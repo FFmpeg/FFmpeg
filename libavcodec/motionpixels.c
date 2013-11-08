@@ -68,6 +68,12 @@ static av_cold int mp_decode_init(AVCodecContext *avctx)
     mp->offset_bits_len = av_log2(avctx->width * avctx->height) + 1;
     mp->vpt = av_mallocz(avctx->height * sizeof(YuvPixel));
     mp->hpt = av_mallocz(h4 * w4 / 16 * sizeof(YuvPixel));
+    if (!mp->changes_map || !mp->vpt || !mp->hpt) {
+        av_freep(&mp->changes_map);
+        av_freep(&mp->vpt);
+        av_freep(&mp->hpt);
+        return AVERROR(ENOMEM);
+    }
     avctx->pix_fmt = AV_PIX_FMT_RGB555;
     avcodec_get_frame_defaults(&mp->frame);
     return 0;
@@ -332,6 +338,7 @@ static av_cold int mp_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_motionpixels_decoder = {
     .name           = "motionpixels",
+    .long_name      = NULL_IF_CONFIG_SMALL("Motion Pixels video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MOTIONPIXELS,
     .priv_data_size = sizeof(MotionPixelsContext),
@@ -339,5 +346,4 @@ AVCodec ff_motionpixels_decoder = {
     .close          = mp_decode_end,
     .decode         = mp_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Motion Pixels video"),
 };

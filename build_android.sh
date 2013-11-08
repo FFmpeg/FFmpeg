@@ -32,15 +32,22 @@ version_type="$2"
 function arm_toolchain()
 {
 	export CROSS_PREFIX=arm-linux-androideabi-
-	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=${CROSS_PREFIX}4.7 \
-		--system=$HOST_SYSTEM --platform=android-14 --install-dir=$TOOLCHAIN
+	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=${CROSS_PREFIX}4.8 \
+		--system=$HOST_SYSTEM --install-dir=$TOOLCHAIN
 }
 
 function x86_toolchain()
 {
 	export CROSS_PREFIX=i686-linux-android-
-	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=x86-4.7 \
-		--system=$HOST_SYSTEM --platform=android-14 --install-dir=$TOOLCHAIN
+	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=x86-4.8 \
+		--system=$HOST_SYSTEM --install-dir=$TOOLCHAIN
+}
+
+function mips_toolchain()
+{
+	export CROSS_PREFIX=mipsel-linux-android-
+	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=${CROSS_PREFIX}4.8 \
+		--system=$HOST_SYSTEM --install-dir=$TOOLCHAIN
 }
 
 
@@ -54,26 +61,32 @@ if [ "$platform" = "x86" ];then
 	echo "Build Android x86 ffmpeg\n"
 	x86_toolchain
 	TARGET="x86"
+elif [ "$platform" = "mips" ];then
+	echo "Build Android mips ffmpeg\n"
+	mips_toolchain
+	TARGET="mips"
 else
 	echo "Build Android arm ffmpeg\n"
 	arm_toolchain
-	TARGET="neon neon armv7 vfp armv6"
+	TARGET="neon armv7 vfp armv6"
 fi
 export PATH=$TOOLCHAIN/bin:$PATH
 export CC="$CCACHE ${CROSS_PREFIX}gcc"
+export CXX=${CROSS_PREFIX}g++
 export LD=${CROSS_PREFIX}ld
 export AR=${CROSS_PREFIX}ar
 export STRIP=${CROSS_PREFIX}strip
+
 
 CFLAGS="-std=c99 -O3 -Wall -pipe -fpic -fasm \
 	-finline-limit=300 -ffast-math \
 	-fstrict-aliasing -Werror=strict-aliasing \
 	-fmodulo-sched -fmodulo-sched-allow-regmoves \
-	-fgraphite -fgraphite-identity -floop-block -floop-flatten \
-	-floop-interchange -floop-strip-mine -floop-parallelize-all -ftree-loop-linear \
 	-Wno-psabi -Wa,--noexecstack \
+	-fdiagnostics-color=always \
 	-DANDROID -DNDEBUG \
 	-I$SSL/include"
+
 
 LDFLAGS="-lm -lz -Wl,--no-undefined -Wl,-z,noexecstack"
 
@@ -83,6 +96,14 @@ case $CROSS_PREFIX in
 			-D__ARM_ARCH_5__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5TE__"
 		;;
 	x86-*)
+		;;
+	mipsel-*)
+		CFLAGS="-std=c99 -O3 -Wall -pipe -fpic -fasm \
+			-ftree-vectorize -ffunction-sections -funwind-tables -fomit-frame-pointer -funswitch-loops \
+			-finline-limit=300 -finline-functions -fpredictive-commoning -fgcse-after-reload -fipa-cp-clone \
+			-Wno-psabi -Wa,--noexecstack \
+			-DANDROID -DNDEBUG \
+			-I$SSL/include"
 		;;
 esac
 
@@ -167,7 +188,6 @@ else
 		--enable-asm"
 fi
 
-echo "Build $version_type ffmpeg\n"
 # --disable-decoder=ac3 --disable-decoder=eac3 --disable-decoder=mlp \
 
 for version in $TARGET; do
@@ -226,6 +246,20 @@ for version in $TARGET; do
 			EXTRA_LDFLAGS="-L$SSL/libs/x86"
 			SSL_OBJS=`find $SSL/obj/local/x86/objs/ssl $SSL/obj/local/x86/objs/crypto -type f -name "*.o"`
 			;;
+		mips)
+			FFMPEG_FLAGS="--arch=mips \
+				--cpu=mips32r2 \
+				--enable-runtime-cpudetect \
+				--enable-openssl \
+				--enable-yasm \
+				--disable-mipsfpu \
+				--disable-mipsdspr1 \
+				--disable-mipsdspr2 \
+				$FFMPEG_FLAGS"
+			EXTRA_CFLAGS="-fno-strict-aliasing -fmessage-length=0 -fno-inline-functions-called-once -frerun-cse-after-loop -frename-registers"
+			EXTRA_LDFLAGS="-L$SSL/libs/mips"
+			SSL_OBJS=`find $SSL/obj/local/mips/objs/ssl $SSL/obj/local/mips/objs/crypto -type f -name "*.o"`
+			;;
 		*)
 			FFMPEG_FLAGS=""
 			EXTRA_CFLAGS=""
@@ -255,6 +289,10 @@ for version in $TARGET; do
 		i686-*)
 			$CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
 				libavutil/*.o libavutil/x86/*.o libavcodec/*.o libavcodec/x86/*.o libavformat/*.o libavfilter/*.o libavfilter/x86/*.o libswresample/*.o libswresample/x86/*.o libswscale/*.o libswscale/x86/*.o compat/*.o
+			;;
+		mipsel-*)
+			$CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
+				libavutil/*.o libavutil/mips/*.o libavcodec/*.o libavcodec/mips/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswscale/*.o compat/*.o
 			;;
 	esac
 

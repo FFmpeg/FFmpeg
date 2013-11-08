@@ -94,7 +94,7 @@ Then pass @code{--enable-libtwolame} to configure to enable it.
 
 @section libvpx
 
-FFmpeg can make use of the libvpx library for VP8 encoding.
+FFmpeg can make use of the libvpx library for VP8/VP9 encoding.
 
 Go to @url{http://www.webmproject.org/} and follow the instructions for
 installing the library. Then pass @code{--enable-libvpx} to configure to
@@ -133,6 +133,20 @@ Go to @url{https://github.com/dekkers/libilbc} and follow the instructions for
 installing the library. Then pass @code{--enable-libilbc} to configure to
 enable it.
 
+@section libzvbi
+
+libzvbi is a VBI decoding library which can be used by FFmpeg to decode DVB
+teletext pages and DVB teletext subtitles.
+
+Go to @url{http://sourceforge.net/projects/zapping/} and follow the instructions for
+installing the library. Then pass @code{--enable-libzvbi} to configure to
+enable it.
+
+@float NOTE
+libzvbi is licensed under the GNU General Public License Version 2 or later
+(see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for details),
+you must upgrade FFmpeg's license to GPL in order to use it.
+@end float
 
 
 @chapter Supported File Formats, Codecs or Features
@@ -474,6 +488,8 @@ following image formats are supported:
     @tab YUV, JPEG and some extension is not supported yet.
 @item Truevision Targa  @tab X @tab X
     @tab Targa (.TGA) image format
+@item WebP         @tab @tab X
+    @tab WebP image format
 @item XBM  @tab X @tab X
     @tab X BitMap image format
 @item XFace @tab X @tab X
@@ -591,7 +607,6 @@ following image formats are supported:
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
 @item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  @tab  E  @tab  X
     @tab encoding supported through external library libx264
-@item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)  @tab  E  @tab  X
 @item HuffYUV                @tab  X  @tab  X
 @item HuffYUV FFmpeg variant @tab  X  @tab  X
 @item IBM Ultimotion         @tab     @tab  X
@@ -644,7 +659,6 @@ following image formats are supported:
 @item Motion Pixels video    @tab     @tab  X
 @item MPEG-1 video           @tab  X  @tab  X
 @item MPEG-1/2 video XvMC (X-Video Motion Compensation)  @tab     @tab  X
-@item MPEG-1/2 video (VDPAU acceleration)  @tab     @tab  X
 @item MPEG-2 video           @tab  X  @tab  X
 @item MPEG-4 part 2          @tab  X  @tab  X
     @tab libxvidcore can be used alternatively for encoding.
@@ -662,6 +676,8 @@ following image formats are supported:
     @tab fourcc: VP60,VP61,VP62
 @item VP8                    @tab  E  @tab  X
     @tab fourcc: VP80, encoding supported through external library libvpx
+@item VP9                    @tab  E  @tab  X
+    @tab encoding supported through external library libvpx
 @item Pinnacle TARGA CineWave YUV16 @tab     @tab  X
     @tab fourcc: Y216
 @item Prores                 @tab     @tab  X
@@ -811,8 +827,8 @@ following image formats are supported:
 @item Amazing Studio PAF Audio @tab     @tab  X
 @item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
-@item Atrac 1                @tab     @tab  X
-@item Atrac 3                @tab     @tab  X
+@item ATRAC1                 @tab     @tab  X
+@item ATRAC3                 @tab     @tab  X
 @item Bink Audio             @tab     @tab  X
     @tab Used in Bink and Smacker files in many games.
 @item CELT                   @tab     @tab  E
@@ -947,6 +963,7 @@ performance on systems without hardware floating point support).
 @item 3GPP Timed Text  @tab   @tab   @tab X @tab X
 @item AQTitle          @tab   @tab X @tab   @tab X
 @item DVB              @tab X @tab X @tab X @tab X
+@item DVB teletext     @tab   @tab X @tab   @tab E
 @item DVD              @tab X @tab X @tab X @tab X
 @item JACOsub          @tab X @tab X @tab   @tab X
 @item MicroDVD         @tab X @tab X @tab   @tab X
@@ -968,6 +985,8 @@ performance on systems without hardware floating point support).
 @end multitable
 
 @code{X} means that the feature is supported.
+
+@code{E} means that support is provided through an external library.
 
 @section Network Protocols
 

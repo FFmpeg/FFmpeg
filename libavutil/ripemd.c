@@ -88,7 +88,7 @@ static const int WB[80] = {
 
 #define rol(value, bits) ((value << bits) | (value >> (32 - bits)))
 
-#define SWAP(a,b) if (ext) { int t = a; a = b; b = t; }
+#define SWAP(a,b) if (ext) { t = a; a = b; b = t; }
 
 #define ROUND128_0_TO_15(a,b,c,d,e,f,g,h)                               \
     a = rol(a + ((  b ^ c  ^ d)      + block[WA[n]]),         ROTA[n]); \
@@ -112,7 +112,7 @@ static const int WB[80] = {
 
 static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int ext)
 {
-    uint32_t a, b, c, d, e, f, g, h;
+    uint32_t a, b, c, d, e, f, g, h, t;
     uint32_t block[16];
     int n;
 
@@ -128,38 +128,74 @@ static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int e
 
     for (n = 0; n < 16; n++)
         block[n] = AV_RL32(buffer + 4 * n);
+    n = 0;
 
-    for (n = 0; n < 16;) {
+#if CONFIG_SMALL
+    for (; n < 16;) {
         ROUND128_0_TO_15(a,b,c,d,e,f,g,h);
-        ROUND128_0_TO_15(d,a,b,c,h,e,f,g);
-        ROUND128_0_TO_15(c,d,a,b,g,h,e,f);
-        ROUND128_0_TO_15(b,c,d,a,f,g,h,e);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
     }
     SWAP(a,e)
 
     for (; n < 32;) {
         ROUND128_16_TO_31(a,b,c,d,e,f,g,h);
-        ROUND128_16_TO_31(d,a,b,c,h,e,f,g);
-        ROUND128_16_TO_31(c,d,a,b,g,h,e,f);
-        ROUND128_16_TO_31(b,c,d,a,f,g,h,e);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
     }
     SWAP(b,f)
 
     for (; n < 48;) {
         ROUND128_32_TO_47(a,b,c,d,e,f,g,h);
-        ROUND128_32_TO_47(d,a,b,c,h,e,f,g);
-        ROUND128_32_TO_47(c,d,a,b,g,h,e,f);
-        ROUND128_32_TO_47(b,c,d,a,f,g,h,e);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
     }
     SWAP(c,g)
 
     for (; n < 64;) {
         ROUND128_48_TO_63(a,b,c,d,e,f,g,h);
-        ROUND128_48_TO_63(d,a,b,c,h,e,f,g);
-        ROUND128_48_TO_63(c,d,a,b,g,h,e,f);
-        ROUND128_48_TO_63(b,c,d,a,f,g,h,e);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
     }
     SWAP(d,h)
+#else
+
+#define R128_0                         \
+    ROUND128_0_TO_15(a,b,c,d,e,f,g,h); \
+    ROUND128_0_TO_15(d,a,b,c,h,e,f,g); \
+    ROUND128_0_TO_15(c,d,a,b,g,h,e,f); \
+    ROUND128_0_TO_15(b,c,d,a,f,g,h,e)
+
+    R128_0; R128_0; R128_0; R128_0;
+    SWAP(a,e)
+
+#define R128_16                         \
+    ROUND128_16_TO_31(a,b,c,d,e,f,g,h); \
+    ROUND128_16_TO_31(d,a,b,c,h,e,f,g); \
+    ROUND128_16_TO_31(c,d,a,b,g,h,e,f); \
+    ROUND128_16_TO_31(b,c,d,a,f,g,h,e)
+
+    R128_16; R128_16; R128_16; R128_16;
+    SWAP(b,f)
+
+#define R128_32                         \
+    ROUND128_32_TO_47(a,b,c,d,e,f,g,h); \
+    ROUND128_32_TO_47(d,a,b,c,h,e,f,g); \
+    ROUND128_32_TO_47(c,d,a,b,g,h,e,f); \
+    ROUND128_32_TO_47(b,c,d,a,f,g,h,e)
+
+    R128_32; R128_32; R128_32; R128_32;
+    SWAP(c,g)
+
+#define R128_48                         \
+    ROUND128_48_TO_63(a,b,c,d,e,f,g,h); \
+    ROUND128_48_TO_63(d,a,b,c,h,e,f,g); \
+    ROUND128_48_TO_63(c,d,a,b,g,h,e,f); \
+    ROUND128_48_TO_63(b,c,d,a,f,g,h,e)
+
+    R128_48; R128_48; R128_48; R128_48;
+    SWAP(d,h)
+#endif
 
     if (ext) {
         state[0] += a; state[1] += b; state[2] += c; state[3] += d;
@@ -205,7 +241,7 @@ static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int e
 
 static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64], int ext)
 {
-    uint32_t a, b, c, d, e, f, g, h, i, j;
+    uint32_t a, b, c, d, e, f, g, h, i, j, t;
     uint32_t block[16];
     int n;
 
@@ -222,56 +258,100 @@ static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64], int e
 
     for (n = 0; n < 16; n++)
         block[n] = AV_RL32(buffer + 4 * n);
+    n = 0;
 
-    for (n = 0; n < 16 - 1;) {
+#if CONFIG_SMALL
+    for (; n < 16;) {
         ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
-        ROUND160_0_TO_15(e,a,b,c,d,j,f,g,h,i);
-        ROUND160_0_TO_15(d,e,a,b,c,i,j,f,g,h);
-        ROUND160_0_TO_15(c,d,e,a,b,h,i,j,f,g);
-        ROUND160_0_TO_15(b,c,d,e,a,g,h,i,j,f);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
     }
+    SWAP(b,g)
+
+    for (; n < 32;) {
+        ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    SWAP(d,i)
+
+    for (; n < 48;) {
+        ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    SWAP(a,f)
+
+    for (; n < 64;) {
+        ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    SWAP(c,h)
+
+    for (; n < 80;) {
+        ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    SWAP(e,j)
+#else
+
+#define R160_0                             \
+    ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j); \
+    ROUND160_0_TO_15(e,a,b,c,d,j,f,g,h,i); \
+    ROUND160_0_TO_15(d,e,a,b,c,i,j,f,g,h); \
+    ROUND160_0_TO_15(c,d,e,a,b,h,i,j,f,g); \
+    ROUND160_0_TO_15(b,c,d,e,a,g,h,i,j,f)
+
+    R160_0; R160_0; R160_0;
     ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
     SWAP(a,f)
 
-    for (; n < 32 - 1;) {
-        ROUND160_16_TO_31(e,a,b,c,d,j,f,g,h,i);
-        ROUND160_16_TO_31(d,e,a,b,c,i,j,f,g,h);
-        ROUND160_16_TO_31(c,d,e,a,b,h,i,j,f,g);
-        ROUND160_16_TO_31(b,c,d,e,a,g,h,i,j,f);
-        ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j);
-    }
+#define R160_16                             \
+    ROUND160_16_TO_31(e,a,b,c,d,j,f,g,h,i); \
+    ROUND160_16_TO_31(d,e,a,b,c,i,j,f,g,h); \
+    ROUND160_16_TO_31(c,d,e,a,b,h,i,j,f,g); \
+    ROUND160_16_TO_31(b,c,d,e,a,g,h,i,j,f); \
+    ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j)
+
+    R160_16; R160_16; R160_16;
     ROUND160_16_TO_31(e,a,b,c,d,j,f,g,h,i);
     SWAP(b,g)
 
-    for (; n < 48 - 1;) {
-        ROUND160_32_TO_47(d,e,a,b,c,i,j,f,g,h);
-        ROUND160_32_TO_47(c,d,e,a,b,h,i,j,f,g);
-        ROUND160_32_TO_47(b,c,d,e,a,g,h,i,j,f);
-        ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j);
-        ROUND160_32_TO_47(e,a,b,c,d,j,f,g,h,i);
-    }
+#define R160_32                             \
+    ROUND160_32_TO_47(d,e,a,b,c,i,j,f,g,h); \
+    ROUND160_32_TO_47(c,d,e,a,b,h,i,j,f,g); \
+    ROUND160_32_TO_47(b,c,d,e,a,g,h,i,j,f); \
+    ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j); \
+    ROUND160_32_TO_47(e,a,b,c,d,j,f,g,h,i)
+
+    R160_32; R160_32; R160_32;
     ROUND160_32_TO_47(d,e,a,b,c,i,j,f,g,h);
     SWAP(c,h)
 
-    for (; n < 64 - 1;) {
-        ROUND160_48_TO_63(c,d,e,a,b,h,i,j,f,g);
-        ROUND160_48_TO_63(b,c,d,e,a,g,h,i,j,f);
-        ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j);
-        ROUND160_48_TO_63(e,a,b,c,d,j,f,g,h,i);
-        ROUND160_48_TO_63(d,e,a,b,c,i,j,f,g,h);
-    }
+#define R160_48                             \
+    ROUND160_48_TO_63(c,d,e,a,b,h,i,j,f,g); \
+    ROUND160_48_TO_63(b,c,d,e,a,g,h,i,j,f); \
+    ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j); \
+    ROUND160_48_TO_63(e,a,b,c,d,j,f,g,h,i); \
+    ROUND160_48_TO_63(d,e,a,b,c,i,j,f,g,h)
+
+    R160_48; R160_48; R160_48;
     ROUND160_48_TO_63(c,d,e,a,b,h,i,j,f,g);
     SWAP(d,i)
 
-    for (; n < 75;) {
-        ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f);
-        ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j);
-        ROUND160_64_TO_79(e,a,b,c,d,j,f,g,h,i);
-        ROUND160_64_TO_79(d,e,a,b,c,i,j,f,g,h);
-        ROUND160_64_TO_79(c,d,e,a,b,h,i,j,f,g);
-    }
+#define R160_64                             \
+    ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f); \
+    ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j); \
+    ROUND160_64_TO_79(e,a,b,c,d,j,f,g,h,i); \
+    ROUND160_64_TO_79(d,e,a,b,c,i,j,f,g,h); \
+    ROUND160_64_TO_79(c,d,e,a,b,h,i,j,f,g)
+
+    R160_64; R160_64; R160_64;
     ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f);
     SWAP(e,j)
+#endif
 
     if (ext) {
         state[0] += a; state[1] += b; state[2] += c; state[3] += d; state[4] += e;

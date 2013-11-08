@@ -30,6 +30,7 @@
 #include "libavutil/cpu.h"
 #include "yuv2rgb_altivec.h"
 
+#if HAVE_ALTIVEC
 #define vzero vec_splat_s32(0)
 
 #define yuv2planeX_8(d1, d2, l1, src, x, perm, filter) do {     \
@@ -284,9 +285,11 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
             }
         }
 }
+#endif /* HAVE_ALTIVEC */
 
-av_cold void ff_sws_init_swScale_altivec(SwsContext *c)
+av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
 {
+#if HAVE_ALTIVEC
     enum AVPixelFormat dstFormat = c->dstFormat;
 
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
@@ -325,4 +328,5 @@ av_cold void ff_sws_init_swScale_altivec(SwsContext *c)
             break;
         }
     }
+#endif /* HAVE_ALTIVEC */
 }

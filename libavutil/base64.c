@@ -270,7 +270,10 @@ int main(int argc, char ** argv)
         }
     }
 
-    return error_count;
+    if (error_count)
+        printf("Error Count: %d.\n", error_count);
+
+    return !!error_count;
 }
 
 // LCOV_EXCL_STOP

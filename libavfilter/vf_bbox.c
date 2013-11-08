@@ -107,9 +107,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
 static const AVFilterPad bbox_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -122,7 +122,7 @@ static const AVFilterPad bbox_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_bbox = {
+AVFilter ff_vf_bbox = {
     .name          = "bbox",
     .description   = NULL_IF_CONFIG_SMALL("Compute bounding box for each frame."),
     .priv_size     = sizeof(BBoxContext),

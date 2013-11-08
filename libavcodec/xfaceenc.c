@@ -227,6 +227,7 @@ static av_cold int xface_encode_close(AVCodecContext *avctx)
 
 AVCodec ff_xface_encoder = {
     .name           = "xface",
+    .long_name      = NULL_IF_CONFIG_SMALL("X-face image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_XFACE,
     .priv_data_size = sizeof(XFaceContext),
@@ -234,5 +235,4 @@ AVCodec ff_xface_encoder = {
     .close          = xface_encode_close,
     .encode2        = xface_encode_frame,
     .pix_fmts       = (const enum PixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("X-face image"),
 };

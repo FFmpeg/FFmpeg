@@ -82,7 +82,6 @@ output_unchanged:
 }
 
 AVBitStreamFilter ff_mp3_header_compress_bsf={
-    "mp3comp",
-    0,
-    mp3_header_compress,
+    .name   = "mp3comp",
+    .filter = mp3_header_compress,
 };

@@ -349,6 +349,7 @@ static const AVCodecDefault defaults[] = {
 
 AVCodec ff_libspeex_encoder = {
     .name           = "libspeex",
+    .long_name      = NULL_IF_CONFIG_SMALL("libspeex Speex"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_SPEEX,
     .priv_data_size = sizeof(LibSpeexEncContext),
@@ -362,7 +363,6 @@ AVCodec ff_libspeex_encoder = {
                                            AV_CH_LAYOUT_STEREO,
                                            0 },
     .supported_samplerates = (const int[]){ 8000, 16000, 32000, 0 },
-    .long_name      = NULL_IF_CONFIG_SMALL("libspeex Speex"),
     .priv_class     = &speex_class,
     .defaults       = defaults,
 };

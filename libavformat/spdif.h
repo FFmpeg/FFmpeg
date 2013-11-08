@@ -41,9 +41,9 @@ enum IEC61937DataType {
     IEC61937_DTS1               = 0x0B,          ///< DTS type I   (512 samples)
     IEC61937_DTS2               = 0x0C,          ///< DTS type II  (1024 samples)
     IEC61937_DTS3               = 0x0D,          ///< DTS type III (2048 samples)
-    IEC61937_ATRAC              = 0x0E,          ///< Atrac data
-    IEC61937_ATRAC3             = 0x0F,          ///< Atrac 3 data
-    IEC61937_ATRACX             = 0x10,          ///< Atrac 3 plus data
+    IEC61937_ATRAC              = 0x0E,          ///< ATRAC data
+    IEC61937_ATRAC3             = 0x0F,          ///< ATRAC3 data
+    IEC61937_ATRACX             = 0x10,          ///< ATRAC3+ data
     IEC61937_DTSHD              = 0x11,          ///< DTS HD data
     IEC61937_WMAPRO             = 0x12,          ///< WMA 9 Professional data
     IEC61937_MPEG2_AAC_LSF_2048 = 0x13,          ///< MPEG-2 AAC ADTS half-rate low sampling frequency

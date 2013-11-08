@@ -687,6 +687,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 #if CONFIG_HUFFYUV_ENCODER
 AVCodec ff_huffyuv_encoder = {
     .name           = "huffyuv",
+    .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HUFFYUV,
     .priv_data_size = sizeof(HYuvContext),
@@ -697,13 +698,13 @@ AVCodec ff_huffyuv_encoder = {
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
 };
 #endif
 
 #if CONFIG_FFVHUFF_ENCODER
 AVCodec ff_ffvhuff_encoder = {
     .name           = "ffvhuff",
+    .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FFVHUFF,
     .priv_data_size = sizeof(HYuvContext),
@@ -714,6 +715,5 @@ AVCodec ff_ffvhuff_encoder = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
 };
 #endif

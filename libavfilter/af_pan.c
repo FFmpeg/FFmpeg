@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002 Anders Johansson <ajh@atri.curtin.edu.au>
- * Copyright (c) 2011 Clément Bœsch <ubitux@gmail.com>
+ * Copyright (c) 2011 Clément Bœsch <u pkh me>
  * Copyright (c) 2011 Nicolas George <nicolas.george@normalesup.org>
  *
  * This file is part of FFmpeg.
@@ -391,7 +391,6 @@ static const AVOption pan_options[] = {
 
 AVFILTER_DEFINE_CLASS(pan);
 
-
 static const AVFilterPad pan_inputs[] = {
     {
         .name         = "default",
@@ -410,7 +409,7 @@ static const AVFilterPad pan_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_pan = {
+AVFilter ff_af_pan = {
     .name          = "pan",
     .description   = NULL_IF_CONFIG_SMALL("Remix channels with coefficients (panning)."),
     .priv_size     = sizeof(PanContext),

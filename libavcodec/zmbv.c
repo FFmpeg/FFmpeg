@@ -510,7 +510,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
     if (c->comp == 0) { //Uncompressed data
         if (c->decomp_size < len) {
-            av_log(avctx, AV_LOG_ERROR, "decomp buffer too small\n");
+            av_log(avctx, AV_LOG_ERROR, "Buffer too small\n");
             return AVERROR_INVALIDDATA;
         }
         memcpy(c->decomp_buf, buf, len);
@@ -622,6 +622,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec ff_zmbv_decoder = {
     .name           = "zmbv",
+    .long_name      = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_ZMBV,
     .priv_data_size = sizeof(ZmbvContext),
@@ -629,5 +630,4 @@ AVCodec ff_zmbv_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
 };

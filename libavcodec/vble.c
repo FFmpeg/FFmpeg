@@ -202,6 +202,7 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
 
 AVCodec ff_vble_decoder = {
     .name           = "vble",
+    .long_name      = NULL_IF_CONFIG_SMALL("VBLE Lossless Codec"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VBLE,
     .priv_data_size = sizeof(VBLEContext),
@@ -209,5 +210,4 @@ AVCodec ff_vble_decoder = {
     .close          = vble_decode_close,
     .decode         = vble_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("VBLE Lossless Codec"),
 };

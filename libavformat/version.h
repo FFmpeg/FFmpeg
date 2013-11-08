@@ -30,8 +30,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFORMAT_VERSION_MAJOR 55
-#define LIBAVFORMAT_VERSION_MINOR 13
-#define LIBAVFORMAT_VERSION_MICRO 102
+#define LIBAVFORMAT_VERSION_MINOR 19
+#define LIBAVFORMAT_VERSION_MICRO 104
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -48,6 +48,9 @@
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
  */
+#ifndef FF_API_REFERENCE_DTS
+#define FF_API_REFERENCE_DTS            (LIBAVFORMAT_VERSION_MAJOR < 56)
+#endif
 
 #ifndef FF_API_ALLOC_OUTPUT_CONTEXT
 #define FF_API_ALLOC_OUTPUT_CONTEXT    (LIBAVFORMAT_VERSION_MAJOR < 56)

@@ -51,7 +51,7 @@ typedef struct {
 
 static const AVOption astats_options[] = {
     { "length", "set the window length", OFFSET(time_constant), AV_OPT_TYPE_DOUBLE, {.dbl=.05}, .01, 10, FLAGS },
-    {NULL},
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(astats);
@@ -262,7 +262,7 @@ static const AVFilterPad astats_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_astats = {
+AVFilter ff_af_astats = {
     .name          = "astats",
     .description   = NULL_IF_CONFIG_SMALL("Show time domain statistics about audio frames."),
     .query_formats = query_formats,

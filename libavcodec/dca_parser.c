@@ -61,6 +61,7 @@ static int dca_find_frame_end(DCAParseContext * pc1, const uint8_t * buf,
                 if (!pc1->lastmarker || state == pc1->lastmarker || pc1->lastmarker == DCA_HD_MARKER) {
                     start_found = 1;
                     pc1->lastmarker = state;
+                    i++;
                     break;
                 }
             }
@@ -75,10 +76,6 @@ static int dca_find_frame_end(DCAParseContext * pc1, const uint8_t * buf,
             if (IS_MARKER(state, i, buf, buf_size) && (state == pc1->lastmarker || pc1->lastmarker == DCA_HD_MARKER)) {
                 if(pc1->framesize > pc1->size)
                     continue;
-                // We have to check that we really read a full frame here, and that it isn't a pure HD frame, because their size is not constant.
-                if(!pc1->framesize && state == pc1->lastmarker && state != DCA_HD_MARKER){
-                    pc1->framesize = pc1->hd_pos ? pc1->hd_pos : pc1->size;
-                }
                 pc->frame_start_found = 0;
                 pc->state = -1;
                 pc1->size = 0;
@@ -100,7 +97,7 @@ static av_cold int dca_parse_init(AVCodecParserContext * s)
 }
 
 static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
-                            int *sample_rate)
+                            int *sample_rate, int *framesize)
 {
     GetBitContext gb;
     uint8_t hdr[12 + FF_INPUT_BUFFER_PADDING_SIZE] = { 0 };
@@ -120,7 +117,11 @@ static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
         return AVERROR_INVALIDDATA;
     *duration = 256 * (sample_blocks / 8);
 
-    skip_bits(&gb, 20);
+    *framesize = get_bits(&gb, 14) + 1;
+    if (*framesize < 95)
+        return AVERROR_INVALIDDATA;
+
+    skip_bits(&gb, 6);
     sr_code = get_bits(&gb, 4);
     *sample_rate = avpriv_dca_sample_rates[sr_code];
     if (*sample_rate == 0)
@@ -151,7 +152,7 @@ static int dca_parse(AVCodecParserContext * s,
     }
 
     /* read the duration and sample rate from the frame header */
-    if (!dca_parse_params(buf, buf_size, &duration, &sample_rate)) {
+    if (!dca_parse_params(buf, buf_size, &duration, &sample_rate, &pc1->framesize)) {
         s->duration = duration;
         avctx->sample_rate = sample_rate;
     } else

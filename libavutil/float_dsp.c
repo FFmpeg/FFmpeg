@@ -20,7 +20,7 @@
  */
 
 #include "config.h"
-#include "libavutil/attributes.h"
+#include "attributes.h"
 #include "float_dsp.h"
 
 static void vector_fmul_c(float *dst, const float *src0, const float *src1,

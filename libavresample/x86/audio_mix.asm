@@ -2,20 +2,20 @@
 ;* x86 optimized channel mixing
 ;* Copyright (c) 2012 Justin Ruggles <justin.ruggles@gmail.com>
 ;*
-;* This file is part of Libav.
+;* This file is part of FFmpeg.
 ;*
-;* Libav is free software; you can redistribute it and/or
+;* FFmpeg is free software; you can redistribute it and/or
 ;* modify it under the terms of the GNU Lesser General Public
 ;* License as published by the Free Software Foundation; either
 ;* version 2.1 of the License, or (at your option) any later version.
 ;*
-;* Libav is distributed in the hope that it will be useful,
+;* FFmpeg is distributed in the hope that it will be useful,
 ;* but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ;* Lesser General Public License for more details.
 ;*
 ;* You should have received a copy of the GNU Lesser General Public
-;* License along with Libav; if not, write to the Free Software
+;* License along with FFmpeg; if not, write to the Free Software
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
@@ -390,10 +390,10 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, n
     S16_TO_S32_SX   4, 5
     cvtdq2ps       m4, m4
     cvtdq2ps       m5, m5
-    fmaddps        m2, m4, mx_1_ %+ %%i, m2, m6
-    fmaddps        m3, m5, mx_1_ %+ %%i, m3, m6
-    fmaddps        m0, m4, mx_0_ %+ %%i, m0, m4
-    fmaddps        m1, m5, mx_0_ %+ %%i, m1, m5
+    FMULADD_PS     m2, m4, mx_1_ %+ %%i, m2, m6
+    FMULADD_PS     m3, m5, mx_1_ %+ %%i, m3, m6
+    FMULADD_PS     m0, m4, mx_0_ %+ %%i, m0, m4
+    FMULADD_PS     m1, m5, mx_0_ %+ %%i, m1, m5
     %else
     %if copy_src_from_stack
     mov       src_ptr, src %+ %%i %+ m
@@ -402,8 +402,8 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, n
     S16_TO_S32_SX   2, 3
     cvtdq2ps       m2, m2
     cvtdq2ps       m3, m3
-    fmaddps        m0, m2, mx_0_ %+ %%i, m0, m4
-    fmaddps        m1, m3, mx_0_ %+ %%i, m1, m4
+    FMULADD_PS     m0, m2, mx_0_ %+ %%i, m0, m4
+    FMULADD_PS     m1, m3, mx_0_ %+ %%i, m1, m4
     %endif
     %assign %%i %%i+1
 %endrep
@@ -428,7 +428,7 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, n
     %if stereo || mx_stack_0_0
     mulps          m0, m0, mx_0_0
     %else
-    mulps          m0, [src0q+lenq], mx_0_0
+    mulps          m0, mx_0_0, [src0q+lenq]
     %endif
 %assign %%i 1
 %rep (in_channels - 1)
@@ -443,12 +443,12 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, n
     mova           m2, [src_ptr+lenq]
     %endif
     %if stereo
-    fmaddps        m1, m2, mx_1_ %+ %%i, m1, m3
+    FMULADD_PS     m1, m2, mx_1_ %+ %%i, m1, m3
     %endif
     %if stereo || mx_stack_0_ %+ %%i
-    fmaddps        m0, m2, mx_0_ %+ %%i, m0, m2
+    FMULADD_PS     m0, m2, mx_0_ %+ %%i, m0, m2
     %else
-    fmaddps        m0, mx_0_ %+ %%i, [src_ptr+lenq], m0, m1
+    FMULADD_PS     m0, mx_0_ %+ %%i, [src_ptr+lenq], m0, m1
     %endif
     %assign %%i %%i+1
 %endrep

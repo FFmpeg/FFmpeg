@@ -123,8 +123,8 @@ static void cmv_decode_inter(CmvContext *s, AVFrame *frame, const uint8_t *buf,
             int yoffset = ((buf[i] >> 4)) - 7;
             if (s->last_frame->data[0])
                 cmv_motcomp(frame->data[0], frame->linesize[0],
-                          s->last_frame->data[0], s->last_frame->linesize[0],
-                          x*4, y*4, xoffset, yoffset, s->avctx->width, s->avctx->height);
+                            s->last_frame->data[0], s->last_frame->linesize[0],
+                            x*4, y*4, xoffset, yoffset, s->avctx->width, s->avctx->height);
         }
         i++;
     }
@@ -225,6 +225,7 @@ static av_cold int cmv_decode_end(AVCodecContext *avctx){
 
 AVCodec ff_eacmv_decoder = {
     .name           = "eacmv",
+    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts CMV video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_CMV,
     .priv_data_size = sizeof(CmvContext),
@@ -232,5 +233,4 @@ AVCodec ff_eacmv_decoder = {
     .close          = cmv_decode_end,
     .decode         = cmv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts CMV video"),
 };

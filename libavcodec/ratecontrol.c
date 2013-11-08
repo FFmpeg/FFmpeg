@@ -328,6 +328,9 @@ int ff_vbv_update(MpegEncContext *s, int frame_size)
         rcc->buffer_index -= frame_size;
         if (rcc->buffer_index < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "rc buffer underflow\n");
+            if (frame_size > max_rate && s->qscale == s->avctx->qmax) {
+                av_log(s->avctx, AV_LOG_ERROR, "max bitrate possibly too small or try trellis with large lmax or increase qmax\n");
+            }
             rcc->buffer_index = 0;
         }
 

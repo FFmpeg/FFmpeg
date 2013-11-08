@@ -135,6 +135,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(H261,             h261);
     REGISTER_MUXDEMUX(H263,             h263);
     REGISTER_MUXDEMUX(H264,             h264);
+    REGISTER_DEMUXER (HEVC,             hevc);
     REGISTER_MUXDEMUX(HLS,              hls);
     REGISTER_MUXDEMUX(ICO,              ico);
     REGISTER_DEMUXER (IDCIN,            idcin);
@@ -247,8 +248,8 @@ void av_register_all(void)
     REGISTER_DEMUXER (SBG,              sbg);
     REGISTER_DEMUXER (SDP,              sdp);
 #if CONFIG_RTPDEC
-    av_register_rtp_dynamic_payload_handlers();
-    av_register_rdt_dynamic_payload_handlers();
+    ff_register_rtp_dynamic_payload_handlers();
+    ff_register_rdt_dynamic_payload_handlers();
 #endif
     REGISTER_DEMUXER (SEGAFILM,         segafilm);
     REGISTER_MUXER   (SEGMENT,          segment);
@@ -350,4 +351,5 @@ void av_register_all(void)
     REGISTER_PROTOCOL(LIBRTMPS,         librtmps);
     REGISTER_PROTOCOL(LIBRTMPT,         librtmpt);
     REGISTER_PROTOCOL(LIBRTMPTE,        librtmpte);
+    REGISTER_PROTOCOL(LIBSSH,           libssh);
 }

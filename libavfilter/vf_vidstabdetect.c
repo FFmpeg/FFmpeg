@@ -186,23 +186,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static const AVFilterPad avfilter_vf_vidstabdetect_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
-        .config_props     = config_input,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
 
 static const AVFilterPad avfilter_vf_vidstabdetect_outputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };
 
-AVFilter avfilter_vf_vidstabdetect = {
+AVFilter ff_vf_vidstabdetect = {
     .name          = "vidstabdetect",
     .description   = NULL_IF_CONFIG_SMALL("Extract relative transformations, "
                                           "pass 1 of 2 for stabilization "
@@ -211,7 +211,6 @@ AVFilter avfilter_vf_vidstabdetect = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
     .inputs        = avfilter_vf_vidstabdetect_inputs,
     .outputs       = avfilter_vf_vidstabdetect_outputs,
     .priv_class    = &vidstabdetect_class,

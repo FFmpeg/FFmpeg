@@ -142,7 +142,7 @@ static const AVOption ebur128_options[] = {
         { "info",    "information logging level", 0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_INFO},    INT_MIN, INT_MAX, A|V|F, "level" },
         { "verbose", "verbose logging level",     0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_VERBOSE}, INT_MIN, INT_MAX, A|V|F, "level" },
     { "metadata", "inject metadata in the filtergraph", OFFSET(metadata), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, A|V|F },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(ebur128);
@@ -777,16 +777,15 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad ebur128_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .get_audio_buffer = ff_null_get_audio_buffer,
-        .filter_frame     = filter_frame,
-        .config_props     = config_audio_input,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .config_props = config_audio_input,
     },
     { NULL }
 };
 
-AVFilter avfilter_af_ebur128 = {
+AVFilter ff_af_ebur128 = {
     .name          = "ebur128",
     .description   = NULL_IF_CONFIG_SMALL("EBU R128 scanner."),
     .priv_size     = sizeof(EBUR128Context),

@@ -52,6 +52,7 @@
 #include "golomb.h"
 #include "hpeldsp.h"
 #include "rectangle.h"
+#include "vdpau_internal.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -104,6 +105,13 @@ static const uint8_t svq3_scan[16] = {
     2 + 2 * 4, 3 + 0 * 4, 3 + 1 * 4, 3 + 2 * 4,
     0 + 1 * 4, 0 + 2 * 4, 1 + 1 * 4, 1 + 2 * 4,
     0 + 3 * 4, 1 + 3 * 4, 2 + 3 * 4, 3 + 3 * 4,
+};
+
+static const uint8_t luma_dc_zigzag_scan[16] = {
+    0 * 16 + 0 * 64, 1 * 16 + 0 * 64, 2 * 16 + 0 * 64, 0 * 16 + 2 * 64,
+    3 * 16 + 0 * 64, 0 * 16 + 1 * 64, 1 * 16 + 1 * 64, 2 * 16 + 1 * 64,
+    1 * 16 + 2 * 64, 2 * 16 + 2 * 64, 3 * 16 + 2 * 64, 0 * 16 + 3 * 64,
+    3 * 16 + 1 * 64, 1 * 16 + 3 * 64, 2 * 16 + 3 * 64, 3 * 16 + 3 * 64,
 };
 
 static const uint8_t svq3_pred_0[25][2] = {
@@ -309,7 +317,8 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
     src  = pic->f.data[0] + mx + my * h->linesize;
 
     if (emu) {
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src, h->linesize,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->linesize,
+                                 src, h->linesize,
                                  width + 1, height + 1,
                                  mx, my, s->h_edge_pos, s->v_edge_pos);
         src = h->edge_emu_buffer;
@@ -335,7 +344,8 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
             src  = pic->f.data[i] + mx + my * h->uvlinesize;
 
             if (emu) {
-                h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src, h->uvlinesize,
+                h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->uvlinesize,
+                                         src, h->uvlinesize,
                                          width + 1, height + 1,
                                          mx, my, (s->h_edge_pos >> 1),
                                          s->v_edge_pos >> 1);
@@ -650,8 +660,8 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         dir = (dir >> 1) ^ 3 * (dir & 1) ^ 1;
 
         if ((h->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, dir, 0)) < 0) {
-            av_log(h->avctx, AV_LOG_ERROR, "check_intra_pred_mode < 0\n");
-            return -1;
+            av_log(h->avctx, AV_LOG_ERROR, "ff_h264_check_intra_pred_mode < 0\n");
+            return h->intra16x16_pred_mode;
         }
 
         cbp     = i_mb_type_info[mb_type - 8].cbp;
@@ -978,7 +988,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             int offset                = get_bits_count(&gb) + 7 >> 3;
             uint8_t *buf;
 
-            if (watermark_height <= 0 || (uint64_t)watermark_width*4 > UINT_MAX/watermark_height)
+            if (watermark_height <= 0 ||
+                (uint64_t)watermark_width * 4 > UINT_MAX / watermark_height)
                 return -1;
 
             buf = av_malloc(buf_len);
@@ -1336,6 +1347,7 @@ static av_cold int svq3_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_svq3_decoder = {
     .name           = "svq3",
+    .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 3 / Sorenson Video 3 / SVQ3"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SVQ3,
     .priv_data_size = sizeof(SVQ3Context),
@@ -1345,7 +1357,6 @@ AVCodec ff_svq3_decoder = {
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND |
                       CODEC_CAP_DR1             |
                       CODEC_CAP_DELAY,
-    .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 3 / Sorenson Video 3 / SVQ3"),
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUVJ420P,
                                                      AV_PIX_FMT_NONE},
 };

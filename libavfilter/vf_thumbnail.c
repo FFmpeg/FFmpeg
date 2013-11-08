@@ -209,11 +209,10 @@ static int query_formats(AVFilterContext *ctx)
 
 static const AVFilterPad thumbnail_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = config_props,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -227,7 +226,7 @@ static const AVFilterPad thumbnail_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_thumbnail = {
+AVFilter ff_vf_thumbnail = {
     .name          = "thumbnail",
     .description   = NULL_IF_CONFIG_SMALL("Select the most representative frame in a given sequence of consecutive frames."),
     .priv_size     = sizeof(ThumbContext),

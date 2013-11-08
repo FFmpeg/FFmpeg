@@ -1353,6 +1353,7 @@ static const AVClass mpeg4enc_class = {
 
 AVCodec ff_mpeg4_encoder = {
     .name           = "mpeg4",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,
     .priv_data_size = sizeof(MpegEncContext),
@@ -1361,6 +1362,5 @@ AVCodec ff_mpeg4_encoder = {
     .close          = ff_MPV_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
     .priv_class     = &mpeg4enc_class,
 };

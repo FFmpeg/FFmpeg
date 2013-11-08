@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/simple_idct.h"
 #include "dsputil_x86.h"
@@ -567,6 +568,16 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
                                         int cpu_flags)
 {
+#if HAVE_MMXEXT_INLINE
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
+
+    if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX && avctx->lowres == 0) {
+        c->idct_put = ff_idct_xvid_mmxext_put;
+        c->idct_add = ff_idct_xvid_mmxext_add;
+        c->idct     = ff_idct_xvid_mmxext;
+    }
+#endif /* HAVE_MMXEXT_INLINE */
+
 #if HAVE_MMXEXT_EXTERNAL
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
     SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
@@ -672,16 +683,16 @@ static av_cold void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_SSE4_EXTERNAL */
 }
 
-av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_7REGS && HAVE_INLINE_ASM
-    if (cpu_flags & AV_CPU_FLAG_CMOV)
+    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_CMOV)
         c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_cmov;
 #endif
 
-    if (cpu_flags & AV_CPU_FLAG_MMX) {
+    if (X86_MMX(cpu_flags)) {
 #if HAVE_INLINE_ASM
         const int idct_algo = avctx->idct_algo;
 
@@ -692,20 +703,9 @@ av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
                 c->idct                  = ff_simple_idct_mmx;
                 c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
             } else if (idct_algo == FF_IDCT_XVIDMMX) {
-                if (cpu_flags & AV_CPU_FLAG_SSE2) {
-                    c->idct_put              = ff_idct_xvid_sse2_put;
-                    c->idct_add              = ff_idct_xvid_sse2_add;
-                    c->idct                  = ff_idct_xvid_sse2;
-                    c->idct_permutation_type = FF_SSE2_IDCT_PERM;
-                } else if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
-                    c->idct_put              = ff_idct_xvid_mmxext_put;
-                    c->idct_add              = ff_idct_xvid_mmxext_add;
-                    c->idct                  = ff_idct_xvid_mmxext;
-                } else {
-                    c->idct_put              = ff_idct_xvid_mmx_put;
-                    c->idct_add              = ff_idct_xvid_mmx_add;
-                    c->idct                  = ff_idct_xvid_mmx;
-                }
+                c->idct_put              = ff_idct_xvid_mmx_put;
+                c->idct_add              = ff_idct_xvid_mmx_add;
+                c->idct                  = ff_idct_xvid_mmx;
             }
         }
 #endif /* HAVE_INLINE_ASM */
@@ -713,19 +713,19 @@ av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
         dsputil_init_mmx(c, avctx, cpu_flags);
     }
 
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
+    if (X86_MMXEXT(cpu_flags))
         dsputil_init_mmxext(c, avctx, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_SSE)
+    if (X86_SSE(cpu_flags))
         dsputil_init_sse(c, avctx, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_SSE2)
+    if (X86_SSE2(cpu_flags))
         dsputil_init_sse2(c, avctx, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_SSSE3)
+    if (EXTERNAL_SSSE3(cpu_flags))
         dsputil_init_ssse3(c, avctx, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_SSE4)
+    if (EXTERNAL_SSE4(cpu_flags))
         dsputil_init_sse4(c, avctx, cpu_flags);
 
     if (CONFIG_ENCODERS)

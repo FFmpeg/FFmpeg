@@ -137,9 +137,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 AVCodec ff_xsub_decoder = {
     .name      = "xsub",
+    .long_name = NULL_IF_CONFIG_SMALL("XSUB"),
     .type      = AVMEDIA_TYPE_SUBTITLE,
     .id        = AV_CODEC_ID_XSUB,
     .init      = decode_init,
     .decode    = decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("XSUB"),
 };

@@ -38,6 +38,10 @@
 #include "simple_idct_template.c"
 #undef BIT_DEPTH
 
+#define BIT_DEPTH 12
+#include "simple_idct_template.c"
+#undef BIT_DEPTH
+
 /* 2x4x8 idct */
 
 #define CN_SHIFT 12

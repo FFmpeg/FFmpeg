@@ -435,6 +435,7 @@ static av_cold void mpc8_decode_flush(AVCodecContext *avctx)
 
 AVCodec ff_mpc8_decoder = {
     .name           = "mpc8",
+    .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV8"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_MUSEPACK8,
     .priv_data_size = sizeof(MPCContext),
@@ -442,7 +443,6 @@ AVCodec ff_mpc8_decoder = {
     .decode         = mpc8_decode_frame,
     .flush          = mpc8_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV8"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };

@@ -139,8 +139,8 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     int i, t, seekd;
     GetBitContext gb;
 
-    if (s->nb_streams<=0) {
-        av_log(s, AV_LOG_ERROR, "cannot parse stream table before stream header\n");
+    if (s->nb_streams == 0) {
+        av_log(s, AV_LOG_ERROR, "No stream added before parsing seek table\n");
         return;
     }
 
@@ -151,7 +151,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
         return;
     }
     if (size > INT_MAX/10 || size<=0) {
-        av_log(s, AV_LOG_ERROR, "Seek table size is invalid\n");
+        av_log(s, AV_LOG_ERROR, "Bad seek table size\n");
         return;
     }
     if(!(buf = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE)))
@@ -241,8 +241,8 @@ static int mpc8_read_header(AVFormatContext *s)
     st->codec->codec_id = AV_CODEC_ID_MUSEPACK8;
     st->codec->bits_per_coded_sample = 16;
 
-    st->codec->extradata_size = 2;
-    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (ff_alloc_extradata(st->codec, 2))
+        return AVERROR(ENOMEM);
     avio_read(pb, st->codec->extradata, st->codec->extradata_size);
 
     st->codec->channels = (st->codec->extradata[1] >> 4) + 1;

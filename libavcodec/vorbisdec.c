@@ -1817,6 +1817,7 @@ static av_cold void vorbis_decode_flush(AVCodecContext *avctx)
 
 AVCodec ff_vorbis_decoder = {
     .name            = "vorbis",
+    .long_name       = NULL_IF_CONFIG_SMALL("Vorbis"),
     .type            = AVMEDIA_TYPE_AUDIO,
     .id              = AV_CODEC_ID_VORBIS,
     .priv_data_size  = sizeof(vorbis_context),
@@ -1825,7 +1826,6 @@ AVCodec ff_vorbis_decoder = {
     .decode          = vorbis_decode_frame,
     .flush           = vorbis_decode_flush,
     .capabilities    = CODEC_CAP_DR1,
-    .long_name       = NULL_IF_CONFIG_SMALL("Vorbis"),
     .channel_layouts = ff_vorbis_channel_layouts,
     .sample_fmts     = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                        AV_SAMPLE_FMT_NONE },

@@ -130,10 +130,7 @@ static int parse_fmtp_config(AVStream *st, char *value)
         goto end;
     }
     av_freep(&st->codec->extradata);
-    st->codec->extradata_size = (get_bits_left(&gb) + 7)/8;
-    st->codec->extradata = av_mallocz(st->codec->extradata_size +
-                                      FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata) {
+    if (ff_alloc_extradata(st->codec, (get_bits_left(&gb) + 7)/8)) {
         ret = AVERROR(ENOMEM);
         goto end;
     }

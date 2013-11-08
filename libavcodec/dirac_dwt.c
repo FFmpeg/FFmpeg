@@ -569,17 +569,3 @@ void ff_spatial_idwt_slice2(DWTContext *d, int y)
     }
 }
 
-int ff_spatial_idwt2(IDWTELEM *buffer, int width, int height, int stride,
-                     enum dwt_type type, int decomposition_count, IDWTELEM *temp)
-{
-    DWTContext d;
-    int y;
-
-    if (ff_spatial_idwt_init2(&d, buffer, width, height, stride, type, decomposition_count, temp))
-        return -1;
-
-    for (y = 0; y < d.height; y += 4)
-        ff_spatial_idwt_slice2(&d, y);
-
-    return 0;
-}

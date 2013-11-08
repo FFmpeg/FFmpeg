@@ -85,7 +85,7 @@ static int mp3_read_probe(AVProbeData *p)
     else if(max_frames>200)return AVPROBE_SCORE_EXTENSION;
     else if(max_frames>=4) return AVPROBE_SCORE_EXTENSION / 2;
     else if(ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC) && 2*ff_id3v2_tag_len(buf0) >= p->buf_size)
-                           return AVPROBE_SCORE_EXTENSION / 4;
+                           return p->buf_size < PROBE_BUF_MAX ? AVPROBE_SCORE_EXTENSION / 4 : AVPROBE_SCORE_EXTENSION - 2;
     else if(max_frames>=1) return 1;
     else                   return 0;
 //mpegps_mp3_unrecognized_format.mpg has max_frames=3
@@ -288,6 +288,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     AVStream *st = s->streams[0];
     int64_t ret  = av_index_search_timestamp(st, timestamp, flags);
     int i, j;
+    int dir = (flags&AVSEEK_FLAG_BACKWARD) ? -1 : 1;
 
     if (mp3->is_cbr && st->duration > 0 && mp3->header_filesize > s->data_offset) {
         int64_t filesize = avio_size(s->pb);
@@ -317,7 +318,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
 
 #define MIN_VALID 3
     for(i=0; i<4096; i++) {
-        int64_t pos = ie->pos + i;
+        int64_t pos = ie->pos + i*dir;
         for(j=0; j<MIN_VALID; j++) {
             ret = check(s, pos);
             if(ret < 0)
@@ -330,7 +331,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     if(j!=MIN_VALID)
         i=0;
 
-    ret = avio_seek(s->pb, ie->pos + i, SEEK_SET);
+    ret = avio_seek(s->pb, ie->pos + i*dir, SEEK_SET);
     if (ret < 0)
         return ret;
     ff_update_cur_dts(s, st, ie->timestamp);
@@ -360,6 +361,6 @@ AVInputFormat ff_mp3_demuxer = {
     .read_seek      = mp3_seek,
     .priv_data_size = sizeof(MP3DecContext),
     .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "mp2,mp3,m2a", /* XXX: use probe */
+    .extensions     = "mp2,mp3,m2a,mpa", /* XXX: use probe */
     .priv_class     = &demuxer_class,
 };

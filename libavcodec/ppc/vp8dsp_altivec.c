@@ -241,15 +241,15 @@ void put_vp8_epel ## WIDTH ## _v ## TAPS ## _altivec(uint8_t *dst, ptrdiff_t dst
 }
 
 #define EPEL_HV(WIDTH, HTAPS, VTAPS) \
-static void put_vp8_epel ## WIDTH ## _h ## HTAPS ## v ## VTAPS ## _altivec(uint8_t *dst, ptrdiff_t stride, uint8_t *src, ptrdiff_t s, int h, int mx, int my) \
+static void put_vp8_epel ## WIDTH ## _h ## HTAPS ## v ## VTAPS ## _altivec(uint8_t *dst, ptrdiff_t dstride, uint8_t *src, ptrdiff_t sstride, int h, int mx, int my) \
 { \
     DECLARE_ALIGNED(16, uint8_t, tmp)[(2*WIDTH+5)*16]; \
     if (VTAPS == 6) { \
-        put_vp8_epel ## WIDTH ## _h ## HTAPS ## _altivec(tmp, 16,     src-2*stride, stride, h+5, mx, my); \
-        put_vp8_epel ## WIDTH ## _v ## VTAPS ## _altivec(dst, stride, tmp+2*16,     16,     h,   mx, my); \
+        put_vp8_epel ## WIDTH ## _h ## HTAPS ## _altivec(tmp, 16,      src-2*sstride, sstride, h+5, mx, my); \
+        put_vp8_epel ## WIDTH ## _v ## VTAPS ## _altivec(dst, dstride, tmp+2*16,      16,      h,   mx, my); \
     } else { \
-        put_vp8_epel ## WIDTH ## _h ## HTAPS ## _altivec(tmp, 16,     src-stride, stride, h+4, mx, my); \
-        put_vp8_epel ## WIDTH ## _v ## VTAPS ## _altivec(dst, stride, tmp+16,     16,     h,   mx, my); \
+        put_vp8_epel ## WIDTH ## _h ## HTAPS ## _altivec(tmp, 16,      src-sstride, sstride, h+4, mx, my); \
+        put_vp8_epel ## WIDTH ## _v ## VTAPS ## _altivec(dst, dstride, tmp+16,      16,      h,   mx, my); \
     } \
 }
 
@@ -269,9 +269,44 @@ EPEL_HV(4,  4,6)
 EPEL_HV(4,  6,4)
 EPEL_HV(4,  4,4)
 
-static void put_vp8_pixels16_altivec(uint8_t *dst, ptrdiff_t stride, uint8_t *src, ptrdiff_t s, int h, int mx, int my)
+static void put_vp8_pixels16_altivec(uint8_t *dst, ptrdiff_t dstride, uint8_t *src, ptrdiff_t sstride, int h, int mx, int my)
 {
-    ff_put_pixels16_altivec(dst, src, stride, h);
+    register vector unsigned char pixelsv1, pixelsv2;
+    register vector unsigned char pixelsv1B, pixelsv2B;
+    register vector unsigned char pixelsv1C, pixelsv2C;
+    register vector unsigned char pixelsv1D, pixelsv2D;
+
+    register vector unsigned char perm = vec_lvsl(0, src);
+    int i;
+    register ptrdiff_t dstride2 = dstride << 1, sstride2 = sstride << 1;
+    register ptrdiff_t dstride3 = dstride2 + dstride, sstride3 = sstride + sstride2;
+    register ptrdiff_t dstride4 = dstride << 2, sstride4 = sstride << 2;
+
+// hand-unrolling the loop by 4 gains about 15%
+// mininum execution time goes from 74 to 60 cycles
+// it's faster than -funroll-loops, but using
+// -funroll-loops w/ this is bad - 74 cycles again.
+// all this is on a 7450, tuning for the 7450
+    for (i = 0; i < h; i += 4) {
+        pixelsv1  = vec_ld( 0, src);
+        pixelsv2  = vec_ld(15, src);
+        pixelsv1B = vec_ld(sstride, src);
+        pixelsv2B = vec_ld(15 + sstride, src);
+        pixelsv1C = vec_ld(sstride2, src);
+        pixelsv2C = vec_ld(15 + sstride2, src);
+        pixelsv1D = vec_ld(sstride3, src);
+        pixelsv2D = vec_ld(15 + sstride3, src);
+        vec_st(vec_perm(pixelsv1, pixelsv2, perm),
+               0, (unsigned char*)dst);
+        vec_st(vec_perm(pixelsv1B, pixelsv2B, perm),
+               dstride, (unsigned char*)dst);
+        vec_st(vec_perm(pixelsv1C, pixelsv2C, perm),
+               dstride2, (unsigned char*)dst);
+        vec_st(vec_perm(pixelsv1D, pixelsv2D, perm),
+               dstride3, (unsigned char*)dst);
+        src += sstride4;
+        dst += dstride4;
+    }
 }
 
 #endif /* HAVE_ALTIVEC */

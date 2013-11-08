@@ -28,6 +28,7 @@
 
 #include <string.h>
 #include "libavutil/intreadwrite.h"
+#include "internal.h"
 #include "rtp.h"
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
@@ -60,11 +61,9 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
         av_freep(&st->codec->extradata);
         st->codec->extradata_size = 0;
 
-        if (len < 2 || !(st->codec->extradata =
-                         av_malloc(len + 8 + FF_INPUT_BUFFER_PADDING_SIZE)))
+        if (len < 2 || ff_alloc_extradata(st->codec, len + 8))
             return AVERROR_INVALIDDATA;
 
-        st->codec->extradata_size = len + 8;
         memcpy(st->codec->extradata, "SEQH", 4);
         AV_WB32(st->codec->extradata + 4, len);
         memcpy(st->codec->extradata + 8, buf, len);

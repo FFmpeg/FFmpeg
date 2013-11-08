@@ -34,7 +34,6 @@
 #include "libavutil/avutil.h"
 #include "libavutil/mem.h"
 #include "mpegvideo.h"
-#include "msmpeg4.h"
 #include "h263.h"
 #include "mpeg4video.h"
 #include "msmpeg4.h"

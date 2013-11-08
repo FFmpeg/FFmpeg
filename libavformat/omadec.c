@@ -1,7 +1,7 @@
 /*
  * Sony OpenMG (OMA) demuxer
  *
- * Copyright (c) 2008 Maxim Poliakovski
+ * Copyright (c) 2008, 2013 Maxim Poliakovski
  *               2008 Benjamin Larsson
  *               2011 David Goldwich
  *
@@ -171,7 +171,7 @@ static int nprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
     taglen  = AV_RB32(&enc_header[pos + 32]);
     datalen = AV_RB32(&enc_header[pos + 36]) >> 4;
 
-    pos += 44 + taglen;
+    pos += 44L + taglen;
 
     if (pos + (((uint64_t)datalen) << 4) > size)
         return -1;
@@ -285,7 +285,7 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
 static int oma_read_header(AVFormatContext *s)
 {
     int     ret, framesize, jsflag, samplerate;
-    uint32_t codec_params;
+    uint32_t codec_params, channel_id;
     int16_t eid;
     uint8_t buf[EA3_HEADER_SIZE];
     uint8_t *edata;
@@ -347,14 +347,12 @@ static int oma_read_header(AVFormatContext *s)
         st->codec->sample_rate = samplerate;
         st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
 
-        /* fake the atrac3 extradata
+        /* fake the ATRAC3 extradata
          * (wav format, makes stream copy to wav work) */
-        st->codec->extradata_size = 14;
-        edata = av_mallocz(14 + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!edata)
+        if (ff_alloc_extradata(st->codec, 14))
             return AVERROR(ENOMEM);
 
-        st->codec->extradata = edata;
+        edata = st->codec->extradata;
         AV_WL16(&edata[0],  1);             // always 1
         AV_WL32(&edata[2],  samplerate);    // samples rate
         AV_WL16(&edata[6],  jsflag);        // coding mode
@@ -365,7 +363,14 @@ static int oma_read_header(AVFormatContext *s)
         avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
         break;
     case OMA_CODECID_ATRAC3P:
-        st->codec->channels = (codec_params >> 10) & 7;
+        channel_id = (codec_params >> 10) & 7;
+        if (!channel_id) {
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid ATRAC-X channel id: %d\n", channel_id);
+            return AVERROR_INVALIDDATA;
+        }
+        st->codec->channel_layout = ff_oma_chid_to_native_layout[channel_id - 1];
+        st->codec->channels       = ff_oma_chid_to_num_channels[channel_id - 1];
         framesize = ((codec_params & 0x3FF) * 8) + 8;
         samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7] * 100;
         if (!samplerate) {
@@ -373,7 +378,7 @@ static int oma_read_header(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
         }
         st->codec->sample_rate = samplerate;
-        st->codec->bit_rate    = samplerate * framesize * 8 / 1024;
+        st->codec->bit_rate    = samplerate * framesize * 8 / 2048;
         avpriv_set_pts_info(st, 64, 1, samplerate);
         av_log(s, AV_LOG_ERROR, "Unsupported codec ATRAC3+!\n");
         break;

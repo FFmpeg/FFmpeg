@@ -331,16 +331,14 @@ cglobal deblock_v_luma_8, 5,5,10
 ; void deblock_h_luma( uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
 ;-----------------------------------------------------------------------------
 INIT_MMX cpuname
-cglobal deblock_h_luma_8, 5,9
+cglobal deblock_h_luma_8, 5,9,0,0x60+16*WIN64
     movsxd r7,  r1d
     lea    r8,  [r7+r7*2]
     lea    r6,  [r0-4]
     lea    r5,  [r0-4+r8]
 %if WIN64
-    sub    rsp, 0x98
-    %define pix_tmp rsp+0x30
+    %define pix_tmp rsp+0x30 ; shadow space + r4
 %else
-    sub    rsp, 0x68
     %define pix_tmp rsp
 %endif
 
@@ -379,11 +377,6 @@ cglobal deblock_h_luma_8, 5,9
     movq   m3, [pix_tmp+0x40]
     TRANSPOSE8x4B_STORE  PASS8ROWS(r6, r5, r7, r8)
 
-%if WIN64
-    add    rsp, 0x98
-%else
-    add    rsp, 0x68
-%endif
     RET
 %endmacro
 
@@ -708,13 +701,16 @@ INIT_MMX cpuname
 ;-----------------------------------------------------------------------------
 ; void deblock_h_luma_intra( uint8_t *pix, int stride, int alpha, int beta )
 ;-----------------------------------------------------------------------------
-cglobal deblock_h_luma_intra_8, 4,9
+cglobal deblock_h_luma_intra_8, 4,9,0,0x80
     movsxd r7,  r1d
     lea    r8,  [r7*3]
     lea    r6,  [r0-4]
     lea    r5,  [r0-4+r8]
-    sub    rsp, 0x88
+%if WIN64
+    %define pix_tmp rsp+0x20 ; shadow space
+%else
     %define pix_tmp rsp
+%endif
 
     ; transpose 8x16 -> tmp space
     TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r7, r8), PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30)
@@ -734,7 +730,6 @@ cglobal deblock_h_luma_intra_8, 4,9
     sub    r5,  r7
     shr    r7,  3
     TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30), PASS8ROWS(r6, r5, r7, r8)
-    add    rsp, 0x88
     RET
 %else
 cglobal deblock_h_luma_intra_8, 2,4,8,0x80

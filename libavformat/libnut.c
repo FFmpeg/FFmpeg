@@ -223,14 +223,16 @@ static int nut_read_header(AVFormatContext * avf) {
         AVStream * st = avformat_new_stream(avf, NULL);
         int j;
 
+        if (!st)
+            return AVERROR(ENOMEM);
+
         for (j = 0; j < s[i].fourcc_len && j < 8; j++) st->codec->codec_tag |= s[i].fourcc[j]<<(j*8);
 
         st->codec->has_b_frames = s[i].decode_delay;
 
         st->codec->extradata_size = s[i].codec_specific_len;
         if (st->codec->extradata_size) {
-            st->codec->extradata = av_mallocz(st->codec->extradata_size);
-            if(!st->codec->extradata){
+            if(ff_alloc_extradata(st->codec, st->codec->extradata_size)){
                 nut_demuxer_uninit(nut);
                 priv->nut = NULL;
                 return AVERROR(ENOMEM);

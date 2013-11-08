@@ -69,7 +69,7 @@ static const AVOption concat_options[] = {
     { "unsafe", "enable unsafe mode",
       OFFSET(unsafe),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, V|A|F},
-    { 0 }
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(concat);
@@ -412,7 +412,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_free(cat->in);
 }
 
-AVFilter avfilter_avf_concat = {
+AVFilter ff_avf_concat = {
     .name          = "concat",
     .description   = NULL_IF_CONFIG_SMALL("Concatenate audio and video streams."),
     .init          = init,

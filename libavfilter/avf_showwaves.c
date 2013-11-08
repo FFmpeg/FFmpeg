@@ -62,7 +62,7 @@ static const AVOption showwaves_options[] = {
     { "n",    "set how many samples to show in the same point", OFFSET(n), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     { "rate", "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
     { "r",    "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(showwaves);
@@ -244,13 +244,13 @@ static const AVFilterPad showwaves_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_avf_showwaves = {
-    .name           = "showwaves",
-    .description    = NULL_IF_CONFIG_SMALL("Convert input audio to a video output."),
-    .uninit         = uninit,
-    .query_formats  = query_formats,
-    .priv_size      = sizeof(ShowWavesContext),
-    .inputs         = showwaves_inputs,
-    .outputs        = showwaves_outputs,
-    .priv_class     = &showwaves_class,
+AVFilter ff_avf_showwaves = {
+    .name          = "showwaves",
+    .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a video output."),
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .priv_size     = sizeof(ShowWavesContext),
+    .inputs        = showwaves_inputs,
+    .outputs       = showwaves_outputs,
+    .priv_class    = &showwaves_class,
 };

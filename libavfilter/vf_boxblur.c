@@ -372,7 +372,7 @@ static const AVFilterPad avfilter_vf_boxblur_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_boxblur = {
+AVFilter ff_vf_boxblur = {
     .name          = "boxblur",
     .description   = NULL_IF_CONFIG_SMALL("Blur the input."),
     .priv_size     = sizeof(BoxBlurContext),
@@ -380,8 +380,7 @@ AVFilter avfilter_vf_boxblur = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_boxblur_inputs,
-    .outputs   = avfilter_vf_boxblur_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .inputs        = avfilter_vf_boxblur_inputs,
+    .outputs       = avfilter_vf_boxblur_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

@@ -258,12 +258,6 @@ static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
     GetBitContext gb;
     int i, j, k;
 
-    if (buf_size * 8 < avctx->bit_rate * mtab->size / avctx->sample_rate + 8) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Frame too small (%d bytes). Truncated file?\n", buf_size);
-        return AVERROR(EINVAL);
-    }
-
     init_get_bits(&gb, buf, buf_size * 8);
     skip_bits(&gb, get_bits(&gb, 8));
 
@@ -318,7 +312,7 @@ static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
         }
     }
 
-    return 0;
+    return (get_bits_count(&gb) + 7) / 8;
 }
 
 static av_cold int twinvq_decode_init(AVCodecContext *avctx)
@@ -362,9 +356,8 @@ static av_cold int twinvq_decode_init(AVCodecContext *avctx)
                                                  : AV_CH_LAYOUT_STEREO;
 
     ibps = avctx->bit_rate / (1000 * avctx->channels);
-
-    if (ibps > 255U) {
-        av_log(avctx, AV_LOG_ERROR, "unsupported per channel bitrate %dkbps\n", ibps);
+    if (ibps < 8 || ibps > 48) {
+        av_log(avctx, AV_LOG_ERROR, "Bad bitrate per channel value %d\n", ibps);
         return AVERROR_INVALIDDATA;
     }
 
@@ -403,6 +396,9 @@ static av_cold int twinvq_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    avctx->block_align = (avctx->bit_rate * tctx->mtab->size
+                                          / avctx->sample_rate + 15) / 8;
+
     tctx->codec          = TWINVQ_CODEC_VQF;
     tctx->read_bitstream = twinvq_read_bitstream;
     tctx->dec_bark_env   = dec_bark_env;
@@ -413,6 +409,7 @@ static av_cold int twinvq_decode_init(AVCodecContext *avctx)
 
 AVCodec ff_twinvq_decoder = {
     .name           = "twinvq",
+    .long_name      = NULL_IF_CONFIG_SMALL("VQF TwinVQ"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_TWINVQ,
     .priv_data_size = sizeof(TwinVQContext),
@@ -420,7 +417,6 @@ AVCodec ff_twinvq_decoder = {
     .close          = ff_twinvq_decode_close,
     .decode         = ff_twinvq_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("VQF TwinVQ"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

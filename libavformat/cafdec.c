@@ -130,8 +130,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
         }
         avio_read(pb, preamble, ALAC_PREAMBLE);
 
-        st->codec->extradata = av_mallocz(ALAC_HEADER + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!st->codec->extradata)
+        if (ff_alloc_extradata(st->codec, ALAC_HEADER))
             return AVERROR(ENOMEM);
 
         /* For the old style cookie, we skip 12 bytes, then read 36 bytes.
@@ -154,13 +153,10 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             avio_read(pb, &st->codec->extradata[24], ALAC_NEW_KUKI - 12);
             avio_skip(pb, size - ALAC_NEW_KUKI);
         }
-        st->codec->extradata_size = ALAC_HEADER;
     } else {
-        st->codec->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!st->codec->extradata)
+        if (ff_alloc_extradata(st->codec, size))
             return AVERROR(ENOMEM);
         avio_read(pb, st->codec->extradata, size);
-        st->codec->extradata_size = size;
     }
 
     return 0;

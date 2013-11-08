@@ -394,6 +394,7 @@ static const int aac_sample_rates[] = {
 
 AVCodec ff_libfdk_aac_encoder = {
     .name                  = "libfdk_aac",
+    .long_name             = NULL_IF_CONFIG_SMALL("Fraunhofer FDK AAC"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_AAC,
     .priv_data_size        = sizeof(AACContext),
@@ -403,7 +404,6 @@ AVCodec ff_libfdk_aac_encoder = {
     .capabilities          = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },
-    .long_name             = NULL_IF_CONFIG_SMALL("Fraunhofer FDK AAC"),
     .priv_class            = &aac_enc_class,
     .defaults              = aac_encode_defaults,
     .profiles              = profiles,

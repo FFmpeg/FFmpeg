@@ -71,10 +71,10 @@ static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
 
 AVCodec ff_rawvideo_encoder = {
     .name           = "rawvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_RAWVIDEO,
     .priv_data_size = sizeof(AVFrame),
     .init           = raw_init_encoder,
     .encode2        = raw_encode,
-    .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
 };

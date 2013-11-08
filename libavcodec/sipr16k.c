@@ -29,7 +29,6 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"
 #include "lsp.h"
-#include "celp_filters.h"
 #include "acelp_vectors.h"
 #include "acelp_pitch_delay.h"
 #include "acelp_filters.h"

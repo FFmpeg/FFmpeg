@@ -229,7 +229,7 @@ differing versions of tools. FFM2 is the default.
 @chapter Options
 @c man begin OPTIONS
 
-@include avtools-common-opts.texi
+@include fftools-common-opts.texi
 
 @section Main options
 

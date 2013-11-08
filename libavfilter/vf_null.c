@@ -28,8 +28,8 @@
 
 static const AVFilterPad avfilter_vf_null_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };
@@ -42,9 +42,9 @@ static const AVFilterPad avfilter_vf_null_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_null = {
-    .name      = "null",
+AVFilter ff_vf_null = {
+    .name        = "null",
     .description = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
-    .inputs    = avfilter_vf_null_inputs,
-    .outputs   = avfilter_vf_null_outputs,
+    .inputs      = avfilter_vf_null_inputs,
+    .outputs     = avfilter_vf_null_outputs,
 };

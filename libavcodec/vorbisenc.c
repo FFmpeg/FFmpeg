@@ -1192,6 +1192,7 @@ error:
 
 AVCodec ff_vorbis_encoder = {
     .name           = "vorbis",
+    .long_name      = NULL_IF_CONFIG_SMALL("Vorbis"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_VORBIS,
     .priv_data_size = sizeof(vorbis_enc_context),
@@ -1201,5 +1202,4 @@ AVCodec ff_vorbis_encoder = {
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Vorbis"),
 };

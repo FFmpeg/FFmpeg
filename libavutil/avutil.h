@@ -128,6 +128,12 @@
  *
  * @}
  *
+ * @defgroup lavu_log Logging Facility
+ *
+ * @{
+ *
+ * @}
+ *
  * @defgroup lavu_misc Other
  *
  * @{

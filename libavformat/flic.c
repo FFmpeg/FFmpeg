@@ -125,8 +125,8 @@ static int flic_read_header(AVFormatContext *s)
     }
 
     /* send over the whole 128-byte FLIC header */
-    st->codec->extradata_size = FLIC_HEADER_SIZE;
-    st->codec->extradata = av_malloc(FLIC_HEADER_SIZE);
+    if (ff_alloc_extradata(st->codec, FLIC_HEADER_SIZE))
+        return AVERROR(ENOMEM);
     memcpy(st->codec->extradata, header, FLIC_HEADER_SIZE);
 
     /* peek at the preamble to detect TFTD videos - they seem to always start with an audio chunk */
@@ -176,8 +176,8 @@ static int flic_read_header(AVFormatContext *s)
 
         /* send over abbreviated FLIC header chunk */
         av_free(st->codec->extradata);
-        st->codec->extradata_size = 12;
-        st->codec->extradata = av_malloc(12);
+        if (ff_alloc_extradata(st->codec, 12))
+            return AVERROR(ENOMEM);
         memcpy(st->codec->extradata, header, 12);
 
     } else if (magic_number == FLIC_FILE_MAGIC_1) {

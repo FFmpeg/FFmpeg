@@ -1,7 +1,7 @@
 /*
  * MicroDVD subtitle demuxer
  * Copyright (c) 2010  Aurelien Jacobs <aurel@gnuage.org>
- * Copyright (c) 2012  Clément Bœsch <ubitux@gmail.com>
+ * Copyright (c) 2012  Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
@@ -47,7 +47,7 @@ static int microdvd_probe(AVProbeData *p)
             sscanf(ptr, "{%*d}{%*d}%c",  &c) != 1 &&
             sscanf(ptr, "{DEFAULT}{}%c", &c) != 1)
             return 0;
-        ptr += strcspn(ptr, "\n") + 1;
+        ptr += ff_subtitles_next_line(ptr);
     }
     return AVPROBE_SCORE_MAX;
 }

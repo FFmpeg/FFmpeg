@@ -61,8 +61,8 @@ static int vc1t_read_header(AVFormatContext *s)
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = AV_CODEC_ID_WMV3;
 
-    st->codec->extradata = av_malloc(VC1_EXTRADATA_SIZE);
-    st->codec->extradata_size = VC1_EXTRADATA_SIZE;
+    if (ff_alloc_extradata(st->codec, VC1_EXTRADATA_SIZE))
+        return AVERROR(ENOMEM);
     avio_read(pb, st->codec->extradata, VC1_EXTRADATA_SIZE);
     st->codec->height = avio_rl32(pb);
     st->codec->width = avio_rl32(pb);

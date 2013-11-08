@@ -676,12 +676,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 AVCodec ff_indeo5_decoder = {
     .name           = "indeo5",
+    .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 5"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_INDEO5,
     .priv_data_size = sizeof(IVI45DecContext),
     .init           = decode_init,
     .close          = ff_ivi_decode_close,
     .decode         = ff_ivi_decode_frame,
-    .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 5"),
     .capabilities   = CODEC_CAP_DR1,
 };

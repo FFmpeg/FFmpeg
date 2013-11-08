@@ -75,7 +75,7 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
     while (!voc->remaining_size) {
         type = avio_r8(pb);
         if (type == VOC_TYPE_EOF)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         voc->remaining_size = avio_rl24(pb);
         if (!voc->remaining_size) {
             if (!s->pb->seekable)
@@ -91,11 +91,11 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
                 if (sample_rate)
                     dec->sample_rate = sample_rate;
                 avpriv_set_pts_info(st, 64, 1, dec->sample_rate);
+                dec->channels = channels;
+                dec->bits_per_coded_sample = av_get_bits_per_sample(dec->codec_id);
             } else
                 avio_skip(pb, 1);
-            dec->channels = channels;
             tmp_codec = avio_r8(pb);
-            dec->bits_per_coded_sample = av_get_bits_per_sample(dec->codec_id);
             voc->remaining_size -= 2;
             max_size -= 2;
             channels = 1;
@@ -117,10 +117,10 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             if (!dec->sample_rate) {
                 dec->sample_rate = avio_rl32(pb);
                 avpriv_set_pts_info(st, 64, 1, dec->sample_rate);
+                dec->bits_per_coded_sample = avio_r8(pb);
+                dec->channels = avio_r8(pb);
             } else
-                avio_skip(pb, 4);
-            dec->bits_per_coded_sample = avio_r8(pb);
-            dec->channels = avio_r8(pb);
+                avio_skip(pb, 6);
             tmp_codec = avio_rl16(pb);
             avio_skip(pb, 4);
             voc->remaining_size -= 12;

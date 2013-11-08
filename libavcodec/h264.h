@@ -306,7 +306,7 @@ typedef struct H264Context {
 
     /* coded dimensions -- 16 * mb w/h */
     int width, height;
-    int linesize, uvlinesize;
+    ptrdiff_t linesize, uvlinesize;
     int chroma_x_shift, chroma_y_shift;
 
     int qscale;
@@ -379,8 +379,8 @@ typedef struct H264Context {
     uint32_t *mb2br_xy;
     int b_stride;       // FIXME use s->b4_stride
 
-    int mb_linesize;    ///< may be equal to s->linesize or s->linesize * 2, for mbaff
-    int mb_uvlinesize;
+    ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
+    ptrdiff_t mb_uvlinesize;
 
     unsigned current_sps_id; ///< id of the current SPS
     SPS sps; ///< current sps
@@ -1011,5 +1011,7 @@ static av_always_inline int get_dct8x8_allowed(H264Context *h)
 
 void ff_h264_draw_horiz_band(H264Context *h, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
+int ff_pred_weight_table(H264Context *h);
+int ff_set_ref_count(H264Context *h);
 
 #endif /* AVCODEC_H264_H */

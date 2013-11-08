@@ -175,7 +175,6 @@ static const AVFilterPad alphamerge_inputs[] = {
         .name             = "main",
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = config_input_main,
-        .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
         .needs_writable   = 1,
     },{
@@ -196,7 +195,7 @@ static const AVFilterPad alphamerge_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_alphamerge = {
+AVFilter ff_vf_alphamerge = {
     .name           = "alphamerge",
     .description    = NULL_IF_CONFIG_SMALL("Copy the luma value of the second "
                       "input into the alpha channel of the first input."),

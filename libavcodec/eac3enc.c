@@ -2,20 +2,20 @@
  * E-AC-3 encoder
  * Copyright (c) 2011 Justin Ruggles <justin.ruggles@gmail.com>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -254,6 +254,7 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 #if CONFIG_EAC3_ENCODER
 AVCodec ff_eac3_encoder = {
     .name            = "eac3",
+    .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
     .type            = AVMEDIA_TYPE_AUDIO,
     .id              = AV_CODEC_ID_EAC3,
     .priv_data_size  = sizeof(AC3EncodeContext),
@@ -262,7 +263,6 @@ AVCodec ff_eac3_encoder = {
     .close           = ff_ac3_encode_close,
     .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
-    .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
     .priv_class      = &eac3enc_class,
     .channel_layouts = ff_ac3_channel_layouts,
     .defaults        = ac3_defaults,

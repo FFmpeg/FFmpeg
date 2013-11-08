@@ -106,13 +106,13 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_libilbc_decoder = {
     .name           = "libilbc",
+    .long_name      = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ILBC,
     .priv_data_size = sizeof(ILBCDecContext),
     .init           = ilbc_decode_init,
     .decode         = ilbc_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
     .priv_class     = &ilbc_dec_class,
 };
 
@@ -184,6 +184,7 @@ static const AVCodecDefault ilbc_encode_defaults[] = {
 
 AVCodec ff_libilbc_encoder = {
     .name           = "libilbc",
+    .long_name      = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ILBC,
     .priv_data_size = sizeof(ILBCEncContext),
@@ -191,7 +192,6 @@ AVCodec ff_libilbc_encoder = {
     .encode2        = ilbc_encode_frame,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
     .defaults       = ilbc_encode_defaults,
     .priv_class     = &ilbc_enc_class,
 };

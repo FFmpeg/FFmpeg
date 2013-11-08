@@ -43,6 +43,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->planar             = !!(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
 
     switch (avctx->pix_fmt) {
+    case AV_PIX_FMT_ABGR:
+        s->descriptor = 52;
+        break;
+    case AV_PIX_FMT_GRAY16BE:
+    case AV_PIX_FMT_GRAY16LE:
+    case AV_PIX_FMT_GRAY8:
+        s->descriptor = 6;
+        break;
     case AV_PIX_FMT_GBRP10BE:
     case AV_PIX_FMT_GBRP10LE:
     case AV_PIX_FMT_GBRP12BE:
@@ -235,17 +243,19 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 AVCodec ff_dpx_encoder = {
     .name           = "dpx",
+    .long_name      = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DPX,
     .priv_data_size = sizeof(DPXContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_RGB24,    AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_RGB24,    AV_PIX_FMT_RGBA, AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_GRAY16BE,
         AV_PIX_FMT_RGB48LE,  AV_PIX_FMT_RGB48BE,
         AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_RGBA64BE,
         AV_PIX_FMT_GBRP10LE, AV_PIX_FMT_GBRP10BE,
         AV_PIX_FMT_GBRP12LE, AV_PIX_FMT_GBRP12BE,
         AV_PIX_FMT_NONE},
-    .long_name     = NULL_IF_CONFIG_SMALL("DPX image"),
 };

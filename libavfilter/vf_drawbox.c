@@ -254,12 +254,11 @@ AVFILTER_DEFINE_CLASS(drawbox);
 
 static const AVFilterPad drawbox_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = config_input,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .filter_frame     = filter_frame,
-        .needs_writable   = 1,
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_VIDEO,
+        .config_props   = config_input,
+        .filter_frame   = filter_frame,
+        .needs_writable = 1,
     },
     { NULL }
 };
@@ -272,17 +271,16 @@ static const AVFilterPad drawbox_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_drawbox = {
-    .name      = "drawbox",
-    .description = NULL_IF_CONFIG_SMALL("Draw a colored box on the input video."),
-    .priv_size = sizeof(DrawBoxContext),
-    .priv_class = &drawbox_class,
-    .init      = init,
-
-    .query_formats   = query_formats,
-    .inputs    = drawbox_inputs,
-    .outputs   = drawbox_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+AVFilter ff_vf_drawbox = {
+    .name          = "drawbox",
+    .description   = NULL_IF_CONFIG_SMALL("Draw a colored box on the input video."),
+    .priv_size     = sizeof(DrawBoxContext),
+    .priv_class    = &drawbox_class,
+    .init          = init,
+    .query_formats = query_formats,
+    .inputs        = drawbox_inputs,
+    .outputs       = drawbox_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 #endif /* CONFIG_DRAWBOX_FILTER */
 
@@ -379,7 +377,7 @@ static const AVFilterPad drawgrid_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_drawgrid = {
+AVFilter ff_vf_drawgrid = {
     .name          = "drawgrid",
     .description   = NULL_IF_CONFIG_SMALL("Draw a colored grid on the input video."),
     .priv_size     = sizeof(DrawBoxContext),

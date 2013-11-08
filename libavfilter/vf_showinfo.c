@@ -77,10 +77,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
 static const AVFilterPad avfilter_vf_showinfo_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -93,11 +92,9 @@ static const AVFilterPad avfilter_vf_showinfo_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_showinfo = {
+AVFilter ff_vf_showinfo = {
     .name        = "showinfo",
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each video frame."),
-
-    .inputs    = avfilter_vf_showinfo_inputs,
-
-    .outputs   = avfilter_vf_showinfo_outputs,
+    .inputs      = avfilter_vf_showinfo_inputs,
+    .outputs     = avfilter_vf_showinfo_outputs,
 };

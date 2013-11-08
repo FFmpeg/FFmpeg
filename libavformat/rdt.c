@@ -419,15 +419,16 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
 
         for (n = 0; n < s->nb_streams; n++)
             if (s->streams[n]->id == stream->id) {
-                int count = s->streams[n]->index + 1;
+                int count = s->streams[n]->index + 1, err;
                 if (first == -1) first = n;
                 if (rdt->nb_rmst < count) {
-                    RMStream **rmst= av_realloc(rdt->rmst, count*sizeof(*rmst));
-                    if (!rmst)
-                        return AVERROR(ENOMEM);
-                    memset(rmst + rdt->nb_rmst, 0,
-                           (count - rdt->nb_rmst) * sizeof(*rmst));
-                    rdt->rmst    = rmst;
+                    if ((err = av_reallocp(&rdt->rmst,
+                                           count * sizeof(*rdt->rmst))) < 0) {
+                        rdt->nb_rmst = 0;
+                        return err;
+                    }
+                    memset(rdt->rmst + rdt->nb_rmst, 0,
+                           (count - rdt->nb_rmst) * sizeof(*rdt->rmst));
                     rdt->nb_rmst = count;
                 }
                 rdt->rmst[s->streams[n]->index] = ff_rm_alloc_rmstream();
@@ -563,7 +564,7 @@ RDT_HANDLER(live_audio, "x-pn-multirate-realaudio-live", AVMEDIA_TYPE_AUDIO);
 RDT_HANDLER(video,      "x-pn-realvideo",                AVMEDIA_TYPE_VIDEO);
 RDT_HANDLER(audio,      "x-pn-realaudio",                AVMEDIA_TYPE_AUDIO);
 
-void av_register_rdt_dynamic_payload_handlers(void)
+void ff_register_rdt_dynamic_payload_handlers(void)
 {
     ff_register_dynamic_payload_handler(&rdt_video_handler);
     ff_register_dynamic_payload_handler(&rdt_audio_handler);

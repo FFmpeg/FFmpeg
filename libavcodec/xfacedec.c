@@ -178,11 +178,11 @@ static int xface_decode_frame(AVCodecContext *avctx,
 
 AVCodec ff_xface_decoder = {
     .name           = "xface",
+    .long_name      = NULL_IF_CONFIG_SMALL("X-face image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_XFACE,
     .priv_data_size = sizeof(XFaceContext),
     .init           = xface_decode_init,
     .decode         = xface_decode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("X-face image"),
 };

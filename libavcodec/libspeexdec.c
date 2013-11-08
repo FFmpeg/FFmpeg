@@ -180,6 +180,7 @@ static av_cold void libspeex_decode_flush(AVCodecContext *avctx)
 
 AVCodec ff_libspeex_decoder = {
     .name           = "libspeex",
+    .long_name      = NULL_IF_CONFIG_SMALL("libspeex Speex"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_SPEEX,
     .priv_data_size = sizeof(LibSpeexContext),
@@ -188,5 +189,4 @@ AVCodec ff_libspeex_decoder = {
     .decode         = libspeex_decode_frame,
     .flush          = libspeex_decode_flush,
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DELAY | CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("libspeex Speex"),
 };

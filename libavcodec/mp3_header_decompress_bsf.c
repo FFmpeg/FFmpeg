@@ -92,7 +92,6 @@ static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext 
 }
 
 AVBitStreamFilter ff_mp3_header_decompress_bsf={
-    "mp3decomp",
-    0,
-    mp3_header_decompress,
+    .name   = "mp3decomp",
+    .filter = mp3_header_decompress,
 };

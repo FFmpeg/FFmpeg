@@ -75,6 +75,15 @@ unsigned ff_tget(GetByteContext *gb, int type, int le)
     }
 }
 
+static char *auto_sep(int count, char *sep, int i, int columns)
+{
+    if (sep)
+        return i ? sep : "";
+    if (i && i%columns) {
+        return ", ";
+    } else
+        return columns < count ? "\n" : "";
+}
 
 int ff_tadd_rational_metadata(int count, const char *name, const char *sep,
                               GetByteContext *gb, int le, AVDictionary **metadata)
@@ -88,14 +97,13 @@ int ff_tadd_rational_metadata(int count, const char *name, const char *sep,
         return AVERROR_INVALIDDATA;
     if (bytestream2_get_bytes_left(gb) < count * sizeof(int64_t))
         return AVERROR_INVALIDDATA;
-    if (!sep) sep = ", ";
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
         nom   = ff_tget_long(gb, le);
         denom = ff_tget_long(gb, le);
-        av_bprintf(&bp, "%s%i:%i", (i ? sep : ""), nom, denom);
+        av_bprintf(&bp, "%s%7i:%-7i", auto_sep(count, sep, i, 4), nom, denom);
     }
 
     if ((i = av_bprint_finalize(&bp, &ap))) {
@@ -122,12 +130,11 @@ int ff_tadd_long_metadata(int count, const char *name, const char *sep,
         return AVERROR_INVALIDDATA;
     if (bytestream2_get_bytes_left(gb) < count * sizeof(int32_t))
         return AVERROR_INVALIDDATA;
-    if (!sep) sep = ", ";
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
-        av_bprintf(&bp, "%s%i", (i ? sep : ""), ff_tget_long(gb, le));
+        av_bprintf(&bp, "%s%7i", auto_sep(count, sep, i, 8), ff_tget_long(gb, le));
     }
 
     if ((i = av_bprint_finalize(&bp, &ap))) {
@@ -154,12 +161,11 @@ int ff_tadd_doubles_metadata(int count, const char *name, const char *sep,
         return AVERROR_INVALIDDATA;
     if (bytestream2_get_bytes_left(gb) < count * sizeof(int64_t))
         return AVERROR_INVALIDDATA;
-    if (!sep) sep = ", ";
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(&bp, 10 * count, 100 * count);
 
     for (i = 0; i < count; i++) {
-        av_bprintf(&bp, "%s%f", (i ? sep : ""), ff_tget_double(gb, le));
+        av_bprintf(&bp, "%s%f", auto_sep(count, sep, i, 4), ff_tget_double(gb, le));
     }
 
     if ((i = av_bprint_finalize(&bp, &ap))) {
@@ -186,12 +192,11 @@ int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
         return AVERROR_INVALIDDATA;
     if (bytestream2_get_bytes_left(gb) < count * sizeof(int16_t))
         return AVERROR_INVALIDDATA;
-    if (!sep) sep = ", ";
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
-        av_bprintf(&bp, "%s%i", (i ? sep : ""), ff_tget_short(gb, le));
+        av_bprintf(&bp, "%s%5i", auto_sep(count, sep, i, 8), ff_tget_short(gb, le));
     }
 
     if ((i = av_bprint_finalize(&bp, &ap))) {
@@ -206,6 +211,36 @@ int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
     return 0;
 }
 
+
+int ff_tadd_bytes_metadata(int count, const char *name, const char *sep,
+                           GetByteContext *gb, int le, AVDictionary **metadata)
+{
+    AVBPrint bp;
+    char *ap;
+    int i;
+
+    if (count >= INT_MAX / sizeof(int8_t) || count <= 0)
+        return AVERROR_INVALIDDATA;
+    if (bytestream2_get_bytes_left(gb) < count * sizeof(int8_t))
+        return AVERROR_INVALIDDATA;
+
+    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
+
+    for (i = 0; i < count; i++) {
+        av_bprintf(&bp, "%s%3i", auto_sep(count, sep, i, 16), bytestream2_get_byte(gb));
+    }
+
+    if ((i = av_bprint_finalize(&bp, &ap))) {
+        return i;
+    }
+    if (!ap) {
+        return AVERROR(ENOMEM);
+    }
+
+    av_dict_set(metadata, name, ap, AV_DICT_DONT_STRDUP_VAL);
+
+    return 0;
+}
 
 int ff_tadd_string_metadata(int count, const char *name,
                             GetByteContext *gb, int le, AVDictionary **metadata)

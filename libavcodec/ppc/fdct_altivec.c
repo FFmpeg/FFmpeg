@@ -458,5 +458,3 @@ void ff_fdct_altivec(int16_t *block)
 #undef CTS
     /* }}} */
 }
-
-/* vim:set foldmethod=marker foldlevel=0: */

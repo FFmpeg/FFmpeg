@@ -28,14 +28,14 @@ lock(){
 checkout(){
     case "$repo" in
         file:*|/*) src="${repo#file:}"      ;;
-        git:*)     git clone "$repo" "$src" ;;
+        git:*)     git clone --quiet "$repo" "$src" ;;
     esac
 }
 
 update()(
     cd ${src} || return
     case "$repo" in
-        git:*) git pull --quiet ;;
+        git:*) git fetch --force && git reset --hard FETCH_HEAD ;;
     esac
 )
 

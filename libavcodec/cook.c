@@ -228,7 +228,7 @@ static av_cold int init_cook_mlt(COOKContext *q)
 
     /* Initialize the MDCT. */
     if ((ret = ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size) + 1, 1, 1.0 / 32768.0))) {
-        av_free(q->mlt_window);
+        av_freep(&q->mlt_window);
         return ret;
     }
     av_log(q->avctx, AV_LOG_DEBUG, "MDCT initialized, order = %d.\n",
@@ -302,8 +302,8 @@ static av_cold int cook_decode_close(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_DEBUG, "Deallocating memory.\n");
 
     /* Free allocated memory buffers. */
-    av_free(q->mlt_window);
-    av_free(q->decoded_bytes_buffer);
+    av_freep(&q->mlt_window);
+    av_freep(&q->decoded_bytes_buffer);
 
     /* Free the transform. */
     ff_mdct_end(&q->mdct_ctx);
@@ -1279,6 +1279,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
 AVCodec ff_cook_decoder = {
     .name           = "cook",
+    .long_name      = NULL_IF_CONFIG_SMALL("Cook / Cooker / Gecko (RealAudio G2)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_COOK,
     .priv_data_size = sizeof(COOKContext),
@@ -1286,7 +1287,6 @@ AVCodec ff_cook_decoder = {
     .close          = cook_decode_close,
     .decode         = cook_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Cook / Cooker / Gecko (RealAudio G2)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

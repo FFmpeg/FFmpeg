@@ -129,7 +129,8 @@ static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
  */
 static int mm_decode_inter(MmContext * s, int half_horiz, int half_vert)
 {
-    int data_off = bytestream2_get_le16(&s->gb), y = 0;
+    int data_off = bytestream2_get_le16(&s->gb);
+    int y = 0;
     GetByteContext data_ptr;
 
     if (bytestream2_get_bytes_left(&s->gb) < data_off)
@@ -232,6 +233,7 @@ static av_cold int mm_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_mmvideo_decoder = {
     .name           = "mmvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("American Laser Games MM Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MMVIDEO,
     .priv_data_size = sizeof(MmContext),
@@ -239,5 +241,4 @@ AVCodec ff_mmvideo_decoder = {
     .close          = mm_decode_end,
     .decode         = mm_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("American Laser Games MM Video"),
 };

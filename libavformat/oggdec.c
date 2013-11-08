@@ -30,6 +30,7 @@
 
 #include <stdio.h>
 #include "libavutil/avassert.h"
+#include "libavutil/intreadwrite.h"
 #include "oggdec.h"
 #include "avformat.h"
 #include "internal.h"
@@ -88,7 +89,7 @@ static int ogg_restore(AVFormatContext *s, int discard)
     struct ogg *ogg = s->priv_data;
     AVIOContext *bc = s->pb;
     struct ogg_state *ost = ogg->state;
-    int i;
+    int i, err;
 
     if (!ost)
         return 0;
@@ -96,25 +97,21 @@ static int ogg_restore(AVFormatContext *s, int discard)
     ogg->state = ost->next;
 
     if (!discard) {
-        struct ogg_stream *old_streams = ogg->streams;
 
         for (i = 0; i < ogg->nstreams; i++)
-            av_free(ogg->streams[i].buf);
+            av_freep(&ogg->streams[i].buf);
 
         avio_seek(bc, ost->pos, SEEK_SET);
         ogg->page_pos = -1;
         ogg->curidx   = ost->curidx;
         ogg->nstreams = ost->nstreams;
-        ogg->streams  = av_realloc(ogg->streams,
-                                   ogg->nstreams * sizeof(*ogg->streams));
-
-        if (ogg->streams) {
+        if ((err = av_reallocp_array(&ogg->streams, ogg->nstreams,
+                                     sizeof(*ogg->streams))) < 0) {
+            ogg->nstreams = 0;
+            return err;
+        } else
             memcpy(ogg->streams, ost->streams,
                    ost->nstreams * sizeof(*ogg->streams));
-        } else {
-            av_free(old_streams);
-            ogg->nstreams = 0;
-        }
     }
 
     av_free(ost);
@@ -636,14 +633,14 @@ static int ogg_read_close(AVFormatContext *s)
     int i;
 
     for (i = 0; i < ogg->nstreams; i++) {
-        av_free(ogg->streams[i].buf);
+        av_freep(&ogg->streams[i].buf);
         if (ogg->streams[i].codec &&
             ogg->streams[i].codec->cleanup) {
             ogg->streams[i].codec->cleanup(s, i);
         }
-        av_free(ogg->streams[i].private);
+        av_freep(&ogg->streams[i].private);
     }
-    av_free(ogg->streams);
+    av_freep(&ogg->streams);
     return 0;
 }
 
@@ -776,6 +773,18 @@ retry:
     pkt->flags    = os->pflags;
     pkt->duration = os->pduration;
     pkt->pos      = fpos;
+
+    if (os->end_trimming) {
+        uint8_t *side_data = av_packet_new_side_data(pkt,
+                                                     AV_PKT_DATA_SKIP_SAMPLES,
+                                                     10);
+        if(side_data == NULL) {
+            av_free_packet(pkt);
+            av_free(pkt);
+            return AVERROR(ENOMEM);
+        }
+        AV_WL32(side_data + 4, os->end_trimming);
+    }
 
     return psize;
 }

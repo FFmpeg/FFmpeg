@@ -28,7 +28,7 @@ int ff_scale_image(uint8_t *dst_data[4], int dst_linesize[4],
     int ret;
     struct SwsContext *sws_ctx = sws_getContext(src_w, src_h, src_pix_fmt,
                                                 dst_w, dst_h, dst_pix_fmt,
-                                                SWS_BILINEAR, NULL, NULL, NULL);
+                                                0, NULL, NULL, NULL);
     if (!sws_ctx) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Impossible to create scale context for the conversion "

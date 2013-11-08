@@ -271,6 +271,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     const int scale       = avctx->codec_id == AV_CODEC_ID_ASV1 ? 1 : 2;
     int i;
 
+    if (avctx->extradata_size < 1) {
+        av_log(avctx, AV_LOG_WARNING, "No extradata provided\n");
+    }
+
     ff_asv_common_init(avctx);
     init_vlcs(a);
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, ff_asv_scantab);
@@ -306,6 +310,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 #if CONFIG_ASV1_DECODER
 AVCodec ff_asv1_decoder = {
     .name           = "asv1",
+    .long_name      = NULL_IF_CONFIG_SMALL("ASUS V1"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_ASV1,
     .priv_data_size = sizeof(ASV1Context),
@@ -313,13 +318,13 @@ AVCodec ff_asv1_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("ASUS V1"),
 };
 #endif
 
 #if CONFIG_ASV2_DECODER
 AVCodec ff_asv2_decoder = {
     .name           = "asv2",
+    .long_name      = NULL_IF_CONFIG_SMALL("ASUS V2"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_ASV2,
     .priv_data_size = sizeof(ASV1Context),
@@ -327,7 +332,6 @@ AVCodec ff_asv2_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("ASUS V2"),
 };
 #endif
 

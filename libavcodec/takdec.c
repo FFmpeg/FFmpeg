@@ -686,11 +686,12 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_tak_decode_frame_header(avctx, gb, &s->ti, 0)) < 0)
         return ret;
 
-    if (avctx->err_recognition & AV_EF_CRCCHECK) {
+    if (avctx->err_recognition & (AV_EF_CRCCHECK|AV_EF_COMPLIANT)) {
         hsize = get_bits_count(gb) / 8;
         if (ff_tak_check_crc(pkt->data, hsize)) {
             av_log(avctx, AV_LOG_ERROR, "CRC error\n");
-            return AVERROR_INVALIDDATA;
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
         }
     }
 
@@ -861,11 +862,12 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
     else if (get_bits_left(gb) > 0)
         av_log(avctx, AV_LOG_DEBUG, "underread\n");
 
-    if (avctx->err_recognition & AV_EF_CRCCHECK) {
+    if (avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_COMPLIANT)) {
         if (ff_tak_check_crc(pkt->data + hsize,
                              get_bits_count(gb) / 8 - hsize)) {
             av_log(avctx, AV_LOG_ERROR, "CRC error\n");
-            return AVERROR_INVALIDDATA;
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
         }
     }
 
@@ -931,6 +933,7 @@ static av_cold int tak_decode_close(AVCodecContext *avctx)
 
 AVCodec ff_tak_decoder = {
     .name             = "tak",
+    .long_name        = NULL_IF_CONFIG_SMALL("TAK (Tom's lossless Audio Kompressor)"),
     .type             = AVMEDIA_TYPE_AUDIO,
     .id               = AV_CODEC_ID_TAK,
     .priv_data_size   = sizeof(TAKDecContext),
@@ -940,7 +943,6 @@ AVCodec ff_tak_decoder = {
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name        = NULL_IF_CONFIG_SMALL("TAK (Tom's lossless Audio Kompressor)"),
     .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                         AV_SAMPLE_FMT_S16P,
                                                         AV_SAMPLE_FMT_S32P,

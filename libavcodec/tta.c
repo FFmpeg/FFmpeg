@@ -251,7 +251,8 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     int32_t *p;
 
     if (avctx->err_recognition & AV_EF_CRCCHECK) {
-        if (buf_size < 4 || tta_check_crc(s, buf, buf_size - 4))
+        if (buf_size < 4 ||
+            (tta_check_crc(s, buf, buf_size - 4) && avctx->err_recognition & AV_EF_EXPLODE))
             return AVERROR_INVALIDDATA;
     }
 
@@ -442,6 +443,7 @@ static const AVClass tta_decoder_class = {
 
 AVCodec ff_tta_decoder = {
     .name           = "tta",
+    .long_name      = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_TTA,
     .priv_data_size = sizeof(TTAContext),
@@ -450,6 +452,5 @@ AVCodec ff_tta_decoder = {
     .decode         = tta_decode_frame,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
     .priv_class     = &tta_decoder_class,
 };

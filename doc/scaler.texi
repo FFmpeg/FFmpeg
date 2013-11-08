@@ -1,3 +1,4 @@
+@anchor{scaler_options}
 @chapter Scaler Options
 @c man begin SCALER OPTIONS
 
@@ -9,6 +10,7 @@ FFmpeg tools. For programmatic use, they can be set explicitly in the
 
 @table @option
 
+@anchor{sws_flags}
 @item sws_flags
 Set the scaler flags. This is also used to set the scaling
 algorithm. Only a single algorithm should be selected.
@@ -93,6 +95,24 @@ Select destination range.
 Set scaling algorithm parameters. The specified values are specific of
 some scaling algorithms and ignored by others. The specified values
 are floating point number values.
+
+@item sws_dither
+Set the dithering algorithm. Accepts one of the following
+values. Default value is @samp{auto}.
+
+@table @samp
+@item auto
+automatic choice
+
+@item none
+no dithering
+
+@item bayer
+bayer dither
+
+@item ed
+error diffusion dither
+@end table
 
 @end table
 

@@ -1,9 +1,13 @@
 gray                6575994300fa6c32755e68a9c7398247
 yuv410p             c9bad1317b496071d6d895238638e07d
+yuv411p             aeab23fbe2fa1a509fb45d873759819b
 yuv420p             9794d11e59ec7bcdf9e30a433e4137b1
 yuv422p             e852e61e455db8ee3981ea942d510b0f
+yuv440p             7d74a024260b8676492cec372293c64a
 yuv444p             a38a3f65d2f358cde5e9547c897cfcd5
 yuva420p            c1dc15d6ee78587d9f825acd795673d7
+yuva422p            efba80640dc04e9cbb27078ce084d397
+yuva444p            3e4158d682df2da3d07134946d082f67
 yuvj420p            3ee7014727ee64b45292a4f15ba028d8
 yuvj422p            4f990d5473f15571276adb5770b3b773
 yuvj440p            9a005e8b8431aaa762fde8d942fd11a9

@@ -37,7 +37,9 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"
 #include "libavutil/libm.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/timecode.h"
+#include "libavutil/timestamp.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
@@ -72,6 +74,17 @@ static int show_private_data            = 1;
 
 static char *print_format;
 static char *stream_specifier;
+
+typedef struct {
+    int id;             ///< identifier
+    int64_t start, end; ///< start, end in second/AV_TIME_BASE units
+    int has_start, has_end;
+    int start_is_offset, end_is_offset;
+    int duration_frames;
+} ReadInterval;
+
+static ReadInterval *read_intervals;
+static int read_intervals_nb = 0;
 
 /* section structure definition */
 
@@ -1593,16 +1606,93 @@ static av_always_inline int process_frame(WriterContext *w,
     return got_frame;
 }
 
-static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
+static void log_read_interval(const ReadInterval *interval, void *log_ctx, int log_level)
+{
+    av_log(log_ctx, log_level, "id:%d", interval->id);
+
+    if (interval->has_start) {
+        av_log(log_ctx, log_level, " start:%s%s", interval->start_is_offset ? "+" : "",
+               av_ts2timestr(interval->start, &AV_TIME_BASE_Q));
+    } else {
+        av_log(log_ctx, log_level, " start:N/A");
+    }
+
+    if (interval->has_end) {
+        av_log(log_ctx, log_level, " end:%s", interval->end_is_offset ? "+" : "");
+        if (interval->duration_frames)
+            av_log(log_ctx, log_level, "#%"PRId64, interval->end);
+        else
+            av_log(log_ctx, log_level, "%s", av_ts2timestr(interval->end, &AV_TIME_BASE_Q));
+    } else {
+        av_log(log_ctx, log_level, " end:N/A");
+    }
+
+    av_log(log_ctx, log_level, "\n");
+}
+
+static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
+                                 const ReadInterval *interval, int64_t *cur_ts)
 {
     AVPacket pkt, pkt1;
     AVFrame frame;
-    int i = 0;
+    int ret = 0, i = 0, frame_count = 0;
+    int64_t start = -INT64_MAX, end = interval->end;
+    int has_start = 0, has_end = interval->has_end && !interval->end_is_offset;
 
     av_init_packet(&pkt);
 
+    av_log(NULL, AV_LOG_VERBOSE, "Processing read interval ");
+    log_read_interval(interval, NULL, AV_LOG_VERBOSE);
+
+    if (interval->has_start) {
+        int64_t target;
+        if (interval->start_is_offset) {
+            if (*cur_ts == AV_NOPTS_VALUE) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Could not seek to relative position since current "
+                       "timestamp is not defined\n");
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
+            target = *cur_ts + interval->start;
+        } else {
+            target = interval->start;
+        }
+
+        av_log(NULL, AV_LOG_VERBOSE, "Seeking to read interval start point %s\n",
+               av_ts2timestr(target, &AV_TIME_BASE_Q));
+        if ((ret = avformat_seek_file(fmt_ctx, -1, -INT64_MAX, target, INT64_MAX, 0)) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Could not seek to position %"PRId64": %s\n",
+                   interval->start, av_err2str(ret));
+            goto end;
+        }
+    }
+
     while (!av_read_frame(fmt_ctx, &pkt)) {
         if (selected_streams[pkt.stream_index]) {
+            AVRational tb = fmt_ctx->streams[pkt.stream_index]->time_base;
+
+            if (pkt.pts != AV_NOPTS_VALUE)
+                *cur_ts = av_rescale_q(pkt.pts, tb, AV_TIME_BASE_Q);
+
+            if (!has_start && *cur_ts != AV_NOPTS_VALUE) {
+                start = *cur_ts;
+                has_start = 1;
+            }
+
+            if (has_start && !has_end && interval->end_is_offset) {
+                end = start + interval->end;
+                has_end = 1;
+            }
+
+            if (interval->end_is_offset && interval->duration_frames) {
+                if (frame_count >= interval->end)
+                    break;
+            } else if (has_end && *cur_ts != AV_NOPTS_VALUE && *cur_ts >= end) {
+                break;
+            }
+
+            frame_count++;
             if (do_read_packets) {
                 if (do_show_packets)
                     show_packet(w, fmt_ctx, &pkt, i++);
@@ -1623,6 +1713,30 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
         pkt.stream_index = i;
         if (do_read_frames)
             while (process_frame(w, fmt_ctx, &frame, &pkt) > 0);
+    }
+
+end:
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Could not read packets in interval ");
+        log_read_interval(interval, NULL, AV_LOG_ERROR);
+    }
+    return ret;
+}
+
+static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
+{
+    int i, ret = 0;
+    int64_t cur_ts = fmt_ctx->start_time;
+
+    if (read_intervals_nb == 0) {
+        ReadInterval interval = (ReadInterval) { .has_start = 0, .has_end = 0 };
+        ret = read_interval_packets(w, fmt_ctx, &interval, &cur_ts);
+    } else {
+        for (i = 0; i < read_intervals_nb; i++) {
+            ret = read_interval_packets(w, fmt_ctx, &read_intervals[i], &cur_ts);
+            if (ret < 0)
+                break;
+        }
     }
 }
 
@@ -1709,7 +1823,27 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             else   print_str_opt("sample_fmt", "unknown");
             print_val("sample_rate",     dec_ctx->sample_rate, unit_hertz_str);
             print_int("channels",        dec_ctx->channels);
+
+            if (dec_ctx->channel_layout) {
+                av_bprint_clear(&pbuf);
+                av_bprint_channel_layout(&pbuf, dec_ctx->channels, dec_ctx->channel_layout);
+                print_str    ("channel_layout", pbuf.str);
+            } else {
+                print_str_opt("channel_layout", "unknown");
+            }
+
             print_int("bits_per_sample", av_get_bits_per_sample(dec_ctx->codec_id));
+            break;
+
+        case AVMEDIA_TYPE_SUBTITLE:
+            if (dec_ctx->width)
+                print_int("width",       dec_ctx->width);
+            else
+                print_str_opt("width",   "N/A");
+            if (dec_ctx->height)
+                print_int("height",      dec_ctx->height);
+            else
+                print_str_opt("height",  "N/A");
             break;
         }
     } else {
@@ -1867,6 +2001,7 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     else           print_str_opt("size", "N/A");
     if (fmt_ctx->bit_rate > 0) print_val    ("bit_rate", fmt_ctx->bit_rate, unit_bit_per_second_str);
     else                       print_str_opt("bit_rate", "N/A");
+    print_int("probe_score", av_format_get_probe_score(fmt_ctx));
     show_tags(w, fmt_ctx->metadata, SECTION_ID_FORMAT_TAGS);
 
     writer_print_section_footer(w);
@@ -1924,18 +2059,18 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         AVCodec *codec;
 
         if (stream->codec->codec_id == AV_CODEC_ID_PROBE) {
-            av_log(NULL, AV_LOG_ERROR,
+            av_log(NULL, AV_LOG_WARNING,
                    "Failed to probe codec for input stream %d\n",
                     stream->index);
         } else if (!(codec = avcodec_find_decoder(stream->codec->codec_id))) {
-            av_log(NULL, AV_LOG_ERROR,
+            av_log(NULL, AV_LOG_WARNING,
                     "Unsupported codec with id %d for input stream %d\n",
                     stream->codec->codec_id, stream->index);
         } else {
             AVDictionary *opts = filter_codec_opts(codec_opts, stream->codec->codec_id,
                                                    fmt_ctx, stream, codec);
             if (avcodec_open2(stream->codec, codec, &opts) < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Error while opening codec for input stream %d\n",
+                av_log(NULL, AV_LOG_WARNING, "Could not open codec for input stream %d\n",
                        stream->index);
             }
             if ((t = av_dict_get(opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
@@ -2217,6 +2352,145 @@ void show_help_default(const char *opt, const char *arg)
     show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
 }
 
+/**
+ * Parse interval specification, according to the format:
+ * INTERVAL ::= [START|+START_OFFSET][%[END|+END_OFFSET]]
+ * INTERVALS ::= INTERVAL[,INTERVALS]
+*/
+static int parse_read_interval(const char *interval_spec,
+                               ReadInterval *interval)
+{
+    int ret = 0;
+    char *next, *p, *spec = av_strdup(interval_spec);
+    if (!spec)
+        return AVERROR(ENOMEM);
+
+    if (!*spec) {
+        av_log(NULL, AV_LOG_ERROR, "Invalid empty interval specification\n");
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
+
+    p = spec;
+    next = strchr(spec, '%');
+    if (next)
+        *next++ = 0;
+
+    /* parse first part */
+    if (*p) {
+        interval->has_start = 1;
+
+        if (*p == '+') {
+            interval->start_is_offset = 1;
+            p++;
+        } else {
+            interval->start_is_offset = 0;
+        }
+
+        ret = av_parse_time(&interval->start, p, 1);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid interval start specification '%s'\n", p);
+            goto end;
+        }
+    } else {
+        interval->has_start = 0;
+    }
+
+    /* parse second part */
+    p = next;
+    if (p && *p) {
+        int64_t us;
+        interval->has_end = 1;
+
+        if (*p == '+') {
+            interval->end_is_offset = 1;
+            p++;
+        } else {
+            interval->end_is_offset = 0;
+        }
+
+        if (interval->end_is_offset && *p == '#') {
+            long long int lli;
+            char *tail;
+            interval->duration_frames = 1;
+            p++;
+            lli = strtoll(p, &tail, 10);
+            if (*tail || lli < 0) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Invalid or negative value '%s' for duration number of frames\n", p);
+                goto end;
+            }
+            interval->end = lli;
+        } else {
+            ret = av_parse_time(&us, p, 1);
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Invalid interval end/duration specification '%s'\n", p);
+                goto end;
+            }
+            interval->end = us;
+        }
+    } else {
+        interval->has_end = 0;
+    }
+
+end:
+    av_free(spec);
+    return ret;
+}
+
+static int parse_read_intervals(const char *intervals_spec)
+{
+    int ret, n, i;
+    char *p, *spec = av_strdup(intervals_spec);
+    if (!spec)
+        return AVERROR(ENOMEM);
+
+    /* preparse specification, get number of intervals */
+    for (n = 0, p = spec; *p; p++)
+        if (*p == ',')
+            n++;
+    n++;
+
+    read_intervals = av_malloc(n * sizeof(*read_intervals));
+    if (!read_intervals) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    read_intervals_nb = n;
+
+    /* parse intervals */
+    p = spec;
+    for (i = 0; p; i++) {
+        char *next;
+
+        av_assert0(i < read_intervals_nb);
+        next = strchr(p, ',');
+        if (next)
+            *next++ = 0;
+
+        read_intervals[i].id = i;
+        ret = parse_read_interval(p, &read_intervals[i]);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error parsing read interval #%d '%s'\n",
+                   i, p);
+            goto end;
+        }
+        av_log(NULL, AV_LOG_VERBOSE, "Parsed log interval ");
+        log_read_interval(&read_intervals[i], NULL, AV_LOG_VERBOSE);
+        p = next;
+    }
+    av_assert0(i == read_intervals_nb);
+
+end:
+    av_free(spec);
+    return ret;
+}
+
+static int opt_read_intervals(void *optctx, const char *opt, const char *arg)
+{
+    return parse_read_intervals(arg);
+}
+
 static int opt_pretty(void *optctx, const char *opt, const char *arg)
 {
     show_value_unit              = 1;
@@ -2315,6 +2589,7 @@ static const OptionDef real_options[] = {
     { "show_private_data", OPT_BOOL, {(void*)&show_private_data}, "show private data" },
     { "private",           OPT_BOOL, {(void*)&show_private_data}, "same as show_private_data" },
     { "bitexact", OPT_BOOL, {&do_bitexact}, "force bitexact output" },
+    { "read_intervals", HAS_ARG, {.func_arg = opt_read_intervals}, "set read intervals", "read_intervals" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {.func_arg = opt_default}, "generic catch all option", "" },
     { "i", HAS_ARG, {.func_arg = opt_input_file_i}, "read specified file", "input_file"},
     { NULL, },
@@ -2427,6 +2702,7 @@ int main(int argc, char **argv)
 
 end:
     av_freep(&print_format);
+    av_freep(&read_intervals);
 
     uninit_opts();
     for (i = 0; i < FF_ARRAY_ELEMS(sections); i++)

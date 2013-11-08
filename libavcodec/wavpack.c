@@ -548,9 +548,11 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
     } while (!last && count < s->samples);
 
     wv_reset_saved_context(s);
-    if ((s->avctx->err_recognition & AV_EF_CRCCHECK) &&
-        wv_check_crc(s, crc, crc_extra_bits))
-        return AVERROR_INVALIDDATA;
+    if (s->avctx->err_recognition & AV_EF_CRCCHECK) {
+        int ret = wv_check_crc(s, crc, crc_extra_bits);
+        if (ret < 0 && s->avctx->err_recognition & AV_EF_EXPLODE)
+            return ret;
+    }
 
     return 0;
 }
@@ -1080,6 +1082,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_wavpack_decoder = {
     .name           = "wavpack",
+    .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_WAVPACK,
     .priv_data_size = sizeof(WavpackContext),
@@ -1089,5 +1092,4 @@ AVCodec ff_wavpack_decoder = {
     .flush          = wavpack_decode_flush,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
 };

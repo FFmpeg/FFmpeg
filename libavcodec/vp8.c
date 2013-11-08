@@ -45,7 +45,6 @@ static void free_buffers(VP8Context *s)
             pthread_mutex_destroy(&s->thread_data[i].lock);
 #endif
             av_freep(&s->thread_data[i].filter_strength);
-            av_freep(&s->thread_data[i].edge_emu_buffer);
         }
     av_freep(&s->thread_data);
     av_freep(&s->macroblocks_base);
@@ -1180,13 +1179,13 @@ static av_always_inline
 void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
                  ThreadFrame *ref, const VP56mv *mv,
                  int x_off, int y_off, int block_w, int block_h,
-                 int width, int height, int linesize,
+                 int width, int height, ptrdiff_t linesize,
                  vp8_mc_func mc_func[3][3])
 {
     uint8_t *src = ref->f->data[0];
 
     if (AV_RN32A(mv)) {
-
+        int src_linesize = linesize;
         int mx = (mv->x << 1)&7, mx_idx = subpel_idx[0][mx];
         int my = (mv->y << 1)&7, my_idx = subpel_idx[0][my];
 
@@ -1198,12 +1197,15 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
         src += y_off * linesize + x_off;
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
-            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, src - my_idx * linesize - mx_idx, linesize,
-                                     block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, 32,
+                                     src - my_idx * linesize - mx_idx, linesize,
+                                     block_w + subpel_idx[1][mx],
+                                     block_h + subpel_idx[1][my],
                                      x_off - mx_idx, y_off - my_idx, width, height);
-            src = td->edge_emu_buffer + mx_idx + linesize * my_idx;
+            src = td->edge_emu_buffer + mx_idx + 32 * my_idx;
+            src_linesize = 32;
         }
-        mc_func[my_idx][mx_idx](dst, linesize, src, linesize, block_h, mx, my);
+        mc_func[my_idx][mx_idx](dst, linesize, src, src_linesize, block_h, mx, my);
     } else {
         ff_thread_await_progress(ref, (3 + y_off + block_h) >> 4, 0);
         mc_func[0][0](dst, linesize, src + y_off * linesize + x_off, linesize, block_h, 0, 0);
@@ -1230,7 +1232,7 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
 static av_always_inline
 void vp8_mc_chroma(VP8Context *s, VP8ThreadData *td, uint8_t *dst1, uint8_t *dst2,
                    ThreadFrame *ref, const VP56mv *mv, int x_off, int y_off,
-                   int block_w, int block_h, int width, int height, int linesize,
+                   int block_w, int block_h, int width, int height, ptrdiff_t linesize,
                    vp8_mc_func mc_func[3][3])
 {
     uint8_t *src1 = ref->f->data[1], *src2 = ref->f->data[2];
@@ -1248,17 +1250,21 @@ void vp8_mc_chroma(VP8Context *s, VP8ThreadData *td, uint8_t *dst1, uint8_t *dst
         ff_thread_await_progress(ref, (3 + y_off + block_h + subpel_idx[2][my]) >> 3, 0);
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
-            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, src1 - my_idx * linesize - mx_idx, linesize,
-                                     block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, 32,
+                                     src1 - my_idx * linesize - mx_idx, linesize,
+                                     block_w + subpel_idx[1][mx],
+                                     block_h + subpel_idx[1][my],
                                      x_off - mx_idx, y_off - my_idx, width, height);
-            src1 = td->edge_emu_buffer + mx_idx + linesize * my_idx;
-            mc_func[my_idx][mx_idx](dst1, linesize, src1, linesize, block_h, mx, my);
+            src1 = td->edge_emu_buffer + mx_idx + 32 * my_idx;
+            mc_func[my_idx][mx_idx](dst1, linesize, src1, 32, block_h, mx, my);
 
-            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, src2 - my_idx * linesize - mx_idx, linesize,
-                                     block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, 32,
+                                     src2 - my_idx * linesize - mx_idx, linesize,
+                                     block_w + subpel_idx[1][mx],
+                                     block_h + subpel_idx[1][my],
                                      x_off - mx_idx, y_off - my_idx, width, height);
-            src2 = td->edge_emu_buffer + mx_idx + linesize * my_idx;
-            mc_func[my_idx][mx_idx](dst2, linesize, src2, linesize, block_h, mx, my);
+            src2 = td->edge_emu_buffer + mx_idx + 32 * my_idx;
+            mc_func[my_idx][mx_idx](dst2, linesize, src2, 32, block_h, mx, my);
         } else {
             mc_func[my_idx][mx_idx](dst1, linesize, src1, linesize, block_h, mx, my);
             mc_func[my_idx][mx_idx](dst2, linesize, src2, linesize, block_h, mx, my);
@@ -1854,8 +1860,8 @@ static int vp8_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata,
     return 0;
 }
 
-static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                            AVPacket *avpkt)
+int ff_vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *avpkt)
 {
     VP8Context *s = avctx->priv_data;
     int ret, i, referenced, num_jobs;
@@ -1944,10 +1950,6 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     s->linesize   = curframe->tf.f->linesize[0];
     s->uvlinesize = curframe->tf.f->linesize[1];
 
-    if (!s->thread_data[0].edge_emu_buffer)
-        for (i = 0; i < MAX_THREADS; i++)
-            s->thread_data[i].edge_emu_buffer = av_malloc(21*s->linesize);
-
     memset(s->top_nnz, 0, s->mb_width*sizeof(*s->top_nnz));
     /* Zero macroblock structures for top/top-left prediction from outside the frame. */
     if (!s->mb_layout)
@@ -2009,7 +2011,7 @@ err:
     return ret;
 }
 
-static av_cold int vp8_decode_free(AVCodecContext *avctx)
+av_cold int ff_vp8_decode_free(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
     int i;
@@ -2032,7 +2034,7 @@ static av_cold int vp8_init_frames(VP8Context *s)
     return 0;
 }
 
-static av_cold int vp8_decode_init(AVCodecContext *avctx)
+av_cold int ff_vp8_decode_init(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
     int ret;
@@ -2046,7 +2048,7 @@ static av_cold int vp8_decode_init(AVCodecContext *avctx)
     ff_vp8dsp_init(&s->vp8dsp);
 
     if ((ret = vp8_init_frames(s)) < 0) {
-        vp8_decode_free(avctx);
+        ff_vp8_decode_free(avctx);
         return ret;
     }
 
@@ -2061,7 +2063,7 @@ static av_cold int vp8_decode_init_thread_copy(AVCodecContext *avctx)
     s->avctx = avctx;
 
     if ((ret = vp8_init_frames(s)) < 0) {
-        vp8_decode_free(avctx);
+        ff_vp8_decode_free(avctx);
         return ret;
     }
 
@@ -2147,35 +2149,35 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     pkt.data = buf;
     pkt.size = buf_size;
 
-    return vp8_decode_frame(avctx, data, data_size, &pkt);
+    return ff_vp8_decode_frame(avctx, data, data_size, &pkt);
 }
 
 AVCodec ff_vp8_decoder = {
     .name                  = "vp8",
+    .long_name             = NULL_IF_CONFIG_SMALL("On2 VP8"),
     .type                  = AVMEDIA_TYPE_VIDEO,
     .id                    = AV_CODEC_ID_VP8,
     .priv_data_size        = sizeof(VP8Context),
-    .init                  = vp8_decode_init,
-    .close                 = vp8_decode_free,
-    .decode                = vp8_decode_frame,
+    .init                  = ff_vp8_decode_init,
+    .close                 = ff_vp8_decode_free,
+    .decode                = ff_vp8_decode_frame,
     .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
     .flush                 = vp8_decode_flush,
-    .long_name             = NULL_IF_CONFIG_SMALL("On2 VP8"),
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp8_decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
 };
 
-AVCodec ff_webp_decoder = {
-    .name                  = "webp",
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_WEBP,
-    .priv_data_size        = sizeof(VP8Context),
-    .init                  = vp8_decode_init,
-    .close                 = vp8_decode_free,
-    .decode                = webp_decode_frame,
-    .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
-    .flush                 = vp8_decode_flush,
-    .long_name             = NULL_IF_CONFIG_SMALL("WebP"),
-    .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp8_decode_init_thread_copy),
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
-};
+// AVCodec ff_webp_decoder = {
+//     .name                  = "webp",
+//     .long_name             = NULL_IF_CONFIG_SMALL("WebP"),
+//     .type                  = AVMEDIA_TYPE_VIDEO,
+//     .id                    = AV_CODEC_ID_WEBP,
+//     .priv_data_size        = sizeof(VP8Context),
+//     .init                  = vp8_decode_init,
+//     .close                 = vp8_decode_free,
+//     .decode                = webp_decode_frame,
+//     .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
+//     .flush                 = vp8_decode_flush,
+//     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp8_decode_init_thread_copy),
+//     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
+// };

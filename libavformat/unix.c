@@ -26,12 +26,11 @@
  *
  */
 
-#include <sys/un.h>
-
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "os_support.h"
 #include "network.h"
+#include <sys/un.h>
 #include "url.h"
 
 typedef struct UnixContext {

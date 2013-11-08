@@ -71,7 +71,7 @@ static const AVOption sine_options[] = {
     OPT_DUR("duration",          duration,               0, 0, INT64_MAX, "set the audio duration"),
     OPT_DUR("d",                 duration,               0, 0, INT64_MAX, "set the audio duration"),
     OPT_INT("samples_per_frame", samples_per_frame,   1024, 0, INT_MAX,   "set the number of samples per frame"),
-    {NULL},
+    {NULL}
 };
 
 AVFILTER_DEFINE_CLASS(sine);
@@ -210,7 +210,7 @@ static const AVFilterPad sine_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_asrc_sine = {
+AVFilter ff_asrc_sine = {
     .name          = "sine",
     .description   = NULL_IF_CONFIG_SMALL("Generate sine wave audio signal."),
     .query_formats = query_formats,

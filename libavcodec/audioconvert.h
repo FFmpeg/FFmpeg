@@ -45,14 +45,20 @@ typedef struct AVAudioConvert AVAudioConvert;
  * @param[in] matrix Channel mixing matrix (of dimension in_channel*out_channels). Set to NULL to ignore.
  * @param flags See AV_CPU_FLAG_xx
  * @return NULL on error
+ * @deprecated See libswresample
  */
+
+attribute_deprecated
 AVAudioConvert *av_audio_convert_alloc(enum AVSampleFormat out_fmt, int out_channels,
                                        enum AVSampleFormat in_fmt, int in_channels,
                                        const float *matrix, int flags);
 
 /**
  * Free audio sample format converter context
+ * @deprecated See libswresample
  */
+
+attribute_deprecated
 void av_audio_convert_free(AVAudioConvert *ctx);
 
 /**
@@ -62,7 +68,10 @@ void av_audio_convert_free(AVAudioConvert *ctx);
  * @param[in] in array of input buffers for each channel
  * @param[in] in_stride distance between consecutive input samples (measured in bytes)
  * @param len length of audio frame size (measured in samples)
+ * @deprecated See libswresample
  */
+
+attribute_deprecated
 int av_audio_convert(AVAudioConvert *ctx,
                            void * const out[6], const int out_stride[6],
                      const void * const  in[6], const int  in_stride[6], int len);

@@ -47,7 +47,7 @@ typedef struct {
 static const AVOption aconvert_options[] = {
     { "sample_fmt",     "", OFFSET(format_str),         AV_OPT_TYPE_STRING, .flags = A|F },
     { "channel_layout", "", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, .flags = A|F },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(aconvert);
@@ -183,7 +183,7 @@ static const AVFilterPad aconvert_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_aconvert = {
+AVFilter ff_af_aconvert = {
     .name          = "aconvert",
     .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to sample_fmt:channel_layout."),
     .priv_size     = sizeof(AConvertContext),

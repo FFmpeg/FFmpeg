@@ -151,7 +151,8 @@ static int set_params(AVFilterContext *ctx, const char *params)
         if (*params) {
             if (!(param = av_get_token(&params, "|")))
                 return AVERROR(ENOMEM);
-            params++;               /* skip ':' */
+            if (*params)
+                params++;               /* skip ':' */
             ret = set_param(ctx, info, i, param);
             av_free(param);
             if (ret < 0)
@@ -412,7 +413,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static const AVOption frei0r_options[] = {
     { "filter_name",   NULL, OFFSET(dl_name), AV_OPT_TYPE_STRING, .flags = FLAGS },
     { "filter_params", NULL, OFFSET(params),  AV_OPT_TYPE_STRING, .flags = FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(frei0r);
@@ -435,20 +436,16 @@ static const AVFilterPad avfilter_vf_frei0r_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_frei0r = {
-    .name      = "frei0r",
-    .description = NULL_IF_CONFIG_SMALL("Apply a frei0r effect."),
-
+AVFilter ff_vf_frei0r = {
+    .name          = "frei0r",
+    .description   = NULL_IF_CONFIG_SMALL("Apply a frei0r effect."),
     .query_formats = query_formats,
-    .init = filter_init,
-    .uninit = uninit,
-
-    .priv_size = sizeof(Frei0rContext),
-    .priv_class = &frei0r_class,
-
-    .inputs    = avfilter_vf_frei0r_inputs,
-
-    .outputs   = avfilter_vf_frei0r_outputs,
+    .init          = filter_init,
+    .uninit        = uninit,
+    .priv_size     = sizeof(Frei0rContext),
+    .priv_class    = &frei0r_class,
+    .inputs        = avfilter_vf_frei0r_inputs,
+    .outputs       = avfilter_vf_frei0r_outputs,
 };
 
 static av_cold int source_init(AVFilterContext *ctx)
@@ -520,18 +517,14 @@ static const AVFilterPad avfilter_vsrc_frei0r_src_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vsrc_frei0r_src = {
-    .name        = "frei0r_src",
-    .description = NULL_IF_CONFIG_SMALL("Generate a frei0r source."),
-
-    .priv_size = sizeof(Frei0rContext),
-    .priv_class = &frei0r_src_class,
-    .init      = source_init,
-    .uninit    = uninit,
-
+AVFilter ff_vsrc_frei0r_src = {
+    .name          = "frei0r_src",
+    .description   = NULL_IF_CONFIG_SMALL("Generate a frei0r source."),
+    .priv_size     = sizeof(Frei0rContext),
+    .priv_class    = &frei0r_src_class,
+    .init          = source_init,
+    .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = NULL,
-
-    .outputs   = avfilter_vsrc_frei0r_src_outputs,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_frei0r_src_outputs,
 };

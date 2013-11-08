@@ -321,6 +321,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec ff_eamad_decoder = {
     .name           = "eamad",
+    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts Madcow Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MAD,
     .priv_data_size = sizeof(MadContext),
@@ -328,5 +329,4 @@ AVCodec ff_eamad_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts Madcow Video")
 };

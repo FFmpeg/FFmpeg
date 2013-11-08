@@ -770,6 +770,7 @@ static const AVCodecDefault mp2_defaults[] = {
 
 AVCodec ff_mp2_encoder = {
     .name                  = "mp2",
+    .long_name             = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_MP2,
     .priv_data_size        = sizeof(MpegAudioContext),
@@ -783,6 +784,5 @@ AVCodec ff_mp2_encoder = {
     .channel_layouts       = (const uint64_t[]){ AV_CH_LAYOUT_MONO,
                                                  AV_CH_LAYOUT_STEREO,
                                                  0 },
-    .long_name             = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
     .defaults              = mp2_defaults,
 };

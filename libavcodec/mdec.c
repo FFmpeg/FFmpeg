@@ -177,7 +177,8 @@ static int decode_frame(AVCodecContext *avctx,
         a->bitstream_buffer[i]     = buf[i + 1];
         a->bitstream_buffer[i + 1] = buf[i];
     }
-    init_get_bits(&a->gb, a->bitstream_buffer, buf_size * 8);
+    if ((ret = init_get_bits8(&a->gb, a->bitstream_buffer, buf_size)) < 0)
+        return ret;
 
     /* skip over 4 preamble bytes in stream (typically 0xXX 0xXX 0x00 0x38) */
     skip_bits(&a->gb, 32);
@@ -242,6 +243,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec ff_mdec_decoder = {
     .name             = "mdec",
+    .long_name        = NULL_IF_CONFIG_SMALL("Sony PlayStation MDEC (Motion DECoder)"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_MDEC,
     .priv_data_size   = sizeof(MDECContext),
@@ -249,6 +251,5 @@ AVCodec ff_mdec_decoder = {
     .close            = decode_end,
     .decode           = decode_frame,
     .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name        = NULL_IF_CONFIG_SMALL("Sony PlayStation MDEC (Motion DECoder)"),
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy)
 };

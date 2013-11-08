@@ -907,11 +907,11 @@ erasure:
 
 AVCodec ff_evrc_decoder = {
     .name           = "evrc",
+    .long_name      = NULL_IF_CONFIG_SMALL("EVRC (Enhanced Variable Rate Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_EVRC,
     .init           = evrc_decode_init,
     .decode         = evrc_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .priv_data_size = sizeof(EVRCContext),
-    .long_name      = NULL_IF_CONFIG_SMALL("EVRC (Enhanced Variable Rate Codec)"),
 };

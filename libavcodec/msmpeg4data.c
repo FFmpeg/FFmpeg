@@ -27,6 +27,8 @@
  * MSMPEG4 data tables.
  */
 
+#include "h263.h"
+#include "mpeg4video.h"
 #include "msmpeg4data.h"
 
 uint32_t ff_v2_dc_lum_table[512][2];
@@ -595,14 +597,6 @@ static const int8_t table4_run[168] = {
  21, 22, 23, 24, 25, 26, 27, 28,
  29, 30, 31, 32, 33, 34, 35, 36,
 };
-
-extern const uint16_t ff_inter_vlc[103][2];
-extern const int8_t ff_inter_level[102];
-extern const int8_t ff_inter_run[102];
-
-extern const uint16_t ff_mpeg4_intra_vlc[103][2];
-extern const int8_t ff_mpeg4_intra_level[102];
-extern const int8_t ff_mpeg4_intra_run[102];
 
 RLTable ff_rl_table[NB_RL_TABLES] = {
     /* intra luminance tables */

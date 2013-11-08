@@ -138,6 +138,7 @@
       <xsd:attribute name="sample_fmt"       type="xsd:string"/>
       <xsd:attribute name="sample_rate"      type="xsd:int"/>
       <xsd:attribute name="channels"         type="xsd:int"/>
+      <xsd:attribute name="channel_layout"   type="xsd:string"/>
       <xsd:attribute name="bits_per_sample"  type="xsd:int"/>
 
       <xsd:attribute name="id"               type="xsd:string"/>
@@ -178,12 +179,14 @@
 
       <xsd:attribute name="filename"         type="xsd:string" use="required"/>
       <xsd:attribute name="nb_streams"       type="xsd:int"    use="required"/>
+      <xsd:attribute name="nb_programs"      type="xsd:int"    use="required"/>
       <xsd:attribute name="format_name"      type="xsd:string" use="required"/>
       <xsd:attribute name="format_long_name" type="xsd:string"/>
       <xsd:attribute name="start_time"       type="xsd:float"/>
       <xsd:attribute name="duration"         type="xsd:float"/>
       <xsd:attribute name="size"             type="xsd:long"/>
       <xsd:attribute name="bit_rate"         type="xsd:long"/>
+      <xsd:attribute name="probe_score"      type="xsd:int"/>
     </xsd:complexType>
 
     <xsd:complexType name="tagType">

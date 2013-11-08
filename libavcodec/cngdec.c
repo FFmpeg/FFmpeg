@@ -157,6 +157,7 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_comfortnoise_decoder = {
     .name           = "comfortnoise",
+    .long_name      = NULL_IF_CONFIG_SMALL("RFC 3389 comfort noise generator"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_COMFORT_NOISE,
     .priv_data_size = sizeof(CNGContext),
@@ -164,7 +165,6 @@ AVCodec ff_comfortnoise_decoder = {
     .decode         = cng_decode_frame,
     .flush          = cng_decode_flush,
     .close          = cng_decode_close,
-    .long_name      = NULL_IF_CONFIG_SMALL("RFC 3389 comfort noise generator"),
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,

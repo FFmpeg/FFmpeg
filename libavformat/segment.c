@@ -1,20 +1,20 @@
 /*
  * Copyright (c) 2011, Luca Barbato
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -187,7 +187,6 @@ static int segment_start(AVFormatContext *s, int write_header)
     seg->segment_idx++;
     if ((err = set_segment_filename(s)) < 0)
         return err;
-    seg->segment_count++;
 
     if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
@@ -319,6 +318,10 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
         }
         avio_flush(seg->list_pb);
     }
+
+    av_log(s, AV_LOG_VERBOSE, "segment:'%s' count:%d ended\n",
+           seg->avf->filename, seg->segment_count);
+    seg->segment_count++;
 
 end:
     avio_close(oc->pb);
@@ -594,7 +597,6 @@ static int seg_write_header(AVFormatContext *s)
 
     if ((ret = set_segment_filename(s)) < 0)
         goto fail;
-    seg->segment_count++;
 
     if (seg->write_header_trailer) {
         if ((ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
@@ -641,13 +643,13 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     if (seg->times) {
-        end_pts = seg->segment_count <= seg->nb_times ?
-            seg->times[seg->segment_count-1] : INT64_MAX;
+        end_pts = seg->segment_count < seg->nb_times ?
+            seg->times[seg->segment_count] : INT64_MAX;
     } else if (seg->frames) {
         start_frame = seg->segment_count <= seg->nb_frames ?
-            seg->frames[seg->segment_count-1] : INT_MAX;
+            seg->frames[seg->segment_count] : INT_MAX;
     } else {
-        end_pts = seg->time * seg->segment_count;
+        end_pts = seg->time * (seg->segment_count+1);
     }
 
     av_dlog(s, "packet stream:%d pts:%s pts_time:%s is_key:%d frame:%d\n",
@@ -661,12 +663,10 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
          (pkt->pts != AV_NOPTS_VALUE &&
           av_compare_ts(pkt->pts, st->time_base,
                         end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0))) {
-        ret = segment_end(s, seg->individual_header_trailer, 0);
+        if ((ret = segment_end(s, seg->individual_header_trailer, 0)) < 0)
+            goto fail;
 
-        if (!ret)
-            ret = segment_start(s, seg->individual_header_trailer);
-
-        if (ret)
+        if ((ret = segment_start(s, seg->individual_header_trailer)) < 0)
             goto fail;
 
         oc = seg->avf;

@@ -284,8 +284,8 @@ typedef struct MpegEncContext {
     int b4_stride;             ///< 4*mb_width+1 used for some 4x4 block arrays to allow simple addressing
     int h_edge_pos, v_edge_pos;///< horizontal / vertical position of the right/bottom edge (pixel replication)
     int mb_num;                ///< number of MBs of a picture
-    int linesize;              ///< line size, in bytes, may be different from width
-    int uvlinesize;            ///< line size, for chroma in bytes, may be different from width
+    ptrdiff_t linesize;        ///< line size, in bytes, may be different from width
+    ptrdiff_t uvlinesize;      ///< line size, for chroma in bytes, may be different from width
     Picture *picture;          ///< main picture buffer
     Picture **input_picture;   ///< next pictures on display order for encoding
     Picture **reordered_input_picture; ///< pointer to the next pictures in codedorder for encoding
@@ -304,7 +304,7 @@ typedef struct MpegEncContext {
     /* WARNING: changes above this line require updates to hardcoded
      *          offsets used in asm. */
 
-    int64_t user_specified_pts;///< last non zero pts from AVFrame which was passed into avcodec_encode_video()
+    int64_t user_specified_pts; ///< last non-zero pts from AVFrame which was passed into avcodec_encode_video2()
     /**
      * pts difference between the first and second input frame, used for
      * calculating dts of the first frame when there's a delay */
@@ -545,6 +545,7 @@ typedef struct MpegEncContext {
     int prev_mb_info, last_mb_info;
     uint8_t *mb_info_ptr;
     int mb_info_size;
+    int ehc_mode;
 
     /* H.263+ specific */
     int umvplus;                    ///< == H263+ && unrestricted_mv

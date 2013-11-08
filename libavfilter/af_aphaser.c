@@ -71,7 +71,7 @@ static const AVOption aphaser_options[] = {
     { "t",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_TRI}, 0, 0, FLAGS, "type" },
     { "sinusoidal",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, FLAGS, "type" },
     { "s",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, FLAGS, "type" },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(aphaser);
@@ -345,7 +345,7 @@ static const AVFilterPad aphaser_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_aphaser = {
+AVFilter ff_af_aphaser = {
     .name          = "aphaser",
     .description   = NULL_IF_CONFIG_SMALL("Add a phasing effect to the audio."),
     .query_formats = query_formats,

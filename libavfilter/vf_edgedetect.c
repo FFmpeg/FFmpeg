@@ -45,7 +45,7 @@ typedef struct {
 static const AVOption edgedetect_options[] = {
     { "high", "set high threshold", OFFSET(high), AV_OPT_TYPE_DOUBLE, {.dbl=50/255.}, 0, 1, FLAGS },
     { "low",  "set low threshold",  OFFSET(low),  AV_OPT_TYPE_DOUBLE, {.dbl=20/255.}, 0, 1, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(edgedetect);
@@ -317,7 +317,7 @@ static const AVFilterPad edgedetect_outputs[] = {
      { NULL }
 };
 
-AVFilter avfilter_vf_edgedetect = {
+AVFilter ff_vf_edgedetect = {
     .name          = "edgedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect and draw edge."),
     .priv_size     = sizeof(EdgeDetectContext),

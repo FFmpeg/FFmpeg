@@ -371,6 +371,8 @@ typedef struct OutputStream {
     int copy_prior_start;
 
     int keep_pix_fmt;
+
+    AVCodecParserContext *parser;
 } OutputStream;
 
 typedef struct OutputFile {
@@ -420,6 +422,7 @@ extern int qp_hist;
 extern int stdin_interaction;
 extern int frame_bits_per_raw_sample;
 extern AVIOContext *progress_avio;
+extern float max_error_rate;
 
 extern const AVIOInterruptCB int_cb;
 

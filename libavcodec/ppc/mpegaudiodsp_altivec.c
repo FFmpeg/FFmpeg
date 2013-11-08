@@ -21,6 +21,7 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
 #include "libavutil/internal.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/mpegaudiodsp.h"
@@ -132,6 +133,9 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
 av_cold void ff_mpadsp_init_ppc(MPADSPContext *s)
 {
 #if HAVE_ALTIVEC
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+        return;
+
     s->apply_window_float = apply_window_mp3;
 #endif /* HAVE_ALTIVEC */
 }

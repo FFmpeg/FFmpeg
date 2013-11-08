@@ -387,6 +387,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                     }
                     s->diff_start  = get_bits(&gb, 8);
                     s->diff_height = get_bits(&gb, 8);
+                    if (s->diff_start + s->diff_height > cur_blk_height) {
+                        av_log(avctx, AV_LOG_ERROR, "Block parameters invalid\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     av_log(avctx, AV_LOG_DEBUG,
                            "%dx%d diff start %d height %d\n",
                            i, j, s->diff_start, s->diff_height);
@@ -475,6 +479,7 @@ static av_cold int flashsv_decode_end(AVCodecContext *avctx)
 #if CONFIG_FLASHSV_DECODER
 AVCodec ff_flashsv_decoder = {
     .name           = "flashsv",
+    .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v1"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FLASHSV,
     .priv_data_size = sizeof(FlashSVContext),
@@ -483,7 +488,6 @@ AVCodec ff_flashsv_decoder = {
     .decode         = flashsv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v1"),
 };
 #endif /* CONFIG_FLASHSV_DECODER */
 
@@ -538,6 +542,7 @@ static av_cold int flashsv2_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_flashsv2_decoder = {
     .name           = "flashsv2",
+    .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v2"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FLASHSV2,
     .priv_data_size = sizeof(FlashSVContext),
@@ -546,6 +551,5 @@ AVCodec ff_flashsv2_decoder = {
     .decode         = flashsv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v2"),
 };
 #endif /* CONFIG_FLASHSV2_DECODER */

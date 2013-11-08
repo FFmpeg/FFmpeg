@@ -984,6 +984,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
 
 AVCodec ff_dvvideo_encoder = {
     .name           = "dvvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DVVIDEO,
     .priv_data_size = sizeof(DVVideoContext),
@@ -993,6 +994,5 @@ AVCodec ff_dvvideo_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
 };
 #endif // CONFIG_DVVIDEO_ENCODER

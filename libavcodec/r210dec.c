@@ -90,33 +90,33 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 #if CONFIG_R210_DECODER
 AVCodec ff_r210_decoder = {
     .name           = "r210",
+    .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_R210,
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
 };
 #endif
 #if CONFIG_R10K_DECODER
 AVCodec ff_r10k_decoder = {
     .name           = "r10k",
+    .long_name      = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_R10K,
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
 };
 #endif
 #if CONFIG_AVRP_DECODER
 AVCodec ff_avrp_decoder = {
     .name           = "avrp",
+    .long_name      = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AVRP,
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
 };
 #endif

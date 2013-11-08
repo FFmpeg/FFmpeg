@@ -25,6 +25,7 @@ OBJS=$(addsuffix .o,$(EXAMPLES))
 # the following examples make explicit use of the math library
 decoding_encoding: LDLIBS += -lm
 muxing:            LDLIBS += -lm
+resampling_audio:  LDLIBS += -lm
 
 .phony: all clean-test clean
 

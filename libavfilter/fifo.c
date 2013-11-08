@@ -254,7 +254,6 @@ static const AVFilterPad avfilter_vf_fifo_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = add_to_queue,
     },
     { NULL }
@@ -269,7 +268,7 @@ static const AVFilterPad avfilter_vf_fifo_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_fifo = {
+AVFilter ff_vf_fifo = {
     .name      = "fifo",
     .description = NULL_IF_CONFIG_SMALL("Buffer input images and send them when they are requested."),
 
@@ -286,7 +285,6 @@ static const AVFilterPad avfilter_af_afifo_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
-        .get_audio_buffer = ff_null_get_audio_buffer,
         .filter_frame     = add_to_queue,
     },
     { NULL }
@@ -301,7 +299,7 @@ static const AVFilterPad avfilter_af_afifo_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_afifo = {
+AVFilter ff_af_afifo = {
     .name        = "afifo",
     .description = NULL_IF_CONFIG_SMALL("Buffer input frames and send them when they are requested."),
 

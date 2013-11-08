@@ -63,7 +63,7 @@ static int jacosub_probe(AVProbeData *p)
                 return AVPROBE_SCORE_EXTENSION + 1;
             return 0;
         }
-        ptr += strcspn(ptr, "\n") + 1;
+        ptr += ff_subtitles_next_line(ptr);
     }
     return 0;
 }

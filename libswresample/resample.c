@@ -256,7 +256,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
 
     return c;
 error:
-    av_free(c->filter_bank);
+    av_freep(&c->filter_bank);
     av_free(c);
     return NULL;
 }

@@ -1565,6 +1565,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         if (ctx->cur_frame_length != sconf->frame_length &&
             ctx->crc_org != ctx->crc) {
             av_log(avctx, AV_LOG_ERROR, "CRC error.\n");
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
         }
     }
 
@@ -1786,6 +1788,7 @@ static av_cold void flush(AVCodecContext *avctx)
 
 AVCodec ff_als_decoder = {
     .name           = "als",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Audio Lossless Coding (ALS)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_MP4ALS,
     .priv_data_size = sizeof(ALSDecContext),
@@ -1794,5 +1797,4 @@ AVCodec ff_als_decoder = {
     .decode         = decode_frame,
     .flush          = flush,
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Audio Lossless Coding (ALS)"),
 };

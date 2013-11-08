@@ -378,9 +378,11 @@ static int h261_decode_mb(H261Context *h)
     // Read mtype
     h->mtype = get_vlc2(&s->gb, h261_mtype_vlc.table, H261_MTYPE_VLC_BITS, 2);
     if (h->mtype < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "illegal mtype %d\n", h->mtype);
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid mtype index %d\n",
+               h->mtype);
         return SLICE_ERROR;
     }
+    av_assert0(h->mtype < FF_ARRAY_ELEMS(ff_h261_mtype_map));
     h->mtype = ff_h261_mtype_map[h->mtype];
 
     // Read mquant
@@ -476,7 +478,6 @@ static int h261_decode_picture_header(H261Context *h)
     s->picture_number = (s->picture_number & ~31) + i;
 
     s->avctx->time_base      = (AVRational) { 1001, 30000 };
-    s->current_picture.f.pts = s->picture_number;
 
     /* PTYPE starts here */
     skip_bits1(&s->gb); /* split screen off */
@@ -661,6 +662,7 @@ static av_cold int h261_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_h261_decoder = {
     .name           = "h261",
+    .long_name      = NULL_IF_CONFIG_SMALL("H.261"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H261,
     .priv_data_size = sizeof(H261Context),
@@ -669,5 +671,4 @@ AVCodec ff_h261_decoder = {
     .decode         = h261_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .max_lowres     = 3,
-    .long_name      = NULL_IF_CONFIG_SMALL("H.261"),
 };

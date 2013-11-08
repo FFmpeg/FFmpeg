@@ -48,6 +48,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
@@ -325,6 +326,14 @@ static int64_t cur_time;           // Making this global saves on passing it aro
 static AVLFG random_state;
 
 static FILE *logfile = NULL;
+
+static void htmlstrip(char *s) {
+    while (s && *s) {
+        s += strspn(s, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,. ");
+        if (*s)
+            *s++ = '?';
+    }
+}
 
 static int64_t ffm_read_write_index(int fd)
 {
@@ -1885,6 +1894,7 @@ static int http_parse_request(HTTPContext *c)
  send_error:
     c->http_error = 404;
     q = c->buffer;
+    htmlstrip(msg);
     snprintf(q, c->buffer_size,
                   "HTTP/1.0 404 Not Found\r\n"
                   "Content-type: text/html\r\n"
@@ -4423,6 +4433,14 @@ static int parse_ffconfig(const char *filename)
                 } else {
                     video_enc.time_base.num = frame_rate.den;
                     video_enc.time_base.den = frame_rate.num;
+                }
+            }
+        } else if (!av_strcasecmp(cmd, "PixelFormat")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                video_enc.pix_fmt = av_get_pix_fmt(arg);
+                if (video_enc.pix_fmt == AV_PIX_FMT_NONE) {
+                    ERROR("Unknown pixel format: %s\n", arg);
                 }
             }
         } else if (!av_strcasecmp(cmd, "VideoGopSize")) {

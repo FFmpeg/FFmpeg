@@ -634,6 +634,7 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 AVCodec ff_alac_encoder = {
     .name           = "alac",
+    .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ALAC,
     .priv_data_size = sizeof(AlacEncodeContext),
@@ -645,5 +646,4 @@ AVCodec ff_alac_encoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
                                                      AV_SAMPLE_FMT_S16P,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };

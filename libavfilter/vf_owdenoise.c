@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Michael Niedermayer <michaelni@gmx.at>
- * Copyright (c) 2013 Clément Bœsch <ubitux@gmail.com>
+ * Copyright (c) 2013 Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
@@ -329,7 +329,7 @@ static const AVFilterPad owdenoise_outputs[] = {
      { NULL }
 };
 
-AVFilter avfilter_vf_owdenoise = {
+AVFilter ff_vf_owdenoise = {
     .name          = "owdenoise",
     .description   = NULL_IF_CONFIG_SMALL("Denoise using wavelets."),
     .priv_size     = sizeof(OWDenoiseContext),

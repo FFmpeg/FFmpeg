@@ -171,7 +171,7 @@ static const AVFilterPad pp_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_pp = {
+AVFilter ff_vf_pp = {
     .name            = "pp",
     .description     = NULL_IF_CONFIG_SMALL("Filter video using libpostproc."),
     .priv_size       = sizeof(PPFilterContext),

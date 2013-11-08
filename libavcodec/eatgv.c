@@ -169,12 +169,18 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
 
     /* allocate codebook buffers as necessary */
     if (num_mvs > s->num_mvs) {
-        s->mv_codebook = av_realloc(s->mv_codebook, num_mvs*2*sizeof(int));
+        if (av_reallocp_array(&s->mv_codebook, num_mvs, sizeof(*s->mv_codebook))) {
+            s->num_mvs = 0;
+            return AVERROR(ENOMEM);
+        }
         s->num_mvs = num_mvs;
     }
 
     if (num_blocks_packed > s->num_blocks_packed) {
-        s->block_codebook = av_realloc(s->block_codebook, num_blocks_packed*16);
+        if (av_reallocp_array(&s->block_codebook, num_blocks_packed, sizeof(*s->block_codebook))) {
+            s->num_blocks_packed = 0;
+            return AVERROR(ENOMEM);
+        }
         s->num_blocks_packed = num_blocks_packed;
     }
 
@@ -347,12 +353,12 @@ static av_cold int tgv_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_eatgv_decoder = {
     .name           = "eatgv",
+    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts TGV video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TGV,
     .priv_data_size = sizeof(TgvContext),
     .init           = tgv_decode_init,
     .close          = tgv_decode_end,
     .decode         = tgv_decode_frame,
-    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts TGV video"),
     .capabilities   = CODEC_CAP_DR1,
 };

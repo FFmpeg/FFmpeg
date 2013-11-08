@@ -45,7 +45,7 @@ typedef struct ThreadContext {
 
     int nb_threads;
     pthread_t *workers;
-    action_func *func;
+    avfilter_action_func *func;
 
     /* per-execute perameters */
     AVFilterContext *ctx;
@@ -58,6 +58,7 @@ typedef struct ThreadContext {
     pthread_cond_t current_job_cond;
     pthread_mutex_t current_job_lock;
     int current_job;
+    unsigned int current_execute;
     int done;
 } ThreadContext;
 
@@ -66,6 +67,7 @@ static void* attribute_align_arg worker(void *v)
     ThreadContext *c = v;
     int our_job      = c->nb_jobs;
     int nb_threads   = c->nb_threads;
+    unsigned int last_execute = 0;
     int self_id;
 
     pthread_mutex_lock(&c->current_job_lock);
@@ -75,7 +77,9 @@ static void* attribute_align_arg worker(void *v)
             if (c->current_job == nb_threads + c->nb_jobs)
                 pthread_cond_signal(&c->last_job_cond);
 
-            pthread_cond_wait(&c->current_job_cond, &c->current_job_lock);
+            while (last_execute == c->current_execute && !c->done)
+                pthread_cond_wait(&c->current_job_cond, &c->current_job_lock);
+            last_execute = c->current_execute;
             our_job = self_id;
 
             if (c->done) {
@@ -112,11 +116,12 @@ static void slice_thread_uninit(ThreadContext *c)
 
 static void slice_thread_park_workers(ThreadContext *c)
 {
-    pthread_cond_wait(&c->last_job_cond, &c->current_job_lock);
+    while (c->current_job != c->nb_threads + c->nb_jobs)
+        pthread_cond_wait(&c->last_job_cond, &c->current_job_lock);
     pthread_mutex_unlock(&c->current_job_lock);
 }
 
-static int thread_execute(AVFilterContext *ctx, action_func *func,
+static int thread_execute(AVFilterContext *ctx, avfilter_action_func *func,
                           void *arg, int *ret, int nb_jobs)
 {
     ThreadContext *c = ctx->graph->internal->thread;
@@ -139,6 +144,8 @@ static int thread_execute(AVFilterContext *ctx, action_func *func,
         c->rets    = &dummy_ret;
         c->nb_rets = 1;
     }
+    c->current_execute++;
+
     pthread_cond_broadcast(&c->current_job_cond);
 
     slice_thread_park_workers(c);

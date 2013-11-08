@@ -33,6 +33,7 @@
 #include "libavutil/base64.h"
 #include "libavcodec/bytestream.h"
 
+#include "internal.h"
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
 
@@ -288,11 +289,11 @@ parse_packed_headers(const uint8_t * packed_headers,
      * -- FF_INPUT_BUFFER_PADDING_SIZE required */
     extradata_alloc = length + length/255 + 3 + FF_INPUT_BUFFER_PADDING_SIZE;
 
-    ptr = codec->extradata = av_malloc(extradata_alloc);
-    if (!ptr) {
+    if (ff_alloc_extradata(codec, extradata_alloc)) {
         av_log(codec, AV_LOG_ERROR, "Out of memory\n");
         return AVERROR(ENOMEM);
     }
+    ptr = codec->extradata;
     *ptr++ = 2;
     ptr += av_xiphlacing(ptr, length1);
     ptr += av_xiphlacing(ptr, length2);

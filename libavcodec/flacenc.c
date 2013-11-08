@@ -1343,6 +1343,7 @@ static const AVClass flac_encoder_class = {
 
 AVCodec ff_flac_encoder = {
     .name           = "flac",
+    .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_FLAC,
     .priv_data_size = sizeof(FlacEncodeContext),
@@ -1353,6 +1354,5 @@ AVCodec ff_flac_encoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_S32,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
     .priv_class     = &flac_encoder_class,
 };

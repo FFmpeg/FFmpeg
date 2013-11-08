@@ -52,9 +52,7 @@ static int read_header(AVFormatContext *s)
     if (!vst)
         return AVERROR(ENOMEM);
 
-    vst->codec->extradata_size = 2;
-    vst->codec->extradata = av_mallocz(2 + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!vst->codec->extradata)
+    if (ff_alloc_extradata(vst->codec, 2))
         return AVERROR(ENOMEM);
 
     version                  = avio_r8(pb);
@@ -96,10 +94,12 @@ static int read_header(AVFormatContext *s)
     mvi->get_int = (vst->codec->width * vst->codec->height < (1 << 16)) ? avio_rl16 : avio_rl24;
 
     mvi->audio_frame_size   = ((uint64_t)mvi->audio_data_size << MVI_FRAC_BITS) / frames_count;
-    if (!mvi->audio_frame_size) {
-        av_log(s, AV_LOG_ERROR, "audio_frame_size is 0\n");
+    if (mvi->audio_frame_size <= 1 << MVI_FRAC_BITS - 1) {
+        av_log(s, AV_LOG_ERROR, "Invalid audio_data_size (%d) or frames_count (%d)\n",
+               mvi->audio_data_size, frames_count);
         return AVERROR_INVALIDDATA;
     }
+
     mvi->audio_size_counter = (ast->codec->sample_rate * 830 / mvi->audio_frame_size - 1) * mvi->audio_frame_size;
     mvi->audio_size_left    = mvi->audio_data_size;
 

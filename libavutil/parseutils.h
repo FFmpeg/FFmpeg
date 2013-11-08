@@ -99,6 +99,19 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
                    void *log_ctx);
 
 /**
+ * Get the name of a color from the internal table of hard-coded named
+ * colors.
+ *
+ * This function is meant to enumerate the color names recognized by
+ * av_parse_color().
+ *
+ * @param color_idx index of the requested color, starting from 0
+ * @param rgbp      if not NULL, will point to a 3-elements array with the color value in RGB
+ * @return the color name string or NULL if color_idx is not in the array
+ */
+const char *av_get_known_color_name(int color_idx, const uint8_t **rgb);
+
+/**
  * Parse timestr and return in *time a corresponding number of
  * microseconds.
  *
@@ -127,7 +140,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
  * @endcode
  * @param duration flag which tells how to interpret timestr, if not
  * zero timestr is interpreted as a duration, otherwise as a date
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code otherwise
  */
 int av_parse_time(int64_t *timeval, const char *timestr, int duration);

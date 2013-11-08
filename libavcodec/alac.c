@@ -320,6 +320,9 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
             rice_history_mult[ch] = get_bits(&alac->gb, 3);
             lpc_order[ch]         = get_bits(&alac->gb, 5);
 
+            if (lpc_order[ch] >= alac->max_samples_per_frame)
+                return AVERROR_INVALIDDATA;
+
             /* read the predictor table */
             for (i = lpc_order[ch] - 1; i >= 0; i--)
                 lpc_coefs[ch][i] = get_sbits(&alac->gb, 16);
@@ -463,9 +466,8 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         channels = (element == TYPE_CPE) ? 2 : 1;
-        if (   ch + channels > alac->channels
-            || ff_alac_channel_layout_offsets[alac->channels - 1][ch] + channels > alac->channels
-        ) {
+        if (ch + channels > alac->channels ||
+            ff_alac_channel_layout_offsets[alac->channels - 1][ch] + channels > alac->channels) {
             av_log(avctx, AV_LOG_ERROR, "invalid element channel count\n");
             return AVERROR_INVALIDDATA;
         }
@@ -511,11 +513,7 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
 static int allocate_buffers(ALACContext *alac)
 {
     int ch;
-    int buf_size;
-
-    if (alac->max_samples_per_frame > INT_MAX / sizeof(int32_t))
-        goto buf_alloc_fail;
-    buf_size = alac->max_samples_per_frame * sizeof(int32_t);
+    int buf_size = alac->max_samples_per_frame * sizeof(int32_t);
 
     for (ch = 0; ch < FFMIN(alac->channels, 2); ch++) {
         FF_ALLOC_OR_GOTO(alac->avctx, alac->predict_error_buffer[ch],
@@ -546,7 +544,8 @@ static int alac_set_info(ALACContext *alac)
     bytestream2_skipu(&gb, 12); // size:4, alac:4, version:4
 
     alac->max_samples_per_frame = bytestream2_get_be32u(&gb);
-    if (!alac->max_samples_per_frame || alac->max_samples_per_frame > INT_MAX) {
+    if (!alac->max_samples_per_frame ||
+        alac->max_samples_per_frame > INT_MAX / sizeof(int32_t)) {
         av_log(alac->avctx, AV_LOG_ERROR, "max samples per frame invalid: %u\n",
                alac->max_samples_per_frame);
         return AVERROR_INVALIDDATA;
@@ -627,6 +626,7 @@ static int init_thread_copy(AVCodecContext *avctx)
 
 AVCodec ff_alac_decoder = {
     .name           = "alac",
+    .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ALAC,
     .priv_data_size = sizeof(ALACContext),
@@ -635,5 +635,4 @@ AVCodec ff_alac_decoder = {
     .decode         = alac_decode_frame,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };

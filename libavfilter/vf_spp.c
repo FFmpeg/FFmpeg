@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
- * Copyright (c) 2013 Clément Bœsch <ubitux@gmail.com>
+ * Copyright (c) 2013 Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
@@ -422,7 +422,7 @@ static const AVFilterPad spp_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_spp = {
+AVFilter ff_vf_spp = {
     .name            = "spp",
     .description     = NULL_IF_CONFIG_SMALL("Apply a simple post processing filter."),
     .priv_size       = sizeof(SPPContext),

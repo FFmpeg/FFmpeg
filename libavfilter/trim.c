@@ -74,7 +74,7 @@ typedef struct TrimContext {
     int eof;
 } TrimContext;
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     TrimContext *s = ctx->priv;
 
@@ -202,7 +202,7 @@ static const AVOption trim_options[] = {
     { "end_frame",   "Number of the first frame that should be dropped "
         "again",                                                         OFFSET(end_frame),   AV_OPT_TYPE_INT64,  { .i64 = INT64_MAX }, 0, INT64_MAX, FLAGS },
     COMPAT_OPTS
-    { NULL },
+    { NULL }
 };
 #undef FLAGS
 
@@ -220,22 +220,19 @@ static const AVFilterPad trim_inputs[] = {
 
 static const AVFilterPad trim_outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_output,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
     },
     { NULL }
 };
 
-AVFilter avfilter_vf_trim = {
+AVFilter ff_vf_trim = {
     .name        = "trim",
     .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
-
     .init        = init,
-
     .priv_size   = sizeof(TrimContext),
     .priv_class  = &trim_class,
-
     .inputs      = trim_inputs,
     .outputs     = trim_outputs,
 };
@@ -360,7 +357,7 @@ static const AVOption atrim_options[] = {
     { "end_sample",   "Number of the first audio sample that should be "
         "dropped again",                                                 OFFSET(end_sample),   AV_OPT_TYPE_INT64,  { .i64 = INT64_MAX }, 0, INT64_MAX, FLAGS },
     COMPAT_OPTS
-    { NULL },
+    { NULL }
 };
 #undef FLAGS
 
@@ -378,22 +375,19 @@ static const AVFilterPad atrim_inputs[] = {
 
 static const AVFilterPad atrim_outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_AUDIO,
-        .config_props  = config_output,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_output,
     },
     { NULL }
 };
 
-AVFilter avfilter_af_atrim = {
+AVFilter ff_af_atrim = {
     .name        = "atrim",
     .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
-
     .init        = init,
-
     .priv_size   = sizeof(TrimContext),
     .priv_class  = &atrim_class,
-
     .inputs      = atrim_inputs,
     .outputs     = atrim_outputs,
 };

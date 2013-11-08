@@ -92,6 +92,11 @@ void choose_sample_fmt(AVStream *st, AVCodec *codec)
 
 static char *choose_pix_fmts(OutputStream *ost)
 {
+    AVDictionaryEntry *strict_dict = av_dict_get(ost->opts, "strict", NULL, 0);
+    if (strict_dict)
+        // used by choose_pixel_fmt() and below
+        av_opt_set(ost->st->codec, "strict", strict_dict->value, 0);
+
      if (ost->keep_pix_fmt) {
         if (ost->filter)
             avfilter_graph_set_auto_convert(ost->filter->graph->graph,
@@ -860,6 +865,10 @@ int configure_filtergraph(FilterGraph *fg)
         if (strlen(args))
             args[strlen(args) - 1] = '\0';
         fg->graph->resample_lavr_opts = av_strdup(args);
+
+        e = av_dict_get(ost->opts, "threads", NULL, 0);
+        if (e)
+            av_opt_set(fg->graph, "threads", e->value, 0);
     }
 
     if ((ret = avfilter_graph_parse2(fg->graph, graph_desc, &inputs, &outputs)) < 0)

@@ -193,7 +193,7 @@ static void qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
                     filled = 0;
                     dst -= stride;
                     height--;
-                    if(height < 0)
+                    if (height < 0)
                         break;
                 }
             }
@@ -209,7 +209,7 @@ static void qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
                     filled = 0;
                     dst -= stride;
                     height--;
-                    if(height < 0)
+                    if (height < 0)
                         break;
                 }
             }
@@ -340,6 +340,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
 AVCodec ff_qpeg_decoder = {
     .name           = "qpeg",
+    .long_name      = NULL_IF_CONFIG_SMALL("Q-team QPEG"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_QPEG,
     .priv_data_size = sizeof(QpegContext),
@@ -348,5 +349,4 @@ AVCodec ff_qpeg_decoder = {
     .decode         = decode_frame,
     .flush          = decode_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Q-team QPEG"),
 };

@@ -1,3 +1,8 @@
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, ADELAY, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-adelay
+fate-filter-adelay: tests/data/asynth-44100-2.wav
+fate-filter-adelay: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-adelay: CMD = framecrc -i $(SRC) -af adelay=42
+
 FATE_AMIX += fate-filter-amix-simple
 fate-filter-amix-simple: CMD = ffmpeg -filter_complex amix -i $(SRC) -ss 3 -i $(SRC1) -f f32le -
 fate-filter-amix-simple: REF = $(SAMPLES)/filter/amix_simple.pcm
