@@ -24,7 +24,8 @@
 #include "libavcodec/put_bits.h"
 #include "libavutil/lfg.h"
 
-static int score_array[1000]; //this must be larger than the number of formats
+#define MAX_FORMATS 1000 //this must be larger than the number of formats
+static int score_array[MAX_FORMATS];
 static int failures = 0;
 
 static void probe(AVProbeData *pd, int type, int p, int size)
