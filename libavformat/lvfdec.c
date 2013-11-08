@@ -25,9 +25,13 @@
 
 static int lvf_probe(AVProbeData *p)
 {
-    if (AV_RL32(p->buf) == MKTAG('L', 'V', 'F', 'F'))
-        return AVPROBE_SCORE_EXTENSION;
-    return 0;
+    if (AV_RL32(p->buf) != MKTAG('L', 'V', 'F', 'F'))
+        return 0;
+
+    if (!AV_RL32(p->buf + 16) || AV_RL32(p->buf + 16) > 256)
+        return 0;
+
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int lvf_read_header(AVFormatContext *s)
