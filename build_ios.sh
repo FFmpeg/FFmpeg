@@ -56,6 +56,8 @@ function doConfigureSina()
 		--enable-network \
 		\
 		--disable-everything \
+		--disable-muxers \
+		--enable-muxer=mp4 \
 		--enable-filters \
 		--enable-parsers \
 		--enable-protocol=file \
@@ -182,11 +184,12 @@ function doMake()
 
 
 build_date=`date "+%Y%m%dT%H%M%S"`
-build_versions="release debug sina"
+#build_versions="release debug sina"
+build_versions="release sina"
 build_archs="armv7 armv7s i386"
-#build_versions="sina"
+#build_versions="release"
 #build_date=built
-#build_archs="armv7 armv7s i386"
+#build_archs="armv7"
 path_old=$PATH
 
 for iver in $build_versions; do
@@ -197,8 +200,7 @@ for iver in $build_versions; do
 
 	lipo_archs=
 	for iarch in $build_archs; do
-		[[ $iver == "debug" && $iarch != "armv7" ]] && continue
-		[[ $iver == "sina" && $iarch == "i386" ]] && continue
+		[[ $iver == "debug" && $iarch == "armv7s" ]] && continue
 		export ARCH=$iarch
 		export DIST=${DEST}/$build_date/$iver/$iarch && mkdir -p ${DIST}
 		libdir=${DIST}/lib && mkdir -p $libdir
@@ -243,9 +245,7 @@ for iver in $build_versions; do
 	export PATH=${DEVRootReal}/usr/bin:$path_old
 	univs=${DEST}/$build_date/$iver/universal
 	univslib=$univs/lib && mkdir -p $univslib
-	lipo $lipo_archs -create -output $univslib/libffmpeg_tmp.a
-	#libtool -static -o $univslib/libffmpeg.a -L$univslib -L$RTMPLIBS -lffmpeg_tmp -lrtmp
-	libtool -static -o $univslib/libffmpeg.a -L$univslib -lffmpeg_tmp
+	lipo $lipo_archs -create -output $univslib/libffmpeg.a
 	ranlib $univslib/libffmpeg.a
 	[[ $iver != "debug" ]] && strip -S $univslib/libffmpeg.a
 done
