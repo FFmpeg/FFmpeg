@@ -12,6 +12,7 @@ OBJS-$(CONFIG_ENCODERS)                += x86/dsputilenc_mmx.o          \
                                           x86/fdct.o                    \
                                           x86/motion_est.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
+OBJS-$(CONFIG_H263DSP)                 += x86/h263dsp_init.o
 OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
 OBJS-$(CONFIG_H264DSP)                 += x86/h264dsp_init.o
 OBJS-$(CONFIG_H264PRED)                += x86/h264_intrapred_init.o
@@ -68,8 +69,7 @@ YASM-OBJS-$(CONFIG_DSPUTIL)            += x86/dsputil.o                 \
                                           x86/qpel.o
 YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
-YASM-OBJS-$(CONFIG_H263_DECODER)       += x86/h263_loopfilter.o
-YASM-OBJS-$(CONFIG_H263_ENCODER)       += x86/h263_loopfilter.o
+YASM-OBJS-$(CONFIG_H263DSP)            += x86/h263_loopfilter.o
 YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264_chromamc.o           \
                                           x86/h264_chromamc_10bit.o
 YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \

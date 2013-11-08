@@ -205,9 +205,6 @@ typedef struct DSPContext {
     void (*bswap_buf)(uint32_t *dst, const uint32_t *src, int w);
     void (*bswap16_buf)(uint16_t *dst, const uint16_t *src, int len);
 
-    void (*h263_v_loop_filter)(uint8_t *src, int stride, int qscale);
-    void (*h263_h_loop_filter)(uint8_t *src, int stride, int qscale);
-
     /* assume len is a multiple of 8, and arrays are 16-byte aligned */
     void (*vector_clipf)(float *dst /* align 16 */, const float *src /* align 16 */, float min, float max, int len /* align 16 */);
 

@@ -33,6 +33,7 @@
 #include "error_resilience.h"
 #include "get_bits.h"
 #include "h264chroma.h"
+#include "h263dsp.h"
 #include "hpeldsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
@@ -396,6 +397,7 @@ typedef struct MpegEncContext {
     H264ChromaContext h264chroma;
     HpelDSPContext hdsp;
     VideoDSPContext vdsp;
+    H263DSPContext h263dsp;
     int f_code;                 ///< forward MV resolution
     int b_code;                 ///< backward MV resolution for B Frames (mpeg4)
     int16_t (*p_mv_table_base)[2];
@@ -924,7 +926,6 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s);
 
 extern const uint8_t ff_aic_dc_scale_table[32];
 extern const uint8_t ff_h263_chroma_qscale_table[32];
-extern const uint8_t ff_h263_loop_filter_strength[32];
 
 /* rv10.c */
 void ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);

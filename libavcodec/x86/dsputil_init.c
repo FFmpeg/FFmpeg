@@ -71,9 +71,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 #define ff_put_no_rnd_pixels16_mmxext ff_put_pixels16_mmxext
 #define ff_put_no_rnd_pixels8_mmxext ff_put_pixels8_mmxext
 
-void ff_h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale);
-void ff_h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale);
-
 int32_t ff_scalarproduct_int16_mmxext(const int16_t *v1, const int16_t *v2,
                                       int order);
 int32_t ff_scalarproduct_int16_sse2(const int16_t *v1, const int16_t *v2,
@@ -556,11 +553,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_MMX_INLINE */
 
 #if HAVE_MMX_EXTERNAL
-    if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
-        c->h263_v_loop_filter = ff_h263_v_loop_filter_mmx;
-        c->h263_h_loop_filter = ff_h263_h_loop_filter_mmx;
-    }
-
     c->vector_clip_int32 = ff_vector_clip_int32_mmx;
 #endif /* HAVE_MMX_EXTERNAL */
 }

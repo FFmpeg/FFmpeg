@@ -124,6 +124,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         if ((ret = ff_MPV_common_init(s)) < 0)
             return ret;
 
+    ff_h263dsp_init(&s->h263dsp);
     ff_h263_decode_init_vlc();
 
     return 0;
