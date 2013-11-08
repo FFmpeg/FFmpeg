@@ -819,8 +819,12 @@ static void do_video_out(AVFormatContext *s,
     nb_frames = 1;
 
     format_video_sync = video_sync_method;
-    if (format_video_sync == VSYNC_AUTO)
-        format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? ((s->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH : VSYNC_VFR) : VSYNC_CFR;
+    if (format_video_sync == VSYNC_AUTO) {
+        if(!strcmp(s->oformat->name, "avi")) {
+            format_video_sync = VSYNC_VFR;
+        } else
+            format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? ((s->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH : VSYNC_VFR) : VSYNC_CFR;
+    }
 
     switch (format_video_sync) {
     case VSYNC_CFR:
