@@ -38,7 +38,7 @@
  * Decoder context
  */
 typedef struct DxaDecContext {
-    AVFrame prev;
+    AVFrame *prev;
 
     int dsize;
     uint8_t *decomp_buf;
@@ -226,7 +226,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
     outptr = frame->data[0];
     srcptr = c->decomp_buf;
-    tmpptr = c->prev.data[0];
+    tmpptr = c->prev->data[0];
     stride = frame->linesize[0];
 
     if(buf[0]=='N' && buf[1]=='U' && buf[2]=='L' && buf[3]=='L')
@@ -243,8 +243,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     case -1:
         frame->key_frame = 0;
         frame->pict_type = AV_PICTURE_TYPE_P;
-        if(c->prev.data[0])
-            memcpy(frame->data[0], c->prev.data[0], frame->linesize[0] * avctx->height);
+        if (c->prev->data[0])
+            memcpy(frame->data[0], c->prev->data[0], frame->linesize[0] * avctx->height);
         else{ // Should happen only when first frame is 'NULL'
             memset(frame->data[0], 0, frame->linesize[0] * avctx->height);
             frame->key_frame = 1;
@@ -281,15 +281,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     case 13:
         frame->key_frame = 0;
         frame->pict_type = AV_PICTURE_TYPE_P;
-        decode_13(avctx, c, frame->data[0], frame->linesize[0], srcptr, c->prev.data[0]);
+        decode_13(avctx, c, frame->data[0], frame->linesize[0], srcptr, c->prev->data[0]);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown/unsupported compression type %d\n", buf[4]);
         return AVERROR_INVALIDDATA;
     }
 
-    av_frame_unref(&c->prev);
-    if ((ret = av_frame_ref(&c->prev, frame)) < 0)
+    av_frame_unref(c->prev);
+    if ((ret = av_frame_ref(c->prev, frame)) < 0)
         return ret;
 
     *got_frame = 1;
@@ -301,6 +301,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     DxaDecContext * const c = avctx->priv_data;
+
+    c->prev = av_frame_alloc();
+    if (!c->prev)
+        return AVERROR(ENOMEM);
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
@@ -318,7 +322,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     DxaDecContext * const c = avctx->priv_data;
 
     av_freep(&c->decomp_buf);
-    av_frame_unref(&c->prev);
+    av_frame_free(&c->prev);
 
     return 0;
 }
