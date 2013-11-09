@@ -754,6 +754,9 @@ typedef struct MpegEncContext {
     ERContext er;
 
     int error_rate;
+
+    /* temporary frames used by b_frame_strategy = 2 */
+    AVFrame *tmp_frames[MAX_B_FRAMES + 2];
 } MpegEncContext;
 
 #define REBASE_PICTURE(pic, new_ctx, old_ctx)             \
