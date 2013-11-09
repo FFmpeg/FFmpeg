@@ -50,7 +50,6 @@ static const uint8_t type_sizes2[6] = {
 typedef struct TiffEncoderContext {
     AVClass *class;                         ///< for private options
     AVCodecContext *avctx;
-    AVFrame picture;
 
     int width;                              ///< picture width
     int height;                             ///< picture height
@@ -184,9 +183,9 @@ static int encode_strip(TiffEncoderContext *s, const int8_t *src,
     }
 }
 
-static void pack_yuv(TiffEncoderContext *s, uint8_t *dst, int lnum)
+static void pack_yuv(TiffEncoderContext *s, const AVFrame *p,
+                     uint8_t *dst, int lnum)
 {
-    AVFrame *p = &s->picture;
     int i, j, k;
     int w       = (s->width - 1) / s->subsampling[0] + 1;
     uint8_t *pu = &p->data[1][lnum / s->subsampling[1] * p->linesize[1]];
@@ -205,7 +204,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     TiffEncoderContext *s = avctx->priv_data;
-    AVFrame *const p = &s->picture;
+    const AVFrame *const p = pict;
     int i;
     uint8_t *ptr;
     uint8_t *offset;
@@ -222,11 +221,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const AVPixFmtDescriptor *pfd;
 
     s->avctx = avctx;
-
-    *p                 = *pict;
-    p->pict_type       = AV_PICTURE_TYPE_I;
-    p->key_frame       = 1;
-    avctx->coded_frame = &s->picture;
 
     s->width          = avctx->width;
     s->height         = avctx->height;
@@ -349,7 +343,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         zn               = 0;
         for (j = 0; j < s->rps; j++) {
             if (is_yuv) {
-                pack_yuv(s, yuv_line, j);
+                pack_yuv(s, p, yuv_line, j);
                 memcpy(zbuf + zn, yuv_line, bytes_per_row);
                 j += s->subsampling[1] - 1;
             } else
@@ -384,7 +378,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             strip_offsets[i / s->rps] = ptr - pkt->data;
         }
         if (is_yuv) {
-            pack_yuv(s, yuv_line, i);
+            pack_yuv(s, p, yuv_line, i);
             ret = encode_strip(s, yuv_line, ptr, bytes_per_row, s->compr);
             i  += s->subsampling[1] - 1;
         } else
@@ -470,6 +464,24 @@ fail:
     return ret;
 }
 
+static av_cold int encode_init(AVCodecContext *avctx)
+{
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
+
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+    avctx->coded_frame->key_frame = 1;
+
+    return 0;
+}
+
+static av_cold int encode_close(AVCodecContext *avctx)
+{
+    av_frame_free(&avctx->coded_frame);
+    return 0;
+}
+
 #define OFFSET(x) offsetof(TiffEncoderContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -496,6 +508,8 @@ AVCodec ff_tiff_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TIFF,
     .priv_data_size = sizeof(TiffEncoderContext),
+    .init           = encode_init,
+    .close          = encode_close,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48LE, AV_PIX_FMT_PAL8,
