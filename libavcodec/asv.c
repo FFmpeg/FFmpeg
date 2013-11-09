@@ -89,6 +89,5 @@ av_cold void ff_asv_common_init(AVCodecContext *avctx) {
     a->mb_width2  = (avctx->width  + 0) / 16;
     a->mb_height2 = (avctx->height + 0) / 16;
 
-    avctx->coded_frame= &a->picture;
     a->avctx= avctx;
 }
