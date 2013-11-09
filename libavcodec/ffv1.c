@@ -141,8 +141,6 @@ av_cold int ffv1_common_init(AVCodecContext *avctx)
     if (!avctx->width || !avctx->height)
         return AVERROR_INVALIDDATA;
 
-    avcodec_get_frame_defaults(&s->picture);
-
     ff_dsputil_init(&s->dsp, avctx);
 
     s->width  = avctx->width;
@@ -270,8 +268,6 @@ av_cold int ffv1_close(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
     int i, j;
-
-    av_frame_unref(&s->last_picture);
 
     for (j = 0; j < s->slice_count; j++) {
         FFV1Context *fs = s->slice_context[j];
