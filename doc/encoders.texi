@@ -748,7 +748,7 @@ about 80-96 kbps/channel
 Default value is 0.
 @end table
 
-@section Examples
+@subsection Examples
 
 @itemize
 @item
