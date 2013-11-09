@@ -44,7 +44,7 @@
 
 typedef struct TrueMotion1Context {
     AVCodecContext *avctx;
-    AVFrame frame;
+    AVFrame *frame;
 
     const uint8_t *buf;
     int size;
@@ -400,7 +400,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
 
     if (s->w != s->avctx->width || s->h != s->avctx->height ||
         new_pix_fmt != s->avctx->pix_fmt) {
-        av_frame_unref(&s->frame);
+        av_frame_unref(s->frame);
         s->avctx->sample_aspect_ratio = (AVRational){ 1 << width_shift, 1 };
         s->avctx->pix_fmt = new_pix_fmt;
 
@@ -469,7 +469,9 @@ static av_cold int truemotion1_decode_init(AVCodecContext *avctx)
 //    else
 //        avctx->pix_fmt = AV_PIX_FMT_RGB555;
 
-    avcodec_get_frame_defaults(&s->frame);
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
 
     /* there is a vertical predictor for each pixel in a line; each vertical
      * predictor is 0 to start with */
@@ -594,7 +596,7 @@ static void truemotion1_decode_16bit(TrueMotion1Context *s)
     unsigned int horiz_pred;
     unsigned int *vert_pred;
     unsigned int *current_pixel_pair;
-    unsigned char *current_line = s->frame.data[0];
+    unsigned char *current_line = s->frame->data[0];
     int keyframe = s->flags & FLAG_KEYFRAME;
 
     /* these variables are for managing the stream of macroblock change bits */
@@ -708,7 +710,7 @@ static void truemotion1_decode_16bit(TrueMotion1Context *s)
         if (((y + 1) & 3) == 0)
             mb_change_bits += s->mb_change_bits_row_size;
 
-        current_line += s->frame.linesize[0];
+        current_line += s->frame->linesize[0];
     }
 }
 
@@ -720,7 +722,7 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
     unsigned int horiz_pred;
     unsigned int *vert_pred;
     unsigned int *current_pixel_pair;
-    unsigned char *current_line = s->frame.data[0];
+    unsigned char *current_line = s->frame->data[0];
     int keyframe = s->flags & FLAG_KEYFRAME;
 
     /* these variables are for managing the stream of macroblock change bits */
@@ -834,7 +836,7 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
         if (((y + 1) & 3) == 0)
             mb_change_bits += s->mb_change_bits_row_size;
 
-        current_line += s->frame.linesize[0];
+        current_line += s->frame->linesize[0];
     }
 }
 
@@ -853,7 +855,7 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
     if ((ret = truemotion1_decode_header(s)) < 0)
         return ret;
 
-    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -864,7 +866,7 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
         truemotion1_decode_16bit(s);
     }
 
-    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
         return ret;
 
     *got_frame      = 1;
@@ -877,7 +879,7 @@ static av_cold int truemotion1_decode_end(AVCodecContext *avctx)
 {
     TrueMotion1Context *s = avctx->priv_data;
 
-    av_frame_unref(&s->frame);
+    av_frame_free(&s->frame);
     av_free(s->vert_pred);
 
     return 0;
