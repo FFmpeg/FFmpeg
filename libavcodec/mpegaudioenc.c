@@ -35,6 +35,8 @@
 
 #include "mpegaudio.h"
 #include "mpegaudiodsp.h"
+#include "mpegaudiodata.h"
+#include "mpegaudiotab.h"
 
 /* currently, cannot change these constants (need to modify
    quantization stage) */
@@ -60,12 +62,6 @@ typedef struct MpegAudioContext {
     int sblimit; /* number of used subbands */
     const unsigned char *alloc_table;
 } MpegAudioContext;
-
-/* define it to use floats in quantization (I don't like floats !) */
-#define USE_FLOATS
-
-#include "mpegaudiodata.h"
-#include "mpegaudiotab.h"
 
 static av_cold int MPA_encode_init(AVCodecContext *avctx)
 {
@@ -152,13 +148,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
         if (v <= 0)
             v = 1;
         scale_factor_table[i] = v;
-#ifdef USE_FLOATS
         scale_factor_inv_table[i] = pow(2.0, -(3 - i) / 3.0) / (float)(1 << 20);
-#else
-#define P 15
-        scale_factor_shift[i] = 21 - P - (i / 3);
-        scale_factor_mult[i] = (1 << P) * pow(2.0, (i % 3) / 3.0);
-#endif
     }
     for(i=0;i<128;i++) {
         v = i - 64;
@@ -672,30 +662,11 @@ static void encode_frame(MpegAudioContext *s,
                         qindex = s->alloc_table[j+b];
                         steps = ff_mpa_quant_steps[qindex];
                         for(m=0;m<3;m++) {
+                            float a;
                             sample = s->sb_samples[ch][k][l + m][i];
                             /* divide by scale factor */
-#ifdef USE_FLOATS
-                            {
-                                float a;
-                                a = (float)sample * scale_factor_inv_table[s->scale_factors[ch][i][k]];
-                                q[m] = (int)((a + 1.0) * steps * 0.5);
-                            }
-#else
-                            {
-                                int q1, e, shift, mult;
-                                e = s->scale_factors[ch][i][k];
-                                shift = scale_factor_shift[e];
-                                mult = scale_factor_mult[e];
-
-                                /* normalize to P bits */
-                                if (shift < 0)
-                                    q1 = sample << (-shift);
-                                else
-                                    q1 = sample >> shift;
-                                q1 = (q1 * mult) >> P;
-                                q[m] = ((q1 + (1 << P)) * steps) >> (P + 1);
-                            }
-#endif
+                            a = (float)sample * scale_factor_inv_table[s->scale_factors[ch][i][k]];
+                            q[m] = (int)((a + 1.0) * steps * 0.5);
                             if (q[m] >= steps)
                                 q[m] = steps - 1;
                             assert(q[m] >= 0 && q[m] < steps);
