@@ -585,6 +585,7 @@ static int dv_probe(AVProbeData *p)
     unsigned state, marker_pos = 0;
     int i;
     int matches           = 0;
+    int firstmatch        = 0;
     int secondary_matches = 0;
 
     if (p->buf_size < 5)
@@ -597,8 +598,11 @@ static int dv_probe(AVProbeData *p)
             // should appear around every 12000 bytes, at least 10 per frame
             if ((state & 0xff07ff7f) == 0x1f07003f) {
                 secondary_matches++;
-                if ((state & 0xffffff7f) == 0x1f07003f)
+                if ((state & 0xffffff7f) == 0x1f07003f) {
                     matches++;
+                    if (!i)
+                        firstmatch = 1;
+                }
             }
             if (state == 0x003f0700 || state == 0xff3f0700)
                 marker_pos = i;
@@ -608,7 +612,7 @@ static int dv_probe(AVProbeData *p)
     }
 
     if (matches && p->buf_size / matches < 1024 * 1024) {
-        if (matches > 4 ||
+        if (matches > 4 || firstmatch ||
             (secondary_matches >= 10 &&
              p->buf_size / secondary_matches < 24000))
             // not max to avoid dv in mov to match
