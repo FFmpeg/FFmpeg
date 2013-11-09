@@ -52,7 +52,7 @@
 typedef struct XanContext {
 
     AVCodecContext *avctx;
-    AVFrame last_frame;
+    AVFrame *last_frame;
 
     const unsigned char *buf;
     int size;
@@ -71,6 +71,19 @@ typedef struct XanContext {
 
 } XanContext;
 
+static av_cold int xan_decode_end(AVCodecContext *avctx)
+{
+    XanContext *s = avctx->priv_data;
+
+    av_frame_free(&s->last_frame);
+
+    av_freep(&s->buffer1);
+    av_freep(&s->buffer2);
+    av_freep(&s->palettes);
+
+    return 0;
+}
+
 static av_cold int xan_decode_init(AVCodecContext *avctx)
 {
     XanContext *s = avctx->priv_data;
@@ -88,6 +101,12 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
     s->buffer2 = av_malloc(s->buffer2_size + 130);
     if (!s->buffer2) {
         av_freep(&s->buffer1);
+        return AVERROR(ENOMEM);
+    }
+
+    s->last_frame = av_frame_alloc();
+    if (!s->last_frame) {
+        xan_decode_end(avctx);
         return AVERROR(ENOMEM);
     }
 
@@ -234,7 +253,7 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s, AVFrame *frame,
         return;
 
     palette_plane = frame->data[0];
-    prev_palette_plane = s->last_frame.data[0];
+    prev_palette_plane = s->last_frame->data[0];
     if (!prev_palette_plane)
         prev_palette_plane = palette_plane;
     stride = frame->linesize[0];
@@ -582,27 +601,14 @@ static int xan_decode_frame(AVCodecContext *avctx,
     if (xan_wc3_decode_frame(s, frame) < 0)
         return AVERROR_INVALIDDATA;
 
-    av_frame_unref(&s->last_frame);
-    if ((ret = av_frame_ref(&s->last_frame, frame)) < 0)
+    av_frame_unref(s->last_frame);
+    if ((ret = av_frame_ref(s->last_frame, frame)) < 0)
         return ret;
 
     *got_frame = 1;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
-}
-
-static av_cold int xan_decode_end(AVCodecContext *avctx)
-{
-    XanContext *s = avctx->priv_data;
-
-    av_frame_unref(&s->last_frame);
-
-    av_freep(&s->buffer1);
-    av_freep(&s->buffer2);
-    av_freep(&s->palettes);
-
-    return 0;
 }
 
 AVCodec ff_xan_wc3_decoder = {
