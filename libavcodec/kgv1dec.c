@@ -32,14 +32,14 @@
 
 typedef struct {
     AVCodecContext *avctx;
-    AVFrame prev;
+    AVFrame *prev;
 } KgvContext;
 
 static void decode_flush(AVCodecContext *avctx)
 {
     KgvContext * const c = avctx->priv_data;
 
-    av_frame_unref(&c->prev);
+    av_frame_free(&c->prev);
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
@@ -62,7 +62,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     buf += 2;
 
     if (w != avctx->width || h != avctx->height) {
-        av_frame_unref(&c->prev);
+        av_frame_unref(c->prev);
         if ((res = ff_set_dimensions(avctx, w, h)) < 0)
             return res;
     }
@@ -72,8 +72,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if ((res = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return res;
     out  = (uint16_t *) frame->data[0];
-    if (c->prev.data[0]) {
-        prev = (uint16_t *) c->prev.data[0];
+    if (c->prev->data[0]) {
+        prev = (uint16_t *) c->prev->data[0];
     } else {
         prev = NULL;
     }
@@ -152,8 +152,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (outcnt - maxcnt)
         av_log(avctx, AV_LOG_DEBUG, "frame finished with %d diff\n", outcnt - maxcnt);
 
-    av_frame_unref(&c->prev);
-    if ((res = av_frame_ref(&c->prev, frame)) < 0)
+    av_frame_unref(c->prev);
+    if ((res = av_frame_ref(c->prev, frame)) < 0)
         return res;
 
     *got_frame = 1;
@@ -164,6 +164,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     KgvContext * const c = avctx->priv_data;
+
+    c->prev = av_frame_alloc();
+    if (!c->prev)
+        return AVERROR(ENOMEM);
 
     c->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_RGB555;
