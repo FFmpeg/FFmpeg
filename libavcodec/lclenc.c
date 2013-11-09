@@ -54,7 +54,6 @@
 typedef struct LclEncContext {
 
     AVCodecContext *avctx;
-    AVFrame pic;
 
     // Image type
     int imgtype;
@@ -74,7 +73,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     LclEncContext *c = avctx->priv_data;
-    AVFrame * const p = &c->pic;
+    const AVFrame * const p = pict;
     int i, ret;
     int zret; // Zlib return code
     int max_size = deflateBound(&c->zstream, avctx->width * avctx->height * 3);
@@ -84,10 +83,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             av_log(avctx, AV_LOG_ERROR, "Error allocating packet of size %d.\n", max_size);
             return ret;
     }
-
-    *p = *pict;
-    p->pict_type= AV_PICTURE_TYPE_I;
-    p->key_frame= 1;
 
     if(avctx->pix_fmt != AV_PIX_FMT_BGR24){
         av_log(avctx, AV_LOG_ERROR, "Format not supported!\n");
@@ -139,7 +134,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
     assert(avctx->width && avctx->height);
 
     avctx->extradata= av_mallocz(8);
-    avctx->coded_frame= &c->pic;
+
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
+
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+    avctx->coded_frame->key_frame = 1;
 
     // Will be user settable someday
     c->compression = 6;
@@ -180,6 +181,8 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     deflateEnd(&c->zstream);
+
+    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }
