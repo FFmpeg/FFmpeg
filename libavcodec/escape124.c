@@ -42,7 +42,7 @@ typedef struct CodeBook {
 } CodeBook;
 
 typedef struct Escape124Context {
-    AVFrame frame;
+    AVFrame *frame;
 
     unsigned num_superblocks;
 
@@ -67,6 +67,10 @@ static av_cold int escape124_decode_init(AVCodecContext *avctx)
     s->num_superblocks = ((unsigned)avctx->width / 8) *
                          ((unsigned)avctx->height / 8);
 
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -78,7 +82,7 @@ static av_cold int escape124_decode_close(AVCodecContext *avctx)
     for (i = 0; i < 3; i++)
         av_free(s->codebooks[i].blocks);
 
-    av_frame_unref(&s->frame);
+    av_frame_free(&s->frame);
 
     return 0;
 }
@@ -229,13 +233,13 @@ static int escape124_decode_frame(AVCodecContext *avctx,
     // Leave last frame unchanged
     // FIXME: Is this necessary?  I haven't seen it in any real samples
     if (!(frame_flags & 0x114) || !(frame_flags & 0x7800000)) {
-        if (!s->frame.data[0])
+        if (!s->frame->data[0])
             return AVERROR_INVALIDDATA;
 
         av_log(NULL, AV_LOG_DEBUG, "Skipping frame\n");
 
         *got_frame = 1;
-        if ((ret = av_frame_ref(frame, &s->frame)) < 0)
+        if ((ret = av_frame_ref(frame, s->frame)) < 0)
             return ret;
 
         return frame_size;
@@ -276,8 +280,8 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
     new_frame_data = (uint16_t*)frame->data[0];
     new_stride = frame->linesize[0] / 2;
-    old_frame_data = (uint16_t*)s->frame.data[0];
-    old_stride = s->frame.linesize[0] / 2;
+    old_frame_data = (uint16_t*)s->frame->data[0];
+    old_stride = s->frame->linesize[0] / 2;
 
     for (superblock_index = 0; superblock_index < s->num_superblocks;
          superblock_index++) {
@@ -356,8 +360,8 @@ static int escape124_decode_frame(AVCodecContext *avctx,
            "Escape sizes: %i, %i, %i\n",
            frame_size, buf_size, get_bits_count(&gb) / 8);
 
-    av_frame_unref(&s->frame);
-    if ((ret = av_frame_ref(&s->frame, frame)) < 0)
+    av_frame_unref(s->frame);
+    if ((ret = av_frame_ref(s->frame, frame)) < 0)
         return ret;
 
     *got_frame = 1;
