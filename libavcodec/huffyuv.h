@@ -78,7 +78,6 @@ typedef struct HYuvContext {
     uint32_t bits[3][256];
     uint32_t pix_bgr_map[1<<VLC_BITS];
     VLC vlc[6];                             //Y,U,V,YY,YU,YV
-    AVFrame picture;
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     DSPContext dsp;
