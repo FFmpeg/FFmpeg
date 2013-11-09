@@ -58,7 +58,7 @@ typedef struct {
 typedef struct CinepakContext {
 
     AVCodecContext *avctx;
-    AVFrame frame;
+    AVFrame *frame;
 
     const unsigned char *data;
     int size;
@@ -138,14 +138,14 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
 
     for (y=strip->y1; y < strip->y2; y+=4) {
 
-        iy[0] = strip->x1 + (y * s->frame.linesize[0]);
-        iy[1] = iy[0] + s->frame.linesize[0];
-        iy[2] = iy[1] + s->frame.linesize[0];
-        iy[3] = iy[2] + s->frame.linesize[0];
-        iu[0] = (strip->x1/2) + ((y/2) * s->frame.linesize[1]);
-        iu[1] = iu[0] + s->frame.linesize[1];
-        iv[0] = (strip->x1/2) + ((y/2) * s->frame.linesize[2]);
-        iv[1] = iv[0] + s->frame.linesize[2];
+        iy[0] = strip->x1 + (y * s->frame->linesize[0]);
+        iy[1] = iy[0] + s->frame->linesize[0];
+        iy[2] = iy[1] + s->frame->linesize[0];
+        iy[3] = iy[2] + s->frame->linesize[0];
+        iu[0] = (strip->x1/2) + ((y/2) * s->frame->linesize[1]);
+        iu[1] = iu[0] + s->frame->linesize[1];
+        iv[0] = (strip->x1/2) + ((y/2) * s->frame->linesize[2]);
+        iv[1] = iv[0] + s->frame->linesize[2];
 
         for (x=strip->x1; x < strip->x2; x+=4) {
             if ((chunk_id & 0x01) && !(mask >>= 1)) {
@@ -172,40 +172,40 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                         return AVERROR_INVALIDDATA;
 
                     codebook = &strip->v1_codebook[*data++];
-                    s->frame.data[0][iy[0] + 0] = codebook->y0;
-                    s->frame.data[0][iy[0] + 1] = codebook->y0;
-                    s->frame.data[0][iy[1] + 0] = codebook->y0;
-                    s->frame.data[0][iy[1] + 1] = codebook->y0;
+                    s->frame->data[0][iy[0] + 0] = codebook->y0;
+                    s->frame->data[0][iy[0] + 1] = codebook->y0;
+                    s->frame->data[0][iy[1] + 0] = codebook->y0;
+                    s->frame->data[0][iy[1] + 1] = codebook->y0;
                     if (!s->palette_video) {
-                        s->frame.data[1][iu[0]] = codebook->u;
-                        s->frame.data[2][iv[0]] = codebook->v;
+                        s->frame->data[1][iu[0]] = codebook->u;
+                        s->frame->data[2][iv[0]] = codebook->v;
                     }
 
-                    s->frame.data[0][iy[0] + 2] = codebook->y1;
-                    s->frame.data[0][iy[0] + 3] = codebook->y1;
-                    s->frame.data[0][iy[1] + 2] = codebook->y1;
-                    s->frame.data[0][iy[1] + 3] = codebook->y1;
+                    s->frame->data[0][iy[0] + 2] = codebook->y1;
+                    s->frame->data[0][iy[0] + 3] = codebook->y1;
+                    s->frame->data[0][iy[1] + 2] = codebook->y1;
+                    s->frame->data[0][iy[1] + 3] = codebook->y1;
                     if (!s->palette_video) {
-                        s->frame.data[1][iu[0] + 1] = codebook->u;
-                        s->frame.data[2][iv[0] + 1] = codebook->v;
+                        s->frame->data[1][iu[0] + 1] = codebook->u;
+                        s->frame->data[2][iv[0] + 1] = codebook->v;
                     }
 
-                    s->frame.data[0][iy[2] + 0] = codebook->y2;
-                    s->frame.data[0][iy[2] + 1] = codebook->y2;
-                    s->frame.data[0][iy[3] + 0] = codebook->y2;
-                    s->frame.data[0][iy[3] + 1] = codebook->y2;
+                    s->frame->data[0][iy[2] + 0] = codebook->y2;
+                    s->frame->data[0][iy[2] + 1] = codebook->y2;
+                    s->frame->data[0][iy[3] + 0] = codebook->y2;
+                    s->frame->data[0][iy[3] + 1] = codebook->y2;
                     if (!s->palette_video) {
-                        s->frame.data[1][iu[1]] = codebook->u;
-                        s->frame.data[2][iv[1]] = codebook->v;
+                        s->frame->data[1][iu[1]] = codebook->u;
+                        s->frame->data[2][iv[1]] = codebook->v;
                     }
 
-                    s->frame.data[0][iy[2] + 2] = codebook->y3;
-                    s->frame.data[0][iy[2] + 3] = codebook->y3;
-                    s->frame.data[0][iy[3] + 2] = codebook->y3;
-                    s->frame.data[0][iy[3] + 3] = codebook->y3;
+                    s->frame->data[0][iy[2] + 2] = codebook->y3;
+                    s->frame->data[0][iy[2] + 3] = codebook->y3;
+                    s->frame->data[0][iy[3] + 2] = codebook->y3;
+                    s->frame->data[0][iy[3] + 3] = codebook->y3;
                     if (!s->palette_video) {
-                        s->frame.data[1][iu[1] + 1] = codebook->u;
-                        s->frame.data[2][iv[1] + 1] = codebook->v;
+                        s->frame->data[1][iu[1] + 1] = codebook->u;
+                        s->frame->data[2][iv[1] + 1] = codebook->v;
                     }
 
                 } else if (flag & mask) {
@@ -213,43 +213,43 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                         return AVERROR_INVALIDDATA;
 
                     codebook = &strip->v4_codebook[*data++];
-                    s->frame.data[0][iy[0] + 0] = codebook->y0;
-                    s->frame.data[0][iy[0] + 1] = codebook->y1;
-                    s->frame.data[0][iy[1] + 0] = codebook->y2;
-                    s->frame.data[0][iy[1] + 1] = codebook->y3;
+                    s->frame->data[0][iy[0] + 0] = codebook->y0;
+                    s->frame->data[0][iy[0] + 1] = codebook->y1;
+                    s->frame->data[0][iy[1] + 0] = codebook->y2;
+                    s->frame->data[0][iy[1] + 1] = codebook->y3;
                     if (!s->palette_video) {
-                        s->frame.data[1][iu[0]] = codebook->u;
-                        s->frame.data[2][iv[0]] = codebook->v;
+                        s->frame->data[1][iu[0]] = codebook->u;
+                        s->frame->data[2][iv[0]] = codebook->v;
                     }
 
                     codebook = &strip->v4_codebook[*data++];
-                    s->frame.data[0][iy[0] + 2] = codebook->y0;
-                    s->frame.data[0][iy[0] + 3] = codebook->y1;
-                    s->frame.data[0][iy[1] + 2] = codebook->y2;
-                    s->frame.data[0][iy[1] + 3] = codebook->y3;
+                    s->frame->data[0][iy[0] + 2] = codebook->y0;
+                    s->frame->data[0][iy[0] + 3] = codebook->y1;
+                    s->frame->data[0][iy[1] + 2] = codebook->y2;
+                    s->frame->data[0][iy[1] + 3] = codebook->y3;
                     if (!s->palette_video) {
-                        s->frame.data[1][iu[0] + 1] = codebook->u;
-                        s->frame.data[2][iv[0] + 1] = codebook->v;
+                        s->frame->data[1][iu[0] + 1] = codebook->u;
+                        s->frame->data[2][iv[0] + 1] = codebook->v;
                     }
 
                     codebook = &strip->v4_codebook[*data++];
-                    s->frame.data[0][iy[2] + 0] = codebook->y0;
-                    s->frame.data[0][iy[2] + 1] = codebook->y1;
-                    s->frame.data[0][iy[3] + 0] = codebook->y2;
-                    s->frame.data[0][iy[3] + 1] = codebook->y3;
+                    s->frame->data[0][iy[2] + 0] = codebook->y0;
+                    s->frame->data[0][iy[2] + 1] = codebook->y1;
+                    s->frame->data[0][iy[3] + 0] = codebook->y2;
+                    s->frame->data[0][iy[3] + 1] = codebook->y3;
                     if (!s->palette_video) {
-                        s->frame.data[1][iu[1]] = codebook->u;
-                        s->frame.data[2][iv[1]] = codebook->v;
+                        s->frame->data[1][iu[1]] = codebook->u;
+                        s->frame->data[2][iv[1]] = codebook->v;
                     }
 
                     codebook = &strip->v4_codebook[*data++];
-                    s->frame.data[0][iy[2] + 2] = codebook->y0;
-                    s->frame.data[0][iy[2] + 3] = codebook->y1;
-                    s->frame.data[0][iy[3] + 2] = codebook->y2;
-                    s->frame.data[0][iy[3] + 3] = codebook->y3;
+                    s->frame->data[0][iy[2] + 2] = codebook->y0;
+                    s->frame->data[0][iy[2] + 3] = codebook->y1;
+                    s->frame->data[0][iy[3] + 2] = codebook->y2;
+                    s->frame->data[0][iy[3] + 3] = codebook->y3;
                     if (!s->palette_video) {
-                        s->frame.data[1][iu[1] + 1] = codebook->u;
-                        s->frame.data[2][iv[1] + 1] = codebook->v;
+                        s->frame->data[1][iu[1] + 1] = codebook->u;
+                        s->frame->data[2][iv[1] + 1] = codebook->v;
                     }
 
                 }
@@ -414,7 +414,9 @@ static av_cold int cinepak_decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = AV_PIX_FMT_PAL8;
     }
 
-    avcodec_get_frame_defaults(&s->frame);
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -430,7 +432,7 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     s->data = buf;
     s->size = buf_size;
 
-    if ((ret = ff_reget_buffer(avctx, &s->frame))) {
+    if ((ret = ff_reget_buffer(avctx, s->frame))) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
@@ -438,7 +440,7 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     if (s->palette_video) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
         if (pal) {
-            s->frame.palette_has_changed = 1;
+            s->frame->palette_has_changed = 1;
             memcpy(s->pal, pal, AVPALETTE_SIZE);
         }
     }
@@ -446,9 +448,9 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     cinepak_decode(s);
 
     if (s->palette_video)
-        memcpy (s->frame.data[1], s->pal, AVPALETTE_SIZE);
+        memcpy (s->frame->data[1], s->pal, AVPALETTE_SIZE);
 
-    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
         return ret;
 
     *got_frame = 1;
@@ -461,7 +463,7 @@ static av_cold int cinepak_decode_end(AVCodecContext *avctx)
 {
     CinepakContext *s = avctx->priv_data;
 
-    av_frame_unref(&s->frame);
+    av_frame_free(&s->frame);
 
     return 0;
 }
