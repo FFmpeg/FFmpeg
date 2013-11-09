@@ -984,7 +984,10 @@ static void find_ref_mvs(VP9Context *s,
             if (mv->ref[0] != ref && mv->ref[0] >= 0) {
                 RETURN_SCALE_MV(mv->mv[0], s->signbias[mv->ref[0]] != s->signbias[ref]);
             }
-            if (mv->ref[1] != ref && mv->ref[1] >= 0) {
+            if (mv->ref[1] != ref && mv->ref[1] >= 0 &&
+                // BUG - libvpx has this condition regardless of whether
+                // we used the first ref MV and pre-scaling
+                AV_RN32A(&mv->mv[0]) != AV_RN32A(&mv->mv[1])) {
                 RETURN_SCALE_MV(mv->mv[1], s->signbias[mv->ref[1]] != s->signbias[ref]);
             }
         }
@@ -997,7 +1000,10 @@ static void find_ref_mvs(VP9Context *s,
         if (mv->ref[0] != ref && mv->ref[0] >= 0) {
             RETURN_SCALE_MV(mv->mv[0], s->signbias[mv->ref[0]] != s->signbias[ref]);
         }
-        if (mv->ref[1] != ref && mv->ref[1] >= 0) {
+        if (mv->ref[1] != ref && mv->ref[1] >= 0 &&
+            // BUG - libvpx has this condition regardless of whether
+            // we used the first ref MV and pre-scaling
+            AV_RN32A(&mv->mv[0]) != AV_RN32A(&mv->mv[1])) {
             RETURN_SCALE_MV(mv->mv[1], s->signbias[mv->ref[1]] != s->signbias[ref]);
         }
     }
