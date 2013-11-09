@@ -45,7 +45,7 @@
  */
 typedef struct FrapsContext {
     AVCodecContext *avctx;
-    AVFrame frame;
+    AVFrame *frame;
     uint8_t *tmpbuf;
     int tmpbuf_size;
     DSPContext dsp;
@@ -66,7 +66,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->avctx  = avctx;
     s->tmpbuf = NULL;
 
-    avcodec_get_frame_defaults(&s->frame);
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
 
     ff_dsputil_init(&s->dsp, avctx);
 
@@ -136,7 +138,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf     = avpkt->data;
     int buf_size           = avpkt->size;
     AVFrame *frame         = data;
-    AVFrame * const f      = &s->frame;
+    AVFrame * const f      = s->frame;
     uint32_t header;
     unsigned int version,header_size;
     unsigned int x, y;
@@ -361,7 +363,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     FrapsContext *s = (FrapsContext*)avctx->priv_data;
 
-    av_frame_unref(&s->frame);
+    av_frame_free(&s->frame);
 
     av_freep(&s->tmpbuf);
     return 0;
