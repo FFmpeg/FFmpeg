@@ -399,6 +399,11 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
                 av_log(logctx, AV_LOG_WARNING, "Format %s detected only with low score of %d, misdetection possible!\n", (*fmt)->name, score);
             }else
                 av_log(logctx, AV_LOG_DEBUG, "Format %s probed with size=%d and score=%d\n", (*fmt)->name, probe_size, score);
+#if 0
+            FILE *f = fopen("probestat.tmp", "ab");
+            fprintf(f, "probe_size:%d format:%s score:%d filename:%s\n", probe_size, (*fmt)->name, score, filename);
+            fclose(f);
+#endif
         }
     }
 
