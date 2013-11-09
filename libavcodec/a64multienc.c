@@ -165,6 +165,7 @@ static void render_charset(AVCodecContext *avctx, uint8_t *charset,
 static av_cold int a64multi_close_encoder(AVCodecContext *avctx)
 {
     A64Context *c = avctx->priv_data;
+    av_frame_free(&avctx->coded_frame);
     av_free(c->mc_meta_charset);
     av_free(c->mc_best_cb);
     av_free(c->mc_charset);
@@ -216,8 +217,12 @@ static av_cold int a64multi_init_encoder(AVCodecContext *avctx)
     AV_WB32(avctx->extradata, c->mc_lifetime);
     AV_WB32(avctx->extradata + 16, INTERLACED);
 
-    avcodec_get_frame_defaults(&c->picture);
-    avctx->coded_frame            = &c->picture;
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame) {
+        a64multi_close_encoder(avctx);
+        return AVERROR(ENOMEM);
+    }
+
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
     if (!avctx->codec_tag)
@@ -247,7 +252,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                  const AVFrame *pict, int *got_packet)
 {
     A64Context *c = avctx->priv_data;
-    AVFrame *const p = &c->picture;
+    AVFrame *const p = avctx->coded_frame;
 
     int frame;
     int x, y;

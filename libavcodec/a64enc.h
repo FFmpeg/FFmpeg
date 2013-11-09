@@ -34,9 +34,6 @@
 #define C64YRES 200
 
 typedef struct A64Context {
-    /* general variables */
-    AVFrame picture;
-
     /* variables for multicolor modes */
     AVLFG randctx;
     int mc_lifetime;
