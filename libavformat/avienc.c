@@ -26,6 +26,8 @@
 #include "avi.h"
 #include "avio_internal.h"
 #include "riff.h"
+#include "libavformat/avlanguage.h"
+#include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "libavutil/avassert.h"
@@ -308,6 +310,16 @@ static int avi_write_header(AVFormatContext *s)
         if ((t = av_dict_get(s->streams[i]->metadata, "title", NULL, 0))) {
             ff_riff_write_info_tag(s->pb, "strn", t->value);
             t = NULL;
+        }
+        if(stream->codec_id == AV_CODEC_ID_XSUB
+           && (t = av_dict_get(s->streams[i]->metadata, "language", NULL, 0))) {
+            const char* langstr = av_convert_lang_to(t->value, AV_LANG_ISO639_1);
+            t = NULL;
+            if (langstr) {
+                char* str = av_asprintf("Subtitle - %s-xx;02", langstr);
+                ff_riff_write_info_tag(s->pb, "strn", str);
+                av_free(str);
+            }
         }
       }
 
