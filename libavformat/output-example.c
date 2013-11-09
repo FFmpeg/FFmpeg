@@ -138,7 +138,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 {
     AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
-    AVFrame *frame = avcodec_alloc_frame();
+    AVFrame *frame = av_frame_alloc();
     int got_packet;
 
     av_init_packet(&pkt);
@@ -237,7 +237,7 @@ static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
     uint8_t *picture_buf;
     int size;
 
-    picture = avcodec_alloc_frame();
+    picture = av_frame_alloc();
     if (!picture)
         return NULL;
     size        = avpicture_get_size(pix_fmt, width, height);

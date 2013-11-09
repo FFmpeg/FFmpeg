@@ -168,7 +168,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    avctx->coded_frame = avcodec_alloc_frame();
+    avctx->coded_frame = av_frame_alloc();
     if (!avctx->coded_frame) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
         goto fail;

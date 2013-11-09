@@ -579,7 +579,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    avctx->coded_frame = avcodec_alloc_frame();
+    avctx->coded_frame = av_frame_alloc();
     if (!avctx->coded_frame) {
         ret = AVERROR(ENOMEM);
         goto error;

@@ -48,7 +48,7 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
     avctx->bits_per_coded_sample = av_get_bits_per_sample(avctx->codec->id);
     avctx->block_align           = avctx->channels * avctx->bits_per_coded_sample / 8;
     avctx->bit_rate              = avctx->block_align * avctx->sample_rate * 8;
-    avctx->coded_frame           = avcodec_alloc_frame();
+    avctx->coded_frame           = av_frame_alloc();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
 

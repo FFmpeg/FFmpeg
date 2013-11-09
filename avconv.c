@@ -637,7 +637,7 @@ static int poll_filter(OutputStream *ost)
     AVFrame *filtered_frame = NULL;
     int frame_size, ret;
 
-    if (!ost->filtered_frame && !(ost->filtered_frame = avcodec_alloc_frame())) {
+    if (!ost->filtered_frame && !(ost->filtered_frame = av_frame_alloc())) {
         return AVERROR(ENOMEM);
     } else
         avcodec_get_frame_defaults(ost->filtered_frame);
@@ -1056,7 +1056,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     AVCodecContext *avctx = ist->st->codec;
     int i, ret, err = 0, resample_changed;
 
-    if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
+    if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc()))
         return AVERROR(ENOMEM);
     if (!ist->filter_frame && !(ist->filter_frame = av_frame_alloc()))
         return AVERROR(ENOMEM);

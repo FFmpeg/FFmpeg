@@ -1842,7 +1842,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             int resample_changed, audio_resample;
 
             if (!is->frame) {
-                if (!(is->frame = avcodec_alloc_frame()))
+                if (!(is->frame = av_frame_alloc()))
                     return AVERROR(ENOMEM);
             } else
                 avcodec_get_frame_defaults(is->frame);

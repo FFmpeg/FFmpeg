@@ -1928,7 +1928,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
 {
     const AVCodec *codec;
     int got_picture = 1, ret = 0;
-    AVFrame *frame = avcodec_alloc_frame();
+    AVFrame *frame = av_frame_alloc();
     AVPacket pkt = *avpkt;
 
     if (!frame)

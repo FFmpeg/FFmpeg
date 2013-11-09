@@ -1125,7 +1125,7 @@ static int pad_last_frame(AVCodecContext *s, AVFrame **dst, const AVFrame *src)
     AVFrame *frame = NULL;
     int ret;
 
-    if (!(frame = avcodec_alloc_frame()))
+    if (!(frame = av_frame_alloc()))
         return AVERROR(ENOMEM);
 
     frame->format         = src->format;
