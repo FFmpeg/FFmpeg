@@ -33,7 +33,6 @@
 
 typedef struct {
     AVCodecContext *avctx;
-    AVFrame        frame;
     int            bpp;
     int            format;
     int            padded_bits;
