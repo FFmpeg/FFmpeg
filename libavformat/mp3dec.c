@@ -67,6 +67,8 @@ static int mp3_read_probe(AVProbeData *p)
 
     for(; buf < end; buf= buf2+1) {
         buf2 = buf;
+        if(ff_mpa_check_header(AV_RB32(buf2)))
+            continue;
 
         for(frames = 0; buf2 < end; frames++) {
             header = AV_RB32(buf2);
