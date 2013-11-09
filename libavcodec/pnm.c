@@ -184,13 +184,3 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
     }
     return 0;
 }
-
-av_cold int ff_pnm_init(AVCodecContext *avctx)
-{
-    PNMContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
-
-    return 0;
-}
