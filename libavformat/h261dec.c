@@ -43,10 +43,10 @@ static int h261_probe(AVProbeData *p)
                 else              valid_psc++;
 
                 if(src_fmt){ // CIF
-                    static const int lut[16]={1,2,3,4,5,6,7,8,9,10,11,12,0,1,2,3};
+                    static const int lut[16]={1,2,3,4,5,6,7,8,9,10,11,12,0,16,16,16};
                     next_gn = lut[gn];
                 }else{       //QCIF
-                    static const int lut[16]={1,3,4,5,6,0,1,2,3,4,5,6,0,1,2,3,4};
+                    static const int lut[16]={1,3,16,5,16,0,16,16,16,16,16,16,16,16,16,16};
                     next_gn = lut[gn];
                 }
             }
