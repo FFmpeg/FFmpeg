@@ -41,7 +41,7 @@
 
 typedef struct QtrleContext {
     AVCodecContext *avctx;
-    AVFrame frame;
+    AVFrame *frame;
 
     GetByteContext g;
     uint32_t pal[256];
@@ -58,10 +58,10 @@ static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
 {
     int rle_code;
     int pixel_ptr;
-    int row_inc = s->frame.linesize[0];
+    int row_inc = s->frame->linesize[0];
     unsigned char pi0, pi1;  /* 2 8-pixel values */
-    unsigned char *rgb = s->frame.data[0];
-    int pixel_limit = s->frame.linesize[0] * s->avctx->height;
+    unsigned char *rgb = s->frame->data[0];
+    int pixel_limit = s->frame->linesize[0] * s->avctx->height;
     int skip;
 
     row_ptr  -= row_inc;
@@ -110,10 +110,10 @@ static inline void qtrle_decode_2n4bpp(QtrleContext *s, int row_ptr,
 {
     int rle_code, i;
     int pixel_ptr;
-    int row_inc = s->frame.linesize[0];
+    int row_inc = s->frame->linesize[0];
     unsigned char pi[16];  /* 16 palette indices */
-    unsigned char *rgb = s->frame.data[0];
-    int pixel_limit = s->frame.linesize[0] * s->avctx->height;
+    unsigned char *rgb = s->frame->data[0];
+    int pixel_limit = s->frame->linesize[0] * s->avctx->height;
     int num_pixels = (bpp == 4) ? 8 : 16;
 
     while (lines_to_change--) {
@@ -166,10 +166,10 @@ static void qtrle_decode_8bpp(QtrleContext *s, int row_ptr, int lines_to_change)
 {
     int rle_code;
     int pixel_ptr;
-    int row_inc = s->frame.linesize[0];
+    int row_inc = s->frame->linesize[0];
     unsigned char pi1, pi2, pi3, pi4;  /* 4 palette indexes */
-    unsigned char *rgb = s->frame.data[0];
-    int pixel_limit = s->frame.linesize[0] * s->avctx->height;
+    unsigned char *rgb = s->frame->data[0];
+    int pixel_limit = s->frame->linesize[0] * s->avctx->height;
 
     while (lines_to_change--) {
         pixel_ptr = row_ptr + (4 * (bytestream2_get_byte(&s->g) - 1));
@@ -216,10 +216,10 @@ static void qtrle_decode_16bpp(QtrleContext *s, int row_ptr, int lines_to_change
 {
     int rle_code;
     int pixel_ptr;
-    int row_inc = s->frame.linesize[0];
+    int row_inc = s->frame->linesize[0];
     unsigned short rgb16;
-    unsigned char *rgb = s->frame.data[0];
-    int pixel_limit = s->frame.linesize[0] * s->avctx->height;
+    unsigned char *rgb = s->frame->data[0];
+    int pixel_limit = s->frame->linesize[0] * s->avctx->height;
 
     while (lines_to_change--) {
         pixel_ptr = row_ptr + (bytestream2_get_byte(&s->g) - 1) * 2;
@@ -260,10 +260,10 @@ static void qtrle_decode_24bpp(QtrleContext *s, int row_ptr, int lines_to_change
 {
     int rle_code;
     int pixel_ptr;
-    int row_inc = s->frame.linesize[0];
+    int row_inc = s->frame->linesize[0];
     unsigned char r, g, b;
-    unsigned char *rgb = s->frame.data[0];
-    int pixel_limit = s->frame.linesize[0] * s->avctx->height;
+    unsigned char *rgb = s->frame->data[0];
+    int pixel_limit = s->frame->linesize[0] * s->avctx->height;
 
     while (lines_to_change--) {
         pixel_ptr = row_ptr + (bytestream2_get_byte(&s->g) - 1) * 3;
@@ -307,10 +307,10 @@ static void qtrle_decode_32bpp(QtrleContext *s, int row_ptr, int lines_to_change
 {
     int rle_code;
     int pixel_ptr;
-    int row_inc = s->frame.linesize[0];
+    int row_inc = s->frame->linesize[0];
     unsigned int argb;
-    unsigned char *rgb = s->frame.data[0];
-    int pixel_limit = s->frame.linesize[0] * s->avctx->height;
+    unsigned char *rgb = s->frame->data[0];
+    int pixel_limit = s->frame->linesize[0] * s->avctx->height;
 
     while (lines_to_change--) {
         pixel_ptr = row_ptr + (bytestream2_get_byte(&s->g) - 1) * 4;
@@ -385,7 +385,9 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avcodec_get_frame_defaults(&s->frame);
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -401,7 +403,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     int ret;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
-    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0) {
         av_log (s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
@@ -428,7 +430,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
         start_line = 0;
         height     = s->avctx->height;
     }
-    row_ptr = s->frame.linesize[0] * start_line;
+    row_ptr = s->frame->linesize[0] * start_line;
 
     switch (avctx->bits_per_coded_sample) {
     case 1:
@@ -476,16 +478,16 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
 
         if (pal) {
-            s->frame.palette_has_changed = 1;
+            s->frame->palette_has_changed = 1;
             memcpy(s->pal, pal, AVPALETTE_SIZE);
         }
 
         /* make the palette available on the way out */
-        memcpy(s->frame.data[1], s->pal, AVPALETTE_SIZE);
+        memcpy(s->frame->data[1], s->pal, AVPALETTE_SIZE);
     }
 
 done:
-    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
         return ret;
     *got_frame      = 1;
 
@@ -497,7 +499,7 @@ static av_cold int qtrle_decode_end(AVCodecContext *avctx)
 {
     QtrleContext *s = avctx->priv_data;
 
-    av_frame_unref(&s->frame);
+    av_frame_free(&s->frame);
 
     return 0;
 }
