@@ -49,9 +49,6 @@ typedef struct SchroEncoderParams {
     /** Schroedinger frame format */
     SchroFrameFormat frame_format;
 
-    /** frame being encoded */
-    AVFrame picture;
-
     /** frame size */
     int frame_size;
 
@@ -164,7 +161,9 @@ static av_cold int libschroedinger_encode_init(AVCodecContext *avctx)
                                                     avctx->width,
                                                     avctx->height);
 
-    avctx->coded_frame = &p_schro_params->picture;
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     if (!avctx->gop_size) {
         schro_encoder_setting_set_double(p_schro_params->encoder,
@@ -431,6 +430,8 @@ static int libschroedinger_encode_close(AVCodecContext *avctx)
 
     /* Free the video format structure. */
     av_freep(&p_schro_params->format);
+
+    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }
