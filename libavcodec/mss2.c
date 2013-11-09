@@ -34,7 +34,7 @@
 typedef struct MSS2Context {
     VC1Context     v;
     int            split_position;
-    AVFrame        last_pic;
+    AVFrame       *last_pic;
     MSS12Context   c;
     MSS2DSPContext dsp;
     SliceContext   sc[2];
@@ -523,8 +523,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
 
     avctx->pix_fmt = is_555 ? AV_PIX_FMT_RGB555 : AV_PIX_FMT_RGB24;
-    if (ctx->last_pic.format != avctx->pix_fmt)
-        av_frame_unref(&ctx->last_pic);
+    if (ctx->last_pic->format != avctx->pix_fmt)
+        av_frame_unref(ctx->last_pic);
 
     if (has_wmv9) {
         bytestream2_init(&gB, buf, buf_size + ARITH2_PADDING);
@@ -603,20 +603,20 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return ret;
         }
 
-        if (ctx->last_pic.data[0]) {
-            av_assert0(frame->linesize[0] == ctx->last_pic.linesize[0]);
-            c->last_rgb_pic = ctx->last_pic.data[0] +
-                              ctx->last_pic.linesize[0] * (avctx->height - 1);
+        if (ctx->last_pic->data[0]) {
+            av_assert0(frame->linesize[0] == ctx->last_pic->linesize[0]);
+            c->last_rgb_pic = ctx->last_pic->data[0] +
+                              ctx->last_pic->linesize[0] * (avctx->height - 1);
         } else {
             av_log(avctx, AV_LOG_ERROR, "Missing keyframe\n");
             return AVERROR_INVALIDDATA;
         }
     } else {
-        if ((ret = ff_reget_buffer(avctx, &ctx->last_pic)) < 0) {
+        if ((ret = ff_reget_buffer(avctx, ctx->last_pic)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return ret;
         }
-        if ((ret = av_frame_ref(frame, &ctx->last_pic)) < 0)
+        if ((ret = av_frame_ref(frame, ctx->last_pic)) < 0)
             return ret;
 
         c->last_rgb_pic = NULL;
@@ -730,8 +730,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         av_log(avctx, AV_LOG_WARNING, "buffer not fully consumed\n");
 
     if (c->mvX < 0 || c->mvY < 0) {
-        av_frame_unref(&ctx->last_pic);
-        ret = av_frame_ref(&ctx->last_pic, frame);
+        av_frame_unref(ctx->last_pic);
+        ret = av_frame_ref(ctx->last_pic, frame);
         if (ret < 0)
             return ret;
     }
@@ -806,7 +806,7 @@ static av_cold int mss2_decode_end(AVCodecContext *avctx)
 {
     MSS2Context *const ctx = avctx->priv_data;
 
-    av_frame_unref(&ctx->last_pic);
+    av_frame_free(&ctx->last_pic);
 
     ff_mss12_decode_end(&ctx->c);
     av_freep(&ctx->c.pal_pic);
@@ -839,6 +839,12 @@ static av_cold int mss2_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = c->free_colours == 127 ? AV_PIX_FMT_RGB555
                                             : AV_PIX_FMT_RGB24;
+
+    ctx->last_pic = av_frame_alloc();
+    if (!ctx->last_pic) {
+        mss2_decode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
