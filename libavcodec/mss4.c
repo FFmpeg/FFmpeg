@@ -126,7 +126,7 @@ static const uint8_t mss4_vec_entry_vlc_syms[2][9] = {
 #define MAX_ENTRIES  162
 
 typedef struct MSS4Context {
-    AVFrame    pic;
+    AVFrame   *pic;
 
     VLC        dc_vlc[2], ac_vlc[2];
     VLC        vec_entry_vlc[2];
@@ -297,10 +297,10 @@ static int mss4_decode_dct_block(MSS4Context *c, GetBitContext *gb,
                 return ret;
             c->prev_dc[0][mb_x * 2 + i] = c->dc_cache[j][LEFT];
 
-            ff_mss34_dct_put(out + xpos * 8, c->pic.linesize[0],
+            ff_mss34_dct_put(out + xpos * 8, c->pic->linesize[0],
                              c->block);
         }
-        out += 8 * c->pic.linesize[0];
+        out += 8 * c->pic->linesize[0];
     }
 
     for (i = 1; i < 3; i++) {
@@ -320,7 +320,7 @@ static int mss4_decode_dct_block(MSS4Context *c, GetBitContext *gb,
         for (j = 0; j < 16; j++) {
             for (k = 0; k < 8; k++)
                 AV_WN16A(out + k * 2, c->imgbuf[i][k + (j & ~1) * 4] * 0x101);
-            out += c->pic.linesize[i];
+            out += c->pic->linesize[i];
         }
     }
 
@@ -481,7 +481,7 @@ static int mss4_decode_image_block(MSS4Context *ctx, GetBitContext *gb,
 
     for (i = 0; i < 3; i++)
         for (j = 0; j < 16; j++)
-            memcpy(picdst[i] + mb_x * 16 + j * ctx->pic.linesize[i],
+            memcpy(picdst[i] + mb_x * 16 + j * ctx->pic->linesize[i],
                    ctx->imgbuf[i] + j * 16, 16);
 
     return 0;
@@ -554,16 +554,16 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
-    c->pic.key_frame = (frame_type == INTRA_FRAME);
-    c->pic.pict_type = (frame_type == INTRA_FRAME) ? AV_PICTURE_TYPE_I
+    c->pic->key_frame = (frame_type == INTRA_FRAME);
+    c->pic->pict_type = (frame_type == INTRA_FRAME) ? AV_PICTURE_TYPE_I
                                                    : AV_PICTURE_TYPE_P;
     if (frame_type == SKIP_FRAME) {
         *got_frame      = 1;
-        if ((ret = av_frame_ref(data, &c->pic)) < 0)
+        if ((ret = av_frame_ref(data, c->pic)) < 0)
             return ret;
 
         return buf_size;
@@ -579,9 +579,9 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     mb_width  = FFALIGN(width,  16) >> 4;
     mb_height = FFALIGN(height, 16) >> 4;
-    dst[0] = c->pic.data[0];
-    dst[1] = c->pic.data[1];
-    dst[2] = c->pic.data[2];
+    dst[0] = c->pic->data[0];
+    dst[1] = c->pic->data[1];
+    dst[2] = c->pic->data[2];
 
     memset(c->prev_vec, 0, sizeof(c->prev_vec));
     for (y = 0; y < mb_height; y++) {
@@ -615,17 +615,30 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             if (blk_type != DCT_BLOCK)
                 mss4_update_dc_cache(c, x);
         }
-        dst[0] += c->pic.linesize[0] * 16;
-        dst[1] += c->pic.linesize[1] * 16;
-        dst[2] += c->pic.linesize[2] * 16;
+        dst[0] += c->pic->linesize[0] * 16;
+        dst[1] += c->pic->linesize[1] * 16;
+        dst[2] += c->pic->linesize[2] * 16;
     }
 
-    if ((ret = av_frame_ref(data, &c->pic)) < 0)
+    if ((ret = av_frame_ref(data, c->pic)) < 0)
         return ret;
 
     *got_frame      = 1;
 
     return buf_size;
+}
+
+static av_cold int mss4_decode_end(AVCodecContext *avctx)
+{
+    MSS4Context * const c = avctx->priv_data;
+    int i;
+
+    av_frame_free(&c->pic);
+    for (i = 0; i < 3; i++)
+        av_freep(&c->prev_dc[i]);
+    mss4_free_vlcs(c);
+
+    return 0;
 }
 
 static av_cold int mss4_decode_init(AVCodecContext *avctx)
@@ -648,20 +661,13 @@ static av_cold int mss4_decode_init(AVCodecContext *avctx)
         }
     }
 
+    c->pic = av_frame_alloc();
+    if (!c->pic) {
+        mss4_decode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
+
     avctx->pix_fmt     = AV_PIX_FMT_YUV444P;
-
-    return 0;
-}
-
-static av_cold int mss4_decode_end(AVCodecContext *avctx)
-{
-    MSS4Context * const c = avctx->priv_data;
-    int i;
-
-    av_frame_unref(&c->pic);
-    for (i = 0; i < 3; i++)
-        av_freep(&c->prev_dc[i]);
-    mss4_free_vlcs(c);
 
     return 0;
 }
