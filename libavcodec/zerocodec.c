@@ -23,7 +23,7 @@
 #include "libavutil/common.h"
 
 typedef struct {
-    AVFrame  previous_frame;
+    AVFrame  *previous_frame;
     z_stream zstream;
 } ZeroCodecContext;
 
@@ -32,7 +32,7 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
 {
     ZeroCodecContext *zc = avctx->priv_data;
     AVFrame *pic         = data;
-    AVFrame *prev_pic    = &zc->previous_frame;
+    AVFrame *prev_pic    = zc->previous_frame;
     z_stream *zstream    = &zc->zstream;
     uint8_t *prev        = prev_pic->data[0];
     uint8_t *dst;
@@ -93,8 +93,8 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
         dst  -= pic->linesize[0];
     }
 
-    av_frame_unref(&zc->previous_frame);
-    if ((ret = av_frame_ref(&zc->previous_frame, pic)) < 0)
+    av_frame_unref(zc->previous_frame);
+    if ((ret = av_frame_ref(zc->previous_frame, pic)) < 0)
         return ret;
 
     *got_frame = 1;
@@ -106,7 +106,7 @@ static av_cold int zerocodec_decode_close(AVCodecContext *avctx)
 {
     ZeroCodecContext *zc = avctx->priv_data;
 
-    av_frame_unref(&zc->previous_frame);
+    av_frame_free(&zc->previous_frame);
 
     inflateEnd(&zc->zstream);
 
@@ -129,6 +129,12 @@ static av_cold int zerocodec_decode_init(AVCodecContext *avctx)
     zret = inflateInit(zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not initialize inflate: %d.\n", zret);
+        return AVERROR(ENOMEM);
+    }
+
+    zc->previous_frame = av_frame_alloc();
+    if (!zc->previous_frame) {
+        zerocodec_decode_close(avctx);
         return AVERROR(ENOMEM);
     }
 
