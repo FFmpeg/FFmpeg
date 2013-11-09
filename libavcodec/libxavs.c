@@ -45,7 +45,6 @@ typedef struct XavsContext {
     xavs_picture_t  pic;
     uint8_t        *sei;
     int             sei_size;
-    AVFrame         out_pic;
     int             end_of_stream;
     float crf;
     int cqp;
@@ -161,7 +160,7 @@ static int XAVS_frame(AVCodecContext *ctx, AVPacket *pkt,
         return 0;
     }
 
-    x4->out_pic.pts = pic_out.i_pts;
+    avctx->coded_frame->pts = pic_out.i_pts;
     pkt->pts = pic_out.i_pts;
     if (ctx->has_b_frames) {
         if (!x4->out_frame_count)
@@ -174,25 +173,25 @@ static int XAVS_frame(AVCodecContext *ctx, AVPacket *pkt,
     switch (pic_out.i_type) {
     case XAVS_TYPE_IDR:
     case XAVS_TYPE_I:
-        x4->out_pic.pict_type = AV_PICTURE_TYPE_I;
+        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
         break;
     case XAVS_TYPE_P:
-        x4->out_pic.pict_type = AV_PICTURE_TYPE_P;
+        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
         break;
     case XAVS_TYPE_B:
     case XAVS_TYPE_BREF:
-        x4->out_pic.pict_type = AV_PICTURE_TYPE_B;
+        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
         break;
     }
 
     /* There is no IDR frame in AVS JiZhun */
     /* Sequence header is used as a flag */
     if (pic_out.i_type == XAVS_TYPE_I) {
-        x4->out_pic.key_frame = 1;
+        avctx->coded_frame->key_frame = 1;
         pkt->flags |= AV_PKT_FLAG_KEY;
     }
 
-    x4->out_pic.quality   = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
+    avctx->coded_frame->quality = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
 
     x4->out_frame_count++;
     *got_packet = ret;
@@ -209,6 +208,8 @@ static av_cold int XAVS_close(AVCodecContext *avctx)
 
     if (x4->enc)
         xavs_encoder_close(x4->enc);
+
+    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }
@@ -357,7 +358,10 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     if (!(x4->pts_buffer = av_mallocz((avctx->max_b_frames+1) * sizeof(*x4->pts_buffer))))
         return AVERROR(ENOMEM);
 
-    avctx->coded_frame = &x4->out_pic;
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
+
     /* TAG: Do we have GLOBAL HEADER in AVS */
     /* We Have PPS and SPS in AVS */
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
