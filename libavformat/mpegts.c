@@ -455,7 +455,7 @@ static int analyze(const uint8_t *buf, int size, int packet_size, int *index){
     int x=0;
     int best_score=0;
 
-    memset(stat, 0, packet_size*sizeof(int));
+    memset(stat, 0, packet_size*sizeof(*stat));
 
     for(x=i=0; i<size-3; i++){
         if(buf[i] == 0x47 && !(buf[i+1] & 0x80) && buf[i+3] != 0x47){
