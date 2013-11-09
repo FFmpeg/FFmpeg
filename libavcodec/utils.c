@@ -2137,8 +2137,11 @@ AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel)
     return hwaccel ? hwaccel->next : first_hwaccel;
 }
 
-AVHWAccel *ff_find_hwaccel(enum AVCodecID codec_id, enum AVPixelFormat pix_fmt)
+AVHWAccel *ff_find_hwaccel(AVCodecContext *avctx)
 {
+    enum AVCodecID codec_id = avctx->codec->id;
+    enum AVPixelFormat pix_fmt = avctx->pix_fmt;
+
     AVHWAccel *hwaccel = NULL;
 
     while ((hwaccel = av_hwaccel_next(hwaccel)))
