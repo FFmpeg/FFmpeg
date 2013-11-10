@@ -86,10 +86,14 @@ typedef struct {
 
 static int ape_probe(AVProbeData * p)
 {
-    if (p->buf[0] == 'M' && p->buf[1] == 'A' && p->buf[2] == 'C' && p->buf[3] == ' ')
-        return AVPROBE_SCORE_MAX;
+    int version = AV_RL16(p->buf+4);
+    if (AV_RL32(p->buf) != MKTAG('M', 'A', 'C', ' '))
+        return 0;
 
-    return 0;
+    if (version < APE_MIN_VERSION || version > APE_MAX_VERSION)
+        return AVPROBE_SCORE_MAX/4;
+
+    return AVPROBE_SCORE_MAX;
 }
 
 static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
