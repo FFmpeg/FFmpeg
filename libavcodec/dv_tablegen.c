@@ -22,9 +22,6 @@
 
 #include <stdlib.h>
 #define CONFIG_HARDCODED_TABLES 0
-#ifndef CONFIG_SMALL
-#error CONFIG_SMALL must be defined to generate tables
-#endif
 #include "dv_tablegen.h"
 #include "tableprint.h"
 #include <inttypes.h>
