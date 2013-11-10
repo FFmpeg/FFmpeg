@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include "dv_vlc_data.h"
+#include "dvdata.h"
 
 #if CONFIG_SMALL
 #define DV_VLC_MAP_RUN_SIZE 15
@@ -51,20 +51,20 @@ static void dv_vlc_map_tableinit(void)
 {
     int i, j;
     for (i = 0; i < NB_DV_VLC - 1; i++) {
-       if (dv_vlc_run[i] >= DV_VLC_MAP_RUN_SIZE)
+       if (ff_dv_vlc_run[i] >= DV_VLC_MAP_RUN_SIZE)
            continue;
 #if CONFIG_SMALL
-       if (dv_vlc_level[i] >= DV_VLC_MAP_LEV_SIZE)
+       if (ff_dv_vlc_level[i] >= DV_VLC_MAP_LEV_SIZE)
            continue;
 #endif
 
-       if (dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].size != 0)
+       if (dv_vlc_map[ff_dv_vlc_run[i]][ff_dv_vlc_level[i]].size != 0)
            continue;
 
-       dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].vlc  =
-           dv_vlc_bits[i] << (!!dv_vlc_level[i]);
-       dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].size =
-           dv_vlc_len[i] + (!!dv_vlc_level[i]);
+       dv_vlc_map[ff_dv_vlc_run[i]][ff_dv_vlc_level[i]].vlc  =
+           ff_dv_vlc_bits[i] << (!!ff_dv_vlc_level[i]);
+       dv_vlc_map[ff_dv_vlc_run[i]][ff_dv_vlc_level[i]].size =
+           ff_dv_vlc_len[i] + (!!ff_dv_vlc_level[i]);
     }
     for (i = 0; i < DV_VLC_MAP_RUN_SIZE; i++) {
 #if CONFIG_SMALL
