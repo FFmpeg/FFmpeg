@@ -29,6 +29,7 @@
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/stereo3d.h"
 
 #include "bytestream.h"
 #include "cabac_functions.h"
@@ -2347,6 +2348,41 @@ static void restore_tqb_pixels(HEVCContext *s)
     }
 }
 
+static int set_side_data(HEVCContext *s)
+{
+    AVFrame *out = s->ref->frame;
+
+    if (s->sei_frame_packing_present &&
+        s->frame_packing_arrangement_type >= 3 &&
+        s->frame_packing_arrangement_type <= 5 &&
+        s->content_interpretation_type > 0 &&
+        s->content_interpretation_type < 3) {
+        AVStereo3D *stereo = av_stereo3d_create_side_data(out);
+        if (!stereo)
+            return AVERROR(ENOMEM);
+
+        switch (s->frame_packing_arrangement_type) {
+        case 3:
+            if (s->quincunx_subsampling)
+                stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
+            else
+                stereo->type = AV_STEREO3D_SIDEBYSIDE;
+            break;
+        case 4:
+            stereo->type = AV_STEREO3D_TOPBOTTOM;
+            break;
+        case 5:
+            stereo->type = AV_STEREO3D_FRAMESEQUENCE;
+            break;
+        }
+
+        if (s->content_interpretation_type == 2)
+            stereo->flags = AV_STEREO3D_FLAG_INVERT;
+    }
+
+    return 0;
+}
+
 static int hevc_frame_start(HEVCContext *s)
 {
     HEVCLocalContext *lc = &s->HEVClc;
@@ -2380,6 +2416,10 @@ static int hevc_frame_start(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS.\n");
         goto fail;
     }
+
+    ret = set_side_data(s);
+    if (ret < 0)
+        goto fail;
 
     av_frame_unref(s->output_frame);
     ret = ff_hevc_output_frame(s, s->output_frame, 0);
