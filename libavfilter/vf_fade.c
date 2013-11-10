@@ -317,7 +317,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     s->factor = av_clip_uint16(s->factor);
 
     // Invert fade_factor if Fading Out
-    if (s->type == 1) {
+    if (s->type == FADE_OUT) {
         s->factor=UINT16_MAX-s->factor;
     }
 
