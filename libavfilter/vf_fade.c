@@ -276,18 +276,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     // Calculate Fade assuming this is a Fade In
     if (s->fade_state == VF_FADE_WAITING) {
         s->factor=0;
-        if ((frame_timestamp >= (s->start_time/(double)AV_TIME_BASE))
-            && (inlink->frame_count >= s->start_frame)) {
+        if (frame_timestamp >= s->start_time/(double)AV_TIME_BASE
+            && inlink->frame_count >= s->start_frame) {
             // Time to start fading
             s->fade_state = VF_FADE_FADING;
 
             // Save start time in case we are starting based on frames and fading based on time
-            if ((s->start_time == 0) && (s->start_frame != 0)) {
+            if (s->start_time == 0 && s->start_frame != 0) {
                 s->start_time = frame_timestamp*(double)AV_TIME_BASE;
             }
 
             // Save start frame in case we are starting based on time and fading based on frames
-            if ((s->start_time != 0) && (s->start_frame == 0)) {
+            if (s->start_time != 0 && s->start_frame == 0) {
                 s->start_frame = inlink->frame_count;
             }
         }
@@ -296,16 +296,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         if (s->duration == 0) {
             // Fading based on frame count
             s->factor = (inlink->frame_count - s->start_frame) * s->fade_per_frame;
-            if (inlink->frame_count > (s->start_frame + s->nb_frames)) {
+            if (inlink->frame_count > s->start_frame + s->nb_frames) {
                 s->fade_state = VF_FADE_DONE;
             }
 
         } else {
             // Fading based on duration
-            s->factor = (frame_timestamp - (s->start_time/(double)AV_TIME_BASE))
+            s->factor = (frame_timestamp - s->start_time/(double)AV_TIME_BASE)
                             * (float) UINT16_MAX / (s->duration/(double)AV_TIME_BASE);
-            if (frame_timestamp > ((s->start_time/(double)AV_TIME_BASE)
-                                    + (s->duration/(double)AV_TIME_BASE))) {
+            if (frame_timestamp > s->start_time/(double)AV_TIME_BASE
+                                  + s->duration/(double)AV_TIME_BASE) {
                 s->fade_state = VF_FADE_DONE;
             }
         }
