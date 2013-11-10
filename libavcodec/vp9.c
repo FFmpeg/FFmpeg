@@ -254,7 +254,7 @@ static int update_size(AVCodecContext *ctx, int w, int h)
     s->rows     = (h + 7) >> 3;
 
 #define assign(var, type, n) var = (type) p; p += s->sb_cols * n * sizeof(*var)
-    av_free(s->above_partition_ctx);
+    av_freep(&s->above_partition_ctx);
     p = av_malloc(s->sb_cols * (240 + sizeof(*s->lflvl) + 16 * sizeof(*s->above_mv_ctx) +
                                 64 * s->sb_rows * (1 + sizeof(*s->mv[0]) * 2)));
     if (!p)
