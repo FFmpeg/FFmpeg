@@ -1180,7 +1180,7 @@ static void setup_hwaccel_for_pixfmt(AVCodecContext *avctx)
     } else if (!avctx->xvmc_acceleration) {
         avctx->xvmc_acceleration = 2;
     }
-    avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
+    avctx->hwaccel = ff_find_hwaccel(avctx);
     // until then pix_fmt may be changed right after codec init
     if (avctx->pix_fmt == AV_PIX_FMT_XVMC_MPEG2_IDCT ||
         avctx->hwaccel || uses_vdpau(avctx))
