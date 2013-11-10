@@ -109,7 +109,6 @@ static int thp_read_header(AVFormatContext *s)
             st->codec->codec_tag = 0;  /* no fourcc */
             st->codec->width = avio_rb32(pb);
             st->codec->height = avio_rb32(pb);
-            st->codec->sample_rate = av_q2d(thp->fps);
             st->nb_frames =
             st->duration = thp->framecnt;
             thp->vst = st;
