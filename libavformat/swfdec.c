@@ -59,11 +59,14 @@ static int swf_probe(AVProbeData *p)
         return 0;
 
     /* check file header */
-    if ((p->buf[0] == 'F' || p->buf[0] == 'C') && p->buf[1] == 'W' &&
-        p->buf[2] == 'S' && p->buf[3] < 20)
-        return AVPROBE_SCORE_MAX;
-    else
+    if (   AV_RB24(p->buf) != AV_RB24("CWS")
+        && AV_RB24(p->buf) != AV_RB24("FWS"))
         return 0;
+
+    if (p->buf[3] >= 20)
+        return AVPROBE_SCORE_MAX / 4;
+
+    return AVPROBE_SCORE_MAX;
 }
 
 #if CONFIG_ZLIB
