@@ -33,7 +33,7 @@ static int ast_probe(AVProbeData *p)
     if (!AV_RB16(p->buf + 10) ||
         !AV_RB16(p->buf + 12) || AV_RB16(p->buf + 12) > 256 ||
         !AV_RB32(p->buf + 16) || AV_RB32(p->buf + 16) > 8*48000)
-        return 1;
+        return AVPROBE_SCORE_MAX / 8;
 
     return AVPROBE_SCORE_MAX / 3 * 2;
 }
