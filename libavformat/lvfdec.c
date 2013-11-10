@@ -29,7 +29,7 @@ static int lvf_probe(AVProbeData *p)
         return 0;
 
     if (!AV_RL32(p->buf + 16) || AV_RL32(p->buf + 16) > 256)
-        return 0;
+        return AVPROBE_SCORE_MAX / 8;
 
     return AVPROBE_SCORE_EXTENSION;
 }
