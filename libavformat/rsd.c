@@ -46,9 +46,9 @@ static int rsd_probe(AVProbeData *p)
     if (memcmp(p->buf, "RSD", 3) || p->buf[3] - '0' < 2 || p->buf[3] - '0' > 6)
         return 0;
     if (AV_RL32(p->buf +  8) > 256 || !AV_RL32(p->buf +  8))
-        return 1;
+        return AVPROBE_SCORE_MAX / 8;
     if (AV_RL32(p->buf + 16) > 8*48000 || !AV_RL32(p->buf + 16))
-        return 1;
+        return AVPROBE_SCORE_MAX / 8;
     return AVPROBE_SCORE_MAX;
 }
 
