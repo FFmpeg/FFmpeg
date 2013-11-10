@@ -87,6 +87,8 @@ Standard options:
   --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]
   --incdir=DIR             install includes in DIR [PREFIX/include]
   --mandir=DIR             install man page in DIR [PREFIX/share/man]
+  --enable-rpath           use rpath to allow installing libraries in paths
+                           not part of the dynamic linker search path
 
 Licensing options:
   --enable-gpl             allow use of GPL code, the resulting libs
@@ -1612,6 +1614,7 @@ CMDLINE_SELECT="
     logging
     lto
     optimizations
+    rpath
     stripping
 "
 
@@ -4468,6 +4471,7 @@ check_disable_warning -Wno-pointer-sign
 # add some linker flags
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
+enabled rpath && add_ldflags -Wl,-rpath=$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 enabled xmm_clobber_test &&
@@ -4980,7 +4984,7 @@ Version: $version
 Requires: $(enabled shared || echo $requires)
 Requires.private: $(enabled shared && echo $requires)
 Conflicts:
-Libs: -L\${libdir} -l${shortname} $(enabled shared || echo $libs)
+Libs: -L\${libdir} $(enabled rpath && echo "-Wl,-rpath,\${libdir}") -l${shortname} $(enabled shared || echo $libs)
 Libs.private: $(enabled shared && echo $libs)
 Cflags: -I\${includedir}
 EOF
