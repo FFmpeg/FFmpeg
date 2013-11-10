@@ -582,7 +582,7 @@ static int dv_read_close(AVFormatContext *s)
 
 static int dv_probe(AVProbeData *p)
 {
-    unsigned state, marker_pos = 0;
+    unsigned marker_pos = 0;
     int i;
     int matches           = 0;
     int firstmatch        = 0;
