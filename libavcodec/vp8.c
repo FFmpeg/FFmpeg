@@ -2105,52 +2105,6 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     return 0;
 }
 
-static unsigned apply_padding(unsigned size) { return size + (size & 1); }
-
-static int webp_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                             AVPacket *avpkt)
-{
-    const uint8_t *buf = avpkt->data;
-    int buf_size       = avpkt->size;
-    AVPacket pkt       = *avpkt;
-
-    if (buf_size >= 16
-        && AV_RL32(buf   ) == AV_RL32("RIFF")
-        && AV_RL32(buf+ 8) == AV_RL32("WEBP")) {
-        unsigned riff_size = apply_padding(AV_RL32(buf+4)) + 8;
-        buf += 12;   // Skip over main header
-        buf_size -= 12;
-        if (buf_size < 8 || riff_size < 8) {
-            av_log(avctx, AV_LOG_ERROR, "Incomplete header.\n");
-            return AVERROR_INVALIDDATA;
-        }
-        if (AV_RL32(buf) == AV_RL32("VP8L")) {
-            av_log(avctx, AV_LOG_ERROR, "Unsupported WebP lossless format.\n");
-            return AVERROR_PATCHWELCOME;
-        }
-        if (AV_RL32(buf) == AV_RL32("VP8X") && AV_RL32(buf+4) < (unsigned)buf_size) {
-            unsigned size = apply_padding(AV_RL32(buf+4) + 8);
-            buf      += size;
-            buf_size -= size;
-        }
-        if (buf_size >= 8
-            && AV_RL32(buf) == AV_RL32("ALPH") && AV_RL32(buf+4) < (unsigned)buf_size) {
-            unsigned size = apply_padding(AV_RL32(buf+4) + 8);
-            buf      += size;
-            buf_size -= size;
-            av_log(avctx, AV_LOG_WARNING, "Skipping alpha plane\n");
-        }
-        if (buf_size >= 8 && AV_RL32(buf) == AV_RL32("VP8 ")) {
-            buf      += 8;
-            buf_size -= 8;
-        }
-    }
-    pkt.data = buf;
-    pkt.size = buf_size;
-
-    return ff_vp8_decode_frame(avctx, data, data_size, &pkt);
-}
-
 AVCodec ff_vp8_decoder = {
     .name                  = "vp8",
     .long_name             = NULL_IF_CONFIG_SMALL("On2 VP8"),
@@ -2166,17 +2120,3 @@ AVCodec ff_vp8_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
 };
 
-// AVCodec ff_webp_decoder = {
-//     .name                  = "webp",
-//     .long_name             = NULL_IF_CONFIG_SMALL("WebP"),
-//     .type                  = AVMEDIA_TYPE_VIDEO,
-//     .id                    = AV_CODEC_ID_WEBP,
-//     .priv_data_size        = sizeof(VP8Context),
-//     .init                  = vp8_decode_init,
-//     .close                 = vp8_decode_free,
-//     .decode                = webp_decode_frame,
-//     .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
-//     .flush                 = vp8_decode_flush,
-//     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp8_decode_init_thread_copy),
-//     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
-// };
