@@ -6,6 +6,7 @@ version <next>
 - HNM version 4 demuxer and video decoder
 - Live HDS muxer
 - setsar/setdar filters now support variables in ratio expressions
+- elbg filter
 
 
 version 2.1:

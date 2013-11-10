@@ -127,6 +127,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(DRAWGRID,       drawgrid,       vf);
     REGISTER_FILTER(DRAWTEXT,       drawtext,       vf);
     REGISTER_FILTER(EDGEDETECT,     edgedetect,     vf);
+    REGISTER_FILTER(ELBG,           elbg,           vf);
     REGISTER_FILTER(EXTRACTPLANES,  extractplanes,  vf);
     REGISTER_FILTER(FADE,           fade,           vf);
     REGISTER_FILTER(FIELD,          field,          vf);
