@@ -25,8 +25,7 @@
 #include "golomb.h"
 #include "hevc.h"
 
-static void decode_nal_sei_decoded_picture_hash(HEVCContext *s,
-                                                int payload_size)
+static void decode_nal_sei_decoded_picture_hash(HEVCContext *s)
 {
     int cIdx, i;
     GetBitContext *gb = &s->HEVClc.gb;
@@ -92,7 +91,7 @@ static int decode_nal_sei_message(HEVCContext *s)
     }
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
         if (payload_type == 256)
-            decode_nal_sei_decoded_picture_hash(s, payload_size);
+            decode_nal_sei_decoded_picture_hash(s);
         else if (payload_type == 45)
             decode_nal_sei_frame_packing_arrangement(&s->HEVClc);
         else {
@@ -101,7 +100,7 @@ static int decode_nal_sei_message(HEVCContext *s)
         }
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
         if (payload_type == 132)
-            decode_nal_sei_decoded_picture_hash(s, payload_size);
+            decode_nal_sei_decoded_picture_hash(s);
         else {
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", payload_type);
             skip_bits(gb, 8 * payload_size);
