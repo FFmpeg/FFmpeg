@@ -61,6 +61,9 @@ static int vid_probe(AVProbeData *p)
     if (AV_RL32(p->buf) != MKTAG('V', 'I', 'D', 0))
         return 0;
 
+    if (p->buf[4] != 2)
+        return AVPROBE_SCORE_MAX / 4;
+
     return AVPROBE_SCORE_MAX;
 }
 
