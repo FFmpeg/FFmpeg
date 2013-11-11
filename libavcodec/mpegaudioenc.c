@@ -33,8 +33,13 @@
 #define FRAC_BITS   15   /* fractional bits for sb_samples and dct */
 #define WFRAC_BITS  14   /* fractional bits for window */
 
+/* define it to use floats in quantization (I don't like floats !) */
+#define USE_FLOATS
+
 #include "mpegaudio.h"
 #include "mpegaudiodsp.h"
+#include "mpegaudiodata.h"
+#include "mpegaudiotab.h"
 
 /* currently, cannot change these constants (need to modify
    quantization stage) */
@@ -60,12 +65,6 @@ typedef struct MpegAudioContext {
     int sblimit; /* number of used subbands */
     const unsigned char *alloc_table;
 } MpegAudioContext;
-
-/* define it to use floats in quantization (I don't like floats !) */
-#define USE_FLOATS
-
-#include "mpegaudiodata.h"
-#include "mpegaudiotab.h"
 
 static av_cold int MPA_encode_init(AVCodecContext *avctx)
 {
