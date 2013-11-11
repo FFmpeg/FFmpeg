@@ -1843,43 +1843,43 @@ static int decode_coeffs_b(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
                 if (!vp56_rac_get_prob_branchy(c, tp[7])) {
                     val = 5 + vp56_rac_get_prob(c, 159);
                 } else {
-                    val = 7 + (vp56_rac_get_prob(c, 165) << 1) +
-                               vp56_rac_get_prob(c, 145);
+                    val  = 7 + (vp56_rac_get_prob(c, 165) << 1);
+                    val +=      vp56_rac_get_prob(c, 145);
                 }
             } else { // cat 3-6
                 cache[rc] = 5;
                 if (!vp56_rac_get_prob_branchy(c, tp[8])) {
                     if (!vp56_rac_get_prob_branchy(c, tp[9])) {
-                        val = 11 + (vp56_rac_get_prob(c, 173) << 2) +
-                                   (vp56_rac_get_prob(c, 148) << 1) +
-                                    vp56_rac_get_prob(c, 140);
+                        val  = 11 + (vp56_rac_get_prob(c, 173) << 2);
+                        val +=      (vp56_rac_get_prob(c, 148) << 1);
+                        val +=       vp56_rac_get_prob(c, 140);
                     } else {
-                        val = 19 + (vp56_rac_get_prob(c, 176) << 3) +
-                                   (vp56_rac_get_prob(c, 155) << 2) +
-                                   (vp56_rac_get_prob(c, 140) << 1) +
-                                    vp56_rac_get_prob(c, 135);
+                        val  = 19 + (vp56_rac_get_prob(c, 176) << 3);
+                        val +=      (vp56_rac_get_prob(c, 155) << 2);
+                        val +=      (vp56_rac_get_prob(c, 140) << 1);
+                        val +=       vp56_rac_get_prob(c, 135);
                     }
                 } else if (!vp56_rac_get_prob_branchy(c, tp[10])) {
-                    val = 35 + (vp56_rac_get_prob(c, 180) << 4) +
-                               (vp56_rac_get_prob(c, 157) << 3) +
-                               (vp56_rac_get_prob(c, 141) << 2) +
-                               (vp56_rac_get_prob(c, 134) << 1) +
-                                vp56_rac_get_prob(c, 130);
+                    val  = 35 + (vp56_rac_get_prob(c, 180) << 4);
+                    val +=      (vp56_rac_get_prob(c, 157) << 3);
+                    val +=      (vp56_rac_get_prob(c, 141) << 2);
+                    val +=      (vp56_rac_get_prob(c, 134) << 1);
+                    val +=       vp56_rac_get_prob(c, 130);
                 } else {
-                    val = 67 + (vp56_rac_get_prob(c, 254) << 13) +
-                               (vp56_rac_get_prob(c, 254) << 12) +
-                               (vp56_rac_get_prob(c, 254) << 11) +
-                               (vp56_rac_get_prob(c, 252) << 10) +
-                               (vp56_rac_get_prob(c, 249) << 9) +
-                               (vp56_rac_get_prob(c, 243) << 8) +
-                               (vp56_rac_get_prob(c, 230) << 7) +
-                               (vp56_rac_get_prob(c, 196) << 6) +
-                               (vp56_rac_get_prob(c, 177) << 5) +
-                               (vp56_rac_get_prob(c, 153) << 4) +
-                               (vp56_rac_get_prob(c, 140) << 3) +
-                               (vp56_rac_get_prob(c, 133) << 2) +
-                               (vp56_rac_get_prob(c, 130) << 1) +
-                                vp56_rac_get_prob(c, 129);
+                    val  = 67 + (vp56_rac_get_prob(c, 254) << 13);
+                    val +=      (vp56_rac_get_prob(c, 254) << 12);
+                    val +=      (vp56_rac_get_prob(c, 254) << 11);
+                    val +=      (vp56_rac_get_prob(c, 252) << 10);
+                    val +=      (vp56_rac_get_prob(c, 249) << 9);
+                    val +=      (vp56_rac_get_prob(c, 243) << 8);
+                    val +=      (vp56_rac_get_prob(c, 230) << 7);
+                    val +=      (vp56_rac_get_prob(c, 196) << 6);
+                    val +=      (vp56_rac_get_prob(c, 177) << 5);
+                    val +=      (vp56_rac_get_prob(c, 153) << 4);
+                    val +=      (vp56_rac_get_prob(c, 140) << 3);
+                    val +=      (vp56_rac_get_prob(c, 133) << 2);
+                    val +=      (vp56_rac_get_prob(c, 130) << 1);
+                    val +=       vp56_rac_get_prob(c, 129);
                 }
             }
         }
