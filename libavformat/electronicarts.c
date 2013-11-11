@@ -361,6 +361,11 @@ static int process_ea_header(AVFormatContext *s)
         if (ea->big_endian)
             size = av_bswap32(size);
 
+        if (size < 8) {
+            av_log(s, AV_LOG_ERROR, "chunk size too small\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         switch (blockid) {
         case ISNh_TAG:
             if (avio_rl32(pb) != EACS_TAG) {
