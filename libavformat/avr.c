@@ -26,9 +26,15 @@
 
 static int avr_probe(AVProbeData *p)
 {
-    if (AV_RL32(p->buf) == MKTAG('2', 'B', 'I', 'T'))
-        return AVPROBE_SCORE_EXTENSION;
-    return 0;
+    if (AV_RL32(p->buf) != MKTAG('2', 'B', 'I', 'T'))
+        return 0;
+
+    if (!AV_RB16(p->buf+12) || AV_RB16(p->buf+12) > 256) // channels
+        return AVPROBE_SCORE_EXTENSION/2;
+    if (AV_RB16(p->buf+14) > 256) // bps
+        return AVPROBE_SCORE_EXTENSION/2;
+
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int avr_read_header(AVFormatContext *s)
