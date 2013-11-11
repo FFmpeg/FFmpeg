@@ -77,14 +77,11 @@ static void insert_ts(AVBPrint *buf, int ts)
     }
 }
 
-int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
-                    int ts_start, int duration, int raw)
+int ff_ass_bprint_dialog(AVBPrint *buf, const char *dialog,
+                         int ts_start, int duration, int raw)
 {
-    AVBPrint buf;
-    int ret, dlen;
-    AVSubtitleRect **rects;
+    int dlen;
 
-    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (!raw || raw == 2) {
         long int layer = 0;
 
@@ -101,32 +98,92 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
                 return AVERROR_INVALIDDATA;
             dialog++;
         }
-        av_bprintf(&buf, "Dialogue: %ld,", layer);
-        insert_ts(&buf, ts_start);
-        insert_ts(&buf, duration == -1 ? -1 : ts_start + duration);
+        av_bprintf(buf, "Dialogue: %ld,", layer);
+        insert_ts(buf, ts_start);
+        insert_ts(buf, duration == -1 ? -1 : ts_start + duration);
         if (raw != 2)
-            av_bprintf(&buf, "Default,");
+            av_bprintf(buf, "Default,");
     }
 
     dlen = strcspn(dialog, "\n");
     dlen += dialog[dlen] == '\n';
 
-    av_bprintf(&buf, "%.*s", dlen, dialog);
+    av_bprintf(buf, "%.*s", dlen, dialog);
     if (raw == 2)
-        av_bprintf(&buf, "\r\n");
+        av_bprintf(buf, "\r\n");
+
+    return dlen;
+}
+
+int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
+                    int ts_start, int duration, int raw)
+{
+    AVBPrint buf;
+    int ret, dlen;
+    AVSubtitleRect **rects;
+
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+    if ((ret = ff_ass_bprint_dialog(&buf, dialog, ts_start, duration, raw)) < 0)
+        goto err;
+    dlen = ret;
     if (!av_bprint_is_complete(&buf))
-        return AVERROR(ENOMEM);
+        goto errnomem;
 
     rects = av_realloc(sub->rects, (sub->num_rects+1) * sizeof(*sub->rects));
     if (!rects)
-        return AVERROR(ENOMEM);
+        goto errnomem;
     sub->rects = rects;
     sub->end_display_time = FFMAX(sub->end_display_time, 10 * duration);
     rects[sub->num_rects]       = av_mallocz(sizeof(*rects[0]));
     rects[sub->num_rects]->type = SUBTITLE_ASS;
     ret = av_bprint_finalize(&buf, &rects[sub->num_rects]->ass);
     if (ret < 0)
-        return ret;
+        goto err;
     sub->num_rects++;
     return dlen;
+
+errnomem:
+    ret = AVERROR(ENOMEM);
+err:
+    av_bprint_finalize(&buf, NULL);
+    return ret;
+}
+
+void ff_ass_bprint_text_event(AVBPrint *buf, const char *p, int size,
+                             const char *linebreaks, int keep_ass_markup)
+{
+    const char *p_end = p + size;
+
+    for (; p < p_end && *p; p++) {
+
+        /* forced custom line breaks, not accounted as "normal" EOL */
+        if (linebreaks && strchr(linebreaks, *p)) {
+            av_bprintf(buf, "\\N");
+
+        /* standard ASS escaping so random characters don't get mis-interpreted
+         * as ASS */
+        } else if (!keep_ass_markup && strchr("{}\\", *p)) {
+            av_bprintf(buf, "\\%c", *p);
+
+        /* some packets might end abruptly (no \0 at the end, like for example
+         * in some cases of demuxing from a classic video container), some
+         * might be terminated with \n or \r\n which we have to remove (for
+         * consistency with those who haven't), and we also have to deal with
+         * evil cases such as \r at the end of the buffer (and no \0 terminated
+         * character) */
+        } else if (p[0] == '\n') {
+            /* some stuff left so we can insert a line break */
+            if (p < p_end - 1)
+                av_bprintf(buf, "\\N");
+        } else if (p[0] == '\r' && p < p_end - 1 && p[1] == '\n') {
+            /* \r followed by a \n, we can skip it. We don't insert the \N yet
+             * because we don't know if it is followed by more text */
+            continue;
+
+        /* finally, a sane character */
+        } else {
+            av_bprint_chars(buf, *p, 1);
+        }
+    }
+    av_bprintf(buf, "\r\n");
 }

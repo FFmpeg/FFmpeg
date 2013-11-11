@@ -19,7 +19,9 @@
  */
 
 #include "avcodec.h"
+#include "libavcodec/ass.h"
 #include "libavutil/opt.h"
+#include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 
 #include <libzvbi.h>
@@ -31,6 +33,15 @@
 #define VBI_G(rgba)   (((rgba) >> 8) & 0xFF)
 #define VBI_B(rgba)   (((rgba) >> 16) & 0xFF)
 #define VBI_A(rgba)   (((rgba) >> 24) & 0xFF)
+#define MAX_BUFFERED_PAGES 25
+
+typedef struct TeletextPage
+{
+    AVSubtitleRect *sub_rect;
+    int pgno;
+    int subno;
+    int64_t pts;
+} TeletextPage;
 
 /* main data structure */
 typedef struct TeletextContext
@@ -39,15 +50,17 @@ typedef struct TeletextContext
     char           *pgno;
     int             x_offset;
     int             y_offset;
-    char           *format;
-    int             format_id; /* 0 = bitmap, 1 = text */
+    int             format_id; /* 0 = bitmap, 1 = text/ass */
     int             chop_top;
     int             sub_duration; /* in msec */
     int             transparent_bg;
     int             chop_spaces;
 
     int             lines_processed;
-    AVSubtitleRect *sub_rect;
+    TeletextPage    *pages;
+    int             nb_pages;
+    int64_t         pts;
+    int             handler_ret;
 
     vbi_decoder *   vbi;
     vbi_dvb_demux * dx;
@@ -72,14 +85,54 @@ chop_spaces_utf8(const unsigned char* t, int len)
     return len;
 }
 
+static void
+subtitle_rect_free(AVSubtitleRect **sub_rect)
+{
+    av_freep(&(*sub_rect)->pict.data[0]);
+    av_freep(&(*sub_rect)->pict.data[1]);
+    av_freep(&(*sub_rect)->ass);
+    av_freep(sub_rect);
+}
+
+static int
+create_ass_text(TeletextContext *ctx, const char *text, char **ass)
+{
+    int ret;
+    AVBPrint buf, buf2;
+    const int ts_start    = av_rescale_q(ctx->pts,          AV_TIME_BASE_Q,        (AVRational){1, 100});
+    const int ts_duration = av_rescale_q(ctx->sub_duration, (AVRational){1, 1000}, (AVRational){1, 100});
+
+    /* First we escape the plain text into buf. */
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+    ff_ass_bprint_text_event(&buf, text, strlen(text), "", 0);
+
+    if (!av_bprint_is_complete(&buf)) {
+        av_bprint_finalize(&buf, NULL);
+        return AVERROR(ENOMEM);
+    }
+
+    /* Then we create the ass dialog line in buf2 from the escaped text in buf. */
+    av_bprint_init(&buf2, 0, AV_BPRINT_SIZE_UNLIMITED);
+    ff_ass_bprint_dialog(&buf2, buf.str, ts_start, ts_duration, 0);
+    av_bprint_finalize(&buf, NULL);
+
+    if (!av_bprint_is_complete(&buf2)) {
+        av_bprint_finalize(&buf2, NULL);
+        return AVERROR(ENOMEM);
+    }
+
+    if ((ret = av_bprint_finalize(&buf2, ass)) < 0)
+        return ret;
+
+    return 0;
+}
+
 // draw a page as text
 static int
-gen_sub_text(TeletextContext *ctx, vbi_page *page, int chop_top)
+gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top)
 {
-    AVSubtitleRect *sub_rect = ctx->sub_rect;
-    char *text;
     const char *in;
-    char *out;
+    AVBPrint buf;
     char *vbi_text = av_malloc(TEXT_MAXSZ);
     int sz;
 
@@ -97,11 +150,8 @@ gen_sub_text(TeletextContext *ctx, vbi_page *page, int chop_top)
     }
     vbi_text[sz] = '\0';
     in  = vbi_text;
-    out = text = av_malloc(TEXT_MAXSZ);
-    if (!text) {
-        av_free(vbi_text);
-        return AVERROR(ENOMEM);
-    }
+    av_bprint_init(&buf, 0, TEXT_MAXSZ);
+
     if (ctx->chop_spaces) {
         for (;;) {
             int nl, sz;
@@ -116,33 +166,38 @@ gen_sub_text(TeletextContext *ctx, vbi_page *page, int chop_top)
                 break;
             // skip trailing spaces
             sz = chop_spaces_utf8(in, nl);
-            memcpy(out, in, sz);
-            out += sz;
-            *out++ = '\n';
+            av_bprint_append_data(&buf, in, sz);
+            av_bprintf(&buf, "\n");
             in += nl;
         }
     } else {
-        strcpy(text, vbi_text);
-        out += sz;
-        *out++ = '\n';
+        av_bprintf(&buf, "%s\n", vbi_text);
     }
     av_free(vbi_text);
-    *out = '\0';
-    if (out > text) {
-        sub_rect->type = SUBTITLE_TEXT;
-        sub_rect->text = text;
-        av_log(ctx, AV_LOG_DEBUG, "subtext:%s:txetbus\n", text);
+
+    if (!av_bprint_is_complete(&buf)) {
+        av_bprint_finalize(&buf, NULL);
+        return AVERROR(ENOMEM);
+    }
+
+    if (buf.len) {
+        int ret;
+        sub_rect->type = SUBTITLE_ASS;
+        if ((ret = create_ass_text(ctx, buf.str, &sub_rect->ass)) < 0) {
+            av_bprint_finalize(&buf, NULL);
+            return ret;
+        }
+        av_log(ctx, AV_LOG_DEBUG, "subtext:%s:txetbus\n", sub_rect->ass);
     } else {
         sub_rect->type = SUBTITLE_NONE;
-        av_free(text);
     }
+    av_bprint_finalize(&buf, NULL);
     return 0;
 }
 
 static void
-fix_transparency(TeletextContext *ctx, vbi_page *page, int chop_top, uint8_t transparent_color, int resx, int resy)
+fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top, uint8_t transparent_color, int resx, int resy)
 {
-    AVSubtitleRect *sub_rect = ctx->sub_rect;
     int iy;
 
     // Hack for transparency, inspired by VLC code...
@@ -173,9 +228,8 @@ fix_transparency(TeletextContext *ctx, vbi_page *page, int chop_top, uint8_t tra
 
 // draw a page as bitmap
 static int
-gen_sub_bitmap(TeletextContext *ctx, vbi_page *page, int chop_top)
+gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top)
 {
-    AVSubtitleRect *sub_rect = ctx->sub_rect;
     int resx = page->columns * 12;
     int resy = (page->rows - chop_top) * 10;
     uint8_t ci, cmax = 0;
@@ -206,7 +260,7 @@ gen_sub_bitmap(TeletextContext *ctx, vbi_page *page, int chop_top)
                             0, chop_top, page->columns, page->rows - chop_top,
                             /*reveal*/ 1, /*flash*/ 1);
 
-    fix_transparency(ctx, page, chop_top, cmax, resx, resy);
+    fix_transparency(ctx, sub_rect, page, chop_top, cmax, resx, resy);
     sub_rect->x = ctx->x_offset;
     sub_rect->y = ctx->y_offset;
     sub_rect->w = resx;
@@ -239,6 +293,7 @@ static void
 handler(vbi_event *ev, void *user_data)
 {
     TeletextContext *ctx = user_data;
+    TeletextPage *new_pages;
     vbi_page page;
     int res;
     char pgno_str[12];
@@ -252,6 +307,8 @@ handler(vbi_event *ev, void *user_data)
            pgno_str, ev->ev.ttx_page.subno & 0xFF);
 
     if (strcmp(ctx->pgno, "*") && !strstr(ctx->pgno, pgno_str))
+        return;
+    if (ctx->handler_ret < 0)
         return;
 
     /* Fetch the page.  */
@@ -279,18 +336,34 @@ handler(vbi_event *ev, void *user_data)
     av_log(ctx, AV_LOG_DEBUG, "%d x %d page chop:%d\n",
            page.columns, page.rows, chop_top);
 
-    if (!ctx->sub_rect) {
-        ctx->sub_rect = av_mallocz(sizeof(*ctx->sub_rect));
-        if (ctx->sub_rect) {
-            res = (ctx->format_id == 0) ?
-                gen_sub_bitmap(ctx, &page, chop_top) :
-                gen_sub_text  (ctx, &page, chop_top);
-            if (res)
-                av_freep(&ctx->sub_rect);
+    if (ctx->nb_pages < MAX_BUFFERED_PAGES) {
+        if ((new_pages = av_realloc_array(ctx->pages, ctx->nb_pages + 1, sizeof(TeletextPage)))) {
+            TeletextPage *cur_page = new_pages + ctx->nb_pages;
+            ctx->pages = new_pages;
+            cur_page->sub_rect = av_mallocz(sizeof(*cur_page->sub_rect));
+            cur_page->pts = ctx->pts;
+            cur_page->pgno = ev->ev.ttx_page.pgno;
+            cur_page->subno = ev->ev.ttx_page.subno;
+            if (cur_page->sub_rect) {
+                res = (ctx->format_id == 0) ?
+                    gen_sub_bitmap(ctx, cur_page->sub_rect, &page, chop_top) :
+                    gen_sub_text  (ctx, cur_page->sub_rect, &page, chop_top);
+                if (res < 0) {
+                    av_freep(&cur_page->sub_rect);
+                    ctx->handler_ret = res;
+                } else {
+                    ctx->pages[ctx->nb_pages++] = *cur_page;
+                }
+            } else {
+                ctx->handler_ret = AVERROR(ENOMEM);
+            }
+        } else {
+            ctx->handler_ret = AVERROR(ENOMEM);
         }
     } else {
-        // FIXME: Multiple teletext pages in a single packet, some kind of buffering should be done instead of dropping the page...
-        av_log(ctx, AV_LOG_WARNING, "Missed page %s.%02x.\n", pgno_str, ev->ev.ttx_page.subno & 0xFF);
+        //TODO: If multiple packets contain more than one page, pages may got queued up, and this may happen...
+        av_log(ctx, AV_LOG_ERROR, "Buffered too many pages, dropping page %s.\n", pgno_str);
+        ctx->handler_ret = AVERROR(ENOSYS);
     }
 
     vbi_unref_page(&page);
@@ -304,10 +377,11 @@ teletext_decode_frame(AVCodecContext *avctx,
     TeletextContext *ctx = avctx->priv_data;
     AVSubtitle      *sub = data;
     const uint8_t   *buf = pkt->data;
-    unsigned int    left = pkt->size;
+    int             left = pkt->size;
     uint8_t         pesheader[45] = {0x00, 0x00, 0x01, 0xbd, 0x00, 0x00, 0x85, 0x80, 0x24, 0x21, 0x00, 0x01, 0x00, 0x01};
     int             pesheader_size = sizeof(pesheader);
     const uint8_t   *pesheader_buf = pesheader;
+    int             ret = 0;
 
     if (!ctx->vbi) {
         if (!(ctx->vbi = vbi_decoder_new()))
@@ -321,64 +395,84 @@ teletext_decode_frame(AVCodecContext *avctx,
     if (!ctx->dx && (!(ctx->dx = vbi_dvb_pes_demux_new (/* callback */ NULL, NULL))))
         return AVERROR(ENOMEM);
 
-    // We allow unreasonably big packets, even if the standard only allows a max size of 1472
-    if ((pesheader_size + left) < 184 || (pesheader_size + left) > 65504 || (pesheader_size + left) % 184 != 0)
-        return AVERROR_INVALIDDATA;
+    if (avctx->pkt_timebase.den && pkt->pts != AV_NOPTS_VALUE)
+        ctx->pts = av_rescale_q(pkt->pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
 
-    memset(pesheader + 14, 0xff, pesheader_size - 14);
-    AV_WB16(pesheader + 4, left + pesheader_size - 6);
+    if (left) {
+        // We allow unreasonably big packets, even if the standard only allows a max size of 1472
+        if ((pesheader_size + left) < 184 || (pesheader_size + left) > 65504 || (pesheader_size + left) % 184 != 0)
+            return AVERROR_INVALIDDATA;
 
-    /* PTS is deliberately left as 0 in the PES header, otherwise libzvbi uses
-     * it to detect dropped frames. Unforunatey the guessed packet PTS values
-     * (see mpegts demuxer) are not accurate enough to pass that test. */
-    vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, NULL, &pesheader_buf, &pesheader_size);
+        memset(pesheader + 14, 0xff, pesheader_size - 14);
+        AV_WB16(pesheader + 4, left + pesheader_size - 6);
 
-    while (left > 0) {
-        int64_t pts = 0;
-        unsigned int lines = vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, &pts, &buf, &left);
+        /* PTS is deliberately left as 0 in the PES header, otherwise libzvbi uses
+         * it to detect dropped frames. Unforunatey the guessed packet PTS values
+         * (see mpegts demuxer) are not accurate enough to pass that test. */
+        vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, NULL, &pesheader_buf, &pesheader_size);
+
+        ctx->handler_ret = pkt->size;
+
+        while (left > 0) {
+            int64_t pts = 0;
+            unsigned int lines = vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, &pts, &buf, &left);
 #ifdef DEBUG
-        av_log(avctx, AV_LOG_DEBUG,
-               "ctx=%p buf_size=%d left=%u lines=%u pts=%f pkt_pts=%f\n",
-               ctx, pkt->size, left, lines, (double)pts/90000.0, (double)pkt->pts/90000.0);
+            av_log(avctx, AV_LOG_DEBUG,
+                   "ctx=%p buf_size=%d left=%u lines=%u pts=%f pkt_pts=%f\n",
+                   ctx, pkt->size, left, lines, (double)pts/90000.0, (double)pkt->pts/90000.0);
 #endif
-        if (lines > 0) {
+            if (lines > 0) {
 #ifdef DEBUGx
-            int i;
-            for(i=0; i<lines; ++i)
-                av_log(avctx, AV_LOG_DEBUG,
-                       "lines=%d id=%x\n", i, ctx->sliced[i].id);
+                int i;
+                for(i=0; i<lines; ++i)
+                    av_log(avctx, AV_LOG_DEBUG,
+                           "lines=%d id=%x\n", i, ctx->sliced[i].id);
 #endif
-            vbi_decode(ctx->vbi, ctx->sliced, lines, (double)pts/90000.0);
-            ctx->lines_processed += lines;
+                vbi_decode(ctx->vbi, ctx->sliced, lines, (double)pts/90000.0);
+                ctx->lines_processed += lines;
+            }
         }
+        ctx->pts = AV_NOPTS_VALUE;
+        ret = ctx->handler_ret;
     }
 
+    if (ret < 0)
+        return ret;
+
     // is there a subtitle to pass?
-    if (ctx->sub_rect) {
-        sub->format = (ctx->sub_rect->type == SUBTITLE_TEXT ? 1: 0);
+    if (ctx->nb_pages) {
+        int i;
+        sub->format = ctx->format_id;
         sub->start_display_time = 0;
         sub->end_display_time = ctx->sub_duration;
         sub->num_rects = 0;
+        sub->pts = ctx->pages->pts;
 
-        if (ctx->sub_rect->type != SUBTITLE_NONE) {
+        if (ctx->pages->sub_rect->type != SUBTITLE_NONE) {
             sub->rects = av_malloc(sizeof(*sub->rects) * 1);
             if (sub->rects) {
                 sub->num_rects = 1;
-                sub->rects[0] = ctx->sub_rect;
+                sub->rects[0] = ctx->pages->sub_rect;
+            } else {
+                ret = AVERROR(ENOMEM);
             }
         } else {
             av_log(avctx, AV_LOG_DEBUG, "sending empty sub\n");
             sub->rects = NULL;
         }
         if (!sub->rects) // no rect was passed
-            av_free(ctx->sub_rect);
-        ctx->sub_rect = NULL;
+            subtitle_rect_free(&ctx->pages->sub_rect);
 
-        *data_size = 1;
+        for (i = 0; i < ctx->nb_pages - 1; i++)
+            ctx->pages[i] = ctx->pages[i + 1];
+        ctx->nb_pages--;
+
+        if (ret >= 0)
+            *data_size = 1;
     } else
         *data_size = 0;
 
-    return pkt->size;
+    return ret;
 }
 
 static int teletext_init_decoder(AVCodecContext *avctx)
@@ -394,15 +488,7 @@ static int teletext_init_decoder(AVCodecContext *avctx)
 
     ctx->dx = NULL;
     ctx->vbi = NULL;
-    ctx->sub_rect = NULL;
-    if (!strcmp(ctx->format, "bitmap")) {
-        ctx->format_id = 0;
-    } else if (!strcmp(ctx->format, "text")) {
-        ctx->format_id = 1;
-    } else {
-        av_log(avctx, AV_LOG_ERROR, "unkown format %s\n", ctx->format);
-        return AVERROR_OPTION_NOT_FOUND;
-    }
+    ctx->pts = AV_NOPTS_VALUE;
 
 #ifdef DEBUG
     {
@@ -411,7 +497,7 @@ static int teletext_init_decoder(AVCodecContext *avctx)
     }
 #endif
     av_log(avctx, AV_LOG_VERBOSE, "page filter: %s\n", ctx->pgno);
-    return 0;
+    return (ctx->format_id == 1) ? ff_ass_subtitle_header_default(avctx) : 0;
 }
 
 static int teletext_close_decoder(AVCodecContext *avctx)
@@ -421,11 +507,15 @@ static int teletext_close_decoder(AVCodecContext *avctx)
 #ifdef DEBUG
     av_log(avctx, AV_LOG_DEBUG, "lines_total=%u\n", ctx->lines_processed);
 #endif
+    while (ctx->nb_pages)
+        subtitle_rect_free(&ctx->pages[--ctx->nb_pages].sub_rect);
+    av_freep(&ctx->pages);
 
     vbi_dvb_demux_delete(ctx->dx);
     vbi_decoder_delete(ctx->vbi);
     ctx->dx = NULL;
     ctx->vbi = NULL;
+    ctx->pts = AV_NOPTS_VALUE;
     return 0;
 }
 
@@ -439,7 +529,9 @@ static void teletext_flush(AVCodecContext *avctx)
 static const AVOption options[] = {
     {"txt_page",        "list of teletext page numbers to decode, * is all", OFFSET(pgno),           AV_OPT_TYPE_STRING, {.str = "*"},      0, 0,        SD},
     {"txt_chop_top",    "discards the top teletext line",                    OFFSET(chop_top),       AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},
-    {"txt_format",      "format of the subtitles (bitmap or text)",          OFFSET(format),         AV_OPT_TYPE_STRING, {.str = "bitmap"}, 0, 0,        SD},
+    {"txt_format",      "format of the subtitles (bitmap or text)",          OFFSET(format_id),      AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,        SD,  "txt_format"},
+    {"bitmap",          NULL,                                                0,                      AV_OPT_TYPE_CONST,  {.i64 = 0},        0, 0,        SD,  "txt_format"},
+    {"text",            NULL,                                                0,                      AV_OPT_TYPE_CONST,  {.i64 = 1},        0, 0,        SD,  "txt_format"},
     {"txt_left",        "x offset of generated bitmaps",                     OFFSET(x_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_top",         "y offset of generated bitmaps",                     OFFSET(y_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_chop_spaces", "chops leading and trailing spaces from text",       OFFSET(chop_spaces),    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},
@@ -464,6 +556,7 @@ AVCodec ff_libzvbi_teletext_decoder = {
     .init      = teletext_init_decoder,
     .close     = teletext_close_decoder,
     .decode    = teletext_decode_frame,
+    .capabilities = CODEC_CAP_DELAY,
     .flush     = teletext_flush,
     .priv_class= &teletext_class,
 };

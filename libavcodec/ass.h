@@ -23,6 +23,7 @@
 #define AVCODEC_ASS_H
 
 #include "avcodec.h"
+#include "libavutil/bprint.h"
 
 /**
  * @name Default values for ASS style
@@ -90,4 +91,38 @@ int ff_ass_subtitle_header_default(AVCodecContext *avctx);
 int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
                     int ts_start, int duration, int raw);
 
+/**
+ * Add an ASS dialog line to an AVBPrint buffer.
+ *
+ * @param buf pointer to an initialized AVBPrint buffer
+ * @param dialog ASS dialog to add to sub
+ * @param ts_start start timestamp for this dialog (in 1/100 second unit)
+ * @param duration duration for this dialog (in 1/100 second unit), can be -1
+ *                 to last until the end of the presentation
+ * @param raw when set to 2, it indicates that dialog contains an ASS
+ *                           dialog line as muxed in Matroska
+ *            when set to 1, it indicates that dialog contains a whole SSA
+ *                           dialog line which should be copied as is.
+ *            when set to 0, it indicates that dialog contains only the Text
+ *                           part of the ASS dialog line, the rest of the line
+ *                           will be generated.
+ * @return number of characters read from dialog. It can be less than the whole
+ *         length of dialog, if dialog contains several lines of text.
+ *         A negative value indicates an error.
+ */
+int ff_ass_bprint_dialog(AVBPrint *buf, const char *dialog,
+                         int ts_start, int duration, int raw);
+
+/**
+ * Escape a text subtitle using ASS syntax into an AVBPrint buffer.
+ * Newline characters will be escaped to \N.
+ *
+ * @param buf pointer to an initialized AVBPrint buffer
+ * @param p source text
+ * @param size size of the source text
+ * @param linebreaks additional newline chars, which will be escaped to \N
+ * @param keep_ass_markup braces and backslash will not be escaped if set
+ */
+void ff_ass_bprint_text_event(AVBPrint *buf, const char *p, int size,
+                             const char *linebreaks, int keep_ass_markup);
 #endif /* AVCODEC_ASS_H */

@@ -41,59 +41,20 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static int text_event_to_ass(const AVCodecContext *avctx, AVBPrint *buf,
-                             const char *p, const char *p_end)
-{
-    const TextContext *text = avctx->priv_data;
-
-    for (; p < p_end && *p; p++) {
-
-        /* forced custom line breaks, not accounted as "normal" EOL */
-        if (text->linebreaks && strchr(text->linebreaks, *p)) {
-            av_bprintf(buf, "\\N");
-
-        /* standard ASS escaping so random characters don't get mis-interpreted
-         * as ASS */
-        } else if (!text->keep_ass_markup && strchr("{}\\", *p)) {
-            av_bprintf(buf, "\\%c", *p);
-
-        /* some packets might end abruptly (no \0 at the end, like for example
-         * in some cases of demuxing from a classic video container), some
-         * might be terminated with \n or \r\n which we have to remove (for
-         * consistency with those who haven't), and we also have to deal with
-         * evil cases such as \r at the end of the buffer (and no \0 terminated
-         * character) */
-        } else if (p[0] == '\n') {
-            /* some stuff left so we can insert a line break */
-            if (p < p_end - 1)
-                av_bprintf(buf, "\\N");
-        } else if (p[0] == '\r' && p < p_end - 1 && p[1] == '\n') {
-            /* \r followed by a \n, we can skip it. We don't insert the \N yet
-             * because we don't know if it is followed by more text */
-            continue;
-
-        /* finally, a sane character */
-        } else {
-            av_bprint_chars(buf, *p, 1);
-        }
-    }
-    av_bprintf(buf, "\r\n");
-    return 0;
-}
-
 static int text_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_sub_ptr, AVPacket *avpkt)
 {
     AVBPrint buf;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
+    const TextContext *text = avctx->priv_data;
     const int ts_start     = av_rescale_q(avpkt->pts,      avctx->time_base, (AVRational){1,100});
     const int ts_duration  = avpkt->duration != -1 ?
                              av_rescale_q(avpkt->duration, avctx->time_base, (AVRational){1,100}) : -1;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    if (ptr && avpkt->size > 0 && *ptr &&
-        !text_event_to_ass(avctx, &buf, ptr, ptr + avpkt->size)) {
+    if (ptr && avpkt->size > 0 && *ptr) {
+        ff_ass_bprint_text_event(&buf, ptr, avpkt->size, text->linebreaks, text->keep_ass_markup);
         if (!av_bprint_is_complete(&buf)) {
             av_bprint_finalize(&buf, NULL);
             return AVERROR(ENOMEM);
