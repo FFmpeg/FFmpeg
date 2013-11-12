@@ -6422,9 +6422,11 @@ The main purpose of setting @option{mp} to a chroma plane is to reduce CPU
 load and make pullup usable in realtime on slow machines.
 @end table
 
-For example to inverse telecined NTSC input:
+For best results (without duplicated frames in the output file) it is
+necessary to change the output frame rate. For example, to inverse
+telecine NTSC input:
 @example
-pullup,fps=24000/1001
+ffmpeg -i input -vf pullup -r 24000/1001 ...
 @end example
 
 @section removelogo
