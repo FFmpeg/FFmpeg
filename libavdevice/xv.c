@@ -97,6 +97,7 @@ static int xv_write_header(AVFormatContext *s)
     if (XvQueryAdaptors(xv->display, DefaultRootWindow(xv->display), &num_adaptors, &ai) != Success)
         return AVERROR_EXTERNAL;
     xv->xv_port = ai[0].base_id;
+    XvFreeAdaptorInfo(ai);
 
     if (encctx->pix_fmt != AV_PIX_FMT_YUV420P) {
         av_log(s, AV_LOG_ERROR,
