@@ -806,8 +806,8 @@ static void generate_codebook(RoqContext *enc, RoqTempdata *tempdata,
     else
         closest_cb = tempdata->closest_cb2;
 
-    ff_init_elbg(points, 6*c_size, inputCount, codebook, cbsize, 1, closest_cb, &enc->randctx);
-    ff_do_elbg(points, 6*c_size, inputCount, codebook, cbsize, 1, closest_cb, &enc->randctx);
+    avpriv_init_elbg(points, 6*c_size, inputCount, codebook, cbsize, 1, closest_cb, &enc->randctx);
+    avpriv_do_elbg(points, 6*c_size, inputCount, codebook, cbsize, 1, closest_cb, &enc->randctx);
 
     if (size == 4)
         av_free(closest_cb);

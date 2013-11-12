@@ -324,7 +324,7 @@ static void do_shiftings(elbg_data *elbg)
 
 #define BIG_PRIME 433494437LL
 
-void ff_init_elbg(int *points, int dim, int numpoints, int *codebook,
+void avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
                   int numCB, int max_steps, int *closest_cb,
                   AVLFG *rand_state)
 {
@@ -339,8 +339,8 @@ void ff_init_elbg(int *points, int dim, int numpoints, int *codebook,
             memcpy(temp_points + i*dim, points + k*dim, dim*sizeof(int));
         }
 
-        ff_init_elbg(temp_points, dim, numpoints/8, codebook, numCB, 2*max_steps, closest_cb, rand_state);
-        ff_do_elbg(temp_points, dim, numpoints/8, codebook, numCB, 2*max_steps, closest_cb, rand_state);
+        avpriv_init_elbg(temp_points, dim, numpoints/8, codebook, numCB, 2*max_steps, closest_cb, rand_state);
+        avpriv_do_elbg(temp_points, dim, numpoints/8, codebook, numCB, 2*max_steps, closest_cb, rand_state);
 
         av_free(temp_points);
 
@@ -351,7 +351,7 @@ void ff_init_elbg(int *points, int dim, int numpoints, int *codebook,
 
 }
 
-void ff_do_elbg(int *points, int dim, int numpoints, int *codebook,
+void avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
                 int numCB, int max_steps, int *closest_cb,
                 AVLFG *rand_state)
 {
