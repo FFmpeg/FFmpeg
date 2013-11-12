@@ -209,7 +209,7 @@ static inline int hpel_motion(MpegEncContext *s,
         dxy |= (motion_y & 1) << 1;
     src += src_y * s->linesize + src_x;
 
-    if (s->unrestricted_mv && (s->flags & CODEC_FLAG_EMU_EDGE)) {
+    if (s->flags & CODEC_FLAG_EMU_EDGE) {
         if ((unsigned)src_x > FFMAX(s->h_edge_pos - (motion_x & 1) - 8, 0) ||
             (unsigned)src_y > FFMAX(s->v_edge_pos - (motion_y & 1) - 8, 0)) {
             s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->linesize, src,
