@@ -707,7 +707,6 @@ typedef struct MpegEncContext {
     int rtp_mode;
 
     uint8_t *ptr_lastgob;
-    int swap_uv;             //vcr2 codec is an MPEG-2 variant with U and V swapped
     int16_t (*pblocks[12])[64];
 
     int16_t (*block)[64]; ///< points to one of the following blocks

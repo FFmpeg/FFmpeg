@@ -646,15 +646,6 @@ static inline int get_qscale(MpegEncContext *s)
     }
 }
 
-static void exchange_uv(MpegEncContext *s)
-{
-    int16_t (*tmp)[64];
-
-    tmp           = s->pblocks[4];
-    s->pblocks[4] = s->pblocks[5];
-    s->pblocks[5] = tmp;
-}
-
 /* motion type (for MPEG-2) */
 #define MT_FIELD 1
 #define MT_FRAME 2
@@ -761,9 +752,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
         // if 1, we memcpy blocks in xvmcvideo
         if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1) {
             ff_xvmc_pack_pblocks(s, -1); // inter are always full blocks
-            if (s->swap_uv) {
-                exchange_uv(s);
-            }
         }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_XVMC */
@@ -978,9 +966,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
             //if 1, we memcpy blocks in xvmcvideo
             if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1) {
                 ff_xvmc_pack_pblocks(s, cbp);
-                if (s->swap_uv) {
-                    exchange_uv(s);
-                }
             }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_XVMC */
@@ -1988,7 +1973,6 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->chroma_format        = 1;
     s->codec_id             = s->avctx->codec_id = AV_CODEC_ID_MPEG1VIDEO;
     s->out_format           = FMT_MPEG1;
-    s->swap_uv              = 0; // AFAIK VCR2 does not have SEQ_HEADER
     if (s->flags & CODEC_FLAG_LOW_DELAY)
         s->low_delay = 1;
 
@@ -2028,8 +2012,6 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
 
     if (ff_MPV_common_init(s) < 0)
         return -1;
-    exchange_uv(s); // common init reset pblocks, so we swap them here
-    s->swap_uv = 1; // in case of xvmc we need to swap uv for each MB
     s1->mpeg_enc_ctx_allocated = 1;
 
     for (i = 0; i < 64; i++) {
