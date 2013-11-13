@@ -32,5 +32,5 @@ AVOutputFormat ff_null_muxer = {
     .audio_codec       = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
     .write_packet      = null_write_packet,
-    .flags             = AVFMT_NOFILE | AVFMT_NOTIMESTAMPS | AVFMT_RAWPICTURE,
+    .flags             = AVFMT_VARIABLE_FPS | AVFMT_NOFILE | AVFMT_NOTIMESTAMPS | AVFMT_RAWPICTURE,
 };
