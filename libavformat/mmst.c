@@ -152,7 +152,7 @@ static int send_command_packet(MMSTContext *mmst)
     return 0;
 }
 
-static void mms_put_utf16(MMSContext *mms, const uint8_t *src)
+static int mms_put_utf16(MMSContext *mms, const uint8_t *src)
 {
     AVIOContext bic;
     int size = mms->write_out_ptr - mms->out_buffer;
@@ -161,7 +161,10 @@ static void mms_put_utf16(MMSContext *mms, const uint8_t *src)
             sizeof(mms->out_buffer) - size, 1, NULL, NULL, NULL, NULL);
 
     len = avio_put_str16le(&bic, src);
+    if (len < 0)
+        return len;
     mms->write_out_ptr += len;
+    return 0;
 }
 
 static int send_time_test_data(MMSTContext *mmst)
@@ -173,6 +176,7 @@ static int send_time_test_data(MMSTContext *mmst)
 
 static int send_protocol_select(MMSTContext *mmst)
 {
+    int ret;
     char data_string[256];
     MMSContext *mms = &mmst->mms;
 
@@ -189,18 +193,21 @@ static int send_protocol_select(MMSTContext *mmst)
             "TCP",                                        // or UDP
             LOCAL_PORT);
 
-    mms_put_utf16(mms, data_string);
+    if ((ret = mms_put_utf16(mms, data_string)) < 0)
+        return ret;
     return send_command_packet(mmst);
 }
 
 static int send_media_file_request(MMSTContext *mmst)
 {
+    int ret;
     MMSContext *mms = &mmst->mms;
     start_command_packet(mmst, CS_PKT_MEDIA_FILE_REQUEST);
     insert_command_prefixes(mms, 1, 0xffffffff);
     bytestream_put_le32(&mms->write_out_ptr, 0);
     bytestream_put_le32(&mms->write_out_ptr, 0);
-    mms_put_utf16(mms, mmst->path + 1); // +1 for skip "/"
+    if ((ret = mms_put_utf16(mms, mmst->path + 1)) < 0) // +1 for skip "/"
+        return ret;
 
     return send_command_packet(mmst);
 }
@@ -417,6 +424,7 @@ static int send_media_header_request(MMSTContext *mmst)
 static int send_startup_packet(MMSTContext *mmst)
 {
     char data_string[256];
+    int ret;
     MMSContext *mms = &mmst->mms;
     // SubscriberName is defined in MS specification linked below.
     // The guid value can be any valid value.
@@ -429,7 +437,8 @@ static int send_startup_packet(MMSTContext *mmst)
     start_command_packet(mmst, CS_PKT_INITIAL);
     insert_command_prefixes(mms, 0, 0x0004000b);
     bytestream_put_le32(&mms->write_out_ptr, 0x0003001c);
-    mms_put_utf16(mms, data_string);
+    if ((ret = mms_put_utf16(mms, data_string)) < 0)
+        return ret;
     return send_command_packet(mmst);
 }
 
