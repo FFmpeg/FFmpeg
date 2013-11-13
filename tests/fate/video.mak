@@ -269,6 +269,9 @@ fate-vb: CMD = framecrc -i $(TARGET_SAMPLES)/SIFF/INTRO_B.VB -t 3 -pix_fmt rgb24
 FATE_VIDEO-$(call DEMDEC, AVI, VCR1) += fate-vcr1
 fate-vcr1: CMD = framecrc -i $(TARGET_SAMPLES)/vcr1/VCR1test.avi -an
 
+FATE_VIDEO-$(call DEMDEC, AVI, MPEG2VIDEO) += fate-vcr2
+fate-vcr2: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/vcr2/VCR2test.avi -an
+
 FATE_VIDEO-$(call DEMDEC, AVI, XL) += fate-videoxl
 fate-videoxl: CMD = framecrc -i $(TARGET_SAMPLES)/vixl/pig-vixl.avi
 
