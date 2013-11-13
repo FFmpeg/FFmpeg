@@ -94,7 +94,6 @@ typedef struct HpelDSPContext {
 
 void ff_hpeldsp_init(HpelDSPContext *c, int flags);
 
-void ff_hpeldsp_init_alpha(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_arm(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_bfin(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_ppc(HpelDSPContext *c, int flags);
