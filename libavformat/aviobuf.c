@@ -319,6 +319,7 @@ int avio_put_str16le(AVIOContext *s, const char *str)
 {
     const uint8_t *q = str;
     int ret = 0;
+    int err = 0;
 
     while (*q) {
         uint32_t ch;
@@ -329,8 +330,11 @@ int avio_put_str16le(AVIOContext *s, const char *str)
         continue;
 invalid:
         av_log(s, AV_LOG_ERROR, "Invaid UTF8 sequence in avio_put_str16le\n");
+        err = AVERROR(EINVAL);
     }
     avio_wl16(s, 0);
+    if (err)
+        return err;
     ret += 2;
     return ret;
 }
