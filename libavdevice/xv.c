@@ -51,10 +51,35 @@ typedef struct {
     char *display_name;
 
     XvImage* yuv_image;
+    enum AVPixelFormat image_format;
     int image_width, image_height;
     XShmSegmentInfo yuv_shminfo;
     int xv_port;
 } XVContext;
+
+typedef struct XVTagFormatMap
+{
+    int tag;
+    enum AVPixelFormat format;
+} XVTagFormatMap;
+
+static XVTagFormatMap tag_codec_map[] = {
+    { MKTAG('I','4','2','0'), AV_PIX_FMT_YUV420P },
+    { MKTAG('U','Y','V','Y'), AV_PIX_FMT_UYVY422 },
+    { MKTAG('Y','U','Y','2'), AV_PIX_FMT_YUYV422 },
+    { 0,                      AV_PIX_FMT_NONE }
+};
+
+static int xv_get_tag_from_format(enum AVPixelFormat format)
+{
+    XVTagFormatMap *m = tag_codec_map;
+    int i;
+    for (i = 0; m->tag; m = &tag_codec_map[++i]) {
+        if (m->format == format)
+            return m->tag;
+    }
+    return 0;
+}
 
 static int xv_write_header(AVFormatContext *s)
 {
@@ -62,7 +87,7 @@ static int xv_write_header(AVFormatContext *s)
     unsigned int num_adaptors;
     XvAdaptorInfo *ai;
     XvImageFormatValues *fv;
-    int num_formats = 0, j;
+    int num_formats = 0, j, tag;
     AVCodecContext *encctx = s->streams[0]->codec;
 
     if (   s->nb_streams > 1
@@ -71,6 +96,14 @@ static int xv_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Only supports one rawvideo stream\n");
         return AVERROR(EINVAL);
     }
+
+    if (!(tag = xv_get_tag_from_format(encctx->pix_fmt))) {
+        av_log(s, AV_LOG_ERROR,
+               "Unsupported pixel format '%s', only yuv420p, uyvy422, yuyv422 are currently supported\n",
+               av_get_pix_fmt_name(encctx->pix_fmt));
+        return AVERROR_PATCHWELCOME;
+    }
+    xv->image_format = encctx->pix_fmt;
 
     xv->display = XOpenDisplay(xv->display_name);
     if (!xv->display) {
@@ -100,18 +133,11 @@ static int xv_write_header(AVFormatContext *s)
     xv->xv_port = ai[0].base_id;
     XvFreeAdaptorInfo(ai);
 
-    if (encctx->pix_fmt != AV_PIX_FMT_YUV420P) {
-        av_log(s, AV_LOG_ERROR,
-               "Unsupported pixel format '%s', only yuv420p is currently supported\n",
-               av_get_pix_fmt_name(encctx->pix_fmt));
-        return AVERROR_PATCHWELCOME;
-    }
-
     fv = XvListImageFormats(xv->display, xv->xv_port, &num_formats);
     if (!fv)
         return AVERROR_EXTERNAL;
     for (j = 0; j < num_formats; j++) {
-        if (fv[j].id == MKTAG('I','4','2','0')) {
+        if (fv[j].id == tag) {
             break;
         }
     }
@@ -119,15 +145,15 @@ static int xv_write_header(AVFormatContext *s)
 
     if (j >= num_formats) {
         av_log(s, AV_LOG_ERROR,
-               "Device does not support pixel format yuv420p, aborting\n");
+               "Device does not support pixel format %s, aborting\n",
+               av_get_pix_fmt_name(encctx->pix_fmt));
         return AVERROR(EINVAL);
     }
 
     xv->gc = XCreateGC(xv->display, xv->window, 0, 0);
     xv->image_width  = encctx->width;
     xv->image_height = encctx->height;
-    xv->yuv_image = XvShmCreateImage(xv->display, xv->xv_port,
-                                     MKTAG('I','4','2','0'), 0,
+    xv->yuv_image = XvShmCreateImage(xv->display, xv->xv_port, tag, 0,
                                      xv->image_width, xv->image_height, &xv->yuv_shminfo);
     xv->yuv_shminfo.shmid = shmget(IPC_PRIVATE, xv->yuv_image->data_size,
                                    IPC_CREAT | 0777);
@@ -157,7 +183,7 @@ static int xv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     avpicture_fill(&pict, pkt->data, ctx->pix_fmt, ctx->width, ctx->height);
     av_image_copy(data, img->pitches, (const uint8_t **)pict.data, pict.linesize,
-                  AV_PIX_FMT_YUV420P, img->width, img->height);
+                  xv->image_format, img->width, img->height);
 
     XGetWindowAttributes(xv->display, xv->window, &window_attrs);
     if (XvShmPutImage(xv->display, xv->xv_port, xv->window, xv->gc,
