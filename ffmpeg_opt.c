@@ -2089,23 +2089,23 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         opt_video_codec(o, "c:v", "mpeg1video");
         opt_audio_codec(o, "c:a", "mp2");
         parse_option(o, "f", "vcd", options);
-        av_dict_set(&o->g->codec_opts, "b:v", arg, 0);
+        av_dict_set(&o->g->codec_opts, "b:v", arg, AV_DICT_DONT_OVERWRITE);
 
         parse_option(o, "s", norm == PAL ? "352x288" : "352x240", options);
         parse_option(o, "r", frame_rates[norm], options);
-        av_dict_set(&o->g->codec_opts, "g", norm == PAL ? "15" : "18", 0);
+        av_dict_set(&o->g->codec_opts, "g", norm == PAL ? "15" : "18", AV_DICT_DONT_OVERWRITE);
 
-        av_dict_set(&o->g->codec_opts, "b:v", "1150000", 0);
-        av_dict_set(&o->g->codec_opts, "maxrate", "1150000", 0);
-        av_dict_set(&o->g->codec_opts, "minrate", "1150000", 0);
-        av_dict_set(&o->g->codec_opts, "bufsize", "327680", 0); // 40*1024*8;
+        av_dict_set(&o->g->codec_opts, "b:v", "1150000", AV_DICT_DONT_OVERWRITE);
+        av_dict_set(&o->g->codec_opts, "maxrate", "1150000", AV_DICT_DONT_OVERWRITE);
+        av_dict_set(&o->g->codec_opts, "minrate", "1150000", AV_DICT_DONT_OVERWRITE);
+        av_dict_set(&o->g->codec_opts, "bufsize", "327680", AV_DICT_DONT_OVERWRITE); // 40*1024*8;
 
-        av_dict_set(&o->g->codec_opts, "b:a", "224000", 0);
+        av_dict_set(&o->g->codec_opts, "b:a", "224000", AV_DICT_DONT_OVERWRITE);
         parse_option(o, "ar", "44100", options);
         parse_option(o, "ac", "2", options);
 
-        av_dict_set(&o->g->format_opts, "packetsize", "2324", 0);
-        av_dict_set(&o->g->format_opts, "muxrate", "1411200", 0); // 2352 * 75 * 8;
+        av_dict_set(&o->g->format_opts, "packetsize", "2324", AV_DICT_DONT_OVERWRITE);
+        av_dict_set(&o->g->format_opts, "muxrate", "1411200", AV_DICT_DONT_OVERWRITE); // 2352 * 75 * 8;
 
         /* We have to offset the PTS, so that it is consistent with the SCR.
            SCR starts at 36000, but the first two packs contain only padding
@@ -2122,18 +2122,18 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         parse_option(o, "s", norm == PAL ? "480x576" : "480x480", options);
         parse_option(o, "r", frame_rates[norm], options);
         parse_option(o, "pix_fmt", "yuv420p", options);
-        av_dict_set(&o->g->codec_opts, "g", norm == PAL ? "15" : "18", 0);
+        av_dict_set(&o->g->codec_opts, "g", norm == PAL ? "15" : "18", AV_DICT_DONT_OVERWRITE);
 
-        av_dict_set(&o->g->codec_opts, "b:v", "2040000", 0);
-        av_dict_set(&o->g->codec_opts, "maxrate", "2516000", 0);
-        av_dict_set(&o->g->codec_opts, "minrate", "0", 0); // 1145000;
-        av_dict_set(&o->g->codec_opts, "bufsize", "1835008", 0); // 224*1024*8;
-        av_dict_set(&o->g->codec_opts, "scan_offset", "1", 0);
+        av_dict_set(&o->g->codec_opts, "b:v", "2040000", AV_DICT_DONT_OVERWRITE);
+        av_dict_set(&o->g->codec_opts, "maxrate", "2516000", AV_DICT_DONT_OVERWRITE);
+        av_dict_set(&o->g->codec_opts, "minrate", "0", AV_DICT_DONT_OVERWRITE); // 1145000;
+        av_dict_set(&o->g->codec_opts, "bufsize", "1835008", AV_DICT_DONT_OVERWRITE); // 224*1024*8;
+        av_dict_set(&o->g->codec_opts, "scan_offset", "1", AV_DICT_DONT_OVERWRITE);
 
-        av_dict_set(&o->g->codec_opts, "b:a", "224000", 0);
+        av_dict_set(&o->g->codec_opts, "b:a", "224000", AV_DICT_DONT_OVERWRITE);
         parse_option(o, "ar", "44100", options);
 
-        av_dict_set(&o->g->format_opts, "packetsize", "2324", 0);
+        av_dict_set(&o->g->format_opts, "packetsize", "2324", AV_DICT_DONT_OVERWRITE);
 
     } else if (!strcmp(arg, "dvd")) {
 
@@ -2144,17 +2144,17 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         parse_option(o, "s", norm == PAL ? "720x576" : "720x480", options);
         parse_option(o, "r", frame_rates[norm], options);
         parse_option(o, "pix_fmt", "yuv420p", options);
-        av_dict_set(&o->g->codec_opts, "g", norm == PAL ? "15" : "18", 0);
+        av_dict_set(&o->g->codec_opts, "g", norm == PAL ? "15" : "18", AV_DICT_DONT_OVERWRITE);
 
-        av_dict_set(&o->g->codec_opts, "b:v", "6000000", 0);
-        av_dict_set(&o->g->codec_opts, "maxrate", "9000000", 0);
-        av_dict_set(&o->g->codec_opts, "minrate", "0", 0); // 1500000;
-        av_dict_set(&o->g->codec_opts, "bufsize", "1835008", 0); // 224*1024*8;
+        av_dict_set(&o->g->codec_opts, "b:v", "6000000", AV_DICT_DONT_OVERWRITE);
+        av_dict_set(&o->g->codec_opts, "maxrate", "9000000", AV_DICT_DONT_OVERWRITE);
+        av_dict_set(&o->g->codec_opts, "minrate", "0", AV_DICT_DONT_OVERWRITE); // 1500000;
+        av_dict_set(&o->g->codec_opts, "bufsize", "1835008", AV_DICT_DONT_OVERWRITE); // 224*1024*8;
 
-        av_dict_set(&o->g->format_opts, "packetsize", "2048", 0);  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
-        av_dict_set(&o->g->format_opts, "muxrate", "10080000", 0); // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
+        av_dict_set(&o->g->format_opts, "packetsize", "2048", AV_DICT_DONT_OVERWRITE);  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
+        av_dict_set(&o->g->format_opts, "muxrate", "10080000", AV_DICT_DONT_OVERWRITE); // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
 
-        av_dict_set(&o->g->codec_opts, "b:a", "448000", 0);
+        av_dict_set(&o->g->codec_opts, "b:a", "448000", AV_DICT_DONT_OVERWRITE);
         parse_option(o, "ar", "48000", options);
 
     } else if (!strncmp(arg, "dv", 2)) {
