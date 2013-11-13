@@ -537,6 +537,15 @@ fail:
     return ret;
 }
 
+static void exchange_uv(MpegEncContext *s)
+{
+    int16_t (*tmp)[64];
+
+    tmp           = s->pblocks[4];
+    s->pblocks[4] = s->pblocks[5];
+    s->pblocks[5] = tmp;
+}
+
 static int init_duplicate_context(MpegEncContext *s)
 {
     int y_size = s->b8_stride * (2 * s->mb_height + 1);
@@ -567,6 +576,8 @@ static int init_duplicate_context(MpegEncContext *s)
     for (i = 0; i < 12; i++) {
         s->pblocks[i] = &s->block[i];
     }
+    if (s->avctx->codec_tag == AV_RL32("VCR2"))
+        exchange_uv(s);
 
     if (s->out_format == FMT_H263) {
         /* ac values */
@@ -641,6 +652,8 @@ int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src)
     for (i = 0; i < 12; i++) {
         dst->pblocks[i] = &dst->block[i];
     }
+    if (dst->avctx->codec_tag == AV_RL32("VCR2"))
+        exchange_uv(dst);
     if (!dst->edge_emu_buffer &&
         (ret = ff_mpv_frame_size_alloc(dst, dst->linesize)) < 0) {
         av_log(dst->avctx, AV_LOG_ERROR, "failed to allocate context "
