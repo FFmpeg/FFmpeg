@@ -852,6 +852,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->ist_index  = nb_input_streams - ic->nb_streams;
     f->start_time = o->start_time;
     f->recording_time = o->recording_time;
+    f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     f->nb_streams = ic->nb_streams;
     f->rate_emu   = o->rate_emu;

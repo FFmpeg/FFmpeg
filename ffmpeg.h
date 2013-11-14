@@ -51,6 +51,7 @@
 #define VSYNC_PASSTHROUGH 0
 #define VSYNC_CFR         1
 #define VSYNC_VFR         2
+#define VSYNC_VSCFR       0xfe
 #define VSYNC_DROP        0xff
 
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
@@ -281,6 +282,7 @@ typedef struct InputFile {
     int eof_reached;      /* true if eof reached */
     int eagain;           /* true if last read attempt returned EAGAIN */
     int ist_index;        /* index of first stream in input_streams */
+    int64_t input_ts_offset;
     int64_t ts_offset;
     int64_t last_ts;
     int64_t start_time;   /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */
