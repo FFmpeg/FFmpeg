@@ -293,7 +293,7 @@ typedef struct {
     EbmlBin  bin;
     uint64_t additional_id;
     EbmlBin  additional;
-    uint64_t discard_padding;
+    int64_t discard_padding;
 } MatroskaBlock;
 
 static EbmlSyntax ebml_header[] = {
@@ -571,7 +571,7 @@ static EbmlSyntax matroska_blockgroup[] = {
     { MATROSKA_ID_BLOCKADDITIONS, EBML_NEST, 0, 0, {.n=matroska_blockadditions} },
     { MATROSKA_ID_SIMPLEBLOCK,    EBML_BIN,  0, offsetof(MatroskaBlock,bin) },
     { MATROSKA_ID_BLOCKDURATION,  EBML_UINT, 0, offsetof(MatroskaBlock,duration) },
-    { MATROSKA_ID_DISCARDPADDING, EBML_UINT, 0, offsetof(MatroskaBlock,discard_padding) },
+    { MATROSKA_ID_DISCARDPADDING, EBML_SINT, 0, offsetof(MatroskaBlock,discard_padding) },
     { MATROSKA_ID_BLOCKREFERENCE, EBML_UINT, 0, offsetof(MatroskaBlock,reference) },
     { MATROSKA_ID_CODECSTATE,     EBML_NONE },
     { 1,                          EBML_UINT, 0, offsetof(MatroskaBlock,non_simple), {.u=1} },
@@ -2416,7 +2416,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                 uint64_t timecode, uint64_t lace_duration,
                                 int64_t pos, int is_keyframe,
                                 uint8_t *additional, uint64_t additional_id, int additional_size,
-                                uint64_t discard_padding)
+                                int64_t discard_padding)
 {
     MatroskaTrackEncoding *encodings = track->encodings.elem;
     uint8_t *pkt_data = data;
@@ -2553,7 +2553,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                                 int size, int64_t pos, uint64_t cluster_time,
                                 uint64_t block_duration, int is_keyframe,
                                 uint8_t *additional, uint64_t additional_id, int additional_size,
-                                int64_t cluster_pos, uint64_t discard_padding)
+                                int64_t cluster_pos, int64_t discard_padding)
 {
     uint64_t timecode = AV_NOPTS_VALUE;
     MatroskaTrack *track;
