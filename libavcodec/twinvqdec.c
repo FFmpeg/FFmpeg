@@ -251,7 +251,7 @@ static void read_cb_data(TwinVQContext *tctx, GetBitContext *gb,
 static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
                                  const uint8_t *buf, int buf_size)
 {
-    TwinVQFrameData     *bits = &tctx->bits;
+    TwinVQFrameData     *bits = &tctx->bits[0];
     const TwinVQModeTab *mtab = tctx->mtab;
     int channels              = tctx->avctx->channels;
     int sub;
@@ -268,7 +268,7 @@ static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
         return AVERROR_INVALIDDATA;
     }
 
-    bits->ftype = ff_twinvq_wtype_to_ftype_table[tctx->bits.window_type];
+    bits->ftype = ff_twinvq_wtype_to_ftype_table[tctx->bits[0].window_type];
 
     sub = mtab->fmode[bits->ftype].sub;
 
@@ -396,13 +396,17 @@ static av_cold int twinvq_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    avctx->block_align = (avctx->bit_rate * tctx->mtab->size
-                                          / avctx->sample_rate + 15) / 8;
-
     tctx->codec          = TWINVQ_CODEC_VQF;
     tctx->read_bitstream = twinvq_read_bitstream;
     tctx->dec_bark_env   = dec_bark_env;
     tctx->decode_ppc     = decode_ppc;
+    tctx->frame_size     = avctx->bit_rate * tctx->mtab->size
+                                           / avctx->sample_rate + 8;
+    if (avctx->block_align && avctx->block_align * 8 / tctx->frame_size > 1) {
+        av_log(avctx, AV_LOG_ERROR,
+               "VQF TwinVQ should have only one frame per packet\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     return ff_twinvq_decode_init(avctx);
 }
