@@ -4174,7 +4174,7 @@ echo "License: $license"
 
 echo "Creating config.mak and config.h..."
 
-test -e Makefile || $ln_s "$source_path/Makefile" .
+test -e Makefile || echo "include $source_path/Makefile" > Makefile
 
 config_files="$TMPH config.mak"
 
