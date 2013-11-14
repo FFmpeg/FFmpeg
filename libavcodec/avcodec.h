@@ -691,7 +691,12 @@ typedef struct RcOverride{
     float quality_factor;
 } RcOverride;
 
+#if FF_API_MAX_BFRAMES
+/**
+ * @deprecated there is no libavcodec-wide limit on the number of B-frames
+ */
 #define FF_MAX_B_FRAMES 16
+#endif
 
 /* encoding support
    These flags can be passed in AVCodecContext.flags before initialization.

@@ -316,6 +316,10 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     s->avctx        = avctx;
     s->flags        = avctx->flags;
     s->flags2       = avctx->flags2;
+    if (avctx->max_b_frames > MAX_B_FRAMES) {
+        av_log(avctx, AV_LOG_ERROR, "Too many B-frames requested, maximum "
+               "is %d.\n", MAX_B_FRAMES);
+    }
     s->max_b_frames = avctx->max_b_frames;
     s->codec_id     = avctx->codec->id;
     s->strict_std_compliance = avctx->strict_std_compliance;
@@ -1146,7 +1150,7 @@ static int estimate_best_b_count(MpegEncContext *s)
 {
     AVCodec *codec    = avcodec_find_encoder(s->avctx->codec_id);
     AVCodecContext *c = avcodec_alloc_context3(NULL);
-    AVFrame input[FF_MAX_B_FRAMES + 2];
+    AVFrame input[MAX_B_FRAMES + 2];
     const int scale = s->avctx->brd_scale;
     int i, j, out_size, p_lambda, b_lambda, lambda2;
     int64_t best_rd  = INT64_MAX;
