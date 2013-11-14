@@ -53,6 +53,8 @@
 #include <vdpau/vdpau_x11.h>
 #include "libavutil/avconfig.h"
 #include "libavutil/attributes.h"
+
+#include "avcodec.h"
 #include "version.h"
 
 #if FF_API_BUFS_VDPAU
@@ -142,6 +144,19 @@ AVVDPAUContext *av_alloc_vdpaucontext(void);
 
 AVVDPAU_Render2 av_vdpau_hwaccel_get_render2(const AVVDPAUContext *);
 void av_vdpau_hwaccel_set_render2(AVVDPAUContext *, AVVDPAU_Render2);
+
+/**
+ * Get a decoder profile that should be used for initializing a VDPAU decoder.
+ * Should be called from the AVCodecContext.get_format() callback.
+ *
+ * @param avctx the codec context being used for decoding the stream
+ * @param profile a pointer into which the result will be written on success.
+ *                The contents of profile are undefined if this function returns
+ *                an error.
+ *
+ * @return 0 on success (non-negative), a negative AVERROR on failure.
+ */
+int av_vdpau_get_profile(AVCodecContext *avctx, VdpDecoderProfile *profile);
 
 #if FF_API_CAP_VDPAU
 /** @brief The videoSurface is used for rendering. */
