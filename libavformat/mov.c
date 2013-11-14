@@ -2387,8 +2387,10 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     // done for ai5q, ai52, ai55, ai1q, ai12 and ai15.
     if (!st->codec->extradata_size && st->codec->codec_id == AV_CODEC_ID_H264 &&
-        st->codec->codec_tag != MKTAG('a', 'v', 'c', '1')) {
-        ff_generate_avci_extradata(st);
+        TAG_IS_AVCI(st->codec->codec_tag)) {
+        ret = ff_generate_avci_extradata(st);
+        if (ret < 0)
+            return ret;
     }
 
     switch (st->codec->codec_id) {

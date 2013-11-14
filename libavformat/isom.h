@@ -207,6 +207,22 @@ void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 #define MOV_TKHD_FLAG_IN_PREVIEW    0x0004
 #define MOV_TKHD_FLAG_IN_POSTER     0x0008
 
+#define TAG_IS_AVCI(tag)                    \
+    ((tag) == MKTAG('a', 'i', '5', 'p') ||  \
+     (tag) == MKTAG('a', 'i', '5', 'q') ||  \
+     (tag) == MKTAG('a', 'i', '5', '2') ||  \
+     (tag) == MKTAG('a', 'i', '5', '3') ||  \
+     (tag) == MKTAG('a', 'i', '5', '5') ||  \
+     (tag) == MKTAG('a', 'i', '5', '6') ||  \
+     (tag) == MKTAG('a', 'i', '1', 'p') ||  \
+     (tag) == MKTAG('a', 'i', '1', 'q') ||  \
+     (tag) == MKTAG('a', 'i', '1', '2') ||  \
+     (tag) == MKTAG('a', 'i', '1', '3') ||  \
+     (tag) == MKTAG('a', 'i', '1', '5') ||  \
+     (tag) == MKTAG('a', 'i', '1', '6') ||  \
+     (tag) == MKTAG('A', 'V', 'i', 'n'))
+
+
 int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom);
 enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
