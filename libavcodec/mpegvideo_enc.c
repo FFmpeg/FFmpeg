@@ -319,6 +319,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     if (avctx->max_b_frames > MAX_B_FRAMES) {
         av_log(avctx, AV_LOG_ERROR, "Too many B-frames requested, maximum "
                "is %d.\n", MAX_B_FRAMES);
+        avctx->max_b_frames = MAX_B_FRAMES;
     }
     s->max_b_frames = avctx->max_b_frames;
     s->codec_id     = avctx->codec->id;
