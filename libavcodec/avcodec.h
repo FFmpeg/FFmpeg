@@ -851,6 +851,7 @@ typedef struct RcOverride{
  */
 #define CODEC_CAP_LOSSLESS         0x80000000
 
+#if FF_API_MB_TYPE
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
 #define MB_TYPE_INTRA16x16 0x0002 //FIXME H.264-specific
@@ -874,6 +875,7 @@ typedef struct RcOverride{
 #define MB_TYPE_QUANT      0x00010000
 #define MB_TYPE_CBP        0x00020000
 //Note bits 24-31 are reserved for codec specific use (h264 ref0, mpeg1 0mv, ...)
+#endif
 
 /**
  * Pan Scan area.

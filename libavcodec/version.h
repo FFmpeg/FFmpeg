@@ -126,5 +126,8 @@
 #ifndef FF_API_QSCALE_TYPE
 #define FF_API_QSCALE_TYPE       (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
+#ifndef FF_API_MB_TYPE
+#define FF_API_MB_TYPE           (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
 
 #endif /* AVCODEC_VERSION_H */
