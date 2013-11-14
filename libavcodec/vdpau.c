@@ -40,7 +40,7 @@
 
 AVVDPAUContext *av_alloc_vdpaucontext(void)
 {
-    return av_mallocz(sizeof(AVVDPAUContext));
+    return av_vdpau_alloc_context();
 }
 
 MAKE_ACCESSORS(AVVDPAUContext, vdpau_hwaccel, AVVDPAU_Render2, render2)
@@ -479,6 +479,11 @@ do {                        \
         }
     }
     return AVERROR(EINVAL);
+}
+
+AVVDPAUContext *av_vdpau_alloc_context(void)
+{
+    return av_mallocz(sizeof(AVVDPAUContext));
 }
 
 /* @}*/

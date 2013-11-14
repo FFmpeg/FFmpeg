@@ -17,6 +17,8 @@ API changes, most recent first:
 
 2013-11-xx - xxxxxxx - lavc 55.26.0 - vdpau.h
   Add av_vdpau_get_profile().
+  Add av_vdpau_alloc_context(). This function must from now on be
+  used for allocating AVVDPAUContext.
 
 2013-11-xx - xxxxxxx - lavc 55.41.100 / 55.25.0 - avcodec.h
                        lavu 52.51.100 - frame.h

@@ -82,6 +82,10 @@ typedef int (*AVVDPAU_Render2)(struct AVCodecContext *, struct AVFrame *,
  * during initialization or through each AVCodecContext.get_buffer()
  * function call. In any case, they must be valid prior to calling
  * decoding functions.
+ *
+ * The size of this structure is not a part of the public ABI and must not
+ * be used outside of libavcodec. Use av_vdpau_alloc_context() to allocate an
+ * AVVDPAUContext.
  */
 typedef struct AVVDPAUContext {
     /**
@@ -144,6 +148,13 @@ AVVDPAUContext *av_alloc_vdpaucontext(void);
 
 AVVDPAU_Render2 av_vdpau_hwaccel_get_render2(const AVVDPAUContext *);
 void av_vdpau_hwaccel_set_render2(AVVDPAUContext *, AVVDPAU_Render2);
+
+/**
+ * Allocate an AVVDPAUContext.
+ *
+ * @return Newly-allocated AVVDPAUContext or NULL on failure.
+ */
+AVVDPAUContext *av_vdpau_alloc_context(void);
 
 /**
  * Get a decoder profile that should be used for initializing a VDPAU decoder.
