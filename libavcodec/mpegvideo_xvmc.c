@@ -30,6 +30,9 @@
 
 #include "xvmc.h"
 #include "xvmc_internal.h"
+#include "version.h"
+
+#if FF_API_XVMC
 
 /**
  * Initialize the block field of the MpegEncContext pointer passed as
@@ -329,3 +332,5 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     if (render->filled_mv_blocks_num == render->allocated_mv_blocks)
         ff_mpeg_draw_horiz_band(s, 0, 0);
 }
+
+#endif /* FF_API_XVMC */

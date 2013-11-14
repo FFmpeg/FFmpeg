@@ -281,7 +281,9 @@ static const AVOption avcodec_options[] = {
 {"deflate", "deflate-based coder", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CODER_TYPE_DEFLATE }, INT_MIN, INT_MAX, V|E, "coder"},
 {"context", "context model", OFFSET(context_model), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"slice_flags", NULL, OFFSET(slice_flags), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+#if FF_API_XVMC
 {"xvmc_acceleration", NULL, OFFSET(xvmc_acceleration), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+#endif /* FF_API_XVMC */
 {"mbd", "macroblock decision algorithm (high quality mode)", OFFSET(mb_decision), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, 2, V|E, "mbd"},
 {"simple", "use mbcmp (default)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MB_DECISION_SIMPLE }, INT_MIN, INT_MAX, V|E, "mbd"},
 {"bits", "use fewest bits", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MB_DECISION_BITS }, INT_MIN, INT_MAX, V|E, "mbd"},

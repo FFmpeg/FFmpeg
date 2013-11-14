@@ -601,11 +601,15 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     if (!high_bit_depth) {
+#if FF_API_XVMC
         if (!(CONFIG_MPEG_XVMC_DECODER && avctx->xvmc_acceleration > 1)) {
             /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
-            c->clear_block  = ff_clear_block_sse;
-            c->clear_blocks = ff_clear_blocks_sse;
+#endif /* FF_API_XVMC */
+        c->clear_block  = ff_clear_block_sse;
+        c->clear_blocks = ff_clear_blocks_sse;
+#if FF_API_XVMC
         }
+#endif /* FF_API_XVMC */
     }
 
     c->vector_clipf = ff_vector_clipf_sse;

@@ -30,6 +30,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "h264chroma.h"
@@ -1710,8 +1711,12 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         update_noise_reduction(s);
     }
 
+#if FF_API_XVMC
+FF_DISABLE_DEPRECATION_WARNINGS
     if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
         return ff_xvmc_field_start(s, avctx);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif /* FF_API_XVMC */
 
     return 0;
 }
@@ -1720,19 +1725,24 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
  * frame has been coded/decoded. */
 void ff_MPV_frame_end(MpegEncContext *s)
 {
+#if FF_API_XVMC
+FF_DISABLE_DEPRECATION_WARNINGS
     /* redraw edges for the frame if decoding didn't complete */
     // just to make sure that all data is rendered.
     if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration) {
         ff_xvmc_field_end(s);
-   } else if ((s->er.error_count || s->encoding || !(s->avctx->codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND)) &&
-              !s->avctx->hwaccel &&
-              !(s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
-              s->unrestricted_mv &&
-              s->current_picture.reference &&
-              !s->intra_only &&
-              !(s->flags & CODEC_FLAG_EMU_EDGE) &&
-              !s->avctx->lowres
-            ) {
+    } else
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif /* FF_API_XVMC */
+    if ((s->er.error_count || s->encoding || !(s->avctx->codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND)) &&
+        !s->avctx->hwaccel &&
+        !(s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
+        s->unrestricted_mv &&
+        s->current_picture.reference &&
+        !s->intra_only &&
+        !(s->flags & CODEC_FLAG_EMU_EDGE) &&
+        !s->avctx->lowres
+       ) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
         int hshift = desc->log2_chroma_w;
         int vshift = desc->log2_chroma_h;
@@ -2667,10 +2677,15 @@ void MPV_decode_mb_internal(MpegEncContext *s, int16_t block[12][64],
                             int lowres_flag, int is_mpeg12)
 {
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
+
+#if FF_API_XVMC
+FF_DISABLE_DEPRECATION_WARNINGS
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration){
         ff_xvmc_decode_mb(s);//xvmc uses pblocks
         return;
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif /* FF_API_XVMC */
 
     if(s->avctx->debug&FF_DEBUG_DCT_COEFF) {
        /* print DCT coefficients */

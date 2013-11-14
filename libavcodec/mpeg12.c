@@ -40,7 +40,6 @@
 #include "mpeg12data.h"
 #include "bytestream.h"
 #include "vdpau_internal.h"
-#include "xvmc_internal.h"
 #include "thread.h"
 
 uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
