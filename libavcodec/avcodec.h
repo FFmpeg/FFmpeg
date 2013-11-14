@@ -2833,12 +2833,14 @@ typedef struct AVCodecContext {
     uint8_t *subtitle_header;
     int subtitle_header_size;
 
+#if FF_API_ERROR_RATE
     /**
-     * Simulates errors in the bitstream to test error concealment.
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use the 'error_rate' private AVOption of the mpegvideo
+     * encoders
      */
+    attribute_deprecated
     int error_rate;
+#endif
 
 #if FF_API_CODEC_PKT
     /**
