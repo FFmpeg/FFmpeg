@@ -817,10 +817,23 @@ static void do_video_out(AVFormatContext *s,
     nb_frames = 1;
 
     format_video_sync = video_sync_method;
-    if (format_video_sync == VSYNC_AUTO)
+    if (format_video_sync == VSYNC_AUTO) {
         format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? ((s->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH : VSYNC_VFR) : VSYNC_CFR;
+        if (   ist
+            && format_video_sync == VSYNC_CFR
+            && input_files[ist->file_index]->ctx->nb_streams == 1
+            && input_files[ist->file_index]->input_ts_offset == 0) {
+            format_video_sync = VSYNC_VSCFR;
+        }
+    }
 
     switch (format_video_sync) {
+    case VSYNC_VSCFR:
+        if (ost->frame_number == 0 && delta - duration >= 0.5) {
+            av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta - duration));
+            delta = duration;
+            ost->sync_opts = lrint(sync_ipts);
+        }
     case VSYNC_CFR:
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (delta < -1.1)
@@ -2357,7 +2370,7 @@ static int transcode_init(void)
                 if (ost->filter && !(codec->time_base.num && codec->time_base.den))
                     codec->time_base = ost->filter->filter->inputs[0]->time_base;
                 if (   av_q2d(codec->time_base) < 0.001 && video_sync_method != VSYNC_PASSTHROUGH
-                   && (video_sync_method == VSYNC_CFR || (video_sync_method == VSYNC_AUTO && !(oc->oformat->flags & AVFMT_VARIABLE_FPS)))){
+                   && (video_sync_method == VSYNC_CFR || video_sync_method == VSYNC_VSCFR || (video_sync_method == VSYNC_AUTO && !(oc->oformat->flags & AVFMT_VARIABLE_FPS)))){
                     av_log(oc, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
                                                "Please consider specifying a lower framerate, a different muxer or -vsync 2\n");
                 }
