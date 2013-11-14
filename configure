@@ -994,6 +994,16 @@ check_builtin(){
     check_code ld "$headers" "$builtin" "$@" && enable "$name"
 }
 
+check_compile_assert(){
+    log check_compile_assert "$@"
+    name=$1
+    headers=$2
+    condition=$3
+    shift 3
+    disable "$name"
+    check_code cc "$headers" "char c[2 * !!($condition) - 1]" "$@" && enable "$name"
+}
+
 require(){
     name="$1"
     header="$2"
@@ -1360,6 +1370,7 @@ HAVE_LIST="
     fast_clz
     fast_cmov
     fcntl
+    flt_lim
     fork
     getaddrinfo
     gethrtime
@@ -3535,6 +3546,9 @@ fi
 if enabled_all ccc libc_glibc; then
     add_ldflags -Wl,-z,now  # calls to libots crash without this
 fi
+
+check_compile_assert flt_lim "float.h limits.h" "DBL_MAX == (double)DBL_MAX" ||
+    add_cppflags '-I\$(SRC_PATH)/compat/float'
 
 esc(){
     echo "$*" | sed 's/%/%25/g;s/:/%3a/g'
