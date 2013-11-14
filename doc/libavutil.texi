@@ -16,7 +16,25 @@ The libavutil library is a utility library to aid portable
 multimedia programming. It contains safe portable string functions,
 random number generators, data structures, additional mathematics
 functions, cryptography and multimedia related functionality (like
-enumerations for pixel and sample formats).
+enumerations for pixel and sample formats). It is not a library for
+code needed by both libavcodec and libavformat.
+
+The goals for this library is to be:
+
+@table @strong
+@item Modular
+It should have few interdependencies and the possibility of disabling individual
+parts during @command{./configure}.
+
+@item Small
+Both sources and objects should be small.
+
+@item Efficient
+It should have low CPU and memory usage.
+
+@item Useful
+It should avoid useless features that almost no one needs.
+@end table
 
 @c man end DESCRIPTION
 
