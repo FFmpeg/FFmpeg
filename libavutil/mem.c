@@ -38,6 +38,7 @@
 
 #include "avassert.h"
 #include "avutil.h"
+#include "common.h"
 #include "intreadwrite.h"
 #include "mem.h"
 
@@ -461,5 +462,43 @@ void av_memcpy_backptr(uint8_t *dst, int back, int cnt)
         if (cnt)
             *dst = *src;
     }
+}
+
+void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
+{
+    if (min_size < *size)
+        return ptr;
+
+    min_size = FFMAX(17 * min_size / 16 + 32, min_size);
+
+    ptr = av_realloc(ptr, min_size);
+    /* we could set this to the unmodified min_size but this is safer
+     * if the user lost the ptr and uses NULL now
+     */
+    if (!ptr)
+        min_size = 0;
+
+    *size = min_size;
+
+    return ptr;
+}
+
+static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
+{
+    void **p = ptr;
+    if (min_size < *size)
+        return 0;
+    min_size = FFMAX(17 * min_size / 16 + 32, min_size);
+    av_free(*p);
+    *p = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
+    if (!*p)
+        min_size = 0;
+    *size = min_size;
+    return 1;
+}
+
+void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size)
+{
+    ff_fast_malloc(ptr, size, min_size, 0);
 }
 
