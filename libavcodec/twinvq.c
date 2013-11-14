@@ -521,7 +521,10 @@ int ff_twinvq_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame_ptr = 1;
 
-    return ret;
+    // VQF can deliver packets 1 byte greater than block align
+    if (buf_size == avctx->block_align + 1)
+        return buf_size;
+    return avctx->block_align;
 }
 
 /**
