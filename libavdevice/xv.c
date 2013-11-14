@@ -35,6 +35,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/imgutils.h"
 #include "avdevice.h"
 
 typedef struct {
@@ -148,22 +149,15 @@ static int xv_write_packet(AVFormatContext *s, AVPacket *pkt)
     XWindowAttributes window_attrs;
     AVPicture pict;
     AVCodecContext *ctx = s->streams[0]->codec;
-    int y, h;
-
-    h = img->height / 2;
+    uint8_t *data[3] = {
+        img->data + img->offsets[0],
+        img->data + img->offsets[1],
+        img->data + img->offsets[2]
+    };
 
     avpicture_fill(&pict, pkt->data, ctx->pix_fmt, ctx->width, ctx->height);
-    for (y = 0; y < img->height; y++) {
-        memcpy(&img->data[img->offsets[0] + (y * img->pitches[0])],
-               &pict.data[0][y * pict.linesize[0]], img->pitches[0]);
-    }
-
-    for (y = 0; y < h; ++y) {
-        memcpy(&img->data[img->offsets[1] + (y * img->pitches[1])],
-               &pict.data[1][y * pict.linesize[1]], img->pitches[1]);
-        memcpy(&img->data[img->offsets[2] + (y * img->pitches[2])],
-               &pict.data[2][y * pict.linesize[2]], img->pitches[2]);
-    }
+    av_image_copy(data, img->pitches, (const uint8_t **)pict.data, pict.linesize,
+                  AV_PIX_FMT_YUV420P, img->width, img->height);
 
     XGetWindowAttributes(xv->display, xv->window, &window_attrs);
     if (XvShmPutImage(xv->display, xv->xv_port, xv->window, xv->gc,
