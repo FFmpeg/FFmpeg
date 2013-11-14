@@ -61,8 +61,6 @@ void ff_simple_idct_armv5te(int16_t *data);
 void ff_simple_idct_armv6(int16_t *data);
 void ff_simple_idct_neon(int16_t *data);
 
-void ff_simple_idct_axp(int16_t *data);
-
 struct algo {
     const char *name;
     void (*func)(int16_t *block);
@@ -154,10 +152,6 @@ static const struct algo idct_tab[] = {
 #endif
 #if HAVE_NEON
     { "SIMPLE-NEON",    ff_simple_idct_neon, PARTTRANS_PERM, AV_CPU_FLAG_NEON },
-#endif
-
-#if ARCH_ALPHA
-    { "SIMPLE-ALPHA",   ff_simple_idct_axp,    NO_PERM },
 #endif
 
     { 0 }

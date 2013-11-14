@@ -114,5 +114,8 @@
 #ifndef FF_API_CODEC_PKT
 #define FF_API_CODEC_PKT         (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
+#ifndef FF_API_ARCH_ALPHA
+#define FF_API_ARCH_ALPHA        (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
 
 #endif /* AVCODEC_VERSION_H */
