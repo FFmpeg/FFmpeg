@@ -2282,29 +2282,33 @@ case "$toolchain" in
     msvc)
         # Check whether the current MSVC version needs the C99 converter.
         # From MSVC 2013 (compiler major version 18) onwards, it does actually
-        # support enough of C99 to build libav, but we still need to use
-        # c99wrap for passing command line parameters with a space (for
-        # avoiding msys path mangling/conversion issues). Default to the new
+        # support enough of C99 to build libav. Default to the new
         # behaviour if the regexp was unable to match anything, since this
         # successfully parses the version number of existing supported
         # versions that require the converter (MSVC 2010 and 2012).
         cl_major_ver=$(cl 2>&1 | sed -n 's/.*Version \([[:digit:]]\{1,\}\)\..*/\1/p')
         if [ -z "$cl_major_ver" ] || [ $cl_major_ver -ge 18 ]; then
-            cc_default="c99wrap -noconv cl"
+            cc_default="cl"
         else
             cc_default="c99wrap cl"
         fi
-        ld_default="c99wrap link"
+        ld_default="link"
         nm_default="dumpbin -symbols"
         ar_default="lib"
         target_os_default="win32"
+        # Use a relative path for TMPDIR. This makes sure all the
+        # ffconf temp files are written with a relative path, avoiding
+        # issues with msys/win32 path conversion for MSVC parameters
+        # such as -Fo<file> or -out:<file>.
+        TMPDIR=.
     ;;
     icl)
-        cc_default="c99wrap -noconv icl"
-        ld_default="c99wrap xilink"
+        cc_default="icl"
+        ld_default="xilink"
         nm_default="dumpbin -symbols"
         ar_default="xilib"
         target_os_default="win32"
+        TMPDIR=.
     ;;
     gcov)
         add_cflags  -fprofile-arcs -ftest-coverage
@@ -2660,15 +2664,13 @@ probe_cc(){
         _DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -showIncludes -Zs'
         _cflags_speed="-O2"
         _cflags_size="-O1"
-        # Nonstandard output options, to avoid msys path conversion issues.
-        # Relies on wrapper to remap it.
         if $_cc 2>&1 | grep -q Linker; then
-            _ld_o='-out $@'
+            _ld_o='-out:$@'
         else
             _ld_o='-Fe$@'
         fi
-        _cc_o='-Fo $@'
-        _cc_e='-P -Fi $@'
+        _cc_o='-Fo$@'
+        _cc_e='-P -Fi$@'
         _flags_filter=msvc_flags
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
@@ -2685,14 +2687,12 @@ probe_cc(){
         # versions (tested) as well.
         _cflags_speed="-O2"
         _cflags_size="-O1 -Oi" # -O1 without -Oi miscompiles stuff
-        # Nonstandard output options, to avoid msys path conversion issues.
-        # Relies on wrapper to remap it.
         if $_cc 2>&1 | grep -q Linker; then
-            _ld_o='-out $@'
+            _ld_o='-out:$@'
         else
             _ld_o='-Fe$@'
         fi
-        _cc_o='-Fo $@'
+        _cc_o='-Fo$@'
         _cc_e='-P'
         _flags_filter=icl_flags
         _ld_lib='lib%.a'
