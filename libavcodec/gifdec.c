@@ -87,8 +87,11 @@ static int gif_read_image(GifState *s, AVFrame *frame)
 
     /* verify that all the image is inside the screen dimensions */
     if (left + width > s->screen_width ||
-        top + height > s->screen_height)
-        return AVERROR(EINVAL);
+        top + height > s->screen_height ||
+        !width || !height) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid image dimensions.\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     /* build the palette */
     n = (1 << bits_per_pixel);
