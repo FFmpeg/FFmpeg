@@ -363,7 +363,7 @@ static int decode_frame_header(AVCodecContext *ctx,
 
     /* general header */
     if ((res = init_get_bits8(&s->gb, data, size)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to intialize bitstream reader\n");
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialize bitstream reader\n");
         return res;
     }
     if (get_bits(&s->gb, 2) != 0x2) { // frame marker
