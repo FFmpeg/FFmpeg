@@ -704,8 +704,10 @@ static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
 static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
 {
     av_free(bin->data);
-    if (!(bin->data = av_malloc(length)))
+    if (!(bin->data = av_malloc(length + FF_INPUT_BUFFER_PADDING_SIZE)))
         return AVERROR(ENOMEM);
+
+    memset(bin->data + length, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     bin->size = length;
     bin->pos  = avio_tell(pb);
