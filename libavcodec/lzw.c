@@ -43,7 +43,7 @@ static const uint16_t mask[17] =
 };
 
 struct LZWState {
-    const uint8_t *pbuf, *ebuf;
+    const uint8_t *buf_start, *pbuf, *ebuf;
     int bbits;
     unsigned int bbuf;
 
@@ -92,9 +92,10 @@ static int lzw_get_code(struct LZWState * s)
     return c & s->curmask;
 }
 
-const uint8_t* ff_lzw_cur_ptr(LZWState *p)
+int ff_lzw_size_read(LZWState *p)
 {
-    return ((struct LZWState*)p)->pbuf;
+    struct LZWState *s = p;
+    return s->pbuf - s->buf_start;
 }
 
 void ff_lzw_decode_tail(LZWState *p)
