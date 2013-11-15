@@ -116,7 +116,7 @@ $(HOSTOBJS): %.o: %.c
 	$(call COMPILE,HOSTCC)
 
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
-	$(HOSTLD) $(HOSTLDFLAGS) $(HOSTLD_O) $< $(HOSTLIBS)
+	$(HOSTLD) $(HOSTLDFLAGS) $(HOSTLD_O) $^ $(HOSTLIBS)
 
 $(OBJS):     | $(sort $(dir $(OBJS)))
 $(HOBJS):    | $(sort $(dir $(HOBJS)))
