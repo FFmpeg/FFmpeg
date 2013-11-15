@@ -454,17 +454,21 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         uint8_t *uvbuf = s->edge_emu_buffer + 19 * s->linesize;
 
         srcY -= s->mspel * (1 + s->linesize);
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->linesize,
-                                 srcY, s->linesize,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
+                                 s->linesize, s->linesize,
                                  17 + s->mspel * 2, 17 + s->mspel * 2,
                                  src_x - s->mspel, src_y - s->mspel,
                                  s->h_edge_pos, v_edge_pos);
         srcY = s->edge_emu_buffer;
-        s->vdsp.emulated_edge_mc(uvbuf, s->uvlinesize, srcU, s->uvlinesize,
-                                 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
+        s->vdsp.emulated_edge_mc(uvbuf, srcU,
+                                 s->uvlinesize, s->uvlinesize,
+                                 8 + 1, 8 + 1,
+                                 uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
-        s->vdsp.emulated_edge_mc(uvbuf + 16, s->uvlinesize, srcV, s->uvlinesize,
-                                 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
+        s->vdsp.emulated_edge_mc(uvbuf + 16, srcV,
+                                 s->uvlinesize, s->uvlinesize,
+                                 8 + 1, 8 + 1,
+                                 uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
         srcU = uvbuf;
         srcV = uvbuf + 16;
@@ -700,7 +704,8 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
         || (unsigned)(src_y - (s->mspel << fieldmv)) > v_edge_pos - (my & 3) - ((8 + s->mspel * 2) << fieldmv)) {
         srcY -= s->mspel * (1 + (s->linesize << fieldmv));
         /* check emulate edge stride and offset */
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->linesize, srcY, s->linesize,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
+                                 s->linesize, s->linesize,
                                  9 + s->mspel * 2, (9 + s->mspel * 2) << fieldmv,
                                  src_x - s->mspel, src_y - (s->mspel << fieldmv),
                                  s->h_edge_pos, v_edge_pos);
@@ -915,11 +920,13 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
         || s->h_edge_pos < 18 || v_edge_pos < 18
         || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
         || (unsigned)uvsrc_y > (v_edge_pos    >> 1) - 9) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->uvlinesize, srcU,
-                                 s->uvlinesize, 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcU,
+                                 s->uvlinesize, s->uvlinesize,
+                                 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer + 16, s->uvlinesize, srcV,
-                                 s->uvlinesize, 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer + 16, srcV,
+                                 s->uvlinesize, s->uvlinesize,
+                                 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
         srcU = s->edge_emu_buffer;
         srcV = s->edge_emu_buffer + 16;
@@ -1036,12 +1043,14 @@ static void vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
             || s->h_edge_pos < 10 || v_edge_pos < (5 << fieldmv)
             || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 5
             || (unsigned)uvsrc_y > v_edge_pos - (5 << fieldmv)) {
-            s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->uvlinesize, srcU,
-                                     s->uvlinesize, 5, (5 << fieldmv), uvsrc_x,
-                                     uvsrc_y, s->h_edge_pos >> 1, v_edge_pos);
-            s->vdsp.emulated_edge_mc(s->edge_emu_buffer + 16, s->uvlinesize, srcV,
-                                     s->uvlinesize, 5, (5 << fieldmv), uvsrc_x,
-                                     uvsrc_y, s->h_edge_pos >> 1, v_edge_pos);
+            s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcU,
+                                     s->uvlinesize, s->uvlinesize,
+                                     5, (5 << fieldmv), uvsrc_x, uvsrc_y,
+                                     s->h_edge_pos >> 1, v_edge_pos);
+            s->vdsp.emulated_edge_mc(s->edge_emu_buffer + 16, srcV,
+                                     s->uvlinesize, s->uvlinesize,
+                                     5, (5 << fieldmv), uvsrc_x, uvsrc_y,
+                                     s->h_edge_pos >> 1, v_edge_pos);
             srcU = s->edge_emu_buffer;
             srcV = s->edge_emu_buffer + 16;
 
@@ -1968,16 +1977,21 @@ static void vc1_interp_mc(VC1Context *v)
         uint8_t *uvbuf = s->edge_emu_buffer + 19 * s->linesize;
 
         srcY -= s->mspel * (1 + s->linesize);
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->linesize, srcY, s->linesize,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
+                                 s->linesize, s->linesize,
                                  17 + s->mspel * 2, 17 + s->mspel * 2,
                                  src_x - s->mspel, src_y - s->mspel,
                                  s->h_edge_pos, v_edge_pos);
         srcY = s->edge_emu_buffer;
-        s->vdsp.emulated_edge_mc(uvbuf, s->uvlinesize, srcU, s->uvlinesize,
-                                 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
+        s->vdsp.emulated_edge_mc(uvbuf, srcU,
+                                 s->uvlinesize, s->uvlinesize,
+                                 8 + 1, 8 + 1,
+                                 uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
-        s->vdsp.emulated_edge_mc(uvbuf + 16, s->uvlinesize, srcV, s->uvlinesize,
-                                 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
+        s->vdsp.emulated_edge_mc(uvbuf + 16, srcV,
+                                 s->uvlinesize, s->uvlinesize,
+                                 8 + 1, 8 + 1,
+                                 uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
         srcU = uvbuf;
         srcV = uvbuf + 16;

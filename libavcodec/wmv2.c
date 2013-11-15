@@ -119,9 +119,11 @@ void ff_mspel_motion(MpegEncContext *s,
 
         if(src_x<1 || src_y<1 || src_x + 17  >= s->h_edge_pos
                               || src_y + h+1 >= v_edge_pos){
-            s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->linesize,
-                                     ptr - 1 - s->linesize, s->linesize, 19, 19,
-                                     src_x-1, src_y-1,
+            s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+                                     ptr - 1 - s->linesize,
+                                     s->linesize, s->linesize,
+                                     19, 19,
+                                     src_x - 1, src_y - 1,
                                      s->h_edge_pos, s->v_edge_pos);
             ptr= s->edge_emu_buffer + 1 + s->linesize;
             emu=1;
@@ -161,18 +163,22 @@ void ff_mspel_motion(MpegEncContext *s,
     offset = (src_y * uvlinesize) + src_x;
     ptr = ref_picture[1] + offset;
     if(emu){
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->uvlinesize,
-                                 ptr, s->uvlinesize, 9, 9, src_x, src_y,
-                                 s->h_edge_pos>>1, s->v_edge_pos>>1);
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
+                                 s->uvlinesize, s->uvlinesize,
+                                 9, 9,
+                                 src_x, src_y,
+                                 s->h_edge_pos >> 1, s->v_edge_pos >> 1);
         ptr= s->edge_emu_buffer;
     }
     pix_op[1][dxy](dest_cb, ptr, uvlinesize, h >> 1);
 
     ptr = ref_picture[2] + offset;
     if(emu){
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->uvlinesize,
-                                 ptr, s->uvlinesize, 9, 9, src_x, src_y,
-                                 s->h_edge_pos>>1, s->v_edge_pos>>1);
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
+                                 s->uvlinesize, s->uvlinesize,
+                                 9, 9,
+                                 src_x, src_y,
+                                 s->h_edge_pos >> 1, s->v_edge_pos >> 1);
         ptr= s->edge_emu_buffer;
     }
     pix_op[1][dxy](dest_cr, ptr, uvlinesize, h >> 1);

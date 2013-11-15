@@ -1196,8 +1196,9 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
         src += y_off * linesize + x_off;
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
-            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, 32,
-                                     src - my_idx * linesize - mx_idx, linesize,
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
+                                     src - my_idx * linesize - mx_idx,
+                                     32, linesize,
                                      block_w + subpel_idx[1][mx],
                                      block_h + subpel_idx[1][my],
                                      x_off - mx_idx, y_off - my_idx, width, height);
@@ -1249,16 +1250,18 @@ void vp8_mc_chroma(VP8Context *s, VP8ThreadData *td, uint8_t *dst1, uint8_t *dst
         ff_thread_await_progress(ref, (3 + y_off + block_h + subpel_idx[2][my]) >> 3, 0);
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
-            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, 32,
-                                     src1 - my_idx * linesize - mx_idx, linesize,
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
+                                     src1 - my_idx * linesize - mx_idx,
+                                     32, linesize,
                                      block_w + subpel_idx[1][mx],
                                      block_h + subpel_idx[1][my],
                                      x_off - mx_idx, y_off - my_idx, width, height);
             src1 = td->edge_emu_buffer + mx_idx + 32 * my_idx;
             mc_func[my_idx][mx_idx](dst1, linesize, src1, 32, block_h, mx, my);
 
-            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, 32,
-                                     src2 - my_idx * linesize - mx_idx, linesize,
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
+                                     src2 - my_idx * linesize - mx_idx,
+                                     32, linesize,
                                      block_w + subpel_idx[1][mx],
                                      block_h + subpel_idx[1][my],
                                      x_off - mx_idx, y_off - my_idx, width, height);

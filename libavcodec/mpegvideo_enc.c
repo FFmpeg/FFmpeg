@@ -1837,15 +1837,21 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         uint8_t *ebuf = s->edge_emu_buffer + 32;
         int cw = (s->width  + s->chroma_x_shift) >> s->chroma_x_shift;
         int ch = (s->height + s->chroma_y_shift) >> s->chroma_y_shift;
-        s->vdsp.emulated_edge_mc(ebuf, wrap_y, ptr_y, wrap_y, 16, 16, mb_x * 16,
-                                 mb_y * 16, s->width, s->height);
+        s->vdsp.emulated_edge_mc(ebuf, ptr_y,
+                                 wrap_y, wrap_y,
+                                 16, 16, mb_x * 16, mb_y * 16,
+                                 s->width, s->height);
         ptr_y = ebuf;
-        s->vdsp.emulated_edge_mc(ebuf + 18 * wrap_y, wrap_c, ptr_cb, wrap_c, mb_block_width,
-                                 mb_block_height, mb_x * mb_block_width, mb_y * mb_block_height,
+        s->vdsp.emulated_edge_mc(ebuf + 18 * wrap_y, ptr_cb,
+                                 wrap_c, wrap_c,
+                                 mb_block_width, mb_block_height,
+                                 mb_x * mb_block_width, mb_y * mb_block_height,
                                  cw, ch);
         ptr_cb = ebuf + 18 * wrap_y;
-        s->vdsp.emulated_edge_mc(ebuf + 18 * wrap_y + 16, wrap_c, ptr_cr, wrap_c, mb_block_width,
-                                 mb_block_height, mb_x * mb_block_width, mb_y * mb_block_height,
+        s->vdsp.emulated_edge_mc(ebuf + 18 * wrap_y + 16, ptr_cr,
+                                 wrap_c, wrap_c,
+                                 mb_block_width, mb_block_height,
+                                 mb_x * mb_block_width, mb_y * mb_block_height,
                                  cw, ch);
         ptr_cr = ebuf + 18 * wrap_y + 16;
     }

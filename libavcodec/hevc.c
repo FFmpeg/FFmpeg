@@ -1026,7 +1026,8 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
         y_off >= pic_height - block_h - ff_hevc_qpel_extra_after[my]) {
         int offset = extra_top * srcstride + (extra_left << s->sps->pixel_shift);
 
-        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, srcstride, src - offset, srcstride,
+        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src - offset,
+                                 srcstride, srcstride,
                                  block_w + ff_hevc_qpel_extra[mx],
                                  block_h + ff_hevc_qpel_extra[my],
                                  x_off - extra_left, y_off - extra_top,
@@ -1077,7 +1078,8 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         int offset1 = EPEL_EXTRA_BEFORE * (src1stride + (1 << s->sps->pixel_shift));
         int offset2 = EPEL_EXTRA_BEFORE * (src2stride + (1 << s->sps->pixel_shift));
 
-        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src1stride, src1 - offset1, src1stride,
+        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src1 - offset1,
+                                 src1stride, src1stride,
                                  block_w + EPEL_EXTRA, block_h + EPEL_EXTRA,
                                  x_off - EPEL_EXTRA_BEFORE,
                                  y_off - EPEL_EXTRA_BEFORE,
@@ -1087,7 +1089,8 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         s->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, src1stride,
                                              block_w, block_h, mx, my, lc->mc_buffer);
 
-        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src2stride, src2 - offset2, src2stride,
+        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src2 - offset2,
+                                 src2stride, src2stride,
                                  block_w + EPEL_EXTRA, block_h + EPEL_EXTRA,
                                  x_off - EPEL_EXTRA_BEFORE,
                                  y_off - EPEL_EXTRA_BEFORE,

@@ -1414,8 +1414,8 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
         y + p->yblen > p->height+EDGE_WIDTH/2 ||
         x < 0 || y < 0) {
         for (i = 0; i < nplanes; i++) {
-            ff_emulated_edge_mc(s->edge_emu_buffer[i], p->stride,
-                                src[i], p->stride,
+            ff_emulated_edge_mc(s->edge_emu_buffer[i], src[i],
+                                p->stride, p->stride,
                                 p->xblen, p->yblen, x, y,
                                 p->width+EDGE_WIDTH/2, p->height+EDGE_WIDTH/2);
             src[i] = s->edge_emu_buffer[i];

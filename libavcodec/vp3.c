@@ -1549,10 +1549,11 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                             uint8_t *temp= s->edge_emu_buffer;
                             if(stride<0) temp -= 8*stride;
 
-                            s->vdsp.emulated_edge_mc(temp, stride,
-                                                     motion_source, stride,
+                            s->vdsp.emulated_edge_mc(temp, motion_source,
+                                                     stride, stride,
                                                      9, 9, src_x, src_y,
-                                                     plane_width, plane_height);
+                                                     plane_width,
+                                                     plane_height);
                             motion_source= temp;
                         }
                     }

@@ -2227,12 +2227,11 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
 
     if ((unsigned)src_x > FFMAX( h_edge_pos - (!!sx) - w,                 0) ||
         (unsigned)src_y > FFMAX((v_edge_pos >> field_based) - (!!sy) - h, 0)) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->linesize,
-                                src, s->linesize, w + 1,
-                                (h + 1) << field_based, src_x,
-                                src_y   << field_based,
-                                h_edge_pos,
-                                v_edge_pos);
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, src,
+                                 s->linesize, s->linesize,
+                                 w + 1, (h + 1) << field_based,
+                                 src_x, src_y   << field_based,
+                                 h_edge_pos, v_edge_pos);
         src = s->edge_emu_buffer;
         emu = 1;
     }
@@ -2330,21 +2329,22 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
 
     if ((unsigned) src_x > FFMAX( h_edge_pos - (!!sx) - 2 * block_s,       0) || uvsrc_y<0 ||
         (unsigned) src_y > FFMAX((v_edge_pos >> field_based) - (!!sy) - h, 0)) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, linesize >> field_based, ptr_y,
-                                linesize >> field_based, 17, 17 + field_based,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr_y,
+                                 linesize >> field_based, linesize >> field_based,
+                                 17, 17 + field_based,
                                 src_x, src_y << field_based, h_edge_pos,
                                 v_edge_pos);
         ptr_y = s->edge_emu_buffer;
         if (!CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
             uint8_t *uvbuf = s->edge_emu_buffer + 18 * s->linesize;
-            s->vdsp.emulated_edge_mc(uvbuf, uvlinesize >> field_based,
-                                    ptr_cb, uvlinesize >> field_based, 9,
-                                    9 + field_based,
+            s->vdsp.emulated_edge_mc(uvbuf,  ptr_cb,
+                                     uvlinesize >> field_based, uvlinesize >> field_based,
+                                     9, 9 + field_based,
                                     uvsrc_x, uvsrc_y << field_based,
                                     h_edge_pos >> 1, v_edge_pos >> 1);
-            s->vdsp.emulated_edge_mc(uvbuf + 16, uvlinesize >> field_based,
-                                    ptr_cr, uvlinesize >> field_based, 9,
-                                    9 + field_based,
+            s->vdsp.emulated_edge_mc(uvbuf + 16,  ptr_cr,
+                                     uvlinesize >> field_based,uvlinesize >> field_based,
+                                     9, 9 + field_based,
                                     uvsrc_x, uvsrc_y << field_based,
                                     h_edge_pos >> 1, v_edge_pos >> 1);
             ptr_cb = uvbuf;
@@ -2416,8 +2416,10 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
     ptr = ref_picture[1] + offset;
     if ((unsigned) src_x > FFMAX(h_edge_pos - (!!sx) - block_s, 0) ||
         (unsigned) src_y > FFMAX(v_edge_pos - (!!sy) - block_s, 0)) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->uvlinesize, ptr, s->uvlinesize,
-                                9, 9, src_x, src_y, h_edge_pos, v_edge_pos);
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
+                                 s->uvlinesize, s->uvlinesize,
+                                 9, 9,
+                                 src_x, src_y, h_edge_pos, v_edge_pos);
         ptr = s->edge_emu_buffer;
         emu = 1;
     }
@@ -2427,9 +2429,10 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
 
     ptr = ref_picture[2] + offset;
     if (emu) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->uvlinesize,
-                                ptr, s->uvlinesize, 9, 9,
-                                src_x, src_y, h_edge_pos, v_edge_pos);
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
+                                 s->uvlinesize, s->uvlinesize,
+                                 9, 9,
+                                 src_x, src_y, h_edge_pos, v_edge_pos);
         ptr = s->edge_emu_buffer;
     }
     pix_op[op_index](dest_cr, ptr, s->uvlinesize, block_s, sx, sy);

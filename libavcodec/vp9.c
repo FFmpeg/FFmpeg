@@ -2223,9 +2223,9 @@ static av_always_inline void mc_luma_dir(VP9Context *s, vp9_mc_func (*mc)[2],
     // FIXME bilinear filter only needs 0/1 pixels, not 3/4
     if (x < !!mx * 3 || y < !!my * 3 ||
         x + !!mx * 4 > w - bw || y + !!my * 4 > h - bh) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, 80,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
                                  ref - !!my * 3 * ref_stride - !!mx * 3,
-                                 ref_stride,
+                                 80, ref_stride,
                                  bw + !!mx * 7, bh + !!my * 7,
                                  x - !!mx * 3, y - !!my * 3, w, h);
         ref = s->edge_emu_buffer + !!my * 3 * 80 + !!mx * 3;
@@ -2253,15 +2253,17 @@ static av_always_inline void mc_chroma_dir(VP9Context *s, vp9_mc_func (*mc)[2],
     // FIXME bilinear filter only needs 0/1 pixels, not 3/4
     if (x < !!mx * 3 || y < !!my * 3 ||
         x + !!mx * 4 > w - bw || y + !!my * 4 > h - bh) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, 80,
-                                 ref_u - !!my * 3 * src_stride_u - !!mx * 3, src_stride_u,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+                                 ref_u - !!my * 3 * src_stride_u - !!mx * 3,
+                                 80, src_stride_u,
                                  bw + !!mx * 7, bh + !!my * 7,
                                  x - !!mx * 3, y - !!my * 3, w, h);
         ref_u = s->edge_emu_buffer + !!my * 3 * 80 + !!mx * 3;
         mc[!!mx][!!my](dst_u, dst_stride, ref_u, 80, bh, mx, my);
 
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, 80,
-                                 ref_v - !!my * 3 * src_stride_v - !!mx * 3, src_stride_v,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+                                 ref_v - !!my * 3 * src_stride_v - !!mx * 3,
+                                 80, src_stride_v,
                                  bw + !!mx * 7, bh + !!my * 7,
                                  x - !!mx * 3, y - !!my * 3, w, h);
         ref_v = s->edge_emu_buffer + !!my * 3 * 80 + !!mx * 3;

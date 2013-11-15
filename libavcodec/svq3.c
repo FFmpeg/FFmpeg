@@ -317,8 +317,8 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
     src  = pic->f.data[0] + mx + my * h->linesize;
 
     if (emu) {
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->linesize,
-                                 src, h->linesize,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src,
+                                 h->linesize, h->linesize,
                                  width + 1, height + 1,
                                  mx, my, s->h_edge_pos, s->v_edge_pos);
         src = h->edge_emu_buffer;
@@ -344,8 +344,8 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
             src  = pic->f.data[i] + mx + my * h->uvlinesize;
 
             if (emu) {
-                h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->uvlinesize,
-                                         src, h->uvlinesize,
+                h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src,
+                                         h->uvlinesize, h->uvlinesize,
                                          width + 1, height + 1,
                                          mx, my, (s->h_edge_pos >> 1),
                                          s->v_edge_pos >> 1);

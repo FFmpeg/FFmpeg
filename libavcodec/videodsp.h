@@ -30,8 +30,8 @@
 #include <stdint.h>
 
 #define EMULATED_EDGE(depth) \
-void ff_emulated_edge_mc_ ## depth(uint8_t *dst, ptrdiff_t dst_stride, \
-                                   const uint8_t *src, ptrdiff_t src_stride, \
+void ff_emulated_edge_mc_ ## depth(uint8_t *dst, const uint8_t *src, \
+                                   ptrdiff_t dst_stride, ptrdiff_t src_stride, \
                                    int block_w, int block_h,\
                                    int src_x, int src_y, int w, int h);
 
@@ -47,8 +47,10 @@ typedef struct VideoDSPContext {
      * @param dst_stride number of bytes between 2 vertically adjacent samples
      *                   in destination buffer
      * @param src source buffer
-     * @param src_stride number of bytes between 2 vertically adjacent samples
-     *                   in source buffer
+     * @param dst_linesize number of bytes between 2 vertically adjacent
+     *                     samples in the destination buffer
+     * @param src_linesize number of bytes between 2 vertically adjacent
+     *                     samples in both the source buffer
      * @param block_w width of block
      * @param block_h height of block
      * @param src_x x coordinate of the top left sample of the block in the
@@ -58,8 +60,9 @@ typedef struct VideoDSPContext {
      * @param w width of the source buffer
      * @param h height of the source buffer
      */
-    void (*emulated_edge_mc)(uint8_t *dst, ptrdiff_t dst_stride,
-                             const uint8_t *src, ptrdiff_t src_stride,
+    void (*emulated_edge_mc)(uint8_t *dst, const uint8_t *src,
+                             ptrdiff_t dst_linesize,
+                             ptrdiff_t src_linesize,
                              int block_w, int block_h,
                              int src_x, int src_y, int w, int h);
 

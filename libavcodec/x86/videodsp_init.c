@@ -129,8 +129,9 @@ static emu_edge_hfix_func *hfixtbl_sse2[11] = {
 };
 extern emu_edge_hvar_func ff_emu_edge_hvar_sse2;
 
-static av_always_inline void emulated_edge_mc(uint8_t *dst, ptrdiff_t dst_stride,
-                                              const uint8_t *src, ptrdiff_t src_stride,
+static av_always_inline void emulated_edge_mc(uint8_t *dst, const uint8_t *src,
+                                              ptrdiff_t dst_stride,
+                                              ptrdiff_t src_stride,
                                               x86_reg block_w, x86_reg block_h,
                                               x86_reg src_x, x86_reg src_y,
                                               x86_reg w, x86_reg h,
@@ -141,7 +142,7 @@ static av_always_inline void emulated_edge_mc(uint8_t *dst, ptrdiff_t dst_stride
 {
     x86_reg start_y, start_x, end_y, end_x, src_y_add = 0, p;
 
-    if(!w || !h)
+    if (!w || !h)
         return;
 
     if (src_y >= h) {
@@ -203,34 +204,37 @@ static av_always_inline void emulated_edge_mc(uint8_t *dst, ptrdiff_t dst_stride
 }
 
 #if ARCH_X86_32
-static av_noinline void emulated_edge_mc_mmx(uint8_t *buf, ptrdiff_t buf_stride,
-                                             const uint8_t *src, ptrdiff_t src_stride,
+static av_noinline void emulated_edge_mc_mmx(uint8_t *buf, const uint8_t *src,
+                                             ptrdiff_t buf_stride,
+                                             ptrdiff_t src_stride,
                                              int block_w, int block_h,
                                              int src_x, int src_y, int w, int h)
 {
-    emulated_edge_mc(buf, buf_stride, src, src_stride, block_w, block_h,
+    emulated_edge_mc(buf, src, buf_stride, src_stride, block_w, block_h,
                      src_x, src_y, w, h, vfixtbl_mmx, &ff_emu_edge_vvar_mmx,
                      hfixtbl_mmx, &ff_emu_edge_hvar_mmx);
 }
 
-static av_noinline void emulated_edge_mc_sse(uint8_t *buf, ptrdiff_t buf_stride,
-                                             const uint8_t *src, ptrdiff_t src_stride,
+static av_noinline void emulated_edge_mc_sse(uint8_t *buf, const uint8_t *src,
+                                             ptrdiff_t buf_stride,
+                                             ptrdiff_t src_stride,
                                              int block_w, int block_h,
                                              int src_x, int src_y, int w, int h)
 {
-    emulated_edge_mc(buf, buf_stride, src, src_stride, block_w, block_h,
+    emulated_edge_mc(buf, src, buf_stride, src_stride, block_w, block_h,
                      src_x, src_y, w, h, vfixtbl_sse, &ff_emu_edge_vvar_sse,
                      hfixtbl_mmx, &ff_emu_edge_hvar_mmx);
 }
 #endif
 
-static av_noinline void emulated_edge_mc_sse2(uint8_t *buf, ptrdiff_t buf_stride,
-                                              const uint8_t *src, ptrdiff_t src_stride,
+static av_noinline void emulated_edge_mc_sse2(uint8_t *buf, const uint8_t *src,
+                                              ptrdiff_t buf_stride,
+                                              ptrdiff_t src_stride,
                                               int block_w, int block_h,
                                               int src_x, int src_y, int w, int h)
 {
-    emulated_edge_mc(buf, buf_stride, src, src_stride, block_w, block_h, src_x,
-                     src_y, w, h, vfixtbl_sse, &ff_emu_edge_vvar_sse,
+    emulated_edge_mc(buf, src, buf_stride, src_stride, block_w, block_h,
+                     src_x, src_y, w, h, vfixtbl_sse, &ff_emu_edge_vvar_sse,
                      hfixtbl_sse2, &ff_emu_edge_hvar_sse2);
 }
 #endif /* HAVE_YASM */

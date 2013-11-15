@@ -934,9 +934,9 @@ static av_always_inline void mc_dir_part(H264Context *h, Picture *pic,
         full_my                <          0 - extra_height ||
         full_mx + 16 /*FIXME*/ > pic_width  + extra_width  ||
         full_my + 16 /*FIXME*/ > pic_height + extra_height) {
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->mb_linesize,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
                                  src_y - (2 << pixel_shift) - 2 * h->mb_linesize,
-                                 h->mb_linesize,
+                                 h->mb_linesize, h->mb_linesize,
                                  16 + 5, 16 + 5 /*FIXME*/, full_mx - 2,
                                  full_my - 2, pic_width, pic_height);
         src_y = h->edge_emu_buffer + (2 << pixel_shift) + 2 * h->mb_linesize;
@@ -953,9 +953,9 @@ static av_always_inline void mc_dir_part(H264Context *h, Picture *pic,
     if (chroma_idc == 3 /* yuv444 */) {
         src_cb = pic->f.data[1] + offset;
         if (emu) {
-            h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->mb_linesize,
+            h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
                                      src_cb - (2 << pixel_shift) - 2 * h->mb_linesize,
-                                     h->mb_linesize,
+                                     h->mb_linesize, h->mb_linesize,
                                      16 + 5, 16 + 5 /*FIXME*/,
                                      full_mx - 2, full_my - 2,
                                      pic_width, pic_height);
@@ -967,9 +967,9 @@ static av_always_inline void mc_dir_part(H264Context *h, Picture *pic,
 
         src_cr = pic->f.data[2] + offset;
         if (emu) {
-            h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->mb_linesize,
+            h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
                                      src_cr - (2 << pixel_shift) - 2 * h->mb_linesize,
-                                     h->mb_linesize,
+                                     h->mb_linesize, h->mb_linesize,
                                      16 + 5, 16 + 5 /*FIXME*/,
                                      full_mx - 2, full_my - 2,
                                      pic_width, pic_height);
@@ -994,7 +994,8 @@ static av_always_inline void mc_dir_part(H264Context *h, Picture *pic,
              (my >> ysh) * h->mb_uvlinesize;
 
     if (emu) {
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->mb_uvlinesize, src_cb, h->mb_uvlinesize,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cb,
+                                 h->mb_uvlinesize, h->mb_uvlinesize,
                                  9, 8 * chroma_idc + 1, (mx >> 3), (my >> ysh),
                                  pic_width >> 1, pic_height >> (chroma_idc == 1 /* yuv420 */));
         src_cb = h->edge_emu_buffer;
@@ -1004,7 +1005,8 @@ static av_always_inline void mc_dir_part(H264Context *h, Picture *pic,
               mx & 7, (my << (chroma_idc == 2 /* yuv422 */)) & 7);
 
     if (emu) {
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->mb_uvlinesize, src_cr, h->mb_uvlinesize,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cr,
+                                 h->mb_uvlinesize, h->mb_uvlinesize,
                                  9, 8 * chroma_idc + 1, (mx >> 3), (my >> ysh),
                                  pic_width >> 1, pic_height >> (chroma_idc == 1 /* yuv420 */));
         src_cr = h->edge_emu_buffer;
