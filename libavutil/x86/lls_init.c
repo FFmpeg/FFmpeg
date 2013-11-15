@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/lls.h"
+#include "libavutil/lls2.h"
 #include "libavutil/x86/cpu.h"
 
 void ff_update_lls_sse2(LLSModel *m, double *var);
