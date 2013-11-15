@@ -62,6 +62,7 @@ typedef enum {
     EBML_NEST,
     EBML_PASS,
     EBML_STOP,
+    EBML_SINT,
     EBML_TYPE_COUNT
 } EbmlType;
 
@@ -759,6 +760,34 @@ static int ebml_read_uint(AVIOContext *pb, int size, uint64_t *num)
 }
 
 /*
+ * Read the next element as a signed int.
+ * 0 is success, < 0 is failure.
+ */
+static int ebml_read_sint(AVIOContext *pb, int size, int64_t *num)
+{
+    int n = 1;
+
+    if (size > 8)
+        return AVERROR_INVALIDDATA;
+
+    if (size == 0) {
+        *num = 0;
+    } else {
+        *num = avio_r8(pb);
+        /* negative value */
+        if (*num & 0x80) {
+            *num = (-1 << 8) | *num;
+        }
+
+        /* big-endian ordering; build up number */
+        while (n++ < size)
+            *num = (*num << 8) | avio_r8(pb);
+    }
+
+    return 0;
+}
+
+/*
  * Read the next element as a float.
  * 0 is success, < 0 is failure.
  */
@@ -985,6 +1014,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
 
     switch (syntax->type) {
     case EBML_UINT:  res = ebml_read_uint  (pb, length, data);  break;
+    case EBML_SINT:  res = ebml_read_sint  (pb, length, data);  break;
     case EBML_FLOAT: res = ebml_read_float (pb, length, data);  break;
     case EBML_STR:
     case EBML_UTF8:  res = ebml_read_ascii (pb, length, data);  break;
