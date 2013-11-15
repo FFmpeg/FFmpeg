@@ -33,7 +33,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "libavcodec/dv_profile.h"
-#include "libavcodec/dvdata.h"
+#include "libavcodec/dv.h"
 #include "dv.h"
 #include "libavutil/fifo.h"
 #include "libavutil/mathematics.h"

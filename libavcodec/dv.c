@@ -47,6 +47,7 @@
 #include "simple_idct.h"
 #include "dvdata.h"
 #include "dv_tablegen.h"
+#include "dv.h"
 
 /* XXX: also include quantization */
 RL_VLC_ELEM ff_dv_rl_vlc[1184];

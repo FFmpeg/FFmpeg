@@ -44,6 +44,7 @@
 #include "put_bits.h"
 #include "simple_idct.h"
 #include "dvdata.h"
+#include "dv.h"
 
 typedef struct BlockInfo {
     const uint32_t *factor_table;
