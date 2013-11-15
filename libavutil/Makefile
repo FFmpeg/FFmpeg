@@ -90,6 +90,7 @@ OBJS = adler32.o                                                        \
        intfloat_readwrite.o                                             \
        intmath.o                                                        \
        lfg.o                                                            \
+       lls1.o                                                           \
        lls2.o                                                           \
        log.o                                                            \
        log2_tab.o                                                       \
@@ -143,6 +144,7 @@ TESTPROGS = adler32                                                     \
             fifo                                                        \
             hmac                                                        \
             lfg                                                         \
+            lls1                                                        \
             lls2                                                        \
             md5                                                         \
             murmur3                                                     \
