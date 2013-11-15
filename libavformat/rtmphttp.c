@@ -113,7 +113,7 @@ static int rtmp_http_read(URLContext *h, uint8_t *buf, int size)
         if (ret < 0 && ret != AVERROR_EOF)
             return ret;
 
-        if (ret == AVERROR_EOF) {
+        if (!ret || ret == AVERROR_EOF) {
             if (rt->finishing) {
                 /* Do not send new requests when the client wants to
                  * close the connection. */
@@ -227,7 +227,7 @@ static int rtmp_http_open(URLContext *h, const char *uri, int flags)
     /* read the server reply which contains a unique ID */
     for (;;) {
         ret = ffurl_read(rt->stream, rt->client_id + off, sizeof(rt->client_id) - off);
-        if (ret == AVERROR_EOF)
+        if (!ret || ret == AVERROR_EOF)
             break;
         if (ret < 0)
             goto fail;
