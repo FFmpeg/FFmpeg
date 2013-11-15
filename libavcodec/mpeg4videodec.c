@@ -45,6 +45,33 @@ static const int mb_type_b_map[4]= {
     MB_TYPE_L0 | MB_TYPE_16x16,
 };
 
+static void init_tables(void)
+{
+    static int done = 0;
+    if (!done) {
+        done = 1;
+
+        ff_init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
+        ff_init_rl(&ff_rvlc_rl_inter, ff_mpeg4_static_rl_table_store[1]);
+        ff_init_rl(&ff_rvlc_rl_intra, ff_mpeg4_static_rl_table_store[2]);
+        INIT_VLC_RL(ff_mpeg4_rl_intra, 554);
+        INIT_VLC_RL(ff_rvlc_rl_inter, 1072);
+        INIT_VLC_RL(ff_rvlc_rl_intra, 1072);
+        INIT_VLC_STATIC(&dc_lum, DC_VLC_BITS, 10 /* 13 */,
+                 &ff_mpeg4_DCtab_lum[0][1], 2, 1,
+                 &ff_mpeg4_DCtab_lum[0][0], 2, 1, 512);
+        INIT_VLC_STATIC(&dc_chrom, DC_VLC_BITS, 10 /* 13 */,
+                 &ff_mpeg4_DCtab_chrom[0][1], 2, 1,
+                 &ff_mpeg4_DCtab_chrom[0][0], 2, 1, 512);
+        INIT_VLC_STATIC(&sprite_trajectory, SPRITE_TRAJ_VLC_BITS, 15,
+                 &ff_sprite_trajectory_tab[0][1], 4, 2,
+                 &ff_sprite_trajectory_tab[0][0], 4, 2, 128);
+        INIT_VLC_STATIC(&mb_type_b_vlc, MB_TYPE_B_VLC_BITS, 4,
+                 &ff_mb_type_b_tab[0][1], 2, 1,
+                 &ff_mb_type_b_tab[0][0], 2, 1, 16);
+    }
+}
+
 /**
  * Predict the ac.
  * @param n block index (0-3 are luma, 4-5 are chroma)
@@ -2202,7 +2229,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     int ret;
-    static int done = 0;
+
+    init_tables();
 
     s->divx_version=
     s->divx_build=
@@ -2211,29 +2239,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if((ret=ff_h263_decode_init(avctx)) < 0)
         return ret;
-
-    if (!done) {
-        done = 1;
-
-        ff_init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
-        ff_init_rl(&ff_rvlc_rl_inter, ff_mpeg4_static_rl_table_store[1]);
-        ff_init_rl(&ff_rvlc_rl_intra, ff_mpeg4_static_rl_table_store[2]);
-        INIT_VLC_RL(ff_mpeg4_rl_intra, 554);
-        INIT_VLC_RL(ff_rvlc_rl_inter, 1072);
-        INIT_VLC_RL(ff_rvlc_rl_intra, 1072);
-        INIT_VLC_STATIC(&dc_lum, DC_VLC_BITS, 10 /* 13 */,
-                 &ff_mpeg4_DCtab_lum[0][1], 2, 1,
-                 &ff_mpeg4_DCtab_lum[0][0], 2, 1, 512);
-        INIT_VLC_STATIC(&dc_chrom, DC_VLC_BITS, 10 /* 13 */,
-                 &ff_mpeg4_DCtab_chrom[0][1], 2, 1,
-                 &ff_mpeg4_DCtab_chrom[0][0], 2, 1, 512);
-        INIT_VLC_STATIC(&sprite_trajectory, SPRITE_TRAJ_VLC_BITS, 15,
-                 &ff_sprite_trajectory_tab[0][1], 4, 2,
-                 &ff_sprite_trajectory_tab[0][0], 4, 2, 128);
-        INIT_VLC_STATIC(&mb_type_b_vlc, MB_TYPE_B_VLC_BITS, 4,
-                 &ff_mb_type_b_tab[0][1], 2, 1,
-                 &ff_mb_type_b_tab[0][0], 2, 1, 16);
-    }
 
     s->h263_pred = 1;
     s->low_delay = 0; //default, might be overriden in the vol header during header parsing
