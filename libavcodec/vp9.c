@@ -98,7 +98,7 @@ typedef struct VP9Context {
     // bitstream header
     uint8_t profile;
     uint8_t keyframe, last_keyframe;
-    uint8_t invisible, last_invisible;
+    uint8_t invisible;
     uint8_t use_last_frame_mvs;
     uint8_t errorres;
     uint8_t colorspace;
@@ -359,6 +359,7 @@ static int decode_frame_header(AVCodecContext *ctx,
 {
     VP9Context *s = ctx->priv_data;
     int c, i, j, k, l, m, n, w, h, max, size2, res, sharp;
+    int last_invisible;
     const uint8_t *data2;
 
     /* general header */
@@ -381,11 +382,11 @@ static int decode_frame_header(AVCodecContext *ctx,
     }
     s->last_keyframe  = s->keyframe;
     s->keyframe       = !get_bits1(&s->gb);
-    s->last_invisible = s->invisible;
+    last_invisible    = s->invisible;
     s->invisible      = !get_bits1(&s->gb);
     s->errorres       = get_bits1(&s->gb);
     // FIXME disable this upon resolution change
-    s->use_last_frame_mvs = !s->errorres && !s->last_invisible;
+    s->use_last_frame_mvs = !s->errorres && !last_invisible;
     if (s->keyframe) {
         if (get_bits_long(&s->gb, 24) != VP9_SYNCCODE) { // synccode
             av_log(ctx, AV_LOG_ERROR, "Invalid sync code\n");
