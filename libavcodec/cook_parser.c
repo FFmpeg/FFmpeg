@@ -40,10 +40,11 @@ static int cook_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 {
     CookParseContext *s = s1->priv_data;
 
-    if (s->duration)
-        s1->duration = s->duration;
-    else if (avctx->extradata && avctx->extradata_size >= 8 && avctx->channels)
+    if (!s->duration &&
+                avctx->extradata && avctx->extradata_size >= 8 && avctx->channels)
         s->duration = AV_RB16(avctx->extradata + 4) / avctx->channels;
+
+    s1->duration = s->duration;
 
     /* always return the full packet. this parser isn't doing any splitting or
        combining, only setting packet duration */
