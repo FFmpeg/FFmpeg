@@ -773,11 +773,7 @@ static int ebml_read_sint(AVIOContext *pb, int size, int64_t *num)
     if (size == 0) {
         *num = 0;
     } else {
-        *num = avio_r8(pb);
-        /* negative value */
-        if (*num & 0x80) {
-            *num = (-1 << 8) | *num;
-        }
+        *num = sign_extend(avio_r8(pb), 8);
 
         /* big-endian ordering; build up number */
         while (n++ < size)
