@@ -30,7 +30,7 @@
 
 #include "attributes.h"
 #include "version.h"
-#include "lls.h"
+#include "lls2.h"
 
 static void update_lls(LLSModel *m, double *var)
 {
