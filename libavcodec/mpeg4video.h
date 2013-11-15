@@ -110,6 +110,7 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
 
 extern uint8_t ff_mpeg4_static_rl_table_store[3][2][2*MAX_RUN + MAX_LEVEL + 3];
 
+void ff_mpeg4_init_tables(void);
 
 #if 0 //3IV1 is quite rare and it slows things down a tiny bit
 #define IS_3IV1 s->codec_tag == AV_RL32("3IV1")

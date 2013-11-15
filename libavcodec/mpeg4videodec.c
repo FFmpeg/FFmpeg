@@ -45,7 +45,7 @@ static const int mb_type_b_map[4]= {
     MB_TYPE_L0 | MB_TYPE_16x16,
 };
 
-static void init_tables(void)
+void ff_mpeg4_init_tables(void)
 {
     static int done = 0;
     if (!done) {
@@ -2230,7 +2230,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     int ret;
 
-    init_tables();
+    ff_mpeg4_init_tables();
 
     s->divx_version=
     s->divx_build=
