@@ -786,7 +786,7 @@ Set maximum frame size, or duration of a frame in milliseconds. The
 argument must be exactly the following: 2.5, 5, 10, 20, 40, 60. Smaller
 frame sizes achieve lower latency but less quality at a given bitrate.
 Sizes greater than 20ms are only interesting at fairly low bitrates.
-The default of FFmpeg is 10ms, but is 20ms in @command{opusenc}.
+The default is 20ms.
 
 @item packet_loss (@emph{expect-loss})
 Set expected packet loss percentage. The default is 0.
