@@ -202,6 +202,27 @@ static void put_ebml_uint(AVIOContext *pb, unsigned int elementid, uint64_t val)
         avio_w8(pb, (uint8_t)(val >> i*8));
 }
 
+static void put_ebml_sint(AVIOContext *pb, unsigned int elementid, int64_t val)
+{
+    int i, bytes = 1;
+    uint64_t uval = (val < 0 ? (-val - 1) << 1 : val << 1);
+    while (uval>>=8) bytes++;
+
+    /* make unsigned */
+    if (val >= 0) {
+        uval = val;
+    } else {
+        uval = 0x80 << (bytes - 1);
+        uval += val;
+        uval |= 0x80 << (bytes - 1);
+    }
+
+    put_ebml_id(pb, elementid);
+    put_ebml_num(pb, bytes, 0);
+    for (i = bytes - 1; i >= 0; i--)
+        avio_w8(pb, (uint8_t)(uval >> i*8));
+}
+
 static void put_ebml_float(AVIOContext *pb, unsigned int elementid, double val)
 {
     put_ebml_id(pb, elementid);
