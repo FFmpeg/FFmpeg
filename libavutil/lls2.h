@@ -30,12 +30,12 @@
 #define MAX_VARS 32
 #define MAX_VARS_ALIGN FFALIGN(MAX_VARS+1,4)
 
-//FIXME avoid direct access to LLSModel from outside
+//FIXME avoid direct access to LLSModel2 from outside
 
 /**
  * Linear least squares model.
  */
-typedef struct LLSModel {
+typedef struct LLSModel2 {
     DECLARE_ALIGNED(32, double, covariance[MAX_VARS_ALIGN][MAX_VARS_ALIGN]);
     DECLARE_ALIGNED(32, double, coeff[MAX_VARS][MAX_VARS]);
     double variance[MAX_VARS];
@@ -47,25 +47,18 @@ typedef struct LLSModel {
      *            32-byte aligned, and any padding elements must be initialized
      *            (i.e not denormal/nan).
      */
-    void (*update_lls)(struct LLSModel *m, double *var);
+    void (*update_lls)(struct LLSModel2 *m, double *var);
     /**
      * Inner product of var[] and the LPC coefs.
      * @param m this context
      * @param var training samples, excluding the value to be predicted. unaligned.
      * @param order lpc order
      */
-    double (*evaluate_lls)(struct LLSModel *m, double *var, int order);
-} LLSModel;
+    double (*evaluate_lls)(struct LLSModel2 *m, double *var, int order);
+} LLSModel2;
 
-void avpriv_init_lls(LLSModel *m, int indep_count);
-void ff_init_lls_x86(LLSModel *m);
-void avpriv_solve_lls(LLSModel *m, double threshold, unsigned short min_order);
-
-#if FF_API_LLS_PRIVATE
-void av_init_lls(LLSModel *m, int indep_count);
-void av_update_lls(LLSModel *m, double *param, double decay);
-void av_solve_lls(LLSModel *m, double threshold, int min_order);
-double av_evaluate_lls(LLSModel *m, double *param, int order);
-#endif /* FF_API_LLS_PRIVATE */
+void avpriv_init_lls2(LLSModel2 *m, int indep_count);
+void ff_init_lls_x86(LLSModel2 *m);
+void avpriv_solve_lls2(LLSModel2 *m, double threshold, unsigned short min_order);
 
 #endif /* AVUTIL_LLS_H */
