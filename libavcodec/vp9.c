@@ -2768,6 +2768,8 @@ static int decode_sb(AVCodecContext *ctx, int row, int col, struct VP9Filter *lf
                     }
                 }
                 break;
+            default:
+                av_assert0(0);
             }
         } else if (vp56_rac_get_prob_branchy(&s->c, p[1])) {
             bp = PARTITION_SPLIT;
