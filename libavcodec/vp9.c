@@ -3560,17 +3560,7 @@ static av_cold int vp9_decode_free(AVCodecContext *ctx)
         av_frame_free(&s->fb[i]);
     }
     av_freep(&s->above_partition_ctx);
-    s->above_skip_ctx = s->above_txfm_ctx = s->above_mode_ctx = NULL;
-    s->above_y_nnz_ctx = s->above_uv_nnz_ctx[0] = s->above_uv_nnz_ctx[1] = NULL;
-    s->intra_pred_data[0] = s->intra_pred_data[1] = s->intra_pred_data[2] = NULL;
-    s->above_segpred_ctx = s->above_intra_ctx = s->above_comp_ctx = NULL;
-    s->above_ref_ctx = s->above_filter_ctx = NULL;
-    s->above_mv_ctx = NULL;
-    s->segmentation_map = NULL;
-    s->mv[0] = s->mv[1] = NULL;
-    s->lflvl = NULL;
     av_freep(&s->c_b);
-    s->c_b_size = 0;
 
     return 0;
 }
