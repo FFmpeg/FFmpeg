@@ -25,7 +25,7 @@
 
 
 typedef struct {
-    AVFrame picture;
+    AVFrame *frame;
 } AvsContext;
 
 typedef enum {
@@ -52,7 +52,7 @@ avs_decode_frame(AVCodecContext * avctx,
     int buf_size = avpkt->size;
     AvsContext *const avs = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame *const p =  &avs->picture;
+    AVFrame *const p =  avs->frame;
     const uint8_t *table, *vect;
     uint8_t *out;
     int i, j, x, y, stride, ret, vect_w = 3, vect_h = 3;
@@ -65,8 +65,8 @@ avs_decode_frame(AVCodecContext * avctx,
     p->pict_type = AV_PICTURE_TYPE_P;
     p->key_frame = 0;
 
-    out = avs->picture.data[0];
-    stride = avs->picture.linesize[0];
+    out    = p->data[0];
+    stride = p->linesize[0];
 
     if (buf_end - buf < 4)
         return AVERROR_INVALIDDATA;
@@ -76,7 +76,7 @@ avs_decode_frame(AVCodecContext * avctx,
 
     if (type == AVS_PALETTE) {
         int first, last;
-        uint32_t *pal = (uint32_t *) avs->picture.data[1];
+        uint32_t *pal = (uint32_t *) p->data[1];
 
         first = AV_RL16(buf);
         last = first + AV_RL16(buf + 2);
@@ -149,7 +149,7 @@ avs_decode_frame(AVCodecContext * avctx,
             align_get_bits(&change_map);
     }
 
-    if ((ret = av_frame_ref(picture, &avs->picture)) < 0)
+    if ((ret = av_frame_ref(picture, p)) < 0)
         return ret;
     *got_frame = 1;
 
@@ -159,16 +159,21 @@ avs_decode_frame(AVCodecContext * avctx,
 static av_cold int avs_decode_init(AVCodecContext * avctx)
 {
     AvsContext *s = avctx->priv_data;
+
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
+
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
     avcodec_set_dimensions(avctx, 318, 198);
-    avcodec_get_frame_defaults(&s->picture);
+
     return 0;
 }
 
 static av_cold int avs_decode_end(AVCodecContext *avctx)
 {
     AvsContext *s = avctx->priv_data;
-    av_frame_unref(&s->picture);
+    av_frame_free(&s->frame);
     return 0;
 }
 
