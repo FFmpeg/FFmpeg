@@ -23,6 +23,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/vp9dsp.h"
 
 #if HAVE_YASM
@@ -184,12 +185,12 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
     init_subpel2(idx, 0, 1, v, type, opt); \
     init_subpel2(idx, 1, 0, h, type, opt)
 
-    if (cpu_flags & AV_CPU_FLAG_MMX) {
+    if (EXTERNAL_MMX(cpu_flags)) {
         init_fpel(4, 0,  4, put, mmx);
         init_fpel(3, 0,  8, put, mmx);
     }
 
-    if (cpu_flags & AV_CPU_FLAG_SSE) {
+    if (EXTERNAL_SSE(cpu_flags)) {
         init_fpel(2, 0, 16, put, sse);
         init_fpel(1, 0, 32, put, sse);
         init_fpel(0, 0, 64, put, sse);
@@ -197,13 +198,13 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
         init_fpel(3, 1,  8, avg, sse);
     }
 
-    if (cpu_flags & AV_CPU_FLAG_SSE2) {
+    if (EXTERNAL_SSE2(cpu_flags)) {
         init_fpel(2, 1, 16, avg, sse2);
         init_fpel(1, 1, 32, avg, sse2);
         init_fpel(0, 1, 64, avg, sse2);
     }
 
-    if (cpu_flags & AV_CPU_FLAG_SSSE3) {
+    if (EXTERNAL_SSSE3(cpu_flags)) {
         init_subpel3(0, put, ssse3);
         init_subpel3(1, avg, ssse3);
         dsp->itxfm_add[TX_4X4][DCT_DCT] = ff_vp9_idct_idct_4x4_add_ssse3;
