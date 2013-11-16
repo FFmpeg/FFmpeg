@@ -1091,27 +1091,24 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                         srcPtr  += srcStride[plane];
                     }
                 } else if (src_depth <= dst_depth) {
-                    int orig_length = length;
                     for (i = 0; i < height; i++) {
+                        j = 0;
                         if(isBE(c->srcFormat) == HAVE_BIGENDIAN &&
                            isBE(c->dstFormat) == HAVE_BIGENDIAN &&
                            shiftonly) {
                              unsigned shift = dst_depth - src_depth;
-                             length = orig_length;
 #if HAVE_FAST_64BIT
 #define FAST_COPY_UP(shift) \
-    for (j = 0; j < length - 3; j += 4) { \
+    for (; j < length - 3; j += 4) { \
         uint64_t v = AV_RN64A(srcPtr2 + j); \
         AV_WN64A(dstPtr2 + j, v << shift); \
-    } \
-    length &= 3;
+    }
 #else
 #define FAST_COPY_UP(shift) \
-    for (j = 0; j < length - 1; j += 2) { \
+    for (; j < length - 1; j += 2) { \
         uint32_t v = AV_RN32A(srcPtr2 + j); \
         AV_WN32A(dstPtr2 + j, v << shift); \
-    } \
-    length &= 1;
+    }
 #endif
                              switch (shift)
                              {
@@ -1121,12 +1118,12 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                         }
 #define COPY_UP(r,w) \
     if(shiftonly){\
-        for (j = 0; j < length; j++){ \
+        for (; j < length; j++){ \
             unsigned int v= r(&srcPtr2[j]);\
             w(&dstPtr2[j], v<<(dst_depth-src_depth));\
         }\
     }else{\
-        for (j = 0; j < length; j++){ \
+        for (; j < length; j++){ \
             unsigned int v= r(&srcPtr2[j]);\
             w(&dstPtr2[j], (v<<(dst_depth-src_depth)) | \
                         (v>>(2*src_depth-dst_depth)));\
