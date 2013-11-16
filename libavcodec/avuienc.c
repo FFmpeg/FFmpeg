@@ -25,7 +25,7 @@
 
 static av_cold int avui_encode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = avcodec_alloc_frame();
+    avctx->coded_frame = av_frame_alloc();
 
     if (avctx->width != 720 || avctx->height != 486 && avctx->height != 576) {
         av_log(avctx, AV_LOG_ERROR, "Only 720x486 and 720x576 are supported.\n");

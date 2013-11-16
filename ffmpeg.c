@@ -1071,7 +1071,7 @@ static int reap_filters(void)
         if (!ost->filter)
             continue;
 
-        if (!ost->filtered_frame && !(ost->filtered_frame = avcodec_alloc_frame())) {
+        if (!ost->filtered_frame && !(ost->filtered_frame = av_frame_alloc())) {
             return AVERROR(ENOMEM);
         } else
             avcodec_get_frame_defaults(ost->filtered_frame);
@@ -1536,7 +1536,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     int i, ret, err = 0, resample_changed;
     AVRational decoded_frame_tb;
 
-    if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
+    if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc()))
         return AVERROR(ENOMEM);
     if (!ist->filter_frame && !(ist->filter_frame = av_frame_alloc()))
         return AVERROR(ENOMEM);

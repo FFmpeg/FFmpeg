@@ -30,7 +30,7 @@ static av_cold int y41p_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avctx->coded_frame = avcodec_alloc_frame();
+    avctx->coded_frame = av_frame_alloc();
     avctx->bits_per_coded_sample = 12;
 
     if (!avctx->coded_frame) {

@@ -221,7 +221,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 {
     AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
-    AVFrame *frame = avcodec_alloc_frame();
+    AVFrame *frame = av_frame_alloc();
     int got_packet, ret, dst_nb_samples;
 
     av_init_packet(&pkt);
@@ -310,7 +310,7 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
     }
 
     /* allocate and init a re-usable frame */
-    frame = avcodec_alloc_frame();
+    frame = av_frame_alloc();
     if (!frame) {
         fprintf(stderr, "Could not allocate video frame\n");
         exit(1);

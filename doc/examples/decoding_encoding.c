@@ -156,7 +156,7 @@ static void audio_encode_example(const char *filename)
     }
 
     /* frame containing input raw audio */
-    frame = avcodec_alloc_frame();
+    frame = av_frame_alloc();
     if (!frame) {
         fprintf(stderr, "Could not allocate audio frame\n");
         exit(1);
@@ -287,7 +287,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
         int got_frame = 0;
 
         if (!decoded_frame) {
-            if (!(decoded_frame = avcodec_alloc_frame())) {
+            if (!(decoded_frame = av_frame_alloc())) {
                 fprintf(stderr, "Could not allocate audio frame\n");
                 exit(1);
             }
@@ -386,7 +386,7 @@ static void video_encode_example(const char *filename, int codec_id)
         exit(1);
     }
 
-    frame = avcodec_alloc_frame();
+    frame = av_frame_alloc();
     if (!frame) {
         fprintf(stderr, "Could not allocate video frame\n");
         exit(1);
@@ -565,7 +565,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-    frame = avcodec_alloc_frame();
+    frame = av_frame_alloc();
     if (!frame) {
         fprintf(stderr, "Could not allocate video frame\n");
         exit(1);

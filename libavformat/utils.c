@@ -2448,7 +2448,7 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt, A
 {
     const AVCodec *codec;
     int got_picture = 1, ret = 0;
-    AVFrame *frame = avcodec_alloc_frame();
+    AVFrame *frame = av_frame_alloc();
     AVSubtitle subtitle;
     AVPacket pkt = *avpkt;
 

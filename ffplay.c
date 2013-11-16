@@ -2163,7 +2163,7 @@ static int audio_decode_frame(VideoState *is)
         /* NOTE: the audio packet can contain several frames */
         while (pkt_temp->stream_index != -1 || is->audio_buf_frames_pending) {
             if (!is->frame) {
-                if (!(is->frame = avcodec_alloc_frame()))
+                if (!(is->frame = av_frame_alloc()))
                     return AVERROR(ENOMEM);
             } else {
                 av_frame_unref(is->frame);

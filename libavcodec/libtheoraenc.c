@@ -264,7 +264,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     th_comment_clear(&t_comment);
 
     /* Set up the output AVFrame */
-    avc_context->coded_frame= avcodec_alloc_frame();
+    avc_context->coded_frame = av_frame_alloc();
 
     return 0;
 }
