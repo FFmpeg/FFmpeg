@@ -1,0 +1,4 @@
+28fbc7485c7939f40368f79adccb3e3d *tests/data/fate/acodec-mp2fixed.mp2
+96130 tests/data/fate/acodec-mp2fixed.mp2
+87461bd4ce4b0e0cbbf6c43621baf261 *tests/data/fate/acodec-mp2fixed.out.wav
+stddev: 4384.26 PSNR: 23.49 MAXDIFF:52632 bytes:  1058400/  1057916

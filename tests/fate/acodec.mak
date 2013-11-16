@@ -68,6 +68,10 @@ FATE_ACODEC-$(call ENCDEC, MP2, MP2 MP3) += fate-acodec-mp2
 fate-acodec-mp2: FMT = mp2
 fate-acodec-mp2: CMP_SHIFT = -1924
 
+FATE_ACODEC-$(call ENCDEC, MP2FIXED MP2 , MP2 MP3) += fate-acodec-mp2fixed
+fate-acodec-mp2fixed: FMT = mp2
+fate-acodec-mp2fixed: CMP_SHIFT = -1924
+
 FATE_ACODEC-$(call ENCDEC, ALAC, MOV) += fate-acodec-alac
 fate-acodec-alac: FMT = mov
 fate-acodec-alac: CODEC = alac -compression_level 1

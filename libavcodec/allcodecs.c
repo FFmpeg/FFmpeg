@@ -350,6 +350,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(MP1FLOAT,          mp1float);
     REGISTER_ENCDEC (MP2,               mp2);
     REGISTER_DECODER(MP2FLOAT,          mp2float);
+    REGISTER_ENCODER(MP2FIXED,          mp2fixed);
     REGISTER_DECODER(MP3,               mp3);
     REGISTER_DECODER(MP3FLOAT,          mp3float);
     REGISTER_DECODER(MP3ADU,            mp3adu);
