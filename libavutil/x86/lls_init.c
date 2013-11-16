@@ -23,11 +23,11 @@
 #include "libavutil/lls2.h"
 #include "libavutil/x86/cpu.h"
 
-void ff_update_lls_sse2(LLSModel *m, double *var);
-void ff_update_lls_avx(LLSModel *m, double *var);
-double ff_evaluate_lls_sse2(LLSModel *m, double *var, int order);
+void ff_update_lls_sse2(LLSModel2 *m, double *var);
+void ff_update_lls_avx(LLSModel2 *m, double *var);
+double ff_evaluate_lls_sse2(LLSModel2 *m, double *var, int order);
 
-av_cold void ff_init_lls_x86(LLSModel *m)
+av_cold void ff_init_lls_x86(LLSModel2 *m)
 {
     int cpu_flags = av_get_cpu_flags();
     if (EXTERNAL_SSE2(cpu_flags)) {
