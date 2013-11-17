@@ -3602,7 +3602,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
             av_assert2(level);
 
-            if(s->out_format == FMT_H263){
+            if(s->out_format == FMT_H263 || s->out_format == FMT_H261){
                 unquant_coeff= alevel*qmul + qadd;
             }else{ //MPEG1
                 j= s->dsp.idct_permutation[ scantable[i] ]; //FIXME optimize
@@ -3631,7 +3631,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                     }
                 }
 
-                if(s->out_format == FMT_H263){
+                if(s->out_format == FMT_H263 || s->out_format == FMT_H261){
                     for(j=survivor_count-1; j>=0; j--){
                         int run= i - survivor[j];
                         int score= distortion + last_length[UNI_AC_ENC_INDEX(run, level)]*lambda;
@@ -3657,7 +3657,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                     }
                 }
 
-                if(s->out_format == FMT_H263){
+                if(s->out_format == FMT_H263 || s->out_format == FMT_H261){
                   for(j=survivor_count-1; j>=0; j--){
                         int run= i - survivor[j];
                         int score= distortion + score_tab[i-run];
@@ -3690,7 +3690,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         survivor[ survivor_count++ ]= i+1;
     }
 
-    if(s->out_format != FMT_H263){
+    if(s->out_format != FMT_H263 && s->out_format != FMT_H261){
         last_score= 256*256*256*120;
         for(i= survivor[0]; i<=last_non_zero + 1; i++){
             int score= score_tab[i];
@@ -3723,7 +3723,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             int alevel= FFABS(level);
             int unquant_coeff, score, distortion;
 
-            if(s->out_format == FMT_H263){
+            if(s->out_format == FMT_H263 || s->out_format == FMT_H261){
                     unquant_coeff= (alevel*qmul + qadd)>>3;
             }else{ //MPEG1
                     unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) s->inter_matrix[0])) >> 4;
