@@ -61,7 +61,7 @@
 typedef struct VmdVideoContext {
 
     AVCodecContext *avctx;
-    AVFrame prev_frame;
+    AVFrame *prev_frame;
 
     const unsigned char *buf;
     int size;
@@ -244,11 +244,11 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
 
     /* if only a certain region will be updated, copy the entire previous
      * frame before the decode */
-    if (s->prev_frame.data[0] &&
+    if (s->prev_frame->data[0] &&
         (frame_x || frame_y || (frame_width != s->avctx->width) ||
         (frame_height != s->avctx->height))) {
 
-        memcpy(frame->data[0], s->prev_frame.data[0],
+        memcpy(frame->data[0], s->prev_frame->data[0],
             s->avctx->height * frame->linesize[0]);
     }
 
@@ -291,7 +291,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
     }
 
     dp = &frame->data[0][frame_y * frame->linesize[0] + frame_x];
-    pp = &s->prev_frame.data[0][frame_y * s->prev_frame.linesize[0] + frame_x];
+    pp = &s->prev_frame->data[0][frame_y * s->prev_frame->linesize[0] + frame_x];
     switch (meth) {
     case 1:
         for (i = 0; i < frame_height; i++) {
@@ -307,7 +307,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                     ofs += len;
                 } else {
                     /* interframe pixel copy */
-                    if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
+                    if (ofs + len + 1 > frame_width || !s->prev_frame->data[0])
                         return AVERROR_INVALIDDATA;
                     memcpy(&dp[ofs], &pp[ofs], len + 1);
                     ofs += len + 1;
@@ -320,7 +320,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 return AVERROR_INVALIDDATA;
             }
             dp += frame->linesize[0];
-            pp += s->prev_frame.linesize[0];
+            pp += s->prev_frame->linesize[0];
         }
         break;
 
@@ -328,7 +328,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
         for (i = 0; i < frame_height; i++) {
             bytestream2_get_buffer(&gb, dp, frame_width);
             dp += frame->linesize[0];
-            pp += s->prev_frame.linesize[0];
+            pp += s->prev_frame->linesize[0];
         }
         break;
 
@@ -353,7 +353,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                     }
                 } else {
                     /* interframe pixel copy */
-                    if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
+                    if (ofs + len + 1 > frame_width || !s->prev_frame->data[0])
                         return AVERROR_INVALIDDATA;
                     memcpy(&dp[ofs], &pp[ofs], len + 1);
                     ofs += len + 1;
@@ -366,10 +366,20 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 return AVERROR_INVALIDDATA;
             }
             dp += frame->linesize[0];
-            pp += s->prev_frame.linesize[0];
+            pp += s->prev_frame->linesize[0];
         }
         break;
     }
+    return 0;
+}
+
+static av_cold int vmdvideo_decode_end(AVCodecContext *avctx)
+{
+    VmdVideoContext *s = avctx->priv_data;
+
+    av_frame_free(&s->prev_frame);
+    av_freep(&s->unpack_buffer);
+
     return 0;
 }
 
@@ -412,7 +422,11 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
         palette32[i] |= palette32[i] >> 6 & 0x30303;
     }
 
-    avcodec_get_frame_defaults(&s->prev_frame);
+    s->prev_frame = av_frame_alloc();
+    if (!s->prev_frame) {
+        vmdvideo_decode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -443,8 +457,8 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
     memcpy(frame->data[1], s->palette, PALETTE_COUNT * 4);
 
     /* shuffle frames */
-    av_frame_unref(&s->prev_frame);
-    if ((ret = av_frame_ref(&s->prev_frame, frame)) < 0)
+    av_frame_unref(s->prev_frame);
+    if ((ret = av_frame_ref(s->prev_frame, frame)) < 0)
         return ret;
 
     *got_frame      = 1;
@@ -452,17 +466,6 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
     /* report that the buffer was completely consumed */
     return buf_size;
 }
-
-static av_cold int vmdvideo_decode_end(AVCodecContext *avctx)
-{
-    VmdVideoContext *s = avctx->priv_data;
-
-    av_frame_unref(&s->prev_frame);
-    av_free(s->unpack_buffer);
-
-    return 0;
-}
-
 
 /*
  * Audio Decoder
