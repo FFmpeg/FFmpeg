@@ -38,7 +38,7 @@ static void decode_flush(AVCodecContext *avctx)
 {
     KgvContext * const c = avctx->priv_data;
 
-    av_frame_unref(c->prev);
+    av_frame_free(&c->prev);
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
@@ -155,12 +155,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     KgvContext * const c = avctx->priv_data;
 
-    avctx->pix_fmt = AV_PIX_FMT_RGB555;
-    avctx->flags  |= CODEC_FLAG_EMU_EDGE;
-
     c->prev = av_frame_alloc();
     if (!c->prev)
         return AVERROR(ENOMEM);
+
+    avctx->pix_fmt = AV_PIX_FMT_RGB555;
+    avctx->flags  |= CODEC_FLAG_EMU_EDGE;
 
     return 0;
 }
