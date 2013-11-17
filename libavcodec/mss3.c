@@ -803,15 +803,24 @@ static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return buf_size;
 }
 
+static av_cold int mss3_decode_end(AVCodecContext *avctx)
+{
+    MSS3Context * const c = avctx->priv_data;
+    int i;
+
+    av_frame_free(&c->pic);
+    for (i = 0; i < 3; i++)
+        av_freep(&c->dct_coder[i].prev_dc);
+
+    return 0;
+}
+
 static av_cold int mss3_decode_init(AVCodecContext *avctx)
 {
     MSS3Context * const c = avctx->priv_data;
     int i;
 
     c->avctx = avctx;
-    c->pic = av_frame_alloc();
-    if (!c->pic)
-        return AVERROR(ENOMEM);
 
     if ((avctx->width & 0xF) || (avctx->height & 0xF)) {
         av_log(avctx, AV_LOG_ERROR,
@@ -838,21 +847,15 @@ static av_cold int mss3_decode_init(AVCodecContext *avctx)
         }
     }
 
+    c->pic = av_frame_alloc();
+    if (!c->pic) {
+        mss3_decode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
+
     avctx->pix_fmt     = AV_PIX_FMT_YUV420P;
 
     init_coders(c);
-
-    return 0;
-}
-
-static av_cold int mss3_decode_end(AVCodecContext *avctx)
-{
-    MSS3Context * const c = avctx->priv_data;
-    int i;
-
-    av_frame_free(&c->pic);
-    for (i = 0; i < 3; i++)
-        av_freep(&c->dct_coder[i].prev_dc);
 
     return 0;
 }
