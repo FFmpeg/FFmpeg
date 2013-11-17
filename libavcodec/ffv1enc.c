@@ -830,6 +830,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ffv1_allocate_initial_states(s)) < 0)
         return ret;
 
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
+
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+
     if (!s->transparency)
         s->plane_count = 2;
     if (!s->chroma_planes && s->version > 3)
@@ -1000,7 +1006,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
     int height       = fs->slice_height;
     int x            = fs->slice_x;
     int y            = fs->slice_y;
-    AVFrame *const p = f->picture.f;
+    const AVFrame *const p = f->picture.f;
     const int ps     = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step_minus1 + 1;
     int ret;
     RangeCoder c_bak = fs->c;
@@ -1008,7 +1014,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
     fs->slice_coding_mode = 0;
 
 retry:
-    if (p->key_frame)
+    if (c->coded_frame->key_frame)
         ffv1_clear_slice_state(f, fs);
     if (f->version > 2) {
         encode_slice_header(f, fs);
@@ -1129,16 +1135,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     av_frame_unref(p);
     if ((ret = av_frame_ref(p, pict)) < 0)
         return ret;
-    p->pict_type = AV_PICTURE_TYPE_I;
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     if (avctx->gop_size == 0 || f->picture_number % avctx->gop_size == 0) {
         put_rac(c, &keystate, 1);
-        p->key_frame = 1;
+        avctx->coded_frame->key_frame = 1;
         f->gob_count++;
         write_header(f);
     } else {
         put_rac(c, &keystate, 0);
-        p->key_frame = 0;
+        avctx->coded_frame->key_frame = 0;
     }
 
     if (f->ac > 1) {
@@ -1195,9 +1201,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pkt->size   = buf_p - pkt->data;
     pkt->pts    =
     pkt->dts    = pict->pts;
-    pkt->flags |= AV_PKT_FLAG_KEY * p->key_frame;
+    pkt->flags |= AV_PKT_FLAG_KEY * avctx->coded_frame->key_frame;
     *got_packet = 1;
 
+    return 0;
+}
+
+static av_cold int encode_close(AVCodecContext *avctx)
+{
+    av_frame_free(&avctx->coded_frame);
+    ffv1_close(avctx);
     return 0;
 }
 
@@ -1228,7 +1241,7 @@ AVCodec ff_ffv1_encoder = {
     .priv_data_size = sizeof(FFV1Context),
     .init           = encode_init,
     .encode2        = encode_frame,
-    .close          = ffv1_close,
+    .close          = encode_close,
     .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,   AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,  AV_PIX_FMT_YUV444P,

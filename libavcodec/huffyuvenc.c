@@ -156,7 +156,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     s->version = 2;
 
-    avctx->coded_frame = &s->picture;
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
+
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+    avctx->coded_frame->key_frame = 1;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
@@ -446,15 +451,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const int fake_ystride = s->interlaced ? pict->linesize[0]*2  : pict->linesize[0];
     const int fake_ustride = s->interlaced ? pict->linesize[1]*2  : pict->linesize[1];
     const int fake_vstride = s->interlaced ? pict->linesize[2]*2  : pict->linesize[2];
-    AVFrame * const p = &s->picture;
+    const AVFrame * const p = pict;
     int i, j, size = 0, ret;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, width * height * 3 * 4 + FF_MIN_BUFFER_SIZE)) < 0)
         return ret;
-
-    *p = *pict;
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
 
     if (s->context) {
         for (i = 0; i < 3; i++) {
@@ -680,6 +681,8 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     av_freep(&avctx->stats_out);
+
+    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }

@@ -256,7 +256,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_huffyuv_common_init(avctx);
     memset(s->vlc, 0, 3 * sizeof(VLC));
 
-    avcodec_get_frame_defaults(&s->picture);
     s->interlaced = s->height > 288;
 
     s->bgr32 = 1;
