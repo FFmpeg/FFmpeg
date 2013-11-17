@@ -277,7 +277,7 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t *frame)
 
         avpriv_set_pts_info(c->vst, 64, c->sys->time_base.num,
                             c->sys->time_base.den);
-        avctx->time_base = c->sys->time_base;
+        c->vst->avg_frame_rate = av_inv_q(c->vst->time_base);
         if (!avctx->width) {
             avctx->width  = c->sys->width;
             avctx->height = c->sys->height;
