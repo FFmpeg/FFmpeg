@@ -5379,8 +5379,8 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
         int width = v->output_width>>!!plane;
 
         for (row = 0; row < v->output_height>>!!plane; row++) {
-            uint8_t *dst = v->sprite_output_frame.data[plane] +
-                           v->sprite_output_frame.linesize[plane] * row;
+            uint8_t *dst = v->sprite_output_frame->data[plane] +
+                           v->sprite_output_frame->linesize[plane] * row;
 
             for (sprite = 0; sprite <= v->two_sprites; sprite++) {
                 uint8_t *iplane = s->current_picture.f.data[plane];
@@ -5471,8 +5471,8 @@ static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
         v->two_sprites = 0;
     }
 
-    av_frame_unref(&v->sprite_output_frame);
-    if ((ret = ff_get_buffer(avctx, &v->sprite_output_frame, 0)) < 0)
+    av_frame_unref(v->sprite_output_frame);
+    if ((ret = ff_get_buffer(avctx, v->sprite_output_frame, 0)) < 0)
         return ret;
 
     vc1_draw_sprites(v, &sd);
@@ -5699,6 +5699,10 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         v->res_sprite = (avctx->codec_id == AV_CODEC_ID_VC1IMAGE);
     }
 
+    v->sprite_output_frame = av_frame_alloc();
+    if (!v->sprite_output_frame)
+        return AVERROR(ENOMEM);
+
     avctx->profile = v->profile;
     if (v->profile == PROFILE_ADVANCED)
         avctx->level = v->level;
@@ -5745,7 +5749,7 @@ av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
     VC1Context *v = avctx->priv_data;
     int i;
 
-    av_frame_unref(&v->sprite_output_frame);
+    av_frame_free(&v->sprite_output_frame);
 
     for (i = 0; i < 4; i++)
         av_freep(&v->sr_rows[i >> 1][i & 1]);
@@ -6200,7 +6204,7 @@ image:
         if (vc1_decode_sprites(v, &s->gb))
             goto err;
 #endif
-        if ((ret = av_frame_ref(pict, &v->sprite_output_frame)) < 0)
+        if ((ret = av_frame_ref(pict, v->sprite_output_frame)) < 0)
             goto err;
         *got_frame = 1;
     } else {

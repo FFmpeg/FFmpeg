@@ -50,7 +50,7 @@ typedef struct BlockInfo {
 
 typedef struct FlashSVContext {
     AVCodecContext *avctx;
-    AVFrame         frame;
+    AVFrame        *frame;
     int             image_width, image_height;
     int             block_width, block_height;
     uint8_t        *tmpblock;
@@ -99,6 +99,19 @@ static int decode_hybrid(const uint8_t *sptr, uint8_t *dptr, int dx, int dy,
     return sptr - orig_src;
 }
 
+static av_cold int flashsv_decode_end(AVCodecContext *avctx)
+{
+    FlashSVContext *s = avctx->priv_data;
+    inflateEnd(&s->zstream);
+    /* release the frame if needed */
+    av_frame_free(&s->frame);
+
+    /* free the tmpblock */
+    av_freep(&s->tmpblock);
+
+    return 0;
+}
+
 static av_cold int flashsv_decode_init(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
@@ -114,7 +127,12 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
         return 1;
     }
     avctx->pix_fmt = AV_PIX_FMT_BGR24;
-    avcodec_get_frame_defaults(&s->frame);
+
+    s->frame = av_frame_alloc();
+    if (!s->frame) {
+        flashsv_decode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -206,18 +224,18 @@ static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
         /* Flash Screen Video stores the image upside down, so copy
          * lines to destination in reverse order. */
         for (k = 1; k <= s->diff_height; k++) {
-            memcpy(s->frame.data[0] + x_pos * 3 +
-                   (s->image_height - y_pos - k) * s->frame.linesize[0],
+            memcpy(s->frame->data[0] + x_pos * 3 +
+                   (s->image_height - y_pos - k) * s->frame->linesize[0],
                    line, width * 3);
             /* advance source pointer to next line */
             line += width * 3;
         }
     } else {
         /* hybrid 15-bit/palette mode */
-        decode_hybrid(s->tmpblock, s->frame.data[0],
+        decode_hybrid(s->tmpblock, s->frame->data[0],
                       s->image_height - (y_pos + 1 + s->diff_height),
                       x_pos, s->diff_height, width,
-                      s->frame.linesize[0], s->pal);
+                      s->frame->linesize[0], s->pal);
     }
     skip_bits_long(gb, 8 * block_size); /* skip the consumed bits */
     return 0;
@@ -344,7 +362,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             s->image_width, s->image_height, s->block_width, s->block_height,
             h_blocks, v_blocks, h_part, v_part);
 
-    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
 
     /* loop over all block columns */
@@ -369,7 +387,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             s->diff_height    = cur_blk_height;
 
             if (8 * size > get_bits_left(&gb)) {
-                av_frame_unref(&s->frame);
+                av_frame_unref(s->frame);
                 return AVERROR_INVALIDDATA;
             }
 
@@ -429,11 +447,11 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 
             if (has_diff) {
                 int k;
-                int off = (s->image_height - y_pos - 1) * s->frame.linesize[0];
+                int off = (s->image_height - y_pos - 1) * s->frame->linesize[0];
 
                 for (k = 0; k < cur_blk_height; k++) {
-                    int x = off - k * s->frame.linesize[0] + x_pos * 3;
-                    memcpy(s->frame.data[0] + x, s->keyframe + x,
+                    int x = off - k * s->frame->linesize[0] + x_pos * 3;
+                    memcpy(s->frame->data[0] + x, s->keyframe + x,
                            cur_blk_width * 3);
                 }
             }
@@ -451,17 +469,17 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     }
     if (s->is_keyframe && s->ver == 2) {
         if (!s->keyframe) {
-            s->keyframe = av_malloc(s->frame.linesize[0] * avctx->height);
+            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);
             if (!s->keyframe) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot allocate image data\n");
                 return AVERROR(ENOMEM);
             }
         }
-        memcpy(s->keyframe, s->frame.data[0],
-               s->frame.linesize[0] * avctx->height);
+        memcpy(s->keyframe, s->frame->data[0],
+               s->frame->linesize[0] * avctx->height);
     }
 
-    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
         return ret;
 
     *got_frame = 1;
@@ -472,19 +490,6 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 
     /* report that the buffer was completely consumed */
     return buf_size;
-}
-
-static av_cold int flashsv_decode_end(AVCodecContext *avctx)
-{
-    FlashSVContext *s = avctx->priv_data;
-    inflateEnd(&s->zstream);
-    /* release the frame if needed */
-    av_frame_unref(&s->frame);
-
-    /* free the tmpblock */
-    av_freep(&s->tmpblock);
-
-    return 0;
 }
 
 #if CONFIG_FLASHSV_DECODER
