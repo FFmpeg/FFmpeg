@@ -348,8 +348,13 @@ Stop writing to the stream after @var{framecount} frames.
 
 @item -q[:@var{stream_specifier}] @var{q} (@emph{output,per-stream})
 @itemx -qscale[:@var{stream_specifier}] @var{q} (@emph{output,per-stream})
-Use fixed quality scale (VBR). The meaning of @var{q} is
+Use fixed quality scale (VBR). The meaning of @var{q}/@var{qscale} is
 codec-dependent.
+If @var{qscale} is used without a @var{stream_specifier} then it applies only
+to the video stream, this is to maintain compatibility with previous behavior
+and as specifying the same codec specific value to 2 different codecs that is
+audio and video generally is not what is intended when no stream_specifier is
+used.
 
 @anchor{filter_option}
 @item -filter[:@var{stream_specifier}] @var{filtergraph} (@emph{output,per-stream})
