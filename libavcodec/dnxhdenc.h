@@ -43,7 +43,6 @@ typedef struct DNXHDEncContext {
     AVClass *class;
     MpegEncContext m; ///< Used for quantization dsp functions
 
-    AVFrame frame;
     int cid;
     const CIDEntry *cid_table;
     uint8_t *msip; ///< Macroblock Scan Indexes Payload
