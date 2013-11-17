@@ -41,11 +41,13 @@ typedef struct JvContext {
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     JvContext *s = avctx->priv_data;
-    avctx->pix_fmt = AV_PIX_FMT_PAL8;
-    ff_dsputil_init(&s->dsp, avctx);
+
     s->frame = av_frame_alloc();
     if (!s->frame)
         return AVERROR(ENOMEM);
+
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
+    ff_dsputil_init(&s->dsp, avctx);
     return 0;
 }
 
