@@ -38,7 +38,6 @@ typedef struct PNGEncContext {
     uint8_t *bytestream;
     uint8_t *bytestream_start;
     uint8_t *bytestream_end;
-    AVFrame picture;
 
     int filter_type;
 
@@ -218,7 +217,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     PNGEncContext *s = avctx->priv_data;
-    AVFrame * const p= &s->picture;
+    const AVFrame * const p = pict;
     int bit_depth, color_type, y, len, row_size, ret, is_progressive;
     int bits_per_pixel, pass_row_size, enc_row_size;
     int64_t max_packet_size;
@@ -227,10 +226,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *crow_base = NULL, *crow_buf, *crow;
     uint8_t *progressive_buf = NULL;
     uint8_t *top_buf = NULL;
-
-    *p = *pict;
-    p->pict_type= AV_PICTURE_TYPE_I;
-    p->key_frame= 1;
 
     is_progressive = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
     switch(avctx->pix_fmt) {
@@ -454,8 +449,13 @@ static av_cold int png_enc_init(AVCodecContext *avctx){
         avctx->bits_per_coded_sample = 8;
     }
 
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame= &s->picture;
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
+
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+    avctx->coded_frame->key_frame = 1;
+
     ff_dsputil_init(&s->dsp, avctx);
 
     s->filter_type = av_clip(avctx->prediction_method, PNG_FILTER_VALUE_NONE, PNG_FILTER_VALUE_MIXED);
@@ -469,6 +469,12 @@ static av_cold int png_enc_init(AVCodecContext *avctx){
       s->dpm = s->dpi * 10000 / 254;
     }
 
+    return 0;
+}
+
+static av_cold int png_enc_close(AVCodecContext *avctx)
+{
+    av_frame_free(&avctx->coded_frame);
     return 0;
 }
 
@@ -494,6 +500,7 @@ AVCodec ff_png_encoder = {
     .id             = AV_CODEC_ID_PNG,
     .priv_data_size = sizeof(PNGEncContext),
     .init           = png_enc_init,
+    .close          = png_enc_close,
     .encode2        = encode_frame,
     .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]){
