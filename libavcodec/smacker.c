@@ -584,6 +584,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
+    c->pic = av_frame_alloc();
+    if (!c->pic)
+        return AVERROR(ENOMEM);
+
     /* decode huffman trees from extradata */
     if(avctx->extradata_size < 16){
         av_log(avctx, AV_LOG_ERROR, "Extradata missing!\n");
@@ -595,10 +599,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         decode_end(avctx);
         return ret;
     }
-
-    c->pic = av_frame_alloc();
-    if (!c->pic)
-        return AVERROR(ENOMEM);
 
     return 0;
 }

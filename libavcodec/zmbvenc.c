@@ -44,6 +44,7 @@
  */
 typedef struct ZmbvEncContext {
     AVCodecContext *avctx;
+
     int range;
     uint8_t *comp_buf, *work_buf;
     uint8_t pal[768];
@@ -119,7 +120,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     ZmbvEncContext * const c = avctx->priv_data;
-    AVFrame * const p = (AVFrame *)pict;
+    const AVFrame * const p = pict;
     uint8_t *src, *prev, *buf;
     uint32_t *palptr;
     int keyframe, chpal;
@@ -132,8 +133,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     c->curfrm++;
     if(c->curfrm == c->keyint)
         c->curfrm = 0;
-    p->pict_type= keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
-    p->key_frame= keyframe;
+    avctx->coded_frame->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    avctx->coded_frame->key_frame = keyframe;
     chpal = !keyframe && memcmp(p->data[1], c->pal2, 1024);
 
     palptr = (uint32_t*)p->data[1];
@@ -248,6 +249,20 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
+static av_cold int encode_end(AVCodecContext *avctx)
+{
+    ZmbvEncContext * const c = avctx->priv_data;
+
+    av_freep(&c->comp_buf);
+    av_freep(&c->work_buf);
+
+    deflateEnd(&c->zstream);
+    av_freep(&c->prev);
+
+    av_frame_free(&avctx->coded_frame);
+
+    return 0;
+}
 
 /**
  * Init zmbv encoder
@@ -309,23 +324,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    return 0;
-}
-
-
-
-/**
- * Uninit zmbv encoder
- */
-static av_cold int encode_end(AVCodecContext *avctx)
-{
-    ZmbvEncContext * const c = avctx->priv_data;
-
-    av_freep(&c->comp_buf);
-    av_freep(&c->work_buf);
-
-    deflateEnd(&c->zstream);
-    av_freep(&c->prev);
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame) {
+        encode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
