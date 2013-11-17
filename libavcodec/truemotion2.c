@@ -931,6 +931,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     l->avctx       = avctx;
     avctx->pix_fmt = AV_PIX_FMT_BGR24;
+
     l->pic = av_frame_alloc();
     if (!l->pic)
         return AVERROR(ENOMEM);
