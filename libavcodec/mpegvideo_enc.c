@@ -236,7 +236,7 @@ av_cold int ff_dct_encode_init(MpegEncContext *s) {
 av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    int i;
+    int i, ret;
     int chroma_h_shift, chroma_v_shift;
 
     MPV_encode_defaults(s);
@@ -876,12 +876,29 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     if (ff_rate_control_init(s) < 0)
         return -1;
 
+    if (avctx->b_frame_strategy == 2) {
+        for (i = 0; i < s->max_b_frames + 2; i++) {
+            s->tmp_frames[i] = av_frame_alloc();
+            if (!s->tmp_frames[i])
+                return AVERROR(ENOMEM);
+
+            s->tmp_frames[i]->format = AV_PIX_FMT_YUV420P;
+            s->tmp_frames[i]->width  = s->width  >> avctx->brd_scale;
+            s->tmp_frames[i]->height = s->height >> avctx->brd_scale;
+
+            ret = av_frame_get_buffer(s->tmp_frames[i], 32);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
     return 0;
 }
 
 av_cold int ff_MPV_encode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
+    int i;
 
     ff_rate_control_uninit(s);
 
@@ -891,6 +908,9 @@ av_cold int ff_MPV_encode_end(AVCodecContext *avctx)
         ff_mjpeg_encode_close(s);
 
     av_freep(&avctx->extradata);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->tmp_frames); i++)
+        av_frame_free(&s->tmp_frames[i]);
 
     return 0;
 }
@@ -1133,7 +1153,6 @@ static int estimate_best_b_count(MpegEncContext *s)
 {
     AVCodec *codec    = avcodec_find_encoder(s->avctx->codec_id);
     AVCodecContext *c = avcodec_alloc_context3(NULL);
-    AVFrame input[FF_MAX_B_FRAMES + 2];
     const int scale = s->avctx->brd_scale;
     int i, j, out_size, p_lambda, b_lambda, lambda2;
     int64_t best_rd  = INT64_MAX;
@@ -1168,18 +1187,8 @@ static int estimate_best_b_count(MpegEncContext *s)
         return -1;
 
     for (i = 0; i < s->max_b_frames + 2; i++) {
-        int ysize = c->width * c->height;
-        int csize = (c->width / 2) * (c->height / 2);
         Picture pre_input, *pre_input_ptr = i ? s->input_picture[i - 1] :
                                                 s->next_picture_ptr;
-
-        avcodec_get_frame_defaults(&input[i]);
-        input[i].data[0]     = av_malloc(ysize + 2 * csize);
-        input[i].data[1]     = input[i].data[0] + ysize;
-        input[i].data[2]     = input[i].data[1] + csize;
-        input[i].linesize[0] = c->width;
-        input[i].linesize[1] =
-        input[i].linesize[2] = c->width / 2;
 
         if (pre_input_ptr && (!i || s->input_picture[i - 1])) {
             pre_input = *pre_input_ptr;
@@ -1190,13 +1199,13 @@ static int estimate_best_b_count(MpegEncContext *s)
                 pre_input.f.data[2] += INPLACE_OFFSET;
             }
 
-            s->dsp.shrink[scale](input[i].data[0], input[i].linesize[0],
+            s->dsp.shrink[scale](s->tmp_frames[i]->data[0], s->tmp_frames[i]->linesize[0],
                                  pre_input.f.data[0], pre_input.f.linesize[0],
                                  c->width,      c->height);
-            s->dsp.shrink[scale](input[i].data[1], input[i].linesize[1],
+            s->dsp.shrink[scale](s->tmp_frames[i]->data[1], s->tmp_frames[i]->linesize[1],
                                  pre_input.f.data[1], pre_input.f.linesize[1],
                                  c->width >> 1, c->height >> 1);
-            s->dsp.shrink[scale](input[i].data[2], input[i].linesize[2],
+            s->dsp.shrink[scale](s->tmp_frames[i]->data[2], s->tmp_frames[i]->linesize[2],
                                  pre_input.f.data[2], pre_input.f.linesize[2],
                                  c->width >> 1, c->height >> 1);
         }
@@ -1210,21 +1219,21 @@ static int estimate_best_b_count(MpegEncContext *s)
 
         c->error[0] = c->error[1] = c->error[2] = 0;
 
-        input[0].pict_type = AV_PICTURE_TYPE_I;
-        input[0].quality   = 1 * FF_QP2LAMBDA;
+        s->tmp_frames[0]->pict_type = AV_PICTURE_TYPE_I;
+        s->tmp_frames[0]->quality   = 1 * FF_QP2LAMBDA;
 
-        out_size = encode_frame(c, &input[0]);
+        out_size = encode_frame(c, s->tmp_frames[0]);
 
         //rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
 
         for (i = 0; i < s->max_b_frames + 1; i++) {
             int is_p = i % (j + 1) == j || i == s->max_b_frames;
 
-            input[i + 1].pict_type = is_p ?
+            s->tmp_frames[i + 1]->pict_type = is_p ?
                                      AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_B;
-            input[i + 1].quality   = is_p ? p_lambda : b_lambda;
+            s->tmp_frames[i + 1]->quality   = is_p ? p_lambda : b_lambda;
 
-            out_size = encode_frame(c, &input[i + 1]);
+            out_size = encode_frame(c, s->tmp_frames[i + 1]);
 
             rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
         }
@@ -1245,10 +1254,6 @@ static int estimate_best_b_count(MpegEncContext *s)
 
     avcodec_close(c);
     av_freep(&c);
-
-    for (i = 0; i < s->max_b_frames + 2; i++) {
-        av_freep(&input[i].data[0]);
-    }
 
     return best_b_count;
 }
