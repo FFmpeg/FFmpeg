@@ -163,7 +163,7 @@ FATE_VIDEO-$(call DEMDEC, MXF, JPEG2000) += fate-jpeg2000-dcinema
 fate-jpeg2000-dcinema: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/jpeg2000/chiens_dcinema2K.mxf -pix_fmt xyz12le
 
 FATE_VIDEO-$(call DEMDEC, JV, JV) += fate-jv
-fate-jv: CMD = framecrc -i $(TARGET_SAMPLES)/jv/intro.jv -pix_fmt rgb24 -an
+fate-jv: CMD = framecrc -i $(TARGET_SAMPLES)/jv/intro.jv -an -pix_fmt rgb24
 
 FATE_VIDEO-$(call DEMDEC, AVI, KGV1) += fate-kgv1
 fate-kgv1: CMD = framecrc -i $(TARGET_SAMPLES)/kega/kgv1.avi -pix_fmt rgb555le -an
