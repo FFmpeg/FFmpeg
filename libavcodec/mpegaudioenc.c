@@ -704,6 +704,8 @@ static void encode_frame(MpegAudioContext *s,
                                     q1 = sample >> shift;
                                 q1 = (q1 * mult) >> P;
                                 q[m] = ((q1 + (1 << P)) * steps) >> (P + 1);
+                                if (q[m] < 0)
+                                    q[m] = 0;
                             }
 #endif
                             if (q[m] >= steps)
