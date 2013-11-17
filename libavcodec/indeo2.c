@@ -171,36 +171,36 @@ static int ir2_decode_frame(AVCodecContext *avctx,
 
     if (s->decode_delta) { /* intraframe */
         if ((ret = ir2_decode_plane(s, avctx->width, avctx->height,
-                                    s->picture->data[0], s->picture->linesize[0],
+                                    p->data[0], p->linesize[0],
                                     ir2_luma_table)) < 0)
             return ret;
 
         /* swapped U and V */
         if ((ret = ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
-                                    s->picture->data[2], s->picture->linesize[2],
+                                    p->data[2], p->linesize[2],
                                     ir2_luma_table)) < 0)
             return ret;
         if ((ret = ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
-                                    s->picture->data[1], s->picture->linesize[1],
+                                    p->data[1], p->linesize[1],
                                     ir2_luma_table)) < 0)
             return ret;
     } else { /* interframe */
         if ((ret = ir2_decode_plane_inter(s, avctx->width, avctx->height,
-                                          s->picture->data[0], s->picture->linesize[0],
+                                          p->data[0], p->linesize[0],
                                           ir2_luma_table)) < 0)
             return ret;
         /* swapped U and V */
         if ((ret = ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
-                                          s->picture->data[2], s->picture->linesize[2],
+                                          p->data[2], p->linesize[2],
                                           ir2_luma_table)) < 0)
             return ret;
         if ((ret = ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
-                                          s->picture->data[1], s->picture->linesize[1],
+                                          p->data[1], p->linesize[1],
                                           ir2_luma_table)) < 0)
             return ret;
     }
 
-    if ((ret = av_frame_ref(picture, s->picture)) < 0)
+    if ((ret = av_frame_ref(picture, p)) < 0)
         return ret;
 
     *got_frame = 1;
