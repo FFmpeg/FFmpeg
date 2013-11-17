@@ -1,0 +1,4 @@
+4befca10c9228e947ed77ed4dcacae4d *tests/data/fate/vsynth1-h261-trellis.avi
+675444 tests/data/fate/vsynth1-h261-trellis.avi
+6989f2248debfde868f1facd9a2cd5d7 *tests/data/fate/vsynth1-h261-trellis.out.rawvideo
+stddev:    8.95 PSNR: 29.09 MAXDIFF:   87 bytes:  7603200/  7603200
