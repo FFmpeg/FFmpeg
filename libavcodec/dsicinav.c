@@ -39,7 +39,7 @@ typedef enum CinVideoBitmapIndex {
 
 typedef struct CinVideoContext {
     AVCodecContext *avctx;
-    AVFrame frame;
+    AVFrame *frame;
     unsigned int bitmap_size;
     uint32_t palette[256];
     uint8_t *bitmap_table[3];
@@ -118,7 +118,9 @@ static av_cold int cinvideo_decode_init(AVCodecContext *avctx)
     cin->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
-    avcodec_get_frame_defaults(&cin->frame);
+    cin->frame = av_frame_alloc();
+    if (!cin->frame)
+        return AVERROR(ENOMEM);
 
     cin->bitmap_size = avctx->width * avctx->height;
     if (allocate_buffers(cin))
@@ -315,20 +317,20 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
         break;
     }
 
-    if ((res = ff_reget_buffer(avctx, &cin->frame)) < 0)
+    if ((res = ff_reget_buffer(avctx, cin->frame)) < 0)
         return res;
 
-    memcpy(cin->frame.data[1], cin->palette, sizeof(cin->palette));
-    cin->frame.palette_has_changed = 1;
+    memcpy(cin->frame->data[1], cin->palette, sizeof(cin->palette));
+    cin->frame->palette_has_changed = 1;
     for (y = 0; y < cin->avctx->height; ++y)
-        memcpy(cin->frame.data[0] + (cin->avctx->height - 1 - y) * cin->frame.linesize[0],
+        memcpy(cin->frame->data[0] + (cin->avctx->height - 1 - y) * cin->frame->linesize[0],
                cin->bitmap_table[CIN_CUR_BMP] + y * cin->avctx->width,
                cin->avctx->width);
 
     FFSWAP(uint8_t *, cin->bitmap_table[CIN_CUR_BMP],
                       cin->bitmap_table[CIN_PRE_BMP]);
 
-    if ((res = av_frame_ref(data, &cin->frame)) < 0)
+    if ((res = av_frame_ref(data, cin->frame)) < 0)
         return res;
 
     *got_frame = 1;
@@ -340,7 +342,7 @@ static av_cold int cinvideo_decode_end(AVCodecContext *avctx)
 {
     CinVideoContext *cin = avctx->priv_data;
 
-    av_frame_unref(&cin->frame);
+    av_frame_free(&cin->frame);
 
     destroy_buffers(cin);
 
