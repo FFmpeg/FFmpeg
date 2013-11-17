@@ -2486,10 +2486,7 @@ cglobal pred4x4_tm_vp8_8, 3,3
     pshufb     mm3, mm6
     pshufb     mm4, mm6
     pshufb     mm5, mm6
-    psubw      mm2, mm7
-    psubw      mm3, mm7
-    psubw      mm4, mm7
-    psubw      mm5, mm7
+    psubw      mm0, mm7
     paddw      mm2, mm0
     paddw      mm3, mm0
     paddw      mm4, mm0
