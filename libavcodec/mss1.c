@@ -30,7 +30,7 @@
 
 typedef struct MSS1Context {
     MSS12Context   ctx;
-    AVFrame        pic;
+    AVFrame       *pic;
     SliceContext   sc;
 } MSS1Context;
 
@@ -151,32 +151,32 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     init_get_bits(&gb, buf, buf_size * 8);
     arith_init(&acoder, &gb);
 
-    if ((ret = ff_reget_buffer(avctx, &ctx->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, ctx->pic)) < 0)
         return ret;
 
-    c->pal_pic    =  ctx->pic.data[0] + ctx->pic.linesize[0] * (avctx->height - 1);
-    c->pal_stride = -ctx->pic.linesize[0];
+    c->pal_pic    =  ctx->pic->data[0] + ctx->pic->linesize[0] * (avctx->height - 1);
+    c->pal_stride = -ctx->pic->linesize[0];
     c->keyframe   = !arith_get_bit(&acoder);
     if (c->keyframe) {
         c->corrupted = 0;
         ff_mss12_slicecontext_reset(&ctx->sc);
         pal_changed        = decode_pal(c, &acoder);
-        ctx->pic.key_frame = 1;
-        ctx->pic.pict_type = AV_PICTURE_TYPE_I;
+        ctx->pic->key_frame = 1;
+        ctx->pic->pict_type = AV_PICTURE_TYPE_I;
     } else {
         if (c->corrupted)
             return AVERROR_INVALIDDATA;
-        ctx->pic.key_frame = 0;
-        ctx->pic.pict_type = AV_PICTURE_TYPE_P;
+        ctx->pic->key_frame = 0;
+        ctx->pic->pict_type = AV_PICTURE_TYPE_P;
     }
     c->corrupted = ff_mss12_decode_rect(&ctx->sc, &acoder, 0, 0,
                                         avctx->width, avctx->height);
     if (c->corrupted)
         return AVERROR_INVALIDDATA;
-    memcpy(ctx->pic.data[1], c->pal, AVPALETTE_SIZE);
-    ctx->pic.palette_has_changed = pal_changed;
+    memcpy(ctx->pic->data[1], c->pal, AVPALETTE_SIZE);
+    ctx->pic->palette_has_changed = pal_changed;
 
-    if ((ret = av_frame_ref(data, &ctx->pic)) < 0)
+    if ((ret = av_frame_ref(data, ctx->pic)) < 0)
         return ret;
 
     *got_frame      = 1;
@@ -192,7 +192,9 @@ static av_cold int mss1_decode_init(AVCodecContext *avctx)
 
     c->ctx.avctx       = avctx;
 
-    avcodec_get_frame_defaults(&c->pic);
+    c->pic = av_frame_alloc();
+    if (!c->pic)
+        return AVERROR(ENOMEM);
 
     ret = ff_mss12_decode_init(&c->ctx, 0, &c->sc, NULL);
 
@@ -205,7 +207,7 @@ static av_cold int mss1_decode_end(AVCodecContext *avctx)
 {
     MSS1Context * const ctx = avctx->priv_data;
 
-    av_frame_unref(&ctx->pic);
+    av_frame_free(&ctx->pic);
     ff_mss12_decode_end(&ctx->ctx);
 
     return 0;

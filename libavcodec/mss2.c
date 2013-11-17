@@ -837,6 +837,7 @@ static av_cold int mss2_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = c->free_colours == 127 ? AV_PIX_FMT_RGB555
                                             : AV_PIX_FMT_RGB24;
 
+
     return 0;
 }
 
