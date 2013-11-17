@@ -38,7 +38,17 @@ typedef struct XanContext {
     GetByteContext gb;
 } XanContext;
 
-static av_cold int xan_decode_end(AVCodecContext *avctx);
+static av_cold int xan_decode_end(AVCodecContext *avctx)
+{
+    XanContext *s = avctx->priv_data;
+
+    av_frame_free(&s->pic);
+
+    av_freep(&s->y_buffer);
+    av_freep(&s->scratch_buffer);
+
+    return 0;
+}
 
 static av_cold int xan_decode_init(AVCodecContext *avctx)
 {
@@ -426,18 +436,6 @@ static int xan_decode_frame(AVCodecContext *avctx,
     *got_frame = 1;
 
     return avpkt->size;
-}
-
-static av_cold int xan_decode_end(AVCodecContext *avctx)
-{
-    XanContext *s = avctx->priv_data;
-
-    av_frame_free(&s->pic);
-
-    av_freep(&s->y_buffer);
-    av_freep(&s->scratch_buffer);
-
-    return 0;
 }
 
 AVCodec ff_xan_wc4_decoder = {
