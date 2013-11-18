@@ -110,7 +110,7 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     return 1;
 }
 
-static int XAVS_frame(AVCodecContext *ctx, AVPacket *pkt,
+static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
                       const AVFrame *frame, int *got_packet)
 {
     XavsContext *x4 = ctx->priv_data;
