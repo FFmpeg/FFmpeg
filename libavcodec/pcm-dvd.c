@@ -249,7 +249,7 @@ static int pcm_dvd_decode_frame(AVCodecContext *avctx, void *data,
     if ((retval = pcm_dvd_parse_header(avctx, src)))
         return retval;
     if (s->last_block_size && s->last_block_size != s->block_size) {
-        av_log(avctx, AV_LOG_WARNING, "block_size has changed\n");
+        av_log(avctx, AV_LOG_WARNING, "block_size has changed %d != %d\n", s->last_block_size, s->block_size);
         s->extra_sample_count = 0;
     }
     s->last_block_size = s->block_size;
