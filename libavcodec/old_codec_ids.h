@@ -34,7 +34,9 @@
     /* video codecs */
     CODEC_ID_MPEG1VIDEO,
     CODEC_ID_MPEG2VIDEO, ///< preferred ID for MPEG-1/2 video decoding
+#if FF_API_XVMC
     CODEC_ID_MPEG2VIDEO_XVMC,
+#endif
     CODEC_ID_H261,
     CODEC_ID_H263,
     CODEC_ID_RV10,
