@@ -237,12 +237,6 @@ static av_cold int encode_init(AVCodecContext *avctx){
     int i;
     const int scale= avctx->codec_id == AV_CODEC_ID_ASV1 ? 1 : 2;
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    avctx->coded_frame->key_frame = 1;
-
     ff_asv_common_init(avctx);
 
     if(avctx->global_quality == 0) avctx->global_quality= 4*FF_QUALITY_SCALE;
