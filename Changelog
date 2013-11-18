@@ -32,7 +32,7 @@ version 10:
   the -noaccurate_seek option.
 - avconv -t option can now be used for inputs, to limit the duration of
   data read from an input file
-- incomplete Voxware MetaSound decoder
+- Voxware MetaSound decoder
 - WebP decoder
 - Error Resilient AAC syntax (ER AAC LC) decoding
 - Low Delay AAC (ER AAC LD) decoding
