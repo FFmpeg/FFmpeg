@@ -330,8 +330,7 @@ static av_cold void init_uni_h261_rl_tab(RLTable *rl, uint32_t *bits_tab,
             for(last=0; last<=1; last++){
                 const int index= UNI_ENC_INDEX(last, run, slevel+64);
                 int level= slevel < 0 ? -slevel : slevel;
-                int sign= slevel < 0 ? 1 : 0;
-                int bits, len, code;
+                int len, code;
 
                 len_tab[index]= 100;
 
