@@ -116,7 +116,7 @@ typedef struct VP9Context {
     uint8_t refidx[3];
     uint8_t signbias[3];
     uint8_t varcompref[2];
-    AVFrame *refs[8], *f, *fb[10];
+    AVFrame *refs[8], *f;
 
     struct {
         uint8_t level;
@@ -427,8 +427,9 @@ static int decode_frame_header(AVCodecContext *ctx,
             s->signbias[1]    = get_bits1(&s->gb);
             s->refidx[2]      = get_bits(&s->gb, 3);
             s->signbias[2]    = get_bits1(&s->gb);
-            if (!s->refs[s->refidx[0]] || !s->refs[s->refidx[1]] ||
-                !s->refs[s->refidx[2]]) {
+            if (!s->refs[s->refidx[0]]->buf[0] ||
+                !s->refs[s->refidx[1]]->buf[0] ||
+                !s->refs[s->refidx[2]]->buf[0]) {
                 av_log(ctx, AV_LOG_ERROR, "Not all references are available\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -3288,7 +3289,21 @@ static void adapt_probs(VP9Context *s)
     }
 }
 
-static int vp9_decode_frame(AVCodecContext *ctx, void *out_pic,
+static av_cold int vp9_decode_free(AVCodecContext *ctx)
+{
+    VP9Context *s = ctx->priv_data;
+    int i;
+
+    for (i = 0; i < 8; i++)
+        av_frame_free(&s->refs[i]);
+    av_freep(&s->above_partition_ctx);
+    av_freep(&s->c_b);
+
+    return 0;
+}
+
+
+static int vp9_decode_frame(AVCodecContext *ctx, AVFrame *frame,
                             int *got_frame, const uint8_t *data, int size)
 {
     VP9Context *s = ctx->priv_data;
@@ -3299,11 +3314,11 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *out_pic,
     if ((res = decode_frame_header(ctx, data, size, &ref)) < 0) {
         return res;
     } else if (res == 0) {
-        if (!s->refs[ref]) {
+        if (!s->refs[ref]->buf[0]) {
             av_log(ctx, AV_LOG_ERROR, "Requested reference %d not available\n", ref);
             return AVERROR_INVALIDDATA;
         }
-        if ((res = av_frame_ref(out_pic, s->refs[ref])) < 0)
+        if ((res = av_frame_ref(frame, s->refs[ref])) < 0)
             return res;
         *got_frame = 1;
         return 0;
@@ -3311,23 +3326,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *out_pic,
     data += res;
     size -= res;
 
-    // discard old references
-    for (i = 0; i < 10; i++) {
-        AVFrame *f = s->fb[i];
-        if (f->data[0] && f != s->f &&
-            f != s->refs[0] && f != s->refs[1] &&
-            f != s->refs[2] && f != s->refs[3] &&
-            f != s->refs[4] && f != s->refs[5] &&
-            f != s->refs[6] && f != s->refs[7])
-            av_frame_unref(f);
-    }
-
-    // find unused reference
-    for (i = 0; i < 10; i++)
-        if (!s->fb[i]->data[0])
-            break;
-    av_assert0(i < 10);
-    s->f = s->fb[i];
+    s->f = frame;
     if ((res = ff_get_buffer(ctx, s->f,
                              s->refreshrefmask ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
         return res;
@@ -3455,19 +3454,22 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *out_pic,
 
     // ref frame setup
     for (i = 0; i < 8; i++)
-        if (s->refreshrefmask & (1 << i))
-            s->refs[i] = s->f;
+        if (s->refreshrefmask & (1 << i)) {
+            av_frame_unref(s->refs[i]);
+            if ((res = av_frame_ref(s->refs[i], s->f)) < 0)
+                return res;
+        }
 
-    if (!s->invisible) {
-        if ((res = av_frame_ref(out_pic, s->f)) < 0)
-            return res;
+    if (s->invisible) {
+        av_frame_unref(s->f);
+    } else {
         *got_frame = 1;
     }
 
     return 0;
 }
 
-static int vp9_decode_packet(AVCodecContext *avctx, void *out_pic,
+static int vp9_decode_packet(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *data = avpkt->data;
@@ -3495,7 +3497,7 @@ static int vp9_decode_packet(AVCodecContext *avctx, void *out_pic,
                                    sz, size); \
                             return AVERROR_INVALIDDATA; \
                         } \
-                        res = vp9_decode_frame(avctx, out_pic, got_frame, \
+                        res = vp9_decode_frame(avctx, frame, got_frame, \
                                                data, sz); \
                         if (res < 0) \
                             return res; \
@@ -3513,7 +3515,7 @@ static int vp9_decode_packet(AVCodecContext *avctx, void *out_pic,
     }
     // if we get here, there was no valid superframe index, i.e. this is just
     // one whole single frame - decode it as such from the complete input buf
-    if ((res = vp9_decode_frame(avctx, out_pic, got_frame, data, size)) < 0)
+    if ((res = vp9_decode_frame(avctx, frame, got_frame, data, size)) < 0)
         return res;
     return avpkt->size;
 }
@@ -3523,11 +3525,8 @@ static void vp9_decode_flush(AVCodecContext *ctx)
     VP9Context *s = ctx->priv_data;
     int i;
 
-    for (i = 0; i < 10; i++)
-        if (s->fb[i]->data[0])
-            av_frame_unref(s->fb[i]);
     for (i = 0; i < 8; i++)
-        s->refs[i] = NULL;
+        av_frame_unref(s->refs[i]);
     s->f = NULL;
 }
 
@@ -3539,30 +3538,15 @@ static av_cold int vp9_decode_init(AVCodecContext *ctx)
     ctx->pix_fmt = AV_PIX_FMT_YUV420P;
     ff_vp9dsp_init(&s->dsp);
     ff_videodsp_init(&s->vdsp, 8);
-    for (i = 0; i < 10; i++) {
-        s->fb[i] = av_frame_alloc();
-        if (!s->fb[i]) {
+    for (i = 0; i < 8; i++) {
+        s->refs[i] = av_frame_alloc();
+        if (!s->refs[i]) {
+            vp9_decode_free(ctx);
             av_log(ctx, AV_LOG_ERROR, "Failed to allocate frame buffer %d\n", i);
             return AVERROR(ENOMEM);
         }
     }
     s->filter.sharpness = -1;
-
-    return 0;
-}
-
-static av_cold int vp9_decode_free(AVCodecContext *ctx)
-{
-    VP9Context *s = ctx->priv_data;
-    int i;
-
-    for (i = 0; i < 10; i++) {
-        if (s->fb[i]->data[0])
-            av_frame_unref(s->fb[i]);
-        av_frame_free(&s->fb[i]);
-    }
-    av_freep(&s->above_partition_ctx);
-    av_freep(&s->c_b);
 
     return 0;
 }
