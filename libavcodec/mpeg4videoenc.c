@@ -42,9 +42,9 @@ static uint8_t  uni_mpeg4_intra_rl_len[64 * 64 * 2 * 2];
 static uint32_t uni_mpeg4_inter_rl_bits[64 * 64 * 2 * 2];
 static uint8_t  uni_mpeg4_inter_rl_len[64 * 64 * 2 * 2];
 
-//#define UNI_MPEG4_ENC_INDEX(last, run, level) (last * 128 + run * 256 + level)
-//#define UNI_MPEG4_ENC_INDEX(last, run, level) (last * 128 * 64 + run + level * 64)
-#define UNI_MPEG4_ENC_INDEX(last, run, level) (last * 128 * 64 + run * 128 + (level))
+//#define UNI_MPEG4_ENC_INDEX(last, run, level) ((last) * 128 + (run) * 256 + (level))
+//#define UNI_MPEG4_ENC_INDEX(last, run, level) ((last) * 128 * 64 + (run) + (level) * 64)
+#define UNI_MPEG4_ENC_INDEX(last, run, level) ((last) * 128 * 64 + (run) * 128 + (level))
 
 /* mpeg4
  * inter
