@@ -706,8 +706,6 @@ Allow caching (only affects M3U8 list files).
 Allow live-friendly file generation.
 @end table
 
-Default value is @code{samp}.
-
 @item segment_list_size @var{size}
 Update the list file so that it contains at most the last @var{size}
 segments. If 0 the list file will contain all the segments. Default
