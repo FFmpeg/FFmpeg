@@ -147,10 +147,10 @@ static int planarToNv12Wrapper(SwsContext *c, const uint8_t *src[],
 
     if (c->dstFormat == AV_PIX_FMT_NV12)
         interleaveBytes(src[1], src[2], dst, c->srcW / 2, srcSliceH / 2,
-                        srcStride[1], srcStride[2], dstStride[0]);
+                        srcStride[1], srcStride[2], dstStride[1]);
     else
         interleaveBytes(src[2], src[1], dst, c->srcW / 2, srcSliceH / 2,
-                        srcStride[2], srcStride[1], dstStride[0]);
+                        srcStride[2], srcStride[1], dstStride[1]);
 
     return srcSliceH;
 }
