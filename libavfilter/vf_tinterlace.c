@@ -263,6 +263,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     case MODE_DROP_ODD:  /* only output even frames, odd  frames are dropped; height unchanged, half framerate */
     case MODE_DROP_EVEN: /* only output odd  frames, even frames are dropped; height unchanged, half framerate */
         out = av_frame_clone(tinterlace->mode == MODE_DROP_EVEN ? cur : next);
+        if (!out)
+            return AVERROR(ENOMEM);
         av_frame_free(&tinterlace->next);
         break;
 
