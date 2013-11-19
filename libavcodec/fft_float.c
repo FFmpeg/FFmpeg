@@ -17,4 +17,4 @@
  */
 
 #define CONFIG_FFT_FLOAT 1
-#include "fft.c"
+#include "fft_template.c"

@@ -17,4 +17,4 @@
  */
 
 #define DCT32_FLOAT 1
-#include "dct32.c"
+#include "dct32_template.c"
