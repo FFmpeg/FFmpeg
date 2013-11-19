@@ -1924,6 +1924,32 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
             ::: "memory"
             );
 }
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW && !COMPILE_TEMPLATE_AVX*/
+
+#if !COMPILE_TEMPLATE_AMD3DNOW && (ARCH_X86_32 || COMPILE_TEMPLATE_SSE2) && COMPILE_TEMPLATE_MMXEXT == COMPILE_TEMPLATE_SSE2
+void RENAME(ff_nv12ToUV)(uint8_t *dstU, uint8_t *dstV,
+                                const uint8_t *unused0,
+                                const uint8_t *src1,
+                                const uint8_t *src2,
+                                int w, uint32_t *unused);
+static void RENAME(deinterleaveBytes)(const uint8_t *src, uint8_t *dst1, uint8_t *dst2,
+                                      int width, int height, int srcStride,
+                                      int dst1Stride, int dst2Stride)
+{
+    int h;
+
+    for (h=0; h < height; h++) {
+        RENAME(ff_nv12ToUV)(dst1, dst2, NULL, src, NULL, width, NULL);
+        src += srcStride;
+        dst1 += dst1Stride;
+        dst2 += dst2Stride;
+    }
+    __asm__(
+            EMMS"       \n\t"
+            SFENCE"     \n\t"
+            ::: "memory"
+            );
+}
 #endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
 #if !COMPILE_TEMPLATE_SSE2
@@ -2497,4 +2523,7 @@ static av_cold void RENAME(rgb2rgb_init)(void)
 #if !COMPILE_TEMPLATE_AMD3DNOW && !COMPILE_TEMPLATE_AVX
     interleaveBytes    = RENAME(interleaveBytes);
 #endif /* !COMPILE_TEMPLATE_AMD3DNOW  && !COMPILE_TEMPLATE_AVX*/
+#if !COMPILE_TEMPLATE_AMD3DNOW && (ARCH_X86_32 || COMPILE_TEMPLATE_SSE2) && COMPILE_TEMPLATE_MMXEXT == COMPILE_TEMPLATE_SSE2
+    deinterleaveBytes  = RENAME(deinterleaveBytes);
+#endif
 }
