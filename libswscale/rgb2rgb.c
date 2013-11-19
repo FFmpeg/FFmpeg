@@ -83,6 +83,9 @@ void (*planar2x)(const uint8_t *src, uint8_t *dst, int width, int height,
 void (*interleaveBytes)(const uint8_t *src1, const uint8_t *src2, uint8_t *dst,
                         int width, int height, int src1Stride,
                         int src2Stride, int dstStride);
+void (*deinterleaveBytes)(const uint8_t *src, uint8_t *dst1, uint8_t *dst2,
+                        int width, int height, int srcStride,
+                        int dst1Stride, int dst2Stride);
 void (*vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
                     uint8_t *dst1, uint8_t *dst2,
                     int width, int height,
