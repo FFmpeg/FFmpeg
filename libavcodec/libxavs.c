@@ -112,10 +112,10 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     return 1;
 }
 
-static int XAVS_frame(AVCodecContext *ctx, AVPacket *pkt,
+static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
                       const AVFrame *frame, int *got_packet)
 {
-    XavsContext *x4 = ctx->priv_data;
+    XavsContext *x4 = avctx->priv_data;
     xavs_nal_t *nal;
     int nnal, i, ret;
     xavs_picture_t pic_out;
@@ -131,14 +131,14 @@ static int XAVS_frame(AVCodecContext *ctx, AVPacket *pkt,
 
         x4->pic.i_pts  = frame->pts;
         x4->pic.i_type = XAVS_TYPE_AUTO;
-        x4->pts_buffer[ctx->frame_number % (ctx->max_b_frames+1)] = frame->pts;
+        x4->pts_buffer[avctx->frame_number % (avctx->max_b_frames+1)] = frame->pts;
     }
 
     if (xavs_encoder_encode(x4->enc, &nal, &nnal,
                             frame? &x4->pic: NULL, &pic_out) < 0)
     return -1;
 
-    ret = encode_nals(ctx, pkt, nal, nnal);
+    ret = encode_nals(avctx, pkt, nal, nnal);
 
     if (ret < 0)
         return -1;
@@ -152,8 +152,8 @@ static int XAVS_frame(AVCodecContext *ctx, AVPacket *pkt,
             pkt->data[1] = 0x0;
             pkt->data[2] = 0x01;
             pkt->data[3] = 0xb1;
-            pkt->dts = 2*x4->pts_buffer[(x4->out_frame_count-1)%(ctx->max_b_frames+1)] -
-                       x4->pts_buffer[(x4->out_frame_count-2)%(ctx->max_b_frames+1)];
+            pkt->dts = 2*x4->pts_buffer[(x4->out_frame_count-1)%(avctx->max_b_frames+1)] -
+                       x4->pts_buffer[(x4->out_frame_count-2)%(avctx->max_b_frames+1)];
             x4->end_of_stream = END_OF_STREAM;
             *got_packet = 1;
         }
@@ -162,11 +162,11 @@ static int XAVS_frame(AVCodecContext *ctx, AVPacket *pkt,
 
     avctx->coded_frame->pts = pic_out.i_pts;
     pkt->pts = pic_out.i_pts;
-    if (ctx->has_b_frames) {
+    if (avctx->has_b_frames) {
         if (!x4->out_frame_count)
             pkt->dts = pkt->pts - (x4->pts_buffer[1] - x4->pts_buffer[0]);
         else
-            pkt->dts = x4->pts_buffer[(x4->out_frame_count-1)%(ctx->max_b_frames+1)];
+            pkt->dts = x4->pts_buffer[(x4->out_frame_count-1)%(avctx->max_b_frames+1)];
     } else
         pkt->dts = pkt->pts;
 
