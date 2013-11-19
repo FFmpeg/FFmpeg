@@ -1496,6 +1496,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.data = pkt->data;
         opkt.size = pkt->size;
     }
+    av_copy_packet_side_data(&opkt, pkt);
 
     if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (of->ctx->oformat->flags & AVFMT_RAWPICTURE)) {
         /* store AVPicture in AVPacket, as expected by the output format */
