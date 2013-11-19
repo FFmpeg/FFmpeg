@@ -1854,7 +1854,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 #endif /* HAVE_7REGS */
 #endif /* !COMPILE_TEMPLATE_SSE2 */
 
-#if !COMPILE_TEMPLATE_AMD3DNOW
+#if !COMPILE_TEMPLATE_AMD3DNOW && !COMPILE_TEMPLATE_AVX
 static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, uint8_t *dest,
                                     int width, int height, int src1Stride,
                                     int src2Stride, int dstStride)
@@ -2494,7 +2494,7 @@ static av_cold void RENAME(rgb2rgb_init)(void)
     uyvytoyuv420       = RENAME(uyvytoyuv420);
 #endif /* !COMPILE_TEMPLATE_SSE2 */
 
-#if !COMPILE_TEMPLATE_AMD3DNOW
+#if !COMPILE_TEMPLATE_AMD3DNOW && !COMPILE_TEMPLATE_AVX
     interleaveBytes    = RENAME(interleaveBytes);
-#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW  && !COMPILE_TEMPLATE_AVX*/
 }

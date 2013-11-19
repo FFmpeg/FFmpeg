@@ -91,6 +91,7 @@ DECLARE_ASM_CONST(8, uint64_t, mul16_mid)    = 0x2080208020802080ULL;
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define COMPILE_TEMPLATE_SSE2 0
+#define COMPILE_TEMPLATE_AVX 0
 
 //MMX versions
 #undef RENAME
@@ -111,10 +112,18 @@ DECLARE_ASM_CONST(8, uint64_t, mul16_mid)    = 0x2080208020802080ULL;
 #define RENAME(a) a ## _SSE2
 #include "rgb2rgb_template.c"
 
+//AVX versions
+#undef RENAME
+#undef COMPILE_TEMPLATE_AVX
+#define COMPILE_TEMPLATE_AVX 1
+#define RENAME(a) a ## _AVX
+#include "rgb2rgb_template.c"
+
 //3DNOW versions
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #undef COMPILE_TEMPLATE_SSE2
+#undef COMPILE_TEMPLATE_AVX
 #undef COMPILE_TEMPLATE_AMD3DNOW
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define COMPILE_TEMPLATE_SSE2 0
@@ -144,5 +153,7 @@ av_cold void rgb2rgb_init_x86(void)
         rgb2rgb_init_MMXEXT();
     if (INLINE_SSE2(cpu_flags))
         rgb2rgb_init_SSE2();
+    if (INLINE_AVX(cpu_flags))
+        rgb2rgb_init_AVX();
 #endif /* HAVE_INLINE_ASM */
 }
