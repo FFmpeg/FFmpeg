@@ -43,8 +43,9 @@ typedef struct {
 static int timed_line(const char *ptr)
 {
     char c;
+    int fs, fe;
     return (sscanf(ptr, "%*u:%*u:%*u.%*u %*u:%*u:%*u.%*u %c", &c) == 1 ||
-            sscanf(ptr, "@%*u @%*u %c",                       &c) == 1);
+            (sscanf(ptr, "@%u @%u %c", &fs, &fe, &c) == 3 && fs < fe));
 }
 
 static int jacosub_probe(AVProbeData *p)
