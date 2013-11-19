@@ -1926,7 +1926,7 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
 }
 #endif /* !COMPILE_TEMPLATE_AMD3DNOW && !COMPILE_TEMPLATE_AVX*/
 
-#if !COMPILE_TEMPLATE_AMD3DNOW && (ARCH_X86_32 || COMPILE_TEMPLATE_SSE2) && COMPILE_TEMPLATE_MMXEXT == COMPILE_TEMPLATE_SSE2
+#if !COMPILE_TEMPLATE_AMD3DNOW && (ARCH_X86_32 || COMPILE_TEMPLATE_SSE2) && COMPILE_TEMPLATE_MMXEXT == COMPILE_TEMPLATE_SSE2 && HAVE_YASM
 void RENAME(ff_nv12ToUV)(uint8_t *dstU, uint8_t *dstV,
                                 const uint8_t *unused0,
                                 const uint8_t *src1,
@@ -2523,7 +2523,7 @@ static av_cold void RENAME(rgb2rgb_init)(void)
 #if !COMPILE_TEMPLATE_AMD3DNOW && !COMPILE_TEMPLATE_AVX
     interleaveBytes    = RENAME(interleaveBytes);
 #endif /* !COMPILE_TEMPLATE_AMD3DNOW  && !COMPILE_TEMPLATE_AVX*/
-#if !COMPILE_TEMPLATE_AMD3DNOW && (ARCH_X86_32 || COMPILE_TEMPLATE_SSE2) && COMPILE_TEMPLATE_MMXEXT == COMPILE_TEMPLATE_SSE2
+#if !COMPILE_TEMPLATE_AMD3DNOW && (ARCH_X86_32 || COMPILE_TEMPLATE_SSE2) && COMPILE_TEMPLATE_MMXEXT == COMPILE_TEMPLATE_SSE2 && HAVE_YASM
     deinterleaveBytes  = RENAME(deinterleaveBytes);
 #endif
 }
