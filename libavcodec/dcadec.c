@@ -2480,8 +2480,7 @@ static av_cold int dca_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     /* allow downmixing to stereo */
-    if (avctx->channels > 0 && avctx->request_channels < avctx->channels &&
-        avctx->request_channels == 2) {
+    if (avctx->channels > 2 && avctx->request_channels == 2) {
         avctx->channels = avctx->request_channels;
     }
 
