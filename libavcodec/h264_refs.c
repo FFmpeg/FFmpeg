@@ -141,7 +141,9 @@ int ff_h264_fill_default_ref_list(H264Context *h)
         }
 
         if (lens[0] == lens[1] && lens[1] > 1) {
-            for (i = 0; h->default_ref_list[0][i].f.data[0] == h->default_ref_list[1][i].f.data[0] && i < lens[0]; i++);
+            for (i = 0; i < lens[0] &&
+                        h->default_ref_list[0][i].f.buf[0]->buffer ==
+                        h->default_ref_list[1][i].f.buf[0]->buffer; i++);
             if (i == lens[0]) {
                 Picture tmp;
                 COPY_PICTURE(&tmp, &h->default_ref_list[1][0]);
@@ -304,13 +306,13 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
     }
     for (list = 0; list < h->list_count; list++) {
         for (index = 0; index < h->ref_count[list]; index++) {
-            if (   !h->ref_list[list][index].f.data[0]
+            if (   !h->ref_list[list][index].f.buf[0]
                 || (!FIELD_PICTURE(h) && (h->ref_list[list][index].reference&3) != 3)) {
                 int i;
                 av_log(h->avctx, AV_LOG_ERROR, "Missing reference picture, default is %d\n", h->default_ref_list[list][0].poc);
                 for (i = 0; i < FF_ARRAY_ELEMS(h->last_pocs); i++)
                     h->last_pocs[i] = INT_MIN;
-                if (h->default_ref_list[list][0].f.data[0]
+                if (h->default_ref_list[list][0].f.buf[0]
                     && !(!FIELD_PICTURE(h) && (h->default_ref_list[list][0].reference&3) != 3))
                     COPY_PICTURE(&h->ref_list[list][index], &h->default_ref_list[list][0]);
                 else

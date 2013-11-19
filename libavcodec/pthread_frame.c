@@ -853,7 +853,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
                            avctx->get_buffer2 == avcodec_default_get_buffer2);
 FF_ENABLE_DEPRECATION_WARNINGS
 
-    if (!f->f->data[0])
+    if (!f->f->buf[0])
         return;
 
     if (avctx->debug & FF_DEBUG_BUFFERS)
