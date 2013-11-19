@@ -237,6 +237,7 @@ int av_copy_packet_side_data(AVPacket *pkt, AVPacket *src)
             pkt->side_data[i].type = src->side_data[i].type;
         }
     }
+    pkt->side_data_elems = src->side_data_elems;
     return 0;
 
 failed_alloc:
