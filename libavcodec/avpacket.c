@@ -442,9 +442,11 @@ uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size)
         const size_t new_size = *size + keylen + 1 + valuelen + 1;
         uint8_t *const new_data = av_realloc(data, new_size);
 
-        if (!new_data || new_size > INT_MAX)
+        if (!new_data)
             goto fail;
         data = new_data;
+        if (new_size > INT_MAX)
+            goto fail;
 
         memcpy(data + *size, t->key, keylen + 1);
         memcpy(data + *size + keylen + 1, t->value, valuelen + 1);
