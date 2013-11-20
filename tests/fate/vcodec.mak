@@ -76,7 +76,7 @@ fate-vsynth%-flv:                FMT     = flv
 
 FATE_VCODEC-$(call ENCDEC, H261, AVI)   += h261 h261-trellis
 fate-vsynth%-h261:               ENCOPTS = -qscale 11
-fate-vsynth%-h261-trellis:       ENCOPTS = -qscale 12 -trellis 1
+fate-vsynth%-h261-trellis:       ENCOPTS = -qscale 12 -trellis 1 -mbd rd
 
 FATE_VCODEC-$(call ENCDEC, H263, AVI)   += h263 h263-obmc h263p
 fate-vsynth%-h263:               ENCOPTS = -qscale 10
