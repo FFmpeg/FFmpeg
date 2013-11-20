@@ -3615,6 +3615,7 @@ case $target_os in
         enable dos_paths
         ;;
     win32|win64)
+        disable symver
         if enabled shared; then
             # Link to the import library instead of the normal static library
             # for shared libs.
