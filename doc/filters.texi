@@ -95,7 +95,7 @@ In a complete filterchain all the unlabelled filter input and output
 pads must be connected. A filtergraph is considered valid if all the
 filter input and output pads of all the filterchains are connected.
 
-Libavfilter will automatically insert scale filters where format
+Libavfilter will automatically insert @ref{scale} filters where format
 conversion is required. It is possible to specify swscale flags
 for those automatically inserted scalers by prepending
 @code{sws_flags=@var{flags};}
@@ -1230,6 +1230,7 @@ format=pix_fmts=yuv420p
 format=pix_fmts=yuv420p|yuv444p|yuv410p
 @end example
 
+@anchor{fps}
 @section fps
 
 Convert the video to specified constant framerate by duplicating or dropping
@@ -1820,6 +1821,7 @@ format=monow, pixdesctest
 
 can be used to test the monowhite pixel format descriptor definition.
 
+@anchor{scale}
 @section scale
 
 Scale the input video and/or convert the image format.
