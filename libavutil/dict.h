@@ -118,7 +118,10 @@ int av_dict_count(const AVDictionary *m);
 int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags);
 
 /**
- * Parse the key/value pairs list and add to a dictionary.
+ * Parse the key/value pairs list and add the parsed entries to a dictionary.
+ *
+ * In case of failure, all the successfully set entries are stored in
+ * *pm. You may need to manually free the created dictionary.
  *
  * @param key_val_sep  a 0-terminated list of characters used to separate
  *                     key from value
