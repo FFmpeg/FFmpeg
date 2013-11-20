@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Clément Bœsch
+ * Copyright (c) 2012-2013 Clément Bœsch
  * Copyright (c) 2013 Rudolf Polzer <divverent@xonotic.org>
  *
  * This file is part of FFmpeg.
@@ -37,6 +37,7 @@
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
 enum ColorMode    { CHANNEL, INTENSITY, NB_CLMODES };
+enum WindowFunc   { WFUNC_NONE, WFUNC_HANN, WFUNC_HAMMING, NB_WFUNC };
 
 typedef struct {
     const AVClass *class;
@@ -57,6 +58,7 @@ typedef struct {
     int filled;                 ///< number of samples (per channel) filled in current rdft_buffer
     int consumed;               ///< number of samples (per channel) consumed from the input frame
     float *window_func_lut;     ///< Window function LUT
+    enum WindowFunc win_func;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
 } ShowSpectrumContext;
 
@@ -79,6 +81,9 @@ static const AVOption showspectrum_options[] = {
     { "log",  "logarithmic", 0, AV_OPT_TYPE_CONST, {.i64=LOG},    0, 0, FLAGS, "scale" },
     { "lin",  "linear",      0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "scale" },
     { "saturation", "color saturation multiplier", OFFSET(saturation), AV_OPT_TYPE_FLOAT, {.dbl = 1}, -10, 10, FLAGS },
+    { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANN}, 0, NB_WFUNC-1, FLAGS, "win_func" },
+        { "hann",    "Hann window",    0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_HANN},    INT_MIN, INT_MAX, FLAGS, "win_func" },
+        { "hamming", "Hamming window", 0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_HAMMING}, INT_MIN, INT_MAX, FLAGS, "win_func" },
     { NULL }
 };
 
@@ -195,14 +200,28 @@ static int config_output(AVFilterLink *outlink)
         }
         s->filled = 0;
 
-        /* pre-calc windowing function (hann here) */
+        /* pre-calc windowing function */
         s->window_func_lut =
             av_realloc_f(s->window_func_lut, win_size,
                          sizeof(*s->window_func_lut));
         if (!s->window_func_lut)
             return AVERROR(ENOMEM);
-        for (i = 0; i < win_size; i++)
-            s->window_func_lut[i] = .5f * (1 - cos(2*M_PI*i / (win_size-1)));
+        switch (s->win_func) {
+        case WFUNC_NONE:
+            for (i = 0; i < win_size; i++)
+                s->window_func_lut[i] = 1.;
+            break;
+        case WFUNC_HANN:
+            for (i = 0; i < win_size; i++)
+                s->window_func_lut[i] = .5f * (1 - cos(2*M_PI*i / (win_size-1)));
+            break;
+        case WFUNC_HAMMING:
+            for (i = 0; i < win_size; i++)
+                s->window_func_lut[i] = .54f - .46f * cos(2*M_PI*i / (win_size-1));
+            break;
+        default:
+            av_assert0(0);
+        }
 
         /* prepare the initial picref buffer (black frame) */
         av_frame_free(&s->outpicref);
