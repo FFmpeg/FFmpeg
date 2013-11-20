@@ -152,7 +152,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         }
         if (i == nb_input_streams) {
             av_log(NULL, AV_LOG_FATAL, "Cannot find a matching stream for "
-                   "unlabeled input pad %d on filter %s", in->pad_idx,
+                   "unlabeled input pad %d on filter %s\n", in->pad_idx,
                    in->filter_ctx->name);
             exit(1);
         }
