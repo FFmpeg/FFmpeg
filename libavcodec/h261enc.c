@@ -99,20 +99,19 @@ static void h261_encode_gob_header(MpegEncContext *s, int mb_line)
     put_bits(&s->pb, 5, s->qscale);     /* GQUANT */
     put_bits(&s->pb, 1, 0);             /* no GEI */
     s->mb_skip_run = 0;
-    h->current_mv_x = 0;
-    h->current_mv_y = 0;
+    s->last_mv[0][0][0] = 0;
+    s->last_mv[0][0][1] = 0;
 }
 
 void ff_h261_reorder_mb_index(MpegEncContext *s)
 {
-    H261Context *h = (H261Context *)s;
     int index = s->mb_x + s->mb_y * s->mb_width;
 
     if (index % 11 == 0) {
         if (index % 33 == 0)
             h261_encode_gob_header(s, 0);
-        h->current_mv_x = 0;
-        h->current_mv_y = 0;
+        s->last_mv[0][0][0] = 0;
+        s->last_mv[0][0][1] = 0;
     }
 
     /* for CIF the GOB's are fragmented in the middle of a scanline
@@ -254,8 +253,8 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
             /* skip macroblock */
             s->skip_count++;
             s->mb_skip_run++;
-            h->current_mv_x = 0;
-            h->current_mv_y = 0;
+            s->last_mv[0][0][0] = 0;
+            s->last_mv[0][0][1] = 0;
             return;
         }
     }
@@ -294,10 +293,10 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
     }
 
     if (IS_16X16(h->mtype)) {
-        mv_diff_x       = (motion_x >> 1) - h->current_mv_x;
-        mv_diff_y       = (motion_y >> 1) - h->current_mv_y;
-        h->current_mv_x = (motion_x >> 1);
-        h->current_mv_y = (motion_y >> 1);
+        mv_diff_x       = (motion_x >> 1) - s->last_mv[0][0][0];
+        mv_diff_y       = (motion_y >> 1) - s->last_mv[0][0][1];
+        s->last_mv[0][0][0] = (motion_x >> 1);
+        s->last_mv[0][0][1] = (motion_y >> 1);
         h261_encode_motion(h, mv_diff_x);
         h261_encode_motion(h, mv_diff_y);
     }
@@ -313,8 +312,8 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
         h261_encode_block(h, block[i], i);
 
     if (!IS_16X16(h->mtype)) {
-        h->current_mv_x = 0;
-        h->current_mv_y = 0;
+        s->last_mv[0][0][0] = 0;
+        s->last_mv[0][0][1] = 0;
     }
 }
 
