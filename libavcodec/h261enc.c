@@ -80,7 +80,7 @@ void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
         h->gob_number = -1;
     else
         h->gob_number = 0;
-    h->current_mba = 0;
+    s->mb_skip_run = 0;
 }
 
 /**
@@ -98,18 +98,22 @@ static void h261_encode_gob_header(MpegEncContext *s, int mb_line)
     put_bits(&s->pb, 4, h->gob_number); /* GN */
     put_bits(&s->pb, 5, s->qscale);     /* GQUANT */
     put_bits(&s->pb, 1, 0);             /* no GEI */
-    h->current_mba  = 0;
-    h->previous_mba = 0;
+    s->mb_skip_run = 0;
     h->current_mv_x = 0;
     h->current_mv_y = 0;
 }
 
 void ff_h261_reorder_mb_index(MpegEncContext *s)
 {
+    H261Context *h = (H261Context *)s;
     int index = s->mb_x + s->mb_y * s->mb_width;
 
-    if (index % 33 == 0)
-        h261_encode_gob_header(s, 0);
+    if (index % 11 == 0) {
+        if (index % 33 == 0)
+            h261_encode_gob_header(s, 0);
+        h->current_mv_x = 0;
+        h->current_mv_y = 0;
+    }
 
     /* for CIF the GOB's are fragmented in the middle of a scanline
      * that's why we need to adjust the x and y index of the macroblocks */
@@ -237,7 +241,6 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
     cbp = 63; // avoid warning
     mvd = 0;
 
-    h->current_mba++;
     h->mtype = 0;
 
     if (!s->mb_intra) {
@@ -250,6 +253,7 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
         if ((cbp | mvd | s->dquant) == 0) {
             /* skip macroblock */
             s->skip_count++;
+            s->mb_skip_run++;
             h->current_mv_x = 0;
             h->current_mv_y = 0;
             return;
@@ -258,8 +262,9 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
     /* MB is not skipped, encode MBA */
     put_bits(&s->pb,
-             ff_h261_mba_bits[(h->current_mba - h->previous_mba) - 1],
-             ff_h261_mba_code[(h->current_mba - h->previous_mba) - 1]);
+             ff_h261_mba_bits[s->mb_skip_run],
+             ff_h261_mba_code[s->mb_skip_run]);
+    s->mb_skip_run = 0;
 
     /* calculate MTYPE */
     if (!s->mb_intra) {
@@ -297,8 +302,6 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
         h261_encode_motion(h, mv_diff_y);
     }
 
-    h->previous_mba = h->current_mba;
-
     if (HAS_CBP(h->mtype)) {
         av_assert1(cbp > 0);
         put_bits(&s->pb,
@@ -309,8 +312,7 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
         /* encode each block */
         h261_encode_block(h, block[i], i);
 
-    if ((h->current_mba == 11) || (h->current_mba == 22) ||
-        (h->current_mba == 33) || (!IS_16X16(h->mtype))) {
+    if (!IS_16X16(h->mtype)) {
         h->current_mv_x = 0;
         h->current_mv_y = 0;
     }
