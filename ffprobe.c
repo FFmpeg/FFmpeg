@@ -306,11 +306,22 @@ static const char *writer_get_name(void *p)
     return wctx->writer->name;
 }
 
+#define OFFSET(x) offsetof(WriterContext, x)
+
+static void *writer_child_next(void *obj, void *prev)
+{
+    WriterContext *ctx = obj;
+    if (!prev && ctx->writer && ctx->writer->priv_class && ctx->priv)
+        return ctx->priv;
+    return NULL;
+}
+
 static const AVClass writer_class = {
     "Writer",
     writer_get_name,
     NULL,
     LIBAVUTIL_VERSION_INT,
+    .child_next = writer_child_next,
 };
 
 static void writer_close(WriterContext **wctx)
@@ -351,14 +362,35 @@ static int writer_open(WriterContext **wctx, const Writer *writer, const char *a
     (*wctx)->sections = sections;
     (*wctx)->nb_sections = nb_sections;
 
+    av_opt_set_defaults(*wctx);
+
     if (writer->priv_class) {
         void *priv_ctx = (*wctx)->priv;
         *((const AVClass **)priv_ctx) = writer->priv_class;
         av_opt_set_defaults(priv_ctx);
+    }
 
-        if (args &&
-            (ret = av_set_options_string(priv_ctx, args, "=", ":")) < 0)
+    /* convert options to dictionary */
+    if (args) {
+        AVDictionary *opts = NULL;
+        AVDictionaryEntry *opt = NULL;
+
+        if ((ret = av_dict_parse_string(&opts, args, "=", ":", 0)) < 0) {
+            av_log(*wctx, AV_LOG_ERROR, "Failed to parse option string '%s' provided to writer context\n", args);
+            av_dict_free(&opts);
             goto fail;
+        }
+
+        while ((opt = av_dict_get(opts, "", opt, AV_DICT_IGNORE_SUFFIX))) {
+            if ((ret = av_opt_set(*wctx, opt->key, opt->value, AV_OPT_SEARCH_CHILDREN)) < 0) {
+                av_log(*wctx, AV_LOG_ERROR, "Failed to set option '%s' with value '%s' provided to writer context\n",
+                       opt->key, opt->value);
+                av_dict_free(&opts);
+                goto fail;
+            }
+        }
+
+        av_dict_free(&opts);
     }
 
     for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
@@ -557,6 +589,7 @@ typedef struct DefaultContext {
     int nested_section[SECTION_MAX_NB_LEVELS];
 } DefaultContext;
 
+#undef OFFSET
 #define OFFSET(x) offsetof(DefaultContext, x)
 
 static const AVOption default_options[] = {
