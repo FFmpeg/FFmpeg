@@ -437,12 +437,12 @@ uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size)
         return NULL;
 
     while ((t = av_dict_get(dict, "", t, AV_DICT_IGNORE_SUFFIX))) {
-        const int keylen = strlen(t->key);
-        const int valuelen = strlen(t->value);
+        const size_t keylen   = strlen(t->key);
+        const size_t valuelen = strlen(t->value);
         const size_t new_size = *size + keylen + 1 + valuelen + 1;
         uint8_t *const new_data = av_realloc(data, new_size);
 
-        if (!new_data)
+        if (!new_data || new_size > INT_MAX)
             goto fail;
         data = new_data;
 
