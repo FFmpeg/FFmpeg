@@ -37,7 +37,7 @@
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
 enum ColorMode    { CHANNEL, INTENSITY, NB_CLMODES };
-enum WindowFunc   { WFUNC_NONE, WFUNC_HANN, WFUNC_HAMMING, NB_WFUNC };
+enum WindowFunc   { WFUNC_NONE, WFUNC_HANN, WFUNC_HAMMING, WFUNC_BLACKMAN, NB_WFUNC };
 
 typedef struct {
     const AVClass *class;
@@ -84,6 +84,7 @@ static const AVOption showspectrum_options[] = {
     { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANN}, 0, NB_WFUNC-1, FLAGS, "win_func" },
         { "hann",    "Hann window",    0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_HANN},    INT_MIN, INT_MAX, FLAGS, "win_func" },
         { "hamming", "Hamming window", 0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_HAMMING}, INT_MIN, INT_MAX, FLAGS, "win_func" },
+        { "blackman", "Blackman window", 0, AV_OPT_TYPE_CONST, {.i64 = WFUNC_BLACKMAN}, INT_MIN, INT_MAX, FLAGS, "win_func" },
     { NULL }
 };
 
@@ -219,6 +220,11 @@ static int config_output(AVFilterLink *outlink)
             for (i = 0; i < win_size; i++)
                 s->window_func_lut[i] = .54f - .46f * cos(2*M_PI*i / (win_size-1));
             break;
+        case WFUNC_BLACKMAN: {
+            for (i = 0; i < win_size; i++)
+                s->window_func_lut[i] = .42f - .5f*cos(2*M_PI*i / (win_size-1)) + .08f*cos(4*M_PI*i / (win_size-1));
+            break;
+        }
         default:
             av_assert0(0);
         }
