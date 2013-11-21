@@ -369,10 +369,8 @@ int main (int argc, char **argv)
     }
 
 end:
-    if (video_dec_ctx)
-        avcodec_close(video_dec_ctx);
-    if (audio_dec_ctx)
-        avcodec_close(audio_dec_ctx);
+    avcodec_close(video_dec_ctx);
+    avcodec_close(audio_dec_ctx);
     avformat_close_input(&fmt_ctx);
     if (video_dst_file)
         fclose(video_dst_file);

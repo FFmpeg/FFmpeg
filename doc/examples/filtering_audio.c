@@ -248,8 +248,7 @@ int main(int argc, char **argv)
     }
 end:
     avfilter_graph_free(&filter_graph);
-    if (dec_ctx)
-        avcodec_close(dec_ctx);
+    avcodec_close(dec_ctx);
     avformat_close_input(&fmt_ctx);
     av_frame_free(&frame);
     av_frame_free(&filt_frame);
