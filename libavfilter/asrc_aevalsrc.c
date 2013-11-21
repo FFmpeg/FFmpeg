@@ -101,6 +101,7 @@ static av_cold int init(AVFilterContext *ctx)
             ret = AVERROR(ENOMEM);
             goto end;
         }
+        eval->expr[eval->nb_channels-1] = NULL;
         ret = av_expr_parse(&eval->expr[eval->nb_channels - 1], expr, var_names,
                             NULL, NULL, NULL, NULL, 0, ctx);
         if (ret < 0)
