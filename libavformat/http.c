@@ -51,7 +51,7 @@ typedef struct {
     int http_code;
     int64_t chunksize;      /**< Used if "Transfer-Encoding: chunked" otherwise -1. */
     int64_t off, filesize;
-    char location[MAX_URL_SIZE];
+    char *location;
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
     char *headers;
@@ -83,6 +83,7 @@ static const AVOption options[] = {
 {"none", "No auth method set, autodetect", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_NONE}, 0, 0, D|E, "auth_type" },
 {"basic", "HTTP basic authentication", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_BASIC}, 0, 0, D|E, "auth_type" },
 {"send_expect_100", "Force sending an Expect: 100-continue header for POST", OFFSET(send_expect_100), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
+{"location", "The actual location of the data received", OFFSET(location), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
@@ -218,7 +219,10 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     int ret;
 
     s->off = 0;
-    av_strlcpy(s->location, uri, sizeof(s->location));
+    av_free(s->location);
+    s->location = av_strdup(uri);
+    if (!s->location)
+        return AVERROR(ENOMEM);
 
     av_dict_copy(&options, s->chained_options, 0);
     ret = http_open_cnx(h, &options);
@@ -235,7 +239,9 @@ static int http_open(URLContext *h, const char *uri, int flags,
     h->is_streamed = 1;
 
     s->filesize = -1;
-    av_strlcpy(s->location, uri, sizeof(s->location));
+    s->location = av_strdup(uri);
+    if (!s->location)
+        return AVERROR(ENOMEM);
     if (options)
         av_dict_copy(&s->chained_options, *options, 0);
 
@@ -335,10 +341,14 @@ static int process_line(URLContext *h, char *line, int line_count,
         while (av_isspace(*p))
             p++;
         if (!av_strcasecmp(tag, "Location")) {
-            char redirected_location[MAX_URL_SIZE];
+            char redirected_location[MAX_URL_SIZE], *new_loc;
             ff_make_absolute_url(redirected_location, sizeof(redirected_location),
                                  s->location, p);
-            av_strlcpy(s->location, redirected_location, sizeof(s->location));
+            new_loc = av_strdup(redirected_location);
+            if (!new_loc)
+                return AVERROR(ENOMEM);
+            av_free(s->location);
+            s->location = new_loc;
             *new_location = 1;
         } else if (!av_strcasecmp (tag, "Content-Length") && s->filesize == -1) {
             s->filesize = strtoll(p, NULL, 10);
