@@ -56,6 +56,15 @@ typedef struct {
     int h264_initialized;
     struct vda_context vda_ctx;
     enum AVPixelFormat pix_fmt;
+
+    /* for backing-up fields set by user.
+     * we have to gain full control of such fields here */
+    void *hwaccel_context;
+    enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
+    int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
+#if FF_API_GET_BUFFER
+    int (*get_buffer)(struct AVCodecContext *c, AVFrame *pic);
+#endif
 } VDADecoderContext;
 
 static enum AVPixelFormat get_format(struct AVCodecContext *avctx,
@@ -90,6 +99,32 @@ static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flag)
     return 0;
 }
 
+static inline void set_context(AVCodecContext *avctx)
+{
+    VDADecoderContext *ctx = avctx->priv_data;
+    ctx->hwaccel_context = avctx->hwaccel_context;
+    avctx->hwaccel_context = &ctx->vda_ctx;
+    ctx->get_format = avctx->get_format;
+    avctx->get_format = get_format;
+    ctx->get_buffer2 = avctx->get_buffer2;
+    avctx->get_buffer2 = get_buffer2;
+#if FF_API_GET_BUFFER
+    ctx->get_buffer = avctx->get_buffer;
+    avctx->get_buffer = NULL;
+#endif
+}
+
+static inline void restore_context(AVCodecContext *avctx)
+{
+    VDADecoderContext *ctx = avctx->priv_data;
+    avctx->hwaccel_context = ctx->hwaccel_context;
+    avctx->get_format = ctx->get_format;
+    avctx->get_buffer2 = ctx->get_buffer2;
+#if FF_API_GET_BUFFER
+    avctx->get_buffer = ctx->get_buffer;
+#endif
+}
+
 static int vdadec_decode(AVCodecContext *avctx,
         void *data, int *got_frame, AVPacket *avpkt)
 {
@@ -97,7 +132,9 @@ static int vdadec_decode(AVCodecContext *avctx,
     AVFrame *pic = data;
     int ret;
 
+    set_context(avctx);
     ret = ff_h264_decoder.decode(avctx, data, got_frame, avpkt);
+    restore_context(avctx);
     if (*got_frame) {
         AVBufferRef *buffer = pic->buf[0];
         VDABufferContext *context = av_buffer_get_opaque(buffer);
@@ -130,8 +167,11 @@ static av_cold int vdadec_close(AVCodecContext *avctx)
     /* release buffers and decoder */
     ff_vda_destroy_decoder(&ctx->vda_ctx);
     /* close H.264 decoder */
-    if (ctx->h264_initialized)
+    if (ctx->h264_initialized) {
+        set_context(avctx);
         ff_h264_decoder.close(avctx);
+        restore_context(avctx);
+    }
     return 0;
 }
 
@@ -184,18 +224,11 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
                 "Failed to init VDA decoder: %d.\n", status);
         goto failed;
     }
-    avctx->hwaccel_context = vda_ctx;
-
-    /* changes callback functions */
-    avctx->get_format = get_format;
-    avctx->get_buffer2 = get_buffer2;
-#if FF_API_GET_BUFFER
-    // force the old get_buffer to be empty
-    avctx->get_buffer = NULL;
-#endif
 
     /* init H.264 decoder */
+    set_context(avctx);
     ret = ff_h264_decoder.init(avctx);
+    restore_context(avctx);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to open H.264 decoder.\n");
         goto failed;
@@ -211,7 +244,9 @@ failed:
 
 static void vdadec_flush(AVCodecContext *avctx)
 {
-    return ff_h264_decoder.flush(avctx);
+    set_context(avctx);
+    ff_h264_decoder.flush(avctx);
+    restore_context(avctx);
 }
 
 AVCodec ff_h264_vda_decoder = {
