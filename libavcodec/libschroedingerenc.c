@@ -27,9 +27,6 @@
 * (http://dirac.sourceforge.net/specification.html).
 */
 
-#undef NDEBUG
-#include <assert.h>
-
 #include <schroedinger/schro.h>
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schrovideoformat.h>
@@ -301,8 +298,8 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         case SCHRO_STATE_HAVE_BUFFER:
         case SCHRO_STATE_END_OF_STREAM:
             enc_buf = schro_encoder_pull(encoder, &presentation_frame);
-            assert(enc_buf->length > 0);
-            assert(enc_buf->length <= buf_size);
+            if (enc_buf->length <= 0)
+                return AVERROR_BUG;
             parse_code = enc_buf->data[4];
 
             /* All non-frame data is prepended to actual frame data to
