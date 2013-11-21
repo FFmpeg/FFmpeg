@@ -92,21 +92,21 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 
 //MMX versions
 #undef RENAME
-#define RENAME(a) a ## _MMX
+#define RENAME(a) a ## _mmx
 #include "rgb2rgb_template.c"
 
 // MMXEXT versions
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 1
-#define RENAME(a) a ## _MMXEXT
+#define RENAME(a) a ## _mmxext
 #include "rgb2rgb_template.c"
 
 //SSE2 versions
 #undef RENAME
 #undef COMPILE_TEMPLATE_SSE2
 #define COMPILE_TEMPLATE_SSE2 1
-#define RENAME(a) a ## _SSE2
+#define RENAME(a) a ## _sse2
 #include "rgb2rgb_template.c"
 
 //3DNOW versions
@@ -117,7 +117,7 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define COMPILE_TEMPLATE_SSE2 0
 #define COMPILE_TEMPLATE_AMD3DNOW 1
-#define RENAME(a) a ## _3DNOW
+#define RENAME(a) a ## _3dnow
 #include "rgb2rgb_template.c"
 
 /*
@@ -135,12 +135,12 @@ av_cold void rgb2rgb_init_x86(void)
     int cpu_flags = av_get_cpu_flags();
 
     if (INLINE_MMX(cpu_flags))
-        rgb2rgb_init_MMX();
+        rgb2rgb_init_mmx();
     if (INLINE_AMD3DNOW(cpu_flags))
-        rgb2rgb_init_3DNOW();
+        rgb2rgb_init_3dnow();
     if (INLINE_MMXEXT(cpu_flags))
-        rgb2rgb_init_MMXEXT();
+        rgb2rgb_init_mmxext();
     if (INLINE_SSE2(cpu_flags))
-        rgb2rgb_init_SSE2();
+        rgb2rgb_init_sse2();
 #endif /* HAVE_INLINE_ASM */
 }
