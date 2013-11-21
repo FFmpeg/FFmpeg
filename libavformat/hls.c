@@ -211,6 +211,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     char line[1024];
     const char *ptr;
     int close_in = 0;
+    uint8_t *new_url = NULL;
 
     if (!in) {
         close_in = 1;
@@ -218,6 +219,9 @@ static int parse_playlist(HLSContext *c, const char *url,
                               c->interrupt_callback, NULL)) < 0)
             return ret;
     }
+
+    if (av_opt_get(in, "location", AV_OPT_SEARCH_CHILDREN, &new_url) >= 0)
+        url = new_url;
 
     read_chomp_line(in, line, sizeof(line));
     if (strcmp(line, "#EXTM3U")) {
@@ -319,6 +323,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         var->last_load_time = av_gettime();
 
 fail:
+    av_free(new_url);
     if (close_in)
         avio_close(in);
     return ret;
