@@ -380,7 +380,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 int av_packet_split_side_data(AVPacket *pkt){
     if (!pkt->side_data_elems && pkt->size >12 && AV_RB64(pkt->data + pkt->size - 8) == FF_MERGE_MARKER){
         int i;
-        unsigned int size, orig_pktsize = pkt->size;
+        unsigned int size;
         uint8_t *p;
 
         p = pkt->data + pkt->size - 8 - 5;
@@ -413,13 +413,6 @@ int av_packet_split_side_data(AVPacket *pkt){
             p-= size+5;
         }
         pkt->size -= 8;
-        /* FFMIN() prevents overflow in case the packet wasn't allocated with
-         * proper padding.
-         * If the side data is smaller than the buffer padding size, the
-         * remaining bytes should have already been filled with zeros by the
-         * original packet allocation anyway. */
-        memset(pkt->data + pkt->size, 0,
-               FFMIN(orig_pktsize - pkt->size, FF_INPUT_BUFFER_PADDING_SIZE));
         pkt->side_data_elems = i+1;
         return 1;
     }
