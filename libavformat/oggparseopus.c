@@ -55,6 +55,7 @@ static int opus_header(AVFormatContext *avf, int idx)
         st->codec->codec_id   = AV_CODEC_ID_OPUS;
         st->codec->channels   = AV_RL8 (packet + 9);
         priv->pre_skip        = AV_RL16(packet + 10);
+        st->codec->delay      = priv->pre_skip;
         /*orig_sample_rate    = AV_RL32(packet + 12);*/
         /*gain                = AV_RL16(packet + 16);*/
         /*channel_map         = AV_RL8 (packet + 18);*/
