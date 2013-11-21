@@ -111,8 +111,8 @@ static int avi_load_index(AVFormatContext *s);
 static int guess_ni_flag(AVFormatContext *s);
 
 #define print_tag(str, tag, size)                        \
-    av_dlog(NULL, "%s: tag=%c%c%c%c size=0x%x\n",        \
-            str, tag & 0xff,                             \
+    av_dlog(NULL, "pos:%"PRIX64" %s: tag=%c%c%c%c size=0x%x\n", \
+            avio_tell(pb), str, tag & 0xff,              \
             (tag >> 8) & 0xff,                           \
             (tag >> 16) & 0xff,                          \
             (tag >> 24) & 0xff,                          \
