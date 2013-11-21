@@ -2014,7 +2014,6 @@ static int add_metadata_from_side_data(AVCodecContext *avctx, AVFrame *frame)
 {
     int size;
     const uint8_t *side_metadata;
-    const uint8_t *end;
 
     AVDictionary **frame_md = avpriv_frame_get_metadatap(frame);
 
