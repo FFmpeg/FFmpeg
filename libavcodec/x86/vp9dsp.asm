@@ -150,8 +150,7 @@ SECTION .text
 %macro VP9_IDCT4_1D_FINALIZE 0
     SUMSUB_BA            w, 3, 2, 4                         ; m3=t3+t0, m2=-t3+t0
     SUMSUB_BA            w, 1, 0, 4                         ; m1=t2+t1, m0=-t2+t1
-    SWAP                 0, 3                               ; 3102 -> 0132
-    SWAP                 3, 2                               ; 0132 -> 0123
+    SWAP                 0, 3, 2                            ; 3102 -> 0123
 %endmacro
 
 %macro VP9_IDCT4_1D 0
@@ -250,10 +249,8 @@ cglobal vp9_idct_idct_4x4_add, 4,4,0, dst, stride, block, eob
     SUMSUB_BA            w,  1,  2, 4                       ;  m1=t1+t6,  m2=t1-t6
     SUMSUB_BA            w, 11,  0, 4                       ; m11=t2+t5,  m0=t2-t5
     SUMSUB_BA            w,  9,  8, 4                       ;  m9=t3+t4,  m8=t3-t4
-    SWAP                11, 10
-    SWAP                 9,  3
-    SWAP                10,  2
-    SWAP                 9,  0
+    SWAP                11, 10, 2
+    SWAP                 3,  9, 0
 %endmacro
 
 %macro VP9_IDCT8_1D 0
