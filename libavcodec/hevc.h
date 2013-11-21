@@ -330,12 +330,21 @@ typedef struct VUI {
     int log2_max_mv_length_vertical;
 } VUI;
 
+typedef struct ProfileTierLevel {
+    int profile_space;
+    uint8_t tier_flag;
+    int profile_idc;
+    int profile_compatibility_flag[32];
+    int level_idc;
+    int progressive_source_flag;
+    int interlaced_source_flag;
+    int non_packed_constraint_flag;
+    int frame_only_constraint_flag;
+} ProfileTierLevel;
+
 typedef struct PTL {
-    int general_profile_space;
-    uint8_t general_tier_flag;
-    int general_profile_idc;
-    int general_profile_compatibility_flag[32];
-    int general_level_idc;
+    ProfileTierLevel general_PTL;
+    ProfileTierLevel sub_layer_PTL[MAX_SUB_LAYERS];
 
     uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
     uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
@@ -365,6 +374,8 @@ typedef struct HEVCVPS {
     uint8_t vps_poc_proportional_to_timing_flag;
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
+
+    int vps_extension_flag;
 } HEVCVPS;
 
 typedef struct ScalingList {
@@ -757,12 +768,12 @@ typedef struct HEVCLocalContext {
 
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
-    AVCodecContext *avctx;
+    AVCodecContext      *avctx;
 
-    struct HEVCContext *sList[MAX_NB_THREADS];
+    struct HEVCContext  *sList[MAX_NB_THREADS];
 
-    HEVCLocalContext *HEVClcList[MAX_NB_THREADS];
-    HEVCLocalContext *HEVClc;
+    HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
+    HEVCLocalContext    *HEVClc;
 
     uint8_t             threads_type;
     uint8_t             threads_number;
@@ -783,7 +794,7 @@ typedef struct HEVCContext {
     HEVCVPS *vps;
     const HEVCSPS *sps;
     HEVCPPS *pps;
-    HEVCVPS     *vps_list[MAX_VPS_COUNT];
+    AVBufferRef *vps_list[MAX_VPS_COUNT];
     AVBufferRef *sps_list[MAX_SPS_COUNT];
     AVBufferRef *pps_list[MAX_PPS_COUNT];
 
@@ -982,14 +993,12 @@ int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
-
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx);
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
-void ff_hevc_pps_free(HEVCPPS **ppps);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];
