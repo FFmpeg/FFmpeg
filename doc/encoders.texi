@@ -619,6 +619,10 @@ This encoder is considered to be of higher quality with respect to
 both @ref{aacenc,,the native experimental FFmpeg AAC encoder} and
 @ref{libfaac}.
 
+VBR encoding, enabled through the @option{vbr} or @option{flags
++qscale} options, is experimental and only works with some
+combinations of parameters.
+
 For more information see the fdk-aac project at
 @url{http://sourceforge.net/p/opencore-amr/fdk-aac/}.
 
