@@ -1443,7 +1443,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     int len, id, i;
 
     len = get_bits(&s->gb, 16);
-    if (len < 5)
+    if (len < 6)
         return AVERROR_INVALIDDATA;
     if (8 * len > get_bits_left(&s->gb))
         return AVERROR_INVALIDDATA;
@@ -1557,7 +1557,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     }
 
     /* EXIF metadata */
-    if (s->start_code == APP1 && id == AV_RB32("Exif")) {
+    if (s->start_code == APP1 && id == AV_RB32("Exif") && len >= 2) {
         GetByteContext gbytes;
         int ret, le, ifd_offset, bytes_read;
         const uint8_t *aligned;
