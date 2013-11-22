@@ -642,7 +642,7 @@ Set the number of audio channels.
 
 @item flags +qscale
 Enable fixed quality, VBR (Variable Bit Rate) mode.
-Note that VBR is implicitely enabled when the @option{vbr} value is
+Note that VBR is implicitly enabled when the @option{vbr} value is
 positive.
 
 @item cutoff
@@ -725,12 +725,12 @@ Default value is 0.
 
 @item vbr
 Set VBR mode, from 1 to 5. 1 is lowest quality (though still pretty
-good) and 5 is highest quality. A value of 0 will disable VBR mode,
-and CBR (Constant Bit Rate) mode is enabled.
+good) and 5 is highest quality. A value of 0 will disable VBR, and CBR
+(Constant Bit Rate) is enabled.
 
-Currently only the @samp{aac_low} profile supports VBR mode.
+Currently only the @samp{aac_low} profile supports VBR encoding.
 
-VBR modes 1-5 correspond to roughly the following average bit rate:
+VBR modes 1-5 correspond to roughly the following average bit rates:
 
 @table @samp
 @item 1
