@@ -93,7 +93,7 @@ static void ps_hybrid_synthesis_deint_c(float out[2][38][64],
 
 static void ps_decorrelate_c(float (*out)[2], float (*delay)[2],
                              float (*ap_delay)[PS_QMF_TIME_SLOTS + PS_MAX_AP_DELAY][2],
-                             const float phi_fract[2], float (*Q_fract)[2],
+                             const float phi_fract[2], const float (*Q_fract)[2],
                              const float *transient_gain,
                              float g_decay_slope,
                              int len)
