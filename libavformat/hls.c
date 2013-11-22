@@ -724,7 +724,8 @@ start:
         /* Check if this stream still is on an earlier segment number, or
          * has the packet with the lowest dts */
         if (var->pkt.data) {
-            struct variant *minvar = c->variants[minvariant];
+            struct variant *minvar = minvariant < 0 ?
+                                     NULL : c->variants[minvariant];
             if (minvariant < 0 || var->cur_seq_no < minvar->cur_seq_no) {
                 minvariant = i;
             } else if (var->cur_seq_no == minvar->cur_seq_no) {
