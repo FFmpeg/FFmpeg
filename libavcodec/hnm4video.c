@@ -287,12 +287,20 @@ static void decode_interframe_v4a(AVCodecContext *avctx, uint8_t *src,
             if (tag == 0) {
                 writeoffset += bytestream2_get_byte(&gb);
             } else if (tag == 1) {
+                if (writeoffset + hnm->width >= hnm->width * hnm->height) {
+                    av_log(avctx, AV_LOG_ERROR, "writeoffset out of bounds\n");
+                    break;
+                }
                 hnm->current[writeoffset]              = bytestream2_get_byte(&gb);
                 hnm->current[writeoffset + hnm->width] = bytestream2_get_byte(&gb);
                 writeoffset++;
             } else if (tag == 2) {
                 writeoffset += hnm->width;
             } else if (tag == 3) {
+                break;
+            }
+            if (writeoffset > hnm->width * hnm->height) {
+                av_log(avctx, AV_LOG_ERROR, "writeoffset out of bounds\n");
                 break;
             }
         } else {
