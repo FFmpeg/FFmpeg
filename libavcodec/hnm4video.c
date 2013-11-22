@@ -453,7 +453,9 @@ static av_cold int hnm_decode_init(AVCodecContext *avctx)
     hnm->buffer2   = av_mallocz(avctx->width * avctx->height);
     hnm->processed = av_mallocz(avctx->width * avctx->height);
 
-    if (!hnm->buffer1 || !hnm->buffer2 || !hnm->processed) {
+    if (   !hnm->buffer1 || !hnm->buffer2 || !hnm->processed
+        || avctx->width * avctx->height == 0
+        || avctx->height % 2) {
         av_log(avctx, AV_LOG_ERROR, "av_mallocz() failed\n");
         av_freep(&hnm->buffer1);
         av_freep(&hnm->buffer2);
