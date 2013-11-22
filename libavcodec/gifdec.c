@@ -183,8 +183,10 @@ static int gif_read_image(GifState *s, AVFrame *frame)
     if (left + width > s->screen_width ||
         top + height > s->screen_height)
         return AVERROR_INVALIDDATA;
-    if (width <= 0 || height <= 0)
+    if (width <= 0 || height <= 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid image dimensions.\n");
         return AVERROR_INVALIDDATA;
+    }
 
     /* process disposal method */
     if (s->gce_prev_disposal == GCE_DISPOSAL_BACKGROUND) {
