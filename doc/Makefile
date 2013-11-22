@@ -10,9 +10,11 @@ HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
               doc/nut.html                                              \
               doc/platform.html                                         \
 
-DOCS = $(HTMLPAGES) $(MANPAGES) $(PODPAGES)
+DOCS-$(CONFIG_PERL)                             += $(MANPAGES) $(PODPAGES)
+DOCS-$(CONFIG_TEXI2HTML)                        += $(HTMLPAGES)
+DOCS = $(DOCS-yes)
 
-all-$(CONFIG_DOC): documentation
+all: $(DOCS)
 
 apidoc: doc/doxy/html
 documentation: $(DOCS)
@@ -45,7 +47,8 @@ $(DOCS) doc/doxy/html: | doc/
 doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(INSTHEADERS)
 	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $^
 
-install-progs-$(CONFIG_DOC): install-doc install-man
+install-progs-$(CONFIG_PERL): install-man
+install-progs-$(CONFIG_TEXI2HTML): install-doc
 
 install-doc: $(HTMLPAGES)
 	$(Q)mkdir -p "$(DOCDIR)"

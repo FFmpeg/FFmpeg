@@ -1107,7 +1107,6 @@ CONFIG_LIST="
     $LIBRARY_LIST
     $PROGRAM_LIST
     dct
-    doc
     error_resilience
     fft
     gpl
@@ -1119,6 +1118,7 @@ CONFIG_LIST="
     memalign_hack
     network
     nonfree
+    perl
     pic
     rdft
     runtime_cpudetect
@@ -1128,6 +1128,7 @@ CONFIG_LIST="
     sram
     static
     swscale_alpha
+    texi2html
     thumb
     version3
     xmm_clobber_test
@@ -1962,8 +1963,6 @@ avprobe_deps="avcodec avformat"
 avserver_deps="avformat fork !shared"
 avserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 avserver_extralibs='$ldl'
-
-doc_deps="texi2html"
 
 # default parameters
 
@@ -3869,6 +3868,7 @@ if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
     enable sdl
 fi
 
+perl -v            > /dev/null 2>&1 && enable perl      || disable perl
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 
 check_header linux/fb.h
