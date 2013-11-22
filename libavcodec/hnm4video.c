@@ -157,7 +157,12 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
         if (count == 0) {
             tag = bytestream2_get_byte(&gb) & 0xE0;
             tag = tag >> 5;
+
             if (tag == 0) {
+                if (writeoffset + 2 > hnm->width * hnm->height) {
+                    av_log(avctx, AV_LOG_ERROR, "writeoffset out of bounds\n");
+                    break;
+                }
                 hnm->current[writeoffset++] = bytestream2_get_byte(&gb);
                 hnm->current[writeoffset++] = bytestream2_get_byte(&gb);
             } else if (tag == 1) {
@@ -168,12 +173,20 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
                 writeoffset += count;
             } else if (tag == 3) {
                 count = bytestream2_get_byte(&gb) * 2;
+                if (writeoffset + count > hnm->width * hnm->height) {
+                    av_log(avctx, AV_LOG_ERROR, "writeoffset out of bounds\n");
+                    break;
+                }
                 while (count > 0) {
                     hnm->current[writeoffset++] = bytestream2_peek_byte(&gb);
                     count--;
                 }
                 bytestream2_skip(&gb, 1);
             } else {
+                break;
+            }
+            if (writeoffset > hnm->width * hnm->height) {
+                av_log(avctx, AV_LOG_ERROR, "writeoffset out of bounds\n");
                 break;
             }
         } else {
@@ -194,7 +207,7 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
             } else if (backward && offset + 1 >= hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds");
                 break;
-            } else if (writeoffset + count >= hnm->width * hnm->height) {
+            } else if (writeoffset + 2*count > hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Attempting to write out of bounds");
                 break;
