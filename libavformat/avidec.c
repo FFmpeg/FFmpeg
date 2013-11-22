@@ -1306,10 +1306,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     size);
             pkt->stream_index = avi->stream_index;
 
-            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && st->index_entries) {
                 AVIndexEntry *e;
                 int index;
-                av_assert0(st->index_entries);
 
                 index = av_index_search_timestamp(st, ast->frame_offset, 0);
                 e     = &st->index_entries[index];
