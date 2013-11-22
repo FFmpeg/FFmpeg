@@ -373,6 +373,10 @@ static int hnm_decode_frame(AVCodecContext *avctx, void *data,
         hnm_update_palette(avctx, avpkt->data, avpkt->size);
         frame->palette_has_changed = 1;
     } else if (chunk_id == HNM4_CHUNK_ID_IZ) {
+        if (avpkt->size < 12) {
+            av_log(avctx, AV_LOG_ERROR, "packet too small\n");
+            return AVERROR_INVALIDDATA;
+        }
         unpack_intraframe(avctx, avpkt->data + 12, avpkt->size - 12);
         memcpy(hnm->previous, hnm->current, hnm->width * hnm->height);
         if (hnm->version == 0x4a)
