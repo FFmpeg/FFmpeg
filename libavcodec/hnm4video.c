@@ -359,6 +359,11 @@ static int hnm_decode_frame(AVCodecContext *avctx, void *data,
     int ret;
     uint16_t chunk_id;
 
+    if (avpkt->size < 8) {
+        av_log(avctx, AV_LOG_ERROR, "packet too small\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
