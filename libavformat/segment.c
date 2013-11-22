@@ -44,7 +44,7 @@ typedef struct SegmentListEntry {
     double start_time, end_time;
     int64_t start_pts;
     int64_t offset_pts;
-    char filename[1024];
+    char *filename;
     struct SegmentListEntry *next;
 } SegmentListEntry;
 
@@ -72,6 +72,7 @@ typedef struct {
     char *list;            ///< filename for the segment list file
     int   list_flags;      ///< flags affecting list generation
     int   list_size;       ///< number of entries for the segment list file
+    char *list_entry_prefix; ///< prefix to add to list entry filenames
     ListType list_type;    ///< set the list type
     AVIOContext *list_pb;  ///< list file put-byte context
     char *time_str;        ///< segment duration specification string
@@ -158,6 +159,7 @@ static int set_segment_filename(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
+    size_t size;
 
     if (seg->segment_idx_wrap)
         seg->segment_idx %= seg->segment_idx_wrap;
@@ -166,7 +168,19 @@ static int set_segment_filename(AVFormatContext *s)
         av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
         return AVERROR(EINVAL);
     }
-    av_strlcpy(seg->cur_entry.filename, oc->filename, sizeof(seg->cur_entry.filename));
+
+    /* copy modified name in list entry */
+    size = strlen(av_basename(oc->filename)) + 1;
+    if (seg->list_entry_prefix)
+        size += strlen(seg->list_entry_prefix);
+
+    seg->cur_entry.filename = av_mallocz(size);
+    if (!seg->cur_entry.filename)
+        return AVERROR(ENOMEM);
+    snprintf(seg->cur_entry.filename, size, "%s%s",
+             seg->list_entry_prefix ? seg->list_entry_prefix : "",
+             av_basename(oc->filename));
+
     return 0;
 }
 
@@ -303,6 +317,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
             if (seg->list_size && seg->segment_count > seg->list_size) {
                 entry = seg->segment_list_entries;
                 seg->segment_list_entries = seg->segment_list_entries->next;
+                av_free(entry->filename);
                 av_freep(&entry);
             }
 
@@ -746,6 +761,7 @@ fail:
     cur = seg->segment_list_entries;
     while (cur) {
         next = cur->next;
+        av_free(cur->filename);
         av_free(cur);
         cur = next;
     }
@@ -766,6 +782,7 @@ static const AVOption options[] = {
     { "live",              "enable live-friendly list generation (useful for HLS)", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_LIST_FLAG_LIVE }, INT_MIN, INT_MAX,    E, "list_flags"},
 
     { "segment_list_size", "set the maximum number of playlist entries", OFFSET(list_size), AV_OPT_TYPE_INT,  {.i64 = 0},     0, INT_MAX, E },
+    { "segment_list_entry_prefix", "set prefix to prepend to each list entry filename", OFFSET(list_entry_prefix), AV_OPT_TYPE_STRING,  {.str = NULL}, 0, 0, E },
 
     { "segment_list_type", "set the segment list type",                  OFFSET(list_type), AV_OPT_TYPE_INT,  {.i64 = LIST_TYPE_UNDEFINED}, -1, LIST_TYPE_NB-1, E, "list_type" },
     { "flat", "flat format",     0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_FLAT }, INT_MIN, INT_MAX, E, "list_type" },

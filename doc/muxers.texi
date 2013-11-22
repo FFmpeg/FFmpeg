@@ -674,7 +674,9 @@ The segment muxer works best with a single constant frame rate video.
 
 Optionally it can generate a list of the created segments, by setting
 the option @var{segment_list}. The list type is specified by the
-@var{segment_list_type} option.
+@var{segment_list_type} option. The entry filenames in the segment
+list are set by default to the basename of the corresponding segment
+files.
 
 The segment muxer supports the following options:
 
@@ -710,6 +712,10 @@ Allow live-friendly file generation.
 Update the list file so that it contains at most the last @var{size}
 segments. If 0 the list file will contain all the segments. Default
 value is 0.
+
+@item segment_list_entry_prefix @var{prefix}
+Set @var{prefix} to prepend to the name of each entry filename. By
+default no prefix is applied.
 
 @item segment_list_type @var{type}
 Specify the format for the segment list file.
