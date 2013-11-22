@@ -262,7 +262,7 @@ typedef enum {
     WRITER_STRING_VALIDATION_FAIL,
     WRITER_STRING_VALIDATION_REPLACE,
     WRITER_STRING_VALIDATION_IGNORE,
-    WRITER_STRING_VALIDATION_NB,
+    WRITER_STRING_VALIDATION_NB
 } StringValidation;
 
 typedef struct Writer {
@@ -329,7 +329,7 @@ static const AVOption writer_options[] = {
     { "fail",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = WRITER_STRING_VALIDATION_FAIL},    .unit = "sv" },
     { "string_validation_replacement", "set string validation replacement string", OFFSET(string_validation_replacement), AV_OPT_TYPE_STRING, {.str=""}},
     { "svr", "set string validation replacement string", OFFSET(string_validation_replacement), AV_OPT_TYPE_STRING, {.str=""}},
-    { NULL },
+    { NULL }
 };
 
 static void *writer_child_next(void *obj, void *prev)
