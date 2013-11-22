@@ -146,7 +146,8 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
 {
     Hnm4VideoContext *hnm = avctx->priv_data;
     GetByteContext gb;
-    uint32_t writeoffset = 0, count, left, offset;
+    uint32_t writeoffset = 0;
+    int count, left, offset;
     uint8_t tag, previous, backline, backward, swap;
 
     bytestream2_init(&gb, src, size);
@@ -187,16 +188,27 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
 
             left = count;
 
-            if (!backward && offset + count >= hnm->width * hnm->height) {
+            if (!backward && offset + 2*count > hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds");
                 break;
-            } else if (backward && offset >= hnm->width * hnm->height) {
+            } else if (backward && offset + 1 >= hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds");
                 break;
             } else if (writeoffset + count >= hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Attempting to write out of bounds");
                 break;
+            }
+            if(backward) {
+                if (offset < (!!backline)*(2 * hnm->width - 1) + 2*(left-1)) {
+                    av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
+                    break;
+                }
+            } else {
+                if (offset < (!!backline)*(2 * hnm->width - 1)) {
+                    av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
+                    break;
+                }
             }
 
             if (previous) {
