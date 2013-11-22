@@ -617,7 +617,7 @@ so if you allow the use of GPL, you should configure with
 
 This encoder is considered to be of higher quality with respect to
 both @ref{aacenc,,the native experimental FFmpeg AAC encoder} and
-libfaac.
+@ref{libfaac}.
 
 For more information see the fdk-aac project at
 @url{http://sourceforge.net/p/opencore-amr/fdk-aac/}.
