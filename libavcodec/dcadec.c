@@ -1001,13 +1001,13 @@ static void dca_downmix(float **samples, int srcfmt, int lfe_present,
 
     switch (srcfmt) {
     case DCA_MONO:
-    case DCA_CHANNEL:
-    case DCA_STEREO_TOTAL:
-    case DCA_STEREO_SUMDIFF:
     case DCA_4F2R:
         av_log(NULL, 0, "Not implemented!\n");
         break;
+    case DCA_CHANNEL:
     case DCA_STEREO:
+    case DCA_STEREO_TOTAL:
+    case DCA_STEREO_SUMDIFF:
         break;
     case DCA_3F:
         c = channel_mapping[0];
