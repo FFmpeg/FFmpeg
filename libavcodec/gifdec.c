@@ -181,8 +181,10 @@ static int gif_read_image(GifState *s, AVFrame *frame)
 
     /* verify that all the image is inside the screen dimensions */
     if (left + width > s->screen_width ||
-        top + height > s->screen_height)
+        top + height > s->screen_height) {
+        av_log(s->avctx, AV_LOG_ERROR, "image is outside the screen dimensions.\n");
         return AVERROR_INVALIDDATA;
+    }
     if (width <= 0 || height <= 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid image dimensions.\n");
         return AVERROR_INVALIDDATA;
