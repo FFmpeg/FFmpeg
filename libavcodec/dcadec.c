@@ -337,7 +337,7 @@ typedef struct {
     int scale_factor[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][2];    ///< scale factors (2 if transient)
     int joint_huff[DCA_PRIM_CHANNELS_MAX];                       ///< joint subband scale factors codebook
     int joint_scale_factor[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS]; ///< joint subband scale factors
-    int downmix_coef[DCA_PRIM_CHANNELS_MAX][2];                  ///< stereo downmix coefficients
+    float downmix_coef[DCA_PRIM_CHANNELS_MAX][2];                ///< stereo downmix coefficients
     int dynrange_coef;                                           ///< dynamic range coefficient
 
     int high_freq_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];       ///< VQ encoded high frequency subbands
@@ -802,8 +802,8 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
     if (!base_channel && s->prim_channels > 2) {
         if (s->downmix) {
             for (j = base_channel; j < s->prim_channels; j++) {
-                s->downmix_coef[j][0] = get_bits(&s->gb, 7);
-                s->downmix_coef[j][1] = get_bits(&s->gb, 7);
+                s->downmix_coef[j][0] = dca_downmix_coeffs[get_bits(&s->gb, 7)];
+                s->downmix_coef[j][1] = dca_downmix_coeffs[get_bits(&s->gb, 7)];
             }
         } else {
             int am = s->amode & DCA_CHANNEL_MASK;
@@ -819,8 +819,8 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
             }
 
             for (j = base_channel; j < s->prim_channels; j++) {
-                s->downmix_coef[j][0] = dca_default_coeffs[am][j][0];
-                s->downmix_coef[j][1] = dca_default_coeffs[am][j][1];
+                s->downmix_coef[j][0] = dca_downmix_coeffs[dca_default_coeffs[am][j][0]];
+                s->downmix_coef[j][1] = dca_downmix_coeffs[dca_default_coeffs[am][j][1]];
             }
         }
     }
@@ -923,9 +923,9 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
         av_log(s->avctx, AV_LOG_DEBUG, "Downmix coeffs:\n");
         for (j = 0; j < s->prim_channels; j++) {
             av_log(s->avctx, AV_LOG_DEBUG, "Channel 0, %d = %f\n", j,
-                   dca_downmix_coeffs[s->downmix_coef[j][0]]);
+                   s->downmix_coef[j][0]);
             av_log(s->avctx, AV_LOG_DEBUG, "Channel 1, %d = %f\n", j,
-                   dca_downmix_coeffs[s->downmix_coef[j][1]]);
+                   s->downmix_coef[j][1]);
         }
         av_log(s->avctx, AV_LOG_DEBUG, "\n");
     }
@@ -1024,18 +1024,12 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
     }
 
 static void dca_downmix(float **samples, int srcfmt,
-                        int downmix_coef[DCA_PRIM_CHANNELS_MAX][2],
+                        float coef[DCA_PRIM_CHANNELS_MAX][2],
                         const int8_t *channel_mapping)
 {
     int c, l, r, sl, sr, s;
     int i;
     float t, u, v;
-    float coef[DCA_PRIM_CHANNELS_MAX][2];
-
-    for (i = 0; i < DCA_PRIM_CHANNELS_MAX; i++) {
-        coef[i][0] = dca_downmix_coeffs[downmix_coef[i][0]];
-        coef[i][1] = dca_downmix_coeffs[downmix_coef[i][1]];
-    }
 
     switch (srcfmt) {
     case DCA_MONO:
