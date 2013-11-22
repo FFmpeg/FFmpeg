@@ -853,6 +853,12 @@ static av_cold void vp9dsp_intrapred_init(VP9DSPContext *dsp)
 #undef init_intra_pred
 }
 
+#define has_dconly_idct_idct   1
+#define has_dconly_iadst_idct  0
+#define has_dconly_idct_iadst  0
+#define has_dconly_iadst_iadst 0
+#define has_dconly_iwht_iwht   0
+
 #define itxfm_wrapper(type_a, type_b, sz, bits) \
 static void type_a##_##type_b##_##sz##x##sz##_add_c(uint8_t *dst, \
                                                     ptrdiff_t stride, \
@@ -860,6 +866,22 @@ static void type_a##_##type_b##_##sz##x##sz##_add_c(uint8_t *dst, \
 { \
     int i, j; \
     int16_t tmp[sz * sz], out[sz]; \
+\
+    if (has_dconly_##type_a##_##type_b && eob == 1) { \
+        const int t  = (((block[0] * 11585 + (1 << 13)) >> 14) \
+                                   * 11585 + (1 << 13)) >> 14; \
+        block[0] = 0; \
+        for (i = 0; i < sz; i++) { \
+            for (j = 0; j < sz; j++) \
+                dst[j * stride] = av_clip_uint8(dst[j * stride] + \
+                                                (bits ? \
+                                                 (t + (1 << (bits - 1))) >> bits : \
+                                                 t)); \
+            dst++; \
+        } \
+        return; \
+    } \
+\
     for (i = 0; i < sz; i++) \
         type_a##sz##_1d(block + i, sz, tmp + i * sz, 0); \
     memset(block, 0, sz * sz * sizeof(*block)); \
