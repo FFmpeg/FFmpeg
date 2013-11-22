@@ -364,6 +364,8 @@ static int rv20_decode_picture_header(RVDecContext *rv)
             AVRational old_aspect = s->avctx->sample_aspect_ratio;
             av_log(s->avctx, AV_LOG_DEBUG,
                    "attempting to change resolution to %dx%d\n", new_w, new_h);
+            if (av_image_check_size(new_w, new_h, 0, s->avctx) < 0)
+                return AVERROR_INVALIDDATA;
             ff_MPV_common_end(s);
 
             // attempt to keep aspect during typical resolution switches
