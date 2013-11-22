@@ -148,7 +148,7 @@ static int hnm_read_packet(AVFormatContext *s, AVPacket *pkt)
     chunk_id = avio_rl16(pb);
     avio_skip(pb, 2);
 
-    if (chunk_size > hnm->superchunk_remaining) {
+    if (chunk_size > hnm->superchunk_remaining || !chunk_size) {
         av_log(s, AV_LOG_ERROR, "invalid chunk size: %u, offset: %u\n",
                chunk_size, (int) avio_tell(pb));
         avio_skip(pb, hnm->superchunk_remaining - 8);
