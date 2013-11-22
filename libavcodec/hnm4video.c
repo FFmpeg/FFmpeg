@@ -78,7 +78,7 @@ static void unpack_intraframe(AVCodecContext *avctx, uint8_t *src,
         if (getbit(&gb, &bitbuf, &bits)) {
             if (writeoffset >= hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR,
-                       "Attempting to write out of bounds");
+                       "Attempting to write out of bounds\n");
                 break;
             }
             hnm->current[writeoffset++] = bytestream2_get_byte(&gb);
@@ -99,11 +99,11 @@ static void unpack_intraframe(AVCodecContext *avctx, uint8_t *src,
             count  += 2;
             offset += writeoffset;
             if (offset < 0 || offset + count >= hnm->width * hnm->height) {
-                av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds");
+                av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
                 break;
             } else if (writeoffset + count >= hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR,
-                       "Attempting to write out of bounds");
+                       "Attempting to write out of bounds\n");
                 break;
             }
             while (count--) {
@@ -202,14 +202,14 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
             left = count;
 
             if (!backward && offset + 2*count > hnm->width * hnm->height) {
-                av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds");
+                av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
                 break;
             } else if (backward && offset + 1 >= hnm->width * hnm->height) {
-                av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds");
+                av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
                 break;
             } else if (writeoffset + 2*count > hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR,
-                       "Attempting to write out of bounds");
+                       "Attempting to write out of bounds\n");
                 break;
             }
             if(backward) {
@@ -307,10 +307,10 @@ static void decode_interframe_v4a(AVCodecContext *avctx, uint8_t *src,
                 offset -= 0x10000;
 
             if (offset + hnm->width + count >= hnm->width * hnm->height) {
-                av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds");
+                av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
                 break;
             } else if (writeoffset + hnm->width + count >= hnm->width * hnm->height) {
-                av_log(avctx, AV_LOG_ERROR, "Attempting to write out of bounds");
+                av_log(avctx, AV_LOG_ERROR, "Attempting to write out of bounds\n");
                 break;
             }
 
