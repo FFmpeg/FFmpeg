@@ -853,13 +853,7 @@ static av_cold void vp9dsp_intrapred_init(VP9DSPContext *dsp)
 #undef init_intra_pred
 }
 
-#define has_dconly_idct_idct   1
-#define has_dconly_iadst_idct  0
-#define has_dconly_idct_iadst  0
-#define has_dconly_iadst_iadst 0
-#define has_dconly_iwht_iwht   0
-
-#define itxfm_wrapper(type_a, type_b, sz, bits) \
+#define itxfm_wrapper(type_a, type_b, sz, bits, has_dconly) \
 static void type_a##_##type_b##_##sz##x##sz##_add_c(uint8_t *dst, \
                                                     ptrdiff_t stride, \
                                                     int16_t *block, int eob) \
@@ -867,7 +861,7 @@ static void type_a##_##type_b##_##sz##x##sz##_add_c(uint8_t *dst, \
     int i, j; \
     int16_t tmp[sz * sz], out[sz]; \
 \
-    if (has_dconly_##type_a##_##type_b && eob == 1) { \
+    if (has_dconly && eob == 1) { \
         const int t  = (((block[0] * 11585 + (1 << 13)) >> 14) \
                                    * 11585 + (1 << 13)) >> 14; \
         block[0] = 0; \
@@ -897,10 +891,10 @@ static void type_a##_##type_b##_##sz##x##sz##_add_c(uint8_t *dst, \
 }
 
 #define itxfm_wrap(sz, bits) \
-itxfm_wrapper(idct,  idct,  sz, bits) \
-itxfm_wrapper(iadst, idct,  sz, bits) \
-itxfm_wrapper(idct,  iadst, sz, bits) \
-itxfm_wrapper(iadst, iadst, sz, bits)
+itxfm_wrapper(idct,  idct,  sz, bits, 1) \
+itxfm_wrapper(iadst, idct,  sz, bits, 0) \
+itxfm_wrapper(idct,  iadst, sz, bits, 0) \
+itxfm_wrapper(iadst, iadst, sz, bits, 0)
 
 #define IN(x) in[x * stride]
 
@@ -1419,7 +1413,7 @@ static av_always_inline void idct32_1d(const int16_t *in, ptrdiff_t stride,
     out[31] = t0   - t31;
 }
 
-itxfm_wrapper(idct, idct, 32, 6)
+itxfm_wrapper(idct, idct, 32, 6, 1)
 
 static av_always_inline void iwht4_1d(const int16_t *in, ptrdiff_t stride,
                                       int16_t *out, int pass)
@@ -1452,7 +1446,7 @@ static av_always_inline void iwht4_1d(const int16_t *in, ptrdiff_t stride,
     out[3] = t3;
 }
 
-itxfm_wrapper(iwht, iwht, 4, 0)
+itxfm_wrapper(iwht, iwht, 4, 0, 0)
 
 #undef IN
 #undef itxfm_wrapper
