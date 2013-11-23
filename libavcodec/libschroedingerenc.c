@@ -299,7 +299,8 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         case SCHRO_STATE_HAVE_BUFFER:
         case SCHRO_STATE_END_OF_STREAM:
             enc_buf = schro_encoder_pull(encoder, &presentation_frame);
-            av_assert0(enc_buf->length > 0);
+            if (enc_buf->length <= 0)
+                return AVERROR_BUG;
             parse_code = enc_buf->data[4];
 
             /* All non-frame data is prepended to actual frame data to
