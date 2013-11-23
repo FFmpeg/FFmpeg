@@ -1367,8 +1367,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
             s->out_channels = 2;
             s->output_mode  = AC3_CHMODE_STEREO;
         }
-        avctx->channels       = s->out_channels;
-        avctx->channel_layout = avpriv_ac3_channel_layout_tab[s->output_mode];
 
         /* set downmixing coefficients if needed */
         if (s->channels != s->out_channels && !((s->output_mode & AC3_OUTPUT_LFEON) &&
@@ -1380,6 +1378,9 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
     avctx->channels = s->out_channels;
+    avctx->channel_layout = avpriv_ac3_channel_layout_tab[s->output_mode & ~AC3_OUTPUT_LFEON];
+    if (s->output_mode & AC3_OUTPUT_LFEON)
+        avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
 
     /* set audio service type based on bitstream mode for AC-3 */
     avctx->audio_service_type = s->bitstream_mode;
