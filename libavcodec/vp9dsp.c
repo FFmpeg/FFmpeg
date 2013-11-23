@@ -1476,8 +1476,7 @@ static av_cold void vp9dsp_itxfm_init(VP9DSPContext *dsp)
 #undef init_idct
 }
 
-static av_always_inline void loop_filter(uint8_t *dst,  ptrdiff_t stride,
-                                         int E, int I, int H,
+static av_always_inline void loop_filter(uint8_t *dst, int E, int I, int H,
                                          ptrdiff_t stridea, ptrdiff_t strideb,
                                          int wd)
 {
@@ -1589,7 +1588,7 @@ static void loop_filter_##dir##_##wd##_8_c(uint8_t *dst, \
                                            ptrdiff_t stride, \
                                            int E, int I, int H) \
 { \
-    loop_filter(dst, stride, E, I, H, stridea, strideb, wd); \
+    loop_filter(dst, E, I, H, stridea, strideb, wd); \
 }
 
 #define lf_8_fns(wd) \
