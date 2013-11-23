@@ -1828,7 +1828,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     sub2video_update(ist, &subtitle);
 
     if (!subtitle.num_rects)
-        return ret;
+        goto out;
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
@@ -1839,6 +1839,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
         do_subtitle_out(output_files[ost->file_index]->ctx, ost, ist, &subtitle);
     }
 
+out:
     avsubtitle_free(&subtitle);
     return ret;
 }
