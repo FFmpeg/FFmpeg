@@ -27,9 +27,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/buffer.h"
 #include "libavutil/internal.h"
 
 #include "avcodec.h"
+#include "thread.h"
 #include "vp56.h"
 
 enum TxfmMode {
@@ -225,6 +227,16 @@ typedef struct VP9Filter {
                               [8 /* rows */][4 /* 0=16, 1=8, 2=4, 3=inner4 */];
 } VP9Filter;
 
+typedef struct VP9Frame {
+    ThreadFrame tf;
+
+    uint8_t *segmentation_map;
+    VP9MVRefPair *mv;
+
+    AVBufferRef *segmentation_map_buf;
+    AVBufferRef *mv_buf;
+} VP9Frame;
+
 enum BlockLevel {
     BL_64X64,
     BL_32X32,
@@ -293,8 +305,12 @@ typedef struct VP9Context {
     uint8_t refidx[3];
     uint8_t signbias[3];
     uint8_t varcompref[2];
-    AVFrame *refs[8];
-    AVFrame *cur_frame;
+
+    ThreadFrame refs[8];
+
+#define CUR_FRAME 0
+#define LAST_FRAME 1
+    VP9Frame frames[2];
 
     struct {
         uint8_t level;
@@ -392,8 +408,6 @@ typedef struct VP9Context {
 
     // whole-frame cache
     uint8_t *intra_pred_data[3];
-    uint8_t *segmentation_map;
-    VP9MVRefPair *mv[2];
     VP9Filter *lflvl;
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[71 * 80];
 
