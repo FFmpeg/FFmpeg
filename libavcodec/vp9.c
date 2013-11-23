@@ -98,7 +98,7 @@ typedef struct VP9Context {
     VP56RangeCoder c;
     VP56RangeCoder *c_b;
     unsigned c_b_size;
-    VP9Block b;
+    VP9Block *b_base, *b;
     int row, row7, col, col7;
     uint8_t *dst[3];
     ptrdiff_t y_stride, uv_stride;
@@ -228,10 +228,8 @@ typedef struct VP9Context {
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[71*80];
 
     // block reconstruction intermediates
-    DECLARE_ALIGNED(32, int16_t, block)[4096];
-    DECLARE_ALIGNED(32, int16_t, uvblock)[2][1024];
-    uint8_t eob[256];
-    uint8_t uveob[2][64];
+    int16_t *block_base, *block, *uvblock_base[2], *uvblock[2];
+    uint8_t *eob_base, *uveob_base[2], *eob, *uveob[2];
     VP56mv min_mv, max_mv;
     DECLARE_ALIGNED(32, uint8_t, tmp_y)[64*64];
     DECLARE_ALIGNED(32, uint8_t, tmp_uv)[2][32*32];
@@ -329,6 +327,18 @@ static int update_size(AVCodecContext *ctx, int w, int h)
     assign(s->lflvl,               struct VP9Filter *,     1);
     assign(s->above_mv_ctx,        VP56mv(*)[2],          16);
 #undef assign
+
+    av_free(s->b_base);
+    av_free(s->block_base);
+    s->b_base = av_malloc(sizeof(VP9Block));
+    s->block_base = av_mallocz((64 * 64 + 128) * 3);
+    if (!s->b_base || !s->block_base)
+        return AVERROR(ENOMEM);
+    s->uvblock_base[0] = s->block_base + 64 * 64;
+    s->uvblock_base[1] = s->uvblock_base[0] + 32 * 32;
+    s->eob_base = (uint8_t *) (s->uvblock_base[1] + 32 * 32);
+    s->uveob_base[0] = s->eob_base + 256;
+    s->uveob_base[1] = s->uveob_base[0] + 64;
 
     return 0;
 }
@@ -908,7 +918,7 @@ static void find_ref_mvs(VP9Context *s,
         [BS_4x4]   = {{  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
                       { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 }},
     };
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     int row = s->row, col = s->col, row7 = s->row7;
     const int8_t (*p)[2] = mv_ref_blk_off[b->bs];
 #define INVALID_MV 0x80008000U
@@ -1121,7 +1131,7 @@ static av_always_inline int read_mv_component(VP9Context *s, int idx, int hp)
 static void fill_mv(VP9Context *s,
                     VP56mv *mv, int mode, int sb)
 {
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
 
     if (mode == ZEROMV) {
         memset(mv, 0, sizeof(*mv) * 2);
@@ -1204,7 +1214,7 @@ static void decode_mode(AVCodecContext *ctx)
         TX_16X16, TX_8X8, TX_8X8, TX_8X8, TX_4X4, TX_4X4, TX_4X4
     };
     VP9Context *s = ctx->priv_data;
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     int row = s->row, col = s->col, row7 = s->row7;
     enum TxfmMode max_tx = max_tx_for_bl_bp[b->bs];
     int w4 = FFMIN(s->cols - col, bwh_tab[1][b->bs][0]);
@@ -1952,7 +1962,7 @@ static int decode_coeffs_b(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
 static int decode_coeffs(AVCodecContext *ctx)
 {
     VP9Context *s = ctx->priv_data;
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     int row = s->row, col = s->col;
     uint8_t (*p)[6][11] = s->prob.coef[b->tx][0 /* y */][!b->intra];
     unsigned (*c)[6][3] = s->counts.coef[b->tx][0 /* y */][!b->intra];
@@ -2196,7 +2206,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
 static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
 {
     VP9Context *s = ctx->priv_data;
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     int row = s->row, col = s->col;
     int w4 = bwh_tab[1][b->bs][0] << 1, step1d = 1 << b->tx, n;
     int h4 = bwh_tab[1][b->bs][1] << 1, x, y, step = 1 << (b->tx * 2);
@@ -2337,7 +2347,7 @@ static void inter_recon(AVCodecContext *ctx)
         { 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4 },
     };
     VP9Context *s = ctx->priv_data;
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     int row = s->row, col = s->col;
     ThreadFrame *tref1 = &s->refs[s->refidx[b->ref[0]]];
     AVFrame *ref1 = tref1->f;
@@ -2654,7 +2664,7 @@ static int decode_b(AVCodecContext *ctx, int row, int col,
                     enum BlockLevel bl, enum BlockPartition bp)
 {
     VP9Context *s = ctx->priv_data;
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     enum BlockSize bs = bl * 3 + bp;
     int res, y, w4 = bwh_tab[1][bs][0], h4 = bwh_tab[1][bs][1], lvl;
     int emu[2];
@@ -3367,6 +3377,8 @@ static av_cold int vp9_decode_free(AVCodecContext *ctx)
     }
     av_freep(&s->above_partition_ctx);
     av_freep(&s->c_b);
+    av_freep(&s->b_base);
+    av_freep(&s->block_base);
 
     return 0;
 }
@@ -3433,6 +3445,13 @@ static int vp9_decode_frame(AVCodecContext *ctx, AVFrame *frame,
     memset(s->above_uv_nnz_ctx[0], 0, s->sb_cols * 8);
     memset(s->above_uv_nnz_ctx[1], 0, s->sb_cols * 8);
     memset(s->above_segpred_ctx, 0, s->cols);
+    s->b = s->b_base;
+    s->block = s->block_base;
+    s->uvblock[0] = s->uvblock_base[0];
+    s->uvblock[1] = s->uvblock_base[1];
+    s->eob = s->eob_base;
+    s->uveob[0] = s->uveob_base[0];
+    s->uveob[1] = s->uveob_base[1];
     for (tile_row = 0; tile_row < s->tiling.tile_rows; tile_row++) {
         set_tile_offset(&s->tiling.tile_row_start, &s->tiling.tile_row_end,
                         tile_row, s->tiling.log2_tile_rows, s->sb_rows);
