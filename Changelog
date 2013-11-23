@@ -8,6 +8,7 @@ version <next>
 - setsar/setdar filters now support variables in ratio expressions
 - elbg filter
 - string validation in ffprobe
+- support for decoding through VDPAU in ffmpeg (the -hwaccel option)
 
 
 version 2.1:

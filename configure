@@ -1559,11 +1559,13 @@ HAVE_LIST="
     threads
     unistd_h
     usleep
+    vdpau_x11
     vfp_args
     VirtualAlloc
     windows_h
     winsock2_h
     xform_asm
+    xlib
     xmm_clobbers
 "
 
@@ -4426,10 +4428,12 @@ if enabled libcdio; then
     die "ERROR: libcdio-paranoia not found"
 fi
 
+check_lib X11/Xlib.h XOpenDisplay -lX11 && enable xlib
+
 enabled x11grab                                           &&
-require X11 X11/Xlib.h XOpenDisplay -lX11                 &&
 require Xext X11/extensions/XShm.h XShmCreateImage -lXext &&
-require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
+require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes &&
+{ enabled xlib || die "ERROR: Xlib not found"; }
 
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
@@ -4438,6 +4442,10 @@ enabled vaapi &&
 enabled vdpau &&
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
     disable vdpau
+
+enabled vdpau && enabled xlib &&
+    check_lib2 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
+    enable vdpau_x11
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
 disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || disable iconv

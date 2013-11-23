@@ -59,6 +59,7 @@
 enum HWAccelID {
     HWACCEL_NONE = 0,
     HWACCEL_AUTO,
+    HWACCEL_VDPAU,
 };
 
 typedef struct HWAccel {
@@ -484,5 +485,7 @@ int ist_in_filtergraph(FilterGraph *fg, InputStream *ist);
 FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost);
 
 int ffmpeg_parse_options(int argc, char **argv);
+
+int vdpau_init(AVCodecContext *s);
 
 #endif /* FFMPEG_H */

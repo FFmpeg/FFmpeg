@@ -18,7 +18,9 @@ PROGS-$(CONFIG_FFSERVER) += ffserver
 PROGS      := $(PROGS-yes:%=%$(PROGSSUF)$(EXESUF))
 INSTPROGS   = $(PROGS-yes:%=%$(PROGSSUF)$(EXESUF))
 
+
 OBJS-ffmpeg = ffmpeg_opt.o ffmpeg_filter.o
+OBJS-ffmpeg-$(HAVE_VDPAU_X11) += ffmpeg_vdpau.o
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 TOOLS       = qt-faststart trasher
@@ -90,7 +92,7 @@ endef
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 define DOPROG
-OBJS-$(1) += $(1).o cmdutils.o $(EXEOBJS)
+OBJS-$(1) += $(1).o cmdutils.o $(EXEOBJS) $(OBJS-$(1)-yes)
 $(1)$(PROGSSUF)_g$(EXESUF): $$(OBJS-$(1))
 $$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
 $(1)$(PROGSSUF)_g$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
