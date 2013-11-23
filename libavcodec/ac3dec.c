@@ -29,6 +29,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
 #include "internal.h"
@@ -178,10 +179,20 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     /* allow downmixing to stereo or mono */
-    if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
-        avctx->request_channels < avctx->channels) {
-        avctx->channels = avctx->request_channels;
-    }
+#if FF_API_REQUEST_CHANNELS
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->request_channels == 1)
+        avctx->request_channel_layout = AV_CH_LAYOUT_MONO;
+    else if (avctx->request_channels == 2)
+        avctx->request_channel_layout = AV_CH_LAYOUT_STEREO;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    if (avctx->channels > 1 &&
+        avctx->request_channel_layout == AV_CH_LAYOUT_MONO)
+        avctx->channels = 1;
+    else if (avctx->channels > 2 &&
+             avctx->request_channel_layout == AV_CH_LAYOUT_STEREO)
+        avctx->channels = 2;
     s->downmixed = 1;
 
     for (i = 0; i < AC3_MAX_CHANNELS; i++) {
@@ -1348,14 +1359,17 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         s->output_mode  = s->channel_mode;
         if (s->lfe_on)
             s->output_mode |= AC3_OUTPUT_LFEON;
-        if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
-                avctx->request_channels < s->channels) {
-            s->out_channels = avctx->request_channels;
-            s->output_mode  = avctx->request_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
-            s->channel_layout = avpriv_ac3_channel_layout_tab[s->output_mode];
+        if (s->channels > 1 &&
+            avctx->request_channel_layout == AV_CH_LAYOUT_MONO) {
+            s->out_channels = 1;
+            s->output_mode  = AC3_CHMODE_MONO;
+        } else if (s->channels > 2 &&
+                   avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
+            s->out_channels = 2;
+            s->output_mode  = AC3_CHMODE_STEREO;
         }
         avctx->channels       = s->out_channels;
-        avctx->channel_layout = s->channel_layout;
+        avctx->channel_layout = avpriv_ac3_channel_layout_tab[s->output_mode];
 
         s->loro_center_mix_level   = gain_levels[s->  center_mix_level];
         s->loro_surround_mix_level = gain_levels[s->surround_mix_level];
