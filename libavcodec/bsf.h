@@ -1,7 +1,4 @@
 /*
- * Chomp bitstream filter
- * Copyright (c) 2010 Alex Converse <alex.converse@gmail.com>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -19,32 +16,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_BSF_H
+#define AVCODEC_BSF_H
+
 #include "avcodec.h"
-#include "bsf.h"
-#include "internal.h"
-
-static int chomp_filter(AVBSFContext *ctx, AVPacket *out)
-{
-    AVPacket *in;
-    int ret;
-
-    ret = ff_bsf_get_packet(ctx, &in);
-    if (ret < 0)
-        return ret;
-
-    while (in->size > 0 && !in->data[in->size - 1])
-        in->size--;
-
-    av_packet_move_ref(out, in);
-    av_packet_free(&in);
-
-    return 0;
-}
 
 /**
- * This filter removes a string of NULL bytes from the end of a packet.
+ * Called by the biststream filters to get the next packet for filtering.
+ * The filter is responsible for either freeing the packet or passing it to the
+ * caller.
  */
-const AVBitStreamFilter ff_chomp_bsf = {
-    .name   = "chomp",
-    .filter = chomp_filter,
-};
+int ff_bsf_get_packet(AVBSFContext *ctx, AVPacket **pkt);
+
+const AVClass *ff_bsf_child_class_next(const AVClass *prev);
+
+#endif /* AVCODEC_BSF_H */
