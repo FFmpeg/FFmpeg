@@ -1822,9 +1822,12 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
         FFSWAP(AVSubtitle, subtitle,    ist->prev_sub.subtitle);
     }
 
+    if (!*got_output)
+        return ret;
+
     sub2video_update(ist, &subtitle);
 
-    if (!*got_output || !subtitle.num_rects)
+    if (!subtitle.num_rects)
         return ret;
 
     for (i = 0; i < nb_output_streams; i++) {
