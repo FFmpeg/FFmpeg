@@ -341,11 +341,10 @@ static void *writer_child_next(void *obj, void *prev)
 }
 
 static const AVClass writer_class = {
-    "Writer",
-    writer_get_name,
-    NULL,
-    LIBAVUTIL_VERSION_INT,
-    .option = writer_options,
+    .class_name = "Writer",
+    .item_name  = writer_get_name,
+    .option     = writer_options,
+    .version    = LIBAVUTIL_VERSION_INT,
     .child_next = writer_child_next,
 };
 
@@ -706,9 +705,9 @@ static const char *name##_get_name(void *ctx)       \
     return #name ;                                  \
 }                                                   \
 static const AVClass name##_class = {               \
-    #name,                                          \
-    name##_get_name,                                \
-    name##_options                                  \
+    .class_name = #name,                            \
+    .item_name  = name##_get_name,                  \
+    .option     = name##_options                    \
 }
 
 /* Default output */
