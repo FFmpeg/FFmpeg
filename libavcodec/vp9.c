@@ -3304,8 +3304,10 @@ static av_cold int vp9_decode_free(AVCodecContext *ctx)
 
 
 static int vp9_decode_frame(AVCodecContext *ctx, AVFrame *frame,
-                            int *got_frame, const uint8_t *data, int size)
+                            int *got_frame, AVPacket *pkt)
 {
+    const uint8_t *data = pkt->data;
+    int size = pkt->size;
     VP9Context *s = ctx->priv_data;
     int res, tile_row, tile_col, i, ref, row, col;
     ptrdiff_t yoff = 0, uvoff = 0;
@@ -3469,57 +3471,6 @@ static int vp9_decode_frame(AVCodecContext *ctx, AVFrame *frame,
     return 0;
 }
 
-static int vp9_decode_packet(AVCodecContext *avctx, AVFrame *frame,
-                             int *got_frame, AVPacket *avpkt)
-{
-    const uint8_t *data = avpkt->data;
-    int size = avpkt->size, marker, res;
-
-    // read superframe index - this is a collection of individual frames that
-    // together lead to one visible frame
-    av_assert1(size > 0); // without CODEC_CAP_DELAY, this is implied
-    marker = data[size - 1];
-    if ((marker & 0xe0) == 0xc0) {
-        int nbytes = 1 + ((marker >> 3) & 0x3);
-        int n_frames = 1 + (marker & 0x7), idx_sz = 2 + n_frames * nbytes;
-
-        if (size >= idx_sz && data[size - idx_sz] == marker) {
-            const uint8_t *idx = data + size + 1 - idx_sz;
-            switch (nbytes) {
-#define case_n(a, rd) \
-                case a: \
-                    while (n_frames--) { \
-                        int sz = rd; \
-                        idx += a; \
-                        if (sz > size) { \
-                            av_log(avctx, AV_LOG_ERROR, \
-                                   "Superframe packet size too big: %d > %d\n", \
-                                   sz, size); \
-                            return AVERROR_INVALIDDATA; \
-                        } \
-                        res = vp9_decode_frame(avctx, frame, got_frame, \
-                                               data, sz); \
-                        if (res < 0) \
-                            return res; \
-                        data += sz; \
-                        size -= sz; \
-                    } \
-                    break;
-                case_n(1, *idx);
-                case_n(2, AV_RL16(idx));
-                case_n(3, AV_RL24(idx));
-                case_n(4, AV_RL32(idx));
-            }
-            return avpkt->size;
-        }
-    }
-    // if we get here, there was no valid superframe index, i.e. this is just
-    // one whole single frame - decode it as such from the complete input buf
-    if ((res = vp9_decode_frame(avctx, frame, got_frame, data, size)) < 0)
-        return res;
-    return avpkt->size;
-}
-
 static void vp9_decode_flush(AVCodecContext *ctx)
 {
     VP9Context *s = ctx->priv_data;
@@ -3559,7 +3510,7 @@ AVCodec ff_vp9_decoder = {
   .priv_data_size        = sizeof(VP9Context),
   .init                  = vp9_decode_init,
   .close                 = vp9_decode_free,
-  .decode                = vp9_decode_packet,
   .capabilities          = CODEC_CAP_DR1,
   .flush                 = vp9_decode_flush,
+    .decode                = vp9_decode_frame,
 };

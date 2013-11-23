@@ -555,6 +555,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER(VORBIS,             vorbis);
     REGISTER_PARSER(VP3,                vp3);
     REGISTER_PARSER(VP8,                vp8);
+    REGISTER_PARSER(VP9,                vp9);
 
     /* bitstream filters */
     REGISTER_BSF(AAC_ADTSTOASC,         aac_adtstoasc);
