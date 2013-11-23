@@ -621,6 +621,33 @@ would be more efficient.
 @item -copyinkf[:@var{stream_specifier}] (@emph{output,per-stream})
 When doing stream copy, copy also non-key frames found at the
 beginning.
+
+@item -hwaccel[:@var{stream_specifier}] @var{hwaccel} (@emph{input,per-stream})
+Use hardware acceleration to decode the matching stream(s). The allowed values
+of @var{hwaccel} are:
+@table @option
+@item none
+Do not use any hardware acceleration (the default).
+
+@item auto
+Automatically select the hardware acceleration method.
+@end table
+
+This option has no effect if the selected hwaccel is not available or not
+supported by the chosen decoder.
+
+Note that most acceleration methods are intended for playback and will not be
+faster than software decoding on modern CPUs. Additionally, @command{ffmpeg}
+will usually need to copy the decoded frames from the GPU memory into the system
+memory, resulting in further performance loss. This option is thus mainly
+useful for testing.
+
+@item -hwaccel_device[:@var{stream_specifier}] @var{hwaccel_device} (@emph{input,per-stream})
+Select a device to use for hardware acceleration.
+
+This option only makes sense when the @option{-hwaccel} option is also
+specified. Its exact meaning depends on the specific hardware acceleration
+method chosen.
 @end table
 
 @section Audio Options

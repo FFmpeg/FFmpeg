@@ -56,6 +56,18 @@
 
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
 
+enum HWAccelID {
+    HWACCEL_NONE = 0,
+    HWACCEL_AUTO,
+};
+
+typedef struct HWAccel {
+    const char *name;
+    int (*init)(AVCodecContext *s);
+    enum HWAccelID id;
+    enum AVPixelFormat pix_fmt;
+} HWAccel;
+
 /* select an input stream for an output stream */
 typedef struct StreamMap {
     int disabled;           /* 1 is this mapping is disabled by a negative map */
@@ -100,6 +112,10 @@ typedef struct OptionsContext {
     int        nb_ts_scale;
     SpecifierOpt *dump_attachment;
     int        nb_dump_attachment;
+    SpecifierOpt *hwaccels;
+    int        nb_hwaccels;
+    SpecifierOpt *hwaccel_devices;
+    int        nb_hwaccel_devices;
 
     /* output options */
     StreamMap *stream_maps;
@@ -275,6 +291,19 @@ typedef struct InputStream {
     int        nb_filters;
 
     int reinit_filters;
+
+    /* hwaccel options */
+    enum HWAccelID hwaccel_id;
+    char  *hwaccel_device;
+
+    /* hwaccel context */
+    enum HWAccelID active_hwaccel_id;
+    void  *hwaccel_ctx;
+    void (*hwaccel_uninit)(AVCodecContext *s);
+    int  (*hwaccel_get_buffer)(AVCodecContext *s, AVFrame *frame, int flags);
+    int  (*hwaccel_retrieve_data)(AVCodecContext *s, AVFrame *frame);
+    enum AVPixelFormat hwaccel_pix_fmt;
+    enum AVPixelFormat hwaccel_retrieved_pix_fmt;
 } InputStream;
 
 typedef struct InputFile {
@@ -431,6 +460,8 @@ extern float max_error_rate;
 extern const AVIOInterruptCB int_cb;
 
 extern const OptionDef options[];
+extern const HWAccel hwaccels[];
+
 
 void term_init(void);
 void term_exit(void);
