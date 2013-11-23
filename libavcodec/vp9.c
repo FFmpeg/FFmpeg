@@ -152,6 +152,19 @@ static int update_size(AVCodecContext *avctx, int w, int h)
     assign(s->above_mv_ctx,        VP56mv(*)[2], 16);
 #undef assign
 
+    av_freep(&s->b_base);
+    av_freep(&s->block_base);
+    s->b_base     = av_malloc(sizeof(*s->b_base));
+    s->block_base = av_mallocz((64 * 64 + 128) * 3);
+    if (!s->b_base || !s->block_base)
+        return AVERROR(ENOMEM);
+
+    s->uvblock_base[0] = s->block_base + 64 * 64;
+    s->uvblock_base[1] = s->uvblock_base[0] + 32 * 32;
+    s->eob_base        = (uint8_t *) (s->uvblock_base[1] + 32 * 32);
+    s->uveob_base[0]   = s->eob_base + 256;
+    s->uveob_base[1]   = s->uveob_base[0] + 64;
+
     return 0;
 }
 
@@ -1155,6 +1168,15 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     memset(s->above_uv_nnz_ctx[0], 0, s->sb_cols * 8);
     memset(s->above_uv_nnz_ctx[1], 0, s->sb_cols * 8);
     memset(s->above_segpred_ctx, 0, s->cols);
+
+    s->b          = s->b_base;
+    s->block      = s->block_base;
+    s->uvblock[0] = s->uvblock_base[0];
+    s->uvblock[1] = s->uvblock_base[1];
+    s->eob        = s->eob_base;
+    s->uveob[0]   = s->uveob_base[0];
+    s->uveob[1]   = s->uveob_base[1];
+
     for (tile_row = 0; tile_row < s->tiling.tile_rows; tile_row++) {
         set_tile_offset(&s->tiling.tile_row_start, &s->tiling.tile_row_end,
                         tile_row, s->tiling.log2_tile_rows, s->sb_rows);
@@ -1351,6 +1373,8 @@ static av_cold int vp9_decode_free(AVCodecContext *avctx)
 
     av_freep(&s->c_b);
     av_freep(&s->above_partition_ctx);
+    av_freep(&s->b_base);
+    av_freep(&s->block_base);
 
     return 0;
 }

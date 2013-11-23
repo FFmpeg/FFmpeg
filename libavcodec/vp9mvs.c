@@ -64,7 +64,7 @@ static void find_ref_mvs(VP9Context *s,
         [BS_4x4]   = { {  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
                        { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 } },
     };
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     int row = b->row, col = b->col, row7 = b->row7;
     const int8_t (*p)[2] = mv_ref_blk_off[b->bs];
 #define INVALID_MV 0x80008000U
@@ -279,7 +279,7 @@ static av_always_inline int read_mv_component(VP9Context *s, int idx, int hp)
 
 void ff_vp9_fill_mv(VP9Context *s, VP56mv *mv, int mode, int sb)
 {
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
 
     if (mode == ZEROMV) {
         memset(mv, 0, sizeof(*mv) * 2);

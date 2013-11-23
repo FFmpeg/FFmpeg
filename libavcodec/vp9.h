@@ -280,7 +280,8 @@ typedef struct VP9Context {
     VP56RangeCoder c;
     VP56RangeCoder *c_b;
     unsigned c_b_size;
-    VP9Block b;
+    VP9Block *b;
+    VP9Block *b_base;
 
     // bitstream header
     uint8_t profile;
@@ -412,10 +413,8 @@ typedef struct VP9Context {
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[71 * 80];
 
     // block reconstruction intermediates
-    DECLARE_ALIGNED(32, int16_t, block)[4096];
-    DECLARE_ALIGNED(32, int16_t, uvblock)[2][1024];
-    uint8_t eob[256];
-    uint8_t uveob[2][64];
+    int16_t *block_base, *block, *uvblock_base[2], *uvblock[2];
+    uint8_t *eob_base, *uveob_base[2], *eob, *uveob[2];
     struct { int x, y; } min_mv, max_mv;
     DECLARE_ALIGNED(32, uint8_t, tmp_y)[64 * 64];
     DECLARE_ALIGNED(32, uint8_t, tmp_uv)[2][32 * 32];

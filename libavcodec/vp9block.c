@@ -823,7 +823,7 @@ skip_eob:
 static int decode_coeffs(AVCodecContext *avctx)
 {
     VP9Context *s = avctx->priv_data;
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     int row = b->row, col = b->col;
     uint8_t (*p)[6][11] = s->prob.coef[b->tx][0 /* y */][!b->intra];
     unsigned (*c)[6][3] = s->counts.coef[b->tx][0 /* y */][!b->intra];
@@ -1074,7 +1074,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode,
 static void intra_recon(AVCodecContext *avctx, ptrdiff_t y_off, ptrdiff_t uv_off)
 {
     VP9Context *s = avctx->priv_data;
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     AVFrame *f = s->frames[CUR_FRAME].tf.f;
     int row = b->row, col = b->col;
     int w4 = bwh_tab[1][b->bs][0] << 1, step1d = 1 << b->tx, n;
@@ -1227,7 +1227,7 @@ static int inter_recon(AVCodecContext *avctx)
         { 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4 },
     };
     VP9Context *s = avctx->priv_data;
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     int row = b->row, col = b->col;
 
     ThreadFrame *tref1 = &s->refs[s->refidx[b->ref[0]]];
@@ -1555,7 +1555,7 @@ int ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
                         enum BlockLevel bl, enum BlockPartition bp)
 {
     VP9Context *s = avctx->priv_data;
-    VP9Block *const b = &s->b;
+    VP9Block *b = s->b;
     AVFrame *f = s->frames[CUR_FRAME].tf.f;
     enum BlockSize bs = bl * 3 + bp;
     int ret, y, w4 = bwh_tab[1][bs][0], h4 = bwh_tab[1][bs][1], lvl;
