@@ -20,6 +20,7 @@
  */
 
 #include <float.h>
+#include <stdint.h>
 
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"

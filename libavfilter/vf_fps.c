@@ -22,6 +22,7 @@
  */
 
 #include <float.h>
+#include <stdint.h>
 
 #include "libavutil/common.h"
 #include "libavutil/fifo.h"

@@ -27,6 +27,8 @@
 #include <errno.h>
 #include <signal.h>
 #include <limits.h>
+#include <stdint.h>
+
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"

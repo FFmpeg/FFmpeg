@@ -32,6 +32,8 @@
  * optional background_frame
  */
 
+#include <stdint.h>
+
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"

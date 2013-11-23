@@ -25,6 +25,8 @@
  * MPEG1/2 encoder
  */
 
+#include <stdint.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"

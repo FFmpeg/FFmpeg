@@ -27,6 +27,8 @@
  * The simplest mpeg encoder (well, it was the simplest!).
  */
 
+#include <stdint.h>
+
 #include "libavutil/internal.h"
 #include "libavutil/intmath.h"
 #include "libavutil/mathematics.h"

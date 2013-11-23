@@ -24,6 +24,7 @@
  */
 
 #include <limits.h>
+#include <stdint.h>
 
 //#define MOV_EXPORT_ALL_METADATA
 
