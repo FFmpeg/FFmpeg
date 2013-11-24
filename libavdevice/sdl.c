@@ -57,9 +57,6 @@ static int sdl_write_trailer(AVFormatContext *s)
 {
     SDLContext *sdl = s->priv_data;
 
-    av_freep(&sdl->window_title);
-    av_freep(&sdl->icon_title);
-
     if (sdl->overlay) {
         SDL_FreeYUVOverlay(sdl->overlay);
         sdl->overlay = NULL;
