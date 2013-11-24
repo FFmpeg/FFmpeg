@@ -29,6 +29,7 @@ OBJS-$(CONFIG_IEC61883_INDEV)            += iec61883.o
 OBJS-$(CONFIG_JACK_INDEV)                += jack_audio.o timefilter.o
 OBJS-$(CONFIG_LAVFI_INDEV)               += lavfi.o
 OBJS-$(CONFIG_OPENAL_INDEV)              += openal-dec.o
+OBJS-$(CONFIG_OPENGL_OUTDEV)             += opengl_enc.o
 OBJS-$(CONFIG_OSS_INDEV)                 += oss_audio.o
 OBJS-$(CONFIG_OSS_OUTDEV)                += oss_audio.o
 OBJS-$(CONFIG_PULSE_INDEV)               += pulse_audio_dec.o \

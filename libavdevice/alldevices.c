@@ -56,6 +56,7 @@ void avdevice_register_all(void)
     REGISTER_INDEV   (JACK,             jack);
     REGISTER_INDEV   (LAVFI,            lavfi);
     REGISTER_INDEV   (OPENAL,           openal);
+    REGISTER_OUTDEV  (OPENGL,           opengl);
     REGISTER_INOUTDEV(OSS,              oss);
     REGISTER_INOUTDEV(PULSE,            pulse);
     REGISTER_OUTDEV  (SDL,              sdl);

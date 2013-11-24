@@ -149,6 +149,41 @@ ffmpeg -re -i INPUT -vcodec rawvideo -pix_fmt bgra -f fbdev /dev/fb0
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
 
+@section opengl
+OpenGL output device.
+
+To enable this output device you need to configure FFmpeg with @code{--enable-opengl}.
+
+Device allows to render to OpenGL context.
+Context may be provided by application or default SDL window is created.
+
+When device renders to external context, application must implement handlers for following messages:
+@code{AV_CTL_MESSAGE_CREATE_WINDOW_BUFFER} - create OpenGL context on current thread.
+@code{AV_CTL_MESSAGE_PREPARE_WINDOW_BUFFER} - make OpenGL context current.
+@code{AV_CTL_MESSAGE_DISPLAY_WINDOW_BUFFER} - swap buffers.
+@code{AV_CTL_MESSAGE_DESTROY_WINDOW_BUFFER} - destroy OpenGL context.
+Application is also required to inform a device about current resolution by sending @code{AV_DEVICE_WINDOW_RESIZED} message.
+
+@subsection Options
+@table @option
+
+@item background
+Set background color. Black is a default.
+@item no_window
+Disables default SDL window when set to non-zero value.
+Application must provide OpenGL context and both @code{window_size_cb} and @code{window_swap_buffers_cb} callbacks when set.
+@item window_title
+Set the SDL window title, if not specified default to the filename specified for the output device.
+Ignored when @option{no_window} is set.
+
+@end table
+
+@subsection Examples
+Play a file on SDL window using OpenGL rendering:
+@example
+ffmpeg  -i INPUT -f opengl "window title"
+@end example
+
 @section oss
 
 OSS (Open Sound System) output device.
