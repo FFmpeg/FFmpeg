@@ -197,11 +197,11 @@ The information for each single packet is printed within a dedicated
 section with name "PACKET".
 
 @item -show_frames
-Show information about each frame contained in the input multimedia
-stream.
+Show information about each frame and subtitle contained in the input
+multimedia stream.
 
 The information for each single frame is printed within a dedicated
-section with name "FRAME".
+section with name "FRAME" or "SUBTITLE".
 
 @item -show_streams
 Show information about each media stream contained in the input

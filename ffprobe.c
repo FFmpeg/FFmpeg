@@ -135,6 +135,7 @@ typedef enum {
     SECTION_ID_STREAM_DISPOSITION,
     SECTION_ID_STREAMS,
     SECTION_ID_STREAM_TAGS,
+    SECTION_ID_SUBTITLE,
 } SectionID;
 
 static struct section sections[] = {
@@ -144,7 +145,7 @@ static struct section sections[] = {
     [SECTION_ID_ERROR] =              { SECTION_ID_ERROR, "error", 0, { -1 } },
     [SECTION_ID_FORMAT] =             { SECTION_ID_FORMAT, "format", 0, { SECTION_ID_FORMAT_TAGS, -1 } },
     [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "format_tags" },
-    [SECTION_ID_FRAMES] =             { SECTION_ID_FRAMES, "frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME, -1 } },
+    [SECTION_ID_FRAMES] =             { SECTION_ID_FRAMES, "frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME, SECTION_ID_SUBTITLE, -1 } },
     [SECTION_ID_FRAME] =              { SECTION_ID_FRAME, "frame", 0, { SECTION_ID_FRAME_TAGS, -1 } },
     [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "frame_tags" },
     [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS, "library_versions", SECTION_FLAG_IS_ARRAY, { SECTION_ID_LIBRARY_VERSION, -1 } },
@@ -167,6 +168,7 @@ static struct section sections[] = {
     [SECTION_ID_STREAM] =             { SECTION_ID_STREAM, "stream", 0, { SECTION_ID_STREAM_DISPOSITION, SECTION_ID_STREAM_TAGS, -1 } },
     [SECTION_ID_STREAM_DISPOSITION] = { SECTION_ID_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "stream_disposition" },
     [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "stream_tags" },
+    [SECTION_ID_SUBTITLE] =           { SECTION_ID_SUBTITLE, "subtitle", 0, { -1 } },
 };
 
 static const OptionDef *options;
@@ -1675,6 +1677,29 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     fflush(stdout);
 }
 
+static void show_subtitle(WriterContext *w, AVSubtitle *sub, AVStream *stream,
+                          AVFormatContext *fmt_ctx)
+{
+    AVBPrint pbuf;
+
+    av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
+
+    writer_print_section_header(w, SECTION_ID_SUBTITLE);
+
+    print_str ("media_type",         "subtitle");
+    print_ts  ("pts",                 sub->pts);
+    print_time("pts_time",            sub->pts, &AV_TIME_BASE_Q);
+    print_int ("format",              sub->format);
+    print_int ("start_display_time",  sub->start_display_time);
+    print_int ("end_display_time",    sub->end_display_time);
+    print_int ("num_rects",           sub->num_rects);
+
+    writer_print_section_footer(w);
+
+    av_bprint_finalize(&pbuf, NULL);
+    fflush(stdout);
+}
+
 static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                        AVFormatContext *fmt_ctx)
 {
@@ -1751,6 +1776,7 @@ static av_always_inline int process_frame(WriterContext *w,
                                           AVFrame *frame, AVPacket *pkt)
 {
     AVCodecContext *dec_ctx = fmt_ctx->streams[pkt->stream_index]->codec;
+    AVSubtitle sub;
     int ret = 0, got_frame = 0;
 
     avcodec_get_frame_defaults(frame);
@@ -1763,6 +1789,10 @@ static av_always_inline int process_frame(WriterContext *w,
         case AVMEDIA_TYPE_AUDIO:
             ret = avcodec_decode_audio4(dec_ctx, frame, &got_frame, pkt);
             break;
+
+        case AVMEDIA_TYPE_SUBTITLE:
+            ret = avcodec_decode_subtitle2(dec_ctx, &sub, &got_frame, pkt);
+            break;
         }
     }
 
@@ -1772,9 +1802,15 @@ static av_always_inline int process_frame(WriterContext *w,
     pkt->data += ret;
     pkt->size -= ret;
     if (got_frame) {
+        int is_sub = (dec_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE);
         nb_streams_frames[pkt->stream_index]++;
         if (do_show_frames)
-            show_frame(w, frame, fmt_ctx->streams[pkt->stream_index], fmt_ctx);
+            if (is_sub)
+                show_subtitle(w, &sub, fmt_ctx->streams[pkt->stream_index], fmt_ctx);
+            else
+                show_frame(w, frame, fmt_ctx->streams[pkt->stream_index], fmt_ctx);
+        if (is_sub)
+            avsubtitle_free(&sub);
     }
     return got_frame;
 }

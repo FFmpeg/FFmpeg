@@ -28,7 +28,10 @@
 
     <xsd:complexType name="framesType">
         <xsd:sequence>
-            <xsd:element name="frame" type="ffprobe:frameType" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                <xsd:element name="frame" type="ffprobe:frameType" minOccurs="0" maxOccurs="unbounded"/>
+                <xsd:element name="subtitle" type="ffprobe:subtitleType" minOccurs="0" maxOccurs="unbounded"/>
+            </xsd:choice>
         </xsd:sequence>
     </xsd:complexType>
 
@@ -80,6 +83,16 @@
       <xsd:attribute name="interlaced_frame"       type="xsd:int"   />
       <xsd:attribute name="top_field_first"        type="xsd:int"   />
       <xsd:attribute name="repeat_pict"            type="xsd:int"   />
+    </xsd:complexType>
+
+    <xsd:complexType name="subtitleType">
+      <xsd:attribute name="media_type"         type="xsd:string" fixed="subtitle" use="required"/>
+      <xsd:attribute name="pts"                type="xsd:long" />
+      <xsd:attribute name="pts_time"           type="xsd:float"/>
+      <xsd:attribute name="format"             type="xsd:int"  />
+      <xsd:attribute name="start_display_time" type="xsd:int"  />
+      <xsd:attribute name="end_display_time"   type="xsd:int"  />
+      <xsd:attribute name="num_rects"          type="xsd:int"  />
     </xsd:complexType>
 
     <xsd:complexType name="streamsType">
