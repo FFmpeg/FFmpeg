@@ -36,9 +36,8 @@ DOCS-$(CONFIG_MANPAGES)  += $(MANPAGES)
 DOCS-$(CONFIG_TXTPAGES)  += $(TXTPAGES)
 DOCS = $(DOCS-yes)
 
-all-$(CONFIG_DOC): doc
-
 doc: documentation
+all: $(DOCS)
 
 apidoc: doc/doxy/html
 documentation: $(DOCS)
@@ -95,7 +94,7 @@ install-html:
 install-man:
 
 ifdef CONFIG_HTMLPAGES
-install-progs-$(CONFIG_DOC): install-html
+install-progs: install-html
 
 install-html: $(HTMLPAGES)
 	$(Q)mkdir -p "$(DOCDIR)"
@@ -103,7 +102,7 @@ install-html: $(HTMLPAGES)
 endif
 
 ifdef CONFIG_MANPAGES
-install-progs-$(CONFIG_DOC): install-man
+install-progs: install-man
 
 install-man: $(MANPAGES)
 	$(Q)mkdir -p "$(MANDIR)/man1"
