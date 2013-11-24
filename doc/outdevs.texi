@@ -206,7 +206,7 @@ downscaled according to the aspect ratio.
 
 @item window_fullscreen
 Set fullscreen mode when non-zero value is provided.
-Zero is a default.
+Default value is zero.
 @end table
 
 @subsection Examples
