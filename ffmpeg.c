@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdint.h>
+
 #if HAVE_ISATTY
 #if HAVE_IO_H
 #include <io.h>
@@ -38,6 +40,7 @@
 #include <unistd.h>
 #endif
 #endif
+
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswresample/swresample.h"

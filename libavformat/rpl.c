@@ -19,11 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+#include <stdlib.h>
+
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "internal.h"
-#include <stdlib.h>
 
 #define RPL_SIGNATURE "ARMovie\x0A"
 #define RPL_SIGNATURE_SIZE 8

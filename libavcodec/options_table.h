@@ -24,6 +24,7 @@
 
 #include <float.h>
 #include <limits.h>
+#include <stdint.h>
 
 #include "libavutil/opt.h"
 #include "avcodec.h"

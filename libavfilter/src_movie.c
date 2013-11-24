@@ -28,6 +28,7 @@
  */
 
 #include <float.h>
+#include <stdint.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/avstring.h"

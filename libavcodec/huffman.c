@@ -24,6 +24,8 @@
  * huffman tree builder and VLC generator
  */
 
+#include <stdint.h>
+
 #include "avcodec.h"
 #include "get_bits.h"
 #include "huffman.h"

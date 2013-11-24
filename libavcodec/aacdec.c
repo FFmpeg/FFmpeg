@@ -105,6 +105,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
+#include <stdint.h>
 #include <string.h>
 
 #if ARCH_ARM
