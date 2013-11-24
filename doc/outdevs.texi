@@ -209,6 +209,16 @@ Set fullscreen mode when non-zero value is provided.
 Default value is zero.
 @end table
 
+@subsection Interactive commands
+
+The window created by the device can be controlled through the
+following interactive commands.
+
+@table @key
+@item q, ESC
+Quit the device immediately.
+@end table
+
 @subsection Examples
 
 The following command shows the @command{ffmpeg} output is an
