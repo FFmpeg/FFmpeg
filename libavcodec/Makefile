@@ -281,17 +281,17 @@ OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
 OBJS-$(CONFIG_MOTIONPIXELS_DECODER)    += motionpixels.o
 OBJS-$(CONFIG_MOVTEXT_DECODER)         += movtextdec.o ass.o
 OBJS-$(CONFIG_MOVTEXT_ENCODER)         += movtextenc.o ass_split.o
-OBJS-$(CONFIG_MP1_DECODER)             += mpegaudiodec.o
+OBJS-$(CONFIG_MP1_DECODER)             += mpegaudiodec_fixed.o
 OBJS-$(CONFIG_MP1FLOAT_DECODER)        += mpegaudiodec_float.o
-OBJS-$(CONFIG_MP2_DECODER)             += mpegaudiodec.o
+OBJS-$(CONFIG_MP2_DECODER)             += mpegaudiodec_fixed.o
 OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudioenc.o mpegaudio.o \
                                           mpegaudiodata.o mpegaudiodsp_data.o
 OBJS-$(CONFIG_MP2FLOAT_DECODER)        += mpegaudiodec_float.o
-OBJS-$(CONFIG_MP3_DECODER)             += mpegaudiodec.o
-OBJS-$(CONFIG_MP3ADU_DECODER)          += mpegaudiodec.o
+OBJS-$(CONFIG_MP3_DECODER)             += mpegaudiodec_fixed.o
+OBJS-$(CONFIG_MP3ADU_DECODER)          += mpegaudiodec_fixed.o
 OBJS-$(CONFIG_MP3ADUFLOAT_DECODER)     += mpegaudiodec_float.o
 OBJS-$(CONFIG_MP3FLOAT_DECODER)        += mpegaudiodec_float.o
-OBJS-$(CONFIG_MP3ON4_DECODER)          += mpegaudiodec.o mpeg4audio.o
+OBJS-$(CONFIG_MP3ON4_DECODER)          += mpegaudiodec_fixed.o mpeg4audio.o
 OBJS-$(CONFIG_MP3ON4FLOAT_DECODER)     += mpegaudiodec_float.o mpeg4audio.o
 OBJS-$(CONFIG_MPC7_DECODER)            += mpc7.o mpc.o
 OBJS-$(CONFIG_MPC8_DECODER)            += mpc8.o mpc.o
@@ -885,7 +885,7 @@ $(SUBDIR)aacps.o: $(SUBDIR)aacps_tables.h
 $(SUBDIR)aactab.o: $(SUBDIR)aac_tables.h
 $(SUBDIR)dv.o: $(SUBDIR)dv_tables.h
 $(SUBDIR)sinewin.o: $(SUBDIR)sinewin_tables.h
-$(SUBDIR)mpegaudiodec.o: $(SUBDIR)mpegaudio_tables.h
+$(SUBDIR)mpegaudiodec_fixed.o: $(SUBDIR)mpegaudio_tables.h
 $(SUBDIR)mpegaudiodec_float.o: $(SUBDIR)mpegaudio_tables.h
 $(SUBDIR)motionpixels.o: $(SUBDIR)motionpixels_tables.h
 $(SUBDIR)pcm.o: $(SUBDIR)pcm_tables.h

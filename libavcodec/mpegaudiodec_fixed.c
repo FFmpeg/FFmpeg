@@ -1,6 +1,5 @@
 /*
- * Float MPEG Audio decoder
- * Copyright (c) 2010 Michael Niedermayer
+ * Fixed-point MPEG audio decoder
  *
  * This file is part of FFmpeg.
  *
@@ -22,25 +21,26 @@
 #include "config.h"
 #include "libavutil/samplefmt.h"
 
-#define CONFIG_FLOAT 1
+#define CONFIG_FLOAT 0
 
 #include "mpegaudio.h"
 
-#define SHR(a,b)       ((a)*(1.0f/(1<<(b))))
+#define SHR(a,b)       ((a)>>(b))
+/* WARNING: only correct for positive numbers */
 #define FIXR_OLD(a)    ((int)((a) * FRAC_ONE + 0.5))
-#define FIXR(x)        ((float)(x))
-#define FIXHR(x)       ((float)(x))
-#define MULH3(x, y, s) ((s)*(y)*(x))
-#define MULLx(x, y, s) ((y)*(x))
-#define RENAME(a) a ## _float
-#define OUT_FMT   AV_SAMPLE_FMT_FLT
-#define OUT_FMT_P AV_SAMPLE_FMT_FLTP
+#define FIXR(a)        ((int)((a) * FRAC_ONE + 0.5))
+#define FIXHR(a)       ((int)((a) * (1LL<<32) + 0.5))
+#define MULH3(x, y, s) MULH((s)*(x), y)
+#define MULLx(x, y, s) MULL(x,y,s)
+#define RENAME(a)      a ## _fixed
+#define OUT_FMT   AV_SAMPLE_FMT_S16
+#define OUT_FMT_P AV_SAMPLE_FMT_S16P
 
 #include "mpegaudiodec_template.c"
 
-#if CONFIG_MP1FLOAT_DECODER
-AVCodec ff_mp1float_decoder = {
-    .name           = "mp1float",
+#if CONFIG_MP1_DECODER
+AVCodec ff_mp1_decoder = {
+    .name           = "mp1",
     .long_name      = NULL_IF_CONFIG_SMALL("MP1 (MPEG audio layer 1)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_MP1,
@@ -49,14 +49,14 @@ AVCodec ff_mp1float_decoder = {
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_FLT,
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },
 };
 #endif
-#if CONFIG_MP2FLOAT_DECODER
-AVCodec ff_mp2float_decoder = {
-    .name           = "mp2float",
+#if CONFIG_MP2_DECODER
+AVCodec ff_mp2_decoder = {
+    .name           = "mp2",
     .long_name      = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_MP2,
@@ -65,14 +65,14 @@ AVCodec ff_mp2float_decoder = {
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_FLT,
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },
 };
 #endif
-#if CONFIG_MP3FLOAT_DECODER
-AVCodec ff_mp3float_decoder = {
-    .name           = "mp3float",
+#if CONFIG_MP3_DECODER
+AVCodec ff_mp3_decoder = {
+    .name           = "mp3",
     .long_name      = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_MP3,
@@ -81,14 +81,14 @@ AVCodec ff_mp3float_decoder = {
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_FLT,
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },
 };
 #endif
-#if CONFIG_MP3ADUFLOAT_DECODER
-AVCodec ff_mp3adufloat_decoder = {
-    .name           = "mp3adufloat",
+#if CONFIG_MP3ADU_DECODER
+AVCodec ff_mp3adu_decoder = {
+    .name           = "mp3adu",
     .long_name      = NULL_IF_CONFIG_SMALL("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_MP3ADU,
@@ -97,14 +97,14 @@ AVCodec ff_mp3adufloat_decoder = {
     .decode         = decode_frame_adu,
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_FLT,
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },
 };
 #endif
-#if CONFIG_MP3ON4FLOAT_DECODER
-AVCodec ff_mp3on4float_decoder = {
-    .name           = "mp3on4float",
+#if CONFIG_MP3ON4_DECODER
+AVCodec ff_mp3on4_decoder = {
+    .name           = "mp3on4",
     .long_name      = NULL_IF_CONFIG_SMALL("MP3onMP4"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_MP3ON4,
@@ -114,7 +114,7 @@ AVCodec ff_mp3on4float_decoder = {
     .decode         = decode_frame_mp3on4,
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush_mp3on4,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };
 #endif
