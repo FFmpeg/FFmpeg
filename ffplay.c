@@ -1376,9 +1376,13 @@ retry:
 
             if (vp->serial != is->videoq.serial) {
                 pictq_next_picture(is);
+                is->video_current_pos = -1;
                 redisplay = 0;
                 goto retry;
             }
+
+            if (lastvp->serial != vp->serial && !redisplay)
+                is->frame_timer = av_gettime() / 1000000.0;
 
             if (is->paused)
                 goto display;
@@ -1670,15 +1674,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
 
     if (pkt->data == flush_pkt.data) {
         avcodec_flush_buffers(is->video_st->codec);
-
-        SDL_LockMutex(is->pictq_mutex);
-        // Make sure there are no long delay timers (ideally we should just flush the queue but that's harder)
-        while (is->pictq_size && !is->videoq.abort_request) {
-            SDL_CondWait(is->pictq_cond, is->pictq_mutex);
-        }
-        is->video_current_pos = -1;
-        is->frame_timer = (double)av_gettime() / 1000000.0;
-        SDL_UnlockMutex(is->pictq_mutex);
         return 0;
     }
 
