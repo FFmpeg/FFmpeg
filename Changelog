@@ -49,6 +49,7 @@ version 10:
 - dar variable in the scale filter now returns the actual DAR (i.e. a * sar)
 - VP9 decoder
 - support for decoding through VDPAU in avconv (the -hwaccel option)
+- remove mp3_header_(de)compress bitstream filters
 
 
 version 9:
