@@ -164,6 +164,19 @@ by default it is set to the specified output name.
 Specify the device to use. Default device is used when not provided.
 List of output devices can be obtained with command @command{pactl list sinks}.
 
+@item buffer_size
+@item buffer_duration
+Control the size and duration of the PulseAudio buffer. A small buffer
+gives more control, but requires more frequent updates.
+
+@option{buffer_size} specifies size in bytes while
+@option{buffer_duration} specifies duration in milliseconds.
+
+When both options are provided then the highest value is used
+(duration is recalculated to bytes using stream parameters). If they
+are set to 0 (which is default), the device will use the default
+PulseAudio duration value. By default PulseAudio set buffer duration
+to around 2 seconds.
 @end table
 
 @subsection Examples

@@ -35,6 +35,8 @@ typedef struct PulseData {
     const char *device;
     pa_simple *pa;
     int64_t timestamp;
+    int buffer_size;
+    int buffer_duration;
 } PulseData;
 
 static av_cold int pulse_write_header(AVFormatContext *h)
@@ -58,6 +60,19 @@ static av_cold int pulse_write_header(AVFormatContext *h)
         else
             stream_name = "Playback";
     }
+
+    if (s->buffer_duration) {
+        int64_t bytes = s->buffer_duration;
+        bytes *= st->codec->channels * st->codec->sample_rate *
+                 av_get_bytes_per_sample(st->codec->sample_fmt);
+        bytes /= 1000;
+        attr.tlength = FFMAX(s->buffer_size, av_clip64(bytes, 0, UINT32_MAX - 1));
+        av_log(s, AV_LOG_DEBUG,
+               "Buffer duration: %ums recalculated into %"PRId64" bytes buffer.\n",
+               s->buffer_duration, bytes);
+        av_log(s, AV_LOG_DEBUG, "Real buffer length is %u bytes\n", attr.tlength);
+    } else if (s->buffer_size)
+        attr.tlength = s->buffer_size;
 
     ss.format = ff_codec_id_to_pulse_format(st->codec->codec_id);
     ss.rate = st->codec->sample_rate;
@@ -142,6 +157,8 @@ static const AVOption options[] = {
     { "name",          "set application name",   OFFSET(name),        AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT},  0, 0, E },
     { "stream_name",   "set stream description", OFFSET(stream_name), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
     { "device",        "set device name",        OFFSET(device),      AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
+    { "buffer_size",   "set buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT,  {.i64 = 0}, 0, INT_MAX, E },
+    { "buffer_duration", "set buffer duration in millisecs", OFFSET(buffer_duration), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
     { NULL }
 };
 
