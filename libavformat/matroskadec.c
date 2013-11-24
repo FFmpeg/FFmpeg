@@ -253,6 +253,7 @@ typedef struct {
     uint64_t time_scale;
     double   duration;
     char    *title;
+    char    *muxingapp;
     EbmlBin date_utc;
     EbmlList tracks;
     EbmlList attachments;
@@ -317,7 +318,7 @@ static EbmlSyntax matroska_info[] = {
     { MATROSKA_ID_DURATION,           EBML_FLOAT, 0, offsetof(MatroskaDemuxContext,duration) },
     { MATROSKA_ID_TITLE,              EBML_UTF8,  0, offsetof(MatroskaDemuxContext,title) },
     { MATROSKA_ID_WRITINGAPP,         EBML_NONE },
-    { MATROSKA_ID_MUXINGAPP,          EBML_NONE },
+    { MATROSKA_ID_MUXINGAPP,          EBML_UTF8, 0, offsetof(MatroskaDemuxContext,muxingapp) },
     { MATROSKA_ID_DATEUTC,            EBML_BIN,  0, offsetof(MatroskaDemuxContext,date_utc) },
     { MATROSKA_ID_SEGMENTUID,         EBML_NONE },
     { 0 }
@@ -1587,6 +1588,7 @@ static int matroska_read_header(AVFormatContext *s)
         matroska->ctx->duration = matroska->duration * matroska->time_scale
                                   * 1000 / AV_TIME_BASE;
     av_dict_set(&s->metadata, "title", matroska->title, 0);
+    av_dict_set(&s->metadata, "encoder", matroska->muxingapp, 0);
 
     if (matroska->date_utc.size == 8)
         matroska_metadata_creation_time(&s->metadata, AV_RB64(matroska->date_utc.data));
