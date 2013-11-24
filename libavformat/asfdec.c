@@ -1138,7 +1138,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
         }
         if (asf->packet_time_start == 0) {
             if (asf_read_frame_header(s, pb) < 0) {
-                asf->packet_segments = 0;
+                asf->packet_time_start = asf->packet_segments = 0;
                 continue;
             }
             if (asf->stream_index < 0 ||
