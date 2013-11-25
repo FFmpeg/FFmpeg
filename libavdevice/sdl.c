@@ -124,11 +124,13 @@ static void compute_overlay_rect(AVFormatContext *s)
     overlay_rect->y = (sdl->window_height - overlay_rect->h) / 2;
 }
 
+#define SDL_BASE_FLAGS (SDL_SWSURFACE|SDL_RESIZABLE)
+
 static int event_thread(void *arg)
 {
     AVFormatContext *s = arg;
     SDLContext *sdl = s->priv_data;
-    int flags = SDL_SWSURFACE | (sdl->window_fullscreen ? SDL_FULLSCREEN : 0);
+    int flags = SDL_BASE_FLAGS | (sdl->window_fullscreen ? SDL_FULLSCREEN : 0);
     AVStream *st = s->streams[0];
     AVCodecContext *encctx = st->codec;
 
@@ -195,6 +197,22 @@ init_end:
         case SDL_QUIT:
             sdl->quit = 1;
             break;
+
+        case SDL_VIDEORESIZE:
+            sdl->window_width  = event.resize.w;
+            sdl->window_height = event.resize.h;
+
+            SDL_LockMutex(sdl->mutex);
+            sdl->surface = SDL_SetVideoMode(sdl->window_width, sdl->window_height, 24, SDL_BASE_FLAGS);
+            if (!sdl->surface) {
+                av_log(s, AV_LOG_ERROR, "Failed to set SDL video mode: %s\n", SDL_GetError());
+                sdl->quit = 1;
+            } else {
+                compute_overlay_rect(s);
+            }
+            SDL_UnlockMutex(sdl->mutex);
+            break;
+
         default:
             break;
         }
@@ -292,15 +310,15 @@ static int sdl_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVPicture pict;
     int i;
 
-    if (sdl->quit)
+    if (sdl->quit) {
+        sdl_write_trailer(s);
         return AVERROR(EIO);
+    }
     avpicture_fill(&pict, pkt->data, encctx->pix_fmt, encctx->width, encctx->height);
 
     SDL_LockMutex(sdl->mutex);
     SDL_FillRect(sdl->surface, &sdl->surface->clip_rect,
                  SDL_MapRGB(sdl->surface->format, 0, 0, 0));
-    SDL_UnlockMutex(sdl->mutex);
-
     SDL_LockYUVOverlay(sdl->overlay);
     for (i = 0; i < 3; i++) {
         sdl->overlay->pixels [i] = pict.data    [i];
@@ -312,6 +330,7 @@ static int sdl_write_packet(AVFormatContext *s, AVPacket *pkt)
     SDL_UpdateRect(sdl->surface,
                    sdl->overlay_rect.x, sdl->overlay_rect.y,
                    sdl->overlay_rect.w, sdl->overlay_rect.h);
+    SDL_UnlockMutex(sdl->mutex);
 
     return 0;
 }
