@@ -1112,6 +1112,7 @@ CONFIG_LIST="
     $LIBRARY_LIST
     $PROGRAM_LIST
     dct
+    doc
     error_resilience
     fft
     gpl
@@ -1971,6 +1972,10 @@ avprobe_deps="avcodec avformat"
 avserver_deps="avformat fork !shared"
 avserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 avserver_extralibs='$ldl'
+
+# documentation
+perl_deps="doc"
+texi2html_deps="doc"
 
 # default parameters
 
