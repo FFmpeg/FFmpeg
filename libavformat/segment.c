@@ -203,8 +203,10 @@ static int segment_start(AVFormatContext *s, int write_header)
         return err;
 
     if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                          &s->interrupt_callback, NULL)) < 0)
+                          &s->interrupt_callback, NULL)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", oc->filename);
         return err;
+    }
 
     if (oc->oformat->priv_class && oc->priv_data)
         av_opt_set(oc->priv_data, "resend_headers", "1", 0); /* mpegts specific */
@@ -225,8 +227,10 @@ static int segment_list_open(AVFormatContext *s)
 
     ret = avio_open2(&seg->list_pb, seg->list, AVIO_FLAG_WRITE,
                      &s->interrupt_callback, NULL);
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR, "Failed to open segment list '%s'\n", seg->list);
         return ret;
+    }
 
     if (seg->list_type == LIST_TYPE_M3U8 && seg->segment_list_entries) {
         SegmentListEntry *entry;
@@ -615,8 +619,10 @@ static int seg_write_header(AVFormatContext *s)
 
     if (seg->write_header_trailer) {
         if ((ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL)) < 0)
+                              &s->interrupt_callback, NULL)) < 0) {
+            av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", oc->filename);
             goto fail;
+        }
     } else {
         if ((ret = open_null_ctx(&oc->pb)) < 0)
             goto fail;
