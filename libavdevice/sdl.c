@@ -84,6 +84,46 @@ static int sdl_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static void compute_overlay_rect(AVFormatContext *s)
+{
+    AVRational sar, dar; /* sample and display aspect ratios */
+    SDLContext *sdl = s->priv_data;
+    AVStream *st = s->streams[0];
+    AVCodecContext *encctx = st->codec;
+    SDL_Rect *overlay_rect = &sdl->overlay_rect;
+
+    /* compute overlay width and height from the codec context information */
+    sar = st->sample_aspect_ratio.num ? st->sample_aspect_ratio : (AVRational){ 1, 1 };
+    dar = av_mul_q(sar, (AVRational){ encctx->width, encctx->height });
+
+    /* we suppose the screen has a 1/1 sample aspect ratio */
+    if (sdl->window_width && sdl->window_height) {
+        /* fit in the window */
+        if (av_cmp_q(dar, (AVRational){ sdl->window_width, sdl->window_height }) > 0) {
+            /* fit in width */
+            overlay_rect->w = sdl->window_width;
+            overlay_rect->h = av_rescale(overlay_rect->w, dar.den, dar.num);
+        } else {
+            /* fit in height */
+            overlay_rect->h = sdl->window_height;
+            overlay_rect->w = av_rescale(overlay_rect->h, dar.num, dar.den);
+        }
+    } else {
+        if (sar.num > sar.den) {
+            overlay_rect->w = encctx->width;
+            overlay_rect->h = av_rescale(overlay_rect->w, dar.den, dar.num);
+        } else {
+            overlay_rect->h = encctx->height;
+            overlay_rect->w = av_rescale(overlay_rect->h, dar.num, dar.den);
+        }
+        sdl->window_width  = overlay_rect->w;
+        sdl->window_height = overlay_rect->h;
+    }
+
+    overlay_rect->x = (sdl->window_width  - overlay_rect->w) / 2;
+    overlay_rect->y = (sdl->window_height - overlay_rect->h) / 2;
+}
+
 static int event_thread(void *arg)
 {
     AVFormatContext *s = arg;
@@ -161,46 +201,6 @@ init_end:
     }
 
     return 0;
-}
-
-static void compute_overlay_rect(AVFormatContext *s)
-{
-    AVRational sar, dar; /* sample and display aspect ratios */
-    SDLContext *sdl = s->priv_data;
-    AVStream *st = s->streams[0];
-    AVCodecContext *encctx = st->codec;
-    SDL_Rect *overlay_rect = &sdl->overlay_rect;
-
-    /* compute overlay width and height from the codec context information */
-    sar = st->sample_aspect_ratio.num ? st->sample_aspect_ratio : (AVRational){ 1, 1 };
-    dar = av_mul_q(sar, (AVRational){ encctx->width, encctx->height });
-
-    /* we suppose the screen has a 1/1 sample aspect ratio */
-    if (sdl->window_width && sdl->window_height) {
-        /* fit in the window */
-        if (av_cmp_q(dar, (AVRational){ sdl->window_width, sdl->window_height }) > 0) {
-            /* fit in width */
-            overlay_rect->w = sdl->window_width;
-            overlay_rect->h = av_rescale(overlay_rect->w, dar.den, dar.num);
-        } else {
-            /* fit in height */
-            overlay_rect->h = sdl->window_height;
-            overlay_rect->w = av_rescale(overlay_rect->h, dar.num, dar.den);
-        }
-    } else {
-        if (sar.num > sar.den) {
-            overlay_rect->w = encctx->width;
-            overlay_rect->h = av_rescale(overlay_rect->w, dar.den, dar.num);
-        } else {
-            overlay_rect->h = encctx->height;
-            overlay_rect->w = av_rescale(overlay_rect->h, dar.num, dar.den);
-        }
-        sdl->window_width  = overlay_rect->w;
-        sdl->window_height = overlay_rect->h;
-    }
-
-    overlay_rect->x = (sdl->window_width  - overlay_rect->w) / 2;
-    overlay_rect->y = (sdl->window_height - overlay_rect->h) / 2;
 }
 
 static int sdl_write_header(AVFormatContext *s)
