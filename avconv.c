@@ -1354,7 +1354,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 }
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
-static int output_packet(InputStream *ist, const AVPacket *pkt)
+static int process_input_packet(InputStream *ist, const AVPacket *pkt)
 {
     int i;
     int got_output;
@@ -2360,7 +2360,7 @@ static int process_input(void)
         for (i = 0; i < ifile->nb_streams; i++) {
             ist = input_streams[ifile->ist_index + i];
             if (ist->decoding_needed)
-                output_packet(ist, NULL);
+                process_input_packet(ist, NULL);
 
             /* mark all outputs that don't go through lavfi as finished */
             for (j = 0; j < nb_output_streams; j++) {
@@ -2436,7 +2436,7 @@ static int process_input(void)
         }
     }
 
-    ret = output_packet(ist, &pkt);
+    ret = process_input_packet(ist, &pkt);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
                ist->file_index, ist->st->index);
@@ -2509,7 +2509,7 @@ static int transcode(void)
     for (i = 0; i < nb_input_streams; i++) {
         ist = input_streams[i];
         if (!input_files[ist->file_index]->eof_reached && ist->decoding_needed) {
-            output_packet(ist, NULL);
+            process_input_packet(ist, NULL);
         }
     }
     poll_filters();
