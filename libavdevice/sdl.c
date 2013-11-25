@@ -338,10 +338,10 @@ static int sdl_write_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(SDLContext,x)
 
 static const AVOption options[] = {
-    { "window_title", "set SDL window title",           OFFSET(window_title), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "icon_title",   "set SDL iconified window title", OFFSET(icon_title)  , AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_size",  "set SDL window forced size",     OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE,{.str=NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_fullscreen", "set SDL window fullscreen", OFFSET(window_fullscreen), AV_OPT_TYPE_INT,{.i64=0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_title", "set SDL window title",           OFFSET(window_title), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "icon_title",   "set SDL iconified window title", OFFSET(icon_title)  , AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_size",  "set SDL window forced size",     OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_fullscreen", "set SDL window fullscreen", OFFSET(window_fullscreen), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
