@@ -69,7 +69,7 @@ struct SwsContext *sws_opts;
 AVDictionary *swr_opts;
 AVDictionary *format_opts, *codec_opts, *resample_opts;
 
-const int this_year = 2013;
+const int this_year = CONFIG_THIS_YEAR;
 
 static FILE *report_file;
 
