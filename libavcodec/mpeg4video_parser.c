@@ -86,11 +86,11 @@ static int av_mpeg4_decode_header(AVCodecParserContext *s1,
 
     if (avctx->extradata_size && pc->first_picture) {
         init_get_bits(gb, avctx->extradata, avctx->extradata_size * 8);
-        ret = ff_mpeg4_decode_picture_header(s, gb);
+        ret = ff_mpeg4_decode_picture_header(dec_ctx, gb);
     }
 
     init_get_bits(gb, buf, 8 * buf_size);
-    ret = ff_mpeg4_decode_picture_header(s, gb);
+    ret = ff_mpeg4_decode_picture_header(dec_ctx, gb);
     if (s->width && (!avctx->width || !avctx->height ||
                      !avctx->coded_width || !avctx->coded_height)) {
         ret = ff_set_dimensions(avctx, s->width, s->height);

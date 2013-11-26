@@ -368,8 +368,10 @@ static int mpeg4_decode_sprite_trajectory(MpegEncContext *s, GetBitContext *gb)
  * Decode the next video packet.
  * @return <0 if something went wrong
  */
-int ff_mpeg4_decode_video_packet_header(MpegEncContext *s)
+int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
 {
+    MpegEncContext *s = &ctx->m;
+
     int mb_num_bits      = av_log2(s->mb_num - 1) + 1;
     int header_extension = 0, mb_num, len;
 
@@ -386,7 +388,7 @@ int ff_mpeg4_decode_video_packet_header(MpegEncContext *s)
         return -1;
     }
 
-    if (s->shape != RECT_SHAPE) {
+    if (ctx->shape != RECT_SHAPE) {
         header_extension = get_bits1(&s->gb);
         // FIXME more stuff here
     }
@@ -414,13 +416,13 @@ int ff_mpeg4_decode_video_packet_header(MpegEncContext *s)
     s->mb_x = mb_num % s->mb_width;
     s->mb_y = mb_num / s->mb_width;
 
-    if (s->shape != BIN_ONLY_SHAPE) {
+    if (ctx->shape != BIN_ONLY_SHAPE) {
         int qscale = get_bits(&s->gb, s->quant_precision);
         if (qscale)
             s->chroma_qscale = s->qscale = qscale;
     }
 
-    if (s->shape == RECT_SHAPE)
+    if (ctx->shape == RECT_SHAPE)
         header_extension = get_bits1(&s->gb);
 
     if (header_extension) {
@@ -436,7 +438,7 @@ int ff_mpeg4_decode_video_packet_header(MpegEncContext *s)
         skip_bits(&s->gb, 2); /* vop coding type */
         // FIXME not rect stuff here
 
-        if (s->shape != BIN_ONLY_SHAPE) {
+        if (ctx->shape != BIN_ONLY_SHAPE) {
             skip_bits(&s->gb, 3); /* intra dc vlc threshold */
             // FIXME don't just ignore everything
             if (s->pict_type == AV_PICTURE_TYPE_S &&
@@ -1652,8 +1654,9 @@ static int mpeg4_decode_profile_level(MpegEncContext *s, GetBitContext *gb)
     return 0;
 }
 
-static int decode_vol_header(MpegEncContext *s, GetBitContext *gb)
+static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
+    MpegEncContext *s = &ctx->m;
     int width, height, vo_ver_id;
 
     /* vol header */
@@ -1699,10 +1702,10 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb)
             s->low_delay = 0;
     }
 
-    s->shape = get_bits(gb, 2); /* vol shape */
-    if (s->shape != RECT_SHAPE)
+    ctx->shape = get_bits(gb, 2); /* vol shape */
+    if (ctx->shape != RECT_SHAPE)
         av_log(s->avctx, AV_LOG_ERROR, "only rectangular vol supported\n");
-    if (s->shape == GRAY_SHAPE && vo_ver_id != 1) {
+    if (ctx->shape == GRAY_SHAPE && vo_ver_id != 1) {
         av_log(s->avctx, AV_LOG_ERROR, "Gray shape not supported\n");
         skip_bits(gb, 4);  /* video_object_layer_shape_extension */
     }
@@ -1729,8 +1732,8 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb)
 
     s->t_frame = 0;
 
-    if (s->shape != BIN_ONLY_SHAPE) {
-        if (s->shape == RECT_SHAPE) {
+    if (ctx->shape != BIN_ONLY_SHAPE) {
+        if (ctx->shape == RECT_SHAPE) {
             skip_bits1(gb);   /* marker */
             width = get_bits(gb, 13);
             skip_bits1(gb);   /* marker */
@@ -2038,8 +2041,9 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb)
     return 0;
 }
 
-static int decode_vop_header(MpegEncContext *s, GetBitContext *gb)
+static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
+    MpegEncContext *s = &ctx->m;
     int time_incr, time_increment;
 
     s->pict_type = get_bits(gb, 2) + AV_PICTURE_TYPE_I;        /* pict type: I = 0 , P = 1 */
@@ -2134,7 +2138,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb)
             av_log(s->avctx, AV_LOG_ERROR, "vop not coded\n");
         return FRAME_SKIPPED;
     }
-    if (s->shape != BIN_ONLY_SHAPE &&
+    if (ctx->shape != BIN_ONLY_SHAPE &&
                     (s->pict_type == AV_PICTURE_TYPE_P ||
                      (s->pict_type == AV_PICTURE_TYPE_S &&
                       s->vol_sprite_usage == GMC_SPRITE))) {
@@ -2145,7 +2149,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb)
     }
     // FIXME reduced res stuff
 
-    if (s->shape != RECT_SHAPE) {
+    if (ctx->shape != RECT_SHAPE) {
         if (s->vol_sprite_usage != 1 || s->pict_type != AV_PICTURE_TYPE_I) {
             skip_bits(gb, 13);  /* width */
             skip_bits1(gb);     /* marker */
@@ -2163,7 +2167,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb)
 
     // FIXME complexity estimation stuff
 
-    if (s->shape != BIN_ONLY_SHAPE) {
+    if (ctx->shape != BIN_ONLY_SHAPE) {
         skip_bits_long(gb, s->cplx_estimation_trash_i);
         if (s->pict_type != AV_PICTURE_TYPE_I)
             skip_bits_long(gb, s->cplx_estimation_trash_p);
@@ -2202,7 +2206,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb)
             av_log(s->avctx, AV_LOG_ERROR, "static sprite not supported\n");
     }
 
-    if (s->shape != BIN_ONLY_SHAPE) {
+    if (ctx->shape != BIN_ONLY_SHAPE) {
         s->chroma_qscale = s->qscale = get_bits(gb, s->quant_precision);
         if (s->qscale == 0) {
             av_log(s->avctx, AV_LOG_ERROR,
@@ -2241,7 +2245,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb)
         }
 
         if (!s->scalability) {
-            if (s->shape != RECT_SHAPE && s->pict_type != AV_PICTURE_TYPE_I)
+            if (ctx->shape != RECT_SHAPE && s->pict_type != AV_PICTURE_TYPE_I)
                 skip_bits1(gb);  // vop shape coding type
         } else {
             if (s->enhancement_type) {
@@ -2282,8 +2286,9 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb)
  *         FRAME_SKIPPED if a not coded VOP is found
  *         0 if a VOP is found
  */
-int ff_mpeg4_decode_picture_header(MpegEncContext *s, GetBitContext *gb)
+int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
+    MpegEncContext *s = &ctx->m;
     unsigned startcode, v;
 
     /* search next start code */
@@ -2373,7 +2378,7 @@ int ff_mpeg4_decode_picture_header(MpegEncContext *s, GetBitContext *gb)
         }
 
         if (startcode >= 0x120 && startcode <= 0x12F) {
-            if (decode_vol_header(s, gb) < 0)
+            if (decode_vol_header(ctx, gb) < 0)
                 return -1;
         } else if (startcode == USER_DATA_STARTCODE) {
             decode_user_data(s, gb);
@@ -2394,7 +2399,7 @@ end:
         s->low_delay = 1;
     s->avctx->has_b_frames = !s->low_delay;
 
-    return decode_vop_header(s, gb);
+    return decode_vop_header(ctx, gb);
 }
 
 static int mpeg4_update_thread_context(AVCodecContext *dst,
@@ -2407,6 +2412,8 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
 
     if (ret < 0)
         return ret;
+
+    s->shape = s1->shape;
 
     return 0;
 }
