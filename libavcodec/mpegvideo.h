@@ -579,10 +579,6 @@ typedef struct MpegEncContext {
     uint16_t pb_time;               ///< time distance between the last b and p,s,i frame
     uint16_t pp_field_time;
     uint16_t pb_field_time;         ///< like above, just for interlaced
-    int sprite_width;
-    int sprite_height;
-    int sprite_left;
-    int sprite_top;
     int sprite_brightness_change;
     int num_sprite_warping_points;
     int real_sprite_warping_points;

@@ -1769,13 +1769,13 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         if (ctx->vol_sprite_usage == STATIC_SPRITE ||
             ctx->vol_sprite_usage == GMC_SPRITE) {
             if (ctx->vol_sprite_usage == STATIC_SPRITE) {
-                s->sprite_width = get_bits(gb, 13);
+                skip_bits(gb, 13); // sprite_width
                 skip_bits1(gb); /* marker */
-                s->sprite_height = get_bits(gb, 13);
+                skip_bits(gb, 13); // sprite_height
                 skip_bits1(gb); /* marker */
-                s->sprite_left = get_bits(gb, 13);
+                skip_bits(gb, 13); // sprite_left
                 skip_bits1(gb); /* marker */
-                s->sprite_top = get_bits(gb, 13);
+                skip_bits(gb, 13); // sprite_top
                 skip_bits1(gb); /* marker */
             }
             s->num_sprite_warping_points = get_bits(gb, 6);
