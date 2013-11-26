@@ -76,6 +76,10 @@ typedef struct Mpeg4DecContext {
     int divx_build;
     int xvid_build;
     int lavc_build;
+
+    int cplx_estimation_trash_i;
+    int cplx_estimation_trash_p;
+    int cplx_estimation_trash_b;
 } Mpeg4DecContext;
 
 /* dc encoding for mpeg4 */

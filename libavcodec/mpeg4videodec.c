@@ -1882,44 +1882,44 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             int estimation_method = get_bits(gb, 2);
             if (estimation_method < 2) {
                 if (!get_bits1(gb)) {
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* opaque */
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* transparent */
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* intra_cae */
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* inter_cae */
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* no_update */
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* upampling */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* opaque */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* transparent */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* intra_cae */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* inter_cae */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* no_update */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* upampling */
                 }
                 if (!get_bits1(gb)) {
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* intra_blocks */
-                    s->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* inter_blocks */
-                    s->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* inter4v_blocks */
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* not coded blocks */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* intra_blocks */
+                    ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* inter_blocks */
+                    ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* inter4v_blocks */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* not coded blocks */
                 }
                 if (!check_marker(gb, "in complexity estimation part 1")) {
                     skip_bits_long(gb, pos - get_bits_count(gb));
                     goto no_cplx_est;
                 }
                 if (!get_bits1(gb)) {
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* dct_coeffs */
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* dct_lines */
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* vlc_syms */
-                    s->cplx_estimation_trash_i += 4 * get_bits1(gb);  /* vlc_bits */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* dct_coeffs */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* dct_lines */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* vlc_syms */
+                    ctx->cplx_estimation_trash_i += 4 * get_bits1(gb);  /* vlc_bits */
                 }
                 if (!get_bits1(gb)) {
-                    s->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* apm */
-                    s->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* npm */
-                    s->cplx_estimation_trash_b += 8 * get_bits1(gb);  /* interpolate_mc_q */
-                    s->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* forwback_mc_q */
-                    s->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* halfpel2 */
-                    s->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* halfpel4 */
+                    ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* apm */
+                    ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* npm */
+                    ctx->cplx_estimation_trash_b += 8 * get_bits1(gb);  /* interpolate_mc_q */
+                    ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* forwback_mc_q */
+                    ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* halfpel2 */
+                    ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* halfpel4 */
                 }
                 if (!check_marker(gb, "in complexity estimation part 2")) {
                     skip_bits_long(gb, pos - get_bits_count(gb));
                     goto no_cplx_est;
                 }
                 if (estimation_method == 1) {
-                    s->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* sadct */
-                    s->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* qpel */
+                    ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* sadct */
+                    ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* qpel */
                 }
             } else
                 av_log(s->avctx, AV_LOG_ERROR,
@@ -1928,9 +1928,9 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         } else {
 
 no_cplx_est:
-            s->cplx_estimation_trash_i =
-            s->cplx_estimation_trash_p =
-            s->cplx_estimation_trash_b = 0;
+            ctx->cplx_estimation_trash_i =
+            ctx->cplx_estimation_trash_p =
+            ctx->cplx_estimation_trash_b = 0;
         }
 
         ctx->resync_marker = !get_bits1(gb); /* resync_marker_disabled */
@@ -2175,11 +2175,11 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     // FIXME complexity estimation stuff
 
     if (ctx->shape != BIN_ONLY_SHAPE) {
-        skip_bits_long(gb, s->cplx_estimation_trash_i);
+        skip_bits_long(gb, ctx->cplx_estimation_trash_i);
         if (s->pict_type != AV_PICTURE_TYPE_I)
-            skip_bits_long(gb, s->cplx_estimation_trash_p);
+            skip_bits_long(gb, ctx->cplx_estimation_trash_p);
         if (s->pict_type == AV_PICTURE_TYPE_B)
-            skip_bits_long(gb, s->cplx_estimation_trash_b);
+            skip_bits_long(gb, ctx->cplx_estimation_trash_b);
 
         s->intra_dc_threshold = ff_mpeg4_dc_threshold[get_bits(gb, 3)];
         if (!s->progressive_sequence) {
@@ -2247,8 +2247,8 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                    s->num_sprite_warping_points, s->sprite_warping_accuracy,
                    1 - s->no_rounding, s->vo_type,
                    s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold,
-                   s->cplx_estimation_trash_i, s->cplx_estimation_trash_p,
-                   s->cplx_estimation_trash_b);
+                   ctx->cplx_estimation_trash_i, ctx->cplx_estimation_trash_p,
+                   ctx->cplx_estimation_trash_b);
         }
 
         if (!s->scalability) {
