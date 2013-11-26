@@ -1946,13 +1946,11 @@ no_cplx_est:
                 skip_bits(gb, 2); /* requested upstream message type */
                 skip_bits1(gb);   /* newpred segment type */
             }
-            s->reduced_res_vop = get_bits1(gb);
-            if (s->reduced_res_vop)
+            if (get_bits1(gb)) // reduced_res_vop
                 av_log(s->avctx, AV_LOG_ERROR,
                        "reduced resolution VOP not supported\n");
         } else {
             s->new_pred        = 0;
-            s->reduced_res_vop = 0;
         }
 
         s->scalability = get_bits1(gb);
