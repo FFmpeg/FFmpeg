@@ -187,7 +187,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             }
             if (h->sps != (HEVCSPS*)h->sps_list[h->pps->sps_id]->data) {
                 h->sps = (HEVCSPS*)h->sps_list[h->pps->sps_id]->data;
-                h->vps = h->vps_list[h->sps->vps_id];
+                h->vps = (HEVCVPS*)h->vps_list[h->sps->vps_id]->data;
             }
 
             if (!sh->first_slice_in_pic_flag) {
@@ -325,7 +325,7 @@ static void hevc_close(AVCodecParserContext *s)
     av_freep(&pc->buffer);
 
     for (i = 0; i < FF_ARRAY_ELEMS(h->vps_list); i++)
-        av_freep(&h->vps_list[i]);
+        av_buffer_unref(&h->vps_list[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(h->sps_list); i++)
         av_buffer_unref(&h->sps_list[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(h->pps_list); i++)
