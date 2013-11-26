@@ -10,6 +10,7 @@ version <next>
 - string validation in ffprobe
 - support for decoding through VDPAU in ffmpeg (the -hwaccel option)
 - complete Voxware MetaSound decoder
+- remove mp3_header_compress bitstream filters
 
 
 version 2.1:
