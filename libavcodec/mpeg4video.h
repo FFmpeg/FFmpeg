@@ -70,6 +70,12 @@ typedef struct Mpeg4DecContext {
     int rvlc;
     ///< could this stream contain resync markers
     int resync_marker;
+
+    /* bug workarounds */
+    int divx_version;
+    int divx_build;
+    int xvid_build;
+    int lavc_build;
 } Mpeg4DecContext;
 
 /* dc encoding for mpeg4 */
