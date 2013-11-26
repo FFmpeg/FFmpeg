@@ -1953,9 +1953,9 @@ no_cplx_est:
             ctx->new_pred = 0;
         }
 
-        s->scalability = get_bits1(gb);
+        ctx->scalability = get_bits1(gb);
 
-        if (s->scalability) {
+        if (ctx->scalability) {
             GetBitContext bak = *gb;
             int h_sampling_factor_n;
             int h_sampling_factor_m;
@@ -1975,7 +1975,7 @@ no_cplx_est:
                 v_sampling_factor_n == 0 || v_sampling_factor_m == 0) {
                 /* illegal scalability header (VERY broken encoder),
                  * trying to workaround */
-                s->scalability = 0;
+                ctx->scalability = 0;
                 *gb            = bak;
             } else
                 av_log(s->avctx, AV_LOG_ERROR, "scalability not supported\n");
@@ -2249,7 +2249,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                    ctx->cplx_estimation_trash_b);
         }
 
-        if (!s->scalability) {
+        if (!ctx->scalability) {
             if (ctx->shape != RECT_SHAPE && s->pict_type != AV_PICTURE_TYPE_I)
                 skip_bits1(gb);  // vop shape coding type
         } else {

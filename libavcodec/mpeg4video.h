@@ -75,6 +75,7 @@ typedef struct Mpeg4DecContext {
 
     int new_pred;
     int enhancement_type;
+    int scalability;
 
     /* bug workarounds */
     int divx_version;
