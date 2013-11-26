@@ -141,6 +141,8 @@ typedef struct TwinVQContext {
 
     const TwinVQModeTab *mtab;
 
+    int is_6kbps;
+
     // history
     float lsp_hist[2][20];           ///< LSP coefficients of the last frame
     float bark_hist[3][2][40];       ///< BSE coefficients of last frame

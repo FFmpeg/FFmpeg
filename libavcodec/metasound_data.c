@@ -15198,6 +15198,24 @@ static const uint16_t bark_tab_s44_128[] = {
     1, 2, 1, 2, 3, 4, 6, 10, 23, 76
 };
 
+const TwinVQModeTab ff_metasound_mode0806 = {
+    {
+        {  8, bark_tab_s8_64,  10, fcb8s, 1, 5, cb0806ss0, cb0806ss1, 27 },
+        {  2, bark_tab_m8_256, 20, fcb8m, 2, 5, cb0806sm0, cb0806sm1, 22 },
+        {  1, bark_tab_l8_512, 30, fcb8l, 3, 6, cb0806sl0, cb0806sl1, 24 }
+    },
+    512, 12, lsp8, 1, 5, 3, 3, shape8, 8, 28, 20, 6, 200
+};
+
+const TwinVQModeTab ff_metasound_mode0806s = {
+    {
+        {  8, bark_tab_s8s_64,  10, fcb8ss, 1, 5, cb0806ss0, cb0806ss1, 27 },
+        {  2, bark_tab_m8s_256, 20, fcb8sm, 2, 5, cb0806sm0, cb0806sm1, 22 },
+        {  1, bark_tab_l8s_512, 30, fcb8sl, 3, 6, cb0806sl0, cb0806sl1, 24 }
+    },
+    512, 12, lsp8s, 1, 5, 3, 3, shape8s, 8, 28, 20, 6, 200
+};
+
 const TwinVQModeTab ff_metasound_mode0808 = {
     {
         { 8, bark_tab_s8_64,  10, fcb8s, 1, 5, cb0808s0, cb0808s1, 18 },

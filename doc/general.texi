@@ -943,7 +943,6 @@ following image formats are supported:
 @item Vorbis                 @tab  E  @tab  X
     @tab A native but very primitive encoder exists.
 @item Voxware MetaSound      @tab     @tab  X
-    @tab imperfect and incomplete support
 @item WavPack                @tab  X  @tab  X
 @item Westwood Audio (SND1)  @tab     @tab  X
 @item Windows Media Audio 1  @tab  X  @tab  X

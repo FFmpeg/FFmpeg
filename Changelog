@@ -9,6 +9,7 @@ version <next>
 - elbg filter
 - string validation in ffprobe
 - support for decoding through VDPAU in ffmpeg (the -hwaccel option)
+- complete Voxware MetaSound decoder
 
 
 version 2.1:

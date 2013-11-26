@@ -402,6 +402,7 @@ static av_cold int twinvq_decode_init(AVCodecContext *avctx)
     tctx->decode_ppc     = decode_ppc;
     tctx->frame_size     = avctx->bit_rate * tctx->mtab->size
                                            / avctx->sample_rate + 8;
+    tctx->is_6kbps       = 0;
     if (avctx->block_align && avctx->block_align * 8 / tctx->frame_size > 1) {
         av_log(avctx, AV_LOG_ERROR,
                "VQF TwinVQ should have only one frame per packet\n");
