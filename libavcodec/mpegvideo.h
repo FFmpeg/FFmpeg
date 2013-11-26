@@ -596,7 +596,6 @@ typedef struct MpegEncContext {
     int reduced_res_vop;
     int aspect_ratio_info; //FIXME remove
     int sprite_warping_accuracy;
-    int low_latency_sprite;
     int data_partitioning;           ///< data partitioning flag from header
     int partitioned_frame;           ///< is current frame partitioned
     int low_delay;                   ///< no reordering needed / has no b-frames
