@@ -592,7 +592,6 @@ typedef struct MpegEncContext {
     int scalability;
     int hierachy_type;
     int enhancement_type;
-    int new_pred;
     int aspect_ratio_info; //FIXME remove
     int sprite_warping_accuracy;
     int data_partitioning;           ///< data partitioning flag from header

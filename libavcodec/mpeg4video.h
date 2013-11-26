@@ -73,6 +73,8 @@ typedef struct Mpeg4DecContext {
     ///< time distance of first I -> B, used for interlaced b frames
     int t_frame;
 
+    int new_pred;
+
     /* bug workarounds */
     int divx_version;
     int divx_build;
