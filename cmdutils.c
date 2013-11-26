@@ -69,8 +69,6 @@ struct SwsContext *sws_opts;
 AVDictionary *swr_opts;
 AVDictionary *format_opts, *codec_opts, *resample_opts;
 
-const int this_year = CONFIG_THIS_YEAR;
-
 static FILE *report_file;
 
 void init_opts(void)
@@ -1072,7 +1070,7 @@ static void print_program_info(int flags, int level)
     av_log(NULL, level, "%s version " FFMPEG_VERSION, program_name);
     if (flags & SHOW_COPYRIGHT)
         av_log(NULL, level, " Copyright (c) %d-%d the FFmpeg developers",
-               program_birth_year, this_year);
+               program_birth_year, CONFIG_THIS_YEAR);
     av_log(NULL, level, "\n");
     av_log(NULL, level, "%sbuilt on %s %s with %s\n",
            indent, __DATE__, __TIME__, CC_IDENT);

@@ -2422,7 +2422,7 @@ static void ffprobe_show_program_version(WriterContext *w)
     writer_print_section_header(w, SECTION_ID_PROGRAM_VERSION);
     print_str("version", FFMPEG_VERSION);
     print_fmt("copyright", "Copyright (c) %d-%d the FFmpeg developers",
-              program_birth_year, this_year);
+              program_birth_year, CONFIG_THIS_YEAR);
     print_str("build_date", __DATE__);
     print_str("build_time", __TIME__);
     print_str("compiler_ident", CC_IDENT);
