@@ -68,6 +68,10 @@ typedef struct Mpeg4DecContext {
     int vol_sprite_usage;
     int sprite_brightness_change;
     int num_sprite_warping_points;
+    ///< sprite trajectory points
+    uint16_t sprite_traj[4][2];
+    ///< sprite shift [isChroma]
+    int sprite_shift[2];
 
     // reversible vlc
     int rvlc;

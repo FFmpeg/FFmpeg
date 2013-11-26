@@ -188,11 +188,11 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
             y = get_xbits(gb, length);
 
         skip_bits1(gb);         /* marker bit */
-        s->sprite_traj[i][0] = d[i][0] = x;
-        s->sprite_traj[i][1] = d[i][1] = y;
+        ctx->sprite_traj[i][0] = d[i][0] = x;
+        ctx->sprite_traj[i][1] = d[i][1] = y;
     }
     for (; i < 4; i++)
-        s->sprite_traj[i][0] = s->sprite_traj[i][1] = 0;
+        ctx->sprite_traj[i][0] = ctx->sprite_traj[i][1] = 0;
 
     while ((1 << alpha) < w)
         alpha++;
@@ -250,8 +250,8 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         s->sprite_delta[0][1]  =
         s->sprite_delta[1][0]  = 0;
         s->sprite_delta[1][1]  = a;
-        s->sprite_shift[0]     =
-        s->sprite_shift[1]     = 0;
+        ctx->sprite_shift[0]   =
+        ctx->sprite_shift[1]   = 0;
         break;
     case 1:     // GMC only
         s->sprite_offset[0][0] = sprite_ref[0][0] - a * vop_ref[0][0];
@@ -264,8 +264,8 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         s->sprite_delta[0][1]  =
         s->sprite_delta[1][0]  = 0;
         s->sprite_delta[1][1]  = a;
-        s->sprite_shift[0]     =
-        s->sprite_shift[1]     = 0;
+        ctx->sprite_shift[0]   =
+        ctx->sprite_shift[1]   = 0;
         break;
     case 2:
         s->sprite_offset[0][0] = (sprite_ref[0][0] << (alpha + rho)) +
@@ -293,8 +293,8 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         s->sprite_delta[1][0] = (-r * sprite_ref[0][1] + virtual_ref[0][1]);
         s->sprite_delta[1][1] = (-r * sprite_ref[0][0] + virtual_ref[0][0]);
 
-        s->sprite_shift[0] = alpha + rho;
-        s->sprite_shift[1] = alpha + rho + 2;
+        ctx->sprite_shift[0]  = alpha + rho;
+        ctx->sprite_shift[1]  = alpha + rho + 2;
         break;
     case 3:
         min_ab = FFMIN(alpha, beta);
@@ -329,35 +329,35 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         s->sprite_delta[1][0] = (-r * sprite_ref[0][1] + virtual_ref[0][1]) * h3;
         s->sprite_delta[1][1] = (-r * sprite_ref[0][1] + virtual_ref[1][1]) * w3;
 
-        s->sprite_shift[0] = alpha + beta + rho - min_ab;
-        s->sprite_shift[1] = alpha + beta + rho - min_ab + 2;
+        ctx->sprite_shift[0]  = alpha + beta + rho - min_ab;
+        ctx->sprite_shift[1]  = alpha + beta + rho - min_ab + 2;
         break;
     }
     /* try to simplify the situation */
-    if (s->sprite_delta[0][0] == a << s->sprite_shift[0] &&
+    if (s->sprite_delta[0][0] == a << ctx->sprite_shift[0] &&
         s->sprite_delta[0][1] == 0 &&
         s->sprite_delta[1][0] == 0 &&
-        s->sprite_delta[1][1] == a << s->sprite_shift[0]) {
-        s->sprite_offset[0][0] >>= s->sprite_shift[0];
-        s->sprite_offset[0][1] >>= s->sprite_shift[0];
-        s->sprite_offset[1][0] >>= s->sprite_shift[1];
-        s->sprite_offset[1][1] >>= s->sprite_shift[1];
+        s->sprite_delta[1][1] == a << ctx->sprite_shift[0]) {
+        s->sprite_offset[0][0] >>= ctx->sprite_shift[0];
+        s->sprite_offset[0][1] >>= ctx->sprite_shift[0];
+        s->sprite_offset[1][0] >>= ctx->sprite_shift[1];
+        s->sprite_offset[1][1] >>= ctx->sprite_shift[1];
         s->sprite_delta[0][0] = a;
         s->sprite_delta[0][1] = 0;
         s->sprite_delta[1][0] = 0;
         s->sprite_delta[1][1] = a;
-        s->sprite_shift[0] = 0;
-        s->sprite_shift[1] = 0;
+        ctx->sprite_shift[0] = 0;
+        ctx->sprite_shift[1] = 0;
         s->real_sprite_warping_points = 1;
     } else {
-        int shift_y = 16 - s->sprite_shift[0];
-        int shift_c = 16 - s->sprite_shift[1];
+        int shift_y = 16 - ctx->sprite_shift[0];
+        int shift_c = 16 - ctx->sprite_shift[1];
         for (i = 0; i < 2; i++) {
             s->sprite_offset[0][i] <<= shift_y;
             s->sprite_offset[1][i] <<= shift_c;
             s->sprite_delta[0][i]  <<= shift_y;
             s->sprite_delta[1][i]  <<= shift_y;
-            s->sprite_shift[i]       = 16;
+            ctx->sprite_shift[i]     = 16;
         }
         s->real_sprite_warping_points = ctx->num_sprite_warping_points;
     }
@@ -493,7 +493,7 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
     } else {
         dx    = s->sprite_delta[n][0];
         dy    = s->sprite_delta[n][1];
-        shift = s->sprite_shift[0];
+        shift = ctx->sprite_shift[0];
         if (n)
             dy -= 1 << (shift + a + 1);
         else

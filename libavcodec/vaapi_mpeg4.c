@@ -75,8 +75,8 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     pic_param->vol_fields.bits.resync_marker_disable    = !ctx->resync_marker;
     pic_param->no_of_sprite_warping_points              = ctx->num_sprite_warping_points;
     for (i = 0; i < ctx->num_sprite_warping_points && i < 3; i++) {
-        pic_param->sprite_trajectory_du[i]              = s->sprite_traj[i][0];
-        pic_param->sprite_trajectory_dv[i]              = s->sprite_traj[i][1];
+        pic_param->sprite_trajectory_du[i]              = ctx->sprite_traj[i][0];
+        pic_param->sprite_trajectory_dv[i]              = ctx->sprite_traj[i][1];
     }
     pic_param->quant_precision                          = s->quant_precision;
     pic_param->vop_fields.value                         = 0; /* reset all bits */
