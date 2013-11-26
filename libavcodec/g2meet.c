@@ -375,6 +375,8 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
         src += 3;
     }
     npal = *src++ + 1;
+    if (src_end - src < npal * 3)
+        return AVERROR_INVALIDDATA;
     memcpy(pal, src, npal * 3); src += npal * 3;
     if (sub_type != 2) {
         for (i = 0; i < npal; i++) {
