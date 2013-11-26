@@ -180,10 +180,14 @@ init_end:
         SDL_Event event;
         SDL_PumpEvents();
         ret = SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_ALLEVENTS);
-        if (ret < 0)
+        if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Error when getting SDL event: %s\n", SDL_GetError());
-        if (ret <= 0)
             continue;
+        }
+        if (ret == 0) {
+            SDL_Delay(10);
+            continue;
+        }
 
         switch (event.type) {
         case SDL_KEYDOWN:
