@@ -92,3 +92,29 @@ const int16_t ff_gsm_dequant_tab[64][8] = {
     {-26879, -19199, -11520,  -3840,   3840,  11520,  19199,  26879},
     {-28671, -20479, -12288,  -4096,   4096,  12288,  20479,  28671}
 };
+
+static const int apcm_bits[11][13] = {
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    { 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 },
+    { 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1 },
+    { 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1 },
+    { 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1 },
+    { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
+    { 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
+    { 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
+    { 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
+    { 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
+    { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 }
+};
+
+const int* const ff_gsm_apcm_bits[][4] = {
+    { apcm_bits[10], apcm_bits[10], apcm_bits[10], apcm_bits[10] }, // 13000
+    { apcm_bits[10], apcm_bits[10], apcm_bits[10], apcm_bits[ 6] }, // 12400
+    { apcm_bits[10], apcm_bits[10], apcm_bits[ 7], apcm_bits[ 5] }, // 11800
+    { apcm_bits[10], apcm_bits[ 8], apcm_bits[ 5], apcm_bits[ 5] }, // 11200
+    { apcm_bits[ 9], apcm_bits[ 5], apcm_bits[ 5], apcm_bits[ 5] }, // 10600
+    { apcm_bits[ 5], apcm_bits[ 5], apcm_bits[ 5], apcm_bits[ 1] }, // 10000
+    { apcm_bits[ 5], apcm_bits[ 5], apcm_bits[ 2], apcm_bits[ 0] }, //  9400
+    { apcm_bits[ 5], apcm_bits[ 3], apcm_bits[ 0], apcm_bits[ 0] }, //  8800
+    { apcm_bits[ 4], apcm_bits[ 0], apcm_bits[ 0], apcm_bits[ 0] }, //  8200
+};

@@ -55,7 +55,16 @@ static av_cold int gsm_init(AVCodecContext *avctx)
         break;
     case AV_CODEC_ID_GSM_MS:
         avctx->frame_size  = 2 * GSM_FRAME_SIZE;
-        avctx->block_align = GSM_MS_BLOCK_SIZE;
+        if (!avctx->block_align)
+            avctx->block_align = GSM_MS_BLOCK_SIZE;
+        else
+            if (avctx->block_align < MSN_MIN_BLOCK_SIZE ||
+                avctx->block_align > GSM_MS_BLOCK_SIZE  ||
+                (avctx->block_align - MSN_MIN_BLOCK_SIZE) % 3) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid block alignment %d\n",
+                       avctx->block_align);
+                return AVERROR_INVALIDDATA;
+            }
     }
 
     return 0;
@@ -87,12 +96,13 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
         init_get_bits(&gb, buf, buf_size * 8);
         if (get_bits(&gb, 4) != 0xd)
             av_log(avctx, AV_LOG_WARNING, "Missing GSM magic!\n");
-        res = gsm_decode_block(avctx, samples, &gb);
+        res = gsm_decode_block(avctx, samples, &gb, GSM_13000);
         if (res < 0)
             return res;
         break;
     case AV_CODEC_ID_GSM_MS:
-        res = ff_msgsm_decode_block(avctx, samples, buf);
+        res = ff_msgsm_decode_block(avctx, samples, buf,
+                                    (GSM_MS_BLOCK_SIZE - avctx->block_align) / 3);
         if (res < 0)
             return res;
     }
