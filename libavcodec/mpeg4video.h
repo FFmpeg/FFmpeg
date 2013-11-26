@@ -118,6 +118,7 @@ int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);
+int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
 
 /**
  *
