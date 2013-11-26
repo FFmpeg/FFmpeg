@@ -67,6 +67,8 @@ typedef struct Mpeg4DecContext {
     int shape;
     int vol_sprite_usage;
     int sprite_brightness_change;
+    int num_sprite_warping_points;
+
     // reversible vlc
     int rvlc;
     ///< could this stream contain resync markers
