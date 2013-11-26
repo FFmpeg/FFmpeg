@@ -36,12 +36,21 @@ DOCS-$(CONFIG_MANPAGES)  += $(MANPAGES)
 DOCS-$(CONFIG_TXTPAGES)  += $(TXTPAGES)
 DOCS = $(DOCS-yes)
 
+DOC_EXAMPLES-$(CONFIG_MUXING_EXAMPLE)           += muxing
+ALL_DOC_EXAMPLES = muxing
+
+DOC_EXAMPLES     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(EXESUF))
+ALL_DOC_EXAMPLES := $(ALL_DOC_EXAMPLES:%=doc/examples/%$(EXESUF))
+PROGS            += $(DOC_EXAMPLES)
+
 all-$(CONFIG_DOC): doc
 
 doc: documentation
 
 apidoc: doc/doxy/html
 documentation: $(DOCS)
+
+examples: $(DOC_EXAMPLES)
 
 TEXIDEP = awk '/^@(verbatim)?include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 
@@ -84,6 +93,8 @@ doc/%.3: doc/%.pod $(GENTEXI)
 	$(M)pod2man --section=3 --center=" " --release=" " $< > $@
 
 $(DOCS) doc/doxy/html: | doc/
+$(DOC_EXAMPLES:%=%.o): | doc/examples
+OBJDIRS += doc/examples
 
 doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(INSTHEADERS)
 	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $^
@@ -129,7 +140,9 @@ distclean:: docclean
 	$(RM) doc/config.texi
 
 docclean:
-	$(RM) $(TXTPAGES) doc/*.html doc/*.pod doc/*.1 doc/*.3 $(CLEANSUFFIXES:%=doc/%) doc/avoptions_*.texi
+	$(RM) $(ALL_DOC_EXAMPLES)
+	$(RM) $(CLEANSUFFIXES:%=doc/%) $(CLEANSUFFIXES:%=doc/examples/%)
+	$(RM) $(TXTPAGES) doc/*.html doc/*.pod doc/*.1 doc/*.3 doc/avoptions_*.texi
 	$(RM) -r doc/doxy/html
 
 -include $(wildcard $(DOCS:%=%.d))

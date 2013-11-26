@@ -1164,6 +1164,10 @@ COMPONENT_LIST="
     protocols
 "
 
+EXAMPLE_LIST="
+    muxing_example
+"
+
 EXTERNAL_LIBRARY_LIST="
     avisynth
     bzlib
@@ -1264,6 +1268,7 @@ PROGRAM_LIST="
 CONFIG_LIST="
     $COMPONENT_LIST
     $DOCUMENT_LIST
+    $EXAMPLE_LIST
     $EXTERNAL_LIBRARY_LIST
     $HWACCEL_LIST
     $LIBRARY_LIST
@@ -2269,6 +2274,9 @@ tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
 zmq_filter_deps="libzmq"
 
+# examples
+muxing_example_deps="avcodec avformat avutil swscale"
+
 # libraries
 avcodec_deps="avutil"
 avdevice_deps="avutil avcodec avformat"
@@ -2339,6 +2347,7 @@ host_os=$target_os_default
 # configurable options
 enable $PROGRAM_LIST
 enable $DOCUMENT_LIST
+enable $EXAMPLE_LIST
 enable $(filter_out avresample $LIBRARY_LIST)
 enable stripping
 
