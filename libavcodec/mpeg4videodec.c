@@ -1969,7 +1969,7 @@ no_cplx_est:
             h_sampling_factor_m = get_bits(gb, 5);
             v_sampling_factor_n = get_bits(gb, 5);
             v_sampling_factor_m = get_bits(gb, 5);
-            s->enhancement_type = get_bits1(gb);
+            ctx->enhancement_type = get_bits1(gb);
 
             if (h_sampling_factor_n == 0 || h_sampling_factor_m == 0 ||
                 v_sampling_factor_n == 0 || v_sampling_factor_m == 0) {
@@ -2253,7 +2253,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             if (ctx->shape != RECT_SHAPE && s->pict_type != AV_PICTURE_TYPE_I)
                 skip_bits1(gb);  // vop shape coding type
         } else {
-            if (s->enhancement_type) {
+            if (ctx->enhancement_type) {
                 int load_backward_shape = get_bits1(gb);
                 if (load_backward_shape)
                     av_log(s->avctx, AV_LOG_ERROR,
