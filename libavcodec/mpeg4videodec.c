@@ -1736,7 +1736,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     else
         s->avctx->time_base.num = 1;
 
-    s->t_frame = 0;
+    ctx->t_frame = 0;
 
     if (ctx->shape != BIN_ONLY_SHAPE) {
         if (ctx->shape == RECT_SHAPE) {
@@ -2123,14 +2123,14 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         }
         ff_mpeg4_init_direct_mv(s);
 
-        if (s->t_frame == 0)
-            s->t_frame = s->pb_time;
-        if (s->t_frame == 0)
-            s->t_frame = 1;  // 1/0 protection
-        s->pp_field_time = (ROUNDED_DIV(s->last_non_b_time, s->t_frame) -
-                            ROUNDED_DIV(s->last_non_b_time - s->pp_time, s->t_frame)) * 2;
-        s->pb_field_time = (ROUNDED_DIV(s->time, s->t_frame) -
-                            ROUNDED_DIV(s->last_non_b_time - s->pp_time, s->t_frame)) * 2;
+        if (ctx->t_frame == 0)
+            ctx->t_frame = s->pb_time;
+        if (ctx->t_frame == 0)
+            ctx->t_frame = 1;  // 1/0 protection
+        s->pp_field_time = (ROUNDED_DIV(s->last_non_b_time, ctx->t_frame) -
+                            ROUNDED_DIV(s->last_non_b_time - s->pp_time, ctx->t_frame)) * 2;
+        s->pb_field_time = (ROUNDED_DIV(s->time, ctx->t_frame) -
+                            ROUNDED_DIV(s->last_non_b_time - s->pp_time, ctx->t_frame)) * 2;
         if (!s->progressive_sequence) {
             if (s->pp_field_time <= s->pb_field_time || s->pb_field_time <= 1)
                 return FRAME_SKIPPED;

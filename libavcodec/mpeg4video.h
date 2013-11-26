@@ -70,6 +70,8 @@ typedef struct Mpeg4DecContext {
     int rvlc;
     ///< could this stream contain resync markers
     int resync_marker;
+    ///< time distance of first I -> B, used for interlaced b frames
+    int t_frame;
 
     /* bug workarounds */
     int divx_version;
