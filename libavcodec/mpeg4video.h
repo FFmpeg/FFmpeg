@@ -59,6 +59,10 @@
 #define VISUAL_OBJ_STARTCODE 0x1B5
 #define VOP_STARTCODE        0x1B6
 
+typedef struct Mpeg4DecContext {
+    MpegEncContext m;
+} Mpeg4DecContext;
+
 /* dc encoding for mpeg4 */
 extern const uint8_t ff_mpeg4_DCtab_lum[13][2];
 extern const uint8_t ff_mpeg4_DCtab_chrom[13][2];

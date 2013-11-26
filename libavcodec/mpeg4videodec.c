@@ -2397,9 +2397,24 @@ end:
     return decode_vop_header(s, gb);
 }
 
+static int mpeg4_update_thread_context(AVCodecContext *dst,
+                                       const AVCodecContext *src)
+{
+    Mpeg4DecContext *s = dst->priv_data;
+    const Mpeg4DecContext *s1 = src->priv_data;
+
+    int ret = ff_mpeg_update_thread_context(dst, src);
+
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    MpegEncContext *s = avctx->priv_data;
+    Mpeg4DecContext *ctx = avctx->priv_data;
+    MpegEncContext *s = &ctx->m;
     int ret;
     static int done = 0;
 
@@ -2469,7 +2484,7 @@ AVCodec ff_mpeg4_decoder = {
     .long_name             = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
     .type                  = AVMEDIA_TYPE_VIDEO,
     .id                    = AV_CODEC_ID_MPEG4,
-    .priv_data_size        = sizeof(MpegEncContext),
+    .priv_data_size        = sizeof(Mpeg4DecContext),
     .init                  = decode_init,
     .close                 = ff_h263_decode_end,
     .decode                = ff_h263_decode_frame,
@@ -2479,5 +2494,5 @@ AVCodec ff_mpeg4_decoder = {
     .flush                 = ff_mpeg_flush,
     .pix_fmts              = ff_h263_hwaccel_pixfmt_list_420,
     .profiles              = NULL_IF_CONFIG_SMALL(mpeg4_video_profiles),
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_mpeg_update_thread_context),
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg4_update_thread_context),
 };
