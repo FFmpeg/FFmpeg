@@ -1931,7 +1931,7 @@ no_cplx_est:
             s->cplx_estimation_trash_b = 0;
         }
 
-        s->resync_marker = !get_bits1(gb); /* resync_marker_disabled */
+        ctx->resync_marker = !get_bits1(gb); /* resync_marker_disabled */
 
         s->data_partitioning = get_bits1(gb);
         if (s->data_partitioning)
@@ -2240,7 +2240,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                    s->pict_type == AV_PICTURE_TYPE_I ? "I" : (s->pict_type == AV_PICTURE_TYPE_P ? "P" : (s->pict_type == AV_PICTURE_TYPE_B ? "B" : "S")),
                    gb->size_in_bits, s->progressive_sequence, s->alternate_scan,
                    s->top_field_first, s->quarter_sample ? "q" : "h",
-                   s->data_partitioning, s->resync_marker,
+                   s->data_partitioning, ctx->resync_marker,
                    s->num_sprite_warping_points, s->sprite_warping_accuracy,
                    1 - s->no_rounding, s->vo_type,
                    s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold,

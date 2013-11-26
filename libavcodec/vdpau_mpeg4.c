@@ -24,13 +24,15 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
+#include "mpeg4video.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
 
 static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
                                    const uint8_t *buffer, uint32_t size)
 {
-    MpegEncContext * const s = avctx->priv_data;
+    Mpeg4DecContext *ctx = avctx->priv_data;
+    MpegEncContext * const s = &ctx->m;
     Picture *pic             = s->current_picture_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     VdpPictureInfoMPEG4Part2 *info = &pic_ctx->info.mpeg4;
@@ -62,7 +64,7 @@ static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
     info->vop_time_increment_resolution     = s->avctx->time_base.den;
     info->vop_fcode_forward                 = s->f_code;
     info->vop_fcode_backward                = s->b_code;
-    info->resync_marker_disable             = !s->resync_marker;
+    info->resync_marker_disable             = !ctx->resync_marker;
     info->interlaced                        = !s->progressive_sequence;
     info->quant_type                        = s->mpeg_quant;
     info->quarter_sample                    = s->quarter_sample;
