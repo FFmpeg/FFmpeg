@@ -66,6 +66,8 @@ typedef struct Mpeg4DecContext {
     int time_increment_bits;
     int shape;
     int vol_sprite_usage;
+    // reversible vlc
+    int rvlc;
 } Mpeg4DecContext;
 
 /* dc encoding for mpeg4 */
