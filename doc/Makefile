@@ -41,7 +41,7 @@ ALL_DOC_EXAMPLES = muxing
 
 DOC_EXAMPLES     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(EXESUF))
 ALL_DOC_EXAMPLES := $(ALL_DOC_EXAMPLES:%=doc/examples/%$(EXESUF))
-PROGS            += $(DOC_EXAMPLES)
+PROGS            += $(DOC_EXAMPLES-yes:%=doc/examples/%)
 
 all-$(CONFIG_DOC): doc
 
