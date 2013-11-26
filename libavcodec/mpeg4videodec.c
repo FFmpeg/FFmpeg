@@ -2403,6 +2403,92 @@ end:
         s->low_delay = 1;
     s->avctx->has_b_frames = !s->low_delay;
 
+    if (s->xvid_build == -1 && s->divx_version == -1 && s->lavc_build == -1) {
+        if (s->stream_codec_tag == AV_RL32("XVID") ||
+            s->codec_tag        == AV_RL32("XVID") ||
+            s->codec_tag        == AV_RL32("XVIX") ||
+            s->codec_tag        == AV_RL32("RMP4") ||
+            s->codec_tag        == AV_RL32("ZMP4") ||
+            s->codec_tag        == AV_RL32("SIPP"))
+            s->xvid_build = 0;
+    }
+
+    if (s->xvid_build == -1 && s->divx_version == -1 && s->lavc_build == -1)
+        if (s->codec_tag == AV_RL32("DIVX") && s->vo_type == 0 &&
+            s->vol_control_parameters == 0)
+            s->divx_version = 400;  // divx 4
+
+    if (s->xvid_build >= 0 && s->divx_version >= 0) {
+        s->divx_version =
+        s->divx_build   = -1;
+    }
+
+    if (s->workaround_bugs & FF_BUG_AUTODETECT) {
+        if (s->codec_tag == AV_RL32("XVIX"))
+            s->workaround_bugs |= FF_BUG_XVID_ILACE;
+
+        if (s->codec_tag == AV_RL32("UMP4"))
+            s->workaround_bugs |= FF_BUG_UMP4;
+
+        if (s->divx_version >= 500 && s->divx_build < 1814)
+            s->workaround_bugs |= FF_BUG_QPEL_CHROMA;
+
+        if (s->divx_version > 502 && s->divx_build < 1814)
+            s->workaround_bugs |= FF_BUG_QPEL_CHROMA2;
+
+        if (s->xvid_build <= 3U)
+            s->padding_bug_score = 256 * 256 * 256 * 64;
+
+        if (s->xvid_build <= 1U)
+            s->workaround_bugs |= FF_BUG_QPEL_CHROMA;
+
+        if (s->xvid_build <= 12U)
+            s->workaround_bugs |= FF_BUG_EDGE;
+
+        if (s->xvid_build <= 32U)
+            s->workaround_bugs |= FF_BUG_DC_CLIP;
+
+        if (s->lavc_build < 4653U)
+            s->workaround_bugs |= FF_BUG_STD_QPEL;
+
+        if (s->lavc_build < 4655U)
+            s->workaround_bugs |= FF_BUG_DIRECT_BLOCKSIZE;
+
+        if (s->lavc_build < 4670U)
+            s->workaround_bugs |= FF_BUG_EDGE;
+
+        if (s->lavc_build <= 4712U)
+            s->workaround_bugs |= FF_BUG_DC_CLIP;
+
+        if (s->divx_version >= 0)
+            s->workaround_bugs |= FF_BUG_DIRECT_BLOCKSIZE;
+
+        if (s->divx_version == 501 && s->divx_build == 20020416)
+            s->padding_bug_score = 256 * 256 * 256 * 64;
+
+        if (s->divx_version < 500U)
+            s->workaround_bugs |= FF_BUG_EDGE;
+
+        if (s->divx_version >= 0)
+            s->workaround_bugs |= FF_BUG_HPEL_CHROMA;
+    }
+
+#if HAVE_MMX
+    if (s->codec_id == AV_CODEC_ID_MPEG4 && s->xvid_build >= 0 &&
+        s->avctx->idct_algo == FF_IDCT_AUTO &&
+        (av_get_cpu_flags() & AV_CPU_FLAG_MMX)) {
+        s->avctx->idct_algo = FF_IDCT_XVIDMMX;
+        ff_dct_common_init(s);
+        s->picture_number = 0;
+    }
+#endif
+
+    if (s->avctx->debug & FF_DEBUG_BUGS)
+        av_log(s->avctx, AV_LOG_DEBUG,
+               "bugs: %X lavc_build:%d xvid_build:%d divx_version:%d divx_build:%d %s\n",
+               s->workaround_bugs, s->lavc_build, s->xvid_build,
+               s->divx_version, s->divx_build, s->divx_packed ? "p" : "");
+
     return decode_vop_header(ctx, gb);
 }
 
