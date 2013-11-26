@@ -58,6 +58,12 @@ enum AVFrameSideDataType {
      * The data is the AVPanScan struct defined in libavcodec.
      */
     AV_FRAME_DATA_PANSCAN,
+    /**
+     * ATSC A53 Part 4 Closed Captions.
+     * A53 CC bitstream is stored as uint8_t in AVFrameSideData.data.
+     * The number of bytes of CC data is AVFrameSideData.size.
+     */
+    AV_FRAME_DATA_A53_CC,
 };
 
 typedef struct AVFrameSideData {

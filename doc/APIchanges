@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-11-xx - xxxxxxx- - lavu 52.19.0 - frame.h
+  Add AV_FRAME_DATA_A53_CC value to the AVFrameSideDataType enum, which
+  identifies ATSC A53 Part 4 Closed Captions data.
+
 2013-11-XX - xxxxxxx - lavu 52.54.100 - avstring.h
   Add av_utf8_decode() function.
 
