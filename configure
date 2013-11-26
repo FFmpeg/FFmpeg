@@ -1124,7 +1124,7 @@ CONFIG_LIST="
     memalign_hack
     network
     nonfree
-    perl
+    pod2man
     pic
     rdft
     runtime_cpudetect
@@ -1974,7 +1974,7 @@ avserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 avserver_extralibs='$ldl'
 
 # documentation
-perl_deps="doc"
+pod2man_deps="doc"
 texi2html_deps="doc"
 
 # default parameters
@@ -3881,7 +3881,7 @@ if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
     enable sdl
 fi
 
-perl -v            > /dev/null 2>&1 && enable perl      || disable perl
+pod2man --help     > /dev/null 2>&1 && enable pod2man   || disable pod2man
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 
 check_header linux/fb.h
