@@ -67,7 +67,7 @@ PROGS      += $(AVPROGS)
 AVBASENAMES = avconv avplay avprobe avserver
 ALLAVPROGS  = $(AVBASENAMES:%=%$(EXESUF))
 
-$(foreach prog,$(ALLAVPROGS),$(eval OBJS-$(prog) += cmdutils.o))
+$(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
 
 OBJS-avconv                   += avconv_opt.o avconv_filter.o
 OBJS-avconv-$(HAVE_VDPAU_X11) += avconv_vdpau.o
@@ -141,7 +141,7 @@ $(1)$(EXESUF): FF_EXTRALIBS += $(LIBS-$(1))
 -include $$(OBJS-$(1):.o=.d)
 endef
 
-$(foreach P,$(PROGS),$(eval $(call DOPROG,$(P))))
+$(foreach P,$(PROGS),$(eval $(call DOPROG,$(P:$(EXESUF)=))))
 
 $(PROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
