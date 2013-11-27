@@ -30,9 +30,6 @@ ffplay:
 ffprobe:
   ffprobe.c                             Stefano Sabatini
 
-ffserver:
-  ffserver.c, ffserver.h                Baptiste Coudurier
-
 Commandline utility code:
   cmdutils.c, cmdutils.h                Michael Niedermayer
 
