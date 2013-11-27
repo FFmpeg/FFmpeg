@@ -1113,12 +1113,14 @@ transcoding. Use @option{-noaccurate_seek} to disable it, which may be useful
 e.g. when copying some streams and transcoding the others.
 
 @item -override_ffserver (@emph{global})
-Overrides the input specifications from ffserver. Using this option you can
-map any input stream to ffserver and control many aspects of the encoding from
-ffmpeg. Without this option ffmpeg will transmit to ffserver what is requested by
-ffserver.
+Overrides the input specifications from @command{ffserver}. Using this
+option you can map any input stream to @command{ffserver} and control
+many aspects of the encoding from @command{ffmpeg}. Without this
+option @command{ffmpeg} will transmit to @command{ffserver} what is
+requested by @command{ffserver}.
+
 The option is intended for cases where features are needed that cannot be
-specified to ffserver but can be to ffmpeg.
+specified to @command{ffserver} but can be to @command{ffmpeg}.
 
 @end table
 
