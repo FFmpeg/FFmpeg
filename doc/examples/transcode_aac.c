@@ -230,12 +230,6 @@ static int init_resampler(AVCodecContext *input_codec_context,
                           AVCodecContext *output_codec_context,
                           SwrContext **resample_context)
 {
-    /**
-     * Only initialize the resampler if it is necessary, i.e.,
-     * if and only if the sample formats differ.
-     */
-    if (input_codec_context->sample_fmt != output_codec_context->sample_fmt ||
-        input_codec_context->channels != output_codec_context->channels) {
         int error;
 
         /**
@@ -270,7 +264,6 @@ static int init_resampler(AVCodecContext *input_codec_context,
             swr_free(resample_context);
             return error;
         }
-    }
     return 0;
 }
 
