@@ -4386,7 +4386,7 @@ enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 perl -v            > /dev/null 2>&1 && enable perl      || disable perl
-pod2man --help > /dev/null 2>&1 && enable pod2man || disable pod2man
+pod2man --help     > /dev/null 2>&1 && enable pod2man   || disable pod2man
 rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || disable rsync_contimeout
 
 check_header linux/fb.h
