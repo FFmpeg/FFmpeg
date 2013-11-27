@@ -110,7 +110,7 @@ static const int qpeg_table_w[16] =
  { 0x00, 0x20, 0x18, 0x08, 0x18, 0x10, 0x20, 0x10, 0x08, 0x10, 0x20, 0x20, 0x08, 0x10, 0x18, 0x04};
 
 /* Decodes delta frames */
-static void qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
+static void av_noinline qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
                               int stride, int width, int height,
                               int delta, const uint8_t *ctable,
                               uint8_t *refdata)
