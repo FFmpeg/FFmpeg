@@ -255,7 +255,7 @@ typedef struct VideoState {
     int64_t video_current_pos;      // current displayed file pos
     double max_frame_duration;      // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
     VideoPicture pictq[VIDEO_PICTURE_QUEUE_SIZE];
-    int pictq_size, pictq_rindex, pictq_windex;
+    int pictq_size, pictq_rindex, pictq_windex, pictq_rindex_shown;
     SDL_mutex *pictq_mutex;
     SDL_cond *pictq_cond;
 #if !CONFIG_AVFILTER
@@ -844,7 +844,7 @@ static void video_image_display(VideoState *is)
     SDL_Rect rect;
     int i;
 
-    vp = &is->pictq[is->pictq_rindex];
+    vp = &is->pictq[(is->pictq_rindex + is->pictq_rindex_shown) % VIDEO_PICTURE_QUEUE_SIZE];
     if (vp->bmp) {
         if (is->subtitle_st) {
             if (is->subpq_size > 0) {
@@ -1317,7 +1317,23 @@ static double vp_duration(VideoState *is, VideoPicture *vp, VideoPicture *nextvp
     }
 }
 
+/* return the number of undisplayed pictures in the queue */
+static int pictq_nb_remaining(VideoState *is) {
+    return is->pictq_size - is->pictq_rindex_shown;
+}
+
+/* jump back to the previous picture if available by resetting rindex_shown */
+static int pictq_prev_picture(VideoState *is) {
+    int ret = is->pictq_rindex_shown;
+    is->pictq_rindex_shown = 0;
+    return ret;
+}
+
 static void pictq_next_picture(VideoState *is) {
+    if (!is->pictq_rindex_shown) {
+        is->pictq_rindex_shown = 1;
+        return;
+    }
     /* update queue size and signal for next picture */
     if (++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
         is->pictq_rindex = 0;
@@ -1326,25 +1342,6 @@ static void pictq_next_picture(VideoState *is) {
     is->pictq_size--;
     SDL_CondSignal(is->pictq_cond);
     SDL_UnlockMutex(is->pictq_mutex);
-}
-
-static int pictq_prev_picture(VideoState *is) {
-    VideoPicture *prevvp;
-    int ret = 0;
-    /* update queue size and signal for the previous picture */
-    prevvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
-    if (prevvp->allocated && prevvp->serial == is->videoq.serial) {
-        SDL_LockMutex(is->pictq_mutex);
-        if (is->pictq_size < VIDEO_PICTURE_QUEUE_SIZE) {
-            if (--is->pictq_rindex == -1)
-                is->pictq_rindex = VIDEO_PICTURE_QUEUE_SIZE - 1;
-            is->pictq_size++;
-            ret = 1;
-        }
-        SDL_CondSignal(is->pictq_cond);
-        SDL_UnlockMutex(is->pictq_mutex);
-    }
-    return ret;
 }
 
 static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial) {
@@ -1379,15 +1376,15 @@ static void video_refresh(void *opaque, double *remaining_time)
         if (is->force_refresh)
             redisplay = pictq_prev_picture(is);
 retry:
-        if (is->pictq_size == 0) {
+        if (pictq_nb_remaining(is) == 0) {
             // nothing to do, no picture to display in the queue
         } else {
             double last_duration, duration, delay;
             VideoPicture *vp, *lastvp;
 
             /* dequeue the picture */
-            vp = &is->pictq[is->pictq_rindex];
-            lastvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
+            lastvp = &is->pictq[is->pictq_rindex];
+            vp = &is->pictq[(is->pictq_rindex + is->pictq_rindex_shown) % VIDEO_PICTURE_QUEUE_SIZE];
 
             if (vp->serial != is->videoq.serial) {
                 pictq_next_picture(is);
@@ -1424,8 +1421,8 @@ retry:
                 update_video_pts(is, vp->pts, vp->pos, vp->serial);
             SDL_UnlockMutex(is->pictq_mutex);
 
-            if (is->pictq_size > 1) {
-                VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + 1) % VIDEO_PICTURE_QUEUE_SIZE];
+            if (pictq_nb_remaining(is) > 1) {
+                VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + is->pictq_rindex_shown + 1) % VIDEO_PICTURE_QUEUE_SIZE];
                 duration = vp_duration(is, vp, nextvp);
                 if(!is->step && (redisplay || framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) && time > is->frame_timer + duration){
                     if (!redisplay)
@@ -1581,8 +1578,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
 
-    /* keep the last already displayed picture in the queue */
-    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE - 1 &&
+    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
            !is->videoq.abort_request) {
         SDL_CondWait(is->pictq_cond, is->pictq_mutex);
     }
@@ -2996,7 +2992,7 @@ static int read_thread(void *arg)
         }
         if (!is->paused &&
             (!is->audio_st || is->audio_finished == is->audioq.serial) &&
-            (!is->video_st || (is->video_finished == is->videoq.serial && is->pictq_size == 0))) {
+            (!is->video_st || (is->video_finished == is->videoq.serial && pictq_nb_remaining(is) == 0))) {
             if (loop != 1 && (!loop || --loop)) {
                 stream_seek(is, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
             } else if (autoexit) {
