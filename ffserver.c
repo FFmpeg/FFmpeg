@@ -4462,7 +4462,7 @@ static int parse_ffconfig(const char *filename)
                 type = AV_OPT_FLAG_AUDIO_PARAM;
             }
             if (ffserver_opt_default(arg, arg2, avctx, type|AV_OPT_FLAG_ENCODING_PARAM)) {
-                ERROR("AVOption error: %s %s\n", arg, arg2);
+                ERROR("Error setting %s option to %s %s\n", cmd, arg, arg2);
             }
         } else if (!av_strcasecmp(cmd, "AVPresetVideo") ||
                    !av_strcasecmp(cmd, "AVPresetAudio")) {
