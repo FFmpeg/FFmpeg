@@ -111,17 +111,6 @@ them up, and off you go.
 
 @section Troubleshooting
 
-@subsection I don't hear any audio, but video is fine.
-
-Maybe you didn't install LAME, or got your ./configure statement wrong. Check
-the ffmpeg output to see if a line referring to MP3 is present. If not, then
-your configuration was incorrect. If it is, then maybe your wiring is not
-set up correctly. Maybe the sound card is not getting data from the right
-input source. Maybe you have a really awful audio interface (like I do)
-that only captures in stereo and also requires that one channel be flipped.
-If you are one of these people, then export 'AUDIO_FLIP_LEFT=1' before
-starting ffmpeg.
-
 @subsection The audio and video lose sync after a while.
 
 Yes, they do.
