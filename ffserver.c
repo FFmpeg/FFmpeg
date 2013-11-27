@@ -3942,24 +3942,13 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
     memcpy(st->codec, av, sizeof(AVCodecContext));
 }
 
-static enum AVCodecID opt_audio_codec(const char *arg)
+static enum AVCodecID opt_codec(const char *name, enum AVMediaType type)
 {
-    AVCodec *p= avcodec_find_encoder_by_name(arg);
+    AVCodec *codec = avcodec_find_encoder_by_name(name);
 
-    if (p == NULL || p->type != AVMEDIA_TYPE_AUDIO)
+    if (!codec || codec->type != type)
         return AV_CODEC_ID_NONE;
-
-    return p->id;
-}
-
-static enum AVCodecID opt_video_codec(const char *arg)
-{
-    AVCodec *p= avcodec_find_encoder_by_name(arg);
-
-    if (p == NULL || p->type != AVMEDIA_TYPE_VIDEO)
-        return AV_CODEC_ID_NONE;
-
-    return p->id;
+    return codec->id;
 }
 
 static int ffserver_opt_default(const char *opt, const char *arg,
@@ -3998,9 +3987,9 @@ static int ffserver_opt_preset(const char *arg,
             break;
         }
         if(!strcmp(tmp, "acodec")){
-            *audio_id = opt_audio_codec(tmp2);
+            *audio_id = opt_codec(tmp2, AVMEDIA_TYPE_AUDIO);
         }else if(!strcmp(tmp, "vcodec")){
-            *video_id = opt_video_codec(tmp2);
+            *video_id = opt_codec(tmp2, AVMEDIA_TYPE_VIDEO);
         }else if(!strcmp(tmp, "scodec")){
             /* opt_subtitle_codec(tmp2); */
         }else if(ffserver_opt_default(tmp, tmp2, avctx, type) < 0){
@@ -4346,13 +4335,13 @@ static int parse_ffconfig(const char *filename)
                 stream->send_on_key = 1;
         } else if (!av_strcasecmp(cmd, "AudioCodec")) {
             get_arg(arg, sizeof(arg), &p);
-            audio_id = opt_audio_codec(arg);
+            audio_id = opt_codec(arg, AVMEDIA_TYPE_AUDIO);
             if (audio_id == AV_CODEC_ID_NONE) {
                 ERROR("Unknown AudioCodec: %s\n", arg);
             }
         } else if (!av_strcasecmp(cmd, "VideoCodec")) {
             get_arg(arg, sizeof(arg), &p);
-            video_id = opt_video_codec(arg);
+            video_id = opt_codec(arg, AVMEDIA_TYPE_VIDEO);
             if (video_id == AV_CODEC_ID_NONE) {
                 ERROR("Unknown VideoCodec: %s\n", arg);
             }
