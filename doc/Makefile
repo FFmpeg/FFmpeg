@@ -37,7 +37,8 @@ DOCS-$(CONFIG_TXTPAGES)  += $(TXTPAGES)
 DOCS = $(DOCS-yes)
 
 DOC_EXAMPLES-$(CONFIG_MUXING_EXAMPLE)           += muxing
-ALL_DOC_EXAMPLES = muxing
+DOC_EXAMPLES-$(CONFIG_TRANSCODE_AAC_EXAMPLE)    += transcode_aac
+ALL_DOC_EXAMPLES = muxing transcode_aac
 
 DOC_EXAMPLES     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(PROGSSUF)$(EXESUF))
 ALL_DOC_EXAMPLES := $(ALL_DOC_EXAMPLES:%=doc/examples/%$(PROGSSUF)$(EXESUF))

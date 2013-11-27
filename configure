@@ -1166,6 +1166,7 @@ COMPONENT_LIST="
 
 EXAMPLE_LIST="
     muxing_example
+    transcode_aac_example
 "
 
 EXTERNAL_LIBRARY_LIST="
@@ -2276,6 +2277,7 @@ zmq_filter_deps="libzmq"
 
 # examples
 muxing_example_deps="avcodec avformat avutil swscale"
+transcode_aac_example_deps="avcodec avformat avresample"
 
 # libraries
 avcodec_deps="avutil"
