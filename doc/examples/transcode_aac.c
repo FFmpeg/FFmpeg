@@ -18,7 +18,7 @@
 
 /**
  * @file simple audio converter
- * Convert an input audio file to AAC in an MP4 container using Libav.
+ * Convert an input audio file to AAC in an MP4 container using FFmpeg.
  * @author Andreas Unterweger (dustsigns@gmail.com)
  */
 
