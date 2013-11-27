@@ -244,6 +244,404 @@ any ffmpeg instances, you will have to launch them manually.
 Enable debug mode. This option increases log verbosity, directs log
 messages to stdout.
 @end table
+
+@chapter Configuration file syntax
+
+@command{ffserver} reads a configuration file containing global
+options and settings for each stream and feed.
+
+The configuration file consists of global options and dedicated
+sections, which must be introduced by "<@var{SECTION_NAME}
+@var{ARGS}>" on a separate line and must be terminated by a line in
+the form "</@var{SECTION_NAME}>". @var{ARGS} is optional.
+
+Currently the following sections are recognized: @samp{Feed},
+@samp{Stream}, @samp{Redirect}.
+
+A line starting with @code{#} is ignored and treated as a comment.
+
+@section Global options
+@table @option
+@item Port @var{port_number}
+@item RTSPPort @var{port_number}
+
+Set TCP port number on which the HTTP/RTSP server is listening. You
+must select a different port from your standard HTTP web server if it
+is running on the same computer.
+
+If not specified, no corresponding server will be created.
+
+@item BindAddress @var{ip_address}
+@item RTSPBindAddress @var{ip_address}
+Set address on which the HTTP/RTPS server is bound. Only useful if you
+have several network interfaces.
+
+@item MaxHTTPConnections @var{n}
+Set number of simultaneous HTTP connections that can be handled. It
+has to be defined @emph{before} the @option{MaxClients} parameter,
+since it defines the @option{MaxClients} maximum limit.
+
+Default value is 2000.
+
+@item MaxClients @var{n}
+Set number of simultaneous requests that can be handled. Since
+@command{ffserver} is very fast, it is more likely that you will want
+to leave this high and use @option{MaxBandwidth}.
+
+Default value is 5.
+
+@item MaxBandwidth @var{kbps}
+Set the maximum amount of kbit/sec that you are prepared to consume
+when streaming to clients.
+
+Default value is 1000.
+
+@item CustomLog @var{filename}
+Set access log file (uses standard Apache log file format).
+
+'-' is the standard output.
+@end table
+
+@section ACL syntax
+An ACL (Access Control List) specifies the address which are allowed
+to access a given stream, or to write a given feed.
+
+It accepts the folling forms
+@itemize
+@item
+Allow/deny access to @var{address}.
+@example
+ACL ALLOW <address>
+ACL DENY <address>
+@end example
+
+@item
+Allow/deny access to ranges of addresses from @var{first_address} to
+@var{last_address}.
+@example
+ACL ALLOW <first_address> <last_address>
+ACL DENY <first_address> <last_address>
+@end example
+@end itemize
+
+You can repeat the ACL allow/deny as often as you like. It is on a per
+stream basis. The first match defines the action. If there are no matches,
+then the default is the inverse of the last ACL statement.
+
+Thus 'ACL allow localhost' only allows access from localhost.
+'ACL deny 1.0.0.0 1.255.255.255' would deny the whole of network 1 and
+allow everybody else.
+
+@section Feed section
+
+A Feed section defines a feed provided to @command{ffserver}.
+
+Each live feed contains one video and/or audio sequence coming from an
+@command{ffmpeg} encoder or another @command{ffserver}. This sequence
+may be encoded simultaneously with several codecs at several
+resolutions.
+
+A feed instance specification is introduced by a line in the form:
+@example
+<Feed FEED_FILENAME>
+@end example
+
+where @var{FEED_FILENAME} specifies the unique name of the FFM stream.
+
+The following options are recognized within a Feed section.
+
+@table @option
+@item File @var{filename}
+Set the path where the file is stored on disk.
+
+@item FileMaxSize @var{size}
+Set maximum size of the feed. 0 means unlimited.
+
+@item ReadOnlyFile @var{filename}
+Mark the file as readonly and it will not be deleted or updated.
+
+@item Launch
+
+@item ACL
+Specify the list of IP address which are allowed or denied to write
+the feed. Multiple ACL options can be specified.
+@end table
+
+@section Stream section
+
+A Stream section defines a stream provided by @command{ffserver}, and
+identified by a single name.
+
+The stream is sent when answering a request containing the stream
+name.
+
+A stream section must be introduced by the line:
+@example
+<Stream STREAM_NAME>
+@end example
+
+where @var{STREAM_NAME} specifies the unique name of the stream.
+
+The following options are recognized within a Stream section.
+
+@table @option
+@item Feed @var{feed_name}
+Set the input feed.
+
+Must be specified.
+
+@item Format @var{format_name}
+Set the format of the stream.
+
+Must be the name of a format recognized by FFmpeg.
+
+@item AudioBitRate @var{rate}
+Set bitrate for the audio stream in KB per second.
+
+@item AudioChannels @var{n}
+Set number of audio channels.
+
+@item AudioSampleRate @var{n}
+Set sampling frequency for audio. When using low bitrates, you should
+lower this frequency to 22050 or 11025. The supported frequencies
+depend on the selected audio codec.
+
+@item VideoBitRate @var{n}
+Set bitrate for the video stream in KB per second.
+
+@item VideoBitRateRange @var{range}
+Set video bitrate range.
+
+@item VideoBitRateRangeTolerance @var{n}
+
+@item PixelFormat
+Set video pixel format.
+
+@item VideoBufferSize @var{n}
+Set ratecontrol buffer size.
+
+@item VideoFrameRate @var{n}
+Set number of video frames per second.
+
+@item VideoSize
+Set size of the video frame, must be an abbreviation or in the form
+@var{W}x@var{H}.  See @ref{video size syntax,,the Video size section
+in the ffmpeg-utils(1) manual,ffmpeg-utils}.
+
+Default value is @code{160x128}.
+
+@item VideoIntraOnly
+Transmit only intra frames (useful for low bitrates, but kills frame rate).
+
+@item VideoGopSize @var{n}
+If non-intra only, an intra frame is transmitted every VideoGopSize
+frames. Video synchronization can only begin at an intra frame.
+
+@item VideoHighQuality
+@item Video4MotionVector
+
+@item AudioCodec @var{codec_name}
+@item VideoCodec @var{codec_name}
+Set audio/video codec.
+
+@item NoAudio
+@item NoVideo
+Suppress audio/video.
+
+@item VideoQMin @var{n}
+@item VideoQMax @var{n}
+Set video qmin/qmax.
+
+@item AVOptionAudio @var{option} @var{value}
+@item AVOptionVideo @var{option} @var{value}
+Set generic option for audio/video stream.
+
+@item AVPresetAudio @var{preset}
+@item AVOptionVideo @var{preset}
+Set preset for audio/video stream.
+
+@var{preset} must be the path of a preset file.
+
+@item Preroll @var{n}
+Set this to the number of seconds backwards in time to start. Note that
+most players will buffer 5-10 seconds of video, and also you need to allow
+for a keyframe to appear in the data stream.
+
+@item ACL @var{spec}
+Set ACL for the stream.
+
+@item Author @var{value}
+@item Comment @var{value}
+@item Copyright @var{value}
+@item Title @var{value}
+Set metadata corresponding to the option.
+
+@item StartSendOnKey
+Do not send stream until it gets the first key frame. By default
+@command{ffserver} will send data immediately.
+
+@item FaviconURL @var{url}
+Set favicon (favourite icon) for the server status page. It is ignored
+for regular streams.
+@end table
+
+@subsection Server status stream
+
+A server status stream is a special stream which is used to show
+statistics about the @command{ffserver} operations.
+
+It must be specified setting the option @option{Format} to
+@code{status}.
+
+@section Redirect section
+
+A redirect section specifies where to redirect the requested URL to
+another page.
+
+A redirect section must be introduced by the line:
+@example
+<Redirect NAME>
+@end example
+
+where @var{NAME} is the name of the page which should be redirected.
+
+It only accepts the option @option{URL}, which specify the redirection
+URL.
+
+@chapter Stream examples
+
+@itemize
+@item
+Multipart JPEG
+@example
+<Stream test.mjpg>
+Feed feed1.ffm
+Format mpjpeg
+VideoFrameRate 2
+VideoIntraOnly
+NoAudio
+Strict -1
+</Stream>
+@end example
+
+@item
+Single JPEG
+@example
+<Stream test.jpg>
+Feed feed1.ffm
+Format jpeg
+VideoFrameRate 2
+VideoIntraOnly
+#VideoSize 352x240
+NoAudio
+Strict -1
+</Stream>
+@end example
+
+@item
+Flash
+@example
+<Stream test.swf>
+Feed feed1.ffm
+Format swf
+VideoFrameRate 2
+VideoIntraOnly
+NoAudio
+</Stream>
+@end example
+
+@item
+ASF compatible
+@example
+<Stream test.asf>
+Feed feed1.ffm
+Format asf
+VideoFrameRate 15
+VideoSize 352x240
+VideoBitRate 256
+VideoBufferSize 40
+VideoGopSize 30
+AudioBitRate 64
+StartSendOnKey
+</Stream>
+@end example
+
+@item
+MP3 audio
+@example
+<Stream test.mp3>
+Feed feed1.ffm
+Format mp2
+AudioCodec mp3
+AudioBitRate 64
+AudioChannels 1
+AudioSampleRate 44100
+NoVideo
+</Stream>
+@end example
+
+@item
+Ogg Vorbis audio:
+@example
+<Stream test.ogg>
+Feed feed1.ffm
+Title "Stream title"
+AudioBitRate 64
+AudioChannels 2
+AudioSampleRate 44100
+NoVideo
+</Stream>
+@end example
+
+@item
+Real with audio only at 32 kbits
+@example
+<Stream test.ra>
+Feed feed1.ffm
+Format rm
+AudioBitRate 32
+NoVideo
+NoAudio
+</Stream>
+@end example
+
+@item
+Real with audio and video at 64 kbits
+@example
+<Stream test.rm>
+Feed feed1.ffm
+Format rm
+AudioBitRate 32
+VideoBitRate 128
+VideoFrameRate 25
+VideoGopSize 25
+NoAudio
+</Stream>
+@end example
+
+@item
+For stream coming from a file: you only need to set the input filename
+and optionally a new format.
+
+@example
+<Stream file.rm>
+File "/usr/local/httpd/htdocs/tlive.rm"
+NoAudio
+</Stream>
+@end example
+
+@example
+<Stream file.asf>
+File "/usr/local/httpd/htdocs/test.asf"
+NoAudio
+Author "Me"
+Copyright "Super MegaCorp"
+Title "Test stream from disk"
+Comment "Test comment"
+</Stream>
+@end example
+@end itemize
+
 @c man end
 
 @include config.texi
