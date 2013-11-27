@@ -50,6 +50,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/cpu.h"
 #include "cmdutils.h"
+#include "version.h"
 #if CONFIG_NETWORK
 #include "libavformat/network.h"
 #endif
