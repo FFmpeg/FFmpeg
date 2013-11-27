@@ -30,11 +30,12 @@
 #include "libavcodec/avcodec.h"
 
 #include "libavutil/audio_fifo.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/frame.h"
 #include "libavutil/opt.h"
 
-#include "libavresample/avresample.h"
+#include "libswresample/swresample.h"
 
 /** The output bit rate in kbit/s */
 #define OUTPUT_BIT_RATE 48000
@@ -223,11 +224,11 @@ static int init_input_frame(AVFrame **frame)
 /**
  * Initialize the audio resampler based on the input and output codec settings.
  * If the input and output sample formats differ, a conversion is required
- * libavresample takes care of this, but requires initialization.
+ * libswresample takes care of this, but requires initialization.
  */
 static int init_resampler(AVCodecContext *input_codec_context,
                           AVCodecContext *output_codec_context,
-                          AVAudioResampleContext **resample_context)
+                          SwrContext **resample_context)
 {
     /**
      * Only initialize the resampler if it is necessary, i.e.,
@@ -237,35 +238,36 @@ static int init_resampler(AVCodecContext *input_codec_context,
         input_codec_context->channels != output_codec_context->channels) {
         int error;
 
-        /** Create a resampler context for the conversion. */
-        if (!(*resample_context = avresample_alloc_context())) {
-            fprintf(stderr, "Could not allocate resample context\n");
-            return AVERROR(ENOMEM);
-        }
-
         /**
+         * Create a resampler context for the conversion.
          * Set the conversion parameters.
          * Default channel layouts based on the number of channels
          * are assumed for simplicity (they are sometimes not detected
          * properly by the demuxer and/or decoder).
          */
-        av_opt_set_int(*resample_context, "in_channel_layout",
-                       av_get_default_channel_layout(input_codec_context->channels), 0);
-        av_opt_set_int(*resample_context, "out_channel_layout",
-                       av_get_default_channel_layout(output_codec_context->channels), 0);
-        av_opt_set_int(*resample_context, "in_sample_rate",
-                       input_codec_context->sample_rate, 0);
-        av_opt_set_int(*resample_context, "out_sample_rate",
-                       output_codec_context->sample_rate, 0);
-        av_opt_set_int(*resample_context, "in_sample_fmt",
-                       input_codec_context->sample_fmt, 0);
-        av_opt_set_int(*resample_context, "out_sample_fmt",
-                       output_codec_context->sample_fmt, 0);
+        *resample_context = swr_alloc_set_opts(NULL,
+                                              av_get_default_channel_layout(output_codec_context->channels),
+                                              output_codec_context->sample_fmt,
+                                              output_codec_context->sample_rate,
+                                              av_get_default_channel_layout(input_codec_context->channels),
+                                              input_codec_context->sample_fmt,
+                                              input_codec_context->sample_rate,
+                                              0, NULL);
+        if (!*resample_context) {
+            fprintf(stderr, "Could not allocate resample context\n");
+            return AVERROR(ENOMEM);
+        }
+        /**
+        * Perform a sanity check so that the number of converted samples is
+        * not greater than the number of samples to be converted.
+        * If the sample rates differ, this case has to be handled differently
+        */
+        av_assert0(output_codec_context->sample_rate == input_codec_context->sample_rate);
 
         /** Open the resampler with the specified parameters. */
-        if ((error = avresample_open(*resample_context)) < 0) {
+        if ((error = swr_init(*resample_context)) < 0) {
             fprintf(stderr, "Could not open resample context\n");
-            avresample_free(resample_context);
+            swr_free(resample_context);
             return error;
         }
     }
@@ -387,28 +389,19 @@ static int init_converted_samples(uint8_t ***converted_input_samples,
  * The conversion happens on a per-frame basis, the size of which is specified
  * by frame_size.
  */
-static int convert_samples(uint8_t **input_data,
+static int convert_samples(const uint8_t **input_data,
                            uint8_t **converted_data, const int frame_size,
-                           AVAudioResampleContext *resample_context)
+                           SwrContext *resample_context)
 {
     int error;
 
     /** Convert the samples using the resampler. */
-    if ((error = avresample_convert(resample_context, converted_data, 0,
-                                    frame_size, input_data, 0, frame_size)) < 0) {
+    if ((error = swr_convert(resample_context,
+                             converted_data, frame_size,
+                             input_data    , frame_size)) < 0) {
         fprintf(stderr, "Could not convert input samples (error '%s')\n",
                 get_error_text(error));
         return error;
-    }
-
-    /**
-     * Perform a sanity check so that the number of converted samples is
-     * not greater than the number of samples to be converted.
-     * If the sample rates differ, this case has to be handled differently
-     */
-    if (avresample_available(resample_context)) {
-        fprintf(stderr, "Converted samples left over\n");
-        return AVERROR_EXIT;
     }
 
     return 0;
@@ -447,7 +440,7 @@ static int read_decode_convert_and_store(AVAudioFifo *fifo,
                                          AVFormatContext *input_format_context,
                                          AVCodecContext *input_codec_context,
                                          AVCodecContext *output_codec_context,
-                                         AVAudioResampleContext *resampler_context,
+                                         SwrContext *resampler_context,
                                          int *finished)
 {
     /** Temporary storage of the input samples of the frame read from the file. */
@@ -484,7 +477,7 @@ static int read_decode_convert_and_store(AVAudioFifo *fifo,
          * Convert the input samples to the desired output sample format.
          * This requires a temporary storage provided by converted_input_samples.
          */
-        if (convert_samples(input_frame->extended_data, converted_input_samples,
+        if (convert_samples((const uint8_t**)input_frame->extended_data, converted_input_samples,
                             input_frame->nb_samples, resampler_context))
             goto cleanup;
 
@@ -646,7 +639,7 @@ int main(int argc, char **argv)
 {
     AVFormatContext *input_format_context = NULL, *output_format_context = NULL;
     AVCodecContext *input_codec_context = NULL, *output_codec_context = NULL;
-    AVAudioResampleContext *resample_context = NULL;
+    SwrContext *resample_context = NULL;
     AVAudioFifo *fifo = NULL;
     int ret = AVERROR_EXIT;
 
@@ -750,10 +743,7 @@ int main(int argc, char **argv)
 cleanup:
     if (fifo)
         av_audio_fifo_free(fifo);
-    if (resample_context) {
-        avresample_close(resample_context);
-        avresample_free(&resample_context);
-    }
+    swr_free(&resample_context);
     if (output_codec_context)
         avcodec_close(output_codec_context);
     if (output_format_context) {

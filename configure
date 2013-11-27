@@ -2277,7 +2277,7 @@ zmq_filter_deps="libzmq"
 
 # examples
 muxing_example_deps="avcodec avformat avutil swscale"
-transcode_aac_example_deps="avcodec avformat avresample"
+transcode_aac_example_deps="avcodec avformat swresample"
 
 # libraries
 avcodec_deps="avutil"
