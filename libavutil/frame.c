@@ -183,10 +183,16 @@ fail:
 
 static int get_audio_buffer(AVFrame *frame, int align)
 {
-    int channels = frame->channels;
+    int channels;
     int planar   = av_sample_fmt_is_planar(frame->format);
-    int planes   = planar ? channels : 1;
+    int planes;
     int ret, i;
+
+    if (!frame->channels)
+        frame->channels = av_get_channel_layout_nb_channels(frame->channel_layout);
+
+    channels = frame->channels;
+    planes = planar ? channels : 1;
 
     CHECK_CHANNELS_CONSISTENCY(frame);
     if (!frame->linesize[0]) {
