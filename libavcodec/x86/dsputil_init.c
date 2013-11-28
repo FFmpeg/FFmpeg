@@ -22,6 +22,7 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/internal.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
@@ -602,8 +603,10 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
 
     if (!high_bit_depth) {
 #if FF_API_XVMC
+FF_DISABLE_DEPRECATION_WARNINGS
         if (!(CONFIG_MPEG_XVMC_DECODER && avctx->xvmc_acceleration > 1)) {
             /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_XVMC */
         c->clear_block  = ff_clear_block_sse;
         c->clear_blocks = ff_clear_blocks_sse;
