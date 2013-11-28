@@ -50,6 +50,7 @@ version 10:
 - VP9 decoder
 - support for decoding through VDPAU in avconv (the -hwaccel option)
 - remove mp3_header_(de)compress bitstream filters
+- stereoscopic 3d metadata handling
 
 
 version 9:
