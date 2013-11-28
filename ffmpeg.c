@@ -825,6 +825,9 @@ static void do_video_out(AVFormatContext *s,
             && input_files[ist->file_index]->input_ts_offset == 0) {
             format_video_sync = VSYNC_VSCFR;
         }
+        if (format_video_sync == VSYNC_CFR && copy_ts) {
+            format_video_sync = VSYNC_VSCFR;
+        }
     }
 
     switch (format_video_sync) {
