@@ -3275,11 +3275,12 @@ static int h264_slice_header_init(H264Context *h, int reinit)
 
 int ff_set_ref_count(H264Context *h)
 {
+    int ref_count[2], list_count;
     int num_ref_idx_active_override_flag, max_refs;
 
     // set defaults, might be overridden a few lines later
-    h->ref_count[0] = h->pps.ref_count[0];
-    h->ref_count[1] = h->pps.ref_count[1];
+    ref_count[0] = h->pps.ref_count[0];
+    ref_count[1] = h->pps.ref_count[1];
 
     if (h->slice_type_nos != AV_PICTURE_TYPE_I) {
         if (h->slice_type_nos == AV_PICTURE_TYPE_B)
@@ -3287,31 +3288,40 @@ int ff_set_ref_count(H264Context *h)
         num_ref_idx_active_override_flag = get_bits1(&h->gb);
 
         if (num_ref_idx_active_override_flag) {
-            h->ref_count[0] = get_ue_golomb(&h->gb) + 1;
-            if (h->ref_count[0] < 1)
+            ref_count[0] = get_ue_golomb(&h->gb) + 1;
+            if (ref_count[0] < 1)
                 return AVERROR_INVALIDDATA;
             if (h->slice_type_nos == AV_PICTURE_TYPE_B) {
-                h->ref_count[1] = get_ue_golomb(&h->gb) + 1;
-                if (h->ref_count[1] < 1)
+                ref_count[1] = get_ue_golomb(&h->gb) + 1;
+                if (ref_count[1] < 1)
                     return AVERROR_INVALIDDATA;
             }
         }
 
         if (h->slice_type_nos == AV_PICTURE_TYPE_B)
-            h->list_count = 2;
+            list_count = 2;
         else
-            h->list_count = 1;
+            list_count = 1;
     } else {
-        h->list_count   = 0;
-        h->ref_count[0] = h->ref_count[1] = 0;
+        list_count   = 0;
+        ref_count[0] = ref_count[1] = 0;
     }
 
     max_refs = h->picture_structure == PICT_FRAME ? 16 : 32;
 
-    if (h->ref_count[0] > max_refs || h->ref_count[1] > max_refs) {
+    if (ref_count[0] > max_refs || ref_count[1] > max_refs) {
         av_log(h->avctx, AV_LOG_ERROR, "reference overflow\n");
         h->ref_count[0] = h->ref_count[1] = 0;
         return AVERROR_INVALIDDATA;
+    }
+
+    if (list_count != h->list_count ||
+        ref_count[0] != h->ref_count[0] ||
+        ref_count[1] != h->ref_count[1]) {
+        h->ref_count[0] = ref_count[0];
+        h->ref_count[1] = ref_count[1];
+        h->list_count   = list_count;
+        return 1;
     }
 
     return 0;
@@ -3741,6 +3751,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     ret = ff_set_ref_count(h);
     if (ret < 0)
         return ret;
+    else if (ret == 1)
+        default_ref_list_done = 0;
 
     if (!default_ref_list_done)
         ff_h264_fill_default_ref_list(h);
