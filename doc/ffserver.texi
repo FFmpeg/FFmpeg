@@ -293,13 +293,13 @@ when streaming to clients.
 Default value is 1000.
 
 @item CustomLog @var{filename}
-Set access log file (uses standard Apache log file format).
+Set access log file (uses standard Apache log file format). '-' is the
+standard output.
 
-'-' is the standard output. If not specified it will log by default on
-standard out.
+If not specified @command{ffserver} will produce no log.
 
 In case the commandline option @option{-d} is specified this option is
-ignored.
+ignored, and the log is written to standard output.
 
 @item NoDaemon
 Set no-daemon mode. This option is currently ignored since now
