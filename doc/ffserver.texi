@@ -226,6 +226,36 @@ A line starting with @code{#} is ignored and treated as a comment.
 
 Name of options and sections are case-insensitive.
 
+@section ACL syntax
+An ACL (Access Control List) specifies the address which are allowed
+to access a given stream, or to write a given feed.
+
+It accepts the folling forms
+@itemize
+@item
+Allow/deny access to @var{address}.
+@example
+ACL ALLOW <address>
+ACL DENY <address>
+@end example
+
+@item
+Allow/deny access to ranges of addresses from @var{first_address} to
+@var{last_address}.
+@example
+ACL ALLOW <first_address> <last_address>
+ACL DENY <first_address> <last_address>
+@end example
+@end itemize
+
+You can repeat the ACL allow/deny as often as you like. It is on a per
+stream basis. The first match defines the action. If there are no matches,
+then the default is the inverse of the last ACL statement.
+
+Thus 'ACL allow localhost' only allows access from localhost.
+'ACL deny 1.0.0.0 1.255.255.255' would deny the whole of network 1 and
+allow everybody else.
+
 @section Global options
 @table @option
 @item Port @var{port_number}
@@ -276,36 +306,6 @@ Set no-daemon mode. This option is currently ignored since now
 @command{ffserver} will work in no-daemon mode, and is deprecated.
 
 @end table
-
-@section ACL syntax
-An ACL (Access Control List) specifies the address which are allowed
-to access a given stream, or to write a given feed.
-
-It accepts the folling forms
-@itemize
-@item
-Allow/deny access to @var{address}.
-@example
-ACL ALLOW <address>
-ACL DENY <address>
-@end example
-
-@item
-Allow/deny access to ranges of addresses from @var{first_address} to
-@var{last_address}.
-@example
-ACL ALLOW <first_address> <last_address>
-ACL DENY <first_address> <last_address>
-@end example
-@end itemize
-
-You can repeat the ACL allow/deny as often as you like. It is on a per
-stream basis. The first match defines the action. If there are no matches,
-then the default is the inverse of the last ACL statement.
-
-Thus 'ACL allow localhost' only allows access from localhost.
-'ACL deny 1.0.0.0 1.255.255.255' would deny the whole of network 1 and
-allow everybody else.
 
 @section Feed section
 
