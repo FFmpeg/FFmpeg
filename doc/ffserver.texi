@@ -61,18 +61,6 @@ ACL allow 192.168.0.0 192.168.255.255
 then the server will post a page with the status information when
 the special stream @file{status.html} is requested.
 
-@section What can this do?
-
-When properly configured and running, you can capture video and audio in real
-time from a suitable capture card, and stream it out over the Internet to
-either Windows Media Player or RealAudio player (with some restrictions).
-
-It can also stream from files, though that is currently broken. Very often, a
-web server can be used to serve up the files just as well.
-
-It can stream prerecorded video from .ffm files, though it is somewhat tricky
-to make it work correctly.
-
 @section How do I make it work?
 
 First, build the kit. It *really* helps to have installed LAME first. Then when
