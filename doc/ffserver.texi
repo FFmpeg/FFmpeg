@@ -199,7 +199,7 @@ read by default from @file{/etc/ffserver.conf}.
 
 @item -n
 Enable no-launch mode. This option disables all the @code{Launch}
-directives within the various @code{<Stream>} sections. Since
+directives within the various @code{<Feed>} sections. Since
 @command{ffserver} will not launch any @command{ffmpeg} instances, you
 will have to launch them manually.
 
