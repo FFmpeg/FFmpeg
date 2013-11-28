@@ -4059,6 +4059,13 @@ again:
                 }
                 break;
             case NAL_DPA:
+                if (s->flags2 & CODEC_FLAG2_CHUNKS) {
+                    av_log(h->s.avctx, AV_LOG_ERROR,
+                           "Decoding in chunks is not supported for "
+                           "partitioned slices.\n");
+                    return AVERROR(ENOSYS);
+                }
+
                 init_get_bits(&hx->s.gb, ptr, bit_length);
                 hx->intra_gb_ptr =
                 hx->inter_gb_ptr = NULL;
@@ -4191,6 +4198,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     s->flags  = avctx->flags;
     s->flags2 = avctx->flags2;
+    /* reset data partitioning here, to ensure GetBitContexts from previous
+     * packets do not get used. */
+    s->data_partitioning = 0;
 
     /* end of stream, output what is still in the buffers */
 out:
