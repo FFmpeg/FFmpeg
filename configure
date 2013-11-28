@@ -4527,7 +4527,7 @@ test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 # add some strip flags
 # -wN '..@*' is more selective than -x, but not available everywhere.
-check_stripflags -wN \'..@*\' || check_stripflags -x || strip='true'
+check_stripflags -wN \'..@*\' || check_stripflags -x
 
 enabled xmm_clobber_test &&
     check_ldflags -Wl,--wrap,avcodec_open2              \
