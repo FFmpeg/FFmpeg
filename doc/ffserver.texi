@@ -238,7 +238,7 @@ If not specified, no corresponding server will be created.
 
 @item BindAddress @var{ip_address}
 @item RTSPBindAddress @var{ip_address}
-Set address on which the HTTP/RTPS server is bound. Only useful if you
+Set address on which the HTTP/RTSP server is bound. Only useful if you
 have several network interfaces.
 
 @item MaxHTTPConnections @var{n}
