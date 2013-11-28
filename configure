@@ -729,6 +729,10 @@ add_ldflags(){
     append LDFLAGS $($ldflags_filter "$@")
 }
 
+add_stripflags(){
+    append STRIPFLAGS "$@"
+}
+
 add_extralibs(){
     prepend extralibs $($ldflags_filter "$@")
 }
@@ -884,6 +888,20 @@ EOF
 check_ldflags(){
     log check_ldflags "$@"
     test_ldflags "$@" && add_ldflags "$@"
+}
+
+test_stripflags(){
+    log test_stripflags "$@"
+    # call check_cc to get a fresh TMPO
+    check_cc <<EOF
+int main(void) { return 0; }
+EOF
+    check_cmd $strip $STRIPFLAGS "$@" $TMPO
+}
+
+check_stripflags(){
+    log check_stripflags "$@"
+    test_stripflags "$@" && add_stripflags "$@"
 }
 
 check_header(){
@@ -4460,6 +4478,10 @@ check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
+# add some strip flags
+# -wN '..@*' is more selective than -x, but not available everywhere.
+check_stripflags -wN \'..@*\' || check_stripflags -x || strip='true'
+
 enabled xmm_clobber_test &&
     check_ldflags -Wl,--wrap,avcodec_open2              \
                   -Wl,--wrap,avcodec_decode_audio4      \
@@ -4810,6 +4832,7 @@ LD_PATH=$LD_PATH
 DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
+STRIPFLAGS=$STRIPFLAGS
 YASMFLAGS=$YASMFLAGS
 BUILDSUF=$build_suffix
 PROGSSUF=$progs_suffix
