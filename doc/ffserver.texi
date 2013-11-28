@@ -327,13 +327,25 @@ The following options are recognized within a Feed section.
 
 @table @option
 @item File @var{filename}
-Set the path where the file is stored on disk.
+@item ReadOnlyFile @var{filename}
+Set the path where the feed file is stored on disk.
+
+If not specified, the @file{/tmp/FEED.ffm} is assumed, where
+@var{FEED} is the feed name.
+
+If @option{ReadOnlyFile} is used the file is marked as read-only and
+it will not be deleted or updated.
+
+@item Truncate
+Truncate the feed file, rather than appending to it. By default
+@command{ffserver} will append data to the file, until the maximum
+file size value is reached (see @option{FileMaxSize} option).
 
 @item FileMaxSize @var{size}
-Set maximum size of the feed. 0 means unlimited.
+Set maximum size of the feed. 0 means unlimited. The postfixes
+@code{K}, @code{M}, and @code{G} are recognized.
 
-@item ReadOnlyFile @var{filename}
-Mark the file as readonly and it will not be deleted or updated.
+Default value is 5M.
 
 @item Launch @var{args}
 Launch an @command{ffmpeg} command when creating @command{ffserver}.
