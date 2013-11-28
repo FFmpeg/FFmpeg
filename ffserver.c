@@ -4046,11 +4046,13 @@ static int parse_ffconfig(const char *filename)
     FFStream **last_feed, *feed, *s;
     AVCodecContext audio_enc, video_enc;
     enum AVCodecID audio_id, video_id;
+    int ret = 0;
 
     f = fopen(filename, "r");
     if (!f) {
-        perror(filename);
-        return -1;
+        ret = AVERROR(errno);
+        av_log(NULL, AV_LOG_ERROR, "Could not open the configuration file '%s'\n", filename);
+        return ret;
     }
 
     errors = 0;
@@ -4138,6 +4140,10 @@ static int parse_ffconfig(const char *filename)
                 ERROR("Already in a tag\n");
             } else {
                 feed = av_mallocz(sizeof(FFStream));
+                if (!feed) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
                 get_arg(feed->filename, sizeof(feed->filename), &p);
                 q = strrchr(feed->filename, '>');
                 if (*q)
@@ -4169,19 +4175,31 @@ static int parse_ffconfig(const char *filename)
                 int i;
 
                 feed->child_argv = av_mallocz(64 * sizeof(char *));
-
+                if (!feed->child_argv) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
                 for (i = 0; i < 62; i++) {
                     get_arg(arg, sizeof(arg), &p);
                     if (!arg[0])
                         break;
 
                     feed->child_argv[i] = av_strdup(arg);
+                    if (!feed->child_argv[i]) {
+                        ret = AVERROR(ENOMEM);
+                        goto end;
+                    }
                 }
 
-                feed->child_argv[i] = av_asprintf("http://%s:%d/%s",
-                        (my_http_addr.sin_addr.s_addr == INADDR_ANY) ? "127.0.0.1" :
-                    inet_ntoa(my_http_addr.sin_addr),
-                    ntohs(my_http_addr.sin_port), feed->filename);
+                feed->child_argv[i] =
+                    av_asprintf("http://%s:%d/%s",
+                                (my_http_addr.sin_addr.s_addr == INADDR_ANY) ? "127.0.0.1" :
+                                inet_ntoa(my_http_addr.sin_addr), ntohs(my_http_addr.sin_port),
+                                feed->filename);
+                if (!feed->child_argv[i]) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
             }
         } else if (!av_strcasecmp(cmd, "ReadOnlyFile")) {
             if (feed) {
@@ -4238,6 +4256,10 @@ static int parse_ffconfig(const char *filename)
             } else {
                 FFStream *s;
                 stream = av_mallocz(sizeof(FFStream));
+                if (!stream) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
                 get_arg(stream->filename, sizeof(stream->filename), &p);
                 q = strrchr(stream->filename, '>');
                 if (q)
@@ -4407,10 +4429,14 @@ static int parse_ffconfig(const char *filename)
         } else if (!av_strcasecmp(cmd, "VideoSize")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                av_parse_video_size(&video_enc.width, &video_enc.height, arg);
-                if ((video_enc.width % 16) != 0 ||
-                    (video_enc.height % 16) != 0) {
-                    ERROR("Image size must be a multiple of 16\n");
+                ret = av_parse_video_size(&video_enc.width, &video_enc.height, arg);
+                if (ret < 0) {
+                    ERROR("Invalid video size '%s'\n", arg);
+                } else {
+                    if ((video_enc.width % 16) != 0 ||
+                        (video_enc.height % 16) != 0) {
+                        ERROR("Image size must be a multiple of 16\n");
+                    }
                 }
             }
         } else if (!av_strcasecmp(cmd, "VideoFrameRate")) {
@@ -4593,6 +4619,10 @@ static int parse_ffconfig(const char *filename)
                 ERROR("Already in a tag\n");
             } else {
                 redirect = av_mallocz(sizeof(FFStream));
+                if (!redirect) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
                 *last_stream = redirect;
                 last_stream = &redirect->next;
 
@@ -4622,9 +4652,12 @@ static int parse_ffconfig(const char *filename)
     }
 #undef ERROR
 
+end:
     fclose(f);
+    if (ret < 0)
+        return ret;
     if (errors)
-        return -1;
+        return AVERROR(EINVAL);
     else
         return 0;
 }
