@@ -75,6 +75,11 @@ ogm_header(AVFormatContext *s, int idx)
 
         time_unit   = bytestream2_get_le64(&p);
         spu         = bytestream2_get_le64(&p);
+        if (!time_unit || !spu) {
+            av_log(s, AV_LOG_ERROR, "Invalid timing values.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         bytestream2_skip(&p, 4);    /* default_len */
         bytestream2_skip(&p, 8);    /* buffersize + bits_per_sample */
 
