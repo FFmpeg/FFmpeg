@@ -2910,8 +2910,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             Picture *prev = h->short_ref_count ? h->short_ref[0] : NULL;
             av_log(h->s.avctx, AV_LOG_DEBUG, "Frame num gap %d %d\n",
                    h->frame_num, h->prev_frame_num);
-            if (ff_h264_frame_start(h) < 0)
+            if (ff_h264_frame_start(h) < 0) {
+                s0->first_field = 0;
                 return -1;
+            }
             h->prev_frame_num++;
             h->prev_frame_num %= 1 << h->sps.log2_max_frame_num;
             s->current_picture_ptr->frame_num = h->prev_frame_num;
