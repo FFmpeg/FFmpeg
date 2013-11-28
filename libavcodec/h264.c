@@ -2688,7 +2688,14 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->slice_type= slice_type;
     h->slice_type_nos= slice_type & 3;
 
-    s->pict_type= h->slice_type; // to make a few old functions happy, it's wrong though
+    if (h->nal_unit_type  == NAL_IDR_SLICE &&
+        h->slice_type_nos != AV_PICTURE_TYPE_I) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "A non-intra slice in an IDR NAL unit.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    // to make a few old functions happy, it's wrong though
+    s->pict_type = h->slice_type;
 
     pps_id= get_ue_golomb(&s->gb);
     if(pps_id>=MAX_PPS_COUNT){
