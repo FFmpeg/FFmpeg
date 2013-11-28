@@ -392,7 +392,7 @@ Must be the name of a format recognized by FFmpeg. If set to
 Set input format. If not specified, it is automatically guessed.
 
 @item AudioBitRate @var{rate}
-Set bitrate for the audio stream in KB per second.
+Set bitrate for the audio stream in kbits per second.
 
 @item AudioChannels @var{n}
 Set number of audio channels.
@@ -403,14 +403,14 @@ lower this frequency to 22050 or 11025. The supported frequencies
 depend on the selected audio codec.
 
 @item VideoBitRate @var{n}
-Set bitrate for the video stream in KB per second.
+Set bitrate for the video stream in kbits per second.
 
 @item VideoBitRateRange @var{range}
 Set video bitrate range.
 
 A range must be specified in the form @var{minrate}-@var{maxrate}, and
 specifies the @option{minrate} and @option{maxrate} encoding options
-expressed in KB.
+expressed in kbits per second.
 
 @item VideoBitRateRangeTolerance @var{n}
 
