@@ -124,6 +124,11 @@ static int pmp_packet(AVFormatContext *s, AVPacket *pkt)
     if (pmp->cur_stream == 0) {
         int num_packets;
         pmp->audio_packets = avio_r8(pb);
+        if (!pmp->audio_packets) {
+            av_log(s, AV_LOG_ERROR, "No audio packets.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         num_packets = (pmp->num_streams - 1) * pmp->audio_packets + 1;
         avio_skip(pb, 8);
         pmp->current_packet = 0;
