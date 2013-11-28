@@ -344,6 +344,9 @@ it is replaced by a path with the same dirname of the @command{ffserver}
 instance, followed by the remaining argument and terminated with a
 path corresponding to the feed.
 
+When the launched process exits, @command{ffserver} will launch
+another program instance.
+
 In case you need a more complex @command{ffmpeg} configuration,
 e.g. if you need to generate multiple FFM feeds with a single
 @command{ffmpeg} instance, you should launch @command{ffmpeg} by hand.
