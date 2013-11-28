@@ -1725,6 +1725,8 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     print_time("pkt_pts_time",          frame->pkt_pts, &stream->time_base);
     print_ts  ("pkt_dts",               frame->pkt_dts);
     print_time("pkt_dts_time",          frame->pkt_dts, &stream->time_base);
+    print_ts  ("best_effort_timestamp", av_frame_get_best_effort_timestamp(frame));
+    print_time("best_effort_timestamp_time", av_frame_get_best_effort_timestamp(frame), &stream->time_base);
     print_duration_ts  ("pkt_duration",      av_frame_get_pkt_duration(frame));
     print_duration_time("pkt_duration_time", av_frame_get_pkt_duration(frame), &stream->time_base);
     if (av_frame_get_pkt_pos (frame) != -1) print_fmt    ("pkt_pos", "%"PRId64, av_frame_get_pkt_pos(frame));

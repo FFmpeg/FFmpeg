@@ -61,6 +61,8 @@
       <xsd:attribute name="pkt_pts_time"  type="xsd:float"/>
       <xsd:attribute name="pkt_dts"       type="xsd:long" />
       <xsd:attribute name="pkt_dts_time"  type="xsd:float"/>
+      <xsd:attribute name="best_effort_timestamp"      type="xsd:long" />
+      <xsd:attribute name="best_effort_timestamp_time" type="xsd:float" />
       <xsd:attribute name="pkt_duration"  type="xsd:long" />
       <xsd:attribute name="pkt_duration_time" type="xsd:float"/>
       <xsd:attribute name="pkt_pos"       type="xsd:long" />
