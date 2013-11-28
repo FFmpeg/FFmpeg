@@ -4209,18 +4209,13 @@ static int parse_ffconfig(const char *filename)
                     goto end;
                 }
             }
-        } else if (!av_strcasecmp(cmd, "ReadOnlyFile")) {
+        } else if (!av_strcasecmp(cmd, "File") || !av_strcasecmp(cmd, "ReadOnlyFile")) {
             if (feed) {
                 get_arg(feed->feed_filename, sizeof(feed->feed_filename), &p);
-                feed->readonly = 1;
+                feed->readonly = !av_strcasecmp(cmd, "ReadOnlyFile");
             } else if (stream) {
                 get_arg(stream->feed_filename, sizeof(stream->feed_filename), &p);
             }
-        } else if (!av_strcasecmp(cmd, "File")) {
-            if (feed) {
-                get_arg(feed->feed_filename, sizeof(feed->feed_filename), &p);
-            } else if (stream)
-                get_arg(stream->feed_filename, sizeof(stream->feed_filename), &p);
         } else if (!av_strcasecmp(cmd, "Truncate")) {
             if (feed) {
                 get_arg(arg, sizeof(arg), &p);
