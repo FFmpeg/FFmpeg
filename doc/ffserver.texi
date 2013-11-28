@@ -262,6 +262,11 @@ Default value is 1000.
 Set access log file (uses standard Apache log file format).
 
 '-' is the standard output.
+
+@item NoDaemon
+Set no-daemon mode. This option is currently ignored since now
+@command{ffserver} will work in no-daemon mode, and is deprecated.
+
 @end table
 
 @section ACL syntax
