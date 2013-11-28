@@ -4118,9 +4118,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             context_count = 0;
         }
 
-        if (err < 0)
+        if (err < 0) {
             av_log(h->s.avctx, AV_LOG_ERROR, "decode_slice_header error\n");
-        else if(err == 1) {
+            h->ref_count[0] = h->ref_count[1] = h->list_count = 0;
+        } else if (err == 1) {
             /* Slice could not be decoded in parallel mode, copy down
              * NAL unit stuff to context 0 and restart. Note that
              * rbsp_buffer is not transferred, but since we no longer
