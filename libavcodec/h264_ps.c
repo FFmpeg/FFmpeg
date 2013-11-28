@@ -341,6 +341,11 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
         }
         sps->bit_depth_luma   = get_ue_golomb(&h->gb) + 8;
         sps->bit_depth_chroma = get_ue_golomb(&h->gb) + 8;
+        if (sps->bit_depth_chroma != sps->bit_depth_luma) {
+            avpriv_request_sample(h->avctx,
+                                  "Different chroma and luma bit depth");
+            goto fail;
+        }
         sps->transform_bypass = get_bits1(&h->gb);
         decode_scaling_matrices(h, sps, NULL, 1,
                                 sps->scaling_matrix4, sps->scaling_matrix8);
