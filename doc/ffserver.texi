@@ -204,8 +204,9 @@ directives within the various @code{<Stream>} sections. Since
 will have to launch them manually.
 
 @item -d
-Enable debug mode. This option increases log verbosity, directs log
-messages to stdout.
+Enable debug mode. This option increases log verbosity, and directs
+log messages to stdout. When specified, the @option{CustomLog} option
+is ignored.
 @end table
 
 @chapter Configuration file syntax
@@ -264,7 +265,11 @@ Default value is 1000.
 @item CustomLog @var{filename}
 Set access log file (uses standard Apache log file format).
 
-'-' is the standard output.
+'-' is the standard output. If not specified it will log by default on
+standard out.
+
+In case the commandline option @option{-d} is specified this option is
+ignored.
 
 @item NoDaemon
 Set no-daemon mode. This option is currently ignored since now
