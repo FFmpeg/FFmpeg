@@ -4679,6 +4679,7 @@ static const OptionDef options[] = {
 int main(int argc, char **argv)
 {
     struct sigaction sigact = { { 0 } };
+    int ret = 0;
 
     config_filename = av_strdup("/etc/ffserver.conf");
 
@@ -4700,8 +4701,9 @@ int main(int argc, char **argv)
     sigact.sa_flags = SA_NOCLDSTOP | SA_RESTART;
     sigaction(SIGCHLD, &sigact, 0);
 
-    if (parse_ffconfig(config_filename) < 0) {
-        fprintf(stderr, "Incorrect config file - exiting.\n");
+    if ((ret = parse_ffconfig(config_filename)) < 0) {
+        fprintf(stderr, "Error reading configuration file '%s': %s\n",
+                config_filename, av_err2str(ret));
         exit(1);
     }
     av_freep(&config_filename);
