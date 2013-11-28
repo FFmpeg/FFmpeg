@@ -391,6 +391,40 @@ Must be the name of a format recognized by FFmpeg. If set to
 @item InputFormat @var{format_name}
 Set input format. If not specified, it is automatically guessed.
 
+@item Preroll @var{n}
+Set this to the number of seconds backwards in time to start. Note that
+most players will buffer 5-10 seconds of video, and also you need to allow
+for a keyframe to appear in the data stream.
+
+Default value is 0.
+
+@item StartSendOnKey
+Do not send stream until it gets the first key frame. By default
+@command{ffserver} will send data immediately.
+
+@item MaxTime @var{n}
+Set the number of seconds to run. This value set the maximum duration
+of the stream a client will be able to receive.
+
+A value of 0 means that no limit is set on the stream duration.
+
+@item ACL @var{spec}
+Set ACL for the stream.
+
+@item FaviconURL @var{url}
+Set favicon (favourite icon) for the server status page. It is ignored
+for regular streams.
+
+@item Author @var{value}
+@item Comment @var{value}
+@item Copyright @var{value}
+@item Title @var{value}
+Set metadata corresponding to the option.
+
+@item NoAudio
+@item NoVideo
+Suppress audio/video.
+
 @item AudioBitRate @var{rate}
 Set bitrate for the audio stream in kbits per second.
 
@@ -475,10 +509,6 @@ Set @option{lumi_mask}/@option{dark_mask} encoding options.
 @item VideoCodec @var{codec_name}
 Set audio/video codec.
 
-@item NoAudio
-@item NoVideo
-Suppress audio/video.
-
 @item AVOptionAudio @var{option} @var{value}
 @item AVOptionVideo @var{option} @var{value}
 Set generic option for audio/video stream.
@@ -488,30 +518,6 @@ Set generic option for audio/video stream.
 Set preset for audio/video stream.
 
 @var{preset} must be the path of a preset file.
-
-@item Preroll @var{n}
-Set this to the number of seconds backwards in time to start. Note that
-most players will buffer 5-10 seconds of video, and also you need to allow
-for a keyframe to appear in the data stream.
-
-Default value is 0.
-
-@item ACL @var{spec}
-Set ACL for the stream.
-
-@item Author @var{value}
-@item Comment @var{value}
-@item Copyright @var{value}
-@item Title @var{value}
-Set metadata corresponding to the option.
-
-@item StartSendOnKey
-Do not send stream until it gets the first key frame. By default
-@command{ffserver} will send data immediately.
-
-@item FaviconURL @var{url}
-Set favicon (favourite icon) for the server status page. It is ignored
-for regular streams.
 @end table
 
 @subsection Server status stream
