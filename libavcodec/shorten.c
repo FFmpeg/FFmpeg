@@ -431,7 +431,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
         void *tmp_ptr;
         s->max_framesize = 1024; // should hopefully be enough for the first header
         tmp_ptr = av_fast_realloc(s->bitstream, &s->allocated_bitstream_size,
-                                  s->max_framesize);
+                                  s->max_framesize + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!tmp_ptr) {
             av_log(avctx, AV_LOG_ERROR, "error allocating bitstream buffer\n");
             return AVERROR(ENOMEM);
