@@ -385,6 +385,9 @@ Set the format of the output stream.
 Must be the name of a format recognized by FFmpeg. If set to
 @samp{status}, it is treated as a status stream.
 
+@item InputFormat @var{format_name}
+Set input format. If not specified, it is automatically guessed.
+
 @item AudioBitRate @var{rate}
 Set bitrate for the audio stream in KB per second.
 
