@@ -621,6 +621,8 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
                      * Report the problem and keep the pair where it is,
                      * and mark this field valid.
                      */
+            if (h->short_ref[0] == h->cur_pic_ptr)
+                remove_short_at_index(h, 0);
 
             if (h->long_ref[mmco[i].long_arg] != h->cur_pic_ptr) {
                 remove_long(h, mmco[i].long_arg, 0);
