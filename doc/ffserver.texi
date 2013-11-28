@@ -413,12 +413,19 @@ specifies the @option{minrate} and @option{maxrate} encoding options
 expressed in kbits per second.
 
 @item VideoBitRateRangeTolerance @var{n}
+Set video bitrate tolerance in kbits per second.
 
-@item PixelFormat
+@item PixelFormat @var{pixel_format}
 Set video pixel format.
 
+@item Debug @var{integer}
+Set video @option{debug} encoding option.
+
+@item Strict @var{integer}
+Set video @option{strict} encoding option.
+
 @item VideoBufferSize @var{n}
-Set ratecontrol buffer size.
+Set ratecontrol buffer size, expressed in KB.
 
 @item VideoFrameRate @var{n}
 Set number of video frames per second.
@@ -437,8 +444,32 @@ Transmit only intra frames (useful for low bitrates, but kills frame rate).
 If non-intra only, an intra frame is transmitted every VideoGopSize
 frames. Video synchronization can only begin at an intra frame.
 
+@item VideoTag @var{tag}
+Set video tag.
+
 @item VideoHighQuality
 @item Video4MotionVector
+
+@item BitExact
+Set bitexact encoding flag.
+
+@item IdctSimple
+Set simple IDCT algorithm.
+
+@item Qscale @var{n}
+Enable constant quality encoding, and set video qscale (quantization
+scale) value, expressed in @var{n} QP units.
+
+@item VideoQMin @var{n}
+@item VideoQMax @var{n}
+Set video qmin/qmax.
+
+@item VideoQDiff @var{integer}
+Set video @option{qdiff} encoding option.
+
+@item LumiMask @var{float}
+@item DarkMask @var{float}
+Set @option{lumi_mask}/@option{dark_mask} encoding options.
 
 @item AudioCodec @var{codec_name}
 @item VideoCodec @var{codec_name}
@@ -447,10 +478,6 @@ Set audio/video codec.
 @item NoAudio
 @item NoVideo
 Suppress audio/video.
-
-@item VideoQMin @var{n}
-@item VideoQMax @var{n}
-Set video qmin/qmax.
 
 @item AVOptionAudio @var{option} @var{value}
 @item AVOptionVideo @var{option} @var{value}
