@@ -509,8 +509,9 @@ static void start_children(FFStream *feed)
                 char *slash;
                 int i;
 
+                /* replace "ffserver" with "ffmpeg" in the path of current program,
+                 * ignore user provided path */
                 av_strlcpy(pathname, my_program_name, sizeof(pathname));
-
                 slash = strrchr(pathname, '/');
                 if (!slash)
                     slash = pathname;
