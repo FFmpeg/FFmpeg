@@ -1449,7 +1449,8 @@ static int dca_filter_channels(DCAContext *s, int block_index)
     }
 
     /* Down mixing */
-    if (s->avctx->request_channels == 2 && s->prim_channels > 2) {
+    if (s->prim_channels > 2 &&
+        s->avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
         dca_downmix(s->samples_chanptr, s->amode, s->downmix_coef, s->channel_order_tab);
     }
 
@@ -2233,10 +2234,15 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     { /* xxx should also do MA extensions */
         if (s->amode < 16) {
             avctx->channel_layout = dca_core_channel_layout[s->amode];
-
+#if FF_API_REQUEST_CHANNELS
+FF_DISABLE_DEPRECATION_WARNINGS
             if (s->xch_present && (!avctx->request_channels ||
                                    avctx->request_channels
                                    > num_core_channels + !!s->lfe)) {
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+            if (s->xch_present) {
+#endif
                 avctx->channel_layout |= AV_CH_BACK_CENTER;
                 if (s->lfe) {
                     avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
@@ -2265,7 +2271,8 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
                 return AVERROR_INVALIDDATA;
             }
 
-            if (avctx->request_channels == 2 && s->prim_channels > 2) {
+            if (s->prim_channels > 2 &&
+                avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
                 channels = 2;
                 s->output = DCA_STEREO;
                 avctx->channel_layout = AV_CH_LAYOUT_STEREO;
@@ -2480,9 +2487,15 @@ static av_cold int dca_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     /* allow downmixing to stereo */
-    if (avctx->channels > 2 && avctx->request_channels == 2) {
-        avctx->channels = avctx->request_channels;
-    }
+#if FF_API_REQUEST_CHANNELS
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->request_channels == 2)
+        avctx->request_channel_layout = AV_CH_LAYOUT_STEREO;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    if (avctx->channels > 2 &&
+        avctx->request_channel_layout == AV_CH_LAYOUT_STEREO)
+        avctx->channels = 2;
 
     return 0;
 }
