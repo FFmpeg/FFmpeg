@@ -16,11 +16,14 @@ ffserver [@var{options}]
 @chapter Description
 @c man begin DESCRIPTION
 
-@command{ffserver} is a streaming server for both audio and video. It
-supports several live feeds, streaming from files and time shifting on
-live feeds (you can seek to positions in the past on each live feed,
-provided you specify a big enough feed storage in
-@file{ffserver.conf}).
+@command{ffserver} is a streaming server for both audio and video.
+It supports several live feeds, streaming from files and time shifting
+on live feeds. You can seek to positions in the past on each live
+feed, provided you specify a big enough feed storage.
+
+@command{ffserver} is configured through a configuration file, which
+is read at startup. If not explicitly specified, it will read from
+@file{/etc/ffserver.conf}.
 
 @command{ffserver} receives prerecorded files or FFM streams from some
 @command{ffmpeg} instance as input, then streams them over
@@ -191,7 +194,8 @@ differing versions of tools. FFM2 is the default.
 
 @table @option
 @item -f @var{configfile}
-Use @file{configfile} instead of @file{/etc/ffserver.conf}.
+Read configuration file @file{configfile}. If not specified it will
+read by default from @file{/etc/ffserver.conf}.
 
 @item -n
 Enable no-launch mode. This option disables all the @code{Launch}
