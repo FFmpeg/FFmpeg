@@ -4232,7 +4232,15 @@ static int parse_ffconfig(const char *filename)
         } else if (!av_strcasecmp(cmd, "Truncate")) {
             if (feed) {
                 get_arg(arg, sizeof(arg), &p);
-                feed->truncate = strtod(arg, NULL);
+                /* assume Truncate is true in case no argument is specified */
+                if (!arg[0]) {
+                    feed->truncate = 1;
+                } else {
+                    av_log(NULL, AV_LOG_WARNING,
+                           "Truncate N syntax in configuration file is deprecated, "
+                           "use Truncate alone with no arguments\n");
+                    feed->truncate = strtod(arg, NULL);
+                }
             }
         } else if (!av_strcasecmp(cmd, "FileMaxSize")) {
             if (feed) {
