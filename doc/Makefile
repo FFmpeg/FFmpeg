@@ -45,10 +45,11 @@ DOC_EXAMPLES-$(CONFIG_MUXING_EXAMPLE)           += muxing
 DOC_EXAMPLES-$(CONFIG_RESAMPLING_AUDIO_EXAMPLE)  += resampling_audio
 DOC_EXAMPLES-$(CONFIG_SCALING_VIDEO_EXAMPLE)     += scaling_video
 DOC_EXAMPLES-$(CONFIG_TRANSCODE_AAC_EXAMPLE)    += transcode_aac
-ALL_DOC_EXAMPLES = $(DOC_EXAMPLES-) $(DOC_EXAMPLES-yes)
+ALL_DOC_EXAMPLES_LIST = $(DOC_EXAMPLES-) $(DOC_EXAMPLES-yes)
 
 DOC_EXAMPLES     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(PROGSSUF)$(EXESUF))
-ALL_DOC_EXAMPLES := $(ALL_DOC_EXAMPLES:%=doc/examples/%$(PROGSSUF)$(EXESUF))
+ALL_DOC_EXAMPLES   := $(ALL_DOC_EXAMPLES_LIST:%=doc/examples/%$(PROGSSUF)$(EXESUF))
+ALL_DOC_EXAMPLES_G := $(ALL_DOC_EXAMPLES_LIST:%=doc/examples/%$(PROGSSUF)_g$(EXESUF))
 PROGS            += $(DOC_EXAMPLES)
 
 all-$(CONFIG_DOC): doc
@@ -148,7 +149,7 @@ distclean:: docclean
 	$(RM) doc/config.texi
 
 examplesclean:
-	$(RM) $(ALL_DOC_EXAMPLES)
+	$(RM) $(ALL_DOC_EXAMPLES) $(ALL_DOC_EXAMPLES_G)
 	$(RM) $(CLEANSUFFIXES:%=doc/examples/%)
 
 docclean: examplesclean
