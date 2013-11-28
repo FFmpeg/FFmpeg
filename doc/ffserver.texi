@@ -411,6 +411,18 @@ A value of 0 means that no limit is set on the stream duration.
 @item ACL @var{spec}
 Set ACL for the stream.
 
+@item DynamicACL @var{spec}
+
+@item RTSPOtion @var{option}
+
+@item MulticastAddress @var{address}
+
+@item MulticastPort @var{port}
+
+@item MulticastTTL @var{integer}
+
+@item NoLoop
+
 @item FaviconURL @var{url}
 Set favicon (favourite icon) for the server status page. It is ignored
 for regular streams.
