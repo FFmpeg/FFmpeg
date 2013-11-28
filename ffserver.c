@@ -2184,8 +2184,10 @@ static int open_input_stream(HTTPContext *c, const char *info)
         buf_size = FFM_PACKET_SIZE;
         /* compute position (absolute time) */
         if (av_find_info_tag(buf, sizeof(buf), "date", info)) {
-            if ((ret = av_parse_time(&stream_pos, buf, 0)) < 0)
+            if ((ret = av_parse_time(&stream_pos, buf, 0)) < 0) {
+                http_log("Invalid date specification '%s' for stream\n", buf);
                 return ret;
+            }
         } else if (av_find_info_tag(buf, sizeof(buf), "buffer", info)) {
             int prebuffer = strtol(buf, 0, 10);
             stream_pos = av_gettime() - prebuffer * (int64_t)1000000;
@@ -2196,18 +2198,22 @@ static int open_input_stream(HTTPContext *c, const char *info)
         buf_size = 0;
         /* compute position (relative time) */
         if (av_find_info_tag(buf, sizeof(buf), "date", info)) {
-            if ((ret = av_parse_time(&stream_pos, buf, 1)) < 0)
+            if ((ret = av_parse_time(&stream_pos, buf, 1)) < 0) {
+                http_log("Invalid date specification '%s' for stream\n", buf);
                 return ret;
+            }
         } else
             stream_pos = 0;
     }
-    if (input_filename[0] == '\0')
-        return -1;
+    if (!input_filename[0]) {
+        http_log("No filename was specified for stream\n");
+        return AVERROR(EINVAL);
+    }
 
     /* open stream */
     if ((ret = avformat_open_input(&s, input_filename, c->stream->ifmt, &c->stream->in_opts)) < 0) {
-        http_log("could not open %s: %d\n", input_filename, ret);
-        return -1;
+        http_log("Could not open input '%s': %s\n", input_filename, av_err2str(ret));
+        return ret;
     }
 
     /* set buffer size */
@@ -2215,10 +2221,11 @@ static int open_input_stream(HTTPContext *c, const char *info)
 
     s->flags |= AVFMT_FLAG_GENPTS;
     c->fmt_in = s;
-    if (strcmp(s->iformat->name, "ffm") && avformat_find_stream_info(c->fmt_in, NULL) < 0) {
-        http_log("Could not find stream info '%s'\n", input_filename);
+    if (strcmp(s->iformat->name, "ffm") &&
+        (ret = avformat_find_stream_info(c->fmt_in, NULL)) < 0) {
+        http_log("Could not find stream info for input '%s'\n", input_filename);
         avformat_close_input(&s);
-        return -1;
+        return ret;
     }
 
     /* choose stream as clock source (we favorize video stream if
