@@ -459,7 +459,7 @@ retry:
         ret = ff_wmv2_decode_picture_header(s);
     } else if (CONFIG_MSMPEG4_DECODER && s->msmpeg4_version) {
         ret = ff_msmpeg4_decode_picture_header(s);
-    } else if (CONFIG_MPEG4_DECODER && s->h263_pred) {
+    } else if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
         if (s->avctx->extradata_size && s->picture_number == 0) {
             GetBitContext gb;
 
