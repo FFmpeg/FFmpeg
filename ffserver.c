@@ -2622,19 +2622,26 @@ static int http_send_data(HTTPContext *c)
 static int http_start_receive_data(HTTPContext *c)
 {
     int fd;
+    int ret;
 
-    if (c->stream->feed_opened)
-        return -1;
+    if (c->stream->feed_opened) {
+        http_log("Stream feed '%s' was not opened\n", c->stream->feed_filename);
+        return AVERROR(EINVAL);
+    }
 
     /* Don't permit writing to this one */
-    if (c->stream->readonly)
-        return -1;
+    if (c->stream->readonly) {
+        http_log("Cannot write to read-only file '%s'\n", c->stream->feed_filename);
+        return AVERROR(EINVAL);
+    }
 
     /* open feed */
     fd = open(c->stream->feed_filename, O_RDWR);
     if (fd < 0) {
-        http_log("Error opening feeder file: %s\n", strerror(errno));
-        return -1;
+        ret = AVERROR(errno);
+        http_log("Could not open feed file '%s':%s \n",
+                 c->stream->feed_filename, strerror(errno));
+        return ret;
     }
     c->feed_fd = fd;
 
@@ -2643,13 +2650,19 @@ static int http_start_receive_data(HTTPContext *c)
         ffm_write_write_index(c->feed_fd, FFM_PACKET_SIZE);
         http_log("Truncating feed file '%s'\n", c->stream->feed_filename);
         if (ftruncate(c->feed_fd, FFM_PACKET_SIZE) < 0) {
-            http_log("Error truncating feed file: %s\n", strerror(errno));
-            return -1;
+            ret = AVERROR(errno);
+            http_log("Error truncating feed file '%s': %s\n",
+                     c->stream->feed_filename, strerror(errno));
+            return ret;
         }
     } else {
-        if ((c->stream->feed_write_index = ffm_read_write_index(fd)) < 0) {
-            http_log("Error reading write index from feed file: %s\n", strerror(errno));
-            return -1;
+        ret = ffm_read_write_index(fd);
+        if (ret < 0) {
+            http_log("Error reading write index from feed file '%s': %s\n",
+                     c->stream->feed_filename, strerror(errno));
+            return ret;
+        } else {
+            c->stream->feed_write_index = ret;
         }
     }
 
