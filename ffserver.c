@@ -4164,7 +4164,7 @@ static int parse_ffconfig(const char *filename)
                 }
 
                 feed->fmt = av_guess_format("ffm", NULL, NULL);
-                /* defaut feed file */
+                /* default feed file */
                 snprintf(feed->feed_filename, sizeof(feed->feed_filename),
                          "/tmp/%s.ffm", feed->filename);
                 feed->feed_max_size = 5 * 1024 * 1024;
