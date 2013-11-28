@@ -434,6 +434,8 @@ Set this to the number of seconds backwards in time to start. Note that
 most players will buffer 5-10 seconds of video, and also you need to allow
 for a keyframe to appear in the data stream.
 
+Default value is 0.
+
 @item ACL @var{spec}
 Set ACL for the stream.
 
