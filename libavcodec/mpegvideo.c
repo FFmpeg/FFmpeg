@@ -1269,6 +1269,10 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             /* Allocate a dummy frame */
             i = ff_find_unused_picture(s, 0);
             s->last_picture_ptr = &s->picture[i];
+
+            s->last_picture_ptr->f.reference   = 3;
+            s->last_picture_ptr->f.pict_type = AV_PICTURE_TYPE_I;
+
             if (ff_alloc_picture(s, s->last_picture_ptr, 0) < 0)
                 return -1;
             ff_thread_report_progress((AVFrame *) s->last_picture_ptr,
@@ -1282,6 +1286,10 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             /* Allocate a dummy frame */
             i = ff_find_unused_picture(s, 0);
             s->next_picture_ptr = &s->picture[i];
+
+            s->next_picture_ptr->f.reference   = 3;
+            s->next_picture_ptr->f.pict_type = AV_PICTURE_TYPE_I;
+
             if (ff_alloc_picture(s, s->next_picture_ptr, 0) < 0)
                 return -1;
             ff_thread_report_progress((AVFrame *) s->next_picture_ptr,
