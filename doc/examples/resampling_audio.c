@@ -62,7 +62,7 @@ static int get_format_from_sample_fmt(const char **fmt,
 /**
  * Fill dst buffer with nb_samples, generated starting from t.
  */
-void fill_samples(double *dst, int nb_samples, int nb_channels, int sample_rate, double *t)
+static void fill_samples(double *dst, int nb_samples, int nb_channels, int sample_rate, double *t)
 {
     int i, j;
     double tincr = 1.0 / sample_rate, *dstp = dst;
