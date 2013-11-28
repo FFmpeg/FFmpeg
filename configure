@@ -730,7 +730,7 @@ add_ldflags(){
 }
 
 add_stripflags(){
-    append STRIPFLAGS "$@"
+    append ASMSTRIPFLAGS "$@"
 }
 
 add_extralibs(){
@@ -896,7 +896,7 @@ test_stripflags(){
     check_cc <<EOF
 int main(void) { return 0; }
 EOF
-    check_cmd $strip $STRIPFLAGS "$@" $TMPO
+    check_cmd $strip $ASMSTRIPFLAGS "$@" $TMPO
 }
 
 check_stripflags(){
@@ -4832,7 +4832,7 @@ LD_PATH=$LD_PATH
 DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
-STRIPFLAGS=$STRIPFLAGS
+ASMSTRIPFLAGS=$ASMSTRIPFLAGS
 YASMFLAGS=$YASMFLAGS
 BUILDSUF=$build_suffix
 PROGSSUF=$progs_suffix
