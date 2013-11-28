@@ -195,10 +195,13 @@ differing versions of tools. FFM2 is the default.
 @table @option
 @item -f @var{configfile}
 Use @file{configfile} instead of @file{/etc/ffserver.conf}.
+
 @item -n
-Enable no-launch mode. This option disables all the Launch directives
-within the various <Stream> sections. Since ffserver will not launch
-any ffmpeg instances, you will have to launch them manually.
+Enable no-launch mode. This option disables all the @code{Launch}
+directives within the various @code{<Stream>} sections. Since
+@command{ffserver} will not launch any @command{ffmpeg} instances, you
+will have to launch them manually.
+
 @item -d
 Enable debug mode. This option increases log verbosity, directs log
 messages to stdout.
