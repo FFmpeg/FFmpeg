@@ -136,9 +136,6 @@ specify a time. In addition, ffserver will skip frames until a key_frame
 is found. This further reduces the startup delay by not transferring data
 that will be discarded.
 
-* You may want to adjust the MaxBandwidth in the ffserver.conf to limit
-the amount of bandwidth consumed by live streams.
-
 @section Why does the ?buffer / Preroll stop working after a time?
 
 It turns out that (on my machine at least) the number of frames successfully
