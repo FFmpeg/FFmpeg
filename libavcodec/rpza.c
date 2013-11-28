@@ -41,6 +41,7 @@
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/common.h"
 #include "avcodec.h"
 
 typedef struct RpzaContext {
