@@ -68,7 +68,8 @@ static int split_field_copy(Picture *dest, Picture *src, int parity, int id_add)
     return match;
 }
 
-static int build_def_list(Picture *def, Picture **in, int len, int is_long, int sel)
+static int build_def_list(Picture *def, int def_len,
+                          Picture **in, int len, int is_long, int sel)
 {
     int  i[2] = { 0 };
     int index = 0;
@@ -79,10 +80,12 @@ static int build_def_list(Picture *def, Picture **in, int len, int is_long, int 
         while (i[1] < len && !(in[i[1]] && (in[i[1]]->reference & (sel ^ 3))))
             i[1]++;
         if (i[0] < len) {
+            av_assert0(index < def_len);
             in[i[0]]->pic_id = is_long ? i[0] : in[i[0]]->frame_num;
             split_field_copy(&def[index++], in[i[0]++], sel, 1);
         }
         if (i[1] < len) {
+            av_assert0(index < def_len);
             in[i[1]]->pic_id = is_long ? i[1] : in[i[1]]->frame_num;
             split_field_copy(&def[index++], in[i[1]++], sel ^ 3, 0);
         }
@@ -131,8 +134,12 @@ int ff_h264_fill_default_ref_list(H264Context *h)
             len  = add_sorted(sorted,       h->short_ref, h->short_ref_count, cur_poc, 1 ^ list);
             len += add_sorted(sorted + len, h->short_ref, h->short_ref_count, cur_poc, 0 ^ list);
             av_assert0(len <= 32);
-            len  = build_def_list(h->default_ref_list[list],       sorted,      len, 0, h->picture_structure);
-            len += build_def_list(h->default_ref_list[list] + len, h->long_ref, 16,  1, h->picture_structure);
+
+            len  = build_def_list(h->default_ref_list[list], FF_ARRAY_ELEMS(h->default_ref_list[0]),
+                                  sorted, len, 0, h->picture_structure);
+            len += build_def_list(h->default_ref_list[list] + len,
+                                  FF_ARRAY_ELEMS(h->default_ref_list[0]) - len,
+                                  h->long_ref, 16, 1, h->picture_structure);
             av_assert0(len <= 32);
 
             if (len < h->ref_count[list])
@@ -152,9 +159,13 @@ int ff_h264_fill_default_ref_list(H264Context *h)
             }
         }
     } else {
-        len  = build_def_list(h->default_ref_list[0],       h->short_ref, h->short_ref_count, 0, h->picture_structure);
-        len += build_def_list(h->default_ref_list[0] + len, h-> long_ref, 16,                 1, h->picture_structure);
+        len  = build_def_list(h->default_ref_list[0], FF_ARRAY_ELEMS(h->default_ref_list[0]),
+                              h->short_ref, h->short_ref_count, 0, h->picture_structure);
+        len += build_def_list(h->default_ref_list[0] + len,
+                              FF_ARRAY_ELEMS(h->default_ref_list[0]) - len,
+                              h-> long_ref, 16, 1, h->picture_structure);
         av_assert0(len <= 32);
+
         if (len < h->ref_count[0])
             memset(&h->default_ref_list[0][len], 0, sizeof(Picture) * (h->ref_count[0] - len));
     }
