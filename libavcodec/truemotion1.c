@@ -323,6 +323,11 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         return AVERROR_INVALIDDATA;
     }
 
+    if (header.header_size + 1 > s->size) {
+        av_log(s->avctx, AV_LOG_ERROR, "Input packet too small.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* unscramble the header bytes with a XOR operation */
     for (i = 1; i < header.header_size; i++)
         header_buffer[i - 1] = s->buf[i] ^ s->buf[i + 1];
