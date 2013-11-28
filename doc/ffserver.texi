@@ -377,12 +377,13 @@ The following options are recognized within a Stream section.
 @item Feed @var{feed_name}
 Set the input feed.
 
-Must be specified.
+Must be specified for regular streams.
 
 @item Format @var{format_name}
-Set the format of the stream.
+Set the format of the output stream.
 
-Must be the name of a format recognized by FFmpeg.
+Must be the name of a format recognized by FFmpeg. If set to
+@samp{status}, it is treated as a status stream.
 
 @item AudioBitRate @var{rate}
 Set bitrate for the audio stream in KB per second.
@@ -482,7 +483,7 @@ A server status stream is a special stream which is used to show
 statistics about the @command{ffserver} operations.
 
 It must be specified setting the option @option{Format} to
-@code{status}.
+@samp{status}.
 
 @section Redirect section
 
