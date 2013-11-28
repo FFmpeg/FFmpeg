@@ -81,6 +81,7 @@ $(eval $(call FATE_VP9_SUITE,03-deltaq,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,2pass-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,segmentation-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,tiling-pedestrian,$(1),$(2)))
+$(eval $(call FATE_VP9_SUITE,parallelmode-akiyo,$(1),$(2)))
 endef
 
 $(eval $(call FATE_VP9_FULL))
