@@ -4384,11 +4384,6 @@ static int parse_ffconfig(const char *filename)
             get_arg(arg, sizeof(arg), &p);
             if (stream)
                 audio_enc.sample_rate = atoi(arg);
-        } else if (!av_strcasecmp(cmd, "AudioQuality")) {
-            get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-//                audio_enc.quality = atof(arg) * 1000;
-            }
         } else if (!av_strcasecmp(cmd, "VideoBitRateRange")) {
             if (stream) {
                 int minrate, maxrate;
