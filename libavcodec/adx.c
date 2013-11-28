@@ -48,7 +48,7 @@ int avpriv_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
     offset = AV_RB16(buf + 2) + 4;
 
     /* if copyright string is within the provided data, validate it */
-    if (bufsize >= offset && memcmp(buf + offset - 6, "(c)CRI", 6))
+    if (bufsize >= offset && offset >= 6 && memcmp(buf + offset - 6, "(c)CRI", 6))
         return AVERROR_INVALIDDATA;
 
     /* check for encoding=3 block_size=18, sample_size=4 */
