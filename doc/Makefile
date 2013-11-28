@@ -147,9 +147,12 @@ clean:: docclean
 distclean:: docclean
 	$(RM) doc/config.texi
 
-docclean:
+examplesclean:
 	$(RM) $(ALL_DOC_EXAMPLES)
-	$(RM) $(CLEANSUFFIXES:%=doc/%) $(CLEANSUFFIXES:%=doc/examples/%)
+	$(RM) $(CLEANSUFFIXES:%=doc/examples/%)
+
+docclean: examplesclean
+	$(RM) $(CLEANSUFFIXES:%=doc/%)
 	$(RM) $(TXTPAGES) doc/*.html doc/*.pod doc/*.1 doc/*.3 doc/avoptions_*.texi
 	$(RM) -r doc/doxy/html
 
