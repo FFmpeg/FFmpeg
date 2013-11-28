@@ -41,8 +41,8 @@ configuration file.
 
 @section Status stream
 
-ffserver supports an HTTP interface which exposes the current status
-of the server.
+@command{ffserver} supports an HTTP interface which exposes the
+current status of the server.
 
 Simply point your browser to the address of the special status stream
 specified in the configuration file.
