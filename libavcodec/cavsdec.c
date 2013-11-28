@@ -928,6 +928,7 @@ static inline int check_for_slice(AVSContext *h)
 
 static int decode_pic(AVSContext *h)
 {
+    int ret;
     int skip_count    = -1;
     enum cavs_mb mb_type;
 
@@ -965,7 +966,9 @@ static int decode_pic(AVSContext *h)
     if (h->cur.f->data[0])
         h->avctx->release_buffer(h->avctx, h->cur.f);
 
-    ff_get_buffer(h->avctx, h->cur.f);
+    ret = ff_get_buffer(h->avctx, h->cur.f);
+    if (ret < 0)
+        return ret;
 
     if (!h->edge_emu_buffer) {
         int alloc_size = FFALIGN(FFABS(h->cur.f->linesize[0]) + 32, 32);
