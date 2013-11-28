@@ -4495,6 +4495,12 @@ static int execute_decode_slices(H264Context *h, int context_count)
     H264Context *hx;
     int i;
 
+    if (h->mb_y >= h->mb_height) {
+        av_log(h->avctx, AV_LOG_ERROR,
+               "Input contains more MB rows than the frame height.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (h->avctx->hwaccel)
         return 0;
     if (context_count == 1) {
