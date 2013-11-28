@@ -402,6 +402,10 @@ Set bitrate for the video stream in KB per second.
 @item VideoBitRateRange @var{range}
 Set video bitrate range.
 
+A range must be specified in the form @var{minrate}-@var{maxrate}, and
+specifies the @option{minrate} and @option{maxrate} encoding options
+expressed in KB.
+
 @item VideoBitRateRangeTolerance @var{n}
 
 @item PixelFormat
