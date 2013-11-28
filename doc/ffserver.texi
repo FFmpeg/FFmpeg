@@ -219,6 +219,8 @@ Currently the following sections are recognized: @samp{Feed},
 
 A line starting with @code{#} is ignored and treated as a comment.
 
+Name of options and sections are case-insensitive.
+
 @section Global options
 @table @option
 @item Port @var{port_number}
