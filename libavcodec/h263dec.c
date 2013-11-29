@@ -233,7 +233,6 @@ static int decode_slice(MpegEncContext *s)
 
             s->mv_dir  = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
-//            s->mb_skipped = 0;
             av_dlog(s, "%d %d %06X\n",
                     ret, get_bits_count(&s->gb), show_bits(&s->gb, 24));
             ret = s->decode_mb(s, s->block);
@@ -300,7 +299,6 @@ static int decode_slice(MpegEncContext *s)
         (s->workaround_bugs & FF_BUG_AUTODETECT) &&
         get_bits_left(&s->gb) >= 0               &&
         get_bits_left(&s->gb) < 137              &&
-        // !s->resync_marker                     &&
         !s->data_partitioning) {
         const int bits_count = get_bits_count(&s->gb);
         const int bits_left  = s->gb.size_in_bits - bits_count;
@@ -322,8 +320,7 @@ static int decode_slice(MpegEncContext *s)
     }
 
     if (s->workaround_bugs & FF_BUG_AUTODETECT) {
-        if (s->padding_bug_score > -2 && !s->data_partitioning
-            /* && (s->divx_version >= 0 || !s->resync_marker) */)
+        if (s->padding_bug_score > -2 && !s->data_partitioning)
             s->workaround_bugs |= FF_BUG_NO_PADDING;
         else
             s->workaround_bugs &= ~FF_BUG_NO_PADDING;
@@ -502,12 +499,6 @@ retry:
             s->codec_tag        == AV_RL32("ZMP4") ||
             s->codec_tag        == AV_RL32("SIPP"))
             s->xvid_build = 0;
-#if 0
-        if (s->codec_tag == AV_RL32("DIVX") && s->vo_type == 0 &&
-            s->vol_control_parameters == 1 &&
-            s->padding_bug_score > 0 && s->low_delay) // XVID with modified fourcc
-            s->xvid_build = 0;
-#endif
     }
 
     if (s->xvid_build == -1 && s->divx_version == -1 && s->lavc_build == -1)
@@ -572,21 +563,6 @@ retry:
 
         if (s->divx_version >= 0)
             s->workaround_bugs |= FF_BUG_HPEL_CHROMA;
-#if 0
-        if (s->divx_version == 500)
-            s->padding_bug_score = 256 * 256 * 256 * 64;
-
-        /* very ugly XVID padding bug detection FIXME/XXX solve this differently
-         * Let us hope this at least works. */
-        if (s->resync_marker == 0 && s->data_partitioning == 0        &&
-            s->divx_version == -1 && s->codec_id == AV_CODEC_ID_MPEG4 &&
-            s->vo_type == 0)
-            s->workaround_bugs |= FF_BUG_NO_PADDING;
-
-        // FIXME not sure about the version num but a 4609 file seems ok
-        if (s->lavc_build < 4609U)
-            s->workaround_bugs |= FF_BUG_NO_PADDING;
-#endif
     }
 
     if (s->workaround_bugs & FF_BUG_STD_QPEL) {
