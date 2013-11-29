@@ -366,7 +366,7 @@ e.g. if you need to generate multiple FFM feeds with a single
 This option is ignored in case the commandline option @option{-n} is
 specified.
 
-@item ACL
+@item ACL @var{spec}
 Specify the list of IP address which are allowed or denied to write
 the feed. Multiple ACL options can be specified.
 @end table
