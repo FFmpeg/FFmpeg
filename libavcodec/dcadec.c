@@ -347,7 +347,7 @@ static av_always_inline int get_bitalloc(GetBitContext *gb, BitAlloc *ba,
 }
 
 typedef struct {
-    AVClass *class;             ///< class for AVOptions
+    const AVClass *class;       ///< class for AVOptions
     AVCodecContext *avctx;
     /* Frame header */
     int frame_type;             ///< type of the current frame
