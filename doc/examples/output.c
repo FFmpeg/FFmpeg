@@ -163,7 +163,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
         fprintf(stderr, "Error while writing audio frame\n");
         exit(1);
     }
-    avcodec_free_frame(&frame);
+    av_frame_free(&frame);
 }
 
 static void close_audio(AVFormatContext *oc, AVStream *st)
