@@ -3698,7 +3698,7 @@ static void build_file_streams(void)
 
             http_log("Opening feed file '%s' for stream '%s'\n", stream->feed_filename, stream->filename);
             if ((ret = avformat_open_input(&infile, stream->feed_filename, stream->ifmt, &stream->in_opts)) < 0) {
-                http_log("Could not open '%s': %d\n", stream->feed_filename, ret);
+                http_log("Could not open '%s': %s\n", stream->feed_filename, av_err2str(ret));
                 /* remove stream (no need to spend more time on it) */
             fail:
                 remove_stream(stream);
