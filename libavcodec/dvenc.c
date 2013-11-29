@@ -43,6 +43,10 @@ static av_cold int dvvideo_init_encoder(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
+
     dv_vlc_map_tableinit();
 
     return ff_dvvideo_init(avctx);
@@ -388,12 +392,12 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         if ((s->sys->pix_fmt == AV_PIX_FMT_YUV420P) ||
             (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
             (s->sys->height >= 720 && mb_y != 134)) {
-            y_stride = s->picture.linesize[0] << 3;
+            y_stride = s->frame->linesize[0] << 3;
         } else {
             y_stride = 16;
         }
-        y_ptr    = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x) << 3);
-        linesize = s->picture.linesize[0];
+        y_ptr    = s->frame->data[0] + ((mb_y * s->frame->linesize[0] + mb_x) << 3);
+        linesize = s->frame->linesize[0];
 
         if (s->sys->video_stype == 4) { /* SD 422 */
             vs_bit_size +=
@@ -411,12 +415,12 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         enc_blk += 4;
 
         /* initializing chrominance blocks */
-        c_offset = (((mb_y >>  (s->sys->pix_fmt == AV_PIX_FMT_YUV420P)) * s->picture.linesize[1] +
+        c_offset = (((mb_y >>  (s->sys->pix_fmt == AV_PIX_FMT_YUV420P)) * s->frame->linesize[1] +
                      (mb_x >> ((s->sys->pix_fmt == AV_PIX_FMT_YUV411P) ? 2 : 1))) << 3);
         for (j = 2; j; j--) {
-            uint8_t *c_ptr = s->picture.data[j] + c_offset;
-            linesize = s->picture.linesize[j];
-            y_stride = (mb_y == 134) ? 8 : (s->picture.linesize[j] << 3);
+            uint8_t *c_ptr = s->frame->data[j] + c_offset;
+            linesize = s->frame->linesize[j];
+            y_stride = (mb_y == 134) ? 8 : (s->frame->linesize[j] << 3);
             if (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                 uint8_t* d;
                 uint8_t* b = scratch;
@@ -664,10 +668,10 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
         return ret;
     }
 
-    c->pix_fmt           = s->sys->pix_fmt;
-    s->picture           = *frame;
-    s->picture.key_frame = 1;
-    s->picture.pict_type = AV_PICTURE_TYPE_I;
+    c->pix_fmt                = s->sys->pix_fmt;
+    s->frame                  = frame;
+    c->coded_frame->key_frame = 1;
+    c->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     s->buf = pkt->data;
     c->execute(c, dv_encode_video_segment, s->sys->work_chunks, NULL,
@@ -683,6 +687,12 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     return 0;
 }
 
+static int dvvideo_encode_close(AVCodecContext *avctx)
+{
+    av_frame_free(&avctx->coded_frame);
+    return 0;
+}
+
 AVCodec ff_dvvideo_encoder = {
     .name           = "dvvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
@@ -691,6 +701,7 @@ AVCodec ff_dvvideo_encoder = {
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_init_encoder,
     .encode2        = dvvideo_encode_frame,
+    .close          = dvvideo_encode_close,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
