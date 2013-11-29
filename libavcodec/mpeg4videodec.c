@@ -2016,10 +2016,10 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
         ctx->divx_version = ver;
         ctx->divx_build   = build;
         s->divx_packed  = e == 3 && last == 'p';
-        if (s->divx_packed && !s->showed_packed_warning) {
+        if (s->divx_packed && !ctx->showed_packed_warning) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Invalid and inefficient vfw-avi packed B frames detected\n");
-            s->showed_packed_warning = 1;
+            ctx->showed_packed_warning = 1;
         }
     }
 

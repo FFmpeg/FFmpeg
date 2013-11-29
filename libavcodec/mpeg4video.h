@@ -92,6 +92,8 @@ typedef struct Mpeg4DecContext {
     int divx_build;
     int xvid_build;
     int lavc_build;
+    ///< flag for having shown the warning about divxs invalid b frames
+    int showed_packed_warning;
 
     int cplx_estimation_trash_i;
     int cplx_estimation_trash_p;
