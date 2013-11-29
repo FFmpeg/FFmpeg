@@ -22,6 +22,7 @@
 
 #include "vaapi_internal.h"
 #include "h263.h"
+#include "mpeg4video.h"
 
 /** Reconstruct bitstream intra_dc_vlc_thr */
 static int mpeg4_get_intra_dc_vlc_thr(MpegEncContext *s)
@@ -41,7 +42,8 @@ static int mpeg4_get_intra_dc_vlc_thr(MpegEncContext *s)
 
 static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer, av_unused uint32_t size)
 {
-    MpegEncContext * const s = avctx->priv_data;
+    Mpeg4DecContext *ctx = avctx->priv_data;
+    MpegEncContext * const s = &ctx->m;
     struct vaapi_context * const vactx = avctx->hwaccel_context;
     VAPictureParameterBufferMPEG4 *pic_param;
     VAIQMatrixBufferMPEG4 *iq_matrix;
@@ -64,7 +66,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     pic_param->vol_fields.bits.chroma_format            = CHROMA_420;
     pic_param->vol_fields.bits.interlaced               = !s->progressive_sequence;
     pic_param->vol_fields.bits.obmc_disable             = 1;
-    pic_param->vol_fields.bits.sprite_enable            = s->vol_sprite_usage;
+    pic_param->vol_fields.bits.sprite_enable            = ctx->vol_sprite_usage;
     pic_param->vol_fields.bits.sprite_warping_accuracy  = s->sprite_warping_accuracy;
     pic_param->vol_fields.bits.quant_type               = s->mpeg_quant;
     pic_param->vol_fields.bits.quarter_sample           = s->quarter_sample;

@@ -65,6 +65,7 @@ typedef struct Mpeg4DecContext {
     ///< number of bits to represent the fractional part of time
     int time_increment_bits;
     int shape;
+    int vol_sprite_usage;
 } Mpeg4DecContext;
 
 /* dc encoding for mpeg4 */
@@ -109,7 +110,7 @@ void ff_mpeg4_stuffing(PutBitContext *pbc);
 void ff_mpeg4_init_partitions(MpegEncContext *s);
 void ff_mpeg4_merge_partitions(MpegEncContext *s);
 void ff_clean_mpeg4_qscales(MpegEncContext *s);
-int ff_mpeg4_decode_partitions(MpegEncContext *s);
+int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);

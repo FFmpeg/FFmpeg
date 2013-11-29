@@ -448,7 +448,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
             skip_bits(&s->gb, 3); /* intra dc vlc threshold */
             // FIXME don't just ignore everything
             if (s->pict_type == AV_PICTURE_TYPE_S &&
-                s->vol_sprite_usage == GMC_SPRITE) {
+                ctx->vol_sprite_usage == GMC_SPRITE) {
                 if (mpeg4_decode_sprite_trajectory(s, &s->gb) < 0)
                     return AVERROR_INVALIDDATA;
                 av_log(s->avctx, AV_LOG_ERROR, "untested\n");
@@ -580,8 +580,9 @@ static inline int mpeg4_decode_dc(MpegEncContext *s, int n, int *dir_ptr)
  * Decode first partition.
  * @return number of MBs decoded or <0 if an error occurred
  */
-static int mpeg4_decode_partition_a(MpegEncContext *s)
+static int mpeg4_decode_partition_a(Mpeg4DecContext *ctx)
 {
+    MpegEncContext *s = &ctx->m;
     int mb_num = 0;
     static const int8_t quant_tab[4] = { -1, -2, 1, 2 };
 
@@ -651,7 +652,7 @@ try_again:
                 if (bits & 0x10000) {
                     /* skip mb */
                     if (s->pict_type == AV_PICTURE_TYPE_S &&
-                        s->vol_sprite_usage == GMC_SPRITE) {
+                        ctx->vol_sprite_usage == GMC_SPRITE) {
                         s->current_picture.mb_type[xy] = MB_TYPE_SKIP  |
                                                          MB_TYPE_16x16 |
                                                          MB_TYPE_GMC   |
@@ -707,7 +708,7 @@ try_again:
                         ff_clean_intra_table_entries(s);
 
                     if (s->pict_type == AV_PICTURE_TYPE_S &&
-                        s->vol_sprite_usage == GMC_SPRITE &&
+                        ctx->vol_sprite_usage == GMC_SPRITE &&
                         (cbpc & 16) == 0)
                         s->mcsel = get_bits1(&s->gb);
                     else
@@ -866,13 +867,14 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
  * Decode the first and second partition.
  * @return <0 if error (and sets error type in the error_status_table)
  */
-int ff_mpeg4_decode_partitions(MpegEncContext *s)
+int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
 {
+    MpegEncContext *s = &ctx->m;
     int mb_num;
     const int part_a_error = s->pict_type == AV_PICTURE_TYPE_I ? (ER_DC_ERROR | ER_MV_ERROR) : ER_MV_ERROR;
     const int part_a_end   = s->pict_type == AV_PICTURE_TYPE_I ? (ER_DC_END   | ER_MV_END)   : ER_MV_END;
 
-    mb_num = mpeg4_decode_partition_a(s);
+    mb_num = mpeg4_decode_partition_a(ctx);
     if (mb_num < 0) {
         ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                         s->mb_x, s->mb_y, part_a_error);
@@ -1197,6 +1199,7 @@ not_coded:
  */
 static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 {
+    Mpeg4DecContext *ctx = (Mpeg4DecContext *)s;
     int cbp, mb_type;
     const int xy = s->mb_x + s->mb_y * s->mb_stride;
 
@@ -1224,7 +1227,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
             s->mv_dir  = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
             if (s->pict_type == AV_PICTURE_TYPE_S
-                && s->vol_sprite_usage == GMC_SPRITE) {
+                && ctx->vol_sprite_usage == GMC_SPRITE) {
                 s->mcsel      = 1;
                 s->mb_skipped = 0;
             } else {
@@ -1281,6 +1284,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 
 static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
 {
+    Mpeg4DecContext *ctx = (Mpeg4DecContext *)s;
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     int16_t *mot_val;
     static int8_t quant_tab[4] = { -1, -2, 1, 2 };
@@ -1299,7 +1303,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 s->mv_dir  = MV_DIR_FORWARD;
                 s->mv_type = MV_TYPE_16X16;
                 if (s->pict_type == AV_PICTURE_TYPE_S &&
-                    s->vol_sprite_usage == GMC_SPRITE) {
+                    ctx->vol_sprite_usage == GMC_SPRITE) {
                     s->current_picture.mb_type[xy] = MB_TYPE_SKIP  |
                                                      MB_TYPE_GMC   |
                                                      MB_TYPE_16x16 |
@@ -1334,7 +1338,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             goto intra;
 
         if (s->pict_type == AV_PICTURE_TYPE_S &&
-            s->vol_sprite_usage == GMC_SPRITE && (cbpc & 16) == 0)
+            ctx->vol_sprite_usage == GMC_SPRITE && (cbpc & 16) == 0)
             s->mcsel = get_bits1(&s->gb);
         else
             s->mcsel = 0;
@@ -1790,15 +1794,15 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             av_log(s->avctx, AV_LOG_INFO,           /* OBMC Disable */
                    "MPEG4 OBMC not supported (very likely buggy encoder)\n");
         if (vo_ver_id == 1)
-            s->vol_sprite_usage = get_bits1(gb);    /* vol_sprite_usage */
+            ctx->vol_sprite_usage = get_bits1(gb);    /* vol_sprite_usage */
         else
-            s->vol_sprite_usage = get_bits(gb, 2);  /* vol_sprite_usage */
+            ctx->vol_sprite_usage = get_bits(gb, 2);  /* vol_sprite_usage */
 
-        if (s->vol_sprite_usage == STATIC_SPRITE)
+        if (ctx->vol_sprite_usage == STATIC_SPRITE)
             av_log(s->avctx, AV_LOG_ERROR, "Static Sprites not supported\n");
-        if (s->vol_sprite_usage == STATIC_SPRITE ||
-            s->vol_sprite_usage == GMC_SPRITE) {
-            if (s->vol_sprite_usage == STATIC_SPRITE) {
+        if (ctx->vol_sprite_usage == STATIC_SPRITE ||
+            ctx->vol_sprite_usage == GMC_SPRITE) {
+            if (ctx->vol_sprite_usage == STATIC_SPRITE) {
                 s->sprite_width = get_bits(gb, 13);
                 skip_bits1(gb); /* marker */
                 s->sprite_height = get_bits(gb, 13);
@@ -1818,7 +1822,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             }
             s->sprite_warping_accuracy  = get_bits(gb, 2);
             s->sprite_brightness_change = get_bits1(gb);
-            if (s->vol_sprite_usage == STATIC_SPRITE)
+            if (ctx->vol_sprite_usage == STATIC_SPRITE)
                 s->low_latency_sprite = get_bits1(gb);
         }
         // FIXME sadct disable bit if verid!=1 && shape not rect
@@ -2125,7 +2129,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
              ctx->time_increment_bits++) {
             if (s->pict_type == AV_PICTURE_TYPE_P ||
                 (s->pict_type == AV_PICTURE_TYPE_S &&
-                 s->vol_sprite_usage == GMC_SPRITE)) {
+                 ctx->vol_sprite_usage == GMC_SPRITE)) {
                 if ((show_bits(gb, ctx->time_increment_bits + 6) & 0x37) == 0x30)
                     break;
             } else if ((show_bits(gb, ctx->time_increment_bits + 5) & 0x1F) == 0x18)
@@ -2205,7 +2209,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (ctx->shape != BIN_ONLY_SHAPE &&
                     (s->pict_type == AV_PICTURE_TYPE_P ||
                      (s->pict_type == AV_PICTURE_TYPE_S &&
-                      s->vol_sprite_usage == GMC_SPRITE))) {
+                      ctx->vol_sprite_usage == GMC_SPRITE))) {
         /* rounding type for motion estimation */
         s->no_rounding = get_bits1(gb);
     } else {
@@ -2214,7 +2218,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     // FIXME reduced res stuff
 
     if (ctx->shape != RECT_SHAPE) {
-        if (s->vol_sprite_usage != 1 || s->pict_type != AV_PICTURE_TYPE_I) {
+        if (ctx->vol_sprite_usage != 1 || s->pict_type != AV_PICTURE_TYPE_I) {
             skip_bits(gb, 13);  /* width */
             skip_bits1(gb);     /* marker */
             skip_bits(gb, 13);  /* height */
@@ -2263,14 +2267,14 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_S &&
-        (s->vol_sprite_usage == STATIC_SPRITE ||
-         s->vol_sprite_usage == GMC_SPRITE)) {
+        (ctx->vol_sprite_usage == STATIC_SPRITE ||
+         ctx->vol_sprite_usage == GMC_SPRITE)) {
         if (mpeg4_decode_sprite_trajectory(s, gb) < 0)
             return AVERROR_INVALIDDATA;
         if (s->sprite_brightness_change)
             av_log(s->avctx, AV_LOG_ERROR,
                    "sprite_brightness_change not supported\n");
-        if (s->vol_sprite_usage == STATIC_SPRITE)
+        if (ctx->vol_sprite_usage == STATIC_SPRITE)
             av_log(s->avctx, AV_LOG_ERROR, "static sprite not supported\n");
     }
 
