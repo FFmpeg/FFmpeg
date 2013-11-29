@@ -1478,7 +1478,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 frame->extended_buf    = NULL;
                 frame->nb_extended_buf = 0;
             }
-        } else if (frame->data[0])
+        } else
             av_frame_unref(frame);
     }
 
