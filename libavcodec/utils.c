@@ -1416,9 +1416,6 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
         emms_c(); //needed to avoid an emms_c() call before every return;
 
-        if (ret < 0 && picture->buf[0])
-            av_frame_unref(picture);
-
         if (*got_picture_ptr) {
             if (!avctx->refcounted_frames) {
                 avci->to_free = *picture;
@@ -1427,7 +1424,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             }
 
             avctx->frame_number++;
-        }
+        } else
+            av_frame_unref(picture);
     } else
         ret = 0;
 
