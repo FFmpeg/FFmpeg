@@ -4321,7 +4321,7 @@ static int parse_ffconfig(const char *filename)
                     sfeed = sfeed->next_feed;
                 }
                 if (!sfeed)
-                    ERROR("feed '%s' not defined\n", arg);
+                    ERROR("Feed with name '%s' for stream '%s' is not defined\n", arg, stream->filename);
                 else
                     stream->feed = sfeed;
             }
