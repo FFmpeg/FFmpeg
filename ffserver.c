@@ -4045,12 +4045,12 @@ static AVOutputFormat *ffserver_guess_format(const char *short_name, const char 
     return fmt;
 }
 
-static void report_config_error(const char *filename, int line_num, int *errors, const char *fmt, ...)
+static void report_config_error(const char *filename, int line_num, int log_level, int *errors, const char *fmt, ...)
 {
     va_list vl;
     va_start(vl, fmt);
-    fprintf(stderr, "%s:%d: ", filename, line_num);
-    vfprintf(stderr, fmt, vl);
+    av_log(NULL, log_level, "%s:%d: ", filename, line_num);
+    av_vlog(NULL, log_level, fmt, vl);
     va_end(vl);
 
     (*errors)++;
@@ -4063,7 +4063,7 @@ static int parse_ffconfig(const char *filename)
     char cmd[64];
     char arg[1024], arg2[1024];
     const char *p;
-    int val, errors, line_num;
+    int val, errors, warnings, line_num;
     FFStream **last_stream, *stream, *redirect;
     FFStream **last_feed, *feed, *s;
     AVCodecContext audio_enc, video_enc;
@@ -4077,7 +4077,7 @@ static int parse_ffconfig(const char *filename)
         return ret;
     }
 
-    errors = 0;
+    errors = warnings = 0;
     line_num = 0;
     first_stream = NULL;
     last_stream = &first_stream;
@@ -4088,8 +4088,9 @@ static int parse_ffconfig(const char *filename)
     redirect = NULL;
     audio_id = AV_CODEC_ID_NONE;
     video_id = AV_CODEC_ID_NONE;
+#define ERROR(...)   report_config_error(filename, line_num, AV_LOG_ERROR,   &errors,   __VA_ARGS__)
+#define WARNING(...) report_config_error(filename, line_num, AV_LOG_WARNING, &warnings, __VA_ARGS__)
 
-#define ERROR(...) report_config_error(filename, line_num, &errors, __VA_ARGS__)
     for(;;) {
         if (fgets(line, sizeof(line), f) == NULL)
             break;
@@ -4115,7 +4116,7 @@ static int parse_ffconfig(const char *filename)
                 ERROR("%s:%d: Invalid host/IP address: %s\n", arg);
             }
         } else if (!av_strcasecmp(cmd, "NoDaemon")) {
-            // do nothing here, its the default now
+            WARNING("NoDaemon option has no effect, you should remove it\n");
         } else if (!av_strcasecmp(cmd, "RTSPPort")) {
             get_arg(arg, sizeof(arg), &p);
             val = atoi(arg);
@@ -4237,9 +4238,8 @@ static int parse_ffconfig(const char *filename)
                 if (!arg[0]) {
                     feed->truncate = 1;
                 } else {
-                    av_log(NULL, AV_LOG_WARNING,
-                           "Truncate N syntax in configuration file is deprecated, "
-                           "use Truncate alone with no arguments\n");
+                    WARNING("Truncate N syntax in configuration file is deprecated, "
+                            "use Truncate alone with no arguments\n");
                     feed->truncate = strtod(arg, NULL);
                 }
             }
@@ -4374,9 +4374,8 @@ static int parse_ffconfig(const char *filename)
                 for (i = 0; i < strlen(cmd); i++)
                     key[i] = av_tolower(cmd[i]);
                 key[i] = 0;
-                av_log(NULL, AV_LOG_WARNING,
-                       "'%s' option in configuration file is deprecated, "
-                       "use 'Metadata %s VALUE' instead\n", cmd, key);
+                WARNING("'%s' option in configuration file is deprecated, "
+                        "use 'Metadata %s VALUE' instead\n", cmd, key);
                 if ((ret = av_dict_set(&stream->metadata, key, arg, 0)) < 0) {
                     ERROR("Could not set metadata '%s' to value '%s': %s\n",
                           key, arg, av_err2str(ret));
