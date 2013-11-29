@@ -396,11 +396,21 @@ to override the encoding options specified by @command{ffserver}, you
 can use the @command{ffmpeg} @option{override_ffserver} commandline
 option.
 
+Only one of the @option{Feed} and @option{File} options should be set.
+
 @table @option
 @item Feed @var{feed_name}
-Set the input feed.
+Set the input feed. @var{feed_name} must correspond to an existing
+feed defined in a @code{Feed} section.
 
-Must be specified for regular streams.
+When this option is set, encoding options are used to setup the
+encoding operated by the remote @command{ffmpeg} process.
+
+@item File @var{filename}
+Set the filename of the pre-recorded input file to stream.
+
+When this option is set, encoding options are ignored and the input
+file content is re-streamed as is.
 
 @item Format @var{format_name}
 Set the format of the output stream.
