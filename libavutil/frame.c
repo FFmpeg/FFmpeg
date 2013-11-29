@@ -379,6 +379,7 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->quality             = src->quality;
     dst->coded_picture_number = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
+    dst->flags                  = src->flags;
 
     memcpy(dst->error, src->error, sizeof(dst->error));
 
