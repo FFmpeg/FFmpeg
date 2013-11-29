@@ -83,7 +83,7 @@ typedef struct AVCodecInternal {
      */
     int last_audio_frame;
 
-    AVFrame to_free;
+    AVFrame *to_free;
 
     FramePool *pool;
 
