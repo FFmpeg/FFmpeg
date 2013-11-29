@@ -2321,9 +2321,10 @@ static int http_prepare_data(HTTPContext *c)
          */
         c->fmt_ctx.max_delay = (int)(0.7*AV_TIME_BASE);
 
-        if (avformat_write_header(&c->fmt_ctx, NULL) < 0) {
-            http_log("Error writing output header\n");
-            return -1;
+        if ((ret = avformat_write_header(&c->fmt_ctx, NULL)) < 0) {
+            http_log("Error writing output header for stream '%s': %s\n",
+                     c->stream->filename, av_err2str(ret));
+            return ret;
         }
         av_dict_free(&c->fmt_ctx.metadata);
 
