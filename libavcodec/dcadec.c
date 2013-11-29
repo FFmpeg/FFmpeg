@@ -32,6 +32,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "avcodec.h"
 #include "fft.h"
@@ -346,6 +347,7 @@ static av_always_inline int get_bitalloc(GetBitContext *gb, BitAlloc *ba,
 }
 
 typedef struct {
+    AVClass *class;             ///< class for AVOptions
     AVCodecContext *avctx;
     /* Frame header */
     int frame_type;             ///< type of the current frame
@@ -443,6 +445,7 @@ typedef struct {
     /* XCh extension information */
     int xch_present;            ///< XCh extension present and valid
     int xch_base_channel;       ///< index of first (only) channel containing XCH data
+    int xch_disable;            ///< whether the XCh extension should be decoded or not
 
     /* XXCH extension information */
     int xxch_chset;
@@ -2321,12 +2324,12 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
             avctx->channel_layout = dca_core_channel_layout[s->amode];
 #if FF_API_REQUEST_CHANNELS
 FF_DISABLE_DEPRECATION_WARNINGS
-            if (s->xch_present && (!avctx->request_channels ||
-                                   avctx->request_channels
-                                   > num_core_channels + !!s->lfe)) {
+            if (s->xch_present && !s->xch_disable &&
+                (!avctx->request_channels ||
+                 avctx->request_channels > num_core_channels + !!s->lfe)) {
 FF_ENABLE_DEPRECATION_WARNINGS
 #else
-            if (s->xch_present) {
+            if (s->xch_present && !s->xch_disable) {
 #endif
                 avctx->channel_layout |= AV_CH_BACK_CENTER;
                 if (s->lfe) {
@@ -2602,6 +2605,18 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
+static const AVOption options[] = {
+    { "disable_xch", "disable decoding of the XCh extension", offsetof(DCAContext, xch_disable), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM|AV_OPT_FLAG_AUDIO_PARAM },
+    { NULL },
+};
+
+static const AVClass dca_decoder_class = {
+    .class_name = "DCA decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_dca_decoder = {
     .name            = "dca",
     .long_name       = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
@@ -2615,4 +2630,5 @@ AVCodec ff_dca_decoder = {
     .sample_fmts     = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                        AV_SAMPLE_FMT_NONE },
     .profiles        = NULL_IF_CONFIG_SMALL(profiles),
+    .priv_class      = &dca_decoder_class,
 };
