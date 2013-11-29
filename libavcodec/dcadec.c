@@ -1450,8 +1450,10 @@ static int dca_subframe_footer(DCAContext *s, int base_channel)
 
             aux_data_end = 8 * aux_data_count + get_bits_count(&s->gb);
 
-            if (get_bits_long(&s->gb, 32) != 0x9A1105A0) // nSYNCAUX
+            if (get_bits_long(&s->gb, 32) != 0x9A1105A0) { // nSYNCAUX
+                av_log(s->avctx,AV_LOG_ERROR, "nSYNCAUX mismatching\n");
                 return AVERROR_INVALIDDATA;
+            }
 
             if (get_bits1(&s->gb)) { // bAUXTimeStampFlag
                 avpriv_request_sample(s->avctx,
@@ -1502,9 +1504,10 @@ static int dca_subframe_footer(DCAContext *s, int base_channel)
             skip_bits(&s->gb, 16);  // nAUXCRC16
 
             // additional data (reserved, cf. ETSI TS 102 114 V1.4.1)
-            if ((reserved = (aux_data_end - get_bits_count(&s->gb))) < 0)
+            if ((reserved = (aux_data_end - get_bits_count(&s->gb))) < 0) {
+                 av_log(s->avctx, AV_LOG_ERROR, "overread aux by %d bits\n", -reserved);
                 return AVERROR_INVALIDDATA;
-            else if (reserved) {
+            } else if (reserved) {
                 avpriv_request_sample(s->avctx,
                                       "Core auxiliary data reserved content");
                 skip_bits_long(&s->gb, reserved);
