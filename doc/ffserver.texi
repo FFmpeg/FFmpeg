@@ -443,7 +443,7 @@ Set ACL for the stream.
 
 @item DynamicACL @var{spec}
 
-@item RTSPOtion @var{option}
+@item RTSPOption @var{option}
 
 @item MulticastAddress @var{address}
 
