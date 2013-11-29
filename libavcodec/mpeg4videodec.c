@@ -2523,6 +2523,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
 
     s->shape               = s1->shape;
     s->time_increment_bits = s1->time_increment_bits;
+    s->vol_sprite_usage    = s1->vol_sprite_usage;
 
     return 0;
 }
