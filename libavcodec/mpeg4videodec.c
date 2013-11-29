@@ -1179,7 +1179,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
     mb_type = s->current_picture.mb_type[xy];
     cbp     = s->cbp_table[xy];
 
-    ctx->use_intra_dc_vlc = s->qscale < s->intra_dc_threshold;
+    ctx->use_intra_dc_vlc = s->qscale < ctx->intra_dc_threshold;
 
     if (s->current_picture.qscale_table[xy] != s->qscale)
         ff_set_qscale(s, s->current_picture.qscale_table[xy]);
@@ -1577,7 +1577,7 @@ intra:
         }
         cbp = (cbpc & 3) | (cbpy << 2);
 
-        ctx->use_intra_dc_vlc = s->qscale < s->intra_dc_threshold;
+        ctx->use_intra_dc_vlc = s->qscale < ctx->intra_dc_threshold;
 
         if (dquant)
             ff_set_qscale(s, s->qscale + quant_tab[get_bits(&s->gb, 2)]);
@@ -2180,7 +2180,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         if (s->pict_type == AV_PICTURE_TYPE_B)
             skip_bits_long(gb, ctx->cplx_estimation_trash_b);
 
-        s->intra_dc_threshold = ff_mpeg4_dc_threshold[get_bits(gb, 3)];
+        ctx->intra_dc_threshold = ff_mpeg4_dc_threshold[get_bits(gb, 3)];
         if (!s->progressive_sequence) {
             s->top_field_first = get_bits1(gb);
             s->alternate_scan  = get_bits1(gb);
@@ -2245,7 +2245,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                    s->data_partitioning, ctx->resync_marker,
                    ctx->num_sprite_warping_points, s->sprite_warping_accuracy,
                    1 - s->no_rounding, s->vo_type,
-                   s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold,
+                   s->vol_control_parameters ? " VOLC" : " ", ctx->intra_dc_threshold,
                    ctx->cplx_estimation_trash_i, ctx->cplx_estimation_trash_p,
                    ctx->cplx_estimation_trash_b);
         }

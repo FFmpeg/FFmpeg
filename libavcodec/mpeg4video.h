@@ -84,6 +84,8 @@ typedef struct Mpeg4DecContext {
     int enhancement_type;
     int scalability;
     int use_intra_dc_vlc;
+    ///< QP above whch the ac VLC should be used for intra dc
+    int intra_dc_threshold;
 
     /* bug workarounds */
     int divx_version;
