@@ -24,7 +24,7 @@
  */
 
 #include "config.h"
-#include "version.h"
+#include "libavutil/ffversion.h"
 
 #include <string.h>
 

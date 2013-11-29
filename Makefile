@@ -119,8 +119,8 @@ GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 .version: $(wildcard $(GIT_LOG)) $(VERSION_SH) config.mak
 .version: M=@
 
-version.h .version:
-	$(M)$(VERSION_SH) $(SRC_PATH) version.h $(EXTRA_VERSION)
+libavutil/ffversion.h .version:
+	$(M)$(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h $(EXTRA_VERSION)
 	$(Q)touch .version
 
 # force version.sh to run whenever version might have changed
@@ -163,7 +163,7 @@ clean::
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .config libavutil/avconfig.h .version version.h libavcodec/codec_names.h
+	$(RM) config.* .config libavutil/avconfig.h .version libavutil/ffversion.h libavcodec/codec_names.h
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)

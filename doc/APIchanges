@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-11-xx - xxxxxxx - lavu 52.56.100 - ffversion.h
+  Moves version.h to libavutil/ffversion.h.
+  Install ffversion.h and make it public.
+
 2013-11-xx - xxxxxxx- - lavu 52.19.0 - frame.h
   Add AV_FRAME_DATA_A53_CC value to the AVFrameSideDataType enum, which
   identifies ATSC A53 Part 4 Closed Captions data.
