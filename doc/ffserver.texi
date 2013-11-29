@@ -605,7 +605,7 @@ Feed feed1.ffm
 Format jpeg
 VideoFrameRate 2
 VideoIntraOnly
-#VideoSize 352x240
+VideoSize 352x240
 NoAudio
 Strict -1
 </Stream>
