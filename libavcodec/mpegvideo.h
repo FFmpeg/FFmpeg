@@ -615,7 +615,6 @@ typedef struct MpegEncContext {
     int low_latency_sprite;
     int data_partitioning;           ///< data partitioning flag from header
     int partitioned_frame;           ///< is current frame partitioned
-    int resync_marker;               ///< could this stream contain resync markers
     int low_delay;                   ///< no reordering needed / has no b-frames
     int vo_type;
     int vol_control_parameters;      ///< does the stream contain the low_delay flag, used to workaround buggy encoders

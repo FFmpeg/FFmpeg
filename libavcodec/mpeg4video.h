@@ -68,6 +68,8 @@ typedef struct Mpeg4DecContext {
     int vol_sprite_usage;
     // reversible vlc
     int rvlc;
+    ///< could this stream contain resync markers
+    int resync_marker;
 } Mpeg4DecContext;
 
 /* dc encoding for mpeg4 */

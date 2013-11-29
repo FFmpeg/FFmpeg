@@ -32,6 +32,7 @@
 #include "h264.h"
 
 #include "avcodec.h"
+#include "mpeg4video.h"
 #include "mpegvideo.h"
 #include "version.h"
 
@@ -95,7 +96,7 @@ void ff_vdpau_h264_picture_complete(H264Context *h);
 void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
                                  int buf_size);
 
-void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
+void ff_vdpau_mpeg4_decode_picture(Mpeg4DecContext *s, const uint8_t *buf,
                                    int buf_size);
 
 #endif /* AVCODEC_VDPAU_INTERNAL_H */

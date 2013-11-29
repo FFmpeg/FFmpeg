@@ -109,12 +109,13 @@ void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n, int dir)
  * check if the next stuff is a resync marker or the end.
  * @return 0 if not
  */
-static inline int mpeg4_is_resync(MpegEncContext *s)
+static inline int mpeg4_is_resync(Mpeg4DecContext *ctx)
 {
+    MpegEncContext *s = &ctx->m;
     int bits_count = get_bits_count(&s->gb);
     int v          = show_bits(&s->gb, 16);
 
-    if (s->workaround_bugs & FF_BUG_NO_PADDING && !s->resync_marker)
+    if (s->workaround_bugs & FF_BUG_NO_PADDING && !ctx->resync_marker)
         return 0;
 
     while (v <= 0xFF) {
@@ -1268,12 +1269,12 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 
     /* per-MB end of slice check */
     if (--s->mb_num_left <= 0) {
-        if (mpeg4_is_resync(s))
+        if (mpeg4_is_resync(ctx))
             return SLICE_END;
         else
             return SLICE_NOEND;
     } else {
-        if (mpeg4_is_resync(s)) {
+        if (mpeg4_is_resync(ctx)) {
             const int delta = s->mb_x + 1 == s->mb_width ? 2 : 1;
             if (s->cbp_table[xy + delta])
                 return SLICE_END;
@@ -1632,7 +1633,7 @@ intra:
 end:
     /* per-MB end of slice check */
     if (s->codec_id == AV_CODEC_ID_MPEG4) {
-        int next = mpeg4_is_resync(s);
+        int next = mpeg4_is_resync(ctx);
         if (next) {
             if        (s->mb_x + s->mb_y*s->mb_width + 1 >  next && (s->avctx->err_recognition & AV_EF_AGGRESSIVE)) {
                 return -1;
@@ -1968,7 +1969,7 @@ no_cplx_est:
             s->cplx_estimation_trash_b = 0;
         }
 
-        s->resync_marker = !get_bits1(gb); /* resync_marker_disabled */
+        ctx->resync_marker = !get_bits1(gb); /* resync_marker_disabled */
 
         s->data_partitioning = get_bits1(gb);
         if (s->data_partitioning)
@@ -2315,7 +2316,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                    s->pict_type == AV_PICTURE_TYPE_I ? "I" : (s->pict_type == AV_PICTURE_TYPE_P ? "P" : (s->pict_type == AV_PICTURE_TYPE_B ? "B" : "S")),
                    gb->size_in_bits,s->progressive_sequence, s->alternate_scan,
                    s->top_field_first, s->quarter_sample ? "q" : "h",
-                   s->data_partitioning, s->resync_marker,
+                   s->data_partitioning, ctx->resync_marker,
                    s->num_sprite_warping_points, s->sprite_warping_accuracy,
                    1 - s->no_rounding, s->vo_type,
                    s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold,

@@ -345,7 +345,7 @@ void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
     render->info.vc1.range_mapuv        = v->range_mapuv;
     /* Specific to simple/main profile only */
     render->info.vc1.multires           = v->multires;
-    render->info.vc1.syncmarker         = v->s.resync_marker;
+    render->info.vc1.syncmarker         = v->resync_marker;
     render->info.vc1.rangered           = v->rangered | (v->rangeredfrm << 1);
     render->info.vc1.maxbframes         = v->s.max_b_frames;
 
@@ -383,9 +383,10 @@ void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
 #endif /* (CONFIG_VC1_VDPAU_DECODER */
 
 #if CONFIG_MPEG4_VDPAU_DECODER
-void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
+void ff_vdpau_mpeg4_decode_picture(Mpeg4DecContext *ctx, const uint8_t *buf,
                                    int buf_size)
 {
+    MpegEncContext *s = &ctx->m;
     struct vdpau_render_state *render, *last, *next;
     int i;
 
@@ -403,7 +404,7 @@ void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
     render->info.mpeg4.vop_coding_type                   = 0;
     render->info.mpeg4.vop_fcode_forward                 = s->f_code;
     render->info.mpeg4.vop_fcode_backward                = s->b_code;
-    render->info.mpeg4.resync_marker_disable             = !s->resync_marker;
+    render->info.mpeg4.resync_marker_disable             = !ctx->resync_marker;
     render->info.mpeg4.interlaced                        = !s->progressive_sequence;
     render->info.mpeg4.quant_type                        = s->mpeg_quant;
     render->info.mpeg4.quarter_sample                    = s->quarter_sample;
