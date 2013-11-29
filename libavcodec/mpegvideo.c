@@ -747,9 +747,9 @@ do {\
     s->padding_bug_score    = s1->padding_bug_score;
 
     // MPEG4 timing info
-    memcpy(&s->time_increment_bits, &s1->time_increment_bits,
+    memcpy(&s->last_time_base, &s1->last_time_base,
            (char *) &s1->pb_field_time + sizeof(s1->pb_field_time) -
-           (char *) &s1->time_increment_bits);
+           (char *) &s1->last_time_base);
 
     // B-frame info
     s->max_b_frames = s1->max_b_frames;

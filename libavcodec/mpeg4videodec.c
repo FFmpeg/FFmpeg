@@ -372,8 +372,8 @@ static int mpeg4_decode_sprite_trajectory(MpegEncContext *s, GetBitContext *gb)
     return 0;
 }
 
-static int decode_new_pred(MpegEncContext *s, GetBitContext *gb) {
-    int len = FFMIN(s->time_increment_bits + 3, 15);
+static int decode_new_pred(Mpeg4DecContext *ctx, GetBitContext *gb) {
+    int len = FFMIN(ctx->time_increment_bits + 3, 15);
 
     get_bits(gb, len);
     if (get_bits1(gb))
@@ -438,7 +438,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
             time_incr++;
 
         check_marker(&s->gb, "before time_increment in video packed header");
-        skip_bits(&s->gb, s->time_increment_bits);      /* time_increment */
+        skip_bits(&s->gb, ctx->time_increment_bits);      /* time_increment */
         check_marker(&s->gb, "before vop_coding_type in video packed header");
 
         skip_bits(&s->gb, 2); /* vop coding type */
@@ -471,7 +471,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
         }
     }
     if (s->new_pred)
-        decode_new_pred(s, &s->gb);
+        decode_new_pred(ctx, &s->gb);
 
     return 0;
 }
@@ -1753,14 +1753,14 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         return -1;
     }
 
-    s->time_increment_bits = av_log2(s->avctx->time_base.den - 1) + 1;
-    if (s->time_increment_bits < 1)
-        s->time_increment_bits = 1;
+    ctx->time_increment_bits = av_log2(s->avctx->time_base.den - 1) + 1;
+    if (ctx->time_increment_bits < 1)
+        ctx->time_increment_bits = 1;
 
     check_marker(gb, "before fixed_vop_rate");
 
     if (get_bits1(gb) != 0)     /* fixed_vop_rate  */
-        s->avctx->time_base.num = get_bits(gb, s->time_increment_bits);
+        s->avctx->time_base.num = get_bits(gb, ctx->time_increment_bits);
     else
         s->avctx->time_base.num = 1;
 
@@ -2020,7 +2020,7 @@ no_cplx_est:
     if (s->avctx->debug&FF_DEBUG_PICT_INFO) {
         av_log(s->avctx, AV_LOG_DEBUG, "tb %d/%d, tincrbits:%d, qp_prec:%d, ps:%d,  %s%s%s%s\n",
                s->avctx->time_base.num, s->avctx->time_base.den,
-               s->time_increment_bits,
+               ctx->time_increment_bits,
                s->quant_precision,
                s->progressive_sequence,
                s->scalability ? "scalability " :"" , s->quarter_sample ? "qpel " : "",
@@ -2115,34 +2115,34 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
     check_marker(gb, "before time_increment");
 
-    if (s->time_increment_bits == 0 ||
-        !(show_bits(gb, s->time_increment_bits + 1) & 1)) {
+    if (ctx->time_increment_bits == 0 ||
+        !(show_bits(gb, ctx->time_increment_bits + 1) & 1)) {
         av_log(s->avctx, AV_LOG_ERROR,
                "hmm, seems the headers are not complete, trying to guess time_increment_bits\n");
 
-        for (s->time_increment_bits = 1;
-             s->time_increment_bits < 16;
-             s->time_increment_bits++) {
+        for (ctx->time_increment_bits = 1;
+             ctx->time_increment_bits < 16;
+             ctx->time_increment_bits++) {
             if (s->pict_type == AV_PICTURE_TYPE_P ||
                 (s->pict_type == AV_PICTURE_TYPE_S &&
                  s->vol_sprite_usage == GMC_SPRITE)) {
-                if ((show_bits(gb, s->time_increment_bits + 6) & 0x37) == 0x30)
+                if ((show_bits(gb, ctx->time_increment_bits + 6) & 0x37) == 0x30)
                     break;
-            } else if ((show_bits(gb, s->time_increment_bits + 5) & 0x1F) == 0x18)
+            } else if ((show_bits(gb, ctx->time_increment_bits + 5) & 0x1F) == 0x18)
                 break;
         }
 
         av_log(s->avctx, AV_LOG_ERROR,
-               "my guess is %d bits ;)\n", s->time_increment_bits);
-        if (s->avctx->time_base.den && 4*s->avctx->time_base.den < 1<<s->time_increment_bits) {
-            s->avctx->time_base.den = 1<<s->time_increment_bits;
+               "my guess is %d bits ;)\n", ctx->time_increment_bits);
+        if (s->avctx->time_base.den && 4*s->avctx->time_base.den < 1<<ctx->time_increment_bits) {
+            s->avctx->time_base.den = 1<<ctx->time_increment_bits;
         }
     }
 
     if (IS_3IV1)
         time_increment = get_bits1(gb);        // FIXME investigate further
     else
-        time_increment = get_bits(gb, s->time_increment_bits);
+        time_increment = get_bits(gb, ctx->time_increment_bits);
 
     if (s->pict_type != AV_PICTURE_TYPE_B) {
         s->last_time_base = s->time_base;
@@ -2200,7 +2200,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         return FRAME_SKIPPED;
     }
     if (s->new_pred)
-        decode_new_pred(s, gb);
+        decode_new_pred(ctx, gb);
 
     if (ctx->shape != BIN_ONLY_SHAPE &&
                     (s->pict_type == AV_PICTURE_TYPE_P ||
@@ -2517,7 +2517,8 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     if (ret < 0)
         return ret;
 
-    s->shape = s1->shape;
+    s->shape               = s1->shape;
+    s->time_increment_bits = s1->time_increment_bits;
 
     return 0;
 }
@@ -2541,7 +2542,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->h263_pred = 1;
     s->low_delay = 0; /* default, might be overridden in the vol header during header parsing */
     s->decode_mb = mpeg4_decode_mb;
-    s->time_increment_bits = 4; /* default value for broken headers */
+    ctx->time_increment_bits = 4; /* default value for broken headers */
 
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
     avctx->internal->allocate_progress = 1;

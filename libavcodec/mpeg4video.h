@@ -62,6 +62,8 @@
 typedef struct Mpeg4DecContext {
     MpegEncContext m;
 
+    ///< number of bits to represent the fractional part of time
+    int time_increment_bits;
     int shape;
 } Mpeg4DecContext;
 

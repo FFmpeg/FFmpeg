@@ -585,7 +585,8 @@ typedef struct MpegEncContext {
     int custom_pcf;
 
     /* mpeg4 specific */
-    int time_increment_bits;        ///< number of bits to represent the fractional part of time
+    ///< number of bits to represent the fractional part of time (encoder only)
+    int time_increment_bits;
     int last_time_base;
     int time_base;                  ///< time in seconds of last I,P,S Frame
     int64_t time;                   ///< time of current frame
