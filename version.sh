@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Usage: version.sh <ffmpeg-root-dir> <output-version.h> <extra-version>
+
 # check for git short hash
 if ! test "$revision"; then
     revision=$(cd "$1" && git describe --tags --match N 2> /dev/null)
