@@ -3112,6 +3112,7 @@ AVFrame *avcodec_alloc_frame(void);
  */
 void avcodec_get_frame_defaults(AVFrame *frame);
 
+#if FF_API_AVFRAME_LAVC
 /**
  * Free the frame and any dynamically allocated objects in it,
  * e.g. extended_data.
@@ -3121,8 +3122,12 @@ void avcodec_get_frame_defaults(AVFrame *frame);
  * @warning this function does NOT free the data buffers themselves
  * (it does not know how, since they might have been allocated with
  *  a custom get_buffer()).
+ *
+ * @deprecated use av_frame_free()
  */
+attribute_deprecated
 void avcodec_free_frame(AVFrame **frame);
+#endif
 
 /**
  * Initialize the AVCodecContext to use the given AVCodec. Prior to using this
