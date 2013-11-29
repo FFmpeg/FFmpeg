@@ -388,6 +388,14 @@ where @var{STREAM_NAME} specifies the unique name of the stream.
 
 The following options are recognized within a Stream section.
 
+Encoding options are marked with the @emph{encoding} tag, and they are
+used to set the encoding parameters, and are mapped to libavcodec
+encoding options. Not all encoding options are supported, in
+particular it is not possible to set encoder private options. In order
+to override the encoding options specified by @command{ffserver}, you
+can use the @command{ffmpeg} @option{override_ffserver} commandline
+option.
+
 @table @option
 @item Feed @var{feed_name}
 Set the input feed.
@@ -449,97 +457,103 @@ Set metadata corresponding to the option.
 @item NoVideo
 Suppress audio/video.
 
-@item AudioBitRate @var{rate}
+@item AudioCodec @var{codec_name} (@emph{encoding,audio})
+Set audio codec.
+
+@item AudioBitRate @var{rate} (@emph{encoding,audio})
 Set bitrate for the audio stream in kbits per second.
 
-@item AudioChannels @var{n}
+@item AudioChannels @var{n} (@emph{encoding,audio})
 Set number of audio channels.
 
-@item AudioSampleRate @var{n}
+@item AudioSampleRate @var{n} (@emph{encoding,audio})
 Set sampling frequency for audio. When using low bitrates, you should
 lower this frequency to 22050 or 11025. The supported frequencies
 depend on the selected audio codec.
 
-@item VideoBitRate @var{n}
+@item AVOptionAudio @var{option} @var{value} (@emph{encoding,audio})
+Set generic option for audio stream.
+
+@item AVPresetAudio @var{preset} (@emph{encoding,audio})
+Set preset for audio stream.
+
+@item VideoCodec @var{codec_name} (@emph{encoding,video})
+Set video codec.
+
+@item VideoBitRate @var{n} (@emph{encoding,video})
 Set bitrate for the video stream in kbits per second.
 
-@item VideoBitRateRange @var{range}
+@item VideoBitRateRange @var{range} (@emph{encoding,video})
 Set video bitrate range.
 
 A range must be specified in the form @var{minrate}-@var{maxrate}, and
 specifies the @option{minrate} and @option{maxrate} encoding options
 expressed in kbits per second.
 
-@item VideoBitRateRangeTolerance @var{n}
+@item VideoBitRateRangeTolerance @var{n} (@emph{encoding,video})
 Set video bitrate tolerance in kbits per second.
 
-@item PixelFormat @var{pixel_format}
+@item PixelFormat @var{pixel_format} (@emph{encoding,video})
 Set video pixel format.
 
-@item Debug @var{integer}
+@item Debug @var{integer} (@emph{encoding,video})
 Set video @option{debug} encoding option.
 
-@item Strict @var{integer}
+@item Strict @var{integer} (@emph{encoding,video})
 Set video @option{strict} encoding option.
 
-@item VideoBufferSize @var{n}
+@item VideoBufferSize @var{n} (@emph{encoding,video})
 Set ratecontrol buffer size, expressed in KB.
 
-@item VideoFrameRate @var{n}
+@item VideoFrameRate @var{n} (@emph{encoding,video})
 Set number of video frames per second.
 
-@item VideoSize
+@item VideoSize (@emph{encoding,video})
 Set size of the video frame, must be an abbreviation or in the form
 @var{W}x@var{H}.  See @ref{video size syntax,,the Video size section
 in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 Default value is @code{160x128}.
 
-@item VideoIntraOnly
+@item VideoIntraOnly (@emph{encoding,video})
 Transmit only intra frames (useful for low bitrates, but kills frame rate).
 
-@item VideoGopSize @var{n}
+@item VideoGopSize @var{n} (@emph{encoding,video})
 If non-intra only, an intra frame is transmitted every VideoGopSize
 frames. Video synchronization can only begin at an intra frame.
 
-@item VideoTag @var{tag}
+@item VideoTag @var{tag} (@emph{encoding,video})
 Set video tag.
 
-@item VideoHighQuality
-@item Video4MotionVector
+@item VideoHighQuality (@emph{encoding,video})
+@item Video4MotionVector (@emph{encoding,video})
 
-@item BitExact
+@item BitExact (@emph{encoding,video})
 Set bitexact encoding flag.
 
-@item IdctSimple
+@item IdctSimple (@emph{encoding,video})
 Set simple IDCT algorithm.
 
-@item Qscale @var{n}
+@item Qscale @var{n} (@emph{encoding,video})
 Enable constant quality encoding, and set video qscale (quantization
 scale) value, expressed in @var{n} QP units.
 
-@item VideoQMin @var{n}
-@item VideoQMax @var{n}
+@item VideoQMin @var{n} (@emph{encoding,video})
+@item VideoQMax @var{n} (@emph{encoding,video})
 Set video qmin/qmax.
 
-@item VideoQDiff @var{integer}
+@item VideoQDiff @var{integer} (@emph{encoding,video})
 Set video @option{qdiff} encoding option.
 
-@item LumiMask @var{float}
-@item DarkMask @var{float}
+@item LumiMask @var{float} (@emph{encoding,video})
+@item DarkMask @var{float} (@emph{encoding,video})
 Set @option{lumi_mask}/@option{dark_mask} encoding options.
 
-@item AudioCodec @var{codec_name}
-@item VideoCodec @var{codec_name}
-Set audio/video codec.
+@item AVOptionVideo @var{option} @var{value} (@emph{encoding,video})
+Set generic option for video stream.
 
-@item AVOptionAudio @var{option} @var{value}
-@item AVOptionVideo @var{option} @var{value}
-Set generic option for audio/video stream.
-
-@item AVPresetAudio @var{preset}
-@item AVOptionVideo @var{preset}
-Set preset for audio/video stream.
+@item AVPresetVideo @var{preset} (@emph{encoding,video})
+Set preset for video stream.
 
 @var{preset} must be the path of a preset file.
 @end table
