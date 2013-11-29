@@ -367,7 +367,7 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
 
     v->overlap         = get_bits1(gb); //common
 
-    v->s.resync_marker = get_bits1(gb);
+    v->resync_marker   = get_bits1(gb);
     v->rangered        = get_bits1(gb);
     if (v->rangered && v->profile == PROFILE_SIMPLE) {
         av_log(avctx, AV_LOG_INFO,
@@ -409,7 +409,7 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
            "DQuant=%i, Quantizer mode=%i, Max B frames=%i\n",
            v->profile, v->frmrtq_postproc, v->bitrtq_postproc,
            v->s.loop_filter, v->multires, v->fastuvmc, v->extended_mv,
-           v->rangered, v->vstransform, v->overlap, v->s.resync_marker,
+           v->rangered, v->vstransform, v->overlap, v->resync_marker,
            v->dquant, v->quantizer_mode, avctx->max_b_frames);
     return 0;
 }

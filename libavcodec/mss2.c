@@ -778,7 +778,7 @@ static av_cold int wmv9_init(AVCodecContext *avctx)
 
     v->overlap         = 0;
 
-    v->s.resync_marker = 0;
+    v->resync_marker   = 0;
     v->rangered        = 0;
 
     v->s.max_b_frames = avctx->max_b_frames = 0;

@@ -97,7 +97,7 @@ static void fill_picture_parameters(AVCodecContext *avctx,
                                   (v->vstransform      );
     pp->bPicOverflowBlocks      = (v->quantizer_mode << 6) |
                                   (v->multires       << 5) |
-                                  (s->resync_marker  << 4) |
+                                  (v->resync_marker  << 4) |
                                   (v->rangered       << 3) |
                                   (s->max_b_frames       );
     pp->bPicExtrapolation       = (!v->interlace || v->fcm == PROGRESSIVE) ? 1 : 2;
