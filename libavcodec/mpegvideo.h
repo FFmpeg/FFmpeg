@@ -668,7 +668,6 @@ typedef struct MpegEncContext {
     int progressive_frame;
     int full_pel[2];
     int interlaced_dct;
-    int first_slice;
     int first_field;         ///< is 1 for the first field of a field picture 0 otherwise
     int drop_frame_timecode; ///< timecode is in drop frame format.
     int scan_offset;         ///< reserve space for SVCD scan offset user data.
