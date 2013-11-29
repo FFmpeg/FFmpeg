@@ -1048,9 +1048,9 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
     put_bits(&s->pb, 1, s->progressive_sequence ? 0 : 1);
     put_bits(&s->pb, 1, 1);             /* obmc disable */
     if (vo_ver_id == 1)
-        put_bits(&s->pb, 1, s->vol_sprite_usage);       /* sprite enable */
+        put_bits(&s->pb, 1, 0);       /* sprite enable */
     else
-        put_bits(&s->pb, 2, s->vol_sprite_usage);       /* sprite enable */
+        put_bits(&s->pb, 2, 0);       /* sprite enable */
 
     put_bits(&s->pb, 1, 0);             /* not 8 bit == false */
     put_bits(&s->pb, 1, s->mpeg_quant); /* quant type= (0=h263 style)*/
@@ -1121,8 +1121,7 @@ void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
     put_bits(&s->pb, s->time_increment_bits, time_mod); /* time increment */
     put_bits(&s->pb, 1, 1);                             /* marker */
     put_bits(&s->pb, 1, 1);                             /* vop coded */
-    if (s->pict_type == AV_PICTURE_TYPE_P ||
-        (s->pict_type == AV_PICTURE_TYPE_S && s->vol_sprite_usage == GMC_SPRITE)) {
+    if (s->pict_type == AV_PICTURE_TYPE_P) {
         put_bits(&s->pb, 1, s->no_rounding);    /* rounding type */
     }
     put_bits(&s->pb, 3, 0);     /* intra dc VLC threshold */
