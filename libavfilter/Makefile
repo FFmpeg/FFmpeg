@@ -49,8 +49,6 @@ OBJS = allfilters.o                                                     \
 
 
 OBJS-$(CONFIG_AVCODEC)                       += avcodec.o
-OBJS-$(CONFIG_AVFORMAT)                      += lavfutils.o
-OBJS-$(CONFIG_SWSCALE)                       += lswsutils.o
 
 OBJS-$(CONFIG_ACONVERT_FILTER)               += af_aconvert.o
 OBJS-$(CONFIG_ADELAY_FILTER)                 += af_adelay.o
