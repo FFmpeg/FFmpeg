@@ -216,6 +216,7 @@ typedef struct FFStream {
     struct FFStream *feed;   /* feed we are using (can be null if
                                 coming from file) */
     AVDictionary *in_opts;   /* input parameters */
+    AVDictionary *metadata;  /* metadata to set on the stream */
     AVInputFormat *ifmt;       /* if non NULL, force input format */
     AVOutputFormat *fmt;
     IPAddressACL *acl;
@@ -228,10 +229,6 @@ typedef struct FFStream {
     int feed_streams[MAX_STREAMS]; /* index of streams in the feed */
     char feed_filename[1024]; /* file name of the feed storage, or
                                  input file name for a stream */
-    char author[512];
-    char title[512];
-    char copyright[512];
-    char comment[512];
     pid_t pid;  /* Of ffmpeg process */
     time_t pid_start;  /* Of ffmpeg process */
     char **child_argv;
@@ -2279,11 +2276,7 @@ static int http_prepare_data(HTTPContext *c)
     switch(c->state) {
     case HTTPSTATE_SEND_DATA_HEADER:
         memset(&c->fmt_ctx, 0, sizeof(c->fmt_ctx));
-        av_dict_set(&c->fmt_ctx.metadata, "author"   , c->stream->author   , 0);
-        av_dict_set(&c->fmt_ctx.metadata, "comment"  , c->stream->comment  , 0);
-        av_dict_set(&c->fmt_ctx.metadata, "copyright", c->stream->copyright, 0);
-        av_dict_set(&c->fmt_ctx.metadata, "title"    , c->stream->title    , 0);
-
+        av_dict_copy(&(c->fmt_ctx.metadata), c->stream->metadata, 0);
         c->fmt_ctx.streams = av_mallocz(sizeof(AVStream *) * c->stream->nb_streams);
 
         for(i=0;i<c->stream->nb_streams;i++) {
@@ -2993,6 +2986,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     AVFormatContext *avc;
     AVStream *avs = NULL;
     AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
+    AVDictionaryEntry *entry = av_dict_get(stream->metadata, "title", NULL, 0);
     int i;
 
     avc =  avformat_alloc_context();
@@ -3001,7 +2995,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     }
     avc->oformat = rtp_format;
     av_dict_set(&avc->metadata, "title",
-               stream->title[0] ? stream->title : "No Title", 0);
+                entry ? entry->value : "No Title", 0);
     avc->nb_streams = stream->nb_streams;
     if (stream->is_multicast) {
         snprintf(avc->filename, 1024, "rtp://%s:%d?multicast=1?ttl=%d",
@@ -4067,7 +4061,7 @@ static int parse_ffconfig(const char *filename)
     FILE *f;
     char line[1024];
     char cmd[64];
-    char arg[1024];
+    char arg[1024], arg2[1024];
     const char *p;
     int val, errors, line_num;
     FFStream **last_stream, *stream, *redirect;
@@ -4367,18 +4361,37 @@ static int parse_ffconfig(const char *filename)
             } else {
                 ERROR("FaviconURL only permitted for status streams\n");
             }
-        } else if (!av_strcasecmp(cmd, "Author")) {
-            if (stream)
-                get_arg(stream->author, sizeof(stream->author), &p);
-        } else if (!av_strcasecmp(cmd, "Comment")) {
-            if (stream)
-                get_arg(stream->comment, sizeof(stream->comment), &p);
-        } else if (!av_strcasecmp(cmd, "Copyright")) {
-            if (stream)
-                get_arg(stream->copyright, sizeof(stream->copyright), &p);
-        } else if (!av_strcasecmp(cmd, "Title")) {
-            if (stream)
-                get_arg(stream->title, sizeof(stream->title), &p);
+        } else if (!av_strcasecmp(cmd, "Author")    ||
+                   !av_strcasecmp(cmd, "Comment")   ||
+                   !av_strcasecmp(cmd, "Copyright") ||
+                   !av_strcasecmp(cmd, "Title")) {
+            get_arg(arg, sizeof(arg), &p);
+
+            if (stream) {
+                char key[32];
+                int i, ret;
+
+                for (i = 0; i < strlen(cmd); i++)
+                    key[i] = av_tolower(cmd[i]);
+                key[i] = 0;
+                av_log(NULL, AV_LOG_WARNING,
+                       "'%s' option in configuration file is deprecated, "
+                       "use 'Metadata %s VALUE' instead\n", cmd, key);
+                if ((ret = av_dict_set(&stream->metadata, key, arg, 0)) < 0) {
+                    ERROR("Could not set metadata '%s' to value '%s': %s\n",
+                          key, arg, av_err2str(ret));
+                }
+            }
+        } else if (!av_strcasecmp(cmd, "Metadata")) {
+            get_arg(arg, sizeof(arg), &p);
+            get_arg(arg2, sizeof(arg2), &p);
+            if (stream) {
+                int ret;
+                if ((ret = av_dict_set(&stream->metadata, arg, arg2, 0)) < 0) {
+                    ERROR("Could not set metadata '%s' to value '%s': %s\n",
+                          arg, arg2, av_err2str(ret));
+                }
+            }
         } else if (!av_strcasecmp(cmd, "Preroll")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream)
@@ -4501,7 +4514,6 @@ static int parse_ffconfig(const char *filename)
             }
         } else if (!av_strcasecmp(cmd, "AVOptionVideo") ||
                    !av_strcasecmp(cmd, "AVOptionAudio")) {
-            char arg2[1024];
             AVCodecContext *avctx;
             int type;
             get_arg(arg, sizeof(arg), &p);

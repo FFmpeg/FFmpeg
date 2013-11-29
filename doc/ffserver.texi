@@ -550,7 +550,11 @@ for regular streams.
 @item Comment @var{value}
 @item Copyright @var{value}
 @item Title @var{value}
-Set metadata corresponding to the option.
+Set metadata corresponding to the option. All these options are
+deprecated in favor of @option{Metadata}.
+
+@item Metadata @var{key} @var{value}
+Set metadata value on the output stream.
 
 @item NoAudio
 @item NoVideo
@@ -757,7 +761,7 @@ Ogg Vorbis audio
 @example
 <Stream test.ogg>
 Feed feed1.ffm
-Title "Stream title"
+Metadata title "Stream title"
 AudioBitRate 64
 AudioChannels 2
 AudioSampleRate 44100
@@ -804,10 +808,10 @@ NoAudio
 <Stream file.asf>
 File "/usr/local/httpd/htdocs/test.asf"
 NoAudio
-Author "Me"
-Copyright "Super MegaCorp"
-Title "Test stream from disk"
-Comment "Test comment"
+Metadata author "Me"
+Metadata copyright "Super MegaCorp"
+Metadata title "Test stream from disk"
+Metadata comment "Test comment"
 </Stream>
 @end example
 @end itemize
