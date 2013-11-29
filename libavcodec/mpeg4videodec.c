@@ -1256,7 +1256,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
         s->dsp.clear_blocks(s->block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
-            if (mpeg4_decode_block(s, block[i], i, cbp & 32, s->mb_intra, s->rvlc) < 0) {
+            if (mpeg4_decode_block(s, block[i], i, cbp & 32, s->mb_intra, ctx->rvlc) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "texture corrupted at %d %d %d\n",
                        s->mb_x, s->mb_y, s->mb_intra);
@@ -1972,7 +1972,7 @@ no_cplx_est:
 
         s->data_partitioning = get_bits1(gb);
         if (s->data_partitioning)
-            s->rvlc = get_bits1(gb);
+            ctx->rvlc = get_bits1(gb);
 
         if (vo_ver_id != 1) {
             s->new_pred = get_bits1(gb);
@@ -2028,7 +2028,7 @@ no_cplx_est:
                s->quant_precision,
                s->progressive_sequence,
                s->scalability ? "scalability " :"" , s->quarter_sample ? "qpel " : "",
-               s->data_partitioning ? "partition " : "", s->rvlc ? "rvlc " : ""
+               s->data_partitioning ? "partition " : "", ctx->rvlc ? "rvlc " : ""
         );
     }
 
