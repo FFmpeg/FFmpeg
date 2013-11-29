@@ -3690,7 +3690,12 @@ static void build_file_streams(void)
                 av_dict_set(&stream->in_opts, "mpeg2ts_compute_pcr", "1", 0);
             }
 
-            http_log("Opening file '%s'\n", stream->feed_filename);
+            if (!stream->feed_filename[0]) {
+                http_log("Unspecified feed file for stream '%s'\n", stream->filename);
+                goto fail;
+            }
+
+            http_log("Opening feed file '%s' for stream '%s'\n", stream->feed_filename, stream->filename);
             if ((ret = avformat_open_input(&infile, stream->feed_filename, stream->ifmt, &stream->in_opts)) < 0) {
                 http_log("Could not open '%s': %d\n", stream->feed_filename, ret);
                 /* remove stream (no need to spend more time on it) */
