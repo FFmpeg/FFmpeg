@@ -1063,8 +1063,7 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
     if (vo_ver_id != 1)
         put_bits(&s->pb, 1, s->quarter_sample);
     put_bits(&s->pb, 1, 1);             /* complexity estimation disable */
-    s->resync_marker = s->rtp_mode;
-    put_bits(&s->pb, 1, s->resync_marker ? 0 : 1); /* resync marker disable */
+    put_bits(&s->pb, 1, s->rtp_mode ? 0 : 1); /* resync marker disable */
     put_bits(&s->pb, 1, s->data_partitioning ? 1 : 0);
     if (s->data_partitioning)
         put_bits(&s->pb, 1, 0);         /* no rvlc */
