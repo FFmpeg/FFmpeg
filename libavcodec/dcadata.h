@@ -7505,8 +7505,19 @@ DECLARE_ALIGNED(16, static const float, lfe_fir_128)[] =
     0.01724460535, 0.47964480519, 0.48503074050, 0.01805862412,
 };
 
-
-static const float dca_downmix_scale_factors[241] = {
+/*
+ * D.11 Look-up Table for Downmix Scale Factors
+ *
+ * Note that the range of the entries in DmixTable[] is between -60 dB and 0 dB
+ * with addition of -inf (|DMixCoeff| = 0), which is coded with a DmixCode = 0.
+ * Furthermore, the range [-60 to 0] is subdivided into 3 regions, each with a
+ * different grid resolution:
+ *
+ * 1) [-60.000 to -30] with resolution of 0.500 dB
+ * 2) [-29.750 to -15] with resolution of 0.250 dB
+ * 3) [-14.875 to   0] with resolution of 0.125 dB
+ */
+static const float dca_dmixtable[241] = {
     0.001000, 0.001059, 0.001122, 0.001189, 0.001259, 0.001334, 0.001413, 0.001496,
     0.001585, 0.001679, 0.001778, 0.001884, 0.001995, 0.002113, 0.002239, 0.002371,
     0.002512, 0.002661, 0.002818, 0.002985, 0.003162, 0.003350, 0.003548, 0.003758,
@@ -7537,7 +7548,7 @@ static const float dca_downmix_scale_factors[241] = {
     0.707107, 0.718208, 0.728618, 0.739180, 0.749894, 0.760764, 0.771792, 0.782979,
     0.794328, 0.805842, 0.817523, 0.829373, 0.841395, 0.853591, 0.865964, 0.878517,
     0.891251, 0.904170, 0.917276, 0.930572, 0.944061, 0.957745, 0.971628, 0.985712,
-    1.000000
+    1.000000,
 };
 
 static const float dca_default_coeffs[10][5][2] = {
