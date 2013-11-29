@@ -66,13 +66,6 @@ the special stream @file{status.html} is requested.
 
 @section How do I make it work?
 
-First, build the kit. It *really* helps to have installed LAME first. Then when
-you run the ffserver ./configure, make sure that you have the
-@code{--enable-libmp3lame} flag turned on.
-
-LAME is important as it allows for streaming audio to Windows Media Player.
-Don't ask why the other audio types do not work.
-
 As a simple test, just run the following two command lines where INPUTFILE
 is some file which you can decode with ffmpeg:
 
