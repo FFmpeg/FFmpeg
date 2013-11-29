@@ -61,6 +61,8 @@
 
 typedef struct Mpeg4DecContext {
     MpegEncContext m;
+
+    int shape;
 } Mpeg4DecContext;
 
 /* dc encoding for mpeg4 */
@@ -98,7 +100,7 @@ void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n,
 void ff_set_mpeg4_time(MpegEncContext *s);
 void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 
-int ff_mpeg4_decode_picture_header(MpegEncContext *s, GetBitContext *gb);
+int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb);
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
 void ff_mpeg4_clean_buffers(MpegEncContext *s);
 void ff_mpeg4_stuffing(PutBitContext *pbc);
@@ -107,7 +109,7 @@ void ff_mpeg4_merge_partitions(MpegEncContext *s);
 void ff_clean_mpeg4_qscales(MpegEncContext *s);
 int ff_mpeg4_decode_partitions(MpegEncContext *s);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
-int ff_mpeg4_decode_video_packet_header(MpegEncContext *s);
+int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);
 void ff_mpeg4videodec_static_init(void);
 
