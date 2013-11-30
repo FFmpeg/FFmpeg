@@ -2680,14 +2680,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     if (ret < 0)
         return ret;
 
-    s->shape               = s1->shape;
-    s->time_increment_bits = s1->time_increment_bits;
-    s->vol_sprite_usage    = s1->vol_sprite_usage;
-    s->rvlc                = s1->rvlc;
-    s->divx_version        = s1->divx_version;
-    s->divx_build          = s1->divx_build;
-    s->xvid_build          = s1->xvid_build;
-    s->lavc_build          = s1->lavc_build;
+    memcpy(((uint8_t*)s) + sizeof(MpegEncContext), ((uint8_t*)s1) + sizeof(MpegEncContext), sizeof(Mpeg4DecContext) - sizeof(MpegEncContext));
 
     return 0;
 }
