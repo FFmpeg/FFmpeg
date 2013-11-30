@@ -5943,18 +5943,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         goto err;
     }
 
-    // process pulldown flags
-    s->current_picture_ptr->f.repeat_pict = 0;
-    // Pulldown flags are only valid when 'broadcast' has been set.
-    // So ticks_per_frame will be 2
-    if (v->rff) {
-        // repeat field
-        s->current_picture_ptr->f.repeat_pict = 1;
-    } else if (v->rptfrm) {
-        // repeat frames
-        s->current_picture_ptr->f.repeat_pict = v->rptfrm * 2;
-    }
-
     // for skipping the frame
     s->current_picture.f.pict_type = s->pict_type;
     s->current_picture.f.key_frame = s->pict_type == AV_PICTURE_TYPE_I;
@@ -5978,6 +5966,18 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 
     if (ff_MPV_frame_start(s, avctx) < 0) {
         goto err;
+    }
+
+    // process pulldown flags
+    s->current_picture_ptr->f.repeat_pict = 0;
+    // Pulldown flags are only valid when 'broadcast' has been set.
+    // So ticks_per_frame will be 2
+    if (v->rff) {
+        // repeat field
+        s->current_picture_ptr->f.repeat_pict = 1;
+    } else if (v->rptfrm) {
+        // repeat frames
+        s->current_picture_ptr->f.repeat_pict = v->rptfrm * 2;
     }
 
     s->me.qpel_put = s->dsp.put_qpel_pixels_tab;
