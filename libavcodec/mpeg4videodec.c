@@ -1824,7 +1824,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 return -1;
             }
             s->sprite_warping_accuracy  = get_bits(gb, 2);
-            s->sprite_brightness_change = get_bits1(gb);
+            ctx->sprite_brightness_change = get_bits1(gb);
             if (ctx->vol_sprite_usage == STATIC_SPRITE)
                 skip_bits1(gb); // low_latency_sprite
         }
@@ -2386,7 +2386,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
          ctx->vol_sprite_usage == GMC_SPRITE)) {
         if (mpeg4_decode_sprite_trajectory(ctx, gb) < 0)
             return AVERROR_INVALIDDATA;
-        if (s->sprite_brightness_change)
+        if (ctx->sprite_brightness_change)
             av_log(s->avctx, AV_LOG_ERROR,
                    "sprite_brightness_change not supported\n");
         if (ctx->vol_sprite_usage == STATIC_SPRITE)
