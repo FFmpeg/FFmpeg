@@ -788,9 +788,6 @@ void ff_MPV_common_defaults(MpegEncContext *s)
 
     s->coded_picture_number  = 0;
     s->picture_number        = 0;
-    s->input_picture_number  = 0;
-
-    s->picture_in_gop_number = 0;
 
     s->f_code                = 1;
     s->b_code                = 1;
