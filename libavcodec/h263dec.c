@@ -491,8 +491,10 @@ retry:
 
     avctx->has_b_frames = !s->low_delay;
 
-    if (ff_mpeg4_workaround_bugs(avctx) == 1)
-        goto retry;
+    if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
+        if (ff_mpeg4_workaround_bugs(avctx) == 1)
+            goto retry;
+    }
 
     /* After H263 & mpeg4 header decode we have the height, width,
      * and other parameters. So then we could init the picture.
