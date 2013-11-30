@@ -181,7 +181,7 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
     if (w <= 0 || h <= 0)
         return AVERROR_INVALIDDATA;
 
-    for (i = 0; i < s->num_sprite_warping_points; i++) {
+    for (i = 0; i < ctx->num_sprite_warping_points; i++) {
         int length;
         int x = 0, y = 0;
 
@@ -249,7 +249,7 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
                         ROUNDED_DIV(((h - h2) * (r * sprite_ref[0][1] - 16 * vop_ref[0][1]) +
                                      h2 * (r * sprite_ref[2][1] - 16 * vop_ref[2][1])), h);
 
-    switch (s->num_sprite_warping_points) {
+    switch (ctx->num_sprite_warping_points) {
     case 0:
         s->sprite_offset[0][0] =
         s->sprite_offset[0][1] =
@@ -368,7 +368,7 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
             s->sprite_delta[1][i]  <<= shift_y;
             s->sprite_shift[i]       = 16;
         }
-        s->real_sprite_warping_points = s->num_sprite_warping_points;
+        s->real_sprite_warping_points = ctx->num_sprite_warping_points;
     }
 
     return 0;
@@ -1815,12 +1815,12 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 skip_bits(gb, 13); // sprite_top
                 skip_bits1(gb); /* marker */
             }
-            s->num_sprite_warping_points = get_bits(gb, 6);
-            if (s->num_sprite_warping_points > 3) {
+            ctx->num_sprite_warping_points = get_bits(gb, 6);
+            if (ctx->num_sprite_warping_points > 3) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "%d sprite_warping_points\n",
-                       s->num_sprite_warping_points);
-                s->num_sprite_warping_points = 0;
+                       ctx->num_sprite_warping_points);
+                ctx->num_sprite_warping_points = 0;
                 return -1;
             }
             s->sprite_warping_accuracy  = get_bits(gb, 2);
@@ -2431,7 +2431,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                    gb->size_in_bits,s->progressive_sequence, s->alternate_scan,
                    s->top_field_first, s->quarter_sample ? "q" : "h",
                    s->data_partitioning, ctx->resync_marker,
-                   s->num_sprite_warping_points, s->sprite_warping_accuracy,
+                   ctx->num_sprite_warping_points, s->sprite_warping_accuracy,
                    1 - s->no_rounding, s->vo_type,
                    s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold,
                    ctx->cplx_estimation_trash_i, ctx->cplx_estimation_trash_p,
