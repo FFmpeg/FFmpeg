@@ -772,7 +772,6 @@ void ff_MPV_common_defaults(MpegEncContext *s);
 
 void ff_MPV_decode_defaults(MpegEncContext *s);
 int ff_MPV_common_init(MpegEncContext *s);
-int ff_mpv_frame_size_alloc(MpegEncContext *s, int linesize);
 int ff_MPV_common_frame_size_change(MpegEncContext *s);
 void ff_MPV_common_end(MpegEncContext *s);
 void ff_MPV_decode_mb(MpegEncContext *s, int16_t block[12][64]);

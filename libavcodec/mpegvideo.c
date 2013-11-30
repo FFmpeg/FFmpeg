@@ -191,7 +191,7 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     return 0;
 }
 
-int ff_mpv_frame_size_alloc(MpegEncContext *s, int linesize)
+static int frame_size_alloc(MpegEncContext *s, int linesize)
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 32, 32);
 
@@ -270,7 +270,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     }
 
     if (!s->edge_emu_buffer &&
-        (ret = ff_mpv_frame_size_alloc(s, pic->f.linesize[0])) < 0) {
+        (ret = frame_size_alloc(s, pic->f.linesize[0])) < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "get_buffer() failed to allocate context scratch buffers.\n");
         ff_mpeg_unref_picture(s, pic);
@@ -636,7 +636,7 @@ int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src)
     if (dst->avctx->codec_tag == AV_RL32("VCR2"))
         exchange_uv(dst);
     if (!dst->edge_emu_buffer &&
-        (ret = ff_mpv_frame_size_alloc(dst, dst->linesize)) < 0) {
+        (ret = frame_size_alloc(dst, dst->linesize)) < 0) {
         av_log(dst->avctx, AV_LOG_ERROR, "failed to allocate context "
                "scratch buffers.\n");
         return ret;
@@ -743,7 +743,7 @@ do {\
     // linesize dependend scratch buffer allocation
     if (!s->edge_emu_buffer)
         if (s1->linesize) {
-            if (ff_mpv_frame_size_alloc(s, s1->linesize) < 0) {
+            if (frame_size_alloc(s, s1->linesize) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate context "
                        "scratch buffers.\n");
                 return AVERROR(ENOMEM);
