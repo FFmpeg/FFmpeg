@@ -1348,16 +1348,14 @@ av_cold void ff_init_vlc_rl(RLTable *rl)
     }
 }
 
-void ff_release_unused_pictures(MpegEncContext*s, int remove_current)
+static void release_unused_pictures(MpegEncContext *s)
 {
     int i;
 
     /* release non reference frames */
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-        if (!s->picture[i].reference &&
-            (remove_current || &s->picture[i] !=  s->current_picture_ptr)) {
+        if (!s->picture[i].reference)
             ff_mpeg_unref_picture(s, &s->picture[i]);
-        }
     }
 }
 
@@ -1460,7 +1458,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     ff_mpeg_unref_picture(s, &s->current_picture);
 
     if (!s->encoding) {
-        ff_release_unused_pictures(s, 1);
+        release_unused_pictures(s);
 
         if (s->current_picture_ptr &&
             s->current_picture_ptr->f.buf[0] == NULL) {

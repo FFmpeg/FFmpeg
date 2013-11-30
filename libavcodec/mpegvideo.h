@@ -795,7 +795,6 @@ void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
 void ff_print_debug_info(MpegEncContext *s, Picture *p);
 void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
-void ff_release_unused_pictures(MpegEncContext *s, int remove_current);
 int ff_find_unused_picture(MpegEncContext *s, int shared);
 void ff_denoise_dct(MpegEncContext *s, int16_t *block);
 int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
