@@ -430,8 +430,9 @@ Truncate the feed file, rather than appending to it. By default
 file size value is reached (see @option{FileMaxSize} option).
 
 @item FileMaxSize @var{size}
-Set maximum size of the feed. 0 means unlimited. The postfixes
-@code{K}, @code{M}, and @code{G} are recognized.
+Set maximum size of the feed file in bytes. 0 means unlimited. The
+postfixes @code{K} (2^10), @code{M} (2^20), and @code{G} (2^30) are
+recognized.
 
 Default value is 5M.
 
