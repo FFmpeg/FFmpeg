@@ -1657,12 +1657,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
-/* generic function for encode/decode called after a
- * frame has been coded/decoded. */
+/* called after a frame has been decoded. */
 void ff_MPV_frame_end(MpegEncContext *s)
 {
-    int i;
-
 #if FF_API_XVMC
 FF_DISABLE_DEPRECATION_WARNINGS
     /* redraw edges for the frame if decoding didn't complete */
@@ -1672,7 +1669,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
     } else
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_XVMC */
-    if ((s->er.error_count || s->encoding) &&
+    if (s->er.error_count  &&
         !s->avctx->hwaccel &&
         s->unrestricted_mv &&
         s->current_picture.reference &&
@@ -1697,11 +1694,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     emms_c();
 
-    s->last_pict_type                 = s->pict_type;
-    s->last_lambda_for [s->pict_type] = s->current_picture_ptr->f.quality;
-    if (s->pict_type!= AV_PICTURE_TYPE_B) {
-        s->last_non_b_pict_type = s->pict_type;
-    }
 #if 0
     /* copy back current_picture variables */
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
@@ -1713,20 +1705,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     assert(i < MAX_PICTURE_COUNT);
 #endif
 
-    if (s->encoding) {
-        /* release non-reference frames */
-        for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            if (!s->picture[i].reference)
-                ff_mpeg_unref_picture(s, &s->picture[i]);
-        }
-    }
     // clear copies, to avoid confusion
 #if 0
     memset(&s->last_picture,    0, sizeof(Picture));
     memset(&s->next_picture,    0, sizeof(Picture));
     memset(&s->current_picture, 0, sizeof(Picture));
 #endif
-    s->avctx->coded_frame = &s->current_picture_ptr->f;
 
     if (s->current_picture.reference)
         ff_thread_report_progress(&s->current_picture_ptr->tf, INT_MAX, 0);
