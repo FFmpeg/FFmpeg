@@ -472,7 +472,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
             }
         }
     }
-    if (s->new_pred)
+    if (ctx->new_pred)
         decode_new_pred(ctx, &s->gb);
 
     return 0;
@@ -1978,8 +1978,8 @@ no_cplx_est:
             ctx->rvlc = get_bits1(gb);
 
         if (vo_ver_id != 1) {
-            s->new_pred = get_bits1(gb);
-            if (s->new_pred) {
+            ctx->new_pred = get_bits1(gb);
+            if (ctx->new_pred) {
                 av_log(s->avctx, AV_LOG_ERROR, "new pred not supported\n");
                 skip_bits(gb, 2); /* requested upstream message type */
                 skip_bits1(gb);   /* newpred segment type */
@@ -1988,7 +1988,7 @@ no_cplx_est:
                 av_log(s->avctx, AV_LOG_ERROR,
                        "reduced resolution VOP not supported\n");
         } else {
-            s->new_pred        = 0;
+            ctx->new_pred = 0;
         }
 
         s->scalability = get_bits1(gb);
@@ -2318,7 +2318,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             av_log(s->avctx, AV_LOG_ERROR, "vop not coded\n");
         return FRAME_SKIPPED;
     }
-    if (s->new_pred)
+    if (ctx->new_pred)
         decode_new_pred(ctx, gb);
 
     if (ctx->shape != BIN_ONLY_SHAPE &&
