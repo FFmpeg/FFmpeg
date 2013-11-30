@@ -1990,7 +1990,6 @@ static int video_thread(void *arg)
             goto the_end;
     }
  the_end:
-    avcodec_flush_buffers(is->video_st->codec);
 #if CONFIG_AVFILTER
     avfilter_graph_free(&graph);
 #endif
