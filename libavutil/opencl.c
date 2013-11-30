@@ -98,7 +98,7 @@ static const AVClass openclutils_class = {
 
 static OpenclContext opencl_ctx = {&openclutils_class};
 
-static const cl_device_type device_type[] = {CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU, CL_DEVICE_TYPE_DEFAULT};
+static const cl_device_type device_type[] = {CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU};
 
 typedef struct {
     int err_code;
