@@ -62,22 +62,22 @@
 typedef struct Mpeg4DecContext {
     MpegEncContext m;
 
-    ///< number of bits to represent the fractional part of time
+    /// number of bits to represent the fractional part of time
     int time_increment_bits;
     int shape;
     int vol_sprite_usage;
     int sprite_brightness_change;
     int num_sprite_warping_points;
-    ///< sprite trajectory points
+    /// sprite trajectory points
     uint16_t sprite_traj[4][2];
-    ///< sprite shift [isChroma]
+    /// sprite shift [isChroma]
     int sprite_shift[2];
 
     // reversible vlc
     int rvlc;
-    ///< could this stream contain resync markers
+    /// could this stream contain resync markers
     int resync_marker;
-    ///< time distance of first I -> B, used for interlaced b frames
+    /// time distance of first I -> B, used for interlaced b frames
     int t_frame;
 
     int new_pred;
