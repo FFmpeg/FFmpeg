@@ -74,6 +74,7 @@ typedef struct Mpeg4DecContext {
     int t_frame;
 
     int new_pred;
+    int enhancement_type;
 
     /* bug workarounds */
     int divx_version;
