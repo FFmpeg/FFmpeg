@@ -391,8 +391,8 @@ ignored, and the log is written to standard output.
 
 @item NoDaemon
 Set no-daemon mode. This option is currently ignored since now
-@command{ffserver} will work in no-daemon mode, and is deprecated.
-
+@command{ffserver} will always work in no-daemon mode, and is
+deprecated.
 @end table
 
 @section Feed section
