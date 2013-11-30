@@ -326,6 +326,8 @@ static const int8_t dca_channel_reorder_nolfe_xch[][9] = {
 
 #define DCA_BUFFER_PADDING_SIZE   1024
 
+#define DCA_NSYNCAUX        0x9A1105A0
+
 /** Bit allocation */
 typedef struct {
     int offset;                 ///< code values offset
@@ -1444,6 +1446,7 @@ static int dca_filter_channels(DCAContext *s, int block_index)
 static int dca_subframe_footer(DCAContext *s, int base_channel)
 {
     int in, out, aux_data_count, aux_data_end, reserved;
+    uint32_t nsyncaux;
 
     /*
      * Unpack optional information
@@ -1462,8 +1465,9 @@ static int dca_subframe_footer(DCAContext *s, int base_channel)
 
             aux_data_end = 8 * aux_data_count + get_bits_count(&s->gb);
 
-            if (get_bits_long(&s->gb, 32) != 0x9A1105A0) { // nSYNCAUX
-                av_log(s->avctx,AV_LOG_ERROR, "nSYNCAUX mismatching\n");
+            if ((nsyncaux = get_bits_long(&s->gb, 32)) != DCA_NSYNCAUX) {
+                av_log(s->avctx, AV_LOG_ERROR, "nSYNCAUX mismatch %#"PRIx32"\n",
+                       nsyncaux);
                 return AVERROR_INVALIDDATA;
             }
 
@@ -1477,7 +1481,8 @@ static int dca_subframe_footer(DCAContext *s, int base_channel)
             }
 
             if ((s->core_downmix = get_bits1(&s->gb))) {
-                switch (get_bits(&s->gb, 3)) {
+                int am = get_bits(&s->gb, 3);
+                switch (am) {
                 case 0:
                     s->core_downmix_amode = DCA_MONO;
                     break;
@@ -1500,13 +1505,20 @@ static int dca_subframe_footer(DCAContext *s, int base_channel)
                     s->core_downmix_amode = DCA_3F1R;
                     break;
                 default:
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "Invalid mode %d for embedded downmix coefficients\n",
+                           am);
                     return AVERROR_INVALIDDATA;
                 }
                 for (out = 0; out < dca_channels[s->core_downmix_amode]; out++) {
                     for (in = 0; in < s->prim_channels + !!s->lfe; in++) {
                         uint16_t tmp = get_bits(&s->gb, 9);
-                        if ((tmp & 0xFF) > 241)
+                        if ((tmp & 0xFF) > 241) {
+                            av_log(s->avctx, AV_LOG_ERROR,
+                                   "Invalid downmix coefficient code %"PRIu16"\n",
+                                   tmp);
                             return AVERROR_INVALIDDATA;
+                        }
                         s->core_downmix_codes[in][out] = tmp;
                     }
                 }
@@ -1517,7 +1529,8 @@ static int dca_subframe_footer(DCAContext *s, int base_channel)
 
             // additional data (reserved, cf. ETSI TS 102 114 V1.4.1)
             if ((reserved = (aux_data_end - get_bits_count(&s->gb))) < 0) {
-                 av_log(s->avctx, AV_LOG_ERROR, "overread aux by %d bits\n", -reserved);
+                 av_log(s->avctx, AV_LOG_ERROR,
+                        "Overread auxiliary data by %d bits\n", -reserved);
                 return AVERROR_INVALIDDATA;
             } else if (reserved) {
                 avpriv_request_sample(s->avctx,
