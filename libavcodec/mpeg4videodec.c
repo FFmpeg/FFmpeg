@@ -2000,7 +2000,7 @@ no_cplx_est:
             int v_sampling_factor_n;
             int v_sampling_factor_m;
 
-            s->hierachy_type = get_bits1(gb);
+            skip_bits1(gb);    // hierarchy_type
             skip_bits(gb, 4);  /* ref_layer_id */
             skip_bits1(gb);    /* ref_layer_sampling_dir */
             h_sampling_factor_n = get_bits(gb, 5);
