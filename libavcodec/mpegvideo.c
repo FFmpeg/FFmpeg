@@ -683,7 +683,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 
     s->coded_picture_number = s1->coded_picture_number;
     s->picture_number       = s1->picture_number;
-    s->input_picture_number = s1->input_picture_number;
 
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         ff_mpeg_unref_picture(s, &s->picture[i]);
