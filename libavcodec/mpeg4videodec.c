@@ -1826,7 +1826,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             s->sprite_warping_accuracy  = get_bits(gb, 2);
             s->sprite_brightness_change = get_bits1(gb);
             if (ctx->vol_sprite_usage == STATIC_SPRITE)
-                s->low_latency_sprite = get_bits1(gb);
+                skip_bits1(gb); // low_latency_sprite
         }
         // FIXME sadct disable bit if verid!=1 && shape not rect
 
