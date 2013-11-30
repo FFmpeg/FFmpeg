@@ -623,7 +623,6 @@ typedef struct MpegEncContext {
     PutBitContext tex_pb;            ///< used for data partitioned VOPs
     PutBitContext pb2;               ///< used for data partitioned VOPs
     int mpeg_quant;
-    int t_frame;                       ///< time distance of first I -> B, used for interlaced b frames
     int padding_bug_score;             ///< used to detect the VERY common padding bug in MPEG4
 
     /* divx specific, used to workaround (many) bugs in divx5 */
