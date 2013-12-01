@@ -459,7 +459,6 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
                   (int64_t)avs->vi->height) * bits) / 8;
     if (!pkt->size)
         return AVERROR_UNKNOWN;
-    av_new_packet(pkt, (int)pkt->size);
     if (av_new_packet(pkt, (int)pkt->size) < 0) {
         av_free(pkt);
         return AVERROR(ENOMEM);
