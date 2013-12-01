@@ -94,7 +94,7 @@ static const int avs_planes_yuv[3]    = { AVS_PLANAR_Y, AVS_PLANAR_U,
 
 /* A conflict between C++ global objects, atexit, and dynamic loading requires
  * us to register our own atexit handler to prevent double freeing. */
-static AviSynthLibrary *avs_library = NULL;
+static AviSynthLibrary avs_library;
 static int avs_atexit_called        = 0;
 
 /* Linked list of AviSynthContexts. An atexit handler destroys this list. */
@@ -104,18 +104,14 @@ static av_cold void avisynth_atexit_handler(void);
 
 static av_cold int avisynth_load_library(void)
 {
-    avs_library = av_mallocz(sizeof(AviSynthLibrary));
-    if (!avs_library)
+    avs_library.library = LoadLibrary(AVISYNTH_LIB);
+    if (!avs_library.library)
         return AVERROR_UNKNOWN;
 
-    avs_library->library = LoadLibrary(AVISYNTH_LIB);
-    if (!avs_library->library)
-        goto init_fail;
-
-#define LOAD_AVS_FUNC(name, continue_on_fail)                           \
-        avs_library->name =                                             \
-            (void *)GetProcAddress(avs_library->library, #name);        \
-        if (!continue_on_fail && !avs_library->name)                    \
+#define LOAD_AVS_FUNC(name, continue_on_fail)                          \
+        avs_library.name =                                             \
+            (void *)GetProcAddress(avs_library.library, #name);        \
+        if (!continue_on_fail && !avs_library.name)                    \
             goto fail;
 
     LOAD_AVS_FUNC(avs_bit_blt, 0);
@@ -138,9 +134,7 @@ static av_cold int avisynth_load_library(void)
     return 0;
 
 fail:
-    FreeLibrary(avs_library->library);
-init_fail:
-    av_freep(&avs_library);
+    FreeLibrary(avs_library.library);
     return AVERROR_UNKNOWN;
 }
 
@@ -152,13 +146,13 @@ static av_cold int avisynth_context_create(AVFormatContext *s)
     AviSynthContext *avs = s->priv_data;
     int ret;
 
-    if (!avs_library)
+    if (!avs_library.library)
         if (ret = avisynth_load_library())
             return ret;
 
-    avs->env = avs_library->avs_create_script_environment(3);
-    if (avs_library->avs_get_error) {
-        const char *error = avs_library->avs_get_error(avs->env);
+    avs->env = avs_library.avs_create_script_environment(3);
+    if (avs_library.avs_get_error) {
+        const char *error = avs_library.avs_get_error(avs->env);
         if (error) {
             av_log(s, AV_LOG_ERROR, "%s\n", error);
             return AVERROR_UNKNOWN;
@@ -190,11 +184,11 @@ static av_cold void avisynth_context_destroy(AviSynthContext *avs)
     }
 
     if (avs->clip) {
-        avs_library->avs_release_clip(avs->clip);
+        avs_library.avs_release_clip(avs->clip);
         avs->clip = NULL;
     }
     if (avs->env) {
-        avs_library->avs_delete_script_environment(avs->env);
+        avs_library.avs_delete_script_environment(avs->env);
         avs->env = NULL;
     }
 }
@@ -208,8 +202,7 @@ static av_cold void avisynth_atexit_handler(void)
         avisynth_context_destroy(avs);
         avs = next;
     }
-    FreeLibrary(avs_library->library);
-    av_freep(&avs_library);
+    FreeLibrary(avs_library.library);
 
     avs_atexit_called = 1;
 }
@@ -375,7 +368,7 @@ static int avisynth_open_file(AVFormatContext *s)
 #else
     arg = avs_new_value_string(s->filename);
 #endif
-    val = avs_library->avs_invoke(avs->env, "Import", arg, 0);
+    val = avs_library.avs_invoke(avs->env, "Import", arg, 0);
     if (avs_is_error(val)) {
         av_log(s, AV_LOG_ERROR, "%s\n", avs_as_error(val));
         ret = AVERROR_UNKNOWN;
@@ -387,11 +380,11 @@ static int avisynth_open_file(AVFormatContext *s)
         goto fail;
     }
 
-    avs->clip = avs_library->avs_take_clip(val, avs->env);
-    avs->vi   = avs_library->avs_get_video_info(avs->clip);
+    avs->clip = avs_library.avs_take_clip(val, avs->env);
+    avs->vi   = avs_library.avs_get_video_info(avs->clip);
 
     /* Release the AVS_Value as it will go out of scope. */
-    avs_library->avs_release_value(val);
+    avs_library.avs_release_value(val);
 
     if (ret = avisynth_create_stream(s))
         goto fail;
@@ -472,8 +465,8 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
         return AVERROR(ENOMEM);
     }
 
-    frame = avs_library->avs_get_frame(avs->clip, n);
-    error = avs_library->avs_clip_get_error(avs->clip);
+    frame = avs_library.avs_get_frame(avs->clip, n);
+    error = avs_library.avs_clip_get_error(avs->clip);
     if (error) {
         av_log(s, AV_LOG_ERROR, "%s\n", error);
         avs->error = 1;
@@ -488,7 +481,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
         pitch = avs_get_pitch_p(frame, plane);
 
 #ifdef USING_AVISYNTH
-        if (avs_library->avs_get_version(avs->clip) == 3) {
+        if (avs_library.avs_get_version(avs->clip) == 3) {
             rowsize     = avs_get_row_size_p_25(frame, plane);
             planeheight = avs_get_height_p_25(frame, plane);
         } else {
@@ -506,12 +499,12 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
             pitch = -pitch;
         }
 
-        avs_library->avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch,
+        avs_library.avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch,
                                  rowsize, planeheight);
         dst_p += rowsize * planeheight;
     }
 
-    avs_library->avs_release_video_frame(frame);
+    avs_library.avs_release_video_frame(frame);
     return 0;
 }
 
@@ -570,8 +563,8 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt,
     if (!pkt->data)
         return AVERROR(ENOMEM);
 
-    avs_library->avs_get_audio(avs->clip, pkt->data, n, samples);
-    error = avs_library->avs_clip_get_error(avs->clip);
+    avs_library.avs_get_audio(avs->clip, pkt->data, n, samples);
+    error = avs_library.avs_clip_get_error(avs->clip);
     if (error) {
         av_log(s, AV_LOG_ERROR, "%s\n", error);
         avs->error = 1;
