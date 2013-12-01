@@ -193,7 +193,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
 
     emms_c();
 
-    ff_mjpeg_encode_picture_trailer(s);
+    ff_mjpeg_encode_picture_trailer(&s->pb, s->header_bits);
     s->picture_number++;
 
     flush_put_bits(&s->pb);

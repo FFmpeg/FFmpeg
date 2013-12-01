@@ -269,11 +269,11 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     put_bits(pb, 8, 0); /* Ah/Al (not used) */
 }
 
-static void escape_FF(MpegEncContext *s, int start)
+static void escape_FF(PutBitContext *pb, int start)
 {
-    int size= put_bits_count(&s->pb) - start*8;
+    int size = put_bits_count(pb) - start * 8;
     int i, ff_count;
-    uint8_t *buf= s->pb.buf + start;
+    uint8_t *buf = pb->buf + start;
     int align= (-(size_t)(buf))&3;
 
     assert((size&7) == 0);
@@ -306,8 +306,8 @@ static void escape_FF(MpegEncContext *s, int start)
 
     if(ff_count==0) return;
 
-    flush_put_bits(&s->pb);
-    skip_put_bytes(&s->pb, ff_count);
+    flush_put_bits(pb);
+    skip_put_bytes(pb, ff_count);
 
     for(i=size-1; ff_count; i--){
         int v= buf[i];
@@ -328,16 +328,16 @@ void ff_mjpeg_encode_stuffing(PutBitContext * pbc)
     if(length) put_bits(pbc, length, (1<<length)-1);
 }
 
-void ff_mjpeg_encode_picture_trailer(MpegEncContext *s)
+void ff_mjpeg_encode_picture_trailer(PutBitContext *pb, int header_bits)
 {
-    ff_mjpeg_encode_stuffing(&s->pb);
-    flush_put_bits(&s->pb);
+    ff_mjpeg_encode_stuffing(pb);
+    flush_put_bits(pb);
 
-    assert((s->header_bits&7)==0);
+    assert((header_bits & 7) == 0);
 
-    escape_FF(s, s->header_bits>>3);
+    escape_FF(pb, header_bits >> 3);
 
-    put_marker(&s->pb, EOI);
+    put_marker(pb, EOI);
 }
 
 void ff_mjpeg_encode_dc(MpegEncContext *s, int val,
