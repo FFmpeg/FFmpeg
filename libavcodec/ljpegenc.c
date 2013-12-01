@@ -115,9 +115,9 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
                     diff= ((left[i] - pred + 0x100)&0x1FF) - 0x100;
 
                     if(i==0)
-                        ff_mjpeg_encode_dc(s, diff, m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
+                        ff_mjpeg_encode_dc(&s->pb, diff, m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
                     else
-                        ff_mjpeg_encode_dc(s, diff, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+                        ff_mjpeg_encode_dc(&s->pb, diff, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
                 }
             }
         }
@@ -158,9 +158,9 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
                                 }
 
                                 if(i==0)
-                                    ff_mjpeg_encode_dc(s, *ptr - pred, m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
+                                    ff_mjpeg_encode_dc(&s->pb, *ptr - pred, m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
                                 else
-                                    ff_mjpeg_encode_dc(s, *ptr - pred, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+                                    ff_mjpeg_encode_dc(&s->pb, *ptr - pred, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
                             }
                         }
                     }
@@ -170,19 +170,19 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
                         int x, y, h, v, linesize;
                         h = s->mjpeg_hsample[i];
                         v = s->mjpeg_vsample[i];
-                        linesize= p->linesize[i];
+                        linesize = pict->linesize[i];
 
                         for(y=0; y<v; y++){
                             for(x=0; x<h; x++){
                                 int pred;
 
-                                ptr = p->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+                                ptr = pict->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
                                 PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
 
                                 if(i==0)
-                                    ff_mjpeg_encode_dc(s, *ptr - pred, m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
+                                    ff_mjpeg_encode_dc(&s->pb, *ptr - pred, m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
                                 else
-                                    ff_mjpeg_encode_dc(s, *ptr - pred, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+                                    ff_mjpeg_encode_dc(&s->pb, *ptr - pred, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
                             }
                         }
                     }
