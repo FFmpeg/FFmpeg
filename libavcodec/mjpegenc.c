@@ -37,11 +37,6 @@
 #include "mjpeg.h"
 #include "mjpegenc.h"
 
-/* use two quantizer tables (one for luminance and one for chrominance) */
-/* not yet working */
-#undef TWOMATRIXES
-
-
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
     MJpegContext *m;
@@ -109,25 +104,13 @@ static void jpeg_table_header(MpegEncContext *s)
 
     /* quant matrixes */
     put_marker(p, DQT);
-#ifdef TWOMATRIXES
-    put_bits(p, 16, 2 + 2 * (1 + 64));
-#else
     put_bits(p, 16, 2 + 1 * (1 + 64));
-#endif
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 0); /* table 0 */
     for(i=0;i<64;i++) {
         j = s->intra_scantable.permutated[i];
         put_bits(p, 8, s->intra_matrix[j]);
     }
-#ifdef TWOMATRIXES
-    put_bits(p, 4, 0); /* 8 bit precision */
-    put_bits(p, 4, 1); /* table 1 */
-    for(i=0;i<64;i++) {
-        j = s->intra_scantable.permutated[i];
-        put_bits(p, 8, s->chroma_intra_matrix[j]);
-    }
-#endif
 
     /* huffman table */
     put_marker(p, DHT);
@@ -224,21 +207,13 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 8, 2); /* component number */
     put_bits(&s->pb, 4, s->mjpeg_hsample[1]); /* H factor */
     put_bits(&s->pb, 4, s->mjpeg_vsample[1]); /* V factor */
-#ifdef TWOMATRIXES
-    put_bits(&s->pb, 8, lossless ? 0 : 1); /* select matrix */
-#else
     put_bits(&s->pb, 8, 0); /* select matrix */
-#endif
 
     /* Cr component */
     put_bits(&s->pb, 8, 3); /* component number */
     put_bits(&s->pb, 4, s->mjpeg_hsample[2]); /* H factor */
     put_bits(&s->pb, 4, s->mjpeg_vsample[2]); /* V factor */
-#ifdef TWOMATRIXES
-    put_bits(&s->pb, 8, lossless ? 0 : 1); /* select matrix */
-#else
     put_bits(&s->pb, 8, 0); /* select matrix */
-#endif
 
     /* scan header */
     put_marker(&s->pb, SOS);
