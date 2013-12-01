@@ -1066,20 +1066,24 @@ static void sigterm_handler(int sig)
     exit(123);
 }
 
+static void set_default_window_size(VideoPicture *vp)
+{
+    SDL_Rect rect;
+    calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
+    default_width  = rect.w;
+    default_height = rect.h;
+}
+
 static int video_open(VideoState *is, int force_set_video_mode, VideoPicture *vp)
 {
     int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     int w,h;
-    SDL_Rect rect;
 
     if (is_full_screen) flags |= SDL_FULLSCREEN;
     else                flags |= SDL_RESIZABLE;
 
-    if (vp && vp->width) {
-        calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
-        default_width  = rect.w;
-        default_height = rect.h;
-    }
+    if (vp && vp->width)
+        set_default_window_size(vp);
 
     if (is_full_screen && fs_screen_width) {
         w = fs_screen_width;
