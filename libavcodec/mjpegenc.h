@@ -51,7 +51,9 @@ typedef struct MJpegContext {
 
 int  ff_mjpeg_encode_init(MpegEncContext *s);
 void ff_mjpeg_encode_close(MpegEncContext *s);
-void ff_mjpeg_encode_picture_header(MpegEncContext *s);
+void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
+                                    ScanTable *intra_scantable,
+                                    uint16_t intra_matrix[64]);
 void ff_mjpeg_encode_picture_trailer(MpegEncContext *s);
 void ff_mjpeg_encode_stuffing(PutBitContext *pbc);
 void ff_mjpeg_encode_dc(MpegEncContext *s, int val,

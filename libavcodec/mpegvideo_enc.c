@@ -3296,7 +3296,8 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     switch(s->out_format) {
     case FMT_MJPEG:
         if (CONFIG_MJPEG_ENCODER)
-            ff_mjpeg_encode_picture_header(s);
+            ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
+                                           s->intra_matrix);
         break;
     case FMT_H261:
         if (CONFIG_H261_ENCODER)

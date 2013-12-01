@@ -70,7 +70,8 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
-    ff_mjpeg_encode_picture_header(s);
+    ff_mjpeg_encode_picture_header(avctx, &s->pb, &s->intra_scantable,
+                                   s->intra_matrix);
 
     s->header_bits= put_bits_count(&s->pb);
 
