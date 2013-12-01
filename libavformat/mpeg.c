@@ -521,7 +521,13 @@ static int mpegps_read_packet(AVFormatContext *s,
         codec_id = AV_CODEC_ID_DVD_NAV;
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
         type = AVMEDIA_TYPE_AUDIO;
-        codec_id = m->sofdec > 0 ? AV_CODEC_ID_ADPCM_ADX : AV_CODEC_ID_MP2;
+        if (m->sofdec > 0) {
+            codec_id = AV_CODEC_ID_ADPCM_ADX;
+            // Auto-detect AC-3
+            request_probe = 50;
+        } else {
+            codec_id = AV_CODEC_ID_MP2;
+        }
     } else if (startcode >= 0x80 && startcode <= 0x87) {
         type = AVMEDIA_TYPE_AUDIO;
         codec_id = AV_CODEC_ID_AC3;
