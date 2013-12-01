@@ -46,6 +46,8 @@
 /doc/examples/transcode_aac
 /doc/fate.txt
 /doc/doxy/html/
+/doc/examples/output
+/doc/examples/transcode_aac
 /doc/print_options
 /lcov/
 /libavcodec/*_tablegen
