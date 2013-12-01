@@ -753,7 +753,7 @@ NoVideo
 @end example
 
 @item
-Ogg Vorbis audio:
+Ogg Vorbis audio
 @example
 <Stream test.ogg>
 Feed feed1.ffm
@@ -773,7 +773,6 @@ Feed feed1.ffm
 Format rm
 AudioBitRate 32
 NoVideo
-NoAudio
 </Stream>
 @end example
 
