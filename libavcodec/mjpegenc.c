@@ -153,18 +153,17 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
     int size;
     uint8_t *ptr;
 
-    if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0)
-    {
-    /* JFIF header */
-    put_marker(p, APP0);
-    put_bits(p, 16, 16);
-    avpriv_put_string(p, "JFIF", 1); /* this puts the trailing zero-byte too */
-    put_bits(p, 16, 0x0201); /* v 1.02 */
-    put_bits(p, 8, 0); /* units type: 0 - aspect ratio */
-    put_bits(p, 16, avctx->sample_aspect_ratio.num);
-    put_bits(p, 16, avctx->sample_aspect_ratio.den);
-    put_bits(p, 8, 0); /* thumbnail width */
-    put_bits(p, 8, 0); /* thumbnail height */
+    if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
+        /* JFIF header */
+        put_marker(p, APP0);
+        put_bits(p, 16, 16);
+        avpriv_put_string(p, "JFIF", 1); /* this puts the trailing zero-byte too */
+        put_bits(p, 16, 0x0201);         /* v 1.02 */
+        put_bits(p,  8, 0);              /* units type: 0 - aspect ratio */
+        put_bits(p, 16, avctx->sample_aspect_ratio.num);
+        put_bits(p, 16, avctx->sample_aspect_ratio.den);
+        put_bits(p, 8, 0); /* thumbnail width */
+        put_bits(p, 8, 0); /* thumbnail height */
     }
 
     /* comment */
@@ -178,9 +177,9 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
         AV_WB16(ptr, size);
     }
 
-    if(  avctx->pix_fmt == AV_PIX_FMT_YUV420P
-       ||avctx->pix_fmt == AV_PIX_FMT_YUV422P
-       ||avctx->pix_fmt == AV_PIX_FMT_YUV444P){
+    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P ||
+        avctx->pix_fmt == AV_PIX_FMT_YUV422P ||
+        avctx->pix_fmt == AV_PIX_FMT_YUV444P) {
         put_marker(p, COM);
         flush_put_bits(p);
         ptr = put_bits_ptr(p);
