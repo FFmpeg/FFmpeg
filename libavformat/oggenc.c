@@ -86,14 +86,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass ogg_muxer_class = {
-    .class_name = "Ogg muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-
 static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc_offset)
 {
     int64_t pos = avio_tell(pb);
@@ -624,11 +616,26 @@ static int ogg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+#if CONFIG_OGG_MUXER
+static const AVClass ogg_muxer_class = {
+    .class_name = "Ogg muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_ogg_muxer = {
     .name              = "ogg",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg"),
     .mime_type         = "application/ogg",
-    .extensions        = "ogg,ogv,spx,opus",
+    .extensions        = "ogg,ogv"
+#if !CONFIG_SPEEX_MUXER
+                         ",spx"
+#endif
+#if !CONFIG_OPUS_MUXER
+                         ",opus"
+#endif
+                         ,
     .priv_data_size    = sizeof(OGGContext),
     .audio_codec       = AV_CODEC_ID_FLAC,
     .video_codec       = AV_CODEC_ID_THEORA,
@@ -638,3 +645,52 @@ AVOutputFormat ff_ogg_muxer = {
     .flags             = AVFMT_TS_NEGATIVE,
     .priv_class        = &ogg_muxer_class,
 };
+#endif
+
+#if CONFIG_SPEEX_MUXER
+static const AVClass speex_muxer_class = {
+    .class_name = "Speex muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVOutputFormat ff_speex_muxer = {
+    .name              = "speex",
+    .long_name         = NULL_IF_CONFIG_SMALL("Speex"),
+    .mime_type         = "audio/ogg",
+    .extensions        = "spx",
+    .priv_data_size    = sizeof(OGGContext),
+    .audio_codec       = AV_CODEC_ID_SPEEX,
+     .video_codec      = AV_CODEC_ID_NONE,
+    .write_header      = ogg_write_header,
+    .write_packet      = ogg_write_packet,
+    .write_trailer     = ogg_write_trailer,
+    .flags             = AVFMT_TS_NEGATIVE,
+    .priv_class        = &speex_muxer_class,
+};
+#endif
+
+#if CONFIG_OPUS_MUXER
+static const AVClass opus_muxer_class = {
+    .class_name = "Opus muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVOutputFormat ff_opus_muxer = {
+    .name              = "opus",
+    .long_name         = NULL_IF_CONFIG_SMALL("Opus"),
+    .mime_type         = "audio/ogg",
+    .extensions        = "opus",
+    .priv_data_size    = sizeof(OGGContext),
+    .audio_codec       = AV_CODEC_ID_OPUS,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = ogg_write_header,
+    .write_packet      = ogg_write_packet,
+    .write_trailer     = ogg_write_trailer,
+    .flags             = AVFMT_TS_NEGATIVE,
+    .priv_class        = &opus_muxer_class,
+};
+#endif
