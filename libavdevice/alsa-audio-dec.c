@@ -142,7 +142,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     ts_delay += res;
     pkt->pts = timestamp.tv_sec * 1000000LL
                + (timestamp.tv_nsec * st->codec->sample_rate
-                  - ts_delay * 1000000000LL + st->codec->sample_rate * 500LL)
+                  - (int64_t)ts_delay * 1000000000LL + st->codec->sample_rate * 500LL)
                / (st->codec->sample_rate * 1000LL);
 
     pkt->size = res * s->frame_size;
