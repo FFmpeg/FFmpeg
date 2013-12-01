@@ -466,9 +466,11 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
                   (int64_t)avs->vi->height) * bits) / 8;
     if (!pkt->size)
         return AVERROR_UNKNOWN;
-    pkt->data = av_malloc(pkt->size);
-    if (!pkt->data)
+    av_new_packet(pkt, (int)pkt->size);
+    if (av_new_packet(pkt, (int)pkt->size) < 0) {
+        av_free(pkt);
         return AVERROR(ENOMEM);
+    }
 
     frame = avs_library->avs_get_frame(avs->clip, n);
     error = avs_library->avs_clip_get_error(avs->clip);
@@ -606,7 +608,7 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (avs->error)
         return AVERROR_UNKNOWN;
 
-    pkt->destruct = av_destruct_packet;
+    av_free_packet(pkt);
 
     /* If either stream reaches EOF, try to read the other one before
      * giving up. */
