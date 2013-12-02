@@ -28,7 +28,8 @@
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_x86.h"
 
-extern uint16_t ff_inv_zigzag_direct16[64];
+/* not permutated inverse zigzag_direct + 1 for MMX quantizer */
+DECLARE_ALIGNED(16, static uint16_t, inv_zigzag_direct16)[64];
 
 #if HAVE_MMX_INLINE
 #define COMPILE_TEMPLATE_MMXEXT 0
@@ -84,6 +85,10 @@ extern uint16_t ff_inv_zigzag_direct16[64];
 av_cold void ff_dct_encode_init_x86(MpegEncContext *s)
 {
     const int dct_algo = s->avctx->dct_algo;
+    int i;
+
+    for (i = 0; i < 64; i++)
+        inv_zigzag_direct16[ff_zigzag_direct[i]] = i + 1;
 
     if (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX) {
 #if HAVE_MMX_INLINE
