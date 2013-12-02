@@ -51,33 +51,32 @@ SECTION .text
 %macro VP9_MULSUB_2W_2X 6 ; dst1, dst2, src (unchanged), round, coefs1, coefs2
     pmaddwd            m%1, m%3, %5
     pmaddwd            m%2, m%3, %6
-    paddd              m%1, m%4
-    paddd              m%2, m%4
-    psrad              m%1, 14
-    psrad              m%2, 14
+    paddd              m%1,  %4
+    paddd              m%2,  %4
+    psrad              m%1,  14
+    psrad              m%2,  14
 %endmacro
 
-%macro VP9_UNPACK_MULSUB_2W_4X 4 ; dst1, dst2, coef1, coef2
-    punpckhwd           m6, m%2, m%1
-    VP9_MULSUB_2W_2X     4, 5,  6, 7, [pw_m%3_%4], [pw_%4_%3]
+%macro VP9_UNPACK_MULSUB_2W_4X 7 ; dst1, dst2, coef1, coef2, rnd, tmp1, tmp2
+    punpckhwd          m%6, m%2, m%1
+    VP9_MULSUB_2W_2X    %7,  %6,  %6, %5, [pw_m%3_%4], [pw_%4_%3]
     punpcklwd          m%2, m%1
-    VP9_MULSUB_2W_2X    %1, 6, %2, 7, [pw_m%3_%4], [pw_%4_%3]
-    packssdw           m%1, m4
-    packssdw            m6, m5
-    SWAP                %2, 6
+    VP9_MULSUB_2W_2X    %1,  %2,  %2, %5, [pw_m%3_%4], [pw_%4_%3]
+    packssdw           m%1, m%7
+    packssdw           m%2, m%6
 %endmacro
 
-%macro VP9_STORE_2X 2
-    movh                m6, [dstq]
-    movh                m7, [dstq+strideq]
-    punpcklbw           m6, m4
-    punpcklbw           m7, m4
-    paddw               m6, %1
-    paddw               m7, %2
-    packuswb            m6, m4
-    packuswb            m7, m4
-    movh            [dstq], m6
-    movh    [dstq+strideq], m7
+%macro VP9_STORE_2X 5 ; reg1, reg2, tmp1, tmp2, zero
+    movh               m%3, [dstq]
+    movh               m%4, [dstq+strideq]
+    punpcklbw          m%3, m%5
+    punpcklbw          m%4, m%5
+    paddw              m%3, m%1
+    paddw              m%4, m%2
+    packuswb           m%3, m%5
+    packuswb           m%4, m%5
+    movh            [dstq], m%3
+    movh    [dstq+strideq], m%4
 %endmacro
 
 ;-------------------------------------------------------------------------------------------
@@ -95,7 +94,7 @@ SECTION .text
     mova                m4, [pw_11585x2]
     pmulhrsw            m2, m4                              ; m2=t0
     pmulhrsw            m0, m4                              ; m0=t1
-    VP9_UNPACK_MULSUB_2W_4X 1, 3, 15137, 6270               ; m1=t2, m3=t3
+    VP9_UNPACK_MULSUB_2W_4X 1, 3, 15137, 6270, m7, 4, 5     ; m1=t2, m3=t3
     VP9_IDCT4_1D_FINALIZE
 %endmacro
 
@@ -113,11 +112,11 @@ SECTION .text
     mova                m5, [pw_2048]
     pmulhrsw            m0, m5              ; (x*2048 + (1<<14))>>15 <=> (x+8)>>4
     pmulhrsw            m1, m5
-    VP9_STORE_2X        m0, m1
+    VP9_STORE_2X         0,  1,  6,  7,  4
     lea               dstq, [dstq+2*strideq]
     pmulhrsw            m2, m5
     pmulhrsw            m3, m5
-    VP9_STORE_2X        m2, m3
+    VP9_STORE_2X         2,  3,  6,  7,  4
 %endmacro
 
 INIT_MMX ssse3
@@ -136,11 +135,10 @@ cglobal vp9_idct_idct_4x4_add, 4,4,0, dst, stride, block, eob
     pshufw              m0, m0, 0
     pxor                m4, m4
     movh          [blockq], m4
-    mova                m5, [pw_2048]
-    pmulhrsw            m0, m5              ; (x*2048 + (1<<14))>>15 <=> (x+8)>>4
-    VP9_STORE_2X        m0, m0
+    pmulhrsw            m0, [pw_2048]       ; (x*2048 + (1<<14))>>15 <=> (x+8)>>4
+    VP9_STORE_2X         0,  0,  6,  7,  4
     lea               dstq, [dstq+2*strideq]
-    VP9_STORE_2X        m0, m0
+    VP9_STORE_2X         0,  0,  6,  7,  4
     RET
 
 ; faster path for when only top left 2x2 block is set
@@ -194,9 +192,9 @@ cglobal vp9_idct_idct_4x4_add, 4,4,0, dst, stride, block, eob
     SUMSUB_BA            w, 8, 0, 4                         ; m8=IN(0)+IN(4) m0=IN(0)-IN(4)
     pmulhrsw            m8, m12                             ; m8=t0a
     pmulhrsw            m0, m12                             ; m0=t1a
-    VP9_UNPACK_MULSUB_2W_4X 2, 10, 15137,  6270             ; m2=t2a, m10=t3a
-    VP9_UNPACK_MULSUB_2W_4X 1, 11, 16069,  3196             ; m1=t4a, m11=t7a
-    VP9_UNPACK_MULSUB_2W_4X 9,  3,  9102, 13623             ; m9=t5a,  m3=t6a
+    VP9_UNPACK_MULSUB_2W_4X 2, 10, 15137,  6270, m7, 4, 5   ; m2=t2a, m10=t3a
+    VP9_UNPACK_MULSUB_2W_4X 1, 11, 16069,  3196, m7, 4, 5   ; m1=t4a, m11=t7a
+    VP9_UNPACK_MULSUB_2W_4X 9,  3,  9102, 13623, m7, 4, 5   ; m9=t5a,  m3=t6a
     SUMSUB_BA            w, 10,  8, 4                       ; m10=t0a+t3a (t0),  m8=t0a-t3a (t3)
     SUMSUB_BA            w,  2,  0, 4                       ;  m2=t1a+t2a (t1),  m0=t1a-t2a (t2)
     SUMSUB_BA            w,  9,  1, 4                       ;  m9=t4a+t5a (t4),  m1=t4a-t5a (t5a)
@@ -232,19 +230,19 @@ cglobal vp9_idct_idct_4x4_add, 4,4,0, dst, stride, block, eob
     mova                m5, [pw_1024]
     pmulhrsw            m0, m5              ; (x*1024 + (1<<14))>>15 <=> (x+16)>>5
     pmulhrsw            m1, m5
-    VP9_STORE_2X        m0, m1
+    VP9_STORE_2X         0,  1,  6,  7,  4
     lea               dstq, [dstq+2*strideq]
     pmulhrsw            m2, m5
     pmulhrsw            m3, m5
-    VP9_STORE_2X        m2, m3
+    VP9_STORE_2X         2,  3,  6,  7,  4
     lea               dstq, [dstq+2*strideq]
     pmulhrsw            m8, m5
     pmulhrsw            m9, m5
-    VP9_STORE_2X        m8, m9
+    VP9_STORE_2X         8,  9,  6,  7,  4
     lea               dstq, [dstq+2*strideq]
     pmulhrsw           m10, m5
     pmulhrsw           m11, m5
-    VP9_STORE_2X       m10, m11
+    VP9_STORE_2X        10, 11,  6,  7,  4
 %endmacro
 
 INIT_XMM ssse3
@@ -266,13 +264,13 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     movd          [blockq], m4
     mova                m5, [pw_1024]
     pmulhrsw            m0, m5              ; (x*1024 + (1<<14))>>15 <=> (x+16)>>5
-    VP9_STORE_2X        m0, m0
+    VP9_STORE_2X         0,  0,  6,  7,  4
     lea               dstq, [dstq+2*strideq]
-    VP9_STORE_2X        m0, m0
+    VP9_STORE_2X         0,  0,  6,  7,  4
     lea               dstq, [dstq+2*strideq]
-    VP9_STORE_2X        m0, m0
+    VP9_STORE_2X         0,  0,  6,  7,  4
     lea               dstq, [dstq+2*strideq]
-    VP9_STORE_2X        m0, m0
+    VP9_STORE_2X         0,  0,  6,  7,  4
     RET
 
 ; faster path for when only left corner is set (3 input: DC, right to DC, below
