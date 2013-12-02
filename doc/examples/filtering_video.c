@@ -243,9 +243,7 @@ end:
     av_frame_free(&filt_frame);
 
     if (ret < 0 && ret != AVERROR_EOF) {
-        char buf[1024];
-        av_strerror(ret, buf, sizeof(buf));
-        fprintf(stderr, "Error occurred: %s\n", buf);
+        fprintf(stderr, "Error occurred: %s\n", av_err2str(ret));
         exit(1);
     }
 
