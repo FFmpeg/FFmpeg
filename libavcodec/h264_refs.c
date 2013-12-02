@@ -562,6 +562,7 @@ int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
 int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
 {
     int i, av_uninit(j);
+    int pps_count;
     int current_ref_assigned = 0, err = 0;
     Picture *av_uninit(pic);
 
@@ -732,9 +733,13 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
     print_short_term(h);
     print_long_term(h);
 
+    pps_count = 0;
+    for (i = 0; i < FF_ARRAY_ELEMS(h->pps_buffers); i++)
+        pps_count += !!h->pps_buffers[i];
+
     if (   err >= 0
         && h->long_ref_count==0
-        && h->short_ref_count<=2
+        && (h->short_ref_count<=2 || h->pps.ref_count[0] <= 1 && h->pps.ref_count[1] <= 1 && pps_count == 1)
         && h->pps.ref_count[0]<=2 + (h->picture_structure != PICT_FRAME)
         && h->cur_pic_ptr->f.pict_type == AV_PICTURE_TYPE_I){
         h->cur_pic_ptr->sync |= 1;
