@@ -57,6 +57,9 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 %.o: %.S
 	$(COMPILE_S)
 
+%_host.o: %.c
+	$(COMPILE_HOSTC)
+
 %.i: %.c
 	$(CC) $(CCFLAGS) $(CC_E) $<
 
