@@ -91,9 +91,8 @@ SECTION .text
 
 %macro VP9_IDCT4_1D 0
     SUMSUB_BA            w, 2, 0, 4                         ; m2=IN(0)+IN(2) m0=IN(0)-IN(2)
-    mova                m4, [pw_11585x2]
-    pmulhrsw            m2, m4                              ; m2=t0
-    pmulhrsw            m0, m4                              ; m0=t1
+    pmulhrsw            m2, m6                              ; m2=t0
+    pmulhrsw            m0, m6                              ; m0=t1
     VP9_UNPACK_MULSUB_2W_4X 1, 3, 15137, 6270, m7, 4, 5     ; m1=t2, m3=t3
     VP9_IDCT4_1D_FINALIZE
 %endmacro
@@ -162,6 +161,7 @@ cglobal vp9_idct_idct_4x4_add, 4,4,0, dst, stride, block, eob
     mova                m1, [blockq+ 8]
     mova                m2, [blockq+16]
     mova                m3, [blockq+24]
+    mova                m6, [pw_11585x2]
     mova                m7, [pd_8192]       ; rounding
     VP9_IDCT4_1D
     TRANSPOSE4x4W  0, 1, 2, 3, 4
