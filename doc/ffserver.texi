@@ -786,7 +786,6 @@ AudioBitRate 32
 VideoBitRate 128
 VideoFrameRate 25
 VideoGopSize 25
-NoAudio
 </Stream>
 @end example
 
