@@ -91,7 +91,6 @@ static int init_filters(const char *filters_descr)
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
     enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
-    AVBufferSinkParams *buffersink_params;
 
     filter_graph = avfilter_graph_alloc();
     if (!outputs || !inputs || !filter_graph) {
@@ -114,13 +113,17 @@ static int init_filters(const char *filters_descr)
     }
 
     /* buffer video sink: to terminate the filter chain. */
-    buffersink_params = av_buffersink_params_alloc();
-    buffersink_params->pixel_fmts = pix_fmts;
     ret = avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out",
-                                       NULL, buffersink_params, filter_graph);
-    av_free(buffersink_params);
+                                       NULL, NULL, filter_graph);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot create buffer sink\n");
+        goto end;
+    }
+
+    ret = av_opt_set_int_list(buffersink_ctx, "pix_fmts", pix_fmts,
+                              AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot set output pixel format\n");
         goto end;
     }
 
