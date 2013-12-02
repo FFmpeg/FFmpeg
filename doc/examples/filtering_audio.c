@@ -220,6 +220,7 @@ int main(int argc, char **argv)
         goto end;
 
     /* read all packets */
+    packet0.data = NULL;
     packet.data = NULL;
     while (1) {
         if (!packet0.data) {
