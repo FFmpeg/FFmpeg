@@ -3386,12 +3386,15 @@ elif check_cpp_condition features.h "defined __GLIBC__"; then
 elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
     libc_type=newlib
     add_cppflags -U__STRICT_ANSI__
-elif check_header _mingw.h; then
-    libc_type=mingw
-    check_cpp_condition _mingw.h \
-        "defined (__MINGW64_VERSION_MAJOR) || (__MINGW32_MAJOR_VERSION > 3) || \
-            (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
-        die "ERROR: MinGW runtime version must be >= 3.15."
+# MinGW64 is backwards compatible with MinGW32, so check for it first.
+elif check_cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
+    libc_type=mingw64
+    add_cppflags -U__STRICT_ANSI__
+elif check_cpp_condition _mingw.h "defined __MINGW32_VERSION"; then
+    libc_type=mingw32
+    check_cpp_condition _mingw.h "__MINGW32_MAJOR_VERSION > 3 || \
+        (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
+        die "ERROR: MinGW32 runtime version must be >= 3.15."
     add_cppflags -U__STRICT_ANSI__
 elif check_cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
     libc_type=msvcrt
