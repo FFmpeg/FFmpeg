@@ -227,7 +227,6 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     int i, ret;
-    int chroma_h_shift, chroma_v_shift;
 
     MPV_encode_defaults(s);
 
@@ -237,19 +236,6 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
             avctx->pix_fmt != AV_PIX_FMT_YUV422P) {
             av_log(avctx, AV_LOG_ERROR,
                    "only YUV420 and YUV422 are supported\n");
-            return -1;
-        }
-        break;
-    case AV_CODEC_ID_LJPEG:
-        if (avctx->pix_fmt != AV_PIX_FMT_YUVJ420P &&
-            avctx->pix_fmt != AV_PIX_FMT_YUVJ422P &&
-            avctx->pix_fmt != AV_PIX_FMT_YUVJ444P &&
-            avctx->pix_fmt != AV_PIX_FMT_BGRA     &&
-            ((avctx->pix_fmt != AV_PIX_FMT_YUV420P &&
-              avctx->pix_fmt != AV_PIX_FMT_YUV422P &&
-              avctx->pix_fmt != AV_PIX_FMT_YUV444P) ||
-             avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL)) {
-            av_log(avctx, AV_LOG_ERROR, "colorspace not supported in LJPEG\n");
             return -1;
         }
         break;
@@ -538,9 +524,6 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     if (avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
         s->inter_quant_bias = avctx->inter_quant_bias;
 
-    av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift,
-                                     &chroma_v_shift);
-
     if (avctx->codec_id == AV_CODEC_ID_MPEG4 &&
         s->avctx->time_base.den > (1 << 16) - 1) {
         av_log(avctx, AV_LOG_ERROR,
@@ -564,24 +547,10 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
         s->rtp_mode   = 1;
         break;
-    case AV_CODEC_ID_LJPEG:
     case AV_CODEC_ID_MJPEG:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
-        if (avctx->codec->id == AV_CODEC_ID_LJPEG &&
-            avctx->pix_fmt   == AV_PIX_FMT_BGRA) {
-            s->mjpeg_vsample[0] = s->mjpeg_hsample[0] =
-            s->mjpeg_vsample[1] = s->mjpeg_hsample[1] =
-            s->mjpeg_vsample[2] = s->mjpeg_hsample[2] = 1;
-        } else {
-            s->mjpeg_vsample[0] = 2;
-            s->mjpeg_vsample[1] = 2 >> chroma_v_shift;
-            s->mjpeg_vsample[2] = 2 >> chroma_v_shift;
-            s->mjpeg_hsample[0] = 2;
-            s->mjpeg_hsample[1] = 2 >> chroma_h_shift;
-            s->mjpeg_hsample[2] = 2 >> chroma_h_shift;
-        }
-        if (!(CONFIG_MJPEG_ENCODER || CONFIG_LJPEG_ENCODER) ||
+        if (!CONFIG_MJPEG_ENCODER ||
             ff_mjpeg_encode_init(s) < 0)
             return -1;
         avctx->delay = 0;
@@ -838,7 +807,7 @@ av_cold int ff_MPV_encode_end(AVCodecContext *avctx)
     ff_rate_control_uninit(s);
 
     ff_MPV_common_end(s);
-    if ((CONFIG_MJPEG_ENCODER || CONFIG_LJPEG_ENCODER) &&
+    if (CONFIG_MJPEG_ENCODER &&
         s->out_format == FMT_MJPEG)
         ff_mjpeg_encode_close(s);
 
