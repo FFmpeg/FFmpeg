@@ -85,7 +85,7 @@ static int open_input_file(const char *filename)
 static int init_filters(const char *filters_descr)
 {
     char args[512];
-    int ret;
+    int ret = 0;
     AVFilter *buffersrc  = avfilter_get_by_name("buffer");
     AVFilter *buffersink = avfilter_get_by_name("buffersink");
     AVFilterInOut *outputs = avfilter_inout_alloc();
@@ -94,6 +94,10 @@ static int init_filters(const char *filters_descr)
     AVBufferSinkParams *buffersink_params;
 
     filter_graph = avfilter_graph_alloc();
+    if (!outputs || !inputs || !filter_graph) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     /* buffer video source: the decoded frames from the decoder will be inserted here. */
     snprintf(args, sizeof(args),
@@ -106,7 +110,7 @@ static int init_filters(const char *filters_descr)
                                        args, NULL, filter_graph);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot create buffer source\n");
-        return ret;
+        goto end;
     }
 
     /* buffer video sink: to terminate the filter chain. */
@@ -117,7 +121,7 @@ static int init_filters(const char *filters_descr)
     av_free(buffersink_params);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot create buffer sink\n");
-        return ret;
+        goto end;
     }
 
     /* Endpoints for the filter graph. */
@@ -133,11 +137,16 @@ static int init_filters(const char *filters_descr)
 
     if ((ret = avfilter_graph_parse_ptr(filter_graph, filters_descr,
                                     &inputs, &outputs, NULL)) < 0)
-        return ret;
+        goto end;
 
     if ((ret = avfilter_graph_config(filter_graph, NULL)) < 0)
-        return ret;
-    return 0;
+        goto end;
+
+end:
+    avfilter_inout_free(&inputs);
+    avfilter_inout_free(&outputs);
+
+    return ret;
 }
 
 static void display_frame(const AVFrame *frame, AVRational time_base)
