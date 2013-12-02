@@ -85,7 +85,7 @@ static int open_input_file(const char *filename)
 static int init_filters(const char *filters_descr)
 {
     char args[512];
-    int ret;
+    int ret = 0;
     AVFilter *abuffersrc  = avfilter_get_by_name("abuffer");
     AVFilter *abuffersink = avfilter_get_by_name("abuffersink");
     AVFilterInOut *outputs = avfilter_inout_alloc();
@@ -97,6 +97,10 @@ static int init_filters(const char *filters_descr)
     AVRational time_base = fmt_ctx->streams[audio_stream_index]->time_base;
 
     filter_graph = avfilter_graph_alloc();
+    if (!outputs || !inputs || !filter_graph) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     /* buffer audio source: the decoded frames from the decoder will be inserted here. */
     if (!dec_ctx->channel_layout)
@@ -109,7 +113,7 @@ static int init_filters(const char *filters_descr)
                                        args, NULL, filter_graph);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot create audio buffer source\n");
-        return ret;
+        goto end;
     }
 
     /* buffer audio sink: to terminate the filter chain. */
@@ -117,28 +121,28 @@ static int init_filters(const char *filters_descr)
                                        NULL, NULL, filter_graph);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot create audio buffer sink\n");
-        return ret;
+        goto end;
     }
 
     ret = av_opt_set_int_list(buffersink_ctx, "sample_fmts", out_sample_fmts, -1,
                               AV_OPT_SEARCH_CHILDREN);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot set output sample format\n");
-        return ret;
+        goto end;
     }
 
     ret = av_opt_set_int_list(buffersink_ctx, "channel_layouts", out_channel_layouts, -1,
                               AV_OPT_SEARCH_CHILDREN);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot set output channel layout\n");
-        return ret;
+        goto end;
     }
 
     ret = av_opt_set_int_list(buffersink_ctx, "sample_rates", out_sample_rates, -1,
                               AV_OPT_SEARCH_CHILDREN);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot set output sample rate\n");
-        return ret;
+        goto end;
     }
 
     /* Endpoints for the filter graph. */
@@ -153,11 +157,11 @@ static int init_filters(const char *filters_descr)
     inputs->next       = NULL;
 
     if ((ret = avfilter_graph_parse_ptr(filter_graph, filters_descr,
-                                    &inputs, &outputs, NULL)) < 0)
-        return ret;
+                                        &inputs, &outputs, NULL)) < 0)
+        goto end;
 
     if ((ret = avfilter_graph_config(filter_graph, NULL)) < 0)
-        return ret;
+        goto end;
 
     /* Print summary of the sink buffer
      * Note: args buffer is reused to store channel layout string */
@@ -168,7 +172,11 @@ static int init_filters(const char *filters_descr)
            (char *)av_x_if_null(av_get_sample_fmt_name(outlink->format), "?"),
            args);
 
-    return 0;
+end:
+    avfilter_inout_free(&inputs);
+    avfilter_inout_free(&outputs);
+
+    return ret;
 }
 
 static void print_frame(const AVFrame *frame)
