@@ -215,7 +215,6 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
     *got_packet = 1;
 
     return 0;
-//    return (put_bits_count(&f->pb)+7)/8;
 }
 
 static av_cold int ljpeg_encode_close(AVCodecContext *avctx)
