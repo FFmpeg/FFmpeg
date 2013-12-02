@@ -243,9 +243,9 @@ int main(int argc, char **argv)
                 /* pull filtered audio from the filtergraph */
                 while (1) {
                     ret = av_buffersink_get_frame(buffersink_ctx, filt_frame);
-                    if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                         break;
-                    if(ret < 0)
+                    if (ret < 0)
                         goto end;
                     print_frame(filt_frame);
                     av_frame_unref(filt_frame);
