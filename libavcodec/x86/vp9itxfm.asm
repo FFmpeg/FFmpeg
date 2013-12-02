@@ -39,7 +39,7 @@ VP9_IDCT_COEFFS %1, %2
 
 VP9_IDCT_COEFFS_ALL 15137,  6270
 VP9_IDCT_COEFFS_ALL 16069,  3196
-VP9_IDCT_COEFFS      9102, 13623
+VP9_IDCT_COEFFS_ALL  9102, 13623
 
 pd_8192: times 4 dd 8192
 pw_2048: times 8 dw 2048
@@ -205,6 +205,26 @@ cglobal vp9_idct_idct_4x4_add, 4,4,0, dst, stride, block, eob
     VP9_IDCT8_1D_FINALIZE
 %endmacro
 
+%macro VP9_IDCT8_4x4_1D 0
+    pmulhrsw            m0, m12                             ; m0=t1a/t0a
+    pmulhrsw           m10, m2, [pw_15137x2]                ; m10=t3a
+    pmulhrsw            m2, [pw_6270x2]                     ; m2=t2a
+    pmulhrsw           m11, m1, [pw_16069x2]                ; m11=t7a
+    pmulhrsw            m1, [pw_3196x2]                     ; m1=t4a
+    pmulhrsw            m9, m3, [pw_9102x2]                 ; m9=-t5a
+    pmulhrsw            m3, [pw_13623x2]                    ; m3=t6a
+    psubw               m8, m0, m10                         ; m8=t0a-t3a (t3)
+    paddw              m10, m0                              ; m10=t0a+t3a (t0)
+    SUMSUB_BA            w,  2,  0, 4                       ;  m2=t1a+t2a (t1),  m0=t1a-t2a (t2)
+    SUMSUB_BA            w,  9,  1, 4                       ;  m1=t4a+t5a (t4),  m9=t4a-t5a (t5a)
+    SWAP                 1,  9
+    SUMSUB_BA            w,  3, 11, 4                       ;  m3=t7a+t6a (t7), m11=t7a-t6a (t6a)
+    SUMSUB_BA            w,  1, 11, 4                       ;  m1=t6a+t5a (t6), m11=t6a-t5a (t5)
+    pmulhrsw            m1, m12                             ; m1=t6
+    pmulhrsw           m11, m12                             ; m11=t5
+    VP9_IDCT8_1D_FINALIZE
+%endmacro
+
 ; TODO: a lot of t* copies can probably be removed and merged with
 ; following SUMSUBs from VP9_IDCT8_1D_FINALIZE with AVX
 %macro VP9_IDCT8_2x2_1D 0
@@ -250,8 +270,11 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
 
     mova               m12, [pw_11585x2]    ; often used
 
-    cmp eobd, 3 ; top left corner or less
+    cmp eobd, 12 ; top left half or less
     jg .idctfull
+
+    cmp eobd, 3  ; top left corner or less
+    jg .idcthalf
 
     cmp eobd, 1 ; faster path for when only DC is set
     jne .idcttopleftcorner
@@ -286,6 +309,22 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     pxor                m4, m4  ; used for the block reset, and VP9_STORE_2X
     movd       [blockq+ 0], m4
     movd       [blockq+16], m4
+    VP9_IDCT8_WRITEOUT
+    RET
+
+.idcthalf:
+    movh                m0, [blockq + 0]
+    movh                m1, [blockq +16]
+    movh                m2, [blockq +32]
+    movh                m3, [blockq +48]
+    VP9_IDCT8_4x4_1D
+    TRANSPOSE8x8W  0, 1, 2, 3, 8, 9, 10, 11, 4
+    VP9_IDCT8_4x4_1D
+    pxor                m4, m4
+    movh       [blockq+ 0], m4
+    movh       [blockq+16], m4
+    movh       [blockq+32], m4
+    movh       [blockq+48], m4
     VP9_IDCT8_WRITEOUT
     RET
 
