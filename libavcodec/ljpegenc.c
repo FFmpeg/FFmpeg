@@ -70,8 +70,8 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int max_pkt_size = FF_MIN_BUFFER_SIZE;
     int ret, header_bits;
 
-    if (avctx->pix_fmt == AV_PIX_FMT_BGRA)
-        max_pkt_size += width * height * 3 * 4;
+    if (avctx->pix_fmt == AV_PIX_FMT_BGR24)
+        max_pkt_size += width * height * 3 * 3;
     else {
         max_pkt_size += mb_width * mb_height * 3 * 4
                         * s->hsample[0] * s->vsample[0];
@@ -88,7 +88,7 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     header_bits = put_bits_count(&pb);
 
-    if(avctx->pix_fmt == AV_PIX_FMT_BGRA){
+    if (avctx->pix_fmt == AV_PIX_FMT_BGR24) {
         int x, y, i;
         const int linesize = pict->linesize[0];
         uint16_t (*buffer)[4] = s->scratch;
@@ -102,7 +102,7 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             const int modified_predictor= y ? predictor : 1;
             uint8_t *ptr = pict->data[0] + (linesize * y);
 
-            if(pb.buf_end - pb.buf - (put_bits_count(&pb) >> 3) < width * 3 * 4) {
+            if(pb.buf_end - pb.buf - (put_bits_count(&pb) >> 3) < width * 3 * 3) {
                 av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
                 return -1;
             }
@@ -111,9 +111,9 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 top[i]= left[i]= topleft[i]= buffer[0][i];
             }
             for(x = 0; x < width; x++) {
-                buffer[x][1] = ptr[4*x+0] - ptr[4*x+1] + 0x100;
-                buffer[x][2] = ptr[4*x+2] - ptr[4*x+1] + 0x100;
-                buffer[x][0] = (ptr[4*x+0] + 2*ptr[4*x+1] + ptr[4*x+2])>>2;
+                buffer[x][1] =  ptr[3 * x + 0] -     ptr[3 * x + 1] + 0x100;
+                buffer[x][2] =  ptr[3 * x + 2] -     ptr[3 * x + 1] + 0x100;
+                buffer[x][0] = (ptr[3 * x + 0] + 2 * ptr[3 * x + 1] + ptr[3 * x + 2]) >> 2;
 
                 for(i=0;i<3;i++) {
                     int pred, diff;
@@ -257,7 +257,7 @@ static av_cold int ljpeg_encode_init(AVCodecContext *avctx)
     av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift,
                                      &chroma_v_shift);
 
-    if (avctx->pix_fmt   == AV_PIX_FMT_BGRA) {
+    if (avctx->pix_fmt   == AV_PIX_FMT_BGR24) {
         s->vsample[0] = s->hsample[0] =
         s->vsample[1] = s->hsample[1] =
         s->vsample[2] = s->hsample[2] = 1;
@@ -294,7 +294,7 @@ AVCodec ff_ljpeg_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVJ420P,
                                                     AV_PIX_FMT_YUVJ422P,
                                                     AV_PIX_FMT_YUVJ444P,
-                                                    AV_PIX_FMT_BGRA,
+                                                    AV_PIX_FMT_BGR24,
                                                     AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_YUV422P,
                                                     AV_PIX_FMT_YUVJ444P,

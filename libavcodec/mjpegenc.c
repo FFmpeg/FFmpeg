@@ -186,7 +186,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
                                      &chroma_v_shift);
 
     if (avctx->codec->id == AV_CODEC_ID_LJPEG &&
-        avctx->pix_fmt   == AV_PIX_FMT_BGRA) {
+        avctx->pix_fmt   == AV_PIX_FMT_BGR24) {
         vsample[0] = hsample[0] =
         vsample[1] = hsample[1] =
         vsample[2] = hsample[2] = 1;
@@ -212,7 +212,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     }
 
     put_bits(pb, 16, 17);
-    if (lossless && avctx->pix_fmt == AV_PIX_FMT_BGRA)
+    if (lossless && avctx->pix_fmt == AV_PIX_FMT_BGR24)
         put_bits(pb, 8, 9); /* 9 bits/component RCT */
     else
         put_bits(pb, 8, 8); /* 8 bits/component */
