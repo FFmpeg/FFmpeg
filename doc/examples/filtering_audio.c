@@ -196,7 +196,7 @@ static void print_frame(const AVFrame *frame)
 int main(int argc, char **argv)
 {
     int ret;
-    AVPacket packet;
+    AVPacket packet0, packet;
     AVFrame *frame = av_frame_alloc();
     AVFrame *filt_frame = av_frame_alloc();
     int got_frame;
@@ -220,9 +220,13 @@ int main(int argc, char **argv)
         goto end;
 
     /* read all packets */
+    packet.data = NULL;
     while (1) {
-        if ((ret = av_read_frame(fmt_ctx, &packet)) < 0)
-            break;
+        if (!packet0.data) {
+            if ((ret = av_read_frame(fmt_ctx, &packet)) < 0)
+                break;
+            packet0 = packet;
+        }
 
         if (packet.stream_index == audio_stream_index) {
             avcodec_get_frame_defaults(frame);
@@ -232,6 +236,8 @@ int main(int argc, char **argv)
                 av_log(NULL, AV_LOG_ERROR, "Error decoding audio\n");
                 continue;
             }
+            packet.size -= ret;
+            packet.data += ret;
 
             if (got_frame) {
                 /* push the audio data from decoded frame into the filtergraph */
@@ -251,8 +257,13 @@ int main(int argc, char **argv)
                     av_frame_unref(filt_frame);
                 }
             }
+
+            if (packet.size <= 0)
+                av_free_packet(&packet0);
+        } else {
+            /* discard non-wanted packets */
+            av_free_packet(&packet0);
         }
-        av_free_packet(&packet);
     }
 end:
     avfilter_graph_free(&filter_graph);
