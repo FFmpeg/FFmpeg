@@ -39,7 +39,7 @@ checkheaders: $(HOBJS)
 alltools: $(TOOLS)
 
 $(HOSTOBJS): %.o: %.c
-	$(call COMPILE,HOSTCC)
+	$(COMPILE_HOSTC)
 
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
 	$(HOSTLD) $(HOSTLDFLAGS) $(HOSTLD_O) $^ $(HOSTLIBS)

@@ -38,6 +38,7 @@ endef
 
 COMPILE_C = $(call COMPILE,CC)
 COMPILE_S = $(call COMPILE,AS)
+COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 
 %.o: %.c
 	$(COMPILE_C)
