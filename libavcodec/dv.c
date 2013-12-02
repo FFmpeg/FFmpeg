@@ -255,20 +255,20 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
 
         /* it's faster to include sign bit in a generic VLC parsing scheme */
         for (i = 0, j = 0; i < NB_DV_VLC; i++, j++) {
-            new_dv_vlc_bits[j]  = dv_vlc_bits[i];
-            new_dv_vlc_len[j]   = dv_vlc_len[i];
-            new_dv_vlc_run[j]   = dv_vlc_run[i];
-            new_dv_vlc_level[j] = dv_vlc_level[i];
+            new_dv_vlc_bits[j]  = ff_dv_vlc_bits[i];
+            new_dv_vlc_len[j]   = ff_dv_vlc_len[i];
+            new_dv_vlc_run[j]   = ff_dv_vlc_run[i];
+            new_dv_vlc_level[j] = ff_dv_vlc_level[i];
 
-            if (dv_vlc_level[i]) {
+            if (ff_dv_vlc_level[i]) {
                 new_dv_vlc_bits[j] <<= 1;
                 new_dv_vlc_len[j]++;
 
                 j++;
-                new_dv_vlc_bits[j]  = (dv_vlc_bits[i] << 1) | 1;
-                new_dv_vlc_len[j]   =  dv_vlc_len[i] + 1;
-                new_dv_vlc_run[j]   =  dv_vlc_run[i];
-                new_dv_vlc_level[j] = -dv_vlc_level[i];
+                new_dv_vlc_bits[j]  = (ff_dv_vlc_bits[i] << 1) | 1;
+                new_dv_vlc_len[j]   =  ff_dv_vlc_len[i] + 1;
+                new_dv_vlc_run[j]   =  ff_dv_vlc_run[i];
+                new_dv_vlc_level[j] = -ff_dv_vlc_level[i];
             }
         }
 
