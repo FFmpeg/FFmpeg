@@ -18,6 +18,6 @@ FFmpeg (no need to make install in any prefix). Then just run "make examples".
 This will build the examples using the FFmpeg build system. You can clean those
 examples using "make examplesclean"
 
-If you want to try the dedicated Makefile examples (to emulate a the first
+If you want to try the dedicated Makefile examples (to emulate the first
 method), go into doc/examples and run a command such as
 PKG_CONFIG_PATH=pc-uninstalled make.
