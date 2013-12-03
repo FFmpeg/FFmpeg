@@ -392,7 +392,7 @@ static av_cold void decode_init_static(void)
         ci = ci_table[i];
         cs = 1.0 / sqrt(1.0 + ci * ci);
         ca = cs * ci;
-#if !CONFIG_FLOAT
+#if !USE_FLOATS
         csa_table[i][0] = FIXHR(cs/4);
         csa_table[i][1] = FIXHR(ca/4);
         csa_table[i][2] = FIXHR(ca/4) + FIXHR(cs/4);
@@ -828,7 +828,7 @@ static void switch_buffer(MPADecodeContext *s, int *pos, int *end_pos,
                 v = -v;
             *dst = v;
 */
-#if CONFIG_FLOAT
+#if USE_FLOATS
 #define READ_FLIP_SIGN(dst,src)                     \
     v = AV_RN32A(src) ^ (get_bits1(&s->gb) << 31);  \
     AV_WN32A(dst, v);
@@ -1137,7 +1137,7 @@ found2:
         /* ms stereo ONLY */
         /* NOTE: the 1/sqrt(2) normalization factor is included in the
            global gain */
-#if CONFIG_FLOAT
+#if USE_FLOATS
        s->fdsp.butterflies_float(g0->sb_hybrid, g1->sb_hybrid, 576);
 #else
         tab0 = g0->sb_hybrid;
@@ -1152,7 +1152,7 @@ found2:
     }
 }
 
-#if CONFIG_FLOAT
+#if USE_FLOATS
 #if HAVE_MIPSFPU
 #   include "mips/compute_antialias_float.h"
 #endif /* HAVE_MIPSFPU */
@@ -1160,10 +1160,10 @@ found2:
 #if HAVE_MIPSDSPR1
 #   include "mips/compute_antialias_fixed.h"
 #endif /* HAVE_MIPSDSPR1 */
-#endif /* CONFIG_FLOAT */
+#endif /* USE_FLOATS */
 
 #ifndef compute_antialias
-#if CONFIG_FLOAT
+#if USE_FLOATS
 #define AA(j) do {                                                      \
         float tmp0 = ptr[-1-j];                                         \
         float tmp1 = ptr[   j];                                         \

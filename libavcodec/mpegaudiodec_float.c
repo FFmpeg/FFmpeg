@@ -22,7 +22,7 @@
 #include "config.h"
 #include "libavutil/samplefmt.h"
 
-#define CONFIG_FLOAT 1
+#define USE_FLOATS 1
 
 #include "mpegaudio.h"
 

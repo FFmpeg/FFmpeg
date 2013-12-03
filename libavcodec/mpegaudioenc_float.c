@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define USE_FLOATS
+#define USE_FLOATS 1
 #include "mpegaudioenc_template.c"
 
 AVCodec ff_mp2_encoder = {

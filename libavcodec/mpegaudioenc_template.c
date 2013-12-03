@@ -64,7 +64,7 @@ typedef struct MpegAudioContext {
     int16_t filter_bank[512];
     int scale_factor_table[64];
     unsigned char scale_diff_table[128];
-#ifdef USE_FLOATS
+#if USE_FLOATS
     float scale_factor_inv_table[64];
 #else
     int8_t scale_factor_shift[64];
@@ -158,7 +158,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
         if (v <= 0)
             v = 1;
         s->scale_factor_table[i] = v;
-#ifdef USE_FLOATS
+#if USE_FLOATS
         s->scale_factor_inv_table[i] = exp2(-(3 - i) / 3.0) / (float)(1 << 20);
 #else
 #define P 15
@@ -681,7 +681,7 @@ static void encode_frame(MpegAudioContext *s,
                         for(m=0;m<3;m++) {
                             sample = s->sb_samples[ch][k][l + m][i];
                             /* divide by scale factor */
-#ifdef USE_FLOATS
+#if USE_FLOATS
                             {
                                 float a;
                                 a = (float)sample * s->scale_factor_inv_table[s->scale_factors[ch][i][k]];

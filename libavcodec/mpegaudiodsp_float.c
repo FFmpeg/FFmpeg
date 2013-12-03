@@ -16,5 +16,5 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define CONFIG_FLOAT 1
+#define USE_FLOATS 1
 #include "mpegaudiodsp_template.c"
