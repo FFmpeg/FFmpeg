@@ -5,6 +5,5 @@ OBJS += bfin/dsputil_bfin.o                                             \
 
 OBJS-$(CONFIG_HPELDSP)                  += bfin/hpeldsp_bfin.o          \
                                            bfin/hpel_pixels_bfin.o
-OBJS-$(CONFIG_MPEGVIDEOENC)             += bfin/mpegvideo_bfin.o
 OBJS-$(CONFIG_VP3DSP)                   += bfin/vp3_bfin.o              \
                                            bfin/vp3_idct_bfin.o

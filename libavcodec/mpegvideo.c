@@ -371,8 +371,6 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
 
     if (ARCH_ARM)
         ff_MPV_common_init_arm(s);
-    if (ARCH_BFIN)
-        ff_MPV_common_init_bfin(s);
     if (ARCH_PPC)
         ff_MPV_common_init_ppc(s);
     if (ARCH_X86)
