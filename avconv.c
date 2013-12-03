@@ -642,8 +642,7 @@ static int poll_filter(OutputStream *ost)
 
     if (!ost->filtered_frame && !(ost->filtered_frame = av_frame_alloc())) {
         return AVERROR(ENOMEM);
-    } else
-        avcodec_get_frame_defaults(ost->filtered_frame);
+    }
     filtered_frame = ost->filtered_frame;
 
     if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
