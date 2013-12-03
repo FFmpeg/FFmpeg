@@ -45,6 +45,13 @@ static int parse(AVCodecParserContext *ctx,
     VP9ParseContext *s = ctx->priv_data;
     int marker;
 
+    if (size <= 0) {
+        *out_size = 0;
+        *out_data = data;
+
+        return 0;
+    }
+
     if (s->n_frames > 0) {
         *out_data = data;
         *out_size = s->size[--s->n_frames];
