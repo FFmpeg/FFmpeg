@@ -555,15 +555,17 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         /* parse timestr as HH:MM:SS */
         q = small_strptime(p, time_fmt[0], &dt);
         if (!q) {
+            char *o;
             /* parse timestr as S+ */
-            dt.tm_sec = strtol(p, (char **)&q, 10);
-            if (q == p) {
+            dt.tm_sec = strtol(p, &o, 10);
+            if (o == p) {
                 /* the parsing didn't succeed */
                 *timeval = INT64_MIN;
                 return AVERROR(EINVAL);
             }
             dt.tm_min = 0;
             dt.tm_hour = 0;
+            q = o;
         }
     }
 
