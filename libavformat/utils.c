@@ -887,12 +887,11 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
 
     if (ref == AV_NOPTS_VALUE)
         ref = pkt->pts;
-    if (ref == AV_NOPTS_VALUE)
+    if (st->pts_wrap_reference != AV_NOPTS_VALUE || st->pts_wrap_bits >= 63 || ref == AV_NOPTS_VALUE || !s->correct_ts_overflow)
         return 0;
     ref &= (1LL<<st->pts_wrap_bits)-1;
 
-    if (s->correct_ts_overflow && st->pts_wrap_bits < 63 &&
-        st->pts_wrap_reference == AV_NOPTS_VALUE) {
+    {
         int i;
 
         // reference time stamp should be 60 s before first time stamp
@@ -945,7 +944,6 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
         }
         return 1;
     }
-    return 0;
 }
 
 static void update_initial_timestamps(AVFormatContext *s, int stream_index,
