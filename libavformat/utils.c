@@ -55,6 +55,8 @@
  * various utility functions for use within FFmpeg
  */
 
+static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_index, AVPacket *pkt);
+
 unsigned avformat_version(void)
 {
     av_assert0(LIBAVFORMAT_VERSION_MICRO >= 100);
@@ -709,6 +711,17 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         st= s->streams[pkt->stream_index];
+
+        if (update_wrap_reference(s, st, pkt->stream_index, pkt) && st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
+            // correct first time stamps to negative values
+            if (!is_relative(st->first_dts))
+                st->first_dts = wrap_timestamp(st, st->first_dts);
+            if (!is_relative(st->start_time))
+                st->start_time = wrap_timestamp(st, st->start_time);
+            if (!is_relative(st->cur_dts))
+                st->cur_dts = wrap_timestamp(st, st->cur_dts);
+        }
+
         pkt->dts = wrap_timestamp(st, pkt->dts);
         pkt->pts = wrap_timestamp(st, pkt->pts);
 
@@ -868,13 +881,20 @@ static AVPacketList *get_next_pkt(AVFormatContext *s, AVStream *st, AVPacketList
     return NULL;
 }
 
-static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_index)
+static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_index, AVPacket *pkt)
 {
+    int64_t ref = pkt->dts;
+
+    if (ref == AV_NOPTS_VALUE)
+        ref = pkt->pts;
+    if (ref == AV_NOPTS_VALUE)
+        return 0;
+    ref &= (1LL<<st->pts_wrap_bits)-1;
+
     if (s->correct_ts_overflow && st->pts_wrap_bits < 63 &&
-        st->pts_wrap_reference == AV_NOPTS_VALUE && st->first_dts != AV_NOPTS_VALUE) {
+        st->pts_wrap_reference == AV_NOPTS_VALUE) {
         int i;
 
-        int64_t ref = st->first_dts & ((1LL<<st->pts_wrap_bits)-1);
         // reference time stamp should be 60 s before first time stamp
         int64_t pts_wrap_reference = ref - av_rescale(60, st->time_base.den, st->time_base.num);
         // if first time stamp is not more than 1/8 and 60s before the wrap point, subtract rather than add wrap offset
@@ -970,16 +990,6 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
             if(pktl->pkt.dts == AV_NOPTS_VALUE)
                 pktl->pkt.dts= pts_buffer[0];
         }
-    }
-
-    if (update_wrap_reference(s, st, stream_index) && st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
-        // correct first time stamps to negative values
-        st->first_dts = wrap_timestamp(st, st->first_dts);
-        st->start_time = wrap_timestamp(st, st->start_time);
-        st->cur_dts = wrap_timestamp(st, st->cur_dts);
-        pkt->dts = wrap_timestamp(st, pkt->dts);
-        pkt->pts = wrap_timestamp(st, pkt->pts);
-        pts = wrap_timestamp(st, pts);
     }
 
     if (st->start_time == AV_NOPTS_VALUE)
