@@ -534,6 +534,7 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
     AudioData in, out, tmp;
     int ret_sum=0;
     int border=0;
+    int padless = ARCH_X86 && s->engine == SWR_ENGINE_SWR ? 7 : 0;
 
     av_assert1(s->in_buffer.ch_count == in_param->ch_count);
     av_assert1(s->in_buffer.planar   == in_param->planar);
@@ -564,9 +565,9 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
             }
         }
 
-        if((s->flushed || in_count) && !s->in_buffer_count){
+        if((s->flushed || in_count > padless) && !s->in_buffer_count){
             s->in_buffer_index=0;
-            ret= s->resampler->multiple_resample(s->resample, &out, out_count, &in, in_count, &consumed);
+            ret= s->resampler->multiple_resample(s->resample, &out, out_count, &in, FFMAX(in_count-padless, 0), &consumed);
             out_count -= ret;
             ret_sum += ret;
             buf_set(&out, &out, ret);
@@ -598,6 +599,10 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
             s->resample_in_constraint= 0;
             if(s->in_buffer_count != count || in_count)
                 continue;
+            if (padless) {
+                padless = 0;
+                continue;
+            }
         }
         break;
     }while(1);
