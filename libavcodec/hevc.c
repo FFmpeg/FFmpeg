@@ -2570,10 +2570,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     /* verify the SEI checksum */
     if (avctx->err_recognition & AV_EF_CRCCHECK && s->is_decoded &&
-        avctx->err_recognition & AV_EF_EXPLODE &&
         s->is_md5) {
         ret = verify_md5(s, s->ref->frame);
-        if (ret < 0) {
+        if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
             ff_hevc_unref_frame(s, s->ref, ~0);
             return ret;
         }
