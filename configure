@@ -3393,7 +3393,7 @@ elif check_header _mingw.h; then
             (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
         die "ERROR: MinGW runtime version must be >= 3.15."
     add_cppflags -U__STRICT_ANSI__
-elif check_func_headers stdlib.h _get_doserrno; then
+elif check_cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
     libc_type=msvcrt
     add_compat strtod.o strtod=avpriv_strtod
     add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
