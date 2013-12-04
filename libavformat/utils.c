@@ -55,8 +55,6 @@
  * various utility functions for use within FFmpeg
  */
 
-static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_index, AVPacket *pkt);
-
 unsigned avformat_version(void)
 {
     av_assert0(LIBAVFORMAT_VERSION_MICRO >= 100);
@@ -655,6 +653,70 @@ no_packet:
     return 0;
 }
 
+static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_index, AVPacket *pkt)
+{
+    int64_t ref = pkt->dts;
+    int i, pts_wrap_behavior;
+    int64_t pts_wrap_reference;
+    AVProgram *first_program;
+
+    if (ref == AV_NOPTS_VALUE)
+        ref = pkt->pts;
+    if (st->pts_wrap_reference != AV_NOPTS_VALUE || st->pts_wrap_bits >= 63 || ref == AV_NOPTS_VALUE || !s->correct_ts_overflow)
+        return 0;
+    ref &= (1LL<<st->pts_wrap_bits)-1;
+
+    // reference time stamp should be 60 s before first time stamp
+    pts_wrap_reference = ref - av_rescale(60, st->time_base.den, st->time_base.num);
+    // if first time stamp is not more than 1/8 and 60s before the wrap point, subtract rather than add wrap offset
+    pts_wrap_behavior = (ref < (1LL<<st->pts_wrap_bits) - (1LL<<st->pts_wrap_bits-3)) ||
+        (ref < (1LL<<st->pts_wrap_bits) - av_rescale(60, st->time_base.den, st->time_base.num)) ?
+        AV_PTS_WRAP_ADD_OFFSET : AV_PTS_WRAP_SUB_OFFSET;
+
+    first_program = av_find_program_from_stream(s, NULL, stream_index);
+
+    if (!first_program) {
+        int default_stream_index = av_find_default_stream_index(s);
+        if (s->streams[default_stream_index]->pts_wrap_reference == AV_NOPTS_VALUE) {
+            for (i=0; i<s->nb_streams; i++) {
+                s->streams[i]->pts_wrap_reference = pts_wrap_reference;
+                s->streams[i]->pts_wrap_behavior = pts_wrap_behavior;
+            }
+        }
+        else {
+            st->pts_wrap_reference = s->streams[default_stream_index]->pts_wrap_reference;
+            st->pts_wrap_behavior = s->streams[default_stream_index]->pts_wrap_behavior;
+        }
+    }
+    else {
+        AVProgram *program = first_program;
+        while (program) {
+            if (program->pts_wrap_reference != AV_NOPTS_VALUE) {
+                pts_wrap_reference = program->pts_wrap_reference;
+                pts_wrap_behavior = program->pts_wrap_behavior;
+                break;
+            }
+            program = av_find_program_from_stream(s, program, stream_index);
+        }
+
+        // update every program with differing pts_wrap_reference
+        program = first_program;
+        while(program) {
+            if (program->pts_wrap_reference != pts_wrap_reference) {
+                for (i=0; i<program->nb_stream_indexes; i++) {
+                    s->streams[program->stream_index[i]]->pts_wrap_reference = pts_wrap_reference;
+                    s->streams[program->stream_index[i]]->pts_wrap_behavior = pts_wrap_behavior;
+                }
+
+                program->pts_wrap_reference = pts_wrap_reference;
+                program->pts_wrap_behavior = pts_wrap_behavior;
+            }
+            program = av_find_program_from_stream(s, program, stream_index);
+        }
+    }
+    return 1;
+}
+
 int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, i, err;
@@ -879,71 +941,6 @@ static AVPacketList *get_next_pkt(AVFormatContext *s, AVStream *st, AVPacketList
     if (pktl == s->parse_queue_end)
         return s->packet_buffer;
     return NULL;
-}
-
-static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_index, AVPacket *pkt)
-{
-    int64_t ref = pkt->dts;
-
-    if (ref == AV_NOPTS_VALUE)
-        ref = pkt->pts;
-    if (st->pts_wrap_reference != AV_NOPTS_VALUE || st->pts_wrap_bits >= 63 || ref == AV_NOPTS_VALUE || !s->correct_ts_overflow)
-        return 0;
-    ref &= (1LL<<st->pts_wrap_bits)-1;
-
-    {
-        int i;
-
-        // reference time stamp should be 60 s before first time stamp
-        int64_t pts_wrap_reference = ref - av_rescale(60, st->time_base.den, st->time_base.num);
-        // if first time stamp is not more than 1/8 and 60s before the wrap point, subtract rather than add wrap offset
-        int pts_wrap_behavior = (ref < (1LL<<st->pts_wrap_bits) - (1LL<<st->pts_wrap_bits-3)) ||
-            (ref < (1LL<<st->pts_wrap_bits) - av_rescale(60, st->time_base.den, st->time_base.num)) ?
-            AV_PTS_WRAP_ADD_OFFSET : AV_PTS_WRAP_SUB_OFFSET;
-
-        AVProgram *first_program = av_find_program_from_stream(s, NULL, stream_index);
-
-        if (!first_program) {
-            int default_stream_index = av_find_default_stream_index(s);
-            if (s->streams[default_stream_index]->pts_wrap_reference == AV_NOPTS_VALUE) {
-                for (i=0; i<s->nb_streams; i++) {
-                    s->streams[i]->pts_wrap_reference = pts_wrap_reference;
-                    s->streams[i]->pts_wrap_behavior = pts_wrap_behavior;
-                }
-            }
-            else {
-                st->pts_wrap_reference = s->streams[default_stream_index]->pts_wrap_reference;
-                st->pts_wrap_behavior = s->streams[default_stream_index]->pts_wrap_behavior;
-            }
-        }
-        else {
-            AVProgram *program = first_program;
-            while (program) {
-                if (program->pts_wrap_reference != AV_NOPTS_VALUE) {
-                    pts_wrap_reference = program->pts_wrap_reference;
-                    pts_wrap_behavior = program->pts_wrap_behavior;
-                    break;
-                }
-                program = av_find_program_from_stream(s, program, stream_index);
-            }
-
-            // update every program with differing pts_wrap_reference
-            program = first_program;
-            while(program) {
-                if (program->pts_wrap_reference != pts_wrap_reference) {
-                    for (i=0; i<program->nb_stream_indexes; i++) {
-                        s->streams[program->stream_index[i]]->pts_wrap_reference = pts_wrap_reference;
-                        s->streams[program->stream_index[i]]->pts_wrap_behavior = pts_wrap_behavior;
-                    }
-
-                    program->pts_wrap_reference = pts_wrap_reference;
-                    program->pts_wrap_behavior = pts_wrap_behavior;
-                }
-                program = av_find_program_from_stream(s, program, stream_index);
-            }
-        }
-        return 1;
-    }
 }
 
 static void update_initial_timestamps(AVFormatContext *s, int stream_index,
