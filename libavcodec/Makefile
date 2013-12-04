@@ -25,8 +25,6 @@ OBJS = allcodecs.o                                                      \
        raw.o                                                            \
        utils.o                                                          \
 
-OBJS-$(HAVE_MSVCRT) += file_open.o
-
 # parts needed for many different codecs
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o
@@ -677,6 +675,7 @@ OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 
 # thread libraries
+OBJS-$(HAVE_LIBC_MSVCRT)               += file_open.o
 OBJS-$(HAVE_PTHREADS)                  += pthread.o pthread_slice.o pthread_frame.o
 OBJS-$(HAVE_W32THREADS)                += pthread.o pthread_slice.o pthread_frame.o
 

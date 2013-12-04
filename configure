@@ -1332,6 +1332,7 @@ HAVE_LIST="
     isatty
     jack_port_get_latency_range
     ldbrx
+    libc_msvcrt
     libdc1394_1
     libdc1394_2
     local_aligned_16
@@ -1349,7 +1350,6 @@ HAVE_LIST="
     mm_empty
     mmap
     mprotect
-    msvcrt
     nanosleep
     poll_h
     posix_memalign
@@ -1557,7 +1557,7 @@ need_memalign="altivec neon sse"
 
 symver_if_any="symver_asm_label symver_gnu_asm"
 
-log2_deps="!msvcrt"
+log2_deps="!libc_msvcrt"
 
 # subsystems
 dct_select="rdft"
@@ -3413,7 +3413,7 @@ elif check_cpp_condition sys/brand.h "defined SOLARIS_BRAND_NAME"; then
     add_cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
 fi
 
-test -n "$libc_type" && enable $libc_type
+test -n "$libc_type" && enable libc_$libc_type
 
 case $libc_type in
     bionic)
@@ -3429,7 +3429,7 @@ esac
 
 # hacks for compiler/libc/os combinations
 
-if enabled_all tms470 glibc; then
+if enabled_all tms470 libc_glibc; then
     CPPFLAGS="-I${source_path}/compat/tms470 ${CPPFLAGS}"
     add_cppflags -D__USER_LABEL_PREFIX__=
     add_cppflags -D__builtin_memset=memset
@@ -3437,7 +3437,7 @@ if enabled_all tms470 glibc; then
     add_cflags   -pds=48    # incompatible redefinition of macro
 fi
 
-if enabled_all ccc glibc; then
+if enabled_all ccc libc_glibc; then
     add_ldflags -Wl,-z,now  # calls to libots crash without this
 fi
 

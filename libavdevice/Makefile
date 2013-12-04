@@ -7,8 +7,6 @@ HEADERS = avdevice.h                                                    \
 OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \
 
-OBJS-$(HAVE_MSVCRT) += file_open.o
-
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa-audio-common.o \
                                             alsa-audio-dec.o
@@ -30,6 +28,8 @@ OBJS-$(CONFIG_X11GRAB_INDEV)             += x11grab.o
 # external libraries
 OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
+
+OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa-audio.h
 SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio_common.h
