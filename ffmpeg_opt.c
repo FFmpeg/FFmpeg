@@ -653,6 +653,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                 if (!ist->hwaccel_device)
                     exit_program(1);
             }
+            ist->hwaccel_pix_fmt = AV_PIX_FMT_NONE;
 
             break;
         case AVMEDIA_TYPE_AUDIO:
