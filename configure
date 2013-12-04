@@ -3809,7 +3809,7 @@ elif check_header _mingw.h; then
     else
         add_cppflags -D__USE_MINGW_ANSI_STDIO=1
     fi
-elif check_func_headers stdlib.h _get_doserrno; then
+elif check_cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
     libc_type=msvcrt
     add_compat strtod.o strtod=avpriv_strtod
     add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
