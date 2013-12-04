@@ -975,6 +975,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
     if (update_wrap_reference(s, st, stream_index) && st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
         // correct first time stamps to negative values
         st->first_dts = wrap_timestamp(st, st->first_dts);
+        st->start_time = wrap_timestamp(st, st->start_time);
         st->cur_dts = wrap_timestamp(st, st->cur_dts);
         pkt->dts = wrap_timestamp(st, pkt->dts);
         pkt->pts = wrap_timestamp(st, pkt->pts);
