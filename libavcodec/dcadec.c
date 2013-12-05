@@ -1263,7 +1263,7 @@ static int dca_filter_channels(DCAContext *s, int block_index)
     }
 
     /* Generate LFE samples for this subsubframe FIXME!!! */
-    if (s->output & DCA_LFE) {
+    if (s->lfe) {
         lfe_interpolation_fir(s, s->lfe, 2 * s->lfe,
                               s->lfe_data + 2 * s->lfe * (block_index + 4),
                               s->samples_chanptr[dca_lfe_index[s->amode]],
