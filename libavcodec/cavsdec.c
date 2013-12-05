@@ -1161,6 +1161,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return 0;
     }
 
+    h->stc = 0;
+
     buf_ptr = buf;
     buf_end = buf + buf_size;
     for(;;) {
