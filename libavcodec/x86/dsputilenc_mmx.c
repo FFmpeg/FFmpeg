@@ -992,6 +992,13 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
         c->ssd_int8_vs_int16 = ssd_int8_vs_int16_mmx;
     }
 
+    if (INLINE_AMD3DNOW(cpu_flags)) {
+        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+            c->try_8x8basis = try_8x8basis_3dnow;
+        }
+        c->add_8x8basis = add_8x8basis_3dnow;
+    }
+
     if (INLINE_MMXEXT(cpu_flags)) {
         if (avctx->bits_per_raw_sample <= 8 &&
             (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
@@ -1024,13 +1031,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
         c->sum_abs_dctelem = sum_abs_dctelem_ssse3;
     }
 #endif
-
-    if (INLINE_AMD3DNOW(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
-            c->try_8x8basis = try_8x8basis_3dnow;
-        }
-        c->add_8x8basis = add_8x8basis_3dnow;
-    }
 #endif /* HAVE_INLINE_ASM */
 
     if (EXTERNAL_MMX(cpu_flags)) {
