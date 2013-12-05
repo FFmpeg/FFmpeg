@@ -2712,7 +2712,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int flush_codecs = ic->probesize > 0;
 
     if(ic->pb)
-        av_log(ic, AV_LOG_DEBUG, "File position before avformat_find_stream_info() is %"PRId64"\n", avio_tell(ic->pb));
+        av_log(ic, AV_LOG_DEBUG, "Before avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d\n",
+               avio_tell(ic->pb), ic->pb->bytes_read, ic->pb->seek_count);
 
     for(i=0;i<ic->nb_streams;i++) {
         const AVCodec *codec;
@@ -3139,7 +3140,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         av_freep(&ic->streams[i]->info);
     }
     if(ic->pb)
-        av_log(ic, AV_LOG_DEBUG, "File position after avformat_find_stream_info() is %"PRId64"\n", avio_tell(ic->pb));
+        av_log(ic, AV_LOG_DEBUG, "After avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d frames:%d\n",
+               avio_tell(ic->pb), ic->pb->bytes_read, ic->pb->seek_count, count);
     return ret;
 }
 
