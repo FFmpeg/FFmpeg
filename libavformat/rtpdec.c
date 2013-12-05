@@ -32,6 +32,12 @@
 
 #define MIN_FEEDBACK_INTERVAL 200000 /* 200 ms in us */
 
+static RTPDynamicProtocolHandler gsm_dynamic_handler = {
+    .enc_name   = "GSM",
+    .codec_type = AVMEDIA_TYPE_AUDIO,
+    .codec_id   = AV_CODEC_ID_GSM,
+};
+
 static RTPDynamicProtocolHandler realmedia_mp3_dynamic_handler = {
     .enc_name   = "X-MP3-draft-00",
     .codec_type = AVMEDIA_TYPE_AUDIO,
@@ -90,6 +96,7 @@ void ff_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_theora_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vorbis_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vp8_dynamic_handler);
+    ff_register_dynamic_payload_handler(&gsm_dynamic_handler);
     ff_register_dynamic_payload_handler(&opus_dynamic_handler);
     ff_register_dynamic_payload_handler(&realmedia_mp3_dynamic_handler);
     ff_register_dynamic_payload_handler(&speex_dynamic_handler);
