@@ -435,6 +435,70 @@ aecho=0.8:0.9:1000|1800:0.3|0.25
 @end example
 @end itemize
 
+@section aeval
+
+Modify an audio signal according to the specified expressions.
+
+This filter accepts one or more expressions (one for each channel),
+which are evaluated and used to modify a corresponding audio signal.
+
+This filter accepts the following options:
+
+@table @option
+@item exprs
+Set the '|'-separated expressions list for each separate channel. If
+the number of input channels is greater than the number of
+expressions, the last specified expression is used for the remaining
+output channels.
+
+@item channel_layout, c
+Set output channel layout. If not specified, the channel layout is
+specified by the number of expressions. If set to @samp{same}, it will
+use by default the same input channel layout.
+@end table
+
+Each expression in @var{exprs} can contain the following constants and functions:
+
+@table @option
+@item ch
+channel number of the current expression
+
+@item n
+number of the evaluated sample, starting from 0
+
+@item s
+sample rate
+
+@item t
+time of the evaluated sample expressed in seconds
+
+@item nb_in_channels
+@item nb_out_channels
+input and output number of channels
+
+@item val(CH)
+the value of input channel with number @var{CH}
+@end table
+
+Note: this filter is slow. For faster processing you should use a
+dedicated filter.
+
+@subsection Examples
+
+@itemize
+@item
+Half volume:
+@example
+aeval=val(ch)/2:c=same
+@end example
+
+@item
+Invert phase of the second channel:
+@example
+eval=val(0)|-val(1)
+@end example
+@end itemize
+
 @section afade
 
 Apply fade-in/out effect to input audio.

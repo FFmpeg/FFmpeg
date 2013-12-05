@@ -12,6 +12,7 @@ version <next>
 - complete Voxware MetaSound decoder
 - remove mp3_header_compress bitstream filters
 - Windows resource files for shared libraries
+- aeval filter
 
 
 version 2.1:
