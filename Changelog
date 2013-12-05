@@ -11,6 +11,7 @@ version <next>
 - support for decoding through VDPAU in ffmpeg (the -hwaccel option)
 - complete Voxware MetaSound decoder
 - remove mp3_header_compress bitstream filters
+- Windows resource files for shared libraries
 
 
 version 2.1:

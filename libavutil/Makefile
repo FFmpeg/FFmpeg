@@ -122,6 +122,9 @@ OBJS-$(CONFIG_OPENCL)                   += opencl.o opencl_internal.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
 
+# Windows resource file
+SLIBOBJS-$(HAVE_GNU_WINDRES)            += avutilres.o
+
 SKIPHEADERS          = old_pix_fmts.h
 
 SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h

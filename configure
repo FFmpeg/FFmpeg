@@ -267,6 +267,7 @@ Advanced options (experts only):
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
+  --windres=WINDRES        use windows resource compiler WINDRES [$windres_default]
   --yasmexe=EXE            use yasm-compatible assembler EXE [$yasmexe_default]
   --cc=CC                  use C compiler CC [$cc_default]
   --cxx=CXX                use C compiler CXX [$cxx_default]
@@ -1509,6 +1510,7 @@ HAVE_LIST="
     gettimeofday
     glob
     gnu_as
+    gnu_windres
     gsm_h
     ibm_asm
     inet_aton
@@ -2367,6 +2369,7 @@ pkg_config_default=pkg-config
 ranlib="ranlib"
 strip_default="strip"
 yasmexe_default="yasm"
+windres_default="windres"
 
 nogas=":"
 
@@ -2637,6 +2640,7 @@ nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
 strip_default="${cross_prefix}${strip_default}"
+windres_default="${cross_prefix}${windres_default}"
 
 sysinclude_default="${sysroot}/usr/include"
 
@@ -3155,7 +3159,7 @@ test -n "$cc_type" && enable $cc_type ||
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 : ${host_ld_default:=$host_cc}
-set_default ar as dep_cc ld host_ld
+set_default ar as dep_cc ld host_ld windres
 
 probe_cc as "$as"
 asflags_filter=$_flags_filter
@@ -3637,6 +3641,7 @@ case $target_os in
         elif enabled arm; then
             LIBTARGET=arm-wince
         fi
+        enabled shared && ! enabled small && check_cmd $windres --version && enable gnu_windres
         check_ldflags -Wl,--nxcompat
         check_ldflags -Wl,--dynamicbase
         shlibdir_default="$bindir_default"
@@ -3699,6 +3704,7 @@ case $target_os in
         SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(FULLNAME).dll.a'
         objformat="win32"
         enable dos_paths
+        enabled shared && ! enabled small && check_cmd $windres --version && enable gnu_windres
         ;;
     *-dos|freedos|opendos)
         network_extralibs="-lsocket"
@@ -4882,6 +4888,7 @@ LD_O=$LD_O
 LD_LIB=$LD_LIB
 LD_PATH=$LD_PATH
 DLLTOOL=$dlltool
+WINDRES=$windres
 LDFLAGS=$LDFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 ASMSTRIPFLAGS=$ASMSTRIPFLAGS
@@ -4969,6 +4976,7 @@ cat > $TMPH <<EOF
 #define av_restrict $_restrict
 #define EXTERN_PREFIX "${extern_prefix}"
 #define EXTERN_ASM ${extern_prefix}
+#define BUILDSUF "$build_suffix"
 #define SLIBSUF "$SLIBSUF"
 #define HAVE_MMX2 HAVE_MMXEXT
 EOF

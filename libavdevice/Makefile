@@ -51,6 +51,9 @@ OBJS-$(CONFIG_XV_OUTDEV)                 += xv.o
 OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
 
+# Windows resource file
+SLIBOBJS-$(HAVE_GNU_WINDRES)             += avdeviceres.o
+
 SKIPHEADERS-$(CONFIG_DSHOW_INDEV)        += dshow_capture.h
 SKIPHEADERS-$(CONFIG_LIBPULSE)           += pulse_audio_common.h
 SKIPHEADERS-$(CONFIG_V4L2_INDEV)         += v4l2-common.h

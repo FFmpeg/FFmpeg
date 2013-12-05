@@ -814,6 +814,9 @@ OBJS-$(HAVE_OS2THREADS)                += pthread.o pthread_slice.o pthread_fram
 
 OBJS-$(CONFIG_FRAME_THREAD_ENCODER)    += frame_thread_encoder.o
 
+# Windows resource file
+SLIBOBJS-$(HAVE_GNU_WINDRES)           += avcodecres.o
+
 SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
                                           aac_tablegen_decl.h           \
