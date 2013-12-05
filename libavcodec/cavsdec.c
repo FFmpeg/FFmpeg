@@ -566,7 +566,7 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
         if (level_code >= ESCAPE_CODE) {
             run      = ((level_code - ESCAPE_CODE) >> 1) + 1;
             if(run > 64)
-                return -1;
+                return AVERROR_INVALIDDATA;
             esc_code = get_ue_code(gb, esc_golomb_order);
             level    = esc_code + (run > r->max_run ? 1 : r->level_add[run]);
             while (level > r->inc_limit)
@@ -893,7 +893,7 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb)
         av_log(h->avctx, AV_LOG_ERROR, "unexpected start code 0x%02x\n", h->stc);
 
     if (h->stc >= h->mb_height)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     h->mby   = h->stc;
     h->mbidx = h->mby * h->mb_width;
