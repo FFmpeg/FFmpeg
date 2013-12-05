@@ -2159,6 +2159,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     av_dlog(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
                             "size %d, distance %d, keyframe %d\n", st->index, current_sample,
                             current_offset, current_dts, sample_size, distance, keyframe);
+                    if (st->nb_index_entries < 100)
+                        ff_rfps_add_frame(mov->fc, st, current_dts);
                 }
 
                 current_offset += sample_size;
@@ -3409,6 +3411,8 @@ static int mov_read_header(AVFormatContext *s)
             s->streams[i]->codec->bit_rate = mov->bitrates[i];
         }
     }
+
+    ff_rfps_calculate(s);
 
     return 0;
 }
