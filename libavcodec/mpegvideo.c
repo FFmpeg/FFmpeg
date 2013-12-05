@@ -1064,7 +1064,6 @@ static int init_context_frame(MpegEncContext *s)
     s->mb_width   = (s->width + 15) / 16;
     s->mb_stride  = s->mb_width + 1;
     s->b8_stride  = s->mb_width * 2 + 1;
-    s->b4_stride  = s->mb_width * 4 + 1;
     mb_array_size = s->mb_height * s->mb_stride;
     mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
 

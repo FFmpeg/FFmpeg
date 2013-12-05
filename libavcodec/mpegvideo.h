@@ -249,7 +249,6 @@ typedef struct MpegEncContext {
     int mb_width, mb_height;   ///< number of MBs horizontally & vertically
     int mb_stride;             ///< mb_width+1 used for some arrays to allow simple addressing of left & top MBs without sig11
     int b8_stride;             ///< 2*mb_width+1 used for some 8x8 block arrays to allow simple addressing
-    int b4_stride;             ///< 4*mb_width+1 used for some 4x4 block arrays to allow simple addressing
     int h_edge_pos, v_edge_pos;///< horizontal / vertical position of the right/bottom edge (pixel replication)
     int mb_num;                ///< number of MBs of a picture
     ptrdiff_t linesize;        ///< line size, in bytes, may be different from width
