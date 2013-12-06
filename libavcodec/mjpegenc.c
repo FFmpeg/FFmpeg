@@ -324,11 +324,11 @@ end:
         s->thread_context[i]->esc_pos = 0;
 }
 
-static void escape_FF(MpegEncContext *s, int start)
+static void escape_FF(PutBitContext *pb, int start)
 {
-    int size= put_bits_count(&s->pb) - start*8;
+    int size = put_bits_count(pb) - start * 8;
     int i, ff_count;
-    uint8_t *buf= s->pb.buf + start;
+    uint8_t *buf = pb->buf + start;
     int align= (-(size_t)(buf))&3;
 
     av_assert1((size&7) == 0);
@@ -361,8 +361,8 @@ static void escape_FF(MpegEncContext *s, int start)
 
     if(ff_count==0) return;
 
-    flush_put_bits(&s->pb);
-    skip_put_bytes(&s->pb, ff_count);
+    flush_put_bits(pb);
+    skip_put_bytes(pb, ff_count);
 
     for(i=size-1; ff_count; i--){
         int v= buf[i];
@@ -385,7 +385,7 @@ void ff_mjpeg_encode_stuffing(MpegEncContext *s)
     if(length) put_bits(pbc, length, (1<<length)-1);
 
     flush_put_bits(&s->pb);
-    escape_FF(s, s->esc_pos);
+    escape_FF(&s->pb, s->esc_pos);
 
     if((s->avctx->active_thread_type & FF_THREAD_SLICE) && mb_y < s->mb_height)
         put_marker(pbc, RST0 + (mb_y&7));
@@ -395,13 +395,11 @@ void ff_mjpeg_encode_stuffing(MpegEncContext *s)
         s->last_dc[i] = 128 << s->intra_dc_precision;
 }
 
-void ff_mjpeg_encode_picture_trailer(MpegEncContext *s)
+void ff_mjpeg_encode_picture_trailer(PutBitContext *pb, int header_bits)
 {
+    av_assert1((header_bits & 7) == 0);
 
-    av_assert1((s->header_bits&7)==0);
-
-
-    put_marker(&s->pb, EOI);
+    put_marker(pb, EOI);
 }
 
 void ff_mjpeg_encode_dc(MpegEncContext *s, int val,
