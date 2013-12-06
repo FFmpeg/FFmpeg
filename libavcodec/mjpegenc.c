@@ -84,10 +84,9 @@ void ff_mjpeg_encode_close(MpegEncContext *s)
 }
 
 /* table_class: 0 = DC coef, 1 = AC coefs */
-static int put_huffman_table(MpegEncContext *s, int table_class, int table_id,
+static int put_huffman_table(PutBitContext *p, int table_class, int table_id,
                              const uint8_t *bits_table, const uint8_t *value_table)
 {
-    PutBitContext *p = &s->pb;
     int n, i;
 
     put_bits(p, 4, table_class);
@@ -147,14 +146,14 @@ static void jpeg_table_header(MpegEncContext *s)
     ptr = put_bits_ptr(p);
     put_bits(p, 16, 0); /* patched later */
     size = 2;
-    size += put_huffman_table(s, 0, 0, avpriv_mjpeg_bits_dc_luminance,
+    size += put_huffman_table(p, 0, 0, avpriv_mjpeg_bits_dc_luminance,
                               avpriv_mjpeg_val_dc);
-    size += put_huffman_table(s, 0, 1, avpriv_mjpeg_bits_dc_chrominance,
+    size += put_huffman_table(p, 0, 1, avpriv_mjpeg_bits_dc_chrominance,
                               avpriv_mjpeg_val_dc);
 
-    size += put_huffman_table(s, 1, 0, avpriv_mjpeg_bits_ac_luminance,
+    size += put_huffman_table(p, 1, 0, avpriv_mjpeg_bits_ac_luminance,
                               avpriv_mjpeg_val_ac_luminance);
-    size += put_huffman_table(s, 1, 1, avpriv_mjpeg_bits_ac_chrominance,
+    size += put_huffman_table(p, 1, 1, avpriv_mjpeg_bits_ac_chrominance,
                               avpriv_mjpeg_val_ac_chrominance);
     AV_WB16(ptr, size);
 }
