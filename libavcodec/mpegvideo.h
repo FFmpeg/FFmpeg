@@ -625,8 +625,6 @@ typedef struct MpegEncContext {
 
     /* MJPEG specific */
     struct MJpegContext *mjpeg_ctx;
-    int mjpeg_vsample[3];       ///< vertical sampling factors, default = {2, 1, 1}
-    int mjpeg_hsample[3];       ///< horizontal sampling factors, default = {2, 1, 1}
     int esc_pos;
 
     /* MSMPEG4 specific */

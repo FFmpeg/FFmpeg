@@ -212,15 +212,13 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG;
     int hsample[3], vsample[3];
     int i;
-    MpegEncContext *s = avctx->priv_data;
-    av_assert0(avctx->codec->priv_data_size == sizeof(MpegEncContext));
 
     av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift,
                                      &chroma_v_shift);
     if (avctx->codec->id == AV_CODEC_ID_LJPEG &&
         (avctx->pix_fmt == AV_PIX_FMT_BGR0
-            || s->avctx->pix_fmt == AV_PIX_FMT_BGRA
-            || s->avctx->pix_fmt == AV_PIX_FMT_BGR24)) {
+         || avctx->pix_fmt == AV_PIX_FMT_BGRA
+         || avctx->pix_fmt == AV_PIX_FMT_BGR24)) {
         vsample[0] = hsample[0] =
         vsample[1] = hsample[1] =
         vsample[2] = hsample[2] = 1;
@@ -319,9 +317,14 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     put_bits(pb, 8, 0); /* Ah/Al (not used) */
 
 end:
-    s->esc_pos = put_bits_count(pb) >> 3;
-    for(i=1; i<s->slice_context_count; i++)
-        s->thread_context[i]->esc_pos = 0;
+    if (avctx->codec->priv_data_size == sizeof(MpegEncContext)) {
+        MpegEncContext *s = avctx->priv_data;
+        av_assert0(avctx->codec->priv_data_size == sizeof(MpegEncContext));
+
+        s->esc_pos = put_bits_count(pb) >> 3;
+        for(i=1; i<s->slice_context_count; i++)
+            s->thread_context[i]->esc_pos = 0;
+    }
 }
 
 void ff_mjpeg_escape_FF(PutBitContext *pb, int start)
@@ -530,6 +533,9 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     MpegEncContext *s = avctx->priv_data;
     AVFrame pic = *pic_arg;
     int i;
+    int chroma_h_shift, chroma_v_shift;
+
+    av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift, &chroma_v_shift);
 
     //CODEC_FLAG_EMU_EDGE have to be cleared
     if(s->avctx->flags & CODEC_FLAG_EMU_EDGE)
@@ -537,7 +543,8 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
     //picture should be flipped upside-down
     for(i=0; i < 3; i++) {
-        pic.data[i] += (pic.linesize[i] * (s->mjpeg_vsample[i] * (8 * s->mb_height -((s->height/V_MAX)&7)) - 1 ));
+        int vsample = i ? 2 >> chroma_v_shift : 2;
+        pic.data[i] += (pic.linesize[i] * (vsample * (8 * s->mb_height -((s->height/V_MAX)&7)) - 1 ));
         pic.linesize[i] *= -1;
     }
     return ff_MPV_encode_picture(avctx, pkt, &pic, got_packet);
