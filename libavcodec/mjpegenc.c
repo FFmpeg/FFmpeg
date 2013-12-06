@@ -204,14 +204,9 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
     }
 }
 
-void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
-                                    ScanTable *intra_scantable,
-                                    uint16_t intra_matrix[64])
+void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[3], int vsample[3])
 {
     int chroma_h_shift, chroma_v_shift;
-    const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG && avctx->codec_id != AV_CODEC_ID_AMV;
-    int hsample[3], vsample[3];
-    int i;
 
     av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift,
                                      &chroma_v_shift);
@@ -233,6 +228,17 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
         hsample[1] = 2 >> chroma_h_shift;
         hsample[2] = 2 >> chroma_h_shift;
     }
+}
+
+void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
+                                    ScanTable *intra_scantable,
+                                    uint16_t intra_matrix[64])
+{
+    const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG && avctx->codec_id != AV_CODEC_ID_AMV;
+    int hsample[3], vsample[3];
+    int i;
+
+    ff_mjpeg_init_hvsample(avctx, hsample, vsample);
 
     put_marker(pb, SOI);
 
