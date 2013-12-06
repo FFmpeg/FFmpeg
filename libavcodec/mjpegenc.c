@@ -104,13 +104,15 @@ static int put_huffman_table(PutBitContext *p, int table_class, int table_id,
     return n + 17;
 }
 
-static void jpeg_table_header(MpegEncContext *s)
+static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
+                              ScanTable *intra_scantable,
+                              uint16_t intra_matrix[64],
+                              int hsample[3])
 {
-    PutBitContext *p = &s->pb;
     int i, j, size;
     uint8_t *ptr;
 
-    if (s->avctx->codec_id != AV_CODEC_ID_LJPEG) {
+    if (avctx->codec_id != AV_CODEC_ID_LJPEG) {
     /* quant matrixes */
     put_marker(p, DQT);
 #ifdef TWOMATRIXES
@@ -121,8 +123,8 @@ static void jpeg_table_header(MpegEncContext *s)
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 0); /* table 0 */
     for(i=0;i<64;i++) {
-        j = s->intra_scantable.permutated[i];
-        put_bits(p, 8, s->intra_matrix[j]);
+        j = intra_scantable->permutated[i];
+        put_bits(p, 8, intra_matrix[j]);
     }
 #ifdef TWOMATRIXES
     put_bits(p, 4, 0); /* 8 bit precision */
@@ -134,10 +136,10 @@ static void jpeg_table_header(MpegEncContext *s)
 #endif
     }
 
-    if(s->avctx->active_thread_type & FF_THREAD_SLICE){
+    if(avctx->active_thread_type & FF_THREAD_SLICE){
         put_marker(p, DRI);
         put_bits(p, 16, 4);
-        put_bits(p, 16, (s->width-1)/(8*s->mjpeg_hsample[0]) + 1);
+        put_bits(p, 16, (avctx->width-1)/(8*hsample[0]) + 1);
     }
 
     /* huffman table */
@@ -212,7 +214,7 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
 
     jpeg_put_comments(s->avctx, &s->pb);
 
-    jpeg_table_header(s);
+    jpeg_table_header(s->avctx, &s->pb, &s->intra_scantable, s->intra_matrix, s->mjpeg_hsample);
 
     switch(s->avctx->codec_id){
     case AV_CODEC_ID_MJPEG:  put_marker(&s->pb, SOF0 ); break;
