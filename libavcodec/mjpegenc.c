@@ -326,10 +326,17 @@ end:
 
 void ff_mjpeg_escape_FF(PutBitContext *pb, int start)
 {
-    int size = put_bits_count(pb) - start * 8;
+    int size;
     int i, ff_count;
     uint8_t *buf = pb->buf + start;
     int align= (-(size_t)(buf))&3;
+    int pad = (-put_bits_count(pb))&7;
+
+    if (pad)
+        put_bits(pb, pad, (1<<pad)-1);
+
+    flush_put_bits(pb);
+    size = put_bits_count(pb) - start * 8;
 
     av_assert1((size&7) == 0);
     size >>= 3;
@@ -381,11 +388,8 @@ void ff_mjpeg_encode_stuffing(MpegEncContext *s)
     int length, i;
     PutBitContext *pbc = &s->pb;
     int mb_y = s->mb_y - !s->mb_x;
-    length= (-put_bits_count(pbc))&7;
-    if(length) put_bits(pbc, length, (1<<length)-1);
 
-    flush_put_bits(&s->pb);
-    ff_mjpeg_escape_FF(&s->pb, s->esc_pos);
+    ff_mjpeg_escape_FF(pbc, s->esc_pos);
 
     if((s->avctx->active_thread_type & FF_THREAD_SLICE) && mb_y < s->mb_height)
         put_marker(pbc, RST0 + (mb_y&7));
