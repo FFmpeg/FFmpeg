@@ -63,7 +63,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
         s->rd_scratchpad = av_mallocz(alloc_size * 4 * 16 * 2);
         if (!s->rd_scratchpad) {
             av_log(avctx, AV_LOG_ERROR, "failed to allocate context scratch buffers.\n");
-            return ret;
+            return AVERROR(ENOMEM);
         }
     }
 
