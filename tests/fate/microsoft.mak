@@ -12,7 +12,7 @@ fate-msvideo1: $(FATE_MSVIDEO1)
 
 FATE_WMV8_DRM += fate-wmv8-drm
 # discard last packet to avoid fails due to overread of VC-1 decoder
-fate-wmv8-drm: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -an -vframes 162
+fate-wmv8-drm: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -an -frames:v 129
 
 FATE_WMV8_DRM += fate-wmv8-drm-nodec
 fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -acodec copy -vcodec copy
