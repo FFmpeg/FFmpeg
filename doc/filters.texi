@@ -1896,7 +1896,8 @@ This source accepts the following options:
 @item exprs
 Set the '|'-separated expressions list for each separate channel. In case the
 @option{channel_layout} option is not specified, the selected channel layout
-depends on the number of provided expressions.
+depends on the number of provided expressions. Otherwise the last
+specified expression is applied to the remaining output channels.
 
 @item channel_layout, c
 Set the channel layout. The number of channels in the specified layout

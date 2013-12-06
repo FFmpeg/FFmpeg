@@ -85,7 +85,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     EvalContext *eval = ctx->priv;
     char *args1 = av_strdup(eval->exprs);
-    char *expr, *buf;
+    char *expr, *last_expr, *buf;
     int ret;
 
     if (!args1) {
@@ -94,27 +94,39 @@ static av_cold int init(AVFilterContext *ctx)
         goto end;
     }
 
+#define ADD_EXPRESSION(expr_) do {                                      \
+        if (!av_dynarray2_add((void **)&eval->expr, &eval->nb_channels, \
+                              sizeof(*eval->expr), NULL)) {             \
+            ret = AVERROR(ENOMEM);                                      \
+            goto end;                                                   \
+        }                                                               \
+        eval->expr[eval->nb_channels-1] = NULL;                         \
+        ret = av_expr_parse(&eval->expr[eval->nb_channels - 1], expr_,  \
+                            var_names, NULL, NULL,                      \
+                            NULL, NULL, 0, ctx);                        \
+        if (ret < 0)                                                    \
+            goto end;                                                   \
+    } while (0)
+
     /* parse expressions */
     buf = args1;
     while (expr = av_strtok(buf, "|", &buf)) {
-        if (!av_dynarray2_add((void **)&eval->expr, &eval->nb_channels, sizeof(*eval->expr), NULL)) {
-            ret = AVERROR(ENOMEM);
-            goto end;
-        }
-        eval->expr[eval->nb_channels-1] = NULL;
-        ret = av_expr_parse(&eval->expr[eval->nb_channels - 1], expr, var_names,
-                            NULL, NULL, NULL, NULL, 0, ctx);
-        if (ret < 0)
-            goto end;
+        ADD_EXPRESSION(expr);
+        last_expr = expr;
     }
 
     if (eval->chlayout_str) {
-        int n;
+        int i, n;
         ret = ff_parse_channel_layout(&eval->chlayout, NULL, eval->chlayout_str, ctx);
         if (ret < 0)
             goto end;
 
         n = av_get_channel_layout_nb_channels(eval->chlayout);
+        if (n > eval->nb_channels) {
+            for (i = eval->nb_channels; i < n; i++)
+                ADD_EXPRESSION(last_expr);
+        }
+
         if (n != eval->nb_channels) {
             av_log(ctx, AV_LOG_ERROR,
                    "Mismatch between the specified number of channels '%d' "
