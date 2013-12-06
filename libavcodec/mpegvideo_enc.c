@@ -217,6 +217,9 @@ static void MPV_encode_defaults(MpegEncContext *s)
     }
     s->me.mv_penalty = default_mv_penalty;
     s->fcode_tab     = default_fcode_tab;
+
+    s->input_picture_number  = 0;
+    s->picture_in_gop_number = 0;
 }
 
 av_cold int ff_dct_encode_init(MpegEncContext *s) {
