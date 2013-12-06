@@ -586,15 +586,6 @@ retry:
         if (ff_MPV_common_init(s) < 0)
             return -1;
 
-    /* We need to set current_picture_ptr before reading the header,
-     * otherwise we cannot store anything in there. */
-    if (s->current_picture_ptr == NULL || s->current_picture_ptr->f.data[0]) {
-        int i = ff_find_unused_picture(s, 0);
-        if (i < 0)
-            return i;
-        s->current_picture_ptr = &s->picture[i];
-    }
-
     ret = h261_decode_picture_header(h);
 
     /* skip if the header was thrashed */
