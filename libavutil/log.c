@@ -101,6 +101,9 @@ static int use_color = -1;
 
 static void colored_fputs(int level, const char *str)
 {
+    if (!*str)
+        return;
+
     if (use_color < 0) {
 #if HAVE_SETCONSOLETEXTATTRIBUTE
         CONSOLE_SCREEN_BUFFER_INFO con_info;
