@@ -30,6 +30,8 @@
  * MJPEG encoder.
  */
 
+#include "libavutil/pixdesc.h"
+
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "mjpeg.h"
@@ -202,95 +204,122 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
     }
 }
 
-void ff_mjpeg_encode_picture_header(MpegEncContext *s)
+void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
+                                    ScanTable *intra_scantable,
+                                    uint16_t intra_matrix[64])
 {
-    const int lossless= s->avctx->codec_id != AV_CODEC_ID_MJPEG;
+    int chroma_h_shift, chroma_v_shift;
+    const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG;
+    int hsample[3], vsample[3];
     int i;
+    MpegEncContext *s = avctx->priv_data;
+    av_assert0(avctx->codec->priv_data_size == sizeof(MpegEncContext));
 
-    put_marker(&s->pb, SOI);
+    av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift,
+                                     &chroma_v_shift);
+    if (avctx->codec->id == AV_CODEC_ID_LJPEG &&
+        (avctx->pix_fmt == AV_PIX_FMT_BGR0
+            || s->avctx->pix_fmt == AV_PIX_FMT_BGRA
+            || s->avctx->pix_fmt == AV_PIX_FMT_BGR24)) {
+        vsample[0] = hsample[0] =
+        vsample[1] = hsample[1] =
+        vsample[2] = hsample[2] = 1;
+    } else if (avctx->pix_fmt == AV_PIX_FMT_YUV444P || avctx->pix_fmt == AV_PIX_FMT_YUVJ444P) {
+        vsample[0] = vsample[1] = vsample[2] = 2;
+        hsample[0] = hsample[1] = hsample[2] = 1;
+    } else {
+        vsample[0] = 2;
+        vsample[1] = 2 >> chroma_v_shift;
+        vsample[2] = 2 >> chroma_v_shift;
+        hsample[0] = 2;
+        hsample[1] = 2 >> chroma_h_shift;
+        hsample[2] = 2 >> chroma_h_shift;
+    }
+
+    put_marker(pb, SOI);
 
     // hack for AMV mjpeg format
-    if(s->avctx->codec_id == AV_CODEC_ID_AMV) goto end;
+    if(avctx->codec_id == AV_CODEC_ID_AMV) goto end;
 
-    jpeg_put_comments(s->avctx, &s->pb);
+    jpeg_put_comments(avctx, pb);
 
-    jpeg_table_header(s->avctx, &s->pb, &s->intra_scantable, s->intra_matrix, s->mjpeg_hsample);
+    jpeg_table_header(avctx, pb, intra_scantable, intra_matrix, hsample);
 
-    switch(s->avctx->codec_id){
-    case AV_CODEC_ID_MJPEG:  put_marker(&s->pb, SOF0 ); break;
-    case AV_CODEC_ID_LJPEG:  put_marker(&s->pb, SOF3 ); break;
+    switch (avctx->codec_id) {
+    case AV_CODEC_ID_MJPEG:  put_marker(pb, SOF0 ); break;
+    case AV_CODEC_ID_LJPEG:  put_marker(pb, SOF3 ); break;
     default: av_assert0(0);
     }
 
-    put_bits(&s->pb, 16, 17);
-    if(lossless && (s->avctx->pix_fmt == AV_PIX_FMT_BGR0
-                    || s->avctx->pix_fmt == AV_PIX_FMT_BGRA
-                    || s->avctx->pix_fmt == AV_PIX_FMT_BGR24))
-        put_bits(&s->pb, 8, 9); /* 9 bits/component RCT */
+    put_bits(pb, 16, 17);
+    if (lossless && (  avctx->pix_fmt == AV_PIX_FMT_BGR0
+                    || avctx->pix_fmt == AV_PIX_FMT_BGRA
+                    || avctx->pix_fmt == AV_PIX_FMT_BGR24))
+        put_bits(pb, 8, 9); /* 9 bits/component RCT */
     else
-        put_bits(&s->pb, 8, 8); /* 8 bits/component */
-    put_bits(&s->pb, 16, s->height);
-    put_bits(&s->pb, 16, s->width);
-    put_bits(&s->pb, 8, 3); /* 3 components */
+        put_bits(pb, 8, 8); /* 8 bits/component */
+    put_bits(pb, 16, avctx->height);
+    put_bits(pb, 16, avctx->width);
+    put_bits(pb, 8, 3); /* 3 components */
 
     /* Y component */
-    put_bits(&s->pb, 8, 1); /* component number */
-    put_bits(&s->pb, 4, s->mjpeg_hsample[0]); /* H factor */
-    put_bits(&s->pb, 4, s->mjpeg_vsample[0]); /* V factor */
-    put_bits(&s->pb, 8, 0); /* select matrix */
+    put_bits(pb, 8, 1); /* component number */
+    put_bits(pb, 4, hsample[0]); /* H factor */
+    put_bits(pb, 4, vsample[0]); /* V factor */
+    put_bits(pb, 8, 0); /* select matrix */
 
     /* Cb component */
-    put_bits(&s->pb, 8, 2); /* component number */
-    put_bits(&s->pb, 4, s->mjpeg_hsample[1]); /* H factor */
-    put_bits(&s->pb, 4, s->mjpeg_vsample[1]); /* V factor */
+    put_bits(pb, 8, 2); /* component number */
+    put_bits(pb, 4, hsample[1]); /* H factor */
+    put_bits(pb, 4, vsample[1]); /* V factor */
 #ifdef TWOMATRIXES
-    put_bits(&s->pb, 8, lossless ? 0 : 1); /* select matrix */
+    put_bits(pb, 8, lossless ? 0 : 1); /* select matrix */
 #else
-    put_bits(&s->pb, 8, 0); /* select matrix */
+    put_bits(pb, 8, 0); /* select matrix */
 #endif
 
     /* Cr component */
-    put_bits(&s->pb, 8, 3); /* component number */
-    put_bits(&s->pb, 4, s->mjpeg_hsample[2]); /* H factor */
-    put_bits(&s->pb, 4, s->mjpeg_vsample[2]); /* V factor */
+    put_bits(pb, 8, 3); /* component number */
+    put_bits(pb, 4, hsample[2]); /* H factor */
+    put_bits(pb, 4, vsample[2]); /* V factor */
 #ifdef TWOMATRIXES
-    put_bits(&s->pb, 8, lossless ? 0 : 1); /* select matrix */
+    put_bits(pb, 8, lossless ? 0 : 1); /* select matrix */
 #else
-    put_bits(&s->pb, 8, 0); /* select matrix */
+    put_bits(pb, 8, 0); /* select matrix */
 #endif
 
     /* scan header */
-    put_marker(&s->pb, SOS);
-    put_bits(&s->pb, 16, 12); /* length */
-    put_bits(&s->pb, 8, 3); /* 3 components */
+    put_marker(pb, SOS);
+    put_bits(pb, 16, 12); /* length */
+    put_bits(pb, 8, 3); /* 3 components */
 
     /* Y component */
-    put_bits(&s->pb, 8, 1); /* index */
-    put_bits(&s->pb, 4, 0); /* DC huffman table index */
-    put_bits(&s->pb, 4, 0); /* AC huffman table index */
+    put_bits(pb, 8, 1); /* index */
+    put_bits(pb, 4, 0); /* DC huffman table index */
+    put_bits(pb, 4, 0); /* AC huffman table index */
 
     /* Cb component */
-    put_bits(&s->pb, 8, 2); /* index */
-    put_bits(&s->pb, 4, 1); /* DC huffman table index */
-    put_bits(&s->pb, 4, lossless ? 0 : 1); /* AC huffman table index */
+    put_bits(pb, 8, 2); /* index */
+    put_bits(pb, 4, 1); /* DC huffman table index */
+    put_bits(pb, 4, lossless ? 0 : 1); /* AC huffman table index */
 
     /* Cr component */
-    put_bits(&s->pb, 8, 3); /* index */
-    put_bits(&s->pb, 4, 1); /* DC huffman table index */
-    put_bits(&s->pb, 4, lossless ? 0 : 1); /* AC huffman table index */
+    put_bits(pb, 8, 3); /* index */
+    put_bits(pb, 4, 1); /* DC huffman table index */
+    put_bits(pb, 4, lossless ? 0 : 1); /* AC huffman table index */
 
-    put_bits(&s->pb, 8, lossless ? s->avctx->prediction_method+1 : 0); /* Ss (not used) */
+    put_bits(pb, 8, lossless ? avctx->prediction_method + 1 : 0); /* Ss (not used) */
 
-    switch(s->avctx->codec_id){
-    case AV_CODEC_ID_MJPEG:  put_bits(&s->pb, 8, 63); break; /* Se (not used) */
-    case AV_CODEC_ID_LJPEG:  put_bits(&s->pb, 8,  0); break; /* not used */
+    switch (avctx->codec_id) {
+    case AV_CODEC_ID_MJPEG:  put_bits(pb, 8, 63); break; /* Se (not used) */
+    case AV_CODEC_ID_LJPEG:  put_bits(pb, 8,  0); break; /* not used */
     default: av_assert0(0);
     }
 
-    put_bits(&s->pb, 8, 0); /* Ah/Al (not used) */
+    put_bits(pb, 8, 0); /* Ah/Al (not used) */
 
 end:
-    s->esc_pos = put_bits_count(&s->pb) >> 3;
+    s->esc_pos = put_bits_count(pb) >> 3;
     for(i=1; i<s->slice_context_count; i++)
         s->thread_context[i]->esc_pos = 0;
 }
