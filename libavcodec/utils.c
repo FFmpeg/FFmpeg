@@ -163,7 +163,8 @@ av_cold void avcodec_register(AVCodec *codec)
     avcodec_init();
     p = &first_avcodec;
     codec->next = NULL;
-    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, codec))
+
+    while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, codec))
         p = &(*p)->next;
 
     if (codec->init_static_data)
@@ -3013,7 +3014,7 @@ void av_register_hwaccel(AVHWAccel *hwaccel)
 {
     AVHWAccel **p = &first_hwaccel;
     hwaccel->next = NULL;
-    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, hwaccel))
+    while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, hwaccel))
         p = &(*p)->next;
 }
 

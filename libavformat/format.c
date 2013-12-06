@@ -54,7 +54,7 @@ void av_register_input_format(AVInputFormat *format)
     AVInputFormat **p = &first_iformat;
 
     format->next = NULL;
-    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
+    while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
         p = &(*p)->next;
 }
 
@@ -63,7 +63,7 @@ void av_register_output_format(AVOutputFormat *format)
     AVOutputFormat **p = &first_oformat;
 
     format->next = NULL;
-    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
+    while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
         p = &(*p)->next;
 }
 
