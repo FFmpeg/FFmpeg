@@ -75,9 +75,6 @@ static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
 
 static int16_t background, attr_orig;
 static HANDLE con;
-#define set_color(x)  SetConsoleTextAttribute(con, background | color[x])
-#define set_256color set_color
-#define reset_color() SetConsoleTextAttribute(con, attr_orig)
 #else
 
 static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
@@ -101,9 +98,6 @@ static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [16+AV_CLASS_CATEGORY_SWRESAMPLER     ] = 147 << 8 | 0x14,
 };
 
-#define set_color(x)  fprintf(stderr, "\033[%d;3%dm", (color[x] >> 4) & 15, color[x] & 15)
-#define set_256color(x) fprintf(stderr, "\033[48;5;%dm\033[38;5;%dm", (color[x] >> 16) & 0xff, (color[x] >> 8) & 0xff)
-#define reset_color() fprintf(stderr, "\033[0m")
 #endif
 static int use_color = -1;
 
@@ -132,14 +126,29 @@ static void colored_fputs(int level, const char *str)
 #endif
     }
 
-    if (use_color == 1) {
-        set_color(level);
-    } else if (use_color == 256)
-        set_256color(level);
+#if HAVE_SETCONSOLETEXTATTRIBUTE
+    if (use_color)
+        SetConsoleTextAttribute(con, background | color[level]);
     fputs(str, stderr);
-    if (use_color) {
-        reset_color();
-    }
+    if (use_color)
+        SetConsoleTextAttribute(con, attr_orig);
+#else
+    if (use_color == 1) {
+        fprintf(stderr,
+                "\033[%d;3%dm%s\033[0m",
+                (color[level] >> 4) & 15,
+                color[level] & 15,
+                str);
+    } else if (use_color == 256) {
+        fprintf(stderr,
+                "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
+                (color[level] >> 16) & 0xff,
+                (color[level] >> 8) & 0xff,
+                str);
+    } else
+        fputs(str, stderr);
+#endif
+
 }
 
 const char *av_default_item_name(void *ptr)
