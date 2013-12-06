@@ -127,19 +127,19 @@ static void colored_fputs(int level, const char *str)
     }
 
 #if HAVE_SETCONSOLETEXTATTRIBUTE
-    if (use_color)
+    if (use_color && level != AV_LOG_INFO/8)
         SetConsoleTextAttribute(con, background | color[level]);
     fputs(str, stderr);
-    if (use_color)
+    if (use_color && level != AV_LOG_INFO/8)
         SetConsoleTextAttribute(con, attr_orig);
 #else
-    if (use_color == 1) {
+    if (use_color == 1 && level != AV_LOG_INFO/8) {
         fprintf(stderr,
                 "\033[%d;3%dm%s\033[0m",
                 (color[level] >> 4) & 15,
                 color[level] & 15,
                 str);
-    } else if (use_color == 256) {
+    } else if (use_color == 256 && level != AV_LOG_INFO/8) {
         fprintf(stderr,
                 "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
                 (color[level] >> 16) & 0xff,
