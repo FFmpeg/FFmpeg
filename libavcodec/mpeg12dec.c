@@ -53,6 +53,7 @@ typedef struct Mpeg1Context {
     AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
     int sync;                        ///< Did we reach a sync point like a GOP/SEQ/KEYFrame?
     int tmpgexs;
+    int first_slice;
     int extradata_decoded;
 } Mpeg1Context;
 
@@ -1955,7 +1956,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_XVMC */
 
     /* end of slice reached */
-    if (/*s->mb_y << field_pic == s->mb_height &&*/ !s->first_field && !s->first_slice) {
+    if (/*s->mb_y << field_pic == s->mb_height &&*/ !s->first_field && !s1->first_slice) {
         /* end of image */
 
         ff_er_frame_end(&s->er);
@@ -2352,7 +2353,7 @@ static int decode_chunks(AVCodecContext *avctx,
                 /* we have a complete image: we try to decompress it */
                 if (mpeg1_decode_picture(avctx, buf_ptr, input_size) < 0)
                     s2->pict_type = 0;
-                s2->first_slice = 1;
+                s->first_slice = 1;
                 last_code = PICTURE_START_CODE;
             } else {
                 av_log(avctx, AV_LOG_ERROR, "ignoring pic after %X\n", last_code);
@@ -2496,9 +2497,9 @@ static int decode_chunks(AVCodecContext *avctx,
                     break;
                 }
 
-                if (s2->first_slice) {
+                if (s->first_slice) {
                     skip_frame = 0;
-                    s2->first_slice = 0;
+                    s->first_slice = 0;
                     if (mpeg_field_start(s2, buf, buf_size) < 0)
                         return -1;
                 }
