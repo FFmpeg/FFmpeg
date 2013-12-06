@@ -57,8 +57,8 @@ typedef struct LJpegEncContext {
     uint16_t (*scratch)[4];
 } LJpegEncContext;
 
-static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
-                                   const AVFrame *pict, int *got_packet)
+static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                              const AVFrame *pict, int *got_packet)
 {
     LJpegEncContext *s = avctx->priv_data;
     PutBitContext pb;
@@ -304,7 +304,7 @@ AVCodec ff_ljpeg_encoder = {
     .id             = AV_CODEC_ID_LJPEG,
     .priv_data_size = sizeof(LJpegEncContext),
     .init           = ljpeg_encode_init,
-    .encode2        = encode_picture_lossless,
+    .encode2        = ljpeg_encode_frame,
     .close          = ljpeg_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_BGR24   , AV_PIX_FMT_BGRA    , AV_PIX_FMT_BGR0,
