@@ -490,7 +490,7 @@ int avfilter_register(AVFilter *filter)
 
     filter->next = NULL;
 
-    while(avpriv_atomic_ptr_cas((void * volatile *)f, NULL, filter))
+    while(*f || avpriv_atomic_ptr_cas((void * volatile *)f, NULL, filter))
         f = &(*f)->next;
 
     return 0;
