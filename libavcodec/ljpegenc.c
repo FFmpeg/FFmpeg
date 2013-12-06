@@ -118,6 +118,94 @@ static int ljpeg_encode_bgr(AVCodecContext *avctx, PutBitContext *pb,
     return 0;
 }
 
+static inline void ljpeg_encode_yuv_mb(LJpegEncContext *s, PutBitContext *pb,
+                                       const AVFrame *frame, int predictor,
+                                       int mb_x, int mb_y)
+{
+    int i;
+
+    if (mb_x == 0 || mb_y == 0) {
+        for (i = 0; i < 3; i++) {
+            uint8_t *ptr;
+            int x, y, h, v, linesize;
+            h = s->hsample[i];
+            v = s->vsample[i];
+            linesize = frame->linesize[i];
+
+            for (y = 0; y < v; y++) {
+                for (x = 0; x < h; x++) {
+                    int pred;
+
+                    ptr = frame->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+                    if (y == 0 && mb_y == 0) {
+                        if (x == 0 && mb_x == 0)
+                            pred = 128;
+                        else
+                            pred = ptr[-1];
+                    } else {
+                        if (x == 0 && mb_x == 0) {
+                            pred = ptr[-linesize];
+                        } else {
+                            PREDICT(pred, ptr[-linesize - 1], ptr[-linesize],
+                                    ptr[-1], predictor);
+                        }
+                    }
+
+                    if (i == 0)
+                        ff_mjpeg_encode_dc(pb, *ptr - pred, s->huff_size_dc_luminance, s->huff_code_dc_luminance); //FIXME ugly
+                    else
+                        ff_mjpeg_encode_dc(pb, *ptr - pred, s->huff_size_dc_chrominance, s->huff_code_dc_chrominance);
+                }
+            }
+        }
+    } else {
+        for (i = 0; i < 3; i++) {
+            uint8_t *ptr;
+            int x, y, h, v, linesize;
+            h = s->hsample[i];
+            v = s->vsample[i];
+            linesize = frame->linesize[i];
+
+            for (y = 0; y < v; y++) {
+                for (x = 0; x < h; x++) {
+                    int pred;
+
+                    ptr = frame->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+                    PREDICT(pred, ptr[-linesize - 1], ptr[-linesize], ptr[-1], predictor);
+
+                    if (i == 0)
+                        ff_mjpeg_encode_dc(pb, *ptr - pred, s->huff_size_dc_luminance, s->huff_code_dc_luminance); //FIXME ugly
+                    else
+                        ff_mjpeg_encode_dc(pb, *ptr - pred, s->huff_size_dc_chrominance, s->huff_code_dc_chrominance);
+                }
+            }
+        }
+    }
+}
+
+static int ljpeg_encode_yuv(AVCodecContext *avctx, PutBitContext *pb,
+                            const AVFrame *frame)
+{
+    const int predictor = avctx->prediction_method + 1;
+    LJpegEncContext *s  = avctx->priv_data;
+    const int mb_width  = (avctx->width  + s->hsample[0] - 1) / s->hsample[0];
+    const int mb_height = (avctx->height + s->vsample[0] - 1) / s->vsample[0];
+    int mb_x, mb_y;
+
+    for (mb_y = 0; mb_y < mb_height; mb_y++) {
+        if (pb->buf_end - pb->buf - (put_bits_count(pb) >> 3) <
+            mb_width * 4 * 3 * s->hsample[0] * s->vsample[0]) {
+            av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
+            return -1;
+        }
+
+        for (mb_x = 0; mb_x < mb_width; mb_x++)
+            ljpeg_encode_yuv_mb(s, pb, frame, predictor, mb_x, mb_y);
+    }
+
+    return 0;
+}
+
 static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *pict, int *got_packet)
 {
@@ -125,7 +213,6 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     PutBitContext pb;
     const int width  = avctx->width;
     const int height = avctx->height;
-    const int predictor= avctx->prediction_method+1;
     const int mb_width  = (width  + s->hsample[0] - 1) / s->hsample[0];
     const int mb_height = (height + s->vsample[0] - 1) / s->vsample[0];
     int max_pkt_size = FF_MIN_BUFFER_SIZE;
@@ -152,80 +239,12 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if(    avctx->pix_fmt == AV_PIX_FMT_BGR0
         || avctx->pix_fmt == AV_PIX_FMT_BGRA
-        || avctx->pix_fmt == AV_PIX_FMT_BGR24){
+        || avctx->pix_fmt == AV_PIX_FMT_BGR24)
         ret = ljpeg_encode_bgr(avctx, &pb, pict);
-        if (ret < 0)
-            return ret;
-    }else{
-        int mb_x, mb_y, i;
-
-        for(mb_y = 0; mb_y < mb_height; mb_y++) {
-            if (pb.buf_end - pb.buf - (put_bits_count(&pb) >> 3) <
-                mb_width * 4 * 3 * s->hsample[0] * s->vsample[0]) {
-                av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
-                return -1;
-            }
-            for(mb_x = 0; mb_x < mb_width; mb_x++) {
-                if(mb_x==0 || mb_y==0){
-                    for(i=0;i<3;i++) {
-                        uint8_t *ptr;
-                        int x, y, h, v, linesize;
-                        h = s->hsample[i];
-                        v = s->vsample[i];
-                        linesize = pict->linesize[i];
-
-                        for(y=0; y<v; y++){
-                            for(x=0; x<h; x++){
-                                int pred;
-
-                                ptr = pict->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
-                                if(y==0 && mb_y==0){
-                                    if(x==0 && mb_x==0){
-                                        pred= 128;
-                                    }else{
-                                        pred= ptr[-1];
-                                    }
-                                }else{
-                                    if(x==0 && mb_x==0){
-                                        pred= ptr[-linesize];
-                                    }else{
-                                        PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
-                                    }
-                                }
-
-                                if(i==0)
-                                    ff_mjpeg_encode_dc(&pb, *ptr - pred, s->huff_size_dc_luminance, s->huff_code_dc_luminance); //FIXME ugly
-                                else
-                                    ff_mjpeg_encode_dc(&pb, *ptr - pred, s->huff_size_dc_chrominance, s->huff_code_dc_chrominance);
-                            }
-                        }
-                    }
-                }else{
-                    for(i=0;i<3;i++) {
-                        uint8_t *ptr;
-                        int x, y, h, v, linesize;
-                        h = s->hsample[i];
-                        v = s->vsample[i];
-                        linesize = pict->linesize[i];
-
-                        for(y=0; y<v; y++){
-                            for(x=0; x<h; x++){
-                                int pred;
-
-                                ptr = pict->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
-                                PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
-
-                                if(i==0)
-                                    ff_mjpeg_encode_dc(&pb, *ptr - pred, s->huff_size_dc_luminance, s->huff_code_dc_luminance); //FIXME ugly
-                                else
-                                    ff_mjpeg_encode_dc(&pb, *ptr - pred, s->huff_size_dc_chrominance, s->huff_code_dc_chrominance);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    else
+        ret = ljpeg_encode_yuv(avctx, &pb, pict);
+    if (ret < 0)
+        return ret;
 
     emms_c();
 
