@@ -1075,6 +1075,26 @@ require_pkg_config(){
     add_extralibs $(get_safe ${pkg}_libs)
 }
 
+require_libfreetype(){
+    log require_libfreetype "$@"
+    pkg="freetype2"
+    check_cmd $pkg_config --exists --print-errors $pkg \
+      || die "ERROR: $pkg not found"
+    pkg_cflags=$($pkg_config --cflags $pkg)
+    pkg_libs=$($pkg_config --libs $pkg)
+    {
+        echo "#include <ft2build.h>"
+        echo "#include FT_FREETYPE_H"
+        echo "long check_func(void) { return (long) FT_Init_FreeType; }"
+        echo "int main(void) { return 0; }"
+    } | check_ld "cc" $pkg_cflags $pkg_libs \
+      && set_safe ${pkg}_cflags $pkg_cflags \
+      && set_safe ${pkg}_libs   $pkg_libs \
+      || die "ERROR: $pkg not found"
+    add_cflags    $(get_safe ${pkg}_cflags)
+    add_extralibs $(get_safe ${pkg}_libs)
+}
+
 hostcc_o(){
     eval printf '%s\\n' $HOSTCC_O
 }
@@ -3904,7 +3924,7 @@ enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaa
 enabled libfdk_aac && require  libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
 flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
 enabled libflite   && require2 libflite "flite/flite.h" flite_init $flite_libs
-enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
+enabled libfreetype && require_libfreetype
 enabled libgsm     && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                             check_lib "${gsm_hdr}" gsm_create -lgsm && break;
                         done || die "ERROR: libgsm not found"; }
