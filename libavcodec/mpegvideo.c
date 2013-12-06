@@ -792,10 +792,6 @@ do {\
         s->last_pict_type = s1->pict_type;
         if (s1->current_picture_ptr)
             s->last_lambda_for[s1->pict_type] = s1->current_picture_ptr->f.quality;
-
-        if (s1->pict_type != AV_PICTURE_TYPE_B) {
-            s->last_non_b_pict_type = s1->pict_type;
-        }
     }
 
     return 0;
