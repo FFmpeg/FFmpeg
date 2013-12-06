@@ -178,7 +178,11 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
     }
 
     if (num_blocks_packed > s->num_blocks_packed) {
-        s->block_codebook = av_realloc(s->block_codebook, num_blocks_packed*16);
+        int err;
+        if ((err = av_reallocp(&s->block_codebook, num_blocks_packed * 16)) < 0) {
+            s->num_blocks_packed = 0;
+            return err;
+        }
         s->num_blocks_packed = num_blocks_packed;
     }
 

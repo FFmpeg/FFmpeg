@@ -106,12 +106,17 @@ static int alloc_table(VLC *vlc, int size, int use_static)
 
     vlc->table_size += size;
     if (vlc->table_size > vlc->table_allocated) {
+        int err;
         if (use_static)
             return AVERROR_BUG;
         vlc->table_allocated += (1 << vlc->bits);
-        vlc->table = av_realloc(vlc->table, sizeof(VLC_TYPE) * 2 * vlc->table_allocated);
-        if (!vlc->table)
-            return AVERROR(ENOMEM);
+        if ((err = av_reallocp(&vlc->table,
+                               sizeof(VLC_TYPE) * 2 *
+                               vlc->table_allocated)) < 0) {
+            vlc->table_allocated = 0;
+            vlc->table_size = 0;
+            return err;
+        }
     }
     return index;
 }
