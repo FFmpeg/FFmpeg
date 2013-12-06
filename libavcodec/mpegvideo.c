@@ -1743,24 +1743,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     emms_c();
 
-#if 0
-    /* copy back current_picture variables */
-    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-        if (s->picture[i].f.data[0] == s->current_picture.f.data[0]) {
-            s->picture[i] = s->current_picture;
-            break;
-        }
-    }
-    av_assert0(i < MAX_PICTURE_COUNT);
-#endif
-
-    // clear copies, to avoid confusion
-#if 0
-    memset(&s->last_picture,    0, sizeof(Picture));
-    memset(&s->next_picture,    0, sizeof(Picture));
-    memset(&s->current_picture, 0, sizeof(Picture));
-#endif
-
     if (s->current_picture.reference)
         ff_thread_report_progress(&s->current_picture_ptr->tf, INT_MAX, 0);
 }
