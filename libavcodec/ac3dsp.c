@@ -23,6 +23,7 @@
 #include "avcodec.h"
 #include "ac3.h"
 #include "ac3dsp.h"
+#include "mathops.h"
 
 static void ac3_exponent_min_c(uint8_t *exp, int num_reuse_blocks, int nb_coefs)
 {
@@ -196,6 +197,19 @@ static void ac3_downmix_c(float **samples, float (*matrix)[2],
     }
 }
 
+static void apply_window_int16_c(int16_t *output, const int16_t *input,
+                                 const int16_t *window, unsigned int len)
+{
+    int i;
+    int len2 = len >> 1;
+
+    for (i = 0; i < len2; i++) {
+        int16_t w       = window[i];
+        output[i]       = (MUL16(input[i],       w) + (1 << 14)) >> 15;
+        output[len-i-1] = (MUL16(input[len-i-1], w) + (1 << 14)) >> 15;
+    }
+}
+
 av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
 {
     c->ac3_exponent_min = ac3_exponent_min_c;
@@ -208,6 +222,7 @@ av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
     c->compute_mantissa_size = ac3_compute_mantissa_size_c;
     c->extract_exponents = ac3_extract_exponents_c;
     c->downmix = ac3_downmix_c;
+    c->apply_window_int16 = apply_window_int16_c;
 
     if (ARCH_ARM)
         ff_ac3dsp_init_arm(c, bit_exact);
