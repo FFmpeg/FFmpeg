@@ -115,13 +115,13 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             }
             for(x = 0; x < width; x++) {
                 if(avctx->pix_fmt == AV_PIX_FMT_BGR24){
-                    buffer[x][1] = ptr[3*x+0] - ptr[3*x+1] + 0x100;
-                    buffer[x][2] = ptr[3*x+2] - ptr[3*x+1] + 0x100;
-                    buffer[x][0] = (ptr[3*x+0] + 2*ptr[3*x+1] + ptr[3*x+2])>>2;
+                    buffer[x][1] =  ptr[3 * x + 0] -     ptr[3 * x + 1] + 0x100;
+                    buffer[x][2] =  ptr[3 * x + 2] -     ptr[3 * x + 1] + 0x100;
+                    buffer[x][0] = (ptr[3 * x + 0] + 2 * ptr[3 * x + 1] + ptr[3 * x + 2]) >> 2;
                 }else{
-                buffer[x][1] = ptr[4*x+0] - ptr[4*x+1] + 0x100;
-                buffer[x][2] = ptr[4*x+2] - ptr[4*x+1] + 0x100;
-                buffer[x][0] = (ptr[4*x+0] + 2*ptr[4*x+1] + ptr[4*x+2])>>2;
+                    buffer[x][1] =  ptr[4 * x + 0] -     ptr[4 * x + 1] + 0x100;
+                    buffer[x][2] =  ptr[4 * x + 2] -     ptr[4 * x + 1] + 0x100;
+                    buffer[x][0] = (ptr[4 * x + 0] + 2 * ptr[4 * x + 1] + ptr[4 * x + 2]) >> 2;
                 }
 
                 for(i=0;i<3;i++) {

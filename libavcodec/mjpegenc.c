@@ -216,7 +216,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift,
                                      &chroma_v_shift);
     if (avctx->codec->id == AV_CODEC_ID_LJPEG &&
-        (avctx->pix_fmt == AV_PIX_FMT_BGR0
+        (   avctx->pix_fmt == AV_PIX_FMT_BGR0
          || avctx->pix_fmt == AV_PIX_FMT_BGRA
          || avctx->pix_fmt == AV_PIX_FMT_BGR24)) {
         vsample[0] = hsample[0] =
