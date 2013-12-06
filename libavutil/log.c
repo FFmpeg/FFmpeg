@@ -100,6 +100,9 @@ static int use_color = -1;
 #undef fprintf
 static void colored_fputs(int level, const char *str)
 {
+    if (!*str)
+        return;
+
     if (use_color < 0) {
 #if defined(_WIN32) && !defined(__MINGW32CE__)
         CONSOLE_SCREEN_BUFFER_INFO con_info;
