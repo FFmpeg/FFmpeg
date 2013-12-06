@@ -1129,10 +1129,8 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
     if (is_alpha_chunk)
         s->image[IMAGE_ROLE_ARGB].is_alpha_primary = 1;
     ret = decode_entropy_coded_image(s, IMAGE_ROLE_ARGB, w, h);
-    if (ret < 0) {
-        av_frame_free(&p);
+    if (ret < 0)
         goto free_and_return;
-    }
 
     /* apply transformations */
     for (i = s->nb_transforms - 1; i >= 0; i--) {
@@ -1150,10 +1148,8 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
             ret = apply_color_indexing_transform(s);
             break;
         }
-        if (ret < 0) {
-            av_frame_free(&p);
+        if (ret < 0)
             goto free_and_return;
-        }
     }
 
     *got_frame   = 1;
