@@ -711,7 +711,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 
     s->coded_picture_number = s1->coded_picture_number;
     s->picture_number       = s1->picture_number;
-    s->input_picture_number = s1->input_picture_number;
 
     av_assert0(!s->picture || s->picture != s1->picture);
     if(s->picture)
