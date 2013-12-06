@@ -25,7 +25,7 @@
 #include "mpeg4video.h"
 
 /** Reconstruct bitstream intra_dc_vlc_thr */
-static int mpeg4_get_intra_dc_vlc_thr(MpegEncContext *s)
+static int mpeg4_get_intra_dc_vlc_thr(Mpeg4DecContext *s)
 {
     switch (s->intra_dc_threshold) {
     case 99: return 0;
@@ -83,7 +83,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     pic_param->vop_fields.bits.vop_coding_type          = s->pict_type - AV_PICTURE_TYPE_I;
     pic_param->vop_fields.bits.backward_reference_vop_coding_type = s->pict_type == AV_PICTURE_TYPE_B ? s->next_picture.f.pict_type - AV_PICTURE_TYPE_I : 0;
     pic_param->vop_fields.bits.vop_rounding_type        = s->no_rounding;
-    pic_param->vop_fields.bits.intra_dc_vlc_thr         = mpeg4_get_intra_dc_vlc_thr(s);
+    pic_param->vop_fields.bits.intra_dc_vlc_thr         = mpeg4_get_intra_dc_vlc_thr(ctx);
     pic_param->vop_fields.bits.top_field_first          = s->top_field_first;
     pic_param->vop_fields.bits.alternate_vertical_scan_flag = s->alternate_scan;
     pic_param->vop_fcode_forward                        = s->f_code;
