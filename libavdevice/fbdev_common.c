@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdlib.h>
 #include "fbdev_common.h"
 #include "libavutil/common.h"
 
@@ -55,3 +56,12 @@ enum AVPixelFormat ff_get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *varin
 
     return AV_PIX_FMT_NONE;
 }
+
+const char* ff_fbdev_default_device()
+{
+    const char *dev = getenv("FRAMEBUFFER");
+    if (!dev)
+        dev = "/dev/fb0";
+    return dev;
+}
+
