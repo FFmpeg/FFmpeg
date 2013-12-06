@@ -1470,8 +1470,6 @@ no_output_pic:
 
 static void frame_end(MpegEncContext *s)
 {
-    int i;
-
     if (s->unrestricted_mv &&
         s->current_picture.reference &&
         !s->intra_only) {
