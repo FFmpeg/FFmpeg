@@ -209,7 +209,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
                                     uint16_t intra_matrix[64])
 {
     int chroma_h_shift, chroma_v_shift;
-    const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG;
+    const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG && avctx->codec_id != AV_CODEC_ID_AMV;
     int hsample[3], vsample[3];
     int i;
 
@@ -317,7 +317,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     put_bits(pb, 8, 0); /* Ah/Al (not used) */
 
 end:
-    if (avctx->codec->priv_data_size == sizeof(MpegEncContext)) {
+    if (!lossless) {
         MpegEncContext *s = avctx->priv_data;
         av_assert0(avctx->codec->priv_data_size == sizeof(MpegEncContext));
 
