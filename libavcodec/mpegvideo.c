@@ -285,7 +285,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     return 0;
 }
 
-static void free_picture_tables(Picture *pic)
+void ff_free_picture_tables(Picture *pic)
 {
     int i;
 
@@ -382,7 +382,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared)
     if (pic->qscale_table_buf)
         if (   pic->alloc_mb_width  != s->mb_width
             || pic->alloc_mb_height != s->mb_height)
-            free_picture_tables(pic);
+            ff_free_picture_tables(pic);
 
     if (shared) {
         av_assert0(pic->f.data[0]);
@@ -425,7 +425,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared)
 fail:
     av_log(s->avctx, AV_LOG_ERROR, "Error allocating a picture.\n");
     ff_mpeg_unref_picture(s, pic);
-    free_picture_tables(pic);
+    ff_free_picture_tables(pic);
     return AVERROR(ENOMEM);
 }
 
@@ -449,7 +449,7 @@ void ff_mpeg_unref_picture(MpegEncContext *s, Picture *pic)
     av_buffer_unref(&pic->hwaccel_priv_buf);
 
     if (pic->needs_realloc)
-        free_picture_tables(pic);
+        ff_free_picture_tables(pic);
 
     memset((uint8_t*)pic + off, 0, sizeof(*pic) - off);
 }
@@ -465,7 +465,7 @@ do {\
         av_buffer_unref(&dst->table);\
         dst->table = av_buffer_ref(src->table);\
         if (!dst->table) {\
-            free_picture_tables(dst);\
+            ff_free_picture_tables(dst);\
             return AVERROR(ENOMEM);\
         }\
     }\
@@ -1244,36 +1244,19 @@ void ff_MPV_common_end(MpegEncContext *s)
     av_freep(&s->bitstream_buffer);
     s->allocated_bitstream_buffer_size = 0;
 
-    av_freep(&s->avctx->stats_out);
-    av_freep(&s->ac_stats);
-
-    if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
-    if(s->q_chroma_intra_matrix16 != s->q_intra_matrix16) av_freep(&s->q_chroma_intra_matrix16);
-    s->q_chroma_intra_matrix=   NULL;
-    s->q_chroma_intra_matrix16= NULL;
-    av_freep(&s->q_intra_matrix);
-    av_freep(&s->q_inter_matrix);
-    av_freep(&s->q_intra_matrix16);
-    av_freep(&s->q_inter_matrix16);
-    av_freep(&s->input_picture);
-    av_freep(&s->reordered_input_picture);
-    av_freep(&s->dct_offset);
-
     if (s->picture) {
         for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            free_picture_tables(&s->picture[i]);
+            ff_free_picture_tables(&s->picture[i]);
             ff_mpeg_unref_picture(s, &s->picture[i]);
         }
     }
     av_freep(&s->picture);
-    free_picture_tables(&s->last_picture);
+    ff_free_picture_tables(&s->last_picture);
     ff_mpeg_unref_picture(s, &s->last_picture);
-    free_picture_tables(&s->current_picture);
+    ff_free_picture_tables(&s->current_picture);
     ff_mpeg_unref_picture(s, &s->current_picture);
-    free_picture_tables(&s->next_picture);
+    ff_free_picture_tables(&s->next_picture);
     ff_mpeg_unref_picture(s, &s->next_picture);
-    free_picture_tables(&s->new_picture);
-    ff_mpeg_unref_picture(s, &s->new_picture);
 
     free_context_frame(s);
 
@@ -1440,7 +1423,7 @@ int ff_find_unused_picture(MpegEncContext *s, int shared)
     if (ret >= 0 && ret < MAX_PICTURE_COUNT) {
         if (s->picture[ret].needs_realloc) {
             s->picture[ret].needs_realloc = 0;
-            free_picture_tables(&s->picture[ret]);
+            ff_free_picture_tables(&s->picture[ret]);
             ff_mpeg_unref_picture(s, &s->picture[ret]);
             avcodec_get_frame_defaults(&s->picture[ret].f);
         }
