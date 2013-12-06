@@ -211,7 +211,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
     emms_c();
     av_assert0(s->esc_pos == s->header_bits >> 3);
 
-    ff_mjpeg_encode_stuffing(s);
+    ff_mjpeg_escape_FF(&s->pb, s->esc_pos);
     ff_mjpeg_encode_picture_trailer(&s->pb, s->header_bits);
     s->picture_number++;
 
