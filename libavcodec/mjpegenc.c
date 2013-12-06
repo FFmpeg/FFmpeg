@@ -388,7 +388,7 @@ void ff_mjpeg_escape_FF(PutBitContext *pb, int start)
 
 void ff_mjpeg_encode_stuffing(MpegEncContext *s)
 {
-    int length, i;
+    int i;
     PutBitContext *pbc = &s->pb;
     int mb_y = s->mb_y - !s->mb_x;
 
