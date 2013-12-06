@@ -402,13 +402,13 @@ void ff_mjpeg_encode_picture_trailer(PutBitContext *pb, int header_bits)
     put_marker(pb, EOI);
 }
 
-void ff_mjpeg_encode_dc(MpegEncContext *s, int val,
+void ff_mjpeg_encode_dc(PutBitContext *pb, int val,
                         uint8_t *huff_size, uint16_t *huff_code)
 {
     int mant, nbits;
 
     if (val == 0) {
-        put_bits(&s->pb, huff_size[0], huff_code[0]);
+        put_bits(pb, huff_size[0], huff_code[0]);
     } else {
         mant = val;
         if (val < 0) {
@@ -418,9 +418,9 @@ void ff_mjpeg_encode_dc(MpegEncContext *s, int val,
 
         nbits= av_log2_16bit(val) + 1;
 
-        put_bits(&s->pb, huff_size[nbits], huff_code[nbits]);
+        put_bits(pb, huff_size[nbits], huff_code[nbits]);
 
-        put_sbits(&s->pb, nbits, mant);
+        put_sbits(pb, nbits, mant);
     }
 }
 
@@ -437,11 +437,11 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
     dc = block[0]; /* overflow is impossible */
     val = dc - s->last_dc[component];
     if (n < 4) {
-        ff_mjpeg_encode_dc(s, val, m->huff_size_dc_luminance, m->huff_code_dc_luminance);
+        ff_mjpeg_encode_dc(&s->pb, val, m->huff_size_dc_luminance, m->huff_code_dc_luminance);
         huff_size_ac = m->huff_size_ac_luminance;
         huff_code_ac = m->huff_code_ac_luminance;
     } else {
-        ff_mjpeg_encode_dc(s, val, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+        ff_mjpeg_encode_dc(&s->pb, val, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
         huff_size_ac = m->huff_size_ac_chrominance;
         huff_code_ac = m->huff_code_ac_chrominance;
     }

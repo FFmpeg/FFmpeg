@@ -56,7 +56,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
                                     uint16_t intra_matrix[64]);
 void ff_mjpeg_encode_picture_trailer(PutBitContext *pb, int header_bits);
 void ff_mjpeg_encode_stuffing(MpegEncContext *s);
-void ff_mjpeg_encode_dc(MpegEncContext *s, int val,
+void ff_mjpeg_encode_dc(PutBitContext *pb, int val,
                         uint8_t *huff_size, uint16_t *huff_code);
 void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[6][64]);
 
