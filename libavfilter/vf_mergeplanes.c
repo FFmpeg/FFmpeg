@@ -53,7 +53,7 @@ typedef struct MergePlanesContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption mergeplanes_options[] = {
     { "mapping", "set input to output plane mapping", OFFSET(mapping), AV_OPT_TYPE_INT, {.i64=0}, 0, 0x33333333, FLAGS },
-    { "format", "set output pixel format", OFFSET(out_fmt), AV_OPT_TYPE_PIXEL_FMT, {.i64=AV_PIX_FMT_YUVA444P}, .flags=FLAGS },
+    { "format", "set output pixel format", OFFSET(out_fmt), AV_OPT_TYPE_PIXEL_FMT, {.i64=AV_PIX_FMT_YUVA444P}, 0, AV_PIX_FMT_NB-1, .flags=FLAGS },
     { NULL }
 };
 
