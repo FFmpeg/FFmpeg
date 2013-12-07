@@ -2736,7 +2736,6 @@ int ff_rfps_add_frame(AVFormatContext *ic, AVStream *st, int64_t ts)
             int n = st->info->duration_count;
             for (i=0; i<MAX_STD_TIMEBASES; i++) {
                 if (st->info->duration_error[0][1][i] < 1e10) {
-                    int framerate= get_std_framerate(i);
                     double a0     = st->info->duration_error[0][0][i] / n;
                     double error0 = st->info->duration_error[0][1][i] / n - a0*a0;
                     double a1     = st->info->duration_error[1][0][i] / n;
