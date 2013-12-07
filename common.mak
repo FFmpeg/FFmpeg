@@ -61,7 +61,7 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 	$(COMPILE_HOSTC)
 
 %.o: %.rc
-	$(WINDRES) $(IFLAGS) -o $@ $<
+	$(WINDRES) $(IFLAGS) --preprocessor "$(DEPCC) -E -xc-header -DRC_INVOKED $(CC_DEPFLAGS)" -o $@ $<
 
 %.i: %.c
 	$(CC) $(CCFLAGS) $(CC_E) $<
@@ -149,4 +149,4 @@ endef
 
 $(eval $(RULES))
 
--include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d))
+-include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SLIBOBJS:.o=.d))
