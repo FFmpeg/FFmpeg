@@ -34,6 +34,8 @@
 #define VBI_B(rgba)   (((rgba) >> 16) & 0xFF)
 #define VBI_A(rgba)   (((rgba) >> 24) & 0xFF)
 #define MAX_BUFFERED_PAGES 25
+#define BITMAP_CHAR_WIDTH  12
+#define BITMAP_CHAR_HEIGHT 10
 
 typedef struct TeletextPage
 {
@@ -195,13 +197,13 @@ static void fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi
     // Hack for transparency, inspired by VLC code...
     for (iy = 0; iy < resy; iy++) {
         uint8_t *pixel = sub_rect->pict.data[0] + iy * sub_rect->pict.linesize[0];
-        vbi_char *vc = page->text + (iy / 10 + chop_top) * page->columns;
+        vbi_char *vc = page->text + (iy / BITMAP_CHAR_HEIGHT + chop_top) * page->columns;
         vbi_char *vcnext = vc + page->columns;
         for (; vc < vcnext; vc++) {
-            uint8_t *pixelnext = pixel + 12;
+            uint8_t *pixelnext = pixel + BITMAP_CHAR_WIDTH;
             switch (vc->opacity) {
                 case VBI_TRANSPARENT_SPACE:
-                    memset(pixel, transparent_color, 12);
+                    memset(pixel, transparent_color, BITMAP_CHAR_WIDTH);
                     break;
                 case VBI_OPAQUE:
                 case VBI_SEMI_TRANSPARENT:
@@ -221,8 +223,8 @@ static void fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi
 /* Draw a page as bitmap */
 static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top)
 {
-    int resx = page->columns * 12;
-    int resy = (page->rows - chop_top) * 10;
+    int resx = page->columns * BITMAP_CHAR_WIDTH;
+    int resy = (page->rows - chop_top) * BITMAP_CHAR_HEIGHT;
     uint8_t ci, cmax = 0;
     int ret;
     vbi_char *vc = page->text + (chop_top * page->columns);
