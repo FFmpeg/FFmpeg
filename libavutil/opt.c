@@ -280,6 +280,21 @@ static int set_string_video_rate(void *obj, const AVOption *o, const char *val, 
     return ret;
 }
 
+static int set_string_color(void *obj, const AVOption *o, const char *val, uint8_t *dst)
+{
+    int ret;
+
+    if (!val) {
+        return 0;
+    } else {
+        ret = av_parse_color(dst, val, -1, obj);
+        if (ret < 0)
+            av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as color\n", val);
+        return ret;
+    }
+    return 0;
+}
+
 #if FF_API_OLD_AVOPTIONS
 int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out)
 {
@@ -358,16 +373,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
             return ret;
         }
         break;
-    case AV_OPT_TYPE_COLOR:
-        if (!val) {
-            return 0;
-        } else {
-            ret = av_parse_color(dst, val, -1, obj);
-            if (ret < 0)
-                av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as color\n", val);
-            return ret;
-        }
-        break;
+    case AV_OPT_TYPE_COLOR:      return set_string_color(obj, o, val, dst);
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
         if (!val || !strcmp(val, "none")) {
             *(int64_t *)dst = 0;
