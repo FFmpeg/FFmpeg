@@ -1066,20 +1066,24 @@ static void sigterm_handler(int sig)
     exit(123);
 }
 
+static void set_default_window_size(VideoPicture *vp)
+{
+    SDL_Rect rect;
+    calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
+    default_width  = rect.w;
+    default_height = rect.h;
+}
+
 static int video_open(VideoState *is, int force_set_video_mode, VideoPicture *vp)
 {
     int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     int w,h;
-    SDL_Rect rect;
 
     if (is_full_screen) flags |= SDL_FULLSCREEN;
     else                flags |= SDL_RESIZABLE;
 
-    if (vp && vp->width) {
-        calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
-        default_width  = rect.w;
-        default_height = rect.h;
-    }
+    if (vp && vp->width)
+        set_default_window_size(vp);
 
     if (is_full_screen && fs_screen_width) {
         w = fs_screen_width;
@@ -1376,9 +1380,13 @@ retry:
 
             if (vp->serial != is->videoq.serial) {
                 pictq_next_picture(is);
+                is->video_current_pos = -1;
                 redisplay = 0;
                 goto retry;
             }
+
+            if (lastvp->serial != vp->serial && !redisplay)
+                is->frame_timer = av_gettime() / 1000000.0;
 
             if (is->paused)
                 goto display;
@@ -1670,15 +1678,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
 
     if (pkt->data == flush_pkt.data) {
         avcodec_flush_buffers(is->video_st->codec);
-
-        SDL_LockMutex(is->pictq_mutex);
-        // Make sure there are no long delay timers (ideally we should just flush the queue but that's harder)
-        while (is->pictq_size && !is->videoq.abort_request) {
-            SDL_CondWait(is->pictq_cond, is->pictq_mutex);
-        }
-        is->video_current_pos = -1;
-        is->frame_timer = (double)av_gettime() / 1000000.0;
-        SDL_UnlockMutex(is->pictq_mutex);
         return 0;
     }
 
@@ -1995,7 +1994,6 @@ static int video_thread(void *arg)
             goto the_end;
     }
  the_end:
-    avcodec_flush_buffers(is->video_st->codec);
 #if CONFIG_AVFILTER
     avfilter_graph_free(&graph);
 #endif
@@ -2820,6 +2818,13 @@ static int read_thread(void *arg)
     }
 
     is->show_mode = show_mode;
+    if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
+        AVStream *st = ic->streams[st_index[AVMEDIA_TYPE_VIDEO]];
+        AVCodecContext *avctx = st->codec;
+        VideoPicture vp = {.width = avctx->width, .height = avctx->height, .sar = av_guess_sample_aspect_ratio(ic, st, NULL)};
+        if (vp.width)
+            set_default_window_size(&vp);
+    }
 
     /* open the streams */
     if (st_index[AVMEDIA_TYPE_AUDIO] >= 0) {
