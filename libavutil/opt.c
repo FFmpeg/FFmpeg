@@ -1101,6 +1101,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
     const AVClass *class = *(AVClass **)s;
     const AVOption *opt = NULL;
     while ((opt = av_opt_next(s, opt)) != NULL) {
+        void *dst = ((uint8_t*)s) + opt->offset;
 #if FF_API_OLD_AVOPTIONS
         if ((opt->flags & mask) != flags)
             continue;
@@ -1114,26 +1115,32 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             case AV_OPT_TYPE_INT64:
             case AV_OPT_TYPE_DURATION:
             case AV_OPT_TYPE_CHANNEL_LAYOUT:
-                av_opt_set_int(s, opt->name, opt->default_val.i64, 0);
+                write_number(s, opt, dst, 1, 1, opt->default_val.i64);
             break;
             case AV_OPT_TYPE_DOUBLE:
             case AV_OPT_TYPE_FLOAT: {
                 double val;
                 val = opt->default_val.dbl;
-                av_opt_set_double(s, opt->name, val, 0);
+                write_number(s, opt, dst, val, 1, 1);
             }
             break;
             case AV_OPT_TYPE_RATIONAL: {
                 AVRational val;
                 val = av_d2q(opt->default_val.dbl, INT_MAX);
-                av_opt_set_q(s, opt->name, val, 0);
+                write_number(s, opt, dst, 1, val.den, val.num);
             }
             break;
             case AV_OPT_TYPE_COLOR:
+                set_string_color(s, opt, opt->default_val.str, dst);
+                break;
             case AV_OPT_TYPE_STRING:
+                set_string(s, opt, opt->default_val.str, dst);
+                break;
             case AV_OPT_TYPE_IMAGE_SIZE:
+                set_string_image_size(s, opt, opt->default_val.str, dst);
+                break;
             case AV_OPT_TYPE_VIDEO_RATE:
-                av_opt_set(s, opt->name, opt->default_val.str, 0);
+                set_string_video_rate(s, opt, opt->default_val.str, dst);
                 break;
             case AV_OPT_TYPE_PIXEL_FMT:
 #if LIBAVUTIL_VERSION_MAJOR < 53
@@ -1141,7 +1148,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                     av_opt_set(s, opt->name, opt->default_val.str, 0);
                 else
 #endif
-                    av_opt_set_pixel_fmt(s, opt->name, opt->default_val.i64, 0);
+                    write_number(s, opt, dst, 1, 1, opt->default_val.i64);
                 break;
             case AV_OPT_TYPE_SAMPLE_FMT:
 #if LIBAVUTIL_VERSION_MAJOR < 53
@@ -1149,7 +1156,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                     av_opt_set(s, opt->name, opt->default_val.str, 0);
                 else
 #endif
-                    av_opt_set_sample_fmt(s, opt->name, opt->default_val.i64, 0);
+                    write_number(s, opt, dst, 1, 1, opt->default_val.i64);
                 break;
             case AV_OPT_TYPE_BINARY:
                 /* Cannot set default for binary */
