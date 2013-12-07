@@ -474,6 +474,11 @@ static int teletext_init_decoder(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
+    if (ctx->format_id == 0) {
+        avctx->width  = 41 * BITMAP_CHAR_WIDTH;
+        avctx->height = 25 * BITMAP_CHAR_HEIGHT;
+    }
+
     ctx->dx = NULL;
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
