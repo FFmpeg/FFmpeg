@@ -267,6 +267,19 @@ static int set_string_image_size(void *obj, const AVOption *o, const char *val, 
     return ret;
 }
 
+static int set_string_video_rate(void *obj, const AVOption *o, const char *val, AVRational *dst)
+{
+    int ret;
+    if (!val) {
+        ret = AVERROR(EINVAL);
+    } else {
+        ret = av_parse_video_rate(dst, val);
+    }
+    if (ret < 0)
+        av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as video rate\n", val);
+    return ret;
+}
+
 #if FF_API_OLD_AVOPTIONS
 int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out)
 {
@@ -302,15 +315,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     case AV_OPT_TYPE_DOUBLE:
     case AV_OPT_TYPE_RATIONAL: return set_string_number(obj, target_obj, o, val, dst);
     case AV_OPT_TYPE_IMAGE_SIZE: return set_string_image_size(obj, o, val, dst);
-    case AV_OPT_TYPE_VIDEO_RATE:
-        if (!val) {
-            ret = AVERROR(EINVAL);
-        } else {
-            ret = av_parse_video_rate(dst, val);
-        }
-        if (ret < 0)
-            av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as video rate\n", val);
-        return ret;
+    case AV_OPT_TYPE_VIDEO_RATE: return set_string_video_rate(obj, o, val, dst);
     case AV_OPT_TYPE_PIXEL_FMT:
         if (!val || !strcmp(val, "none")) {
             ret = AV_PIX_FMT_NONE;
