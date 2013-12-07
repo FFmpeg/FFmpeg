@@ -255,7 +255,7 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
 
     fix_transparency(ctx, sub_rect, page, chop_top, cmax, resx, resy);
     sub_rect->x = ctx->x_offset;
-    sub_rect->y = ctx->y_offset;
+    sub_rect->y = ctx->y_offset + chop_top * BITMAP_CHAR_HEIGHT;
     sub_rect->w = resx;
     sub_rect->h = resy;
     sub_rect->nb_colors = (int)cmax + 1;
