@@ -975,8 +975,6 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     c->srcRange   = srcRange;
     c->dstRange   = dstRange;
 
-    fill_xyztables(c);
-
     if ((isYUV(c->dstFormat) || isGray(c->dstFormat)) && (isYUV(c->srcFormat) || isGray(c->srcFormat)))
         return -1;
 
@@ -1067,6 +1065,8 @@ static void handle_formats(SwsContext *c)
     c->dst0Alpha |= handle_0alpha(&c->dstFormat);
     c->srcXYZ    |= handle_xyz(&c->srcFormat);
     c->dstXYZ    |= handle_xyz(&c->dstFormat);
+    if (c->srcXYZ || c->dstXYZ)
+        fill_xyztables(c);
 }
 
 SwsContext *sws_alloc_context(void)
