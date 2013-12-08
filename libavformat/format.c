@@ -33,6 +33,9 @@ static AVInputFormat *first_iformat = NULL;
 /** head of registered output format linked list */
 static AVOutputFormat *first_oformat = NULL;
 
+static AVInputFormat **last_iformat = &first_iformat;
+static AVOutputFormat **last_oformat = &first_oformat;
+
 AVInputFormat *av_iformat_next(AVInputFormat *f)
 {
     if (f)
@@ -51,20 +54,22 @@ AVOutputFormat *av_oformat_next(AVOutputFormat *f)
 
 void av_register_input_format(AVInputFormat *format)
 {
-    AVInputFormat **p = &first_iformat;
+    AVInputFormat **p = last_iformat;
 
     format->next = NULL;
     while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
         p = &(*p)->next;
+    last_iformat = &format->next;
 }
 
 void av_register_output_format(AVOutputFormat *format)
 {
-    AVOutputFormat **p = &first_oformat;
+    AVOutputFormat **p = last_oformat;
 
     format->next = NULL;
     while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
         p = &(*p)->next;
+    last_oformat = &format->next;
 }
 
 int av_match_ext(const char *filename, const char *extensions)
