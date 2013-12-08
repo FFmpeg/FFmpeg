@@ -169,6 +169,7 @@ void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size)
 
 /* encoder management */
 static AVCodec *first_avcodec = NULL;
+static AVCodec **last_avcodec = &first_avcodec;
 
 AVCodec *av_codec_next(const AVCodec *c)
 {
@@ -204,11 +205,12 @@ av_cold void avcodec_register(AVCodec *codec)
 {
     AVCodec **p;
     avcodec_init();
-    p = &first_avcodec;
+    p = last_avcodec;
     codec->next = NULL;
 
     while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, codec))
         p = &(*p)->next;
+    last_avcodec = &codec->next;
 
     if (codec->init_static_data)
         codec->init_static_data(codec);
@@ -3208,13 +3210,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_MISSING_SAMPLE */
 
 static AVHWAccel *first_hwaccel = NULL;
+static AVHWAccel **last_hwaccel = &first_hwaccel;
 
 void av_register_hwaccel(AVHWAccel *hwaccel)
 {
-    AVHWAccel **p = &first_hwaccel;
+    AVHWAccel **p = last_hwaccel;
     hwaccel->next = NULL;
     while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, hwaccel))
         p = &(*p)->next;
+    last_hwaccel = &hwaccel->next;
 }
 
 AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel)
