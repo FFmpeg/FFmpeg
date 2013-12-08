@@ -84,7 +84,8 @@ typedef struct Mpeg4DecContext {
     int enhancement_type;
     int scalability;
     int use_intra_dc_vlc;
-    ///< QP above whch the ac VLC should be used for intra dc
+
+    /// QP above whch the ac VLC should be used for intra dc
     int intra_dc_threshold;
 
     /* bug workarounds */
@@ -92,7 +93,8 @@ typedef struct Mpeg4DecContext {
     int divx_build;
     int xvid_build;
     int lavc_build;
-    ///< flag for having shown the warning about divxs invalid b frames
+
+    /// flag for having shown the warning about divxs invalid b frames
     int showed_packed_warning;
 
     int cplx_estimation_trash_i;
