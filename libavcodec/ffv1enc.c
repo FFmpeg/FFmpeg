@@ -674,6 +674,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((avctx->flags & (CODEC_FLAG_PASS1|CODEC_FLAG_PASS2)) || avctx->slices>1)
         s->version = FFMAX(s->version, 2);
 
+    // Unspecified level & slices, we choose version 1.2+ to ensure multithreaded decodability
+    if (avctx->slices == 0 && avctx->level < 0 && avctx->width * avctx->height > 720*576)
+        s->version = FFMAX(s->version, 2);
+
     if (avctx->level <= 0 && s->version == 2) {
         s->version = 3;
     }
