@@ -456,6 +456,7 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
 }
 
 static AVFilter *first_filter;
+static AVFilter **last_filter = &first_filter;
 
 #if !FF_API_NOCONST_GET_NAME
 const
@@ -476,7 +477,7 @@ AVFilter *avfilter_get_by_name(const char *name)
 
 int avfilter_register(AVFilter *filter)
 {
-    AVFilter **f = &first_filter;
+    AVFilter **f = last_filter;
     int i;
 
     /* the filter must select generic or internal exclusively */
@@ -492,6 +493,7 @@ int avfilter_register(AVFilter *filter)
 
     while(*f || avpriv_atomic_ptr_cas((void * volatile *)f, NULL, filter))
         f = &(*f)->next;
+    last_filter = &filter->next;
 
     return 0;
 }
