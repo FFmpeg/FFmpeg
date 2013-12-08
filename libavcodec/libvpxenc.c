@@ -852,9 +852,6 @@ AVCodec ff_libvpx_vp8_encoder = {
 #if CONFIG_LIBVPX_VP9_ENCODER
 static av_cold int vp9_init(AVCodecContext *avctx)
 {
-    int ret;
-    if ((ret = ff_vp9_check_experimental(avctx)))
-        return ret;
     return vpx_init(avctx, &vpx_codec_vp9_cx_algo);
 }
 
@@ -878,5 +875,6 @@ AVCodec ff_libvpx_vp9_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &class_vp9,
     .defaults       = defaults,
+    .init_static_data = ff_vp9_init_static,
 };
 #endif /* CONFIG_LIBVPX_VP9_ENCODER */

@@ -133,9 +133,6 @@ AVCodec ff_libvpx_vp8_decoder = {
 #if CONFIG_LIBVPX_VP9_DECODER
 static av_cold int vp9_init(AVCodecContext *avctx)
 {
-    int ret;
-    if ((ret = ff_vp9_check_experimental(avctx)))
-        return ret;
     return vpx_init(avctx, &vpx_codec_vp9_dx_algo);
 }
 
@@ -149,5 +146,6 @@ AVCodec ff_libvpx_vp9_decoder = {
     .close          = vp8_free,
     .decode         = vp8_decode,
     .capabilities   = CODEC_CAP_AUTO_THREADS | CODEC_CAP_DR1,
+    .init_static_data = ff_vp9_init_static,
 };
 #endif /* CONFIG_LIBVPX_VP9_DECODER */

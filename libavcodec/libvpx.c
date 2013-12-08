@@ -22,14 +22,9 @@
 
 #include "libvpx.h"
 
-int ff_vp9_check_experimental(AVCodecContext *avctx)
+av_cold void ff_vp9_init_static(AVCodec *codec)
 {
-    if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL &&
-        (vpx_codec_version_major() < 1 ||
-         (vpx_codec_version_major() == 1 && vpx_codec_version_minor() < 3))) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Non-experimental support of VP9 requires libvpx >= 1.3.0\n");
-        return AVERROR_EXPERIMENTAL;
-    }
-    return 0;
+    if (    vpx_codec_version_major() < 1
+        || (vpx_codec_version_major() == 1 && vpx_codec_version_minor() < 3))
+        codec->capabilities |= CODEC_CAP_EXPERIMENTAL;
 }

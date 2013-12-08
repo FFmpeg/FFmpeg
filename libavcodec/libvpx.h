@@ -23,6 +23,6 @@
 
 #include "avcodec.h"
 
-int ff_vp9_check_experimental(AVCodecContext *avctx);
+void ff_vp9_init_static(AVCodec *codec);
 
 #endif /* AVCODEC_LIBVPX_H */
