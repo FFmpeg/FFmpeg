@@ -441,7 +441,7 @@ static int encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int s
             if (s->slice_coding_mode != 1) {
                 b -= g;
                 r -= g;
-                g += (b + r) >> 2;
+                g += ((b + r) * s->slice_rct_y_coef) >> 2;
                 b += offset;
                 r += offset;
             }
@@ -557,8 +557,10 @@ static int write_extradata(FFV1Context *f)
 
     put_symbol(c, state, f->version, 0);
     if (f->version > 2) {
-        if (f->version == 3)
+        if (f->version == 3) {
             f->micro_version = 4;
+        } else if (f->version == 4)
+            f->micro_version = 1;
         put_symbol(c, state, f->micro_version, 0);
     }
 
@@ -995,7 +997,69 @@ static void encode_slice_header(FFV1Context *f, FFV1Context *fs)
         if (fs->slice_coding_mode == 1)
             ffv1_clear_slice_state(f, fs);
         put_symbol(c, state, fs->slice_coding_mode, 0);
+        if (fs->slice_coding_mode != 1)
+            put_symbol(c, state, fs->slice_rct_y_coef, 0);
     }
+}
+
+static void choose_rct_params(FFV1Context *fs, uint8_t *src[3], const int stride[3], int w, int h)
+{
+    int stat[3] = {0};
+    int x, y, i, p, best;
+    int16_t *sample[3];
+    int lbd = fs->bits_per_raw_sample <= 8;
+
+    for (y = 0; y < h; y++) {
+        int lastr=0, lastg=0, lastb=0;
+        for (p = 0; p < 3; p++)
+            sample[p] = fs->sample_buffer + p*w;
+
+        for (x = 0; x < w; x++) {
+            int b, g, r;
+            if (lbd) {
+                unsigned v = *((uint32_t*)(src[0] + x*4 + stride[0]*y));
+                b =  v        & 0xFF;
+                g = (v >>  8) & 0xFF;
+                r = (v >> 16) & 0xFF;
+            } else {
+                b = *((uint16_t*)(src[0] + x*2 + stride[0]*y));
+                g = *((uint16_t*)(src[1] + x*2 + stride[1]*y));
+                r = *((uint16_t*)(src[2] + x*2 + stride[2]*y));
+            }
+
+            if (x && y) {
+                int ar = r - lastr;
+                int ag = g - lastg;
+                int ab = b - lastb;
+                int bg = ag - sample[0][x];
+                int bb = ab - sample[1][x];
+                int br = ar - sample[2][x];
+
+                br -= bg;
+                bb -= bg;
+
+                stat[0] += FFABS(bg);
+                stat[1] += FFABS(bg + ((br+bb)>>2));
+                stat[2] += FFABS(bg + ((br+bb)>>1));
+
+                sample[0][x] = ag;
+                sample[1][x] = ab;
+                sample[2][x] = ar;
+            }
+
+            lastr = r;
+            lastg = g;
+            lastb = b;
+        }
+    }
+
+    best = 0;
+    for (i=1; i<=2; i++) {
+        if (stat[i] < stat[best])
+            best = i;
+    }
+
+    fs->slice_rct_y_coef = best;
 }
 
 static int encode_slice(AVCodecContext *c, void *arg)
@@ -1010,8 +1074,16 @@ static int encode_slice(AVCodecContext *c, void *arg)
     const int ps     = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step_minus1 + 1;
     int ret;
     RangeCoder c_bak = fs->c;
+    uint8_t *planes[3] = {p->data[0] + ps*x + y*p->linesize[0],
+                          p->data[1] + ps*x + y*p->linesize[1],
+                          p->data[2] + ps*x + y*p->linesize[2]};
 
     fs->slice_coding_mode = 0;
+    if (f->version > 3) {
+        choose_rct_params(fs, planes, p->linesize, width, height);
+    } else {
+        fs->slice_rct_y_coef = 1;
+    }
 
 retry:
     if (c->coded_frame->key_frame)
@@ -1043,9 +1115,6 @@ retry:
         if (fs->transparency)
             ret |= encode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2);
     } else {
-        uint8_t *planes[3] = {p->data[0] + ps*x + y*p->linesize[0],
-                              p->data[1] + ps*x + y*p->linesize[1],
-                              p->data[2] + ps*x + y*p->linesize[2]};
         ret = encode_rgb_frame(fs, planes, width, height, p->linesize);
     }
     emms_c();
