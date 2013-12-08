@@ -3179,7 +3179,6 @@ case $target_os in
         SHFLAGS='-shared -Wl,-h,$$(@F)'
         enabled x86 && SHFLAGS="-mimpure-text $SHFLAGS"
         network_extralibs="-lsocket -lnsl"
-        add_cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
         # When using suncc to build, the Solaris linker will mark
         # an executable with each instruction set encountered by
         # the Solaris assembler.  As our libraries contain their own
@@ -3409,6 +3408,9 @@ elif check_cpp_condition stddef.h "defined __KLIBC__"; then
     libc_type=klibc
 elif check_cpp_condition sys/cdefs.h "defined __BIONIC__"; then
     libc_type=bionic
+elif check_cpp_condition sys/brand.h "defined SOLARIS_BRAND_NAME"; then
+    libc_type=solaris
+    add_cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
 fi
 
 test -n "$libc_type" && enable $libc_type
