@@ -2495,19 +2495,6 @@ static int32_t scalarproduct_and_madd_int16_c(int16_t *v1, const int16_t *v2, co
     return res;
 }
 
-static void apply_window_int16_c(int16_t *output, const int16_t *input,
-                                 const int16_t *window, unsigned int len)
-{
-    int i;
-    int len2 = len >> 1;
-
-    for (i = 0; i < len2; i++) {
-        int16_t w       = window[i];
-        output[i]       = (MUL16(input[i],       w) + (1 << 14)) >> 15;
-        output[len-i-1] = (MUL16(input[len-i-1], w) + (1 << 14)) >> 15;
-    }
-}
-
 static void vector_clip_int32_c(int32_t *dst, const int32_t *src, int32_t min,
                                 int32_t max, unsigned int len)
 {
@@ -2799,7 +2786,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_clipf = vector_clipf_c;
     c->scalarproduct_int16 = scalarproduct_int16_c;
     c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_c;
-    c->apply_window_int16 = apply_window_int16_c;
     c->vector_clip_int32 = vector_clip_int32_c;
 
     c->shrink[0]= av_image_copy_plane;
