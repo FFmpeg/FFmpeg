@@ -14,6 +14,8 @@ libavutil:     2012-10-22
 
 
 API changes, most recent first:
+2013-12-xx - xxxxxxx - lavu 52.57.100 - opencl.h
+  Add av_opencl_benchmark() function.
 
 2013-11-xx - xxxxxxx - lavu 52.56.100 - ffversion.h
   Moves version.h to libavutil/ffversion.h.

@@ -250,6 +250,10 @@ Possible flags for this option are:
 @end table
 @end table
 
+@item -opencl_bench
+Benchmark all available OpenCL devices and show the results. This option
+is only available when FFmpeg has been compiled with @code{--enable-opencl}.
+
 @item -opencl_options options (@emph{global})
 Set OpenCL environment options. This option is only available when
 FFmpeg has been compiled with @code{--enable-opencl}.

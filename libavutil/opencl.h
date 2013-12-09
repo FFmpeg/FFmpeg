@@ -310,4 +310,20 @@ void av_opencl_release_kernel(AVOpenCLKernelEnv *env);
  */
 void av_opencl_uninit(void);
 
+/**
+ * Benchmark an OpenCL device with a user defined callback function.  This function
+ * sets up an external OpenCL environment including context and command queue on
+ * the device then tears it down in the end.  The callback function should perform
+ * the rest of the work.
+ *
+ * @param device            pointer to the OpenCL device to be used
+ * @param platform          cl_platform_id handle to which the device belongs to
+ * @param benchmark         callback function to perform the benchmark, return a
+ *                          negative value in case of failure
+ * @return the score passed from the callback function, a negative error code in case
+ * of failure
+ */
+int64_t av_opencl_benchmark(AVOpenCLDeviceNode *device, cl_platform_id platform,
+                            int64_t (*benchmark)(AVOpenCLExternalEnv *ext_opencl_env));
+
 #endif /* LIBAVUTIL_OPENCL_H */
