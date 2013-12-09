@@ -453,33 +453,33 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
 {
     int i;
 
-    dst->key_frame           = src->key_frame;
-    dst->pict_type           = src->pict_type;
-    dst->sample_aspect_ratio = src->sample_aspect_ratio;
-    dst->pts                 = src->pts;
-    dst->repeat_pict         = src->repeat_pict;
-    dst->interlaced_frame    = src->interlaced_frame;
-    dst->top_field_first     = src->top_field_first;
-    dst->palette_has_changed = src->palette_has_changed;
-    dst->sample_rate         = src->sample_rate;
-    dst->opaque              = src->opaque;
+    dst->key_frame              = src->key_frame;
+    dst->pict_type              = src->pict_type;
+    dst->sample_aspect_ratio    = src->sample_aspect_ratio;
+    dst->pts                    = src->pts;
+    dst->repeat_pict            = src->repeat_pict;
+    dst->interlaced_frame       = src->interlaced_frame;
+    dst->top_field_first        = src->top_field_first;
+    dst->palette_has_changed    = src->palette_has_changed;
+    dst->sample_rate            = src->sample_rate;
+    dst->opaque                 = src->opaque;
 #if FF_API_AVFRAME_LAVC
-    dst->type                = src->type;
+    dst->type                   = src->type;
 #endif
-    dst->pkt_pts             = src->pkt_pts;
-    dst->pkt_dts             = src->pkt_dts;
-    dst->pkt_pos             = src->pkt_pos;
-    dst->pkt_size            = src->pkt_size;
-    dst->pkt_duration        = src->pkt_duration;
-    dst->reordered_opaque    = src->reordered_opaque;
-    dst->quality             = src->quality;
-    dst->best_effort_timestamp = src->best_effort_timestamp;
-    dst->coded_picture_number = src->coded_picture_number;
+    dst->pkt_pts                = src->pkt_pts;
+    dst->pkt_dts                = src->pkt_dts;
+    dst->pkt_pos                = src->pkt_pos;
+    dst->pkt_size               = src->pkt_size;
+    dst->pkt_duration           = src->pkt_duration;
+    dst->reordered_opaque       = src->reordered_opaque;
+    dst->quality                = src->quality;
+    dst->best_effort_timestamp  = src->best_effort_timestamp;
+    dst->coded_picture_number   = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
     dst->flags                  = src->flags;
-    dst->decode_error_flags  = src->decode_error_flags;
-    dst->colorspace          = src->colorspace;
-    dst->color_range         = src->color_range;
+    dst->decode_error_flags     = src->decode_error_flags;
+    dst->colorspace             = src->colorspace;
+    dst->color_range            = src->color_range;
 
     av_dict_copy(&dst->metadata, src->metadata, 0);
 
