@@ -31,7 +31,7 @@
 
 typedef struct MXpegDecodeContext {
     MJpegDecodeContext jpg;
-    AVFrame picture[2]; /* pictures array */
+    AVFrame *picture[2]; /* pictures array */
     int picture_index; /* index of current picture */
     int got_sof_data; /* true if SOF data successfully parsed */
     int got_mxm_bitmask; /* true if MXM bitmask available */
@@ -42,11 +42,36 @@ typedef struct MXpegDecodeContext {
     unsigned mb_width, mb_height; /* size of picture in MB's from MXM header */
 } MXpegDecodeContext;
 
+static av_cold int mxpeg_decode_end(AVCodecContext *avctx)
+{
+    MXpegDecodeContext *s = avctx->priv_data;
+    MJpegDecodeContext *jpg = &s->jpg;
+    int i;
+
+    jpg->picture_ptr = NULL;
+    ff_mjpeg_decode_end(avctx);
+
+    for (i = 0; i < 2; ++i)
+        av_frame_free(&s->picture[i]);
+
+    av_freep(&s->mxm_bitmask);
+    av_freep(&s->completion_bitmask);
+
+    return 0;
+}
+
 static av_cold int mxpeg_decode_init(AVCodecContext *avctx)
 {
     MXpegDecodeContext *s = avctx->priv_data;
 
-    s->jpg.picture_ptr      = &s->picture[0];
+    s->picture[0] = av_frame_alloc();
+    s->picture[1] = av_frame_alloc();
+    if (!s->picture[0] || !s->picture[1]) {
+        mxpeg_decode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
+
+    s->jpg.picture_ptr      = s->picture[0];
     return ff_mjpeg_decode_init(avctx);
 }
 
@@ -260,7 +285,7 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
                 }
 
                 if (s->got_mxm_bitmask) {
-                    AVFrame *reference_ptr = &s->picture[s->picture_index ^ 1];
+                    AVFrame *reference_ptr = s->picture[s->picture_index ^ 1];
                     if (mxpeg_check_dimensions(s, jpg, reference_ptr) < 0)
                         break;
 
@@ -295,7 +320,7 @@ the_end:
         *got_frame = 1;
 
         s->picture_index ^= 1;
-        jpg->picture_ptr = &s->picture[s->picture_index];
+        jpg->picture_ptr = s->picture[s->picture_index];
 
         if (!s->has_complete_frame) {
             if (!s->got_mxm_bitmask)
@@ -306,24 +331,6 @@ the_end:
     }
 
     return buf_ptr - buf;
-}
-
-static av_cold int mxpeg_decode_end(AVCodecContext *avctx)
-{
-    MXpegDecodeContext *s = avctx->priv_data;
-    MJpegDecodeContext *jpg = &s->jpg;
-    int i;
-
-    jpg->picture_ptr = NULL;
-    ff_mjpeg_decode_end(avctx);
-
-    for (i = 0; i < 2; ++i)
-        av_frame_unref(&s->picture[i]);
-
-    av_freep(&s->mxm_bitmask);
-    av_freep(&s->completion_bitmask);
-
-    return 0;
 }
 
 AVCodec ff_mxpeg_decoder = {
