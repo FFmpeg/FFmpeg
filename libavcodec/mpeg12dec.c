@@ -27,6 +27,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
+#include "libavutil/stereo3d.h"
 #include "internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
@@ -2212,6 +2213,37 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
             if (buf_end - p < 1)
                 return;
             avctx->dtg_active_format = p[0] & 0x0f;
+        }
+    } else if (buf_end - p >= 6 &&
+               p[0] == 'J' && p[1] == 'P' && p[2] == '3' && p[3] == 'D' &&
+               p[4] == 0x03) { // S3D_video_format_length
+        // the 0x7F mask ignores the reserved_bit value
+        const uint8_t S3D_video_format_type = p[5] & 0x7F;
+
+        if (S3D_video_format_type == 0x03 ||
+            S3D_video_format_type == 0x04 ||
+            S3D_video_format_type == 0x08 ||
+            S3D_video_format_type == 0x23) {
+            Mpeg1Context *s1   = avctx->priv_data;
+            MpegEncContext *s  = &s1->mpeg_enc_ctx;
+            AVStereo3D *stereo = av_stereo3d_create_side_data(&s->current_picture_ptr->f);
+            if (!stereo)
+                return;
+
+            switch (S3D_video_format_type) {
+            case 0x03:
+                stereo->type = AV_STEREO3D_SIDEBYSIDE;
+                break;
+            case 0x04:
+                stereo->type = AV_STEREO3D_TOPBOTTOM;
+                break;
+            case 0x08:
+                stereo->type = AV_STEREO3D_2D;
+                break;
+            case 0x23:
+                stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
+                break;
+            }
         }
     } else if (mpeg_decode_a53_cc(avctx, p, buf_size)) {
         return;
