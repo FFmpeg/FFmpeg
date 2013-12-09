@@ -95,7 +95,7 @@ typedef struct PerThreadContext {
     uint8_t       *buf;             ///< backup storage for packet data when the input packet is not refcounted
     int            allocated_buf_size; ///< Size allocated for buf
 
-    AVFrame frame;                  ///< Output frame (for decoding) or input (for encoding).
+    AVFrame *frame;                 ///< Output frame (for decoding) or input (for encoding).
     int     got_frame;              ///< The output of got_picture_ptr from the last avcodec_decode_video() call.
     int     result;                 ///< The result of the last codec decode/encode() call.
 
@@ -340,13 +340,9 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
         if (!codec->update_thread_context && THREAD_SAFE_CALLBACKS(avctx))
             ff_thread_finish_setup(avctx);
 
-        avcodec_get_frame_defaults(&p->frame);
+        av_frame_unref(p->frame);
         p->got_frame = 0;
-        p->result = codec->decode(avctx, &p->frame, &p->got_frame, &p->avpkt);
-
-        /* many decoders assign whole AVFrames, thus overwriting extended_data;
-         * make sure it's set correctly */
-        p->frame.extended_data = p->frame.data;
+        p->result = codec->decode(avctx, p->frame, &p->got_frame, &p->avpkt);
 
         if (p->state == STATE_SETTING_UP) ff_thread_finish_setup(avctx);
 
@@ -638,7 +634,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
             pthread_mutex_unlock(&p->progress_mutex);
         }
 
-        av_frame_move_ref(picture, &p->frame);
+        av_frame_move_ref(picture, p->frame);
         *got_picture_ptr = p->got_frame;
         picture->pkt_dts = p->avpkt.dts;
 
@@ -766,7 +762,7 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
         avctx->codec = NULL;
 
         release_delayed_buffers(p);
-        av_frame_unref(&p->frame);
+        av_frame_free(&p->frame);
     }
 
     for (i = 0; i < thread_count; i++) {
@@ -834,6 +830,12 @@ static int frame_thread_init(AVCodecContext *avctx)
         pthread_cond_init(&p->input_cond, NULL);
         pthread_cond_init(&p->progress_cond, NULL);
         pthread_cond_init(&p->output_cond, NULL);
+
+        p->frame = av_frame_alloc();
+        if (!p->frame) {
+            err = AVERROR(ENOMEM);
+            goto error;
+        }
 
         p->parent = fctx;
         p->avctx  = copy;
@@ -911,7 +913,7 @@ void ff_thread_flush(AVCodecContext *avctx)
         PerThreadContext *p = &fctx->threads[i];
         // Make sure decode flush calls with size=0 won't return old frames
         p->got_frame = 0;
-        av_frame_unref(&p->frame);
+        av_frame_unref(p->frame);
 
         release_delayed_buffers(p);
     }
