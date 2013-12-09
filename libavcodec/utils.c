@@ -1194,6 +1194,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         goto free_and_end;
     }
 
+    avctx->internal->to_free = av_frame_alloc();
+    if (!avctx->internal->to_free) {
+        ret = AVERROR(ENOMEM);
+        goto free_and_end;
+    }
+
     if (codec->priv_data_size > 0) {
         if (!avctx->priv_data) {
             avctx->priv_data = av_mallocz(codec->priv_data_size);
@@ -2023,6 +2029,52 @@ static int add_metadata_from_side_data(AVCodecContext *avctx, AVFrame *frame)
     return av_packet_unpack_dictionary(side_metadata, size, frame_md);
 }
 
+static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
+{
+    int ret;
+
+    /* move the original frame to our backup */
+    av_frame_unref(avci->to_free);
+    av_frame_move_ref(avci->to_free, frame);
+
+    /* now copy everything except the AVBufferRefs back
+     * note that we make a COPY of the side data, so calling av_frame_free() on
+     * the caller's frame will work properly */
+    ret = av_frame_copy_props(frame, avci->to_free);
+    if (ret < 0)
+        return ret;
+
+    memcpy(frame->data,     avci->to_free->data,     sizeof(frame->data));
+    memcpy(frame->linesize, avci->to_free->linesize, sizeof(frame->linesize));
+    if (avci->to_free->extended_data != avci->to_free->data) {
+        int planes = av_get_channel_layout_nb_channels(avci->to_free->channel_layout);
+        int size   = planes * sizeof(*frame->extended_data);
+
+        if (!size) {
+            av_frame_unref(frame);
+            return AVERROR_BUG;
+        }
+
+        frame->extended_data = av_malloc(size);
+        if (!frame->extended_data) {
+            av_frame_unref(frame);
+            return AVERROR(ENOMEM);
+        }
+        memcpy(frame->extended_data, avci->to_free->extended_data,
+               size);
+    } else
+        frame->extended_data = frame->data;
+
+    frame->format         = avci->to_free->format;
+    frame->width          = avci->to_free->width;
+    frame->height         = avci->to_free->height;
+    frame->channel_layout = avci->to_free->channel_layout;
+    frame->nb_samples     = avci->to_free->nb_samples;
+    av_frame_set_channels(frame, av_frame_get_channels(avci->to_free));
+
+    return 0;
+}
+
 int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
                                               int *got_picture_ptr,
                                               const AVPacket *avpkt)
@@ -2044,9 +2096,6 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         return AVERROR(EINVAL);
 
     avcodec_get_frame_defaults(picture);
-
-    if (!avctx->refcounted_frames)
-        av_frame_unref(&avci->to_free);
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type & FF_THREAD_FRAME)) {
         int did_split = av_packet_split_side_data(&tmp);
@@ -2092,9 +2141,9 @@ fail:
 
         if (*got_picture_ptr) {
             if (!avctx->refcounted_frames) {
-                avci->to_free = *picture;
-                avci->to_free.extended_data = avci->to_free.data;
-                memset(picture->buf, 0, sizeof(picture->buf));
+                int err = unrefcount_frame(avci, picture);
+                if (err < 0)
+                    return err;
             }
 
             avctx->frame_number++;
@@ -2185,9 +2234,6 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
     }
 
     avcodec_get_frame_defaults(frame);
-
-    if (!avctx->refcounted_frames)
-        av_frame_unref(&avci->to_free);
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type & FF_THREAD_FRAME)) {
         uint8_t *side;
@@ -2291,11 +2337,9 @@ fail:
 
         if (ret >= 0 && *got_frame_ptr) {
             if (!avctx->refcounted_frames) {
-                avci->to_free = *frame;
-                avci->to_free.extended_data = avci->to_free.data;
-                memset(frame->buf, 0, sizeof(frame->buf));
-                frame->extended_buf    = NULL;
-                frame->nb_extended_buf = 0;
+                int err = unrefcount_frame(avci, frame);
+                if (err < 0)
+                    return err;
             }
         } else
             av_frame_unref(frame);
@@ -2533,8 +2577,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         avctx->coded_frame = NULL;
         avctx->internal->byte_buffer_size = 0;
         av_freep(&avctx->internal->byte_buffer);
-        if (!avctx->refcounted_frames)
-            av_frame_unref(&avctx->internal->to_free);
+        av_frame_free(&avctx->internal->to_free);
         for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
             av_buffer_pool_uninit(&pool->pools[i]);
         av_freep(&avctx->internal->pool);
@@ -2856,7 +2899,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     avctx->pts_correction_last_dts = INT64_MIN;
 
     if (!avctx->refcounted_frames)
-        av_frame_unref(&avctx->internal->to_free);
+        av_frame_unref(avctx->internal->to_free);
 }
 
 int av_get_exact_bits_per_sample(enum AVCodecID codec_id)
