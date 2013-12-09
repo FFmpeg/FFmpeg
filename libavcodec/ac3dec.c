@@ -760,8 +760,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     i = !s->channel_mode;
     do {
         if (get_bits1(gbc)) {
-            s->dynamic_range[i] = ((dynamic_range_tab[get_bits(gbc, 8)] - 1.0) *
-                                  s->drc_scale) + 1.0;
+            s->dynamic_range[i] = powf(dynamic_range_tab[get_bits(gbc, 8)],
+                                       s->drc_scale);
         } else if (blk == 0) {
             s->dynamic_range[i] = 1.0f;
         }
