@@ -61,7 +61,7 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 	$(COMPILE_HOSTC)
 
 %.o: %.rc
-	$(WINDRES) $(IFLAGS) --preprocessor "$(subst @,,$(DEPCC)) -E -xc-header -DRC_INVOKED $(CC_DEPFLAGS)" -o $@ $<
+	$(WINDRES) $(IFLAGS) --preprocessor "$(DEPWINDRES) -E -xc-header -DRC_INVOKED $(CC_DEPFLAGS)" -o $@ $<
 
 %.i: %.c
 	$(CC) $(CCFLAGS) $(CC_E) $<
