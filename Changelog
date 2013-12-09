@@ -13,6 +13,7 @@ version <next>
 - remove mp3_header_compress bitstream filters
 - Windows resource files for shared libraries
 - aeval filter
+- stereoscopic 3d metadata handling
 
 
 version 2.1:

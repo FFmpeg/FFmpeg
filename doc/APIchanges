@@ -21,6 +21,10 @@ API changes, most recent first:
   Moves version.h to libavutil/ffversion.h.
   Install ffversion.h and make it public.
 
+2013-11-xx - xxxxxxx- - lavu 52.20.0 - frame.h
+  Add AV_FRAME_DATA_STEREO3D value to the AVFrameSideDataType enum and
+  stereo3d.h API, that identify codec-independent stereo3d information.
+
 2013-11-xx - xxxxxxx- - lavu 52.19.0 - frame.h
   Add AV_FRAME_DATA_A53_CC value to the AVFrameSideDataType enum, which
   identifies ATSC A53 Part 4 Closed Captions data.

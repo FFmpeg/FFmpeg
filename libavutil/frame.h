@@ -64,6 +64,11 @@ enum AVFrameSideDataType {
      * The number of bytes of CC data is AVFrameSideData.size.
      */
     AV_FRAME_DATA_A53_CC,
+    /**
+     * Stereoscopic 3d metadata.
+     * The data is the AVStereo3D struct defined in libavutil/stereo3d.h.
+     */
+    AV_FRAME_DATA_STEREO3D,
 };
 
 typedef struct AVFrameSideData {
