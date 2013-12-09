@@ -3103,16 +3103,17 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
  */
 attribute_deprecated
 AVFrame *avcodec_alloc_frame(void);
-#endif
 
 /**
  * Set the fields of the given AVFrame to default values.
  *
  * @param frame The AVFrame of which the fields should be set to default values.
+ *
+ * @deprecated use av_frame_unref()
  */
+attribute_deprecated
 void avcodec_get_frame_defaults(AVFrame *frame);
 
-#if FF_API_AVFRAME_LAVC
 /**
  * Free the frame and any dynamically allocated objects in it,
  * e.g. extended_data.

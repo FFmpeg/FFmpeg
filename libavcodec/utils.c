@@ -801,6 +801,7 @@ enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const en
     return fmt[0];
 }
 
+#if FF_API_AVFRAME_LAVC
 void avcodec_get_frame_defaults(AVFrame *frame)
 {
     if (frame->extended_data != frame->data)
@@ -815,7 +816,6 @@ void avcodec_get_frame_defaults(AVFrame *frame)
     frame->extended_data       = frame->data;
 }
 
-#if FF_API_AVFRAME_LAVC
 AVFrame *avcodec_alloc_frame(void)
 {
     AVFrame *frame = av_mallocz(sizeof(AVFrame));

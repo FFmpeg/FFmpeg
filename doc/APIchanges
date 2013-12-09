@@ -13,6 +13,11 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-12-xx - xxxxxxx - lavc 55.28.1 - avcodec.h
+  av_frame_alloc(), av_frame_unref() and av_frame_free() now can and should be
+  used instead of avcodec_alloc_frame(), avcodec_get_frame_defaults() and
+  avcodec_free_frame() respectively. The latter three functions are deprecated.
+
 2013-11-xx - xxxxxxx- - lavu 52.20.0 - frame.h
   Add AV_FRAME_DATA_STEREO3D value to the AVFrameSideDataType enum and
   stereo3d.h API, that identify codec-independent stereo3d information.
