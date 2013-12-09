@@ -42,6 +42,7 @@ void ff_h264_reset_sei(H264Context *h)
     h->sei_dpb_output_delay         =  0;
     h->sei_cpb_removal_delay        = -1;
     h->sei_buffering_period_present =  0;
+    h->sei_frame_packing_present    =  0;
 }
 
 static int decode_picture_timing(H264Context *h)
@@ -223,31 +224,40 @@ static int decode_buffering_period(H264Context *h)
     return 0;
 }
 
-static int decode_frame_packing(H264Context *h, int size) {
-    int bits = get_bits_left(&h->gb);
+static int decode_frame_packing_arrangement(H264Context *h)
+{
+    int cancel;
+    int quincunx =  0;
+    int content  = -1;
+    int type     = -1;
 
     h->sei_fpa.frame_packing_arrangement_id          = get_ue_golomb(&h->gb);
-    h->sei_fpa.frame_packing_arrangement_cancel_flag = get_bits(&h->gb, 1);
-    if (!h->sei_fpa.frame_packing_arrangement_cancel_flag) {
-        h->sei_fpa.frame_packing_arrangement_type  = get_bits(&h->gb, 7);
-        h->sei_fpa.quincunx_sampling_flag          = get_bits(&h->gb, 1);
-        h->sei_fpa.content_interpretation_type     = get_bits(&h->gb, 6);
-        skip_bits(&h->gb, 1); /* spatial_flipping_flag */
-        skip_bits(&h->gb, 1); /* frame0_flipped_flag */
-        skip_bits(&h->gb, 1); /* field_views_flag */
-        skip_bits(&h->gb, 1); /* current_frame_is_frame0_flag */
-        skip_bits(&h->gb, 1); /* frame0_self_contained_flag */
-        skip_bits(&h->gb, 1); /* frame1_self_contained_flag */
-        if (!h->sei_fpa.quincunx_sampling_flag && h->sei_fpa.frame_packing_arrangement_type != 5) {
-            skip_bits(&h->gb, 4); /* frame0_grid_position_x */
-            skip_bits(&h->gb, 4); /* frame0_grid_position_y */
-            skip_bits(&h->gb, 4); /* frame1_grid_position_x */
-            skip_bits(&h->gb, 4); /* frame1_grid_position_y */
-        }
-        skip_bits(&h->gb, 8); /* frame_packing_arrangement_reserved_byte */
+    cancel = get_bits(&h->gb, 1);
+    if (cancel == 0) {
+        type = get_bits(&h->gb, 7);     // frame_packing_arrangement_type
+        quincunx = get_bits1(&h->gb);   // quincunx_sampling_flag
+        content = get_bits(&h->gb, 6);  // content_interpretation_type
+
+        // the following skips: spatial_flipping_flag, frame0_flipped_flag,
+        // field_views_flag, current_frame_is_frame0_flag,
+        // frame0_self_contained_flag, frame1_self_contained_flag
+        skip_bits(&h->gb, 6);
+        if (quincunx == 0 && type != 5)
+            skip_bits(&h->gb, 16);      // frame[01]_grid_position_[xy]
+        skip_bits(&h->gb, 8);           // frame_packing_arrangement_reserved_byte
         h->sei_fpa.frame_packing_arrangement_repetition_period = get_ue_golomb(&h->gb) /* frame_packing_arrangement_repetition_period */;
     }
-    skip_bits(&h->gb, 1); /* frame_packing_arrangement_extension_flag */
+    skip_bits1(&h->gb);                 // frame_packing_arrangement_extension_flag
+
+    h->sei_frame_packing_present      = (cancel == 0);
+    h->frame_packing_arrangement_type = type;
+    h->content_interpretation_type    = content;
+    h->quincunx_subsampling           = quincunx;
+
+    h->sei_fpa.frame_packing_arrangement_cancel_flag = cancel  ;
+    h->sei_fpa.frame_packing_arrangement_type        = type    ;
+    h->sei_fpa.quincunx_sampling_flag                = quincunx;
+    h->sei_fpa.content_interpretation_type           = content ;
 
     if (h->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(h->avctx, AV_LOG_DEBUG, "SEI FPA %d %d %d %d %d %d\n",
@@ -257,7 +267,7 @@ static int decode_frame_packing(H264Context *h, int size) {
                                        h->sei_fpa.quincunx_sampling_flag,
                                        h->sei_fpa.content_interpretation_type,
                                        h->sei_fpa.frame_packing_arrangement_repetition_period);
-    skip_bits_long(&h->gb, 8 * size - (bits - get_bits_left(&h->gb)));
+
     return 0;
 }
 
@@ -317,8 +327,9 @@ int ff_h264_decode_sei(H264Context *h)
                 return ret;
             break;
         case SEI_TYPE_FRAME_PACKING:
-            if (decode_frame_packing(h, size) < 0)
-                return -1;
+            ret = decode_frame_packing_arrangement(h);
+            if (ret < 0)
+                return ret;
             break;
         default:
             av_log(h->avctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);
