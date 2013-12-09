@@ -1433,7 +1433,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             return ret;
     }
 
-    avcodec_get_frame_defaults(picture);
+    av_frame_unref(picture);
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type & FF_THREAD_FRAME)) {
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
@@ -1494,7 +1494,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             return ret;
     }
 
-    avcodec_get_frame_defaults(frame);
+    av_frame_unref(frame);
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size) {
         ret = avctx->codec->decode(avctx, frame, got_frame_ptr, avpkt);
