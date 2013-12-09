@@ -1552,12 +1552,9 @@ fast_64bit_if_any="alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="alpha avr32 mips ppc x86"
 fast_unaligned_if_any="ppc x86"
 
-inline_asm_deps="!tms470"
 need_memalign="altivec neon sse"
 
 symver_if_any="symver_asm_label symver_gnu_asm"
-
-log2_deps="!libc_msvcrt"
 
 # subsystems
 dct_select="rdft"
@@ -3424,6 +3421,7 @@ case $libc_type in
         add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
                                      _snprintf=avpriv_snprintf  \
                                      vsnprintf=avpriv_vsnprintf
+        disable log2
         ;;
 esac
 
@@ -4112,6 +4110,7 @@ elif enabled armcc; then
     add_cflags -W${armcc_opt},--diag_suppress=513  # pointer sign
 elif enabled tms470; then
     add_cflags -pds=824 -pds=837
+    disable inline_asm
 elif enabled pathscale; then
     add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
 elif enabled_any msvc icl; then
