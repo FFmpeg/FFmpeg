@@ -23,7 +23,6 @@
  * EBU R.128 implementation
  * @see http://tech.ebu.ch/loudness
  * @see https://www.youtube.com/watch?v=iuEtQqC-Sqo "EBU R128 Introduction - Florian Camerer"
- * @todo True Peak
  * @todo implement start/stop/reset through filter command injection
  * @todo support other frequencies to avoid resampling
  */
@@ -37,6 +36,7 @@
 #include "libavutil/xga_font_data.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
+#include "libswresample/swresample.h"
 #include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -108,6 +108,13 @@ typedef struct {
     int nb_channels;                ///< number of channels in the input
     double *ch_weighting;           ///< channel weighting mapping
     int sample_count;               ///< sample count used for refresh frequency, reset at refresh
+
+    /* Helpers for peak calculation*/
+    struct SwrContext *swr;         ///< up-sample context
+    uint8_t **peak_samples_buffer;  ///< buffer for the up-sampled signal
+    int       peak_samples_size;    ///< buffer size
+    int sample_ratio;               ///< sample frequency ratio
+    float peak;                     ///< total peak
 
     /* Filter caches.
      * The mult by 3 in the following is for X[i], X[i-1] and X[i-2] */
@@ -323,6 +330,7 @@ static int config_video_output(AVFilterLink *outlink)
 
 static int config_audio_input(AVFilterLink *inlink)
 {
+    int ret;
     AVFilterContext *ctx = inlink->dst;
     EBUR128Context *ebur128 = ctx->priv;
 
@@ -332,6 +340,28 @@ static int config_audio_input(AVFilterLink *inlink)
         inlink->min_samples =
         inlink->max_samples =
         inlink->partial_buf_size = inlink->sample_rate / 10;
+
+    // init libswresample context
+    ebur128->sample_ratio = 4;
+    ebur128->swr = swr_alloc_set_opts(ebur128->swr,
+                                      inlink->channel_layout, inlink->format,
+                                      (inlink->sample_rate * ebur128->sample_ratio),
+                                      inlink->channel_layout,    inlink->format, inlink->sample_rate,
+                                      0, ctx);
+    av_opt_set_sample_fmt(ebur128->swr, "internal_sample_fmt", AV_SAMPLE_FMT_S16P, 0);
+    if (!ebur128->swr)
+        return AVERROR(ENOMEM);
+    ret = swr_init(ebur128->swr);
+    if (ret < 0)
+        return ret;
+
+    //just set up peak_samples_buffer, keep it small, we'll throw it away...
+    ebur128->peak_samples_size = 0;
+    ret = av_samples_alloc_array_and_samples(&ebur128->peak_samples_buffer, NULL, 2,
+                                             2, AV_SAMPLE_FMT_DBL, 0);
+    if (ret < 0)
+        return ret;
+
     return 0;
 }
 
@@ -456,6 +486,27 @@ static av_cold int init(AVFilterContext *ctx)
 
 #define HIST_POS(power) (int)(((power) - ABS_THRES) * HIST_GRAIN)
 
+/*
+ * Update largest absolute sample value.
+ */
+static void calc_peak(const double *samples, int nb_samples, int nb_channels, float *peak_p)
+{
+    float peak = 0.0;
+    assert(samples);
+
+    while (nb_samples--) {
+        for (int i = 0; i < nb_channels; i++){
+            if (samples[i] > peak)
+                peak = samples[i];
+            else if (-samples[i] > peak)
+                peak = -samples[i];
+        }
+        samples += nb_channels;
+    }
+
+    *peak_p = FFMAX(peak, *peak_p);
+}
+
 /* loudness and power should be set such as loudness = -0.691 +
  * 10*log10(power), we just avoid doing that calculus two times */
 static int gate_update(struct integrator *integ, double power,
@@ -490,6 +541,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     const int nb_samples  = insamples->nb_samples;
     const double *samples = (double *)insamples->data[0];
     AVFrame *pic = ebur128->outpicref;
+    const int nb_up_samples  = nb_samples * ebur128->sample_ratio + 32;
+    int ret = 0;
+
+    if (ebur128->peak_samples_size < nb_up_samples){
+        av_free(ebur128->peak_samples_buffer[0]);
+        ret = av_samples_alloc(ebur128->peak_samples_buffer, NULL, nb_channels, nb_up_samples,
+                               AV_SAMPLE_FMT_DBL, 1);
+        if (ret < 0)
+            return ret;
+        ebur128->peak_samples_size = nb_up_samples;
+    }
+    ret = swr_convert(ebur128->swr, ebur128->peak_samples_buffer, nb_up_samples,
+                      (const uint8_t **)insamples->extended_data, nb_samples);
+    if (ret < 0)
+        return ret;
+
+    calc_peak((double *)ebur128->peak_samples_buffer[0], ret, nb_channels, &ebur128->peak);
 
     for (idx_insample = 0; idx_insample < nb_samples; idx_insample++) {
         const int bin_id_400  = ebur128->i400.cache_pos;
@@ -757,10 +825,15 @@ static av_cold void uninit(AVFilterContext *ctx)
            "    LRA:       %5.1f LU\n"
            "    Threshold: %5.1f LUFS\n"
            "    LRA low:   %5.1f LUFS\n"
-           "    LRA high:  %5.1f LUFS\n",
+           "    LRA high:  %5.1f LUFS\n\n"
+           "  Peak:\n"
+           "    Max peak:  %5.1f TPFS\n"
+           "    Max peak:    %1.6f\n",
            ebur128->integrated_loudness, ebur128->i400.rel_threshold,
            ebur128->loudness_range,      ebur128->i3000.rel_threshold,
-           ebur128->lra_low, ebur128->lra_high);
+           ebur128->lra_low, ebur128->lra_high,
+           20 * log10(ebur128->peak),
+           ebur128->peak);
 
     av_freep(&ebur128->y_line_ref);
     av_freep(&ebur128->ch_weighting);
@@ -773,6 +846,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     for (i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
     av_frame_free(&ebur128->outpicref);
+    swr_free(&ebur128->swr);
+    av_free(ebur128->peak_samples_buffer[0]);
 }
 
 static const AVFilterPad ebur128_inputs[] = {
