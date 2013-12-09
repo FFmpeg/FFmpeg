@@ -886,6 +886,12 @@ typedef struct HEVCContext {
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
     int nuh_layer_id;
 
+    /** frame packing arrangement variables */
+    int sei_frame_packing_present;
+    int frame_packing_arrangement_type;
+    int content_interpretation_type;
+    int quincunx_subsampling;
+
     int picture_struct;
 } HEVCContext;
 
