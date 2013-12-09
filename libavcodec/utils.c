@@ -2047,7 +2047,7 @@ static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
     memcpy(frame->data,     avci->to_free->data,     sizeof(frame->data));
     memcpy(frame->linesize, avci->to_free->linesize, sizeof(frame->linesize));
     if (avci->to_free->extended_data != avci->to_free->data) {
-        int planes = av_get_channel_layout_nb_channels(avci->to_free->channel_layout);
+        int planes = av_frame_get_channels(avci->to_free);
         int size   = planes * sizeof(*frame->extended_data);
 
         if (!size) {
