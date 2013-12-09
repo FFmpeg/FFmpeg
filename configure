@@ -3839,10 +3839,6 @@ elif check_cpp_condition _mingw.h "defined __MINGW32_VERSION"; then
     add_cppflags -U__STRICT_ANSI__
 elif check_cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
     libc_type=msvcrt
-    add_compat strtod.o strtod=avpriv_strtod
-    add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
-                                 _snprintf=avpriv_snprintf  \
-                                 vsnprintf=avpriv_vsnprintf
     # The MSVC 2010 headers (Win 7.0 SDK) set _WIN32_WINNT to
     # 0x601 by default unless something else is set by the user.
     # This can easily lead to us detecting functions only present
@@ -3854,10 +3850,21 @@ elif check_cpp_condition stddef.h "defined __KLIBC__"; then
     libc_type=klibc
 elif check_cpp_condition sys/cdefs.h "defined __BIONIC__"; then
     libc_type=bionic
-    add_compat strtod.o strtod=avpriv_strtod
 fi
 
 test -n "$libc_type" && enable $libc_type
+
+case $libc_type in
+    bionic)
+        add_compat strtod.o strtod=avpriv_strtod
+        ;;
+    msvcrt)
+        add_compat strtod.o strtod=avpriv_strtod
+        add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
+                                     _snprintf=avpriv_snprintf  \
+                                     vsnprintf=avpriv_vsnprintf
+        ;;
+esac
 
 # hacks for compiler/libc/os combinations
 
