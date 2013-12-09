@@ -2090,9 +2090,6 @@ fail:
                 ret = avpkt->size;
         }
 
-        if (ret < 0 && picture->buf[0])
-            av_frame_unref(picture);
-
         if (*got_picture_ptr) {
             if (!avctx->refcounted_frames) {
                 avci->to_free = *picture;
@@ -2105,7 +2102,8 @@ fail:
                                                guess_correct_pts(avctx,
                                                                  picture->pkt_pts,
                                                                  picture->pkt_dts));
-        }
+        } else
+            av_frame_unref(picture);
     } else
         ret = 0;
 
