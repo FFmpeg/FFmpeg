@@ -476,6 +476,7 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->best_effort_timestamp = src->best_effort_timestamp;
     dst->coded_picture_number = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
+    dst->flags                  = src->flags;
     dst->decode_error_flags  = src->decode_error_flags;
     dst->colorspace          = src->colorspace;
     dst->color_range         = src->color_range;
