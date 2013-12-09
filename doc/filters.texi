@@ -371,7 +371,7 @@ smaller than number of channels all remaining channels will not be delayed.
 Delay first channel by 1.5 seconds, the third channel by 0.5 seconds and leave
 the second channel (and any other channels that may be present) unchanged.
 @example
-adelay=1500:0:500
+adelay=1500|0|500
 @end example
 @end itemize
 
