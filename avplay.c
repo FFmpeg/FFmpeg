@@ -1846,8 +1846,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             if (!is->frame) {
                 if (!(is->frame = av_frame_alloc()))
                     return AVERROR(ENOMEM);
-            } else
-                avcodec_get_frame_defaults(is->frame);
+            }
 
             if (flush_complete)
                 break;
