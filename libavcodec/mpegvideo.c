@@ -1396,7 +1396,6 @@ int ff_find_unused_picture(MpegEncContext *s, int shared)
             s->picture[ret].needs_realloc = 0;
             ff_free_picture_tables(&s->picture[ret]);
             ff_mpeg_unref_picture(s, &s->picture[ret]);
-            avcodec_get_frame_defaults(&s->picture[ret].f);
         }
     }
     return ret;
