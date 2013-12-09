@@ -1,5 +1,5 @@
 /*
- * Avi/AvxSynth support
+ * AviSynth/AvxSynth support
  * Copyright (c) 2012 AvxSynth Team.
  *
  * This file is part of FFmpeg
