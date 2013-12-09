@@ -87,9 +87,12 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
 
-    if (!s->picture_ptr)
-        s->picture_ptr = &s->picture;
-    avcodec_get_frame_defaults(&s->picture);
+    if (!s->picture_ptr) {
+        s->picture = av_frame_alloc();
+        if (!s->picture)
+            return AVERROR(ENOMEM);
+        s->picture_ptr = s->picture;
+    }
 
     s->avctx = avctx;
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
@@ -1368,7 +1371,7 @@ next_field:
         s->last_dc[i] = (4 << s->bits);
 
     if (s->lossless) {
-        av_assert0(s->picture_ptr == &s->picture);
+        av_assert0(s->picture_ptr == s->picture);
         if (CONFIG_JPEGLS_DECODER && s->ls) {
 //            for () {
 //            reset_ls_coding_parameters(s, 0);
@@ -1389,7 +1392,7 @@ next_field:
         }
     } else {
         if (s->progressive && predictor) {
-            av_assert0(s->picture_ptr == &s->picture);
+            av_assert0(s->picture_ptr == s->picture);
             if ((ret = mjpeg_decode_scan_progressive_ac(s, predictor,
                                                         ilv, prev_shift,
                                                         point_transform)) < 0)
@@ -2035,7 +2038,10 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_INFO, "Single field\n");
     }
 
-    if (s->picture_ptr)
+    if (s->picture) {
+        av_frame_free(&s->picture);
+        s->picture_ptr = NULL;
+    } else if (s->picture_ptr)
         av_frame_unref(s->picture_ptr);
 
     av_free(s->buffer);
