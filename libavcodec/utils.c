@@ -2171,7 +2171,6 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                                               const AVPacket *avpkt)
 {
     AVCodecInternal *avci = avctx->internal;
-    int planar, channels;
     int ret = 0;
 
     *got_frame_ptr = 0;
@@ -2302,18 +2301,6 @@ fail:
             }
         } else if (frame->data[0])
             av_frame_unref(frame);
-    }
-
-    /* many decoders assign whole AVFrames, thus overwriting extended_data;
-     * make sure it's set correctly; assume decoders that actually use
-     * extended_data are doing it correctly */
-    if (*got_frame_ptr) {
-        planar   = av_sample_fmt_is_planar(frame->format);
-        channels = av_frame_get_channels(frame);
-        if (!(planar && channels > AV_NUM_DATA_POINTERS))
-            frame->extended_data = frame->data;
-    } else {
-        frame->extended_data = NULL;
     }
 
     return ret;
