@@ -320,8 +320,6 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
     }else
         memcpy(s->dv_zigzag[1], ff_zigzag248_direct, 64);
 
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
     s->avctx = avctx;
     avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
 
@@ -341,6 +339,10 @@ static av_cold int dvvideo_init_encoder(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "DVCPRO HD encoding is not supported.\n");
         return AVERROR_PATCHWELCOME;
     }
+
+    avctx->coded_frame = av_frame_alloc();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     dv_vlc_map_tableinit();
 
@@ -687,12 +689,12 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         if ((s->sys->pix_fmt == AV_PIX_FMT_YUV420P) ||
             (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
             (s->sys->height >= 720 && mb_y != 134)) {
-            y_stride = s->picture.linesize[0] << 3;
+            y_stride = s->frame->linesize[0] << 3;
         } else {
             y_stride = 16;
         }
-        y_ptr    = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x) << 3);
-        linesize = s->picture.linesize[0];
+        y_ptr    = s->frame->data[0] + ((mb_y * s->frame->linesize[0] + mb_x) << 3);
+        linesize = s->frame->linesize[0];
 
         if (s->sys->video_stype == 4) { /* SD 422 */
             vs_bit_size +=
@@ -710,12 +712,12 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         enc_blk += 4;
 
         /* initializing chrominance blocks */
-        c_offset = (((mb_y >>  (s->sys->pix_fmt == AV_PIX_FMT_YUV420P)) * s->picture.linesize[1] +
+        c_offset = (((mb_y >>  (s->sys->pix_fmt == AV_PIX_FMT_YUV420P)) * s->frame->linesize[1] +
                      (mb_x >> ((s->sys->pix_fmt == AV_PIX_FMT_YUV411P) ? 2 : 1))) << 3);
         for (j = 2; j; j--) {
-            uint8_t *c_ptr = s->picture.data[j] + c_offset;
-            linesize = s->picture.linesize[j];
-            y_stride = (mb_y == 134) ? 8 : (s->picture.linesize[j] << 3);
+            uint8_t *c_ptr = s->frame->data[j] + c_offset;
+            linesize = s->frame->linesize[j];
+            y_stride = (mb_y == 134) ? 8 : (s->frame->linesize[j] << 3);
             if (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                 uint8_t* d;
                 uint8_t* b = scratch;
@@ -814,7 +816,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c,
      *      compression scheme (if any).
      */
     int apt   = (c->sys->pix_fmt == AV_PIX_FMT_YUV420P ? 0 : 1);
-    int fs    = c->picture.top_field_first ? 0x00 : 0x40;
+    int fs    = c->frame->top_field_first ? 0x00 : 0x40;
 
     uint8_t aspect = 0;
     if ((int)(av_q2d(c->avctx->sample_aspect_ratio) * c->avctx->width / c->avctx->height * 10) >= 17) /* 16:9 */
@@ -963,10 +965,10 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     if ((ret = ff_alloc_packet2(c, pkt, s->sys->frame_size)) < 0)
         return ret;
 
-    c->pix_fmt           = s->sys->pix_fmt;
-    s->picture           = *frame;
-    s->picture.key_frame = 1;
-    s->picture.pict_type = AV_PICTURE_TYPE_I;
+    c->pix_fmt                = s->sys->pix_fmt;
+    s->frame                  = frame;
+    c->coded_frame->key_frame = 1;
+    c->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     s->buf = pkt->data;
     c->execute(c, dv_encode_video_segment, s->sys->work_chunks, NULL,
@@ -982,6 +984,12 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     return 0;
 }
 
+static int dvvideo_encode_close(AVCodecContext *avctx)
+{
+    av_frame_free(&avctx->coded_frame);
+    return 0;
+}
+
 AVCodec ff_dvvideo_encoder = {
     .name           = "dvvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
@@ -990,6 +998,7 @@ AVCodec ff_dvvideo_encoder = {
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_init_encoder,
     .encode2        = dvvideo_encode_frame,
+    .close          = dvvideo_encode_close,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
