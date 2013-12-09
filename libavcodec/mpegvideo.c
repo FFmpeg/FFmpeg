@@ -1036,14 +1036,14 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
     FF_ALLOCZ_OR_GOTO(s->avctx, s->picture,
                       MAX_PICTURE_COUNT * sizeof(Picture), fail);
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-        avcodec_get_frame_defaults(&s->picture[i].f);
+        av_frame_unref(&s->picture[i].f);
     }
     memset(&s->next_picture, 0, sizeof(s->next_picture));
     memset(&s->last_picture, 0, sizeof(s->last_picture));
     memset(&s->current_picture, 0, sizeof(s->current_picture));
-    avcodec_get_frame_defaults(&s->next_picture.f);
-    avcodec_get_frame_defaults(&s->last_picture.f);
-    avcodec_get_frame_defaults(&s->current_picture.f);
+    av_frame_unref(&s->next_picture.f);
+    av_frame_unref(&s->last_picture.f);
+    av_frame_unref(&s->current_picture.f);
 
     if (s->width && s->height) {
         if (init_context_frame(s))
