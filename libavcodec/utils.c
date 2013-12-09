@@ -2090,7 +2090,7 @@ fail:
                 ret = avpkt->size;
         }
 
-        if (ret < 0 && picture->data[0])
+        if (ret < 0 && picture->buf[0])
             av_frame_unref(picture);
 
         if (*got_picture_ptr) {
