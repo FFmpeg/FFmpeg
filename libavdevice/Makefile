@@ -10,8 +10,6 @@ HEADERS = avdevice.h                                                    \
 OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \
 
-OBJS-$(HAVE_MSVCRT) += file_open.o
-
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa-audio-common.o \
                                             alsa-audio-dec.o timefilter.o
@@ -50,6 +48,8 @@ OBJS-$(CONFIG_XV_OUTDEV)                 += xv.o
 # external libraries
 OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
+
+OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES)             += avdeviceres.o

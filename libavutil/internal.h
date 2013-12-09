@@ -211,7 +211,7 @@ void avpriv_report_missing_feature(void *avc,
 void avpriv_request_sample(void *avc,
                            const char *msg, ...) av_printf_format(2, 3);
 
-#if HAVE_MSVCRT
+#if HAVE_LIBC_MSVCRT
 #define avpriv_open ff_open
 #endif
 

@@ -24,8 +24,6 @@ OBJS = allformats.o         \
        url.o                \
        utils.o              \
 
-OBJS-$(HAVE_MSVCRT) += file_open.o
-
 OBJS-$(CONFIG_NETWORK)                   += network.o
 OBJS-$(CONFIG_RIFFDEC)                   += riffdec.o
 OBJS-$(CONFIG_RIFFENC)                   += riffenc.o
@@ -466,6 +464,8 @@ OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_TLS_PROTOCOL)              += tls.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 OBJS-$(CONFIG_UNIX_PROTOCOL)             += unix.o
+
+OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES)             += avformatres.o
