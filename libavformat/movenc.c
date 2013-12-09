@@ -3885,7 +3885,8 @@ static int mov_write_header(AVFormatContext *s)
             }else{
                 track->sample_size = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
             }
-            if (st->codec->codec_id == AV_CODEC_ID_ILBC) {
+            if (st->codec->codec_id == AV_CODEC_ID_ILBC ||
+                st->codec->codec_id == AV_CODEC_ID_ADPCM_IMA_QT) {
                 track->audio_vbr = 1;
             }
             if (track->mode != MODE_MOV &&
