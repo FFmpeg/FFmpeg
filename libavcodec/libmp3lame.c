@@ -59,18 +59,14 @@ typedef struct LAMEContext {
 static int realloc_buffer(LAMEContext *s)
 {
     if (!s->buffer || s->buffer_size - s->buffer_index < BUFFER_SIZE) {
-        uint8_t *tmp;
-        int new_size = s->buffer_index + 2 * BUFFER_SIZE;
+        int new_size = s->buffer_index + 2 * BUFFER_SIZE, err;
 
         av_dlog(s->avctx, "resizing output buffer: %d -> %d\n", s->buffer_size,
                 new_size);
-        tmp = av_realloc(s->buffer, new_size);
-        if (!tmp) {
-            av_freep(&s->buffer);
+        if ((err = av_reallocp(&s->buffer, new_size)) < 0) {
             s->buffer_size = s->buffer_index = 0;
-            return AVERROR(ENOMEM);
+            return err;
         }
-        s->buffer      = tmp;
         s->buffer_size = new_size;
     }
     return 0;

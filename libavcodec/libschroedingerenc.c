@@ -293,6 +293,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* Now check to see if we have any output from the encoder. */
     while (go) {
+        int err;
         SchroStateEnum state;
         state = schro_encoder_wait(encoder);
         switch (state) {
@@ -307,8 +308,12 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
              * be able to set the pts correctly. So we don't write data
              * to the frame output queue until we actually have a frame
              */
-            p_schro_params->enc_buf = av_realloc(p_schro_params->enc_buf,
-                                                 p_schro_params->enc_buf_size + enc_buf->length);
+            if ((err = av_reallocp(&p_schro_params->enc_buf,
+                                   p_schro_params->enc_buf_size +
+                                   enc_buf->length)) < 0) {
+                p_schro_params->enc_buf_size = 0;
+                return err;
+            }
 
             memcpy(p_schro_params->enc_buf + p_schro_params->enc_buf_size,
                    enc_buf->data, enc_buf->length);

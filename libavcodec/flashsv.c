@@ -307,13 +307,13 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     /* the block size could change between frames, make sure the buffer
      * is large enough, if not, get a larger one */
     if (s->block_size < s->block_width * s->block_height) {
-        int tmpblock_size = 3 * s->block_width * s->block_height;
+        int tmpblock_size = 3 * s->block_width * s->block_height, err;
 
-        s->tmpblock = av_realloc(s->tmpblock, tmpblock_size);
-        if (!s->tmpblock) {
+        if ((err = av_reallocp(&s->tmpblock, tmpblock_size)) < 0) {
+            s->block_size = 0;
             av_log(avctx, AV_LOG_ERROR,
                    "Cannot allocate decompression buffer.\n");
-            return AVERROR(ENOMEM);
+            return err;
         }
         if (s->ver == 2) {
             s->deflate_block_size = calc_deflate_block_size(tmpblock_size);
@@ -322,12 +322,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                        "Cannot determine deflate buffer size.\n");
                 return -1;
             }
-            s->deflate_block = av_realloc(s->deflate_block,
-                                          s->deflate_block_size);
-            if (!s->deflate_block) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Cannot allocate deflate buffer.\n");
-                return AVERROR(ENOMEM);
+            if ((err = av_reallocp(&s->deflate_block, s->deflate_block_size)) < 0) {
+                s->block_size = 0;
+                av_log(avctx, AV_LOG_ERROR, "Cannot allocate deflate buffer.\n");
+                return err;
             }
         }
     }
@@ -351,7 +349,9 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     /* we care for keyframes only in Screen Video v2 */
     s->is_keyframe = (avpkt->flags & AV_PKT_FLAG_KEY) && (s->ver == 2);
     if (s->is_keyframe) {
-        s->keyframedata = av_realloc(s->keyframedata, avpkt->size);
+        int err;
+        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
+            return err;
         memcpy(s->keyframedata, avpkt->data, avpkt->size);
     }
     if(s->ver == 2 && !s->blocks)

@@ -122,9 +122,7 @@ static av_cold int shorten_decode_init(AVCodecContext *avctx)
 
 static int allocate_buffers(ShortenContext *s)
 {
-    int i, chan;
-    int *coeffs;
-    void *tmp_ptr;
+    int i, chan, err;
 
     for (chan = 0; chan < s->channels; chan++) {
         if (FFMAX(1, s->nmean) >= UINT_MAX / sizeof(int32_t)) {
@@ -138,26 +136,21 @@ static int allocate_buffers(ShortenContext *s)
             return AVERROR_INVALIDDATA;
         }
 
-        tmp_ptr =
-            av_realloc(s->offset[chan], sizeof(int32_t) * FFMAX(1, s->nmean));
-        if (!tmp_ptr)
-            return AVERROR(ENOMEM);
-        s->offset[chan] = tmp_ptr;
+        if ((err = av_reallocp(&s->offset[chan],
+                               sizeof(int32_t) *
+                               FFMAX(1, s->nmean))) < 0)
+            return err;
 
-        tmp_ptr = av_realloc(s->decoded_base[chan], (s->blocksize + s->nwrap) *
-                             sizeof(s->decoded_base[0][0]));
-        if (!tmp_ptr)
-            return AVERROR(ENOMEM);
-        s->decoded_base[chan] = tmp_ptr;
+        if ((err = av_reallocp(&s->decoded_base[chan], (s->blocksize + s->nwrap) *
+                               sizeof(s->decoded_base[0][0]))) < 0)
+            return err;
         for (i = 0; i < s->nwrap; i++)
             s->decoded_base[chan][i] = 0;
         s->decoded[chan] = s->decoded_base[chan] + s->nwrap;
     }
 
-    coeffs = av_realloc(s->coeffs, s->nwrap * sizeof(*s->coeffs));
-    if (!coeffs)
-        return AVERROR(ENOMEM);
-    s->coeffs = coeffs;
+    if ((err = av_reallocp(&s->coeffs, s->nwrap * sizeof(*s->coeffs))) < 0)
+        return err;
 
     return 0;
 }
