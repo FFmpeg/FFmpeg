@@ -1973,7 +1973,6 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
            !has_decode_delay_been_guessed(st) ||
            (!st->codec_info_nb_frames && st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF))) {
         got_picture = 0;
-        avcodec_get_frame_defaults(frame);
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             ret = avcodec_decode_video2(st->codec, frame,
