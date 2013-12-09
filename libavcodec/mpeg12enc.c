@@ -32,6 +32,8 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/timecode.h"
+#include "libavutil/stereo3d.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "mathops.h"
@@ -388,6 +390,7 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s)
 
 void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 {
+    AVFrameSideData *side_data;
     mpeg1_encode_sequence_header(s);
 
     /* mpeg1 picture header */
@@ -470,6 +473,44 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         put_header(s, USER_START_CODE);
         for (i = 0; i < sizeof(svcd_scan_offset_placeholder); i++)
             put_bits(&s->pb, 8, svcd_scan_offset_placeholder[i]);
+    }
+    side_data = av_frame_get_side_data(&s->current_picture_ptr->f,
+                                       AV_FRAME_DATA_STEREO3D);
+    if (side_data) {
+        AVStereo3D *stereo = (AVStereo3D *)side_data->data;
+        uint8_t fpa_type;
+
+        switch (stereo->type) {
+        case AV_STEREO3D_SIDEBYSIDE:
+            fpa_type = 0x03;
+            break;
+        case AV_STEREO3D_TOPBOTTOM:
+            fpa_type = 0x04;
+            break;
+        case AV_STEREO3D_2D:
+            fpa_type = 0x08;
+            break;
+        case AV_STEREO3D_SIDEBYSIDE_QUINCUNX:
+            fpa_type = 0x23;
+            break;
+        default:
+            fpa_type = 0;
+            break;
+        }
+
+        if (fpa_type != 0) {
+            put_header(s, USER_START_CODE);
+            put_bits(&s->pb, 8, 'J');   // S3D_video_format_signaling_identifier
+            put_bits(&s->pb, 8, 'P');
+            put_bits(&s->pb, 8, '3');
+            put_bits(&s->pb, 8, 'D');
+            put_bits(&s->pb, 8, 0x03);  // S3D_video_format_length
+
+            put_bits(&s->pb, 1, 1);     // reserved_bit
+            put_bits(&s->pb, 7, fpa_type); // S3D_video_format_type
+            put_bits(&s->pb, 8, 0x04);  // reserved_data[0]
+            put_bits(&s->pb, 8, 0xFF);  // reserved_data[1]
+        }
     }
 
     s->mb_y = 0;
