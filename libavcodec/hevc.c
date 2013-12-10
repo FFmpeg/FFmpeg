@@ -388,6 +388,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
 static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 {
     int ret;
+    int num = 0, den = 0;
 
     pic_arrays_free(s);
     ret = pic_arrays_init(s, sps);
@@ -432,6 +433,19 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     s->sps = sps;
     s->vps = (HEVCVPS*) s->vps_list[s->sps->vps_id]->data;
+
+    if (s->vps->vps_timing_info_present_flag) {
+        num = s->vps->vps_num_units_in_tick;
+        den = s->vps->vps_time_scale;
+    } else if (sps->vui.vui_timing_info_present_flag) {
+        num = sps->vui.vui_num_units_in_tick;
+        den = sps->vui.vui_time_scale;
+    }
+
+    if (num != 0 && den != 0)
+        av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
+                  num, den, 1 << 30);
+
     return 0;
 
 fail:
