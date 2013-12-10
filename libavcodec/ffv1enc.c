@@ -441,7 +441,7 @@ static int encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int s
             if (s->slice_coding_mode != 1) {
                 b -= g;
                 r -= g;
-                g += ((b + r) * s->slice_rct_y_coef) >> 2;
+                g += (b * s->slice_rct_by_coef + r * s->slice_rct_ry_coef) >> 2;
                 b += offset;
                 r += offset;
             }
@@ -560,7 +560,7 @@ static int write_extradata(FFV1Context *f)
         if (f->version == 3) {
             f->micro_version = 4;
         } else if (f->version == 4)
-            f->micro_version = 1;
+            f->micro_version = 2;
         put_symbol(c, state, f->micro_version, 0);
     }
 
@@ -999,14 +999,36 @@ static void encode_slice_header(FFV1Context *f, FFV1Context *fs)
         if (fs->slice_coding_mode == 1)
             ffv1_clear_slice_state(f, fs);
         put_symbol(c, state, fs->slice_coding_mode, 0);
-        if (fs->slice_coding_mode != 1)
-            put_symbol(c, state, fs->slice_rct_y_coef, 0);
+        if (fs->slice_coding_mode != 1) {
+            put_symbol(c, state, fs->slice_rct_by_coef, 0);
+            put_symbol(c, state, fs->slice_rct_ry_coef, 0);
+        }
     }
 }
 
 static void choose_rct_params(FFV1Context *fs, uint8_t *src[3], const int stride[3], int w, int h)
 {
-    int stat[3] = {0};
+#define NB_Y_COEFF 15
+    static const int rct_y_coeff[15][2] = {
+        {0, 0}, //      4G
+        {1, 1}, //  R + 2G + B
+        {2, 2}, // 2R      + 2B
+        {0, 2}, //      2G + 2B
+        {2, 0}, // 2R + 2G
+        {4, 0}, // 4R
+        {0, 4}, //           4B
+
+        {0, 3}, //      1G + 3B
+        {3, 0}, // 3R + 1G
+        {3, 1}, // 3R      +  B
+        {1, 3}, //  R      + 3B
+        {1, 2}, //  R +  G + 2B
+        {2, 1}, // 2R +  G +  B
+        {0, 1}, //      3G +  B
+        {1, 0}, //  R + 3G
+    };
+
+    int stat[NB_Y_COEFF] = {0};
     int x, y, i, p, best;
     int16_t *sample[3];
     int lbd = fs->bits_per_raw_sample <= 8;
@@ -1041,9 +1063,9 @@ static void choose_rct_params(FFV1Context *fs, uint8_t *src[3], const int stride
                 br -= bg;
                 bb -= bg;
 
-                stat[0] += FFABS(bg);
-                stat[1] += FFABS(bg + ((br+bb)>>2));
-                stat[2] += FFABS(bg + ((br+bb)>>1));
+                for (i = 0; i<NB_Y_COEFF; i++) {
+                    stat[i] += FFABS(bg + ((br*rct_y_coeff[i][0] + bb*rct_y_coeff[i][1])>>2));
+                }
 
             }
             sample[0][x] = ag;
@@ -1057,12 +1079,13 @@ static void choose_rct_params(FFV1Context *fs, uint8_t *src[3], const int stride
     }
 
     best = 0;
-    for (i=1; i<=2; i++) {
+    for (i=1; i<NB_Y_COEFF; i++) {
         if (stat[i] < stat[best])
             best = i;
     }
 
-    fs->slice_rct_y_coef = best;
+    fs->slice_rct_by_coef = rct_y_coeff[best][1];
+    fs->slice_rct_ry_coef = rct_y_coeff[best][0];
 }
 
 static int encode_slice(AVCodecContext *c, void *arg)
@@ -1085,7 +1108,8 @@ static int encode_slice(AVCodecContext *c, void *arg)
     if (f->version > 3) {
         choose_rct_params(fs, planes, p->linesize, width, height);
     } else {
-        fs->slice_rct_y_coef = 1;
+        fs->slice_rct_by_coef = 1;
+        fs->slice_rct_ry_coef = 1;
     }
 
 retry:

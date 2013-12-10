@@ -260,7 +260,7 @@ static void decode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int 
             if (s->slice_coding_mode != 1) {
                 b -= offset;
                 r -= offset;
-                g -= ((b + r) * s->slice_rct_y_coef) >> 2;
+                g -= (b * s->slice_rct_by_coef + r * s->slice_rct_ry_coef) >> 2;
                 b += g;
                 r += g;
             }
@@ -334,8 +334,9 @@ static int decode_slice_header(FFV1Context *f, FFV1Context *fs)
         fs->slice_reset_contexts = get_rac(c, state);
         fs->slice_coding_mode = get_symbol(c, state, 0);
         if (fs->slice_coding_mode != 1) {
-            fs->slice_rct_y_coef = get_symbol(c, state, 0);
-            if (fs->slice_rct_y_coef > 2U) {
+            fs->slice_rct_by_coef = get_symbol(c, state, 0);
+            fs->slice_rct_ry_coef = get_symbol(c, state, 0);
+            if ((uint64_t)fs->slice_rct_by_coef + (uint64_t)fs->slice_rct_ry_coef > 4) {
                 av_log(f->avctx, AV_LOG_ERROR, "slice_rct_y_coef out of range\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -388,7 +389,8 @@ static int decode_slice(AVCodecContext *c, void *arg)
         }
     }
 
-    fs->slice_rct_y_coef = 1;
+    fs->slice_rct_by_coef = 1;
+    fs->slice_rct_ry_coef = 1;
 
     if (f->version > 2) {
         if (ffv1_init_slice_state(f, fs) < 0)

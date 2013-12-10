@@ -130,7 +130,8 @@ typedef struct FFV1Context {
     int slice_y;
     int slice_reset_contexts;
     int slice_coding_mode;
-    int slice_rct_y_coef;
+    int slice_rct_by_coef;
+    int slice_rct_ry_coef;
 } FFV1Context;
 
 int ffv1_common_init(AVCodecContext *avctx);
