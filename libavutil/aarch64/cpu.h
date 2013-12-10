@@ -16,19 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_CPU_INTERNAL_H
-#define AVUTIL_CPU_INTERNAL_H
+#ifndef AVUTIL_AARCH64_CPU_H
+#define AVUTIL_AARCH64_CPU_H
 
-#include "cpu.h"
+#include "config.h"
+#include "libavutil/cpu.h"
+#include "libavutil/cpu_internal.h"
 
-#define CPUEXT_SUFFIX(flags, suffix, cpuext)                            \
-    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext))
+#define have_neon(flags) CPUEXT(flags, NEON)
+#define have_vfp(flags)  CPUEXT(flags, VFP)
 
-#define CPUEXT(flags, cpuext) CPUEXT_SUFFIX(flags, , cpuext)
-
-int ff_get_cpu_flags_aarch64(void);
-int ff_get_cpu_flags_arm(void);
-int ff_get_cpu_flags_ppc(void);
-int ff_get_cpu_flags_x86(void);
-
-#endif /* AVUTIL_CPU_INTERNAL_H */
+#endif /* AVUTIL_AARCH64_CPU_H */

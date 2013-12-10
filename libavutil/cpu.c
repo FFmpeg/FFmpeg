@@ -51,9 +51,14 @@ int av_get_cpu_flags(void)
     if (checked)
         return flags;
 
-    if (ARCH_ARM) flags = ff_get_cpu_flags_arm();
-    if (ARCH_PPC) flags = ff_get_cpu_flags_ppc();
-    if (ARCH_X86) flags = ff_get_cpu_flags_x86();
+    if (ARCH_AARCH64)
+        flags = ff_get_cpu_flags_aarch64();
+    if (ARCH_ARM)
+        flags = ff_get_cpu_flags_arm();
+    if (ARCH_PPC)
+        flags = ff_get_cpu_flags_ppc();
+    if (ARCH_X86)
+        flags = ff_get_cpu_flags_x86();
 
     flags  &= cpuflags_mask;
     checked = 1;
@@ -114,6 +119,9 @@ int av_parse_cpu_flags(const char *s)
         { "vfp",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP      },    .unit = "flags" },
         { "vfpv3",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFPV3    },    .unit = "flags" },
         { "neon",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_NEON     },    .unit = "flags" },
+#elif ARCH_AARCH64
+        { "neon",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_NEON     },    .unit = "flags" },
+        { "vfp",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP      },    .unit = "flags" },
 #endif
         { NULL },
     };
@@ -170,7 +178,10 @@ static const struct {
     int flag;
     const char *name;
 } cpu_flag_tab[] = {
-#if   ARCH_ARM
+#if   ARCH_AARCH64
+    { AV_CPU_FLAG_NEON,      "neon"       },
+    { AV_CPU_FLAG_VFP,       "vfp"        },
+#elif ARCH_ARM
     { AV_CPU_FLAG_ARMV5TE,   "armv5te"    },
     { AV_CPU_FLAG_ARMV6,     "armv6"      },
     { AV_CPU_FLAG_ARMV6T2,   "armv6t2"    },
