@@ -1839,7 +1839,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
 
     for (i = 0; h->DPB && i < MAX_PICTURE_COUNT; i++) {
         unref_picture(h, &h->DPB[i]);
-        if (h1->DPB[i].f.data[0] &&
+        if (h1->DPB && h1->DPB[i].f.data[0] &&
             (ret = ref_picture(h, &h->DPB[i], &h1->DPB[i])) < 0)
             return ret;
     }
