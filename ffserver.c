@@ -2455,8 +2455,9 @@ static int http_prepare_data(HTTPContext *c)
                     if (pkt.pts != AV_NOPTS_VALUE)
                         pkt.pts = av_rescale_q(pkt.pts, ist->time_base, ost->time_base);
                     pkt.duration = av_rescale_q(pkt.duration, ist->time_base, ost->time_base);
-                    if (av_write_frame(ctx, &pkt) < 0) {
-                        http_log("Error writing frame to output\n");
+                    if ((ret = av_write_frame(ctx, &pkt)) < 0) {
+                        http_log("Error writing frame to output for stream '%s': %s\n",
+                                 c->stream->filename, av_err2str(ret));
                         c->state = HTTPSTATE_SEND_DATA_TRAILER;
                     }
 
