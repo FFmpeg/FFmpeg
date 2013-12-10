@@ -22,6 +22,8 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "internal.h"
+#include "rangecoder.h"
+
 
 /**
  * @file
@@ -87,7 +89,94 @@ static inline int shift_down(int a,int b)
     return (a>>b)+(a<0);
 }
 
+static av_always_inline av_flatten void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed, uint64_t rc_stat[256][2], uint64_t rc_stat2[32][2]){
+    int i;
+
+#define put_rac(C,S,B) \
+do{\
+    if(rc_stat){\
+        rc_stat[*(S)][B]++;\
+        rc_stat2[(S)-state][B]++;\
+    }\
+    put_rac(C,S,B);\
+}while(0)
+
+    if(v){
+        const int a= FFABS(v);
+        const int e= av_log2(a);
+        put_rac(c, state+0, 0);
+        if(e<=9){
+            for(i=0; i<e; i++){
+                put_rac(c, state+1+i, 1);  //1..10
+            }
+            put_rac(c, state+1+i, 0);
+
+            for(i=e-1; i>=0; i--){
+                put_rac(c, state+22+i, (a>>i)&1); //22..31
+            }
+
+            if(is_signed)
+                put_rac(c, state+11 + e, v < 0); //11..21
+        }else{
+            for(i=0; i<e; i++){
+                put_rac(c, state+1+FFMIN(i,9), 1);  //1..10
+            }
+            put_rac(c, state+1+9, 0);
+
+            for(i=e-1; i>=0; i--){
+                put_rac(c, state+22+FFMIN(i,9), (a>>i)&1); //22..31
+            }
+
+            if(is_signed)
+                put_rac(c, state+11 + 10, v < 0); //11..21
+        }
+    }else{
+        put_rac(c, state+0, 1);
+    }
+#undef put_rac
+}
+
+static inline av_flatten int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
+    if(get_rac(c, state+0))
+        return 0;
+    else{
+        int i, e, a;
+        e= 0;
+        while(get_rac(c, state+1 + FFMIN(e,9))){ //1..10
+            e++;
+        }
+
+        a= 1;
+        for(i=e-1; i>=0; i--){
+            a += a + get_rac(c, state+22 + FFMIN(i,9)); //22..31
+        }
+
+        e= -(is_signed && get_rac(c, state+11 + FFMIN(e, 10))); //11..21
+        return (a^e)-e;
+    }
+}
+
 #if 1
+static inline int intlist_write(RangeCoder *c, uint8_t *state, int *buf, int entries, int base_2_part)
+{
+    int i;
+
+    for (i = 0; i < entries; i++)
+        put_symbol(c, state, buf[i], 1, NULL, NULL);
+
+    return 1;
+}
+
+static inline int intlist_read(RangeCoder *c, uint8_t *state, int *buf, int entries, int base_2_part)
+{
+    int i;
+
+    for (i = 0; i < entries; i++)
+        buf[i] = get_symbol(c, state, 1);
+
+    return 1;
+}
+#elif 1
 static inline int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_part)
 {
     int i;
@@ -503,6 +592,8 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     PutBitContext pb;
     int i;
 
+    s->version = 2;
+
     if (avctx->channels > MAX_CHANNELS)
     {
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo streams are supported by now\n");
@@ -623,15 +714,18 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                               const AVFrame *frame, int *got_packet_ptr)
 {
     SonicContext *s = avctx->priv_data;
-    PutBitContext pb;
+    RangeCoder c;
     int i, j, ch, quant = 0, x = 0;
     int ret;
     const short *samples = (const int16_t*)frame->data[0];
+    uint8_t state[32];
 
     if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size * 5 + 1000)) < 0)
         return ret;
 
-    init_put_bits(&pb, avpkt->data, avpkt->size);
+    ff_init_range_encoder(&c, avpkt->data, avpkt->size);
+    ff_build_rac_states(&c, 0.05*(1LL<<32), 256-8);
+    memset(state, 128, sizeof(state));
 
     // short -> internal
     for (i = 0; i < s->frame_size; i++)
@@ -677,7 +771,7 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     // generate taps
     modified_levinson_durbin(s->window, s->window_size,
                 s->predictor_k, s->num_taps, s->channels, s->tap_quant);
-    if ((ret = intlist_write(&pb, s->predictor_k, s->num_taps, 0)) < 0)
+    if ((ret = intlist_write(&c, state, s->predictor_k, s->num_taps, 0)) < 0)
         return ret;
 
     for (ch = 0; ch < s->channels; ch++)
@@ -720,7 +814,7 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
         quant = av_clip(quant, 1, 65534);
 
-        set_ue_golomb(&pb, quant);
+        put_symbol(&c, state, quant, 0, NULL, NULL);
 
         quant *= SAMPLE_FACTOR;
     }
@@ -732,16 +826,16 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             for (i = 0; i < s->block_align; i++)
                 s->coded_samples[ch][i] = ROUNDED_DIV(s->coded_samples[ch][i], quant);
 
-        if ((ret = intlist_write(&pb, s->coded_samples[ch], s->block_align, 1)) < 0)
+        if ((ret = intlist_write(&c, state, s->coded_samples[ch], s->block_align, 1)) < 0)
             return ret;
     }
 
 //    av_log(avctx, AV_LOG_DEBUG, "used bytes: %d\n", (put_bits_count(&pb)+7)/8);
 
-    flush_put_bits(&pb);
-    avpkt->size = (put_bits_count(&pb)+7)/8;
+    avpkt->size = ff_rac_terminate(&c);
     *got_packet_ptr = 1;
     return 0;
+
 }
 #endif /* CONFIG_SONIC_ENCODER || CONFIG_SONIC_LS_ENCODER */
 
@@ -771,7 +865,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
         s->version       = get_bits(&gb, 8);
         s->minor_version = get_bits(&gb, 8);
     }
-    if (s->version > 2)
+    if (s->version != 2)
     {
         av_log(avctx, AV_LOG_ERROR, "Unsupported Sonic version, please report\n");
         return AVERROR_INVALIDDATA;
@@ -868,7 +962,8 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     SonicContext *s = avctx->priv_data;
-    GetBitContext gb;
+    RangeCoder c;
+    uint8_t state[32];
     int i, quant, ch, j, ret;
     int16_t *samples;
     AVFrame *frame = data;
@@ -882,9 +977,11 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 
 //    av_log(NULL, AV_LOG_INFO, "buf_size: %d\n", buf_size);
 
-    init_get_bits8(&gb, buf, buf_size);
+    memset(state, 128, sizeof(state));
+    ff_init_range_decoder(&c, buf, buf_size);
+    ff_build_rac_states(&c, 0.05*(1LL<<32), 256-8);
 
-    intlist_read(&gb, s->predictor_k, s->num_taps, 0);
+    intlist_read(&c, state, s->predictor_k, s->num_taps, 0);
 
     // dequantize
     for (i = 0; i < s->num_taps; i++)
@@ -893,7 +990,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     if (s->lossless)
         quant = 1;
     else
-        quant = get_ue_golomb(&gb) * SAMPLE_FACTOR;
+        quant = get_symbol(&c, state, 0) * SAMPLE_FACTOR;
 
 //    av_log(NULL, AV_LOG_INFO, "quant: %d\n", quant);
 
@@ -903,7 +1000,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 
         predictor_init_state(s->predictor_k, s->predictor_state[ch], s->num_taps);
 
-        intlist_read(&gb, s->coded_samples[ch], s->block_align, 1);
+        intlist_read(&c, state, s->coded_samples[ch], s->block_align, 1);
 
         for (i = 0; i < s->block_align; i++)
         {
@@ -948,11 +1045,9 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     for (i = 0; i < s->frame_size; i++)
         samples[i] = av_clip_int16(s->int_samples[i]);
 
-    align_get_bits(&gb);
-
     *got_frame_ptr = 1;
 
-    return (get_bits_count(&gb)+7)/8;
+    return buf_size;
 }
 
 AVCodec ff_sonic_decoder = {
