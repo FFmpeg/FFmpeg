@@ -45,6 +45,7 @@
 #define RIGHT_SIDE 2
 
 typedef struct SonicContext {
+    int version;
     int lossless, decorrelation;
 
     int num_taps, downsampling;
@@ -499,7 +500,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
 {
     SonicContext *s = avctx->priv_data;
     PutBitContext pb;
-    int i, version = 0;
+    int i;
 
     if (avctx->channels > MAX_CHANNELS)
     {
@@ -571,8 +572,8 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     init_put_bits(&pb, avctx->extradata, 16*8);
 
-    put_bits(&pb, 2, version); // version
-    if (version == 1)
+    put_bits(&pb, 2, s->version); // version
+    if (s->version == 1)
     {
         put_bits(&pb, 2, s->channels);
         put_bits(&pb, 4, code_samplerate(s->samplerate));
@@ -589,7 +590,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = put_bits_count(&pb)/8;
 
     av_log(avctx, AV_LOG_INFO, "Sonic: ver: %d ls: %d dr: %d taps: %d block: %d frame: %d downsamp: %d\n",
-        version, s->lossless, s->decorrelation, s->num_taps, s->block_align, s->frame_size, s->downsampling);
+        s->version, s->lossless, s->decorrelation, s->num_taps, s->block_align, s->frame_size, s->downsampling);
 
     avctx->frame_size = s->block_align*s->downsampling;
 
@@ -747,7 +748,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
 {
     SonicContext *s = avctx->priv_data;
     GetBitContext gb;
-    int i, version;
+    int i;
 
     s->channels = avctx->channels;
     s->samplerate = avctx->sample_rate;
@@ -760,14 +761,14 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
 
     init_get_bits8(&gb, avctx->extradata, avctx->extradata_size);
 
-    version = get_bits(&gb, 2);
-    if (version > 1)
+    s->version = get_bits(&gb, 2);
+    if (s->version > 1)
     {
         av_log(avctx, AV_LOG_ERROR, "Unsupported Sonic version, please report\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (version == 1)
+    if (s->version == 1)
     {
         s->channels = get_bits(&gb, 2);
         s->samplerate = samplerate_table[get_bits(&gb, 4)];
@@ -805,7 +806,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
 //    avctx->frame_size = s->block_align;
 
     av_log(avctx, AV_LOG_INFO, "Sonic: ver: %d ls: %d dr: %d taps: %d block: %d frame: %d downsamp: %d\n",
-        version, s->lossless, s->decorrelation, s->num_taps, s->block_align, s->frame_size, s->downsampling);
+        s->version, s->lossless, s->decorrelation, s->num_taps, s->block_align, s->frame_size, s->downsampling);
 
     // generate taps
     s->tap_quant = av_calloc(s->num_taps, sizeof(*s->tap_quant));
