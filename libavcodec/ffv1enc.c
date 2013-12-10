@@ -1018,6 +1018,7 @@ static void choose_rct_params(FFV1Context *fs, uint8_t *src[3], const int stride
 
         for (x = 0; x < w; x++) {
             int b, g, r;
+            int ab, ag, ar;
             if (lbd) {
                 unsigned v = *((uint32_t*)(src[0] + x*4 + stride[0]*y));
                 b =  v        & 0xFF;
@@ -1029,10 +1030,10 @@ static void choose_rct_params(FFV1Context *fs, uint8_t *src[3], const int stride
                 r = *((uint16_t*)(src[2] + x*2 + stride[2]*y));
             }
 
+            ar = r - lastr;
+            ag = g - lastg;
+            ab = b - lastb;
             if (x && y) {
-                int ar = r - lastr;
-                int ag = g - lastg;
-                int ab = b - lastb;
                 int bg = ag - sample[0][x];
                 int bb = ab - sample[1][x];
                 int br = ar - sample[2][x];
@@ -1044,10 +1045,10 @@ static void choose_rct_params(FFV1Context *fs, uint8_t *src[3], const int stride
                 stat[1] += FFABS(bg + ((br+bb)>>2));
                 stat[2] += FFABS(bg + ((br+bb)>>1));
 
-                sample[0][x] = ag;
-                sample[1][x] = ab;
-                sample[2][x] = ar;
             }
+            sample[0][x] = ag;
+            sample[1][x] = ab;
+            sample[2][x] = ar;
 
             lastr = r;
             lastg = g;
