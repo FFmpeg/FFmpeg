@@ -599,8 +599,10 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
             int w, h;
             if (sscanf(data + 5, "%dx%d", &w, &h) == 2) {
                int ret = ff_set_dimensions(avctx, w, h);
-               if (ret < 0)
+               if (ret < 0) {
+                   av_free(dataorig);
                    return ret;
+               }
             }
         }
 
