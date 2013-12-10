@@ -843,7 +843,7 @@ typedef struct HEVCContext {
     const HEVCVPS *vps;
     const HEVCSPS *sps;
     const HEVCPPS *pps;
-    HEVCVPS     *vps_list[MAX_VPS_COUNT];
+    AVBufferRef *vps_list[MAX_VPS_COUNT];
     AVBufferRef *sps_list[MAX_SPS_COUNT];
     AVBufferRef *pps_list[MAX_PPS_COUNT];
 

@@ -328,12 +328,13 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     GetBitContext *gb = &s->HEVClc.gb;
     int vps_id = 0;
     HEVCVPS *vps;
+    AVBufferRef *vps_buf = av_buffer_allocz(sizeof(*vps));
+
+    if (!vps_buf)
+      return AVERROR(ENOMEM);
+    vps = (HEVCVPS*)vps_buf->data;
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VPS\n");
-
-    vps = av_mallocz(sizeof(*vps));
-    if (!vps)
-        return AVERROR(ENOMEM);
 
     vps_id = get_bits(gb, 4);
     if (vps_id >= MAX_VPS_COUNT) {
@@ -410,12 +411,12 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     }
     get_bits1(gb); /* vps_extension_flag */
 
-    av_free(s->vps_list[vps_id]);
-    s->vps_list[vps_id] = vps;
+    av_buffer_unref(&s->vps_list[vps_id]);
+    s->vps_list[vps_id] = vps_buf;
     return 0;
 
 err:
-    av_free(vps);
+    av_buffer_unref(&vps_buf);
     return AVERROR_INVALIDDATA;
 }
 
