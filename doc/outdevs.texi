@@ -22,6 +22,22 @@ A description of the currently available output devices follows.
 
 ALSA (Advanced Linux Sound Architecture) output device.
 
+@subsection Examples
+
+@itemize
+@item
+Play a file on default ALSA device:
+@example
+ffmpeg -i INPUT -f alsa default
+@end example
+
+@item
+Play a file on soundcard 1, audio device 7:
+@example
+ffmpeg -i INPUT -f alsa hw:1,7
+@end example
+@end itemize
+
 @section caca
 
 CACA output device.
