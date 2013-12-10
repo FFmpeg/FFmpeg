@@ -2158,7 +2158,7 @@ fail:
 
     /* many decoders assign whole AVFrames, thus overwriting extended_data;
      * make sure it's set correctly */
-    picture->extended_data = picture->data;
+    av_assert0(!picture->extended_data || picture->extended_data == picture->data);
 
     return ret;
 }
