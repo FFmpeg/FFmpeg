@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "hevc.h"
 #include "golomb.h"
+#include "hevc.h"
 
 static void decode_nal_sei_decoded_picture_hash(HEVCContext *s)
 {

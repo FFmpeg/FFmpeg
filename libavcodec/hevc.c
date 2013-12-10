@@ -2294,7 +2294,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 }
 
 /* FIXME: This is adapted from ff_h264_decode_nal, avoiding duplication
-   between these functions would be nice. */
+ * between these functions would be nice. */
 int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                          HEVCNAL *nal)
 {
@@ -2857,7 +2857,7 @@ static int hevc_decode_extradata(HEVCContext *s)
          avctx->extradata[2] > 1)) {
         /* It seems the extradata is encoded as hvcC format.
          * Temporarily, we support configurationVersion==0 until 14496-15 3rd
-         * finalized. When finalized, configurationVersion will be 1 and we
+         * is finalized. When finalized, configurationVersion will be 1 and we
          * can recognize hvcC by checking if avctx->extradata[0]==1 or not. */
         int i, j, num_arrays, nal_len_size;
 

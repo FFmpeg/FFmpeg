@@ -412,8 +412,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
             decode_hrd(s, common_inf_present, vps->vps_max_sub_layers);
         }
     }
-
-    vps->vps_extension_flag = get_bits1(gb);
+    get_bits1(gb); /* vps_extension_flag */
 
     av_buffer_unref(&s->vps_list[vps_id]);
     s->vps_list[vps_id] = vps_buf;
@@ -1183,7 +1182,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     }
 
     pps->slice_header_extension_present_flag = get_bits1(gb);
-    pps->pps_extension_flag                  = get_bits1(gb);
+    skip_bits1(gb);     // pps_extension_flag
 
     // Inferred parameters
     pps->col_bd   = av_malloc_array(pps->num_tile_columns + 1, sizeof(*pps->col_bd));
