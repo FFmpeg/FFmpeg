@@ -1578,6 +1578,9 @@ fast_unaligned_if_any="ppc x86"
 
 need_memalign="altivec neon sse"
 
+# system capabilities
+log2_deps="!libc_msvcrt"
+
 symver_if_any="symver_asm_label symver_gnu_asm"
 
 # subsystems
@@ -3453,7 +3456,6 @@ case $libc_type in
         add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
                                      _snprintf=avpriv_snprintf  \
                                      vsnprintf=avpriv_vsnprintf
-        disable log2
         ;;
 esac
 
