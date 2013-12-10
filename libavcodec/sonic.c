@@ -193,7 +193,7 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
     bits = av_calloc(entries*max, sizeof(*bits));
     if (!bits)
     {
-//        av_free(copy);
+        av_free(copy);
         return AVERROR(ENOMEM);
     }
 
@@ -249,8 +249,8 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
         if (buf[i])
             put_bits(pb, 1, buf[i] < 0);
 
-//    av_free(bits);
-//    av_free(copy);
+    av_free(bits);
+    av_free(copy);
 
     return 0;
 }
@@ -341,7 +341,7 @@ static int intlist_read(GetBitContext *gb, int *buf, int entries, int base_2_par
 
         pos++;
     }
-//    av_free(bits);
+    av_free(bits);
 
     // read signs
     for (i = 0; i < entries; i++)
