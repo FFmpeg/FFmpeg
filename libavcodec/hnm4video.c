@@ -36,8 +36,8 @@
 
 typedef struct Hnm4VideoContext {
     uint8_t version;
-    uint16_t width;
-    uint16_t height;
+    int width;
+    int height;
     uint8_t *current;
     uint8_t *previous;
     uint8_t *buffer1;
