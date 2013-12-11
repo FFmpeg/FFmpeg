@@ -3856,7 +3856,7 @@ probe_libc(){
         else
             add_${pfx}cppflags -D__USE_MINGW_ANSI_STDIO=1
         fi
-        add_${pfx}cppflags -U__STRICT_ANSI__
+        add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
     elif check_${pfx}cpp_condition _mingw.h "defined __MINGW32_VERSION"; then
         eval ${pfx}libc_type=mingw32
         check_${pfx}cpp_condition _mingw.h "__MINGW32_MAJOR_VERSION > 3 || \
