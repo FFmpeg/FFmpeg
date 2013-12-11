@@ -89,7 +89,7 @@ static int parse_header(OutputStream *os, const uint8_t *buf, int buf_size)
         if (size > buf_size)
             return AVERROR_INVALIDDATA;
         if (type == 8 || type == 9) {
-            if (os->nb_extra_packets > FF_ARRAY_ELEMS(os->extra_packets))
+            if (os->nb_extra_packets >= FF_ARRAY_ELEMS(os->extra_packets))
                 return AVERROR_INVALIDDATA;
             os->extra_packet_sizes[os->nb_extra_packets] = size;
             os->extra_packets[os->nb_extra_packets] = av_malloc(size);
