@@ -2167,7 +2167,6 @@ static int audio_decode_frame(VideoState *is)
                     return AVERROR(ENOMEM);
             } else {
                 av_frame_unref(is->frame);
-                avcodec_get_frame_defaults(is->frame);
             }
 
             if (is->audioq.serial != is->audio_pkt_temp_serial)
