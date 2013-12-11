@@ -468,7 +468,7 @@ static void ffmpeg_cleanup(int ret)
             bsfc = next;
         }
         output_streams[i]->bitstream_filters = NULL;
-        avcodec_free_frame(&output_streams[i]->filtered_frame);
+        av_frame_free(&output_streams[i]->filtered_frame);
 
         av_parser_close(output_streams[i]->parser);
 

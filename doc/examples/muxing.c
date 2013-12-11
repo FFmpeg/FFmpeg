@@ -280,7 +280,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
                 av_err2str(ret));
         exit(1);
     }
-    avcodec_free_frame(&frame);
+    av_frame_free(&frame);
 }
 
 static void close_audio(AVFormatContext *oc, AVStream *st)
