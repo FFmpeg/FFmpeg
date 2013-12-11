@@ -2104,7 +2104,7 @@ HOSTCC_E='-E -o $@'
 HOSTCC_O='-o $@'
 HOSTLD_O='-o $@'
 
-host_cflags='-O3 -g'
+host_cflags='-O3'
 host_cppflags='-D_ISOC99_SOURCE'
 host_libs='-lm'
 host_cflags_filter=echo
