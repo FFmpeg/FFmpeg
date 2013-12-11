@@ -719,6 +719,10 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
         if(filterToken == NULL) break;
         p+= strlen(filterToken) + 1; // p points to next filterToken
         filterName= strtok(filterToken, optionDelimiters);
+        if (filterName == NULL) {
+            ppMode->error++;
+            break;
+        }
         av_log(NULL, AV_LOG_DEBUG, "pp: %s::%s\n", filterToken, filterName);
 
         if(*filterName == '-'){
