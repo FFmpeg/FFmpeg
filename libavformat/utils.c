@@ -2857,15 +2857,16 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         /* Ensure that subtitle_header is properly set. */
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
-            && codec && !st->codec->codec)
-            avcodec_open2(st->codec, codec, options ? &options[i]
-                              : &thread_opt);
+            && codec && !st->codec->codec) {
+            if (avcodec_open2(st->codec, codec, options ? &options[i] : &thread_opt) < 0)
+                av_log(ic, AV_LOG_WARNING, "Failed to open codec in av_find_stream_info\n");
+        }
 
         //try to just open decoders, in case this is enough to get parameters
         if (!has_codec_parameters(st, NULL) && st->request_probe <= 0) {
             if (codec && !st->codec->codec)
-                avcodec_open2(st->codec, codec, options ? &options[i]
-                              : &thread_opt);
+                if (avcodec_open2(st->codec, codec, options ? &options[i] : &thread_opt) < 0)
+                    av_log(ic, AV_LOG_WARNING, "Failed to open codec in av_find_stream_info\n");
         }
         if (!options)
             av_dict_free(&thread_opt);
