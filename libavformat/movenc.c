@@ -3705,7 +3705,7 @@ static int mov_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     MOVMuxContext *mov = s->priv_data;
     AVDictionaryEntry *t, *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
-    int i, hint_track = 0, tmcd_track = 0;
+    int i, ret, hint_track = 0, tmcd_track = 0;
 
     /* Default mode == MP4 */
     mov->mode = MODE_MP4;
@@ -3840,6 +3840,7 @@ static int mov_write_header(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "Could not find tag for codec %s in stream #%d, "
                    "codec not currently supported in container\n",
                    avcodec_get_name(st->codec->codec_id), i);
+            ret = AVERROR(EINVAL);
             goto error;
         }
         /* If hinting of this track is enabled by a later hint track,
@@ -3852,6 +3853,7 @@ static int mov_write_header(AVFormatContext *s)
                 track->tag == MKTAG('m','x','5','p') || track->tag == MKTAG('m','x','5','n')) {
                 if (st->codec->width != 720 || (st->codec->height != 608 && st->codec->height != 512)) {
                     av_log(s, AV_LOG_ERROR, "D-10/IMX must use 720x608 or 720x512 video resolution\n");
+                    ret = AVERROR(EINVAL);
                     goto error;
                 }
                 track->height = track->tag >> 24 == 'n' ? 486 : 576;
@@ -3878,6 +3880,7 @@ static int mov_write_header(AVFormatContext *s)
                      st->codec->codec_id == AV_CODEC_ID_ILBC){
                 if (!st->codec->block_align) {
                     av_log(s, AV_LOG_ERROR, "track %d: codec block align is not set for adpcm\n", i);
+                    ret = AVERROR(EINVAL);
                     goto error;
                 }
                 track->sample_size = st->codec->block_align;
@@ -3894,6 +3897,7 @@ static int mov_write_header(AVFormatContext *s)
                 track->enc->codec_id == AV_CODEC_ID_MP3 && track->timescale < 16000) {
                 av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not supported\n",
                        i, track->enc->sample_rate);
+                ret = AVERROR(EINVAL);
                 goto error;
             }
         } else if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
@@ -3948,7 +3952,7 @@ static int mov_write_header(AVFormatContext *s)
         mov->time += 0x7C25B080; // 1970 based -> 1904 based
 
     if (mov->chapter_track)
-        if (mov_create_chapter_track(s, mov->chapter_track) < 0)
+        if ((ret = mov_create_chapter_track(s, mov->chapter_track)) < 0)
             goto error;
 
     if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
@@ -3957,7 +3961,7 @@ static int mov_write_header(AVFormatContext *s)
             AVStream *st = s->streams[i];
             if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
                 st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-                if (ff_mov_init_hinting(s, hint_track, i) < 0)
+                if ((ret = ff_mov_init_hinting(s, hint_track, i)) < 0)
                     goto error;
                 hint_track++;
             }
@@ -3975,7 +3979,7 @@ static int mov_write_header(AVFormatContext *s)
                     t = av_dict_get(st->metadata, "timecode", NULL, 0);
                 if (!t)
                     continue;
-                if (mov_create_timecode_track(s, tmcd_track, i, t->value) < 0)
+                if ((ret = mov_create_timecode_track(s, tmcd_track, i, t->value)) < 0)
                     goto error;
                 tmcd_track++;
             }
@@ -3995,7 +3999,7 @@ static int mov_write_header(AVFormatContext *s)
     return 0;
  error:
     mov_free(s);
-    return -1;
+    return ret;
 }
 
 static int get_moov_size(AVFormatContext *s)
