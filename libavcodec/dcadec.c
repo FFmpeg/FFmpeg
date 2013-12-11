@@ -2001,6 +2001,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     for (i = 0; i < 2 * s->lfe * 4; i++)
         s->lfe_data[i] = s->lfe_data[i + lfe_samples];
 
+    /* AVMatrixEncoding
+     *
+     * DCA_STEREO_TOTAL (Lt/Rt) is equivalent to Dolby Surround */
+    ret = ff_side_data_update_matrix_encoding(frame,
+                                              (s->output & ~DCA_LFE) == DCA_STEREO_TOTAL ?
+                                              AV_MATRIX_ENCODING_DOLBY : AV_MATRIX_ENCODING_NONE);
+    if (ret < 0)
+        return ret;
+
     *got_frame_ptr = 1;
 
     return buf_size;
