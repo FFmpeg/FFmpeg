@@ -3837,8 +3837,9 @@ static int mov_write_header(AVFormatContext *s)
         track->mode = mov->mode;
         track->tag  = mov_find_codec_tag(s, track);
         if (!track->tag) {
-            av_log(s, AV_LOG_ERROR, "track %d: could not find tag, "
-                   "codec not currently supported in container\n", i);
+            av_log(s, AV_LOG_ERROR, "Could not find tag for codec %s in stream #%d, "
+                   "codec not currently supported in container\n",
+                   avcodec_get_name(st->codec->codec_id), i);
             goto error;
         }
         /* If hinting of this track is enabled by a later hint track,
