@@ -110,6 +110,11 @@ int main(int argc, char **argv)
         pd.buf      = av_realloc(pd.buf, size + AVPROBE_PADDING_SIZE);
         pd.filename = "";
 
+        if (!pd.buf) {
+            fprintf(stderr, "out of memory\n");
+            return 1;
+        }
+
         memset(pd.buf, 0, size + AVPROBE_PADDING_SIZE);
 
         fprintf(stderr, "testing size=%d\n", size);
