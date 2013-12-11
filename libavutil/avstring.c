@@ -362,8 +362,8 @@ int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
     if (code >= 0xD800 && code <= 0xDFFF &&
         !(flags & AV_UTF8_FLAG_ACCEPT_SURROGATES))
         ret = AVERROR(EILSEQ);
-    if (code == 0xFFFE || code == 0xFFFF &&
-        (!flags & AV_UTF8_FLAG_ACCEPT_NON_CHARACTERS))
+    if ((code == 0xFFFE || code == 0xFFFF) &&
+        !(flags & AV_UTF8_FLAG_ACCEPT_NON_CHARACTERS))
         ret = AVERROR(EILSEQ);
 
 end:
