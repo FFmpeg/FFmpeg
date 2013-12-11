@@ -82,6 +82,26 @@ static int opus_header(AVFormatContext *avf, int idx)
     return 0;
 }
 
+static int opus_duration(uint8_t *src, int size)
+{
+    unsigned nb_frames  = 1;
+    unsigned toc        = src[0];
+    unsigned toc_config = toc >> 3;
+    unsigned toc_count  = toc & 3;
+    unsigned frame_size = toc_config < 12 ? FFMAX(480, 960 * (toc_config & 3)) :
+                          toc_config < 16 ? 480 << (toc_config & 1) :
+                                            120 << (toc_config & 3);
+    if (toc_count == 3) {
+        if (size<2)
+            return AVERROR_INVALIDDATA;
+        nb_frames = src[1] & 0x3F;
+    } else if (toc_count) {
+        nb_frames = 2;
+    }
+
+    return frame_size * nb_frames;
+}
+
 static int opus_packet(AVFormatContext *avf, int idx)
 {
     struct ogg *ogg              = avf->priv_data;
@@ -89,26 +109,12 @@ static int opus_packet(AVFormatContext *avf, int idx)
     AVStream *st                 = avf->streams[idx];
     struct oggopus_private *priv = os->private;
     uint8_t *packet              = os->buf + os->pstart;
-    unsigned toc, toc_config, toc_count, frame_size, nb_frames = 1;
 
     if (!os->psize)
         return AVERROR_INVALIDDATA;
 
-    toc        = *packet;
-    toc_config = toc >> 3;
-    toc_count  = toc & 3;
-    frame_size = toc_config < 12 ? FFMAX(480, 960 * (toc_config & 3)) :
-                 toc_config < 16 ? 480 << (toc_config & 1) :
-                                   120 << (toc_config & 3);
-    if (toc_count == 3) {
-        if (os->psize < 2)
-            return AVERROR_INVALIDDATA;
-        nb_frames = packet[1] & 0x3F;
-    } else if (toc_count) {
-        nb_frames = 2;
-    }
 
-    os->pduration = frame_size * nb_frames;
+    os->pduration = opus_duration(packet, os->psize);
     if (os->lastpts != AV_NOPTS_VALUE) {
         if (st->start_time == AV_NOPTS_VALUE)
             st->start_time = os->lastpts;
