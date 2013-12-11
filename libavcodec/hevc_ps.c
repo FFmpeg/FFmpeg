@@ -336,9 +336,6 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VPS\n");
 
-    if (!vps)
-        return AVERROR(ENOMEM);
-
     vps_id = get_bits(gb, 4);
     if (vps_id >= MAX_VPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "VPS id out of range: %d\n", vps_id);
@@ -416,7 +413,6 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
 
     av_buffer_unref(&s->vps_list[vps_id]);
     s->vps_list[vps_id] = vps_buf;
-
     return 0;
 
 err:
