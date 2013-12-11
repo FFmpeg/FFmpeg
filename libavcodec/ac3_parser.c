@@ -68,6 +68,9 @@ int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
     hdr->center_mix_level   = 5;  // -4.5dB
     hdr->surround_mix_level = 6;  // -6.0dB
 
+    /* set default dolby surround mode */
+    hdr->dolby_surround_mode = AC3_DSURMOD_NOTINDICATED;
+
     if(hdr->bitstream_id <= 10) {
         /* Normal AC-3 */
         hdr->crc1 = get_bits(gbc, 16);
@@ -85,7 +88,7 @@ int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
         hdr->channel_mode = get_bits(gbc, 3);
 
         if(hdr->channel_mode == AC3_CHMODE_STEREO) {
-            skip_bits(gbc, 2); // skip dsurmod
+            hdr->dolby_surround_mode = get_bits(gbc, 2);
         } else {
             if((hdr->channel_mode & 1) && hdr->channel_mode != AC3_CHMODE_MONO)
                 hdr->  center_mix_level =   center_levels[get_bits(gbc, 2)];
