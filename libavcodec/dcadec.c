@@ -1890,7 +1890,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (s->prim_channels + !!s->lfe > 2 &&
             avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
             channels = 2;
-            s->output = DCA_STEREO;
+            s->output = s->prim_channels == 2 ? s->amode : DCA_STEREO;
             avctx->channel_layout = AV_CH_LAYOUT_STEREO;
 
             /* Stereo downmix coefficients
@@ -1911,6 +1911,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     s->downmix_coef[i][1] = (!code ? 0.0f :
                                              sign * dca_dmixtable[code - 1]);
                 }
+                s->output = s->core_downmix_amode;
             } else {
                 int am = s->amode & DCA_CHANNEL_MASK;
                 if (am >= FF_ARRAY_ELEMS(dca_default_coeffs)) {
