@@ -1080,8 +1080,7 @@ static int reap_filters(void)
 
         if (!ost->filtered_frame && !(ost->filtered_frame = av_frame_alloc())) {
             return AVERROR(ENOMEM);
-        } else
-            avcodec_get_frame_defaults(ost->filtered_frame);
+        }
         filtered_frame = ost->filtered_frame;
 
         while (1) {
