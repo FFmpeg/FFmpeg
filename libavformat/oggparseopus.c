@@ -113,6 +113,36 @@ static int opus_packet(AVFormatContext *avf, int idx)
     if (!os->psize)
         return AVERROR_INVALIDDATA;
 
+    if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS)) {
+        int seg, d;
+        int duration;
+        uint8_t *last_pkt  = os->buf + os->pstart;
+        uint8_t *next_pkt  = last_pkt;
+
+        duration = 0;
+        seg = os->segp;
+        d = opus_duration(last_pkt, os->psize);
+        if (d < 0) {
+            os->pflags |= AV_PKT_FLAG_CORRUPT;
+            return 0;
+        }
+        duration += d;
+        last_pkt = next_pkt =  next_pkt + os->psize;
+        for (; seg < os->nsegs; seg++) {
+            if (os->segments[seg] < 255) {
+                int d = opus_duration(last_pkt, os->segments[seg]);
+                if (d < 0) {
+                    duration = os->granule;
+                    break;
+                }
+                duration += d;
+                last_pkt  = next_pkt + os->segments[seg];
+            }
+            next_pkt += os->segments[seg];
+        }
+        os->lastpts                 =
+        os->lastdts                 = os->granule - duration;
+    }
 
     os->pduration = opus_duration(packet, os->psize);
     if (os->lastpts != AV_NOPTS_VALUE) {
