@@ -509,7 +509,7 @@ static int hds_write_packet(AVFormatContext *s, AVPacket *pkt)
     HDSContext *c = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
     OutputStream *os = &c->streams[s->streams[pkt->stream_index]->id];
-    int64_t end_dts = (os->fragment_index) * c->min_frag_duration;
+    int64_t end_dts = os->fragment_index * (int64_t) c->min_frag_duration;
     int ret;
 
     if (st->first_dts == AV_NOPTS_VALUE)
