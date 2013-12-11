@@ -1391,6 +1391,11 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
 
         for (b = 0; b < ctx->num_blocks; b++) {
             bd.block_length = div_blocks[b];
+            if (bd.block_length <= 0) {
+                av_log(ctx->avctx, AV_LOG_WARNING,
+                       "Invalid block length %d in channel data!\n", bd.block_length);
+                continue;
+            }
 
             for (c = 0; c < avctx->channels; c++) {
                 bd.const_block = ctx->const_block + c;
