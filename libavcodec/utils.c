@@ -1087,22 +1087,12 @@ AVFrame *avcodec_alloc_frame(void)
 
     return frame;
 }
-#endif
 
 void avcodec_free_frame(AVFrame **frame)
 {
-    AVFrame *f;
-
-    if (!frame || !*frame)
-        return;
-
-    f = *frame;
-
-    if (f->extended_data != f->data)
-        av_freep(&f->extended_data);
-
-    av_freep(frame);
+    av_frame_free(frame);
 }
+#endif
 
 MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
 MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)
