@@ -172,7 +172,7 @@ end:
 static av_cold int init(AVFilterContext *ctx)
 {
     EvalContext *eval = ctx->priv;
-    int ret;
+    int ret = 0;
 
     if (eval->chlayout_str) {
         if (!strcmp(eval->chlayout_str, "same") && !strcmp(ctx->filter->name, "aeval")) {
