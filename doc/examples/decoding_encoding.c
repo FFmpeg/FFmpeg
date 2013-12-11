@@ -291,8 +291,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
                 fprintf(stderr, "Could not allocate audio frame\n");
                 exit(1);
             }
-        } else
-            avcodec_get_frame_defaults(decoded_frame);
+        }
 
         len = avcodec_decode_audio4(c, decoded_frame, &got_frame, &avpkt);
         if (len < 0) {
