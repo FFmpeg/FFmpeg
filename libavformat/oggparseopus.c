@@ -108,6 +108,7 @@ static int opus_packet(AVFormatContext *avf, int idx)
     AVStream *st                 = avf->streams[idx];
     struct oggopus_private *priv = os->private;
     uint8_t *packet              = os->buf + os->pstart;
+    int ret;
 
     if (!os->psize)
         return AVERROR_INVALIDDATA;
@@ -143,7 +144,10 @@ static int opus_packet(AVFormatContext *avf, int idx)
         os->lastdts                 = os->granule - duration;
     }
 
-    os->pduration = opus_duration(packet, os->psize);
+    if ((ret = opus_duration(packet, os->psize)) < 0)
+        return ret;
+
+    os->pduration = ret;
     if (os->lastpts != AV_NOPTS_VALUE) {
         if (st->start_time == AV_NOPTS_VALUE)
             st->start_time = os->lastpts;
