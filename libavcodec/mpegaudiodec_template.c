@@ -1748,6 +1748,7 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data,
     /* update codec info */
     avctx->sample_rate = s->sample_rate;
     avctx->channels    = s->nb_channels;
+    avctx->channel_layout = s->nb_channels == 1 ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
     if (!avctx->bit_rate)
         avctx->bit_rate = s->bit_rate;
 
