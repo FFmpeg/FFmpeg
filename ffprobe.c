@@ -2381,6 +2381,7 @@ static int probe_file(WriterContext *wctx, const char *filename)
             writer_print_section_footer(wctx);
         CHECK_END;
     }
+
     if (do_show_programs) {
         ret = show_programs(wctx, fmt_ctx);
         CHECK_END;
