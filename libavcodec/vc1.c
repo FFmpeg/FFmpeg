@@ -293,6 +293,7 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
         v->zz_4x8 = ff_vc1_adv_progressive_4x8_zz;
         return decode_sequence_header_adv(v, gb);
     } else {
+        v->chromaformat = 1;
         v->zz_8x4 = ff_wmv2_scantableA;
         v->zz_4x8 = ff_wmv2_scantableB;
         v->res_y411   = get_bits1(gb);
