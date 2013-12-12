@@ -52,7 +52,10 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s)
 static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
-    int cancel, type, quincunx, content;
+    int cancel;
+    int quincunx =  0;
+    int content  = -1;
+    int type     = -1;
 
     get_ue_golomb(gb);                  // frame_packing_arrangement_id
     cancel = get_bits1(gb);             // frame_packing_cancel_flag
