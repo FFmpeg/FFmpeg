@@ -3268,10 +3268,11 @@ static int mov_read_close(AVFormatContext *s)
         MOVStreamContext *sc = st->priv_data;
 
         av_freep(&sc->ctts_data);
-        for (j = 0; j < sc->drefs_count; j++) {
+        for (j = 0; sc->drefs && j < sc->drefs_count; j++) {
             av_freep(&sc->drefs[j].path);
             av_freep(&sc->drefs[j].dir);
         }
+        sc->drefs_count = 0;
         av_freep(&sc->drefs);
         if (!sc->pb_is_copied)
             avio_close(sc->pb);

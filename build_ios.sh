@@ -169,7 +169,9 @@ function doConfigure()
 	else
 		doConfigureAll
 	fi
-	ret=$?; cp -f ./config.log ./config.h ${DIST}/; [[ $ret != 0 ]] && die
+	ret=$?;
+	perl -i -pe "s|^#define HAVE_GETADDRINFO 1|#define HAVE_GETADDRINFO 0|" config.h # getaddrinfo has some issues in iOS
+	cp -f ./config.log ./config.h ${DIST}/; [[ $ret != 0 ]] && die
 }
 
 function doMake()
@@ -185,7 +187,7 @@ function doMake()
 
 build_date=`date "+%Y%m%dT%H%M%S"`
 #build_versions="release debug sina"
-build_versions="release sina"
+build_versions="release sina debug"
 build_archs="armv7 armv7s i386"
 #build_versions="release"
 #build_date=built

@@ -1418,8 +1418,10 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
         ret = s->packet_buffer ?
             read_from_packet_buffer(&s->packet_buffer, &s->packet_buffer_end, pkt) :
             read_frame_internal(s, pkt);
-        if (ret < 0)
+        if (ret < 0) {
+            av_log(s, AV_LOG_DEBUG, "NAL 1WWE &&&&&&&&&&&&&&&&&&& %d\n", ret);
             return ret;
+		}
         goto return_packet;
     }
 
@@ -3264,10 +3266,13 @@ void avformat_free_context(AVFormatContext *s)
     }
     av_freep(&s->programs);
     av_freep(&s->priv_data);
-    while(s->nb_chapters--) {
-        av_dict_free(&s->chapters[s->nb_chapters]->metadata);
-        av_freep(&s->chapters[s->nb_chapters]);
+    while(s->chapters && s->nb_chapters--) {
+		if (s->chapters[s->nb_chapters]) {
+			av_dict_free(&s->chapters[s->nb_chapters]->metadata);
+			av_freep(&s->chapters[s->nb_chapters]);
+		}
     }
+	s->nb_chapters = 0;
     av_freep(&s->chapters);
     av_dict_free(&s->metadata);
     av_freep(&s->streams);

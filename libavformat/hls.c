@@ -764,7 +764,7 @@ start:
 static int hls_close(AVFormatContext *s)
 {
     HLSContext *c = s->priv_data;
-
+    if (!c) return 0;
     free_variant_list(c);
     return 0;
 }

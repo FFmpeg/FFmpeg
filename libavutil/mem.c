@@ -233,6 +233,8 @@ void av_free(void *ptr)
 
 void av_freep(void *arg)
 {
+    if (!arg)
+        return;
     void **ptr = (void **)arg;
     av_free(*ptr);
     *ptr = NULL;

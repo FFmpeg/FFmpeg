@@ -902,6 +902,7 @@ static int http_close(URLContext *h)
 {
     int ret = 0;
     HTTPContext *s = h->priv_data;
+    if (!s) return ret;
 
 #if CONFIG_ZLIB
     inflateEnd(&s->inflate_stream);
