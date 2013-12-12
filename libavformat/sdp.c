@@ -532,6 +532,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                 break;
             default:
                 av_log(c, AV_LOG_ERROR, "Unsupported pixel format.\n");
+                av_free(config);
                 return NULL;
             }
 
