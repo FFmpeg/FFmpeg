@@ -676,8 +676,7 @@ OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 
 # thread libraries
 OBJS-$(HAVE_LIBC_MSVCRT)               += file_open.o
-OBJS-$(HAVE_PTHREADS)                  += pthread.o pthread_slice.o pthread_frame.o
-OBJS-$(HAVE_W32THREADS)                += pthread.o pthread_slice.o pthread_frame.o
+OBJS-$(HAVE_THREADS)                   += pthread.o pthread_slice.o pthread_frame.o
 
 SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
