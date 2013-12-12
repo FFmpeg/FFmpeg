@@ -160,6 +160,7 @@ if [ "$version_type" = "online" ]; then
 		--enable-decoder=aac \
 		--enable-decoder=ac3 \
 		--enable-decoder=mp3 \
+		--enable-muxer=mp4 \
 		--enable-asm \
 		--enable-pic"
 else
@@ -177,6 +178,7 @@ else
 		--disable-postproc \
 		--disable-encoders \
 		--disable-muxers \
+		--enable-muxer=mp4 \
 		--disable-devices \
 		--disable-demuxer=sbg \
 		--disable-demuxer=dts \
