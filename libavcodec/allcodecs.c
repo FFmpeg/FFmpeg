@@ -464,6 +464,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER(MPEG4VIDEO,         mpeg4video);
     REGISTER_PARSER(MPEGAUDIO,          mpegaudio);
     REGISTER_PARSER(MPEGVIDEO,          mpegvideo);
+    REGISTER_PARSER(PNG,                png);
     REGISTER_PARSER(PNM,                pnm);
     REGISTER_PARSER(RV30,               rv30);
     REGISTER_PARSER(RV40,               rv40);
