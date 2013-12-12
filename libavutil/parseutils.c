@@ -613,12 +613,14 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
             dt.tm_hour = 0;
         }
         if (!q) {
+            char *o;
             /* parse timestr as S+ */
-            dt.tm_sec = strtol(p, (void *)&q, 10);
-            if (q == p) /* the parsing didn't succeed */
+            dt.tm_sec = strtol(p, &o, 10);
+            if (o == p) /* the parsing didn't succeed */
                 return AVERROR(EINVAL);
             dt.tm_min = 0;
             dt.tm_hour = 0;
+            q = o;
         }
     }
 
