@@ -32,6 +32,7 @@ static const IdStrMap img_tags[] = {
     { AV_CODEC_ID_MJPEG,      "jpeg"     },
     { AV_CODEC_ID_MJPEG,      "jpg"      },
     { AV_CODEC_ID_MJPEG,      "jps"      },
+    { AV_CODEC_ID_MJPEG,      "mpo"      },
     { AV_CODEC_ID_LJPEG,      "ljpg"     },
     { AV_CODEC_ID_JPEGLS,     "jls"      },
     { AV_CODEC_ID_PNG,        "png"      },
