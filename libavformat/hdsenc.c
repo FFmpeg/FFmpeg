@@ -412,7 +412,9 @@ static int hds_write_header(AVFormatContext *s)
 
         snprintf(os->temp_filename, sizeof(os->temp_filename),
                  "%s/stream%d_temp", s->filename, i);
-        init_file(s, os, 0);
+        ret = init_file(s, os, 0);
+        if (ret < 0)
+            goto fail;
 
         if (!os->has_video && c->min_frag_duration <= 0) {
             av_log(s, AV_LOG_WARNING,
