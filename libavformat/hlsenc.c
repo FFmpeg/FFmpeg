@@ -70,6 +70,7 @@ static int hls_mux_init(AVFormatContext *s)
 
     oc->oformat            = hls->oformat;
     oc->interrupt_callback = s->interrupt_callback;
+    av_dict_copy(&oc->metadata, s->metadata, 0);
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st;
