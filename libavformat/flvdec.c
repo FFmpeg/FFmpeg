@@ -256,6 +256,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
         return 1;     // 1 byte body size adjustment for flv_read_packet()
     case FLV_CODECID_H264:
         vcodec->codec_id = AV_CODEC_ID_H264;
+        vstream->need_parsing = AVSTREAM_PARSE_HEADERS;
         return 3;     // not 4, reading packet type will consume one byte
     case FLV_CODECID_MPEG4:
         vcodec->codec_id = AV_CODEC_ID_MPEG4;
