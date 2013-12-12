@@ -10,6 +10,7 @@ version <next>:
 - H.261 RTP payload format (RFC 4587) depacketizer and experimental packetizer
 - RTP/mpegts muxer
 - VP8 in Ogg demuxing
+- OpenH264 encoder wrapper
 
 
 version 11:
