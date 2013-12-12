@@ -123,7 +123,7 @@ static void fill_picture_parameters(AVCodecContext *avctx,
                                   (v->range_mapuv          );
     pp->bPicBinPB               = 0;
     pp->bMV_RPS                 = (v->fcm == ILACE_FIELD && pp->bPicBackwardPrediction) ? v->refdist + 9 : 0;
-    pp->bReservedBits           = 0;
+    pp->bReservedBits           = v->pq;
     if (s->picture_structure == PICT_FRAME) {
         pp->wBitstreamFcodes        = v->lumscale;
         pp->wBitstreamPCEelements   = v->lumshift;
