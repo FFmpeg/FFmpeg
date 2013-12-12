@@ -60,8 +60,11 @@ function doConfigureSina()
 		--enable-muxer=mp4 \
 		--enable-filters \
 		--enable-parsers \
+		--disable-parser=hevc \
 		--enable-protocol=file \
 		--enable-protocol=http \
+		--enable-protocol=rtmp \
+		--enable-protocol=rtp \
 		--enable-demuxer=hls \
 		--enable-demuxer=mpegts \
 		--enable-demuxer=mpegtsraw \
@@ -69,7 +72,9 @@ function doConfigureSina()
 		--enable-demuxer=concat \
 		--enable-demuxer=mov \
 		--enable-demuxer=flv \
+		--enable-demuxer=rtsp \
 		--enable-demuxer=mp3 \
+		--enable-demuxer=matroska \
 		--enable-decoder=mpeg4 \
 		--enable-decoder=mpegvideo \
 		--enable-decoder=mpeg1video \
@@ -80,6 +85,7 @@ function doConfigureSina()
 		--enable-decoder=aac \
 		--enable-decoder=ac3 \
 		--enable-decoder=mp3 \
+		--enable-decoder=nellymoser \
 		\
 		--enable-openssl \
 		\
@@ -170,7 +176,7 @@ function doConfigure()
 		doConfigureAll
 	fi
 	ret=$?;
-	perl -i -pe "s|^#define HAVE_GETADDRINFO 1|#define HAVE_GETADDRINFO 0|" config.h # getaddrinfo has some issues in iOS
+	perl -i -pe "s|^#define HAVE_GETADDRINFO 1|#define HAVE_GETADDRINFO 0|" config.h # getaddrinfo() has some issues in iOS
 	cp -f ./config.log ./config.h ${DIST}/; [[ $ret != 0 ]] && die
 }
 
@@ -187,7 +193,7 @@ function doMake()
 
 build_date=`date "+%Y%m%dT%H%M%S"`
 #build_versions="release debug sina"
-build_versions="release sina debug"
+build_versions="release sina"
 build_archs="armv7 armv7s i386"
 #build_versions="release"
 #build_date=built
