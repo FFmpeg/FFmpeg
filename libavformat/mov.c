@@ -1314,6 +1314,9 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
     /* figure out the palette situation */
     color_depth     = st->codec->bits_per_coded_sample & 0x1F;
     color_greyscale = st->codec->bits_per_coded_sample & 0x20;
+    /* Do not create a greyscale palette for cinepak */
+    if (color_greyscale && st->codec->codec_id == AV_CODEC_ID_CINEPAK)
+        return;
 
     /* if the depth is 2, 4, or 8 bpp, file is palettized */
     if ((color_depth == 2) || (color_depth == 4) || (color_depth == 8)) {
@@ -1329,9 +1332,6 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
             color_index = 255;
             color_dec   = 256 / (color_count - 1);
             for (j = 0; j < color_count; j++) {
-                if (st->codec->codec_id == AV_CODEC_ID_CINEPAK){
-                    r = g = b = color_count - 1 - color_index;
-                } else
                 r = g = b = color_index;
                 sc->palette[j] = (0xFFU << 24) | (r << 16) | (g << 8) | (b);
                 color_index -= color_dec;
