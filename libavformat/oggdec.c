@@ -785,6 +785,7 @@ retry:
             return AVERROR(ENOMEM);
         }
         AV_WL32(side_data + 4, os->end_trimming);
+        os->end_trimming = 0;
     }
 
     return psize;
