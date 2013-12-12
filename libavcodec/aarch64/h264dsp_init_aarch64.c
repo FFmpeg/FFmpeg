@@ -1,0 +1,62 @@
+/*
+ * Copyright (c) 2010 Mans Rullgard <mans@mansr.com>
+ *
+ * This file is part of Libav.
+ *
+ * Libav is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * Libav is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with Libav; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include <stdint.h>
+
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/aarch64/cpu.h"
+#include "libavcodec/h264dsp.h"
+
+void ff_h264_idct_add_neon(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct_dc_add_neon(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct_add16_neon(uint8_t *dst, const int *block_offset,
+                             int16_t *block, int stride,
+                             const uint8_t nnzc[6*8]);
+void ff_h264_idct_add16intra_neon(uint8_t *dst, const int *block_offset,
+                                  int16_t *block, int stride,
+                                  const uint8_t nnzc[6*8]);
+void ff_h264_idct_add8_neon(uint8_t **dest, const int *block_offset,
+                            int16_t *block, int stride,
+                            const uint8_t nnzc[6*8]);
+
+void ff_h264_idct8_add_neon(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_dc_add_neon(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add4_neon(uint8_t *dst, const int *block_offset,
+                             int16_t *block, int stride,
+                             const uint8_t nnzc[6*8]);
+
+av_cold void ff_h264dsp_init_aarch64(H264DSPContext *c, const int bit_depth,
+                                     const int chroma_format_idc)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_neon(cpu_flags) && bit_depth == 8) {
+        c->h264_idct_add        = ff_h264_idct_add_neon;
+        c->h264_idct_dc_add     = ff_h264_idct_dc_add_neon;
+        c->h264_idct_add16      = ff_h264_idct_add16_neon;
+        c->h264_idct_add16intra = ff_h264_idct_add16intra_neon;
+        if (chroma_format_idc <= 1)
+            c->h264_idct_add8   = ff_h264_idct_add8_neon;
+        c->h264_idct8_add       = ff_h264_idct8_add_neon;
+        c->h264_idct8_dc_add    = ff_h264_idct8_dc_add_neon;
+        c->h264_idct8_add4      = ff_h264_idct8_add4_neon;
+    }
+}
