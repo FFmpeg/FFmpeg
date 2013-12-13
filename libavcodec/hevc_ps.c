@@ -192,7 +192,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 }
 
 
-static int decode_profile_tier_level(HEVCContext *s,  ProfileTierLevel *ptl)
+static void decode_profile_tier_level(HEVCContext *s, ProfileTierLevel *ptl)
 {
     int i;
     HEVCLocalContext *lc = s->HEVClc;
@@ -214,16 +214,13 @@ static int decode_profile_tier_level(HEVCContext *s,  ProfileTierLevel *ptl)
     ptl->interlaced_source_flag     = get_bits1(gb);
     ptl->non_packed_constraint_flag = get_bits1(gb);
     ptl->frame_only_constraint_flag = get_bits1(gb);
-    if (get_bits(gb, 16) != 0) // XXX_reserved_zero_44bits[0..15]
-        return -1;
-    if (get_bits(gb, 16) != 0) // XXX_reserved_zero_44bits[16..31]
-        return -1;
-    if (get_bits(gb, 12) != 0) // XXX_reserved_zero_44bits[32..43]
-        return -1;
-    return 0;
+
+    skip_bits(gb, 16); // XXX_reserved_zero_44bits[0..15]
+    skip_bits(gb, 16); // XXX_reserved_zero_44bits[16..31]
+    skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
 }
 
-static int parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
+static void parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
 {
     int i;
     HEVCLocalContext *lc = s->HEVClc;
@@ -244,7 +241,6 @@ static int parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
         if (ptl->sub_layer_level_present_flag[i])
             ptl->sub_layer_PTL[i].level_idc = get_bits(gb, 8);
     }
-    return 0;
 }
 
 static void decode_sublayer_hrd(HEVCContext *s, int nb_cpb,
@@ -362,10 +358,8 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         goto err;
     }
 
-    if (parse_ptl(s, &vps->ptl, vps->vps_max_sub_layers) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Error decoding profile tier level.\n");
-        goto err;
-    }
+    parse_ptl(s, &vps->ptl, vps->vps_max_sub_layers);
+
     vps->vps_sub_layer_ordering_info_present_flag = get_bits1(gb);
 
     i = vps->vps_sub_layer_ordering_info_present_flag ? 0 : vps->vps_max_sub_layers - 1;
@@ -649,11 +643,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     skip_bits1(gb); // temporal_id_nesting_flag
 
-    if (parse_ptl(s, &sps->ptl, sps->max_sub_layers) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "error decoding profile tier level\n");
-        ret = AVERROR_INVALIDDATA;
-        goto err;
-    }
+    parse_ptl(s, &sps->ptl, sps->max_sub_layers);
+
     sps_id = get_ue_golomb_long(gb);
     if (sps_id >= MAX_SPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", sps_id);
