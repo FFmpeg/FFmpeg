@@ -157,13 +157,17 @@ static PullupField *make_field_queue(PullupContext *s, int len)
 
     for (; len > 0; len--) {
         f->next = av_mallocz(sizeof(*f->next));
-        if (!f->next)
+        if (!f->next) {
+            free_field_queue(head, &f);
             return NULL;
+        }
 
         f->next->prev = f;
         f = f->next;
-        if (alloc_metrics(s, f) < 0)
+        if (alloc_metrics(s, f) < 0) {
+            free_field_queue(head, &f);
             return NULL;
+        }
     }
 
     f->next = head;
