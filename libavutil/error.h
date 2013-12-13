@@ -26,7 +26,6 @@
 
 #include <errno.h>
 #include <stddef.h>
-#include "avutil.h"
 
 /**
  * @addtogroup lavu_error
