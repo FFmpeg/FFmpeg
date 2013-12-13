@@ -108,6 +108,11 @@ static int caf_write_header(AVFormatContext *s)
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, enc->codec_id);
     int64_t chunk_size = 0;
 
+    if (s->nb_streams != 1) {
+        av_log(s, AV_LOG_ERROR, "CAF files have exactly one stream\n");
+        return AVERROR(EINVAL);
+    }
+
     switch (enc->codec_id) {
     case AV_CODEC_ID_AAC:
     case AV_CODEC_ID_AC3:
