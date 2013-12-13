@@ -220,7 +220,6 @@ static int decode_profile_tier_level(HEVCContext *s,  ProfileTierLevel *ptl)
         return -1;
     if (get_bits(gb, 12) != 0) // XXX_reserved_zero_44bits[32..43]
         return -1;
-    ptl->level_idc = get_bits(gb, 8);
     return 0;
 }
 
@@ -230,6 +229,7 @@ static int parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb = &lc->gb;
     decode_profile_tier_level(s, &ptl->general_PTL);
+    ptl->general_PTL.level_idc = get_bits(gb, 8);
 
     for (i = 0; i < max_num_sub_layers - 1; i++) {
         ptl->sub_layer_profile_present_flag[i] = get_bits1(gb);
@@ -239,10 +239,10 @@ static int parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
         for (i = max_num_sub_layers - 1; i < 8; i++)
             skip_bits(gb, 2); // reserved_zero_2bits[i]
     for (i = 0; i < max_num_sub_layers - 1; i++) {
-        if (ptl->sub_layer_profile_present_flag[i]) {
+        if (ptl->sub_layer_profile_present_flag[i])
             decode_profile_tier_level(s, &ptl->sub_layer_PTL[i]);
+        if (ptl->sub_layer_level_present_flag[i])
             ptl->sub_layer_PTL[i].level_idc = get_bits(gb, 8);
-        }
     }
     return 0;
 }
