@@ -1191,6 +1191,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
             asf_st->pkt.dts          = asf->packet_frag_timestamp - asf->hdr.preroll;
             asf_st->pkt.stream_index = asf->stream_index;
             asf_st->pkt.pos          = asf_st->packet_pos = asf->packet_pos;
+            asf_st->pkt_clean        = 0;
 
             if (asf_st->pkt.data && asf_st->palette_changed) {
                 uint8_t *pal;
@@ -1229,6 +1230,11 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
                    asf->packet_frag_offset, asf->packet_frag_size,
                    asf_st->pkt.size);
             continue;
+        }
+
+        if (asf->packet_frag_offset != asf_st->frag_offset && !asf_st->pkt_clean) {
+            memset(asf_st->pkt.data + asf_st->frag_offset, 0, asf_st->pkt.size - asf_st->frag_offset);
+            asf_st->pkt_clean = 1;
         }
 
         ret = avio_read(pb, asf_st->pkt.data + asf->packet_frag_offset,
