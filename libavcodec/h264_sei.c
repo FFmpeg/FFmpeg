@@ -178,34 +178,25 @@ static int decode_buffering_period(H264Context *h)
 
 static int decode_frame_packing_arrangement(H264Context *h)
 {
-    int cancel;
-    int quincunx =  0;
-    int content  = -1;
-    int type     = -1;
-
     get_ue_golomb(&h->gb);              // frame_packing_arrangement_id
-    cancel = get_bits1(&h->gb);         // frame_packing_arrangement_cancel_flag
-    if (cancel == 0) {
-        type = get_bits(&h->gb, 7);     // frame_packing_arrangement_type
-        quincunx = get_bits1(&h->gb);   // quincunx_sampling_flag
-        content = get_bits(&h->gb, 6);  // content_interpretation_type
+    h->sei_frame_packing_present = !get_bits1(&h->gb);
+
+    if (h->sei_frame_packing_present) {
+        h->frame_packing_arrangement_type = get_bits(&h->gb, 7);
+        h->quincunx_subsampling           = get_bits1(&h->gb);
+        h->content_interpretation_type    = get_bits(&h->gb, 6);
 
         // the following skips: spatial_flipping_flag, frame0_flipped_flag,
         // field_views_flag, current_frame_is_frame0_flag,
         // frame0_self_contained_flag, frame1_self_contained_flag
         skip_bits(&h->gb, 6);
 
-        if (quincunx == 0 && type != 5)
+        if (!h->quincunx_subsampling && h->frame_packing_arrangement_type != 5)
             skip_bits(&h->gb, 16);      // frame[01]_grid_position_[xy]
         skip_bits(&h->gb, 8);           // frame_packing_arrangement_reserved_byte
         get_ue_golomb(&h->gb);          // frame_packing_arrangement_repetition_period
     }
     skip_bits1(&h->gb);                 // frame_packing_arrangement_extension_flag
-
-    h->sei_frame_packing_present      = (cancel == 0);
-    h->frame_packing_arrangement_type = type;
-    h->content_interpretation_type    = content;
-    h->quincunx_subsampling           = quincunx;
 
     return 0;
 }
