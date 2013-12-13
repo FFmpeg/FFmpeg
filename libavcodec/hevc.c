@@ -389,8 +389,8 @@ static int hls_slice_header(HEVCContext *s)
         s->max_ra     = INT_MAX;
     }
 
-    s->avctx->profile = s->sps->ptl.general_PTL.profile_idc;
-    s->avctx->level   = s->sps->ptl.general_PTL.level_idc;
+    s->avctx->profile = s->sps->ptl.general_ptl.profile_idc;
+    s->avctx->level   = s->sps->ptl.general_ptl.level_idc;
 
     sh->dependent_slice_segment_flag = 0;
     if (!sh->first_slice_in_pic_flag) {

@@ -330,7 +330,7 @@ typedef struct VUI {
     int log2_max_mv_length_vertical;
 } VUI;
 
-typedef struct ProfileTierLevel {
+typedef struct PTLCommon {
     uint8_t profile_space;
     uint8_t tier_flag;
     uint8_t profile_idc;
@@ -340,11 +340,11 @@ typedef struct ProfileTierLevel {
     uint8_t interlaced_source_flag;
     uint8_t non_packed_constraint_flag;
     uint8_t frame_only_constraint_flag;
-} ProfileTierLevel;
+} PTLCommon;
 
 typedef struct PTL {
-    ProfileTierLevel general_PTL;
-    ProfileTierLevel sub_layer_PTL[MAX_SUB_LAYERS];
+    PTLCommon general_ptl;
+    PTLCommon sub_layer_ptl[MAX_SUB_LAYERS];
 
     uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
     uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
