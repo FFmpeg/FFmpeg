@@ -159,7 +159,7 @@ static int open_codec_context(int *stream_idx,
         if (!dec) {
             fprintf(stderr, "Failed to find %s codec\n",
                     av_get_media_type_string(type));
-            return ret;
+            return AVERROR(EINVAL);
         }
 
         /* Init the decoders, with or without reference counting */
