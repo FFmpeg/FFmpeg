@@ -348,12 +348,6 @@ typedef struct PTL {
 
     uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
     uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
-
-    int sub_layer_profile_space[MAX_SUB_LAYERS];
-    uint8_t sub_layer_tier_flag[MAX_SUB_LAYERS];
-    int sub_layer_profile_idc[MAX_SUB_LAYERS];
-    uint8_t sub_layer_profile_compatibility_flags[MAX_SUB_LAYERS][32];
-    int sub_layer_level_idc[MAX_SUB_LAYERS];
 } PTL;
 
 typedef struct HEVCVPS {
