@@ -5459,6 +5459,8 @@ static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
     AVCodecContext *avctx = s->avctx;
     SpriteData sd;
 
+    memset(&sd, 0, sizeof(sd));
+
     vc1_parse_sprites(v, gb, &sd);
 
     if (!s->current_picture.f.data[0]) {
