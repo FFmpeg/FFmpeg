@@ -376,7 +376,9 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
 
         case OPCODE_INIT_VIDEO_BUFFERS:
             av_dlog(NULL, "initialize video buffers\n");
-            if ((opcode_version > 2) || (opcode_size > 8) || opcode_size < 4) {
+            if ((opcode_version > 2) || (opcode_size > 8) || opcode_size < 4
+                || opcode_version == 2 && opcode_size < 8
+            ) {
                 av_dlog(NULL, "bad init_video_buffers opcode\n");
                 chunk_type = CHUNK_BAD;
                 break;
