@@ -84,6 +84,7 @@ typedef struct {
     char *local_addr;
     int packet_size;
     int timeout;
+    struct sockaddr_storage local_addr_storage;
 } UDPContext;
 
 #define OFFSET(x) offsetof(UDPContext, x)
@@ -140,14 +141,17 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
     return 0;
 }
 
-static int udp_join_multicast_group(int sockfd, struct sockaddr *addr)
+static int udp_join_multicast_group(int sockfd, struct sockaddr *addr,struct sockaddr *local_addr)
 {
 #ifdef IP_ADD_MEMBERSHIP
     if (addr->sa_family == AF_INET) {
         struct ip_mreq mreq;
 
         mreq.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
-        mreq.imr_interface.s_addr= INADDR_ANY;
+        if (local_addr)
+            mreq.imr_interface= ((struct sockaddr_in *)local_addr)->sin_addr;
+        else
+            mreq.imr_interface.s_addr= INADDR_ANY;
         if (setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const void *)&mreq, sizeof(mreq)) < 0) {
             log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_MEMBERSHIP)");
             return -1;
@@ -169,14 +173,17 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr)
     return 0;
 }
 
-static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr)
+static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct sockaddr *local_addr)
 {
 #ifdef IP_DROP_MEMBERSHIP
     if (addr->sa_family == AF_INET) {
         struct ip_mreq mreq;
 
         mreq.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
-        mreq.imr_interface.s_addr= INADDR_ANY;
+        if (local_addr)
+            mreq.imr_interface= ((struct sockaddr_in *)local_addr)->sin_addr;
+        else
+            mreq.imr_interface.s_addr= INADDR_ANY;
         if (setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, (const void *)&mreq, sizeof(mreq)) < 0) {
             log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_DROP_MEMBERSHIP)");
             return -1;
@@ -624,6 +631,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if (udp_fd < 0)
         goto fail;
 
+    s->local_addr_storage=my_addr; //store for future multicast join
+
     /* Follow the requested reuse option, unless it's multicast in which
      * case enable reuse unless explicitly disabled.
      */
@@ -668,7 +677,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                 if (udp_set_multicast_sources(udp_fd, (struct sockaddr *)&s->dest_addr, s->dest_addr_len, include_sources, num_include_sources, 1) < 0)
                     goto fail;
             } else {
-                if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr) < 0)
+                if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr,(struct sockaddr *)&s->local_addr_storage) < 0)
                     goto fail;
             }
             if (num_exclude_sources) {
@@ -838,7 +847,7 @@ static int udp_close(URLContext *h)
     int ret;
 
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
-        udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
+        udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr,(struct sockaddr *)&s->local_addr_storage);
     closesocket(s->udp_fd);
 #if HAVE_PTHREAD_CANCEL
     if (s->thread_started) {
