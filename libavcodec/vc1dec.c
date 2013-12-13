@@ -5364,7 +5364,7 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
     int ysub[2];
     MpegEncContext *s = &v->s;
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i <= v->two_sprites; i++) {
         xoff[i] = av_clip(sd->coefs[i][2], 0, v->sprite_width-1 << 16);
         xadv[i] = sd->coefs[i][0];
         if (xadv[i] != 1<<16 || (v->sprite_width << 16) - (v->output_width << 16) - xoff[i])
@@ -5442,7 +5442,7 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
         }
 
         if (!plane) {
-            for (i = 0; i < 2; i++) {
+            for (i = 0; i <= v->two_sprites; i++) {
                 xoff[i] >>= 1;
                 yoff[i] >>= 1;
             }
