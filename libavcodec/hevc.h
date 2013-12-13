@@ -331,15 +331,15 @@ typedef struct VUI {
 } VUI;
 
 typedef struct ProfileTierLevel {
-    int profile_space;
+    uint8_t profile_space;
     uint8_t tier_flag;
-    int profile_idc;
-    int profile_compatibility_flag[32];
-    int level_idc;
-    int progressive_source_flag;
-    int interlaced_source_flag;
-    int non_packed_constraint_flag;
-    int frame_only_constraint_flag;
+    uint8_t profile_idc;
+    uint8_t profile_compatibility_flag[32];
+    uint8_t level_idc;
+    uint8_t progressive_source_flag;
+    uint8_t interlaced_source_flag;
+    uint8_t non_packed_constraint_flag;
+    uint8_t frame_only_constraint_flag;
 } ProfileTierLevel;
 
 typedef struct PTL {
