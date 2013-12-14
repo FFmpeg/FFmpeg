@@ -192,7 +192,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
     return 0;
 }
 
-static int decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl,
+static void decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl,
                                      int max_num_sub_layers)
 {
     int i, j;
@@ -207,12 +207,9 @@ static int decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl,
     skip_bits1(gb); // general_interlaced_source_flag
     skip_bits1(gb); // general_non_packed_constraint_flag
     skip_bits1(gb); // general_frame_only_constraint_flag
-    if (get_bits(gb, 16) != 0) // XXX_reserved_zero_44bits[0..15]
-        return -1;
-    if (get_bits(gb, 16) != 0) // XXX_reserved_zero_44bits[16..31]
-        return -1;
-    if (get_bits(gb, 12) != 0) // XXX_reserved_zero_44bits[32..43]
-        return -1;
+    skip_bits(gb, 16); // XXX_reserved_zero_44bits[0..15]
+    skip_bits(gb, 16); // XXX_reserved_zero_44bits[16..31]
+    skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
 
     ptl->general_level_idc = get_bits(gb, 8);
     for (i = 0; i < max_num_sub_layers - 1; i++) {
@@ -234,17 +231,13 @@ static int decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl,
             skip_bits1(gb); // sub_layer_non_packed_constraint_flag
             skip_bits1(gb); // sub_layer_frame_only_constraint_flag
 
-            if (get_bits(gb, 16) != 0) // sub_layer_reserved_zero_44bits[0..15]
-                return -1;
-            if (get_bits(gb, 16) != 0) // sub_layer_reserved_zero_44bits[16..31]
-                return -1;
-            if (get_bits(gb, 12) != 0) // sub_layer_reserved_zero_44bits[32..43]
-                return -1;
+            skip_bits(gb, 16); // sub_layer_reserved_zero_44bits[0..15]
+            skip_bits(gb, 16); // sub_layer_reserved_zero_44bits[16..31]
+            skip_bits(gb, 12); // sub_layer_reserved_zero_44bits[32..43]
         }
         if (ptl->sub_layer_level_present_flag[i])
             ptl->sub_layer_level_idc[i] = get_bits(gb, 8);
     }
-    return 0;
 }
 
 static void decode_sublayer_hrd(HEVCContext *s, int nb_cpb,
@@ -362,10 +355,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         goto err;
     }
 
-    if (decode_profile_tier_level(&s->HEVClc, &vps->ptl, vps->vps_max_sub_layers) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Error decoding profile tier level.\n");
-        goto err;
-    }
+    decode_profile_tier_level(&s->HEVClc, &vps->ptl, vps->vps_max_sub_layers);
     vps->vps_sub_layer_ordering_info_present_flag = get_bits1(gb);
 
     i = vps->vps_sub_layer_ordering_info_present_flag ? 0 : vps->vps_max_sub_layers - 1;
@@ -647,12 +637,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     skip_bits1(gb); // temporal_id_nesting_flag
-    if (decode_profile_tier_level(&s->HEVClc, &sps->ptl,
-                                  sps->max_sub_layers) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "error decoding profile tier level\n");
-        ret = AVERROR_INVALIDDATA;
-        goto err;
-    }
+    decode_profile_tier_level(&s->HEVClc, &sps->ptl, sps->max_sub_layers);
     sps_id = get_ue_golomb_long(gb);
     if (sps_id >= MAX_SPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", sps_id);
