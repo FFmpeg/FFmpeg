@@ -175,6 +175,21 @@ enum FrameCodingMode {
     ILACE_FIELD         ///<  in the bitstream is reported as 11b
 };
 
+/**
+ * Imode types
+ * @{
+ */
+enum Imode {
+    IMODE_RAW,
+    IMODE_NORM2,
+    IMODE_DIFF2,
+    IMODE_NORM6,
+    IMODE_DIFF6,
+    IMODE_ROWSKIP,
+    IMODE_COLSKIP
+};
+/** @} */ //imode defines
+
 /** The VC1 Context
  * @todo Change size wherever another size is more efficient
  * Many members are only used for Advanced Profile

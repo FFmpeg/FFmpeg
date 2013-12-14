@@ -47,21 +47,6 @@
  * @{
  */
 
-/**
- * Imode types
- * @{
- */
-enum Imode {
-    IMODE_RAW,
-    IMODE_NORM2,
-    IMODE_DIFF2,
-    IMODE_NORM6,
-    IMODE_DIFF6,
-    IMODE_ROWSKIP,
-    IMODE_COLSKIP
-};
-/** @} */ //imode defines
-
 /** Decode rows by checking if they are skipped
  * @param plane Buffer to store decoded bits
  * @param[in] width Width of this buffer
