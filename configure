@@ -4319,9 +4319,7 @@ fi
 # do this before the optional library checks as some of them require pthreads
 if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     enable pthreads
-    if check_func pthread_join && check_func pthread_create; then
-        :
-    elif check_func pthread_join -pthread && check_func pthread_create -pthread; then
+    if check_func pthread_join -pthread && check_func pthread_create -pthread; then
         add_cflags -pthread
         add_extralibs -pthread
     elif check_func pthread_join -pthreads && check_func pthread_create -pthreads; then
@@ -4329,7 +4327,9 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
         add_extralibs -pthreads
     elif check_func pthread_join -lpthreadGC2 && check_func pthread_create -lpthreadGC2; then
         add_extralibs -lpthreadGC2
-    elif ! check_lib pthread.h pthread_join -lpthread && ! check_lib pthread.h pthread_create -lpthread; then
+    elif check_lib pthread.h pthread_join -lpthread && check_lib pthread.h pthread_create -lpthread; then
+        :
+    elif ! check_func pthread_join && ! check_func pthread_create; then
         disable pthreads
     fi
 fi
