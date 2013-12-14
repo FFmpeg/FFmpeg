@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 Wei Gao <weigao@multicorewareinc.com>
+ * Copyright (C) 2013 Lenny Wang
  *
  *
  * This file is part of FFmpeg.
@@ -25,16 +26,16 @@
 #include "libavutil/opencl.h"
 
 const char *ff_kernel_deshake_opencl = AV_OPENCL_KERNEL(
-
-inline unsigned char pixel(global const unsigned char *src, float x, float y,
+inline unsigned char pixel(global const unsigned char *src, int x, int y,
                            int w, int h,int stride, unsigned char def)
 {
-    return (x < 0 || y < 0 || x >= w || y >= h) ? def : src[(int)x + (int)y * stride];
+    return (x < 0 || y < 0 || x >= w || y >= h) ? def : src[x + y * stride];
 }
+
 unsigned char interpolate_nearest(float x, float y, global const unsigned char *src,
                                   int width, int height, int stride, unsigned char def)
 {
-    return pixel(src, (int)(x + 0.5), (int)(y + 0.5), width, height, stride, def);
+    return pixel(src, (int)(x + 0.5f), (int)(y + 0.5f), width, height, stride, def);
 }
 
 unsigned char interpolate_bilinear(float x, float y, global const unsigned char *src,
@@ -42,21 +43,18 @@ unsigned char interpolate_bilinear(float x, float y, global const unsigned char 
 {
     int x_c, x_f, y_c, y_f;
     int v1, v2, v3, v4;
+    x_f = (int)x;
+    y_f = (int)y;
+    x_c = x_f + 1;
+    y_c = y_f + 1;
 
-    if (x < -1 || x > width || y < -1 || y > height) {
+    if (x_f < -1 || x_f > width || y_f < -1 || y_f > height) {
         return def;
     } else {
-        x_f = (int)x;
-        x_c = x_f + 1;
-
-        y_f = (int)y;
-        y_c = y_f + 1;
-
-        v1 = pixel(src, x_c, y_c, width, height, stride, def);
+        v4 = pixel(src, x_f, y_f, width, height, stride, def);
         v2 = pixel(src, x_c, y_f, width, height, stride, def);
         v3 = pixel(src, x_f, y_c, width, height, stride, def);
-        v4 = pixel(src, x_f, y_f, width, height, stride, def);
-
+        v1 = pixel(src, x_c, y_c, width, height, stride, def);
         return (v1*(x - x_f)*(y - y_f) + v2*((x - x_f)*(y_c - y)) +
                 v3*(x_c - x)*(y - y_f) + v4*((x_c - x)*(y_c - y)));
     }
@@ -68,19 +66,18 @@ unsigned char interpolate_biquadratic(float x, float y, global const unsigned ch
     int     x_c, x_f, y_c, y_f;
     unsigned char v1,  v2,  v3,  v4;
     float   f1,  f2,  f3,  f4;
+    x_f = (int)x;
+    y_f = (int)y;
+    x_c = x_f + 1;
+    y_c = y_f + 1;
 
-    if (x < - 1 || x > width || y < -1 || y > height)
+    if (x_f < - 1 || x_f > width || y_f < -1 || y_f > height)
         return def;
     else {
-        x_f = (int)x;
-        x_c = x_f + 1;
-        y_f = (int)y;
-        y_c = y_f + 1;
-
-        v1 = pixel(src, x_c, y_c, width, height, stride, def);
+        v4 = pixel(src, x_f, y_f, width, height, stride, def);
         v2 = pixel(src, x_c, y_f, width, height, stride, def);
         v3 = pixel(src, x_f, y_c, width, height, stride, def);
-        v4 = pixel(src, x_f, y_f, width, height, stride, def);
+        v1 = pixel(src, x_c, y_c, width, height, stride, def);
 
         f1 = 1 - sqrt((x_c - x) * (y_c - y));
         f2 = 1 - sqrt((x_c - x) * (y - y_f));
@@ -107,109 +104,120 @@ inline int mirror(int v, int m)
     return v;
 }
 
-kernel void avfilter_transform(global  unsigned char *src,
-                               global  unsigned char *dst,
-                               global          float *matrix,
-                               global          float *matrix2,
-                                                 int interpolate,
-                                                 int fillmethod,
-                                                 int src_stride_lu,
-                                                 int dst_stride_lu,
-                                                 int src_stride_ch,
-                                                 int dst_stride_ch,
-                                                 int height,
-                                                 int width,
-                                                 int ch,
-                                                 int cw)
+kernel void avfilter_transform_luma(global unsigned char *src,
+                                    global unsigned char *dst,
+                                    float4 matrix,
+                                    int interpolate,
+                                    int fill,
+                                    int src_stride_lu,
+                                    int dst_stride_lu,
+                                    int height,
+                                    int width)
 {
-     int global_id = get_global_id(0);
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+    int idx_dst = y * dst_stride_lu + x;
+    unsigned char def = 0;
+    float x_s = x * matrix.x + y * matrix.y + matrix.z;
+    float y_s = x * (-matrix.y) + y * matrix.x + matrix.w;
 
-     global unsigned char *dst_y = dst;
-     global unsigned char *dst_u = dst_y + height * dst_stride_lu;
-     global unsigned char *dst_v = dst_u + ch * dst_stride_ch;
-
-     global unsigned char *src_y = src;
-     global unsigned char *src_u = src_y + height * src_stride_lu;
-     global unsigned char *src_v = src_u + ch * src_stride_ch;
-
-     global unsigned char *tempdst;
-     global unsigned char *tempsrc;
-
-     int x;
-     int y;
-     float x_s;
-     float y_s;
-     int tempsrc_stride;
-     int tempdst_stride;
-     int temp_height;
-     int temp_width;
-     int curpos;
-     unsigned char def = 0;
-     if (global_id < width*height) {
-        y = global_id/width;
-        x = global_id%width;
-        x_s = x * matrix[0] + y * matrix[1] + matrix[2];
-        y_s = x * matrix[3] + y * matrix[4] + matrix[5];
-        tempdst = dst_y;
-        tempsrc = src_y;
-        tempsrc_stride = src_stride_lu;
-        tempdst_stride = dst_stride_lu;
-        temp_height = height;
-        temp_width = width;
-     } else if ((global_id >= width*height)&&(global_id < width*height + ch*cw)) {
-        y = (global_id - width*height)/cw;
-        x = (global_id - width*height)%cw;
-        x_s = x * matrix2[0] + y * matrix2[1] + matrix2[2];
-        y_s = x * matrix2[3] + y * matrix2[4] + matrix2[5];
-        tempdst = dst_u;
-        tempsrc = src_u;
-        tempsrc_stride = src_stride_ch;
-        tempdst_stride = dst_stride_ch;
-        temp_height = ch;
-        temp_width = cw;
-     } else {
-        y = (global_id - width*height - ch*cw)/cw;
-        x = (global_id - width*height - ch*cw)%cw;
-        x_s = x * matrix2[0] + y * matrix2[1] + matrix2[2];
-        y_s = x * matrix2[3] + y * matrix2[4] + matrix2[5];
-        tempdst = dst_v;
-        tempsrc = src_v;
-        tempsrc_stride = src_stride_ch;
-        tempdst_stride = dst_stride_ch;
-        temp_height = ch;
-        temp_width = cw;
-     }
-     curpos = y * tempdst_stride + x;
-     switch (fillmethod) {
-        case 0: //FILL_BLANK
-            def = 0;
-            break;
-        case 1: //FILL_ORIGINAL
-            def = tempsrc[y*tempsrc_stride+x];
-            break;
-        case 2: //FILL_CLAMP
-            y_s = clipf(y_s, 0, temp_height - 1);
-            x_s = clipf(x_s, 0, temp_width - 1);
-            def = tempsrc[(int)y_s * tempsrc_stride + (int)x_s];
-            break;
-        case 3: //FILL_MIRROR
-            y_s = mirror(y_s,temp_height - 1);
-            x_s = mirror(x_s,temp_width - 1);
-            def = tempsrc[(int)y_s * tempsrc_stride + (int)x_s];
-            break;
+    if (x < width && y < height) {
+        switch (fill) {
+            case 0: //FILL_BLANK
+                def = 0;
+                break;
+            case 1: //FILL_ORIGINAL
+                def = src[y*src_stride_lu + x];
+                break;
+            case 2: //FILL_CLAMP
+                y_s = clipf(y_s, 0, height - 1);
+                x_s = clipf(x_s, 0, width - 1);
+                def = src[(int)y_s * src_stride_lu + (int)x_s];
+                break;
+            case 3: //FILL_MIRROR
+                y_s = mirror(y_s, height - 1);
+                x_s = mirror(x_s, width - 1);
+                def = src[(int)y_s * src_stride_lu + (int)x_s];
+                break;
+        }
+        switch (interpolate) {
+            case 0: //INTERPOLATE_NEAREST
+                dst[idx_dst] = interpolate_nearest(x_s, y_s, src, width, height, src_stride_lu, def);
+                break;
+            case 1: //INTERPOLATE_BILINEAR
+                dst[idx_dst] = interpolate_bilinear(x_s, y_s, src, width, height, src_stride_lu, def);
+                break;
+            case 2: //INTERPOLATE_BIQUADRATIC
+                dst[idx_dst] = interpolate_biquadratic(x_s, y_s, src, width, height, src_stride_lu, def);
+                break;
+            default:
+                return;
+        }
     }
-    switch (interpolate) {
-        case 0: //INTERPOLATE_NEAREST
-            tempdst[curpos] = interpolate_nearest(x_s, y_s, tempsrc, temp_width, temp_height, tempsrc_stride, def);
-            break;
-        case 1: //INTERPOLATE_BILINEAR
-            tempdst[curpos] = interpolate_bilinear(x_s, y_s, tempsrc, temp_width, temp_height, tempsrc_stride, def);
-            break;
-        case 2: //INTERPOLATE_BIQUADRATIC
-            tempdst[curpos] = interpolate_biquadratic(x_s, y_s, tempsrc, temp_width, temp_height, tempsrc_stride, def);
-            break;
-        default:
-            return;
+}
+
+kernel void avfilter_transform_chroma(global unsigned char *src,
+                                      global unsigned char *dst,
+                                      float4 matrix,
+                                      int interpolate,
+                                      int fill,
+                                      int src_stride_lu,
+                                      int dst_stride_lu,
+                                      int src_stride_ch,
+                                      int dst_stride_ch,
+                                      int height,
+                                      int width,
+                                      int ch,
+                                      int cw)
+{
+
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+    int pad_ch = get_global_size(1)>>1;
+    global unsigned char *dst_u = dst + height * dst_stride_lu;
+    global unsigned char *src_u = src + height * src_stride_lu;
+    global unsigned char *dst_v = dst_u + ch * dst_stride_ch;
+    global unsigned char *src_v = src_u + ch * src_stride_ch;
+    src = y < pad_ch ? src_u : src_v;
+    dst = y < pad_ch ? dst_u : dst_v;
+    y = select(y - pad_ch, y, y < pad_ch);
+    float x_s = x * matrix.x + y * matrix.y + matrix.z;
+    float y_s = x * (-matrix.y) + y * matrix.x + matrix.w;
+    int idx_dst = y * dst_stride_ch + x;
+    unsigned char def;
+
+    if (x < cw && y < ch) {
+        switch (fill) {
+            case 0: //FILL_BLANK
+                def = 0;
+                break;
+            case 1: //FILL_ORIGINAL
+                def = src[y*src_stride_ch + x];
+                break;
+            case 2: //FILL_CLAMP
+                y_s = clipf(y_s, 0, ch - 1);
+                x_s = clipf(x_s, 0, cw - 1);
+                def = src[(int)y_s * src_stride_ch + (int)x_s];
+                break;
+            case 3: //FILL_MIRROR
+                y_s = mirror(y_s, ch - 1);
+                x_s = mirror(x_s, cw - 1);
+                def = src[(int)y_s * src_stride_ch + (int)x_s];
+                break;
+        }
+        switch (interpolate) {
+            case 0: //INTERPOLATE_NEAREST
+                dst[idx_dst] = interpolate_nearest(x_s, y_s, src, cw, ch, src_stride_ch, def);
+                break;
+            case 1: //INTERPOLATE_BILINEAR
+                dst[idx_dst] = interpolate_bilinear(x_s, y_s, src, cw, ch, src_stride_ch, def);
+                break;
+            case 2: //INTERPOLATE_BIQUADRATIC
+                dst[idx_dst] = interpolate_biquadratic(x_s, y_s, src, cw, ch, src_stride_ch, def);
+                break;
+            default:
+                return;
+        }
     }
 }
 );

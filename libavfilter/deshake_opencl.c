@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 Wei Gao <weigao@multicorewareinc.com>
+ * Copyright (C) 2013 Lenny Wang
  *
  * This file is part of FFmpeg.
  *
@@ -29,8 +30,8 @@
 #include "deshake_opencl.h"
 #include "libavutil/opencl_internal.h"
 
-#define MATRIX_SIZE 6
 #define PLANE_NUM 3
+#define ROUND_TO_16(a) ((((a - 1)/16)+1)*16)
 
 int ff_opencl_transform(AVFilterContext *ctx,
                         int width, int height, int cw, int ch,
@@ -39,29 +40,40 @@ int ff_opencl_transform(AVFilterContext *ctx,
                         enum FillMethod fill, AVFrame *in, AVFrame *out)
 {
     int ret = 0;
-    const size_t global_work_size = width * height + 2 * ch * cw;
     cl_int status;
     DeshakeContext *deshake = ctx->priv;
-    FFOpenclParam opencl_param = {0};
-
-    opencl_param.ctx = ctx;
-    opencl_param.kernel = deshake->opencl_ctx.kernel;
-    ret = av_opencl_buffer_write(deshake->opencl_ctx.cl_matrix_y, (uint8_t *)matrix_y, deshake->opencl_ctx.matrix_size * sizeof(cl_float));
-    if (ret < 0)
-        return ret;
-    ret = av_opencl_buffer_write(deshake->opencl_ctx.cl_matrix_uv, (uint8_t *)matrix_uv, deshake->opencl_ctx.matrix_size * sizeof(cl_float));
-    if (ret < 0)
-        return ret;
+    float4 packed_matrix_lu = {matrix_y[0], matrix_y[1], matrix_y[2], matrix_y[5]};
+    float4 packed_matrix_ch = {matrix_uv[0], matrix_uv[1], matrix_uv[2], matrix_uv[5]};
+    size_t global_worksize_lu[2] = {(size_t)ROUND_TO_16(width), (size_t)ROUND_TO_16(height)};
+    size_t global_worksize_ch[2] = {(size_t)ROUND_TO_16(cw), (size_t)(2*ROUND_TO_16(ch))};
+    size_t local_worksize[2] = {16, 16};
+    FFOpenclParam param_lu = {0};
+    FFOpenclParam param_ch = {0};
+    param_lu.ctx = param_ch.ctx = ctx;
+    param_lu.kernel = deshake->opencl_ctx.kernel_luma;
+    param_ch.kernel = deshake->opencl_ctx.kernel_chroma;
 
     if ((unsigned int)interpolate > INTERPOLATE_BIQUADRATIC) {
         av_log(ctx, AV_LOG_ERROR, "Selected interpolate method is invalid\n");
         return AVERROR(EINVAL);
     }
-    ret = ff_opencl_set_parameter(&opencl_param,
+    ret = ff_opencl_set_parameter(&param_lu,
                                   FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_inbuf),
                                   FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_outbuf),
-                                  FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_matrix_y),
-                                  FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_matrix_uv),
+                                  FF_OPENCL_PARAM_INFO(packed_matrix_lu),
+                                  FF_OPENCL_PARAM_INFO(interpolate),
+                                  FF_OPENCL_PARAM_INFO(fill),
+                                  FF_OPENCL_PARAM_INFO(in->linesize[0]),
+                                  FF_OPENCL_PARAM_INFO(out->linesize[0]),
+                                  FF_OPENCL_PARAM_INFO(height),
+                                  FF_OPENCL_PARAM_INFO(width),
+                                  NULL);
+    if (ret < 0)
+        return ret;
+    ret = ff_opencl_set_parameter(&param_ch,
+                                  FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_inbuf),
+                                  FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_outbuf),
+                                  FF_OPENCL_PARAM_INFO(packed_matrix_ch),
                                   FF_OPENCL_PARAM_INFO(interpolate),
                                   FF_OPENCL_PARAM_INFO(fill),
                                   FF_OPENCL_PARAM_INFO(in->linesize[0]),
@@ -76,13 +88,15 @@ int ff_opencl_transform(AVFilterContext *ctx,
     if (ret < 0)
         return ret;
     status = clEnqueueNDRangeKernel(deshake->opencl_ctx.command_queue,
-                                    deshake->opencl_ctx.kernel, 1, NULL,
-                                    &global_work_size, NULL, 0, NULL, NULL);
+                                    deshake->opencl_ctx.kernel_luma, 2, NULL,
+                                    global_worksize_lu, local_worksize, 0, NULL, NULL);
+    status |= clEnqueueNDRangeKernel(deshake->opencl_ctx.command_queue,
+                                    deshake->opencl_ctx.kernel_chroma, 2, NULL,
+                                    global_worksize_ch, local_worksize, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "OpenCL run kernel error occurred: %s\n", av_opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
-    clFinish(deshake->opencl_ctx.command_queue);
     ret = av_opencl_buffer_read_image(out->data, deshake->opencl_ctx.out_plane_size,
                                       deshake->opencl_ctx.plane_num, deshake->opencl_ctx.cl_outbuf,
                                       deshake->opencl_ctx.cl_outbuf_size);
@@ -98,16 +112,7 @@ int ff_opencl_deshake_init(AVFilterContext *ctx)
     ret = av_opencl_init(NULL);
     if (ret < 0)
         return ret;
-    deshake->opencl_ctx.matrix_size = MATRIX_SIZE;
-    deshake->opencl_ctx.plane_num   = PLANE_NUM;
-    ret = av_opencl_buffer_create(&deshake->opencl_ctx.cl_matrix_y,
-        deshake->opencl_ctx.matrix_size*sizeof(cl_float), CL_MEM_READ_ONLY, NULL);
-    if (ret < 0)
-        return ret;
-    ret = av_opencl_buffer_create(&deshake->opencl_ctx.cl_matrix_uv,
-        deshake->opencl_ctx.matrix_size*sizeof(cl_float), CL_MEM_READ_ONLY, NULL);
-    if (ret < 0)
-        return ret;
+    deshake->opencl_ctx.plane_num = PLANE_NUM;
     deshake->opencl_ctx.command_queue = av_opencl_get_command_queue();
     if (!deshake->opencl_ctx.command_queue) {
         av_log(ctx, AV_LOG_ERROR, "Unable to get OpenCL command queue in filter 'deshake'\n");
@@ -118,10 +123,19 @@ int ff_opencl_deshake_init(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_ERROR, "OpenCL failed to compile program 'avfilter_transform'\n");
         return AVERROR(EINVAL);
     }
-    if (!deshake->opencl_ctx.kernel) {
-        deshake->opencl_ctx.kernel = clCreateKernel(deshake->opencl_ctx.program, "avfilter_transform", &ret);
+    if (!deshake->opencl_ctx.kernel_luma) {
+        deshake->opencl_ctx.kernel_luma = clCreateKernel(deshake->opencl_ctx.program,
+                                                         "avfilter_transform_luma", &ret);
         if (ret != CL_SUCCESS) {
-            av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel 'avfilter_transform'\n");
+            av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel 'avfilter_transform_luma'\n");
+            return AVERROR(EINVAL);
+        }
+    }
+    if (!deshake->opencl_ctx.kernel_chroma) {
+        deshake->opencl_ctx.kernel_chroma = clCreateKernel(deshake->opencl_ctx.program,
+                                                           "avfilter_transform_chroma", &ret);
+        if (ret != CL_SUCCESS) {
+            av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel 'avfilter_transform_chroma'\n");
             return AVERROR(EINVAL);
         }
     }
@@ -133,9 +147,8 @@ void ff_opencl_deshake_uninit(AVFilterContext *ctx)
     DeshakeContext *deshake = ctx->priv;
     av_opencl_buffer_release(&deshake->opencl_ctx.cl_inbuf);
     av_opencl_buffer_release(&deshake->opencl_ctx.cl_outbuf);
-    av_opencl_buffer_release(&deshake->opencl_ctx.cl_matrix_y);
-    av_opencl_buffer_release(&deshake->opencl_ctx.cl_matrix_uv);
-    clReleaseKernel(deshake->opencl_ctx.kernel);
+    clReleaseKernel(deshake->opencl_ctx.kernel_luma);
+    clReleaseKernel(deshake->opencl_ctx.kernel_chroma);
     clReleaseProgram(deshake->opencl_ctx.program);
     deshake->opencl_ctx.command_queue = NULL;
     av_opencl_uninit();
