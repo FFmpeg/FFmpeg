@@ -170,6 +170,10 @@ static void audio_encode_example(const char *filename)
      * we calculate the size of the samples buffer in bytes */
     buffer_size = av_samples_get_buffer_size(NULL, c->channels, c->frame_size,
                                              c->sample_fmt, 0);
+    if (!buffer_size) {
+        fprintf(stderr, "Could not get sample buffer size\n");
+        exit(1);
+    }
     samples = av_malloc(buffer_size);
     if (!samples) {
         fprintf(stderr, "Could not allocate %d bytes for samples buffer\n",
