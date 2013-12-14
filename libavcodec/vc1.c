@@ -864,11 +864,13 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     v->fcm = fcm;
 
     if (v->field_mode) {
+        v->s.mb_height = FFALIGN(v->s.height + 15 >> 4, 2);
         v->fptype = get_bits(gb, 3);
         v->s.pict_type = (v->fptype & 2) ? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
         if (v->fptype & 4) // B-picture
             v->s.pict_type = (v->fptype & 2) ? AV_PICTURE_TYPE_BI : AV_PICTURE_TYPE_B;
     } else {
+        v->s.mb_height = v->s.height + 15 >> 4;
         switch (get_unary(gb, 0, 4)) {
         case 0:
             v->s.pict_type = AV_PICTURE_TYPE_P;
