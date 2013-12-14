@@ -248,7 +248,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                 if (pass == 0) {
                     /* now we know the total size of the packet (with the
                      * start sequences added) */
-                    av_new_packet(pkt, total_length);
+                    if ((result = av_new_packet(pkt, total_length)) < 0)
+                        return result;
                     dst = pkt->data;
                 } else {
                     assert(dst - pkt->data == total_length);
