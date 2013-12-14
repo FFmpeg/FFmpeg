@@ -513,13 +513,6 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
             break;
         case AV_CODEC_ID_THEORA: {
             const char *pix_fmt;
-            if (c->extradata_size)
-                config = xiph_extradata2config(c);
-            else
-                av_log(c, AV_LOG_ERROR, "Theora configuation info missing\n");
-            if (!config)
-                return NULL;
-
             switch (c->pix_fmt) {
             case AV_PIX_FMT_YUV420P:
                 pix_fmt = "YCbCr-4:2:0";
@@ -532,9 +525,15 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                 break;
             default:
                 av_log(c, AV_LOG_ERROR, "Unsupported pixel format.\n");
-                av_free(config);
                 return NULL;
             }
+
+            if (c->extradata_size)
+                config = xiph_extradata2config(c);
+            else
+                av_log(c, AV_LOG_ERROR, "Theora configuation info missing\n");
+            if (!config)
+                return NULL;
 
             av_strlcatf(buff, size, "a=rtpmap:%d theora/90000\r\n"
                                     "a=fmtp:%d delivery-method=inline; "
