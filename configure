@@ -4311,9 +4311,6 @@ check_header windows.h
 check_header X11/extensions/XvMClib.h
 check_header asm/types.h
 
-disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
-disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
-
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex && enable w32threads
 fi
@@ -4348,6 +4345,9 @@ done
 if enabled pthreads; then
   check_func pthread_cancel
 fi
+
+disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
+disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
 enabled sync_val_compare_and_swap && enable atomics_gcc
 enabled_all atomic_cas_ptr machine_rw_barrier && enable atomics_suncc
