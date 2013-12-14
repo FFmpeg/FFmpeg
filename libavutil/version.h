@@ -36,8 +36,8 @@
  * @{
  */
 
-#define LIBAVUTIL_VERSION_MAJOR 52
-#define LIBAVUTIL_VERSION_MINOR 20
+#define LIBAVUTIL_VERSION_MAJOR 53
+#define LIBAVUTIL_VERSION_MINOR  0
 #define LIBAVUTIL_VERSION_MICRO  0
 
 #define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
@@ -62,37 +62,37 @@
  */
 
 #ifndef FF_API_PIX_FMT
-#define FF_API_PIX_FMT                  (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_PIX_FMT                  (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_CONTEXT_SIZE
-#define FF_API_CONTEXT_SIZE             (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_CONTEXT_SIZE             (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_PIX_FMT_DESC
-#define FF_API_PIX_FMT_DESC             (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_PIX_FMT_DESC             (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_AV_REVERSE
-#define FF_API_AV_REVERSE               (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_AV_REVERSE               (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_AUDIOCONVERT
-#define FF_API_AUDIOCONVERT             (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_AUDIOCONVERT             (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_CPU_FLAG_MMX2
-#define FF_API_CPU_FLAG_MMX2            (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_CPU_FLAG_MMX2            (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_LLS_PRIVATE
-#define FF_API_LLS_PRIVATE              (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_LLS_PRIVATE              (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_AVFRAME_LAVC
-#define FF_API_AVFRAME_LAVC             (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_AVFRAME_LAVC             (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_VDPAU
-#define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_XVMC
-#define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_INTFLOAT
-#define FF_API_INTFLOAT                 (LIBAVUTIL_VERSION_MAJOR < 53)
+#define FF_API_INTFLOAT                 (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 
 /**
