@@ -27,21 +27,21 @@ SECTION_RODATA
 
 pw_11585x2: times 8 dw 23170
 
-%macro VP9_IDCT_COEFFS 2-3 0
+%macro VP9_IDCT_COEFFS 2
 pw_m%1_%2:  times 4 dw -%1,  %2
 pw_%2_%1:   times 4 dw  %2,  %1
-%if %3 == 1
 pw_m%2_m%1: times 4 dw -%2, -%1
-%endif
 %endmacro
 
-%macro VP9_IDCT_COEFFS_ALL 2-3 0
+%macro VP9_IDCT_COEFFS_ALL 2
 pw_%1x2: times 8 dw %1*2
+pw_m%1x2: times 8 dw -%1*2
 pw_%2x2: times 8 dw %2*2
-VP9_IDCT_COEFFS %1, %2, %3
+pw_m%2x2: times 8 dw -%2*2
+VP9_IDCT_COEFFS %1, %2
 %endmacro
 
-VP9_IDCT_COEFFS_ALL 15137,  6270, 1
+VP9_IDCT_COEFFS_ALL 15137,  6270
 VP9_IDCT_COEFFS_ALL 16069,  3196
 VP9_IDCT_COEFFS_ALL  9102, 13623
 VP9_IDCT_COEFFS_ALL 16305,  1606
@@ -367,7 +367,7 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
 ; void vp9_idct_idct_16x16_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
 ;---------------------------------------------------------------------------------------------
 
-%macro VP9_IDCT16_1D 2 ; src, pass
+%macro VP9_IDCT16_1D 2-3 16 ; src, pass, nnzc
     mova                m5, [%1+ 32]       ; IN(1)
     mova               m14, [%1+ 64]       ; IN(2)
     mova                m6, [%1+ 96]       ; IN(3)
@@ -375,6 +375,22 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     mova                m7, [%1+160]       ; IN(5)
     mova               m15, [%1+192]       ; IN(6)
     mova                m4, [%1+224]       ; IN(7)
+%if %3 <= 8
+    pmulhrsw            m8, m9,  [pw_15137x2]       ; t3
+    pmulhrsw            m9, [pw_6270x2]             ; t2
+    pmulhrsw           m13, m14, [pw_16069x2]       ; t7
+    pmulhrsw           m14, [pw_3196x2]             ; t4
+    pmulhrsw           m12, m15, [pw_m9102x2]       ; t5
+    pmulhrsw           m15, [pw_13623x2]            ; t6
+    pmulhrsw            m2, m5,  [pw_16305x2]       ; t15
+    pmulhrsw            m5, [pw_1606x2]             ; t8
+    pmulhrsw            m3, m4,  [pw_m10394x2]      ; t9
+    pmulhrsw            m4, [pw_12665x2]            ; t14
+    pmulhrsw            m0, m7,  [pw_14449x2]       ; t13
+    pmulhrsw            m7, [pw_7723x2]             ; t10
+    pmulhrsw            m1, m6,  [pw_m4756x2]       ; t11
+    pmulhrsw            m6, [pw_15679x2]            ; t12
+%else
     mova                m3, [%1+288]       ; IN(9)
     mova               m12, [%1+320]       ; IN(10)
     mova                m0, [%1+352]       ; IN(11)
@@ -393,6 +409,7 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     VP9_UNPACK_MULSUB_2W_4X   3,   4, 10394, 12665, [pd_8192], 10, 11 ; t9,  t14
     VP9_UNPACK_MULSUB_2W_4X   7,   0, 14449,  7723, [pd_8192], 10, 11 ; t10, t13
     VP9_UNPACK_MULSUB_2W_4X   1,   6,  4756, 15679, [pd_8192], 10, 11 ; t11, t12
+%endif
 
     ; m11=t0, m10=t1, m9=t2, m8=t3, m14=t4, m12=t5, m15=t6, m13=t7
     ; m5=t8, m3=t9, m7=t10, m1=t11, m6=t12, m0=t13, m4=t14, m2=t15
@@ -439,6 +456,11 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
 
     ; from load/start
     mova               m10, [%1+  0]        ; IN(0)
+%if %3 <= 8
+    pmulhrsw           m10, [pw_11585x2]    ; t0 and t1
+    psubw              m11, m10, m8
+    paddw               m8, m10
+%else
     mova               m11, [%1+256]        ; IN(8)
 
     ; from 3 stages back
@@ -448,6 +470,7 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
 
     ; from 2 stages back
     SUMSUB_BA            w,  8, 11, 7       ; t0,  t3
+%endif
     SUMSUB_BA            w,  9, 10, 7       ; t1,  t2
 
     ; from 1 stage back
@@ -541,11 +564,15 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
 %endif ; %2 == 1/2
 %endmacro
 
-%macro ZERO_BLOCK 3 ; mem, n_bytes, zero_reg
-%assign %%off 0
-%rep %2/mmsize
-    mova        [%1+%%off], %3
-%assign %%off (%%off+mmsize)
+%macro ZERO_BLOCK 4 ; mem, stride, nnzcpl, zero_reg
+%assign %%y 0
+%rep %3
+%assign %%x 0
+%rep %3*2/mmsize
+    mova      [%1+%%y+%%x], %4
+%assign %%x (%%x+mmsize)
+%endrep
+%assign %%y (%%y+%2)
 %endrep
 %endmacro
 
@@ -568,8 +595,11 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
 
 INIT_XMM ssse3
 cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
+    ; 2x2=eob=3, 4x4=eob=10
+    cmp eobd, 38
+    jg .idctfull
     cmp eobd, 1 ; faster path for when only DC is set
-    jne .idctfull
+    jne .idct8x8
 
     ; dc-only
     movd                m0, [blockq]
@@ -585,6 +615,25 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     lea               dstq, [dstq+2*strideq]
 %endrep
     VP9_STORE_2XFULL    0, 1, 2, 3, 4, 5
+    RET
+
+.idct8x8:
+    DEFINE_ARGS dst, stride, block, cnt, dst_bak
+    VP9_IDCT16_1D   blockq, 1, 8
+
+    mov               cntd, 2
+    mov           dst_bakq, dstq
+.loop2_8x8:
+    VP9_IDCT16_1D      rsp, 2, 8
+    lea               dstq, [dst_bakq+8]
+    add                rsp, 16
+    dec               cntd
+    jg .loop2_8x8
+    sub                rsp, 32
+
+    ; at the end of the loop, m0 should still be zero
+    ; use that to zero out block coefficients
+    ZERO_BLOCK      blockq, 32, 8, m0
     RET
 
 .idctfull:
@@ -611,8 +660,7 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
 
     ; at the end of the loop, m0 should still be zero
     ; use that to zero out block coefficients
-    ZERO_BLOCK      blockq, 512, m0
-
+    ZERO_BLOCK      blockq, 32, 16, m0
     RET
 
 %endif ; x86-64
