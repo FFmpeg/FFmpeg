@@ -23,13 +23,8 @@
 
 /**
  * @file
- * @ingroup lsws
+ * @ingroup libsws
  * external API header
- */
-
-/**
- * @defgroup lsws Libswscale
- * @{
  */
 
 #include <stdint.h>
@@ -40,6 +35,9 @@
 #include "version.h"
 
 /**
+ * @defgroup libsws Color conversion and scaling
+ * @{
+ *
  * Return the LIBSWSCALE_VERSION_INT constant.
  */
 unsigned swscale_version(void);
