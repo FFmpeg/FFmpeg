@@ -1002,7 +1002,13 @@ static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
     st->codec->extradata_size= size - FF_INPUT_BUFFER_PADDING_SIZE;
     AV_WB32(       buf    , atom.size + 8);
     AV_WL32(       buf + 4, atom.type);
-    avio_read(pb, buf + 8, atom.size);
+    err = avio_read(pb, buf + 8, atom.size);
+    if (err < 0) {
+        return err;
+    } else if (err < atom.size) {
+        av_log(c->fc, AV_LOG_WARNING, "truncated extradata\n");
+        st->codec->extradata_size -= atom.size - err;
+    }
     return 0;
 }
 
