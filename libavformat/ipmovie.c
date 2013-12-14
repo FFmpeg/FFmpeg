@@ -321,7 +321,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
 
         case OPCODE_CREATE_TIMER:
             av_dlog(NULL, "create timer\n");
-            if ((opcode_version > 0) || (opcode_size > 6)) {
+            if ((opcode_version > 0) || (opcode_size != 6)) {
                 av_dlog(NULL, "bad create_timer opcode\n");
                 chunk_type = CHUNK_BAD;
                 break;
