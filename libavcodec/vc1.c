@@ -122,12 +122,16 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
     case IMODE_NORM2:
         if ((height * width) & 1) {
             *planep++ = get_bits1(gb);
-            offset    = 1;
+            y = offset = 1;
+            if (offset == width) {
+                offset = 0;
+                planep += stride - width;
+            }
         }
         else
-            offset = 0;
+            y = offset = 0;
         // decode bitplane as one long line
-        for (y = offset; y < height * width; y += 2) {
+        for (; y < height * width; y += 2) {
             code = get_vlc2(gb, ff_vc1_norm2_vlc.table, VC1_NORM2_VLC_BITS, 1);
             *planep++ = code & 1;
             offset++;
