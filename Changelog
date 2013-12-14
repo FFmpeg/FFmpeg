@@ -10,7 +10,7 @@ version <next>
 - string validation in ffprobe
 - support for decoding through VDPAU in ffmpeg (the -hwaccel option)
 - complete Voxware MetaSound decoder
-- remove mp3_header_compress bitstream filters
+- remove mp3_header_compress bitstream filter
 - Windows resource files for shared libraries
 - aeval filter
 - stereoscopic 3d metadata handling
