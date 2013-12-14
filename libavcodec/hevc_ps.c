@@ -201,6 +201,14 @@ static void decode_profile_tier_level(HEVCContext *s, PTLCommon *ptl)
     ptl->profile_space = get_bits(gb, 2);
     ptl->tier_flag     = get_bits1(gb);
     ptl->profile_idc   = get_bits(gb, 5);
+    if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN)
+        av_log(s->avctx, AV_LOG_DEBUG, "Main profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_10)
+        av_log(s->avctx, AV_LOG_DEBUG, "Main 10 profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_STILL_PICTURE)
+        av_log(s->avctx, AV_LOG_DEBUG, "Main Still Picture profile bitstream\n");
+    else
+        av_log(s->avctx, AV_LOG_WARNING, "Unknown HEVC profile: %d\n", ptl->profile_idc);
 
     for (i = 0; i < 32; i++)
         ptl->profile_compatibility_flag[i] = get_bits1(gb);
