@@ -117,8 +117,6 @@ ffmpeg -i frame_%d.jpg -c:v copy rotated.avi
 
 @section movsub
 
-@section mp3_header_compress
-
 @section mp3_header_decompress
 
 @section noise
