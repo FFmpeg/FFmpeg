@@ -799,18 +799,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->pcm_enabled_flag = get_bits1(gb);
     if (sps->pcm_enabled_flag) {
-        int pcm_bit_depth_chroma;
         sps->pcm.bit_depth   = get_bits(gb, 4) + 1;
-        pcm_bit_depth_chroma = get_bits(gb, 4) + 1;
-        if (pcm_bit_depth_chroma != sps->pcm.bit_depth) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "PCM Luma bit depth (%d) is different from PCM chroma"
-                   "bit depth (%d), this is unsupported.\n",
-                   sps->pcm.bit_depth, pcm_bit_depth_chroma);
-            ret = AVERROR_INVALIDDATA;
-            goto err;
-        }
-
+        sps->pcm.bit_depth_chroma = get_bits(gb, 4) + 1;
         sps->pcm.log2_min_pcm_cb_size = get_ue_golomb_long(gb) + 3;
         sps->pcm.log2_max_pcm_cb_size = sps->pcm.log2_min_pcm_cb_size +
                                         get_ue_golomb_long(gb);
