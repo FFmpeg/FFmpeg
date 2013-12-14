@@ -32,8 +32,6 @@
 #include "xvmc_internal.h"
 #include "version.h"
 
-#if FF_API_XVMC
-
 /**
  * Initialize the block field of the MpegEncContext pointer passed as
  * parameter after making sure that the data is not corrupted.
@@ -47,6 +45,15 @@ void ff_xvmc_init_block(MpegEncContext *s)
     assert(render && render->xvmc_id == AV_XVMC_ID);
 
     s->block = (int16_t (*)[64])(render->data_blocks + render->next_free_data_block_num * 64);
+}
+
+static void exchange_uv(MpegEncContext *s)
+{
+    int16_t (*tmp)[64];
+
+    tmp           = s->pblocks[4];
+    s->pblocks[4] = s->pblocks[5];
+    s->pblocks[5] = tmp;
 }
 
 /**
@@ -66,6 +73,9 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
             s->pblocks[i] = NULL;
         cbp += cbp;
     }
+    if (s->swap_uv) {
+        exchange_uv(s);
+    }
 }
 
 /**
@@ -73,8 +83,9 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
  * This function should be called for every new field and/or frame.
  * It should be safe to call the function a few times for the same field.
  */
-int ff_xvmc_field_start(MpegEncContext *s, AVCodecContext *avctx)
+static int ff_xvmc_field_start(AVCodecContext *avctx, const uint8_t *buf, uint32_t buf_size)
 {
+    struct MpegEncContext *s = avctx->priv_data;
     struct xvmc_pix_fmt *last, *next, *render = (struct xvmc_pix_fmt*)s->current_picture.f.data[2];
     const int mb_block_count = 4 + (1 << s->chroma_format);
 
@@ -141,20 +152,22 @@ return -1;
  * some leftover blocks, for example from error_resilience(), may remain.
  * It should be safe to call the function a few times for the same field.
  */
-void ff_xvmc_field_end(MpegEncContext *s)
+static int ff_xvmc_field_end(AVCodecContext *avctx)
 {
+    struct MpegEncContext *s = avctx->priv_data;
     struct xvmc_pix_fmt *render = (struct xvmc_pix_fmt*)s->current_picture.f.data[2];
     assert(render);
 
     if (render->filled_mv_blocks_num > 0)
         ff_mpeg_draw_horiz_band(s, 0, 0);
+    return 0;
 }
 
 /**
  * Synthesize the data needed by XvMC to render one macroblock of data.
  * Fill all relevant fields, if necessary do IDCT.
  */
-void ff_xvmc_decode_mb(MpegEncContext *s)
+static void ff_xvmc_decode_mb(struct MpegEncContext *s)
 {
     XvMCMacroBlock *mv_block;
     struct xvmc_pix_fmt *render;
@@ -313,7 +326,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
                  * slowdown. */
             }
             // copy blocks only if the codec doesn't support pblocks reordering
-            if (s->avctx->xvmc_acceleration == 1) {
+            if (!s->pack_pblocks) {
                 memcpy(&render->data_blocks[render->next_free_data_block_num*64],
                        s->pblocks[i], sizeof(*s->pblocks[i]));
             }
@@ -333,4 +346,30 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
         ff_mpeg_draw_horiz_band(s, 0, 0);
 }
 
-#endif /* FF_API_XVMC */
+#if CONFIG_MPEG1_XVMC_HWACCEL
+AVHWAccel ff_mpeg1_xvmc_hwaccel = {
+    .name           = "mpeg1_xvmc",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_MPEG1VIDEO,
+    .pix_fmt        = AV_PIX_FMT_XVMC,
+    .start_frame    = ff_xvmc_field_start,
+    .end_frame      = ff_xvmc_field_end,
+    .decode_slice   = NULL,
+    .decode_mb      = ff_xvmc_decode_mb,
+    .priv_data_size = 0,
+};
+#endif
+
+#if CONFIG_MPEG2_XVMC_HWACCEL
+AVHWAccel ff_mpeg2_xvmc_hwaccel = {
+    .name           = "mpeg2_xvmc",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_MPEG2VIDEO,
+    .pix_fmt        = AV_PIX_FMT_XVMC,
+    .start_frame    = ff_xvmc_field_start,
+    .end_frame      = ff_xvmc_field_end,
+    .decode_slice   = NULL,
+    .decode_mb      = ff_xvmc_decode_mb,
+    .priv_data_size = 0,
+};
+#endif

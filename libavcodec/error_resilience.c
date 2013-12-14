@@ -699,15 +699,11 @@ static int is_intra_more_likely(ERContext *s)
     if (undamaged_count < 5)
         return 0; // almost all MBs damaged -> use temporal prediction
 
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
     // prevent dsp.sad() check, that requires access to the image
-    if (CONFIG_MPEG_XVMC_DECODER    &&
-        s->avctx->xvmc_acceleration &&
+    if (CONFIG_XVMC    &&
+        s->avctx->hwaccel && s->avctx->hwaccel->decode_mb &&
         s->cur_pic->f.pict_type == AV_PICTURE_TYPE_I)
         return 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
 
     skip_amount     = FFMAX(undamaged_count / 50, 1); // check only up to 50 MBs
     is_intra_likely = 0;
@@ -770,7 +766,7 @@ void ff_er_frame_start(ERContext *s)
 
 static int er_supported(ERContext *s)
 {
-    if(s->avctx->hwaccel                                              ||
+    if(s->avctx->hwaccel && s->avctx->hwaccel->decode_slice           ||
        s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU          ||
        !s->cur_pic                                                    ||
        s->cur_pic->field_picture
@@ -795,7 +791,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
     const int end_xy   = s->mb_index2xy[end_i];
     int mask           = -1;
 
-    if (s->avctx->hwaccel)
+    if (s->avctx->hwaccel && s->avctx->hwaccel->decode_slice)
         return;
 
     if (start_i > end_i || start_xy > end_xy) {
@@ -1188,13 +1184,9 @@ void ff_er_frame_end(ERContext *s)
     } else
         guess_mv(s);
 
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-    /* the filters below are not XvMC compatible, skip them */
-    if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
+    /* the filters below manipulate raw image, skip them */
+    if (CONFIG_XVMC && s->avctx->hwaccel && s->avctx->hwaccel->decode_mb)
         goto ec_clean;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
     /* fill DC for inter blocks */
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {

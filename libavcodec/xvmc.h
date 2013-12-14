@@ -33,8 +33,6 @@
 #include "version.h"
 #include "avcodec.h"
 
-#if FF_API_XVMC
-
 /**
  * @defgroup lavc_codec_hwaccel_xvmc XvMC
  * @ingroup lavc_codec_hwaccel
@@ -168,7 +166,5 @@ attribute_deprecated struct xvmc_pix_fmt {
 /**
  * @}
  */
-
-#endif /* FF_API_XVMC */
 
 #endif /* AVCODEC_XVMC_H */
