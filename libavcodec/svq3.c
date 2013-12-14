@@ -158,6 +158,8 @@ static const uint32_t svq3_dequant_coeff[32] = {
     61694, 68745, 77615, 89113, 100253, 109366, 126635, 141533
 };
 
+static int svq3_decode_end(AVCodecContext *avctx);
+
 void ff_svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
 {
     const int qmul = svq3_dequant_coeff[qp];
@@ -868,19 +870,18 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     unsigned char *extradata_end;
     unsigned int size;
     int marker_found = 0;
+    int ret;
 
     s->cur_pic  = av_mallocz(sizeof(*s->cur_pic));
     s->last_pic = av_mallocz(sizeof(*s->last_pic));
     s->next_pic = av_mallocz(sizeof(*s->next_pic));
     if (!s->next_pic || !s->last_pic || !s->cur_pic) {
-        av_freep(&s->cur_pic);
-        av_freep(&s->last_pic);
-        av_freep(&s->next_pic);
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
-    if (ff_h264_decode_init(avctx) < 0)
-        return -1;
+    if ((ret = ff_h264_decode_init(avctx)) < 0)
+        goto fail;
 
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     h->flags           = avctx->flags;
@@ -915,8 +916,10 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         int frame_size_code;
 
         size = AV_RB32(&extradata[4]);
-        if (size > extradata_end - extradata - 8)
-            return AVERROR_INVALIDDATA;
+        if (size > extradata_end - extradata - 8) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
         init_get_bits(&gb, extradata + 8, size * 8);
 
         /* 'frame size code' and optional 'width, height' */
@@ -970,8 +973,10 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         /* unknown field */
         skip_bits1(&gb);
 
-        if (skip_1stop_8data_bits(&gb) < 0)
-            return AVERROR_INVALIDDATA;
+        if (skip_1stop_8data_bits(&gb) < 0) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
 
         s->unknown_flag  = get_bits1(&gb);
         avctx->has_b_frames = !h->low_delay;
@@ -989,8 +994,10 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             uint8_t *buf;
 
             if (watermark_height <= 0 ||
-                (uint64_t)watermark_width * 4 > UINT_MAX / watermark_height)
-                return -1;
+                (uint64_t)watermark_width * 4 > UINT_MAX / watermark_height) {
+                ret = -1;
+                goto fail;
+            }
 
             buf = av_malloc(buf_len);
             av_log(avctx, AV_LOG_DEBUG, "watermark size: %dx%d\n",
@@ -1003,7 +1010,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
                 av_log(avctx, AV_LOG_ERROR,
                        "could not uncompress watermark logo\n");
                 av_free(buf);
-                return -1;
+                ret = -1;
+                goto fail;
             }
             s->watermark_key = ff_svq1_packet_checksum(buf, buf_len, 0);
             s->watermark_key = s->watermark_key << 16 | s->watermark_key;
@@ -1013,7 +1021,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 #else
             av_log(avctx, AV_LOG_ERROR,
                    "this svq3 file contains watermark which need zlib support compiled in\n");
-            return -1;
+            ret = -1;
+            goto fail;
 #endif
         }
     }
@@ -1028,12 +1037,15 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     s->h_edge_pos = h->mb_width * 16;
     s->v_edge_pos = h->mb_height * 16;
 
-    if (ff_h264_alloc_tables(h) < 0) {
+    if ((ret = ff_h264_alloc_tables(h)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "svq3 memory allocation failed\n");
-        return AVERROR(ENOMEM);
+        goto fail;
     }
 
     return 0;
+fail:
+    svq3_decode_end(avctx);
+    return ret;
 }
 
 static void free_picture(AVCodecContext *avctx, Picture *pic)
