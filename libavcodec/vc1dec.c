@@ -5288,7 +5288,7 @@ static void vc1_sprite_parse_transform(GetBitContext* gb, int c[7])
         c[6] = 1 << 16;
 }
 
-static void vc1_parse_sprites(VC1Context *v, GetBitContext* gb, SpriteData* sd)
+static int vc1_parse_sprites(VC1Context *v, GetBitContext* gb, SpriteData* sd)
 {
     AVCodecContext *avctx = v->s.avctx;
     int sprite, i;
@@ -5332,7 +5332,7 @@ static void vc1_parse_sprites(VC1Context *v, GetBitContext* gb, SpriteData* sd)
         sd->effect_pcount2 = get_bits(gb, 16);
         if (sd->effect_pcount2 > 10) {
             av_log(avctx, AV_LOG_ERROR, "Too many effect parameters\n");
-            return;
+            return AVERROR_INVALIDDATA;
         } else if (sd->effect_pcount2) {
             i = -1;
             av_log(avctx, AV_LOG_DEBUG, "Effect params 2: ");
@@ -5349,10 +5349,14 @@ static void vc1_parse_sprites(VC1Context *v, GetBitContext* gb, SpriteData* sd)
         av_log(avctx, AV_LOG_DEBUG, "Effect flag set\n");
 
     if (get_bits_count(gb) >= gb->size_in_bits +
-       (avctx->codec_id == AV_CODEC_ID_WMV3IMAGE ? 64 : 0))
+       (avctx->codec_id == AV_CODEC_ID_WMV3IMAGE ? 64 : 0)) {
         av_log(avctx, AV_LOG_ERROR, "Buffer overrun\n");
+        return AVERROR_INVALIDDATA;
+    }
     if (get_bits_count(gb) < gb->size_in_bits - 8)
         av_log(avctx, AV_LOG_WARNING, "Buffer not fully read\n");
+
+    return 0;
 }
 
 static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
@@ -5461,7 +5465,9 @@ static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
 
     memset(&sd, 0, sizeof(sd));
 
-    vc1_parse_sprites(v, gb, &sd);
+    ret = vc1_parse_sprites(v, gb, &sd);
+    if (ret < 0)
+        return ret;
 
     if (!s->current_picture.f.data[0]) {
         av_log(avctx, AV_LOG_ERROR, "Got no sprites\n");
