@@ -34,6 +34,8 @@
 #define VBI_B(rgba)   (((rgba) >> 16) & 0xFF)
 #define VBI_A(rgba)   (((rgba) >> 24) & 0xFF)
 #define MAX_BUFFERED_PAGES 25
+#define BITMAP_CHAR_WIDTH  12
+#define BITMAP_CHAR_HEIGHT 10
 
 typedef struct TeletextPage
 {
@@ -43,7 +45,6 @@ typedef struct TeletextPage
     int64_t pts;
 } TeletextPage;
 
-/* main data structure */
 typedef struct TeletextContext
 {
     AVClass        *class;
@@ -67,14 +68,10 @@ typedef struct TeletextContext
 #ifdef DEBUG
     vbi_export *    ex;
 #endif
-    /* Don't even _think_ about making sliced stack-local! */
     vbi_sliced      sliced[64];
 } TeletextContext;
 
-/************************************************************************/
-
-static int
-chop_spaces_utf8(const unsigned char* t, int len)
+static int chop_spaces_utf8(const unsigned char* t, int len)
 {
     t += len;
     while (len > 0) {
@@ -85,8 +82,7 @@ chop_spaces_utf8(const unsigned char* t, int len)
     return len;
 }
 
-static void
-subtitle_rect_free(AVSubtitleRect **sub_rect)
+static void subtitle_rect_free(AVSubtitleRect **sub_rect)
 {
     av_freep(&(*sub_rect)->pict.data[0]);
     av_freep(&(*sub_rect)->pict.data[1]);
@@ -94,8 +90,7 @@ subtitle_rect_free(AVSubtitleRect **sub_rect)
     av_freep(sub_rect);
 }
 
-static int
-create_ass_text(TeletextContext *ctx, const char *text, char **ass)
+static int create_ass_text(TeletextContext *ctx, const char *text, char **ass)
 {
     int ret;
     AVBPrint buf, buf2;
@@ -127,9 +122,8 @@ create_ass_text(TeletextContext *ctx, const char *text, char **ass)
     return 0;
 }
 
-// draw a page as text
-static int
-gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top)
+/* Draw a page as text */
+static int gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top)
 {
     const char *in;
     AVBPrint buf;
@@ -195,21 +189,21 @@ gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int
     return 0;
 }
 
-static void
-fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top, uint8_t transparent_color, int resx, int resy)
+static void fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page,
+                             int chop_top, uint8_t transparent_color, int resx, int resy)
 {
     int iy;
 
     // Hack for transparency, inspired by VLC code...
     for (iy = 0; iy < resy; iy++) {
         uint8_t *pixel = sub_rect->pict.data[0] + iy * sub_rect->pict.linesize[0];
-        vbi_char *vc = page->text + (iy / 10 + chop_top) * page->columns;
+        vbi_char *vc = page->text + (iy / BITMAP_CHAR_HEIGHT + chop_top) * page->columns;
         vbi_char *vcnext = vc + page->columns;
         for (; vc < vcnext; vc++) {
-            uint8_t *pixelnext = pixel + 12;
+            uint8_t *pixelnext = pixel + BITMAP_CHAR_WIDTH;
             switch (vc->opacity) {
                 case VBI_TRANSPARENT_SPACE:
-                    memset(pixel, transparent_color, 12);
+                    memset(pixel, transparent_color, BITMAP_CHAR_WIDTH);
                     break;
                 case VBI_OPAQUE:
                 case VBI_SEMI_TRANSPARENT:
@@ -226,12 +220,11 @@ fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page,
     }
 }
 
-// draw a page as bitmap
-static int
-gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top)
+/* Draw a page as bitmap */
+static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top)
 {
-    int resx = page->columns * 12;
-    int resy = (page->rows - chop_top) * 10;
+    int resx = page->columns * BITMAP_CHAR_WIDTH;
+    int resy = (page->rows - chop_top) * BITMAP_CHAR_HEIGHT;
     uint8_t ci, cmax = 0;
     int ret;
     vbi_char *vc = page->text + (chop_top * page->columns);
@@ -262,7 +255,7 @@ gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, i
 
     fix_transparency(ctx, sub_rect, page, chop_top, cmax, resx, resy);
     sub_rect->x = ctx->x_offset;
-    sub_rect->y = ctx->y_offset;
+    sub_rect->y = ctx->y_offset + chop_top * BITMAP_CHAR_HEIGHT;
     sub_rect->w = resx;
     sub_rect->h = resy;
     sub_rect->nb_colors = (int)cmax + 1;
@@ -289,8 +282,7 @@ gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, i
     return 0;
 }
 
-static void
-handler(vbi_event *ev, void *user_data)
+static void handler(vbi_event *ev, void *user_data)
 {
     TeletextContext *ctx = user_data;
     TeletextPage *new_pages;
@@ -311,7 +303,6 @@ handler(vbi_event *ev, void *user_data)
     if (ctx->handler_ret < 0)
         return;
 
-    /* Fetch the page.  */
     res = vbi_fetch_vt_page(ctx->vbi, &page,
                             ev->ev.ttx_page.pgno,
                             ev->ev.ttx_page.subno,
@@ -369,10 +360,7 @@ handler(vbi_event *ev, void *user_data)
     vbi_unref_page(&page);
 }
 
-static int
-teletext_decode_frame(AVCodecContext *avctx,
-                      void *data, int *data_size,
-                      AVPacket *pkt)
+static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *pkt)
 {
     TeletextContext *ctx = avctx->priv_data;
     AVSubtitle      *sub = data;
@@ -484,6 +472,11 @@ static int teletext_init_decoder(AVCodecContext *avctx)
     if (!(maj > 0 || min > 2 || min == 2 && rev >= 26)) {
         av_log(avctx, AV_LOG_ERROR, "decoder needs zvbi version >= 0.2.26.\n");
         return AVERROR_EXTERNAL;
+    }
+
+    if (ctx->format_id == 0) {
+        avctx->width  = 41 * BITMAP_CHAR_WIDTH;
+        avctx->height = 25 * BITMAP_CHAR_HEIGHT;
     }
 
     ctx->dx = NULL;
