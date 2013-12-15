@@ -942,6 +942,15 @@ audio packets.
 ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac -strict experimental
        -f tee "[bsfs/v=dump_extra]out.ts|[movflags=+faststart]out.mp4|[select=a]out.aac"
 @end example
+
+@item
+As below, but select only stream @code{a:1} for the audio output. Note
+that a second level escaping must be performed, as ":" is a special
+character used to separate options.
+@example
+ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac -strict experimental
+       -f tee "[bsfs/v=dump_extra]out.ts|[movflags=+faststart]out.mp4|[select=\'a:1\']out.aac"
+@end example
 @end itemize
 
 Note: some codecs may need different options depending on the output format;
