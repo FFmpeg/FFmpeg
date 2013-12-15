@@ -2226,7 +2226,11 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
             S3D_video_format_type == 0x23) {
             Mpeg1Context *s1   = avctx->priv_data;
             MpegEncContext *s  = &s1->mpeg_enc_ctx;
-            AVStereo3D *stereo = av_stereo3d_create_side_data(&s->current_picture_ptr->f);
+            AVStereo3D *stereo;
+            if (!s->current_picture_ptr)
+                return;
+
+            stereo = av_stereo3d_create_side_data(&s->current_picture_ptr->f);
             if (!stereo)
                 return;
 
