@@ -90,6 +90,9 @@ struct Program {
     unsigned int id; //program id/service id
     unsigned int nb_pids;
     unsigned int pids[MAX_PIDS_PER_PROGRAM];
+
+    /** have we found pmt for this program */
+    int pmt_found;
 };
 
 struct MpegTSContext {
@@ -205,6 +208,17 @@ typedef struct PESContext {
 
 extern AVInputFormat ff_mpegts_demuxer;
 
+static struct Program * get_program(MpegTSContext *ts, unsigned int programid)
+{
+    int i;
+    for(i=0; i<ts->nb_prg; i++) {
+        if(ts->prg[i].id == programid) {
+            return &ts->prg[i];
+        }
+    }
+    return NULL;
+}
+
 static void clear_avprogram(MpegTSContext *ts, unsigned int programid)
 {
     AVProgram *prg = NULL;
@@ -225,8 +239,10 @@ static void clear_program(MpegTSContext *ts, unsigned int programid)
 
     clear_avprogram(ts, programid);
     for(i=0; i<ts->nb_prg; i++)
-        if(ts->prg[i].id == programid)
+        if(ts->prg[i].id == programid) {
             ts->prg[i].nb_pids = 0;
+            ts->prg[i].pmt_found = 0;
+        }
 }
 
 static void clear_programs(MpegTSContext *ts)
@@ -245,25 +261,28 @@ static void add_pat_entry(MpegTSContext *ts, unsigned int programid)
     p = &ts->prg[ts->nb_prg];
     p->id = programid;
     p->nb_pids = 0;
+    p->pmt_found = 0;
     ts->nb_prg++;
 }
 
 static void add_pid_to_pmt(MpegTSContext *ts, unsigned int programid, unsigned int pid)
 {
-    int i;
-    struct Program *p = NULL;
-    for(i=0; i<ts->nb_prg; i++) {
-        if(ts->prg[i].id == programid) {
-            p = &ts->prg[i];
-            break;
-        }
-    }
+    struct Program *p = get_program(ts, programid);
     if(!p)
         return;
 
     if(p->nb_pids >= MAX_PIDS_PER_PROGRAM)
         return;
     p->pids[p->nb_pids++] = pid;
+}
+
+static void set_pmt_found(MpegTSContext *ts, unsigned int programid)
+{
+    struct Program *p = get_program(ts, programid);
+    if(!p)
+        return;
+
+    p->pmt_found = 1;
 }
 
 static void set_pcr_pid(AVFormatContext *s, unsigned int programid, unsigned int pid)
@@ -1590,6 +1609,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (!ts->stream->nb_streams)
         ts->stop_parse = 2;
 
+    set_pmt_found(ts, h->id);
+
     for(;;) {
         st = 0;
         pes = NULL;
@@ -1912,6 +1933,21 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
                                    p, p_end - p, 0);
             }
         }
+
+        // stop find_stream_info from waiting for more streams
+        // when all programs have received a PMT
+        if( ts->stream->ctx_flags & AVFMTCTX_NOHEADER) {
+            int i;
+            for(i=0; i<ts->nb_prg; i++) {
+                if (!ts->prg[i].pmt_found)
+                    break;
+            }
+            if (i == ts->nb_prg && ts->nb_prg > 0) {
+                av_log(ts->stream, AV_LOG_DEBUG, "All programs have pmt, headers found\n");
+                ts->stream->ctx_flags &= ~AVFMTCTX_NOHEADER;
+            }
+        }
+
     } else {
         int ret;
         int64_t pcr = -1;
