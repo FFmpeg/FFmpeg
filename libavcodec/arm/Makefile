@@ -23,6 +23,7 @@ OBJS-$(CONFIG_HPELDSP)                 += arm/hpeldsp_init_arm.o        \
                                           arm/hpeldsp_arm.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += arm/mpegaudiodsp_init_arm.o
 OBJS-$(CONFIG_MPEGVIDEO)               += arm/mpegvideo_arm.o
+OBJS-$(CONFIG_VC1_DECODER)             += arm/vc1dsp_init_arm.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += arm/vorbisdsp_init_arm.o
 OBJS-$(CONFIG_VP3DSP)                  += arm/vp3dsp_init_arm.o
 OBJS-$(CONFIG_VP6_DECODER)             += arm/vp6dsp_init_arm.o
@@ -88,6 +89,8 @@ NEON-OBJS-$(CONFIG_RDFT)               += arm/rdft_neon.o
 NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_neon.o
 NEON-OBJS-$(CONFIG_RV40_DECODER)       += arm/rv34dsp_neon.o            \
                                           arm/rv40dsp_neon.o
+NEON-OBJS-$(CONFIG_VC1_DECODER)        += arm/vc1dsp_init_neon.o        \
+                                          arm/vc1dsp_neon.o
 NEON-OBJS-$(CONFIG_VORBIS_DECODER)     += arm/vorbisdsp_neon.o
 NEON-OBJS-$(CONFIG_VP3DSP)             += arm/vp3dsp_neon.o
 NEON-OBJS-$(CONFIG_VP6_DECODER)        += arm/vp6dsp_neon.o
