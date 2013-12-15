@@ -889,8 +889,8 @@ to feed the same packets to several muxers directly.
 The slave outputs are specified in the file name given to the muxer,
 separated by '|'. If any of the slave name contains the '|' separator,
 leading or trailing spaces or any special character, it must be
-escaped (see the ``Quoting and escaping'' section in the ffmpeg-utils
-manual).
+escaped (see @ref{quoting_and_escaping,,the "Quoting and escaping"
+section in the ffmpeg-utils(1) manual,ffmpeg-utils}).
 
 Muxer options can be specified for each slave by prepending them as a list of
 @var{key}=@var{value} pairs separated by ':', between square brackets. If
@@ -905,9 +905,12 @@ output name suffix.
 
 @item bsfs[/@var{spec}]
 Specify a list of bitstream filters to apply to the specified
-output. It is possible to specify to which streams a given bitstream
-filter applies, by appending a stream specifier to the option
-separated by @code{/}. If the stream specifier is not specified, the
+output.
+
+It is possible to specify to which streams a given bitstream filter
+applies, by appending a stream specifier to the option separated by
+@code{/}. @var{spec} must be a stream specifier (see @ref{Format
+stream specifiers}).  If the stream specifier is not specified, the
 bistream filters will be applied to all streams in the output.
 
 Several bitstream filters can be specified, separated by ",".
