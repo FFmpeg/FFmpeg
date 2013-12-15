@@ -544,7 +544,8 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, char *tta
 
     len -= 16;
     while (len > 10) {
-        avio_read(pb, tag, 4);
+        if (avio_read(pb, tag, 4) < 4)
+            goto end;
         tag[4] = 0;
         taglen = avio_rb32(pb);
         avio_skip(pb, 2);
