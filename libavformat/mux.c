@@ -237,7 +237,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
 
     // some sanity checks
     if (s->nb_streams == 0 && !(of->flags & AVFMT_NOSTREAMS)) {
-        av_log(s, AV_LOG_ERROR, "no streams\n");
+        av_log(s, AV_LOG_ERROR, "No streams to mux were specified\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
