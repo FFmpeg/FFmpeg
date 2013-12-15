@@ -2731,6 +2731,7 @@ int ff_rfps_add_frame(AVFormatContext *ic, AVStream *st, int64_t ts)
             }
         }
         st->info->duration_count++;
+        st->info->rfps_duration_sum += duration;
 
         if (st->info->duration_count % 10 == 0) {
             int n = st->info->duration_count;
@@ -2784,6 +2785,10 @@ void ff_rfps_calculate(AVFormatContext *ic)
                     continue;
                 if(!st->info->codec_info_duration && 1.0 < (1001*12.0)/get_std_framerate(j))
                     continue;
+
+                if (av_q2d(st->time_base) * st->info->rfps_duration_sum / st->info->duration_count < (1001*12.0 * 0.8)/get_std_framerate(j))
+                    continue;
+
                 for(k=0; k<2; k++){
                     int n= st->info->duration_count;
                     double a= st->info->duration_error[k][0][j] / n;
@@ -2805,6 +2810,7 @@ void ff_rfps_calculate(AVFormatContext *ic)
         av_freep(&st->info->duration_error);
         st->info->last_dts = AV_NOPTS_VALUE;
         st->info->duration_count = 0;
+        st->info->rfps_duration_sum = 0;
     }
 }
 
