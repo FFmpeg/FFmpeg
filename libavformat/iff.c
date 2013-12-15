@@ -462,7 +462,9 @@ static int iff_read_packet(AVFormatContext *s,
         buf = pkt->data;
         bytestream_put_be16(&buf, 2);
         ret = avio_read(pb, buf, iff->body_size);
-        if (ret>=0 && ret < iff->body_size)
+        if (ret<0) {
+            av_free_packet(pkt);
+        } else if (ret < iff->body_size)
             av_shrink_packet(pkt, ret + 2);
     } else {
         av_assert0(0);
