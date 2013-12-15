@@ -549,10 +549,8 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, char *tta
         taglen = avio_rb32(pb);
         avio_skip(pb, 2);
         len -= 10;
-        if (taglen < 0 || taglen > len) {
-            av_free(dst);
-            return;
-        }
+        if (taglen < 0 || taglen > len)
+            goto end;
         if (tag[0] == 'T')
             read_ttag(s, pb, taglen, &chapter->metadata, tag);
         else
@@ -562,6 +560,7 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, char *tta
 
     ff_metadata_conv(&chapter->metadata, NULL, ff_id3v2_34_metadata_conv);
     ff_metadata_conv(&chapter->metadata, NULL, ff_id3v2_4_metadata_conv);
+end:
     av_free(dst);
 }
 
