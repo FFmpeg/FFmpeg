@@ -588,6 +588,7 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         }
         if (level < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
+            *dir_ptr = 0;
             return -1;
         }
         level-=256;
@@ -599,6 +600,7 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         }
         if (level < 0){
             av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
+            *dir_ptr = 0;
             return -1;
         }
 
