@@ -85,14 +85,17 @@ typedef struct AVDictionary AVDictionary;
 /**
  * Get a dictionary entry with matching key.
  *
+ * The returned entry key or value must not be changed, or it will
+ * cause undefined behavior.
+ *
  * To iterate through all the dictionary entries, you can set the matching key
  * to the null string "" and set the AV_DICT_IGNORE_SUFFIX flag.
  *
  * @param prev Set to the previous matching element to find the next.
  *             If set to NULL the first matching element is returned.
  * @param key matching key
- * @param flags Allows case as well as suffix-insensitive comparisons.
- * @return Found entry or NULL, changing key or value leads to undefined behavior.
+ * @param flags a collection of AV_DICT_* flags controlling how the entry is retrieved
+ * @return found entry or NULL in case no matching entry was found in the dictionary
  */
 AVDictionaryEntry *
 av_dict_get(AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
