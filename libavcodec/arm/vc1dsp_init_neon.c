@@ -70,6 +70,15 @@ void ff_put_vc1_mspel_mc32_neon(uint8_t *dst, const uint8_t *src,
 void ff_put_vc1_mspel_mc33_neon(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride, int rnd);
 
+void ff_put_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, int stride, int h,
+                                int x, int y);
+void ff_avg_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, int stride, int h,
+                                int x, int y);
+void ff_put_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, int stride, int h,
+                                int x, int y);
+void ff_avg_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, int stride, int h,
+                                int x, int y);
+
 av_cold void ff_vc1dsp_init_neon(VC1DSPContext *dsp)
 {
     dsp->vc1_inv_trans_8x8 = ff_vc1_inv_trans_8x8_neon;
@@ -97,4 +106,9 @@ av_cold void ff_vc1dsp_init_neon(VC1DSPContext *dsp)
     dsp->put_vc1_mspel_pixels_tab[13] = ff_put_vc1_mspel_mc13_neon;
     dsp->put_vc1_mspel_pixels_tab[14] = ff_put_vc1_mspel_mc23_neon;
     dsp->put_vc1_mspel_pixels_tab[15] = ff_put_vc1_mspel_mc33_neon;
+
+    dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_neon;
+    dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_neon;
+    dsp->put_no_rnd_vc1_chroma_pixels_tab[1] = ff_put_vc1_chroma_mc4_neon;
+    dsp->avg_no_rnd_vc1_chroma_pixels_tab[1] = ff_avg_vc1_chroma_mc4_neon;
 }
