@@ -586,8 +586,10 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         } else {
             level = get_vlc2(&s->gb, v2_dc_chroma_vlc.table, DC_VLC_BITS, 3);
         }
-        if (level < 0)
+        if (level < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
             return -1;
+        }
         level-=256;
     }else{  //FIXME optimize use unified tables & index
         if (n < 4) {
