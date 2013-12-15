@@ -667,7 +667,7 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version,
         unsigned long dlen;
 
         if (isv34) {
-            if (avio_read(s->pb, tag, 4) < 0)
+            if (avio_read(s->pb, tag, 4) < 4)
                 break;
             tag[4] = 0;
             if (version == 3) {
@@ -677,7 +677,7 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version,
             tflags  = avio_rb16(s->pb);
             tunsync = tflags & ID3v2_FLAG_UNSYNCH;
         } else {
-            if (avio_read(s->pb, tag, 3) < 0)
+            if (avio_read(s->pb, tag, 3) < 3)
                 break;
             tag[3] = 0;
             tlen   = avio_rb24(s->pb);
