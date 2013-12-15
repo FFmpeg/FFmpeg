@@ -1108,8 +1108,9 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     if (INLINE_MMXEXT(cpu_flags) && c->srcBpc == 8 && c->dstBpc <= 14) {
         c->canMMXEXTBeUsed = dstW >= srcW && (dstW & 31) == 0 &&
+                             c->chrDstW >= c->chrSrcW &&
                              (srcW & 15) == 0;
-        if (!c->canMMXEXTBeUsed && dstW >= srcW && (srcW & 15) == 0
+        if (!c->canMMXEXTBeUsed && dstW >= srcW && c->chrDstW >= c->chrSrcW && (srcW & 15) == 0
 
             && (flags & SWS_FAST_BILINEAR)) {
             if (flags & SWS_PRINT_INFO)
