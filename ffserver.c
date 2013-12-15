@@ -2641,7 +2641,7 @@ static int http_start_receive_data(HTTPContext *c)
     fd = open(c->stream->feed_filename, O_RDWR);
     if (fd < 0) {
         ret = AVERROR(errno);
-        http_log("Could not open feed file '%s':%s \n",
+        http_log("Could not open feed file '%s': %s\n",
                  c->stream->feed_filename, strerror(errno));
         return ret;
     }
