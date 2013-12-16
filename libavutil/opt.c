@@ -559,8 +559,8 @@ static int set_format(void *obj, const char *name, int fmt, int search_flags,
     } else
 #endif
     {
-        min = FFMIN(o->min, -1);
-        max = FFMAX(o->max, nb_fmts-1);
+        min = FFMAX(o->min, -1);
+        max = FFMIN(o->max, nb_fmts-1);
     }
     if (fmt < min || fmt > max) {
         av_log(obj, AV_LOG_ERROR,
