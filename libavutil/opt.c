@@ -298,7 +298,7 @@ static int set_string_color(void *obj, const AVOption *o, const char *val, uint8
 static int set_string_fmt(void *obj, const AVOption *o, const char *val, uint8_t *dst,
                           int fmt_nb, int ((*get_fmt)(const char *)), const char *desc)
 {
-    int fmt;
+    int fmt, min, max;
 
     if (!val || !strcmp(val, "none")) {
         fmt = -1;
@@ -313,6 +313,16 @@ static int set_string_fmt(void *obj, const AVOption *o, const char *val, uint8_t
                 return AVERROR(EINVAL);
             }
         }
+    }
+
+    min = FFMAX(o->min, -1);
+    max = FFMIN(o->max, fmt_nb-1);
+
+    if (fmt < min || fmt > max) {
+        av_log(obj, AV_LOG_ERROR,
+               "Value %d for parameter '%s' out of %s format range [%d - %d]\n",
+               fmt, o->name, desc, min, max);
+        return AVERROR(ERANGE);
     }
 
     *(int *)dst = fmt;
