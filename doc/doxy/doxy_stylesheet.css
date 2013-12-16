@@ -214,6 +214,10 @@ code {
   background-color: #f7f7f9;
   border: 1px solid #e1e1e8;
 }
+.fragment .line {
+  padding-left: 2em;
+  white-space: pre;
+}
 pre {
   display: block;
   padding: 9.5px;
@@ -222,7 +226,6 @@ pre {
   line-height: 20px;
   word-break: break-all;
   word-wrap: break-word;
-  white-space: pre;
   white-space: pre-wrap;
   background-color: #f5f5f5;
   border: 1px solid #ccc;
@@ -1518,7 +1521,6 @@ table.memberdecls {
         -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
         -webkit-border-top-right-radius: 8px;
         -webkit-border-top-left-radius: 8px;
-        background-image:url('nav_f.png');
         background-repeat:repeat-x;
         background-color: #E2F2E2;
 
@@ -1749,7 +1751,6 @@ table.fieldtable {
 }
 
 .fieldtable th {
-        background-image:url('nav_f.png');
         background-repeat:repeat-x;
         background-color: #E2F2E2;
         font-size: 90%;
@@ -1771,7 +1772,6 @@ table.fieldtable {
     top: 0px;
     left: 10px;
     height: 36px;
-    background-image: url('tab_b.png');
     z-index: 101;
     overflow: hidden;
     font-size: 13px;
@@ -1780,7 +1780,6 @@ table.fieldtable {
 .tablistpath ul
 {
     font-size: 11px;
-    background-image:url('tab_b.png');
     background-repeat:repeat-x;
     height:30px;
     line-height:30px;
@@ -1797,7 +1796,6 @@ table.fieldtable {
     float:left;
     padding-left:10px;
     padding-right:15px;
-    background-image:url('bc_s.png');
     background-repeat:no-repeat;
     background-position:right;
     color:#367C36;
