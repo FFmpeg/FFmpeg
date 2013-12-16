@@ -91,9 +91,6 @@
 #ifndef FF_API_XVMC
 #define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
-#ifndef FF_API_INTFLOAT
-#define FF_API_INTFLOAT                 (LIBAVUTIL_VERSION_MAJOR < 54)
-#endif
 
 /**
  * @}
