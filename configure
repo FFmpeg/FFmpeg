@@ -3836,6 +3836,7 @@ esac
 
 probe_libc(){
     pfx=$1
+    pfx_no_=${pfx%_}
     # uclibc defines __GLIBC__, so it needs to be checked before glibc.
     if check_${pfx}cpp_condition features.h "defined __UCLIBC__"; then
         eval ${pfx}libc_type=uclibc
@@ -3855,6 +3856,8 @@ probe_libc(){
             add_cflags "-include $source_path/compat/msvcrt/snprintf.h"
         fi
         add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
+        eval test \$${pfx_no_}cc_type = "gcc" &&
+            add_${pfx}cppflags -D__printf__=__gnu_printf__
     elif check_${pfx}cpp_condition _mingw.h "defined __MINGW_VERSION"  ||
          check_${pfx}cpp_condition _mingw.h "defined __MINGW32_VERSION"; then
         eval ${pfx}libc_type=mingw32
@@ -3862,6 +3865,8 @@ probe_libc(){
             (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
             die "ERROR: MinGW32 runtime version must be >= 3.15."
         add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
+        eval test \$${pfx_no_}cc_type = "gcc" &&
+            add_${pfx}cppflags -D__printf__=__gnu_printf__
     elif check_${pfx}cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
         eval ${pfx}libc_type=msvcrt
         # The MSVC 2010 headers (Win 7.0 SDK) set _WIN32_WINNT to
