@@ -163,6 +163,11 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st)
         exit(1);
     }
 
+    /* compute the number of converted samples: buffering is avoided
+     * ensuring that the output buffer will contain at least all the
+     * converted input samples */
+    max_dst_nb_samples = src_nb_samples;
+
     /* create resampler context */
     if (c->sample_fmt != AV_SAMPLE_FMT_S16) {
         swr_ctx = swr_alloc();
@@ -184,17 +189,15 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st)
             fprintf(stderr, "Failed to initialize the resampling context\n");
             exit(1);
         }
-    }
 
-    /* compute the number of converted samples: buffering is avoided
-     * ensuring that the output buffer will contain at least all the
-     * converted input samples */
-    max_dst_nb_samples = src_nb_samples;
-    ret = av_samples_alloc_array_and_samples(&dst_samples_data, &dst_samples_linesize, c->channels,
-                                             max_dst_nb_samples, c->sample_fmt, 0);
-    if (ret < 0) {
-        fprintf(stderr, "Could not allocate destination samples\n");
-        exit(1);
+        ret = av_samples_alloc_array_and_samples(&dst_samples_data, &dst_samples_linesize, c->channels,
+                                                 max_dst_nb_samples, c->sample_fmt, 0);
+        if (ret < 0) {
+            fprintf(stderr, "Could not allocate destination samples\n");
+            exit(1);
+        }
+    } else {
+        dst_samples_data = src_samples_data;
     }
     dst_samples_size = av_samples_get_buffer_size(NULL, c->channels, max_dst_nb_samples,
                                                   c->sample_fmt, 0);
@@ -254,7 +257,6 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
             exit(1);
         }
     } else {
-        dst_samples_data[0] = src_samples_data[0];
         dst_nb_samples = src_nb_samples;
     }
 
@@ -287,8 +289,12 @@ freeframe:
 static void close_audio(AVFormatContext *oc, AVStream *st)
 {
     avcodec_close(st->codec);
+    if (dst_samples_data != src_samples_data) {
+        av_free(dst_samples_data[0]);
+        av_free(dst_samples_data);
+    }
     av_free(src_samples_data[0]);
-    av_free(dst_samples_data[0]);
+    av_free(src_samples_data);
 }
 
 /**************************************************************/
