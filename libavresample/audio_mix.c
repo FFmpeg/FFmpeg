@@ -447,7 +447,7 @@ int ff_audio_mix(AudioMix *am, AudioData *src)
 
     if (am->in_matrix_channels && am->out_matrix_channels) {
         uint8_t **data;
-        uint8_t *data0[AVRESAMPLE_MAX_CHANNELS];
+        uint8_t *data0[AVRESAMPLE_MAX_CHANNELS] = { NULL };
 
         if (am->out_matrix_channels < am->out_channels ||
              am->in_matrix_channels <  am->in_channels) {
