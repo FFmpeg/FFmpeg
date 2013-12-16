@@ -574,7 +574,15 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.vui.b_fullrange = avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
                                  avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
-                                 avctx->pix_fmt == AV_PIX_FMT_YUVJ444P;
+                                 avctx->pix_fmt == AV_PIX_FMT_YUVJ444P ||
+                                 avctx->color_range == AVCOL_RANGE_JPEG;
+
+    if (avctx->colorspace != AVCOL_SPC_UNSPECIFIED)
+        x4->params.vui.i_colmatrix = avctx->colorspace;
+    if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED)
+        x4->params.vui.i_colorprim = avctx->color_primaries;
+    if (avctx->color_trc != AVCOL_TRC_UNSPECIFIED)
+        x4->params.vui.i_transfer  = avctx->color_trc;
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
