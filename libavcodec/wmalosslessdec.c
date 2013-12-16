@@ -348,11 +348,11 @@ static int decode_tilehdr(WmallDecodeCtx *s)
             if (num_samples[c] == min_channel_len) {
                 if (fixed_channel_layout || channels_for_cur_subframe == 1 ||
                    (min_channel_len == s->samples_per_frame - s->min_samples_per_subframe)) {
-                    contains_subframe[c] = in_use = 1;
+                    contains_subframe[c] = 1;
                 } else {
-                    if (get_bits1(&s->gb))
-                        contains_subframe[c] = in_use = 1;
+                    contains_subframe[c] = get_bits1(&s->gb);
                 }
+                in_use |= contains_subframe[c];
             } else
                 contains_subframe[c] = 0;
         }
