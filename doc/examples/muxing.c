@@ -269,7 +269,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     }
 
     if (!got_packet)
-        return;
+        goto freeframe;
 
     pkt.stream_index = st->index;
 
@@ -280,6 +280,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
                 av_err2str(ret));
         exit(1);
     }
+freeframe:
     av_frame_free(&frame);
 }
 
