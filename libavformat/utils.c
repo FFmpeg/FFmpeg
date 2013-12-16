@@ -2401,8 +2401,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
  find_stream_info_err:
     for (i=0; i < ic->nb_streams; i++) {
-        if (ic->streams[i]->codec)
-            ic->streams[i]->codec->thread_count = 0;
+        ic->streams[i]->codec->thread_count = 0;
         av_freep(&ic->streams[i]->info);
     }
     return ret;
