@@ -157,7 +157,7 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st)
         10000 : c->frame_size;
 
     ret = av_samples_alloc_array_and_samples(&src_samples_data, &src_samples_linesize, c->channels,
-                                             src_nb_samples, c->sample_fmt, 0);
+                                             src_nb_samples, AV_SAMPLE_FMT_S16, 0);
     if (ret < 0) {
         fprintf(stderr, "Could not allocate source samples\n");
         exit(1);
