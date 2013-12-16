@@ -221,6 +221,7 @@ static int str_read_packet(AVFormatContext *s,
                     av_free_packet(pkt);
                     if (av_new_packet(pkt, sector_count*VIDEO_DATA_CHUNK_SIZE))
                         return AVERROR(EIO);
+                    memset(pkt->data, 0, sector_count*VIDEO_DATA_CHUNK_SIZE);
 
                     pkt->pos= avio_tell(pb) - RAW_CD_SECTOR_SIZE;
                     pkt->stream_index =
