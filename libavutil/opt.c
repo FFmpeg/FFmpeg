@@ -552,7 +552,7 @@ static int set_format(void *obj, const char *name, int fmt, int search_flags,
         return AVERROR(EINVAL);
     }
 
-#if LIBAVUTIL_VERSION_MAJOR < 53
+#if LIBAVUTIL_VERSION_MAJOR < 54
     if (class->version && class->version < AV_VERSION_INT(52, 11, 100)) {
         min = -1;
         max = nb_fmts-1;
@@ -1143,7 +1143,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                 set_string_video_rate(s, opt, opt->default_val.str, dst);
                 break;
             case AV_OPT_TYPE_PIXEL_FMT:
-#if LIBAVUTIL_VERSION_MAJOR < 53
+#if LIBAVUTIL_VERSION_MAJOR < 54
                 if (class->version && class->version < AV_VERSION_INT(52, 10, 100))
                     av_opt_set(s, opt->name, opt->default_val.str, 0);
                 else
@@ -1151,7 +1151,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                     write_number(s, opt, dst, 1, 1, opt->default_val.i64);
                 break;
             case AV_OPT_TYPE_SAMPLE_FMT:
-#if LIBAVUTIL_VERSION_MAJOR < 53
+#if LIBAVUTIL_VERSION_MAJOR < 54
                 if (class->version && class->version < AV_VERSION_INT(52, 10, 100))
                     av_opt_set(s, opt->name, opt->default_val.str, 0);
                 else
