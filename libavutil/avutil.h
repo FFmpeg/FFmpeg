@@ -279,7 +279,6 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
 #include "version.h"
 #include "mathematics.h"
 #include "rational.h"
-#include "intfloat_readwrite.h"
 #include "log.h"
 #include "pixfmt.h"
 
