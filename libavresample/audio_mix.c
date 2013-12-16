@@ -729,7 +729,7 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
         for (i = 0; i < am->in_channels; i++) {
             if (am->output_zero[o])
                 av_log(am->avr, AV_LOG_DEBUG, "  (ZERO)");
-            else if (am->input_skip[i] || am->output_skip[o])
+            else if (am->input_skip[i] || am->output_zero[i] || am->output_skip[o])
                 av_log(am->avr, AV_LOG_DEBUG, "  (SKIP)");
             else
                 av_log(am->avr, AV_LOG_DEBUG, "  %0.3f ",
