@@ -58,7 +58,6 @@ typedef struct {
     /* audio only */
     int sample_rate;
     enum AVSampleFormat sample_fmt;
-    char               *sample_fmt_str;
     int channels;
     uint64_t channel_layout;
     char    *channel_layout_str;
@@ -348,7 +347,7 @@ AVFILTER_DEFINE_CLASS(buffer);
 static const AVOption abuffer_options[] = {
     { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, INT_MAX, A },
     { "sample_rate",    NULL, OFFSET(sample_rate),         AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, A },
-    { "sample_fmt",     NULL, OFFSET(sample_fmt_str),      AV_OPT_TYPE_STRING,             .flags = A },
+    { "sample_fmt",     NULL, OFFSET(sample_fmt),          AV_OPT_TYPE_SAMPLE_FMT, { .i64 = AV_SAMPLE_FMT_NONE }, .min = AV_SAMPLE_FMT_NONE, .max = INT_MAX, .flags = A },
     { "channel_layout", NULL, OFFSET(channel_layout_str),  AV_OPT_TYPE_STRING,             .flags = A },
     { "channels",       NULL, OFFSET(channels),            AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, A },
     { NULL },
@@ -361,10 +360,8 @@ static av_cold int init_audio(AVFilterContext *ctx)
     BufferSourceContext *s = ctx->priv;
     int ret = 0;
 
-    s->sample_fmt = av_get_sample_fmt(s->sample_fmt_str);
     if (s->sample_fmt == AV_SAMPLE_FMT_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid sample format %s\n",
-               s->sample_fmt_str);
+        av_log(ctx, AV_LOG_ERROR, "Sample format was not set or was invalid\n");
         return AVERROR(EINVAL);
     }
 
@@ -402,7 +399,7 @@ static av_cold int init_audio(AVFilterContext *ctx)
 
     av_log(ctx, AV_LOG_VERBOSE,
            "tb:%d/%d samplefmt:%s samplerate:%d chlayout:%s\n",
-           s->time_base.num, s->time_base.den, s->sample_fmt_str,
+           s->time_base.num, s->time_base.den, av_get_sample_fmt_name(s->sample_fmt),
            s->sample_rate, s->channel_layout_str);
     s->warning_limit = 100;
 
