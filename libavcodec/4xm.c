@@ -928,7 +928,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if (avctx->extradata_size != 4 || !avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "extradata wrong or missing\n");
-        return 1;
+        return AVERROR_INVALIDDATA;
     }
 
     f->version = AV_RL32(avctx->extradata) >> 16;
