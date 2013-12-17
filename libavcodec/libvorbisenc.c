@@ -41,7 +41,6 @@
 
 typedef struct OggVorbisEncContext {
     AVClass *av_class;                  /**< class for AVOptions            */
-    AVFrame frame;
     vorbis_info vi;                     /**< vorbis_info used during init   */
     vorbis_dsp_state vd;                /**< DSP state used for analysis    */
     vorbis_block vb;                    /**< vorbis_block used for analysis */
