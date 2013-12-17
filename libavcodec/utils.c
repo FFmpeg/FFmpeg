@@ -1062,19 +1062,7 @@ void avcodec_get_frame_defaults(AVFrame *frame)
 #endif
 
     memset(frame, 0, sizeof(AVFrame));
-
-    frame->pts                   =
-    frame->pkt_dts               =
-    frame->pkt_pts               = AV_NOPTS_VALUE;
-    av_frame_set_best_effort_timestamp(frame, AV_NOPTS_VALUE);
-    av_frame_set_pkt_duration         (frame, 0);
-    av_frame_set_pkt_pos              (frame, -1);
-    av_frame_set_pkt_size             (frame, -1);
-    frame->key_frame           = 1;
-    frame->sample_aspect_ratio = (AVRational) {0, 1 };
-    frame->format              = -1; /* unknown */
-    frame->extended_data       = frame->data;
-    av_frame_set_colorspace(frame, AVCOL_SPC_UNSPECIFIED);
+    av_frame_unref(frame);
 }
 
 AVFrame *avcodec_alloc_frame(void)
