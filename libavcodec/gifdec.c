@@ -237,8 +237,12 @@ static int gif_read_image(GifState *s, AVFrame *frame)
     pass = 0;
     y1 = 0;
     for (y = 0; y < height; y++) {
-        if (ff_lzw_decode(s->lzw, s->idx_line, width) == 0)
+        int count = ff_lzw_decode(s->lzw, s->idx_line, width);
+        if (count != width) {
+            if (count)
+                av_log(s->avctx, AV_LOG_ERROR, "LZW decode failed\n");
             goto decode_tail;
+        }
 
         pr = ptr + width;
 
