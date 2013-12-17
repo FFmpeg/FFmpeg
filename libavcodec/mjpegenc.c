@@ -498,19 +498,23 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
 {
     MpegEncContext *s = avctx->priv_data;
-    AVFrame pic = *pic_arg;
-    int i;
+    AVFrame *pic;
+    int i, ret;
 
     //CODEC_FLAG_EMU_EDGE have to be cleared
     if(s->avctx->flags & CODEC_FLAG_EMU_EDGE)
         return -1;
 
+    pic = av_frame_alloc();
+    av_frame_ref(pic, pic_arg);
     //picture should be flipped upside-down
     for(i=0; i < 3; i++) {
-        pic.data[i] += (pic.linesize[i] * (s->mjpeg_vsample[i] * (8 * s->mb_height -((s->height/V_MAX)&7)) - 1 ));
-        pic.linesize[i] *= -1;
+        pic->data[i] += (pic->linesize[i] * (s->mjpeg_vsample[i] * (8 * s->mb_height -((s->height/V_MAX)&7)) - 1 ));
+        pic->linesize[i] *= -1;
     }
-    return ff_MPV_encode_picture(avctx, pkt, &pic, got_packet);
+    ret = ff_MPV_encode_picture(avctx, pkt, pic, got_packet);
+    av_frame_free(&pic);
+    return ret;
 }
 
 #if CONFIG_MJPEG_ENCODER
