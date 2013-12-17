@@ -80,7 +80,7 @@
 #define DIVRNDUP(a, b) (((a) + (b) - 1) / (b))
 
 typedef struct {
-    AVFrame avframe;
+    AVFrame *avframe;
     int interpolated[3];    /* 1 if hpel[] is valid */
     uint8_t *hpel[3][4];
     uint8_t *hpel_base[3][4];
@@ -291,7 +291,7 @@ static DiracFrame *remove_frame(DiracFrame *framelist[], int picnum)
     int i, remove_idx = -1;
 
     for (i = 0; framelist[i]; i++)
-        if (framelist[i]->avframe.display_picture_number == picnum) {
+        if (framelist[i]->avframe->display_picture_number == picnum) {
             remove_pic = framelist[i];
             remove_idx = i;
         }
@@ -364,8 +364,8 @@ static void free_sequence_buffers(DiracContext *s)
     int i, j, k;
 
     for (i = 0; i < MAX_FRAMES; i++) {
-        if (s->all_frames[i].avframe.data[0]) {
-            av_frame_unref(&s->all_frames[i].avframe);
+        if (s->all_frames[i].avframe->data[0]) {
+            av_frame_unref(s->all_frames[i].avframe);
             memset(s->all_frames[i].interpolated, 0, sizeof(s->all_frames[i].interpolated));
         }
 
@@ -393,6 +393,8 @@ static void free_sequence_buffers(DiracContext *s)
 static av_cold int dirac_decode_init(AVCodecContext *avctx)
 {
     DiracContext *s = avctx->priv_data;
+    int i;
+
     s->avctx = avctx;
     s->frame_number = -1;
 
@@ -403,6 +405,9 @@ static av_cold int dirac_decode_init(AVCodecContext *avctx)
 
     ff_dsputil_init(&s->dsp, avctx);
     ff_diracdsp_init(&s->diracdsp);
+
+    for (i = 0; i < MAX_FRAMES; i++)
+        s->all_frames[i].avframe = av_frame_alloc();
 
     return 0;
 }
@@ -417,7 +422,13 @@ static void dirac_decode_flush(AVCodecContext *avctx)
 
 static av_cold int dirac_decode_end(AVCodecContext *avctx)
 {
+    DiracContext *s = avctx->priv_data;
+    int i;
+
     dirac_decode_flush(avctx);
+    for (i = 0; i < MAX_FRAMES; i++)
+        av_frame_free(&s->all_frames[i].avframe);
+
     return 0;
 }
 
@@ -1519,8 +1530,8 @@ static void interpolate_refplane(DiracContext *s, DiracFrame *ref, int plane, in
        just use 8 for everything for the moment */
     int i, edge = EDGE_WIDTH/2;
 
-    ref->hpel[plane][0] = ref->avframe.data[plane];
-    s->dsp.draw_edges(ref->hpel[plane][0], ref->avframe.linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM); /* EDGE_TOP | EDGE_BOTTOM values just copied to make it build, this needs to be ensured */
+    ref->hpel[plane][0] = ref->avframe->data[plane];
+    s->dsp.draw_edges(ref->hpel[plane][0], ref->avframe->linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM); /* EDGE_TOP | EDGE_BOTTOM values just copied to make it build, this needs to be ensured */
 
     /* no need for hpel if we only have fpel vectors */
     if (!s->mv_precision)
@@ -1528,18 +1539,18 @@ static void interpolate_refplane(DiracContext *s, DiracFrame *ref, int plane, in
 
     for (i = 1; i < 4; i++) {
         if (!ref->hpel_base[plane][i])
-            ref->hpel_base[plane][i] = av_malloc((height+2*edge) * ref->avframe.linesize[plane] + 32);
+            ref->hpel_base[plane][i] = av_malloc((height+2*edge) * ref->avframe->linesize[plane] + 32);
         /* we need to be 16-byte aligned even for chroma */
-        ref->hpel[plane][i] = ref->hpel_base[plane][i] + edge*ref->avframe.linesize[plane] + 16;
+        ref->hpel[plane][i] = ref->hpel_base[plane][i] + edge*ref->avframe->linesize[plane] + 16;
     }
 
     if (!ref->interpolated[plane]) {
         s->diracdsp.dirac_hpel_filter(ref->hpel[plane][1], ref->hpel[plane][2],
                                       ref->hpel[plane][3], ref->hpel[plane][0],
-                                      ref->avframe.linesize[plane], width, height);
-        s->dsp.draw_edges(ref->hpel[plane][1], ref->avframe.linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(ref->hpel[plane][2], ref->avframe.linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(ref->hpel[plane][3], ref->avframe.linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM);
+                                      ref->avframe->linesize[plane], width, height);
+        s->dsp.draw_edges(ref->hpel[plane][1], ref->avframe->linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM);
+        s->dsp.draw_edges(ref->hpel[plane][2], ref->avframe->linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM);
+        s->dsp.draw_edges(ref->hpel[plane][3], ref->avframe->linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM);
     }
     ref->interpolated[plane] = 1;
 }
@@ -1565,7 +1576,7 @@ static int dirac_decode_frame_internal(DiracContext *s)
 
     for (comp = 0; comp < 3; comp++) {
         Plane *p       = &s->plane[comp];
-        uint8_t *frame = s->current_picture->avframe.data[comp];
+        uint8_t *frame = s->current_picture->avframe->data[comp];
 
         /* FIXME: small resolutions */
         for (i = 0; i < 4; i++)
@@ -1640,7 +1651,7 @@ static int dirac_decode_picture_header(DiracContext *s)
     GetBitContext *gb = &s->gb;
 
     /* [DIRAC_STD] 11.1.1 Picture Header. picture_header() PICTURE_NUM */
-    picnum = s->current_picture->avframe.display_picture_number = get_bits_long(gb, 32);
+    picnum = s->current_picture->avframe->display_picture_number = get_bits_long(gb, 32);
 
 
     av_log(s->avctx,AV_LOG_DEBUG,"PICTURE_NUM: %d\n",picnum);
@@ -1659,9 +1670,9 @@ static int dirac_decode_picture_header(DiracContext *s)
         /* Jordi: this is needed if the referenced picture hasn't yet arrived */
         for (j = 0; j < MAX_REFERENCE_FRAMES && refdist; j++)
             if (s->ref_frames[j]
-                && FFABS(s->ref_frames[j]->avframe.display_picture_number - refnum) < refdist) {
+                && FFABS(s->ref_frames[j]->avframe->display_picture_number - refnum) < refdist) {
                 s->ref_pics[i] = s->ref_frames[j];
-                refdist = FFABS(s->ref_frames[j]->avframe.display_picture_number - refnum);
+                refdist = FFABS(s->ref_frames[j]->avframe->display_picture_number - refnum);
             }
 
         if (!s->ref_pics[i] || refdist)
@@ -1670,21 +1681,21 @@ static int dirac_decode_picture_header(DiracContext *s)
         /* if there were no references at all, allocate one */
         if (!s->ref_pics[i])
             for (j = 0; j < MAX_FRAMES; j++)
-                if (!s->all_frames[j].avframe.data[0]) {
+                if (!s->all_frames[j].avframe->data[0]) {
                     s->ref_pics[i] = &s->all_frames[j];
-                    ff_get_buffer(s->avctx, &s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
+                    ff_get_buffer(s->avctx, s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
                     break;
                 }
     }
 
     /* retire the reference frames that are not used anymore */
-    if (s->current_picture->avframe.reference) {
+    if (s->current_picture->avframe->reference) {
         retire = picnum + dirac_get_se_golomb(gb);
         if (retire != picnum) {
             DiracFrame *retire_pic = remove_frame(s->ref_frames, retire);
 
             if (retire_pic)
-                retire_pic->avframe.reference &= DELAYED_PIC_REF;
+                retire_pic->avframe->reference &= DELAYED_PIC_REF;
             else
                 av_log(s->avctx, AV_LOG_DEBUG, "Frame to retire not found\n");
         }
@@ -1692,7 +1703,7 @@ static int dirac_decode_picture_header(DiracContext *s)
         /* if reference array is full, remove the oldest as per the spec */
         while (add_frame(s->ref_frames, MAX_REFERENCE_FRAMES, s->current_picture)) {
             av_log(s->avctx, AV_LOG_ERROR, "Reference frame overflow\n");
-            remove_frame(s->ref_frames, s->ref_frames[0]->avframe.display_picture_number)->avframe.reference &= DELAYED_PIC_REF;
+            remove_frame(s->ref_frames, s->ref_frames[0]->avframe->display_picture_number)->avframe->reference &= DELAYED_PIC_REF;
         }
     }
 
@@ -1717,7 +1728,7 @@ static int get_delayed_pic(DiracContext *s, AVFrame *picture, int *got_frame)
 
     /* find frame with lowest picture number */
     for (i = 1; s->delay_frames[i]; i++)
-        if (s->delay_frames[i]->avframe.display_picture_number < out->avframe.display_picture_number) {
+        if (s->delay_frames[i]->avframe->display_picture_number < out->avframe->display_picture_number) {
             out     = s->delay_frames[i];
             out_idx = i;
         }
@@ -1726,9 +1737,9 @@ static int get_delayed_pic(DiracContext *s, AVFrame *picture, int *got_frame)
         s->delay_frames[i] = s->delay_frames[i+1];
 
     if (out) {
-        out->avframe.reference ^= DELAYED_PIC_REF;
+        out->avframe->reference ^= DELAYED_PIC_REF;
         *got_frame = 1;
-        if((ret = av_frame_ref(picture, &out->avframe)) < 0)
+        if((ret = av_frame_ref(picture, out->avframe)) < 0)
             return ret;
     }
 
@@ -1790,14 +1801,14 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 
         /* find an unused frame */
         for (i = 0; i < MAX_FRAMES; i++)
-            if (s->all_frames[i].avframe.data[0] == NULL)
+            if (s->all_frames[i].avframe->data[0] == NULL)
                 pic = &s->all_frames[i];
         if (!pic) {
             av_log(avctx, AV_LOG_ERROR, "framelist full\n");
             return -1;
         }
 
-        avcodec_get_frame_defaults(&pic->avframe);
+        av_frame_unref(pic->avframe);
 
         /* [DIRAC_STD] Defined in 9.6.1 ... */
         tmp            =  parse_code & 0x03;                   /* [DIRAC_STD] num_refs()      */
@@ -1808,16 +1819,16 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         s->num_refs    = tmp;
         s->is_arith    = (parse_code & 0x48) == 0x08;          /* [DIRAC_STD] using_ac()      */
         s->low_delay   = (parse_code & 0x88) == 0x88;          /* [DIRAC_STD] is_low_delay()  */
-        pic->avframe.reference = (parse_code & 0x0C) == 0x0C;  /* [DIRAC_STD]  is_reference() */
-        pic->avframe.key_frame = s->num_refs == 0;             /* [DIRAC_STD] is_intra()      */
-        pic->avframe.pict_type = s->num_refs + 1;              /* Definition of AVPictureType in avutil.h */
+        pic->avframe->reference = (parse_code & 0x0C) == 0x0C;  /* [DIRAC_STD]  is_reference() */
+        pic->avframe->key_frame = s->num_refs == 0;             /* [DIRAC_STD] is_intra()      */
+        pic->avframe->pict_type = s->num_refs + 1;              /* Definition of AVPictureType in avutil.h */
 
-        if ((ret = ff_get_buffer(avctx, &pic->avframe, (parse_code & 0x0C) == 0x0C ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
+        if ((ret = ff_get_buffer(avctx, pic->avframe, (parse_code & 0x0C) == 0x0C ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
             return ret;
         s->current_picture = pic;
-        s->plane[0].stride = pic->avframe.linesize[0];
-        s->plane[1].stride = pic->avframe.linesize[1];
-        s->plane[2].stride = pic->avframe.linesize[2];
+        s->plane[0].stride = pic->avframe->linesize[0];
+        s->plane[1].stride = pic->avframe->linesize[1];
+        s->plane[2].stride = pic->avframe->linesize[2];
 
         /* [DIRAC_STD] 11.1 Picture parse. picture_parse() */
         if (dirac_decode_picture_header(s))
@@ -1833,7 +1844,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *pkt)
 {
     DiracContext *s     = avctx->priv_data;
-    DiracFrame *picture = data;
+    AVFrame *picture    = data;
     uint8_t *buf        = pkt->data;
     int buf_size        = pkt->size;
     int i, data_unit_size, buf_idx = 0;
@@ -1841,8 +1852,8 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     /* release unused frames */
     for (i = 0; i < MAX_FRAMES; i++)
-        if (s->all_frames[i].avframe.data[0] && !s->all_frames[i].avframe.reference) {
-            av_frame_unref(&s->all_frames[i].avframe);
+        if (s->all_frames[i].avframe->data[0] && !s->all_frames[i].avframe->reference) {
+            av_frame_unref(s->all_frames[i].avframe);
             memset(s->all_frames[i].interpolated, 0, sizeof(s->all_frames[i].interpolated));
         }
 
@@ -1887,40 +1898,40 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (!s->current_picture)
         return buf_size;
 
-    if (s->current_picture->avframe.display_picture_number > s->frame_number) {
+    if (s->current_picture->avframe->display_picture_number > s->frame_number) {
         DiracFrame *delayed_frame = remove_frame(s->delay_frames, s->frame_number);
 
-        s->current_picture->avframe.reference |= DELAYED_PIC_REF;
+        s->current_picture->avframe->reference |= DELAYED_PIC_REF;
 
         if (add_frame(s->delay_frames, MAX_DELAY, s->current_picture)) {
-            int min_num = s->delay_frames[0]->avframe.display_picture_number;
+            int min_num = s->delay_frames[0]->avframe->display_picture_number;
             /* Too many delayed frames, so we display the frame with the lowest pts */
             av_log(avctx, AV_LOG_ERROR, "Delay frame overflow\n");
             delayed_frame = s->delay_frames[0];
 
             for (i = 1; s->delay_frames[i]; i++)
-                if (s->delay_frames[i]->avframe.display_picture_number < min_num)
-                    min_num = s->delay_frames[i]->avframe.display_picture_number;
+                if (s->delay_frames[i]->avframe->display_picture_number < min_num)
+                    min_num = s->delay_frames[i]->avframe->display_picture_number;
 
             delayed_frame = remove_frame(s->delay_frames, min_num);
             add_frame(s->delay_frames, MAX_DELAY, s->current_picture);
         }
 
         if (delayed_frame) {
-            delayed_frame->avframe.reference ^= DELAYED_PIC_REF;
-            if((ret=av_frame_ref(data, &delayed_frame->avframe)) < 0)
+            delayed_frame->avframe->reference ^= DELAYED_PIC_REF;
+            if((ret=av_frame_ref(data, delayed_frame->avframe)) < 0)
                 return ret;
             *got_frame = 1;
         }
-    } else if (s->current_picture->avframe.display_picture_number == s->frame_number) {
+    } else if (s->current_picture->avframe->display_picture_number == s->frame_number) {
         /* The right frame at the right time :-) */
-        if((ret=av_frame_ref(data, &s->current_picture->avframe)) < 0)
+        if((ret=av_frame_ref(data, s->current_picture->avframe)) < 0)
             return ret;
         *got_frame = 1;
     }
 
     if (*got_frame)
-        s->frame_number = picture->avframe.display_picture_number + 1;
+        s->frame_number = picture->display_picture_number + 1;
 
     return buf_idx;
 }
