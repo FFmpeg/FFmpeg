@@ -777,6 +777,7 @@ OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o \
                                           mpegaudiodecheader.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o    \
                                           mpeg12.o mpeg12data.o
+OBJS-$(CONFIG_PNG_PARSER)              += png_parser.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_RV30_PARSER)             += rv34_parser.o
 OBJS-$(CONFIG_RV40_PARSER)             += rv34_parser.o
