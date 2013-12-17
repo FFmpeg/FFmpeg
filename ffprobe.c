@@ -1853,7 +1853,7 @@ static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
                                  const ReadInterval *interval, int64_t *cur_ts)
 {
     AVPacket pkt, pkt1;
-    AVFrame frame;
+    AVFrame *frame = NULL;
     int ret = 0, i = 0, frame_count = 0;
     int64_t start = -INT64_MAX, end = interval->end;
     int has_start = 0, has_end = interval->has_end && !interval->end_is_offset;
@@ -1887,6 +1887,7 @@ static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
         }
     }
 
+    frame = av_frame_alloc();
     while (!av_read_frame(fmt_ctx, &pkt)) {
         if (selected_streams[pkt.stream_index]) {
             AVRational tb = fmt_ctx->streams[pkt.stream_index]->time_base;
@@ -1919,7 +1920,7 @@ static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
             }
             if (do_read_frames) {
                 pkt1 = pkt;
-                while (pkt1.size && process_frame(w, fmt_ctx, &frame, &pkt1) > 0);
+                while (pkt1.size && process_frame(w, fmt_ctx, frame, &pkt1) > 0);
             }
         }
         av_free_packet(&pkt);
@@ -1931,10 +1932,11 @@ static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         pkt.stream_index = i;
         if (do_read_frames)
-            while (process_frame(w, fmt_ctx, &frame, &pkt) > 0);
+            while (process_frame(w, fmt_ctx, frame, &pkt) > 0);
     }
 
 end:
+    av_frame_free(&frame);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Could not read packets in interval ");
         log_read_interval(interval, NULL, AV_LOG_ERROR);
