@@ -179,7 +179,7 @@ void* decode_thread(void *arg)
             sp<MetaData> outFormat = (*s->decoder)->getFormat();
             outFormat->findInt32(kKeyWidth , &w);
             outFormat->findInt32(kKeyHeight, &h);
-            frame->vframe = (AVFrame*)av_mallocz(sizeof(AVFrame));
+            frame->vframe = av_frame_alloc();
             if (!frame->vframe) {
                 frame->status = AVERROR(ENOMEM);
                 decode_done   = 1;
