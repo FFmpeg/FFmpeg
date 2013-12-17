@@ -701,7 +701,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (seg->is_first_pkt) {
-        av_log(s, AV_LOG_DEBUG, "segment:'%s' starts with packet stream:%d pts:%s pts_time:%s frame:%d\n",
+        av_log(s, AV_LOG_VERBOSE, "segment:'%s' starts with packet stream:%d pts:%s pts_time:%s frame:%d\n",
                seg->avf->filename, pkt->stream_index,
                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base), seg->frame_count);
         seg->is_first_pkt = 0;
