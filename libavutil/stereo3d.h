@@ -140,7 +140,7 @@ AVStereo3D *av_stereo3d_alloc(void);
 /**
  * Allocate a complete AVFrameSideData and add it to the frame.
  *
- * @param The frame on which the side data is added to.
+ * @param frame The frame which side data is added to.
  *
  * @return The AVStereo3D structure to be filled by caller.
  */
