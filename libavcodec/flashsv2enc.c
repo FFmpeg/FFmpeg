@@ -87,7 +87,6 @@ typedef struct FlashSV2Context {
     AVCodecContext *avctx;
     uint8_t *current_frame;
     uint8_t *key_frame;
-    AVFrame frame;
     uint8_t *encbuffer;
     uint8_t *keybuffer;
     uint8_t *databuffer;
@@ -849,14 +848,11 @@ static int reconfigure_at_keyframe(FlashSV2Context * s, const uint8_t * image,
 }
 
 static int flashsv2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                                 const AVFrame *pict, int *got_packet)
+                                 const AVFrame *p, int *got_packet)
 {
     FlashSV2Context *const s = avctx->priv_data;
-    AVFrame *const p = &s->frame;
     int res;
     int keyframe = 0;
-
-    *p = *pict;
 
     if ((res = ff_alloc_packet2(avctx, pkt, s->frame_size + FF_MIN_BUFFER_SIZE)) < 0)
         return res;
@@ -891,17 +887,10 @@ static int flashsv2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (keyframe) {
         new_key_frame(s);
-        p->pict_type = AV_PICTURE_TYPE_I;
-        p->key_frame = 1;
         s->last_key_frame = avctx->frame_number;
         pkt->flags |= AV_PKT_FLAG_KEY;
         av_log(avctx, AV_LOG_DEBUG, "Inserting key frame at frame %d\n", avctx->frame_number);
-    } else {
-        p->pict_type = AV_PICTURE_TYPE_P;
-        p->key_frame = 0;
     }
-
-    avctx->coded_frame = p;
 
     pkt->size = res;
     *got_packet = 1;
