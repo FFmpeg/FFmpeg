@@ -1704,7 +1704,6 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
                                              const short *samples)
 {
     AVPacket pkt;
-    AVFrame frame0 = { { 0 } };
     AVFrame *frame;
     int ret, samples_size, got_packet;
 
@@ -1713,8 +1712,7 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
     pkt.size = buf_size;
 
     if (samples) {
-        frame = &frame0;
-        avcodec_get_frame_defaults(frame);
+        frame = av_frame_alloc();
 
         if (avctx->frame_size) {
             frame->nb_samples = avctx->frame_size;
@@ -1725,13 +1723,16 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
             if (!av_get_bits_per_sample(avctx->codec_id)) {
                 av_log(avctx, AV_LOG_ERROR, "avcodec_encode_audio() does not "
                                             "support this codec\n");
+                av_frame_free(&frame);
                 return AVERROR(EINVAL);
             }
             nb_samples = (int64_t)buf_size * 8 /
                          (av_get_bits_per_sample(avctx->codec_id) *
                           avctx->channels);
-            if (nb_samples >= INT_MAX)
+            if (nb_samples >= INT_MAX) {
+                av_frame_free(&frame);
                 return AVERROR(EINVAL);
+            }
             frame->nb_samples = nb_samples;
         }
 
@@ -1743,8 +1744,10 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
         if ((ret = avcodec_fill_audio_frame(frame, avctx->channels,
                                             avctx->sample_fmt,
                                             (const uint8_t *)samples,
-                                            samples_size, 1)) < 0)
+                                            samples_size, 1)) < 0) {
+            av_frame_free(&frame);
             return ret;
+        }
 
         /* fabricate frame pts from sample count.
          * this is needed because the avcodec_encode_audio() API does not have
@@ -1771,6 +1774,7 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
     if (frame && frame->extended_data != frame->data)
         av_freep(&frame->extended_data);
 
+    av_frame_free(&frame);
     return ret ? ret : pkt.size;
 }
 
@@ -2143,7 +2147,7 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
                                               int *frame_size_ptr,
                                               AVPacket *avpkt)
 {
-    AVFrame frame = { { 0 } };
+    AVFrame *frame = av_frame_alloc();
     int ret, got_frame = 0;
 
     if (avctx->get_buffer != avcodec_default_get_buffer) {
@@ -2155,26 +2159,27 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
         avctx->release_buffer = avcodec_default_release_buffer;
     }
 
-    ret = avcodec_decode_audio4(avctx, &frame, &got_frame, avpkt);
+    ret = avcodec_decode_audio4(avctx, frame, &got_frame, avpkt);
 
     if (ret >= 0 && got_frame) {
         int ch, plane_size;
         int planar    = av_sample_fmt_is_planar(avctx->sample_fmt);
         int data_size = av_samples_get_buffer_size(&plane_size, avctx->channels,
-                                                   frame.nb_samples,
+                                                   frame->nb_samples,
                                                    avctx->sample_fmt, 1);
         if (*frame_size_ptr < data_size) {
             av_log(avctx, AV_LOG_ERROR, "output buffer size is too small for "
                                         "the current frame (%d < %d)\n", *frame_size_ptr, data_size);
+            av_frame_free(&frame);
             return AVERROR(EINVAL);
         }
 
-        memcpy(samples, frame.extended_data[0], plane_size);
+        memcpy(samples, frame->extended_data[0], plane_size);
 
         if (planar && avctx->channels > 1) {
             uint8_t *out = ((uint8_t *)samples) + plane_size;
             for (ch = 1; ch < avctx->channels; ch++) {
-                memcpy(out, frame.extended_data[ch], plane_size);
+                memcpy(out, frame->extended_data[ch], plane_size);
                 out += plane_size;
             }
         }
@@ -2182,6 +2187,7 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
     } else {
         *frame_size_ptr = 0;
     }
+    av_frame_free(&frame);
     return ret;
 }
 
