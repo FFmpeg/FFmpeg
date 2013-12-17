@@ -32,14 +32,16 @@
 
 typedef struct {
     AVCodecContext *avctx;
-    AVFrame *prev;
+    uint16_t *frame_buffer;
+    uint16_t *last_frame_buffer;
 } KgvContext;
 
 static void decode_flush(AVCodecContext *avctx)
 {
     KgvContext * const c = avctx->priv_data;
 
-    av_frame_free(&c->prev);
+    av_freep(&c->frame_buffer);
+    av_freep(&c->last_frame_buffer);
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
@@ -62,21 +64,27 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     buf += 2;
 
     if (w != avctx->width || h != avctx->height) {
-        av_frame_unref(c->prev);
+        av_freep(&c->frame_buffer);
+        av_freep(&c->last_frame_buffer);
         if ((res = ff_set_dimensions(avctx, w, h)) < 0)
             return res;
     }
 
+    if (!c->frame_buffer) {
+        c->frame_buffer      = av_mallocz(avctx->width * avctx->height * 2);
+        c->last_frame_buffer = av_mallocz(avctx->width * avctx->height * 2);
+        if (!c->frame_buffer || !c->last_frame_buffer) {
+            decode_flush(avctx);
+            return AVERROR(ENOMEM);
+        }
+    }
+
     maxcnt = w * h;
 
-    if ((res = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+    if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
         return res;
-    out  = (uint16_t *) frame->data[0];
-    if (c->prev->data[0]) {
-        prev = (uint16_t *) c->prev->data[0];
-    } else {
-        prev = NULL;
-    }
+    out  = c->frame_buffer;
+    prev = c->last_frame_buffer;
 
     for (i = 0; i < 8; i++)
         offsets[i] = -1;
@@ -152,9 +160,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (outcnt - maxcnt)
         av_log(avctx, AV_LOG_DEBUG, "frame finished with %d diff\n", outcnt - maxcnt);
 
-    av_frame_unref(c->prev);
-    if ((res = av_frame_ref(c->prev, frame)) < 0)
-        return res;
+    av_image_copy_plane(frame->data[0], frame->linesize[0],
+                        (const uint8_t*)c->frame_buffer,  avctx->width * 2,
+                        avctx->width * 2, avctx->height);
+    FFSWAP(uint16_t *, c->frame_buffer, c->last_frame_buffer);
 
     *got_frame = 1;
 
@@ -165,13 +174,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     KgvContext * const c = avctx->priv_data;
 
-    c->prev = av_frame_alloc();
-    if (!c->prev)
-        return AVERROR(ENOMEM);
-
     c->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_RGB555;
-    avctx->flags  |= CODEC_FLAG_EMU_EDGE;
 
     return 0;
 }
