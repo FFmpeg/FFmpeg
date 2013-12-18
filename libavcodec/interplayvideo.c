@@ -374,6 +374,11 @@ static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s, AVFrame *frame)
     unsigned char P[8];
     int flags = 0;
 
+    if (bytestream2_get_bytes_left(&s->stream_ptr) < 16) {
+        av_log(s->avctx, AV_LOG_ERROR, "too little data for opcode 0xA\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     bytestream2_get_buffer(&s->stream_ptr, P, 4);
 
     /* 4-color encoding for each 4x4 quadrant, or 4-color encoding on
