@@ -279,6 +279,9 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
             (ret = open_next_file(avf)) < 0)
             break;
     }
+    if (ret < 0)
+        return ret;
+
     delta = av_rescale_q(cat->cur_file->start_time - cat->avf->start_time,
                          AV_TIME_BASE_Q,
                          cat->avf->streams[pkt->stream_index]->time_base);
