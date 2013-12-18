@@ -461,7 +461,7 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
             return AVERROR(ENOMEM);
         avio_read(pb, st->codec->extradata, len);
         if (st->codec->codec_id == AV_CODEC_ID_AAC) {
-            MPEG4AudioConfig cfg;
+            MPEG4AudioConfig cfg = {0};
             avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                          st->codec->extradata_size * 8, 1);
             st->codec->channels = cfg.channels;
