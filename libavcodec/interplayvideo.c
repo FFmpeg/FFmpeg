@@ -308,6 +308,11 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s, AVFrame *frame)
     int x, y;
     unsigned char P[4];
 
+    if (bytestream2_get_bytes_left(&s->stream_ptr) < 8) {
+        av_log(s->avctx, AV_LOG_ERROR, "too little data for opcode 0x9\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* 4-color encoding */
     bytestream2_get_buffer(&s->stream_ptr, P, 4);
 
