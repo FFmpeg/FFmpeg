@@ -1583,6 +1583,13 @@ log2_deps="!libc_msvcrt"
 
 symver_if_any="symver_asm_label symver_gnu_asm"
 
+# threading support
+atomics_gcc_if="sync_val_compare_and_swap"
+atomics_suncc_if="atomic_cas_ptr machine_rw_barrier"
+atomics_win32_if="MemoryBarrier"
+atomics_native_if_any="$ATOMICS_LIST"
+threads_if_any="$THREADS_LIST"
+
 # subsystems
 dct_select="rdft"
 error_resilience_select="dsputil"
@@ -3873,10 +3880,6 @@ done
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
-enabled sync_val_compare_and_swap && enable atomics_gcc
-enabled_all atomic_cas_ptr machine_rw_barrier && enable atomics_suncc
-enabled MemoryBarrier && enable atomics_win32
-
 check_lib math.h sin -lm && LIBM="-lm"
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
@@ -4177,9 +4180,6 @@ case $target_os in
         add_cppflags -Dmain=plan9_main
     ;;
 esac
-
-enabled_any $THREADS_LIST      && enable threads
-enabled_any $ATOMICS_LIST      && enable atomics_native
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
