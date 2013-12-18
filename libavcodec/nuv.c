@@ -218,6 +218,7 @@ retry:
         }
         buf      = c->decomp_buf;
         buf_size = c->decomp_size - FFMAX(FF_INPUT_BUFFER_PADDING_SIZE, AV_LZO_OUTPUT_PADDING) - outlen;
+        memset(c->decomp_buf + buf_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     }
     if (c->codec_frameheader) {
         int w, h, q;
