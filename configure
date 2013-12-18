@@ -107,6 +107,7 @@ Configuration options:
   --disable-all            disable building components, libraries and programs
   --enable-incompatible-libav-abi enable incompatible Libav fork ABI [no]
   --enable-incompatible-fork-abi  enable incompatible Libav fork ABI (deprecated) [no]
+  --enable-raise-major     increase major version numbers in sonames [no]
 
 Program options:
   --disable-programs       do not build command line programs
@@ -1365,6 +1366,7 @@ CONFIG_LIST="
     network
     nonfree
     pic
+    raise_major
     rdft
     runtime_cpudetect
     safe_bitstream_reader
@@ -5030,6 +5032,7 @@ get_version(){
     name=$(toupper $lcname)
     file=$source_path/$lcname/version.h
     eval $(awk "/#define ${name}_VERSION_M/ { print \$2 \"=\" \$3 }" "$file")
+    enabled raise_major && eval ${name}_VERSION_MAJOR=$((${name}_VERSION_MAJOR+100))
     eval ${name}_VERSION=\$${name}_VERSION_MAJOR.\$${name}_VERSION_MINOR.\$${name}_VERSION_MICRO
     eval echo "${lcname}_VERSION=\$${name}_VERSION" >> config.mak
     eval echo "${lcname}_VERSION_MAJOR=\$${name}_VERSION_MAJOR" >> config.mak
