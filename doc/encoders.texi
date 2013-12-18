@@ -1144,6 +1144,7 @@ transient response is a higher bitrate.
 
 @end table
 
+@anchor{libwavpack}
 @section libwavpack
 
 A wrapper providing WavPack encoding through libwavpack.
@@ -1155,7 +1156,7 @@ configuration. You need to explicitly configure the build with
 @code{--enable-libwavpack}.
 
 Note that a libavcodec-native encoder for the WavPack codec exists so users can
-encode audios with this codec without using this encoder.
+encode audios with this codec without using this encoder. See @ref{wavpackenc}.
 
 @subsection Options
 
@@ -1188,6 +1189,67 @@ Same as @samp{3}, but with extra processing enabled.
 @samp{4} is the same as @option{-x2} and @samp{8} is the same as @option{-x6}.
 
 @end table
+@end table
+
+@anchor{wavpackenc}
+@section wavpack
+
+WavPack lossless audio encoder.
+
+This is a libavcodec-native WavPack encoder. There is also an encoder based on
+libwavpack, but there is virtually no reason to use that encoder.
+
+See also @ref{libwavpack}.
+
+@subsection Options
+
+The equivalent options for @command{wavpack} command line utility are listed in
+parentheses.
+
+@subsubsection Shared options
+
+The following shared options are effective for this encoder. Only special notes
+about this particular encoder will be documented here. For the general meaning
+of the options, see @ref{codec-options,,the Codec Options chapter}.
+
+@table @option
+@item frame_size (@emph{--blocksize})
+For this encoder, the range for this option is between 128 and 131072. Default
+is automatically decided based on sample rate and number of channel.
+
+For the complete formula of calculating default, see
+@file{libavcodec/wavpackenc.c}.
+
+@item compression_level (@emph{-f}, @emph{-h}, @emph{-hh}, and @emph{-x})
+This option's syntax is consistent with @ref{libwavpack}'s.
+@end table
+
+@subsubsection Private options
+
+@table @option
+@item joint_stereo (@emph{-j})
+Set whether to enable joint stereo. Valid values are:
+
+@table @samp
+@item on (@emph{1})
+Force mid/side audio encoding.
+@item off (@emph{0})
+Force left/right audio encoding.
+@item auto
+Let the encoder decide automatically.
+@end table
+
+@item optimize_mono
+Set whether to enable optimization for mono. This option is only effective for
+non-mono streams. Available values:
+
+@table @samp
+@item on
+enabled
+@item off
+disabled
+@end table
+
 @end table
 
 @c man end AUDIO ENCODERS
