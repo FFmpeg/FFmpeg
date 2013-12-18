@@ -339,7 +339,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
 
         case OPCODE_INIT_AUDIO_BUFFERS:
             av_dlog(NULL, "initialize audio buffers\n");
-            if ((opcode_version > 1) || (opcode_size > 10) || opcode_size < 6) {
+            if (opcode_version > 1 || opcode_size > 10 || opcode_size < 6) {
                 av_dlog(NULL, "bad init_audio_buffers opcode\n");
                 chunk_type = CHUNK_BAD;
                 break;
