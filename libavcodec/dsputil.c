@@ -1250,28 +1250,6 @@ static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src,
     }
 }
 
-#if CONFIG_RV40_DECODER
-void ff_put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    put_pixels16_xy2_8_c(dst, src, stride, 16);
-}
-
-void ff_avg_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    avg_pixels16_xy2_8_c(dst, src, stride, 16);
-}
-
-void ff_put_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    put_pixels8_xy2_8_c(dst, src, stride, 8);
-}
-
-void ff_avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    avg_pixels8_xy2_8_c(dst, src, stride, 8);
-}
-#endif /* CONFIG_RV40_DECODER */
-
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src,
                                   int dstStride, int srcStride, int w)
 {
