@@ -328,21 +328,24 @@ typedef struct VUI {
     int log2_max_mv_length_vertical;
 } VUI;
 
+typedef struct PTLCommon {
+    uint8_t profile_space;
+    uint8_t tier_flag;
+    uint8_t profile_idc;
+    uint8_t profile_compatibility_flag[32];
+    uint8_t level_idc;
+    uint8_t progressive_source_flag;
+    uint8_t interlaced_source_flag;
+    uint8_t non_packed_constraint_flag;
+    uint8_t frame_only_constraint_flag;
+} PTLCommon;
+
 typedef struct PTL {
-    int general_profile_space;
-    uint8_t general_tier_flag;
-    int general_profile_idc;
-    int general_profile_compatibility_flag[32];
-    int general_level_idc;
+    PTLCommon general_ptl;
+    PTLCommon sub_layer_ptl[MAX_SUB_LAYERS];
 
     uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
     uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
-
-    int sub_layer_profile_space[MAX_SUB_LAYERS];
-    uint8_t sub_layer_tier_flag[MAX_SUB_LAYERS];
-    int sub_layer_profile_idc[MAX_SUB_LAYERS];
-    uint8_t sub_layer_profile_compatibility_flags[MAX_SUB_LAYERS][32];
-    int sub_layer_level_idc[MAX_SUB_LAYERS];
 } PTL;
 
 typedef struct HEVCVPS {
