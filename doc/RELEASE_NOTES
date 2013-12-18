@@ -1,61 +1,40 @@
 Release Notes
 =============
 
-* 9 "Plain Nine"
+* 10 "Eks"
 
 General notes
 -------------
 
-From this release onwards, we have decided to drop the leading zero from our
-release numbers. There were no plans of ever changing it, so it carried no
-information. Thus this release is just a plain 9, the next will be 10 etc.
+One of the main features of this release is the addition of reference-counted
+data buffers to Libav and their use in various structures. Specifically, the
+data buffers used by AVPacket and AVFrame can now be reference counted, which
+should allow to significantly simplify many use cases. In addition,
+reference-counted AVFrames can now be used in libavfilter, avoiding the need
+for a separate libavfilter-specific frame structure. Frames can now be passed
+straight from the decoders into filters or from filters to encoders.
 
-A new library arrived in Libav during this development cycle -- its name is
-libavresample and it handles audio conversion and mixing. All users are
-encouraged to use it instead of the old, now deprecated, audio conversion
-API in libavcodec.
+These additions made it necessary to bump the major versions of libavcodec,
+libavformat, libavdevice, libavfilter, and libavutil, which was accompanied by
+dropping some old deprecated APIs. These libraries are thus not ABI- or API-
+compatible with the previous release. All the other libraries (libavresample
+and libswscale) should be both ABI- and API-compatible.
 
-The libpostproc library now resides in a separate tree. It was fully independent
-of the other Libav libraries, not used by any of the tools and saw very little
-development. For these reasons we decided that it has no place in Libav. A
-standalone Git tree is available at http://git.videolan.org/?p=libpostproc.git
-for people wishing to use libpostproc.
+Another major point is the inclusion of the HEVC (AKA H.265, the successor of
+H.264) decoder in the main codebase. It was started in 2012 as a Libav Google
+Summer of Code project by Guillaume Martres and subsequently completed with
+the assistance of the OpenHEVC project and several Libav developers.
 
-The major versions of the libavcodec, libavformat and libavfilter libraries have
-been bumped, so they are not API or ABI compatible with the 0.8 release. The
-ffmpeg transcoding tool, kept for compatibility in 0.8, has also been dropped.
+As usual, this release also contains support for other new formats, many smaller
+new features and countless bug fixes. We can highlight a native VP9 decoder,
+with encoding provided through libvpx, native decoders for WebP, JPEG 2000, and
+AIC, as well as improved WavPack support with encoding through libwavpack,
+support for more AAC flavors (LD - low delay, ELD - enhanced low delay), slice
+multithreading in libavfilter, or muxing chapters in ASF. Furthermore there is
+more fine-grained detection of host and target libc, which should allow better
+portability to various cross compilation scenarios.
 
-This release brings a number of significant changes in the libavfilter library.
-Firstly, all the API dealing with filter internals is no longer public. The
-result is that creating user-side filters will not be supported until
-libavfilter is more mature.
-Secondly, full audio filtering support is now available along with a set of
-basic audio filters. We hope that their number will soon grow significantly.
-The avconv transcoding tool has of course been extended to handle audio
-filtering as well.
-There were a number of other API changes, most importantly the addition of
-the buffer sink public API.
-
-In the libavcodec library, one of the most notable changes is added support for
-planar audio (i.e. not interleaved). Many decoders and encoders, that previously
-did inefficient (de)interleaving internally, now only work with planar audio
-formats. Libavresample can be used for optimized conversion between interleaved
-and planar formats.
-
-Of big interest to our Windows users, Libav now supports building with the MSVC
-compiler. Since MSVC does not support C99 features used extensively by Libav,
-this has been accomplished using a converter that turns C99 code to C89. See the
-platform-specific documentation for more detailed documentation on building
-Libav with MSVC.
-
-As usual, this release also contains support for some new formats, many smaller
-new features and countless bug fixes. We can highlight Opus decoding / encoding
-through libopus, encoders for Apple ProRes and Ut Video, WMA Lossless and
-RealAudio Lossless decoders, fragmented MOV/MP4 and ISMV (Smooth Streaming)
-muxers, 24-bit FLAC encoding, a large number of RTMP improvements and support
-for cover art in ID3v2, WMA, MP4 and FLAC.
-
-See the Changelog file for a list of significant changes.
+See the Changelog file for a fuller list of significant changes.
 
 Please note that our policy on bug reports has not changed. We still only accept
 bug reports against HEAD of the Libav trunk repository. If you are experiencing
@@ -72,30 +51,31 @@ A number of additional APIs have been introduced and some existing functions
 have been deprecated and are scheduled for removal in the next release.
 Significant API changes include:
 
-[libavcodec]:
-* New video encoding API, similar to the previously introduced audio  encoding
-  API, which encodes from an AVFrame to an AVPacket, thus allowing it to
-  properly output timing information and side data.
+[libavutil]
++ added the reference-counted buffers API (buffers.h)
++ moved the AVFrame struct to libavutil and added a new API for working with
+  reference-counted AVFrames (frame.h)
 
-* All CODEC_ID_* symbols now carry AV_ prefixes. Non-prefixed codec IDs are
-  deprecated.
+[libavcodec]
++ added an API for working with reference-counted AVPackets (av_packet_*)
++- converted VDPAU to the hwaccel framework; the old way of using VDPAU is no
+   longer supported
+- old audio encoding and decoding APIs removed
+- old video encoding API removed
+- deprecated enum CodecID removed (enum AVCodecID should be used instead)
+- deprecated audio resampling API removed (libavresample should be used
+  instead)
 
-* New codec descriptor API, which allows getting the properties of a given codec
-  (identified by its ID), without referring to a specific decoder or encoder.
-
-* An AVFrame must now be freed with a dedicated function, avcodec_free_frame().
-
-[libavutil]:
-* New audio FIFO API, which simplifies managing/merging/splitting audio buffers.
-
-* new int/float type punning API
-
-[libavfilter]:
-* All filter internals were hidden.
-
-* audio filtering.
-
-* new buffer sink API for getting frames out of libavfilter.
+[libavfilter]
++- replaced AVFilterBufferRef with AVFrame; AVFilterBufferRef and everything
+   related to it still exists, but is deprecated
++ converted all filters to use the AVOptions system for configuration, it is
+  now possible to query the supported options, their values and set them
+  directly with av_opt_*
++ added a slice multithreading framework
++- merged avfiltergraph.h to avfilter.h, using AVFilterGraph is now explicitly
+   mandatory (it was implicitly required even before); added new API for
+   allocating and initializing filters
 
 Please see the file doc/APIchanges for details along with similar
 programmer-centric information.
