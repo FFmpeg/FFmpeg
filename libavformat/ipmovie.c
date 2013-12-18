@@ -451,8 +451,8 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             av_dlog(NULL, "set palette\n");
             /* check for the logical maximum palette size
              * (3 * 256 + 4 bytes) */
-            if (opcode_size > 0x304) {
-                av_dlog(NULL, "demux_ipmovie: set_palette opcode too large\n");
+            if (opcode_size > 0x304 || opcode_size < 4) {
+                av_dlog(NULL, "demux_ipmovie: set_palette opcode with invalid size\n");
                 chunk_type = CHUNK_BAD;
                 break;
             }
