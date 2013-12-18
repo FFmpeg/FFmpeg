@@ -226,7 +226,7 @@ static void png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
         if (bpp == 4) {
             p = *(int*)dst;
             for (; i < size; i += bpp) {
-                int s = *(int*)(src + i);
+                unsigned s = *(int*)(src + i);
                 p = ((s & 0x7f7f7f7f) + (p & 0x7f7f7f7f)) ^ ((s ^ p) & 0x80808080);
                 *(int*)(dst + i) = p;
             }
