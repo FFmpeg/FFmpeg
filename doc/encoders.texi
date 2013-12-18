@@ -1149,28 +1149,45 @@ transient response is a higher bitrate.
 A wrapper providing WavPack encoding through libwavpack.
 
 Only lossless mode using 32-bit integer samples is supported currently.
-The @option{compression_level} option can be used to control speed vs.
-compression tradeoff, with the values mapped to libwavpack as follows:
+
+Requires the presence of the libwavpack headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libwavpack}.
+
+Note that a libavcodec-native encoder for the WavPack codec exists so users can
+encode audios with this codec without using this encoder.
+
+@subsection Options
+
+@command{wavpack} command line utility's corresponding options are listed in
+parentheses, if any.
 
 @table @option
+@item frame_size (@emph{--blocksize})
+Default is 32768.
 
-@item 0
-Fast mode - corresponding to the wavpack @option{-f} option.
+@item compression_level
+Set speed vs. compression tradeoff. Acceptable arguments are listed below:
+
+@table @samp
+@item 0 (@emph{-f})
+Fast mode.
 
 @item 1
 Normal (default) settings.
 
-@item 2
-High quality - corresponding to the wavpack @option{-h} option.
+@item 2 (@emph{-h})
+High quality.
 
-@item 3
-Very high quality - corresponding to the wavpack @option{-hh} option.
+@item 3 (@emph{-hh})
+Very high quality.
 
-@item 4-8
-Same as 3, but with extra processing enabled - corresponding to the wavpack
-@option{-x} option. I.e. 4 is the same as @option{-x2} and 8 is the same as
-@option{-x6}.
+@item 4-8 (@emph{-hh -x}@var{EXTRAPROC})
+Same as @samp{3}, but with extra processing enabled.
 
+@samp{4} is the same as @option{-x2} and @samp{8} is the same as @option{-x6}.
+
+@end table
 @end table
 
 @c man end AUDIO ENCODERS
