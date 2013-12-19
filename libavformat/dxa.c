@@ -169,7 +169,10 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     avio_seek(s->pb, c->vidpos, SEEK_SET);
     while(!url_feof(s->pb) && c->frames){
-        avio_read(s->pb, buf, 4);
+        if ((ret = avio_read(s->pb, buf, 4)) != 4) {
+            av_log(s, AV_LOG_ERROR, "failed reading chunk type\n");
+            return ret < 0 ? ret : AVERROR_INVALIDDATA;
+        }
         switch(AV_RL32(buf)){
         case MKTAG('N', 'U', 'L', 'L'):
             if(av_new_packet(pkt, 4 + pal_size) < 0)
@@ -187,7 +190,10 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             avio_read(s->pb, pal + 4, 768);
             break;
         case MKTAG('F', 'R', 'A', 'M'):
-            avio_read(s->pb, buf + 4, DXA_EXTRA_SIZE - 4);
+            if ((ret = avio_read(s->pb, buf + 4, DXA_EXTRA_SIZE - 4)) != DXA_EXTRA_SIZE - 4) {
+                av_log(s, AV_LOG_ERROR, "failed reading dxa_extra\n");
+                return ret < 0 ? ret : AVERROR_INVALIDDATA;
+            }
             size = AV_RB32(buf + 5);
             if(size > 0xFFFFFF){
                 av_log(s, AV_LOG_ERROR, "Frame size is too big: %d\n", size);
