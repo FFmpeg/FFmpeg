@@ -455,6 +455,7 @@ bitmap_end_skip:
                 /* old SWF files containing SOI/EOI as data start */
                 /* files created by swink have reversed tag */
                 pkt->size -= 4;
+                memset(pkt->data+pkt->size, 0, 4);
                 res = avio_read(pb, pkt->data, pkt->size);
             } else {
                 res = avio_read(pb, pkt->data + 4, pkt->size - 4);
