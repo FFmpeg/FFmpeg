@@ -499,6 +499,10 @@ static int decode_byterun(uint8_t *dst, int dst_size,
         }
         x += length;
     }
+    if (x < dst_size) {
+        av_log(NULL, AV_LOG_WARNING, "decode_byterun ended before plane size\n");
+        memset(dst+x, 0, dst_size - x);
+    }
     return buf - buf_start;
 }
 
