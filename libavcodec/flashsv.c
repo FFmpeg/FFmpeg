@@ -69,7 +69,7 @@ typedef struct FlashSVContext {
     int             diff_start, diff_height;
 } FlashSVContext;
 
-static int decode_hybrid(const uint8_t *sptr, uint8_t *dptr, int dx, int dy,
+static int decode_hybrid(const uint8_t *sptr, const uint8_t *sptr_end, uint8_t *dptr, int dx, int dy,
                          int h, int w, int stride, const uint32_t *pal)
 {
     int x, y;
@@ -78,6 +78,8 @@ static int decode_hybrid(const uint8_t *sptr, uint8_t *dptr, int dx, int dy,
     for (y = dx + h; y > dx; y--) {
         uint8_t *dst = dptr + (y * stride) + dy * 3;
         for (x = 0; x < w; x++) {
+            if (sptr >= sptr_end)
+                return AVERROR_INVALIDDATA;
             if (*sptr & 0x80) {
                 /* 15-bit color */
                 unsigned c = AV_RB16(sptr) & ~0x8000;
@@ -232,10 +234,15 @@ static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
         }
     } else {
         /* hybrid 15-bit/palette mode */
-        decode_hybrid(s->tmpblock, s->frame->data[0],
+        ret = decode_hybrid(s->tmpblock, s->zstream.next_out,
+                      s->frame->data[0],
                       s->image_height - (y_pos + 1 + s->diff_height),
                       x_pos, s->diff_height, width,
                       s->frame->linesize[0], s->pal);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "decode_hybrid failed\n");
+            return ret;
+        }
     }
     skip_bits_long(gb, 8 * block_size); /* skip the consumed bits */
     return 0;
