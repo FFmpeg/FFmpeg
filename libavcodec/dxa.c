@@ -51,12 +51,16 @@ static const int shift1[6] = { 0, 8, 8, 8, 4, 4 };
 static const int shift2[6] = { 0, 0, 8, 4, 0, 4 };
 
 static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst,
-                     int stride, uint8_t *src, uint8_t *ref)
+                     int stride, uint8_t *src, int srcsize, uint8_t *ref)
 {
     uint8_t *code, *data, *mv, *msk, *tmp, *tmp2;
+    uint8_t *src_end = src + srcsize;
     int i, j, k;
     int type, x, y, d, d2;
     uint32_t mask;
+
+    if (12ULL  + ((avctx->width * avctx->height) >> 4) + AV_RB32(src + 0) + AV_RB32(src + 4) > srcsize)
+        return AVERROR_INVALIDDATA;
 
     code = src  + 12;
     data = code + ((avctx->width * avctx->height) >> 4);
@@ -65,6 +69,8 @@ static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst,
 
     for(j = 0; j < avctx->height; j += 4){
         for(i = 0; i < avctx->width; i += 4){
+            if (data > src_end || mv > src_end || msk > src_end)
+                return AVERROR_INVALIDDATA;
             tmp  = dst + i;
             tmp2 = ref + i;
             type = *code++;
@@ -302,7 +308,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             av_log(avctx, AV_LOG_ERROR, "Missing reference frame\n");
             return AVERROR_INVALIDDATA;
         }
-        decode_13(avctx, c, frame->data[0], frame->linesize[0], srcptr, c->prev->data[0]);
+        decode_13(avctx, c, frame->data[0], frame->linesize[0], srcptr, dsize, c->prev->data[0]);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown/unsupported compression type %d\n", compr);
