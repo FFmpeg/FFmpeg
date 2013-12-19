@@ -446,7 +446,10 @@ bitmap_end_skip:
                 goto skip;
             if ((res = av_new_packet(pkt, len)) < 0)
                 return res;
-            avio_read(pb, pkt->data, 4);
+            if (avio_read(pb, pkt->data, 4) != 4) {
+                av_free_packet(pkt);
+                return AVERROR_INVALIDDATA;
+            }
             if (AV_RB32(pkt->data) == 0xffd8ffd9 ||
                 AV_RB32(pkt->data) == 0xffd9ffd8) {
                 /* old SWF files containing SOI/EOI as data start */
