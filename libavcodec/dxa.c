@@ -42,6 +42,7 @@ typedef struct DxaDecContext {
     AVFrame *prev;
 
     int dsize;
+#define DECOMP_BUF_PADDING 16
     uint8_t *decomp_buf;
     uint32_t pal[256];
 } DxaDecContext;
@@ -245,6 +246,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             av_log(avctx, AV_LOG_ERROR, "Uncompress failed!\n");
             return AVERROR_UNKNOWN;
         }
+        memset(c->decomp_buf + dsize, 0, DECOMP_BUF_PADDING);
     }
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
@@ -328,7 +330,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     c->dsize = avctx->width * avctx->height * 2;
-    c->decomp_buf = av_malloc(c->dsize);
+    c->decomp_buf = av_malloc(c->dsize + DECOMP_BUF_PADDING);
     if (!c->decomp_buf) {
         av_frame_free(&c->prev);
         av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
