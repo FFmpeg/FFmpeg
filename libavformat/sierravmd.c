@@ -204,7 +204,12 @@ static int vmd_read_header(AVFormatContext *s)
             int type;
             uint32_t size;
 
-            avio_read(pb, chunk, BYTES_PER_FRAME_RECORD);
+            if ((ret = avio_read(pb, chunk, BYTES_PER_FRAME_RECORD)) != BYTES_PER_FRAME_RECORD) {
+                av_log(s, AV_LOG_ERROR, "Failed to read frame record\n");
+                if (ret >= 0)
+                    ret = AVERROR_INVALIDDATA;
+                goto error;
+            }
             type = chunk[0];
             size = AV_RL32(&chunk[2]);
             if (size > INT_MAX / 2) {
