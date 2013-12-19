@@ -81,12 +81,14 @@ struct variant {
     int stream_offset;
 
     int finished;
+    int event;
     int64_t target_duration;
     int start_seq_no;
     int n_segments;
     struct segment **segments;
     int needed, cur_needed;
     int cur_seq_no;
+    int first_seq_no;
     int64_t last_load_time;
 
     char key_url[MAX_URL_SIZE];
@@ -248,6 +250,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     if (var) {
         free_segment_list(var);
         var->finished = 0;
+        var->event = 0;
     }
     while (!url_feof(in)) {
         read_chomp_line(in, line, sizeof(line));
@@ -288,6 +291,16 @@ static int parse_playlist(HLSContext *c, const char *url,
                 }
             }
             var->start_seq_no = atoi(ptr);
+        } else if (av_strstart(line, "#EXT-X-PLAYLIST-TYPE:", &ptr)) {
+            if (!var) {
+                var = new_variant(c, 0, url, NULL);
+                if (!var) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+            }
+            if (!strcmp(ptr, "EVENT"))
+                var->event = 1;
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
             if (var)
                 var->finished = 1;
@@ -568,6 +581,7 @@ static int hls_read_header(AVFormatContext *s)
         v->cur_seq_no = v->start_seq_no;
         if (!v->finished && v->n_segments > 3)
             v->cur_seq_no = v->start_seq_no + v->n_segments - 3;
+        v->first_seq_no = v->cur_seq_no;
 
         v->read_buffer = av_malloc(INITIAL_BUFFER_SIZE);
         ffio_init_context(&v->pb, v->read_buffer, INITIAL_BUFFER_SIZE, 0, v,
@@ -776,8 +790,10 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
 {
     HLSContext *c = s->priv_data;
     int i, j, ret;
+    int64_t first_timestamp, seek_timestamp, duration;
 
-    if ((flags & AVSEEK_FLAG_BYTE) || !c->variants[0]->finished)
+    if ((flags & AVSEEK_FLAG_BYTE) ||
+        !(c->variants[0]->finished || c->variants[0]->event))
         return AVERROR(ENOSYS);
 
     c->seek_flags     = flags;
@@ -786,11 +802,14 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
                                        s->streams[stream_index]->time_base.den,
                                        flags & AVSEEK_FLAG_BACKWARD ?
                                        AV_ROUND_DOWN : AV_ROUND_UP);
-    timestamp = av_rescale_rnd(timestamp, AV_TIME_BASE, stream_index >= 0 ?
-                               s->streams[stream_index]->time_base.den :
-                               AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
-                               AV_ROUND_DOWN : AV_ROUND_UP);
-    if (s->duration < c->seek_timestamp) {
+    first_timestamp = c->first_timestamp == AV_NOPTS_VALUE ?
+                      0 : c->first_timestamp;
+    seek_timestamp = c->seek_timestamp;
+    duration = s->duration == AV_NOPTS_VALUE ?
+               0 : s->duration;
+
+    if (seek_timestamp < first_timestamp ||
+        (duration && duration < seek_timestamp - first_timestamp)) {
         c->seek_timestamp = AV_NOPTS_VALUE;
         return AVERROR(EIO);
     }
@@ -799,8 +818,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     for (i = 0; i < c->n_variants; i++) {
         /* Reset reading */
         struct variant *var = c->variants[i];
-        int64_t pos = c->first_timestamp == AV_NOPTS_VALUE ?
-                      0 : c->first_timestamp;
+        int64_t pos = first_timestamp;
         if (var->input) {
             ffurl_close(var->input);
             var->input = NULL;
@@ -814,9 +832,9 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         var->pb.pos = 0;
 
         /* Locate the segment that contains the target timestamp */
-        for (j = 0; j < var->n_segments; j++) {
-            if (timestamp >= pos &&
-                timestamp < pos + var->segments[j]->duration) {
+        for (j = var->first_seq_no - var->start_seq_no; j < var->n_segments; j++) {
+            if (seek_timestamp >= pos &&
+                seek_timestamp < pos + var->segments[j]->duration) {
                 var->cur_seq_no = var->start_seq_no + j;
                 ret = 0;
                 break;
