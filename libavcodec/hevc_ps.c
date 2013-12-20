@@ -320,7 +320,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     AVBufferRef *vps_buf = av_buffer_allocz(sizeof(*vps));
 
     if (!vps_buf)
-      return AVERROR(ENOMEM);
+        return AVERROR(ENOMEM);
     vps = (HEVCVPS*)vps_buf->data;
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VPS\n");
