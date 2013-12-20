@@ -1583,9 +1583,9 @@ int ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
      * This allows to support emu-edge and so on even if we have large
      * block overhangs. */
     emu[0] = (col + w4) * 8 > s->cur_frame->linesize[0] ||
-             (row + h4) > s->rows + 2 * !(avctx->flags & CODEC_FLAG_EMU_EDGE);
+             (row + h4) > s->rows;
     emu[1] = (col + w4) * 4 > s->cur_frame->linesize[1] ||
-             (row + h4) > s->rows + 2 * !(avctx->flags & CODEC_FLAG_EMU_EDGE);
+             (row + h4) > s->rows;
     if (emu[0]) {
         b->dst[0]   = s->tmp_y;
         b->y_stride = 64;
