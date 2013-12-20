@@ -2984,9 +2984,9 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 #define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 
 static const AVProfile profiles[] = {
-    { FF_PROFILE_HEVC_MAIN,                 "Main"              },
-    { FF_PROFILE_HEVC_MAIN_10,              "Main10"            },
-    { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "MainStillPicture"  },
+    { FF_PROFILE_HEVC_MAIN,                 "Main"                },
+    { FF_PROFILE_HEVC_MAIN_10,              "Main 10"             },
+    { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "Main Still Picture"  },
     { FF_PROFILE_UNKNOWN },
 };
 
