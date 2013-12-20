@@ -59,6 +59,15 @@ static int read_probe(AVProbeData *pd)
     return 0;
 }
 
+static int read_close(AVFormatContext *s)
+{
+    JVDemuxContext *jv = s->priv_data;
+
+    av_freep(&jv->frames);
+
+    return 0;
+}
+
 static int read_header(AVFormatContext *s)
 {
     JVDemuxContext *jv = s->priv_data;
@@ -218,15 +227,6 @@ static int read_seek(AVFormatContext *s, int stream_index,
 
     jv->state = JV_AUDIO;
     jv->pts   = i;
-    return 0;
-}
-
-static int read_close(AVFormatContext *s)
-{
-    JVDemuxContext *jv = s->priv_data;
-
-    av_freep(&jv->frames);
-
     return 0;
 }
 
