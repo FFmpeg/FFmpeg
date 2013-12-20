@@ -73,6 +73,7 @@ typedef struct {
     AVExpr   *brightness_pexpr;
     int      hsub;
     int      vsub;
+    int is_first;
     int32_t hue_sin;
     int32_t hue_cos;
     double   var_values[VAR_NB];
@@ -207,6 +208,7 @@ static av_cold int init(AVFilterContext *ctx)
            "H_expr:%s h_deg_expr:%s s_expr:%s b_expr:%s\n",
            hue->hue_expr, hue->hue_deg_expr, hue->saturation_expr, hue->brightness_expr);
     compute_sin_and_cos(hue);
+    hue->is_first = 1;
 
     return 0;
 }
@@ -356,10 +358,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
            hue->var_values[VAR_T], (int)hue->var_values[VAR_N]);
 
     compute_sin_and_cos(hue);
-    if (old_hue_sin != hue->hue_sin || old_hue_cos != hue->hue_cos)
+    if (hue->is_first || (old_hue_sin != hue->hue_sin || old_hue_cos != hue->hue_cos))
         create_chrominance_lut(hue, hue->hue_cos, hue->hue_sin);
 
-    if (old_brightness != hue->brightness && hue->brightness)
+    if (hue->is_first || (old_brightness != hue->brightness && hue->brightness))
         create_luma_lut(hue);
 
     if (!direct) {
@@ -383,6 +385,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     if (!direct)
         av_frame_free(&inpic);
+
+    hue->is_first = 0;
     return ff_filter_frame(outlink, outpic);
 }
 
