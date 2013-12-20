@@ -85,6 +85,7 @@ static int read_part_of_packet(AVFormatContext *s, int64_t *pts,
     PVAContext *pvactx = s->priv_data;
     int syncword, streamid, reserved, flags, length, pts_flag;
     int64_t pva_pts = AV_NOPTS_VALUE, startpos;
+    int ret;
 
 recover:
     startpos = avio_tell(pb);
@@ -133,8 +134,8 @@ recover:
             pes_flags              = avio_rb16(pb);
             pes_header_data_length = avio_r8(pb);
 
-            if (pes_signal != 1) {
-                pva_log(s, AV_LOG_WARNING, "expected signaled PES packet, "
+            if (pes_signal != 1 || pes_header_data_length == 0) {
+                pva_log(s, AV_LOG_WARNING, "expected non empty signaled PES packet, "
                                           "trying to recover\n");
                 avio_skip(pb, length - 9);
                 if (!read_packet)
@@ -142,7 +143,9 @@ recover:
                 goto recover;
             }
 
-            avio_read(pb, pes_header_data, pes_header_data_length);
+            ret = avio_read(pb, pes_header_data, pes_header_data_length);
+            if (ret != pes_header_data_length)
+                return ret < 0 ? ret : AVERROR_INVALIDDATA;
             length -= 9 + pes_header_data_length;
 
             pes_packet_length -= 3 + pes_header_data_length;
