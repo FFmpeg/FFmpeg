@@ -201,6 +201,7 @@ static void decode_profile_tier_level(HEVCContext *s, PTLCommon *ptl)
     ptl->profile_space = get_bits(gb, 2);
     ptl->tier_flag     = get_bits1(gb);
     ptl->profile_idc   = get_bits(gb, 5);
+
     if (ptl->profile_idc == 1)
         av_log(s->avctx, AV_LOG_DEBUG, "Main profile bitstream\n");
     else if (ptl->profile_idc == 2)
