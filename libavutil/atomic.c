@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "atomic.h"
 
 #if !HAVE_ATOMICS_NATIVE
@@ -102,7 +103,7 @@ void *avpriv_atomic_ptr_cas(void * volatile *ptr, void *oldval, void *newval)
 
 #endif /* HAVE_PTHREADS */
 
-#endif /* !HAVE_MEMORYBARRIER && !HAVE_SYNC_VAL_COMPARE_AND_SWAP && !HAVE_MACHINE_RW_BARRIER */
+#endif /* !HAVE_ATOMICS_NATIVE */
 
 #ifdef TEST
 #include "avassert.h"
