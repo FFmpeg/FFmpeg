@@ -41,7 +41,8 @@ int ff_pix_norm1_mmx(uint8_t *pix, int line_size);
 
 #if HAVE_INLINE_ASM
 
-static int sse8_mmx(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
+static int sse8_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                    int line_size, int h)
 {
     int tmp;
 
@@ -105,7 +106,7 @@ static int sse8_mmx(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
     return tmp;
 }
 
-static int sse16_mmx(void *v, uint8_t *pix1, uint8_t *pix2,
+static int sse16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                      int line_size, int h)
 {
     int tmp;
@@ -414,10 +415,9 @@ static int hf_noise16_mmx(uint8_t *pix1, int line_size, int h)
     return tmp + hf_noise8_mmx(pix + 8, line_size, h);
 }
 
-static int nsse16_mmx(void *p, uint8_t *pix1, uint8_t *pix2,
+static int nsse16_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
                       int line_size, int h)
 {
-    MpegEncContext *c = p;
     int score1, score2;
 
     if (c)
@@ -433,10 +433,9 @@ static int nsse16_mmx(void *p, uint8_t *pix1, uint8_t *pix2,
         return score1 + FFABS(score2) * 8;
 }
 
-static int nsse8_mmx(void *p, uint8_t *pix1, uint8_t *pix2,
+static int nsse8_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
                      int line_size, int h)
 {
-    MpegEncContext *c = p;
     int score1 = sse8_mmx(c, pix1, pix2, line_size, h);
     int score2 = hf_noise8_mmx(pix1, line_size, h) -
                  hf_noise8_mmx(pix2, line_size, h);
@@ -447,7 +446,7 @@ static int nsse8_mmx(void *p, uint8_t *pix1, uint8_t *pix2,
         return score1 + FFABS(score2) * 8;
 }
 
-static int vsad_intra16_mmx(void *v, uint8_t *pix, uint8_t *dummy,
+static int vsad_intra16_mmx(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
                             int line_size, int h)
 {
     int tmp;
@@ -511,7 +510,7 @@ static int vsad_intra16_mmx(void *v, uint8_t *pix, uint8_t *dummy,
 }
 #undef SUM
 
-static int vsad_intra16_mmxext(void *v, uint8_t *pix, uint8_t *dummy,
+static int vsad_intra16_mmxext(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
                                int line_size, int h)
 {
     int tmp;
@@ -554,7 +553,7 @@ static int vsad_intra16_mmxext(void *v, uint8_t *pix, uint8_t *dummy,
 }
 #undef SUM
 
-static int vsad16_mmx(void *v, uint8_t *pix1, uint8_t *pix2,
+static int vsad16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                       int line_size, int h)
 {
     int tmp;
@@ -635,7 +634,7 @@ static int vsad16_mmx(void *v, uint8_t *pix1, uint8_t *pix2,
 }
 #undef SUM
 
-static int vsad16_mmxext(void *v, uint8_t *pix1, uint8_t *pix2,
+static int vsad16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                          int line_size, int h)
 {
     int tmp;
@@ -973,13 +972,14 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2,
 
 #endif /* HAVE_INLINE_ASM */
 
-int ff_sse16_sse2(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+int ff_sse16_sse2(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                  int line_size, int h);
 
 #define hadamard_func(cpu)                                              \
-int ff_hadamard8_diff_ ## cpu(void *s, uint8_t *src1, uint8_t *src2,    \
-                              int stride, int h);                       \
-int ff_hadamard8_diff16_ ## cpu(void *s, uint8_t *src1, uint8_t *src2,  \
-                                int stride, int h);
+    int ff_hadamard8_diff_ ## cpu(MpegEncContext *s, uint8_t *src1,     \
+                                  uint8_t *src2, int stride, int h);    \
+    int ff_hadamard8_diff16_ ## cpu(MpegEncContext *s, uint8_t *src1,   \
+                                    uint8_t *src2, int stride, int h);
 
 hadamard_func(mmx)
 hadamard_func(mmxext)

@@ -28,6 +28,7 @@
 #include "libavutil/bfin/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
+#include "libavcodec/mpegvideo.h"
 
 void ff_bfin_idct(int16_t *block) attribute_l1_text;
 void ff_bfin_fdct(int16_t *block) attribute_l1_text;
@@ -50,11 +51,11 @@ int ff_bfin_z_sad8x8(uint8_t *blk1, uint8_t *blk2, int dsz,
 int ff_bfin_z_sad16x16(uint8_t *blk1, uint8_t *blk2, int dsz,
                        int line_size, int h) attribute_l1_text;
 
-int ff_bfin_sse4(void *v, uint8_t *pix1, uint8_t *pix2,
+int ff_bfin_sse4(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                  int line_size, int h) attribute_l1_text;
-int ff_bfin_sse8(void *v, uint8_t *pix1, uint8_t *pix2,
+int ff_bfin_sse8(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                  int line_size, int h) attribute_l1_text;
-int ff_bfin_sse16(void *v, uint8_t *pix1, uint8_t *pix2,
+int ff_bfin_sse16(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                   int line_size, int h) attribute_l1_text;
 
 static void bfin_idct_add(uint8_t *dest, int line_size, int16_t *block)
@@ -81,7 +82,7 @@ static void bfin_clear_blocks(int16_t *blocks)
              ::"a" (blocks) : "P0", "I0", "R0");
 }
 
-static int bfin_pix_abs16(void *c, uint8_t *blk1, uint8_t *blk2,
+static int bfin_pix_abs16(MpegEncContext *c, uint8_t *blk1, uint8_t *blk2,
                           int line_size, int h)
 {
     return ff_bfin_z_sad16x16(blk1, blk2, line_size, line_size, h);
@@ -89,48 +90,48 @@ static int bfin_pix_abs16(void *c, uint8_t *blk1, uint8_t *blk2,
 
 static uint8_t vtmp_blk[256] attribute_l1_data_b;
 
-static int bfin_pix_abs16_x2(void *c, uint8_t *blk1, uint8_t *blk2,
+static int bfin_pix_abs16_x2(MpegEncContext *c, uint8_t *blk1, uint8_t *blk2,
                              int line_size, int h)
 {
     ff_bfin_put_pixels16uc(vtmp_blk, blk2, blk2 + 1, 16, line_size, h);
     return ff_bfin_z_sad16x16(blk1, vtmp_blk, line_size, 16, h);
 }
 
-static int bfin_pix_abs16_y2(void *c, uint8_t *blk1, uint8_t *blk2,
+static int bfin_pix_abs16_y2(MpegEncContext *c, uint8_t *blk1, uint8_t *blk2,
                              int line_size, int h)
 {
     ff_bfin_put_pixels16uc(vtmp_blk, blk2, blk2 + line_size, 16, line_size, h);
     return ff_bfin_z_sad16x16(blk1, vtmp_blk, line_size, 16, h);
 }
 
-static int bfin_pix_abs16_xy2(void *c, uint8_t *blk1, uint8_t *blk2,
+static int bfin_pix_abs16_xy2(MpegEncContext *c, uint8_t *blk1, uint8_t *blk2,
                               int line_size, int h)
 {
     ff_bfin_z_put_pixels16_xy2(vtmp_blk, blk2, 16, line_size, h);
     return ff_bfin_z_sad16x16(blk1, vtmp_blk, line_size, 16, h);
 }
 
-static int bfin_pix_abs8(void *c, uint8_t *blk1, uint8_t *blk2,
+static int bfin_pix_abs8(MpegEncContext *c, uint8_t *blk1, uint8_t *blk2,
                          int line_size, int h)
 {
     return ff_bfin_z_sad8x8(blk1, blk2, line_size, line_size, h);
 }
 
-static int bfin_pix_abs8_x2(void *c, uint8_t *blk1, uint8_t *blk2,
+static int bfin_pix_abs8_x2(MpegEncContext *c, uint8_t *blk1, uint8_t *blk2,
                             int line_size, int h)
 {
     ff_bfin_put_pixels8uc(vtmp_blk, blk2, blk2 + 1, 8, line_size, h);
     return ff_bfin_z_sad8x8(blk1, vtmp_blk, line_size, 8, h);
 }
 
-static int bfin_pix_abs8_y2(void *c, uint8_t *blk1, uint8_t *blk2,
+static int bfin_pix_abs8_y2(MpegEncContext *c, uint8_t *blk1, uint8_t *blk2,
                             int line_size, int h)
 {
     ff_bfin_put_pixels8uc(vtmp_blk, blk2, blk2 + line_size, 8, line_size, h);
     return ff_bfin_z_sad8x8(blk1, vtmp_blk, line_size, 8, h);
 }
 
-static int bfin_pix_abs8_xy2(void *c, uint8_t *blk1, uint8_t *blk2,
+static int bfin_pix_abs8_xy2(MpegEncContext *c, uint8_t *blk1, uint8_t *blk2,
                              int line_size, int h)
 {
     ff_bfin_z_put_pixels8_xy2(vtmp_blk, blk2, 8, line_size, h);

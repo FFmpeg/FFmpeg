@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
+#include "libavcodec/mpegvideo.h"
 #include "dsputil_arm.h"
 
 void ff_simple_idct_armv6(int16_t *data);
@@ -36,17 +37,17 @@ void ff_get_pixels_armv6(int16_t *block, const uint8_t *pixels, int stride);
 void ff_diff_pixels_armv6(int16_t *block, const uint8_t *s1,
                           const uint8_t *s2, int stride);
 
-int ff_pix_abs16_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
+int ff_pix_abs16_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                        int line_size, int h);
-int ff_pix_abs16_x2_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
+int ff_pix_abs16_x2_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                           int line_size, int h);
-int ff_pix_abs16_y2_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
+int ff_pix_abs16_y2_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                           int line_size, int h);
 
-int ff_pix_abs8_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
+int ff_pix_abs8_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                       int line_size, int h);
 
-int ff_sse16_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
+int ff_sse16_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                    int line_size, int h);
 
 int ff_pix_norm1_armv6(uint8_t *pix, int line_size);

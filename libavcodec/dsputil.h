@@ -108,12 +108,13 @@ DEF_OLD_QPEL(qpel8_mc32_old_c)
 DEF_OLD_QPEL(qpel8_mc13_old_c)
 DEF_OLD_QPEL(qpel8_mc33_old_c)
 
+struct MpegEncContext;
 /* Motion estimation:
  * h is limited to { width / 2, width, 2 * width },
  * but never larger than 16 and never smaller than 2.
  * Although currently h < 4 is not used as functions with
  * width < 8 are neither used nor implemented. */
-typedef int (*me_cmp_func)(void /* MpegEncContext */ *s,
+typedef int (*me_cmp_func)(struct MpegEncContext *c,
                            uint8_t *blk1 /* align width (8 or 16) */,
                            uint8_t *blk2 /* align 1 */, int line_size, int h);
 
