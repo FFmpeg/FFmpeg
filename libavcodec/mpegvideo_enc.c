@@ -1148,9 +1148,9 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
                 switch (s->avctx->frame_skip_exp) {
                 case 0: score    =  FFMAX(score, v);          break;
                 case 1: score   += FFABS(v);                  break;
-                case 2: score   += v * v;                     break;
-                case 3: score64 += FFABS(v * v * (int64_t)v); break;
-                case 4: score64 += v * v * (int64_t)(v * v);  break;
+                case 2: score64 += v * (int64_t)v;                       break;
+                case 3: score64 += FFABS(v * (int64_t)v * v);            break;
+                case 4: score64 += (v * (int64_t)v) * (v * (int64_t)v);  break;
                 }
             }
         }
