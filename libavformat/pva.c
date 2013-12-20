@@ -152,8 +152,14 @@ recover:
 
             pvactx->continue_pes = pes_packet_length;
 
-            if (pes_flags & 0x80 && (pes_header_data[0] & 0xf0) == 0x20)
+            if (pes_flags & 0x80 && (pes_header_data[0] & 0xf0) == 0x20) {
+                if (pes_header_data_length < 5) {
+                    pva_log(s, AV_LOG_ERROR, "header too short\n");
+                    avio_skip(pb, length);
+                    return AVERROR_INVALIDDATA;
+                }
                 pva_pts = ff_parse_pes_pts(pes_header_data);
+            }
         }
 
         pvactx->continue_pes -= length;
