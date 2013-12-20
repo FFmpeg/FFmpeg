@@ -108,8 +108,8 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
     }
 #endif
 
-    avc->internal->skip_samples = opus->pre_skip;
-    avc->delay = 3840;  /* Decoder delay (in samples) at 48kHz */
+    /* Decoder delay (in samples) at 48kHz */
+    avc->delay = avc->internal->skip_samples = opus->pre_skip;
 
     return 0;
 }
