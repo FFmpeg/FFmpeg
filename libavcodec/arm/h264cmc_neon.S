@@ -39,6 +39,9 @@ function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
         add             r6,  r6,  r7,  lsl #1
         vld1.16         {d22[],d23[]}, [r6,:16]
   .endif
+  .ifc \codec,vc1
+        vmov.u16        q11, #28
+  .endif
 
 A       muls            r7,  r4,  r5
 T       mul             r7,  r4,  r5
@@ -182,6 +185,9 @@ function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
         lsr             r7,  r4,  #1
         add             r6,  r6,  r7,  lsl #1
         vld1.16         {d22[],d23[]}, [r6,:16]
+  .endif
+  .ifc \codec,vc1
+        vmov.u16        q11, #28
   .endif
 
 A       muls            r7,  r4,  r5
@@ -395,4 +401,11 @@ endconst
         h264_chroma_mc8 avg, rv40
         h264_chroma_mc4 put, rv40
         h264_chroma_mc4 avg, rv40
+#endif
+
+#if CONFIG_VC1_DECODER
+        h264_chroma_mc8 put, vc1
+        h264_chroma_mc8 avg, vc1
+        h264_chroma_mc4 put, vc1
+        h264_chroma_mc4 avg, vc1
 #endif
