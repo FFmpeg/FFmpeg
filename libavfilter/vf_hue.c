@@ -144,8 +144,8 @@ static inline void create_chrominance_lut(HueContext *h, const int32_t c,
             new_v = ((s * u) + (c * v) + (1 << 15) + (128 << 16)) >> 16;
 
             /* Prevent a potential overflow */
-            h->lut_u[i][j] = av_clip_uint8_c(new_u);
-            h->lut_v[i][j] = av_clip_uint8_c(new_v);
+            h->lut_u[i][j] = av_clip_uint8(new_u);
+            h->lut_v[i][j] = av_clip_uint8(new_v);
         }
     }
 }
