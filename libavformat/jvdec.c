@@ -184,6 +184,9 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
+    if (s->pb->eof_reached)
+        return AVERROR_EOF;
+
     return AVERROR(EIO);
 }
 
