@@ -26,8 +26,6 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_bfin.h"
 
-int off;
-
 static void bfin_idct_add (uint8_t *dest, int line_size, int16_t *block)
 {
     ff_bfin_idct (block);
