@@ -353,7 +353,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     }
 
     av_log(inlink->dst, AV_LOG_DEBUG,
-           "H:%0.1f*PI h:%0.1f s:%0.f b:%0.f t:%0.1f n:%d\n",
+           "H:%0.1f*PI h:%0.1f s:%0.1f b:%0.f t:%0.1f n:%d\n",
            hue->hue/M_PI, hue->hue_deg, hue->saturation, hue->brightness,
            hue->var_values[VAR_T], (int)hue->var_values[VAR_N]);
 
