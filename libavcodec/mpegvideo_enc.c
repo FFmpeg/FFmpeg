@@ -1300,6 +1300,20 @@ static int select_input_picture(MpegEncContext *s)
 
     /* set next picture type & ordering */
     if (s->reordered_input_picture[0] == NULL && s->input_picture[0]) {
+        if (s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor) {
+            if (s->picture_in_gop_number < s->gop_size &&
+                s->next_picture_ptr &&
+                skip_check(s, s->input_picture[0], s->next_picture_ptr)) {
+                // FIXME check that te gop check above is +-1 correct
+                av_frame_unref(&s->input_picture[0]->f);
+
+                emms_c();
+                ff_vbv_update(s, 0);
+
+                goto no_output_pic;
+            }
+        }
+
         if (/*s->picture_in_gop_number >= s->gop_size ||*/
             s->next_picture_ptr == NULL || s->intra_only) {
             s->reordered_input_picture[0] = s->input_picture[0];
@@ -1308,19 +1322,6 @@ static int select_input_picture(MpegEncContext *s)
                 s->coded_picture_number++;
         } else {
             int b_frames;
-
-            if (s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor) {
-                if (s->picture_in_gop_number < s->gop_size &&
-                    skip_check(s, s->input_picture[0], s->next_picture_ptr)) {
-                    // FIXME check that te gop check above is +-1 correct
-                    av_frame_unref(&s->input_picture[0]->f);
-
-                    emms_c();
-                    ff_vbv_update(s, 0);
-
-                    goto no_output_pic;
-                }
-            }
 
             if (s->flags & CODEC_FLAG_PASS2) {
                 for (i = 0; i < s->max_b_frames + 1; i++) {
