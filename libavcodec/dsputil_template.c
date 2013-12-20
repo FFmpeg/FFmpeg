@@ -36,11 +36,10 @@ static void FUNCC(draw_edges)(uint8_t *_buf, int _wrap, int width, int height, i
 {
     pixel *buf = (pixel*)_buf;
     int wrap = _wrap / sizeof(pixel);
-    pixel *ptr, *last_line;
+    pixel *ptr = buf, *last_line;
     int i;
 
     /* left and right */
-    ptr = buf;
     for(i=0;i<height;i++) {
         memset(ptr - w, ptr[0], w);
         memset(ptr + width, ptr[width-1], w);
