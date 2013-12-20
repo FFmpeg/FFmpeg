@@ -444,7 +444,6 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     s->avctx      = avctx;
     s->out_format = FMT_H263;
     s->codec_id   = avctx->codec_id;
-    avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
     s->orig_width  = s->width  = avctx->coded_width;
     s->orig_height = s->height = avctx->coded_height;
