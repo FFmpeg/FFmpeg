@@ -662,7 +662,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "channels mismatch\n");
         return AVERROR(EINVAL);
     }
-    if (bits && avctx->sample_fmt == AV_SAMPLE_FMT_U8) {
+    if (bits == (avctx->sample_fmt == AV_SAMPLE_FMT_U8)) {
         av_log(avctx, AV_LOG_ERROR, "sample format mismatch\n");
         return AVERROR(EINVAL);
     }
