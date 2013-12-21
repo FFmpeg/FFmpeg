@@ -31,7 +31,6 @@
 #define AVCODEC_DSPUTIL_H
 
 #include "avcodec.h"
-#include "rnd_avg.h"
 
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
@@ -40,7 +39,6 @@ extern const uint8_t ff_zigzag248_direct[64];
 
 extern uint32_t ff_square_tab[512];
 
-/* pixel operations */
 void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);

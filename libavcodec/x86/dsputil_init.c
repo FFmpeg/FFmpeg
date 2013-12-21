@@ -24,6 +24,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
+#include "libavcodec/pixels.h"
 #include "libavcodec/simple_idct.h"
 #include "libavcodec/version.h"
 #include "dsputil_x86.h"
@@ -107,8 +108,8 @@ void ff_vector_clip_int32_sse4(int32_t *dst, const int32_t *src,
 
 #if HAVE_YASM
 
-PIXELS16(static, ff_avg, , , _mmxext)
-PIXELS16(static, ff_put, , , _mmxext)
+CALL_2X_PIXELS(ff_avg_pixels16_mmxext, ff_avg_pixels8_mmxext, 8)
+CALL_2X_PIXELS(ff_put_pixels16_mmxext, ff_put_pixels8_mmxext, 8)
 
 #define QPEL_OP(OPNAME, RND, MMX)                                       \
 static void OPNAME ## qpel8_mc00_ ## MMX(uint8_t *dst, uint8_t *src,    \

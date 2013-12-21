@@ -28,6 +28,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/hpeldsp.h"
+#include "libavcodec/pixels.h"
 #include "dsputil_x86.h"
 
 void ff_put_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
@@ -109,11 +110,11 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #undef PAVGB
 #undef STATIC
 
-PIXELS16(static, avg_no_rnd, , _y2, _mmx)
-PIXELS16(static, put_no_rnd, , _y2, _mmx)
+CALL_2X_PIXELS(avg_no_rnd_pixels16_y2_mmx, avg_no_rnd_pixels8_y2_mmx, 8)
+CALL_2X_PIXELS(put_no_rnd_pixels16_y2_mmx, put_no_rnd_pixels8_y2_mmx, 8)
 
-PIXELS16(static, avg_no_rnd, , _xy2, _mmx)
-PIXELS16(static, put_no_rnd, , _xy2, _mmx)
+CALL_2X_PIXELS(avg_no_rnd_pixels16_xy2_mmx, avg_no_rnd_pixels8_xy2_mmx, 8)
+CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_mmx, put_no_rnd_pixels8_xy2_mmx, 8)
 
 /***********************************/
 /* MMX rounding */
@@ -130,22 +131,22 @@ PIXELS16(static, put_no_rnd, , _xy2, _mmx)
 #undef PAVGBP
 #undef PAVGB
 
-PIXELS16(static, avg, , _y2, _mmx)
-PIXELS16(static, put, , _y2, _mmx)
+CALL_2X_PIXELS(avg_pixels16_y2_mmx, avg_pixels8_y2_mmx, 8)
+CALL_2X_PIXELS(put_pixels16_y2_mmx, put_pixels8_y2_mmx, 8)
 
 #endif /* HAVE_INLINE_ASM */
 
 
 #if HAVE_YASM
 
-#define HPELDSP_AVG_PIXELS16(CPUEXT)                \
-    PIXELS16(static, put_no_rnd, ff_,  _x2, CPUEXT) \
-    PIXELS16(static, put,        ff_,  _y2, CPUEXT) \
-    PIXELS16(static, put_no_rnd, ff_,  _y2, CPUEXT) \
-    PIXELS16(static, avg,        ff_,     , CPUEXT) \
-    PIXELS16(static, avg,        ff_,  _x2, CPUEXT) \
-    PIXELS16(static, avg,        ff_,  _y2, CPUEXT) \
-    PIXELS16(static, avg,        ff_, _xy2, CPUEXT)
+#define HPELDSP_AVG_PIXELS16(CPUEXT)                      \
+    CALL_2X_PIXELS(put_no_rnd_pixels16_x2 ## CPUEXT, ff_put_no_rnd_pixels8_x2 ## CPUEXT, 8) \
+    CALL_2X_PIXELS(put_pixels16_y2        ## CPUEXT, ff_put_pixels8_y2        ## CPUEXT, 8) \
+    CALL_2X_PIXELS(put_no_rnd_pixels16_y2 ## CPUEXT, ff_put_no_rnd_pixels8_y2 ## CPUEXT, 8) \
+    CALL_2X_PIXELS(avg_pixels16           ## CPUEXT, ff_avg_pixels8           ## CPUEXT, 8) \
+    CALL_2X_PIXELS(avg_pixels16_x2        ## CPUEXT, ff_avg_pixels8_x2        ## CPUEXT, 8) \
+    CALL_2X_PIXELS(avg_pixels16_y2        ## CPUEXT, ff_avg_pixels8_y2        ## CPUEXT, 8) \
+    CALL_2X_PIXELS(avg_pixels16_xy2       ## CPUEXT, ff_avg_pixels8_xy2       ## CPUEXT, 8)
 
 HPELDSP_AVG_PIXELS16(_3dnow)
 HPELDSP_AVG_PIXELS16(_mmxext)
