@@ -132,6 +132,20 @@ size_t av_strlcat(char *dst, const char *src, size_t size);
 size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...) av_printf_format(3, 4);
 
 /**
+ * Get the count of continuous non zero chars starting from the beginning.
+ *
+ * @param len maximum number of characters to check in the string, that
+ *            is the maximum value which is returned by the function
+ */
+static inline size_t av_strnlen(const char *s, size_t len)
+{
+    size_t i;
+    for (i = 0; i < len && s[i]; i++)
+        ;
+    return i;
+}
+
+/**
  * Print arguments following specified format into a large enough auto
  * allocated buffer. It is similar to GNU asprintf().
  * @param fmt printf-compatible format string, specifying how the
