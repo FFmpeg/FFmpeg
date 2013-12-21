@@ -949,7 +949,7 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     int64_t pos = avio_tell(pb);
     int padding = 0;
-    int packet_start_offset = avio_tell(pb) / 1024;
+    unsigned packet_start_offset = avio_tell(pb) / 1024;
     int ret;
 
     gxf_write_packet_header(pb, PKT_MEDIA);
