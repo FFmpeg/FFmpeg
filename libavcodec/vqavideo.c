@@ -238,7 +238,7 @@ static int decode_format80(VqaContext *s, int src_size,
 
         /* 0x80 means that frame is finished */
         if (opcode == 0x80)
-            return 0;
+            break;
 
         if (dest_index >= dest_size) {
             av_log(s->avctx, AV_LOG_ERROR, "decode_format80 problem: dest_index (%d) exceeded dest_size (%d)\n",
