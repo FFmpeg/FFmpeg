@@ -319,8 +319,10 @@ static int fourxm_read_packet(AVFormatContext *s,
 
             if (ret < 0) {
                 av_free_packet(pkt);
-            } else
+            } else {
                 packet_read = 1;
+                av_shrink_packet(pkt, ret + 8);
+            }
             break;
 
         case snd__TAG:
