@@ -303,9 +303,11 @@ static int decode_format80(VqaContext *s, int src_size,
      * codebook entry; it is not important for compressed codebooks because
      * not every entry needs to be filled */
     if (check_size)
-        if (dest_index < dest_size)
+        if (dest_index < dest_size) {
             av_log(s->avctx, AV_LOG_ERROR, "decode_format80 problem: decode finished with dest_index (%d) < dest_size (%d)\n",
                 dest_index, dest_size);
+            memset(dest + dest_index, 0, dest_size - dest_index);
+        }
 
     return 0; // let's display what we decoded anyway
 }
