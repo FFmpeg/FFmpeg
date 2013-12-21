@@ -194,7 +194,6 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
         c->ac3_rshift_int32 = ff_ac3_rshift_int32_mmx;
     }
     if (EXTERNAL_AMD3DNOW(mm_flags)) {
-        c->extract_exponents = ff_ac3_extract_exponents_3dnow;
         if (!bit_exact) {
             c->float_to_fixed24 = ff_float_to_fixed24_3dnow;
         }

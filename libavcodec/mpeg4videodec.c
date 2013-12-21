@@ -2255,7 +2255,8 @@ end:
     return decode_vop_header(s, gb);
 }
 
-av_cold void ff_mpeg4videodec_static_init(void) {
+av_cold void ff_mpeg4videodec_static_init(void)
+{
     static int done = 0;
 
     if (!done) {
