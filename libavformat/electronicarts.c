@@ -357,7 +357,7 @@ static int process_ea_header(AVFormatContext *s)
         blockid = avio_rl32(pb);
         size    = avio_rl32(pb);
         if (i == 0)
-            ea->big_endian = size > 0x000FFFFF;
+            ea->big_endian = size > av_bswap32(size);
         if (ea->big_endian)
             size = av_bswap32(size);
 
