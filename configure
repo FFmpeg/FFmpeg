@@ -1537,6 +1537,7 @@ CONFIG_EXTRA="
     rtpdec
     rtpenc_chain
     sinewin
+    tpeldsp
     videodsp
     vp3dsp
 "
@@ -1820,7 +1821,7 @@ sipr_decoder_select="lsp"
 sp5x_decoder_select="mjpeg_decoder"
 svq1_decoder_select="hpeldsp"
 svq1_encoder_select="aandcttables dsputil hpeldsp mpegvideoenc"
-svq3_decoder_select="h264_decoder hpeldsp"
+svq3_decoder_select="h264_decoder hpeldsp tpeldsp"
 svq3_decoder_suggest="zlib"
 tak_decoder_select="dsputil"
 theora_decoder_select="vp3_decoder"

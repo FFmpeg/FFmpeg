@@ -24,6 +24,7 @@
 
 #include "bit_depth_template.c"
 #include "hpel_template.c"
+#include "tpel_template.c"
 
 static inline void FUNC(copy_block2)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {

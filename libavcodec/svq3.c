@@ -54,6 +54,7 @@
 #include "golomb.h"
 #include "hpeldsp.h"
 #include "rectangle.h"
+#include "tpeldsp.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -70,6 +71,7 @@
 typedef struct {
     H264Context h;
     HpelDSPContext hdsp;
+    TpelDSPContext tdsp;
     H264Picture *cur_pic;
     H264Picture *next_pic;
     H264Picture *last_pic;
@@ -321,9 +323,9 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
         src = h->edge_emu_buffer;
     }
     if (thirdpel)
-        (avg ? h->dsp.avg_tpel_pixels_tab
-             : h->dsp.put_tpel_pixels_tab)[dxy](dest, src, h->linesize,
-                                                width, height);
+        (avg ? s->tdsp.avg_tpel_pixels_tab
+             : s->tdsp.put_tpel_pixels_tab)[dxy](dest, src, h->linesize,
+                                                 width, height);
     else
         (avg ? s->hdsp.avg_pixels_tab
              : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src, h->linesize,
@@ -349,10 +351,10 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
                 src = h->edge_emu_buffer;
             }
             if (thirdpel)
-                (avg ? h->dsp.avg_tpel_pixels_tab
-                     : h->dsp.put_tpel_pixels_tab)[dxy](dest, src,
-                                                        h->uvlinesize,
-                                                        width, height);
+                (avg ? s->tdsp.avg_tpel_pixels_tab
+                     : s->tdsp.put_tpel_pixels_tab)[dxy](dest, src,
+                                                         h->uvlinesize,
+                                                         width, height);
             else
                 (avg ? s->hdsp.avg_pixels_tab
                      : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src,
@@ -881,6 +883,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         return -1;
 
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
+    ff_tpeldsp_init(&s->tdsp);
+
     h->flags           = avctx->flags;
     h->is_complex      = 1;
     h->picture_structure = PICT_FRAME;
