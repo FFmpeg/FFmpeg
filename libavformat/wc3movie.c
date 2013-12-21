@@ -27,6 +27,7 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
@@ -249,10 +250,16 @@ static int wc3_read_packet(AVFormatContext *s,
             else {
                 int i = 0;
                 av_log (s, AV_LOG_DEBUG, "Subtitle time!\n");
+                if (i >= size || av_strnlen(&text[i + 1], size - i - 1) >= size - i - 1)
+                    return AVERROR_INVALIDDATA;
                 av_log (s, AV_LOG_DEBUG, "  inglish: %s\n", &text[i + 1]);
                 i += text[i] + 1;
+                if (i >= size || av_strnlen(&text[i + 1], size - i - 1) >= size - i - 1)
+                    return AVERROR_INVALIDDATA;
                 av_log (s, AV_LOG_DEBUG, "  doytsch: %s\n", &text[i + 1]);
                 i += text[i] + 1;
+                if (i >= size || av_strnlen(&text[i + 1], size - i - 1) >= size - i - 1)
+                    return AVERROR_INVALIDDATA;
                 av_log (s, AV_LOG_DEBUG, "  fronsay: %s\n", &text[i + 1]);
             }
 #endif
