@@ -128,9 +128,15 @@ const enum AVPixelFormat ff_pixfmt_list_420[] = {
 };
 
 const enum AVPixelFormat ff_hwaccel_pixfmt_list_420[] = {
+#if CONFIG_H264_DXVA2_HWACCEL
     AV_PIX_FMT_DXVA2_VLD,
+#endif
+#if CONFIG_H264_VAAPI_HWACCEL
     AV_PIX_FMT_VAAPI_VLD,
+#endif
+#if CONFIG_H264_VDA_HWACCEL
     AV_PIX_FMT_VDA_VLD,
+#endif
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NONE
 };
