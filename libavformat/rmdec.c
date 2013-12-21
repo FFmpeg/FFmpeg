@@ -185,6 +185,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             avio_read(pb, buf, 4);
             buf[4] = 0;
         } else {
+            AV_WL32(buf, 0);
             get_str8(pb, buf, sizeof(buf)); /* desc */
             ast->deint_id = AV_RL32(buf);
             get_str8(pb, buf, sizeof(buf)); /* desc */
