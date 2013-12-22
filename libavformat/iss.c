@@ -76,14 +76,23 @@ static av_cold int iss_read_header(AVFormatContext *s)
 
     get_token(pb, token, sizeof(token)); //"IMA_ADPCM_Sound"
     get_token(pb, token, sizeof(token)); //packet size
-    sscanf(token, "%d", &iss->packet_size);
+    if (sscanf(token, "%d", &iss->packet_size) != 1) {
+        av_log(s, AV_LOG_ERROR, "Failed parsing packet size\n");
+        return AVERROR_INVALIDDATA;
+    }
     get_token(pb, token, sizeof(token)); //File ID
     get_token(pb, token, sizeof(token)); //out size
     get_token(pb, token, sizeof(token)); //stereo
-    sscanf(token, "%d", &stereo);
+    if (sscanf(token, "%d", &stereo) != 1) {
+        av_log(s, AV_LOG_ERROR, "Failed parsing stereo flag\n");
+        return AVERROR_INVALIDDATA;
+    }
     get_token(pb, token, sizeof(token)); //Unknown1
     get_token(pb, token, sizeof(token)); //RateDivisor
-    sscanf(token, "%d", &rate_divisor);
+    if (sscanf(token, "%d", &rate_divisor) != 1) {
+        av_log(s, AV_LOG_ERROR, "Failed parsing rate_divisor\n");
+        return AVERROR_INVALIDDATA;
+    }
     get_token(pb, token, sizeof(token)); //Unknown2
     get_token(pb, token, sizeof(token)); //Version ID
     get_token(pb, token, sizeof(token)); //Size
