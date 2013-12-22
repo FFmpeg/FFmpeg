@@ -596,24 +596,20 @@ static void rotate_luts(VC1Context *v)
             C = A;                                            \
         } else {                                              \
             DEF;                                              \
-            memcpy(&tmp, &L  , sizeof(tmp));                  \
-            memcpy(&L  , &N  , sizeof(tmp));                  \
-            memcpy(&N  , &tmp, sizeof(tmp));                  \
+            memcpy(&tmp, L   , sizeof(tmp));                  \
+            memcpy(L   , N   , sizeof(tmp));                  \
+            memcpy(N   , &tmp, sizeof(tmp));                  \
             C = N;                                            \
         }                                                     \
     } while(0)
 
-    ROTATE(int tmp,             v->last_use_ic, v->next_use_ic, v->curr_use_ic, v->aux_use_ic);
+    ROTATE(int *tmp,            &v->last_use_ic, &v->next_use_ic, v->curr_use_ic, &v->aux_use_ic);
     ROTATE(uint8_t tmp[2][256], v->last_luty,   v->next_luty,   v->curr_luty,   v->aux_luty);
     ROTATE(uint8_t tmp[2][256], v->last_lutuv,  v->next_lutuv,  v->curr_lutuv,  v->aux_lutuv);
 
     INIT_LUT(32, 0, v->curr_luty[0], v->curr_lutuv[0], 0);
     INIT_LUT(32, 0, v->curr_luty[1], v->curr_lutuv[1], 0);
-    v->curr_use_ic = 0;
-    if (v->curr_luty == v->next_luty) {
-        // If we just initialized next_lut, clear next_use_ic to match.
-        v->next_use_ic = 0;
-    }
+    *v->curr_use_ic = 0;
 }
 
 int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
@@ -1108,7 +1104,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                         INIT_LUT(v->lumscale2, v->lumshift2, v->curr_luty[v->cur_field_type^1], v->curr_lutuv[v->cur_field_type^1], 0);
                         INIT_LUT(v->lumscale , v->lumshift , v->last_luty[v->cur_field_type  ], v->last_lutuv[v->cur_field_type  ], 1);
                     }
-                    v->next_use_ic = v->curr_use_ic = 1;
+                    v->next_use_ic = *v->curr_use_ic = 1;
                 } else {
                     INIT_LUT(v->lumscale , v->lumshift , v->last_luty[0], v->last_lutuv[0], 1);
                     INIT_LUT(v->lumscale2, v->lumshift2, v->last_luty[1], v->last_lutuv[1], 1);
