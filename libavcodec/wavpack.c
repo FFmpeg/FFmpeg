@@ -487,6 +487,13 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
     } while (!last && count < s->samples);
 
     wv_reset_saved_context(s);
+
+    if (last && count < s->samples) {
+        int size = av_get_bytes_per_sample(type);
+        memset(dst_l + count*size, 0, (s->samples-count)*size);
+        memset(dst_r + count*size, 0, (s->samples-count)*size);
+    }
+
     if ((s->avctx->err_recognition & AV_EF_CRCCHECK) &&
         wv_check_crc(s, crc, crc_extra_bits))
         return AVERROR_INVALIDDATA;
@@ -548,6 +555,12 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
     } while (!last && count < s->samples);
 
     wv_reset_saved_context(s);
+
+    if (last && count < s->samples) {
+        int size = av_get_bytes_per_sample(type);
+        memset(dst + count*size, 0, (s->samples-count)*size);
+    }
+
     if (s->avctx->err_recognition & AV_EF_CRCCHECK) {
         int ret = wv_check_crc(s, crc, crc_extra_bits);
         if (ret < 0 && s->avctx->err_recognition & AV_EF_EXPLODE)
