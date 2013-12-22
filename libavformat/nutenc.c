@@ -584,8 +584,15 @@ static int write_index(NUTContext *nut, AVIOContext *bc) {
         int64_t last_pts= -1;
         int j, k;
         for (j=0; j<nut->sp_count; j++) {
-            int flag = (nus->keyframe_pts[j] != AV_NOPTS_VALUE) ^ (j+1 == nut->sp_count);
+            int flag;
             int n = 0;
+
+            if (j && nus->keyframe_pts[j] == nus->keyframe_pts[j-1]) {
+                av_log(nut->avf, AV_LOG_WARNING, "Multiple keyframes with same PTS\n");
+                nus->keyframe_pts[j] = AV_NOPTS_VALUE;
+            }
+
+            flag = (nus->keyframe_pts[j] != AV_NOPTS_VALUE) ^ (j+1 == nut->sp_count);
             for (; j<nut->sp_count && (nus->keyframe_pts[j] != AV_NOPTS_VALUE) == flag; j++)
                 n++;
 
