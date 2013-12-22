@@ -24,7 +24,7 @@
  * VP8 compatible video decoder
  */
 
-#include "dsputil.h"
+#include "mathops.h"
 #include "vp8dsp.h"
 #include "libavutil/common.h"
 

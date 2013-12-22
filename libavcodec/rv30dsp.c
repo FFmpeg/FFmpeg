@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "h264chroma.h"
 #include "h264qpel.h"
+#include "mathops.h"
 #include "rv34dsp.h"
 
 #define RV30_LOWPASS(OPNAME, OP) \

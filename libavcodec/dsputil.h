@@ -36,16 +36,11 @@
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
 extern const uint8_t ff_alternate_vertical_scan[64];
-extern const uint8_t ff_zigzag_direct[64];
 extern const uint8_t ff_zigzag248_direct[64];
 
-/* pixel operations */
-#define MAX_NEG_CROP 1024
-
-/* temporary */
 extern uint32_t ff_square_tab[512];
-extern const uint8_t ff_crop_tab[256 + 2 * MAX_NEG_CROP];
 
+/* pixel operations */
 void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);

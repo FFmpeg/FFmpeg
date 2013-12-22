@@ -23,8 +23,8 @@
 
 #include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
+#include "libavcodec/mathops.h"
 #include "libavcodec/vp3dsp.h"
-#include "libavcodec/dsputil.h"
 
 void ff_bfin_vp3_idct(int16_t *block);
 

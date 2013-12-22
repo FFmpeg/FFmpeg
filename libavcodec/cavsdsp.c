@@ -23,7 +23,9 @@
  */
 
 #include <stdio.h>
+
 #include "dsputil.h"
+#include "mathops.h"
 #include "cavsdsp.h"
 #include "libavutil/common.h"
 
