@@ -41,7 +41,7 @@
 #include "mpegvideo.h"
 #include "config.h"
 
-uint32_t ff_squareTbl[512] = { 0, };
+uint32_t ff_square_tab[512] = { 0, };
 
 #define BIT_DEPTH 16
 #include "dsputil_template.c"
@@ -184,7 +184,7 @@ static int pix_sum_c(uint8_t *pix, int line_size)
 static int pix_norm1_c(uint8_t *pix, int line_size)
 {
     int s = 0, i, j;
-    uint32_t *sq = ff_squareTbl + 256;
+    uint32_t *sq = ff_square_tab + 256;
 
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j += 8) {
@@ -255,7 +255,7 @@ static void bswap16_buf(uint16_t *dst, const uint16_t *src, int len)
 static int sse4_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int s = 0, i;
-    uint32_t *sq = ff_squareTbl + 256;
+    uint32_t *sq = ff_square_tab + 256;
 
     for (i = 0; i < h; i++) {
         s    += sq[pix1[0] - pix2[0]];
@@ -271,7 +271,7 @@ static int sse4_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 static int sse8_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int s = 0, i;
-    uint32_t *sq = ff_squareTbl + 256;
+    uint32_t *sq = ff_square_tab + 256;
 
     for (i = 0; i < h; i++) {
         s    += sq[pix1[0] - pix2[0]];
@@ -291,7 +291,7 @@ static int sse8_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int s = 0, i;
-    uint32_t *sq = ff_squareTbl + 256;
+    uint32_t *sq = ff_square_tab + 256;
 
     for (i = 0; i < h; i++) {
         s += sq[pix1[0]  - pix2[0]];
@@ -820,7 +820,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass(uint8_t *dst, uint8_t *src,       \
                                             int dstStride, int srcStride,     \
                                             int h)                            \
 {                                                                             \
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;                            \
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;                           \
     int i;                                                                    \
                                                                               \
     for (i = 0; i < h; i++) {                                                 \
@@ -840,7 +840,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass(uint8_t *dst, uint8_t *src,       \
 static void OPNAME ## mpeg4_qpel8_v_lowpass(uint8_t *dst, uint8_t *src,       \
                                             int dstStride, int srcStride)     \
 {                                                                             \
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;                            \
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;                           \
     const int w = 8;                                                          \
     int i;                                                                    \
                                                                               \
@@ -871,7 +871,7 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass(uint8_t *dst, uint8_t *src,      \
                                              int dstStride, int srcStride,    \
                                              int h)                           \
 {                                                                             \
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;                            \
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;                           \
     int i;                                                                    \
                                                                               \
     for (i = 0; i < h; i++) {                                                 \
@@ -899,7 +899,7 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass(uint8_t *dst, uint8_t *src,      \
 static void OPNAME ## mpeg4_qpel16_v_lowpass(uint8_t *dst, uint8_t *src,      \
                                              int dstStride, int srcStride)    \
 {                                                                             \
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;                            \
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;                           \
     const int w = 16;                                                         \
     int i;                                                                    \
                                                                               \
@@ -1505,7 +1505,7 @@ void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src,
                                   int dstStride, int srcStride, int h)
 {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     int i;
 
     for (i = 0; i < h; i++) {
@@ -1547,7 +1547,7 @@ void ff_avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src,
                                   int dstStride, int srcStride, int w)
 {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     int i;
 
     for (i = 0; i < w; i++) {
@@ -2710,7 +2710,7 @@ av_cold void ff_dsputil_static_init(void)
     int i;
 
     for (i = 0; i < 512; i++)
-        ff_squareTbl[i] = (i - 256) * (i - 256);
+        ff_square_tab[i] = (i - 256) * (i - 256);
 }
 
 av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)

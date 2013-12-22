@@ -160,7 +160,7 @@ static av_always_inline void filter_common(uint8_t *p, ptrdiff_t stride, int is4
 {
     LOAD_PIXELS
     int a, f1, f2;
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
 
     a = 3*(q0 - p0);
 
@@ -215,7 +215,7 @@ static av_always_inline int hev(uint8_t *p, ptrdiff_t stride, int thresh)
 static av_always_inline void filter_mbedge(uint8_t *p, ptrdiff_t stride)
 {
     int a0, a1, a2, w;
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
 
     LOAD_PIXELS
 
@@ -337,7 +337,7 @@ PUT_PIXELS(4)
 static void put_vp8_epel ## SIZE ## _h ## TAPS ## _c(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my) \
 { \
     const uint8_t *filter = subpel_filters[mx-1]; \
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP; \
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP; \
     int x, y; \
 \
     for (y = 0; y < h; y++) { \
@@ -351,7 +351,7 @@ static void put_vp8_epel ## SIZE ## _h ## TAPS ## _c(uint8_t *dst, ptrdiff_t dst
 static void put_vp8_epel ## SIZE ## _v ## TAPS ## _c(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my) \
 { \
     const uint8_t *filter = subpel_filters[my-1]; \
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP; \
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP; \
     int x, y; \
 \
     for (y = 0; y < h; y++) { \
@@ -365,7 +365,7 @@ static void put_vp8_epel ## SIZE ## _v ## TAPS ## _c(uint8_t *dst, ptrdiff_t dst
 static void put_vp8_epel ## SIZE ## _h ## HTAPS ## v ## VTAPS ## _c(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my) \
 { \
     const uint8_t *filter = subpel_filters[mx-1]; \
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP; \
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP; \
     int x, y; \
     uint8_t tmp_array[(2*SIZE+VTAPS-1)*SIZE]; \
     uint8_t *tmp = tmp_array; \

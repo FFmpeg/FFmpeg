@@ -358,7 +358,7 @@ static void deinterlace_line_c(uint8_t *dst,
                              const uint8_t *lum,
                              int size)
 {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     int sum;
 
     for(;size > 0;size--) {
@@ -381,7 +381,7 @@ static void deinterlace_line_inplace_c(uint8_t *lum_m4, uint8_t *lum_m3,
                                        uint8_t *lum_m2, uint8_t *lum_m1,
                                        uint8_t *lum, int size)
 {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     int sum;
 
     for(;size > 0;size--) {

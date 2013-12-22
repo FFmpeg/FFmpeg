@@ -43,8 +43,8 @@ extern const uint8_t ff_zigzag248_direct[64];
 #define MAX_NEG_CROP 1024
 
 /* temporary */
-extern uint32_t ff_squareTbl[512];
-extern const uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
+extern uint32_t ff_square_tab[512];
+extern const uint8_t ff_crop_tab[256 + 2 * MAX_NEG_CROP];
 
 void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
