@@ -14,6 +14,7 @@ version <next>
 - Windows resource files for shared libraries
 - aeval filter
 - stereoscopic 3d metadata handling
+- WebP encoding via libwebp
 
 
 version 2.1:

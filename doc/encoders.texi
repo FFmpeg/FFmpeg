@@ -1365,6 +1365,68 @@ g_error_resilient
 For more information about libvpx see:
 @url{http://www.webmproject.org/}
 
+
+@section libwebp
+
+libwebp WebP Image encoder wrapper
+
+libwebp is Google's official encoder for WebP images. It can encode in either
+lossy or lossless mode. Lossy images are essentially a wrapper around a VP8
+frame. Lossless images are a separate codec developed by Google.
+
+@subsection Pixel Format
+
+Currently, libwebp only supports YUV420 for lossy and RGB for lossless due
+to limitations of the format and libwebp. Alpha is supported for either mode.
+Because of API limitations, if RGB is passed in when encoding lossy or YUV is
+passed in for encoding lossless, the pixel format will automatically be
+converted using functions from libwebp. This is not ideal and is done only for
+convenience.
+
+@subsection Options
+
+@table @option
+
+@item -lossless @var{boolean}
+Enables/Disables use of lossless mode. Default is 0.
+
+@item -compression_level @var{integer}
+For lossy, this is a quality/speed tradeoff. Higher values give better quality
+for a given size at the cost of increased encoding time. For lossless, this is
+a size/speed tradeoff. Higher values give smaller size at the cost of increased
+encoding time. More specifically, it controls the number of extra algorithms
+and compression tools used, and varies the combination of these tools. This
+maps to the @var{method} option in libwebp. The valid range is 0 to 6.
+Default is 4.
+
+@item -qscale @var{float}
+For lossy encoding, this controls image quality, 0 to 100. For lossless
+encoding, this controls the effort and time spent at compressing more. The
+default value is 75. Note that for usage via libavcodec, this option is called
+@var{global_quality} and must be multiplied by @var{FF_QP2LAMBDA}.
+
+@item -preset @var{type}
+Configuration preset. This does some automatic settings based on the general
+type of the image.
+@table @option
+@item none
+Do not use a preset.
+@item default
+Use the encoder default.
+@item picture
+Digital picture, like portrait, inner shot
+@item photo
+Outdoor photograph, with natural lighting
+@item drawing
+Hand or line drawing, with high-contrast details
+@item icon
+Small-sized colorful images
+@item text
+Text-like
+@end table
+
+@end table
+
 @section libx264
 
 x264 H.264/MPEG-4 AVC encoder wrapper.
