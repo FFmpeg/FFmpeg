@@ -129,12 +129,18 @@ ogm_dshow_header(AVFormatContext *s, int idx)
     t = AV_RL32(p + 96);
 
     if(t == 0x05589f80){
+        if (os->psize < 184)
+            return AVERROR_INVALIDDATA;
+
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, AV_RL32(p + 68));
         avpriv_set_pts_info(st, 64, AV_RL64(p + 164), 10000000);
         st->codec->width = AV_RL32(p + 176);
         st->codec->height = AV_RL32(p + 180);
     } else if(t == 0x05589f81){
+        if (os->psize < 136)
+            return AVERROR_INVALIDDATA;
+
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, AV_RL16(p + 124));
         st->codec->channels = AV_RL16(p + 126);
