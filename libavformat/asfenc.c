@@ -525,7 +525,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             avio_wl16(pb, 40 + enc->extradata_size); /* size */
 
             /* BITMAPINFOHEADER header */
-            ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 1);
+            ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 1, 0);
         }
         end_header(pb, hpos);
     }

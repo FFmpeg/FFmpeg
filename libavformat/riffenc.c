@@ -201,10 +201,10 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
 
 /* BITMAPINFOHEADER header */
 void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
-                       const AVCodecTag *tags, int for_asf)
+                       const AVCodecTag *tags, int for_asf, int ignore_extradata)
 {
     /* size */
-    avio_wl32(pb, 40 + enc->extradata_size);
+    avio_wl32(pb, 40 + (ignore_extradata ? 0 : enc->extradata_size));
     avio_wl32(pb, enc->width);
     //We always store RGB TopDown
     avio_wl32(pb, enc->codec_tag ? enc->height : -enc->height);
@@ -220,10 +220,12 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
 
+    if (!ignore_extradata) {
     avio_write(pb, enc->extradata, enc->extradata_size);
 
     if (!for_asf && enc->extradata_size & 1)
         avio_w8(pb, 0);
+    }
 }
 
 void ff_parse_specific_params(AVCodecContext *stream, int *au_rate,
