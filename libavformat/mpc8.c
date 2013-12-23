@@ -157,6 +157,8 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     if(!(buf = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE)))
         return;
     avio_read(s->pb, buf, size);
+    memset(buf+size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+
     init_get_bits(&gb, buf, size * 8);
     size = gb_get_v(&gb);
     if(size > UINT_MAX/4 || size > c->samples/1152){
