@@ -587,10 +587,10 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *t
     avio_wl32(pb, 0);
 
     if (!ignore_extradata) {
-    avio_write(pb, enc->extradata, enc->extradata_size);
+        avio_write(pb, enc->extradata, enc->extradata_size);
 
-    if (!for_asf && enc->extradata_size & 1)
-        avio_w8(pb, 0);
+        if (!for_asf && enc->extradata_size & 1)
+            avio_w8(pb, 0);
     }
 }
 
