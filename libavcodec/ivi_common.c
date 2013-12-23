@@ -363,7 +363,7 @@ static int ivi_init_tiles(IVIBandDesc *band, IVITile *ref_tile,
                                               band->mb_size);
 
             av_freep(&tile->mbs);
-            tile->mbs = av_malloc(tile->num_MBs * sizeof(IVIMbInfo));
+            tile->mbs = av_mallocz(tile->num_MBs * sizeof(IVIMbInfo));
             if (!tile->mbs)
                 return AVERROR(ENOMEM);
 
