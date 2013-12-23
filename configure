@@ -3921,14 +3921,6 @@ if ! disabled pthreads && ! enabled w32threads; then
     fi
 fi
 
-for thread in $THREADS_LIST; do
-    if enabled $thread; then
-        test -n "$thread_type" &&
-            die "ERROR: Only one thread type must be selected." ||
-            thread_type="$thread"
-    fi
-done
-
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
@@ -4271,6 +4263,14 @@ check_deps $CONFIG_LIST       \
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
     enabled_any $need_memalign && enable memalign_hack
+
+for thread in $THREADS_LIST; do
+    if enabled $thread; then
+        test -n "$thread_type" &&
+            die "ERROR: Only one thread type must be selected." ||
+            thread_type="$thread"
+    fi
+done
 
 echo "install prefix            $prefix"
 echo "source path               $source_path"
