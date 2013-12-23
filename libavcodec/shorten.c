@@ -432,6 +432,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "error allocating bitstream buffer\n");
             return AVERROR(ENOMEM);
         }
+        memset(tmp_ptr, 0, s->allocated_bitstream_size);
         s->bitstream = tmp_ptr;
     }
 
