@@ -232,6 +232,7 @@ static int decode_main_header(NUTContext *nut)
                tmp);
         return AVERROR(ENOSYS);
     }
+    nut->version = tmp;
 
     GET_V(stream_count, tmp > 0 && tmp <= NUT_MAX_STREAMS);
 
