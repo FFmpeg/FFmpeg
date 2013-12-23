@@ -282,18 +282,20 @@ static int ape_read_header(AVFormatContext * s)
         ape->totalsamples += ape->blocksperframe * (ape->totalframes - 1);
 
     if (ape->seektablelength > 0) {
-        ape->seektable = av_malloc(ape->seektablelength);
+        ape->seektable = av_mallocz(ape->seektablelength);
         if (!ape->seektable)
             return AVERROR(ENOMEM);
         for (i = 0; i < ape->seektablelength / sizeof(uint32_t) && !pb->eof_reached; i++)
             ape->seektable[i] = avio_rl32(pb);
         if (ape->fileversion < 3810) {
-            ape->bittable = av_malloc(ape->totalframes);
+            ape->bittable = av_mallocz(ape->totalframes);
             if (!ape->bittable)
                 return AVERROR(ENOMEM);
             for (i = 0; i < ape->totalframes && !pb->eof_reached; i++)
                 ape->bittable[i] = avio_r8(pb);
         }
+        if (pb->eof_reached)
+            av_log(s, AV_LOG_WARNING, "File truncated\n");
     }
 
     ape->frames[0].pos     = ape->firstframe;
