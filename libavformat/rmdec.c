@@ -271,6 +271,10 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
                 sub_packet_h <= 1 ||
                 ast->coded_framesize * sub_packet_h > (2 + (sub_packet_h & 1)) * ast->audio_framesize)
                 return AVERROR_INVALIDDATA;
+            if (ast->coded_framesize * sub_packet_h != 2*ast->audio_framesize) {
+                avpriv_request_sample(s, "mismatching interleaver parameters");
+                return AVERROR_INVALIDDATA;
+            }
             break;
         case DEINT_ID_GENR:
             if (ast->sub_packet_size <= 0 ||
