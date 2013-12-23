@@ -76,7 +76,7 @@ typedef struct VmdVideoContext {
 #define QUEUE_SIZE 0x1000
 #define QUEUE_MASK 0x0FFF
 
-static void lz_unpack(const unsigned char *src, int src_len,
+static int lz_unpack(const unsigned char *src, int src_len,
                       unsigned char *dest, int dest_len)
 {
     unsigned char *d;
@@ -97,7 +97,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
     dataleft = bytestream2_get_le32(&gb);
     memset(queue, 0x20, QUEUE_SIZE);
     if (bytestream2_get_bytes_left(&gb) < 4)
-        return;
+        return AVERROR_INVALIDDATA;
     if (bytestream2_peek_le32(&gb) == 0x56781234) {
         bytestream2_skipu(&gb, 4);
         qpos = 0x111;
@@ -111,7 +111,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
         tag = bytestream2_get_byteu(&gb);
         if ((tag == 0xFF) && (dataleft > 8)) {
             if (d_end - d < 8 || bytestream2_get_bytes_left(&gb) < 8)
-                return;
+                return AVERROR_INVALIDDATA;
             for (i = 0; i < 8; i++) {
                 queue[qpos++] = *d++ = bytestream2_get_byteu(&gb);
                 qpos &= QUEUE_MASK;
@@ -123,7 +123,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
                     break;
                 if (tag & 0x01) {
                     if (d_end - d < 1 || bytestream2_get_bytes_left(&gb) < 1)
-                        return;
+                        return AVERROR_INVALIDDATA;
                     queue[qpos++] = *d++ = bytestream2_get_byteu(&gb);
                     qpos &= QUEUE_MASK;
                     dataleft--;
@@ -135,7 +135,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
                         chainlen = bytestream2_get_byte(&gb) + 0xF + 3;
                     }
                     if (d_end - d < chainlen)
-                        return;
+                        return AVERROR_INVALIDDATA;
                     for (j = 0; j < chainlen; j++) {
                         *d = queue[chainofs++ & QUEUE_MASK];
                         queue[qpos++] = *d++;
@@ -147,6 +147,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
             }
         }
     }
+    return d - dest;
 }
 static int rle_unpack(const unsigned char *src, unsigned char *dest,
                       int src_count, int src_size, int dest_len)
@@ -279,15 +280,18 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
         return AVERROR_INVALIDDATA;
     meth = bytestream2_get_byteu(&gb);
     if (meth & 0x80) {
+        int size;
         if (!s->unpack_buffer_size) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Trying to unpack LZ-compressed frame with no LZ buffer\n");
             return AVERROR_INVALIDDATA;
         }
-        lz_unpack(gb.buffer, bytestream2_get_bytes_left(&gb),
-                  s->unpack_buffer, s->unpack_buffer_size);
+        size = lz_unpack(gb.buffer, bytestream2_get_bytes_left(&gb),
+                         s->unpack_buffer, s->unpack_buffer_size);
+        if (size < 0)
+            return size;
         meth &= 0x7F;
-        bytestream2_init(&gb, s->unpack_buffer, s->unpack_buffer_size);
+        bytestream2_init(&gb, s->unpack_buffer, size);
     }
 
     dp = &frame->data[0][frame_y * frame->linesize[0] + frame_x];
