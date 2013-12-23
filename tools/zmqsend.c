@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     AVBPrint src;
     char c, *src_buf, *recv_buf;
     int recv_buf_size, ret;
-    void *ctx, *socket;
+    void *zmq_ctx, *socket;
     const char *bind_address = "tcp://localhost:5555";
     const char *infilename = NULL;
     FILE *infile = NULL;
@@ -88,14 +88,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    ctx = zmq_ctx_new();
-    if (!ctx) {
+    zmq_ctx = zmq_ctx_new();
+    if (!zmq_ctx) {
         av_log(NULL, AV_LOG_ERROR,
                "Could not create ZMQ context: %s\n", zmq_strerror(errno));
         return 1;
     }
 
-    socket = zmq_socket(ctx, ZMQ_REQ);
+    socket = zmq_socket(zmq_ctx, ZMQ_REQ);
     if (!socket) {
         av_log(NULL, AV_LOG_ERROR,
                "Could not create ZMQ socket: %s\n", zmq_strerror(errno));
@@ -162,6 +162,6 @@ int main(int argc, char **argv)
 
 end:
     zmq_close(socket);
-    zmq_ctx_destroy(ctx);
+    zmq_ctx_destroy(zmq_ctx);
     return ret;
 }
