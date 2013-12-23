@@ -1133,6 +1133,7 @@ static int mov_read_dvc1(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     uint8_t profile_level;
+    int ret;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -1149,7 +1150,10 @@ static int mov_read_dvc1(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (ff_alloc_extradata(st->codec, atom.size - 7))
         return AVERROR(ENOMEM);
     avio_seek(pb, 6, SEEK_CUR);
-    avio_read(pb, st->codec->extradata, st->codec->extradata_size);
+    ret = avio_read(pb, st->codec->extradata, st->codec->extradata_size);
+    if (ret != st->codec->extradata_size)
+        return ret < 0 ? ret : AVERROR_INVALIDDATA;
+
     return 0;
 }
 
