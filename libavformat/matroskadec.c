@@ -1834,7 +1834,7 @@ static int matroska_read_header(AVFormatContext *s)
         avpriv_set_pts_info(st, 64, matroska->time_scale*track->time_scale, 1000*1000*1000); /* 64 bit pts in ns */
 
         st->codec->codec_id = codec_id;
-        st->start_time = 0;
+
         if (strcmp(track->language, "und"))
             av_dict_set(&st->metadata, "language", track->language, 0);
         av_dict_set(&st->metadata, "title", track->name, 0);
