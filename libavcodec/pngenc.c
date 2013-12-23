@@ -21,7 +21,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
-#include "dsputil.h"
+#include "huffyuvencdsp.h"
 #include "png.h"
 
 /* TODO:
@@ -33,7 +33,7 @@
 #define IOBUF_SIZE 4096
 
 typedef struct PNGEncContext {
-    DSPContext dsp;
+    HuffYUVEncDSPContext hdsp;
 
     uint8_t *bytestream;
     uint8_t *bytestream_start;
@@ -111,7 +111,7 @@ static void sub_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top,
     }
 }
 
-static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
+static void png_filter_row(PNGEncContext *c, uint8_t *dst, int filter_type,
                            uint8_t *src, uint8_t *top, int size, int bpp)
 {
     int i;
@@ -121,11 +121,11 @@ static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
         memcpy(dst, src, size);
         break;
     case PNG_FILTER_VALUE_SUB:
-        dsp->diff_bytes(dst, src, src - bpp, size);
+        c->hdsp.diff_bytes(dst, src, src - bpp, size);
         memcpy(dst, src, bpp);
         break;
     case PNG_FILTER_VALUE_UP:
-        dsp->diff_bytes(dst, src, top, size);
+        c->hdsp.diff_bytes(dst, src, top, size);
         break;
     case PNG_FILTER_VALUE_AVG:
         for (i = 0; i < bpp; i++)
@@ -153,7 +153,7 @@ static uint8_t *png_choose_filter(PNGEncContext *s, uint8_t *dst,
         int cost, bcost = INT_MAX;
         uint8_t *buf1 = dst, *buf2 = dst + size + 16;
         for (pred = 0; pred < 5; pred++) {
-            png_filter_row(&s->dsp, buf1 + 1, pred, src, top, size, bpp);
+            png_filter_row(s, buf1 + 1, pred, src, top, size, bpp);
             buf1[0] = pred;
             cost = 0;
             for (i = 0; i <= size; i++)
@@ -165,7 +165,7 @@ static uint8_t *png_choose_filter(PNGEncContext *s, uint8_t *dst,
         }
         return buf2;
     } else {
-        png_filter_row(&s->dsp, dst + 1, pred, src, top, size, bpp);
+        png_filter_row(s, dst + 1, pred, src, top, size, bpp);
         dst[0] = pred;
         return dst;
     }
@@ -462,7 +462,7 @@ static av_cold int png_enc_init(AVCodecContext *avctx)
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_huffyuvencdsp_init(&s->hdsp);
 
     s->filter_type = av_clip(avctx->prediction_method,
                              PNG_FILTER_VALUE_NONE,

@@ -1542,6 +1542,7 @@ CONFIG_EXTRA="
     hpeldsp
     huffman
     huffyuvdsp
+    huffyuvencdsp
     intrax8
     lgplv3
     lpc
@@ -1773,7 +1774,7 @@ h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel videodsp"
 h264_decoder_suggest="error_resilience"
 hevc_decoder_select="cabac dsputil golomb videodsp"
 huffyuv_decoder_select="dsputil huffyuvdsp"
-huffyuv_encoder_select="dsputil huffman"
+huffyuv_encoder_select="dsputil huffman huffyuvencdsp"
 iac_decoder_select="imc_decoder"
 imc_decoder_select="dsputil fft mdct sinewin"
 indeo3_decoder_select="hpeldsp"
@@ -1826,7 +1827,7 @@ on2avc_decoder_select="mdct"
 opus_decoder_deps="avresample"
 png_decoder_deps="zlib"
 png_encoder_deps="zlib"
-png_encoder_select="dsputil"
+png_encoder_select="huffyuvencdsp"
 prores_decoder_select="dsputil"
 prores_encoder_select="dsputil"
 qcelp_decoder_select="lsp"
@@ -1857,7 +1858,7 @@ truespeech_decoder_select="dsputil"
 tscc_decoder_deps="zlib"
 twinvq_decoder_select="mdct lsp sinewin"
 utvideo_decoder_select="dsputil"
-utvideo_encoder_select="dsputil huffman"
+utvideo_encoder_select="dsputil huffman huffyuvencdsp"
 vble_decoder_select="huffyuvdsp"
 vc1_decoder_select="error_resilience h263_decoder h264chroma h264qpel intrax8"
 vc1image_decoder_select="vc1_decoder"

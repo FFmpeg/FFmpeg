@@ -53,10 +53,6 @@ uint32_t ff_square_tab[512] = { 0, };
 #include "dsputil_template.c"
 #include "dsputilenc_template.c"
 
-// 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
-#define pb_7f (~0UL / 255 * 0x7f)
-#define pb_80 (~0UL / 255 * 0x80)
-
 const uint8_t ff_alternate_horizontal_scan[64] = {
      0,  1,  2,  3,  8,  9, 16, 17,
     10, 11,  4,  5,  6,  7, 15, 14,
@@ -1663,55 +1659,6 @@ void ff_set_cmp(DSPContext *c, me_cmp_func *cmp, int type)
     }
 }
 
-static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
-{
-    long i;
-
-#if !HAVE_FAST_UNALIGNED
-    if ((long) src2 & (sizeof(long) - 1)) {
-        for (i = 0; i + 7 < w; i += 8) {
-            dst[i + 0] = src1[i + 0] - src2[i + 0];
-            dst[i + 1] = src1[i + 1] - src2[i + 1];
-            dst[i + 2] = src1[i + 2] - src2[i + 2];
-            dst[i + 3] = src1[i + 3] - src2[i + 3];
-            dst[i + 4] = src1[i + 4] - src2[i + 4];
-            dst[i + 5] = src1[i + 5] - src2[i + 5];
-            dst[i + 6] = src1[i + 6] - src2[i + 6];
-            dst[i + 7] = src1[i + 7] - src2[i + 7];
-        }
-    } else
-#endif
-    for (i = 0; i <= w - (int) sizeof(long); i += sizeof(long)) {
-        long a = *(long *) (src1 + i);
-        long b = *(long *) (src2 + i);
-        *(long *) (dst + i) = ((a | pb_80) - (b & pb_7f)) ^
-                              ((a ^ b ^ pb_80) & pb_80);
-    }
-    for (; i < w; i++)
-        dst[i + 0] = src1[i + 0] - src2[i + 0];
-}
-
-static void sub_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1,
-                                         const uint8_t *src2, int w,
-                                         int *left, int *left_top)
-{
-    int i;
-    uint8_t l, lt;
-
-    l  = *left;
-    lt = *left_top;
-
-    for (i = 0; i < w; i++) {
-        const int pred = mid_pred(l, src1[i], (l + src1[i] - lt) & 0xFF);
-        lt     = src1[i];
-        l      = src2[i];
-        dst[i] = l - pred;
-    }
-
-    *left     = l;
-    *left_top = lt;
-}
-
 #define BUTTERFLY2(o1, o2, i1, i2)              \
     o1 = (i1) + (i2);                           \
     o2 = (i1) - (i2);
@@ -2484,9 +2431,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->nsse[1] = nsse8_c;
 
     c->ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
-
-    c->diff_bytes                 = diff_bytes_c;
-    c->sub_hfyu_median_prediction = sub_hfyu_median_prediction_c;
 
     c->bswap_buf   = bswap_buf;
     c->bswap16_buf = bswap16_buf;

@@ -29,7 +29,6 @@
 #include "libavcodec/dct.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
-#include "libavcodec/mathops.h"
 #include "dsputil_x86.h"
 
 void ff_get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size);
@@ -694,70 +693,6 @@ static int vsad16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 }
 #undef SUM
 
-static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
-{
-    x86_reg i = 0;
-
-    __asm__ volatile (
-        "1:                             \n\t"
-        "movq  (%2, %0), %%mm0          \n\t"
-        "movq  (%1, %0), %%mm1          \n\t"
-        "psubb %%mm0, %%mm1             \n\t"
-        "movq %%mm1, (%3, %0)           \n\t"
-        "movq 8(%2, %0), %%mm0          \n\t"
-        "movq 8(%1, %0), %%mm1          \n\t"
-        "psubb %%mm0, %%mm1             \n\t"
-        "movq %%mm1, 8(%3, %0)          \n\t"
-        "add $16, %0                    \n\t"
-        "cmp %4, %0                     \n\t"
-        " jb 1b                         \n\t"
-        : "+r" (i)
-        : "r" (src1), "r" (src2), "r" (dst), "r" ((x86_reg) w - 15));
-
-    for (; i < w; i++)
-        dst[i + 0] = src1[i + 0] - src2[i + 0];
-}
-
-static void sub_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *src1,
-                                              const uint8_t *src2, int w,
-                                              int *left, int *left_top)
-{
-    x86_reg i = 0;
-    uint8_t l, lt;
-
-    __asm__ volatile (
-        "movq  (%1, %0), %%mm0          \n\t" // LT
-        "psllq $8, %%mm0                \n\t"
-        "1:                             \n\t"
-        "movq  (%1, %0), %%mm1          \n\t" // T
-        "movq  -1(%2, %0), %%mm2        \n\t" // L
-        "movq  (%2, %0), %%mm3          \n\t" // X
-        "movq %%mm2, %%mm4              \n\t" // L
-        "psubb %%mm0, %%mm2             \n\t"
-        "paddb %%mm1, %%mm2             \n\t" // L + T - LT
-        "movq %%mm4, %%mm5              \n\t" // L
-        "pmaxub %%mm1, %%mm4            \n\t" // max(T, L)
-        "pminub %%mm5, %%mm1            \n\t" // min(T, L)
-        "pminub %%mm2, %%mm4            \n\t"
-        "pmaxub %%mm1, %%mm4            \n\t"
-        "psubb %%mm4, %%mm3             \n\t" // dst - pred
-        "movq %%mm3, (%3, %0)           \n\t"
-        "add $8, %0                     \n\t"
-        "movq -1(%1, %0), %%mm0         \n\t" // LT
-        "cmp %4, %0                     \n\t"
-        " jb 1b                         \n\t"
-        : "+r" (i)
-        : "r" (src1), "r" (src2), "r" (dst), "r" ((x86_reg) w));
-
-    l  = *left;
-    lt = *left_top;
-
-    dst[0] = src2[0] - mid_pred(l, src1[0], (l + src1[0] - lt) & 0xFF);
-
-    *left_top = src1[w - 1];
-    *left     = src2[w - 1];
-}
-
 #define MMABS_MMX(a,z)                          \
     "pxor "    #z ", " #z "             \n\t"   \
     "pcmpgtw " #a ", " #z "             \n\t"   \
@@ -1010,7 +945,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
             (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
             c->fdct = ff_fdct_mmx;
 
-        c->diff_bytes      = diff_bytes_mmx;
         c->sum_abs_dctelem = sum_abs_dctelem_mmx;
 
         c->sse[0]  = sse16_mmx;
@@ -1046,8 +980,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
             c->vsad[0] = vsad16_mmxext;
         }
-
-        c->sub_hfyu_median_prediction = sub_hfyu_median_prediction_mmxext;
     }
 
     if (INLINE_SSE2(cpu_flags)) {
