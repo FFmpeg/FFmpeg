@@ -291,7 +291,7 @@ static int avi_write_header(AVFormatContext *s)
             // are not (yet) supported.
             if (stream->codec_id != AV_CODEC_ID_XSUB) break;
         case AVMEDIA_TYPE_VIDEO:
-            ff_put_bmp_header(pb, stream, ff_codec_bmp_tags, 0);
+            ff_put_bmp_header(pb, stream, ff_codec_bmp_tags, 0, 0);
             break;
         case AVMEDIA_TYPE_AUDIO:
             if ((ret = ff_put_wav_header(pb, stream)) < 0) {
