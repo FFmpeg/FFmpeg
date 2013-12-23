@@ -2099,16 +2099,6 @@ static int vsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,
     return score;
 }
 
-static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
-                               int size)
-{
-    int score = 0, i;
-
-    for (i = 0; i < size; i++)
-        score += (pix1[i] - pix2[i]) * (pix1[i] - pix2[i]);
-    return score;
-}
-
 #define WRAPPER8_16_SQ(name8, name16)                                   \
 static int name16(MpegEncContext *s, uint8_t *dst, uint8_t *src,        \
                   int stride, int h)                                    \
@@ -2429,8 +2419,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->vsse[5] = vsse_intra8_c;
     c->nsse[0] = nsse16_c;
     c->nsse[1] = nsse8_c;
-
-    c->ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
 
     c->bswap_buf   = bswap_buf;
     c->bswap16_buf = bswap16_buf;

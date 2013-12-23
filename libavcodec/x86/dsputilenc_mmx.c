@@ -805,40 +805,6 @@ DCT_SAD_FUNC(ssse3)
 #undef HSUM
 #undef DCT_SAD
 
-static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2,
-                                 int size)
-{
-    int sum;
-    x86_reg i = size;
-
-    __asm__ volatile (
-        "pxor %%mm4, %%mm4 \n"
-        "1: \n"
-        "sub $8, %0 \n"
-        "movq (%2, %0), %%mm2 \n"
-        "movq (%3, %0, 2), %%mm0 \n"
-        "movq 8(%3, %0, 2), %%mm1 \n"
-        "punpckhbw %%mm2, %%mm3 \n"
-        "punpcklbw %%mm2, %%mm2 \n"
-        "psraw $8, %%mm3 \n"
-        "psraw $8, %%mm2 \n"
-        "psubw %%mm3, %%mm1 \n"
-        "psubw %%mm2, %%mm0 \n"
-        "pmaddwd %%mm1, %%mm1 \n"
-        "pmaddwd %%mm0, %%mm0 \n"
-        "paddd %%mm1, %%mm4 \n"
-        "paddd %%mm0, %%mm4 \n"
-        "jg 1b \n"
-        "movq %%mm4, %%mm3 \n"
-        "psrlq $32, %%mm3 \n"
-        "paddd %%mm3, %%mm4 \n"
-        "movd %%mm4, %1 \n"
-        : "+r" (i), "=r" (sum)
-        : "r" (pix1), "r" (pix2));
-
-    return sum;
-}
-
 #define PHADDD(a, t)                            \
     "movq  " #a ", " #t "               \n\t"   \
     "psrlq    $32, " #a "               \n\t"   \
@@ -958,8 +924,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
             c->try_8x8basis = try_8x8basis_mmx;
         }
         c->add_8x8basis = add_8x8basis_mmx;
-
-        c->ssd_int8_vs_int16 = ssd_int8_vs_int16_mmx;
     }
 
     if (INLINE_AMD3DNOW(cpu_flags)) {
