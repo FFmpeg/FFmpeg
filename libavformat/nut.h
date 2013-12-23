@@ -105,6 +105,7 @@ typedef struct NUTContext {
     int64_t max_pts;
     AVRational *max_pts_tb;
     int version;
+    int minor_version;
 } NUTContext;
 
 extern const AVCodecTag ff_nut_subtitle_tags[];

@@ -233,6 +233,8 @@ static int decode_main_header(NUTContext *nut)
         return AVERROR(ENOSYS);
     }
     nut->version = tmp;
+    if (nut->version > 3)
+        nut->minor_version = ffio_read_varlen(bc);
 
     GET_V(stream_count, tmp > 0 && tmp <= NUT_MAX_STREAMS);
 
