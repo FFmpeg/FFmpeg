@@ -39,7 +39,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-typedef struct SVQ1Context {
+typedef struct SVQ1EncContext {
     /* FIXME: Needed for motion estimation, should not be used for anything
      * else, the idea is to make the motion estimation eventually independent
      * of MpegEncContext, so this will be removed then. */
@@ -75,9 +75,9 @@ typedef struct SVQ1Context {
     int64_t rd_total;
 
     uint8_t *scratchbuf;
-} SVQ1Context;
+} SVQ1EncContext;
 
-static void svq1_write_header(SVQ1Context *s, int frame_type)
+static void svq1_write_header(SVQ1EncContext *s, int frame_type)
 {
     int i;
 
@@ -114,7 +114,7 @@ static void svq1_write_header(SVQ1Context *s, int frame_type)
 #define QUALITY_THRESHOLD    100
 #define THRESHOLD_MULTIPLIER 0.6
 
-static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
+static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
                         uint8_t *decoded, int stride, int level,
                         int threshold, int lambda, int intra)
 {
@@ -259,7 +259,7 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
     return best_score;
 }
 
-static int svq1_encode_plane(SVQ1Context *s, int plane,
+static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                              unsigned char *src_plane,
                              unsigned char *ref_plane,
                              unsigned char *decoded_plane,
@@ -502,7 +502,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
 
 static av_cold int svq1_encode_end(AVCodecContext *avctx)
 {
-    SVQ1Context *const s = avctx->priv_data;
+    SVQ1EncContext *const s = avctx->priv_data;
     int i;
 
     av_log(avctx, AV_LOG_DEBUG, "RD: %f\n",
@@ -533,7 +533,7 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
 
 static av_cold int svq1_encode_init(AVCodecContext *avctx)
 {
-    SVQ1Context *const s = avctx->priv_data;
+    SVQ1EncContext *const s = avctx->priv_data;
     int ret;
 
     ff_dsputil_init(&s->dsp, avctx);
@@ -582,8 +582,8 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pict, int *got_packet)
 {
-    SVQ1Context *const s = avctx->priv_data;
-    AVFrame *const p     = avctx->coded_frame;
+    SVQ1EncContext *const s = avctx->priv_data;
+    AVFrame *const p        = avctx->coded_frame;
     int i, ret;
 
     if (!pkt->data &&
@@ -644,7 +644,7 @@ AVCodec ff_svq1_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SVQ1,
-    .priv_data_size = sizeof(SVQ1Context),
+    .priv_data_size = sizeof(SVQ1EncContext),
     .init           = svq1_encode_init,
     .encode2        = svq1_encode_frame,
     .close          = svq1_encode_end,
