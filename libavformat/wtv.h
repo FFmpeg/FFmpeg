@@ -55,4 +55,6 @@ extern const ff_asf_guid ff_mediasubtype_cpfilters_processed;
 extern const ff_asf_guid ff_format_cpfilters_processed;
 extern const ff_asf_guid ff_format_waveformatex;
 extern const ff_asf_guid ff_format_mpeg2_video;
+extern const ff_asf_guid ff_format_videoinfo2;
+
 #endif /* AVFORMAT_WTV_H */

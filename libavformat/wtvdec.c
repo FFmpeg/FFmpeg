@@ -372,10 +372,6 @@ static const ff_asf_guid mediasubtype_dtvccdata =
 static const ff_asf_guid mediasubtype_mpeg2_sections =
     {0x79,0x85,0x9F,0x4A,0xF8,0x6B,0x92,0x43,0x8A,0x6D,0xD2,0xDD,0x09,0xFA,0x78,0x61};
 
-/* Formats */
-static const ff_asf_guid format_videoinfo2 =
-    {0xA0,0x76,0x2A,0xF7,0x0A,0xEB,0xD0,0x11,0xAC,0xE4,0x00,0x00,0xC0,0xCC,0x16,0xBA};
-
 static int read_probe(AVProbeData *p)
 {
     return ff_guidcmp(p->buf, ff_wtv_guid) ? 0 : AVPROBE_SCORE_MAX;
@@ -691,7 +687,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         st = new_stream(s, st, sid, AVMEDIA_TYPE_VIDEO);
         if (!st)
             return NULL;
-        if (!ff_guidcmp(formattype, format_videoinfo2)) {
+        if (!ff_guidcmp(formattype, ff_format_videoinfo2)) {
             int consumed = parse_videoinfoheader2(s, st);
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else if (!ff_guidcmp(formattype, ff_format_mpeg2_video)) {
