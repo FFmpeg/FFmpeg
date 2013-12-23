@@ -1828,7 +1828,8 @@ Set when the volume expression is evaluated.
 It accepts the following values:
 @table @samp
 @item once
-only evaluate expression once during the filter initialization
+only evaluate expression once during the filter initialization, or
+when the @samp{volume} command is sent
 
 @item frame
 evaluate expression for each incoming frame
@@ -1869,6 +1870,18 @@ last set volume value
 Note that when @option{eval} is set to @samp{once} only the
 @var{sample_rate} and @var{tb} variables are available, all other
 variables will evaluate to NAN.
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item volume
+Modify the volume expression.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+@end table
 
 @subsection Examples
 

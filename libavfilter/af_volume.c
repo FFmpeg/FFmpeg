@@ -296,6 +296,22 @@ static int config_output(AVFilterLink *outlink)
     return set_volume(ctx);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    VolumeContext *vol = ctx->priv;
+    int ret = AVERROR(ENOSYS);
+
+    if (!strcmp(cmd, "volume")) {
+        if ((ret = set_expr(&vol->volume_pexpr, args, ctx)) < 0)
+            return ret;
+        if (vol->eval_mode == EVAL_MODE_ONCE)
+            set_volume(ctx);
+    }
+
+    return ret;
+}
+
 #define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 #define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts)*av_q2d(tb))
@@ -403,4 +419,5 @@ AVFilter ff_af_volume = {
     .inputs         = avfilter_af_volume_inputs,
     .outputs        = avfilter_af_volume_outputs,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = process_command,
 };
