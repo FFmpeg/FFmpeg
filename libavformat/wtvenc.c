@@ -223,9 +223,50 @@ static void finish_chunk(AVFormatContext *s)
         write_index(s);
 }
 
+static void put_videoinfoheader2(AVIOContext *pb, AVStream *st)
+{
+    AVRational dar = av_mul_q(st->sample_aspect_ratio, (AVRational){st->codec->width, st->codec->height});
+    unsigned int num, den;
+    av_reduce(&num, &den, dar.num, dar.den, 0xFFFFFFFF);
+
+    /* VIDEOINFOHEADER2 */
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, st->codec->width);
+    avio_wl32(pb, st->codec->height);
+
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+
+    avio_wl32(pb, st->codec->bit_rate);
+    avio_wl32(pb, 0);
+    avio_wl64(pb, st->avg_frame_rate.num && st->avg_frame_rate.den ? INT64_C(10000000) / av_q2d(st->avg_frame_rate) : 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+
+    avio_wl32(pb, num);
+    avio_wl32(pb, den);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+
+    ff_put_bmp_header(pb, st->codec, ff_codec_bmp_tags, 0, 1);
+
+    if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+        /* MPEG2VIDEOINFO */
+        avio_wl32(pb, 0);
+        avio_wl32(pb, st->codec->extradata_size);
+        avio_wl32(pb, -1);
+        avio_wl32(pb, -1);
+        avio_wl32(pb, 0);
+        avio_write(pb, st->codec->extradata, st->codec->extradata_size);
+        avio_wl64(pb, 0);
+    }
+}
+
 static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
 {
-    WtvContext *wctx = s->priv_data;
     const ff_asf_guid *g, *media_type, *format_type;
     AVIOContext *pb = s->pb;
     int64_t  hdr_pos_start;
@@ -257,13 +298,7 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
 
     hdr_pos_start = avio_tell(pb);
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if (wctx->first_video_flag) {
-            write_pad(pb, 216); //The size is sensitive.
-            wctx->first_video_flag = 0;
-        } else {
-            write_pad(pb, 72); // aspect ratio
-            ff_put_bmp_header(pb, st->codec, ff_codec_bmp_tags, 0);
-        }
+        put_videoinfoheader2(pb, st);
     } else {
         ff_put_wav_header(pb, st->codec);
     }
