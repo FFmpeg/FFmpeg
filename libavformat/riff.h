@@ -46,7 +46,7 @@ void ff_end_tag(AVIOContext *pb, int64_t start);
  */
 int ff_get_bmp_header(AVIOContext *pb, AVStream *st, unsigned *esize);
 
-void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf);
+void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf, int ignore_extradata);
 int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc);
 enum AVCodecID ff_wav_codec_get_id(unsigned int tag, int bps);
 int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size);
