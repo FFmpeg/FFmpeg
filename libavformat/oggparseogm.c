@@ -126,6 +126,8 @@ ogm_dshow_header(AVFormatContext *s, int idx)
     if(*p != 1)
         return 1;
 
+    if (os->psize < 100)
+        return AVERROR_INVALIDDATA;
     t = AV_RL32(p + 96);
 
     if(t == 0x05589f80){
