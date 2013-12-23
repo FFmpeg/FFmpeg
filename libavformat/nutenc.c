@@ -26,6 +26,7 @@
 #include "libavutil/tree.h"
 #include "libavutil/dict.h"
 #include "libavutil/avassert.h"
+#include "libavcodec/bytestream.h"
 #include "libavcodec/mpegaudiodata.h"
 #include "nut.h"
 #include "internal.h"
@@ -778,6 +779,8 @@ static int get_needed_flags(NUTContext *nut, StreamContext *nus, FrameCode *fc,
         flags |= FLAG_SIZE_MSB;
     if (pkt->pts - nus->last_pts != fc->pts_delta)
         flags |= FLAG_CODED_PTS;
+    if (pkt->side_data_elems && nut->version > 3)
+        flags |= FLAG_SM_DATA;
     if (pkt->size > 2 * nut->max_distance)
         flags |= FLAG_CHECKSUM;
     if (FFABS(pkt->pts - nus->last_pts) > nus->max_pts_distance)
@@ -810,11 +813,128 @@ static int find_best_header_idx(NUTContext *nut, AVPacket *pkt)
     return best_i;
 }
 
+static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int is_meta)
+{
+    AVStream *st = s->streams[pkt->stream_index];
+    int ret, i, dyn_size;
+    unsigned flags;
+    AVIOContext *dyn_bc;
+    int sm_data_count = 0;
+    uint8_t tmp[256];
+    uint8_t *dyn_buf;
+
+    ret = avio_open_dyn_buf(&dyn_bc);
+    if (ret < 0)
+        return ret;
+
+    for (i = 0; i<pkt->side_data_elems; i++) {
+        const uint8_t *data = pkt->side_data[i].data;
+        int size = pkt->side_data[i].size;
+        const uint8_t *data_end = data + size;
+
+        if (is_meta) {
+            if (   pkt->side_data[i].type == AV_PKT_DATA_METADATA_UPDATE
+                || pkt->side_data[i].type == AV_PKT_DATA_STRINGS_METADATA) {
+                if (!size || data[size-1])
+                    return AVERROR(EINVAL);
+                while (data < data_end) {
+                    const uint8_t *key = data;
+                    const uint8_t *val = data + strlen(key) + 1;
+
+                    if(val >= data_end)
+                        return AVERROR(EINVAL);
+                    put_str(dyn_bc, key);
+                    put_s(dyn_bc, -1);
+                    put_str(dyn_bc, val);
+                    data = val + strlen(val) + 1;
+                    sm_data_count++;
+                }
+            }
+        } else {
+            switch (pkt->side_data[i].type) {
+            case AV_PKT_DATA_PALETTE:
+            case AV_PKT_DATA_NEW_EXTRADATA:
+            case AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL:
+            default:
+                if (pkt->side_data[i].type == AV_PKT_DATA_PALETTE) {
+                    put_str(dyn_bc, "Palette");
+                } else if(pkt->side_data[i].type == AV_PKT_DATA_NEW_EXTRADATA) {
+                    put_str(dyn_bc, "Extradata");
+                } else if(pkt->side_data[i].type == AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL) {
+                    snprintf(tmp, sizeof(tmp), "CodecSpecificSide%"PRId64"", AV_RB64(data));
+                    put_str(dyn_bc, tmp);
+                } else {
+                    snprintf(tmp, sizeof(tmp), "UserData%s-SD-%d",
+                            (st->codec->flags & CODEC_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT,
+                            pkt->side_data[i].type);
+                    put_str(dyn_bc, tmp);
+                }
+                put_s(dyn_bc, -2);
+                put_str(dyn_bc, "bin");
+                ff_put_v(dyn_bc, pkt->side_data[i].size);
+                avio_write(dyn_bc, data, pkt->side_data[i].size);
+                sm_data_count++;
+                break;
+            case AV_PKT_DATA_PARAM_CHANGE:
+                flags = bytestream_get_le32(&data);
+                if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT) {
+                    put_str(dyn_bc, "Channels");
+                    put_s(dyn_bc, bytestream_get_le32(&data));
+                    sm_data_count++;
+                }
+                if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT) {
+                    put_str(dyn_bc, "ChannelLayout");
+                    put_s(dyn_bc, -2);
+                    put_str(dyn_bc, "u64");
+                    ff_put_v(bc, 8);
+                    avio_write(dyn_bc, data, 8); data+=8;
+                    sm_data_count++;
+                }
+                if (flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE) {
+                    put_str(dyn_bc, "SampleRate");
+                    put_s(dyn_bc, bytestream_get_le32(&data));
+                    sm_data_count++;
+                }
+                if (flags & AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS) {
+                    put_str(dyn_bc, "Width");
+                    put_s(dyn_bc, bytestream_get_le32(&data));
+                    put_str(dyn_bc, "Height");
+                    put_s(dyn_bc, bytestream_get_le32(&data));
+                    sm_data_count+=2;
+                }
+            case AV_PKT_DATA_SKIP_SAMPLES:
+                if (AV_RL32(data)) {
+                    put_str(dyn_bc, "SkipStart");
+                    put_s(dyn_bc, (unsigned)AV_RL32(data));
+                    sm_data_count++;
+                }
+                if (AV_RL32(data+4)) {
+                    put_str(dyn_bc, "SkipEnd");
+                    put_s(dyn_bc, (unsigned)AV_RL32(data+4));
+                    sm_data_count++;
+                }
+                break;
+            case AV_PKT_DATA_METADATA_UPDATE:
+            case AV_PKT_DATA_STRINGS_METADATA:
+                // belongs into meta, not side data
+                break;
+            }
+        }
+    }
+
+    ff_put_v(bc, sm_data_count);
+    dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    avio_write(bc, dyn_buf, dyn_size);
+    av_freep(&dyn_buf);
+
+    return 0;
+}
+
 static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     NUTContext *nut    = s->priv_data;
     StreamContext *nus = &nut->stream[pkt->stream_index];
-    AVIOContext *bc    = s->pb, *dyn_bc;
+    AVIOContext *bc    = s->pb, *dyn_bc, *sm_bc = NULL;
     FrameCode *fc;
     int64_t coded_pts;
     int best_length, frame_code, flags, needed_flags, i, header_idx;
@@ -822,6 +942,9 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     int key_frame = !!(pkt->flags & AV_PKT_FLAG_KEY);
     int store_sp  = 0;
     int ret;
+    int sm_size = 0;
+    int data_size = pkt->size;
+    uint8_t *sm_buf;
 
     if (pkt->pts < 0) {
         av_log(s, AV_LOG_ERROR,
@@ -830,13 +953,23 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EINVAL);
     }
 
+    if (pkt->side_data_elems && nut->version > 3) {
+        ret = avio_open_dyn_buf(&sm_bc);
+        if (ret < 0)
+            return ret;
+        write_sm_data(s, sm_bc, pkt, 0);
+        write_sm_data(s, sm_bc, pkt, 1);
+        sm_size = avio_close_dyn_buf(sm_bc, &sm_buf);
+        data_size += sm_size;
+    }
+
     if (1LL << (20 + 3 * nut->header_count) <= avio_tell(bc))
         write_headers(s, bc);
 
     if (key_frame && !(nus->last_flags & FLAG_KEY))
         store_sp = 1;
 
-    if (pkt->size + 30 /*FIXME check*/ + avio_tell(bc) >= nut->last_syncpoint_pos + nut->max_distance)
+    if (data_size + 30 /*FIXME check*/ + avio_tell(bc) >= nut->last_syncpoint_pos + nut->max_distance)
         store_sp = 1;
 
 //FIXME: Ensure store_sp is 1 in the first place.
@@ -916,10 +1049,10 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (flags & FLAG_STREAM_ID)
             length += ff_get_v_length(pkt->stream_index);
 
-        if (pkt->size % fc->size_mul != fc->size_lsb)
+        if (data_size % fc->size_mul != fc->size_lsb)
             continue;
         if (flags & FLAG_SIZE_MSB)
-            length += ff_get_v_length(pkt->size / fc->size_mul);
+            length += ff_get_v_length(data_size / fc->size_mul);
 
         if (flags & FLAG_CHECKSUM)
             length += 4;
@@ -961,13 +1094,18 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if (flags & FLAG_STREAM_ID)  ff_put_v(bc, pkt->stream_index);
     if (flags & FLAG_CODED_PTS)  ff_put_v(bc, coded_pts);
-    if (flags & FLAG_SIZE_MSB )  ff_put_v(bc, pkt->size / fc->size_mul);
+    if (flags & FLAG_SIZE_MSB )  ff_put_v(bc, data_size / fc->size_mul);
     if (flags & FLAG_HEADER_IDX) ff_put_v(bc, header_idx = best_header_idx);
 
     if (flags & FLAG_CHECKSUM)   avio_wl32(bc, ffio_get_checksum(bc));
     else                         ffio_get_checksum(bc);
 
+    if (flags & FLAG_SM_DATA) {
+        avio_write(bc, sm_buf, sm_size);
+        av_freep(&sm_buf);
+    }
     avio_write(bc, pkt->data + nut->header_len[header_idx], pkt->size - nut->header_len[header_idx]);
+
     nus->last_flags = flags;
     nus->last_pts   = pkt->pts;
 
