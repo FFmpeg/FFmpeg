@@ -1477,8 +1477,10 @@ end:
 free_and_end:
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
-    if (avctx->internal)
+    if (avctx->internal) {
         av_freep(&avctx->internal->pool);
+        av_frame_free(&avctx->internal->to_free);
+    }
     av_freep(&avctx->internal);
     avctx->codec = NULL;
     goto end;
