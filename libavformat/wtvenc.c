@@ -268,6 +268,7 @@ static void put_videoinfoheader2(AVIOContext *pb, AVStream *st)
 static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
 {
     const ff_asf_guid *g, *media_type, *format_type;
+    const AVCodecTag *tags;
     AVIOContext *pb = s->pb;
     int64_t  hdr_pos_start;
     int hdr_size = 0;
@@ -275,18 +276,15 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
     if (st->codec->codec_type  == AVMEDIA_TYPE_VIDEO) {
         g = get_codec_guid(st->codec->codec_id, ff_video_guids);
         media_type = &ff_mediatype_video;
-        format_type = &ff_format_mpeg2_video;
+        format_type = st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO ? &ff_format_mpeg2_video : &ff_format_videoinfo2;
+        tags = ff_codec_bmp_tags;
     } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         g = get_codec_guid(st->codec->codec_id, ff_codec_wav_guids);
         media_type = &ff_mediatype_audio;
         format_type = &ff_format_waveformatex;
+        tags = ff_codec_wav_tags;
     } else {
         av_log(s, AV_LOG_ERROR, "unknown codec_type (0x%x)\n", st->codec->codec_type);
-        return -1;
-    }
-
-    if (g == NULL) {
-        av_log(s, AV_LOG_ERROR, "can't get video codec_id (0x%x) guid.\n", st->codec->codec_id);
         return -1;
     }
 
@@ -308,7 +306,17 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
     avio_seek(pb, -(hdr_size + 4), SEEK_CUR);
     avio_wl32(pb, hdr_size + 32);
     avio_seek(pb, hdr_size, SEEK_CUR);
-    ff_put_guid(pb, g);           // actual_subtype
+    if (g) {
+        ff_put_guid(pb, g);           // actual_subtype
+    } else {
+        int tag = ff_codec_get_tag(tags, st->codec->codec_id);
+        if (!tag) {
+            av_log(s, AV_LOG_ERROR, "unsupported codec_id (0x%x)\n", st->codec->codec_id);
+            return -1;
+        }
+        avio_wl32(pb, tag);
+        avio_write(pb, (const uint8_t[]){FF_MEDIASUBTYPE_BASE_GUID}, 12);
+    }
     ff_put_guid(pb, format_type); // actual_formattype
 
     return 0;
