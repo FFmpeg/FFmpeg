@@ -97,14 +97,14 @@ int main(int argc, char **argv)
 
     socket = zmq_socket(ctx, ZMQ_REQ);
     if (!socket) {
-        av_log(ctx, AV_LOG_ERROR,
+        av_log(NULL, AV_LOG_ERROR,
                "Could not create ZMQ socket: %s\n", zmq_strerror(errno));
         ret = 1;
         goto end;
     }
 
     if (zmq_connect(socket, bind_address) == -1) {
-        av_log(ctx, AV_LOG_ERROR, "Could not bind ZMQ responder to address '%s': %s\n",
+        av_log(NULL, AV_LOG_ERROR, "Could not bind ZMQ responder to address '%s': %s\n",
                bind_address, zmq_strerror(errno));
         ret = 1;
         goto end;
@@ -131,14 +131,14 @@ int main(int argc, char **argv)
     }
 
     if (zmq_msg_init(&msg) == -1) {
-        av_log(ctx, AV_LOG_ERROR,
+        av_log(NULL, AV_LOG_ERROR,
                "Could not initialize receiving message: %s\n", zmq_strerror(errno));
         ret = 1;
         goto end;
     }
 
     if (zmq_msg_recv(&msg, socket, 0) == -1) {
-        av_log(ctx, AV_LOG_ERROR,
+        av_log(NULL, AV_LOG_ERROR,
                "Could not receive message: %s\n", zmq_strerror(errno));
         zmq_msg_close(&msg);
         ret = 1;
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
     recv_buf_size = zmq_msg_size(&msg) + 1;
     recv_buf = av_malloc(recv_buf_size);
     if (!recv_buf) {
-        av_log(ctx, AV_LOG_ERROR,
+        av_log(NULL, AV_LOG_ERROR,
                "Could not allocate receiving message buffer\n");
         zmq_msg_close(&msg);
         ret = 1;
