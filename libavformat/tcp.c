@@ -79,8 +79,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     }
     p = strchr(uri, '?');
     if (p) {
-        if (av_find_info_tag(buf, sizeof(buf), "listen", p))
-            s->listen = 1;
+        if (av_find_info_tag(buf, sizeof(buf), "listen", p)) {
+            char *endptr = NULL;
+            s->listen = strtol(buf, &endptr, 10);
+            /* assume if no digits were found it is a request to enable it */
+            if (buf == endptr)
+                s->listen = 1;
+        }
         if (av_find_info_tag(buf, sizeof(buf), "timeout", p)) {
             s->rw_timeout = strtol(buf, NULL, 10);
         }
