@@ -64,6 +64,9 @@ ff_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,         \
 
 mc_funcs(4);
 mc_funcs(8);
+#if ARCH_X86_64
+mc_funcs(16);
+#endif
 
 #undef mc_funcs
 #undef mc_func
@@ -95,7 +98,9 @@ ff_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,         \
     mc_rep_func(put, sz, hsz, v, ssse3); \
     mc_rep_func(avg, sz, hsz, v, ssse3)
 
+#if ARCH_X86_32
 mc_rep_funcs(16, 8);
+#endif
 mc_rep_funcs(32, 16);
 mc_rep_funcs(64, 32);
 
