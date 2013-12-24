@@ -3547,13 +3547,16 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     if (s->refreshctx && s->parallelmode) {
         int j, k, l, m;
 
-        for (i = 0; i < 4; i++)
+        for (i = 0; i < 4; i++) {
             for (j = 0; j < 2; j++)
                 for (k = 0; k < 2; k++)
                     for (l = 0; l < 6; l++)
                         for (m = 0; m < 6; m++)
                             memcpy(s->prob_ctx[s->framectxid].coef[i][j][k][l][m],
                                    s->prob.coef[i][j][k][l][m], 3);
+            if (s->txfmmode == i)
+                break;
+        }
         s->prob_ctx[s->framectxid].p = s->prob.p;
         ff_thread_finish_setup(ctx);
     }
