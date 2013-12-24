@@ -264,7 +264,8 @@ static int vp9_alloc_frame(AVCodecContext *ctx, VP9Frame *f)
     f->mv = (struct VP9mvrefPair *) (f->extradata->data + sz);
 
     // retain segmentation map if it doesn't update
-    if (s->segmentation.enabled && !s->segmentation.update_map) {
+    if (s->segmentation.enabled && !s->segmentation.update_map &&
+        !s->keyframe && !s->intraonly) {
         memcpy(f->segmentation_map, s->frames[LAST_FRAME].segmentation_map, sz);
     }
 
