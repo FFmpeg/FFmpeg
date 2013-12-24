@@ -979,7 +979,7 @@ ffplay tls://@var{hostname}:@var{port}
 
 User Datagram Protocol.
 
-The required syntax for a UDP url is:
+The required syntax for an UDP URL is:
 @example
 udp://@var{hostname}:@var{port}[?@var{options}]
 @end example
@@ -994,7 +994,6 @@ UDP socket buffer overruns. The @var{fifo_size} and
 The list of supported options follows.
 
 @table @option
-
 @item buffer_size=@var{size}
 Set the UDP socket buffer size in bytes. This is used both for the
 receiving and the sending buffer size.
@@ -1044,25 +1043,34 @@ Survive in case of UDP receiving circular buffer overrun. Default
 value is 0.
 
 @item timeout=@var{microseconds}
-In read mode: if no data arrived in more than this time interval, raise error.
+Set raise error timeout, expressed in microseconds.
+
+This option is only relevant in read mode: if no data arrived in more
+than this time interval, raise error.
 @end table
 
-Some usage examples of the UDP protocol with @command{ffmpeg} follow.
+@section Examples
 
-To stream over UDP to a remote endpoint:
+@itemize
+@item
+Use @command{ffmpeg} to stream over UDP to a remote endpoint:
 @example
 ffmpeg -i @var{input} -f @var{format} udp://@var{hostname}:@var{port}
 @end example
 
-To stream in mpegts format over UDP using 188 sized UDP packets, using a large input buffer:
+@item
+Use @command{ffmpeg} to stream in mpegts format over UDP using 188
+sized UDP packets, using a large input buffer:
 @example
 ffmpeg -i @var{input} -f mpegts udp://@var{hostname}:@var{port}?pkt_size=188&buffer_size=65535
 @end example
 
-To receive over UDP from a remote endpoint:
+@item
+Use @command{ffmpeg} to receive over UDP from a remote endpoint:
 @example
-ffmpeg -i udp://[@var{multicast-address}]:@var{port}
+ffmpeg -i udp://[@var{multicast-address}]:@var{port} ...
 @end example
+@end itemize
 
 @section unix
 
