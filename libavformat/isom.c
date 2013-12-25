@@ -458,13 +458,8 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
         if (!len || (uint64_t)len > (1<<30))
             return -1;
         av_free(st->codec->extradata);
-        if (ff_alloc_extradata(st->codec, len))
-            return AVERROR(ENOMEM);
-        if ((ret = avio_read(pb, st->codec->extradata, len)) != len) {
-            av_freep(&st->codec->extradata);
-            st->codec->extradata_size = 0;
-            return ret < 0 ? ret : AVERROR_INVALIDDATA;
-        }
+        if ((ret = ff_get_extradata(st->codec, pb, len)) < 0)
+            return ret;
         if (st->codec->codec_id == AV_CODEC_ID_AAC) {
             MPEG4AudioConfig cfg = {0};
             avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
