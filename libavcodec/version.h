@@ -26,6 +26,8 @@
  * Libavcodec version macros.
  */
 
+#include "libavutil/version.h"
+
 #define LIBAVCODEC_VERSION_MAJOR 55
 #define LIBAVCODEC_VERSION_MINOR 31
 #define LIBAVCODEC_VERSION_MICRO  0
