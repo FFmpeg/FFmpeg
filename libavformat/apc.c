@@ -52,11 +52,9 @@ static int apc_read_header(AVFormatContext *s)
     avio_rl32(pb); /* number of samples */
     st->codec->sample_rate = avio_rl32(pb);
 
-    if (ff_alloc_extradata(st->codec, 2 * 4))
-        return AVERROR(ENOMEM);
-
     /* initial predictor values for adpcm decoder */
-    avio_read(pb, st->codec->extradata, 2 * 4);
+    if (ff_get_extradata(st->codec, pb, 2 * 4) < 0)
+        return AVERROR(ENOMEM);
 
     if (avio_rl32(pb)) {
         st->codec->channels       = 2;
