@@ -116,9 +116,8 @@ static int read_header(AVFormatContext *s)
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = AV_CODEC_ID_BINKVIDEO;
-    if (ff_alloc_extradata(vst->codec, 4))
+    if (ff_get_extradata(vst->codec, pb, 4) < 0)
         return AVERROR(ENOMEM);
-    avio_read(pb, vst->codec->extradata, 4);
 
     bink->num_audio_tracks = avio_rl32(pb);
 
