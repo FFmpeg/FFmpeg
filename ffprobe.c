@@ -1789,7 +1789,6 @@ static av_always_inline int process_frame(WriterContext *w,
     AVSubtitle sub;
     int ret = 0, got_frame = 0;
 
-    avcodec_get_frame_defaults(frame);
     if (dec_ctx->codec) {
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
