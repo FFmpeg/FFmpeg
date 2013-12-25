@@ -1963,7 +1963,6 @@ static int video_thread(void *arg)
         ret = av_buffersrc_add_frame(filt_in, frame);
         if (ret < 0)
             goto the_end;
-        av_frame_unref(frame);
         av_free_packet(&pkt);
 
         while (ret >= 0) {
@@ -2241,7 +2240,6 @@ static int audio_decode_frame(VideoState *is)
 
                 if ((ret = av_buffersrc_add_frame(is->in_audio_filter, is->frame)) < 0)
                     return ret;
-                av_frame_unref(is->frame);
 #endif
             }
 #if CONFIG_AVFILTER
