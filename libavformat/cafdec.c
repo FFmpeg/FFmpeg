@@ -154,9 +154,8 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             avio_skip(pb, size - ALAC_NEW_KUKI);
         }
     } else {
-        if (ff_alloc_extradata(st->codec, size))
+        if (ff_get_extradata(st->codec, pb, size) < 0)
             return AVERROR(ENOMEM);
-        avio_read(pb, st->codec->extradata, size);
     }
 
     return 0;
