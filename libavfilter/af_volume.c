@@ -387,7 +387,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         av_frame_free(&buf);
 
 end:
-    vol->var_values[VAR_NB_CONSUMED_SAMPLES] += buf->nb_samples;
+    vol->var_values[VAR_NB_CONSUMED_SAMPLES] += out_buf->nb_samples;
     return ff_filter_frame(outlink, out_buf);
 }
 
