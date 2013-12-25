@@ -86,11 +86,8 @@ static int rm_read_extradata(AVIOContext *pb, AVCodecContext *avctx, unsigned si
 {
     if (size >= 1<<24)
         return -1;
-    if (ff_alloc_extradata(avctx, size))
+    if (ff_get_extradata(avctx, pb, size) < 0)
         return AVERROR(ENOMEM);
-    avctx->extradata_size = avio_read(pb, avctx->extradata, size);
-    if (avctx->extradata_size != size)
-        return AVERROR(EIO);
     return 0;
 }
 
