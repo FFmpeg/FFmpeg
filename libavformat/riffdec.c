@@ -117,9 +117,8 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
         }
         if (cbSize > 0) {
             av_free(codec->extradata);
-            if (ff_alloc_extradata(codec, cbSize))
+            if (ff_get_extradata(codec, pb, cbSize) < 0)
                 return AVERROR(ENOMEM);
-            avio_read(pb, codec->extradata, codec->extradata_size);
             size -= cbSize;
         }
 
