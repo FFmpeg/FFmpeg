@@ -57,8 +57,8 @@ void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
         "movq     %%mm2, (%0, %1)       \n\t"
         "movq     %%mm4, (%0, %1, 2)    \n\t"
         "movq     %%mm6, (%0, %2)       \n\t"
-        :: "r"(pix), "r"((x86_reg)line_size), "r"((x86_reg)line_size * 3),
-           "r"(p)
+        :: "r" (pix), "r" ((x86_reg) line_size), "r" ((x86_reg) line_size * 3),
+           "r" (p)
         : "memory");
     pix += line_size * 4;
     p   += 32;
@@ -83,7 +83,8 @@ void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
         "movq      %%mm2, (%0, %1)      \n\t"
         "movq      %%mm4, (%0, %1, 2)   \n\t"
         "movq      %%mm6, (%0, %2)      \n\t"
-        :: "r"(pix), "r"((x86_reg)line_size), "r"((x86_reg)line_size * 3), "r"(p)
+        :: "r" (pix), "r" ((x86_reg) line_size), "r" ((x86_reg) line_size * 3),
+           "r" (p)
         : "memory");
 }
 
@@ -117,8 +118,8 @@ void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
         put_signed_pixels_clamped_mmx_half(0)
         "lea         (%0, %3, 4), %0        \n\t"
         put_signed_pixels_clamped_mmx_half(64)
-        : "+&r"(pixels), "=&r"(line_skip3)
-        : "r"(block), "r"(line_skip)
+        : "+&r" (pixels), "=&r" (line_skip3)
+        : "r" (block), "r" (line_skip)
         : "memory");
 }
 
@@ -156,8 +157,8 @@ void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
             "packuswb   %%mm3, %%mm2    \n\t"
             "movq       %%mm0, %0       \n\t"
             "movq       %%mm2, %1       \n\t"
-            : "+m"(*pix), "+m"(*(pix + line_size))
-            : "r"(p)
+            : "+m" (*pix), "+m" (*(pix + line_size))
+            : "r" (p)
             : "memory");
         pix += line_size * 2;
         p   += 16;
@@ -177,10 +178,9 @@ void name(int16_t *blocks)                              \
         "movq %%mm7, 24(%0, %%"REG_a")  \n\t"           \
         "add    $32, %%"REG_a"          \n\t"           \
         "js      1b                     \n\t"           \
-        :: "r"(((uint8_t *)blocks) + 128 * n),          \
+        :: "r"(((uint8_t *) blocks) + 128 * n),         \
            "i"(-128 * n)                                \
-        : "%"REG_a                                      \
-        );                                              \
+        : "%"REG_a);                                    \
 }
 CLEAR_BLOCKS(ff_clear_blocks_mmx, 6)
 CLEAR_BLOCKS(ff_clear_block_mmx, 1)
@@ -197,9 +197,8 @@ void ff_clear_block_sse(int16_t *block)
         "movaps %%xmm0,  80(%0)         \n"
         "movaps %%xmm0,  96(%0)         \n"
         "movaps %%xmm0, 112(%0)         \n"
-        :: "r"(block)
-        : "memory"
-    );
+        :: "r" (block)
+        : "memory");
 }
 
 void ff_clear_blocks_sse(int16_t *blocks)
@@ -218,15 +217,14 @@ void ff_clear_blocks_sse(int16_t *blocks)
         "movaps %%xmm0, 112(%0, %%"REG_a")  \n"
         "add      $128,         %%"REG_a"   \n"
         "js         1b                      \n"
-        :: "r"(((uint8_t *)blocks) + 128 * 6),
-           "i"(-128 * 6)
-        : "%"REG_a
-    );
+        :: "r"(((uint8_t *) blocks) + 128 * 6), "i"(-128 * 6)
+        : "%"REG_a);
 }
 
 void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w)
 {
     x86_reg i = 0;
+
     __asm__ volatile (
         "jmp          2f                \n\t"
         "1:                             \n\t"
@@ -242,10 +240,10 @@ void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w)
         "2:                             \n\t"
         "cmp          %3, %0            \n\t"
         "js           1b                \n\t"
-        : "+r"(i)
-        : "r"(src), "r"(dst), "r"((x86_reg)w - 15)
-    );
-    for ( ; i < w; i++)
+        : "+r" (i)
+        : "r" (src), "r" (dst), "r" ((x86_reg) w - 15));
+
+    for (; i < w; i++)
         dst[i + 0] += src[i + 0];
 }
 
@@ -276,9 +274,9 @@ void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
             "add               %1, %0       \n\t"
             "cmp               %3, %0       \n\t"
             "jb                1b           \n\t"
-            : "+r"(ptr)
-            : "r"((x86_reg)wrap), "r"((x86_reg)width), "r"(ptr + wrap * height)
-            );
+            : "+r" (ptr)
+            : "r" ((x86_reg) wrap), "r" ((x86_reg) width),
+              "r" (ptr + wrap * height));
     } else {
         __asm__ volatile (
             "1:                                 \n\t"
@@ -297,9 +295,9 @@ void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
             "add               %1, %0           \n\t"
             "cmp               %3, %0           \n\t"
             "jb                1b               \n\t"
-            : "+r"(ptr)
-            : "r"((x86_reg)wrap), "r"((x86_reg)width), "r"(ptr + wrap * height)
-            );
+            : "+r" (ptr)
+            : "r" ((x86_reg) wrap), "r" ((x86_reg) width),
+              "r" (ptr + wrap * height));
     }
 
     /* top and bottom (and hopefully also the corners) */
@@ -316,10 +314,10 @@ void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
                 "add        $8, %0              \n\t"
                 "cmp        %4, %0              \n\t"
                 "jb         1b                  \n\t"
-                : "+r"(ptr)
-                : "r"((x86_reg)buf - (x86_reg)ptr - w), "r"((x86_reg) -wrap),
-                  "r"((x86_reg) -wrap * 3), "r"(ptr + width + 2 * w)
-                );
+                : "+r" (ptr)
+                : "r" ((x86_reg) buf - (x86_reg) ptr - w),
+                  "r" ((x86_reg) - wrap), "r" ((x86_reg) - wrap * 3),
+                  "r" (ptr + width + 2 * w));
         }
     }
 
@@ -336,11 +334,10 @@ void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
                 "add        $8, %0              \n\t"
                 "cmp        %4, %0              \n\t"
                 "jb         1b                  \n\t"
-                : "+r"(ptr)
-                : "r"((x86_reg)last_line - (x86_reg)ptr - w),
-                  "r"((x86_reg)wrap), "r"((x86_reg)wrap * 3),
-                  "r"(ptr + width + 2 * w)
-                );
+                : "+r" (ptr)
+                : "r" ((x86_reg) last_line - (x86_reg) ptr - w),
+                  "r" ((x86_reg) wrap), "r" ((x86_reg) wrap * 3),
+                  "r" (ptr + width + 2 * w));
         }
     }
 }
@@ -362,20 +359,21 @@ void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
     const uint16_t r4[4]   = { r, r, r, r };
     const uint16_t dxy4[4] = { dxys, dxys, dxys, dxys };
     const uint16_t dyy4[4] = { dyys, dyys, dyys, dyys };
-    const uint64_t shift2 = 2 * shift;
+    const uint64_t shift2  = 2 * shift;
     int x, y;
 
     const int dxw = (dxx - (1 << (16 + shift))) * (w - 1);
     const int dyh = (dyy - (1 << (16 + shift))) * (h - 1);
     const int dxh = dxy * (h - 1);
     const int dyw = dyx * (w - 1);
+
     if ( // non-constant fullpel offset (3% of blocks)
         ((ox ^ (ox + dxw)) | (ox ^ (ox + dxh)) | (ox ^ (ox + dxw + dxh)) |
-         (oy ^ (oy + dyw)) | (oy ^ (oy + dyh)) | (oy ^ (oy + dyw + dyh))) >> (16 + shift)
+         (oy ^ (oy + dyw)) | (oy ^ (oy + dyh)) | (oy ^ (oy + dyw + dyh))) >> (16 + shift) ||
         // uses more than 16 bits of subpel mv (only at huge resolution)
-        || (dxx | dxy | dyx | dyy) & 15 ||
-        (unsigned)ix >= width  - w ||
-        (unsigned)iy >= height - h) {
+        (dxx | dxy | dyx | dyy) & 15 ||
+        (unsigned) ix >= width  - w ||
+        (unsigned) iy >= height - h) {
         // FIXME could still use mmx for some of the rows
         ff_gmc_c(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy,
                  shift, r, width, height);
@@ -389,8 +387,7 @@ void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
         "pxor      %%mm7, %%mm7         \n\t"
         "punpcklwd %%mm6, %%mm6         \n\t"
         "punpcklwd %%mm6, %%mm6         \n\t"
-        :: "r"(1<<shift)
-    );
+        :: "r" (1 << shift));
 
     for (x = 0; x < w; x += 4) {
         uint16_t dx4[4] = { oxs - dxys + dxxs * (x + 0),
@@ -412,9 +409,8 @@ void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
                 "movq   %%mm5, %1       \n\t"
                 "psrlw    $12, %%mm4    \n\t"
                 "psrlw    $12, %%mm5    \n\t"
-                : "+m"(*dx4), "+m"(*dy4)
-                : "m"(*dxy4), "m"(*dyy4)
-            );
+                : "+m" (*dx4), "+m" (*dy4)
+                : "m" (*dxy4), "m" (*dyy4));
 
             __asm__ volatile (
                 "movq      %%mm6, %%mm2 \n\t"
@@ -450,11 +446,10 @@ void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
                 "packuswb  %%mm0, %%mm0 \n\t"
                 "movd      %%mm0, %0    \n\t"
 
-                : "=m"(dst[x + y * stride])
-                : "m"(src[0]), "m"(src[1]),
-                  "m"(src[stride]), "m"(src[stride + 1]),
-                  "m"(*r4), "m"(shift2)
-            );
+                : "=m" (dst[x + y * stride])
+                : "m" (src[0]), "m" (src[1]),
+                  "m" (src[stride]), "m" (src[stride + 1]),
+                  "m" (*r4), "m" (shift2));
             src += stride;
         }
         src += 4 - h * stride;
@@ -489,10 +484,9 @@ void ff_vector_clipf_sse(float *dst, const float *src,
         "movaps     %%xmm3, 48(%1, %0)  \n\t"
         "sub           $64, %0          \n\t"
         "jge            1b              \n\t"
-        : "+&r"(i)
-        : "r"(dst), "r"(src), "m"(min), "m"(max)
-        : "memory"
-    );
+        : "+&r" (i)
+        : "r" (dst), "r" (src), "m" (min), "m" (max)
+        : "memory");
 }
 
 #endif /* HAVE_INLINE_ASM */
