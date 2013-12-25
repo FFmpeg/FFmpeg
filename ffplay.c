@@ -1948,7 +1948,6 @@ static int video_thread(void *arg)
                 event.type = FF_QUIT_EVENT;
                 event.user.data1 = is;
                 SDL_PushEvent(&event);
-                av_free_packet(&pkt);
                 goto the_end;
             }
             filt_in  = is->in_video_filter;
@@ -1963,7 +1962,6 @@ static int video_thread(void *arg)
         ret = av_buffersrc_add_frame(filt_in, frame);
         if (ret < 0)
             goto the_end;
-        av_free_packet(&pkt);
 
         while (ret >= 0) {
             is->frame_last_returned_time = av_gettime() / 1000000.0;
