@@ -261,6 +261,7 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             oggparsespeex.o  \
                                             oggparsetheora.o \
                                             oggparsevorbis.o \
+                                            oggparsevp8.o    \
                                             vorbiscomment.o  \
                                             flac_picture.o
 OBJS-$(CONFIG_OGG_MUXER)                 += oggenc.o \

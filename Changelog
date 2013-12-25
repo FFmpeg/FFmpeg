@@ -16,6 +16,7 @@ version <next>
 - stereoscopic 3d metadata handling
 - WebP encoding via libwebp
 - ATRAC3+ decoder
+- VP8 in Ogg demuxing
 
 
 version 2.1:
