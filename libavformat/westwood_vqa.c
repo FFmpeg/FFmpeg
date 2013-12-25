@@ -101,13 +101,9 @@ static int wsvqa_read_header(AVFormatContext *s)
     avio_seek(pb, 20, SEEK_SET);
 
     /* the VQA header needs to go to the decoder */
-    if (ff_alloc_extradata(st->codec, VQA_HEADER_SIZE))
+    if (ff_get_extradata(st->codec, pb, VQA_HEADER_SIZE) < 0)
         return AVERROR(ENOMEM);
     header = (uint8_t *)st->codec->extradata;
-    if (avio_read(pb, st->codec->extradata, VQA_HEADER_SIZE) !=
-        VQA_HEADER_SIZE) {
-        return AVERROR(EIO);
-    }
     st->codec->width = AV_RL16(&header[6]);
     st->codec->height = AV_RL16(&header[8]);
     fps = header[12];
