@@ -249,16 +249,17 @@ static int set_volume(AVFilterContext *ctx)
     }
     vol->var_values[VAR_VOLUME] = vol->volume;
 
+    av_log(ctx, AV_LOG_VERBOSE, "n:%f t:%f pts:%f precision:%s ",
+           vol->var_values[VAR_N], vol->var_values[VAR_T], vol->var_values[VAR_PTS],
+           precision_str[vol->precision]);
+
     if (vol->precision == PRECISION_FIXED) {
         vol->volume_i = (int)(vol->volume * 256 + 0.5);
         vol->volume   = vol->volume_i / 256.0;
-        av_log(ctx, AV_LOG_VERBOSE, "volume:(%d/256)(%f)(%1.2fdB) precision:fixed\n",
-               vol->volume_i, vol->volume, 20.0*log(vol->volume)/M_LN10);
-    } else {
-        av_log(ctx, AV_LOG_VERBOSE, "volume:(%f)(%1.2fdB) precision:%s\n",
-               vol->volume, 20.0*log(vol->volume)/M_LN10,
-               precision_str[vol->precision]);
+        av_log(ctx, AV_LOG_VERBOSE, "volume_i:%d/255 ", vol->volume_i);
     }
+    av_log(ctx, AV_LOG_VERBOSE, "volume:%f volume_dB:%f\n",
+           vol->volume, 20.0*log(vol->volume)/M_LN10);
 
     volume_init(vol);
     return 0;
