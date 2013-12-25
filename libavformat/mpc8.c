@@ -136,7 +136,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     int tag;
     int64_t size, pos, ppos[2];
     uint8_t *buf;
-    int i, t, seekd;
+    int i, t, seekd, ret;
     GetBitContext gb;
 
     if (s->nb_streams == 0) {
@@ -156,7 +156,12 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     }
     if(!(buf = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE)))
         return;
-    avio_read(s->pb, buf, size);
+    ret = avio_read(s->pb, buf, size);
+    if (ret != size) {
+        av_log(s, AV_LOG_ERROR, "seek table truncated\n");
+        av_free(buf);
+        return;
+    }
     memset(buf+size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     init_get_bits(&gb, buf, size * 8);
