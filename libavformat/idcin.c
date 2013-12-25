@@ -205,15 +205,8 @@ static int idcin_read_header(AVFormatContext *s)
     st->codec->height = height;
 
     /* load up the Huffman tables into extradata */
-    if (ff_alloc_extradata(st->codec, HUFFMAN_TABLE_SIZE))
-        return AVERROR(ENOMEM);
-    ret = avio_read(pb, st->codec->extradata, HUFFMAN_TABLE_SIZE);
-    if (ret < 0) {
+    if ((ret = ff_get_extradata(st->codec, pb, HUFFMAN_TABLE_SIZE)) < 0)
         return ret;
-    } else if (ret != HUFFMAN_TABLE_SIZE) {
-        av_log(s, AV_LOG_ERROR, "incomplete header\n");
-        return AVERROR(EIO);
-    }
 
     if (idcin->audio_present) {
         idcin->audio_present = 1;
