@@ -2701,6 +2701,22 @@ int ff_alloc_extradata(AVCodecContext *avctx, int size)
     return ret;
 }
 
+int ff_get_extradata(AVCodecContext *avctx, AVIOContext *pb, int size)
+{
+    int ret = ff_alloc_extradata(avctx, size);
+    if (ret < 0)
+        return ret;
+    ret = avio_read(pb, avctx->extradata, size);
+    if (ret != size) {
+        av_freep(&avctx->extradata);
+        avctx->extradata_size = 0;
+        av_log(avctx, AV_LOG_ERROR, "Failed to read extradata of size %d\n", size);
+        return ret < 0 ? ret : AVERROR_INVALIDDATA;
+    }
+
+    return ret;
+}
+
 int ff_rfps_add_frame(AVFormatContext *ic, AVStream *st, int64_t ts)
 {
     int i, j;
