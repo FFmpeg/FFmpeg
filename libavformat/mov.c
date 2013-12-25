@@ -1086,9 +1086,8 @@ static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         st->codec->codec_id == AV_CODEC_ID_SPEEX) {
         // pass all frma atom to codec, needed at least for QDMC and QDM2
         av_free(st->codec->extradata);
-        if (ff_alloc_extradata(st->codec, atom.size))
+        if (ff_get_extradata(st->codec, pb, atom.size) < 0)
             return AVERROR(ENOMEM);
-        avio_read(pb, st->codec->extradata, atom.size);
     } else if (atom.size > 8) { /* to read frma, esds atoms */
         int ret;
         if ((ret = mov_read_default(c, pb, atom)) < 0)
@@ -1123,9 +1122,9 @@ static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return mov_read_default(c, pb, atom);
     }
     av_free(st->codec->extradata);
-    if (ff_alloc_extradata(st->codec, atom.size))
+    if (ff_get_extradata(st->codec, pb, atom.size) < 0)
         return AVERROR(ENOMEM);
-    avio_read(pb, st->codec->extradata, atom.size);
+
     return 0;
 }
 
@@ -1146,13 +1145,10 @@ static int mov_read_dvc1(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if ((profile_level & 0xf0) != 0xc0)
         return 0;
 
-    av_free(st->codec->extradata);
-    if (ff_alloc_extradata(st->codec, atom.size - 7))
-        return AVERROR(ENOMEM);
     avio_seek(pb, 6, SEEK_CUR);
-    ret = avio_read(pb, st->codec->extradata, st->codec->extradata_size);
-    if (ret != st->codec->extradata_size)
-        return ret < 0 ? ret : AVERROR_INVALIDDATA;
+    av_free(st->codec->extradata);
+    if ((ret = ff_get_extradata(st->codec, pb, atom.size - 7)) < 0)
+        return ret;
 
     return 0;
 }
@@ -1175,11 +1171,10 @@ static int mov_read_strf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if ((uint64_t)atom.size > (1<<30))
         return AVERROR_INVALIDDATA;
 
-    av_free(st->codec->extradata);
-    if (ff_alloc_extradata(st->codec, atom.size - 40))
-        return AVERROR(ENOMEM);
     avio_skip(pb, 40);
-    avio_read(pb, st->codec->extradata, atom.size - 40);
+    av_free(st->codec->extradata);
+    if (ff_get_extradata(st->codec, pb, atom.size - 40) < 0)
+        return AVERROR(ENOMEM);
     return 0;
 }
 
@@ -1491,9 +1486,8 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
                                 int size)
 {
     if (st->codec->codec_tag == MKTAG('t','m','c','d')) {
-        if (ff_alloc_extradata(st->codec, size))
+        if (ff_get_extradata(st->codec, pb, size) < 0)
             return AVERROR(ENOMEM);
-        avio_read(pb, st->codec->extradata, size);
         if (size > 16) {
             MOVStreamContext *tmcd_ctx = st->priv_data;
             int val;
