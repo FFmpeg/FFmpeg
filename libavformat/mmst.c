@@ -1,7 +1,7 @@
 /*
  * MMS protocol over TCP
  * Copyright (c) 2006,2007 Ryan Martell
- * Copyright (c) 2007 Björn Axelsson
+ * Copyright (c) 2007 BjÃ¶rn Axelsson
  * Copyright (c) 2010 Zhentan Feng <spyfeng at gmail dot com>
  *
  * This file is part of FFmpeg.
