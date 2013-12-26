@@ -51,6 +51,8 @@ typedef struct {
     int n;
     int sample_count_mod;
     enum ShowWavesMode mode;
+    void (*draw_sample)(uint8_t *buf, int height, int linesize,
+                        int16_t sample, int16_t *prev_y, int intensity);
 } ShowWavesContext;
 
 #define OFFSET(x) offsetof(ShowWavesContext, x)
@@ -176,6 +178,57 @@ static int request_frame(AVFilterLink *outlink)
 
 #define MAX_INT16 ((1<<15) -1)
 
+static void draw_sample_point(uint8_t *buf, int height, int linesize,
+                              int16_t sample, int16_t *prev_y, int intensity)
+{
+    const int h = height/2 - av_rescale(sample, height/2, MAX_INT16);
+    if (h >= 0 && h < height)
+        buf[h * linesize] += intensity;
+}
+
+static void draw_sample_line(uint8_t *buf, int height, int linesize,
+                             int16_t sample, int16_t *prev_y, int intensity)
+{
+    int k;
+    const int h = height/2 - av_rescale(sample, height/2, MAX_INT16);
+    int start   = height/2;
+    int end     = av_clip(h, 0, height-1);
+    if (start > end)
+        FFSWAP(int16_t, start, end);
+    for (k = start; k < end; k++)
+        buf[k * linesize] += intensity;
+}
+
+static void draw_sample_p2p(uint8_t *buf, int height, int linesize,
+                            int16_t sample, int16_t *prev_y, int intensity)
+{
+    int k;
+    const int h = height/2 - av_rescale(sample, height/2, MAX_INT16);
+    if (h >= 0 && h < height) {
+        buf[h * linesize] += intensity;
+        if (*prev_y && h != *prev_y) {
+            int start = *prev_y;
+            int end = av_clip(h, 0, height-1);
+            if (start > end)
+                FFSWAP(int16_t, start, end);
+            for (k = start + 1; k < end; k++)
+                buf[k * linesize] += intensity;
+        }
+    }
+    *prev_y = h;
+}
+
+static void draw_sample_cline(uint8_t *buf, int height, int linesize,
+                              int16_t sample, int16_t *prev_y, int intensity)
+{
+    int k;
+    const int h     = av_rescale(abs(sample), height, UINT16_MAX);
+    const int start = (height - h) / 2;
+    const int end   = start + h;
+    for (k = start; k < end; k++)
+        buf[k * linesize] += intensity;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -186,7 +239,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     int linesize = outpicref ? outpicref->linesize[0] : 0;
     int16_t *p = (int16_t *)insamples->data[0];
     int nb_channels = inlink->channels;
-    int i, j, k, h, ret = 0;
+    int i, j, ret = 0;
     const int n = showwaves->n;
     const int x = 255 / (nb_channels * n); /* multiplication factor, pre-computed to avoid in-loop divisions */
 
@@ -207,50 +260,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             for (j = 0; j < outlink->h; j++)
                 memset(outpicref->data[0] + j * linesize, 0, outlink->w);
         }
-        for (j = 0; j < nb_channels; j++) {
-            int start, end;
-            switch (showwaves->mode) {
-            case MODE_POINT:
-                h = showwaves->h/2 - av_rescale(*p++, showwaves->h/2, MAX_INT16);
-                if (h >= 0 && h < outlink->h)
-                    *(outpicref->data[0] + showwaves->buf_idx + h * linesize) += x;
-                break;
-
-            case MODE_LINE:
-                h     = showwaves->h/2 - av_rescale(*p++, showwaves->h/2, MAX_INT16);
-                start = showwaves->h/2;
-                end   = av_clip(h, 0, outlink->h-1);
-                if (start > end) FFSWAP(int16_t, start, end);
-                for (k = start; k < end; k++)
-                    *(outpicref->data[0] + showwaves->buf_idx + k * linesize) += x;
-                break;
-
-            case MODE_P2P:
-                h = showwaves->h/2 - av_rescale(*p++, showwaves->h/2, MAX_INT16);
-                if (h >= 0 && h < outlink->h) {
-                    *(outpicref->data[0] + showwaves->buf_idx + h * linesize) += x;
-                    if (showwaves->buf_idy[j] && h != showwaves->buf_idy[j]) {
-                        start = showwaves->buf_idy[j];
-                        end = av_clip(h, 0, outlink->h-1);
-                        if (start > end)
-                            FFSWAP(int16_t, start, end);
-                        for (k = start + 1; k < end; k++)
-                            *(outpicref->data[0] + showwaves->buf_idx + k * linesize) += x;
-                    }
-                }
-                break;
-
-            case MODE_CENTERED_LINE:
-                h     = av_rescale(abs(*p++), showwaves->h, UINT16_MAX);
-                start = (showwaves->h - h) / 2;
-                end   = start + h;
-                for (k = start; k < end; k++)
-                    *(outpicref->data[0] + showwaves->buf_idx + k * linesize) += x;
-                break;
-            }
-            /* store current y coordinate for this channel */
-            showwaves->buf_idy[j] = h;
-        }
+        for (j = 0; j < nb_channels; j++)
+            showwaves->draw_sample(outpicref->data[0] + showwaves->buf_idx,
+                                   outlink->h, linesize, *p++,
+                                   &showwaves->buf_idy[j], x);
 
         showwaves->sample_count_mod++;
         if (showwaves->sample_count_mod == n) {
@@ -265,6 +278,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
     av_frame_free(&insamples);
     return ret;
+}
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    ShowWavesContext *showwaves = ctx->priv;
+
+    switch (showwaves->mode) {
+    case MODE_POINT:         showwaves->draw_sample = draw_sample_point; break;
+    case MODE_LINE:          showwaves->draw_sample = draw_sample_line;  break;
+    case MODE_P2P:           showwaves->draw_sample = draw_sample_p2p;   break;
+    case MODE_CENTERED_LINE: showwaves->draw_sample = draw_sample_cline; break;
+    default:
+        return AVERROR_BUG;
+    }
+    return 0;
 }
 
 static const AVFilterPad showwaves_inputs[] = {
@@ -289,6 +317,7 @@ static const AVFilterPad showwaves_outputs[] = {
 AVFilter ff_avf_showwaves = {
     .name          = "showwaves",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a video output."),
+    .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(ShowWavesContext),
