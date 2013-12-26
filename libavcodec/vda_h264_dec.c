@@ -235,6 +235,16 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
     }
     ctx->h264_initialized = 1;
 
+    for (int i = 0; i < MAX_SPS_COUNT; i++) {
+        SPS *sps = ctx->h264ctx.sps_buffers[i];
+        if (sps && (sps->bit_depth_luma != 8 ||
+                sps->chroma_format_idc == 2 ||
+                sps->chroma_format_idc == 3)) {
+            av_log(avctx, AV_LOG_ERROR, "Format is not supported.\n");
+            goto failed;
+        }
+    }
+
     return 0;
 
 failed:
