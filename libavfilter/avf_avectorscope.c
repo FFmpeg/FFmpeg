@@ -186,9 +186,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                          p->outpicref->height != outlink->h) {
         av_frame_free(&p->outpicref);
         p->outpicref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!p->outpicref)
+        if (!p->outpicref) {
             av_frame_free(&insamples);
             return AVERROR(ENOMEM);
+        }
 
         for (i = 0; i < outlink->h; i++)
             memset(p->outpicref->data[0] + i * p->outpicref->linesize[0], 0, outlink->w * 4);
