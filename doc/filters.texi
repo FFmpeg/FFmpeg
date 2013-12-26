@@ -10813,6 +10813,9 @@ Draw a vertical line for each sample.
 
 @item p2p
 Draw a point for each sample and a line between them.
+
+@item centered_line
+Draw a centered vertical line for each sample.
 @end table
 
 Default value is @code{point}.

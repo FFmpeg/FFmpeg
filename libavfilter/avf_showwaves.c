@@ -36,6 +36,7 @@ enum ShowWavesMode {
     MODE_POINT,
     MODE_LINE,
     MODE_P2P,
+    MODE_CENTERED_LINE,
     MODE_NB,
 };
 
@@ -62,6 +63,7 @@ static const AVOption showwaves_options[] = {
         { "point", "draw a point for each sample", 0, AV_OPT_TYPE_CONST, {.i64=MODE_POINT}, .flags=FLAGS, .unit="mode"},
         { "line",  "draw a line for each sample",  0, AV_OPT_TYPE_CONST, {.i64=MODE_LINE},  .flags=FLAGS, .unit="mode"},
         { "p2p", "draw a line between samples", 0, AV_OPT_TYPE_CONST, {.i64=MODE_P2P}, .flags=FLAGS, .unit="mode"},
+        { "cline","draw a centered line for each sample", 0, AV_OPT_TYPE_CONST, {.i64=MODE_CENTERED_LINE}, .flags=FLAGS, .unit="mode"},
     { "n",    "set how many samples to show in the same point", OFFSET(n), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     { "rate", "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
     { "r",    "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
@@ -206,32 +208,44 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 memset(outpicref->data[0] + j * linesize, 0, outlink->w);
         }
         for (j = 0; j < nb_channels; j++) {
-            h = showwaves->h/2 - av_rescale(*p++, showwaves->h/2, MAX_INT16);
+            int start, end;
             switch (showwaves->mode) {
             case MODE_POINT:
+                h = showwaves->h/2 - av_rescale(*p++, showwaves->h/2, MAX_INT16);
                 if (h >= 0 && h < outlink->h)
                     *(outpicref->data[0] + showwaves->buf_idx + h * linesize) += x;
                 break;
 
             case MODE_LINE:
-            {
-                int start = showwaves->h/2, end = av_clip(h, 0, outlink->h-1);
+                h     = showwaves->h/2 - av_rescale(*p++, showwaves->h/2, MAX_INT16);
+                start = showwaves->h/2;
+                end   = av_clip(h, 0, outlink->h-1);
                 if (start > end) FFSWAP(int16_t, start, end);
                 for (k = start; k < end; k++)
                     *(outpicref->data[0] + showwaves->buf_idx + k * linesize) += x;
                 break;
-            }
+
             case MODE_P2P:
+                h = showwaves->h/2 - av_rescale(*p++, showwaves->h/2, MAX_INT16);
                 if (h >= 0 && h < outlink->h) {
                     *(outpicref->data[0] + showwaves->buf_idx + h * linesize) += x;
                     if (showwaves->buf_idy[j] && h != showwaves->buf_idy[j]) {
-                        int start = showwaves->buf_idy[j], end = av_clip(h, 0, outlink->h-1);
+                        start = showwaves->buf_idy[j];
+                        end = av_clip(h, 0, outlink->h-1);
                         if (start > end)
                             FFSWAP(int16_t, start, end);
                         for (k = start + 1; k < end; k++)
                             *(outpicref->data[0] + showwaves->buf_idx + k * linesize) += x;
                     }
                 }
+                break;
+
+            case MODE_CENTERED_LINE:
+                h     = av_rescale(abs(*p++), showwaves->h, UINT16_MAX);
+                start = (showwaves->h - h) / 2;
+                end   = start + h;
+                for (k = start; k < end; k++)
+                    *(outpicref->data[0] + showwaves->buf_idx + k * linesize) += x;
                 break;
             }
             /* store current y coordinate for this channel */
