@@ -51,6 +51,7 @@ typedef struct {
     int n;
     int sample_count_mod;
     enum ShowWavesMode mode;
+    int split_channels;
     void (*draw_sample)(uint8_t *buf, int height, int linesize,
                         int16_t sample, int16_t *prev_y, int intensity);
 } ShowWavesContext;
@@ -69,6 +70,7 @@ static const AVOption showwaves_options[] = {
     { "n",    "set how many samples to show in the same point", OFFSET(n), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     { "rate", "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
     { "r",    "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
+    { "split_channels", "draw channels separately", OFFSET(split_channels), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -241,7 +243,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     int nb_channels = inlink->channels;
     int i, j, ret = 0;
     const int n = showwaves->n;
-    const int x = 255 / (nb_channels * n); /* multiplication factor, pre-computed to avoid in-loop divisions */
+    const int x = 255 / ((showwaves->split_channels ? 1 : nb_channels) * n); /* multiplication factor, pre-computed to avoid in-loop divisions */
+    const int ch_height = showwaves->split_channels ? outlink->h / nb_channels : outlink->h;
 
     /* draw data in the buffer */
     for (i = 0; i < nb_samples; i++) {
@@ -260,10 +263,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             for (j = 0; j < outlink->h; j++)
                 memset(outpicref->data[0] + j * linesize, 0, outlink->w);
         }
-        for (j = 0; j < nb_channels; j++)
-            showwaves->draw_sample(outpicref->data[0] + showwaves->buf_idx,
-                                   outlink->h, linesize, *p++,
+        for (j = 0; j < nb_channels; j++) {
+            uint8_t *buf = outpicref->data[0] + showwaves->buf_idx;
+            if (showwaves->split_channels)
+                buf += j*ch_height*linesize;
+            showwaves->draw_sample(buf, ch_height, linesize, *p++,
                                    &showwaves->buf_idy[j], x);
+        }
 
         showwaves->sample_count_mod++;
         if (showwaves->sample_count_mod == n) {

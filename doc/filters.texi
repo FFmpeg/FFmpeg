@@ -10830,6 +10830,9 @@ is not explicitly specified.
 Set the (approximate) output frame rate. This is done by setting the
 option @var{n}. Default value is "25".
 
+@item split_channels
+Set if channels should be drawn separately or overlap. Default value is 0.
+
 @end table
 
 @subsection Examples
