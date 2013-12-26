@@ -406,6 +406,9 @@ static void decode_422_bitstream(HYuvContext *s, int count)
             READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
             READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
         }
+        for (; i < count; i++)
+            s->temp[0][2 * i    ] = s->temp[1][i] =
+            s->temp[0][2 * i + 1] = s->temp[2][i] = 128;
     } else {
         for (i = 0; i < count; i++) {
             READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
