@@ -15,6 +15,7 @@ version <next>:
 - improvments to OpenEXR image decoder
 - support decoding 16-bit RLE SGI images
 - GDI screen grabbing for Windows
+- alternative rendition support for HTTP Live Streaming
 
 
 version 2.2:

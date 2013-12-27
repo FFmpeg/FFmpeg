@@ -1,6 +1,7 @@
 /*
  * Apple HTTP Live Streaming demuxer
  * Copyright (c) 2010 Martin Storsjo
+ * Copyright (c) 2013 Anssi Hannula
  *
  * This file is part of FFmpeg.
  *
@@ -38,6 +39,9 @@
 
 #define INITIAL_BUFFER_SIZE 32768
 
+#define MAX_FIELD_LEN 64
+#define MAX_CHARACTERISTICS_LEN 512
+
 /*
  * An apple http stream consists of a playlist with media segment files,
  * played sequentially. There may be several playlists with the same
@@ -62,6 +66,8 @@ struct segment {
     enum KeyType key_type;
     uint8_t iv[16];
 };
+
+struct rendition;
 
 /*
  * Each playlist has its own demuxer. If it currently is active,
@@ -90,12 +96,40 @@ struct playlist {
 
     char key_url[MAX_URL_SIZE];
     uint8_t key[16];
+
+    /* Renditions associated with this playlist, if any.
+     * Alternative rendition playlists have a single rendition associated
+     * with them, and variant main Media Playlists may have
+     * multiple (playlist-less) renditions associated with them. */
+    int n_renditions;
+    struct rendition **renditions;
+};
+
+/*
+ * Renditions are e.g. alternative subtitle or audio streams.
+ * The rendition may either be an external playlist or it may be
+ * contained in the main Media Playlist of the variant (in which case
+ * playlist is NULL).
+ */
+struct rendition {
+    enum AVMediaType type;
+    struct playlist *playlist;
+    char group_id[MAX_FIELD_LEN];
+    char language[MAX_FIELD_LEN];
+    char name[MAX_FIELD_LEN];
+    int disposition;
 };
 
 struct variant {
     int bandwidth;
+
+    /* every variant contains at least the main Media Playlist in index 0 */
     int n_playlists;
     struct playlist **playlists;
+
+    char audio_group[MAX_FIELD_LEN];
+    char video_group[MAX_FIELD_LEN];
+    char subtitles_group[MAX_FIELD_LEN];
 };
 
 typedef struct HLSContext {
@@ -103,6 +137,8 @@ typedef struct HLSContext {
     struct variant **variants;
     int n_playlists;
     struct playlist **playlists;
+    int n_renditions;
+    struct rendition **renditions;
 
     int cur_seq_no;
     int end_of_segment;
@@ -139,6 +175,7 @@ static void free_playlist_list(HLSContext *c)
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];
         free_segment_list(pls);
+        av_freep(&pls->renditions);
         av_free_packet(&pls->pkt);
         av_free(pls->pb.buffer);
         if (pls->input)
@@ -167,6 +204,15 @@ static void free_variant_list(HLSContext *c)
     c->n_variants = 0;
 }
 
+static void free_rendition_list(HLSContext *c)
+{
+    int i;
+    for (i = 0; i < c->n_renditions; i++)
+        av_free(c->renditions[i]);
+    av_freep(&c->renditions);
+    c->n_renditions = 0;
+}
+
 /*
  * Used to reset a statically allocated AVPacket to a clean slate,
  * containing no data.
@@ -189,7 +235,15 @@ static struct playlist *new_playlist(HLSContext *c, const char *url,
     return pls;
 }
 
-static struct variant *new_variant(HLSContext *c, int bandwidth,
+struct variant_info {
+    char bandwidth[20];
+    /* variant group ids: */
+    char audio[MAX_FIELD_LEN];
+    char video[MAX_FIELD_LEN];
+    char subtitles[MAX_FIELD_LEN];
+};
+
+static struct variant *new_variant(HLSContext *c, struct variant_info *info,
                                    const char *url, const char *base)
 {
     struct variant *var;
@@ -203,15 +257,17 @@ static struct variant *new_variant(HLSContext *c, int bandwidth,
     if (!var)
         return NULL;
 
-    var->bandwidth = bandwidth;
+    if (info) {
+        var->bandwidth = atoi(info->bandwidth);
+        strcpy(var->audio_group, info->audio);
+        strcpy(var->video_group, info->video);
+        strcpy(var->subtitles_group, info->subtitles);
+    }
+
     dynarray_add(&c->variants, &c->n_variants, var);
     dynarray_add(&var->playlists, &var->n_playlists, pls);
     return var;
 }
-
-struct variant_info {
-    char bandwidth[20];
-};
 
 static void handle_variant_args(struct variant_info *info, const char *key,
                                 int key_len, char **dest, int *dest_len)
@@ -219,6 +275,15 @@ static void handle_variant_args(struct variant_info *info, const char *key,
     if (!strncmp(key, "BANDWIDTH=", key_len)) {
         *dest     =        info->bandwidth;
         *dest_len = sizeof(info->bandwidth);
+    } else if (!strncmp(key, "AUDIO=", key_len)) {
+        *dest     =        info->audio;
+        *dest_len = sizeof(info->audio);
+    } else if (!strncmp(key, "VIDEO=", key_len)) {
+        *dest     =        info->video;
+        *dest_len = sizeof(info->video);
+    } else if (!strncmp(key, "SUBTITLES=", key_len)) {
+        *dest     =        info->subtitles;
+        *dest_len = sizeof(info->subtitles);
     }
 }
 
@@ -243,10 +308,137 @@ static void handle_key_args(struct key_info *info, const char *key,
     }
 }
 
+struct rendition_info {
+    char type[16];
+    char uri[MAX_URL_SIZE];
+    char group_id[MAX_FIELD_LEN];
+    char language[MAX_FIELD_LEN];
+    char assoc_language[MAX_FIELD_LEN];
+    char name[MAX_FIELD_LEN];
+    char defaultr[4];
+    char forced[4];
+    char characteristics[MAX_CHARACTERISTICS_LEN];
+};
+
+static struct rendition *new_rendition(HLSContext *c, struct rendition_info *info,
+                                      const char *url_base)
+{
+    struct rendition *rend;
+    enum AVMediaType type = AVMEDIA_TYPE_UNKNOWN;
+    char *characteristic;
+    char *chr_ptr;
+    char *saveptr;
+
+    if (!strcmp(info->type, "AUDIO"))
+        type = AVMEDIA_TYPE_AUDIO;
+    else if (!strcmp(info->type, "VIDEO"))
+        type = AVMEDIA_TYPE_VIDEO;
+    else if (!strcmp(info->type, "SUBTITLES"))
+        type = AVMEDIA_TYPE_SUBTITLE;
+    else if (!strcmp(info->type, "CLOSED-CAPTIONS"))
+        /* CLOSED-CAPTIONS is ignored since we do not support CEA-608 CC in
+         * AVC SEI RBSP anyway */
+        return NULL;
+
+    if (type == AVMEDIA_TYPE_UNKNOWN)
+        return NULL;
+
+    /* URI is mandatory for subtitles as per spec */
+    if (type == AVMEDIA_TYPE_SUBTITLE && !info->uri[0])
+        return NULL;
+
+    /* TODO: handle subtitles (each segment has to parsed separately) */
+    if (type == AVMEDIA_TYPE_SUBTITLE)
+        return NULL;
+
+    rend = av_mallocz(sizeof(struct rendition));
+    if (!rend)
+        return NULL;
+
+    dynarray_add(&c->renditions, &c->n_renditions, rend);
+
+    rend->type = type;
+    strcpy(rend->group_id, info->group_id);
+    strcpy(rend->language, info->language);
+    strcpy(rend->name, info->name);
+
+    /* add the playlist if this is an external rendition */
+    if (info->uri[0]) {
+        rend->playlist = new_playlist(c, info->uri, url_base);
+        if (rend->playlist)
+            dynarray_add(&rend->playlist->renditions,
+                         &rend->playlist->n_renditions, rend);
+    }
+
+    if (info->assoc_language[0]) {
+        int langlen = strlen(rend->language);
+        if (langlen < sizeof(rend->language) - 3) {
+            rend->language[langlen] = ',';
+            strncpy(rend->language + langlen + 1, info->assoc_language,
+                    sizeof(rend->language) - langlen - 2);
+        }
+    }
+
+    if (!strcmp(info->defaultr, "YES"))
+        rend->disposition |= AV_DISPOSITION_DEFAULT;
+    if (!strcmp(info->forced, "YES"))
+        rend->disposition |= AV_DISPOSITION_FORCED;
+
+    chr_ptr = info->characteristics;
+    while ((characteristic = av_strtok(chr_ptr, ",", &saveptr))) {
+        if (!strcmp(characteristic, "public.accessibility.describes-music-and-sound"))
+            rend->disposition |= AV_DISPOSITION_HEARING_IMPAIRED;
+        else if (!strcmp(characteristic, "public.accessibility.describes-video"))
+            rend->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
+
+        chr_ptr = NULL;
+    }
+
+    return rend;
+}
+
+static void handle_rendition_args(struct rendition_info *info, const char *key,
+                                  int key_len, char **dest, int *dest_len)
+{
+    if (!strncmp(key, "TYPE=", key_len)) {
+        *dest     =        info->type;
+        *dest_len = sizeof(info->type);
+    } else if (!strncmp(key, "URI=", key_len)) {
+        *dest     =        info->uri;
+        *dest_len = sizeof(info->uri);
+    } else if (!strncmp(key, "GROUP-ID=", key_len)) {
+        *dest     =        info->group_id;
+        *dest_len = sizeof(info->group_id);
+    } else if (!strncmp(key, "LANGUAGE=", key_len)) {
+        *dest     =        info->language;
+        *dest_len = sizeof(info->language);
+    } else if (!strncmp(key, "ASSOC-LANGUAGE=", key_len)) {
+        *dest     =        info->assoc_language;
+        *dest_len = sizeof(info->assoc_language);
+    } else if (!strncmp(key, "NAME=", key_len)) {
+        *dest     =        info->name;
+        *dest_len = sizeof(info->name);
+    } else if (!strncmp(key, "DEFAULT=", key_len)) {
+        *dest     =        info->defaultr;
+        *dest_len = sizeof(info->defaultr);
+    } else if (!strncmp(key, "FORCED=", key_len)) {
+        *dest     =        info->forced;
+        *dest_len = sizeof(info->forced);
+    } else if (!strncmp(key, "CHARACTERISTICS=", key_len)) {
+        *dest     =        info->characteristics;
+        *dest_len = sizeof(info->characteristics);
+    }
+    /*
+     * ignored:
+     * - AUTOSELECT: client may autoselect based on e.g. system language
+     * - INSTREAM-ID: EIA-608 closed caption number ("CC1".."CC4")
+     */
+}
+
 static int parse_playlist(HLSContext *c, const char *url,
                           struct playlist *pls, AVIOContext *in)
 {
-    int ret = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
+    int ret = 0, is_segment = 0, is_variant = 0;
     int64_t duration = 0;
     enum KeyType key_type = KEY_NONE;
     uint8_t iv[16] = "";
@@ -256,6 +448,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     const char *ptr;
     int close_in = 0;
     uint8_t *new_url = NULL;
+    struct variant_info variant_info;
 
     if (!in) {
         AVDictionary *opts = NULL;
@@ -291,11 +484,10 @@ static int parse_playlist(HLSContext *c, const char *url,
     while (!url_feof(in)) {
         read_chomp_line(in, line, sizeof(line));
         if (av_strstart(line, "#EXT-X-STREAM-INF:", &ptr)) {
-            struct variant_info info = {{0}};
             is_variant = 1;
+            memset(&variant_info, 0, sizeof(variant_info));
             ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_variant_args,
-                               &info);
-            bandwidth = atoi(info.bandwidth);
+                               &variant_info);
         } else if (av_strstart(line, "#EXT-X-KEY:", &ptr)) {
             struct key_info info = {{0}};
             ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_key_args,
@@ -309,9 +501,14 @@ static int parse_playlist(HLSContext *c, const char *url,
                 has_iv = 1;
             }
             av_strlcpy(key, info.uri, sizeof(key));
+        } else if (av_strstart(line, "#EXT-X-MEDIA:", &ptr)) {
+            struct rendition_info info = {{0}};
+            ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_rendition_args,
+                               &info);
+            new_rendition(c, &info, url);
         } else if (av_strstart(line, "#EXT-X-TARGETDURATION:", &ptr)) {
             if (!pls) {
-                if (!new_variant(c, 0, url, NULL)) {
+                if (!new_variant(c, NULL, url, NULL)) {
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
@@ -320,7 +517,7 @@ static int parse_playlist(HLSContext *c, const char *url,
             pls->target_duration = atoi(ptr) * AV_TIME_BASE;
         } else if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             if (!pls) {
-                if (!new_variant(c, 0, url, NULL)) {
+                if (!new_variant(c, NULL, url, NULL)) {
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
@@ -337,12 +534,11 @@ static int parse_playlist(HLSContext *c, const char *url,
             continue;
         } else if (line[0]) {
             if (is_variant) {
-                if (!new_variant(c, bandwidth, line, url)) {
+                if (!new_variant(c, &variant_info, line, url)) {
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
                 is_variant = 0;
-                bandwidth  = 0;
             }
             if (is_segment) {
                 struct segment *seg;
@@ -543,6 +739,60 @@ static int playlist_in_multiple_variants(HLSContext *c, struct playlist *pls)
     return variant_count >= 2;
 }
 
+static void add_renditions_to_variant(HLSContext *c, struct variant *var,
+                                      enum AVMediaType type, const char *group_id)
+{
+    int i;
+
+    for (i = 0; i < c->n_renditions; i++) {
+        struct rendition *rend = c->renditions[i];
+
+        if (rend->type == type && !strcmp(rend->group_id, group_id)) {
+
+            if (rend->playlist)
+                /* rendition is an external playlist
+                 * => add the playlist to the variant */
+                dynarray_add(&var->playlists, &var->n_playlists, rend->playlist);
+            else
+                /* rendition is part of the variant main Media Playlist
+                 * => add the rendition to the main Media Playlist */
+                dynarray_add(&var->playlists[0]->renditions,
+                             &var->playlists[0]->n_renditions,
+                             rend);
+        }
+    }
+}
+
+static void add_metadata_from_renditions(AVFormatContext *s, struct playlist *pls,
+                                         enum AVMediaType type)
+{
+    int rend_idx = 0;
+    int i;
+
+    for (i = 0; i < pls->ctx->nb_streams; i++) {
+        AVStream *st = s->streams[pls->stream_offset + i];
+
+        if (st->codec->codec_type != type)
+            continue;
+
+        for (; rend_idx < pls->n_renditions; rend_idx++) {
+            struct rendition *rend = pls->renditions[rend_idx];
+
+            if (rend->type != type)
+                continue;
+
+            if (rend->language[0])
+                av_dict_set(&st->metadata, "language", rend->language, 0);
+            if (rend->name[0])
+                av_dict_set(&st->metadata, "comment", rend->name, 0);
+
+            st->disposition |= rend->disposition;
+        }
+        if (rend_idx >=pls->n_renditions)
+            break;
+    }
+}
+
 static int hls_read_header(AVFormatContext *s)
 {
     URLContext *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
@@ -603,6 +853,18 @@ static int hls_read_header(AVFormatContext *s)
         for (i = 0; i < c->variants[0]->playlists[0]->n_segments; i++)
             duration += c->variants[0]->playlists[0]->segments[i]->duration;
         s->duration = duration;
+    }
+
+    /* Associate renditions with variants */
+    for (i = 0; i < c->n_variants; i++) {
+        struct variant *var = c->variants[i];
+
+        if (var->audio_group[0])
+            add_renditions_to_variant(c, var, AVMEDIA_TYPE_AUDIO, var->audio_group);
+        if (var->video_group[0])
+            add_renditions_to_variant(c, var, AVMEDIA_TYPE_VIDEO, var->video_group);
+        if (var->subtitles_group[0])
+            add_renditions_to_variant(c, var, AVMEDIA_TYPE_SUBTITLE, var->subtitles_group);
     }
 
     /* Open the demuxer for each playlist */
@@ -668,6 +930,10 @@ static int hls_read_header(AVFormatContext *s)
             avcodec_copy_context(st->codec, pls->ctx->streams[j]->codec);
         }
 
+        add_metadata_from_renditions(s, pls, AVMEDIA_TYPE_AUDIO);
+        add_metadata_from_renditions(s, pls, AVMEDIA_TYPE_VIDEO);
+        add_metadata_from_renditions(s, pls, AVMEDIA_TYPE_SUBTITLE);
+
         stream_offset += pls->ctx->nb_streams;
     }
 
@@ -709,6 +975,7 @@ static int hls_read_header(AVFormatContext *s)
 fail:
     free_playlist_list(c);
     free_variant_list(c);
+    free_rendition_list(c);
     return ret;
 }
 
@@ -850,6 +1117,7 @@ static int hls_close(AVFormatContext *s)
 
     free_playlist_list(c);
     free_variant_list(c);
+    free_rendition_list(c);
     return 0;
 }
 
