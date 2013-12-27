@@ -41,6 +41,7 @@
  * @}
  */
 
+
 /**
  * @defgroup version_utils Library Version Macros
  *
@@ -57,7 +58,6 @@
 /**
  * @}
  */
-
 
 /**
  * @file

@@ -27,7 +27,7 @@
  * Libavformat version macros
  */
 
-#include "libavutil/avutil.h"
+#include "libavutil/version.h"
 
 #define LIBAVFORMAT_VERSION_MAJOR 55
 #define LIBAVFORMAT_VERSION_MINOR 22
