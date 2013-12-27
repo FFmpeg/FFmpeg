@@ -32,10 +32,6 @@
 
 #include "avcodec.h"
 
-/* encoding scans */
-extern const uint8_t ff_alternate_horizontal_scan[64];
-extern const uint8_t ff_alternate_vertical_scan[64];
-
 extern uint32_t ff_square_tab[512];
 
 void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);

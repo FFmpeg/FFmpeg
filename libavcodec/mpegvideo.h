@@ -85,6 +85,10 @@ enum OutputFormat {
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2
 
+/* encoding scans */
+extern const uint8_t ff_alternate_horizontal_scan[64];
+extern const uint8_t ff_alternate_vertical_scan[64];
+
 struct MpegEncContext;
 
 /**
