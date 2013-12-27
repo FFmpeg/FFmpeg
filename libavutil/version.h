@@ -19,7 +19,7 @@
 #ifndef AVUTIL_VERSION_H
 #define AVUTIL_VERSION_H
 
-#include "avutil.h"
+#include "macros.h"
 
 /**
  * @defgroup version_utils Library Version Macros

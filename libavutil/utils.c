@@ -17,7 +17,7 @@
  */
 
 #include "config.h"
-#include "version.h"
+#include "avutil.h"
 
 /**
  * @file

@@ -144,28 +144,14 @@
  * @{
  *
  * @}
- */
-
-
-/**
+ *
  * @defgroup preproc_misc Preprocessor String Macros
  *
- * String manipulation macros
- *
  * @{
- */
-
-#define AV_STRINGIFY(s)         AV_TOSTRING(s)
-#define AV_TOSTRING(s) #s
-
-#define AV_GLUE(a, b) a ## b
-#define AV_JOIN(a, b) AV_GLUE(a, b)
-
-#define AV_PRAGMA(s) _Pragma(#s)
-
-/**
+ *
  * @}
  */
+
 
 /**
  * @addtogroup lavu_ver
@@ -288,6 +274,7 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
 
 #include "error.h"
 #include "version.h"
+#include "macros.h"
 
 /**
  * @}

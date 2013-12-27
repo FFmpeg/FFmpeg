@@ -27,6 +27,7 @@ HEADERS = adler32.h                                                     \
           intreadwrite.h                                                \
           lfg.h                                                         \
           log.h                                                         \
+          macros.h                                                      \
           mathematics.h                                                 \
           md5.h                                                         \
           mem.h                                                         \
