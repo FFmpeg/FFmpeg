@@ -260,6 +260,10 @@ pre code {
   -moz-border-radius: 9px;
   border-radius: 9px;
 }
+
+.label a {
+  color:#ffffff;
+}
 a.label:hover,
 a.badge:hover {
   color: #ffffff;
