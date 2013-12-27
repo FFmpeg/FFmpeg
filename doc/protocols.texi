@@ -1058,7 +1058,7 @@ This option is only relevant in read mode: if no data arrived in more
 than this time interval, raise error.
 @end table
 
-@section Examples
+@subsection Examples
 
 @itemize
 @item
