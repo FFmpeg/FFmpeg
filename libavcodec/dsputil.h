@@ -39,6 +39,10 @@ void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 
+void ff_put_pixels8_l2_8(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+                         int dst_stride, int src_stride1, int src_stride2,
+                         int h);
+
 void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r,
               int width, int height);
@@ -174,7 +178,6 @@ typedef struct DSPContext {
     qpel_mc_func put_qpel_pixels_tab[2][16];
     qpel_mc_func avg_qpel_pixels_tab[2][16];
     qpel_mc_func put_no_rnd_qpel_pixels_tab[2][16];
-    qpel_mc_func put_mspel_pixels_tab[8];
 
     me_cmp_func pix_abs[2][4];
 
