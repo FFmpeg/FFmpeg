@@ -70,6 +70,7 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
     /* early exit if the header didn't change apart from the frame number */
     if (s->last_header == header_int)
         return 0;
+    s->last_header = -1;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_dlog(avctx, "pcm_dvd_parse_header: header = %02x%02x%02x\n",
