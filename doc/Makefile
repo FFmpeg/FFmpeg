@@ -105,10 +105,7 @@ $(DOCS) doc/doxy/html: | doc/
 $(DOC_EXAMPLES:%=%.o): | doc/examples
 OBJDIRS += doc/examples
 
-DOXY_TEMPLATES  = doxy_stylesheet.css footer.html header.html
-DOXY_TEMPLATES := $(addprefix $(SRC_PATH)/doc/doxy/, $(DOXY_TEMPLATES))
-
-doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(DOXY_TEMPLATES) $(INSTHEADERS)
+doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(INSTHEADERS)
 	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $^
 
 install-doc: install-html install-man
