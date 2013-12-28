@@ -1213,9 +1213,6 @@ static void free_tables(H264Context *h, int free_rbsp)
     av_freep(&h->mb2b_xy);
     av_freep(&h->mb2br_xy);
 
-    for (i = 0; i < 3; i++)
-        av_freep(&h->visualization_buffer[i]);
-
     av_buffer_pool_uninit(&h->qscale_table_pool);
     av_buffer_pool_uninit(&h->mb_type_pool);
     av_buffer_pool_uninit(&h->motion_val_pool);

@@ -696,8 +696,6 @@ typedef struct H264Context {
     uint8_t *edge_emu_buffer;
     int16_t *dc_val_base;
 
-    uint8_t *visualization_buffer[3]; ///< temporary buffer vor MV visualization
-
     AVBufferPool *qscale_table_pool;
     AVBufferPool *mb_type_pool;
     AVBufferPool *motion_val_pool;
