@@ -540,6 +540,8 @@ static int get_qcd(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q,
     Jpeg2000QuantStyle tmp;
     int compno, ret;
 
+    memset(&tmp, 0, sizeof(tmp));
+
     if ((ret = get_qcx(s, n, &tmp)) < 0)
         return ret;
     for (compno = 0; compno < s->ncomponents; compno++)
