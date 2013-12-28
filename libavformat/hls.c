@@ -653,6 +653,9 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
     HLSContext *c = v->parent->priv_data;
     int ret, i;
 
+    if (!v->needed)
+        return AVERROR_EOF;
+
 restart:
     if (!v->input) {
         /* If this is a live stream and the reload interval has elapsed since
