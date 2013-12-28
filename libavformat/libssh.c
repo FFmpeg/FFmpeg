@@ -121,7 +121,8 @@ static int libssh_open(URLContext *h, const char *url, int flags)
         access = O_RDONLY;
     }
 
-    if (!(s->file = sftp_open(s->sftp, path, access, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH))) {
+    /* 0666 = -rw-rw-rw- = read+write for everyone, minus umask */
+    if (!(s->file = sftp_open(s->sftp, path, access, 0666))) {
         av_log(h, AV_LOG_ERROR, "Error opening sftp file: %s\n", ssh_get_error(s->session));
         ret = AVERROR(EIO);
         goto fail;
