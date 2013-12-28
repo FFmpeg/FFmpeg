@@ -1263,13 +1263,15 @@ static int revert_channel_correlation(ALSDecContext *ctx, ALSBlockData *bd,
     bd->quant_cof   = ctx->quant_cof[c];
     bd->raw_samples = ctx->raw_samples[c] + offset;
 
-    dep = 0;
-    while (!ch[dep].stop_flag) {
+    for (dep = 0; !ch[dep].stop_flag; dep++) {
         unsigned int smp;
         unsigned int begin = 1;
         unsigned int end   = bd->block_length - 1;
         int64_t y;
         int32_t *master = ctx->raw_samples[ch[dep].master_channel] + offset;
+
+        if (ch[dep].master_channel == c)
+            continue;
 
         if (ch[dep].time_diff_flag) {
             int t = ch[dep].time_diff_index;
@@ -1302,8 +1304,6 @@ static int revert_channel_correlation(ALSDecContext *ctx, ALSBlockData *bd,
                 bd->raw_samples[smp] += y >> 7;
             }
         }
-
-        dep++;
     }
 
     return 0;
