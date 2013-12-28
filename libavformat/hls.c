@@ -61,6 +61,8 @@ enum KeyType {
 
 struct segment {
     int64_t duration;
+    int64_t url_offset;
+    int64_t size;
     char url[MAX_URL_SIZE];
     char key[MAX_URL_SIZE];
     enum KeyType key_type;
@@ -92,6 +94,7 @@ struct playlist {
     struct segment **segments;
     int needed, cur_needed;
     int cur_seq_no;
+    int64_t cur_seg_offset;
     int64_t last_load_time;
 
     char key_url[MAX_URL_SIZE];
@@ -447,6 +450,8 @@ static int parse_playlist(HLSContext *c, const char *url,
     char line[MAX_URL_SIZE];
     const char *ptr;
     int close_in = 0;
+    int64_t seg_offset = 0;
+    int64_t seg_size = -1;
     uint8_t *new_url = NULL;
     struct variant_info variant_info;
 
@@ -530,6 +535,11 @@ static int parse_playlist(HLSContext *c, const char *url,
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
             duration   = atof(ptr) * AV_TIME_BASE;
+        } else if (av_strstart(line, "#EXT-X-BYTERANGE:", &ptr)) {
+            seg_size = atoi(ptr);
+            ptr = strchr(ptr, '@');
+            if (ptr)
+                seg_offset = atoi(ptr+1);
         } else if (av_strstart(line, "#", NULL)) {
             continue;
         } else if (line[0]) {
@@ -567,6 +577,16 @@ static int parse_playlist(HLSContext *c, const char *url,
                 ff_make_absolute_url(seg->url, sizeof(seg->url), url, line);
                 dynarray_add(&pls->segments, &pls->n_segments, seg);
                 is_segment = 0;
+
+                seg->size = seg_size;
+                if (seg_size >= 0) {
+                    seg->url_offset = seg_offset;
+                    seg_offset += seg_size;
+                    seg_size = -1;
+                } else {
+                    seg->url_offset = 0;
+                    seg_offset = 0;
+                }
             }
         }
     }
@@ -596,10 +616,23 @@ static int open_input(HLSContext *c, struct playlist *pls)
     // Same opts for key request (ffurl_open mutilates the opts so it cannot be used twice)
     av_dict_copy(&opts2, opts, 0);
 
+    if (seg->size >= 0) {
+        /* try to restrict the HTTP request to the part we want
+         * (if this is in fact a HTTP request) */
+        char offset[24] = { 0 };
+        char end_offset[24] = { 0 };
+        snprintf(offset, sizeof(offset) - 1, "%"PRId64,
+                 seg->url_offset);
+        snprintf(end_offset, sizeof(end_offset) - 1, "%"PRId64,
+                 seg->url_offset + seg->size);
+        av_dict_set(&opts, "offset", offset, 0);
+        av_dict_set(&opts, "end_offset", end_offset, 0);
+    }
+
     if (seg->key_type == KEY_NONE) {
         ret = ffurl_open(&pls->input, seg->url, AVIO_FLAG_READ,
                           &pls->parent->interrupt_callback, &opts);
-        goto cleanup;
+
     } else if (seg->key_type == KEY_AES_128) {
         char iv[33], key[33], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
@@ -641,9 +674,23 @@ static int open_input(HLSContext *c, struct playlist *pls)
     else
       ret = AVERROR(ENOSYS);
 
+    /* Seek to the requested position. If this was a HTTP request, the offset
+     * should already be where want it to, but this allows e.g. local testing
+     * without a HTTP server. */
+    if (ret == 0) {
+        int seekret = ffurl_seek(pls->input, seg->url_offset, SEEK_SET);
+        if (seekret < 0) {
+            av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
+            ret = seekret;
+            ffurl_close(pls->input);
+            pls->input = NULL;
+        }
+    }
+
 cleanup:
     av_dict_free(&opts);
     av_dict_free(&opts2);
+    pls->cur_seg_offset = 0;
     return ret;
 }
 
@@ -652,6 +699,8 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
     struct playlist *v = opaque;
     HLSContext *c = v->parent->priv_data;
     int ret, i;
+    int actual_read_size;
+    struct segment *seg;
 
     if (!v->needed)
         return AVERROR_EOF;
@@ -696,9 +745,18 @@ reload:
         if (ret < 0)
             return ret;
     }
-    ret = ffurl_read(v->input, buf, buf_size);
-    if (ret > 0)
+    /* limit read if the segment was only a part of a file */
+    seg = v->segments[v->cur_seq_no - v->start_seq_no];
+    if (seg->size >= 0)
+        actual_read_size = FFMIN(buf_size, seg->size - v->cur_seg_offset);
+    else
+        actual_read_size = buf_size;
+
+    ret = ffurl_read(v->input, buf, actual_read_size);
+    if (ret > 0) {
+        v->cur_seg_offset += ret;
         return ret;
+    }
     ffurl_close(v->input);
     v->input = NULL;
     v->cur_seq_no++;
