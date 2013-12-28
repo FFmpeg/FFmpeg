@@ -48,6 +48,7 @@ extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
 extern AVDictionary *swr_opts;
 extern AVDictionary *format_opts, *codec_opts, *resample_opts;
+extern int hide_banner;
 
 /**
  * Register a program-specific cleanup routine.

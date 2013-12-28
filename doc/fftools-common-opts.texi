@@ -194,6 +194,13 @@ to a plain @code{%}
 Errors in parsing the environment variable are not fatal, and will not
 appear in the report.
 
+@item -hide_banner
+Suppress printing banner.
+
+All FFmpeg tools will normally show a copyright notice, build options
+and library versions. This option can be used to suppress printing
+this information.
+
 @item -cpuflags flags (@emph{global})
 Allows setting and clearing cpu flags. This option is intended
 for testing. Do not use it unless you know what you're doing.

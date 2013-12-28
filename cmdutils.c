@@ -66,6 +66,7 @@ AVDictionary *swr_opts;
 AVDictionary *format_opts, *codec_opts, *resample_opts;
 
 static FILE *report_file;
+int hide_banner = 0;
 
 void init_opts(void)
 {
@@ -491,6 +492,9 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options)
             fflush(report_file);
         }
     }
+    idx = locate_option(argc, argv, options, "hide_banner");
+    if (idx)
+        hide_banner = 1;
 }
 
 static const AVOption *opt_find(void *obj, const char *name, const char *unit,
@@ -1083,7 +1087,7 @@ static void print_buildconf(int flags, int level)
 void show_banner(int argc, char **argv, const OptionDef *options)
 {
     int idx = locate_option(argc, argv, options, "version");
-    if (idx)
+    if (hide_banner || idx)
         return;
 
     print_program_info (INDENT|SHOW_COPYRIGHT, AV_LOG_INFO);
