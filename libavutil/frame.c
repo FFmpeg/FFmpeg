@@ -159,7 +159,7 @@ static int get_video_buffer(AVFrame *frame, int align)
         if (i == 1 || i == 2)
             h = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
 
-        frame->buf[i] = av_buffer_alloc(frame->linesize[i] * h + 16);
+        frame->buf[i] = av_buffer_alloc(frame->linesize[i] * h + 16 + 16/*STRIDE_ALIGN*/ - 1);
         if (!frame->buf[i])
             goto fail;
 
