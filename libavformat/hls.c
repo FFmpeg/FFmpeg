@@ -629,6 +629,9 @@ static int open_input(HLSContext *c, struct playlist *pls)
         av_dict_set(&opts, "end_offset", end_offset, 0);
     }
 
+    av_log(pls->parent, AV_LOG_VERBOSE, "HLS request for url '%s', offset %"PRId64", playlist %d\n",
+           seg->url, seg->url_offset, pls->index);
+
     if (seg->key_type == KEY_NONE) {
         ret = ffurl_open(&pls->input, seg->url, AVIO_FLAG_READ,
                           &pls->parent->interrupt_callback, &opts);
@@ -716,8 +719,11 @@ restart:
 reload:
         if (!v->finished &&
             av_gettime() - v->last_load_time >= reload_interval) {
-            if ((ret = parse_playlist(c, v->url, v, NULL)) < 0)
+            if ((ret = parse_playlist(c, v->url, v, NULL)) < 0) {
+                av_log(v->parent, AV_LOG_WARNING, "Failed to reload playlist %d\n",
+                       v->index);
                 return ret;
+            }
             /* If we need to reload the playlist again below (if
              * there's still no more segments), switch to a reload
              * interval of half the target duration. */
@@ -742,8 +748,11 @@ reload:
         }
 
         ret = open_input(c, v);
-        if (ret < 0)
+        if (ret < 0) {
+            av_log(v->parent, AV_LOG_WARNING, "Failed to open segment of playlist %d\n",
+                   v->index);
             return ret;
+        }
     }
     /* limit read if the segment was only a part of a file */
     seg = v->segments[v->cur_seq_no - v->start_seq_no];
