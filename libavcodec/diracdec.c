@@ -406,8 +406,14 @@ static av_cold int dirac_decode_init(AVCodecContext *avctx)
     ff_dsputil_init(&s->dsp, avctx);
     ff_diracdsp_init(&s->diracdsp);
 
-    for (i = 0; i < MAX_FRAMES; i++)
+    for (i = 0; i < MAX_FRAMES; i++) {
         s->all_frames[i].avframe = av_frame_alloc();
+        if (!s->all_frames[i].avframe) {
+            while (i > 0)
+                av_frame_free(&s->all_frames[--i].avframe);
+            return AVERROR(ENOMEM);
+        }
+    }
 
     return 0;
 }
