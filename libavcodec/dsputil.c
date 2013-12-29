@@ -347,25 +347,6 @@ static void put_signed_pixels_clamped_c(const int16_t *block,
     }
 }
 
-static void add_pixels8_c(uint8_t *restrict pixels, int16_t *block,
-                          int line_size)
-{
-    int i;
-
-    for (i = 0; i < 8; i++) {
-        pixels[0] += block[0];
-        pixels[1] += block[1];
-        pixels[2] += block[2];
-        pixels[3] += block[3];
-        pixels[4] += block[4];
-        pixels[5] += block[5];
-        pixels[6] += block[6];
-        pixels[7] += block[7];
-        pixels    += line_size;
-        block     += 8;
-    }
-}
-
 static void add_pixels_clamped_c(const int16_t *block, uint8_t *restrict pixels,
                                  int line_size)
 {
@@ -2289,8 +2270,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->shrink[1] = ff_shrink22;
     c->shrink[2] = ff_shrink44;
     c->shrink[3] = ff_shrink88;
-
-    c->add_pixels8 = add_pixels8_c;
 
     c->draw_edges = draw_edges_8_c;
 
