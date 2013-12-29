@@ -76,15 +76,6 @@ int32_t ff_scalarproduct_int16_mmxext(const int16_t *v1, const int16_t *v2,
                                       int order);
 int32_t ff_scalarproduct_int16_sse2(const int16_t *v1, const int16_t *v2,
                                     int order);
-int32_t ff_scalarproduct_and_madd_int16_mmxext(int16_t *v1, const int16_t *v2,
-                                               const int16_t *v3,
-                                               int order, int mul);
-int32_t ff_scalarproduct_and_madd_int16_sse2(int16_t *v1, const int16_t *v2,
-                                             const int16_t *v3,
-                                             int order, int mul);
-int32_t ff_scalarproduct_and_madd_int16_ssse3(int16_t *v1, const int16_t *v2,
-                                              const int16_t *v3,
-                                              int order, int mul);
 
 void ff_bswap32_buf_ssse3(uint32_t *dst, const uint32_t *src, int w);
 void ff_bswap32_buf_sse2(uint32_t *dst, const uint32_t *src, int w);
@@ -568,7 +559,6 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
 
     c->scalarproduct_int16          = ff_scalarproduct_int16_mmxext;
-    c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmxext;
 #endif /* HAVE_MMXEXT_EXTERNAL */
 }
 
@@ -607,7 +597,6 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 
 #if HAVE_SSE2_EXTERNAL
     c->scalarproduct_int16          = ff_scalarproduct_int16_sse2;
-    c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_sse2;
     if (cpu_flags & AV_CPU_FLAG_ATOM) {
         c->vector_clip_int32 = ff_vector_clip_int32_int_sse2;
     } else {
@@ -621,8 +610,6 @@ static av_cold void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
                                        int cpu_flags, unsigned high_bit_depth)
 {
 #if HAVE_SSSE3_EXTERNAL
-    if (!(cpu_flags & (AV_CPU_FLAG_SSE42 | AV_CPU_FLAG_3DNOW))) // cachesplit
-        c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_ssse3;
     c->bswap_buf = ff_bswap32_buf_ssse3;
 #endif /* HAVE_SSSE3_EXTERNAL */
 }
