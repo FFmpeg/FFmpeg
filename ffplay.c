@@ -1610,7 +1610,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
         }
         /* if the queue is aborted, we have to pop the pending ALLOC event or wait for the allocation to complete */
         if (is->videoq.abort_request && SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENTMASK(FF_ALLOC_EVENT)) != 1) {
-            while (!vp->allocated) {
+            while (!vp->allocated && !is->abort_request) {
                 SDL_CondWait(is->pictq_cond, is->pictq_mutex);
             }
         }
