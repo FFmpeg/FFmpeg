@@ -48,12 +48,12 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 
     if (s->width > 65500 || s->height > 65500) {
         av_log(s, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     m = av_malloc(sizeof(MJpegContext));
     if (!m)
-        return -1;
+        return AVERROR(ENOMEM);
 
     s->min_qcoeff=-1023;
     s->max_qcoeff= 1023;
@@ -545,7 +545,7 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
     //CODEC_FLAG_EMU_EDGE have to be cleared
     if(s->avctx->flags & CODEC_FLAG_EMU_EDGE)
-        return -1;
+        return AVERROR(EINVAL);
 
     pic = av_frame_alloc();
     if (!pic)
