@@ -548,6 +548,8 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
 
     pic = av_frame_alloc();
+    if (!pic)
+        return AVERROR(ENOMEM);
     av_frame_ref(pic, pic_arg);
     //picture should be flipped upside-down
     for(i=0; i < 3; i++) {
