@@ -180,7 +180,7 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
     VDADecoderContext *ctx = avctx->priv_data;
     struct vda_context *vda_ctx = &ctx->vda_ctx;
     OSStatus status;
-    int ret;
+    int ret, i;
 
     ctx->h264_initialized = 0;
 
@@ -235,7 +235,7 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
     }
     ctx->h264_initialized = 1;
 
-    for (int i = 0; i < MAX_SPS_COUNT; i++) {
+    for (i = 0; i < MAX_SPS_COUNT; i++) {
         SPS *sps = ctx->h264ctx.sps_buffers[i];
         if (sps && (sps->bit_depth_luma != 8 ||
                 sps->chroma_format_idc == 2 ||
