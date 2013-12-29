@@ -103,6 +103,7 @@ MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, video_codec)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, audio_codec)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, subtitle_codec)
+MAKE_ACCESSORS(AVFormatContext, format, int, metadata_header_padding)
 
 static AVCodec *find_decoder(AVFormatContext *s, AVStream *st, enum AVCodecID codec_id)
 {

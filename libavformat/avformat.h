@@ -1348,6 +1348,13 @@ typedef struct AVFormatContext {
      * Demuxing: Set by user via av_format_set_subtitle_codec (NO direct access).
      */
     AVCodec *subtitle_codec;
+
+    /**
+     * Number of bytes to be written as padding in a metadata header.
+     * Demuxing: Unused.
+     * Muxing: Set by user via av_format_set_metadata_header_padding.
+     */
+    int metadata_header_padding;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);
@@ -1357,6 +1364,8 @@ AVCodec * av_format_get_audio_codec(const AVFormatContext *s);
 void      av_format_set_audio_codec(AVFormatContext *s, AVCodec *c);
 AVCodec * av_format_get_subtitle_codec(const AVFormatContext *s);
 void      av_format_set_subtitle_codec(AVFormatContext *s, AVCodec *c);
+int       av_format_get_metadata_header_padding(const AVFormatContext *s);
+void      av_format_set_metadata_header_padding(AVFormatContext *s, int c);
 
 /**
  * Returns the method used to set ctx->duration.
