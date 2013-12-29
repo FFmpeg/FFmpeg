@@ -71,6 +71,7 @@ static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
 static int flac_write_header(struct AVFormatContext *s)
 {
     int ret;
+    int padding = s->metadata_header_padding;
     AVCodecContext *codec = s->streams[0]->codec;
     FlacMuxerContext *c   = s->priv_data;
 
@@ -86,11 +87,17 @@ static int flac_write_header(struct AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
+    if (padding < 0)
+        padding = 8192;
+    /* The FLAC specification states that 24 bits are used to represent the
+     * size of a metadata block so we must clip this value to 2^24-1. */
+    padding = av_clip_c(padding, 0, 16777215);
+
     ret = ff_flac_write_header(s->pb, codec, 0);
     if (ret)
         return ret;
 
-    ret = flac_write_block_comment(s->pb, &s->metadata, 0,
+    ret = flac_write_block_comment(s->pb, &s->metadata, !padding,
                                    codec->flags & CODEC_FLAG_BITEXACT);
     if (ret)
         return ret;
@@ -99,7 +106,8 @@ static int flac_write_header(struct AVFormatContext *s)
      * every 10s.  So one might add padding to allow that later
      * but there seems to be no simple way to get the duration here.
      * So let's try the flac default of 8192 bytes */
-    flac_write_block_padding(s->pb, 8192, 1);
+    if (padding)
+        flac_write_block_padding(s->pb, padding, 1);
 
     return ret;
 }
