@@ -4359,6 +4359,7 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     elif ! check_func pthread_join && ! check_func pthread_create; then
         disable pthreads
     fi
+    check_code cc "pthread.h" "static pthread_mutex_t atomic_lock = PTHREAD_MUTEX_INITIALIZER" || disable pthreads
 fi
 
 for thread in $THREADS_LIST; do
