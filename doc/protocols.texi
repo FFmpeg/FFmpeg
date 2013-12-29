@@ -661,6 +661,8 @@ set to the the local RTP port value plus 1.
 
 @section rtsp
 
+Real-Time Streaming Protocol.
+
 RTSP is not technically a protocol handler in libavformat, it is a demuxer
 and muxer. The demuxer supports both normal RTSP (with data transferred
 over RTP; this is used by e.g. Apple and Microsoft) and Real-RTSP (with
@@ -675,14 +677,22 @@ The required syntax for a RTSP url is:
 rtsp://@var{hostname}[:@var{port}]/@var{path}
 @end example
 
-The following options (set on the @command{ffmpeg}/@command{ffplay} command
-line, or set in code via @code{AVOption}s or in @code{avformat_open_input}),
-are supported:
+Options can be set on the @command{ffmpeg}/@command{ffplay} command
+line, or set in code via @code{AVOption}s or in
+@code{avformat_open_input}.
 
-Flags for @code{rtsp_transport}:
+The following options are supported.
 
 @table @option
+@item initial_pause
+Do not start playing the stream immediately if set to 1. Default value
+is 0.
 
+@item rtsp_transport
+Set RTSP trasport protocols.
+
+It accepts the following values:
+@table @samp
 @item udp
 Use UDP as lower transport protocol.
 
@@ -700,15 +710,54 @@ passing proxies.
 
 Multiple lower transport protocols may be specified, in that case they are
 tried one at a time (if the setup of one fails, the next one is tried).
-For the muxer, only the @code{tcp} and @code{udp} options are supported.
+For the muxer, only the @samp{tcp} and @samp{udp} options are supported.
 
-Flags for @code{rtsp_flags}:
+@item rtsp_flags
+Set RTSP flags.
 
-@table @option
+The following values are accepted:
+@table @samp
 @item filter_src
 Accept packets only from negotiated peer address and port.
 @item listen
 Act as a server, listening for an incoming connection.
+@end table
+
+Default value is @samp{none}.
+
+@item allowed_media_types
+Set media types to accept from the server.
+
+The following flags are accepted:
+@table @samp
+@item video
+@item audio
+@item data
+@end table
+
+By default it accepts all media types.
+
+@item min_port
+Set minimum local UDP port. Default value is 5000.
+
+@item max_port
+Set maximum local UDP port. Default value is 65000.
+
+@item timeout
+Set maximum timeout (in seconds) to wait for incoming connections.
+
+A value of -1 mean infinite (default). This option implies the
+@option{rtsp_flags} set to @samp{listen}.
+
+@item reorder_queue_size
+Set number of packets to buffer for handling of reordered packets.
+
+@item stimeout
+Set socket TCP I/O timeout in micro seconds.
+
+@item user-agent
+Override User-Agent header. If not specified, it default to the
+libavformat identifier string.
 @end table
 
 When receiving data over UDP, the demuxer tries to reorder received packets
@@ -721,36 +770,36 @@ streams to display can be chosen with @code{-vst} @var{n} and
 @code{-ast} @var{n} for video and audio respectively, and can be switched
 on the fly by pressing @code{v} and @code{a}.
 
-Example command lines:
+@subsection Examples
 
-To watch a stream over UDP, with a max reordering delay of 0.5 seconds:
+The following examples all make use of the @command{ffplay} and
+@command{ffmpeg} tools.
 
+@itemize
+@item
+Watch a stream over UDP, with a max reordering delay of 0.5 seconds:
 @example
 ffplay -max_delay 500000 -rtsp_transport udp rtsp://server/video.mp4
 @end example
 
-To watch a stream tunneled over HTTP:
-
+@item
+Watch a stream tunneled over HTTP:
 @example
 ffplay -rtsp_transport http rtsp://server/video.mp4
 @end example
 
-To send a stream in realtime to a RTSP server, for others to watch:
-
+@item
+Send a stream in realtime to a RTSP server, for others to watch:
 @example
 ffmpeg -re -i @var{input} -f rtsp -muxdelay 0.1 rtsp://server/live.sdp
 @end example
 
-To receive a stream in realtime:
-
+@item
+Receive a stream in realtime:
 @example
 ffmpeg -rtsp_flags listen -i rtsp://ownaddress/live.sdp @var{output}
 @end example
-
-@table @option
-@item stimeout
-Socket IO timeout in micro seconds.
-@end table
+@end itemize
 
 @section sap
 
