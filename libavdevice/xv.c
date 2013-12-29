@@ -149,6 +149,10 @@ static int xv_write_header(AVFormatContext *s)
         ret = AVERROR_EXTERNAL;
         goto fail;
     }
+    if (!num_adaptors) {
+        av_log(s, AV_LOG_ERROR, "No X-Video adaptors present\n");
+        return AVERROR(ENODEV);
+    }
     xv->xv_port = ai[0].base_id;
     XvFreeAdaptorInfo(ai);
 
