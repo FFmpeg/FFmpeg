@@ -188,6 +188,12 @@ Cycle program.
 @item w
 Show audio waves.
 
+@item s
+Step to the next frame.
+
+Pause if the stream is not already paused, step to the next video
+frame, and pause.
+
 @item left/right
 Seek backward/forward 10 seconds.
 
