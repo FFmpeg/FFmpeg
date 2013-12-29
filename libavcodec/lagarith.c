@@ -369,6 +369,9 @@ static int lag_decode_zero_run_line(LagarithContext *l, uint8_t *dst,
     uint8_t mask2 = -(esc_count < 3);
     uint8_t *end = dst + (width - 2);
 
+    avpriv_request_sample(l->avctx, "zero_run_line");
+    return AVERROR_PATCHWELCOME;
+
 output_zeros:
     if (l->zeros_rem) {
         count = FFMIN(l->zeros_rem, width - i);
