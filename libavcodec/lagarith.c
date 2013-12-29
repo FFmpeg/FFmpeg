@@ -460,6 +460,8 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
                    length);
     } else if (esc_count < 8) {
         esc_count -= 4;
+        src ++;
+        src_size --;
         if (esc_count > 0) {
             /* Zero run coding only, no range coding. */
             for (i = 0; i < height; i++) {
