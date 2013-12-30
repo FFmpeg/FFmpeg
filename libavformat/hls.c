@@ -1528,19 +1528,12 @@ start:
             } else if (pls->cur_seq_no == minpls->cur_seq_no) {
                 int64_t dts     =    pls->pkt.dts;
                 int64_t mindts  = minpls->pkt.dts;
-                AVStream *st    =    pls->ctx->streams[pls->pkt.stream_index];
-                AVStream *minst = minpls->ctx->streams[minpls->pkt.stream_index];
                 AVRational tb    = get_timebase(   pls);
                 AVRational mintb = get_timebase(minpls);
 
                 if (dts == AV_NOPTS_VALUE) {
                     minplaylist = i;
                 } else if (mindts != AV_NOPTS_VALUE) {
-                    if (st->start_time    != AV_NOPTS_VALUE)
-                        dts    -= st->start_time;
-                    if (minst->start_time != AV_NOPTS_VALUE)
-                        mindts -= minst->start_time;
-
                     if (av_compare_ts(dts, tb,
                                       mindts, mintb) < 0)
                         minplaylist = i;
