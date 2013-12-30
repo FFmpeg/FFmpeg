@@ -54,7 +54,7 @@ static void arith2_normalise(ArithCoder *c)
     }
 }
 
-ARITH_GET_BIT(2)
+ARITH_GET_BIT(arith2)
 
 /* L. Stuiver and A. Moffat: "Piecewise Integer Mapping for Arithmetic Coding."
  * In Proc. 8th Data Compression Conference (DCC '98), pp. 3-12, Mar. 1998 */
@@ -127,7 +127,7 @@ static int arith2_get_prob(ArithCoder *c, int16_t *probs)
     return i;
 }
 
-ARITH_GET_MODEL_SYM(2)
+ARITH_GET_MODEL_SYM(arith2)
 
 static int arith2_get_consumed_bytes(ArithCoder *c)
 {

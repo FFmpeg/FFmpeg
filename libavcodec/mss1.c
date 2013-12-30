@@ -60,7 +60,7 @@ static void arith_normalise(ArithCoder *c)
     }
 }
 
-ARITH_GET_BIT()
+ARITH_GET_BIT(arith)
 
 static int arith_get_bits(ArithCoder *c, int bits)
 {
@@ -105,7 +105,7 @@ static int arith_get_prob(ArithCoder *c, int16_t *probs)
     return sym;
 }
 
-ARITH_GET_MODEL_SYM()
+ARITH_GET_MODEL_SYM(arith)
 
 static void arith_init(ArithCoder *c, GetBitContext *gb)
 {

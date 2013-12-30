@@ -99,8 +99,8 @@ int ff_mss12_decode_init(MSS12Context *c, int version,
                          SliceContext *sc1, SliceContext *sc2);
 int ff_mss12_decode_end(MSS12Context *ctx);
 
-#define ARITH_GET_BIT(VERSION)                                          \
-static int arith ## VERSION ## _get_bit(ArithCoder *c)                  \
+#define ARITH_GET_BIT(prefix)                                           \
+static int prefix ## _get_bit(ArithCoder *c)                            \
 {                                                                       \
     int range = c->high - c->low + 1;                                   \
     int bit   = 2 * c->value - c->low >= c->high;                       \
@@ -110,22 +110,22 @@ static int arith ## VERSION ## _get_bit(ArithCoder *c)                  \
     else                                                                \
         c->high = c->low + (range >> 1) - 1;                            \
                                                                         \
-    arith ## VERSION ## _normalise(c);                                  \
+    prefix ## _normalise(c);                                            \
                                                                         \
     return bit;                                                         \
 }
 
-#define ARITH_GET_MODEL_SYM(VERSION)                                    \
-static int arith ## VERSION ## _get_model_sym(ArithCoder *c, Model *m)  \
+#define ARITH_GET_MODEL_SYM(prefix)                                     \
+static int prefix ## _get_model_sym(ArithCoder *c, Model *m)            \
 {                                                                       \
     int idx, val;                                                       \
                                                                         \
-    idx = arith ## VERSION ## _get_prob(c, m->cum_prob);                \
+    idx = prefix ## _get_prob(c, m->cum_prob);                          \
                                                                         \
     val = m->idx2sym[idx];                                              \
     ff_mss12_model_update(m, idx);                                      \
                                                                         \
-    arith ## VERSION ## _normalise(c);                                  \
+    prefix ## _normalise(c);                                            \
                                                                         \
     return val;                                                         \
 }
