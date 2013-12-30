@@ -963,14 +963,33 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
     int ret, i;
     int just_opened = 0;
 
+restart:
     if (!v->needed)
         return AVERROR_EOF;
 
-restart:
     if (!v->input) {
+        int64_t reload_interval;
+
+        /* Check that the playlist is still needed before opening a new
+         * segment. */
+        if (v->ctx && v->ctx->nb_streams &&
+            v->parent->nb_streams >= v->stream_offset + v->ctx->nb_streams) {
+            v->needed = 0;
+            for (i = v->stream_offset; i < v->stream_offset + v->ctx->nb_streams;
+                i++) {
+                if (v->parent->streams[i]->discard < AVDISCARD_ALL)
+                    v->needed = 1;
+            }
+        }
+        if (!v->needed) {
+            av_log(v->parent, AV_LOG_INFO, "No longer receiving playlist %d\n",
+                v->index);
+            return AVERROR_EOF;
+        }
+
         /* If this is a live stream and the reload interval has elapsed since
          * the last playlist reload, reload the playlists now. */
-        int64_t reload_interval = default_reload_interval(v);
+        reload_interval = default_reload_interval(v);
 
 reload:
         if (!v->finished &&
@@ -1029,20 +1048,6 @@ reload:
     c->end_of_segment = 1;
     c->cur_seq_no = v->cur_seq_no;
 
-    if (v->ctx && v->ctx->nb_streams &&
-        v->parent->nb_streams >= v->stream_offset + v->ctx->nb_streams) {
-        v->needed = 0;
-        for (i = v->stream_offset; i < v->stream_offset + v->ctx->nb_streams;
-             i++) {
-            if (v->parent->streams[i]->discard < AVDISCARD_ALL)
-                v->needed = 1;
-        }
-    }
-    if (!v->needed) {
-        av_log(v->parent, AV_LOG_INFO, "No longer receiving playlist %d\n",
-               v->index);
-        return AVERROR_EOF;
-    }
     goto restart;
 }
 
