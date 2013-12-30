@@ -31,10 +31,19 @@ typedef struct MpegvideoEncDSPContext {
                         int16_t basis[64], int scale);
     void (*add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale);
 
+    int (*pix_sum)(uint8_t *pix, int line_size);
+    int (*pix_norm1)(uint8_t *pix, int line_size);
+
+    void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,
+                      int src_wrap, int width, int height);
 } MpegvideoEncDSPContext;
 
 void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
                              AVCodecContext *avctx);
+void ff_mpegvideoencdsp_init_arm(MpegvideoEncDSPContext *c,
+                                 AVCodecContext *avctx);
+void ff_mpegvideoencdsp_init_ppc(MpegvideoEncDSPContext *c,
+                                 AVCodecContext *avctx);
 void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
                                  AVCodecContext *avctx);
 

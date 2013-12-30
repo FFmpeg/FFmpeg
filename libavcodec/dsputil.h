@@ -58,9 +58,6 @@ typedef struct DSPContext {
                         int stride);
     int (*sum_abs_dctelem)(int16_t *block /* align 16 */);
 
-    int (*pix_sum)(uint8_t *pix, int line_size);
-    int (*pix_norm1)(uint8_t *pix, int line_size);
-
     me_cmp_func sad[6]; /* identical to pix_absAxA except additional void * */
     me_cmp_func sse[6];
     me_cmp_func hadamard8_diff[6];
@@ -92,9 +89,6 @@ typedef struct DSPContext {
 #define EDGE_WIDTH 16
 #define EDGE_TOP    1
 #define EDGE_BOTTOM 2
-
-    void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,
-                      int src_wrap, int width, int height);
 } DSPContext;
 
 void ff_dsputil_static_init(void);

@@ -21,6 +21,7 @@ OBJS-$(CONFIG_IDCTDSP)                 += arm/idctdsp_init_arm.o        \
                                           arm/simple_idct_arm.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += arm/mpegaudiodsp_init_arm.o
 OBJS-$(CONFIG_MPEGVIDEO)               += arm/mpegvideo_arm.o
+OBJS-$(CONFIG_MPEGVIDEOENC)            += arm/mpegvideoencdsp_init_arm.o
 OBJS-$(CONFIG_NEON_CLOBBER_TEST)       += arm/neontest.o
 OBJS-$(CONFIG_VIDEODSP)                += arm/videodsp_init_arm.o
 OBJS-$(CONFIG_VP3DSP)                  += arm/vp3dsp_init_arm.o
@@ -60,6 +61,7 @@ ARMV6-OBJS-$(CONFIG_IDCTDSP)           += arm/idctdsp_init_armv6.o      \
                                           arm/idctdsp_armv6.o           \
                                           arm/simple_idct_armv6.o
 ARMV6-OBJS-$(CONFIG_MPEGAUDIODSP)      += arm/mpegaudiodsp_fixed_armv6.o
+ARMV6-OBJS-$(CONFIG_MPEGVIDEOENC)      += arm/mpegvideoencdsp_armv6.o
 
 ARMV6-OBJS-$(CONFIG_MLP_DECODER)       += arm/mlpdsp_armv6.o
 ARMV6-OBJS-$(CONFIG_VP7_DECODER)       += arm/vp8_armv6.o               \

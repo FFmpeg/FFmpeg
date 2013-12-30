@@ -308,34 +308,6 @@ static int sad8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
     return s;
 }
 
-static int pix_norm1_altivec(uint8_t *pix, int line_size)
-{
-    int i, s = 0;
-    const vector unsigned int zero =
-        (const vector unsigned int) vec_splat_u32(0);
-    vector unsigned char perm = vec_lvsl(0, pix);
-    vector unsigned int sv = (vector unsigned int) vec_splat_u32(0);
-    vector signed int sum;
-
-    for (i = 0; i < 16; i++) {
-        /* Read the potentially unaligned pixels. */
-        vector unsigned char pixl = vec_ld(0,  pix);
-        vector unsigned char pixr = vec_ld(15, pix);
-        vector unsigned char pixv = vec_perm(pixl, pixr, perm);
-
-        /* Square the values, and add them to our sum. */
-        sv = vec_msum(pixv, pixv, sv);
-
-        pix += line_size;
-    }
-    /* Sum up the four partial sums, and put the result into s. */
-    sum = vec_sums((vector signed int) sv, (vector signed int) zero);
-    sum = vec_splat(sum, 3);
-    vec_ste(sum, 0, &s);
-
-    return s;
-}
-
 /* Sum of Squared Errors for an 8x8 block, AltiVec-enhanced.
  * It's the sad8_altivec code above w/ squaring added. */
 static int sse8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
@@ -426,35 +398,6 @@ static int sse16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
     sumsqr = vec_sums((vector signed int) sum, (vector signed int) zero);
     sumsqr = vec_splat(sumsqr, 3);
     vec_ste(sumsqr, 0, &s);
-
-    return s;
-}
-
-static int pix_sum_altivec(uint8_t *pix, int line_size)
-{
-    int i, s;
-    const vector unsigned int zero =
-        (const vector unsigned int) vec_splat_u32(0);
-    vector unsigned char perm = vec_lvsl(0, pix);
-    vector unsigned int sad = (vector unsigned int) vec_splat_u32(0);
-    vector signed int sumdiffs;
-
-    for (i = 0; i < 16; i++) {
-        /* Read the potentially unaligned 16 pixels into t1. */
-        vector unsigned char pixl = vec_ld(0,  pix);
-        vector unsigned char pixr = vec_ld(15, pix);
-        vector unsigned char t1   = vec_perm(pixl, pixr, perm);
-
-        /* Add each 4 pixel group together and put 4 results into sad. */
-        sad = vec_sum4s(t1, sad);
-
-        pix += line_size;
-    }
-
-    /* Sum up the four partial sums, and put the result into s. */
-    sumdiffs = vec_sums((vector signed int) sad, (vector signed int) zero);
-    sumdiffs = vec_splat(sumdiffs, 3);
-    vec_ste(sumdiffs, 0, &s);
 
     return s;
 }
@@ -910,9 +853,6 @@ av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx,
     c->sad[1] = sad8_altivec;
     c->sse[0] = sse16_altivec;
     c->sse[1] = sse8_altivec;
-
-    c->pix_norm1 = pix_norm1_altivec;
-    c->pix_sum   = pix_sum_altivec;
 
     c->diff_pixels = diff_pixels_altivec;
 

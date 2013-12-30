@@ -43,9 +43,6 @@ int ff_pix_abs8_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
 int ff_sse16_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                    int line_size, int h);
 
-int ff_pix_norm1_armv6(uint8_t *pix, int line_size);
-int ff_pix_sum_armv6(uint8_t *pix, int line_size);
-
 av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx,
                                    unsigned high_bit_depth)
 {
@@ -63,7 +60,4 @@ av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx,
     c->sad[1] = ff_pix_abs8_armv6;
 
     c->sse[0] = ff_sse16_armv6;
-
-    c->pix_norm1 = ff_pix_norm1_armv6;
-    c->pix_sum   = ff_pix_sum_armv6;
 }

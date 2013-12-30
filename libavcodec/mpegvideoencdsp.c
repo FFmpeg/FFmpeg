@@ -21,7 +21,10 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "dsputil.h"
+#include "imgconvert.h"
 #include "mpegvideoencdsp.h"
 
 static int try_8x8basis_c(int16_t rem[64], int16_t weight[64],
@@ -53,12 +56,92 @@ static void add_8x8basis_c(int16_t rem[64], int16_t basis[64], int scale)
                   (BASIS_SHIFT - RECON_SHIFT);
 }
 
+static int pix_sum_c(uint8_t *pix, int line_size)
+{
+    int s = 0, i, j;
+
+    for (i = 0; i < 16; i++) {
+        for (j = 0; j < 16; j += 8) {
+            s   += pix[0];
+            s   += pix[1];
+            s   += pix[2];
+            s   += pix[3];
+            s   += pix[4];
+            s   += pix[5];
+            s   += pix[6];
+            s   += pix[7];
+            pix += 8;
+        }
+        pix += line_size - 16;
+    }
+    return s;
+}
+
+static int pix_norm1_c(uint8_t *pix, int line_size)
+{
+    int s = 0, i, j;
+    uint32_t *sq = ff_square_tab + 256;
+
+    for (i = 0; i < 16; i++) {
+        for (j = 0; j < 16; j += 8) {
+#if 0
+            s += sq[pix[0]];
+            s += sq[pix[1]];
+            s += sq[pix[2]];
+            s += sq[pix[3]];
+            s += sq[pix[4]];
+            s += sq[pix[5]];
+            s += sq[pix[6]];
+            s += sq[pix[7]];
+#else
+#if HAVE_FAST_64BIT
+            register uint64_t x = *(uint64_t *) pix;
+            s += sq[x         & 0xff];
+            s += sq[(x >>  8) & 0xff];
+            s += sq[(x >> 16) & 0xff];
+            s += sq[(x >> 24) & 0xff];
+            s += sq[(x >> 32) & 0xff];
+            s += sq[(x >> 40) & 0xff];
+            s += sq[(x >> 48) & 0xff];
+            s += sq[(x >> 56) & 0xff];
+#else
+            register uint32_t x = *(uint32_t *) pix;
+            s += sq[x         & 0xff];
+            s += sq[(x >>  8) & 0xff];
+            s += sq[(x >> 16) & 0xff];
+            s += sq[(x >> 24) & 0xff];
+            x  = *(uint32_t *) (pix + 4);
+            s += sq[x         & 0xff];
+            s += sq[(x >>  8) & 0xff];
+            s += sq[(x >> 16) & 0xff];
+            s += sq[(x >> 24) & 0xff];
+#endif
+#endif
+            pix += 8;
+        }
+        pix += line_size - 16;
+    }
+    return s;
+}
+
 av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
                                      AVCodecContext *avctx)
 {
     c->try_8x8basis = try_8x8basis_c;
     c->add_8x8basis = add_8x8basis_c;
 
+    c->shrink[0] = av_image_copy_plane;
+    c->shrink[1] = ff_shrink22;
+    c->shrink[2] = ff_shrink44;
+    c->shrink[3] = ff_shrink88;
+
+    c->pix_sum   = pix_sum_c;
+    c->pix_norm1 = pix_norm1_c;
+
+    if (ARCH_ARM)
+        ff_mpegvideoencdsp_init_arm(c, avctx);
+    if (ARCH_PPC)
+        ff_mpegvideoencdsp_init_ppc(c, avctx);
     if (ARCH_X86)
         ff_mpegvideoencdsp_init_x86(c, avctx);
 }

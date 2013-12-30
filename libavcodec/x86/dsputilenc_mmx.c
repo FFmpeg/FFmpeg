@@ -35,8 +35,6 @@ void ff_get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size);
 void ff_get_pixels_sse2(int16_t *block, const uint8_t *pixels, int line_size);
 void ff_diff_pixels_mmx(int16_t *block, const uint8_t *s1, const uint8_t *s2,
                         int stride);
-int ff_pix_sum16_mmx(uint8_t *pix, int line_size);
-int ff_pix_norm1_mmx(uint8_t *pix, int line_size);
 
 #if HAVE_INLINE_ASM
 
@@ -831,8 +829,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
         if (!high_bit_depth)
             c->get_pixels = ff_get_pixels_mmx;
         c->diff_pixels = ff_diff_pixels_mmx;
-        c->pix_sum     = ff_pix_sum16_mmx;
-        c->pix_norm1   = ff_pix_norm1_mmx;
     }
 
     if (EXTERNAL_SSE2(cpu_flags))

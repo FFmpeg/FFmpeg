@@ -92,6 +92,7 @@ YASM-OBJS-$(CONFIG_HPELDSP)            += x86/fpel.o                    \
                                           x86/hpeldsp.o
 YASM-OBJS-$(CONFIG_HUFFYUVDSP)         += x86/huffyuvdsp.o
 YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36.o
+YASM-OBJS-$(CONFIG_MPEGVIDEOENC)       += x86/mpegvideoencdsp.o
 YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
                                           x86/fpel.o                    \
                                           x86/qpel.o
