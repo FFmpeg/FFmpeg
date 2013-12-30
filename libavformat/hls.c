@@ -167,6 +167,7 @@ typedef struct HLSContext {
     int end_of_segment;
     int first_packet;
     int64_t first_timestamp;
+    int64_t cur_timestamp;
     AVIOInterruptCB *interrupt_callback;
     char *user_agent;                    ///< holds HTTP user agent set as an AVOption to the HTTP protocol context
     char *cookies;                       ///< holds HTTP cookie values set in either the initial response or as an AVOption to the HTTP protocol context
@@ -948,6 +949,13 @@ cleanup:
     return ret;
 }
 
+static int64_t default_reload_interval(struct playlist *pls)
+{
+    return pls->n_segments > 0 ?
+                          pls->segments[pls->n_segments - 1]->duration :
+                          pls->target_duration;
+}
+
 static int read_data(void *opaque, uint8_t *buf, int buf_size)
 {
     struct playlist *v = opaque;
@@ -962,9 +970,7 @@ restart:
     if (!v->input) {
         /* If this is a live stream and the reload interval has elapsed since
          * the last playlist reload, reload the playlists now. */
-        int64_t reload_interval = v->n_segments > 0 ?
-                                  v->segments[v->n_segments - 1]->duration :
-                                  v->target_duration;
+        int64_t reload_interval = default_reload_interval(v);
 
 reload:
         if (!v->finished &&
@@ -1141,6 +1147,43 @@ static int find_timestamp_in_playlist(HLSContext *c, struct playlist *pls,
     return 0;
 }
 
+static int select_cur_seq_no(HLSContext *c, struct playlist *pls)
+{
+    int seq_no;
+
+    if (!pls->finished && !c->first_packet &&
+        av_gettime() - pls->last_load_time >= default_reload_interval(pls))
+        /* reload the playlist since it was suspended */
+        parse_playlist(c, pls->url, pls, NULL);
+
+    /* If playback is already in progress (we are just selecting a new
+     * playlist) and this is a complete file, find the matching segment
+     * by counting durations. */
+    if (pls->finished && c->cur_timestamp != AV_NOPTS_VALUE) {
+        find_timestamp_in_playlist(c, pls, c->cur_timestamp, &seq_no);
+        return seq_no;
+    }
+
+    if (!pls->finished) {
+        if (!c->first_packet && /* we are doing a segment selection during playback */
+            c->cur_seq_no >= pls->start_seq_no &&
+            c->cur_seq_no < pls->start_seq_no + pls->n_segments)
+            /* While spec 3.4.3 says that we cannot assume anything about the
+             * content at the same sequence number on different playlists,
+             * in practice this seems to work and doing it otherwise would
+             * require us to download a segment to inspect its timestamps. */
+            return c->cur_seq_no;
+
+        /* If this is a live stream with more than 3 segments, start at the
+         * third last segment. */
+        if (pls->n_segments > 3)
+            return pls->start_seq_no + pls->n_segments - 3;
+    }
+
+    /* Otherwise just start on the first segment. */
+    return pls->start_seq_no;
+}
+
 static int hls_read_header(AVFormatContext *s)
 {
     URLContext *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb->opaque;
@@ -1148,6 +1191,10 @@ static int hls_read_header(AVFormatContext *s)
     int ret = 0, i, j, stream_offset = 0;
 
     c->interrupt_callback = &s->interrupt_callback;
+
+    c->first_packet = 1;
+    c->first_timestamp = AV_NOPTS_VALUE;
+    c->cur_timestamp = AV_NOPTS_VALUE;
 
     // if the URL context is good, read important options we must broker later
     if (u && u->prot->priv_data_class) {
@@ -1231,12 +1278,7 @@ static int hls_read_header(AVFormatContext *s)
         pls->index  = i;
         pls->needed = 1;
         pls->parent = s;
-
-        /* If this is a live stream with more than 3 segments, start at the
-         * third last segment. */
-        pls->cur_seq_no = pls->start_seq_no;
-        if (!pls->finished && pls->n_segments > 3)
-            pls->cur_seq_no = pls->start_seq_no + pls->n_segments - 3;
+        pls->cur_seq_no = select_cur_seq_no(c, pls);
 
         pls->read_buffer = av_malloc(INITIAL_BUFFER_SIZE);
         ffio_init_context(&pls->pb, pls->read_buffer, INITIAL_BUFFER_SIZE, 0, pls,
@@ -1330,9 +1372,6 @@ static int hls_read_header(AVFormatContext *s)
         }
     }
 
-    c->first_packet = 1;
-    c->first_timestamp = AV_NOPTS_VALUE;
-
     return 0;
 fail:
     free_playlist_list(c);
@@ -1361,9 +1400,14 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
         if (pls->cur_needed && !pls->needed) {
             pls->needed = 1;
             changed = 1;
-            pls->cur_seq_no = c->cur_seq_no;
+            pls->cur_seq_no = select_cur_seq_no(c, pls);
             pls->pb.eof_reached = 0;
-            av_log(s, AV_LOG_INFO, "Now receiving playlist %d\n", i);
+            if (c->cur_timestamp != AV_NOPTS_VALUE) {
+                /* catch up */
+                pls->seek_timestamp = c->cur_timestamp;
+                pls->seek_flags = AVSEEK_FLAG_ANY;
+            }
+            av_log(s, AV_LOG_INFO, "Now receiving playlist %d, segment %d\n", i, pls->cur_seq_no);
         } else if (first && !pls->cur_needed && pls->needed) {
             if (pls->input)
                 ffurl_close(pls->input);
@@ -1505,9 +1549,16 @@ start:
     }
     /* If we got a packet, return it */
     if (minplaylist >= 0) {
-        *pkt = c->playlists[minplaylist]->pkt;
-        pkt->stream_index += c->playlists[minplaylist]->stream_offset;
+        struct playlist *pls = c->playlists[minplaylist];
+        *pkt = pls->pkt;
+        pkt->stream_index += pls->stream_offset;
         reset_packet(&c->playlists[minplaylist]->pkt);
+
+        if (pkt->dts != AV_NOPTS_VALUE)
+            c->cur_timestamp = av_rescale_q(pkt->dts,
+                                            pls->ctx->streams[pls->pkt.stream_index]->time_base,
+                                            AV_TIME_BASE_Q);
+
         return 0;
     }
     return AVERROR_EOF;
@@ -1580,6 +1631,8 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         if (valid_for != i)
             find_timestamp_in_playlist(c, pls, seek_timestamp, &pls->cur_seq_no);
     }
+
+    c->cur_timestamp = seek_timestamp;
 
     return 0;
 }
