@@ -248,9 +248,12 @@ static void lag_pred_line(LagarithContext *l, uint8_t *buf,
     int L, TL;
 
     if (!line) {
+        int i, align_width = (width - 1) & ~31;
         /* Left prediction only for first line */
         L = l->dsp.add_hfyu_left_prediction(buf + 1, buf + 1,
-                                            width - 1, buf[0]);
+                                            align_width, buf[0]);
+        for (i = align_width + 1; i < width; i++)
+            buf[i] += buf[i - 1];
     } else {
         /* Left pixel is actually prev_row[width] */
         L = buf[width - stride - 1];
@@ -276,11 +279,18 @@ static void lag_pred_line_yuy2(LagarithContext *l, uint8_t *buf,
     int L, TL;
 
     if (!line) {
+        int i, align_width;
         if (is_luma) {
             buf++;
             width--;
         }
-        l->dsp.add_hfyu_left_prediction(buf + 1, buf + 1, width - 1, buf[0]);
+
+        align_width = (width - 1) & ~31;
+        l->dsp.add_hfyu_left_prediction(buf + 1, buf + 1, align_width, buf[0]);
+
+        for (i = align_width + 1; i < width; i++)
+            buf[i] += buf[i - 1];
+
         return;
     }
     if (line == 1) {
@@ -293,14 +303,17 @@ static void lag_pred_line_yuy2(LagarithContext *l, uint8_t *buf,
             L += buf[i];
             buf[i] = L;
         }
-        buf   += HEAD;
-        width -= HEAD;
+        for (; i < width; i++) {
+            L      = mid_pred(L & 0xFF, buf[i - stride], (L + buf[i - stride] - TL) & 0xFF) + buf[i];
+            TL     = buf[i - stride];
+            buf[i] = L;
+        }
     } else {
         TL = buf[width - (2 * stride) - 1];
         L  = buf[width - stride - 1];
+        l->dsp.add_hfyu_median_prediction(buf, buf - stride, buf, width,
+                                          &L, &TL);
     }
-    l->dsp.add_hfyu_median_prediction(buf, buf - stride, buf, width,
-                                      &L, &TL);
 }
 
 static int lag_decode_line(LagarithContext *l, lag_rac *rac,
