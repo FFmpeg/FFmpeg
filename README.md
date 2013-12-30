@@ -23,4 +23,4 @@ FFmpeg for Vitamio
 3) iOS build
 -----------
 
-		./build_ios.sh
+    ./build_ios.sh
