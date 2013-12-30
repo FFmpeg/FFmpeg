@@ -1458,6 +1458,15 @@ static AVRational get_timebase(struct playlist *pls)
     return pls->ctx->streams[pls->pkt.stream_index]->time_base;
 }
 
+static int compare_ts_with_wrapdetect(int64_t ts_a, struct playlist *pls_a,
+                                      int64_t ts_b, struct playlist *pls_b)
+{
+    int64_t scaled_ts_a = av_rescale_q(ts_a, get_timebase(pls_a), MPEG_TIME_BASE_Q);
+    int64_t scaled_ts_b = av_rescale_q(ts_b, get_timebase(pls_b), MPEG_TIME_BASE_Q);
+
+    return av_compare_mod(scaled_ts_a, scaled_ts_b, 1LL << 33);
+}
+
 static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     HLSContext *c = s->priv_data;
@@ -1518,26 +1527,19 @@ start:
                 reset_packet(&pls->pkt);
             }
         }
-        /* Check if this stream still is on an earlier segment number, or
-         * has the packet with the lowest dts */
+        /* Check if this stream has the packet with the lowest dts */
         if (pls->pkt.data) {
             struct playlist *minpls = minplaylist < 0 ?
                                      NULL : c->playlists[minplaylist];
-            if (minplaylist < 0 || pls->cur_seq_no < minpls->cur_seq_no) {
+            if (minplaylist < 0) {
                 minplaylist = i;
-            } else if (pls->cur_seq_no == minpls->cur_seq_no) {
+            } else {
                 int64_t dts     =    pls->pkt.dts;
                 int64_t mindts  = minpls->pkt.dts;
-                AVRational tb    = get_timebase(   pls);
-                AVRational mintb = get_timebase(minpls);
 
-                if (dts == AV_NOPTS_VALUE) {
+                if (dts == AV_NOPTS_VALUE ||
+                    (mindts != AV_NOPTS_VALUE && compare_ts_with_wrapdetect(dts, pls, mindts, minpls) < 0))
                     minplaylist = i;
-                } else if (mindts != AV_NOPTS_VALUE) {
-                    if (av_compare_ts(dts, tb,
-                                      mindts, mintb) < 0)
-                        minplaylist = i;
-                }
             }
         }
     }
