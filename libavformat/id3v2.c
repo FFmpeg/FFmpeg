@@ -570,6 +570,51 @@ end:
     av_free(dst);
 }
 
+static void free_priv(void *obj)
+{
+    ID3v2ExtraMetaPRIV *priv = obj;
+    av_freep(&priv->owner);
+    av_freep(&priv->data);
+    av_freep(&priv);
+}
+
+static void read_priv(AVFormatContext *s, AVIOContext *pb, int taglen,
+                      char *tag, ID3v2ExtraMeta **extra_meta, int isv34)
+{
+    ID3v2ExtraMeta *meta;
+    ID3v2ExtraMetaPRIV *priv;
+
+    meta = av_mallocz(sizeof(*meta));
+    priv = av_mallocz(sizeof(*priv));
+
+    if (!meta || !priv)
+        goto fail;
+
+    if (decode_str(s, pb, ID3v2_ENCODING_ISO8859, &priv->owner, &taglen) < 0)
+        goto fail;
+
+    priv->data = av_malloc(taglen);
+    if (!priv->data)
+        goto fail;
+
+    priv->datasize = taglen;
+
+    if (avio_read(pb, priv->data, priv->datasize) != priv->datasize)
+        goto fail;
+
+    meta->tag   = "PRIV";
+    meta->data  = priv;
+    meta->next  = *extra_meta;
+    *extra_meta = meta;
+
+    return;
+
+fail:
+    if (priv)
+        free_priv(priv);
+    av_freep(&meta);
+}
+
 typedef struct ID3v2EMFunc {
     const char *tag3;
     const char *tag4;
@@ -582,6 +627,7 @@ static const ID3v2EMFunc id3v2_extra_meta_funcs[] = {
     { "GEO", "GEOB", read_geobtag, free_geobtag },
     { "PIC", "APIC", read_apic,    free_apic    },
     { "CHAP","CHAP", read_chapter, NULL         },
+    { "PRIV","PRIV", read_priv,    free_priv    },
     { NULL }
 };
 

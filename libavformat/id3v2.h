@@ -73,6 +73,12 @@ typedef struct ID3v2ExtraMetaAPIC {
     enum AVCodecID id;
 } ID3v2ExtraMetaAPIC;
 
+typedef struct ID3v2ExtraMetaPRIV {
+    uint8_t *owner;
+    uint8_t *data;
+    uint32_t datasize;
+} ID3v2ExtraMetaPRIV;
+
 /**
  * Detect ID3v2 Header.
  * @param buf   must be ID3v2_HEADER_SIZE byte long
