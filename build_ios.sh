@@ -38,7 +38,7 @@ function die()
 	exit 1; exit 1; exit 1; exit 1;
 }
 
-function doConfigureSina()
+function doConfigureOnline()
 {
 	./configure \
 		--prefix=${DIST} \
@@ -93,8 +93,8 @@ function doConfigureSina()
 		--sysroot=${SDKRoot} \
 		--target-os=darwin \
 		--cc="${CC}" \
-		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -pipe -I${SSLINCLUDE} ${EXCFLAGS}" \
-		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS} ${EXCLDFLAGS}" \
+		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -pipe -I${SSLINCLUDE} ${EXCFLAGS} -miphoneos-version-min=${SDKVERSIONMIN}" \
+		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS} ${EXCLDFLAGS} -miphoneos-version-min=${SDKVERSIONMIN}" \
 		${ADVANCED} \
 		--enable-pic \
 		--enable-thumb \
@@ -110,8 +110,8 @@ function doConfigureSina()
 function doConfigureAll()
 {
 	# *NEED* gas-preprocessor.pl file in $PATH , use for asm compile.
-	# wget https://raw.github.com/libav/gas-preprocessor/master/gas-preprocessor.pl
-	# wget https://raw.github.com/yuvi/gas-preprocessor/master/gas-preprocessor.pl
+	# wget --no-check-certificate https://raw.github.com/libav/gas-preprocessor/master/gas-preprocessor.pl
+	# wget --no-check-certificate https://raw.github.com/yuvi/gas-preprocessor/master/gas-preprocessor.pl
 	./configure \
 		--prefix=${DIST} \
 		\
@@ -152,8 +152,8 @@ function doConfigureAll()
 		--sysroot=${SDKRoot} \
 		--target-os=darwin \
 		--cc="${CC}" \
-		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -pipe -I${SSLINCLUDE} ${EXCFLAGS}" \
-		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS} ${EXCLDFLAGS}" \
+		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -pipe -I${SSLINCLUDE} ${EXCFLAGS} -miphoneos-version-min=${SDKVERSIONMIN}" \
+		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS} ${EXCLDFLAGS} -miphoneos-version-min=${SDKVERSIONMIN}" \
 		${ADVANCED} \
 		--enable-pic \
 		--enable-thumb \
@@ -170,8 +170,8 @@ function doConfigureAll()
 function doConfigure()
 {
 	ver="$1";
-	if [[ $ver == "sina" ]]; then
-		doConfigureSina
+	if [[ $ver == "online" ]]; then
+		doConfigureOnline
 	else
 		doConfigureAll
 	fi
@@ -182,6 +182,7 @@ function doConfigure()
 
 function doMake()
 {
+	rm -f ./-.d
 	(make clean && make) || die
 	## MMS stream failed by optimizations flag "-O1/-O2/-O3", so ...
 	sed -e '/^CFLAGS=/s/ -O[123s]/ -O0/' config.mak > config.O0.mak
@@ -191,34 +192,32 @@ function doMake()
 }
 
 
-build_date=`date "+%Y%m%dT%H%M%S"`
-#build_versions="release debug sina"
-build_versions="release sina"
-build_archs="armv7 armv7s i386"
-#build_versions="release"
-#build_date=built
-#build_archs="armv7"
 path_old=$PATH
+build_date=`date "+%Y%m%dT%H%M%S"`
+#build_versions="release debug online"
+build_versions="online release"
+build_archs="arm64 x86_64 armv7 armv7s i386"
 
 for iver in $build_versions; do
 	case $iver in
-		release|sina)	export DEBUGS="--disable-debug --disable-optimizations --optflags=-O3" ;; # -O3 failed to open mms stream!
+		release|online)	export DEBUGS="--disable-debug --disable-optimizations --optflags=-O3" ;; # -O3 failed to open mms stream!
 		debug)			export DEBUGS="--enable-debug=3 --disable-optimizations" ;;
 	esac
 
 	lipo_archs=
 	for iarch in $build_archs; do
-		[[ $iver == "debug" && $iarch == "armv7s" ]] && continue
+		[[ $iver == debug && ($iarch == armv7s || $iarch == x86_64) ]] && continue
 		export ARCH=$iarch
+		export SDKVERSIONMIN=4.3
 		export DIST=${DEST}/$build_date/$iver/$iarch && mkdir -p ${DIST}
+		export PATH=${DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin:$path_old
+		export CC="${DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang"
 		libdir=${DIST}/lib && mkdir -p $libdir
 		confInfo=${DIST}/configure_out.log
 		makeInfo=${DIST}/make_out.log
 
 		case $iarch in
 			arm*)
-				export PATH=${DEVRootReal}/usr/bin:$path_old
-				export CC="$CCACHE ${DEVRootReal}/usr/bin/gcc"
 				export SDKRoot="$SDKRootReal"
 				export OPTZFLAGS="--enable-asm --disable-armv5te --disable-armv6 --disable-armv6t2"
 				case $iarch in
@@ -227,18 +226,22 @@ for iver in $build_versions; do
 						export ADVANCED="--arch=arm --cpu=cortex-a8"
 						;;
 					armv7s)
-						export EXCFLAGS="-mfpu=neon-fp16 -mfloat-abi=hard"
+						export EXCFLAGS="-mfpu=neon -mfloat-abi=hard"
 						export ADVANCED="--arch=arm --cpu=cortex-a9"
+						;;
+					arm64)
+						export OPTZFLAGS="--disable-asm"
+						export EXCFLAGS="-mfpu=vfpv4 -mfloat-abi=hard"
+						export ADVANCED="--arch=arm"
+						export SDKVERSIONMIN=7.0.0
 						;;
 				esac
 				;;
-			i386)
-				export PATH=${DEVRootSimulator}/usr/bin:$path_old
-				export CC="$CCACHE ${DEVRootSimulator}/usr/bin/gcc"
+			i386|x86_64)
 				export SDKRoot="$SDKRootSimulator"
 				export OPTZFLAGS="--disable-asm"
 				export EXCFLAGS=
-				export ADVANCED="--arch=i386 --cpu=i386"
+				export ADVANCED="--arch=$iarch --cpu=$iarch"
 				;;
 		esac
 
