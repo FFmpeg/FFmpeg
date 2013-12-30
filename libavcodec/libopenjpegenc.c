@@ -502,6 +502,8 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_GBRP14:
     case AV_PIX_FMT_GBRP16:
         gbrframe = av_frame_alloc();
+        if (!gbrframe)
+            return AVERROR(ENOMEM);
         av_frame_ref(gbrframe, frame);
         gbrframe->data[0] = frame->data[2]; // swap to be rgb
         gbrframe->data[1] = frame->data[0];

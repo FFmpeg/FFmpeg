@@ -1721,6 +1721,8 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
 
     if (samples) {
         frame = av_frame_alloc();
+        if (!frame)
+            return AVERROR(ENOMEM);
 
         if (avctx->frame_size) {
             frame->nb_samples = avctx->frame_size;
@@ -2158,6 +2160,8 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
     AVFrame *frame = av_frame_alloc();
     int ret, got_frame = 0;
 
+    if (!frame)
+        return AVERROR(ENOMEM);
     if (avctx->get_buffer != avcodec_default_get_buffer) {
         av_log(avctx, AV_LOG_ERROR, "Custom get_buffer() for use with"
                                     "avcodec_decode_audio3() detected. Overriding with avcodec_default_get_buffer\n");

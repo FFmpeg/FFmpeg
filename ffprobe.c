@@ -1887,6 +1887,10 @@ static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
     }
 
     frame = av_frame_alloc();
+    if (!frame) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
     while (!av_read_frame(fmt_ctx, &pkt)) {
         if (selected_streams[pkt.stream_index]) {
             AVRational tb = fmt_ctx->streams[pkt.stream_index]->time_base;
