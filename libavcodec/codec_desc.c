@@ -2622,6 +2622,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "dvd_nav_packet",
         .long_name = NULL_IF_CONFIG_SMALL("DVD Nav packet"),
     },
+    {
+        .id        = AV_CODEC_ID_TIMED_ID3,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "timed_id3",
+        .long_name = NULL_IF_CONFIG_SMALL("timed ID3 metadata"),
+    },
 
 };
 

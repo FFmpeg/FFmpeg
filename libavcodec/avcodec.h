@@ -513,6 +513,7 @@ enum AVCodecID {
     AV_CODEC_ID_OTF        = MKBETAG( 0 ,'O','T','F'),
     AV_CODEC_ID_SMPTE_KLV  = MKBETAG('K','L','V','A'),
     AV_CODEC_ID_DVD_NAV    = MKBETAG('D','N','A','V'),
+    AV_CODEC_ID_TIMED_ID3  = MKBETAG('T','I','D','3'),
 
 
     AV_CODEC_ID_PROBE = 0x19000, ///< codec_id is not known (like AV_CODEC_ID_NONE) but lavf should attempt to identify it

@@ -662,6 +662,7 @@ static const StreamType REGD_types[] = {
 
 static const StreamType METADATA_types[] = {
     { MKTAG('K','L','V','A'), AVMEDIA_TYPE_DATA, AV_CODEC_ID_SMPTE_KLV },
+    { MKTAG('I','D','3',' '), AVMEDIA_TYPE_DATA, AV_CODEC_ID_TIMED_ID3 },
     { 0 },
 };
 
