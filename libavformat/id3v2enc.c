@@ -29,8 +29,6 @@
 #include "avio_internal.h"
 #include "id3v2.h"
 
-#define PADDING_BYTES 10
-
 static void id3v2_put_size(AVIOContext *pb, int size)
 {
     avio_w8(pb, size >> 21 & 0x7f);
@@ -324,15 +322,24 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
     return 0;
 }
 
-void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb)
+void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb,
+                     int padding_bytes)
 {
     int64_t cur_pos;
+
+    if (padding_bytes < 0)
+        padding_bytes = 10;
+
+    /* The ID3v2.3 specification states that 28 bits are used to represent the
+     * size of the whole tag.  Therefore the current size of the tag needs to be
+     * subtracted from the upper limit of 2^28-1 to clip the value correctly. */
+    padding_bytes = av_clip(padding_bytes, 10, 268435455 - id3->len);
 
     /* adding an arbitrary amount of padding bytes at the end of the
      * ID3 metadata fixes cover art display for some software (iTunes,
      * Traktor, Serato, Torq) */
-    ffio_fill(pb, 0, PADDING_BYTES);
-    id3->len += PADDING_BYTES;
+    ffio_fill(pb, 0, padding_bytes);
+    id3->len += padding_bytes;
 
     cur_pos = avio_tell(pb);
     avio_seek(pb, id3->size_pos, SEEK_SET);
@@ -349,7 +356,7 @@ int ff_id3v2_write_simple(struct AVFormatContext *s, int id3v2_version,
     ff_id3v2_start(&id3, s->pb, id3v2_version, magic);
     if ((ret = ff_id3v2_write_metadata(s, &id3)) < 0)
         return ret;
-    ff_id3v2_finish(&id3, s->pb);
+    ff_id3v2_finish(&id3, s->pb, s->metadata_header_padding);
 
     return 0;
 }

@@ -304,7 +304,7 @@ static int mp3_queue_flush(AVFormatContext *s)
     AVPacketList *pktl;
     int ret = 0, write = 1;
 
-    ff_id3v2_finish(&mp3->id3, s->pb);
+    ff_id3v2_finish(&mp3->id3, s->pb, s->metadata_header_padding);
     mp3_write_xing(s);
 
     while ((pktl = mp3->queue)) {
@@ -513,7 +513,7 @@ static int mp3_write_header(struct AVFormatContext *s)
 
     if (!mp3->pics_to_write) {
         if (mp3->id3v2_version)
-            ff_id3v2_finish(&mp3->id3, s->pb);
+            ff_id3v2_finish(&mp3->id3, s->pb, s->metadata_header_padding);
         mp3_write_xing(s);
     }
 

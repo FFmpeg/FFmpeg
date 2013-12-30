@@ -66,7 +66,7 @@ static int put_id3v2_tags(AVFormatContext *s, AIFFOutputContext *aiff)
             return ret;
         pict_list = pict_list->next;
     }
-    ff_id3v2_finish(&id3v2, pb);
+    ff_id3v2_finish(&id3v2, pb, s->metadata_header_padding);
 
     end = avio_tell(pb);
     size = end - pos;

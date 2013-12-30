@@ -134,7 +134,7 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
 /**
  * Finalize an opened ID3v2 tag.
  */
-void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb);
+void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb, int padding_bytes);
 
 /**
  * Write an ID3v2 tag containing all global metadata from s.
