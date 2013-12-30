@@ -370,7 +370,8 @@ static int lag_decode_zero_run_line(LagarithContext *l, uint8_t *dst,
     uint8_t *end = dst + (width - 2);
 
     avpriv_request_sample(l->avctx, "zero_run_line");
-    return AVERROR_PATCHWELCOME;
+
+    memset(dst, 0, width);
 
 output_zeros:
     if (l->zeros_rem) {
