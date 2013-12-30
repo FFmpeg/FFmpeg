@@ -427,6 +427,7 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
     GetBitContext gb;
     lag_rac rac;
     const uint8_t *src_end = src + src_size;
+    int ret;
 
     rac.avctx = l->avctx;
     l->zeros = 0;
@@ -444,7 +445,8 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
             offset += 4;
         }
 
-        init_get_bits8(&gb, src + offset, src_size - offset);
+        if ((ret = init_get_bits8(&gb, src + offset, src_size - offset)) < 0)
+            return ret;
 
         if (lag_read_prob_header(&rac, &gb) < 0)
             return -1;
