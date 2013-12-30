@@ -1,5 +1,11 @@
 #!/bin/bash
 
+echo "  _    __   _    __                           _             "
+echo " | |  / /  (_)  / /_   ____ _   ____ ___     (_)  ___       "
+echo " | | / /  / /  / __/  / __ \/  / __ __  \   / /  / __ \     "
+echo " | |/ /  / /  / /_   / /_/ /  / / / / / /  / /  / /_/ /     "
+echo " |___/  /_/   \__/   \____/  /_/ /_/ /_/  /_/   \____/      "
+
 [[ ! -e $HOME/build_ios_local.sh ]] && {
 	echo "File \"$HOME/build_ios_local.sh\" not found! Pls see 'build_ios_local.sh.sample'!!" 2>&1
 	exit 1;

@@ -19,3 +19,8 @@ FFmpeg for Vitamio
 ----------------
 
     ./build_android.sh
+
+3) iOS build
+-----------
+
+		./build_ios.sh

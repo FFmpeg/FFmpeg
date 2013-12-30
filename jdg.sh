@@ -1,5 +1,14 @@
 #!/bin/bash
 
+echo "  _    __   _    __                           _             "
+echo " | |  / /  (_)  / /_   ____ _   ____ ___     (_)  ___       "
+echo " | | / /  / /  / __/  / __ \/  / __ __  \   / /  / __ \     "
+echo " | |/ /  / /  / /_   / /_/ /  / / / / / /  / /  / /_/ /     "
+echo " |___/  /_/   \__/   \__,_/  /_/ /_/ /_/  /_/   \____/      "
+
+
+# Test script
+
 DEST=`pwd`/build/android
 SOURCE=`pwd`
 SSL=$SOURCE/../openssl
