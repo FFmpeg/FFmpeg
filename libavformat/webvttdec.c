@@ -35,6 +35,7 @@ typedef struct {
     const AVClass *class;
     FFDemuxSubtitlesQueue q;
     int kind;
+    int prefer_hls_mpegts_pts;
 } WebVTTContext;
 
 static int webvtt_probe(AVProbeData *p)
@@ -57,12 +58,19 @@ static int64_t read_ts(const char *s)
     return AV_NOPTS_VALUE;
 }
 
+static int64_t convert_to_hls_mpegts_ts(int64_t timestamp, int64_t offset)
+{
+     return (timestamp * 90 + offset) & ((1LL << 33) - 1);
+}
+
 static int webvtt_read_header(AVFormatContext *s)
 {
     WebVTTContext *webvtt = s->priv_data;
     AVBPrint header, cue;
     int res = 0;
     AVStream *st = avformat_new_stream(s, NULL);
+    int has_hls_timestamp_map = 0;
+    int64_t hls_ts_offset;
 
     if (!st)
         return AVERROR(ENOMEM);
@@ -90,10 +98,37 @@ static int webvtt_read_header(AVFormatContext *s)
         p = identifier = cue.str;
         pos = avio_tell(s->pb);
 
-        /* ignore header chunk */
+        /* header chunk */
         if (!strncmp(p, "\xEF\xBB\xBFWEBVTT", 9) ||
-            !strncmp(p, "WEBVTT", 6))
+            !strncmp(p, "WEBVTT", 6)) {
+
+            if (webvtt->prefer_hls_mpegts_pts) {
+                /*
+                 * WebVTT files in HLS streams contain a timestamp offset for
+                 * syncing with the main stream:
+                 *
+                 * X-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:900000
+                 * (LOCAL and MPEGTS can be reversed even though HLS spec
+                 *  does not say so)
+                 */
+                char* hls_timestamp_map = strstr(p, "\nX-TIMESTAMP-MAP=");
+                if (hls_timestamp_map) {
+                    char *native_str = strstr(hls_timestamp_map, "LOCAL:");
+                    char *mpegts_str = strstr(hls_timestamp_map, "MPEGTS:");
+                    if (native_str && mpegts_str) {
+                        int64_t native_ts = read_ts(native_str + 6);
+                        int64_t mpegts_ts = strtoll(mpegts_str + 7, NULL, 10);
+
+                        if (native_ts != AV_NOPTS_VALUE) {
+                            hls_ts_offset = mpegts_ts - native_ts * 90;
+                            has_hls_timestamp_map = 1;
+                            avpriv_set_pts_info(st, 33, 1, 90000);
+                        }
+                    }
+                }
+            }
             continue;
+        }
 
         /* optional cue identifier (can be a number like in SRT or some kind of
          * chaptering id) */
@@ -123,6 +158,12 @@ static int webvtt_read_header(AVFormatContext *s)
         do p++; while (*p == ' ' || *p == '\t');
         if ((ts_end = read_ts(p)) == AV_NOPTS_VALUE)
             break;
+
+        if (has_hls_timestamp_map) {
+            /* convert and truncate to MPEG TS timestamps */
+            ts_start = convert_to_hls_mpegts_ts(ts_start, hls_ts_offset);
+            ts_end = convert_to_hls_mpegts_ts(ts_end, hls_ts_offset);
+        }
 
         /* optional cue settings */
         p += strcspn(p, "\n\t ");
@@ -199,6 +240,7 @@ static const AVOption options[] = {
         { "captions",     "WebVTT captions kind",     0, AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_CAPTIONS },     INT_MIN, INT_MAX, 0, "webvtt_kind" },
         { "descriptions", "WebVTT descriptions kind", 0, AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_DESCRIPTIONS }, INT_MIN, INT_MAX, 0, "webvtt_kind" },
         { "metadata",     "WebVTT metadata kind",     0, AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_METADATA },     INT_MIN, INT_MAX, 0, "webvtt_kind" },
+    { "prefer_hls_mpegts_pts", "Use WebVTT embedded HLS MPEG TS timestamps, if available.", OFFSET(prefer_hls_mpegts_pts), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM },
     { NULL }
 };
 
