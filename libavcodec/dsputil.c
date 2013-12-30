@@ -464,35 +464,6 @@ static int nsse8_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int 
         return score1 + FFABS(score2) * 8;
 }
 
-static int try_8x8basis_c(int16_t rem[64], int16_t weight[64],
-                          int16_t basis[64], int scale)
-{
-    int i;
-    unsigned int sum = 0;
-
-    for (i = 0; i < 8 * 8; i++) {
-        int b = rem[i] + ((basis[i] * scale +
-                           (1 << (BASIS_SHIFT - RECON_SHIFT - 1))) >>
-                          (BASIS_SHIFT - RECON_SHIFT));
-        int w = weight[i];
-        b >>= RECON_SHIFT;
-        assert(-512 < b && b < 512);
-
-        sum += (w * b) * (w * b) >> 4;
-    }
-    return sum >> 2;
-}
-
-static void add_8x8basis_c(int16_t rem[64], int16_t basis[64], int scale)
-{
-    int i;
-
-    for (i = 0; i < 8 * 8; i++)
-        rem[i] += (basis[i] * scale +
-                   (1 << (BASIS_SHIFT - RECON_SHIFT - 1))) >>
-                  (BASIS_SHIFT - RECON_SHIFT);
-}
-
 static int zero_cmp(MpegEncContext *s, uint8_t *a, uint8_t *b,
                     int stride, int h)
 {
@@ -1125,9 +1096,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->vsse[5] = vsse_intra8_c;
     c->nsse[0] = nsse16_c;
     c->nsse[1] = nsse8_c;
-
-    c->try_8x8basis = try_8x8basis_c;
-    c->add_8x8basis = add_8x8basis_c;
 
     c->shrink[0] = av_image_copy_plane;
     c->shrink[1] = ff_shrink22;

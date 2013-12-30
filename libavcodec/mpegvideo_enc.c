@@ -701,6 +701,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     if (ARCH_X86)
         ff_MPV_encode_init_x86(s);
 
+    ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_qpeldsp_init(&s->qdsp);
 
     s->avctx->coded_frame = s->current_picture.f;
@@ -3871,7 +3872,7 @@ STOP_TIMER("memset rem[]")}
             run_tab[rle_index++]=run;
             run=0;
 
-            s->dsp.add_8x8basis(rem, basis[j], coeff);
+            s->mpvencdsp.add_8x8basis(rem, basis[j], coeff);
         }else{
             run++;
         }
@@ -3885,7 +3886,7 @@ STOP_TIMER("init rem[]")
 {START_TIMER
 #endif
     for(;;){
-        int best_score=s->dsp.try_8x8basis(rem, weight, basis[0], 0);
+        int best_score = s->mpvencdsp.try_8x8basis(rem, weight, basis[0], 0);
         int best_coeff=0;
         int best_change=0;
         int run2, best_unquant_change=0, analyze_gradient;
@@ -3929,7 +3930,8 @@ STOP_TIMER("dct")}
                 if(new_coeff >= 2048 || new_coeff < 0)
                     continue;
 
-                score= s->dsp.try_8x8basis(rem, weight, basis[0], new_coeff - old_coeff);
+                score = s->mpvencdsp.try_8x8basis(rem, weight, basis[0],
+                                                  new_coeff - old_coeff);
                 if(score<best_score){
                     best_score= score;
                     best_coeff= 0;
@@ -4052,7 +4054,8 @@ STOP_TIMER("dct")}
                 unquant_change= new_coeff - old_coeff;
                 assert((score < 100*lambda && score > -100*lambda) || lambda==0);
 
-                score+= s->dsp.try_8x8basis(rem, weight, basis[j], unquant_change);
+                score += s->mpvencdsp.try_8x8basis(rem, weight, basis[j],
+                                                   unquant_change);
                 if(score<best_score){
                     best_score= score;
                     best_coeff= i;
@@ -4126,7 +4129,7 @@ if(256*256*256*64 % count == 0){
                  }
             }
 
-            s->dsp.add_8x8basis(rem, basis[j], best_unquant_change);
+            s->mpvencdsp.add_8x8basis(rem, basis[j], best_unquant_change);
         }else{
             break;
         }

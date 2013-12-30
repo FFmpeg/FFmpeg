@@ -1,5 +1,5 @@
 /*
- * DSP utils : QNS functions are compiled 3 times for mmx/3dnow/ssse3
+ * QNS functions are compiled 3 times for MMX/3DNOW/SSSE3
  * Copyright (c) 2004 Michael Niedermayer
  *
  * MMX optimization by Michael Niedermayer <michaelni@gmx.at>
