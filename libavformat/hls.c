@@ -160,6 +160,7 @@ typedef struct HLSContext {
     int64_t seek_timestamp;
     int seek_flags;
     AVIOInterruptCB *interrupt_callback;
+    AVDictionary *demuxer_options;
     char *user_agent;                    ///< holds HTTP user agent set as an AVOption to the HTTP protocol context
     char *cookies;                       ///< holds HTTP cookie values set in either the initial response or as an AVOption to the HTTP protocol context
     char *headers;                       ///< holds HTTP headers set as an AVOption to the HTTP protocol context
@@ -970,10 +971,13 @@ static int hls_read_header(AVFormatContext *s)
             add_renditions_to_variant(c, var, AVMEDIA_TYPE_SUBTITLE, var->subtitles_group);
     }
 
+    av_dict_set(&c->demuxer_options, "prefer_hls_mpegts_pts", "1", 0);
+
     /* Open the demuxer for each playlist */
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];
         AVInputFormat *in_fmt = NULL;
+        AVDictionary *opts = NULL;
 
         if (pls->n_segments == 0)
             continue;
@@ -1009,9 +1013,12 @@ static int hls_read_header(AVFormatContext *s)
             pls->ctx = NULL;
             goto fail;
         }
+
         pls->ctx->pb       = &pls->pb;
         pls->stream_offset = stream_offset;
-        ret = avformat_open_input(&pls->ctx, pls->segments[0]->url, in_fmt, NULL);
+        av_dict_copy(&opts, c->demuxer_options, 0);
+        ret = avformat_open_input(&pls->ctx, pls->segments[0]->url, in_fmt, &opts);
+        av_dict_free(&opts);
         if (ret < 0)
             goto fail;
 
@@ -1084,6 +1091,7 @@ fail:
     free_playlist_list(c);
     free_variant_list(c);
     free_rendition_list(c);
+    av_dict_free(&c->demuxer_options);
     return ret;
 }
 
@@ -1127,6 +1135,7 @@ static int reopen_subtitle_playlist(HLSContext *c, struct playlist *pls)
 {
     /* each subtitle segment is demuxed separately */
     struct AVFormatContext *newctx;
+    AVDictionary *opts = NULL;
     int ret;
 
     pls->reopen_subtitle = NO_REOPEN;
@@ -1136,12 +1145,14 @@ static int reopen_subtitle_playlist(HLSContext *c, struct playlist *pls)
 
     newctx->pb = &pls->pb;
 
-    ret = avformat_open_input(&newctx, NULL, pls->ctx->iformat, NULL);
+    av_dict_copy(&opts, c->demuxer_options, 0);
+    ret = avformat_open_input(&newctx, NULL, pls->ctx->iformat, &opts);
     if (ret == 0) {
         avformat_close_input(&pls->ctx);
         pls->ctx = newctx;
     }
 
+    av_dict_free(&opts);
     return ret;
 }
 
@@ -1262,6 +1273,7 @@ static int hls_close(AVFormatContext *s)
     free_playlist_list(c);
     free_variant_list(c);
     free_rendition_list(c);
+    av_dict_free(&c->demuxer_options);
     return 0;
 }
 
