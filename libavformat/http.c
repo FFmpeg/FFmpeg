@@ -947,6 +947,8 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
 
     if (whence == AVSEEK_SIZE)
         return s->filesize;
+    else if ((whence == SEEK_CUR && off == 0) || (whence == SEEK_SET && off == s->off))
+        return s->off;
     else if ((s->filesize == -1 && whence == SEEK_END) || h->is_streamed)
         return -1;
 
