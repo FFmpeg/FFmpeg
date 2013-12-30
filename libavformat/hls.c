@@ -1235,6 +1235,17 @@ static int reopen_subtitle_playlist(HLSContext *c, struct playlist *pls)
     return ret;
 }
 
+static int compare_ts_with_wrapdetect(int64_t ts_a, AVStream *st_a,
+                                      int64_t ts_b, AVStream *st_b)
+{
+    int64_t scaled_ts_b = av_rescale_q(ts_b, st_b->time_base, st_a->time_base);
+
+    /* NOTE: We do not bother to scale pts_wrap_bits here. All the allowed
+     * formats specified in HLS specification have 33-bit MPEG timestamps
+     * (which means we should not even have to perform any rescaling...). */
+    return av_compare_mod(ts_a, scaled_ts_b, 1LL << (FFMIN(st_a->pts_wrap_bits, st_b->pts_wrap_bits)));
+}
+
 static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     HLSContext *c = s->priv_data;
@@ -1301,26 +1312,21 @@ start:
                 reset_packet(&pls->pkt);
             }
         }
-        /* Check if this stream still is on an earlier segment number, or
-         * has the packet with the lowest dts */
+        /* Check if this stream has the packet with the lowest dts */
         if (pls->pkt.data) {
             struct playlist *minpls = minplaylist < 0 ?
                                      NULL : c->playlists[minplaylist];
-            if (minplaylist < 0 || pls->cur_seq_no < minpls->cur_seq_no) {
+            if (minplaylist < 0) {
                 minplaylist = i;
-            } else if (pls->cur_seq_no == minpls->cur_seq_no) {
+            } else {
                 int64_t dts     =    pls->pkt.dts;
                 int64_t mindts  = minpls->pkt.dts;
-                AVRational tb    =    pls->ctx->streams[   pls->pkt.stream_index]->time_base;
-                AVRational mintb = minpls->ctx->streams[minpls->pkt.stream_index]->time_base;
+                AVStream *st    =    pls->ctx->streams[   pls->pkt.stream_index];
+                AVStream *minst = minpls->ctx->streams[minpls->pkt.stream_index];
 
-                if (dts == AV_NOPTS_VALUE) {
+                if (dts == AV_NOPTS_VALUE ||
+                    (mindts != AV_NOPTS_VALUE && compare_ts_with_wrapdetect(dts, st, mindts, minst) < 0))
                     minplaylist = i;
-                } else if (mindts != AV_NOPTS_VALUE) {
-                    if (av_compare_ts(dts, tb,
-                                      mindts, mintb) < 0)
-                        minplaylist = i;
-                }
             }
         }
     }
