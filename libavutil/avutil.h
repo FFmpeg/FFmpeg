@@ -145,6 +145,12 @@
  * @{
  *
  * @}
+ *
+ * @defgroup preproc_misc Preprocessor String Macros
+ *
+ * @{
+ *
+ * @}
  */
 
 
@@ -277,6 +283,7 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
 #include "common.h"
 #include "error.h"
 #include "version.h"
+#include "macros.h"
 #include "mathematics.h"
 #include "rational.h"
 #include "log.h"

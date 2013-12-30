@@ -17,7 +17,7 @@
  */
 
 #include "config.h"
-#include "version.h"
+#include "avutil.h"
 #include "avassert.h"
 #include "samplefmt.h"
 #include "pixdesc.h"

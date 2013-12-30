@@ -21,26 +21,7 @@
 #ifndef AVUTIL_VERSION_H
 #define AVUTIL_VERSION_H
 
-/**
- * @defgroup preproc_misc Preprocessor String Macros
- *
- * String manipulation macros
- *
- * @{
- */
-
-#define AV_STRINGIFY(s)         AV_TOSTRING(s)
-#define AV_TOSTRING(s) #s
-
-#define AV_GLUE(a, b) a ## b
-#define AV_JOIN(a, b) AV_GLUE(a, b)
-
-#define AV_PRAGMA(s) _Pragma(#s)
-
-/**
- * @}
- */
-
+#include "macros.h"
 
 /**
  * @defgroup version_utils Library Version Macros
