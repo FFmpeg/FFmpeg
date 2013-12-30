@@ -125,10 +125,9 @@ static long check_dcbzl_effect(void)
     return count;
 }
 
-av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx,
+                                 unsigned high_bit_depth)
 {
-    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-
     // common optimizations whether AltiVec is available or not
     if (!high_bit_depth) {
         switch (check_dcbzl_effect()) {
@@ -144,19 +143,17 @@ av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx)
     }
 
     if (PPC_ALTIVEC(av_get_cpu_flags())) {
-        ff_dsputil_init_altivec(c, avctx);
+        ff_dsputil_init_altivec(c, avctx, high_bit_depth);
         ff_int_init_altivec(c, avctx);
         c->gmc1 = ff_gmc1_altivec;
 
+        if (!high_bit_depth) {
 #if CONFIG_ENCODERS
-        if (avctx->bits_per_raw_sample <= 8 &&
-            (avctx->dct_algo == FF_DCT_AUTO ||
-             avctx->dct_algo == FF_DCT_ALTIVEC)) {
-            c->fdct = ff_fdct_altivec;
-        }
+            if (avctx->dct_algo == FF_DCT_AUTO ||
+                avctx->dct_algo == FF_DCT_ALTIVEC) {
+                c->fdct = ff_fdct_altivec;
+            }
 #endif //CONFIG_ENCODERS
-
-        if (avctx->bits_per_raw_sample <= 8) {
             if ((avctx->idct_algo == FF_IDCT_AUTO) ||
                 (avctx->idct_algo == FF_IDCT_ALTIVEC)) {
                 c->idct_put              = ff_idct_put_altivec;

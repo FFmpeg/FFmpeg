@@ -147,17 +147,13 @@ static int bfin_pix_abs8_xy2(void *c, uint8_t *blk1, uint8_t *blk2,
  * 2.64s    2/20 same sman.mp4 decode only
  */
 
-av_cold void ff_dsputil_init_bfin(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_bfin(DSPContext *c, AVCodecContext *avctx,
+                                  unsigned high_bit_depth)
 {
-    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-
     c->diff_pixels = ff_bfin_diff_pixels;
 
     c->put_pixels_clamped = ff_bfin_put_pixels_clamped;
     c->add_pixels_clamped = ff_bfin_add_pixels_clamped;
-
-    if (!high_bit_depth)
-        c->get_pixels = ff_bfin_get_pixels;
 
     c->clear_blocks = bfin_clear_blocks;
 
@@ -182,7 +178,9 @@ av_cold void ff_dsputil_init_bfin(DSPContext *c, AVCodecContext *avctx)
     c->sse[1] = ff_bfin_sse8;
     c->sse[2] = ff_bfin_sse4;
 
-    if (avctx->bits_per_raw_sample <= 8) {
+    if (!high_bit_depth) {
+        c->get_pixels = ff_bfin_get_pixels;
+
         if (avctx->dct_algo == FF_DCT_AUTO)
             c->fdct = ff_bfin_fdct;
 

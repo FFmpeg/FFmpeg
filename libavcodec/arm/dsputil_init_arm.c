@@ -64,14 +64,15 @@ static void simple_idct_arm_add(uint8_t *dest, int line_size, int16_t *block)
     ff_add_pixels_clamped(block, dest, line_size);
 }
 
-av_cold void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx,
+                                 unsigned high_bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
 
     ff_put_pixels_clamped = c->put_pixels_clamped;
     ff_add_pixels_clamped = c->add_pixels_clamped;
 
-    if (avctx->bits_per_raw_sample <= 8) {
+    if (!high_bit_depth) {
         if (avctx->idct_algo == FF_IDCT_AUTO ||
             avctx->idct_algo == FF_IDCT_ARM) {
             c->idct_put              = j_rev_dct_arm_put;
@@ -89,9 +90,9 @@ av_cold void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx)
     c->add_pixels_clamped = ff_add_pixels_clamped_arm;
 
     if (have_armv5te(cpu_flags))
-        ff_dsputil_init_armv5te(c, avctx);
+        ff_dsputil_init_armv5te(c, avctx, high_bit_depth);
     if (have_armv6(cpu_flags))
-        ff_dsputil_init_armv6(c, avctx);
+        ff_dsputil_init_armv6(c, avctx, high_bit_depth);
     if (have_neon(cpu_flags))
-        ff_dsputil_init_neon(c, avctx);
+        ff_dsputil_init_neon(c, avctx, high_bit_depth);
 }
