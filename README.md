@@ -1,10 +1,10 @@
-FFmpeg README
-=============
+FFmpeg for Vitamio
+==================
 
 0) Branches
 -----------
 
-- **vplayer**, the main branch for VPlayer
+- **vitamio**, the main branch for Vitamio
 - **master**, sync with FFmpeg official master
 
 
@@ -13,10 +13,9 @@ FFmpeg README
 
     ./configure --prefix=build
     make -j7 install
-    LD_LIBRARY_PATH=build/lib/ build/bin/ffplay cache:/tmp/vvvvvvv:http://web.qqvideo.tc.qq.com/s0012pqc3z1.flv
-
+    LD_LIBRARY_PATH=build/lib/ build/bin/ffplay http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8
 
 2) Android build
 ----------------
 
-    ./Android.sh
+    ./build_android.sh

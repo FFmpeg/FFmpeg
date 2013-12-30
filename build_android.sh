@@ -22,7 +22,7 @@ fi
 #SSL=$SSL
 if [ -z "$SSL" ]; then
   echo "No define SSL before starting"
-  echo "Please download from git@github.com:yixia/openssl-android.git ";
+  echo "Please clone from git@github.com:yixia/openssl-android.git, and run ndk-build ";
   exit 1
 fi
 
@@ -54,7 +54,7 @@ function mips_toolchain()
 SOURCE=`pwd`
 DEST=$SOURCE/build/android
 
-TOOLCHAIN=/tmp/vplayer
+TOOLCHAIN=/tmp/vitamio
 SYSROOT=$TOOLCHAIN/sysroot/
 
 if [ "$platform" = "x86" ];then
