@@ -998,6 +998,9 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
     int64_t cur_dts= RELATIVE_TS_BASE;
 
     if(st->first_dts != AV_NOPTS_VALUE){
+        if (st->update_initial_durations_done)
+            return;
+        st->update_initial_durations_done = 1;
         cur_dts= st->first_dts;
         for(; pktl; pktl= get_next_pkt(s, st, pktl)){
             if(pktl->pkt.stream_index == stream_index){

@@ -893,6 +893,10 @@ typedef struct AVStream {
      */
     int pts_wrap_behavior;
 
+    /**
+     * Internal data to prevent doing update_initial_durations() twice
+     */
+    int update_initial_durations_done;
 } AVStream;
 
 AVRational av_stream_get_r_frame_rate(const AVStream *s);
