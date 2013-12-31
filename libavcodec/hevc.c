@@ -2728,6 +2728,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
             av_freep(&s->sList[i]);
         }
     }
+    if (s->HEVClc == s->HEVClcList[0])
+        s->HEVClc = NULL;
     av_freep(&s->HEVClcList[0]);
 
     for (i = 0; i < s->nals_allocated; i++)
