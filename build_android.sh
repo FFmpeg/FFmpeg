@@ -5,6 +5,7 @@ echo " | |  / /  (_)  / /_   ____ _   ____ ___     (_)  ___       "
 echo " | | / /  / /  / __/  / __ \/  / __ __  \   / /  / __ \     "
 echo " | |/ /  / /  / /_   / /_/ /  / / / / / /  / /  / /_/ /     "
 echo " |___/  /_/   \__/   \____/  /_/ /_/ /_/  /_/   \____/      "
+echo "                                                            "
 
 # export ANDROID_NDK=
 # Detect ANDROID_NDK
@@ -12,6 +13,13 @@ if [ -z "$ANDROID_NDK" ]; then
 	echo "You must define ANDROID_NDK before starting."
 	echo "They must point to your NDK directories.\n"
 	exit 1
+fi
+
+#SSL=$SSL
+if [ -z "$SSL" ]; then
+  echo "No define SSL before starting"
+  echo "Please clone from git@github.com:yixia/OpenSSL-Vitamio.git, and run ndk-build ";
+  exit 1
 fi
 
 # Detect OS
@@ -25,12 +33,6 @@ elif [ $OS == 'Darwin' ]; then
 fi
 
 
-#SSL=$SSL
-if [ -z "$SSL" ]; then
-  echo "No define SSL before starting"
-  echo "Please clone from git@github.com:yixia/openssl-android.git, and run ndk-build ";
-  exit 1
-fi
 
 platform="$1"
 version_type="$2"
