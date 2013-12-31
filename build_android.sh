@@ -138,6 +138,7 @@ if [ "$version_type" = "online" ]; then
 		--enable-optimizations \
 		--enable-filters \
 		--enable-parsers \
+		--disable-parser=hevc \
 		--enable-swscale  \
 		--enable-network \
 		--enable-protocol=file \
@@ -168,6 +169,7 @@ if [ "$version_type" = "online" ]; then
 		--enable-decoder=aac \
 		--enable-decoder=ac3 \
 		--enable-decoder=mp3 \
+		--enable-decoder=nellymoser \
 		--enable-muxer=mp4 \
 		--enable-asm \
 		--enable-pic"
