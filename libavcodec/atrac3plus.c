@@ -1700,6 +1700,10 @@ static int decode_tones_info(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
     int ch_num, i, ret;
     int band_has_tones[16];
 
+    for (ch_num = 0; ch_num < num_channels; ch_num++)
+        memset(ctx->channels[ch_num].tones_info, 0,
+               sizeof(*ctx->channels[ch_num].tones_info) * ATRAC3P_SUBBANDS);
+
     ctx->waves_info->tones_present = get_bits1(gb);
     if (!ctx->waves_info->tones_present)
         return 0;
