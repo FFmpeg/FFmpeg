@@ -249,7 +249,7 @@ static int vqf_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->data[1] = c->last_frame_bits;
     ret = avio_read(s->pb, pkt->data+2, size);
 
-    if (ret<=0) {
+    if (ret != size) {
         av_free_packet(pkt);
         return AVERROR(EIO);
     }
