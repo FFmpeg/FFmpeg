@@ -184,26 +184,49 @@ can not be smaller than one centi second.
 @section hls
 
 Apple HTTP Live Streaming muxer that segments MPEG-TS according to
-the HTTP Live Streaming specification.
+the HTTP Live Streaming (HLS) specification.
 
 It creates a playlist file and numbered segment files. The output
 filename specifies the playlist filename; the segment filenames
 receive the same basename as the playlist, a sequential number and
 a .ts extension.
 
+For example, to convert an input file with @command{ffmpeg}:
 @example
 ffmpeg -i in.nut out.m3u8
 @end example
 
+See also the @ref{segment} muxer, which provides a more generic and
+flexible implementation of a segmenter, and can used to perform HLS
+segmentation.
+
+This muxer supports the following options:
+
 @table @option
-@item -hls_time @var{seconds}
-Set the segment length in seconds.
-@item -hls_list_size @var{size}
-Set the maximum number of playlist entries.
-@item -hls_wrap @var{wrap}
-Set the number after which index wraps.
-@item -start_number @var{number}
-Start the sequence from @var{number}.
+@item hls_time @var{seconds}
+Set the segment length in seconds. Default value is 2.
+
+@item hls_list_size @var{size}
+Set the maximum number of playlist entries. If set to 0 the list file
+will contain all the segments. Default value is 5.
+
+@item hls_wrap @var{wrap}
+Set the number after which the segment filename number (the number
+specified in each segment file) wraps. If set to 0 the number will be
+never wrapped. Default value is 0.
+
+This option is useful to avoid to fill the disk with many segment
+files, and limits the maximum number of segment files written to disk
+to @var{wrap}.
+
+@item start_number @var{number}
+Start the playlist sequence number from @var{number}. Default value is
+0.
+
+Note that the playlist sequence number must be unique for each segment
+and it is not to be confused with the segment filename sequence number
+which can be cyclic, for example if the @option{wrap} option is
+specified.
 @end table
 
 @anchor{ico}
@@ -648,6 +671,7 @@ situations, giving a small seek granularity at the cost of additional container
 overhead.
 @end table
 
+@anchor{segment}
 @section segment, stream_segment, ssegment
 
 Basic stream segmenter.
