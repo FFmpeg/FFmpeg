@@ -702,6 +702,9 @@ the option @var{segment_list}. The list type is specified by the
 list are set by default to the basename of the corresponding segment
 files.
 
+See also the @ref{hls} muxer, which provides a more specific
+implementation for HLS segmentation.
+
 The segment muxer supports the following options:
 
 @table @option
