@@ -36,6 +36,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
+#include "libavformat/internal.h"
 #include "avdevice.h"
 
 typedef struct {
@@ -197,23 +198,19 @@ static int xv_write_header(AVFormatContext *s)
     return ret;
 }
 
-static int xv_write_packet(AVFormatContext *s, AVPacket *pkt)
+static int write_picture(AVFormatContext *s, AVPicture *pict)
 {
     XVContext *xv = s->priv_data;
     XvImage *img = xv->yuv_image;
     XWindowAttributes window_attrs;
-    AVPicture pict;
-    AVCodecContext *ctx = s->streams[0]->codec;
     uint8_t *data[3] = {
         img->data + img->offsets[0],
         img->data + img->offsets[1],
         img->data + img->offsets[2]
     };
 
-    avpicture_fill(&pict, pkt->data, ctx->pix_fmt, ctx->width, ctx->height);
-    av_image_copy(data, img->pitches, (const uint8_t **)pict.data, pict.linesize,
+    av_image_copy(data, img->pitches, (const uint8_t **)pict->data, pict->linesize,
                   xv->image_format, img->width, img->height);
-
     XGetWindowAttributes(xv->display, xv->window, &window_attrs);
     if (XvShmPutImage(xv->display, xv->xv_port, xv->window, xv->gc,
                       xv->yuv_image, 0, 0, xv->image_width, xv->image_height, 0, 0,
@@ -222,6 +219,24 @@ static int xv_write_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EXTERNAL;
     }
     return 0;
+}
+
+static int xv_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    AVPicture pict;
+    AVCodecContext *ctx = s->streams[0]->codec;
+
+    avpicture_fill(&pict, pkt->data, ctx->pix_fmt, ctx->width, ctx->height);
+    return write_picture(s, &pict);
+}
+
+static int xv_write_frame(AVFormatContext *s, int stream_index, AVFrame **frame,
+                          unsigned flags)
+{
+    /* xv_write_header() should have accepted only supported formats */
+    if ((flags & AV_WRITE_UNCODED_FRAME_QUERY))
+        return 0;
+    return write_picture(s, (AVPicture *)*frame);
 }
 
 #define OFFSET(x) offsetof(XVContext, x)
@@ -250,6 +265,7 @@ AVOutputFormat ff_xv_muxer = {
     .video_codec    = AV_CODEC_ID_RAWVIDEO,
     .write_header   = xv_write_header,
     .write_packet   = xv_write_packet,
+    .write_uncoded_frame = xv_write_frame,
     .write_trailer  = xv_write_trailer,
     .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
     .priv_class     = &xv_class,
