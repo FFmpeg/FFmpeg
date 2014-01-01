@@ -114,11 +114,12 @@ static int generate_joint_tables(HYuvContext *s)
     uint8_t len[1 << VLC_BITS];
     int ret;
 
-    if (s->bitstream_bpp < 24) {
+    if (s->bitstream_bpp < 24 || s->version > 2) {
         int p, i, y, u;
         for (p = 0; p < 3; p++) {
+            int p0 = s->version > 2 ? p : 0;
             for (i = y = 0; y < 256; y++) {
-                int len0 = s->len[0][y];
+                int len0 = s->len[p0][y];
                 int limit = VLC_BITS - len0;
                 if(limit <= 0 || !len0)
                     continue;
@@ -128,7 +129,7 @@ static int generate_joint_tables(HYuvContext *s)
                         continue;
                     av_assert0(i < (1 << VLC_BITS));
                     len[i] = len0 + len1;
-                    bits[i] = (s->bits[0][y] << len1) + s->bits[p][u];
+                    bits[i] = (s->bits[p0][y] << len1) + s->bits[p][u];
                     symbols[i] = (y << 8) + u;
                     if(symbols[i] != 0xffff) // reserved to mean "invalid"
                         i++;
@@ -461,6 +462,16 @@ static void decode_422_bitstream(HYuvContext *s, int count)
     }
 }
 
+#define READ_2PIX_PLANE(dst0, dst1, plane){\
+    uint16_t code = get_vlc2(&s->gb, s->vlc[3+plane].table, VLC_BITS, 1);\
+    if(code != 0xffff){\
+        dst0 = code>>8;\
+        dst1 = code;\
+    }else{\
+        dst0 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
+        dst1 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
+    }\
+}
 static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
 {
     int i;
@@ -469,13 +480,11 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
 
     if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
         for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
-            s->temp[0][2*i    ] = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);
-            s->temp[0][2*i + 1] = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);
+            READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane);
         }
     } else {
         for(i=0; i<count; i++){
-            s->temp[0][2*i    ] = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);
-            s->temp[0][2*i + 1] = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);
+            READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane);
         }
     }
 }
