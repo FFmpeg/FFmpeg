@@ -676,7 +676,7 @@ overhead.
 
 Basic stream segmenter.
 
-The segmenter muxer outputs streams to a number of separate files of nearly
+This muxer outputs streams to a number of separate files of nearly
 fixed duration. Output filename pattern can be set in a fashion similar to
 @ref{image2}.
 
