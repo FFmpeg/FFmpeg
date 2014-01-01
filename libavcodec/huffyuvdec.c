@@ -32,6 +32,7 @@
 #include "get_bits.h"
 #include "huffyuv.h"
 #include "thread.h"
+#include "libavutil/pixdesc.h"
 
 #define classic_shift_luma_table_size 42
 static const unsigned char classic_shift_luma[classic_shift_luma_table_size + FF_INPUT_BUFFER_PADDING_SIZE] = {
@@ -264,12 +265,16 @@ static av_cold int decode_init(AVCodecContext *avctx)
         if ((avctx->bits_per_coded_sample & 7) &&
             avctx->bits_per_coded_sample != 12)
             s->version = 1; // do such files exist at all?
-        else
+        else if (avctx->extradata_size > 3 && avctx->extradata[3] == 0)
             s->version = 2;
+        else
+            s->version = 3;
     } else
         s->version = 0;
 
-    if (s->version == 2) {
+    s->bps = 8;
+    s->chroma = 1;
+    if (s->version >= 2) {
         int method, interlace;
 
         if (avctx->extradata_size < 4)
@@ -278,9 +283,18 @@ static av_cold int decode_init(AVCodecContext *avctx)
         method = ((uint8_t*)avctx->extradata)[0];
         s->decorrelate = method & 64 ? 1 : 0;
         s->predictor = method & 63;
-        s->bitstream_bpp = ((uint8_t*)avctx->extradata)[1];
-        if (s->bitstream_bpp == 0)
-            s->bitstream_bpp = avctx->bits_per_coded_sample & ~7;
+        if (s->version == 2) {
+            s->bitstream_bpp = ((uint8_t*)avctx->extradata)[1];
+            if (s->bitstream_bpp == 0)
+                s->bitstream_bpp = avctx->bits_per_coded_sample & ~7;
+        } else {
+            s->bps = (avctx->extradata[1] >> 4) + 1;
+            s->chroma_h_shift = avctx->extradata[1] & 3;
+            s->chroma_v_shift = (avctx->extradata[1] >> 2) & 3;
+            s->yuv   = !!(((uint8_t*)avctx->extradata)[2] & 1);
+            s->chroma= !!(((uint8_t*)avctx->extradata)[2] & 3);
+            s->alpha = !!(((uint8_t*)avctx->extradata)[2] & 4);
+        }
         interlace = (((uint8_t*)avctx->extradata)[2] & 0x30) >> 4;
         s->interlaced = (interlace == 1) ? 1 : (interlace == 2) ? 0 : s->interlaced;
         s->context = ((uint8_t*)avctx->extradata)[2] & 0x40 ? 1 : 0;
@@ -318,28 +332,58 @@ static av_cold int decode_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
     }
 
-    switch (s->bitstream_bpp) {
-    case 12:
-        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-        break;
-    case 16:
-        if (s->yuy2) {
-            avctx->pix_fmt = AV_PIX_FMT_YUYV422;
-        } else {
+    if (s->version <= 2) {
+        switch (s->bitstream_bpp) {
+        case 12:
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+            s->yuv = 1;
+            break;
+        case 16:
+            if (s->yuy2) {
+                avctx->pix_fmt = AV_PIX_FMT_YUYV422;
+            } else {
+                avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+            }
+            s->yuv = 1;
+            break;
+        case 24:
+        case 32:
+            if (s->bgr32) {
+                avctx->pix_fmt = AV_PIX_FMT_RGB32;
+                s->alpha = 1;
+            } else {
+                avctx->pix_fmt = AV_PIX_FMT_BGR24;
+            }
+            break;
+        default:
+            return AVERROR_INVALIDDATA;
+        }
+        av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt,
+                                         &s->chroma_h_shift,
+                                         &s->chroma_v_shift);
+    } else {
+        switch ( (s->chroma<<10) | (s->yuv<<9) | (s->alpha<<8) | ((s->bps-1)<<4) | s->chroma_h_shift | (s->chroma_v_shift<<2)) {
+        case 0x670:
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+            break;
+        case 0x671:
             avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+            break;
+        case 0x672:
+            avctx->pix_fmt = AV_PIX_FMT_YUV411P;
+            break;
+        case 0x674:
+            avctx->pix_fmt = AV_PIX_FMT_YUV440P;
+            break;
+        case 0x675:
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+            break;
+        case 0x67A:
+            avctx->pix_fmt = AV_PIX_FMT_YUV410P;
+            break;
         }
-        break;
-    case 24:
-    case 32:
-        if (s->bgr32) {
-            avctx->pix_fmt = AV_PIX_FMT_RGB32;
-        } else {
-            avctx->pix_fmt = AV_PIX_FMT_BGR24;
-        }
-        break;
-    default:
-        return AVERROR_INVALIDDATA;
     }
+
 
     if ((avctx->pix_fmt == AV_PIX_FMT_YUV422P || avctx->pix_fmt == AV_PIX_FMT_YUV420P) && avctx->width & 1) {
         av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");
@@ -370,7 +414,7 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
     for (i = 0; i < 6; i++)
         s->vlc[i].table = NULL;
 
-    if (s->version == 2) {
+    if (s->version >= 2) {
         if (read_huffman_tables(s, ((uint8_t*)avctx->extradata) + 4,
                                 avctx->extradata_size) < 0)
             return AVERROR_INVALIDDATA;
@@ -413,6 +457,25 @@ static void decode_422_bitstream(HYuvContext *s, int count)
         for (i = 0; i < count; i++) {
             READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
             READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
+        }
+    }
+}
+
+static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
+{
+    int i;
+
+    count/=2;
+
+    if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+        for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
+            s->temp[0][2*i    ] = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);
+            s->temp[0][2*i + 1] = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);
+        }
+    } else {
+        for(i=0; i<count; i++){
+            s->temp[0][2*i    ] = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);
+            s->temp[0][2*i + 1] = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);
         }
     }
 }
@@ -546,7 +609,72 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     s->last_slice_end = 0;
 
-    if (s->bitstream_bpp < 24) {
+    if (s->version > 2) {
+        int plane;
+        for(plane = 0; plane < 1 + 2*s->chroma + s->alpha; plane++) {
+            int left, lefttop, y;
+            int w = width;
+            int h = height;
+            int fake_stride = fake_ystride;
+
+            if (s->chroma && (plane == 1 || plane == 2)) {
+                w >>= s->chroma_h_shift;
+                h >>= s->chroma_v_shift;
+                fake_stride = plane == 1 ? fake_ustride : fake_vstride;
+            }
+
+            switch (s->predictor) {
+            case LEFT:
+            case PLANE:
+                decode_plane_bitstream(s, w, plane);
+                left = s->dsp.add_hfyu_left_prediction(p->data[plane], s->temp[0], w, 0);
+
+                for (y = 1; y < h; y++) {
+                    uint8_t *dst = p->data[plane] + p->linesize[plane]*y;
+
+                    decode_plane_bitstream(s, w, plane);
+                    left = s->dsp.add_hfyu_left_prediction(dst, s->temp[0], w, left);
+                    if (s->predictor == PLANE) {
+                        if (y > s->interlaced) {
+                            s->dsp.add_bytes(dst, dst - fake_stride, w);
+                        }
+                    }
+                }
+
+                break;
+            case MEDIAN:
+                decode_plane_bitstream(s, w, plane);
+                left= s->dsp.add_hfyu_left_prediction(p->data[plane], s->temp[0], w, 0);
+
+                y = 1;
+
+                /* second line is left predicted for interlaced case */
+                if (s->interlaced) {
+                    decode_plane_bitstream(s, w, plane);
+                    left = s->dsp.add_hfyu_left_prediction(p->data[plane] + p->linesize[plane], s->temp[0], w, left);
+                    y++;
+                }
+
+                lefttop = p->data[plane][0];
+                decode_plane_bitstream(s, w, plane);
+                s->dsp.add_hfyu_median_prediction(p->data[plane] + fake_stride, p->data[plane], s->temp[0], w, &left, &lefttop);
+                y++;
+
+                for (; y<h; y++) {
+                    uint8_t *dst;
+
+                    decode_plane_bitstream(s, w, plane);
+
+                    dst = p->data[plane] + p->linesize[plane] * y;
+
+                    s->dsp.add_hfyu_median_prediction(dst, dst - fake_stride, s->temp[0], w, &left, &lefttop);
+                }
+
+                break;
+            }
+        }
+        draw_slice(s, p, height);
+    } else if (s->bitstream_bpp < 24) {
         int y, cy;
         int lefty, leftu, leftv;
         int lefttopy, lefttopu, lefttopv;
