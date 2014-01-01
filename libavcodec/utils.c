@@ -572,12 +572,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
+    int override_dimensions = 1;
     int ret;
 
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        frame->width  = FFMAX(avctx->width, avctx->coded_width);
-        frame->height = FFMAX(avctx->height, avctx->coded_height);
+        if (frame->width <= 0 || frame->height <= 0) {
+            frame->width  = FFMAX(avctx->width, avctx->coded_width);
+            frame->height = FFMAX(avctx->height, avctx->coded_height);
+            override_dimensions = 0;
+        }
         if (frame->format < 0)
             frame->format              = avctx->pix_fmt;
         if (!frame->sample_aspect_ratio.num)
@@ -738,7 +742,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ret = avctx->get_buffer2(avctx, frame, flags);
 
-    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions) {
         frame->width  = avctx->width;
         frame->height = avctx->height;
     }
