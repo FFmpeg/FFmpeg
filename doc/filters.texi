@@ -1395,6 +1395,21 @@ Set the required gain or attenuation in dB.
 Beware of clipping when using a positive gain.
 @end table
 
+@subsection Examples
+@itemize
+@item
+Attenuate 10 dB at 1000 Hz, with a bandwidth of 200 Hz:
+@example
+equalizer=f=1000:width_type=h:width=200:g=-10
+@end example
+
+@item
+Apply 2 dB gain at 1000 Hz with Q 1 and attenuate 5 dB at 100 Hz with Q 2:
+@example
+equalizer=f=1000:width_type=q:width=1:g=2,equalizer=f=100:width_type=q:width=2:g=-5
+@end example
+@end itemize
+
 @section highpass
 
 Apply a high-pass filter with 3dB point frequency.
