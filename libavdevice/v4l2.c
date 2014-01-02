@@ -866,6 +866,9 @@ static int v4l2_read_header(AVFormatContext *s1)
 
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
+    if ((res = v4l2_set_parameters(s1)) < 0)
+        return res;
+
     if (s->pixel_format) {
         AVCodec *codec = avcodec_find_decoder_by_name(s->pixel_format);
 
@@ -916,9 +919,6 @@ static int v4l2_read_header(AVFormatContext *s1)
         return res;
 
     s->frame_format = desired_format;
-
-    if ((res = v4l2_set_parameters(s1)) < 0)
-        return res;
 
     st->codec->pix_fmt = avpriv_fmt_v4l2ff(desired_format, codec_id);
     s->frame_size =
