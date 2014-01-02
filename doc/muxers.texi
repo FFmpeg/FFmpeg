@@ -197,7 +197,7 @@ ffmpeg -i in.nut out.m3u8
 @end example
 
 See also the @ref{segment} muxer, which provides a more generic and
-flexible implementation of a segmenter, and can used to perform HLS
+flexible implementation of a segmenter, and can be used to perform HLS
 segmentation.
 
 This muxer supports the following options:
