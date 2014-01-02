@@ -1506,7 +1506,7 @@ Text-like
 
 @end table
 
-@section libx264
+@section libx264, libx264rgb
 
 x264 H.264/MPEG-4 AVC encoder wrapper.
 
@@ -1527,6 +1527,16 @@ by the libx264 @code{x264_param_parse} function.
 
 The x264 project website is at
 @url{http://www.videolan.org/developers/x264.html}.
+
+The libx264rgb encoder is the same as libx264, except it accepts packed RGB
+pixel formats as input instead of YUV.
+
+@subsection Supported Pixel Formats
+
+x264 supports 8- to 10-bit color spaces. The exact bit depth is controlled at
+x264's configure time. FFmpeg only supports one bit depth in one particular
+build. In other words, it is not possible to build one FFmpeg with multiple
+versions of x264 with different bit depths.
 
 @subsection Options
 
