@@ -1934,8 +1934,10 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
         }
         header = (AV_RB32(buf) & 0x000fffff) | s->syncword; // patch header
 
-        if (ff_mpa_check_header(header) < 0) // Bad header, discard block
-            break;
+        if (ff_mpa_check_header(header) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Bad header, discard block\n");
+            return AVERROR_INVALIDDATA;
+        }
 
         avpriv_mpegaudio_decode_header((MPADecodeHeader *)m, header);
 
