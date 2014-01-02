@@ -244,6 +244,13 @@ static int mace_decode_frame(AVCodecContext *avctx, void *data,
     int i, j, k, l, ret;
     int is_mace3 = (avctx->codec_id == AV_CODEC_ID_MACE3);
 
+    if (buf_size % (avctx->channels << is_mace3)) {
+        av_log(avctx, AV_LOG_ERROR, "buffer size %d is odd\n", buf_size);
+        buf_size -= buf_size % (avctx->channels << is_mace3);
+        if (!buf_size)
+            return AVERROR_INVALIDDATA;
+    }
+
     /* get output buffer */
     frame->nb_samples = 3 * (buf_size << (1 - is_mace3)) / avctx->channels;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
