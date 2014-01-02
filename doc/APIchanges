@@ -13,6 +13,11 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-01-xx - xxxxxxx - lavc 55.32.1 - avcodec.h
+  Edges are not required anymore on video buffers allocated by get_buffer2()
+  (i.e. as if the CODEC_FLAG_EMU_EDGE flag was always on). Deprecate
+  CODEC_FLAG_EMU_EDGE and avcodec_get_edge_width().
+
 2013-12-xx - xxxxxxx - lavu 53.2.0 - frame.h
   Add AV_FRAME_DATA_MATRIXENCODING value to the AVFrameSideDataType enum, which
   identifies AVMatrixEncoding data.
