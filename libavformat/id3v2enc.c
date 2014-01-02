@@ -333,11 +333,10 @@ void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb,
     /* The ID3v2.3 specification states that 28 bits are used to represent the
      * size of the whole tag.  Therefore the current size of the tag needs to be
      * subtracted from the upper limit of 2^28-1 to clip the value correctly. */
+    /* The minimum of 10 is an arbitrary amount of padding at the end of the tag
+     * to fix cover art display with some software such as iTunes, Traktor,
+     * Serato, Torq. */
     padding_bytes = av_clip(padding_bytes, 10, 268435455 - id3->len);
-
-    /* adding an arbitrary amount of padding bytes at the end of the
-     * ID3 metadata fixes cover art display for some software (iTunes,
-     * Traktor, Serato, Torq) */
     ffio_fill(pb, 0, padding_bytes);
     id3->len += padding_bytes;
 
