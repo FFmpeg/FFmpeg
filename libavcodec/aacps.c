@@ -432,6 +432,7 @@ static void hybrid_synthesis(PSDSPContext *dsp, float out[2][38][64],
 #define DECAY_SLOPE      0.05f
 /// Number of frequency bands that can be addressed by the parameter index, b(k)
 static const int   NR_PAR_BANDS[]      = { 20, 34 };
+static const int   NR_IPDOPD_BANDS[]   = { 11, 17 };
 /// Number of frequency bands that can be addressed by the sub subband index, k
 static const int   NR_BANDS[]          = { 71, 91 };
 /// Start frequency band for the all-pass filter decay slope
@@ -828,7 +829,7 @@ static void stereo_processing(PSContext *ps, float (*l)[32][2], float (*r)[32][2
             h21 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps->iid_quant][icc_mapped[e][b]][2];
             h22 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps->iid_quant][icc_mapped[e][b]][3];
 
-            if (!PS_BASELINE && ps->enable_ipdopd && 2*b <= NR_PAR_BANDS[is34]) {
+            if (!PS_BASELINE && ps->enable_ipdopd && b < NR_IPDOPD_BANDS[is34]) {
                 //The spec say says to only run this smoother when enable_ipdopd
                 //is set but the reference decoder appears to run it constantly
                 float h11i, h12i, h21i, h22i;
