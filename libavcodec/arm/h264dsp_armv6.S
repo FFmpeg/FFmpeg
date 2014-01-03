@@ -236,7 +236,7 @@ function ff_h264_find_start_code_candidate_armv6, export=1
         @ drop through to 98f
 98:     setend  le
 99:     pop     {v1-v6,pc}
-.endfunc
+endfunc
 
         .unreq  RESULT
         .unreq  BUF
