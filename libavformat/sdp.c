@@ -402,7 +402,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
     switch (c->codec_id) {
         case AV_CODEC_ID_H264: {
             int mode = 1;
-            if (fmt && fmt->oformat->priv_class &&
+            if (fmt && fmt->oformat && fmt->oformat->priv_class &&
                 av_opt_flag_is_set(fmt->priv_data, "rtpflags", "h264_mode0"))
                 mode = 0;
             if (c->extradata_size) {
