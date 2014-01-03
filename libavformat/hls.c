@@ -465,6 +465,22 @@ static void handle_rendition_args(struct rendition_info *info, const char *key,
      */
 }
 
+/* used by parse_playlist to allocate a new variant+playlist when the
+ * playlist is detected to be a Media Playlist (not Master Playlist)
+ * and we have no parent Master Playlist (parsing of which would have
+ * allocated the variant and playlist already) */
+static int ensure_playlist(HLSContext *c, struct playlist **pls, const char *url)
+{
+    if (*pls)
+        return 0;
+    if (!new_variant(c, NULL, url, NULL))
+        return AVERROR(ENOMEM);
+    *pls = c->playlists[c->n_playlists - 1];
+    return 0;
+}
+
+/* pls = NULL  => Master Playlist or parentless Media Playlist
+ * pls = !NULL => parented Media Playlist, playlist+variant allocated */
 static int parse_playlist(HLSContext *c, const char *url,
                           struct playlist *pls, AVIOContext *in)
 {
@@ -539,22 +555,14 @@ static int parse_playlist(HLSContext *c, const char *url,
                                &info);
             new_rendition(c, &info, url);
         } else if (av_strstart(line, "#EXT-X-TARGETDURATION:", &ptr)) {
-            if (!pls) {
-                if (!new_variant(c, NULL, url, NULL)) {
-                    ret = AVERROR(ENOMEM);
-                    goto fail;
-                }
-                pls = c->playlists[c->n_playlists - 1];
-            }
+            ret = ensure_playlist(c, &pls, url);
+            if (ret < 0)
+                goto fail;
             pls->target_duration = atoi(ptr) * AV_TIME_BASE;
         } else if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
-            if (!pls) {
-                if (!new_variant(c, NULL, url, NULL)) {
-                    ret = AVERROR(ENOMEM);
-                    goto fail;
-                }
-                pls = c->playlists[c->n_playlists - 1];
-            }
+            ret = ensure_playlist(c, &pls, url);
+            if (ret < 0)
+                goto fail;
             pls->start_seq_no = atoi(ptr);
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
             if (pls)
