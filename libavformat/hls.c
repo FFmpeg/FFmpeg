@@ -164,7 +164,6 @@ typedef struct HLSContext {
     struct rendition **renditions;
 
     int cur_seq_no;
-    int end_of_segment;
     int first_packet;
     int64_t first_timestamp;
     int64_t cur_timestamp;
@@ -1053,7 +1052,6 @@ reload:
     v->input = NULL;
     v->cur_seq_no++;
 
-    c->end_of_segment = 1;
     c->cur_seq_no = v->cur_seq_no;
 
     goto restart;
@@ -1480,13 +1478,8 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
     HLSContext *c = s->priv_data;
     int ret, i, minplaylist = -1;
 
-    if (c->first_packet) {
-        recheck_discard_flags(s, 1);
-        c->first_packet = 0;
-    }
+    recheck_discard_flags(s, c->first_packet);
 
-start:
-    c->end_of_segment = 0;
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];
         /* Make sure we've got one buffered packet from each open playlist
@@ -1551,10 +1544,7 @@ start:
             }
         }
     }
-    if (c->end_of_segment) {
-        if (recheck_discard_flags(s, 0))
-            goto start;
-    }
+
     /* If we got a packet, return it */
     if (minplaylist >= 0) {
         struct playlist *pls = c->playlists[minplaylist];
