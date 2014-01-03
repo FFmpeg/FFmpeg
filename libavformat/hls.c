@@ -1417,6 +1417,8 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         pls->pb.buf_end = pls->pb.buf_ptr = pls->pb.buffer;
         /* Reset the pos, to let the mpegts demuxer know we've seeked. */
         pls->pb.pos = 0;
+        /* Flush the packet queue of the subdemuxer. */
+        ff_read_frame_flush(pls->ctx);
         /* Set current segment to end immediately for audio demuxer */
         pls->next_seg_bytepos = 0;
         set_audio_id3_tag_offset(pls);
