@@ -141,6 +141,20 @@ int64_t av_compare_mod(uint64_t a, uint64_t b, uint64_t mod);
 int64_t av_rescale_delta(AVRational in_tb, int64_t in_ts,  AVRational fs_tb, int duration, int64_t *last, AVRational out_tb);
 
 /**
+ * Add a value to a timestamp.
+ *
+ * This function gurantees that when the same value is repeatly added that
+ * no accumulation of rounding errors occurs.
+ *
+ * @param ts Input timestamp
+ * @param ts_tb Input timestamp timebase
+ * @param inc value to add to ts
+ * @param inc_tb inc timebase
+ */
+int64_t av_add_stable(AVRational ts_tb, int64_t ts, AVRational inc_tb, int64_t inc);
+
+
+    /**
  * @}
  */
 

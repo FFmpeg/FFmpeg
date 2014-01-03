@@ -174,3 +174,17 @@ simple_round:
 
     return av_rescale_q(this, fs_tb, out_tb);
 }
+
+int64_t av_add_stable(AVRational ts_tb, int64_t ts, AVRational inc_tb, int64_t inc)
+{
+    AVRational step = av_mul_q(inc_tb, (AVRational) {inc, 1});
+
+    if (av_cmp_q(step, ts_tb) < 0) {
+        //increase step is too small for even 1 step to be representable
+        return ts;
+    } else {
+        int64_t old = av_rescale_q(ts, ts_tb, step);
+        int64_t old_ts = av_rescale_q(old, step, ts_tb);
+        return av_rescale_q(old + 1, step, ts_tb) + (ts - old_ts);
+    }
+}
