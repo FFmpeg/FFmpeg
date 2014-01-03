@@ -1580,7 +1580,11 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             return i;
         }
         s->last_picture_ptr = &s->picture[i];
+
+        s->last_picture_ptr->reference   = 3;
         s->last_picture_ptr->f.key_frame = 0;
+        s->last_picture_ptr->f.pict_type = AV_PICTURE_TYPE_P;
+
         if (ff_alloc_picture(s, s->last_picture_ptr, 0) < 0) {
             s->last_picture_ptr = NULL;
             return -1;
@@ -1613,7 +1617,11 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             return i;
         }
         s->next_picture_ptr = &s->picture[i];
+
+        s->next_picture_ptr->reference   = 3;
         s->next_picture_ptr->f.key_frame = 0;
+        s->next_picture_ptr->f.pict_type = AV_PICTURE_TYPE_P;
+
         if (ff_alloc_picture(s, s->next_picture_ptr, 0) < 0) {
             s->next_picture_ptr = NULL;
             return -1;
