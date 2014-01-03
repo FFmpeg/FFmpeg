@@ -287,4 +287,5 @@ AVInputFormat ff_bink_demuxer = {
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_seek      = read_seek,
+    .flags          = AVFMT_SHOW_IDS,
 };
