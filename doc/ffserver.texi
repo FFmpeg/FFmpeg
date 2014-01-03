@@ -49,7 +49,8 @@ configuration file.
 
 Precisely, @command{ffserver} acts as an HTTP server, accepting POST
 requests from @command{ffmpeg} to acquire the stream to publish, and
-serving HTTP clients GET requests with the stream media content.
+serving RTSP clients or HTTP clients GET requests with the stream
+media content.
 
 A feed is an @ref{FFM} stream created by @command{ffmpeg}, and sent to
 a port where @command{ffserver} is listening.
@@ -86,15 +87,22 @@ Each stream is identified by a unique name, corresponding to the name
 of the resource served by @command{ffserver}, and is configured by
 a dedicated @code{Stream} section in the configuration file.
 
-The stream access URL is given by:
+The stream access HTTP URL is given by:
 @example
 http://@var{ffserver_ip_address}:@var{http_port}/@var{stream_name}[@var{options}]
+@end example
+
+The stream access RTSP URL is given by:
+@example
+http://@var{ffserver_ip_address}:@var{rtsp_port}/@var{stream_name}[@var{options}]
 @end example
 
 @var{stream_name} is the name of the corresponding stream defined in
 the configuration file. @var{options} is a list of options specified
 after the URL which affects how the stream is served by
-@command{ffserver}.
+@command{ffserver}. @var{http_port} and @var{rtsp_port} are the HTTP
+and RTSP ports configured with the options @var{Port} and
+@var{RTSPPort} respectively.
 
 In case the stream is associated to a feed, the encoding parameters
 must be configured in the stream configuration. They are sent to
