@@ -938,8 +938,8 @@ static AVPacketList *get_next_pkt(AVFormatContext *s, AVStream *st, AVPacketList
 {
     if (pktl->next)
         return pktl->next;
-    if (pktl == s->parse_queue_end)
-        return s->packet_buffer;
+    if (pktl == s->packet_buffer_end)
+        return s->parse_queue;
     return NULL;
 }
 
@@ -947,7 +947,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
                                       int64_t dts, int64_t pts, AVPacket *pkt)
 {
     AVStream *st= s->streams[stream_index];
-    AVPacketList *pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
+    AVPacketList *pktl= s->packet_buffer ? s->packet_buffer : s->parse_queue;
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
     int64_t shift;
     int i, delay;
@@ -994,7 +994,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
 static void update_initial_durations(AVFormatContext *s, AVStream *st,
                                      int stream_index, int duration)
 {
-    AVPacketList *pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
+    AVPacketList *pktl= s->packet_buffer ? s->packet_buffer : s->parse_queue;
     int64_t cur_dts= RELATIVE_TS_BASE;
 
     if(st->first_dts != AV_NOPTS_VALUE){
@@ -1018,7 +1018,7 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
             av_log(s, AV_LOG_DEBUG, "first_dts %s but no packet with dts in the queue\n", av_ts2str(st->first_dts));
             return;
         }
-        pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
+        pktl= s->packet_buffer ? s->packet_buffer : s->parse_queue;
         st->first_dts = cur_dts;
     }else if(st->cur_dts != RELATIVE_TS_BASE)
         return;
