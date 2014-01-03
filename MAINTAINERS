@@ -386,6 +386,7 @@ Muxers/Demuxers:
   flvdec.c, flvenc.c                    Michael Niedermayer
   gxf.c                                 Reimar Doeffinger
   gxfenc.c                              Baptiste Coudurier
+  hls.c                                 Anssi Hannula
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
   iff.c                                 Jaikrishnan Menon
@@ -445,6 +446,7 @@ Muxers/Demuxers:
   siff.c                                Kostya Shishkov
   smacker.c                             Kostya Shishkov
   smjpeg*                               Paul B Mahol
+  spdif*                                Anssi Hannula
   srtdec.c                              Aurelien Jacobs
   swf.c                                 Baptiste Coudurier
   takdec.c                              Paul B Mahol
