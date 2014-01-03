@@ -368,26 +368,6 @@ ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
 rm temp[12].[av] all.[av]
 @end example
 
-@section -profile option fails when encoding H.264 video with AAC audio
-
-@command{ffmpeg} prints an error like
-
-@example
-Undefined constant or missing '(' in 'baseline'
-Unable to parse option value "baseline"
-Error setting option profile to value baseline.
-@end example
-
-Short answer: write @option{-profile:v} instead of @option{-profile}.
-
-Long answer: this happens because the @option{-profile} option can apply to both
-video and audio.  Specifically the AAC encoder also defines some profiles, none
-of which are named @var{baseline}.
-
-The solution is to apply the @option{-profile} option to the video stream only
-by using @url{http://ffmpeg.org/ffmpeg.html#Stream-specifiers-1, Stream specifiers}.
-Appending @code{:v} to it will do exactly that.
-
 @section Using @option{-f lavfi}, audio becomes mono for no apparent reason.
 
 Use @option{-dumpgraph -} to find out exactly where the channel layout is
