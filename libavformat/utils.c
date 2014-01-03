@@ -1046,6 +1046,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 {
     int num, den, presentation_delayed, delay, i;
     int64_t offset;
+    AVRational duration;
 
     if (s->flags & AVFMT_FLAG_NOFILLIN)
         return;
@@ -1087,12 +1088,15 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             pkt->dts= AV_NOPTS_VALUE;
     }
 
+    duration = av_mul_q((AVRational){pkt->duration, 1}, st->time_base);
     if (pkt->duration == 0) {
         ff_compute_frame_duration(&num, &den, st, pc, pkt);
         if (den && num) {
+            duration = (AVRational){num, den};
             pkt->duration = av_rescale_rnd(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num, AV_ROUND_DOWN);
         }
     }
+
     if(pkt->duration != 0 && (s->packet_buffer || s->parse_queue))
         update_initial_durations(s, st, pkt->stream_index, pkt->duration);
 
@@ -1138,7 +1142,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         } else if (pkt->pts != AV_NOPTS_VALUE ||
                    pkt->dts != AV_NOPTS_VALUE ||
                    pkt->duration                ) {
-            int duration = pkt->duration;
 
             /* presentation is not delayed : PTS and DTS are the same */
             if (pkt->pts == AV_NOPTS_VALUE)
@@ -1149,7 +1152,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 pkt->pts = st->cur_dts;
             pkt->dts = pkt->pts;
             if (pkt->pts != AV_NOPTS_VALUE)
-                st->cur_dts = pkt->pts + duration;
+                st->cur_dts = av_add_stable(st->time_base, pkt->pts, duration, 1);
         }
     }
 
