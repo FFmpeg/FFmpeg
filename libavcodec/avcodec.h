@@ -2158,6 +2158,8 @@ typedef struct AVCodecContext {
      * avcodec_align_dimensions2() should be used to find the required width and
      * height, as they normally need to be rounded up to the next multiple of 16.
      *
+     * Some decoders do not support linesizes changing between frames.
+     *
      * If frame multithreading is used and thread_safe_callbacks is set,
      * this callback may be called from a different thread, but not from more
      * than one at once. Does not need to be reentrant.
