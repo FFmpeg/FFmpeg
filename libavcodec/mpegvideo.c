@@ -552,6 +552,9 @@ static int init_duplicate_context(MpegEncContext *s)
     int yc_size = y_size + 2 * c_size;
     int i;
 
+    if (s->mb_height & 1)
+        yc_size += 2*s->b8_stride + 2*s->mb_stride;
+
     s->edge_emu_buffer =
     s->me.scratchpad   =
     s->me.temp         =
@@ -899,6 +902,9 @@ static int init_context_frame(MpegEncContext *s)
     c_size  = s->mb_stride * (s->mb_height + 1);
     yc_size = y_size + 2   * c_size;
 
+    if (s->mb_height & 1)
+        yc_size += 2*s->b8_stride + 2*s->mb_stride;
+
     FF_ALLOCZ_OR_GOTO(s->avctx, s->mb_index2xy, (s->mb_num + 1) * sizeof(int), fail); // error ressilience code looks cleaner with this
     for (y = 0; y < s->mb_height; y++)
         for (x = 0; x < s->mb_width; x++)
@@ -956,7 +962,7 @@ static int init_context_frame(MpegEncContext *s)
     }
     if (s->out_format == FMT_H263) {
         /* cbp values */
-        FF_ALLOCZ_OR_GOTO(s->avctx, s->coded_block_base, y_size, fail);
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->coded_block_base, y_size + (s->mb_height&1)*2*s->b8_stride, fail);
         s->coded_block = s->coded_block_base + s->b8_stride + 1;
 
         /* cbp, ac_pred, pred_dir */
