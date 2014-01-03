@@ -168,6 +168,7 @@ OBJS-$(CONFIG_HDS_MUXER)                 += hdsenc.o
 OBJS-$(CONFIG_HEVC_DEMUXER)              += hevcdec.o rawdec.o
 OBJS-$(CONFIG_HLS_DEMUXER)               += hls.o
 OBJS-$(CONFIG_HLS_MUXER)                 += hlsenc.o
+OBJS-$(CONFIG_HLS_ID3_AUDIO_DEMUXER)     += hls_id3_audio.o
 OBJS-$(CONFIG_HNM_DEMUXER)               += hnm.o
 OBJS-$(CONFIG_ICO_DEMUXER)               += icodec.o
 OBJS-$(CONFIG_ICO_MUXER)                 += icoenc.o

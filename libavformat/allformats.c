@@ -137,6 +137,7 @@ void av_register_all(void)
     REGISTER_MUXER   (HDS,              hds);
     REGISTER_DEMUXER (HEVC,             hevc);
     REGISTER_MUXDEMUX(HLS,              hls);
+    REGISTER_DEMUXER (HLS_ID3_AUDIO,    hls_id3_audio);
     REGISTER_DEMUXER (HNM,              hnm);
     REGISTER_MUXDEMUX(ICO,              ico);
     REGISTER_DEMUXER (IDCIN,            idcin);
