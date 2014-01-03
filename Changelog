@@ -53,6 +53,7 @@ version 10:
 - stereoscopic 3d metadata handling
 - png standalone parser
 - WebP encoding via libwebp
+- ATRAC3+ decoder
 
 
 version 9:
