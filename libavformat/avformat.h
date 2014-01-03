@@ -377,6 +377,9 @@ typedef struct AVProbeData {
                                         AVFormatContext.avoid_negative_ts
                                         */
 
+#define AVFMT_RAW_ID3      0x80000 /**< Format requires raw ID3 tags to not be
+                                        parsed/stripped before read_header */
+
 #define AVFMT_SEEK_TO_PTS   0x4000000 /**< Seeking is based on PTS */
 
 /**
