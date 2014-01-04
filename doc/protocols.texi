@@ -117,7 +117,7 @@ ffmpeg -i "data:image/gif;base64,R0lGODdhCAAIAMIEAAAAAAAA//8AAP//AP/////////////
 
 File access protocol.
 
-Allow to read from or read to a file.
+Allow to read from or write to a file.
 
 A file URL can have the form:
 @example
