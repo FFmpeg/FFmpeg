@@ -42,21 +42,6 @@
 #include "thread.h"
 #include <limits.h>
 
-static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale);
-static void dct_unquantize_mpeg1_inter_c(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale);
-static void dct_unquantize_mpeg2_intra_c(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale);
-static void dct_unquantize_mpeg2_intra_bitexact(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale);
-static void dct_unquantize_mpeg2_inter_c(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale);
-static void dct_unquantize_h263_intra_c(MpegEncContext *s,
-                                  int16_t *block, int n, int qscale);
-static void dct_unquantize_h263_inter_c(MpegEncContext *s,
-                                  int16_t *block, int n, int qscale);
-
 static const uint8_t ff_default_chroma_qscale_table[32] = {
 //   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
      0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
@@ -122,6 +107,213 @@ const enum AVPixelFormat ff_pixfmt_list_420[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NONE
 };
+
+static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
+                                   int16_t *block, int n, int qscale)
+{
+    int i, level, nCoeffs;
+    const uint16_t *quant_matrix;
+
+    nCoeffs= s->block_last_index[n];
+
+    block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
+    /* XXX: only mpeg1 */
+    quant_matrix = s->intra_matrix;
+    for(i=1;i<=nCoeffs;i++) {
+        int j= s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            if (level < 0) {
+                level = -level;
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = (level - 1) | 1;
+                level = -level;
+            } else {
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = (level - 1) | 1;
+            }
+            block[j] = level;
+        }
+    }
+}
+
+static void dct_unquantize_mpeg1_inter_c(MpegEncContext *s,
+                                   int16_t *block, int n, int qscale)
+{
+    int i, level, nCoeffs;
+    const uint16_t *quant_matrix;
+
+    nCoeffs= s->block_last_index[n];
+
+    quant_matrix = s->inter_matrix;
+    for(i=0; i<=nCoeffs; i++) {
+        int j= s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            if (level < 0) {
+                level = -level;
+                level = (((level << 1) + 1) * qscale *
+                         ((int) (quant_matrix[j]))) >> 4;
+                level = (level - 1) | 1;
+                level = -level;
+            } else {
+                level = (((level << 1) + 1) * qscale *
+                         ((int) (quant_matrix[j]))) >> 4;
+                level = (level - 1) | 1;
+            }
+            block[j] = level;
+        }
+    }
+}
+
+static void dct_unquantize_mpeg2_intra_c(MpegEncContext *s,
+                                   int16_t *block, int n, int qscale)
+{
+    int i, level, nCoeffs;
+    const uint16_t *quant_matrix;
+
+    if(s->alternate_scan) nCoeffs= 63;
+    else nCoeffs= s->block_last_index[n];
+
+    block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
+    quant_matrix = s->intra_matrix;
+    for(i=1;i<=nCoeffs;i++) {
+        int j= s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            if (level < 0) {
+                level = -level;
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = -level;
+            } else {
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+            }
+            block[j] = level;
+        }
+    }
+}
+
+static void dct_unquantize_mpeg2_intra_bitexact(MpegEncContext *s,
+                                   int16_t *block, int n, int qscale)
+{
+    int i, level, nCoeffs;
+    const uint16_t *quant_matrix;
+    int sum=-1;
+
+    if(s->alternate_scan) nCoeffs= 63;
+    else nCoeffs= s->block_last_index[n];
+
+    block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
+    sum += block[0];
+    quant_matrix = s->intra_matrix;
+    for(i=1;i<=nCoeffs;i++) {
+        int j= s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            if (level < 0) {
+                level = -level;
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = -level;
+            } else {
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+            }
+            block[j] = level;
+            sum+=level;
+        }
+    }
+    block[63]^=sum&1;
+}
+
+static void dct_unquantize_mpeg2_inter_c(MpegEncContext *s,
+                                   int16_t *block, int n, int qscale)
+{
+    int i, level, nCoeffs;
+    const uint16_t *quant_matrix;
+    int sum=-1;
+
+    if(s->alternate_scan) nCoeffs= 63;
+    else nCoeffs= s->block_last_index[n];
+
+    quant_matrix = s->inter_matrix;
+    for(i=0; i<=nCoeffs; i++) {
+        int j= s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            if (level < 0) {
+                level = -level;
+                level = (((level << 1) + 1) * qscale *
+                         ((int) (quant_matrix[j]))) >> 4;
+                level = -level;
+            } else {
+                level = (((level << 1) + 1) * qscale *
+                         ((int) (quant_matrix[j]))) >> 4;
+            }
+            block[j] = level;
+            sum+=level;
+        }
+    }
+    block[63]^=sum&1;
+}
+
+static void dct_unquantize_h263_intra_c(MpegEncContext *s,
+                                  int16_t *block, int n, int qscale)
+{
+    int i, level, qmul, qadd;
+    int nCoeffs;
+
+    av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
+
+    qmul = qscale << 1;
+
+    if (!s->h263_aic) {
+        block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
+        qadd = (qscale - 1) | 1;
+    }else{
+        qadd = 0;
+    }
+    if(s->ac_pred)
+        nCoeffs=63;
+    else
+        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+
+    for(i=1; i<=nCoeffs; i++) {
+        level = block[i];
+        if (level) {
+            if (level < 0) {
+                level = level * qmul - qadd;
+            } else {
+                level = level * qmul + qadd;
+            }
+            block[i] = level;
+        }
+    }
+}
+
+static void dct_unquantize_h263_inter_c(MpegEncContext *s,
+                                  int16_t *block, int n, int qscale)
+{
+    int i, level, qmul, qadd;
+    int nCoeffs;
+
+    av_assert2(s->block_last_index[n]>=0);
+
+    qadd = (qscale - 1) | 1;
+    qmul = qscale << 1;
+
+    nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+
+    for(i=0; i<=nCoeffs; i++) {
+        level = block[i];
+        if (level) {
+            if (level < 0) {
+                level = level * qmul - qadd;
+            } else {
+                level = level * qmul + qadd;
+            }
+            block[i] = level;
+        }
+    }
+}
 
 static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
                               int (*mv)[2][4][2],
@@ -3010,213 +3202,6 @@ void ff_mpeg_flush(AVCodecContext *avctx){
     s->parse_context.last_index= 0;
     s->bitstream_buffer_size=0;
     s->pp_time=0;
-}
-
-static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale)
-{
-    int i, level, nCoeffs;
-    const uint16_t *quant_matrix;
-
-    nCoeffs= s->block_last_index[n];
-
-    block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
-    /* XXX: only mpeg1 */
-    quant_matrix = s->intra_matrix;
-    for(i=1;i<=nCoeffs;i++) {
-        int j= s->intra_scantable.permutated[i];
-        level = block[j];
-        if (level) {
-            if (level < 0) {
-                level = -level;
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
-                level = (level - 1) | 1;
-                level = -level;
-            } else {
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
-                level = (level - 1) | 1;
-            }
-            block[j] = level;
-        }
-    }
-}
-
-static void dct_unquantize_mpeg1_inter_c(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale)
-{
-    int i, level, nCoeffs;
-    const uint16_t *quant_matrix;
-
-    nCoeffs= s->block_last_index[n];
-
-    quant_matrix = s->inter_matrix;
-    for(i=0; i<=nCoeffs; i++) {
-        int j= s->intra_scantable.permutated[i];
-        level = block[j];
-        if (level) {
-            if (level < 0) {
-                level = -level;
-                level = (((level << 1) + 1) * qscale *
-                         ((int) (quant_matrix[j]))) >> 4;
-                level = (level - 1) | 1;
-                level = -level;
-            } else {
-                level = (((level << 1) + 1) * qscale *
-                         ((int) (quant_matrix[j]))) >> 4;
-                level = (level - 1) | 1;
-            }
-            block[j] = level;
-        }
-    }
-}
-
-static void dct_unquantize_mpeg2_intra_c(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale)
-{
-    int i, level, nCoeffs;
-    const uint16_t *quant_matrix;
-
-    if(s->alternate_scan) nCoeffs= 63;
-    else nCoeffs= s->block_last_index[n];
-
-    block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
-    quant_matrix = s->intra_matrix;
-    for(i=1;i<=nCoeffs;i++) {
-        int j= s->intra_scantable.permutated[i];
-        level = block[j];
-        if (level) {
-            if (level < 0) {
-                level = -level;
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
-                level = -level;
-            } else {
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
-            }
-            block[j] = level;
-        }
-    }
-}
-
-static void dct_unquantize_mpeg2_intra_bitexact(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale)
-{
-    int i, level, nCoeffs;
-    const uint16_t *quant_matrix;
-    int sum=-1;
-
-    if(s->alternate_scan) nCoeffs= 63;
-    else nCoeffs= s->block_last_index[n];
-
-    block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
-    sum += block[0];
-    quant_matrix = s->intra_matrix;
-    for(i=1;i<=nCoeffs;i++) {
-        int j= s->intra_scantable.permutated[i];
-        level = block[j];
-        if (level) {
-            if (level < 0) {
-                level = -level;
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
-                level = -level;
-            } else {
-                level = (int)(level * qscale * quant_matrix[j]) >> 3;
-            }
-            block[j] = level;
-            sum+=level;
-        }
-    }
-    block[63]^=sum&1;
-}
-
-static void dct_unquantize_mpeg2_inter_c(MpegEncContext *s,
-                                   int16_t *block, int n, int qscale)
-{
-    int i, level, nCoeffs;
-    const uint16_t *quant_matrix;
-    int sum=-1;
-
-    if(s->alternate_scan) nCoeffs= 63;
-    else nCoeffs= s->block_last_index[n];
-
-    quant_matrix = s->inter_matrix;
-    for(i=0; i<=nCoeffs; i++) {
-        int j= s->intra_scantable.permutated[i];
-        level = block[j];
-        if (level) {
-            if (level < 0) {
-                level = -level;
-                level = (((level << 1) + 1) * qscale *
-                         ((int) (quant_matrix[j]))) >> 4;
-                level = -level;
-            } else {
-                level = (((level << 1) + 1) * qscale *
-                         ((int) (quant_matrix[j]))) >> 4;
-            }
-            block[j] = level;
-            sum+=level;
-        }
-    }
-    block[63]^=sum&1;
-}
-
-static void dct_unquantize_h263_intra_c(MpegEncContext *s,
-                                  int16_t *block, int n, int qscale)
-{
-    int i, level, qmul, qadd;
-    int nCoeffs;
-
-    av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
-
-    qmul = qscale << 1;
-
-    if (!s->h263_aic) {
-        block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
-        qadd = (qscale - 1) | 1;
-    }else{
-        qadd = 0;
-    }
-    if(s->ac_pred)
-        nCoeffs=63;
-    else
-        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-
-    for(i=1; i<=nCoeffs; i++) {
-        level = block[i];
-        if (level) {
-            if (level < 0) {
-                level = level * qmul - qadd;
-            } else {
-                level = level * qmul + qadd;
-            }
-            block[i] = level;
-        }
-    }
-}
-
-static void dct_unquantize_h263_inter_c(MpegEncContext *s,
-                                  int16_t *block, int n, int qscale)
-{
-    int i, level, qmul, qadd;
-    int nCoeffs;
-
-    av_assert2(s->block_last_index[n]>=0);
-
-    qadd = (qscale - 1) | 1;
-    qmul = qscale << 1;
-
-    nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-
-    for(i=0; i<=nCoeffs; i++) {
-        level = block[i];
-        if (level) {
-            if (level < 0) {
-                level = level * qmul - qadd;
-            } else {
-                level = level * qmul + qadd;
-            }
-            block[i] = level;
-        }
-    }
 }
 
 /**
