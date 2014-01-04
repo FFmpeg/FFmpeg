@@ -300,7 +300,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
 {
     MpegEncContext *s = &rv->m;
     int seq, mb_pos, i, ret;
-    int rpr_bits;
+    int rpr_max;
 
     i = get_bits(&s->gb, 2);
     switch(i) {
@@ -341,10 +341,10 @@ static int rv20_decode_picture_header(RVDecContext *rv)
     else
         seq = get_bits(&s->gb, 13) << 2;
 
-    rpr_bits = s->avctx->extradata[1] & 7;
-    if (rpr_bits) {
+    rpr_max = s->avctx->extradata[1] & 7;
+    if (rpr_max) {
         int f, new_w, new_h;
-        rpr_bits = FFMIN((rpr_bits >> 1) + 1, 3);
+        int rpr_bits = av_log2(rpr_max) + 1;
 
         f = get_bits(&s->gb, rpr_bits);
 
@@ -387,7 +387,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
         }
 
         if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
-            av_log(s->avctx, AV_LOG_DEBUG, "F %d/%d\n", f, rpr_bits);
+            av_log(s->avctx, AV_LOG_DEBUG, "F %d/%d/%d\n", f, rpr_bits, rpr_max);
         }
     }
     if (av_image_check_size(s->width, s->height, 0, s->avctx) < 0)
