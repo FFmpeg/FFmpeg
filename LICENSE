@@ -47,7 +47,6 @@ Specifically, the GPL parts of FFmpeg are
     - vf_stereo3d.c
     - vf_super2xsai.c
     - vf_tinterlace.c
-    - vf_yadif.c
     - vsrc_mptestsrc.c
 
 Should you, for whatever reason, prefer to use version 3 of the (L)GPL, then
