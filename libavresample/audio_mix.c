@@ -559,9 +559,12 @@ static void reduce_matrix(AudioMix *am, const double *matrix, int stride)
         if (zero) {
             am->output_zero[o] = 1;
             am->out_matrix_channels--;
+            if (o < am->in_channels)
+                am->in_matrix_channels--;
         }
     }
-    if (am->out_matrix_channels == 0) {
+    if (am->out_matrix_channels == 0 || am->in_matrix_channels == 0) {
+        am->out_matrix_channels = 0;
         am->in_matrix_channels = 0;
         return;
     }
@@ -683,7 +686,7 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
                                      am->in_matrix_channels;                \
         for (i = 0, i0 = 0; i < am->in_channels; i++) {                     \
             double v;                                                       \
-            if (am->input_skip[i])                                          \
+            if (am->input_skip[i] || am->output_zero[i])                    \
                 continue;                                                   \
             v = matrix[o * stride + i];                                     \
             am->matrix_## type[o0][i0] = expr;                              \
