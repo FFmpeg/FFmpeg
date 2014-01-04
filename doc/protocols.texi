@@ -119,15 +119,23 @@ File access protocol.
 
 Allow to read from or read to a file.
 
+A file URL can have the form:
+@example
+file:@var{filename}
+@end example
+
+where @var{filename} is the path of the file to read.
+
+An URL that does not have a protocol prefix will be assumed to be a
+file URL. Depending on the build, an URL that looks like a Windows
+path with the drive letter at the beginning will also be assumed to be
+a file URL (usually not the case in builds for unix-like systems).
+
 For example to read from a file @file{input.mpeg} with @command{ffmpeg}
 use the command:
 @example
 ffmpeg -i file:input.mpeg output.mpeg
 @end example
-
-The ff* tools default to the file protocol, that is a resource
-specified with the name "FILE.mpeg" is interpreted as the URL
-"file:FILE.mpeg".
 
 This protocol accepts the following options:
 
