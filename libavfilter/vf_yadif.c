@@ -517,6 +517,25 @@ static const AVOption yadif_options[] = {
 
 AVFILTER_DEFINE_CLASS(yadif);
 
+static const AVFilterPad avfilter_vf_yadif_inputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .filter_frame  = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_yadif_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
+};
+
 AVFilter ff_vf_yadif = {
     .name          = "yadif",
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
@@ -524,19 +543,7 @@ AVFilter ff_vf_yadif = {
     .priv_class    = &yadif_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs        = (const AVFilterPad[]) {{ .name             = "default",
-                                              .type             = AVMEDIA_TYPE_VIDEO,
-                                              .filter_frame     = filter_frame,
-                                            },
-                                            { .name = NULL}},
-
-    .outputs       = (const AVFilterPad[]) {{ .name             = "default",
-                                              .type             = AVMEDIA_TYPE_VIDEO,
-                                              .request_frame    = request_frame,
-                                              .config_props     = config_props,
-                                            },
-                                            { .name = NULL}},
-
+    .inputs        = avfilter_vf_yadif_inputs,
+    .outputs       = avfilter_vf_yadif_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
