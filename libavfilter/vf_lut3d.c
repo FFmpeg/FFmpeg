@@ -273,7 +273,7 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
             for (k = 0; k < size; k++) {
                 for (j = 0; j < size; j++) {
                     for (i = 0; i < size; i++) {
-                        struct rgbvec *vec = &lut3d->lut[k][j][i];
+                        struct rgbvec *vec = &lut3d->lut[i][j][k];
 
                         do {
                             NEXT_LINE(0);
