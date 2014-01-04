@@ -76,6 +76,12 @@ struct segment {
 
 struct rendition;
 
+enum PlaylistType {
+    PLS_TYPE_UNSPECIFIED,
+    PLS_TYPE_EVENT,
+    PLS_TYPE_VOD
+};
+
 /*
  * Each playlist has its own demuxer. If it currently is active,
  * it has an open AVIOContext too, and potentially an AVPacket
@@ -93,6 +99,7 @@ struct playlist {
     int stream_offset;
 
     int finished;
+    enum PlaylistType type;
     int64_t target_duration;
     int start_seq_no;
     int n_segments;
@@ -528,6 +535,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     if (pls) {
         free_segment_list(pls);
         pls->finished = 0;
+        pls->type = PLS_TYPE_UNSPECIFIED;
     }
     while (!url_feof(in)) {
         read_chomp_line(in, line, sizeof(line));
@@ -564,6 +572,14 @@ static int parse_playlist(HLSContext *c, const char *url,
             if (ret < 0)
                 goto fail;
             pls->start_seq_no = atoi(ptr);
+        } else if (av_strstart(line, "#EXT-X-PLAYLIST-TYPE:", &ptr)) {
+            ret = ensure_playlist(c, &pls, url);
+            if (ret < 0)
+                goto fail;
+            if (!strcmp(ptr, "EVENT"))
+                pls->type = PLS_TYPE_EVENT;
+            else if (!strcmp(ptr, "VOD"))
+                pls->type = PLS_TYPE_VOD;
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
             if (pls)
                 pls->finished = 1;
@@ -1584,17 +1600,24 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     HLSContext *c = s->priv_data;
     struct playlist *seek_pls = NULL;
     int i, seq_no;
-    int64_t seek_timestamp;
+    int64_t first_timestamp, seek_timestamp, duration;
 
-    if ((flags & AVSEEK_FLAG_BYTE) || !c->variants[0]->playlists[0]->finished)
+    if ((flags & AVSEEK_FLAG_BYTE) ||
+        !(c->variants[0]->playlists[0]->finished || c->variants[0]->playlists[0]->type == PLS_TYPE_EVENT))
         return AVERROR(ENOSYS);
+
+    first_timestamp = c->first_timestamp == AV_NOPTS_VALUE ?
+                      0 : c->first_timestamp;
 
     seek_timestamp = av_rescale_rnd(timestamp, AV_TIME_BASE,
                                     s->streams[stream_index]->time_base.den,
                                     flags & AVSEEK_FLAG_BACKWARD ?
                                     AV_ROUND_DOWN : AV_ROUND_UP);
 
-    if (s->duration < seek_timestamp)
+    duration = s->duration == AV_NOPTS_VALUE ?
+               0 : s->duration;
+
+    if (0 < duration && duration < seek_timestamp - first_timestamp)
         return AVERROR(EIO);
 
     /* find the playlist with the specified stream */
