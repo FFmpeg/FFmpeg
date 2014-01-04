@@ -23,14 +23,11 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/x86/asm.h"
-#include "libavutil/x86/cpu.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
 #include "yadif.h"
-
 
 typedef struct ThreadData {
     AVFrame *frame;
@@ -39,35 +36,6 @@ typedef struct ThreadData {
     int parity;
     int tff;
 } ThreadData;
-
-typedef struct YADIFContext {
-    const AVClass *class;
-
-    enum YADIFMode   mode;
-    enum YADIFParity parity;
-    enum YADIFDeint  deint;
-
-    int frame_pending;
-
-    AVFrame *cur;
-    AVFrame *next;
-    AVFrame *prev;
-    AVFrame *out;
-
-    /**
-     * Required alignment for filter_line
-     */
-    void (*filter_line)(void *dst,
-                        void *prev, void *cur, void *next,
-                        int w, int prefs, int mrefs, int parity, int mode);
-    void (*filter_edges)(void *dst, void *prev, void *cur, void *next,
-                         int w, int prefs, int mrefs, int parity, int mode);
-
-    const AVPixFmtDescriptor *csp;
-    int eof;
-    uint8_t *temp_line;
-    int temp_line_size;
-} YADIFContext;
 
 #define CHECK(j)\
     {   int score = FFABS(cur[mrefs - 1 + j] - cur[prefs - 1 - j])\
@@ -493,9 +461,6 @@ static int config_props(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
     YADIFContext *s = link->src->priv;
-    int cpu_flags = av_get_cpu_flags();
-    int bit_depth = (!s->csp) ? 8
-                                  : s->csp->comp[0].depth_minus1 + 1;
 
     link->time_base.num = link->src->inputs[0]->time_base.num;
     link->time_base.den = link->src->inputs[0]->time_base.den * 2;
@@ -519,38 +484,9 @@ static int config_props(AVFilterLink *link)
         s->filter_edges = filter_edges;
     }
 
-#if HAVE_YASM
-    if (bit_depth >= 15) {
-        if (EXTERNAL_SSE4(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_16bit_sse4;
-        else if (EXTERNAL_SSSE3(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_16bit_ssse3;
-        else if (EXTERNAL_SSE2(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_16bit_sse2;
-#if ARCH_X86_32
-        else if (EXTERNAL_MMXEXT(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_16bit_mmxext;
-#endif /* ARCH_X86_32 */
-    } else if ( bit_depth >= 9 && bit_depth <= 14) {
-        if (EXTERNAL_SSSE3(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_10bit_ssse3;
-        else if (EXTERNAL_SSE2(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_10bit_sse2;
-#if ARCH_X86_32
-        else if (EXTERNAL_MMXEXT(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_10bit_mmxext;
-#endif /* ARCH_X86_32 */
-    } else {
-        if (EXTERNAL_SSSE3(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_ssse3;
-        else if (EXTERNAL_SSE2(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_sse2;
-#if ARCH_X86_32
-        else if (EXTERNAL_MMXEXT(cpu_flags))
-            s->filter_line = ff_yadif_filter_line_mmxext;
-#endif /* ARCH_X86_32 */
-    }
-#endif /* HAVE_YASM */
+    if (ARCH_X86)
+        ff_yadif_init_x86(s);
+
     return 0;
 }
 
