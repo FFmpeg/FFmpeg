@@ -52,6 +52,11 @@ static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
     si->pts = get_bits(gb, 13);
     rpr = get_bits(gb, av_log2(r->max_rpr) + 1);
     if(rpr){
+        if (rpr > r->max_rpr) {
+            av_log(avctx, AV_LOG_ERROR, "rpr too large\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         if (avctx->extradata_size < rpr * 2 + 8) {
             av_log(avctx, AV_LOG_ERROR,
                    "Insufficient extradata - need at least %d bytes, got %d\n",
