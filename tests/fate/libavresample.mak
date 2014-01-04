@@ -18,6 +18,13 @@ $(call CROSS_TEST,$(MIX_CHANNELS),MIX,q8,s16p)
 $(call CROSS_TEST,$(MIX_CHANNELS),MIX,q15,s16p)
 $(call CROSS_TEST,$(MIX_CHANNELS),MIX,flt,fltp)
 
+# test output zeroing with skipped corresponding input
+FATE_LAVR_MIX-$(call FILTERDEMDECENCMUX, CHANNELMAP RESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-lavr-mix-output-zero
+fate-lavr-mix-output-zero: tests/data/filtergraphs/lavr_mix_output_zero tests/data/asynth-44100-4.wav
+fate-lavr-mix-output-zero: CMP = oneoff
+fate-lavr-mix-output-zero: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-44100-4.wav -filter_script $(TARGET_PATH)/tests/data/filtergraphs/lavr_mix_output_zero -f s16le -
+fate-lavr-mix-output-zero: REF = $(SAMPLES)/lavr/lavr-mix-output-zero
+
 FATE_LAVR_MIX-$(call FILTERDEMDECENCMUX, RESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_LAVR_MIX)
 fate-lavr-mix: $(FATE_LAVR_MIX-yes)
 #FATE_LAVR += $(FATE_LAVR_MIX-yes)
