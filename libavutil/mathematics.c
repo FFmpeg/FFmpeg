@@ -63,6 +63,9 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
     av_assert2(b >=0);
     av_assert2((unsigned)(rnd&~AV_ROUND_PASS_MINMAX)<=5 && (rnd&~AV_ROUND_PASS_MINMAX)!=4);
 
+    if (c <= 0 || b < 0 || !((unsigned)(rnd&~AV_ROUND_PASS_MINMAX)<=5 && (rnd&~AV_ROUND_PASS_MINMAX)!=4))
+        return INT64_MIN;
+
     if (rnd & AV_ROUND_PASS_MINMAX) {
         if (a == INT64_MIN || a == INT64_MAX)
             return a;
