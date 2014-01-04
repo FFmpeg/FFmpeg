@@ -724,6 +724,20 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     mova                m15, [%1+11*64]
     mova                m12, [%1+13*64]
     mova                m11, [%1+15*64]
+%if %3 <= 16
+    pmulhrsw             m5, m10, [pw_16364x2]
+    pmulhrsw            m10, [pw_804x2]
+    pmulhrsw             m4, m11, [pw_m11003x2]
+    pmulhrsw            m11, [pw_12140x2]
+    pmulhrsw             m7,  m8, [pw_14811x2]
+    pmulhrsw             m8, [pw_7005x2]
+    pmulhrsw             m6,  m9, [pw_m5520x2]
+    pmulhrsw             m9, [pw_15426x2]
+    pmulhrsw             m1, m14, [pw_15893x2]
+    pmulhrsw            m14, [pw_3981x2]
+    pmulhrsw             m0, m15, [pw_m8423x2]
+    pmulhrsw            m15, [pw_14053x2]
+%else
     mova                 m4, [%1+17*64]
     mova                 m0, [%1+21*64]
     mova                 m7, [%1+23*64]
@@ -740,6 +754,7 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     VP9_UNPACK_MULSUB_2W_4X   6,  9,  5520, 15426, [pd_8192], 2, 3 ; t19, t28
     VP9_UNPACK_MULSUB_2W_4X  14,  1, 15893,  3981, [pd_8192], 2, 3 ; t20, t27
     VP9_UNPACK_MULSUB_2W_4X   0, 15,  8423, 14053, [pd_8192], 2, 3 ; t21, t26
+%endif
 
     ; from 1 stage forward
     SUMSUB_BA             w,  4, 10,  2
@@ -749,10 +764,17 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     ; temporary storage
     mova     [rsp+17*%%str], m8             ; t16
     mova     [rsp+21*%%str], m4             ; t19
+%if %3 <= 16
+    pmulhrsw             m3, m12, [pw_13160x2]
+    pmulhrsw            m12, [pw_9760x2]
+    pmulhrsw             m2, m13, [pw_m2404x2]
+    pmulhrsw            m13, [pw_16207x2]
+%else
     mova                 m2, [%1+29*64]
     mova                 m3, [%1+19*64]
     VP9_UNPACK_MULSUB_2W_4X  12,  3, 13160,  9760, [pd_8192], 4, 8 ; t22, t25
     VP9_UNPACK_MULSUB_2W_4X   2, 13,  2404, 16207, [pd_8192], 4, 8 ; t23, t24
+%endif
 
     ; m10=t16, m4=t17, m8=t18, m6=t19, m14=t20, m0=t21, m12=t22, m2=t23,
     ; m13=t24, m3=t25, m15=t26, m1=t27, m9=t28, m7=t29, m11=t30, m5=t31
@@ -1005,8 +1027,10 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
 
 INIT_XMM ssse3
 cglobal vp9_idct_idct_32x32_add, 4, 8, 16, 2048, dst, stride, block, eob
-    cmp eobd, 1
+    cmp eobd, 135
     jg .idctfull
+    cmp eobd, 1
+    jg .idct16x16
 
     ; dc-only case
     movd                m0, [blockq]
@@ -1026,6 +1050,37 @@ cglobal vp9_idct_idct_32x32_add, 4, 8, 16, 2048, dst, stride, block, eob
     RET
 
     DEFINE_ARGS dst_bak, stride, block, cnt, dst, stride30, dst_end, stride2
+.idct16x16:
+    mov               cntd, 2
+.loop1_16x16:
+    VP9_IDCT32_1D   blockq, 1, 16
+    add             blockq, 16
+    add                rsp, 512
+    dec               cntd
+    jg .loop1_16x16
+    sub             blockq, 32
+    sub                rsp, 1024
+
+    mov          stride30q, strideq         ; stride
+    lea           stride2q, [strideq*2]     ; stride*2
+    shl          stride30q, 5               ; stride*32
+    mov               cntd, 4
+    sub          stride30q, stride2q        ; stride*30
+.loop2_16x16:
+    mov               dstq, dst_bakq
+    lea           dst_endq, [dst_bakq+stride30q]
+    VP9_IDCT32_1D      rsp, 2, 16
+    add           dst_bakq, 8
+    add                rsp, 16
+    dec               cntd
+    jg .loop2_16x16
+    sub                rsp, 64
+
+    ; at the end of the loop, m7 should still be zero
+    ; use that to zero out block coefficients
+    ZERO_BLOCK      blockq, 64, 16, m7
+    RET
+
 .idctfull:
     mov               cntd, 4
 .loop1_full:
