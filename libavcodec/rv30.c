@@ -267,6 +267,10 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
     }
 
     r->max_rpr = avctx->extradata[1] & 7;
+    if(avctx->extradata_size < 2*r->max_rpr + 8){
+        av_log(avctx, AV_LOG_WARNING, "Insufficient extradata - need at least %d bytes, got %d\n",
+               2*r->max_rpr + 8, avctx->extradata_size);
+    }
 
     r->parse_slice_header = rv30_parse_slice_header;
     r->decode_intra_types = rv30_decode_intra_types;
