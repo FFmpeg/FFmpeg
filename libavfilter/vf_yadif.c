@@ -38,12 +38,12 @@ typedef struct ThreadData {
 } ThreadData;
 
 #define CHECK(j)\
-    {   int score = FFABS(cur[mrefs - 1 + j] - cur[prefs - 1 - j])\
-                  + FFABS(cur[mrefs     + j] - cur[prefs     - j])\
-                  + FFABS(cur[mrefs + 1 + j] - cur[prefs + 1 - j]);\
+    {   int score = FFABS(cur[mrefs - 1 + (j)] - cur[prefs - 1 - (j)])\
+                  + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
+                  + FFABS(cur[mrefs + 1 + (j)] - cur[prefs + 1 - (j)]);\
         if (score < spatial_score) {\
             spatial_score= score;\
-            spatial_pred= (cur[mrefs    + j] + cur[prefs     - j])>>1;\
+            spatial_pred= (cur[mrefs  +(j)] + cur[prefs  -(j)])>>1;\
 
 /* The is_not_edge argument here controls when the code will enter a branch
  * which reads up to and including x-3 and x+3. */
