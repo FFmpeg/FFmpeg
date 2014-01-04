@@ -50,7 +50,7 @@ static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
     si->quant = get_bits(gb, 5);
     skip_bits1(gb);
     si->pts = get_bits(gb, 13);
-    rpr = get_bits(gb, r->rpr);
+    rpr = get_bits(gb, av_log2(r->max_rpr) + 1);
     if(rpr){
         if (avctx->extradata_size < rpr * 2 + 8) {
             av_log(avctx, AV_LOG_ERROR,
@@ -260,8 +260,8 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Extradata is too small.\n");
         return -1;
     }
-    r->rpr = (avctx->extradata[1] & 7) >> 1;
-    r->rpr = FFMIN(r->rpr + 1, 3);
+
+    r->max_rpr = avctx->extradata[1] & 7;
 
     r->parse_slice_header = rv30_parse_slice_header;
     r->decode_intra_types = rv30_decode_intra_types;

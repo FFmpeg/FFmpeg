@@ -102,7 +102,7 @@ typedef struct RV34DecContext{
     int dmv[4][2];           ///< differential motion vectors for the current macroblock
 
     int rv30;                ///< indicates which RV variasnt is currently decoded
-    int rpr;                 ///< one field size in RV30 slice header
+    int max_rpr;
 
     int cur_pts, last_pts, next_pts;
     int scaled_weight;
