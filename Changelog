@@ -17,6 +17,7 @@ version <next>
 - WebP encoding via libwebp
 - ATRAC3+ decoder
 - VP8 in Ogg demuxing
+- side & metadata support in NUT
 
 
 version 2.1:
