@@ -1433,30 +1433,9 @@ int ff_find_unused_picture(MpegEncContext *s, int shared)
     return ret;
 }
 
-static void update_noise_reduction(MpegEncContext *s)
-{
-    int intra, i;
-
-    for (intra = 0; intra < 2; intra++) {
-        if (s->dct_count[intra] > (1 << 16)) {
-            for (i = 0; i < 64; i++) {
-                s->dct_error_sum[intra][i] >>= 1;
-            }
-            s->dct_count[intra] >>= 1;
-        }
-
-        for (i = 0; i < 64; i++) {
-            s->dct_offset[intra][i] = (s->avctx->noise_reduction *
-                                       s->dct_count[intra] +
-                                       s->dct_error_sum[intra][i] / 2) /
-                                      (s->dct_error_sum[intra][i] + 1);
-        }
-    }
-}
-
 /**
- * generic function for encode/decode called after coding/decoding
- * the header and before a frame is coded/decoded.
+ * generic function called after decoding
+ * the header and before a frame is decoded.
  */
 int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 {
@@ -1478,62 +1457,58 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
     /* release forgotten pictures */
     /* if (mpeg124/h263) */
-    if (!s->encoding) {
-        for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            if (&s->picture[i] != s->last_picture_ptr &&
-                &s->picture[i] != s->next_picture_ptr &&
-                s->picture[i].reference && !s->picture[i].needs_realloc) {
-                if (!(avctx->active_thread_type & FF_THREAD_FRAME))
-                    av_log(avctx, AV_LOG_ERROR,
-                           "releasing zombie picture\n");
-                ff_mpeg_unref_picture(s, &s->picture[i]);
-            }
+    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
+        if (&s->picture[i] != s->last_picture_ptr &&
+            &s->picture[i] != s->next_picture_ptr &&
+            s->picture[i].reference && !s->picture[i].needs_realloc) {
+            if (!(avctx->active_thread_type & FF_THREAD_FRAME))
+                av_log(avctx, AV_LOG_ERROR,
+                       "releasing zombie picture\n");
+            ff_mpeg_unref_picture(s, &s->picture[i]);
         }
     }
 
     ff_mpeg_unref_picture(s, &s->current_picture);
 
-    if (!s->encoding) {
-        release_unused_pictures(s);
+    release_unused_pictures(s);
 
-        if (s->current_picture_ptr &&
-            s->current_picture_ptr->f.buf[0] == NULL) {
-            // we already have a unused image
-            // (maybe it was set before reading the header)
-            pic = s->current_picture_ptr;
-        } else {
-            i   = ff_find_unused_picture(s, 0);
-            if (i < 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
-                return i;
-            }
-            pic = &s->picture[i];
+    if (s->current_picture_ptr &&
+        s->current_picture_ptr->f.buf[0] == NULL) {
+        // we already have a unused image
+        // (maybe it was set before reading the header)
+        pic = s->current_picture_ptr;
+    } else {
+        i   = ff_find_unused_picture(s, 0);
+        if (i < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
+            return i;
         }
-
-        pic->reference = 0;
-        if (!s->droppable) {
-            if (s->pict_type != AV_PICTURE_TYPE_B)
-                pic->reference = 3;
-        }
-
-        pic->f.coded_picture_number = s->coded_picture_number++;
-
-        if (ff_alloc_picture(s, pic, 0) < 0)
-            return -1;
-
-        s->current_picture_ptr = pic;
-        // FIXME use only the vars from current_pic
-        s->current_picture_ptr->f.top_field_first = s->top_field_first;
-        if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
-            s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-            if (s->picture_structure != PICT_FRAME)
-                s->current_picture_ptr->f.top_field_first =
-                    (s->picture_structure == PICT_TOP_FIELD) == s->first_field;
-        }
-        s->current_picture_ptr->f.interlaced_frame = !s->progressive_frame &&
-                                                     !s->progressive_sequence;
-        s->current_picture_ptr->field_picture      =  s->picture_structure != PICT_FRAME;
+        pic = &s->picture[i];
     }
+
+    pic->reference = 0;
+    if (!s->droppable) {
+        if (s->pict_type != AV_PICTURE_TYPE_B)
+            pic->reference = 3;
+    }
+
+    pic->f.coded_picture_number = s->coded_picture_number++;
+
+    if (ff_alloc_picture(s, pic, 0) < 0)
+        return -1;
+
+    s->current_picture_ptr = pic;
+    // FIXME use only the vars from current_pic
+    s->current_picture_ptr->f.top_field_first = s->top_field_first;
+    if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
+        s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+        if (s->picture_structure != PICT_FRAME)
+            s->current_picture_ptr->f.top_field_first =
+                (s->picture_structure == PICT_TOP_FIELD) == s->first_field;
+    }
+    s->current_picture_ptr->f.interlaced_frame = !s->progressive_frame &&
+                                                 !s->progressive_sequence;
+    s->current_picture_ptr->field_picture      =  s->picture_structure != PICT_FRAME;
 
     s->current_picture_ptr->f.pict_type = s->pict_type;
     // if (s->flags && CODEC_FLAG_QSCALE)
@@ -1679,11 +1654,6 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     } else {
         s->dct_unquantize_intra = s->dct_unquantize_mpeg1_intra;
         s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
-    }
-
-    if (s->dct_error_sum) {
-        av_assert2(s->avctx->noise_reduction && s->encoding);
-        update_noise_reduction(s);
     }
 
     return 0;
