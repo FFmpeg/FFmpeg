@@ -165,6 +165,10 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
             mp3->start_pad = v>>12;
             mp3->  end_pad = v&4095;
             st->skip_samples = mp3->start_pad + 528 + 1;
+            if (!st->start_time)
+                st->start_time = av_rescale_q(st->skip_samples,
+                                              (AVRational){1, c.sample_rate},
+                                              st->time_base);
             av_log(s, AV_LOG_DEBUG, "pad %d %d\n", mp3->start_pad, mp3->  end_pad);
         }
     }
