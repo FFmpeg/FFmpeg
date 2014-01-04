@@ -477,3 +477,4 @@ __end_bef_a_evaluation:
         sub r4, r6, r11          @ R4=a0-W2*ROWr16[2] (a3)
         add r6, r6, r11          @ R6=a0+W2*ROWr16[2] (a0)
         bal __end_a_evaluation
+endfunc
