@@ -102,5 +102,6 @@ YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp6dsp.o
 YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o                  \
                                           x86/vp8dsp_loopfilter.o
 YASM-OBJS-$(CONFIG_VP9_DECODER)        += x86/vp9itxfm.o                \
+                                          x86/vp9lpf.o                  \
                                           x86/vp9mc.o
 YASM-OBJS-$(CONFIG_WEBP_DECODER)       += x86/vp8dsp.o
