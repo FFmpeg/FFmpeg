@@ -792,11 +792,11 @@ static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int 
 
     for (i=0; i<count; i++) {
         uint8_t name[256], str_value[256], type_str[256];
-        int value, type;
+        int value;
         if (avio_tell(bc) >= maxpos)
             return AVERROR_INVALIDDATA;
         get_str(bc, name, sizeof(name));
-        type = value = get_s(bc);
+        value = get_s(bc);
 
         if (value == -1) {
             get_str(bc, str_value, sizeof(str_value));
