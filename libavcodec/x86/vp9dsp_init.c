@@ -217,6 +217,11 @@ filters_8tap_1d_fn2(avg, 32, avx2, ssse3)
 #undef filters_8tap_1d_fn3
 #undef filter_8tap_1d_fn
 
+void ff_vp9_loop_filter_v_16_16_ssse3(uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
+void ff_vp9_loop_filter_v_16_16_avx  (uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
+void ff_vp9_loop_filter_h_16_16_ssse3(uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
+void ff_vp9_loop_filter_h_16_16_avx  (uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
+
 #endif /* HAVE_YASM */
 
 av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
@@ -283,11 +288,21 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
     if (EXTERNAL_SSSE3(cpu_flags)) {
         init_subpel3(0, put, ssse3);
         init_subpel3(1, avg, ssse3);
+
+        if (ARCH_X86_64) {
+            dsp->loop_filter_16[0] = ff_vp9_loop_filter_h_16_16_ssse3;
+            dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_ssse3;
+        }
     }
 
     if (EXTERNAL_AVX(cpu_flags)) {
         init_fpel(1, 0, 32, put, avx);
         init_fpel(0, 0, 64, put, avx);
+
+        if (ARCH_X86_64) {
+            dsp->loop_filter_16[0] = ff_vp9_loop_filter_h_16_16_avx;
+            dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_avx;
+        }
     }
 
     if (EXTERNAL_AVX2(cpu_flags)) {
