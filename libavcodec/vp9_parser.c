@@ -77,7 +77,7 @@ static int parse(AVCodecParserContext *ctx,
                     idx += a; \
                     if (sz > size) { \
                         s->n_frames = 0; \
-                        av_log(ctx, AV_LOG_ERROR, \
+                        av_log(avctx, AV_LOG_ERROR, \
                                "Superframe packet size too big: %d > %d\n", \
                                sz, size); \
                         return AVERROR_INVALIDDATA; \
