@@ -74,13 +74,22 @@ SECTION .text
     psrad              m%2,  14
 %endmacro
 
-%macro VP9_UNPACK_MULSUB_2W_4X 7 ; dst1, dst2, coef1, coef2, rnd, tmp1, tmp2
+%macro VP9_UNPACK_MULSUB_2W_4X 7-9 ; dst1, dst2, (src1, src2,) coef1, coef2, rnd, tmp1, tmp2
+%if %0 == 7
     punpckhwd          m%6, m%2, m%1
     VP9_MULSUB_2W_2X    %7,  %6,  %6, %5, [pw_m%3_%4], [pw_%4_%3]
     punpcklwd          m%2, m%1
     VP9_MULSUB_2W_2X    %1,  %2,  %2, %5, [pw_m%3_%4], [pw_%4_%3]
     packssdw           m%1, m%7
     packssdw           m%2, m%6
+%else
+    punpckhwd          m%8, m%4, m%3
+    VP9_MULSUB_2W_2X    %9,  %8,  %8, %7, [pw_m%5_%6], [pw_%6_%5]
+    punpcklwd          m%2, m%4, m%3
+    VP9_MULSUB_2W_2X    %1,  %2,  %2, %7, [pw_m%5_%6], [pw_%6_%5]
+    packssdw           m%1, m%9
+    packssdw           m%2, m%8
+%endif
 %endmacro
 
 %macro VP9_STORE_2X 5-6 dstq ; reg1, reg2, tmp1, tmp2, zero, dst
@@ -381,6 +390,32 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
 ;    SUMSUB_BA            w,  6,  9, 15      ; t6, t9
 ;    SUMSUB_BA            w,  7,  8, 15      ; t7, t8
 %macro VP9_IDCT16_1D_START 4 ; src, nnzc, stride, stack_scratch
+%if %2 <= 4
+    mova                m3, [%1+ 1*%3]      ; IN(1)
+    mova               m12, [%1+ 2*%3]      ; IN(2)
+    mova                m0, [%1+ 3*%3]      ; IN(3)
+
+    pmulhrsw           m15, m12, [pw_16069x2]       ; t6-7
+    pmulhrsw           m12, [pw_3196x2]             ; t4-5
+    pmulhrsw            m4, m3,  [pw_16305x2]       ; t14-15
+    pmulhrsw            m3, [pw_1606x2]             ; t8-9
+    pmulhrsw            m7, m0,  [pw_m4756x2]       ; t10-11
+    pmulhrsw            m0, [pw_15679x2]            ; t12-13
+
+    ; m8=t0, m9=t1, m10=t2, m11=t3, m12=t4, m14=t5, m13=t6, m15=t7
+    ; m3=t8, m5=t9, m1=t10, m7=t11, m0=t12, m6=t13, m2=t14, m4=t15
+
+    paddw              m14, m15, m12
+    psubw              m13, m15, m12
+    pmulhrsw           m13, [pw_11585x2]            ; t5
+    pmulhrsw           m14, [pw_11585x2]            ; t6
+
+    VP9_UNPACK_MULSUB_2W_4X 2, 5, 4, 3, 15137,  6270, [pd_8192], 10, 11 ; t9,  t14
+    VP9_UNPACK_MULSUB_2W_4X 6, 1, 0, 7, 6270, m15137, [pd_8192], 10, 11 ; t10, t13
+
+    ; m15=t0, m14=t1, m13=t2, m12=t3, m11=t4, m10=t5, m9=t6, m8=t7
+    ; m7=t8, m6=t9, m2=t10, m3=t11, m4=t12, m5=t13, m1=t14, m0=t15
+%else
     mova                m5, [%1+ 1*%3]     ; IN(1)
     mova               m14, [%1+ 2*%3]     ; IN(2)
     mova                m6, [%1+ 3*%3]     ; IN(3)
@@ -442,6 +477,7 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     pmulhrsw           m14, [pw_11585x2]                              ; t6
     VP9_UNPACK_MULSUB_2W_4X   2,   5, 15137,  6270, [pd_8192], 10, 11 ; t9,  t14
     VP9_UNPACK_MULSUB_2W_4X   6,   1, 6270, m15137, [pd_8192], 10, 11 ; t10, t13
+%endif
 
     ; m8=t0, m9=t1, m10=t2, m11=t3, m12=t4, m13=t5, m14=t6, m15=t7
     ; m3=t8, m2=t9, m6=t10, m7=t11, m0=t12, m1=t13, m5=t14, m4=t15
@@ -468,6 +504,17 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     ; m7=t8, m6=t9, m5=t10, m4=t11, m3=t12, m2=t13, m1=t14, m0=t15
 
     ; from load/start
+%if %2 <= 4
+    mova               m11, [%1+ 0*%3]      ; IN(0)
+    pmulhrsw           m11, [pw_11585x2]    ; t0-t3
+
+    psubw               m8, m11, m15
+    paddw              m15, m11
+    psubw               m9, m11, m14
+    paddw              m14, m11
+    psubw              m10, m11, m13
+    paddw              m13, m11
+%else
     mova               m10, [%1+ 0*%3]      ; IN(0)
 %if %2 <= 8
     pmulhrsw           m10, [pw_11585x2]    ; t0 and t1
@@ -490,6 +537,7 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     SUMSUB_BA            w, 15,  8, 7       ; t0,  t7
     SUMSUB_BA            w, 14,  9, 7       ; t1,  t6
     SUMSUB_BA            w, 13, 10, 7       ; t2,  t5
+%endif
     SUMSUB_BA            w, 12, 11, 7       ; t3,  t4
 
     SUMSUB_BA            w,  0, 15, 7       ; t0, t15
@@ -716,6 +764,37 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     mova     [rsp+26*%%str], m14    ; t14
 
     ; then, secondly, do t16-31
+%if %3 <= 8
+    mova                 m4, [%1+ 1*64]
+    mova                 m3, [%1+ 3*64]
+    mova                 m0, [%1+ 5*64]
+    mova                 m7, [%1+ 7*64]
+
+    pmulhrsw            m11,  m4, [pw_16364x2] ;t31
+    pmulhrsw             m4, [pw_804x2] ;t16
+    pmulhrsw             m8,  m7, [pw_m5520x2] ;t19
+    pmulhrsw             m7, [pw_15426x2] ;t28
+    pmulhrsw            m15,  m0, [pw_15893x2] ;t27
+    pmulhrsw             m0, [pw_3981x2] ;t20
+    pmulhrsw            m12,  m3, [pw_m2404x2] ;t23
+    pmulhrsw             m3, [pw_16207x2] ;t24
+
+    ; m4=t16/17, m8=t18/19, m0=t20/21, m12=t22/23,
+    ; m3=t24/25, m15=t26/27, m7=t28/29, m11=t30/31
+
+    VP9_UNPACK_MULSUB_2W_4X   5, 10, 11,  4, 16069,  3196, [pd_8192], 6,  9 ; t17, t30
+    VP9_UNPACK_MULSUB_2W_4X   9,  6,  7,  8, 3196, m16069, [pd_8192], 1, 14 ; t18, t29
+    ; from 1 stage forward
+    SUMSUB_BA                 w,  8,  4,  1
+    ; temporary storage
+    mova     [rsp+17*%%str], m8             ; t16
+    mova     [rsp+21*%%str], m4             ; t19
+    VP9_UNPACK_MULSUB_2W_4X   1, 14, 15,  0,  9102, 13623, [pd_8192], 4,  8 ; t21, t26
+    VP9_UNPACK_MULSUB_2W_4X  13,  2,  3, 12, 13623, m9102, [pd_8192], 4,  8 ; t22, t25
+
+    ; m4=t16, m5=t17, m9=t18, m8=t19, m0=t20, m1=t21, m13=t22, m12=t23,
+    ; m3=t24, m2=t25, m14=t26, m15=t27, m7=t28, m6=t29, m10=t30, m11=t31
+%else
     mova                m10, [%1+ 1*64]
     mova                m13, [%1+ 3*64]
     mova                m14, [%1+ 5*64]
@@ -793,6 +872,7 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     VP9_UNPACK_MULSUB_2W_4X   9,  6, 3196, m16069, [pd_8192], 4, 8 ; t18, t29
     VP9_UNPACK_MULSUB_2W_4X   1, 14,  9102, 13623, [pd_8192], 4, 8 ; t21, t26
     VP9_UNPACK_MULSUB_2W_4X  13,  2, 13623, m9102, [pd_8192], 4, 8 ; t22, t25
+%endif
 
     ; m4=t16, m5=t17, m9=t18, m8=t19, m0=t20, m1=t21, m13=t22, m12=t23,
     ; m3=t24, m2=t25, m14=t26, m15=t27, m7=t28, m6=t29, m10=t30, m11=t31
@@ -1029,8 +1109,10 @@ INIT_XMM ssse3
 cglobal vp9_idct_idct_32x32_add, 4, 8, 16, 2048, dst, stride, block, eob
     cmp eobd, 135
     jg .idctfull
-    cmp eobd, 1
+    cmp eobd, 34
     jg .idct16x16
+    cmp eobd, 1
+    jg .idct8x8
 
     ; dc-only case
     movd                m0, [blockq]
@@ -1050,6 +1132,29 @@ cglobal vp9_idct_idct_32x32_add, 4, 8, 16, 2048, dst, stride, block, eob
     RET
 
     DEFINE_ARGS dst_bak, stride, block, cnt, dst, stride30, dst_end, stride2
+.idct8x8:
+    VP9_IDCT32_1D   blockq, 1, 8
+
+    mov          stride30q, strideq         ; stride
+    lea           stride2q, [strideq*2]     ; stride*2
+    shl          stride30q, 5               ; stride*32
+    mov               cntd, 4
+    sub          stride30q, stride2q        ; stride*30
+.loop2_8x8:
+    mov               dstq, dst_bakq
+    lea           dst_endq, [dst_bakq+stride30q]
+    VP9_IDCT32_1D      rsp, 2, 8
+    add           dst_bakq, 8
+    add                rsp, 16
+    dec               cntd
+    jg .loop2_8x8
+    sub                rsp, 64
+
+    ; at the end of the loop, m7 should still be zero
+    ; use that to zero out block coefficients
+    ZERO_BLOCK      blockq, 64,  8, m7
+    RET
+
 .idct16x16:
     mov               cntd, 2
 .loop1_16x16:
