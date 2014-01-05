@@ -915,6 +915,12 @@ skip:
                 return ret;
             if (st->codec->codec_id == AV_CODEC_ID_AAC) {
                 MPEG4AudioConfig cfg;
+
+                /* Workaround for buggy Omnia A/XE encoder */
+                AVDictionaryEntry *t = av_dict_get(s->metadata, "Encoder", NULL, 0);
+                if (t && !strcmp(t->value, "Omnia A/XE"))
+                    st->codec->extradata_size = 2;
+
                 avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                              st->codec->extradata_size * 8, 1);
                 st->codec->channels       = cfg.channels;
