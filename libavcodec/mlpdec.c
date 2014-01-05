@@ -1098,6 +1098,10 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
         }
     }
 
+    /* Update matrix encoding side data */
+    if ((ret = ff_side_data_update_matrix_encoding(frame, s->matrix_encoding)) < 0)
+        return ret;
+
     *got_frame_ptr = 1;
 
     return 0;
