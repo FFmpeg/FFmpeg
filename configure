@@ -2012,7 +2012,6 @@ interlace_filter_deps="gpl"
 resample_filter_deps="avresample"
 ocv_filter_deps="libopencv"
 scale_filter_deps="swscale"
-yadif_filter_deps="gpl"
 
 # examples
 output_example_deps="avcodec avformat avutil swscale"

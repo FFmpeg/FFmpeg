@@ -21,7 +21,6 @@ Specifically, the GPL parts of Libav are
     - vf_cropdetect.c
     - vf_delogo.c
     - vf_hqdn3d.c
-    - vf_yadif.c
 
 Should you, for whatever reason, prefer to use version 3 of the (L)GPL, then
 the configure parameter --enable-version3 will activate this licensing option
