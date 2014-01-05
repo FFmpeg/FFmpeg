@@ -551,6 +551,10 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
             if (codec->extradata_size)
                 avio_write(dyn_cp, codec->extradata, codec->extradata_size);
         } else {
+            if (!ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id))
+                av_log(s, AV_LOG_WARNING, "codec %s is not supported by this format\n",
+                       avcodec_get_name(codec->codec_id));
+
             if (!codec->codec_tag)
                 codec->codec_tag = ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id);
             if (!codec->codec_tag) {
