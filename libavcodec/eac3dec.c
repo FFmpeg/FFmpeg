@@ -341,6 +341,11 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
         }
     }
 
+    /* default dolby matrix encoding modes */
+    s->dolby_surround_mode    = AC3_DSURMOD_NOTINDICATED;
+    s->dolby_surround_ex_mode = AC3_DSUREXMOD_NOTINDICATED;
+    s->dolby_headphone_mode   = AC3_DHEADPHONMOD_NOTINDICATED;
+
     /* mixing metadata */
     if (get_bits1(gbc)) {
         /* center and surround mix levels */
@@ -413,10 +418,11 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
         s->bitstream_mode = get_bits(gbc, 3);
         skip_bits(gbc, 2); // skip copyright bit and original bitstream bit
         if (s->channel_mode == AC3_CHMODE_STEREO) {
-            skip_bits(gbc, 4); // skip Dolby surround and headphone mode
+            s->dolby_surround_mode  = get_bits(gbc, 2);
+            s->dolby_headphone_mode = get_bits(gbc, 2);
         }
         if (s->channel_mode >= AC3_CHMODE_2F2R) {
-            skip_bits(gbc, 2); // skip Dolby surround EX mode
+            s->dolby_surround_ex_mode = get_bits(gbc, 2);
         }
         for (i = 0; i < (s->channel_mode ? 1 : 2); i++) {
             if (get_bits1(gbc)) {

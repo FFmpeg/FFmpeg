@@ -227,12 +227,26 @@ static int ac3_parse_header(AC3DecodeContext *s)
 
     skip_bits(gbc, 2); //skip copyright bit and original bitstream bit
 
-    /* skip the timecodes (or extra bitstream information for Alternate Syntax)
+    /* default dolby matrix encoding modes */
+    s->dolby_surround_ex_mode = AC3_DSUREXMOD_NOTINDICATED;
+    s->dolby_headphone_mode   = AC3_DHEADPHONMOD_NOTINDICATED;
+
+    /* skip the timecodes or parse the Alternate Bit Stream Syntax
        TODO: read & use the xbsi1 downmix levels */
-    if (get_bits1(gbc))
-        skip_bits(gbc, 14); //skip timecode1 / xbsi1
-    if (get_bits1(gbc))
-        skip_bits(gbc, 14); //skip timecode2 / xbsi2
+    if (s->bitstream_id != 6) {
+        if (get_bits1(gbc))
+            skip_bits(gbc, 14); //skip timecode1
+        if (get_bits1(gbc))
+            skip_bits(gbc, 14); //skip timecode2
+    } else {
+        if (get_bits1(gbc))
+            skip_bits(gbc, 14); //skip xbsi1
+        if (get_bits1(gbc)) {
+            s->dolby_surround_ex_mode = get_bits(gbc, 2);
+            s->dolby_headphone_mode   = get_bits(gbc, 2);
+            skip_bits(gbc, 10); // skip adconvtyp (1), xbsi2 (8), encinfo (1)
+        }
+    }
 
     /* skip additional bitstream info */
     if (get_bits1(gbc)) {
@@ -259,6 +273,7 @@ static int parse_frame_header(AC3DecodeContext *s)
 
     /* get decoding parameters from header info */
     s->bit_alloc_params.sr_code     = hdr.sr_code;
+    s->bitstream_id                 = hdr.bitstream_id;
     s->bitstream_mode               = hdr.bitstream_mode;
     s->channel_mode                 = hdr.channel_mode;
     s->lfe_on                       = hdr.lfe_on;
@@ -274,6 +289,7 @@ static int parse_frame_header(AC3DecodeContext *s)
     s->num_blocks                   = hdr.num_blocks;
     s->frame_type                   = hdr.frame_type;
     s->substreamid                  = hdr.substreamid;
+    s->dolby_surround_mode          = hdr.dolby_surround_mode;
 
     if (s->lfe_on) {
         s->start_freq[s->lfe_ch]     = 0;
@@ -282,7 +298,7 @@ static int parse_frame_header(AC3DecodeContext *s)
         s->channel_in_cpl[s->lfe_ch] = 0;
     }
 
-    if (hdr.bitstream_id <= 10) {
+    if (s->bitstream_id <= 10) {
         s->eac3                  = 0;
         s->snr_offset_strategy   = 2;
         s->block_switch_syntax   = 1;

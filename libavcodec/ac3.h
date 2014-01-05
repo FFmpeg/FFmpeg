@@ -82,6 +82,30 @@ typedef enum {
     AC3_CHMODE_3F2R
 } AC3ChannelMode;
 
+/** Dolby Surround mode */
+typedef enum AC3DolbySurroundMode {
+    AC3_DSURMOD_NOTINDICATED = 0,
+    AC3_DSURMOD_OFF,
+    AC3_DSURMOD_ON,
+    AC3_DSURMOD_RESERVED
+} AC3DolbySurroundMode;
+
+/** Dolby Surround EX mode */
+typedef enum AC3DolbySurroundEXMode {
+    AC3_DSUREXMOD_NOTINDICATED = 0,
+    AC3_DSUREXMOD_OFF,
+    AC3_DSUREXMOD_ON,
+    AC3_DSUREXMOD_PLIIZ
+} AC3DolbySurroundEXMode;
+
+/** Dolby Headphone mode */
+typedef enum AC3DolbyHeadphoneMode {
+    AC3_DHEADPHONMOD_NOTINDICATED = 0,
+    AC3_DHEADPHONMOD_OFF,
+    AC3_DHEADPHONMOD_ON,
+    AC3_DHEADPHONMOD_RESERVED
+} AC3DolbyHeadphoneMode;
+
 typedef struct AC3BitAllocParameters {
     int sr_code;
     int sr_shift;
@@ -110,6 +134,7 @@ typedef struct AC3HeaderInfo {
     int surround_mix_level;                 ///< Surround mix level index
     uint16_t channel_map;
     int num_blocks;                         ///< number of audio blocks
+    int dolby_surround_mode;
     /** @} */
 
     /** @name Derived values
