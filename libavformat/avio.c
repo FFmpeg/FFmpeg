@@ -215,17 +215,11 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"                \
     "0123456789+-."
 
-int ffurl_alloc(URLContext **puc, const char *filename, int flags,
-                const AVIOInterruptCB *int_cb)
+static struct URLProtocol *url_find_protocol(const char *filename)
 {
     URLProtocol *up = NULL;
     char proto_str[128], proto_nested[128], *ptr;
     size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
-
-    if (!first_protocol) {
-        av_log(NULL, AV_LOG_WARNING, "No URL Protocols are registered. "
-                                     "Missing call to av_register_all()?\n");
-    }
 
     if (filename[proto_len] != ':' &&
         (filename[proto_len] != ',' || !strchr(filename + proto_len + 1, ':')) ||
@@ -243,13 +237,31 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
 
     while (up = ffurl_protocol_next(up)) {
         if (!strcmp(proto_str, up->name))
-            return url_alloc_for_protocol(puc, up, filename, flags, int_cb);
+            break;
         if (up->flags & URL_PROTOCOL_FLAG_NESTED_SCHEME &&
             !strcmp(proto_nested, up->name))
-            return url_alloc_for_protocol(puc, up, filename, flags, int_cb);
+            break;
     }
+
+    return up;
+}
+
+int ffurl_alloc(URLContext **puc, const char *filename, int flags,
+                const AVIOInterruptCB *int_cb)
+{
+    URLProtocol *p = NULL;
+
+    if (!first_protocol) {
+        av_log(NULL, AV_LOG_WARNING, "No URL Protocols are registered. "
+                                     "Missing call to av_register_all()?\n");
+    }
+
+    p = url_find_protocol(filename);
+    if (p)
+       return url_alloc_for_protocol(puc, p, filename, flags, int_cb);
+
     *puc = NULL;
-    if (!strcmp("https", proto_str))
+    if (av_strstart("https:", filename, NULL))
         av_log(NULL, AV_LOG_WARNING, "https protocol not found, recompile with openssl or gnutls enabled.\n");
     return AVERROR_PROTOCOL_NOT_FOUND;
 }
@@ -375,6 +387,13 @@ int ffurl_close(URLContext *h)
     return ffurl_closep(&h);
 }
 
+
+const char *avio_find_protocol_name(const char *url)
+{
+    URLProtocol *p = url_find_protocol(url);
+
+    return p ? p->name : NULL;
+}
 
 int avio_check(const char *url, int flags)
 {

@@ -151,6 +151,15 @@ typedef struct AVIOContext {
 /* unbuffered I/O */
 
 /**
+ * Return the name of the protocol that will handle the passed URL.
+ *
+ * NULL is returned if no protocol could be found for the given URL.
+ *
+ * @return Name of the protocol or NULL.
+ */
+const char *avio_find_protocol_name(const char *url);
+
+/**
  * Return AVIO_FLAG_* access flags corresponding to the access permissions
  * of the resource in url, or a negative value corresponding to an
  * AVERROR code in case of failure. The returned access flags are
