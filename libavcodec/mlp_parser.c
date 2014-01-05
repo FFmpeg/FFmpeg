@@ -170,14 +170,17 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
         mh->group1_samplerate = mlp_samplerate(ratebits);
         mh->group2_samplerate = 0;
 
-        skip_bits(gb, 8);
+        skip_bits(gb, 4);
+
+        mh->channel_modifier_thd_stream0 = get_bits(gb, 2);
+        mh->channel_modifier_thd_stream1 = get_bits(gb, 2);
 
         mh->channel_arrangement=
         channel_arrangement            = get_bits(gb, 5);
         mh->channels_thd_stream1       = truehd_channels(channel_arrangement);
         mh->channel_layout_thd_stream1 = ff_truehd_layout(channel_arrangement);
 
-        skip_bits(gb, 2);
+        mh->channel_modifier_thd_stream2 = get_bits(gb, 2);
 
         channel_arrangement            = get_bits(gb, 13);
         mh->channels_thd_stream2       = truehd_channels(channel_arrangement);

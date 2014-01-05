@@ -124,4 +124,14 @@ static inline uint8_t xor_32_to_8(uint32_t value)
     return value;
 }
 
+typedef enum THDChannelModifier {
+    THD_CH_MODIFIER_NOTINDICATED  = 0x0,
+    THD_CH_MODIFIER_STEREO        = 0x0, // Stereo (not Dolby Surround)
+    THD_CH_MODIFIER_LTRT          = 0x1, // Dolby Surround
+    THD_CH_MODIFIER_LBINRBIN      = 0x2, // Dolby Headphone
+    THD_CH_MODIFIER_MONO          = 0x3, // Mono or Dual Mono
+    THD_CH_MODIFIER_NOTSURROUNDEX = 0x1, // Not Dolby Digital EX
+    THD_CH_MODIFIER_SURROUNDEX    = 0x2, // Dolby Digital EX
+} THDChannelModifier;
+
 #endif /* AVCODEC_MLP_H */
