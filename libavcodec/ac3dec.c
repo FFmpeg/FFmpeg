@@ -1300,6 +1300,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     int blk, ch, err, ret;
     const uint8_t *channel_map;
     const float *output[AC3_MAX_CHANNELS];
+    enum AVMatrixEncoding matrix_encoding;
 
     /* copy input buffer to decoder context to avoid reading past the end
        of the buffer, which can be caused by a damaged input stream. */
@@ -1447,6 +1448,35 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     /* keep last block for error concealment in next frame */
     for (ch = 0; ch < s->out_channels; ch++)
         memcpy(s->output[ch], output[ch], sizeof(**output) * AC3_BLOCK_SIZE);
+
+    /*
+     * AVMatrixEncoding
+     *
+     * Check whether the input layout is compatible, and make sure we're not
+     * downmixing (else the matrix encoding is no longer applicable).
+     */
+    matrix_encoding = AV_MATRIX_ENCODING_NONE;
+    if (s->channel_mode == AC3_CHMODE_STEREO &&
+        s->channel_mode == (s->output_mode & ~AC3_OUTPUT_LFEON)) {
+        if (s->dolby_surround_mode == AC3_DSURMOD_ON)
+            matrix_encoding = AV_MATRIX_ENCODING_DOLBY;
+        else if (s->dolby_headphone_mode == AC3_DHEADPHONMOD_ON)
+            matrix_encoding = AV_MATRIX_ENCODING_DOLBYHEADPHONE;
+    } else if (s->channel_mode >= AC3_CHMODE_2F2R &&
+               s->channel_mode == (s->output_mode & ~AC3_OUTPUT_LFEON)) {
+        switch (s->dolby_surround_ex_mode) {
+        case AC3_DSUREXMOD_ON: // EX or PLIIx
+            matrix_encoding = AV_MATRIX_ENCODING_DOLBYEX;
+            break;
+        case AC3_DSUREXMOD_PLIIZ:
+            matrix_encoding = AV_MATRIX_ENCODING_DPLIIZ;
+            break;
+        default: // not indicated or off
+            break;
+        }
+    }
+    if ((ret = ff_side_data_update_matrix_encoding(frame, matrix_encoding)) < 0)
+        return ret;
 
     *got_frame_ptr = 1;
 
