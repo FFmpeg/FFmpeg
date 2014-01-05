@@ -69,6 +69,10 @@ enum AVFrameSideDataType {
      * The data is the AVStereo3D struct defined in libavutil/stereo3d.h.
      */
     AV_FRAME_DATA_STEREO3D,
+    /**
+     * The data is the AVMatrixEncoding enum defined in libavutil/channel_layout.h.
+     */
+    AV_FRAME_DATA_MATRIXENCODING,
 };
 
 typedef struct AVFrameSideData {

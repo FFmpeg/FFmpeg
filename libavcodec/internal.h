@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "libavutil/buffer.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
@@ -237,5 +238,11 @@ const uint8_t *avpriv_find_start_code(const uint8_t *p,
  * context.
  */
 int ff_set_dimensions(AVCodecContext *s, int width, int height);
+
+/**
+ * Add or update AV_FRAME_DATA_MATRIXENCODING side data.
+ */
+int ff_side_data_update_matrix_encoding(AVFrame *frame,
+                                        enum AVMatrixEncoding matrix_encoding);
 
 #endif /* AVCODEC_INTERNAL_H */
