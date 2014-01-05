@@ -55,6 +55,9 @@ static av_cold int init(AVFilterContext *ctx)
     int              pix_fmt_name_len, ret;
     enum AVPixelFormat pix_fmt;
 
+    if (!s->pix_fmts)
+        return AVERROR(EINVAL);
+
     /* parse the list of formats */
     for (cur = s->pix_fmts; cur; cur = sep ? sep + 1 : NULL) {
         if (!(sep = strchr(cur, '|')))
