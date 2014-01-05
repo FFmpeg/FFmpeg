@@ -109,7 +109,6 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     PulseData *pd  = s->priv_data;
     int res;
-    pa_usec_t latency;
 
     if (av_new_packet(pkt, pd->frame_size) < 0) {
         return AVERROR(ENOMEM);
@@ -122,13 +121,15 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EIO);
     }
 
-    if ((latency = pa_simple_get_latency(pd->s, &res)) == (pa_usec_t) -1) {
-        av_log(s, AV_LOG_ERROR, "pa_simple_get_latency() failed: %s\n",
-               pa_strerror(res));
-        return AVERROR(EIO);
-    }
-
     if (pd->pts == AV_NOPTS_VALUE) {
+        pa_usec_t latency;
+
+        if ((latency = pa_simple_get_latency(pd->s, &res)) == (pa_usec_t) -1) {
+            av_log(s, AV_LOG_ERROR, "pa_simple_get_latency() failed: %s\n",
+                   pa_strerror(res));
+            return AVERROR(EIO);
+        }
+
         pd->pts = -latency;
     }
 
