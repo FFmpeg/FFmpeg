@@ -1246,13 +1246,14 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
         if (aot == AOT_ER_AAC_LD || aot == AOT_ER_AAC_ELD) {
             ics->swb_offset        =     ff_swb_offset_512[ac->oc[1].m4ac.sampling_index];
             ics->num_swb           =    ff_aac_num_swb_512[ac->oc[1].m4ac.sampling_index];
+            ics->tns_max_bands     =  ff_tns_max_bands_512[ac->oc[1].m4ac.sampling_index];
             if (!ics->num_swb || !ics->swb_offset)
                 return AVERROR_BUG;
         } else {
             ics->swb_offset        =    ff_swb_offset_1024[ac->oc[1].m4ac.sampling_index];
             ics->num_swb           =   ff_aac_num_swb_1024[ac->oc[1].m4ac.sampling_index];
+            ics->tns_max_bands     = ff_tns_max_bands_1024[ac->oc[1].m4ac.sampling_index];
         }
-        ics->tns_max_bands         = ff_tns_max_bands_1024[ac->oc[1].m4ac.sampling_index];
         if (aot != AOT_ER_AAC_ELD) {
             ics->predictor_present     = get_bits1(gb);
             ics->predictor_reset_group = 0;

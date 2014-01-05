@@ -54,7 +54,7 @@ FATE_AAC += fate-aac-ap05_48
 fate-aac-ap05_48: CMD = pcm -i $(TARGET_SAMPLES)/aac/ap05_48.mp4
 fate-aac-ap05_48: REF = $(SAMPLES)/aac/ap05_48.s16
 
-FATE_AAC += fate-aac-er_ad6000np_44_ep0
+#FATE_AAC += fate-aac-er_ad6000np_44_ep0
 fate-aac-er_ad6000np_44_ep0: CMD = pcm -i $(TARGET_SAMPLES)/aac/er_ad6000np_44_ep0.mp4
 fate-aac-er_ad6000np_44_ep0: REF = $(SAMPLES)/aac/er_ad6000np_44_ep0.s16
 
