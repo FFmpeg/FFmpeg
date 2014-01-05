@@ -697,10 +697,9 @@ static void assert_file_overwrite(const char *filename)
         exit_program(1);
     }
 
-    if (!file_overwrite &&
-        (strchr(filename, ':') == NULL || filename[1] == ':' ||
-         av_strstart(filename, "file:", NULL))) {
-        if (avio_check(filename, 0) == 0) {
+    if (!file_overwrite) {
+        const char *proto_name = avio_find_protocol_name(filename);
+        if (proto_name && !strcmp(proto_name, "file") && avio_check(filename, 0) == 0) {
             if (stdin_interaction && !no_file_overwrite) {
                 fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
                 fflush(stderr);
