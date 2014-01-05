@@ -54,7 +54,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
     PulseData *pd = s->priv_data;
     AVStream *st;
     char *device = NULL;
-    int ret;
+    int ret, sample_bytes;
     enum AVCodecID codec_id =
         s->audio_codec_id == AV_CODEC_ID_NONE ? DEFAULT_CODEC_ID : s->audio_codec_id;
     const pa_sample_spec ss = { ff_codec_id_to_pulse_format(codec_id),
@@ -90,11 +90,17 @@ static av_cold int pulse_read_header(AVFormatContext *s)
     st->codec->codec_id    = codec_id;
     st->codec->sample_rate = pd->sample_rate;
     st->codec->channels    = pd->channels;
-    avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
+    avpriv_set_pts_info(st, 64, 1, pd->sample_rate);  /* 64 bits pts in us */
 
     pd->pts = AV_NOPTS_VALUE;
-    pd->frame_duration = (pd->frame_size * 1000000LL * 8) /
-        (pd->sample_rate * pd->channels * av_get_bits_per_sample(codec_id));
+    sample_bytes = (av_get_bits_per_sample(codec_id) >> 3) * pd->channels;
+
+    if (pd->frame_size % sample_bytes) {
+        av_log(s, AV_LOG_WARNING, "frame_size %i is not divisible by %i "
+            "(channels * bytes_per_sample) \n", pd->frame_size, sample_bytes);
+    }
+
+    pd->frame_duration = pd->frame_size / sample_bytes;
 
     return 0;
 }
