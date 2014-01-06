@@ -3409,6 +3409,7 @@ int ff_set_ref_count(H264Context *h)
         if (ref_count[0]-1 > max[0] || ref_count[1]-1 > max[1]){
             av_log(h->avctx, AV_LOG_ERROR, "reference overflow %u > %u or %u > %u\n", ref_count[0]-1, max[0], ref_count[1]-1, max[1]);
             h->ref_count[0] = h->ref_count[1] = 0;
+            h->list_count   = 0;
             return AVERROR_INVALIDDATA;
         }
 
