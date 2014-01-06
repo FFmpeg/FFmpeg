@@ -268,6 +268,7 @@ typedef struct VideoState {
     int step;
 
 #if CONFIG_AVFILTER
+    int vfilter_idx;
     AVFilterContext *in_video_filter;   // the first filter in the video chain
     AVFilterContext *out_video_filter;  // the last filter in the video chain
     AVFilterContext *in_audio_filter;   // the first filter in the audio chain
@@ -324,7 +325,8 @@ double rdftspeed = 0.02;
 static int64_t cursor_last_shown;
 static int cursor_hidden = 0;
 #if CONFIG_AVFILTER
-static char *vfilters = NULL;
+static const char **vfilters_list = NULL;
+static int nb_vfilters = 0;
 static char *afilters = NULL;
 #endif
 
@@ -338,6 +340,15 @@ static AVPacket flush_pkt;
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
 static SDL_Surface *screen;
+
+#if CONFIG_AVFILTER
+static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
+{
+    GROW_ARRAY(vfilters_list, nb_vfilters);
+    vfilters_list[nb_vfilters - 1] = arg;
+    return 0;
+}
+#endif
 
 static inline
 int cmp_audio_fmts(enum AVSampleFormat fmt1, int64_t channel_count1,
@@ -1051,7 +1062,7 @@ static void do_exit(VideoState *is)
     av_lockmgr_register(NULL);
     uninit_opts();
 #if CONFIG_AVFILTER
-    av_freep(&vfilters);
+    av_freep(&vfilters_list);
 #endif
     avformat_network_deinit();
     if (show_status)
@@ -1919,6 +1930,7 @@ static int video_thread(void *arg)
     int last_h = 0;
     enum AVPixelFormat last_format = -2;
     int last_serial = -1;
+    int last_vfilter_idx = 0;
 #endif
 
     for (;;) {
@@ -1937,7 +1949,8 @@ static int video_thread(void *arg)
         if (   last_w != frame->width
             || last_h != frame->height
             || last_format != frame->format
-            || last_serial != serial) {
+            || last_serial != serial
+            || last_vfilter_idx != is->vfilter_idx) {
             av_log(NULL, AV_LOG_DEBUG,
                    "Video frame changed from size:%dx%d format:%s serial:%d to size:%dx%d format:%s serial:%d\n",
                    last_w, last_h,
@@ -1946,7 +1959,7 @@ static int video_thread(void *arg)
                    (const char *)av_x_if_null(av_get_pix_fmt_name(frame->format), "none"), serial);
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
-            if ((ret = configure_video_filters(graph, is, vfilters, frame)) < 0) {
+            if ((ret = configure_video_filters(graph, is, vfilters_list ? vfilters_list[is->vfilter_idx] : NULL, frame)) < 0) {
                 SDL_Event event;
                 event.type = FF_QUIT_EVENT;
                 event.user.data1 = is;
@@ -1959,6 +1972,7 @@ static int video_thread(void *arg)
             last_h = frame->height;
             last_format = frame->format;
             last_serial = serial;
+            last_vfilter_idx = is->vfilter_idx;
             frame_rate = filt_out->inputs[0]->frame_rate;
         }
 
@@ -3263,7 +3277,17 @@ static void event_loop(VideoState *cur_stream)
                 stream_cycle_channel(cur_stream, AVMEDIA_TYPE_SUBTITLE);
                 break;
             case SDLK_w:
+#if CONFIG_AVFILTER
+                if (cur_stream->show_mode == SHOW_MODE_VIDEO && cur_stream->vfilter_idx < nb_vfilters - 1) {
+                    if (++cur_stream->vfilter_idx >= nb_vfilters)
+                        cur_stream->vfilter_idx = 0;
+                } else {
+                    cur_stream->vfilter_idx = 0;
+                    toggle_audio_display(cur_stream);
+                }
+#else
                 toggle_audio_display(cur_stream);
+#endif
                 break;
             case SDLK_PAGEUP:
                 if (cur_stream->ic->nb_chapters <= 1) {
@@ -3529,7 +3553,7 @@ static const OptionDef options[] = {
     { "infbuf", OPT_BOOL | OPT_EXPERT, { &infinite_buffer }, "don't limit the input buffer size (useful with realtime streams)", "" },
     { "window_title", OPT_STRING | HAS_ARG, { &window_title }, "set window title", "window title" },
 #if CONFIG_AVFILTER
-    { "vf", OPT_STRING | HAS_ARG, { &vfilters }, "set video filters", "filter_graph" },
+    { "vf", OPT_EXPERT | HAS_ARG, { .func_arg = opt_add_vfilter }, "set video filters", "filter_graph" },
     { "af", OPT_STRING | HAS_ARG, { &afilters }, "set audio filters", "filter_graph" },
 #endif
     { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, { &rdftspeed }, "rdft speed", "msecs" },
@@ -3572,7 +3596,7 @@ void show_help_default(const char *opt, const char *arg)
            "v                   cycle video channel\n"
            "t                   cycle subtitle channel in the current program\n"
            "c                   cycle program\n"
-           "w                   show audio waves\n"
+           "w                   cycle video filters or show modes\n"
            "s                   activate frame-step mode\n"
            "left/right          seek backward/forward 10 seconds\n"
            "down/up             seek backward/forward 1 minute\n"
