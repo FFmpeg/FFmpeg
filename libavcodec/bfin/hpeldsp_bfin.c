@@ -114,10 +114,8 @@ av_cold void ff_hpeldsp_init_bfin(HpelDSPContext *c, int flags)
     c->put_no_rnd_pixels_tab[1][0] = bfin_put_pixels8_nornd;
     c->put_no_rnd_pixels_tab[1][1] = bfin_put_pixels8_x2_nornd;
     c->put_no_rnd_pixels_tab[1][2] = bfin_put_pixels8_y2_nornd;
-/*     c->put_no_rnd_pixels_tab[1][3] = ff_bfin_put_pixels8_xy2_nornd; */
 
     c->put_no_rnd_pixels_tab[0][0] = bfin_put_pixels16_nornd;
     c->put_no_rnd_pixels_tab[0][1] = bfin_put_pixels16_x2_nornd;
     c->put_no_rnd_pixels_tab[0][2] = bfin_put_pixels16_y2_nornd;
-/*     c->put_no_rnd_pixels_tab[0][3] = ff_bfin_put_pixels16_xy2_nornd; */
 }
