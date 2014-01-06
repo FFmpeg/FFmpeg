@@ -970,6 +970,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code)
     int64_t pts, last_IP_pts;
     StreamContext *stc;
     uint8_t header_idx;
+    int ret;
 
     size = decode_frame_header(nut, &pts, &stream_id, &header_idx, frame_code);
     if (size < 0)
@@ -1006,7 +1007,12 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code)
         pkt->size -= sm_size;
     }
 
-    avio_read(bc, pkt->data + nut->header_len[header_idx], size);
+    ret = avio_read(bc, pkt->data + nut->header_len[header_idx], size);
+    if (ret != size) {
+        if (ret < 0)
+            return ret;
+        av_shrink_packet(pkt, nut->header_len[header_idx] + size);
+    }
 
     pkt->stream_index = stream_id;
     if (stc->last_flags & FLAG_KEY)
