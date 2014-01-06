@@ -3115,12 +3115,6 @@ static int h264_set_parameter_from_sps(H264Context *h)
     if (h->avctx->has_b_frames < 2)
         h->avctx->has_b_frames = !h->low_delay;
 
-    if (h->sps.bit_depth_luma != h->sps.bit_depth_chroma) {
-        avpriv_request_sample(h->avctx,
-                              "Different chroma and luma bit depth");
-        return AVERROR_PATCHWELCOME;
-    }
-
     if (h->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
         h->cur_chroma_format_idc      != h->sps.chroma_format_idc) {
         if (h->avctx->codec &&
