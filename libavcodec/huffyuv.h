@@ -79,11 +79,11 @@ typedef struct HYuvContext {
     int picture_number;
     int last_slice_end;
     uint8_t *temp[3];
-    uint64_t stats[3][256];
-    uint8_t len[3][256];
-    uint32_t bits[3][256];
+    uint64_t stats[4][256];
+    uint8_t len[4][256];
+    uint32_t bits[4][256];
     uint32_t pix_bgr_map[1<<VLC_BITS];
-    VLC vlc[6];                             //Y,U,V,YY,YU,YV
+    VLC vlc[8];                             //Y,U,V,A,YY,YU,YV,AA
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     DSPContext dsp;

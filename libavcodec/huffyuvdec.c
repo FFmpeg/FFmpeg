@@ -116,7 +116,7 @@ static int generate_joint_tables(HYuvContext *s)
 
     if (s->bitstream_bpp < 24 || s->version > 2) {
         int p, i, y, u;
-        for (p = 0; p < 3; p++) {
+        for (p = 0; p < 4; p++) {
             int p0 = s->version > 2 ? p : 0;
             for (i = y = 0; y < 256; y++) {
                 int len0 = s->len[p0][y];
@@ -135,8 +135,8 @@ static int generate_joint_tables(HYuvContext *s)
                         i++;
                 }
             }
-            ff_free_vlc(&s->vlc[3 + p]);
-            if ((ret = ff_init_vlc_sparse(&s->vlc[3 + p], VLC_BITS, i, len, 1, 1,
+            ff_free_vlc(&s->vlc[4 + p]);
+            if ((ret = ff_init_vlc_sparse(&s->vlc[4 + p], VLC_BITS, i, len, 1, 1,
                                           bits, 2, 2, symbols, 2, 2, 0)) < 0)
                 return ret;
         }
@@ -179,8 +179,8 @@ static int generate_joint_tables(HYuvContext *s)
                 }
             }
         }
-        ff_free_vlc(&s->vlc[3]);
-        if ((ret = init_vlc(&s->vlc[3], VLC_BITS, i, len, 1, 1, bits, 2, 2, 0)) < 0)
+        ff_free_vlc(&s->vlc[4]);
+        if ((ret = init_vlc(&s->vlc[4], VLC_BITS, i, len, 1, 1, bits, 2, 2, 0)) < 0)
             return ret;
     }
     return 0;
@@ -191,10 +191,14 @@ static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length)
     GetBitContext gb;
     int i;
     int ret;
+    int count = 3;
 
     init_get_bits(&gb, src, length * 8);
 
-    for (i = 0; i < 3; i++) {
+    if (s->version > 2)
+        count = 1 + s->alpha + 2*s->chroma;
+
+    for (i = 0; i < count; i++) {
         if (read_len_table(s->len[i], &gb) < 0)
             return -1;
         if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i]) < 0) {
@@ -238,7 +242,7 @@ static int read_old_huffman_tables(HYuvContext *s)
     memcpy(s->bits[2], s->bits[1], 256 * sizeof(uint32_t));
     memcpy(s->len[2] , s->len [1], 256 * sizeof(uint8_t));
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 4; i++) {
         ff_free_vlc(&s->vlc[i]);
         if ((ret = init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1,
                             s->bits[i], 4, 4, 0)) < 0)
@@ -256,7 +260,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     HYuvContext *s = avctx->priv_data;
 
     ff_huffyuv_common_init(avctx);
-    memset(s->vlc, 0, 3 * sizeof(VLC));
+    memset(s->vlc, 0, 4 * sizeof(VLC));
 
     s->interlaced = s->height > 288;
 
@@ -367,8 +371,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x070:
             avctx->pix_fmt = AV_PIX_FMT_GRAY8;
             break;
+        case 0x170:
+            avctx->pix_fmt = AV_PIX_FMT_GRAY8A;
+            break;
         case 0x470:
             avctx->pix_fmt = AV_PIX_FMT_GBRP;
+            break;
+        case 0x570:
+            avctx->pix_fmt = AV_PIX_FMT_GBRAP;
             break;
         case 0x670:
             avctx->pix_fmt = AV_PIX_FMT_YUV444P;
@@ -387,6 +397,15 @@ static av_cold int decode_init(AVCodecContext *avctx)
             break;
         case 0x67A:
             avctx->pix_fmt = AV_PIX_FMT_YUV410P;
+            break;
+        case 0x770:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
+            break;
+        case 0x771:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA422P;
+            break;
+        case 0x775:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA420P;
             break;
         }
     }
@@ -418,7 +437,7 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    for (i = 0; i < 6; i++)
+    for (i = 0; i < 8; i++)
         s->vlc[i].table = NULL;
 
     if (s->version >= 2) {
@@ -436,7 +455,7 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 /* TODO instead of restarting the read when the code isn't in the first level
  * of the joint table, jump into the 2nd level of the individual table. */
 #define READ_2PIX(dst0, dst1, plane1){\
-    uint16_t code = get_vlc2(&s->gb, s->vlc[3+plane1].table, VLC_BITS, 1);\
+    uint16_t code = get_vlc2(&s->gb, s->vlc[4+plane1].table, VLC_BITS, 1);\
     if(code != 0xffff){\
         dst0 = code>>8;\
         dst1 = code;\
@@ -469,7 +488,7 @@ static void decode_422_bitstream(HYuvContext *s, int count)
 }
 
 #define READ_2PIX_PLANE(dst0, dst1, plane){\
-    uint16_t code = get_vlc2(&s->gb, s->vlc[3+plane].table, VLC_BITS, 1);\
+    uint16_t code = get_vlc2(&s->gb, s->vlc[4+plane].table, VLC_BITS, 1);\
     if(code != 0xffff){\
         dst0 = code>>8;\
         dst1 = code;\
@@ -517,7 +536,7 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
 {
     int i;
     for (i = 0; i < count; i++) {
-        int code = get_vlc2(&s->gb, s->vlc[3].table, VLC_BITS, 1);
+        int code = get_vlc2(&s->gb, s->vlc[4].table, VLC_BITS, 1);
         if (code != -1) {
             *(uint32_t*)&s->temp[0][4 * i] = s->pix_bgr_map[code];
         } else if(decorrelate) {
@@ -902,7 +921,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     ff_huffyuv_common_end(s);
     av_freep(&s->bitstream_buffer);
 
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < 8; i++) {
         ff_free_vlc(&s->vlc[i]);
     }
 

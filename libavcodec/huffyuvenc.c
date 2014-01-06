@@ -147,6 +147,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     HYuvContext *s = avctx->priv_data;
     int i, j;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    int extradata_tables;
 
     ff_huffyuv_common_init(avctx);
 
@@ -188,6 +189,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV440P:
     case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_YUVA444P:
+    case AV_PIX_FMT_YUVA420P:
+    case AV_PIX_FMT_YUVA422P:
+    case AV_PIX_FMT_GBRAP:
+    case AV_PIX_FMT_GRAY8A:
         s->version = 3;
         break;
     case AV_PIX_FMT_RGB32:
@@ -251,6 +257,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    extradata_tables = 1 + 2*s->chroma + s->alpha;
     ((uint8_t*)avctx->extradata)[0] = s->predictor | (s->decorrelate << 6);
     ((uint8_t*)avctx->extradata)[2] = s->interlaced ? 0x10 : 0x20;
     if (s->context)
@@ -258,6 +265,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->version < 3) {
         ((uint8_t*)avctx->extradata)[1] = s->bitstream_bpp;
         ((uint8_t*)avctx->extradata)[3] = 0;
+        extradata_tables = 3;
     } else {
         ((uint8_t*)avctx->extradata)[1] = ((s->bps-1)<<4) | s->chroma_h_shift | (s->chroma_v_shift<<2);
         if (s->chroma)
@@ -271,12 +279,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (avctx->stats_in) {
         char *p = avctx->stats_in;
 
-        for (i = 0; i < 3; i++)
+        for (i = 0; i < 4; i++)
             for (j = 0; j < 256; j++)
                 s->stats[i][j] = 1;
 
         for (;;) {
-            for (i = 0; i < 3; i++) {
+            for (i = 0; i < 4; i++) {
                 char *next;
 
                 for (j = 0; j < 256; j++) {
@@ -288,7 +296,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             if (p[0] == 0 || p[1] == 0 || p[2] == 0) break;
         }
     } else {
-        for (i = 0; i < 3; i++)
+        for (i = 0; i < 4; i++)
             for (j = 0; j < 256; j++) {
                 int d = FFMIN(j, 256 - j);
 
@@ -296,7 +304,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             }
     }
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < extradata_tables; i++) {
         ff_huff_gen_len_table(s->len[i], s->stats[i]);
 
         if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i]) < 0) {
@@ -308,7 +316,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if (s->context) {
-        for (i = 0; i < 3; i++) {
+        for (i = 0; i < 4; i++) {
             int pels = s->width * s->height / (i ? 40 : 10);
             for (j = 0; j < 256; j++) {
                 int d = FFMIN(j, 256 - j);
@@ -316,7 +324,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             }
         }
     } else {
-        for (i = 0; i < 3; i++)
+        for (i = 0; i < 4; i++)
             for (j = 0; j < 256; j++)
                 s->stats[i][j]= 0;
     }
@@ -546,14 +554,14 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     if (s->context) {
-        for (i = 0; i < 3; i++) {
+        for (i = 0; i < 4; i++) {
             ff_huff_gen_len_table(s->len[i], s->stats[i]);
             if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i]) < 0)
                 return -1;
             size += store_table(s, s->len[i], &pkt->data[size]);
         }
 
-        for (i = 0; i < 3; i++)
+        for (i = 0; i < 4; i++)
             for (j = 0; j < 256; j++)
                 s->stats[i][j] >>= 1;
     }
@@ -789,7 +797,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         int j;
         char *p = avctx->stats_out;
         char *end = p + 1024*30;
-        for (i = 0; i < 3; i++) {
+        for (i = 0; i < 4; i++) {
             for (j = 0; j < 256; j++) {
                 snprintf(p, end-p, "%"PRIu64" ", s->stats[i][j]);
                 p += strlen(p);
@@ -860,6 +868,9 @@ AVCodec ff_ffvhuff_encoder = {
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_GBRP,
         AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_GRAY8A,
         AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
