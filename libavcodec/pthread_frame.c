@@ -152,6 +152,13 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
         p->got_frame = 0;
         p->result = codec->decode(avctx, p->frame, &p->got_frame, &p->avpkt);
 
+        if ((p->result < 0 || !p->got_frame) && p->frame->buf[0]) {
+            if (avctx->internal->allocate_progress)
+                av_log(avctx, AV_LOG_ERROR, "A frame threaded decoder did not "
+                       "free the frame on failure. This is a bug, please report it.\n");
+            av_frame_unref(p->frame);
+        }
+
         if (p->state == STATE_SETTING_UP) ff_thread_finish_setup(avctx);
 
         pthread_mutex_lock(&p->progress_mutex);
