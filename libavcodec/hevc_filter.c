@@ -160,8 +160,8 @@ void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC,
 
     if (s->HEVClc->tu.cu_qp_delta != 0) {
         int off = s->sps->qp_bd_offset;
-        s->HEVClc->qp_y = ((qp_y + s->HEVClc->tu.cu_qp_delta + 52 + 2 * off) %
-                          (52 + off)) - off;
+        s->HEVClc->qp_y = FFUMOD(qp_y + s->HEVClc->tu.cu_qp_delta + 52 + 2 * off,
+                                 52 + off) - off;
     } else
         s->HEVClc->qp_y = qp_y;
 }
