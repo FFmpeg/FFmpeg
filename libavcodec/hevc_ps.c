@@ -621,6 +621,12 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         goto err;
     }
 
+    if (!s->vps_list[sps->vps_id]) {
+        av_log(s->avctx, AV_LOG_ERROR, "VPS does not exist \n");
+        ret = AVERROR_INVALIDDATA;
+        goto err;
+    }
+
     sps->max_sub_layers = get_bits(gb, 3) + 1;
     if (sps->max_sub_layers > MAX_SUB_LAYERS) {
         av_log(s->avctx, AV_LOG_ERROR, "sps_max_sub_layers out of range: %d\n",
