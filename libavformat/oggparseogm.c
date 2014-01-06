@@ -79,6 +79,11 @@ ogm_header(AVFormatContext *s, int idx)
         size        = FFMIN(size, os->psize);
         time_unit   = bytestream2_get_le64(&p);
         spu         = bytestream2_get_le64(&p);
+        if (!time_unit || !spu) {
+            av_log(s, AV_LOG_ERROR, "Invalid timing values.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         bytestream2_skip(&p, 4);    /* default_len */
         bytestream2_skip(&p, 8);    /* buffersize + bits_per_sample */
 
@@ -90,7 +95,7 @@ ogm_header(AVFormatContext *s, int idx)
             st->codec->channels = bytestream2_get_le16(&p);
             bytestream2_skip(&p, 2); /* block_align */
             st->codec->bit_rate = bytestream2_get_le32(&p) * 8;
-            st->codec->sample_rate = time_unit ? spu * 10000000 / time_unit : 0;
+            st->codec->sample_rate = spu * 10000000 / time_unit;
             avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
             if (size >= 56 && st->codec->codec_id == AV_CODEC_ID_AAC) {
                 bytestream2_skip(&p, 4);
