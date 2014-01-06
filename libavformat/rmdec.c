@@ -270,6 +270,8 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             if (ast->sub_packet_size <= 0 ||
                 ast->sub_packet_size > ast->audio_framesize)
                 return AVERROR_INVALIDDATA;
+            if (ast->audio_framesize % ast->sub_packet_size)
+                return AVERROR_INVALIDDATA;
             break;
         case DEINT_ID_SIPR:
         case DEINT_ID_INT0:
