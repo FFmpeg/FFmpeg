@@ -701,6 +701,12 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (setsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, sizeof(tmp)) < 0) {
             log_net_error(h, AV_LOG_WARNING, "setsockopt(SO_RECVBUF)");
         }
+        len = sizeof(tmp);
+        if (getsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, &len) < 0) {
+            log_net_error(h, AV_LOG_WARNING, "getsockopt(SO_RCVBUF)");
+        } else
+            av_log(h, AV_LOG_DEBUG, "end receive buffer size reported is %d\n", tmp);
+
         /* make the socket non-blocking */
         ff_socket_nonblock(udp_fd, 1);
     }
