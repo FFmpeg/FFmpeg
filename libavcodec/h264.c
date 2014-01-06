@@ -4605,6 +4605,8 @@ static int execute_decode_slices(H264Context *h, int context_count)
     H264Context *hx;
     int i;
 
+    av_assert0(h->mb_y < h->mb_height);
+
     if (h->avctx->hwaccel ||
         h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
         return 0;
