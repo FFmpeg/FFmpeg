@@ -17,16 +17,17 @@
  * License along with Libav; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
 /*
-   low level assembler interface wrapper
-
-DEFUN(put_pixels_clamped,mL1,
-        (int16_t *block, uint8_t *dest, int line_size)):
-
-      body
-
-      rts;
-*/
+ * low level assembler interface wrapper
+ *
+ * DEFUN(put_pixels_clamped,mL1,
+ *      (int16_t *block, uint8_t *dest, int line_size)):
+ *
+ *    body
+ *
+ *    rts;
+ */
 
 #ifndef AVCODEC_BFIN_CONFIG_BFIN_H
 #define AVCODEC_BFIN_CONFIG_BFIN_H
@@ -42,24 +43,24 @@ DEFUN(put_pixels_clamped,mL1,
 #else
 #define mL1 mL3
 #endif
-#endif
+#endif /* mL1 */
 
-#define DEFUN(fname,where,interface) \
-        .section where;              \
-        .global _ff_bfin_ ## fname ; \
-        .type _ff_bfin_ ## fname, STT_FUNC; \
-        .align 8;                    \
-        _ff_bfin_ ## fname
+#define DEFUN(fname, where, interface)          \
+    .section where;                             \
+    .global _ff_bfin_ ## fname;                 \
+    .type _ff_bfin_ ## fname, STT_FUNC;         \
+    .align 8;                                   \
+    _ff_bfin_ ## fname
 
 #define DEFUN_END(fname) \
-        .size _ff_bfin_ ## fname, . - _ff_bfin_ ## fname
+    .size _ff_bfin_ ## fname, . - _ff_bfin_ ## fname
 
 #ifdef __FDPIC__
-#define RELOC(reg,got,obj) reg = [got + obj@GOT17M4]
+#define RELOC(reg, got, obj) reg = [got + obj@GOT17M4]
 #else
-#define RELOC(reg,got,obj) reg.L = obj; reg.H = obj
+#define RELOC(reg, got, obj) reg.L = obj; reg.H = obj
 #endif
 
-#endif
+#endif /* DEFUN */
 
 #endif /* AVCODEC_BFIN_CONFIG_BFIN_H */
