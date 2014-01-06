@@ -27,6 +27,7 @@
 #include "sgi.h"
 
 typedef struct SgiState {
+    AVCodecContext *avctx;
     unsigned int width;
     unsigned int height;
     unsigned int depth;
@@ -39,15 +40,16 @@ typedef struct SgiState {
  * Expand an RLE row into a channel.
  * @param s the current image state
  * @param out_buf Points to one line after the output buffer.
- * @param out_end end of line in output buffer
+ * @param len length of out_buf in bytes
  * @param pixelstride pixel stride of input buffer
  * @return size of output in bytes, else return error code.
  */
 static int expand_rle_row(SgiState *s, uint8_t *out_buf,
-                          uint8_t *out_end, int pixelstride)
+                          int len, int pixelstride)
 {
     unsigned char pixel, count;
     unsigned char *orig = out_buf;
+    uint8_t *out_end = out_buf + len;
 
     while (out_buf < out_end) {
         if (bytestream2_get_bytes_left(&s->g) < 1)
@@ -58,8 +60,10 @@ static int expand_rle_row(SgiState *s, uint8_t *out_buf,
         }
 
         /* Check for buffer overflow. */
-        if (out_end - out_buf <= pixelstride * (count - 1))
+        if (out_end - out_buf <= pixelstride * (count - 1)) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid pixel count.\n");
             return AVERROR_INVALIDDATA;
+        }
 
         if (pixel & 0x80) {
             while (count--) {
@@ -103,7 +107,7 @@ static int read_rle_sgi(uint8_t *out_buf, SgiState *s)
             dest_row -= s->linesize;
             start_offset = bytestream2_get_be32(&g_table);
             bytestream2_seek(&s->g, start_offset, SEEK_SET);
-            if (expand_rle_row(s, dest_row + z, dest_row + s->width*s->depth,
+            if (expand_rle_row(s, dest_row + z, s->width*s->depth,
                                s->depth) != s->width) {
                 return AVERROR_INVALIDDATA;
             }
@@ -231,6 +235,15 @@ static int decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
+static av_cold int sgi_decode_init(AVCodecContext *avctx)
+{
+    SgiState *s = avctx->priv_data;
+
+    s->avctx = avctx;
+
+    return 0;
+}
+
 AVCodec ff_sgi_decoder = {
     .name           = "sgi",
     .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
@@ -238,5 +251,6 @@ AVCodec ff_sgi_decoder = {
     .id             = AV_CODEC_ID_SGI,
     .priv_data_size = sizeof(SgiState),
     .decode         = decode_frame,
+    .init           = sgi_decode_init,
     .capabilities   = CODEC_CAP_DR1,
 };
