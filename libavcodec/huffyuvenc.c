@@ -187,6 +187,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV411P:
     case AV_PIX_FMT_YUV440P:
     case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GRAY8:
         s->version = 3;
         break;
     case AV_PIX_FMT_RGB32:
@@ -858,6 +859,7 @@ AVCodec ff_ffvhuff_encoder = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },

@@ -364,6 +364,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
                                          &s->chroma_v_shift);
     } else {
         switch ( (s->chroma<<10) | (s->yuv<<9) | (s->alpha<<8) | ((s->bps-1)<<4) | s->chroma_h_shift | (s->chroma_v_shift<<2)) {
+        case 0x070:
+            avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+            break;
         case 0x470:
             avctx->pix_fmt = AV_PIX_FMT_GBRP;
             break;
