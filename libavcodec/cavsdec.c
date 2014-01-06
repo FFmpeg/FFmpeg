@@ -948,8 +948,8 @@ static inline int check_for_slice(AVSContext *h)
 
 static int decode_pic(AVSContext *h)
 {
-    int skip_count    = -1;
     int ret;
+    int skip_count    = -1;
     enum cavs_mb mb_type;
 
     if (!h->top_qp) {
@@ -985,9 +985,9 @@ static int decode_pic(AVSContext *h)
             skip_bits(&h->gb, 1); //marker_bit
     }
 
-    if ((ret = ff_get_buffer(h->avctx, h->cur.f,
-                             h->cur.f->pict_type == AV_PICTURE_TYPE_B ?
-                             0 : AV_GET_BUFFER_FLAG_REF)) < 0)
+    ret = ff_get_buffer(h->avctx, h->cur.f, h->cur.f->pict_type == AV_PICTURE_TYPE_B ?
+                        0 : AV_GET_BUFFER_FLAG_REF);
+    if (ret < 0)
         return ret;
 
     if (!h->edge_emu_buffer) {
