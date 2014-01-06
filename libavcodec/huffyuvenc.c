@@ -186,6 +186,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV410P:
     case AV_PIX_FMT_YUV411P:
     case AV_PIX_FMT_YUV440P:
+    case AV_PIX_FMT_GBRP:
         s->version = 3;
         break;
     case AV_PIX_FMT_RGB32:
@@ -200,7 +201,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     avctx->bits_per_coded_sample = s->bitstream_bpp;
-    s->decorrelate = s->bitstream_bpp >= 24 && !s->yuv;
+    s->decorrelate = s->bitstream_bpp >= 24 && !s->yuv && avctx->pix_fmt != AV_PIX_FMT_GBRP;
     s->predictor = avctx->prediction_method;
     s->interlaced = avctx->flags&CODEC_FLAG_INTERLACED_ME ? 1 : 0;
     if (avctx->context_model == 1) {
@@ -720,7 +721,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             }
             encode_bgra_bitstream(s, width, 3);
         }
-    } else if (s->yuv) {
+    } else if (s->version > 2) {
         int plane;
         for (plane = 0; plane < 1 + 2*s->chroma + s->alpha; plane++) {
             int left, y;
@@ -856,6 +857,7 @@ AVCodec ff_ffvhuff_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
+        AV_PIX_FMT_GBRP,
         AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
