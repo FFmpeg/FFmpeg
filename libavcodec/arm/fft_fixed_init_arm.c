@@ -20,7 +20,7 @@
 
 #include "libavutil/arm/cpu.h"
 
-#define CONFIG_FFT_FLOAT 0
+#define FFT_FLOAT 0
 #include "libavcodec/fft.h"
 
 void ff_fft_fixed_calc_neon(FFTContext *s, FFTComplex *z);

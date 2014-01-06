@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define CONFIG_FFT_FLOAT 0
+#define FFT_FLOAT 0
 #include "mdct_template.c"
 
 /* same as ff_mdct_calcw_c with double-width unscaled output */

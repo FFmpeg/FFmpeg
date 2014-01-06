@@ -29,7 +29,7 @@
 #include "libavutil/log.h"
 #include "libavutil/time.h"
 #include "fft.h"
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
 #include "dct.h"
 #include "rdft.h"
 #endif
@@ -51,7 +51,7 @@
    pim += (MUL16(are, bim) + MUL16(bre, aim));\
 }
 
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
 #   define RANGE 1.0
 #   define REF_SCALE(x, bits)  (x)
 #   define FMT "%10.6f"
@@ -148,7 +148,7 @@ static void mdct_ref(FFTSample *output, FFTSample *input, int nbits)
     }
 }
 
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
 static void idct_ref(float *output, float *input, int nbits)
 {
     int n = 1<<nbits;
@@ -248,7 +248,7 @@ int main(int argc, char **argv)
     int do_inverse = 0;
     FFTContext s1, *s = &s1;
     FFTContext m1, *m = &m1;
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
     RDFTContext r1, *r = &r1;
     DCTContext d1, *d = &d1;
     int fft_size_2;
@@ -320,7 +320,7 @@ int main(int argc, char **argv)
         ff_fft_init(s, fft_nbits, do_inverse);
         fft_ref_init(fft_nbits, do_inverse);
         break;
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
     case TRANSFORM_RDFT:
         if (do_inverse)
             av_log(NULL, AV_LOG_INFO,"IDFT_C2R");
@@ -375,7 +375,7 @@ int main(int argc, char **argv)
         fft_ref(tab_ref, tab1, fft_nbits);
         err = check_diff((FFTSample *)tab_ref, (FFTSample *)tab, fft_size * 2, 1.0);
         break;
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
     case TRANSFORM_RDFT:
         fft_size_2 = fft_size >> 1;
         if (do_inverse) {
@@ -444,7 +444,7 @@ int main(int argc, char **argv)
                     memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
                     s->fft_calc(s, tab);
                     break;
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
                 case TRANSFORM_RDFT:
                     memcpy(tab2, tab1, fft_size * sizeof(FFTSample));
                     r->rdft_calc(r, tab2);
@@ -474,7 +474,7 @@ int main(int argc, char **argv)
     case TRANSFORM_FFT:
         ff_fft_end(s);
         break;
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
     case TRANSFORM_RDFT:
         ff_rdft_end(r);
         break;
