@@ -482,7 +482,7 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
     h->pred8x8l[TOP_DC_PRED         ]= FUNCC(pred8x8l_top_dc              , depth);\
     h->pred8x8l[DC_128_PRED         ]= FUNCC(pred8x8l_128_dc              , depth);\
 \
-    if (chroma_format_idc == 1) {\
+    if (chroma_format_idc <= 1) {\
         h->pred8x8[VERT_PRED8x8   ]= FUNCC(pred8x8_vertical               , depth);\
         h->pred8x8[HOR_PRED8x8    ]= FUNCC(pred8x8_horizontal             , depth);\
     } else {\
@@ -490,7 +490,7 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
         h->pred8x8[HOR_PRED8x8    ]= FUNCC(pred8x16_horizontal            , depth);\
     }\
     if (codec_id != AV_CODEC_ID_VP8) {\
-        if (chroma_format_idc == 1) {\
+        if (chroma_format_idc <= 1) {\
             h->pred8x8[PLANE_PRED8x8]= FUNCC(pred8x8_plane                , depth);\
         } else {\
             h->pred8x8[PLANE_PRED8x8]= FUNCC(pred8x16_plane               , depth);\
@@ -498,7 +498,7 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
     } else\
         h->pred8x8[PLANE_PRED8x8]= FUNCD(pred8x8_tm_vp8);\
     if(codec_id != AV_CODEC_ID_RV40 && codec_id != AV_CODEC_ID_VP8){\
-        if (chroma_format_idc == 1) {\
+        if (chroma_format_idc <= 1) {\
             h->pred8x8[DC_PRED8x8     ]= FUNCC(pred8x8_dc                     , depth);\
             h->pred8x8[LEFT_DC_PRED8x8]= FUNCC(pred8x8_left_dc                , depth);\
             h->pred8x8[TOP_DC_PRED8x8 ]= FUNCC(pred8x8_top_dc                 , depth);\
@@ -524,7 +524,7 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
             h->pred8x8[DC_129_PRED8x8]= FUNCC(pred8x8_129_dc              , depth);\
         }\
     }\
-    if (chroma_format_idc == 1) {\
+    if (chroma_format_idc <= 1) {\
         h->pred8x8[DC_128_PRED8x8 ]= FUNCC(pred8x8_128_dc                 , depth);\
     } else {\
         h->pred8x8[DC_128_PRED8x8 ]= FUNCC(pred8x16_128_dc                , depth);\
@@ -558,7 +558,7 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
     h->pred4x4_add  [ HOR_PRED   ]= FUNCC(pred4x4_horizontal_add          , depth);\
     h->pred8x8l_add [VERT_PRED   ]= FUNCC(pred8x8l_vertical_add           , depth);\
     h->pred8x8l_add [ HOR_PRED   ]= FUNCC(pred8x8l_horizontal_add         , depth);\
-    if (chroma_format_idc == 1) {\
+    if (chroma_format_idc <= 1) {\
     h->pred8x8_add  [VERT_PRED8x8]= FUNCC(pred8x8_vertical_add            , depth);\
     h->pred8x8_add  [ HOR_PRED8x8]= FUNCC(pred8x8_horizontal_add          , depth);\
     } else {\
@@ -567,9 +567,6 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
     }\
     h->pred16x16_add[VERT_PRED8x8]= FUNCC(pred16x16_vertical_add          , depth);\
     h->pred16x16_add[ HOR_PRED8x8]= FUNCC(pred16x16_horizontal_add        , depth);\
-
-    if(!chroma_format_idc)
-        chroma_format_idc = 1;
 
     switch (bit_depth) {
         case 9:

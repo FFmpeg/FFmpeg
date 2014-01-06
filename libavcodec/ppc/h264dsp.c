@@ -750,7 +750,7 @@ av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
 
     if (bit_depth == 8) {
         c->h264_idct_add = h264_idct_add_altivec;
-        if (chroma_format_idc == 1)
+        if (chroma_format_idc <= 1)
             c->h264_idct_add8 = h264_idct_add8_altivec;
         c->h264_idct_add16      = h264_idct_add16_altivec;
         c->h264_idct_add16intra = h264_idct_add16intra_altivec;

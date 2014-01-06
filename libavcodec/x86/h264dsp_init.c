@@ -214,7 +214,7 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
-    if (chroma_format_idc == 1 && EXTERNAL_MMXEXT(cpu_flags))
+    if (chroma_format_idc <= 1 && EXTERNAL_MMXEXT(cpu_flags))
         c->h264_loop_filter_strength = ff_h264_loop_filter_strength_mmxext;
 
     if (bit_depth == 8) {
@@ -226,7 +226,7 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 
             c->h264_idct_add16 = ff_h264_idct_add16_8_mmx;
             c->h264_idct8_add4 = ff_h264_idct8_add4_8_mmx;
-            if (chroma_format_idc == 1)
+            if (chroma_format_idc <= 1)
                 c->h264_idct_add8 = ff_h264_idct_add8_8_mmx;
             c->h264_idct_add16intra = ff_h264_idct_add16intra_8_mmx;
             if (cpu_flags & AV_CPU_FLAG_CMOV)
@@ -237,13 +237,13 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
             c->h264_idct8_dc_add = ff_h264_idct8_dc_add_8_mmxext;
             c->h264_idct_add16   = ff_h264_idct_add16_8_mmxext;
             c->h264_idct8_add4   = ff_h264_idct8_add4_8_mmxext;
-            if (chroma_format_idc == 1)
+            if (chroma_format_idc <= 1)
                 c->h264_idct_add8 = ff_h264_idct_add8_8_mmxext;
             c->h264_idct_add16intra = ff_h264_idct_add16intra_8_mmxext;
 
             c->h264_v_loop_filter_chroma       = ff_deblock_v_chroma_8_mmxext;
             c->h264_v_loop_filter_chroma_intra = ff_deblock_v_chroma_intra_8_mmxext;
-            if (chroma_format_idc == 1) {
+            if (chroma_format_idc <= 1) {
                 c->h264_h_loop_filter_chroma       = ff_deblock_h_chroma_8_mmxext;
                 c->h264_h_loop_filter_chroma_intra = ff_deblock_h_chroma_intra_8_mmxext;
             }
@@ -266,7 +266,7 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 
             c->h264_idct_add16 = ff_h264_idct_add16_8_sse2;
             c->h264_idct8_add4 = ff_h264_idct8_add4_8_sse2;
-            if (chroma_format_idc == 1)
+            if (chroma_format_idc <= 1)
                 c->h264_idct_add8 = ff_h264_idct_add8_8_sse2;
             c->h264_idct_add16intra      = ff_h264_idct_add16intra_8_sse2;
             c->h264_luma_dc_dequant_idct = ff_h264_luma_dc_dequant_idct_sse2;
@@ -309,7 +309,7 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
             c->h264_idct8_dc_add = ff_h264_idct8_dc_add_10_sse2;
 
             c->h264_idct_add16 = ff_h264_idct_add16_10_sse2;
-            if (chroma_format_idc == 1)
+            if (chroma_format_idc <= 1)
                 c->h264_idct_add8 = ff_h264_idct_add8_10_sse2;
             c->h264_idct_add16intra = ff_h264_idct_add16intra_10_sse2;
 #if HAVE_ALIGNED_STACK
@@ -349,7 +349,7 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
             c->h264_idct8_dc_add = ff_h264_idct8_dc_add_10_avx;
 
             c->h264_idct_add16 = ff_h264_idct_add16_10_avx;
-            if (chroma_format_idc == 1)
+            if (chroma_format_idc <= 1)
                 c->h264_idct_add8 = ff_h264_idct_add8_10_avx;
             c->h264_idct_add16intra = ff_h264_idct_add16intra_10_avx;
 #if HAVE_ALIGNED_STACK
