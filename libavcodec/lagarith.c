@@ -302,16 +302,16 @@ static void lag_pred_line_yuy2(LagarithContext *l, uint8_t *buf,
             L += buf[i];
             buf[i] = L;
         }
-        for (; i<width; i++) {
-            L     = mid_pred(L&0xFF, buf[i-stride], (L + buf[i-stride] - TL)&0xFF) + buf[i];
-            TL    = buf[i-stride];
-            buf[i]= L;
+        for (; i < width; i++) {
+            L      = mid_pred(L & 0xFF, buf[i - stride], (L + buf[i - stride] - TL) & 0xFF) + buf[i];
+            TL     = buf[i - stride];
+            buf[i] = L;
         }
     } else {
         TL = buf[width - (2 * stride) - 1];
         L  = buf[width - stride - 1];
         l->dsp.add_hfyu_median_prediction(buf, buf - stride, buf, width,
-                                        &L, &TL);
+                                          &L, &TL);
     }
 }
 
