@@ -6,6 +6,7 @@ OBJS-$(CONFIG_H264CHROMA)              += ppc/h264chroma_init.o
 OBJS-$(CONFIG_H264DSP)                 += ppc/h264dsp.o
 OBJS-$(CONFIG_H264QPEL)                += ppc/h264qpel.o
 OBJS-$(CONFIG_HPELDSP)                 += ppc/hpeldsp_altivec.o
+OBJS-$(CONFIG_HUFFYUVDSP)              += ppc/huffyuvdsp_altivec.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += ppc/mpegaudiodsp_altivec.o
 OBJS-$(CONFIG_MPEGVIDEO)               += ppc/mpegvideo_altivec.o
 OBJS-$(CONFIG_VIDEODSP)                += ppc/videodsp_ppc.o

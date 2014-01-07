@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "huffyuv.h"
+#include "huffyuvdsp.h"
 #include "thread.h"
 
 #define classic_shift_luma_table_size 42
@@ -239,6 +240,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     HYuvContext *s = avctx->priv_data;
 
     ff_huffyuv_common_init(avctx);
+    ff_huffyuvdsp_init(&s->hdsp);
     memset(s->vlc, 0, 3 * sizeof(VLC));
 
     s->interlaced = s->height > 288;
@@ -542,10 +544,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             case LEFT:
             case PLANE:
                 decode_422_bitstream(s, width-2);
-                lefty = s->dsp.add_hfyu_left_prediction(p->data[0] + 2, s->temp[0], width-2, lefty);
+                lefty = s->hdsp.add_hfyu_left_pred(p->data[0] + 2, s->temp[0], width - 2, lefty);
                 if (!(s->flags&CODEC_FLAG_GRAY)) {
-                    leftu = s->dsp.add_hfyu_left_prediction(p->data[1] + 1, s->temp[1], width2 - 1, leftu);
-                    leftv = s->dsp.add_hfyu_left_prediction(p->data[2] + 1, s->temp[2], width2 - 1, leftv);
+                    leftu = s->hdsp.add_hfyu_left_pred(p->data[1] + 1, s->temp[1], width2 - 1, leftu);
+                    leftv = s->hdsp.add_hfyu_left_pred(p->data[2] + 1, s->temp[2], width2 - 1, leftv);
                 }
 
                 for (cy = y = 1; y < s->height; y++, cy++) {
@@ -556,10 +558,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
                         ydst = p->data[0] + p->linesize[0] * y;
 
-                        lefty = s->dsp.add_hfyu_left_prediction(ydst, s->temp[0], width, lefty);
+                        lefty = s->hdsp.add_hfyu_left_pred(ydst, s->temp[0], width, lefty);
                         if (s->predictor == PLANE) {
                             if (y > s->interlaced)
-                                s->dsp.add_bytes(ydst, ydst - fake_ystride, width);
+                                s->hdsp.add_bytes(ydst, ydst - fake_ystride, width);
                         }
                         y++;
                         if (y >= s->height) break;
@@ -572,17 +574,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     vdst = p->data[2] + p->linesize[2]*cy;
 
                     decode_422_bitstream(s, width);
-                    lefty = s->dsp.add_hfyu_left_prediction(ydst, s->temp[0], width, lefty);
+                    lefty = s->hdsp.add_hfyu_left_pred(ydst, s->temp[0], width, lefty);
                     if (!(s->flags & CODEC_FLAG_GRAY)) {
-                        leftu= s->dsp.add_hfyu_left_prediction(udst, s->temp[1], width2, leftu);
-                        leftv= s->dsp.add_hfyu_left_prediction(vdst, s->temp[2], width2, leftv);
+                        leftu = s->hdsp.add_hfyu_left_pred(udst, s->temp[1], width2, leftu);
+                        leftv = s->hdsp.add_hfyu_left_pred(vdst, s->temp[2], width2, leftv);
                     }
                     if (s->predictor == PLANE) {
                         if (cy > s->interlaced) {
-                            s->dsp.add_bytes(ydst, ydst - fake_ystride, width);
+                            s->hdsp.add_bytes(ydst, ydst - fake_ystride, width);
                             if (!(s->flags & CODEC_FLAG_GRAY)) {
-                                s->dsp.add_bytes(udst, udst - fake_ustride, width2);
-                                s->dsp.add_bytes(vdst, vdst - fake_vstride, width2);
+                                s->hdsp.add_bytes(udst, udst - fake_ustride, width2);
+                                s->hdsp.add_bytes(vdst, vdst - fake_vstride, width2);
                             }
                         }
                     }
@@ -593,10 +595,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             case MEDIAN:
                 /* first line except first 2 pixels is left predicted */
                 decode_422_bitstream(s, width - 2);
-                lefty= s->dsp.add_hfyu_left_prediction(p->data[0] + 2, s->temp[0], width - 2, lefty);
+                lefty = s->hdsp.add_hfyu_left_pred(p->data[0] + 2, s->temp[0], width - 2, lefty);
                 if (!(s->flags & CODEC_FLAG_GRAY)) {
-                    leftu = s->dsp.add_hfyu_left_prediction(p->data[1] + 1, s->temp[1], width2 - 1, leftu);
-                    leftv = s->dsp.add_hfyu_left_prediction(p->data[2] + 1, s->temp[2], width2 - 1, leftv);
+                    leftu = s->hdsp.add_hfyu_left_pred(p->data[1] + 1, s->temp[1], width2 - 1, leftu);
+                    leftv = s->hdsp.add_hfyu_left_pred(p->data[2] + 1, s->temp[2], width2 - 1, leftv);
                 }
 
                 cy = y = 1;
@@ -604,31 +606,31 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 /* second line is left predicted for interlaced case */
                 if (s->interlaced) {
                     decode_422_bitstream(s, width);
-                    lefty = s->dsp.add_hfyu_left_prediction(p->data[0] + p->linesize[0], s->temp[0], width, lefty);
+                    lefty = s->hdsp.add_hfyu_left_pred(p->data[0] + p->linesize[0], s->temp[0], width, lefty);
                     if (!(s->flags & CODEC_FLAG_GRAY)) {
-                        leftu = s->dsp.add_hfyu_left_prediction(p->data[1] + p->linesize[2], s->temp[1], width2, leftu);
-                        leftv = s->dsp.add_hfyu_left_prediction(p->data[2] + p->linesize[1], s->temp[2], width2, leftv);
+                        leftu = s->hdsp.add_hfyu_left_pred(p->data[1] + p->linesize[2], s->temp[1], width2, leftu);
+                        leftv = s->hdsp.add_hfyu_left_pred(p->data[2] + p->linesize[1], s->temp[2], width2, leftv);
                     }
                     y++; cy++;
                 }
 
                 /* next 4 pixels are left predicted too */
                 decode_422_bitstream(s, 4);
-                lefty = s->dsp.add_hfyu_left_prediction(p->data[0] + fake_ystride, s->temp[0], 4, lefty);
+                lefty = s->hdsp.add_hfyu_left_pred(p->data[0] + fake_ystride, s->temp[0], 4, lefty);
                 if (!(s->flags&CODEC_FLAG_GRAY)) {
-                    leftu = s->dsp.add_hfyu_left_prediction(p->data[1] + fake_ustride, s->temp[1], 2, leftu);
-                    leftv = s->dsp.add_hfyu_left_prediction(p->data[2] + fake_vstride, s->temp[2], 2, leftv);
+                    leftu = s->hdsp.add_hfyu_left_pred(p->data[1] + fake_ustride, s->temp[1], 2, leftu);
+                    leftv = s->hdsp.add_hfyu_left_pred(p->data[2] + fake_vstride, s->temp[2], 2, leftv);
                 }
 
                 /* next line except the first 4 pixels is median predicted */
                 lefttopy = p->data[0][3];
                 decode_422_bitstream(s, width - 4);
-                s->dsp.add_hfyu_median_prediction(p->data[0] + fake_ystride+4, p->data[0]+4, s->temp[0], width-4, &lefty, &lefttopy);
+                s->hdsp.add_hfyu_median_pred(p->data[0] + fake_ystride + 4, p->data[0] + 4, s->temp[0], width - 4, &lefty, &lefttopy);
                 if (!(s->flags&CODEC_FLAG_GRAY)) {
                     lefttopu = p->data[1][1];
                     lefttopv = p->data[2][1];
-                    s->dsp.add_hfyu_median_prediction(p->data[1] + fake_ustride+2, p->data[1] + 2, s->temp[1], width2 - 2, &leftu, &lefttopu);
-                    s->dsp.add_hfyu_median_prediction(p->data[2] + fake_vstride+2, p->data[2] + 2, s->temp[2], width2 - 2, &leftv, &lefttopv);
+                    s->hdsp.add_hfyu_median_pred(p->data[1] + fake_ustride + 2, p->data[1] + 2, s->temp[1], width2 - 2, &leftu, &lefttopu);
+                    s->hdsp.add_hfyu_median_pred(p->data[2] + fake_vstride + 2, p->data[2] + 2, s->temp[2], width2 - 2, &leftv, &lefttopv);
                 }
                 y++; cy++;
 
@@ -639,7 +641,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         while (2 * cy > y) {
                             decode_gray_bitstream(s, width);
                             ydst = p->data[0] + p->linesize[0] * y;
-                            s->dsp.add_hfyu_median_prediction(ydst, ydst - fake_ystride, s->temp[0], width, &lefty, &lefttopy);
+                            s->hdsp.add_hfyu_median_pred(ydst, ydst - fake_ystride, s->temp[0], width, &lefty, &lefttopy);
                             y++;
                         }
                         if (y >= height) break;
@@ -652,10 +654,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     udst = p->data[1] + p->linesize[1] * cy;
                     vdst = p->data[2] + p->linesize[2] * cy;
 
-                    s->dsp.add_hfyu_median_prediction(ydst, ydst - fake_ystride, s->temp[0], width, &lefty, &lefttopy);
+                    s->hdsp.add_hfyu_median_pred(ydst, ydst - fake_ystride, s->temp[0], width, &lefty, &lefttopy);
                     if (!(s->flags & CODEC_FLAG_GRAY)) {
-                        s->dsp.add_hfyu_median_prediction(udst, udst - fake_ustride, s->temp[1], width2, &leftu, &lefttopu);
-                        s->dsp.add_hfyu_median_prediction(vdst, vdst - fake_vstride, s->temp[2], width2, &leftv, &lefttopv);
+                        s->hdsp.add_hfyu_median_pred(udst, udst - fake_ustride, s->temp[1], width2, &leftu, &lefttopu);
+                        s->hdsp.add_hfyu_median_pred(vdst, vdst - fake_vstride, s->temp[2], width2, &leftv, &lefttopv);
                     }
                 }
 
@@ -686,19 +688,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             case LEFT:
             case PLANE:
                 decode_bgr_bitstream(s, width - 1);
-                s->dsp.add_hfyu_left_prediction_bgr32(p->data[0] + last_line+4, s->temp[0], width - 1, &leftr, &leftg, &leftb, &lefta);
+                s->hdsp.add_hfyu_left_pred_bgr32(p->data[0] + last_line + 4, s->temp[0], width - 1, &leftr, &leftg, &leftb, &lefta);
 
                 for (y = s->height - 2; y >= 0; y--) { //Yes it is stored upside down.
                     decode_bgr_bitstream(s, width);
 
-                    s->dsp.add_hfyu_left_prediction_bgr32(p->data[0] + p->linesize[0]*y, s->temp[0], width, &leftr, &leftg, &leftb, &lefta);
+                    s->hdsp.add_hfyu_left_pred_bgr32(p->data[0] + p->linesize[0] * y, s->temp[0], width, &leftr, &leftg, &leftb, &lefta);
                     if (s->predictor == PLANE) {
                         if (s->bitstream_bpp != 32) lefta = 0;
                         if ((y & s->interlaced) == 0 &&
                             y < s->height - 1 - s->interlaced) {
-                            s->dsp.add_bytes(p->data[0] + p->linesize[0] * y,
-                                             p->data[0] + p->linesize[0] * y +
-                                             fake_ystride, fake_ystride);
+                            s->hdsp.add_bytes(p->data[0] + p->linesize[0] * y,
+                                              p->data[0] + p->linesize[0] * y +
+                                              fake_ystride, fake_ystride);
                         }
                     }
                 }

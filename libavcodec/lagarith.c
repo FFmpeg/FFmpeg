@@ -30,7 +30,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "mathops.h"
-#include "dsputil.h"
+#include "huffyuvdsp.h"
 #include "lagarithrac.h"
 #include "thread.h"
 
@@ -50,7 +50,7 @@ enum LagarithFrameType {
 
 typedef struct LagarithContext {
     AVCodecContext *avctx;
-    DSPContext dsp;
+    HuffYUVDSPContext hdsp;
     int zeros;                  /**< number of consecutive zero bytes encountered */
     int zeros_rem;              /**< number of zero bytes remaining to output */
     uint8_t *rgb_planes;
@@ -225,7 +225,7 @@ static void add_lag_median_prediction(uint8_t *dst, uint8_t *src1,
                                       uint8_t *diff, int w, int *left,
                                       int *left_top)
 {
-    /* This is almost identical to add_hfyu_median_prediction in dsputil.h.
+    /* This is almost identical to add_hfyu_median_pred in huffyuvdsp.h.
      * However the &0xFF on the gradient predictor yealds incorrect output
      * for lagarith.
      */
@@ -253,8 +253,7 @@ static void lag_pred_line(LagarithContext *l, uint8_t *buf,
     if (!line) {
         int i, align_width = (width - 1) & ~31;
         /* Left prediction only for first line */
-        L = l->dsp.add_hfyu_left_prediction(buf + 1, buf + 1,
-                                            align_width, buf[0]);
+        L = l->hdsp.add_hfyu_left_pred(buf + 1, buf + 1, align_width, buf[0]);
         for (i = align_width + 1; i < width; i++)
             buf[i] += buf[i - 1];
     } else {
@@ -289,7 +288,7 @@ static void lag_pred_line_yuy2(LagarithContext *l, uint8_t *buf,
         }
 
         align_width = (width - 1) & ~31;
-        l->dsp.add_hfyu_left_prediction(buf + 1, buf + 1, align_width, buf[0]);
+        l->hdsp.add_hfyu_left_pred(buf + 1, buf + 1, align_width, buf[0]);
 
         for (i = align_width + 1; i < width; i++)
             buf[i] += buf[i - 1];
@@ -314,8 +313,7 @@ static void lag_pred_line_yuy2(LagarithContext *l, uint8_t *buf,
     } else {
         TL = buf[width - (2 * stride) - 1];
         L  = buf[width - stride - 1];
-        l->dsp.add_hfyu_median_prediction(buf, buf - stride, buf, width,
-                                          &L, &TL);
+        l->hdsp.add_hfyu_median_pred(buf, buf - stride, buf, width, &L, &TL);
     }
 }
 
@@ -682,7 +680,7 @@ static av_cold int lag_decode_init(AVCodecContext *avctx)
     LagarithContext *l = avctx->priv_data;
     l->avctx = avctx;
 
-    ff_dsputil_init(&l->dsp, avctx);
+    ff_huffyuvdsp_init(&l->hdsp);
 
     return 0;
 }

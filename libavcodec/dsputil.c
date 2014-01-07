@@ -1663,19 +1663,6 @@ void ff_set_cmp(DSPContext *c, me_cmp_func *cmp, int type)
     }
 }
 
-static void add_bytes_c(uint8_t *dst, uint8_t *src, int w)
-{
-    long i;
-
-    for (i = 0; i <= w - (int) sizeof(long); i += sizeof(long)) {
-        long a = *(long *) (src + i);
-        long b = *(long *) (dst + i);
-        *(long *) (dst + i) = ((a & pb_7f) + (b & pb_7f)) ^ ((a ^ b) & pb_80);
-    }
-    for (; i < w; i++)
-        dst[i + 0] += src[i + 0];
-}
-
 static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
 {
     long i;
@@ -1704,26 +1691,6 @@ static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
         dst[i + 0] = src1[i + 0] - src2[i + 0];
 }
 
-static void add_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1,
-                                         const uint8_t *diff, int w,
-                                         int *left, int *left_top)
-{
-    int i;
-    uint8_t l, lt;
-
-    l  = *left;
-    lt = *left_top;
-
-    for (i = 0; i < w; i++) {
-        l      = mid_pred(l, src1[i], (l + src1[i] - lt) & 0xFF) + diff[i];
-        lt     = src1[i];
-        dst[i] = l;
-    }
-
-    *left     = l;
-    *left_top = lt;
-}
-
 static void sub_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1,
                                          const uint8_t *src2, int w,
                                          int *left, int *left_top)
@@ -1744,66 +1711,6 @@ static void sub_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1,
     *left     = l;
     *left_top = lt;
 }
-
-static int add_hfyu_left_prediction_c(uint8_t *dst, const uint8_t *src,
-                                      int w, int acc)
-{
-    int i;
-
-    for (i = 0; i < w - 1; i++) {
-        acc   += src[i];
-        dst[i] = acc;
-        i++;
-        acc   += src[i];
-        dst[i] = acc;
-    }
-
-    for (; i < w; i++) {
-        acc   += src[i];
-        dst[i] = acc;
-    }
-
-    return acc;
-}
-
-#if HAVE_BIGENDIAN
-#define B 3
-#define G 2
-#define R 1
-#define A 0
-#else
-#define B 0
-#define G 1
-#define R 2
-#define A 3
-#endif
-static void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, const uint8_t *src,
-                                             int w, int *red, int *green,
-                                             int *blue, int *alpha)
-{
-    int i, r = *red, g = *green, b = *blue, a = *alpha;
-
-    for (i = 0; i < w; i++) {
-        b += src[4 * i + B];
-        g += src[4 * i + G];
-        r += src[4 * i + R];
-        a += src[4 * i + A];
-
-        dst[4 * i + B] = b;
-        dst[4 * i + G] = g;
-        dst[4 * i + R] = r;
-        dst[4 * i + A] = a;
-    }
-
-    *red   = r;
-    *green = g;
-    *blue  = b;
-    *alpha = a;
-}
-#undef B
-#undef G
-#undef R
-#undef A
 
 #define BUTTERFLY2(o1, o2, i1, i2)              \
     o1 = (i1) + (i2);                           \
@@ -2577,11 +2484,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->nsse[1] = nsse8_c;
 
     c->ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
-
-    c->add_bytes                      = add_bytes_c;
-    c->add_hfyu_median_prediction     = add_hfyu_median_prediction_c;
-    c->add_hfyu_left_prediction       = add_hfyu_left_prediction_c;
-    c->add_hfyu_left_prediction_bgr32 = add_hfyu_left_prediction_bgr32_c;
 
     c->diff_bytes                 = diff_bytes_c;
     c->sub_hfyu_median_prediction = sub_hfyu_median_prediction_c;

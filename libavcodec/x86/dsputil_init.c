@@ -20,7 +20,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/internal.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
@@ -89,14 +88,6 @@ int32_t ff_scalarproduct_and_madd_int16_ssse3(int16_t *v1, const int16_t *v2,
 
 void ff_bswap32_buf_ssse3(uint32_t *dst, const uint32_t *src, int w);
 void ff_bswap32_buf_sse2(uint32_t *dst, const uint32_t *src, int w);
-
-void ff_add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top,
-                                          const uint8_t *diff, int w,
-                                          int *left, int *left_top);
-int ff_add_hfyu_left_prediction_ssse3(uint8_t *dst, const uint8_t *src,
-                                      int w, int left);
-int ff_add_hfyu_left_prediction_sse4(uint8_t *dst, const uint8_t *src,
-                                     int w, int left);
 
 void ff_vector_clip_int32_mmx(int32_t *dst, const int32_t *src,
                               int32_t min, int32_t max, unsigned int len);
@@ -549,8 +540,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
     }
 
     c->gmc = ff_gmc_mmx;
-
-    c->add_bytes = ff_add_bytes_mmx;
 #endif /* HAVE_MMX_INLINE */
 
 #if HAVE_MMX_EXTERNAL
@@ -577,10 +566,6 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     SET_QPEL_FUNCS(put_qpel,        1,  8, mmxext, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmxext, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
-
-    /* slower than cmov version on AMD */
-    if (!(cpu_flags & AV_CPU_FLAG_3DNOW))
-        c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmxext;
 
     c->scalarproduct_int16          = ff_scalarproduct_int16_mmxext;
     c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmxext;
@@ -636,10 +621,6 @@ static av_cold void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
                                        int cpu_flags, unsigned high_bit_depth)
 {
 #if HAVE_SSSE3_EXTERNAL
-    c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_ssse3;
-    if (cpu_flags & AV_CPU_FLAG_SSE4) // not really SSE4, just slow on Conroe
-        c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_sse4;
-
     if (!(cpu_flags & (AV_CPU_FLAG_SSE42 | AV_CPU_FLAG_3DNOW))) // cachesplit
         c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_ssse3;
     c->bswap_buf = ff_bswap32_buf_ssse3;
@@ -658,11 +639,6 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
                                  unsigned high_bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
-
-#if HAVE_7REGS && HAVE_INLINE_ASM
-    if (cpu_flags & AV_CPU_FLAG_CMOV)
-        c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_cmov;
-#endif
 
     if (X86_MMX(cpu_flags))
         dsputil_init_mmx(c, avctx, cpu_flags, high_bit_depth);
