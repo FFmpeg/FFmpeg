@@ -450,10 +450,6 @@ typedef struct SwsContext {
     DECLARE_ALIGNED(4, uint32_t, gmask);
 #endif
 
-#if HAVE_VIS
-    DECLARE_ALIGNED(8, uint64_t, sparc_coeffs)[10];
-#endif
-
     /* function pointers for swscale() */
     yuv2planar1_fn yuv2plane1;
     yuv2planarX_fn yuv2planeX;
@@ -571,7 +567,6 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
                            int lastInLumBuf, int lastInChrBuf);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
-SwsFunc ff_yuv2rgb_init_vis(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_bfin(SwsContext *c);
 

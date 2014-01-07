@@ -284,7 +284,6 @@ Optimization options (experts only):
   --disable-armv6t2        disable armv6t2 optimizations
   --disable-vfp            disable VFP optimizations
   --disable-neon           disable NEON optimizations
-  --disable-vis            disable VIS optimizations
   --disable-inline-asm     disable use of inline assembler
   --disable-yasm           disable use of yasm assembler
 
@@ -1294,7 +1293,6 @@ ARCH_EXT_LIST="
     $ARCH_EXT_LIST_X86
     altivec
     ppc4xx
-    vis
 "
 
 HAVE_LIST_CMDLINE="
@@ -1583,8 +1581,6 @@ map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
 altivec_deps="ppc"
 ppc4xx_deps="ppc"
-
-vis_deps="sparc"
 
 cpunop_deps="i686"
 x86_64_select="i686"
@@ -3151,7 +3147,6 @@ elif enabled sparc; then
     case $cpu in
         cypress|f93[04]|tsc701|sparcl*|supersparc|hypersparc|niagara|v[789])
             cpuflags="-mcpu=$cpu"
-            disable vis
         ;;
         ultrasparc*|niagara[234])
             cpuflags="-mcpu=$cpu"
@@ -3739,10 +3734,6 @@ EOF
 
         enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
     fi
-
-elif enabled sparc; then
-
-    enabled vis && check_inline_asm vis '"pdist %f0, %f0, %f0"'
 
 elif enabled x86; then
 
@@ -4350,9 +4341,6 @@ if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
     echo "PPC 4xx optimizations     ${ppc4xx-no}"
     echo "dcbzl available           ${dcbzl-no}"
-fi
-if enabled sparc; then
-    echo "VIS enabled               ${vis-no}"
 fi
 echo "debug symbols             ${debug-no}"
 echo "optimize for size         ${small-no}"
