@@ -427,6 +427,10 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         /* If size is zero, it means the image was buffered. */
 
         if (!ret && got_packet && pkt.size) {
+            /* rescale output packet timestamp values from codec to stream timebase */
+            pkt.pts = av_rescale_q_rnd(pkt.pts, c->time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+            pkt.dts = av_rescale_q_rnd(pkt.dts, c->time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+            pkt.duration = av_rescale_q(pkt.duration, c->time_base, st->time_base);
             pkt.stream_index = st->index;
 
             /* Write the compressed frame to the media file. */
@@ -545,7 +549,7 @@ int main(int argc, char **argv)
             write_audio_frame(oc, audio_st);
         } else {
             write_video_frame(oc, video_st);
-            frame->pts += av_rescale_q(1, video_st->codec->time_base, video_st->time_base);
+            frame->pts++;
         }
     }
 
