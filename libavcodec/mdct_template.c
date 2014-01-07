@@ -31,7 +31,7 @@
  * MDCT/IMDCT transforms.
  */
 
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
 #   define RSCALE(x) (x)
 #else
 #if CONFIG_FFT_FIXED_32

@@ -22,8 +22,8 @@
 #ifndef AVCODEC_FFT_H
 #define AVCODEC_FFT_H
 
-#ifndef CONFIG_FFT_FLOAT
-#define CONFIG_FFT_FLOAT 1
+#ifndef FFT_FLOAT
+#define FFT_FLOAT 1
 #endif
 
 #ifndef CONFIG_FFT_FIXED_32
@@ -34,7 +34,7 @@
 #include "config.h"
 #include "libavutil/mem.h"
 
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
 
 #include "avfft.h"
 
@@ -66,7 +66,7 @@ typedef struct FFTComplex {
 typedef int    FFTDouble;
 typedef struct FFTContext FFTContext;
 
-#endif /* CONFIG_FFT_FLOAT */
+#endif /* FFT_FLOAT */
 
 typedef struct FFTDComplex {
     FFTDouble re, im;

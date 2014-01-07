@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     double (*func)(double) = do_sin ? sin : cos;
 
     printf("/* This file was automatically generated. */\n");
-    printf("#define CONFIG_FFT_FLOAT %d\n", !fixed);
+    printf("#define FFT_FLOAT %d\n", !fixed);
     printf("#include \"libavcodec/%s\"\n", do_sin ? "rdft.h" : "fft.h");
     for (i = 4; i <= BITS; i++) {
         int m = 1 << i;

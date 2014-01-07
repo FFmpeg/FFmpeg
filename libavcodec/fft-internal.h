@@ -19,7 +19,7 @@
 #ifndef AVCODEC_FFT_INTERNAL_H
 #define AVCODEC_FFT_INTERNAL_H
 
-#if CONFIG_FFT_FLOAT
+#if FFT_FLOAT
 
 #define FIX15(v) (v)
 #define sqrthalf (float)M_SQRT1_2
@@ -81,7 +81,7 @@ void ff_mdct_calcw_c(FFTContext *s, FFTDouble *output, const FFTSample *input);
 
 #endif /* CONFIG_FFT_FIXED_32 */
 
-#endif /* CONFIG_FFT_FLOAT */
+#endif /* FFT_FLOAT */
 
 #define ff_imdct_calc_c FFT_NAME(ff_imdct_calc_c)
 #define ff_imdct_half_c FFT_NAME(ff_imdct_half_c)

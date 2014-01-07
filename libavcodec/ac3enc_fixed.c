@@ -26,7 +26,7 @@
  * fixed-point AC-3 encoder.
  */
 
-#define CONFIG_FFT_FLOAT 0
+#define FFT_FLOAT 0
 #undef CONFIG_AC3ENC_FLOAT
 #include "internal.h"
 #include "ac3enc.h"
