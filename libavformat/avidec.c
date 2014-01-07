@@ -639,6 +639,8 @@ static int avi_read_header(AVFormatContext *s)
                     st->codec->codec_tag = tag1;
                     st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag1);
                     st->need_parsing = AVSTREAM_PARSE_HEADERS; // This is needed to get the pict type which is necessary for generating correct pts.
+                    if (st->codec->codec_tag == MKTAG('V', 'S', 'S', 'H'))
+                        st->need_parsing = AVSTREAM_PARSE_FULL;
 
                     if(st->codec->codec_tag==0 && st->codec->height > 0 && st->codec->extradata_size < 1U<<30){
                         st->codec->extradata_size+= 9;
