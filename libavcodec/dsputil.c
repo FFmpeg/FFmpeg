@@ -1258,9 +1258,8 @@ static void OPNAME ## qpel16_mc22_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride
 QPEL_MC(0, put_       , _       , op_put)
 QPEL_MC(1, put_no_rnd_, _no_rnd_, op_put_no_rnd)
 QPEL_MC(0, avg_       , _       , op_avg)
-//QPEL_MC(1, avg_no_rnd , _       , op_avg)
+
 #undef op_avg
-#undef op_avg_no_rnd
 #undef op_put
 #undef op_put_no_rnd
 
@@ -2527,13 +2526,11 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     dspfunc(put_no_rnd_qpel, 0, 16);
 
     dspfunc(avg_qpel, 0, 16);
-    /* dspfunc(avg_no_rnd_qpel, 0, 16); */
 
     dspfunc(put_qpel, 1, 8);
     dspfunc(put_no_rnd_qpel, 1, 8);
 
     dspfunc(avg_qpel, 1, 8);
-    /* dspfunc(avg_no_rnd_qpel, 1, 8); */
 
 #undef dspfunc
 
