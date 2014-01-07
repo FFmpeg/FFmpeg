@@ -3450,6 +3450,13 @@ static void adapt_probs(VP9Context *s)
     }
 }
 
+static void free_buffers(VP9Context *s)
+{
+    av_freep(&s->above_partition_ctx);
+    av_freep(&s->b_base);
+    av_freep(&s->block_base);
+}
+
 static av_cold int vp9_decode_free(AVCodecContext *ctx)
 {
     VP9Context *s = ctx->priv_data;
@@ -3468,11 +3475,9 @@ static av_cold int vp9_decode_free(AVCodecContext *ctx)
             ff_thread_release_buffer(ctx, &s->next_refs[i]);
         av_frame_free(&s->next_refs[i].f);
     }
-    av_freep(&s->above_partition_ctx);
+    free_buffers(s);
     av_freep(&s->c_b);
     s->c_b_size = 0;
-    av_freep(&s->b_base);
-    av_freep(&s->block_base);
 
     return 0;
 }
@@ -3762,7 +3767,10 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     int i, res;
     VP9Context *s = dst->priv_data, *ssrc = src->priv_data;
 
-    // FIXME scalability, size, etc.
+    // detect size changes in other threads
+    if (s->above_partition_ctx && (s->cols != ssrc->cols || s->rows != ssrc->rows)) {
+        free_buffers(s);
+    }
 
     for (i = 0; i < 2; i++) {
         if (s->frames[i].tf.f->data[0])
