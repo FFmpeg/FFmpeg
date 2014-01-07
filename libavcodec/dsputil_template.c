@@ -27,46 +27,6 @@
  * DSP utils
  */
 
-#include "pixels.h"
-
-/* draw the edges of width 'w' of an image of size width, height */
-// FIXME: Check that this is OK for MPEG-4 interlaced.
-static void draw_edges_8_c(uint8_t *buf, int wrap, int width, int height,
-                           int w, int h, int sides)
-{
-    uint8_t *ptr = buf, *last_line;
-    int i;
-
-    /* left and right */
-    for (i = 0; i < height; i++) {
-        memset(ptr - w, ptr[0], w);
-        memset(ptr + width, ptr[width - 1], w);
-        ptr += wrap;
-    }
-
-    /* top and bottom + corners */
-    buf -= w;
-    last_line = buf + (height - 1) * wrap;
-    if (sides & EDGE_TOP)
-        for (i = 0; i < h; i++)
-            // top
-            memcpy(buf - (i + 1) * wrap, buf, width + w + w);
-    if (sides & EDGE_BOTTOM)
-        for (i = 0; i < h; i++)
-            // bottom
-            memcpy(last_line + (i + 1) * wrap, last_line, width + w + w);
-}
-
-static void clear_block_8_c(int16_t *block)
-{
-    memset(block, 0, sizeof(int16_t) * 64);
-}
-
-static void clear_blocks_8_c(int16_t *blocks)
-{
-    memset(blocks, 0, sizeof(int16_t) * 6 * 64);
-}
-
 #define PIXOP2(OPNAME, OP)                                              \
 static inline void OPNAME ## _no_rnd_pixels8_l2_8(uint8_t *dst,         \
                                                   const uint8_t *src1,  \
