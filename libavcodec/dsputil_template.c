@@ -97,10 +97,6 @@ static void FUNCC(clear_blocks)(int16_t *blocks)
 }
 #endif
 
-#if BIT_DEPTH == 8
-#include "hpel_template.c"
-#endif
-
 #define PIXOP2(OPNAME, OP)                                              \
 static inline void FUNC(OPNAME ## _no_rnd_pixels8_l2)(uint8_t *dst,     \
                                                       const uint8_t *src1, \

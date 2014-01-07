@@ -48,6 +48,7 @@ uint32_t ff_square_tab[512] = { 0, };
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 8
+#include "hpel_template.c"
 #include "tpel_template.c"
 #include "dsputil_template.c"
 

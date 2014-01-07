@@ -21,6 +21,8 @@
 
 #include "pixels.h"
 
+#include "bit_depth_template.c"
+
 #define DEF_HPEL(OPNAME, OP)                                            \
 static inline void FUNC(OPNAME ## _pixels8_l2)(uint8_t *dst,            \
                                                const uint8_t *src1,     \
