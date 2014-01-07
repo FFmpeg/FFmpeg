@@ -32,9 +32,9 @@
 #include "fft.h"
 #include "fft-internal.h"
 
-#if CONFIG_FFT_FIXED_32
+#if FFT_FIXED_32
 #include "fft_table.h"
-#else /* CONFIG_FFT_FIXED_32 */
+#else /* FFT_FIXED_32 */
 
 /* cos(2*pi*x/n) for 0<=x<=n/4, followed by its reverse */
 #if !CONFIG_HARDCODED_TABLES
@@ -69,7 +69,7 @@ COSTABLE_CONST FFTSample * const FFT_NAME(ff_cos_tabs)[] = {
     FFT_NAME(ff_cos_65536),
 };
 
-#endif /* CONFIG_FFT_FIXED_32 */
+#endif /* FFT_FIXED_32 */
 
 static void fft_permute_c(FFTContext *s, FFTComplex *z);
 static void fft_calc_c(FFTContext *s, FFTComplex *z);
@@ -87,7 +87,7 @@ static int split_radix_permutation(int i, int n, int inverse)
 
 av_cold void ff_init_ff_cos_tabs(int index)
 {
-#if (!CONFIG_HARDCODED_TABLES) && (!CONFIG_FFT_FIXED_32)
+#if (!CONFIG_HARDCODED_TABLES) && (!FFT_FIXED_32)
     int i;
     int m = 1<<index;
     double freq = 2*M_PI/m;
@@ -163,12 +163,12 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s->mdct_calc   = ff_mdct_calc_c;
 #endif
 
-#if CONFIG_FFT_FIXED_32
+#if FFT_FIXED_32
     {
         int n=0;
         ff_fft_lut_init(fft_offsets_lut, 0, 1 << 16, &n);
     }
-#else /* CONFIG_FFT_FIXED_32 */
+#else /* FFT_FIXED_32 */
 #if FFT_FLOAT
     if (ARCH_ARM)     ff_fft_init_arm(s);
     if (ARCH_PPC)     ff_fft_init_ppc(s);
@@ -182,7 +182,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     for(j=4; j<=nbits; j++) {
         ff_init_ff_cos_tabs(j);
     }
-#endif /* CONFIG_FFT_FIXED_32 */
+#endif /* FFT_FIXED_32 */
 
 
     if (s->fft_permutation == FF_FFT_PERM_AVX) {
@@ -219,7 +219,7 @@ av_cold void ff_fft_end(FFTContext *s)
     av_freep(&s->tmp_buf);
 }
 
-#if CONFIG_FFT_FIXED_32
+#if FFT_FIXED_32
 
 static void fft_calc_c(FFTContext *s, FFTComplex *z) {
 
@@ -380,7 +380,7 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
     }
 }
 
-#else /* CONFIG_FFT_FIXED_32 */
+#else /* FFT_FIXED_32 */
 
 #define BUTTERFLIES(a0,a1,a2,a3) {\
     BF(t3, t5, t5, t1);\
@@ -527,4 +527,4 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z)
 {
     fft_dispatch[s->nbits-2](z);
 }
-#endif /* CONFIG_FFT_FIXED_32 */
+#endif /* FFT_FIXED_32 */
