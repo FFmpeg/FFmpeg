@@ -85,6 +85,7 @@ static int tak_read_header(AVFormatContext *s)
             buffer = av_malloc(size - 3 + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!buffer)
                 return AVERROR(ENOMEM);
+            memset(buffer + size - 3, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
             ffio_init_checksum(pb, tak_check_crc, 0xCE04B7U);
             if (avio_read(pb, buffer, size - 3) != size - 3) {
