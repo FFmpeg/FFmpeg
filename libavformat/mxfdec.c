@@ -418,9 +418,6 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     uint32_t nb_essence_containers;
     int err;
 
-    if (mxf->partitions_count+1 >= UINT_MAX / sizeof(*mxf->partitions))
-        return AVERROR(ENOMEM);
-
     if ((err = av_reallocp_array(&mxf->partitions, mxf->partitions_count + 1,
                                  sizeof(*mxf->partitions))) < 0) {
         mxf->partitions_count = 0;
@@ -552,8 +549,6 @@ static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
 {
     int err;
 
-    if (mxf->metadata_sets_count+1 >= UINT_MAX / sizeof(*mxf->metadata_sets))
-        return AVERROR(ENOMEM);
     if ((err = av_reallocp_array(&mxf->metadata_sets, mxf->metadata_sets_count + 1,
                                  sizeof(*mxf->metadata_sets))) < 0) {
         mxf->metadata_sets_count = 0;
