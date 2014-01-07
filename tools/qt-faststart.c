@@ -102,7 +102,8 @@ int main(int argc, char *argv[])
     int bytes_to_copy;
 
     if (argc != 3) {
-        printf("Usage: qt-faststart <infile.mov> <outfile.mov>\n");
+        printf("Usage: qt-faststart <infile.mov> <outfile.mov>\n"
+               "Note: alternatively you can use -movflags +faststart in ffmpeg\n");
         return 0;
     }
 
