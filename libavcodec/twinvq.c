@@ -996,7 +996,7 @@ static void linear_perm(int16_t *out, int16_t *in, int n_blocks, int size)
         out[i] = block_size * (in[i] % n_blocks) + in[i] / n_blocks;
 }
 
-static av_cold void construct_perm_table(TwinContext *tctx,enum FrameType ftype)
+static av_cold void construct_perm_table(TwinContext *tctx, int ftype)
 {
     int block_size;
     const ModeTab *mtab = tctx->mtab;
