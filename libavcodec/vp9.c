@@ -232,7 +232,7 @@ typedef struct VP9Context {
     // block reconstruction intermediates
     int16_t *block_base, *block, *uvblock_base[2], *uvblock[2];
     uint8_t *eob_base, *uveob_base[2], *eob, *uveob[2];
-    VP56mv min_mv, max_mv;
+    struct { int x, y; } min_mv, max_mv;
     DECLARE_ALIGNED(32, uint8_t, tmp_y)[64*64];
     DECLARE_ALIGNED(32, uint8_t, tmp_uv)[2][32*32];
 } VP9Context;
