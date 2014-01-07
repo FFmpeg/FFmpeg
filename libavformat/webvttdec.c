@@ -119,7 +119,7 @@ static int webvtt_read_header(AVFormatContext *s)
             break;
         if (!(p = strstr(p, "-->")))
             break;
-        p += 3;
+        p += 2;
         do p++; while (*p == ' ' || *p == '\t');
         if ((ts_end = read_ts(p)) == AV_NOPTS_VALUE)
             break;
