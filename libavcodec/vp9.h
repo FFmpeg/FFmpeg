@@ -402,7 +402,7 @@ typedef struct VP9Context {
     DECLARE_ALIGNED(32, int16_t, uvblock)[2][1024];
     uint8_t eob[256];
     uint8_t uveob[2][64];
-    VP56mv min_mv, max_mv;
+    struct { int x, y; } min_mv, max_mv;
     DECLARE_ALIGNED(32, uint8_t, tmp_y)[64 * 64];
     DECLARE_ALIGNED(32, uint8_t, tmp_uv)[2][32 * 32];
 } VP9Context;
