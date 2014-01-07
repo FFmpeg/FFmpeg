@@ -1234,9 +1234,9 @@ static int mxf_compute_index_tables(MXFContext *mxf)
         }
     }
 
-    if (mxf->nb_index_tables > INT_MAX / sizeof(MXFIndexTable) ||
-        !(mxf->index_tables = av_mallocz(mxf->nb_index_tables *
-                                         sizeof(MXFIndexTable)))) {
+    mxf->index_tables = av_mallocz_array(mxf->nb_index_tables,
+                                         sizeof(*mxf->index_tables));
+    if (!mxf->index_tables) {
         av_log(mxf->fc, AV_LOG_ERROR, "failed to allocate index tables\n");
         ret = AVERROR(ENOMEM);
         goto finish_decoding_index;
@@ -1255,10 +1255,10 @@ static int mxf_compute_index_tables(MXFContext *mxf)
     for (i = j = 0; j < mxf->nb_index_tables; i += mxf->index_tables[j++].nb_segments) {
         MXFIndexTable *t = &mxf->index_tables[j];
 
-        if (t->nb_segments >
-            (INT_MAX / sizeof(MXFIndexTableSegment *)) ||
-            !(t->segments = av_mallocz(t->nb_segments *
-                                       sizeof(MXFIndexTableSegment*)))) {
+        t->segments = av_mallocz_array(t->nb_segments,
+                                       sizeof(*t->segments));
+
+        if (!t->segments) {
             av_log(mxf->fc, AV_LOG_ERROR, "failed to allocate IndexTableSegment"
                    " pointer array\n");
             ret = AVERROR(ENOMEM);
