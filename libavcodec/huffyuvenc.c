@@ -554,7 +554,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     if (s->context) {
-        for (i = 0; i < 4; i++) {
+        int count = 3;
+
+        if (s->version > 2)
+            count = 1 + s->alpha + 2*s->chroma;
+
+        for (i = 0; i < count; i++) {
             ff_huff_gen_len_table(s->len[i], s->stats[i]);
             if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i]) < 0)
                 return -1;
