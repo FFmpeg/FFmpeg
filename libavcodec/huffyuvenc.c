@@ -142,12 +142,33 @@ static int store_table(HYuvContext *s, const uint8_t *len, uint8_t *buf)
     return index;
 }
 
+static int store_huffman_tables(HYuvContext *s, uint8_t *buf)
+{
+    int i;
+    int size = 0;
+    int count = 3;
+
+    if (s->version > 2)
+        count = 1 + s->alpha + 2*s->chroma;
+
+    for (i = 0; i < count; i++) {
+        ff_huff_gen_len_table(s->len[i], s->stats[i]);
+
+        if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i]) < 0) {
+            return -1;
+        }
+
+        size += store_table(s, s->len[i], buf + size);
+    }
+    return size;
+}
+
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
     int i, j;
+    int ret;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-    int extradata_tables;
 
     ff_huffyuv_common_init(avctx);
 
@@ -257,7 +278,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    extradata_tables = 1 + 2*s->chroma + s->alpha;
     ((uint8_t*)avctx->extradata)[0] = s->predictor | (s->decorrelate << 6);
     ((uint8_t*)avctx->extradata)[2] = s->interlaced ? 0x10 : 0x20;
     if (s->context)
@@ -265,7 +285,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->version < 3) {
         ((uint8_t*)avctx->extradata)[1] = s->bitstream_bpp;
         ((uint8_t*)avctx->extradata)[3] = 0;
-        extradata_tables = 3;
     } else {
         ((uint8_t*)avctx->extradata)[1] = ((s->bps-1)<<4) | s->chroma_h_shift | (s->chroma_v_shift<<2);
         if (s->chroma)
@@ -304,16 +323,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
             }
     }
 
-    for (i = 0; i < extradata_tables; i++) {
-        ff_huff_gen_len_table(s->len[i], s->stats[i]);
-
-        if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i]) < 0) {
-            return -1;
-        }
-
-        s->avctx->extradata_size +=
-            store_table(s, s->len[i], &((uint8_t*)s->avctx->extradata)[s->avctx->extradata_size]);
-    }
+    ret = store_huffman_tables(s, s->avctx->extradata + s->avctx->extradata_size);
+    if (ret < 0)
+        return ret;
+    s->avctx->extradata_size += ret;
 
     if (s->context) {
         for (i = 0; i < 4; i++) {
@@ -554,17 +567,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     if (s->context) {
-        int count = 3;
-
-        if (s->version > 2)
-            count = 1 + s->alpha + 2*s->chroma;
-
-        for (i = 0; i < count; i++) {
-            ff_huff_gen_len_table(s->len[i], s->stats[i]);
-            if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i]) < 0)
-                return -1;
-            size += store_table(s, s->len[i], &pkt->data[size]);
-        }
+        size = store_huffman_tables(s, pkt->data);
+        if (size < 0)
+            return size;
 
         for (i = 0; i < 4; i++)
             for (j = 0; j < 256; j++)
