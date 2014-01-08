@@ -459,17 +459,16 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
                   (int64_t)avs->vi->height) * bits) / 8;
     if (!pkt->size)
         return AVERROR_UNKNOWN;
-    if (av_new_packet(pkt, (int)pkt->size) < 0) {
-        av_free(pkt);
+
+    if (av_new_packet(pkt, pkt->size) < 0)
         return AVERROR(ENOMEM);
-    }
 
     frame = avs_library.avs_get_frame(avs->clip, n);
     error = avs_library.avs_clip_get_error(avs->clip);
     if (error) {
         av_log(s, AV_LOG_ERROR, "%s\n", error);
         avs->error = 1;
-        av_freep(&pkt->data);
+        av_packet_unref(pkt);
         return AVERROR_UNKNOWN;
     }
 
@@ -558,8 +557,8 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt,
                 samples * avs->vi->nchannels;
     if (!pkt->size)
         return AVERROR_UNKNOWN;
-    pkt->data = av_malloc(pkt->size);
-    if (!pkt->data)
+
+    if (av_new_packet(pkt, pkt->size) < 0)
         return AVERROR(ENOMEM);
 
     avs_library.avs_get_audio(avs->clip, pkt->data, n, samples);
@@ -567,7 +566,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt,
     if (error) {
         av_log(s, AV_LOG_ERROR, "%s\n", error);
         avs->error = 1;
-        av_freep(&pkt->data);
+        av_packet_unref(pkt);
         return AVERROR_UNKNOWN;
     }
     return 0;
@@ -599,8 +598,6 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (avs->error)
         return AVERROR_UNKNOWN;
-
-    av_free_packet(pkt);
 
     /* If either stream reaches EOF, try to read the other one before
      * giving up. */
