@@ -347,6 +347,11 @@ Set title name provided to a single track.
 @item language
 Specify the language of the track in the Matroska languages form.
 
+The language can be either the 3 letters bibliographic ISO-639-2 (ISO
+639-2/B) form (like "fre" for French), or a language code mixed with a
+country code for specialities in languages (like "fre-ca" for Canadian
+French).
+
 @item stereo_mode
 Set stereo 3D video layout of two views in a single video track.
 
