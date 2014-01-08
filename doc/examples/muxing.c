@@ -123,6 +123,7 @@ static AVStream *add_stream(AVFormatContext *oc, AVCodec **codec,
 
 static float t, tincr, tincr2;
 
+AVFrame *audio_frame;
 static uint8_t **src_samples_data;
 static int       src_samples_linesize;
 static int       src_nb_samples;
@@ -140,6 +141,13 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st)
     int ret;
 
     c = st->codec;
+
+    /* allocate and init a re-usable frame */
+    audio_frame = av_frame_alloc();
+    if (!audio_frame) {
+        fprintf(stderr, "Could not allocate audio frame\n");
+        exit(1);
+    }
 
     /* open it */
     ret = avcodec_open2(c, codec, NULL);
@@ -225,7 +233,6 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 {
     AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
-    AVFrame *frame = av_frame_alloc();
     int got_packet, ret, dst_nb_samples;
 
     av_init_packet(&pkt);
@@ -261,18 +268,18 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
         dst_nb_samples = src_nb_samples;
     }
 
-    frame->nb_samples = dst_nb_samples;
-    avcodec_fill_audio_frame(frame, c->channels, c->sample_fmt,
+    audio_frame->nb_samples = dst_nb_samples;
+    avcodec_fill_audio_frame(audio_frame, c->channels, c->sample_fmt,
                              dst_samples_data[0], dst_samples_size, 0);
 
-    ret = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+    ret = avcodec_encode_audio2(c, &pkt, audio_frame, &got_packet);
     if (ret < 0) {
         fprintf(stderr, "Error encoding audio frame: %s\n", av_err2str(ret));
         exit(1);
     }
 
     if (!got_packet)
-        goto freeframe;
+        return;
 
     pkt.stream_index = st->index;
 
@@ -283,8 +290,6 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
                 av_err2str(ret));
         exit(1);
     }
-freeframe:
-    av_frame_free(&frame);
 }
 
 static void close_audio(AVFormatContext *oc, AVStream *st)
@@ -296,6 +301,7 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
     }
     av_free(src_samples_data[0]);
     av_free(src_samples_data);
+    av_frame_free(&audio_frame);
 }
 
 /**************************************************************/
