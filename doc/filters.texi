@@ -6742,6 +6742,12 @@ rotate=-PI/6
 @end example
 
 @item
+Rotate the input by 45 degrees clockwise:
+@example
+rotate=45*PI/180
+@end example
+
+@item
 Apply a constant rotation with period T, starting from an angle of PI/3:
 @example
 rotate=PI/3+2*PI*t/T
