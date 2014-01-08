@@ -1582,8 +1582,8 @@ void ff_get_unscaled_swscale(SwsContext *c)
         ff_get_unscaled_swscale_bfin(c);
     if (ARCH_PPC)
         ff_get_unscaled_swscale_ppc(c);
-    if (ARCH_ARM)
-        ff_get_unscaled_swscale_arm(c);
+//     if (ARCH_ARM)
+//         ff_get_unscaled_swscale_arm(c);
 
 }
 
