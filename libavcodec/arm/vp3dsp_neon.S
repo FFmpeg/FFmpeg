@@ -355,7 +355,7 @@ function ff_vp3_idct_dc_add_neon, export=1
     mov             r3,  r0
     add             r12, r12,  #15
     vdup.16         q15, r12
-    mov             r12, 0
+    mov             r12, #0
     strh            r12, [r2]
     vshr.s16        q15, q15, #5
 
