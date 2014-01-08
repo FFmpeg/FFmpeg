@@ -33,6 +33,7 @@
 #include "golomb.h"
 #include "internal.h"
 #include "mathops.h"
+#include "qpeldsp.h"
 #include "rectangle.h"
 #include "thread.h"
 

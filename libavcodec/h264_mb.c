@@ -32,6 +32,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "h264.h"
+#include "qpeldsp.h"
 #include "svq3.h"
 #include "thread.h"
 

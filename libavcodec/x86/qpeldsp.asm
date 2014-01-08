@@ -1,5 +1,6 @@
 ;******************************************************************************
-;* mpeg4 qpel
+;* quarterpel DSP functions
+;*
 ;* Copyright (c) 2008 Loren Merritt
 ;*
 ;* This file is part of Libav.

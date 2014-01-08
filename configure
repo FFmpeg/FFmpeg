@@ -1551,6 +1551,7 @@ CONFIG_EXTRA="
     mpegvideo
     mpegvideoenc
     nettle
+    qpeldsp
     rangecoder
     riffdec
     riffenc
@@ -1704,7 +1705,7 @@ rdft_select="fft"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideo_select="dsputil hpeldsp videodsp"
-mpegvideoenc_select="dsputil mpegvideo"
+mpegvideoenc_select="dsputil mpegvideo qpeldsp"
 
 # decoders / encoders
 aac_decoder_select="mdct sinewin"
@@ -1730,7 +1731,7 @@ atrac3p_decoder_select="mdct sinewin"
 bink_decoder_select="dsputil hpeldsp"
 binkaudio_dct_decoder_select="mdct rdft dct sinewin"
 binkaudio_rdft_decoder_select="mdct rdft sinewin"
-cavs_decoder_select="dsputil golomb h264chroma videodsp"
+cavs_decoder_select="dsputil golomb h264chroma qpeldsp videodsp"
 cllc_decoder_select="dsputil"
 comfortnoise_encoder_select="lpc"
 cook_decoder_select="dsputil mdct sinewin"
@@ -1766,7 +1767,7 @@ g2m_decoder_deps="zlib"
 g2m_decoder_select="dsputil"
 h261_decoder_select="error_resilience mpegvideo"
 h261_encoder_select="aandcttables mpegvideoenc"
-h263_decoder_select="error_resilience h263_parser h263dsp mpegvideo"
+h263_decoder_select="error_resilience h263_parser h263dsp mpegvideo qpeldsp"
 h263_encoder_select="aandcttables h263dsp mpegvideoenc"
 h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
@@ -1818,7 +1819,7 @@ msmpeg4v2_decoder_select="h263_decoder"
 msmpeg4v2_encoder_select="h263_encoder"
 msmpeg4v3_decoder_select="h263_decoder"
 msmpeg4v3_encoder_select="h263_encoder"
-mss2_decoder_select="error_resilience vc1_decoder"
+mss2_decoder_select="error_resilience qpeldsp vc1_decoder"
 mxpeg_decoder_select="mjpeg_decoder"
 nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="audio_frame_queue mdct sinewin"
@@ -1860,7 +1861,7 @@ twinvq_decoder_select="mdct lsp sinewin"
 utvideo_decoder_select="dsputil"
 utvideo_encoder_select="dsputil huffman huffyuvencdsp"
 vble_decoder_select="huffyuvdsp"
-vc1_decoder_select="error_resilience h263_decoder h264chroma h264qpel intrax8"
+vc1_decoder_select="error_resilience h263_decoder h264chroma h264qpel intrax8 qpeldsp"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
@@ -1936,8 +1937,8 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # parsers
 h264_parser_select="h264_decoder"
-mpeg4video_parser_select="error_resilience h263dsp mpegvideo"
 mpegvideo_parser_select="error_resilience mpegvideo"
+mpeg4video_parser_select="error_resilience h263dsp mpegvideo qpeldsp"
 vc1_parser_select="mpegvideo"
 
 # external libraries

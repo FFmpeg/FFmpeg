@@ -36,6 +36,7 @@
 #include "mpeg4video_parser.h"
 #include "mpegvideo.h"
 #include "msmpeg4.h"
+#include "qpeldsp.h"
 #include "thread.h"
 
 av_cold int ff_h263_decode_init(AVCodecContext *avctx)
@@ -116,6 +117,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
             return ret;
 
     ff_h263dsp_init(&s->h263dsp);
+    ff_qpeldsp_init(&s->qdsp);
     ff_h263_decode_init_vlc();
 
     return 0;
@@ -461,9 +463,9 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     avctx->has_b_frames = !s->low_delay;
 
 #define SET_QPEL_FUNC(postfix1, postfix2)                           \
-    s->dsp.put_        ## postfix1 = ff_put_        ## postfix2;    \
-    s->dsp.put_no_rnd_ ## postfix1 = ff_put_no_rnd_ ## postfix2;    \
-    s->dsp.avg_        ## postfix1 = ff_avg_        ## postfix2;
+    s->qdsp.put_        ## postfix1 = ff_put_        ## postfix2;   \
+    s->qdsp.put_no_rnd_ ## postfix1 = ff_put_no_rnd_ ## postfix2;   \
+    s->qdsp.avg_        ## postfix1 = ff_avg_        ## postfix2;
 
     if (s->workaround_bugs & FF_BUG_STD_QPEL) {
         SET_QPEL_FUNC(qpel_pixels_tab[0][5], qpel16_mc11_old_c)
@@ -527,11 +529,11 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if ((!s->no_rounding) || s->pict_type == AV_PICTURE_TYPE_B) {
-        s->me.qpel_put = s->dsp.put_qpel_pixels_tab;
-        s->me.qpel_avg = s->dsp.avg_qpel_pixels_tab;
+        s->me.qpel_put = s->qdsp.put_qpel_pixels_tab;
+        s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
     } else {
-        s->me.qpel_put = s->dsp.put_no_rnd_qpel_pixels_tab;
-        s->me.qpel_avg = s->dsp.avg_qpel_pixels_tab;
+        s->me.qpel_put = s->qdsp.put_no_rnd_qpel_pixels_tab;
+        s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
     }
 
     if ((ret = ff_MPV_frame_start(s, avctx)) < 0)

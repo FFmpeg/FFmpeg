@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-#include "dsputil.h"
+#include "qpeldsp.h"
 
 typedef struct WMV2DSPContext {
     void (*idct_add)(uint8_t *dest, int line_size, int16_t *block);

@@ -33,6 +33,7 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h264chroma.h"
+#include "qpeldsp.h"
 #include "vc1.h"
 #include "vc1data.h"
 #include "vc1acdata.h"
@@ -5603,6 +5604,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     if (ff_vc1_init_common(v) < 0)
         return -1;
     ff_h264chroma_init(&v->h264chroma, 8);
+    ff_qpeldsp_init(&s->qdsp);
     ff_vc1dsp_init(&v->vc1dsp);
 
     if (avctx->codec_id == AV_CODEC_ID_WMV3 || avctx->codec_id == AV_CODEC_ID_WMV3IMAGE) {
@@ -5971,8 +5973,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         s->current_picture_ptr->f->repeat_pict = v->rptfrm * 2;
     }
 
-    s->me.qpel_put = s->dsp.put_qpel_pixels_tab;
-    s->me.qpel_avg = s->dsp.avg_qpel_pixels_tab;
+    s->me.qpel_put = s->qdsp.put_qpel_pixels_tab;
+    s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
 
     if (avctx->hwaccel) {
         if (avctx->hwaccel->start_frame(avctx, buf, buf_size) < 0)

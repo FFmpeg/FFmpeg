@@ -38,6 +38,7 @@
 #include "ratecontrol.h"
 #include "parser.h"
 #include "mpeg12data.h"
+#include "qpeldsp.h"
 #include "rl.h"
 #include "thread.h"
 #include "videodsp.h"
@@ -348,6 +349,7 @@ typedef struct MpegEncContext {
 
     DSPContext dsp;             ///< pointers for accelerated dsp functions
     HpelDSPContext hdsp;
+    QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H263DSPContext h263dsp;
     int f_code;                 ///< forward MV resolution

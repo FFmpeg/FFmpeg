@@ -26,8 +26,8 @@
  */
 
 #include "libavutil/common.h"
-#include "dsputil.h"
 #include "h264chroma.h"
+#include "qpeldsp.h"
 #include "vc1dsp.h"
 
 /* Apply overlap transform to horizontal edge */
