@@ -74,11 +74,8 @@ static void rpza_decode_stream(RpzaContext *s)
     int stride = s->frame->linesize[0] / 2;
     int row_inc = stride - 4;
     int chunk_size;
-    uint8_t opcode;
-    int n_blocks;
     uint16_t colorA = 0, colorB;
     uint16_t color4[4];
-    uint8_t index, idx;
     uint16_t ta, tb;
     uint16_t *pixels = (uint16_t *)s->frame->data[0];
 
@@ -105,9 +102,9 @@ static void rpza_decode_stream(RpzaContext *s)
 
     /* Process chunk data */
     while (bytestream2_get_bytes_left(&s->gb)) {
-        opcode = bytestream2_get_byte(&s->gb); /* Get opcode */
+        uint8_t opcode = bytestream2_get_byte(&s->gb); /* Get opcode */
 
-        n_blocks = (opcode & 0x1f) + 1; /* Extract block counter from opcode */
+        int n_blocks = (opcode & 0x1f) + 1; /* Extract block counter from opcode */
 
         /* If opcode MSbit is 0, we need more data to decide what to do */
         if ((opcode & 0x80) == 0) {
@@ -182,9 +179,9 @@ static void rpza_decode_stream(RpzaContext *s)
             while (n_blocks--) {
                 block_ptr = row_ptr + pixel_ptr;
                 for (pixel_y = 0; pixel_y < 4; pixel_y++) {
-                    index = bytestream2_get_byteu(&s->gb);
+                    uint8_t index = bytestream2_get_byteu(&s->gb);
                     for (pixel_x = 0; pixel_x < 4; pixel_x++){
-                        idx = (index >> (2 * (3 - pixel_x))) & 0x03;
+                        uint8_t idx = (index >> (2 * (3 - pixel_x))) & 0x03;
                         pixels[block_ptr] = color4[idx];
                         block_ptr++;
                     }
