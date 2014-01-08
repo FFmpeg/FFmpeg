@@ -1856,6 +1856,8 @@ static int mxf_read_header(AVFormatContext *s)
     MXFContext *mxf = s->priv_data;
     KLVPacket klv;
     int64_t essence_offset = 0;
+    int64_t last_pos = -1;
+    uint64_t last_pos_index = 1;
     int ret;
 
     mxf->last_forward_tell = INT64_MAX;
@@ -1871,7 +1873,12 @@ static int mxf_read_header(AVFormatContext *s)
 
     while (!url_feof(s->pb)) {
         const MXFMetadataReadTableEntry *metadata;
-
+        if (avio_tell(s->pb) == last_pos) {
+            av_log(mxf->fc, AV_LOG_ERROR, "MXF structure loop detected\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if ((1ULL<<61) % last_pos_index++ == 0)
+            last_pos = avio_tell(s->pb);
         if (klv_read_packet(&klv, s->pb) < 0) {
             /* EOF - seek to previous partition or stop */
             if(mxf_parse_handle_partition_or_eof(mxf) <= 0)
