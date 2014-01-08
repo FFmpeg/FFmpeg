@@ -1041,7 +1041,7 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     ; t24-31 is in m8-15
     pxor                m7, m7
 
-%macro STORE_2X2 7-8 1 ; src[1-4], tmp[1-2], zero, inc_dst_ptrs
+%macro %%STORE_2X2 7-8 1 ; src[1-4], tmp[1-2], zero, inc_dst_ptrs
     SUMSUB_BA            w, %4, %1, %5
     SUMSUB_BA            w, %3, %2, %5
     pmulhrsw           m%4, [pw_512]
@@ -1061,47 +1061,47 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     ; store t0-1 and t30-31
     mova                m0, [rsp+ 0*%%str]
     mova                m1, [rsp+ 4*%%str]
-    STORE_2X2            0,  1, 14, 15, 2, 3, 7
+    %%STORE_2X2          0,  1, 14, 15, 2, 3, 7
 
     ; store t2-3 and t28-29
     mova                m0, [rsp+ 8*%%str]
     mova                m1, [rsp+12*%%str]
-    STORE_2X2            0,  1, 12, 13, 2, 3, 7
+    %%STORE_2X2          0,  1, 12, 13, 2, 3, 7
 
     ; store t4-5 and t26-27
     mova                m0, [rsp+16*%%str]
     mova                m1, [rsp+20*%%str]
-    STORE_2X2            0,  1, 10, 11, 2, 3, 7
+    %%STORE_2X2          0,  1, 10, 11, 2, 3, 7
 
     ; store t6-7 and t24-25
     mova                m0, [rsp+24*%%str]
     mova                m1, [rsp+28*%%str]
-    STORE_2X2            0,  1,  8,  9, 2, 3, 7
+    %%STORE_2X2          0,  1,  8,  9, 2, 3, 7
 
     ; store t8-9 and t22-23
     mova                m0, [rsp+ 2*%%str]
     mova                m1, [rsp+ 6*%%str]
     mova                m8, [rsp+29*%%str]
-    STORE_2X2            0,  1,  6,  8, 2, 3, 7
+    %%STORE_2X2          0,  1,  6,  8, 2, 3, 7
 
     ; store t10-11 and t20-21
     mova                m0, [rsp+10*%%str]
     mova                m1, [rsp+14*%%str]
-    STORE_2X2            0,  1,  4,  5, 2, 3, 7
+    %%STORE_2X2          0,  1,  4,  5, 2, 3, 7
 
     ; store t12-13 and t18-19
     mova                m0, [rsp+18*%%str]
     mova                m1, [rsp+22*%%str]
     mova                m5, [rsp+13*%%str]
     mova                m4, [rsp+ 9*%%str]
-    STORE_2X2            0,  1,  4,  5, 2, 3, 7
+    %%STORE_2X2          0,  1,  4,  5, 2, 3, 7
 
     ; store t14-17
     mova                m0, [rsp+26*%%str]
     mova                m1, [rsp+30*%%str]
     mova                m5, [rsp+ 5*%%str]
     mova                m4, [rsp+ 1*%%str]
-    STORE_2X2            0,  1,  4,  5, 2, 3, 7, 0
+    %%STORE_2X2          0,  1,  4,  5, 2, 3, 7, 0
 %endif
 %endmacro
 
