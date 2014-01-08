@@ -421,7 +421,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     AVS_VideoFrame *frame;
     unsigned char *dst_p;
     const unsigned char *src_p;
-    int n, i, plane, rowsize, planeheight, pitch, bits;
+    int n, i, plane, rowsize, planeheight, pitch, bits, ret;
     const char *error;
 
     if (avs->curr_frame >= avs->vi->num_frames)
@@ -460,8 +460,14 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     if (!pkt->size)
         return AVERROR_UNKNOWN;
 
-    if (av_new_packet(pkt, pkt->size) < 0)
+    pkt->data = av_malloc(pkt->size);
+    if (!pkt->data)
         return AVERROR(ENOMEM);
+
+    if ((ret = av_packet_from_data(pkt, pkt->data, pkt->size)) < 0) {
+        av_packet_unref(pkt);
+        return ret;
+    }
 
     frame = avs_library.avs_get_frame(avs->clip, n);
     error = avs_library.avs_clip_get_error(avs->clip);
@@ -511,7 +517,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt,
 {
     AviSynthContext *avs = s->priv_data;
     AVRational fps, samplerate;
-    int samples;
+    int samples, ret;
     int64_t n;
     const char *error;
 
@@ -558,8 +564,14 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt,
     if (!pkt->size)
         return AVERROR_UNKNOWN;
 
-    if (av_new_packet(pkt, pkt->size) < 0)
+    pkt->data = av_malloc(pkt->size);
+    if (!pkt->data)
         return AVERROR(ENOMEM);
+
+    if ((ret = av_packet_from_data(pkt, pkt->data, pkt->size)) < 0) {
+        av_packet_unref(pkt);
+        return ret;
+    }
 
     avs_library.avs_get_audio(avs->clip, pkt->data, n, samples);
     error = avs_library.avs_clip_get_error(avs->clip);
