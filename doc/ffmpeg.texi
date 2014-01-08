@@ -508,9 +508,6 @@ prefix is ``ffmpeg2pass''. The complete file name will be
 @file{PREFIX-N.log}, where N is a number specific to the output
 stream
 
-@item -vlang @var{code}
-Set the ISO 639 language code (3 letters) of the current video stream.
-
 @item -vf @var{filtergraph} (@emph{output})
 Create the filtergraph specified by @var{filtergraph} and use it to
 filter the stream.
@@ -709,8 +706,6 @@ stereo but not 6 channels as 5.1. The default is to always try to guess. Use
 @section Subtitle options:
 
 @table @option
-@item -slang @var{code}
-Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @item -scodec @var{codec} (@emph{input/output})
 Set the subtitle codec. This is an alias for @code{-codec:s}.
 @item -sn (@emph{output})
