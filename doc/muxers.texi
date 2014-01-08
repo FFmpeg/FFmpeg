@@ -341,22 +341,17 @@ This muxer implements the matroska and webm container specs.
 The recognized metadata settings in this muxer are:
 
 @table @option
+@item title
+Set title name provided to a single track.
 
-@item title=@var{title name}
-Name provided to a single track
-@end table
+@item language
+Specify the language of the track in the Matroska languages form.
 
-@table @option
+@item stereo_mode
+Set stereo 3D video layout of two views in a single video track.
 
-@item language=@var{language name}
-Specifies the language of the track in the Matroska languages form
-@end table
-
-@table @option
-
-@item stereo_mode=@var{mode}
-Stereo 3D video layout of two views in a single video track
-@table @option
+The following values are recognized:
+@table @samp
 @item mono
 video is not stereo
 @item left_right
@@ -398,7 +393,6 @@ ffmpeg -i sample_left_right_clip.mpg -an -c:v libvpx -metadata stereo_mode=left_
 This muxer supports the following options:
 
 @table @option
-
 @item reserve_index_space
 By default, this muxer writes the index for seeking (called cues in Matroska
 terms) at the end of the file, because it cannot know in advance how much space
@@ -413,7 +407,6 @@ for most use cases should be about 50kB per hour of video.
 
 Note that cues are only written if the output is seekable and this option will
 have no effect if it is not.
-
 @end table
 
 @anchor{md5}
