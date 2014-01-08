@@ -22,13 +22,12 @@
 
 #include <stdint.h>
 
-#include "libavcodec/version.h"
-
 #include "avutil.h"
 #include "buffer.h"
 #include "dict.h"
 #include "rational.h"
 #include "samplefmt.h"
+#include "version.h"
 
 enum AVFrameSideDataType {
     /**
