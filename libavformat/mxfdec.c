@@ -1422,6 +1422,15 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         if (st->duration == -1)
             st->duration = AV_NOPTS_VALUE;
         st->start_time = component->start_position;
+        if (material_track->edit_rate.num <= 0 ||
+            material_track->edit_rate.den <= 0) {
+            av_log(mxf->fc, AV_LOG_WARNING,
+                   "Invalid edit rate (%d/%d) found on stream #%d, "
+                   "defaulting to 25/1\n",
+                   material_track->edit_rate.num,
+                   material_track->edit_rate.den, st->index);
+            material_track->edit_rate = (AVRational){25, 1};
+        }
         avpriv_set_pts_info(st, 64, material_track->edit_rate.den, material_track->edit_rate.num);
 
         PRINT_KEY(mxf->fc, "data definition   ul", source_track->sequence->data_definition_ul);
