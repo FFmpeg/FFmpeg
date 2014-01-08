@@ -2263,17 +2263,18 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
 {
     KLVPacket klv;
     MXFContext *mxf = s->priv_data;
+    int ret;
 
     while (!s->pb->eof_reached) {
-        if (klv_read_packet(&klv, s->pb) < 0)
-            return -1;
+        if ((ret = klv_read_packet(&klv, s->pb)) < 0)
+            return ret;
         PRINT_KEY(s, "read packet", klv.key);
         av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
-            int res = mxf_decrypt_triplet(s, pkt, &klv);
-            if (res < 0) {
+            ret = mxf_decrypt_triplet(s, pkt, &klv);
+            if (ret < 0) {
                 av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
-                return -1;
+                return ret;
             }
             return 0;
         }
@@ -2313,12 +2314,14 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
 
             /* check for 8 channels AES3 element */
             if (klv.key[12] == 0x06 && klv.key[13] == 0x01 && klv.key[14] == 0x10) {
-                if (mxf_get_d10_aes3_packet(s->pb, s->streams[index], pkt, klv.length) < 0) {
+                ret = mxf_get_d10_aes3_packet(s->pb, s->streams[index],
+                                              pkt, klv.length);
+                if (ret < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading D-10 aes3 frame\n");
-                    return -1;
+                    return ret;
                 }
             } else {
-                int ret = av_get_packet(s->pb, pkt, klv.length);
+                ret = av_get_packet(s->pb, pkt, klv.length);
                 if (ret < 0)
                     return ret;
             }
@@ -2343,7 +2346,7 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
                     pkt->pts = mxf->current_edit_unit;
                 }
             } else if (codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-                int ret = mxf_set_audio_pts(mxf, codec, pkt);
+                ret = mxf_set_audio_pts(mxf, codec, pkt);
                 if (ret < 0)
                     return ret;
             }
