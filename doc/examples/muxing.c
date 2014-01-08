@@ -132,6 +132,7 @@ static int max_dst_nb_samples;
 uint8_t **dst_samples_data;
 int       dst_samples_linesize;
 int       dst_samples_size;
+int samples_count;
 
 struct SwrContext *swr_ctx = NULL;
 
@@ -269,8 +270,10 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     }
 
     audio_frame->nb_samples = dst_nb_samples;
+    audio_frame->pts = av_rescale_q(samples_count, (AVRational){1, c->sample_rate}, c->time_base);
     avcodec_fill_audio_frame(audio_frame, c->channels, c->sample_fmt,
                              dst_samples_data[0], dst_samples_size, 0);
+    samples_count += dst_nb_samples;
 
     ret = avcodec_encode_audio2(c, &pkt, audio_frame, &got_packet);
     if (ret < 0) {
@@ -281,6 +284,10 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     if (!got_packet)
         return;
 
+    /* rescale output packet timestamp values from codec to stream timebase */
+    pkt.pts = av_rescale_q_rnd(pkt.pts, c->time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+    pkt.dts = av_rescale_q_rnd(pkt.dts, c->time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+    pkt.duration = av_rescale_q(pkt.duration, c->time_base, st->time_base);
     pkt.stream_index = st->index;
 
     /* Write the compressed frame to the media file. */
