@@ -1909,15 +1909,6 @@ eoi_parser:
             }
             if ((ret = av_frame_ref(frame, s->picture_ptr)) < 0)
                 return ret;
-            if (s->flipped) {
-                int i;
-                for (i = 0; frame->data[i]; i++) {
-                    int h = frame->height >> ((i == 1 || i == 2) ?
-                                              s->pix_desc->log2_chroma_h : 0);
-                    frame->data[i] += frame->linesize[i] * (h - 1);
-                    frame->linesize[i] *= -1;
-                }
-            }
             *got_frame = 1;
             s->got_picture = 0;
 
@@ -2009,7 +2000,7 @@ the_end:
             dst -= s->linesize[s->upscale_v];
         }
     }
-    if (s->flipped && (s->avctx->flags & CODEC_FLAG_EMU_EDGE)) {
+    if (s->flipped) {
         int j;
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
         for (index=0; index<4; index++) {
