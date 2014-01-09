@@ -117,5 +117,6 @@ AVCodec ff_amv_decoder = {
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .decode         = sp5x_decode_frame,
+    .max_lowres     = 3,
 };
 #endif

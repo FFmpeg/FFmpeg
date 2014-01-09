@@ -1112,11 +1112,6 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
     if (mb_bitmask)
         init_get_bits(&mb_bitmask_gb, mb_bitmask, s->mb_width * s->mb_height);
 
-    if (s->flipped && s->avctx->lowres) {
-        av_log(s->avctx, AV_LOG_ERROR, "Can not flip image with lowres\n");
-        s->flipped = 0;
-    }
-
     s->restart_count = 0;
 
     for (i = 0; i < nb_components; i++) {
