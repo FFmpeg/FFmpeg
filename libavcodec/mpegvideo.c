@@ -1852,32 +1852,6 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 /* called after a frame has been decoded. */
 void ff_MPV_frame_end(MpegEncContext *s)
 {
-    if ((s->er.error_count || !(s->avctx->codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND)) &&
-        !s->avctx->hwaccel &&
-        !(s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
-        s->unrestricted_mv &&
-        s->current_picture.reference &&
-        !s->intra_only &&
-        !(s->flags & CODEC_FLAG_EMU_EDGE) &&
-        !s->avctx->lowres
-       ) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
-        int hshift = desc->log2_chroma_w;
-        int vshift = desc->log2_chroma_h;
-        s->dsp.draw_edges(s->current_picture.f.data[0], s->current_picture.f.linesize[0],
-                          s->h_edge_pos, s->v_edge_pos,
-                          EDGE_WIDTH, EDGE_WIDTH,
-                          EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(s->current_picture.f.data[1], s->current_picture.f.linesize[1],
-                          s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
-                          EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
-                          EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(s->current_picture.f.data[2], s->current_picture.f.linesize[2],
-                          s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
-                          EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
-                          EDGE_TOP | EDGE_BOTTOM);
-    }
-
     emms_c();
 
     if (s->current_picture.reference)
@@ -3031,40 +3005,15 @@ void ff_MPV_decode_mb(MpegEncContext *s, int16_t block[12][64]){
  */
 void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
                         Picture *last, int y, int h, int picture_structure,
-                        int first_field, int draw_edges, int low_delay,
+                        int first_field, int low_delay,
                         int v_edge_pos, int h_edge_pos)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-    int hshift = desc->log2_chroma_w;
     int vshift = desc->log2_chroma_h;
     const int field_pic = picture_structure != PICT_FRAME;
     if(field_pic){
         h <<= 1;
         y <<= 1;
-    }
-
-    if (!avctx->hwaccel &&
-        !(avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
-        draw_edges &&
-        cur->reference &&
-        !(avctx->flags & CODEC_FLAG_EMU_EDGE)) {
-        int *linesize = cur->f.linesize;
-        int sides = 0, edge_h;
-        if (y==0) sides |= EDGE_TOP;
-        if (y + h >= v_edge_pos)
-            sides |= EDGE_BOTTOM;
-
-        edge_h= FFMIN(h, v_edge_pos - y);
-
-        dsp->draw_edges(cur->f.data[0] + y * linesize[0],
-                        linesize[0], h_edge_pos, edge_h,
-                        EDGE_WIDTH, EDGE_WIDTH, sides);
-        dsp->draw_edges(cur->f.data[1] + (y >> vshift) * linesize[1],
-                        linesize[1], h_edge_pos >> hshift, edge_h >> vshift,
-                        EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift, sides);
-        dsp->draw_edges(cur->f.data[2] + (y >> vshift) * linesize[2],
-                        linesize[2], h_edge_pos >> hshift, edge_h >> vshift,
-                        EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift, sides);
     }
 
     h = FFMIN(h, avctx->height - y);
@@ -3106,10 +3055,9 @@ void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
 
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h)
 {
-    int draw_edges = s->unrestricted_mv && !s->intra_only;
     ff_draw_horiz_band(s->avctx, &s->dsp, s->current_picture_ptr,
                        s->last_picture_ptr, y, h, s->picture_structure,
-                       s->first_field, draw_edges, s->low_delay,
+                       s->first_field, s->low_delay,
                        s->v_edge_pos, s->h_edge_pos);
 }
 
