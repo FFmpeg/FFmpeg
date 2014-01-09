@@ -457,7 +457,7 @@ static void close_video(AVFormatContext *oc, AVStream *st)
     avcodec_close(st->codec);
     av_free(src_picture.data[0]);
     av_free(dst_picture.data[0]);
-    av_free(frame);
+    av_frame_free(&frame);
 }
 
 /**************************************************************/
