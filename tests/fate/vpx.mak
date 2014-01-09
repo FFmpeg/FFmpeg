@@ -54,7 +54,7 @@ fate-vp8-size-change$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-size-change
 endef
 
 $(eval $(call FATE_VP8_FULL))
-$(eval $(call FATE_VP8_FULL,-emu-edge,-flags +emu_edge))
+
 FATE_SAMPLES_AVCONV-$(CONFIG_VP8_DECODER) += $(FATE_VP8-yes)
 fate-vp8: $(FATE_VP8-yes)
 
