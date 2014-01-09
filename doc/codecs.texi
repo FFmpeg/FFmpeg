@@ -1092,5 +1092,9 @@ instead of alpha. Default is 0.
 
 @c man end CODEC OPTIONS
 
+@ifclear config-writeonly
 @include decoders.texi
+@end ifclear
+@ifclear config-readonly
 @include encoders.texi
+@end ifclear

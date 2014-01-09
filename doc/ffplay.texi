@@ -212,6 +212,7 @@ Seek to percentage in file corresponding to fraction of width.
 
 @include config.texi
 @ifset config-all
+@set config-readonly
 @ifset config-avutil
 @include utils.texi
 @end ifset

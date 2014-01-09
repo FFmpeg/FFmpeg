@@ -17,5 +17,9 @@ for programmatic use.
 
 @c man end DEVICE OPTIONS
 
+@ifclear config-writeonly
 @include indevs.texi
+@end ifclear
+@ifclear config-readonly
 @include outdevs.texi
+@end ifclear

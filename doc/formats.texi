@@ -183,6 +183,10 @@ The exact semantics of stream specifiers is defined by the
 @code{avformat_match_stream_specifier()} function declared in the
 @file{libavformat/avformat.h} header.
 
+@ifclear config-writeonly
 @include demuxers.texi
+@end ifclear
+@ifclear config-readonly
 @include muxers.texi
+@end ifclear
 @include metadata.texi
