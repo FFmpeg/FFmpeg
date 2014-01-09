@@ -31,8 +31,9 @@ fate-sipr-8k5: CMD = pcm -i $(TARGET_SAMPLES)/sipr/sipr_8k5.rm
 fate-sipr-8k5: REF = $(SAMPLES)/sipr/sipr_8k5.pcm
 
 FATE_SIPR += fate-sipr-16k
-fate-sipr-16k: CMD = pcm -i $(TARGET_SAMPLES)/sipr/sipr_16k.rm
+fate-sipr-16k: CMD = pcm -i $(TARGET_SAMPLES)/sipr/sipr_16k.rm -aframes 3250
 fate-sipr-16k: REF = $(SAMPLES)/sipr/sipr_16k.pcm
+fate-sipr-16k: SIZE_TOLERANCE = 40000
 
 $(FATE_SIPR): CMP = oneoff
 
