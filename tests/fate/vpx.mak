@@ -86,7 +86,6 @@ $(eval $(call FATE_VP9_SUITE,parallelmode-akiyo,$(1),$(2)))
 endef
 
 $(eval $(call FATE_VP9_FULL))
-$(eval $(call FATE_VP9_FULL,-emu-edge,-flags +emu_edge))
 
 FATE_SAMPLES_AVCONV-$(CONFIG_VP9_DECODER) += $(FATE_VP9-yes)
 fate-vp9: $(FATE_VP9-yes)

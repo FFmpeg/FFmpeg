@@ -2747,9 +2747,9 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
     // allows to support emu-edge and so on even if we have large block
     // overhangs
     emu[0] = (col + w4) * 8 > f->linesize[0] ||
-             (row + h4) > s->rows + 2 * !(ctx->flags & CODEC_FLAG_EMU_EDGE);
+             (row + h4) > s->rows;
     emu[1] = (col + w4) * 4 > f->linesize[1] ||
-             (row + h4) > s->rows + 2 * !(ctx->flags & CODEC_FLAG_EMU_EDGE);
+             (row + h4) > s->rows;
     if (emu[0]) {
         s->dst[0] = s->tmp_y;
         s->y_stride = 64;
