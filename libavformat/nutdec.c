@@ -1011,8 +1011,8 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code)
     if (ret != size) {
         if (ret < 0)
             return ret;
-        av_shrink_packet(pkt, nut->header_len[header_idx] + size);
     }
+    av_shrink_packet(pkt, nut->header_len[header_idx] + ret);
 
     pkt->stream_index = stream_id;
     if (stc->last_flags & FLAG_KEY)
