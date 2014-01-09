@@ -30,6 +30,7 @@
 #define AVCODEC_MJPEGDEC_H
 
 #include "libavutil/log.h"
+#include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
 #include "get_bits.h"
@@ -120,6 +121,8 @@ typedef struct MJpegDecodeContext {
 
     int extern_huff;
     AVDictionary *exif_metadata;
+
+    const AVPixFmtDescriptor *pix_desc;
 } MJpegDecodeContext;
 
 int ff_mjpeg_decode_init(AVCodecContext *avctx);

@@ -479,6 +479,12 @@ unk_pixfmt:
             s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
     }
 
+    s->pix_desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
+    if (!s->pix_desc) {
+        av_log(s->avctx, AV_LOG_ERROR, "Could not get a pixel format descriptor.\n");
+        return AVERROR_BUG;
+    }
+
     av_frame_unref(s->picture_ptr);
     if (ff_get_buffer(s->avctx, s->picture_ptr, AV_GET_BUFFER_FLAG_REF) < 0)
         return -1;
@@ -1110,21 +1116,15 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
         av_log(s->avctx, AV_LOG_ERROR, "Can not flip image with lowres\n");
         s->flipped = 0;
     }
+
     s->restart_count = 0;
+
     for (i = 0; i < nb_components; i++) {
         int c   = s->comp_index[i];
         data[c] = s->picture_ptr->data[c];
         reference_data[c] = reference ? reference->data[c] : NULL;
         linesize[c] = s->linesize[c];
         s->coefs_finished[c] |= 1;
-        if (s->flipped && !(s->avctx->flags & CODEC_FLAG_EMU_EDGE)) {
-            // picture should be flipped upside-down for this codec
-            int offset = (linesize[c] * (s->v_scount[i] *
-                         (8 * s->mb_height - ((s->height / s->v_max) & 7)) - 1));
-            data[c]           += offset;
-            reference_data[c] += offset;
-            linesize[c]       *= -1;
-        }
     }
 
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
@@ -1781,6 +1781,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
 int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                           AVPacket *avpkt)
 {
+    AVFrame     *frame = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     MJpegDecodeContext *s = avctx->priv_data;
@@ -1906,8 +1907,17 @@ eoi_parser:
                 if (s->bottom_field == !s->interlace_polarity)
                     break;
             }
-            if ((ret = av_frame_ref(data, s->picture_ptr)) < 0)
+            if ((ret = av_frame_ref(frame, s->picture_ptr)) < 0)
                 return ret;
+            if (s->flipped) {
+                int i;
+                for (i = 0; frame->data[i]; i++) {
+                    int h = frame->height >> ((i == 1 || i == 2) ?
+                                              s->pix_desc->log2_chroma_h : 0);
+                    frame->data[i] += frame->linesize[i] * (h - 1);
+                    frame->linesize[i] *= -1;
+                }
+            }
             *got_frame = 1;
             s->got_picture = 0;
 
