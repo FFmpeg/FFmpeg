@@ -54,6 +54,7 @@ version 10:
 - png standalone parser
 - WebP encoding via libwebp
 - ATRAC3+ decoder
+- framepack filter
 
 
 version 9:

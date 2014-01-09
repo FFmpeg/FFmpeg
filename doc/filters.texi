@@ -1252,6 +1252,51 @@ frames with a negative PTS.
 
 @end table
 
+@section framepack
+
+Pack two different video streams into a stereoscopic video, setting proper
+metadata on supported codecs. The two views should have the same size and
+framerate and processing will stop when the shorter video ends. Please note
+that you may conveniently adjust view properties with the @ref{scale} and
+@ref{fps} filters.
+
+This filter accepts the following named parameters:
+@table @option
+
+@item format
+Desired packing format. Supported values are:
+
+@table @option
+
+@item sbs
+Views are next to each other (default).
+
+@item tab
+Views are on top of each other.
+
+@item lines
+Views are packed by line.
+
+@item columns
+Views are eacked by column.
+
+@item frameseq
+Views are temporally interleaved.
+
+@end table
+
+@end table
+
+Some examples follow:
+
+@example
+# Convert left and right views into a frame sequential video.
+avconv -i LEFT -i RIGHT -filter_complex framepack=frameseq OUTPUT
+
+# Convert views into a side-by-side video with the same output resolution as the input.
+avconv -i LEFT -i RIGHT -filter_complex [0:v]scale=w=iw/2[left],[1:v]scale=w=iw/2[right],[left][right]framepack=sbs OUTPUT
+@end example
+
 @anchor{frei0r}
 @section frei0r
 
