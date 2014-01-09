@@ -1032,11 +1032,12 @@ check_lib_cpp(){
 
 check_pkg_config(){
     log check_pkg_config "$@"
-    pkg="$1"
+    pkgandversion="$1"
+    pkg="${1%% *}"
     headers="$2"
     funcs="$3"
     shift 3
-    check_cmd $pkg_config --exists --print-errors $pkg || return
+    check_cmd $pkg_config --exists --print-errors $pkgandversion || return
     pkg_cflags=$($pkg_config --cflags $pkg)
     pkg_libs=$($pkg_config --libs $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
@@ -4458,7 +4459,7 @@ enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
 enabled libutvideo        && require_cpp utvideo "stdint.h stdlib.h utvideo/utvideo.h utvideo/Codec.h" 'CCodec*' -lutvideo -lstdc++
 enabled libv4l2           && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
-enabled libvidstab        && require_pkg_config vidstab vid.stab/libvidstab.h vsMotionDetectInit
+enabled libvidstab        && require_pkg_config "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
 enabled libvo_aacenc      && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
 enabled libvorbis         && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
