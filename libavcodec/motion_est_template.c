@@ -24,6 +24,8 @@
  * Motion estimation template.
  */
 
+#include "mpegvideo.h"
+
 //Let us hope gcc will remove the unused vars ...(gcc 3.2.2 seems to do it ...)
 #define LOAD_COMMON\
     uint32_t av_unused * const score_map= c->score_map;\
