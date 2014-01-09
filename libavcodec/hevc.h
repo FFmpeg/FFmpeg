@@ -72,6 +72,8 @@
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
 
+#define EDGE_EMU_BUFFER_STRIDE 80
+
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
  */
@@ -730,8 +732,8 @@ typedef struct HEVCLocalContext {
     int     start_of_tiles_x;
     int     end_of_tiles_x;
     int     end_of_tiles_y;
-    uint8_t *edge_emu_buffer;
-    int      edge_emu_buffer_size;
+    /* +7 is for subpixel interpolation, *2 for high bit depths */
+    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
     CodingTree ct;
     CodingUnit cu;
     PredictionUnit pu;
