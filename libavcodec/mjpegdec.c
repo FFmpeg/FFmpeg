@@ -2005,8 +2005,8 @@ the_end:
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
         for (index=0; index<4; index++) {
             uint8_t *dst = s->picture_ptr->data[index];
-            int w = s->width;
-            int h = s->height;
+            int w = s->picture_ptr->width;
+            int h = s->picture_ptr->height;
             if(index && index<3){
                 w = FF_CEIL_RSHIFT(w, hshift);
                 h = FF_CEIL_RSHIFT(h, vshift);
