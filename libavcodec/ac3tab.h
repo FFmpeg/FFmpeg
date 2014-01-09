@@ -22,7 +22,9 @@
 #ifndef AVCODEC_AC3TAB_H
 #define AVCODEC_AC3TAB_H
 
-#include "libavutil/common.h"
+#include <stdint.h>
+
+#include "libavutil/internal.h"
 #include "ac3.h"
 
 #if CONFIG_HARDCODED_TABLES
