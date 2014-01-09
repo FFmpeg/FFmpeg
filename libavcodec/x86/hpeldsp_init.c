@@ -22,6 +22,7 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
@@ -251,7 +252,7 @@ static void hpeldsp_init_sse2(HpelDSPContext *c, int flags, int cpu_flags)
 #endif /* HAVE_SSE2_EXTERNAL */
 }
 
-void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
+av_cold void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
 {
     int cpu_flags = av_get_cpu_flags();
 
