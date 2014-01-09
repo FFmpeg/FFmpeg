@@ -135,6 +135,11 @@ static av_cold int atrac3p_decode_init(AVCodecContext *avctx)
     ATRAC3PContext *ctx = avctx->priv_data;
     int i, ch, ret;
 
+    if (!avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR, "block_align is not set\n");
+        return AVERROR(EINVAL);
+    }
+
     ff_atrac3p_init_vlcs();
 
     avpriv_float_dsp_init(&ctx->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);

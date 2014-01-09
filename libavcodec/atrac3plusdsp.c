@@ -116,6 +116,7 @@ av_cold void ff_atrac3p_init_wave_synth(void)
  *  @param[in]    synth_param   ptr to common synthesis parameters
  *  @param[in]    waves_info    parameters for each sine wave
  *  @param[in]    envelope      envelope data for all waves in a group
+ *  @param[in]    phase_shift   flag indicates 180° phase shift
  *  @param[in]    reg_offset    region offset for trimming envelope data
  *  @param[out]   out           receives sythesized data
  */

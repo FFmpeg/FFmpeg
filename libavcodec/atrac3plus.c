@@ -247,6 +247,7 @@ static int num_coded_units(GetBitContext *gb, Atrac3pChanParams *chan,
  *
  * @param[in,out] ctx           ptr to the channel unit context
  * @param[in,out] chan          ptr to the channel parameters
+ * @param[in]     wtab_idx      index of the table of weights
  * @param[in]     avctx         ptr to the AVCodecContext
  * @return result code: 0 = OK, otherwise - error code
  */
