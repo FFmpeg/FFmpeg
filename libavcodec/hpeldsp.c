@@ -32,6 +32,8 @@
 #include "hpeldsp.h"
 
 #define BIT_DEPTH 8
+#include "hpel_template.c"
+#include "tpel_template.c"
 #include "hpeldsp_template.c"
 
 av_cold void ff_hpeldsp_init(HpelDSPContext *c, int flags)
