@@ -854,7 +854,7 @@ static void rgb48Toxyz12(struct SwsContext *c, uint16_t *dst,
                          const uint16_t *src, int stride, int h)
 {
     int xp,yp;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
 
     for (yp=0; yp<h; yp++) {
         for (xp=0; xp+2<stride; xp+=3) {
