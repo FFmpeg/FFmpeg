@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
 #include "libavcodec/flac.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -26,6 +27,11 @@
 #include "vorbiscomment.h"
 #include "libavcodec/bytestream.h"
 
+
+typedef struct FlacMuxerContext {
+    const AVClass *class;
+    int write_header;
+} FlacMuxerContext;
 
 static int flac_write_block_padding(AVIOContext *pb, unsigned int n_padding_bytes,
                                     int last_block)
@@ -66,6 +72,10 @@ static int flac_write_header(struct AVFormatContext *s)
 {
     int ret;
     AVCodecContext *codec = s->streams[0]->codec;
+    FlacMuxerContext *c   = s->priv_data;
+
+    if (!c->write_header)
+        return 0;
 
     if (s->nb_streams > 1) {
         av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
@@ -100,6 +110,10 @@ static int flac_write_trailer(struct AVFormatContext *s)
     uint8_t *streaminfo;
     enum FLACExtradataFormat format;
     int64_t file_size;
+    FlacMuxerContext *c = s->priv_data;
+
+    if (!c->write_header)
+        return 0;
 
     if (!avpriv_flac_is_extradata_valid(s->streams[0]->codec, &format, &streaminfo))
         return -1;
@@ -123,9 +137,22 @@ static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static const AVOption flacenc_options[] = {
+    { "write_header", "Write the file header", offsetof(FlacMuxerContext, write_header), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL },
+};
+
+static const AVClass flac_muxer_class = {
+    .class_name = "flac muxer",
+    .item_name  = av_default_item_name,
+    .option     = flacenc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_flac_muxer = {
     .name              = "flac",
     .long_name         = NULL_IF_CONFIG_SMALL("raw FLAC"),
+    .priv_data_size    = sizeof(FlacMuxerContext),
     .mime_type         = "audio/x-flac",
     .extensions        = "flac",
     .audio_codec       = AV_CODEC_ID_FLAC,
@@ -134,4 +161,5 @@ AVOutputFormat ff_flac_muxer = {
     .write_packet      = flac_write_packet,
     .write_trailer     = flac_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
+    .priv_class        = &flac_muxer_class,
 };
