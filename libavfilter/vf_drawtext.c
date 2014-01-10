@@ -206,7 +206,7 @@ static const AVOption drawtext_options[]= {
     {"start_number", "start frame number for n/frame_num variable", OFFSET(start_number), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
 
     /* FT_LOAD_* flags */
-    { "ft_load_flags", "set font loading flags for libfreetype", OFFSET(ft_load_flags), AV_OPT_TYPE_FLAGS, { .i64 = FT_LOAD_DEFAULT | FT_LOAD_RENDER}, 0, INT_MAX, FLAGS, "ft_load_flags" },
+    { "ft_load_flags", "set font loading flags for libfreetype", OFFSET(ft_load_flags), AV_OPT_TYPE_FLAGS, { .i64 = FT_LOAD_DEFAULT }, 0, INT_MAX, FLAGS, "ft_load_flags" },
         { "default",                     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_DEFAULT },                     .flags = FLAGS, .unit = "ft_load_flags" },
         { "no_scale",                    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_NO_SCALE },                    .flags = FLAGS, .unit = "ft_load_flags" },
         { "no_hinting",                  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_NO_HINTING },                  .flags = FLAGS, .unit = "ft_load_flags" },
@@ -264,6 +264,7 @@ static int glyph_cmp(void *key, const void *b)
 static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
 {
     DrawTextContext *s = ctx->priv;
+    FT_BitmapGlyph bitmapglyph;
     Glyph *glyph;
     struct AVTreeNode *node = NULL;
     int ret;
@@ -284,10 +285,15 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
         ret = AVERROR(EINVAL);
         goto error;
     }
+    if (FT_Glyph_To_Bitmap(glyph->glyph, FT_RENDER_MODE_NORMAL, 0, 1)) {
+        ret = AVERROR_EXTERNAL;
+        goto error;
+    }
+    bitmapglyph = (FT_BitmapGlyph) *glyph->glyph;
 
-    glyph->bitmap      = s->face->glyph->bitmap;
-    glyph->bitmap_left = s->face->glyph->bitmap_left;
-    glyph->bitmap_top  = s->face->glyph->bitmap_top;
+    glyph->bitmap      = bitmapglyph->bitmap;
+    glyph->bitmap_left = bitmapglyph->left;
+    glyph->bitmap_top  = bitmapglyph->top;
     glyph->advance     = s->face->glyph->advance.x >> 6;
 
     /* measure text height to calculate text_height (or the maximum text height) */

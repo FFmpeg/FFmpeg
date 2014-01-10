@@ -3594,7 +3594,7 @@ a combination of the following values:
 @item no_autohint
 @end table
 
-Default value is "render".
+Default value is "default".
 
 For more information consult the documentation for the FT_LOAD_*
 libfreetype flags.
