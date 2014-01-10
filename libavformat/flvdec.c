@@ -916,7 +916,7 @@ retry_duration:
             flv->last_channels    =
             channels              = st->codec->channels;
         } else {
-            AVCodecContext ctx;
+            AVCodecContext ctx = {0};
             ctx.sample_rate = sample_rate;
             flv_set_audio_codec(s, st, &ctx, flags & FLV_AUDIO_CODECID_MASK);
             sample_rate = ctx.sample_rate;
