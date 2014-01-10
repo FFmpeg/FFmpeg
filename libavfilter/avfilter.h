@@ -385,6 +385,12 @@ struct AVFilterPad {
      */
     int needs_fifo;
 
+    /**
+     * The filter expects writable frames from its input link,
+     * duplicating data buffers if needed.
+     *
+     * input pads only.
+     */
     int needs_writable;
 };
 #endif
