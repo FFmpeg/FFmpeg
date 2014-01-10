@@ -421,8 +421,8 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
 
     if (v->respic == 3) {
         ctx->dsp.upsample_plane(f->data[0], f->linesize[0], w,      h);
-        ctx->dsp.upsample_plane(f->data[1], f->linesize[1], w >> 1, h >> 1);
-        ctx->dsp.upsample_plane(f->data[2], f->linesize[2], w >> 1, h >> 1);
+        ctx->dsp.upsample_plane(f->data[1], f->linesize[1], w+1 >> 1, h+1 >> 1);
+        ctx->dsp.upsample_plane(f->data[2], f->linesize[2], w+1 >> 1, h+1 >> 1);
     } else if (v->respic)
         avpriv_request_sample(v->s.avctx,
                               "Asymmetric WMV9 rectangle subsampling");
