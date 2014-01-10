@@ -85,6 +85,9 @@
                    s->nal_unit_type == NAL_BLA_N_LP)
 #define IS_IRAP(s) (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
 
+#define FFUDIV(a,b) (((a) > 0 ? (a) : (a) - (b) + 1) / (b))
+#define FFUMOD(a,b) ((a) - (b) * FFUDIV(a,b))
+
 /**
  * Table 7-3: NAL unit type codes
  */
