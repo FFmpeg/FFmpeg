@@ -18,6 +18,7 @@ version <next>
 - ATRAC3+ decoder
 - VP8 in Ogg demuxing
 - side & metadata support in NUT
+- framepack filter
 
 
 version 2.1:
