@@ -435,6 +435,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         av_init_packet(&pkt);
 
         /* encode the image */
+        frame->pts = frame_count;
         ret = avcodec_encode_video2(c, &pkt, frame, &got_packet);
         if (ret < 0) {
             fprintf(stderr, "Error encoding video frame: %s\n", av_err2str(ret));
@@ -549,8 +550,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if (frame)
-        frame->pts = 0;
     for (;;) {
         /* Compute current audio and video time. */
         audio_time = audio_st ? audio_st->pts.val * av_q2d(audio_st->time_base) : 0.0;
@@ -565,7 +564,6 @@ int main(int argc, char **argv)
             write_audio_frame(oc, audio_st);
         } else {
             write_video_frame(oc, video_st);
-            frame->pts++;
         }
     }
 
