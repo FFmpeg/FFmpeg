@@ -487,7 +487,10 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     partition->index_sid = avio_rb32(pb);
     avio_skip(pb, 8);
     partition->body_sid = avio_rb32(pb);
-    avio_read(pb, op, sizeof(UID));
+    if (avio_read(pb, op, sizeof(UID)) != sizeof(UID)) {
+        av_log(mxf->fc, AV_LOG_ERROR, "Failed reading UID\n");
+        return AVERROR_INVALIDDATA;
+    }
     nb_essence_containers = avio_rb32(pb);
 
     /* some files don'thave FooterPartition set in every partition */
