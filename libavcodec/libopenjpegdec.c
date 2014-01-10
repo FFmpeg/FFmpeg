@@ -162,7 +162,7 @@ static inline void libopenjpeg_copy_to_packed8(AVFrame *picture, opj_image_t *im
         img_ptr = picture->data[0] + y*picture->linesize[0];
         for (x = 0; x < picture->width; x++, index++) {
             for (c = 0; c < image->numcomps; c++) {
-                *img_ptr++ = image->comps[c].data[index];
+                *img_ptr++ = 0x80 * image->comps[c].sgnd + image->comps[c].data[index];
             }
         }
     }
@@ -180,7 +180,7 @@ static inline void libopenjpeg_copy_to_packed16(AVFrame *picture, opj_image_t *i
         img_ptr = (uint16_t*) (picture->data[0] + y*picture->linesize[0]);
         for (x = 0; x < picture->width; x++, index++) {
             for (c = 0; c < image->numcomps; c++) {
-                *img_ptr++ = image->comps[c].data[index] << adjust[c];
+                *img_ptr++ = 0x8000 * image->comps[c].sgnd + (image->comps[c].data[index] << adjust[c]);
             }
         }
     }
@@ -196,7 +196,7 @@ static inline void libopenjpeg_copyto8(AVFrame *picture, opj_image_t *image) {
         for (y = 0; y < image->comps[index].h; y++) {
             img_ptr = picture->data[index] + y * picture->linesize[index];
             for (x = 0; x < image->comps[index].w; x++) {
-                *img_ptr = (uint8_t) *comp_data;
+                *img_ptr = 0x80 * image->comps[index].sgnd + *comp_data;
                 img_ptr++;
                 comp_data++;
             }
@@ -217,7 +217,7 @@ static inline void libopenjpeg_copyto16(AVFrame *picture, opj_image_t *image) {
         for (y = 0; y < image->comps[index].h; y++) {
             img_ptr = (uint16_t*) (picture->data[index] + y * picture->linesize[index]);
             for (x = 0; x < image->comps[index].w; x++) {
-                *img_ptr = *comp_data << adjust[index];
+                *img_ptr = 0x8000 * image->comps[index].sgnd + (*comp_data << adjust[index]);
                 img_ptr++;
                 comp_data++;
             }
