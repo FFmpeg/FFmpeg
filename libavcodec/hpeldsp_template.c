@@ -133,14 +133,14 @@ static inline void FUNCC(OPNAME ## _pixels2_xy2)(uint8_t *_block,       \
                                                  ptrdiff_t line_size,   \
                                                  int h)                 \
 {                                                                       \
-    int i, a0, b0, a1, b1;                                              \
     pixel *block        = (pixel *) _block;                             \
     const pixel *pixels = (const pixel *) _pixels;                      \
-    a0  = pixels[0];                                                    \
-    b0  = pixels[1] + 2;                                                \
+    int i, a1, b1;                                                      \
+    int a0 = pixels[0];                                                 \
+    int b0 = pixels[1] + 2;                                             \
+                                                                        \
     a0 += b0;                                                           \
     b0 += pixels[2];                                                    \
-                                                                        \
     line_size /= sizeof(pixel);                                         \
     pixels += line_size;                                                \
     for (i = 0; i < h; i += 2) {                                        \
