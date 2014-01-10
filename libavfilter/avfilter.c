@@ -1024,13 +1024,18 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         case AVMEDIA_TYPE_AUDIO:
             out = ff_get_audio_buffer(link, frame->nb_samples);
             break;
-        default: return AVERROR(EINVAL);
+        default:
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         if (!out) {
-            av_frame_free(&frame);
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
-        av_frame_copy_props(out, frame);
+
+        ret = av_frame_copy_props(out, frame);
+        if (ret < 0)
+            goto fail;
 
         switch (link->type) {
         case AVMEDIA_TYPE_VIDEO:
@@ -1043,7 +1048,9 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
                             av_get_channel_layout_nb_channels(frame->channel_layout),
                             frame->format);
             break;
-        default: return AVERROR(EINVAL);
+        default:
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
 
         av_frame_free(&frame);
@@ -1075,6 +1082,11 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     link->frame_count++;
     link->frame_requested = 0;
     ff_update_link_current_pts(link, pts);
+    return ret;
+
+fail:
+    av_frame_free(&out);
+    av_frame_free(&frame);
     return ret;
 }
 
