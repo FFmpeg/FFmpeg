@@ -44,6 +44,14 @@ fate-filter-fade: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf fade=in:5:15,fade=out
 FATE_FILTER_VSYNTH-$(call ALLYES, INTERLACE_FILTER FIELDORDER_FILTER) += fate-filter-fieldorder
 fate-filter-fieldorder: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf interlace=tff,fieldorder=bff -sws_flags +accurate_rnd+bitexact
 
+define FATE_FPFILTER_SUITE
+FATE_FILTER_VSYNTH-$(CONFIG_FRAMEPACK_FILTER) += fate-filter-framepack-$(1)
+fate-filter-framepack-$(1): CMD = framecrc -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -filter_complex framepack=$(1) -frames 15
+endef
+
+FPMODES = columns frameseq lines sbs tab
+$(foreach MODE,$(FPMODES),$(eval $(call FATE_FPFILTER_SUITE,$(MODE))))
+
 FATE_FILTER_VSYNTH-$(CONFIG_GRADFUN_FILTER) += fate-filter-gradfun
 fate-filter-gradfun: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf gradfun
 
