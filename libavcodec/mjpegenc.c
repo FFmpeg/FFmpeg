@@ -37,11 +37,6 @@
 #include "mjpeg.h"
 #include "mjpegenc.h"
 
-/* use two quantizer tables (one for luminance and one for chrominance) */
-/* not yet working */
-#undef TWOMATRIXES
-
-
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
     MJpegContext *m;
@@ -116,27 +111,27 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
     uint8_t *ptr;
 
     if (avctx->codec_id != AV_CODEC_ID_LJPEG) {
+        int matrix_count = 1 + !!memcmp(luma_intra_matrix,
+                                        chroma_intra_matrix,
+                                        sizeof(luma_intra_matrix[0]) * 64);
     /* quant matrixes */
     put_marker(p, DQT);
-#ifdef TWOMATRIXES
-    put_bits(p, 16, 2 + 2 * (1 + 64));
-#else
-    put_bits(p, 16, 2 + 1 * (1 + 64));
-#endif
+    put_bits(p, 16, 2 + matrix_count * (1 + 64));
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 0); /* table 0 */
     for(i=0;i<64;i++) {
         j = intra_scantable->permutated[i];
         put_bits(p, 8, luma_intra_matrix[j]);
     }
-#ifdef TWOMATRIXES
-    put_bits(p, 4, 0); /* 8 bit precision */
-    put_bits(p, 4, 1); /* table 1 */
-    for(i=0;i<64;i++) {
-        j = intra_scantable->permutated[i];
-        put_bits(p, 8, chroma_intra_matrix[j]);
-    }
-#endif
+
+        if (matrix_count > 1) {
+            put_bits(p, 4, 0); /* 8 bit precision */
+            put_bits(p, 4, 1); /* table 1 */
+            for(i=0;i<64;i++) {
+                j = intra_scantable->permutated[i];
+                put_bits(p, 8, chroma_intra_matrix[j]);
+            }
+        }
     }
 
     if(avctx->active_thread_type & FF_THREAD_SLICE){
@@ -239,6 +234,9 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG && avctx->codec_id != AV_CODEC_ID_AMV;
     int hsample[3], vsample[3];
     int i;
+    int chroma_matrix = !!memcmp(luma_intra_matrix,
+                                 chroma_intra_matrix,
+                                 sizeof(luma_intra_matrix[0])*64);
 
     ff_mjpeg_init_hvsample(avctx, hsample, vsample);
 
@@ -278,21 +276,13 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     put_bits(pb, 8, 2); /* component number */
     put_bits(pb, 4, hsample[1]); /* H factor */
     put_bits(pb, 4, vsample[1]); /* V factor */
-#ifdef TWOMATRIXES
-    put_bits(pb, 8, lossless ? 0 : 1); /* select matrix */
-#else
-    put_bits(pb, 8, 0); /* select matrix */
-#endif
+    put_bits(pb, 8, lossless ? 0 : chroma_matrix); /* select matrix */
 
     /* Cr component */
     put_bits(pb, 8, 3); /* component number */
     put_bits(pb, 4, hsample[2]); /* H factor */
     put_bits(pb, 4, vsample[2]); /* V factor */
-#ifdef TWOMATRIXES
-    put_bits(pb, 8, lossless ? 0 : 1); /* select matrix */
-#else
-    put_bits(pb, 8, 0); /* select matrix */
-#endif
+    put_bits(pb, 8, lossless ? 0 : chroma_matrix); /* select matrix */
 
     /* scan header */
     put_marker(pb, SOS);
