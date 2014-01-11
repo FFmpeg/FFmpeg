@@ -350,6 +350,8 @@ Developer options (useful when working on FFmpeg itself):
   --enable-ftrapv          Trap arithmetic overflows
   --samples=PATH           location of test samples for FATE, if not set use
                            \$FATE_SAMPLES at make invocation time.
+  --enable-neon-clobber-test check NEON registers for clobbering (should be
+                           used only for debugging purposes)
   --enable-xmm-clobber-test check XMM registers for clobbering (Win64-only;
                            should be used only for debugging purposes)
   --enable-random          randomly enable/disable components
@@ -1371,6 +1373,7 @@ CONFIG_LIST="
     mdct
     memalign_hack
     memory_poisoning
+    neon_clobber_test
     network
     nonfree
     pic
@@ -4628,6 +4631,16 @@ test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 # add some strip flags
 # -wN '..@*' is more selective than -x, but not available everywhere.
 check_stripflags -wN \'..@*\' || check_stripflags -x
+
+enabled neon_clobber_test &&
+    check_ldflags -Wl,--wrap,avcodec_open2              \
+                  -Wl,--wrap,avcodec_decode_audio4      \
+                  -Wl,--wrap,avcodec_decode_video2      \
+                  -Wl,--wrap,avcodec_decode_subtitle2   \
+                  -Wl,--wrap,avcodec_encode_audio2      \
+                  -Wl,--wrap,avcodec_encode_video2      \
+                  -Wl,--wrap,avcodec_encode_subtitle ||
+    disable neon_clobber_test
 
 enabled xmm_clobber_test &&
     check_ldflags -Wl,--wrap,avcodec_open2              \
