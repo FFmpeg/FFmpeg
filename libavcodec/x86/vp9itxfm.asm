@@ -70,21 +70,22 @@ SECTION .text
     psrad              m%2,  14
 %endmacro
 
-%macro VP9_UNPACK_MULSUB_2W_4X 7-9 ; dst1, dst2, (src1, src2,) coef1, coef2, rnd, tmp1, tmp2
-%if %0 == 7
-    punpckhwd          m%6, m%2, m%1
+%macro VP9_MULSUB_2W_4X 7 ; dst1, dst2, coef1, coef2, rnd, tmp1/src, tmp2
     VP9_MULSUB_2W_2X    %7,  %6,  %5, [pw_m%3_%4], [pw_%4_%3]
-    punpcklwd          m%2, m%1
     VP9_MULSUB_2W_2X    %1,  %2,  %5, [pw_m%3_%4], [pw_%4_%3]
     packssdw           m%1, m%7
     packssdw           m%2, m%6
+%endmacro
+
+%macro VP9_UNPACK_MULSUB_2W_4X 7-9 ; dst1, dst2, (src1, src2,) coef1, coef2, rnd, tmp1, tmp2
+%if %0 == 7
+    punpckhwd          m%6, m%2, m%1
+    punpcklwd          m%2, m%1
+    VP9_MULSUB_2W_4X   %1, %2, %3, %4, %5, %6, %7
 %else
     punpckhwd          m%8, m%4, m%3
-    VP9_MULSUB_2W_2X    %9,  %8,  %7, [pw_m%5_%6], [pw_%6_%5]
     punpcklwd          m%2, m%4, m%3
-    VP9_MULSUB_2W_2X    %1,  %2,  %7, [pw_m%5_%6], [pw_%6_%5]
-    packssdw           m%1, m%9
-    packssdw           m%2, m%8
+    VP9_MULSUB_2W_4X   %1, %2, %5, %6, %7, %8, %9
 %endif
 %endmacro
 
