@@ -1106,7 +1106,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
         pps->uniform_spacing_flag = get_bits1(gb);
         if (!pps->uniform_spacing_flag) {
-            int sum = 0;
+            uint64_t sum = 0;
             for (i = 0; i < pps->num_tile_columns - 1; i++) {
                 pps->column_width[i] = get_ue_golomb_long(gb) + 1;
                 sum                 += pps->column_width[i];

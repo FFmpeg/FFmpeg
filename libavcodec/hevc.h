@@ -513,10 +513,10 @@ typedef struct HEVCPPS {
     uint8_t slice_header_extension_present_flag;
 
     // Inferred parameters
-    int *column_width;  ///< ColumnWidth
-    int *row_height;    ///< RowHeight
-    int *col_bd;        ///< ColBd
-    int *row_bd;        ///< RowBd
+    unsigned int *column_width;  ///< ColumnWidth
+    unsigned int *row_height;    ///< RowHeight
+    unsigned int *col_bd;        ///< ColBd
+    unsigned int *row_bd;        ///< RowBd
     int *col_idxX;
 
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
