@@ -859,7 +859,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     MpegTSWrite *ts = s->priv_data;
     uint8_t buf[TS_PACKET_SIZE];
     uint8_t *q;
-    int val, is_start, len, header_len, write_pcr, private_code, flags;
+    int val, is_start, len, header_len, write_pcr, is_dvb_subtitle, flags;
     int afc_len, stuffing_len;
     int64_t pcr = -1; /* avoid warning */
     int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
@@ -927,7 +927,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = 0x00;
             *q++ = 0x00;
             *q++ = 0x01;
-            private_code = 0;
+            is_dvb_subtitle = 0;
             if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
                 if (st->codec->codec_id == AV_CODEC_ID_DIRAC) {
                     *q++ = 0xfd;
@@ -944,8 +944,9 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 *q++ = 0xfd;
             } else {
                 *q++ = 0xbd;
-                if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-                    private_code = 0x20;
+                if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE &&
+                    st->codec->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
+                    is_dvb_subtitle = 1;
                 }
             }
             header_len = 0;
@@ -983,8 +984,11 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                         header_len += 3;
             }
             len = payload_size + header_len + 3;
-            if (private_code != 0)
-                len++;
+            /* 3 extra bytes should be added to DVB subtitle payload: 0x20 0x00 at the beginning and trailing 0xff */
+            if (is_dvb_subtitle) {
+                len += 3;
+                payload_size++;
+            }
             if (len > 0xffff)
                 len = 0;
             *q++ = len >> 8;
@@ -1025,8 +1029,13 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
               }
 
 
-            if (private_code != 0)
-                *q++ = private_code;
+            if (is_dvb_subtitle) {
+                /* First two fields of DVB subtitles PES data:
+                 * data_identifier: for DVB subtitle streams shall be coded with the value 0x20
+                 * subtitle_stream_id: for DVB subtitle stream shall be identified by the value 0x00 */
+                *q++ = 0x20;
+                *q++ = 0x00;
+            }
             is_start = 0;
         }
         /* header size */
@@ -1057,7 +1066,14 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 }
             }
         }
-        memcpy(buf + TS_PACKET_SIZE - len, payload, len);
+
+        if (is_dvb_subtitle && payload_size == len) {
+            memcpy(buf + TS_PACKET_SIZE - len, payload, len - 1);
+            buf[TS_PACKET_SIZE - 1] = 0xff; /* end_of_PES_data_field_marker: an 8-bit field with fixed contents 0xff for DVB subtitle */
+        } else {
+            memcpy(buf + TS_PACKET_SIZE - len, payload, len);
+        }
+
         payload += len;
         payload_size -= len;
         mpegts_prefix_m2ts_header(s);

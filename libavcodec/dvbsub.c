@@ -261,8 +261,6 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     if (h->num_rects && h->rects == NULL)
         return -1;
 
-    *q++ = 0x00; /* subtitle_stream_id */
-
     /* page composition segment */
 
     *q++ = 0x0f; /* sync_byte */
@@ -436,8 +434,6 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     q += 2; /* segment length */
 
     bytestream_put_be16(&pseg_len, q - pseg_len - 2);
-
-    *q++ = 0xff; /* end of PES data */
 
     s->object_version = (s->object_version + 1) & 0xf;
     return q - outbuf;
