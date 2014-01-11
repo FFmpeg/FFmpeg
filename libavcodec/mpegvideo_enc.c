@@ -3504,13 +3504,17 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         for(i=1;i<64;i++){
             int j= s->dsp.idct_permutation[i];
 
+            s->chroma_intra_matrix[j] =
             s->intra_matrix[j] = av_clip_uint8((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
         }
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg2_dc_scale_table[s->intra_dc_precision];
+        s->chroma_intra_matrix[0] =
         s->intra_matrix[0] = ff_mpeg2_dc_scale_table[s->intra_dc_precision][8];
         ff_convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
                        s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
+        ff_convert_matrix(&s->dsp, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
+                       s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
     }
     if(s->codec_id == AV_CODEC_ID_AMV){
