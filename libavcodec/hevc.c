@@ -338,7 +338,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     const HEVCSPS *sps = s->sps;
     int max_poc_lsb    = 1 << sps->log2_max_poc_lsb;
     int prev_delta_msb = 0;
-    int nb_sps = 0, nb_sh;
+    unsigned int nb_sps = 0, nb_sh;
     int i;
 
     rps->nb_refs = 0;
@@ -759,7 +759,7 @@ static int hls_slice_header(HEVCContext *s)
     }
 
     if (s->pps->slice_header_extension_present_flag) {
-        int length = get_ue_golomb_long(gb);
+        unsigned int length = get_ue_golomb_long(gb);
         for (i = 0; i < length; i++)
             skip_bits(gb, 8);  // slice_header_extension_data_byte
     }

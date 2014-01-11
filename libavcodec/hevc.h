@@ -261,7 +261,7 @@ enum ScanType {
 };
 
 typedef struct ShortTermRPS {
-    int num_negative_pics;
+    unsigned int num_negative_pics;
     int num_delta_pocs;
     int32_t delta_poc[32];
     uint8_t used[32];
@@ -528,7 +528,7 @@ typedef struct HEVCPPS {
 } HEVCPPS;
 
 typedef struct SliceHeader {
-    int pps_id;
+    unsigned int pps_id;
 
     ///< address (in raster order) of the first block in the current slice segment
     unsigned int   slice_segment_addr;
