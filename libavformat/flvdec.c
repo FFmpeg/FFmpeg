@@ -943,6 +943,8 @@ retry_duration:
                 dts = AV_NOPTS_VALUE;
         }
         if (type == 0 && (!st->codec->extradata || st->codec->codec_id == AV_CODEC_ID_AAC)) {
+            AVDictionaryEntry *t;
+
             if (st->codec->extradata) {
                 if ((ret = flv_queue_extradata(flv, s->pb, stream_type, size)) < 0)
                     return ret;
@@ -951,8 +953,15 @@ retry_duration:
             }
             if ((ret = flv_get_extradata(s, st, size)) < 0)
                 return ret;
+
+            /* Workaround for buggy Omnia A/XE encoder */
+            t = av_dict_get(s->metadata, "Encoder", NULL, 0);
+            if (st->codec->codec_id == AV_CODEC_ID_AAC && t && !strcmp(t->value, "Omnia A/XE"))
+                st->codec->extradata_size = 2;
+
             if (st->codec->codec_id == AV_CODEC_ID_AAC && 0) {
                 MPEG4AudioConfig cfg;
+
                 if (avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                              st->codec->extradata_size * 8, 1) >= 0) {
                 st->codec->channels       = cfg.channels;
