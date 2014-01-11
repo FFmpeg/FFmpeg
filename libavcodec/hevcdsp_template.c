@@ -51,7 +51,7 @@ static void FUNC(transquant_bypass4x4)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t
 
     for (y = 0; y < 4; y++) {
         for (x = 0; x < 4; x++) {
-            dst[x] += *coeffs;
+            dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
@@ -67,7 +67,7 @@ static void FUNC(transquant_bypass8x8)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t
 
     for (y = 0; y < 8; y++) {
         for (x = 0; x < 8; x++) {
-            dst[x] += *coeffs;
+            dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
@@ -82,7 +82,7 @@ static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs, ptrdiff
 
     for (y = 0; y < 16; y++) {
         for (x = 0; x < 16; x++) {
-            dst[x] += *coeffs;
+            dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
@@ -98,7 +98,7 @@ static void FUNC(transquant_bypass32x32)(uint8_t *_dst, int16_t *coeffs, ptrdiff
 
     for (y = 0; y < 32; y++) {
         for (x = 0; x < 32; x++) {
-            dst[x] += *coeffs;
+            dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
