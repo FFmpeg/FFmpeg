@@ -1038,9 +1038,9 @@ static int decode_frame(WmallDecodeCtx *s)
         len = get_bits(gb, s->log2_frame_size);
 
     /* decode tile information */
-    if (decode_tilehdr(s)) {
+    if ((ret = decode_tilehdr(s))) {
         s->packet_loss = 1;
-        return 0;
+        return ret;
     }
 
     /* read drc info */
