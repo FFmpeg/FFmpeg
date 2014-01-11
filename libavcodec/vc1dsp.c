@@ -681,6 +681,9 @@ PUT_VC1_MSPEL(1, 3)
 PUT_VC1_MSPEL(2, 3)
 PUT_VC1_MSPEL(3, 3)
 
+#define chroma_mc(a) \
+    ((A * src[a] + B * src[a + 1] + \
+      C * src[stride + a] + D * src[stride + a + 1] + 32 - 4) >> 6)
 static void put_no_rnd_vc1_chroma_mc8_c(uint8_t *dst /* align 8 */,
                                         uint8_t *src /* align 1 */,
                                         int stride, int h, int x, int y)
@@ -694,22 +697,14 @@ static void put_no_rnd_vc1_chroma_mc8_c(uint8_t *dst /* align 8 */,
     assert(x < 8 && y < 8 && x >= 0 && y >= 0);
 
     for (i = 0; i < h; i++) {
-        dst[0] = (A * src[0]          + B * src[1] +
-                  C * src[stride + 0] + D * src[stride + 1] + 32 - 4) >> 6;
-        dst[1] = (A * src[1]          + B * src[2] +
-                  C * src[stride + 1] + D * src[stride + 2] + 32 - 4) >> 6;
-        dst[2] = (A * src[2]          + B * src[3] +
-                  C * src[stride + 2] + D * src[stride + 3] + 32 - 4) >> 6;
-        dst[3] = (A * src[3]          + B * src[4] +
-                  C * src[stride + 3] + D * src[stride + 4] + 32 - 4) >> 6;
-        dst[4] = (A * src[4]          + B * src[5] +
-                  C * src[stride + 4] + D * src[stride + 5] + 32 - 4) >> 6;
-        dst[5] = (A * src[5]          + B * src[6] +
-                  C * src[stride + 5] + D * src[stride + 6] + 32 - 4) >> 6;
-        dst[6] = (A * src[6]          + B * src[7] +
-                  C * src[stride + 6] + D * src[stride + 7] + 32 - 4) >> 6;
-        dst[7] = (A * src[7]          + B * src[8] +
-                  C * src[stride + 7] + D * src[stride + 8] + 32 - 4) >> 6;
+        dst[0] = chroma_mc(0);
+        dst[1] = chroma_mc(1);
+        dst[2] = chroma_mc(2);
+        dst[3] = chroma_mc(3);
+        dst[4] = chroma_mc(4);
+        dst[5] = chroma_mc(5);
+        dst[6] = chroma_mc(6);
+        dst[7] = chroma_mc(7);
         dst += stride;
         src += stride;
     }
@@ -727,14 +722,10 @@ static void put_no_rnd_vc1_chroma_mc4_c(uint8_t *dst, uint8_t *src,
     assert(x < 8 && y < 8 && x >= 0 && y >= 0);
 
     for (i = 0; i < h; i++) {
-        dst[0] = (A * src[0]          + B * src[1] +
-                  C * src[stride + 0] + D * src[stride + 1] + 32 - 4) >> 6;
-        dst[1] = (A * src[1]          + B * src[2] +
-                  C * src[stride + 1] + D * src[stride + 2] + 32 - 4) >> 6;
-        dst[2] = (A * src[2]          + B * src[3] +
-                  C * src[stride + 2] + D * src[stride + 3] + 32 - 4) >> 6;
-        dst[3] = (A * src[3]          + B * src[4] +
-                  C * src[stride + 3] + D * src[stride + 4] + 32 - 4) >> 6;
+        dst[0] = chroma_mc(0);
+        dst[1] = chroma_mc(1);
+        dst[2] = chroma_mc(2);
+        dst[3] = chroma_mc(3);
         dst += stride;
         src += stride;
     }
@@ -754,30 +745,14 @@ static void avg_no_rnd_vc1_chroma_mc8_c(uint8_t *dst /* align 8 */,
     assert(x < 8 && y < 8 && x >= 0 && y >= 0);
 
     for (i = 0; i < h; i++) {
-        dst[0] = avg2(dst[0], ((A * src[0] + B * src[1] +
-                                C * src[stride + 0] + D * src[stride + 1] +
-                                32 - 4) >> 6));
-        dst[1] = avg2(dst[1], ((A * src[1] + B * src[2] +
-                                C * src[stride + 1] + D * src[stride + 2] +
-                                32 - 4) >> 6));
-        dst[2] = avg2(dst[2], ((A * src[2] + B * src[3] +
-                                C * src[stride + 2] + D * src[stride + 3] +
-                                32 - 4) >> 6));
-        dst[3] = avg2(dst[3], ((A * src[3] + B * src[4] +
-                                C * src[stride + 3] + D * src[stride + 4] +
-                                32 - 4) >> 6));
-        dst[4] = avg2(dst[4], ((A * src[4] + B * src[5] +
-                                C * src[stride + 4] + D * src[stride + 5] +
-                                32 - 4) >> 6));
-        dst[5] = avg2(dst[5], ((A * src[5] + B * src[6] +
-                                C * src[stride + 5] + D * src[stride + 6] +
-                                32 - 4) >> 6));
-        dst[6] = avg2(dst[6], ((A * src[6] + B * src[7] +
-                                C * src[stride + 6] + D * src[stride + 7] +
-                                32 - 4) >> 6));
-        dst[7] = avg2(dst[7], ((A * src[7] + B * src[8] +
-                                C * src[stride + 7] + D * src[stride + 8] +
-                                32 - 4) >> 6));
+        dst[0] = avg2(dst[0], chroma_mc(0));
+        dst[1] = avg2(dst[1], chroma_mc(1));
+        dst[2] = avg2(dst[2], chroma_mc(2));
+        dst[3] = avg2(dst[3], chroma_mc(3));
+        dst[4] = avg2(dst[4], chroma_mc(4));
+        dst[5] = avg2(dst[5], chroma_mc(5));
+        dst[6] = avg2(dst[6], chroma_mc(6));
+        dst[7] = avg2(dst[7], chroma_mc(7));
         dst += stride;
         src += stride;
     }
