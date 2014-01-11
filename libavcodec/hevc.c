@@ -212,7 +212,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         goto fail;
 
     s->cbf_luma = av_malloc(sps->min_tb_width * sps->min_tb_height);
-    s->tab_ipm  = av_malloc(min_pu_size);
+    s->tab_ipm  = av_mallocz(min_pu_size);
     s->is_pcm   = av_malloc(min_pu_size);
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
