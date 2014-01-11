@@ -703,6 +703,7 @@ static int hls_slice_header(HEVCContext *s)
         }
 
         sh->slice_qp_delta = get_se_golomb(gb);
+
         if (s->pps->pic_slice_level_chroma_qp_offsets_present_flag) {
             sh->slice_cb_qp_offset = get_se_golomb(gb);
             sh->slice_cr_qp_offset = get_se_golomb(gb);
@@ -765,7 +766,17 @@ static int hls_slice_header(HEVCContext *s)
     }
 
     // Inferred parameters
-    sh->slice_qp          = 26 + s->pps->pic_init_qp_minus26 + sh->slice_qp_delta;
+    sh->slice_qp = 26 + s->pps->pic_init_qp_minus26 + sh->slice_qp_delta;
+    if (sh->slice_qp > 51 ||
+        sh->slice_qp < -s->sps->qp_bd_offset) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "The slice_qp %d is outside the valid range "
+               "[%d, 51].\n",
+               sh->slice_qp,
+               -s->sps->qp_bd_offset);
+        return AVERROR_INVALIDDATA;
+    }
+
     sh->slice_ctb_addr_rs = sh->slice_segment_addr;
 
     s->HEVClc.first_qp_group = !s->sh.dependent_slice_segment_flag;
