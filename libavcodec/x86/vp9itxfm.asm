@@ -61,11 +61,11 @@ pw_512:  times 8 dw 512
 SECTION .text
 
 ; (a*x + b*y + round) >> shift
-%macro VP9_MULSUB_2W_2X 6 ; dst1, dst2, src (unchanged), round, coefs1, coefs2
-    pmaddwd            m%1, m%3, %5
-    pmaddwd            m%2, m%3, %6
-    paddd              m%1,  %4
-    paddd              m%2,  %4
+%macro VP9_MULSUB_2W_2X 5 ; dst1, dst2/src, round, coefs1, coefs2
+    pmaddwd            m%1, m%2, %4
+    pmaddwd            m%2,  %5
+    paddd              m%1,  %3
+    paddd              m%2,  %3
     psrad              m%1,  14
     psrad              m%2,  14
 %endmacro
@@ -73,16 +73,16 @@ SECTION .text
 %macro VP9_UNPACK_MULSUB_2W_4X 7-9 ; dst1, dst2, (src1, src2,) coef1, coef2, rnd, tmp1, tmp2
 %if %0 == 7
     punpckhwd          m%6, m%2, m%1
-    VP9_MULSUB_2W_2X    %7,  %6,  %6, %5, [pw_m%3_%4], [pw_%4_%3]
+    VP9_MULSUB_2W_2X    %7,  %6,  %5, [pw_m%3_%4], [pw_%4_%3]
     punpcklwd          m%2, m%1
-    VP9_MULSUB_2W_2X    %1,  %2,  %2, %5, [pw_m%3_%4], [pw_%4_%3]
+    VP9_MULSUB_2W_2X    %1,  %2,  %5, [pw_m%3_%4], [pw_%4_%3]
     packssdw           m%1, m%7
     packssdw           m%2, m%6
 %else
     punpckhwd          m%8, m%4, m%3
-    VP9_MULSUB_2W_2X    %9,  %8,  %8, %7, [pw_m%5_%6], [pw_%6_%5]
+    VP9_MULSUB_2W_2X    %9,  %8,  %7, [pw_m%5_%6], [pw_%6_%5]
     punpcklwd          m%2, m%4, m%3
-    VP9_MULSUB_2W_2X    %1,  %2,  %2, %7, [pw_m%5_%6], [pw_%6_%5]
+    VP9_MULSUB_2W_2X    %1,  %2,  %7, [pw_m%5_%6], [pw_%6_%5]
     packssdw           m%1, m%9
     packssdw           m%2, m%8
 %endif
