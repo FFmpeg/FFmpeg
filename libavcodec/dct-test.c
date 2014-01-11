@@ -113,6 +113,10 @@ static void ff_prores_idct_put_10_sse2_wrap(int16_t *dst){
         tmp[i]= dst[i];
     }
     ff_prores_idct_put_10_sse2(dst, 16, tmp, qmat);
+
+    for(i=0; i<64; i++) {
+         dst[i] -= 512;
+    }
 }
 #endif
 
