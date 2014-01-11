@@ -284,6 +284,9 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
         }
 
         ref(block1);
+        if (!strcmp(dct->name, "PR-SSE2"))
+            for (i = 0; i < 64; i++)
+                block1[i] = av_clip(block1[i], 4-512, 1019-512);
 
         blockSumErr = 0;
         for (i = 0; i < 64; i++) {
