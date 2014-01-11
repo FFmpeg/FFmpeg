@@ -1076,8 +1076,11 @@ static int decode_frame(WmallDecodeCtx *s)
 
     /* decode all subframes */
     while (!s->parsed_all_subframes) {
+        int decoded_samples = s->channel[0].decoded_samples;
         if (decode_subframe(s) < 0) {
             s->packet_loss = 1;
+            if (s->frame->nb_samples)
+                s->frame->nb_samples = decoded_samples;
             return 0;
         }
     }
