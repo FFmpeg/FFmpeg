@@ -3592,11 +3592,15 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
                         data += 4;
                         size -= 4;
                     }
-                    if (tile_size > size)
+                    if (tile_size > size) {
+                        ff_thread_report_progress(&s->frames[CUR_FRAME].tf, INT_MAX, 0);
                         return AVERROR_INVALIDDATA;
+                    }
                     ff_vp56_init_range_decoder(&s->c_b[tile_col], data, tile_size);
-                    if (vp56_rac_get_prob_branchy(&s->c_b[tile_col], 128)) // marker bit
+                    if (vp56_rac_get_prob_branchy(&s->c_b[tile_col], 128)) { // marker bit
+                        ff_thread_report_progress(&s->frames[CUR_FRAME].tf, INT_MAX, 0);
                         return AVERROR_INVALIDDATA;
+                    }
                     data += tile_size;
                     size -= tile_size;
                 }
