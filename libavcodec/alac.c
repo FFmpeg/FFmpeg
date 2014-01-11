@@ -490,7 +490,8 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
                avpkt->size * 8 - get_bits_count(&alac->gb));
     }
 
-    *got_frame_ptr = 1;
+    if (alac->channels == ch)
+        *got_frame_ptr = 1;
 
     return avpkt->size;
 }
