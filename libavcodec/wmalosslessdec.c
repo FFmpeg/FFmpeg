@@ -1040,6 +1040,7 @@ static int decode_frame(WmallDecodeCtx *s)
     /* decode tile information */
     if ((ret = decode_tilehdr(s))) {
         s->packet_loss = 1;
+        av_frame_unref(s->frame);
         return ret;
     }
 
