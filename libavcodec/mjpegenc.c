@@ -108,7 +108,8 @@ static int put_huffman_table(PutBitContext *p, int table_class, int table_id,
 
 static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
                               ScanTable *intra_scantable,
-                              uint16_t intra_matrix[64],
+                              uint16_t luma_intra_matrix[64],
+                              uint16_t chroma_intra_matrix[64],
                               int hsample[3])
 {
     int i, j, size;
@@ -126,14 +127,14 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
     put_bits(p, 4, 0); /* table 0 */
     for(i=0;i<64;i++) {
         j = intra_scantable->permutated[i];
-        put_bits(p, 8, intra_matrix[j]);
+        put_bits(p, 8, luma_intra_matrix[j]);
     }
 #ifdef TWOMATRIXES
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 1); /* table 1 */
     for(i=0;i<64;i++) {
-        j = s->intra_scantable.permutated[i];
-        put_bits(p, 8, s->chroma_intra_matrix[j]);
+        j = intra_scantable->permutated[i];
+        put_bits(p, 8, chroma_intra_matrix[j]);
     }
 #endif
     }
@@ -232,7 +233,8 @@ void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[3], int vsample[3
 
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
                                     ScanTable *intra_scantable,
-                                    uint16_t intra_matrix[64])
+                                    uint16_t luma_intra_matrix[64],
+                                    uint16_t chroma_intra_matrix[64])
 {
     const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG && avctx->codec_id != AV_CODEC_ID_AMV;
     int hsample[3], vsample[3];
@@ -247,7 +249,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
 
     jpeg_put_comments(avctx, pb);
 
-    jpeg_table_header(avctx, pb, intra_scantable, intra_matrix, hsample);
+    jpeg_table_header(avctx, pb, intra_scantable, luma_intra_matrix, chroma_intra_matrix, hsample);
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MJPEG:  put_marker(pb, SOF0 ); break;
