@@ -492,6 +492,8 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
 
     if (alac->channels == ch)
         *got_frame_ptr = 1;
+    else
+        av_log(avctx, AV_LOG_WARNING, "Failed to decode all channels\n");
 
     return avpkt->size;
 }
