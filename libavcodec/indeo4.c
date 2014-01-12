@@ -296,6 +296,7 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
 
     band->is_empty = get_bits1(&ctx->gb);
     if (!band->is_empty) {
+        int old_blk_size = band->blk_size;
         /* skip header size
          * If header size is not given, header size is 4 bytes. */
         if (get_bits1(&ctx->gb))
@@ -391,6 +392,13 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                 return AVERROR_INVALIDDATA;
             }
             band->quant_mat = quant_mat;
+        } else {
+            if (old_blk_size != band->blk_size) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "The band block size does not match the configuration "
+                       "inherited\n");
+                return AVERROR_INVALIDDATA;
+            }
         }
         if (quant_index_to_tab[band->quant_mat] > 4 && band->blk_size == 4) {
             av_log(avctx, AV_LOG_ERROR, "Invalid quant matrix for 4x4 block encountered!\n");
