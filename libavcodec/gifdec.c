@@ -65,8 +65,8 @@ typedef struct GifState {
     int stored_img_size;
     int stored_bg_color;
 
-    GetByteContext gb;
     /* LZW compatible decoder */
+    GetByteContext gb;
     LZWState *lzw;
 
     /* aux buffers */
@@ -144,11 +144,11 @@ static int gif_read_image(GifState *s)
     if (bytestream2_get_bytes_left(&s->gb) < 9)
         return AVERROR_INVALIDDATA;
 
-    left = bytestream2_get_le16u(&s->gb);
-    top = bytestream2_get_le16u(&s->gb);
-    width = bytestream2_get_le16u(&s->gb);
+    left   = bytestream2_get_le16u(&s->gb);
+    top    = bytestream2_get_le16u(&s->gb);
+    width  = bytestream2_get_le16u(&s->gb);
     height = bytestream2_get_le16u(&s->gb);
-    flags = bytestream2_get_byteu(&s->gb);
+    flags  = bytestream2_get_byteu(&s->gb);
     is_interleaved = flags & 0x40;
     has_local_palette = flags & 0x80;
     bits_per_pixel = (flags & 0x07) + 1;
@@ -317,7 +317,7 @@ static int gif_read_extension(GifState *s)
         if (bytestream2_get_bytes_left(&s->gb) < 5)
             return AVERROR_INVALIDDATA;
 
-        gce_flags = bytestream2_get_byteu(&s->gb);
+        gce_flags    = bytestream2_get_byteu(&s->gb);
         bytestream2_skipu(&s->gb, 2);    // delay during which the frame is shown
         gce_transparent_index = bytestream2_get_byteu(&s->gb);
         if (gce_flags & 0x01)
@@ -371,7 +371,7 @@ static int gif_read_header1(GifState *s)
 
     /* read screen header */
     s->transparent_color_index = -1;
-    s->screen_width = bytestream2_get_le16u(&s->gb);
+    s->screen_width  = bytestream2_get_le16u(&s->gb);
     s->screen_height = bytestream2_get_le16u(&s->gb);
     if(   (unsigned)s->screen_width  > 32767
        || (unsigned)s->screen_height > 32767){
@@ -415,7 +415,7 @@ static int gif_read_header1(GifState *s)
 static int gif_parse_next_image(GifState *s, int *got_picture)
 {
     *got_picture = 1;
-    while (bytestream2_get_bytes_left(&s->gb)) {
+    while (bytestream2_get_bytes_left(&s->gb) > 0) {
         int code = bytestream2_get_byte(&s->gb);
         int ret;
 
@@ -462,9 +462,9 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
-    s->picture.pts          = avpkt->pts;
-    s->picture.pkt_pts      = avpkt->pts;
-    s->picture.pkt_dts      = avpkt->dts;
+    s->picture.pts     = avpkt->pts;
+    s->picture.pkt_pts = avpkt->pts;
+    s->picture.pkt_dts = avpkt->dts;
     s->picture.pkt_duration = avpkt->duration;
 
     if (avpkt->size >= 6) {
@@ -516,7 +516,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
     else if (*got_frame)
         *picture = s->picture;
 
-    return avpkt->size;
+    return bytestream2_tell(&s->gb);
 }
 
 static av_cold int gif_decode_close(AVCodecContext *avctx)
