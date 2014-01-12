@@ -399,6 +399,10 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                        "inherited\n");
                 return AVERROR_INVALIDDATA;
             }
+            if (band->quant_mat < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid quant_mat inherited\n");
+                return AVERROR_INVALIDDATA;
+            }
         }
         if (quant_index_to_tab[band->quant_mat] > 4 && band->blk_size == 4) {
             av_log(avctx, AV_LOG_ERROR, "Invalid quant matrix for 4x4 block encountered!\n");
