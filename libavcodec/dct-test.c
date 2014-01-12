@@ -107,6 +107,9 @@ static void ff_prores_idct_wrap(int16_t *dst){
         qmat[i]=4;
     }
     ff_prores_idct(dst, qmat);
+    for(i=0; i<64; i++) {
+         dst[i] -= 512;
+    }
 }
 #if ARCH_X86_64 && HAVE_MMX && HAVE_YASM
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,

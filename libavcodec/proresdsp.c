@@ -31,7 +31,7 @@
 #define CLIP_MIN (1 << (PRORES_BITS_PER_SAMPLE - 8))           ///< minimum value for clipping resulting pixels
 #define CLIP_MAX (1 << PRORES_BITS_PER_SAMPLE) - CLIP_MIN - 1  ///< maximum value for clipping resulting pixels
 
-#define CLIP_AND_BIAS(x) (av_clip((x) + BIAS, CLIP_MIN, CLIP_MAX))
+#define CLIP_AND_BIAS(x) (av_clip((x), CLIP_MIN, CLIP_MAX))
 
 #if CONFIG_PRORES_DECODER | CONFIG_PRORES_LGPL_DECODER
 /**
