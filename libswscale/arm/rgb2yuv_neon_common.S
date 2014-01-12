@@ -214,20 +214,20 @@ endfunc
     load_8888_16x1  b, g, r, x, \src, \count
 .endm
 
-.macro alias_src_rgbx   set
+.macro alias_src_rgbx   set=1
     alias_src_8888  r, g, b, x, \set
 .endm
 
-.macro alias_src_bgrx   set
+.macro alias_src_bgrx   set=1
     alias_src_8888  b, g, r, x, \set
 .endm
 
-.macro alias_dst_nv12   set
+.macro alias_dst_nv12   set=1
     alias   u8x8, c8x8x2_l, \set
     alias   v8x8, c8x8x2_h, \set
 .endm
 
-.macro alias_dst_nv21   set
+.macro alias_dst_nv21   set=1
     alias   v8x8, c8x8x2_l, \set
     alias   u8x8, c8x8x2_h, \set
 .endm
