@@ -682,7 +682,17 @@ static int hls_slice_header(HEVCContext *s)
     }
 
     // Inferred parameters
-    sh->slice_qp          = 26 + s->pps->pic_init_qp_minus26 + sh->slice_qp_delta;
+    sh->slice_qp = 26U + s->pps->pic_init_qp_minus26 + sh->slice_qp_delta;
+    if (sh->slice_qp > 51 ||
+        sh->slice_qp < -s->sps->qp_bd_offset) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "The slice_qp %d is outside the valid range "
+               "[%d, 51].\n",
+               sh->slice_qp,
+               -s->sps->qp_bd_offset);
+        return AVERROR_INVALIDDATA;
+    }
+
     sh->slice_ctb_addr_rs = sh->slice_segment_addr;
 
     s->HEVClc->first_qp_group = !s->sh.dependent_slice_segment_flag;
