@@ -136,7 +136,7 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
     }
 #endif
 
-    a0 = (W4 * row[0]) + (1 << (ROW_SHIFT - 1));
+    a0 = (W4 * row[0]) + (1 << (ROW_SHIFT + extra_shift - 1));
     a1 = a0;
     a2 = a0;
     a3 = a0;
