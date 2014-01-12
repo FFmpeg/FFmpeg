@@ -185,8 +185,11 @@ static int gif_read_image(GifState *s)
 
     /* verify that all the image is inside the screen dimensions */
     if (left + width > s->screen_width ||
-        top + height > s->screen_height)
+        top + height > s->screen_height ||
+        !width || !height) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid image dimensions.\n");
         return AVERROR_INVALIDDATA;
+    }
 
     /* process disposal method */
     if (s->gce_prev_disposal == GCE_DISPOSAL_BACKGROUND) {
@@ -411,10 +414,10 @@ static int gif_read_header1(GifState *s)
 
 static int gif_parse_next_image(GifState *s, int *got_picture)
 {
-    int ret;
     *got_picture = 1;
     while (bytestream2_get_bytes_left(&s->gb)) {
         int code = bytestream2_get_byte(&s->gb);
+        int ret;
 
         av_dlog(s->avctx, "code=%02x '%c'\n", code, code);
 
