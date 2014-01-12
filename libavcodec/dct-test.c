@@ -99,6 +99,15 @@ static const struct algo fdct_tab[] = {
     { 0 }
 };
 
+static void ff_prores_idct_wrap(int16_t *dst){
+    DECLARE_ALIGNED(16, static int16_t, qmat)[64];
+    int i;
+
+    for(i=0; i<64; i++){
+        qmat[i]=4;
+    }
+    ff_prores_idct(dst, qmat);
+}
 #if ARCH_X86_64 && HAVE_MMX && HAVE_YASM
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
                                 int16_t *block, int16_t *qmat);
@@ -125,6 +134,7 @@ static const struct algo idct_tab[] = {
     { "REF-DBL",        ff_ref_idct,           NO_PERM  },
     { "INT",            ff_j_rev_dct,          MMX_PERM },
     { "SIMPLE-C",       ff_simple_idct_8,      NO_PERM  },
+    { "PR-C",           ff_prores_idct_wrap,   NO_PERM, 0, 1 },
 
 #if HAVE_MMX_INLINE
     { "SIMPLE-MMX",     ff_simple_idct_mmx,  MMX_SIMPLE_PERM, AV_CPU_FLAG_MMX },
