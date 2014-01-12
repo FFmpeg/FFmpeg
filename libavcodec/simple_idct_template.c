@@ -107,10 +107,10 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
 #define ROW0_MASK (0xffffLL << 48 * HAVE_BIGENDIAN)
     if (((((uint64_t *)row)[0] & ~ROW0_MASK) | ((uint64_t *)row)[1]) == 0) {
         uint64_t temp;
-        if (DC_SHIFT - extra_shift > 0) {
+        if (DC_SHIFT - extra_shift >= 0) {
             temp = (row[0] << (DC_SHIFT - extra_shift)) & 0xffff;
         } else {
-            temp = (row[0] >> (extra_shift - DC_SHIFT)) & 0xffff;
+            temp = ((row[0] + (1<<(extra_shift - DC_SHIFT-1))) >> (extra_shift - DC_SHIFT)) & 0xffff;
         }
         temp += temp << 16;
         temp += temp << 32;
@@ -124,10 +124,10 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
           ((uint32_t*)row)[3] |
           row[1])) {
         uint32_t temp;
-        if (DC_SHIFT - extra_shift > 0) {
+        if (DC_SHIFT - extra_shift >= 0) {
             temp = (row[0] << (DC_SHIFT - extra_shift)) & 0xffff;
         } else {
-            temp = (row[0] >> (extra_shift - DC_SHIFT)) & 0xffff;
+            temp = ((row[0] + (1<<(extra_shift - DC_SHIFT-1))) >> (extra_shift - DC_SHIFT)) & 0xffff;
         }
         temp += temp << 16;
         ((uint32_t*)row)[0]=((uint32_t*)row)[1] =
