@@ -106,19 +106,6 @@ static const uint8_t last_coeff_flag_offset_8x8[63] = {
  *
  * @param buf_size size of buf in bits
  */
-void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size){
-    init_put_bits(&c->pb, buf, buf_size);
-
-    c->low= 0;
-    c->range= 0x1FE;
-    c->outstanding_count= 0;
-    c->pb.bit_left++; //avoids firstBitFlag
-}
-
-/**
- *
- * @param buf_size size of buf in bits
- */
 void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
     c->bytestream_start=
     c->bytestream= buf;
