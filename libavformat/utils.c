@@ -461,9 +461,6 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
         probe_size = FFMIN(probe_size<<1, FFMAX(max_probe_size, probe_size+1))) {
         void *buftmp;
 
-        if (probe_size < offset) {
-            continue;
-        }
         score = probe_size < max_probe_size ? AVPROBE_SCORE_RETRY : 0;
 
         /* read probe data */
@@ -483,6 +480,8 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
             ret = 0;            /* error was end of file, nothing read */
         }
         buf_offset += ret;
+        if (buf_offset < offset)
+            continue;
         pd.buf_size = buf_offset - offset;
         pd.buf = &buf[offset];
 
