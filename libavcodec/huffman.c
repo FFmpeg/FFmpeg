@@ -68,7 +68,7 @@ int ff_huff_gen_len_table(uint8_t *dst, const uint64_t *stats, int size)
     for (offset = 1; ; offset <<= 1) {
         for (i=0; i < size; i++) {
             h[i].name = i;
-            h[i].val = (stats[i] << 8) + offset;
+            h[i].val = (stats[i] << 14) + offset;
         }
         for (i = size / 2 - 1; i >= 0; i--)
             heap_sift(h, i, size);
