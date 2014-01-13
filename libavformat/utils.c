@@ -408,7 +408,7 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
     }
 
     /* rewind. reuse probe buffer to avoid seeking */
-    ret = ffio_rewind_with_probe_data(pb, &buf, pd.buf_size);
+    ret = ffio_rewind_with_probe_data(pb, &buf, buf_offset);
 
     return ret < 0 ? ret : score;
 }
