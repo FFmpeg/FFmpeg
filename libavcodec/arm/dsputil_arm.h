@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ARM_DSPUTIL_H
-#define AVCODEC_ARM_DSPUTIL_H
+#ifndef AVCODEC_ARM_DSPUTIL_ARM_H
+#define AVCODEC_ARM_DSPUTIL_ARM_H
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
@@ -29,4 +29,4 @@ void ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx);
 void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx);
 void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx);
 
-#endif /* AVCODEC_ARM_DSPUTIL_H */
+#endif /* AVCODEC_ARM_DSPUTIL_ARM_H */
