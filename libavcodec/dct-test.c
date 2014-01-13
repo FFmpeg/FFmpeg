@@ -130,7 +130,7 @@ static const struct algo idct_tab[] = {
 #if HAVE_ARMV6
     { "SIMPLE-ARMV6",   ff_simple_idct_armv6,  MMX_PERM,  AV_CPU_FLAG_ARMV6   },
 #endif
-#if HAVE_NEON
+#if HAVE_NEON && ARCH_ARM
     { "SIMPLE-NEON",    ff_simple_idct_neon, PARTTRANS_PERM, AV_CPU_FLAG_NEON },
 #endif
 
