@@ -188,7 +188,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 
-    s->bps = 8;
+    s->bps = desc->comp[0].depth_minus1 + 1;
     s->yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components >= 2;
     s->chroma = desc->nb_components > 2;
     s->alpha = !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
