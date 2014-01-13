@@ -52,13 +52,18 @@ static void heap_sift(HeapElem *h, int root, int size)
     }
 }
 
-void ff_huff_gen_len_table(uint8_t *dst, const uint64_t *stats)
+int ff_huff_gen_len_table(uint8_t *dst, const uint64_t *stats, int size)
 {
-    HeapElem h[256];
-    int up[2*256];
-    int len[2*256];
+    HeapElem *h  = av_malloc(sizeof(*h) * size);
+    int *up      = av_malloc(sizeof(*up) * 2 * size);
+    uint8_t *len = av_malloc(sizeof(*len) * 2 * size);
     int offset, i, next;
-    int size = 256;
+    int ret = 0;
+
+    if (!h || !up || !len) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     for (offset = 1; ; offset <<= 1) {
         for (i=0; i < size; i++) {
@@ -89,6 +94,11 @@ void ff_huff_gen_len_table(uint8_t *dst, const uint64_t *stats)
         }
         if (i==size) break;
     }
+end:
+    av_free(h);
+    av_free(up);
+    av_free(len);
+    return ret;
 }
 
 static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat,

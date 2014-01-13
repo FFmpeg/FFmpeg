@@ -363,6 +363,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     uint32_t offset = 0, slice_len = 0;
     int      i, sstart, send = 0;
     int      symbol;
+    int      ret;
 
     /* Do prediction / make planes */
     switch (c->frame_pred) {
@@ -429,7 +430,8 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     }
 
     /* Calculate huffman lengths */
-    ff_huff_gen_len_table(lengths, counts);
+    if ((ret = ff_huff_gen_len_table(lengths, counts, 256)) < 0)
+        return ret;
 
     /*
      * Write the plane's header into the output packet:
