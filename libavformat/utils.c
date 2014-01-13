@@ -387,7 +387,8 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
             score = 0;
             ret = 0;            /* error was end of file, nothing read */
         }
-        pd.buf_size = buf_offset += ret;
+        buf_offset += ret;
+        pd.buf_size = buf_offset - offset;
         pd.buf = &buf[offset];
 
         memset(pd.buf + pd.buf_size, 0, AVPROBE_PADDING_SIZE);
