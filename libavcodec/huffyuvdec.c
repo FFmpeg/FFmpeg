@@ -278,6 +278,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->version = 0;
 
     s->bps = 8;
+    s->n = 1<<s->bps;
     s->chroma = 1;
     if (s->version >= 2) {
         int method, interlace;
@@ -294,6 +295,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
                 s->bitstream_bpp = avctx->bits_per_coded_sample & ~7;
         } else {
             s->bps = (avctx->extradata[1] >> 4) + 1;
+            s->n = 1<<s->bps;
             s->chroma_h_shift = avctx->extradata[1] & 3;
             s->chroma_v_shift = (avctx->extradata[1] >> 2) & 3;
             s->yuv   = !!(((uint8_t*)avctx->extradata)[2] & 1);

@@ -68,6 +68,7 @@ typedef struct HYuvContext {
     int yuy2;                               //use yuy2 instead of 422P
     int bgr32;                              //use bgr32 instead of bgr24
     int bps;
+    int n;                                  // 1<<bps
     int alpha;
     int chroma;
     int yuv;
