@@ -31,16 +31,20 @@
  * Lossless decoder
  * Compressed alpha for lossy
  *
+ * @author James Almer <jamrial@gmail.com>
+ * EXIF metadata
+ *
  * Unimplemented:
  *   - Animation
  *   - ICC profile
- *   - Exif and XMP metadata
+ *   - XMP metadata
  */
 
 #define BITSTREAM_READER_LE
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "exif.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "thread.h"
@@ -191,6 +195,8 @@ typedef struct WebPContext {
     enum AlphaFilter alpha_filter;      /* filtering method for alpha chunk */
     uint8_t *alpha_data;                /* alpha chunk data */
     int alpha_data_size;                /* alpha chunk data size */
+    int has_exif;                       /* set after an EXIF chunk has been processed */
+    AVDictionary *exif_metadata;        /* EXIF chunk data */
     int width;                          /* image width */
     int height;                         /* image height */
     int lossless;                       /* indicates lossless or lossy */
@@ -1326,6 +1332,7 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     s->height    = 0;
     *got_frame   = 0;
     s->has_alpha = 0;
+    s->has_exif  = 0;
     bytestream2_init(&gb, avpkt->data, avpkt->size);
 
     if (bytestream2_get_bytes_left(&gb) < 12)
@@ -1345,6 +1352,7 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
+    av_dict_free(&s->exif_metadata);
     while (bytestream2_get_bytes_left(&gb) > 0) {
         char chunk_str[5] = { 0 };
 
@@ -1418,10 +1426,44 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
             break;
         }
+        case MKTAG('E', 'X', 'I', 'F'): {
+            int le, ifd_offset, exif_offset = bytestream2_tell(&gb);
+            GetByteContext exif_gb;
+
+            if (s->has_exif) {
+                av_log(avctx, AV_LOG_VERBOSE, "Ignoring extra EXIF chunk\n");
+                goto exif_end;
+            }
+            if (!(vp8x_flags & VP8X_FLAG_EXIF_METADATA))
+                av_log(avctx, AV_LOG_WARNING,
+                       "EXIF chunk present, but exif bit not set in the "
+                       "VP8X header\n");
+
+            s->has_exif = 1;
+            bytestream2_init(&exif_gb, avpkt->data + exif_offset,
+                             avpkt->size - exif_offset);
+            if (ff_tdecode_header(&exif_gb, &le, &ifd_offset) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "webp: invalid TIFF header "
+                       "in EXIF data\n");
+                goto exif_end;
+            }
+
+            bytestream2_seek(&exif_gb, ifd_offset, SEEK_SET);
+            if (ff_exif_decode_ifd(avctx, &exif_gb, le, 0, &s->exif_metadata) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "webp: error decoding EXIF data\n");
+                goto exif_end;
+            }
+
+            av_dict_copy(avpriv_frame_get_metadatap(data), s->exif_metadata, 0);
+
+exif_end:
+            av_dict_free(&s->exif_metadata);
+            bytestream2_skip(&gb, chunk_size);
+            break;
+        }
         case MKTAG('I', 'C', 'C', 'P'):
         case MKTAG('A', 'N', 'I', 'M'):
         case MKTAG('A', 'N', 'M', 'F'):
-        case MKTAG('E', 'X', 'I', 'F'):
         case MKTAG('X', 'M', 'P', ' '):
             AV_WL32(chunk_str, chunk_type);
             av_log(avctx, AV_LOG_VERBOSE, "skipping unsupported chunk: %s\n",
