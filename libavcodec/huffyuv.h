@@ -38,6 +38,9 @@
 
 #define VLC_BITS 11
 
+#define MAX_BITS 14
+#define MAX_N (1<<MAX_BITS)
+
 #if HAVE_BIGENDIAN
 #define B 3
 #define G 2
@@ -80,9 +83,10 @@ typedef struct HYuvContext {
     int picture_number;
     int last_slice_end;
     uint8_t *temp[3];
-    uint64_t stats[4][256];
-    uint8_t len[4][256];
-    uint32_t bits[4][256];
+    uint16_t *temp16[3];                    ///< identical to temp but 16bit type
+    uint64_t stats[4][MAX_N];
+    uint8_t len[4][MAX_N];
+    uint32_t bits[4][MAX_N];
     uint32_t pix_bgr_map[1<<VLC_BITS];
     VLC vlc[8];                             //Y,U,V,A,YY,YU,YV,AA
     uint8_t *bitstream_buffer;
@@ -93,6 +97,6 @@ typedef struct HYuvContext {
 void ff_huffyuv_common_init(AVCodecContext *s);
 void ff_huffyuv_common_end(HYuvContext *s);
 int  ff_huffyuv_alloc_temp(HYuvContext *s);
-int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table);
+int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int n);
 
 #endif /* AVCODEC_HUFFYUV_H */

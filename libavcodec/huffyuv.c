@@ -35,13 +35,13 @@
 #include "avcodec.h"
 #include "huffyuv.h"
 
-int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table)
+int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int n)
 {
     int len, index;
     uint32_t bits = 0;
 
     for (len = 32; len > 0; len--) {
-        for (index = 0; index < 256; index++) {
+        for (index = 0; index < n; index++) {
             if (len_table[index] == len)
                 dst[index] = bits++;
         }
@@ -60,9 +60,10 @@ av_cold int ff_huffyuv_alloc_temp(HYuvContext *s)
 
     if (s->bitstream_bpp<24) {
         for (i=0; i<3; i++) {
-            s->temp[i]= av_malloc(s->width + 16);
+            s->temp[i]= av_malloc(2*s->width + 16);
             if (!s->temp[i])
                 return AVERROR(ENOMEM);
+            s->temp16[i] = (uint16_t*)s->temp[i];
         }
     } else {
         s->temp[0]= av_mallocz(4*s->width + 16);
@@ -93,5 +94,6 @@ av_cold void ff_huffyuv_common_end(HYuvContext *s)
 
     for(i = 0; i < 3; i++) {
         av_freep(&s->temp[i]);
+        s->temp16[i] = NULL;
     }
 }
