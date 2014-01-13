@@ -602,6 +602,11 @@ static int hls_slice_header(HEVCContext *s)
             sh->entry_point_offset = av_malloc(sh->num_entry_point_offsets * sizeof(int));
             sh->offset = av_malloc(sh->num_entry_point_offsets * sizeof(int));
             sh->size = av_malloc(sh->num_entry_point_offsets * sizeof(int));
+            if (!sh->entry_point_offset || !sh->offset || !sh->size) {
+                sh->num_entry_point_offsets = 0;
+                av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate memory\n");
+                return AVERROR(ENOMEM);
+            }
             for (i = 0; i < sh->num_entry_point_offsets; i++) {
                 int val = 0;
                 for (j = 0; j < segments; j++) {
