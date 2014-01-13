@@ -389,7 +389,7 @@ static inline int decode_ac_coeffs(GetBitContext *gb, DCTELEM *out,
 
         bits_left = get_bits_left(gb);
         if (bits_left <= 0 || (bits_left <= 8 && !show_bits(gb, bits_left)))
-            return AVERROR_INVALIDDATA;
+            return 0;
 
         run = decode_vlc_codeword(gb, ff_prores_ac_codebook[run_cb_index]);
         if (run < 0)
