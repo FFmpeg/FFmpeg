@@ -394,7 +394,9 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (data_type == 3 || (data_type == 0 && (langcode < 0x400 || langcode == 0x7fff))) { // MAC Encoded
             mov_read_mac_string(c, pb, str_size, str, sizeof(str));
         } else {
-            avio_read(pb, str, str_size);
+            int ret = avio_read(pb, str, str_size);
+            if (ret != str_size)
+                return ret < 0 ? ret : AVERROR_INVALIDDATA;
             str[str_size] = 0;
         }
         av_dict_set(&c->fc->metadata, key, str, 0);
