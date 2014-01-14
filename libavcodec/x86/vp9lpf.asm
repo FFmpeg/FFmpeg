@@ -655,12 +655,17 @@ SECTION .text
 %endif
 %endmacro
 
-INIT_XMM ssse3
+%macro LPF_16_16_VH 1
+INIT_XMM %1
 cglobal vp9_loop_filter_v_16_16, 5,8,16,      dst, stride, E, I, H, mstride, dst1, dst2
     LPF_16_16 v
     RET
 cglobal vp9_loop_filter_h_16_16, 5,8,16, 256, dst, stride, E, I, H, mstride, dst1, dst2
     LPF_16_16 h
     RET
+%endmacro
+
+LPF_16_16_VH ssse3
+LPF_16_16_VH avx
 
 %endif ; x86-64

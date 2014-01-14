@@ -289,7 +289,8 @@ cglobal vp9_idct_idct_4x4_add, 4,4,0, dst, stride, block, eob
     VP9_STORE_2X        10, 11,  6,  7,  4
 %endmacro
 
-INIT_XMM ssse3
+%macro VP9_IDCT_IDCT_8x8_ADD_XMM 1
+INIT_XMM %1
 cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
 
     mova               m12, [pw_11585x2]    ; often used
@@ -376,6 +377,10 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     mova      [blockq+112], m4
     VP9_IDCT8_WRITEOUT
     RET
+%endmacro
+
+VP9_IDCT_IDCT_8x8_ADD_XMM ssse3
+VP9_IDCT_IDCT_8x8_ADD_XMM avx
 
 ;---------------------------------------------------------------------------------------------
 ; void vp9_idct_idct_16x16_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
@@ -655,7 +660,8 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     mova         [dstq+%7], m%4
 %endmacro
 
-INIT_XMM ssse3
+%macro VP9_IDCT_IDCT_16x16_ADD_XMM 1
+INIT_XMM %1
 cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     ; 2x2=eob=3, 4x4=eob=10
     cmp eobd, 38
@@ -724,6 +730,10 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
     ; use that to zero out block coefficients
     ZERO_BLOCK      blockq, 32, 16, m0
     RET
+%endmacro
+
+VP9_IDCT_IDCT_16x16_ADD_XMM ssse3
+VP9_IDCT_IDCT_16x16_ADD_XMM avx
 
 ;---------------------------------------------------------------------------------------------
 ; void vp9_idct_idct_32x32_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
@@ -1102,7 +1112,8 @@ cglobal vp9_idct_idct_16x16_add, 4, 5, 16, 512, dst, stride, block, eob
 %endif
 %endmacro
 
-INIT_XMM ssse3
+%macro VP9_IDCT_IDCT_32x32_ADD_XMM 1
+INIT_XMM %1
 cglobal vp9_idct_idct_32x32_add, 4, 8, 16, 2048, dst, stride, block, eob
     cmp eobd, 135
     jg .idctfull
@@ -1213,5 +1224,9 @@ cglobal vp9_idct_idct_32x32_add, 4, 8, 16, 2048, dst, stride, block, eob
     ; use that to zero out block coefficients
     ZERO_BLOCK      blockq, 64, 32, m7
     RET
+%endmacro
+
+VP9_IDCT_IDCT_32x32_ADD_XMM ssse3
+VP9_IDCT_IDCT_32x32_ADD_XMM avx
 
 %endif ; x86-64
