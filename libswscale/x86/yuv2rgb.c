@@ -34,6 +34,7 @@
 #include "libswscale/swscale_internal.h"
 #include "libavutil/attributes.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
 
 #if HAVE_INLINE_ASM
@@ -74,7 +75,7 @@ av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
     int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_MMXEXT_INLINE
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
+    if (INLINE_MMXEXT(cpu_flags)) {
         switch (c->dstFormat) {
         case AV_PIX_FMT_RGB24:
             return yuv420_rgb24_mmxext;
@@ -84,7 +85,7 @@ av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
     }
 #endif
 
-    if (cpu_flags & AV_CPU_FLAG_MMX) {
+    if (INLINE_MMX(cpu_flags)) {
         switch (c->dstFormat) {
             case AV_PIX_FMT_RGB32:
                 if (c->srcFormat == AV_PIX_FMT_YUVA420P) {

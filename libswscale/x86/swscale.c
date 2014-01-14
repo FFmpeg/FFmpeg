@@ -382,11 +382,11 @@ av_cold void ff_sws_init_swscale_x86(SwsContext *c)
     int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_MMX_INLINE
-    if (cpu_flags & AV_CPU_FLAG_MMX)
+    if (INLINE_MMX(cpu_flags))
         sws_init_swscale_mmx(c);
 #endif
 #if HAVE_MMXEXT_INLINE
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
+    if (INLINE_MMXEXT(cpu_flags))
         sws_init_swscale_mmxext(c);
     if (cpu_flags & AV_CPU_FLAG_SSE3){
         if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND))
