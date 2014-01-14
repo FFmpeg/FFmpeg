@@ -134,6 +134,9 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 fail:
     if (filename != s->filename)
         av_freep(&filename);
+    if (rc)
+        RTMP_Close(r);
+
     return rc;
 }
 
