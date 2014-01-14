@@ -24,6 +24,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/simple_idct.h"
+#include "libavcodec/version.h"
 #include "dsputil_x86.h"
 #include "idct_xvid.h"
 
@@ -592,21 +593,20 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
 #if HAVE_SSE_INLINE
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-    if (!high_bit_depth) {
+    c->vector_clipf = ff_vector_clipf_sse;
+
 #if FF_API_XVMC
 FF_DISABLE_DEPRECATION_WARNINGS
-        if (!(CONFIG_MPEG_XVMC_DECODER && avctx->xvmc_acceleration > 1)) {
-            /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
+    /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
+    if (CONFIG_MPEG_XVMC_DECODER && avctx->xvmc_acceleration > 1)
+        return;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_XVMC */
+
+    if (!high_bit_depth) {
         c->clear_block  = ff_clear_block_sse;
         c->clear_blocks = ff_clear_blocks_sse;
-#if FF_API_XVMC
-        }
-#endif /* FF_API_XVMC */
     }
-
-    c->vector_clipf = ff_vector_clipf_sse;
 #endif /* HAVE_SSE_INLINE */
 }
 
