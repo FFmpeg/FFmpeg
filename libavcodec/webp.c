@@ -32,7 +32,7 @@
  * Compressed alpha for lossy
  *
  * @author James Almer <jamrial@gmail.com>
- * EXIF metadata
+ * Exif metadata
  *
  * Unimplemented:
  *   - Animation
@@ -1436,21 +1436,21 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
             if (!(vp8x_flags & VP8X_FLAG_EXIF_METADATA))
                 av_log(avctx, AV_LOG_WARNING,
-                       "EXIF chunk present, but exif bit not set in the "
+                       "EXIF chunk present, but Exif bit not set in the "
                        "VP8X header\n");
 
             s->has_exif = 1;
             bytestream2_init(&exif_gb, avpkt->data + exif_offset,
                              avpkt->size - exif_offset);
             if (ff_tdecode_header(&exif_gb, &le, &ifd_offset) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "webp: invalid TIFF header "
-                       "in EXIF data\n");
+                av_log(avctx, AV_LOG_ERROR, "invalid TIFF header "
+                       "in Exif data\n");
                 goto exif_end;
             }
 
             bytestream2_seek(&exif_gb, ifd_offset, SEEK_SET);
             if (ff_exif_decode_ifd(avctx, &exif_gb, le, 0, &s->exif_metadata) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "webp: error decoding EXIF data\n");
+                av_log(avctx, AV_LOG_ERROR, "error decoding Exif data\n");
                 goto exif_end;
             }
 
