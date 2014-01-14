@@ -18,12 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ARM_HPELDSP_H
-#define AVCODEC_ARM_HPELDSP_H
+#ifndef AVCODEC_ARM_HPELDSP_ARM_H
+#define AVCODEC_ARM_HPELDSP_ARM_H
 
 #include "libavcodec/hpeldsp.h"
 
 void ff_hpeldsp_init_armv6(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_neon(HpelDSPContext *c, int flags);
 
-#endif /* AVCODEC_ARM_HPELDSP_H */
+#endif /* AVCODEC_ARM_HPELDSP_ARM_H */
