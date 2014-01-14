@@ -1962,6 +1962,10 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
 
         avctx->bit_rate += m->bit_rate;
     }
+    if (ch != avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "failed to decode all channels\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     /* update codec info */
     avctx->sample_rate = s->mp3decctx[0]->sample_rate;
