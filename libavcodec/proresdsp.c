@@ -31,7 +31,7 @@
 #define CLIP_MIN (1 << (PRORES_BITS_PER_SAMPLE - 8))           ///< minimum value for clipping resulting pixels
 #define CLIP_MAX (1 << PRORES_BITS_PER_SAMPLE) - CLIP_MIN - 1  ///< maximum value for clipping resulting pixels
 
-#define CLIP_AND_BIAS(x) (av_clip((x), CLIP_MIN, CLIP_MAX))
+#define CLIP(x) (av_clip((x), CLIP_MIN, CLIP_MAX))
 
 #if CONFIG_PRORES_DECODER | CONFIG_PRORES_LGPL_DECODER
 /**
@@ -45,7 +45,7 @@ static void put_pixels(uint16_t *dst, int stride, const int16_t *in)
         for (x = 0; x < 8; x++) {
             src_offset = (y << 3) + x;
 
-            dst[dst_offset + x] = CLIP_AND_BIAS(in[src_offset]);
+            dst[dst_offset + x] = CLIP(in[src_offset]);
         }
     }
 }
