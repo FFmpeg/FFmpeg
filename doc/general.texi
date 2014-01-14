@@ -112,7 +112,39 @@ Go to @url{https://github.com/dekkers/libilbc} and follow the instructions for
 installing the library. Then pass @code{--enable-libilbc} to configure to
 enable it.
 
+@section AviSynth
 
+Libav can read AviSynth scripts as input. To enable support you need a
+suitable @file{avisynth_c.h} header to compile against. The header in
+classic AviSynth's CVS repository is not compatible as it has not been
+updated to support AviSynth 2.6. AviSynth 2.5 is not supported by Libav.
+Once you have the appropriate header, pass @code{--enable-avisynth} to
+configure to enable AviSynth support.
+
+For Windows, supported AviSynth variants are
+@url{http://avisynth.nl, AviSynth 2.6} for 32-bit builds and
+@url{http://avs-plus.net, AviSynth+ 0.1} for 32-bit and 64-bit builds.
+The necessary @file{avisynth_c.h} header is the variant in the @file{extras/}
+directory of the @url{https://www.videolan.org/developers/x264.html, x264}
+source tree. For convenience, this header is also available from a
+@url{https://github.com/qyot27/avisynth_headers, temporary repository}
+along with an installation routine.
+
+For Linux and OS X, the supported AviSynth variant is
+@url{https://github.com/avxsynth/avxsynth, AvxSynth}.
+@file{avxsynth_c.h} is installed as part of the normal
+build routine, as illustrated on
+@url{https://github.com/avxsynth/avxsynth/wiki/System-Setup, AvxSynth's wiki}.
+(the instructions for compiling its prerequisites are outdated, as FFMS 2.18
+or higher is now needed; the list of dependencies to be downloaded from the
+repositories is still the same, though).
+
+@float NOTE
+AviSynth and AvxSynth are loaded dynamically.  Distributors can build Libav
+with @code{--enable-avisynth}, and the binaries will work regardless of the
+end user having AviSynth or AvxSynth installed - they'll only need to be
+installed to use AviSynth scripts (obviously).
+@end float
 
 @chapter Supported File Formats and Codecs
 
