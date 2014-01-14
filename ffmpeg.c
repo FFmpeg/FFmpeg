@@ -1093,6 +1093,10 @@ static int reap_filters(void)
                 }
                 break;
             }
+            if (ost->finished) {
+                av_frame_unref(filtered_frame);
+                continue;
+            }
             frame_pts = AV_NOPTS_VALUE;
             if (filtered_frame->pts != AV_NOPTS_VALUE) {
                 int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
