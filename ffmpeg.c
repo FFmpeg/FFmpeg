@@ -313,6 +313,7 @@ void term_exit(void)
 
 static volatile int received_sigterm = 0;
 static volatile int received_nb_signals = 0;
+static int main_return_code = 0;
 
 static void
 sigterm_handler(int sig)
@@ -547,6 +548,15 @@ static void update_benchmark(const char *fmt, ...)
     }
 }
 
+static void close_all_output_streams(OutputStream *ost, int this_stream, int others)
+{
+    int i;
+    for (i = 0; i < nb_output_streams; i++) {
+        OutputStream *ost2 = output_streams[i];
+        ost2->finished |= ost == ost2 ? this_stream : others;
+    }
+}
+
 static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
 {
     AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
@@ -647,7 +657,8 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
         print_error("av_interleaved_write_frame()", ret);
-        exit_program(1);
+        main_return_code = 1;
+        close_all_output_streams(ost, 3, 1);
     }
 }
 
@@ -655,7 +666,7 @@ static void close_output_stream(OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
 
-    ost->finished = 1;
+    ost->finished |= 1;
     if (of->shortest) {
         int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, AV_TIME_BASE_Q);
         of->recording_time = FFMIN(of->recording_time, end);
@@ -3568,6 +3579,6 @@ int main(int argc, char **argv)
     if ((decode_error_stat[0] + decode_error_stat[1]) * max_error_rate < decode_error_stat[1])
         exit_program(69);
 
-    exit_program(received_nb_signals ? 255 : 0);
-    return 0;
+    exit_program(received_nb_signals ? 255 : main_return_code);
+    return main_return_code;
 }
