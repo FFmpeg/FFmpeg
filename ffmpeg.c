@@ -1407,6 +1407,9 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
     if (ost->source_index != ist_index)
         return 0;
 
+    if (ost->finished)
+        return 0;
+
     if (of->start_time != AV_NOPTS_VALUE && ist->pts < of->start_time)
         return 0;
 
