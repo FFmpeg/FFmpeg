@@ -1953,8 +1953,13 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
         if (m->nb_channels > 1)
             outptr[1] = out_samples[s->coff[fr] + 1];
 
-        if ((ret = mp_decode_frame(m, outptr, buf, fsize)) < 0)
-            return ret;
+        if ((ret = mp_decode_frame(m, outptr, buf, fsize)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "failed to decode channel %d\n", ch);
+            memset(outptr[0], 0, MPA_FRAME_SIZE*sizeof(OUT_INT));
+            if (m->nb_channels > 1)
+                memset(outptr[1], 0, MPA_FRAME_SIZE*sizeof(OUT_INT));
+            ret = m->nb_channels * MPA_FRAME_SIZE*sizeof(OUT_INT);
+        }
 
         out_size += ret;
         buf      += fsize;
