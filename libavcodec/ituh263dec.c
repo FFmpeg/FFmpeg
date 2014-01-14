@@ -538,7 +538,7 @@ retry:
                 rl = &ff_rl_intra_aic;
                 i = 0;
                 s->gb= gb;
-                s->dsp.clear_block(block);
+                s->bdsp.clear_block(block);
                 goto retry;
             }
             av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d i:%d\n", s->mb_x, s->mb_y, s->mb_intra);
@@ -628,7 +628,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
             }
         }while(cbpc == 20);
 
-        s->dsp.clear_blocks(s->block[0]);
+        s->bdsp.clear_blocks(s->block[0]);
 
         dquant = cbpc & 8;
         s->mb_intra = ((cbpc & 4) != 0);
@@ -723,7 +723,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
 
         s->mb_intra = IS_INTRA(mb_type);
         if(HAS_CBP(mb_type)){
-            s->dsp.clear_blocks(s->block[0]);
+            s->bdsp.clear_blocks(s->block[0]);
             cbpc = get_vlc2(&s->gb, cbpc_b_vlc.table, CBPC_B_VLC_BITS, 1);
             if(s->mb_intra){
                 dquant = IS_QUANT(mb_type);
@@ -797,7 +797,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
             }
         }while(cbpc == 8);
 
-        s->dsp.clear_blocks(s->block[0]);
+        s->bdsp.clear_blocks(s->block[0]);
 
         dquant = cbpc & 4;
         s->mb_intra = 1;

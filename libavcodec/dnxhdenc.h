@@ -41,6 +41,7 @@ typedef struct RCEntry {
 
 typedef struct DNXHDEncContext {
     AVClass *class;
+    BlockDSPContext bdsp;
     MpegEncContext m; ///< Used for quantization dsp functions
 
     int cid;

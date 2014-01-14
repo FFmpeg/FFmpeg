@@ -558,19 +558,6 @@ static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
     }
 }
 
-static void clear_block_altivec(int16_t *block)
-{
-    LOAD_ZERO;
-    vec_st(zero_s16v,   0, block);
-    vec_st(zero_s16v,  16, block);
-    vec_st(zero_s16v,  32, block);
-    vec_st(zero_s16v,  48, block);
-    vec_st(zero_s16v,  64, block);
-    vec_st(zero_s16v,  80, block);
-    vec_st(zero_s16v,  96, block);
-    vec_st(zero_s16v, 112, block);
-}
-
 static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
                                      uint8_t *src, int stride, int h)
 {
@@ -931,7 +918,6 @@ av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx,
 
     if (!high_bit_depth) {
         c->get_pixels = get_pixels_altivec;
-        c->clear_block = clear_block_altivec;
     }
 
     c->hadamard8_diff[0] = hadamard8_diff16_altivec;

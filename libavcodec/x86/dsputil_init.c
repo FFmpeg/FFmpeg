@@ -19,12 +19,10 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavutil/internal.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/simple_idct.h"
-#include "libavcodec/version.h"
 #include "dsputil_x86.h"
 #include "idct_xvid.h"
 
@@ -54,8 +52,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
     c->add_pixels_clamped        = ff_add_pixels_clamped_mmx;
 
     if (!high_bit_depth) {
-        c->clear_block  = ff_clear_block_mmx;
-        c->clear_blocks = ff_clear_blocks_mmx;
         c->draw_edges   = ff_draw_edges_mmx;
 
         switch (avctx->idct_algo) {
@@ -103,19 +99,6 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
 {
 #if HAVE_SSE_INLINE
     c->vector_clipf = ff_vector_clipf_sse;
-
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-    /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
-    if (CONFIG_MPEG_XVMC_DECODER && avctx->xvmc_acceleration > 1)
-        return;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
-
-    if (!high_bit_depth) {
-        c->clear_block  = ff_clear_block_sse;
-        c->clear_blocks = ff_clear_blocks_sse;
-    }
 #endif /* HAVE_SSE_INLINE */
 }
 

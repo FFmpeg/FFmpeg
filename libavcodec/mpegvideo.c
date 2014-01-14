@@ -33,6 +33,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/timer.h"
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "dsputil.h"
 #include "internal.h"
 #include "mathops.h"
@@ -363,7 +364,7 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     ff_init_block_index(s);
     ff_update_block_index(s);
 
-    s->dsp.clear_blocks(s->block[0]);
+    s->bdsp.clear_blocks(s->block[0]);
 
     s->dest[0] = s->current_picture.f->data[0] + (s->mb_y *  16                       * s->linesize)   + s->mb_x *  16;
     s->dest[1] = s->current_picture.f->data[1] + (s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16 >> s->chroma_x_shift);
@@ -376,6 +377,7 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
 /* init common dct for both encoder and decoder */
 av_cold int ff_dct_common_init(MpegEncContext *s)
 {
+    ff_blockdsp_init(&s->bdsp, s->avctx);
     ff_dsputil_init(&s->dsp, s->avctx);
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);

@@ -38,26 +38,6 @@ void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r,
               int width, int height);
 
-/* minimum alignment rules ;)
- * If you notice errors in the align stuff, need more alignment for some ASM code
- * for some CPU or need to use a function with less aligned data then send a mail
- * to the libav-devel mailing list, ...
- *
- * !warning These alignments might not match reality, (missing attribute((align))
- * stuff somewhere possible).
- * I (Michael) did not check them, these are just the alignments which I think
- * could be reached easily ...
- *
- * !future video codecs might need functions with less strict alignment
- */
-
-/* add and put pixel (decoding)
- * Block sizes for op_pixels_func are 8x4,8x8 16x8 16x16.
- * h for op_pixels_func is limited to { width / 2, width },
- * but never larger than 16 and never smaller than 4. */
-typedef void (*op_fill_func)(uint8_t *block /* align width (8 or 16) */,
-                             uint8_t value, int line_size, int h);
-
 struct MpegEncContext;
 /* Motion estimation:
  * h is limited to { width / 2, width, 2 * width },
@@ -116,8 +96,7 @@ typedef struct DSPContext {
                 int stride, int h, int ox, int oy,
                 int dxx, int dxy, int dyx, int dyy,
                 int shift, int r, int width, int height);
-    void (*clear_block)(int16_t *block /* align 16 */);
-    void (*clear_blocks)(int16_t *blocks /* align 16 */);
+
     int (*pix_sum)(uint8_t *pix, int line_size);
     int (*pix_norm1)(uint8_t *pix, int line_size);
 
@@ -234,8 +213,6 @@ typedef struct DSPContext {
      */
     void (*vector_clip_int32)(int32_t *dst, const int32_t *src, int32_t min,
                               int32_t max, unsigned int len);
-
-    op_fill_func fill_block_tab[2];
 } DSPContext;
 
 void ff_dsputil_static_init(void);

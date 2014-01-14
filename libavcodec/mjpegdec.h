@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "hpeldsp.h"
@@ -95,6 +96,7 @@ typedef struct MJpegDecodeContext {
     uint8_t *last_nnz[MAX_COMPONENTS];
     uint64_t coefs_finished[MAX_COMPONENTS]; ///< bitmask of which coefs have been completely decoded (progressive mode)
     ScanTable scantable;
+    BlockDSPContext bdsp;
     DSPContext dsp;
     HpelDSPContext hdsp;
 

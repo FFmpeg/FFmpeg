@@ -44,6 +44,7 @@ OBJS-$(CONFIG_VP7_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_VP8_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 
+MMX-OBJS-$(CONFIG_BLOCKDSP)            += x86/blockdsp_mmx.o
 MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \

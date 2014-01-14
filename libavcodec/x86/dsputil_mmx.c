@@ -166,62 +166,6 @@ void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
     } while (--i);
 }
 
-#define CLEAR_BLOCKS(name, n)                           \
-void name(int16_t *blocks)                              \
-{                                                       \
-    __asm__ volatile (                                  \
-        "pxor %%mm7, %%mm7              \n\t"           \
-        "mov     %1,        %%"REG_a"   \n\t"           \
-        "1:                             \n\t"           \
-        "movq %%mm7,   (%0, %%"REG_a")  \n\t"           \
-        "movq %%mm7,  8(%0, %%"REG_a")  \n\t"           \
-        "movq %%mm7, 16(%0, %%"REG_a")  \n\t"           \
-        "movq %%mm7, 24(%0, %%"REG_a")  \n\t"           \
-        "add    $32, %%"REG_a"          \n\t"           \
-        "js      1b                     \n\t"           \
-        :: "r"(((uint8_t *) blocks) + 128 * n),         \
-           "i"(-128 * n)                                \
-        : "%"REG_a);                                    \
-}
-CLEAR_BLOCKS(ff_clear_blocks_mmx, 6)
-CLEAR_BLOCKS(ff_clear_block_mmx, 1)
-
-void ff_clear_block_sse(int16_t *block)
-{
-    __asm__ volatile (
-        "xorps  %%xmm0, %%xmm0          \n"
-        "movaps %%xmm0,    (%0)         \n"
-        "movaps %%xmm0,  16(%0)         \n"
-        "movaps %%xmm0,  32(%0)         \n"
-        "movaps %%xmm0,  48(%0)         \n"
-        "movaps %%xmm0,  64(%0)         \n"
-        "movaps %%xmm0,  80(%0)         \n"
-        "movaps %%xmm0,  96(%0)         \n"
-        "movaps %%xmm0, 112(%0)         \n"
-        :: "r" (block)
-        : "memory");
-}
-
-void ff_clear_blocks_sse(int16_t *blocks)
-{
-    __asm__ volatile (
-        "xorps  %%xmm0, %%xmm0              \n"
-        "mov        %1,         %%"REG_a"   \n"
-        "1:                                 \n"
-        "movaps %%xmm0,    (%0, %%"REG_a")  \n"
-        "movaps %%xmm0,  16(%0, %%"REG_a")  \n"
-        "movaps %%xmm0,  32(%0, %%"REG_a")  \n"
-        "movaps %%xmm0,  48(%0, %%"REG_a")  \n"
-        "movaps %%xmm0,  64(%0, %%"REG_a")  \n"
-        "movaps %%xmm0,  80(%0, %%"REG_a")  \n"
-        "movaps %%xmm0,  96(%0, %%"REG_a")  \n"
-        "movaps %%xmm0, 112(%0, %%"REG_a")  \n"
-        "add      $128,         %%"REG_a"   \n"
-        "js         1b                      \n"
-        :: "r"(((uint8_t *) blocks) + 128 * 6), "i"(-128 * 6)
-        : "%"REG_a);
-}
-
 /* Draw the edges of width 'w' of an image of size width, height
  * this MMX version can only handle w == 8 || w == 16. */
 void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,

@@ -28,6 +28,7 @@
 av_cold void ff_wmv2_common_init(Wmv2Context * w){
     MpegEncContext * const s= &w->s;
 
+    ff_blockdsp_init(&s->bdsp, s->avctx);
     ff_wmv2dsp_init(&w->wdsp);
     s->dsp.idct_permutation_type = w->wdsp.idct_perm;
     ff_init_scantable_permutation(s->dsp.idct_permutation,
@@ -60,12 +61,12 @@ static void wmv2_add_block(Wmv2Context *w, int16_t *block1, uint8_t *dst, int st
     case 1:
         ff_simple_idct84_add(dst           , stride, block1);
         ff_simple_idct84_add(dst + 4*stride, stride, w->abt_block2[n]);
-        s->dsp.clear_block(w->abt_block2[n]);
+        s->bdsp.clear_block(w->abt_block2[n]);
         break;
     case 2:
         ff_simple_idct48_add(dst           , stride, block1);
         ff_simple_idct48_add(dst + 4       , stride, w->abt_block2[n]);
-        s->dsp.clear_block(w->abt_block2[n]);
+        s->bdsp.clear_block(w->abt_block2[n]);
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "internal error in WMV2 abt\n");

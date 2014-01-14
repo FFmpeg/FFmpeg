@@ -29,6 +29,7 @@
 #include "libavutil/timer.h"
 
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "dsputil.h"
 #include "internal.h"
 #include "mpegvideo.h"
@@ -305,6 +306,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     avctx->bits_per_raw_sample = ctx->cid_table->bit_depth;
 
+    ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_dsputil_init(&ctx->m.dsp, avctx);
     ff_dct_common_init(&ctx->m);
     if (!ctx->m.dct_quantize)
@@ -556,10 +558,10 @@ void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, int mb_y)
                                     ptr_v + ctx->dct_uv_offset,
                                     ctx->m.uvlinesize);
         } else {
-            dsp->clear_block(ctx->blocks[4]);
-            dsp->clear_block(ctx->blocks[5]);
-            dsp->clear_block(ctx->blocks[6]);
-            dsp->clear_block(ctx->blocks[7]);
+            ctx->bdsp.clear_block(ctx->blocks[4]);
+            ctx->bdsp.clear_block(ctx->blocks[5]);
+            ctx->bdsp.clear_block(ctx->blocks[6]);
+            ctx->bdsp.clear_block(ctx->blocks[7]);
         }
     } else {
         dsp->get_pixels(ctx->blocks[4],
