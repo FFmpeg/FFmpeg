@@ -1823,10 +1823,10 @@ for ext in $(filter_out mmx $ARCH_EXT_LIST_X86); do
     eval ${ext}_suggest='"${ext}_external ${ext}_inline"'
 done
 
-aligned_stack_if_any="ppc x86"
-fast_64bit_if_any="alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
-fast_clz_if_any="alpha avr32 mips ppc x86"
-fast_unaligned_if_any="ppc x86"
+aligned_stack_if_any="aarch64 ppc x86"
+fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
+fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
+fast_unaligned_if_any="aarch64 ppc x86"
 
 need_memalign="altivec neon sse"
 
