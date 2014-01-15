@@ -126,8 +126,13 @@ int avresample_build_matrix(uint64_t in_layout, uint64_t out_layout,
     /* mix front center to front left/right */
     if (unaccounted & AV_CH_FRONT_CENTER) {
         if ((out_layout & AV_CH_LAYOUT_STEREO) == AV_CH_LAYOUT_STEREO) {
-            matrix[FRONT_LEFT ][FRONT_CENTER] += M_SQRT1_2;
-            matrix[FRONT_RIGHT][FRONT_CENTER] += M_SQRT1_2;
+            if ((in_layout & AV_CH_LAYOUT_STEREO) == AV_CH_LAYOUT_STEREO) {
+                matrix[FRONT_LEFT ][FRONT_CENTER] += center_mix_level;
+                matrix[FRONT_RIGHT][FRONT_CENTER] += center_mix_level;
+            } else {
+                matrix[FRONT_LEFT ][FRONT_CENTER] += M_SQRT1_2;
+                matrix[FRONT_RIGHT][FRONT_CENTER] += M_SQRT1_2;
+            }
         } else
             return AVERROR_PATCHWELCOME;
     }
