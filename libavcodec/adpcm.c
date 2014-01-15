@@ -1310,7 +1310,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                                                        byte & 0x0F, 4, 0);
             }
         } else if (avctx->codec->id == AV_CODEC_ID_ADPCM_SBPRO_3) {
-            for (n = nb_samples / 3; n > 0; n--) {
+            for (n = (nb_samples<<st) / 3; n > 0; n--) {
                 int byte = bytestream2_get_byteu(&gb);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
                                                         byte >> 5        , 3, 0);
