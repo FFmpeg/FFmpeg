@@ -118,6 +118,8 @@ typedef struct H264DSPContext {
 
 void ff_h264dsp_init(H264DSPContext *c, const int bit_depth,
                      const int chroma_format_idc);
+void ff_h264dsp_init_aarch64(H264DSPContext *c, const int bit_depth,
+                             const int chroma_format_idc);
 void ff_h264dsp_init_arm(H264DSPContext *c, const int bit_depth,
                          const int chroma_format_idc);
 void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
