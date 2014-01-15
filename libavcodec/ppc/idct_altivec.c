@@ -18,24 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/*
- * NOTE: This code is based on GPL code from the libmpeg2 project.  The
+/* NOTE: This code is based on GPL code from the libmpeg2 project.  The
  * author, Michel Lespinasses, has given explicit permission to release
  * under LGPL as part of Libav.
- */
-
-/*
+ *
  * Libav integration by Dieter Shirley
  *
  * This file is a direct copy of the AltiVec IDCT module from the libmpeg2
  * project.  I've deleted all of the libmpeg2-specific code, renamed the
  * functions and reordered the function parameters.  The only change to the
  * IDCT function itself was to factor out the partial transposition, and to
- * perform a full transpose at the end of the function.
- */
+ * perform a full transpose at the end of the function. */
 
-
-#include <stdlib.h>                                      /* malloc(), free() */
+#include <stdlib.h>
 #include <string.h>
 #include "config.h"
 #if HAVE_ALTIVEC_H

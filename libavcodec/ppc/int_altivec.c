@@ -19,9 +19,9 @@
  */
 
 /**
- ** @file
- ** integer misc ops.
- **/
+ * @file
+ * miscellaneous integer operations
+ */
 
 #include "config.h"
 #if HAVE_ALTIVEC_H
@@ -43,8 +43,8 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
             int32_t score[4];
           } u;
     u.vscore = vec_splat_s32(0);
-//
-//XXX lazy way, fix it later
+
+// XXX lazy way, fix it later
 
 #define vec_unaligned_load(b) \
     vec_perm(vec_ld(0,b),vec_ld(15,b),vec_lvsl(0, b));
@@ -52,12 +52,12 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
     size16 = size >> 4;
     while(size16) {
 //        score += (pix1[i]-pix2[i])*(pix1[i]-pix2[i]);
-        //load pix1 and the first batch of pix2
+        // load pix1 and the first batch of pix2
 
         vpix1 = vec_unaligned_load(pix1);
         vpix2 = vec_unaligned_load(pix2);
         pix2 += 8;
-        //unpack
+        // unpack
         vpix1h = vec_unpackh(vpix1);
         vdiff  = vec_sub(vpix1h, vpix2);
         vpix1l = vec_unpackl(vpix1);

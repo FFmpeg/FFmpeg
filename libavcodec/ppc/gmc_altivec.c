@@ -1,6 +1,6 @@
 /*
- * GMC (Global Motion Compensation)
- * AltiVec-enabled
+ * GMC (Global Motion Compensation), AltiVec-enabled
+ *
  * Copyright (c) 2003 Romain Dolbeau <romain@dolbeau.org>
  *
  * This file is part of Libav.
@@ -25,10 +25,8 @@
 #include "libavutil/ppc/util_altivec.h"
 #include "dsputil_altivec.h"
 
-/*
-  altivec-enhanced gmc1. ATM this code assume stride is a multiple of 8,
-  to preserve proper dst alignment.
-*/
+/* AltiVec-enhanced gmc1. ATM this code assumes stride is a multiple of 8
+ * to preserve proper dst alignment. */
 void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int stride, int h, int x16, int y16, int rounder)
 {
     const DECLARE_ALIGNED(16, unsigned short, rounder_a) = rounder;
@@ -56,18 +54,16 @@ void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int 
 
     rounderV = vec_splat((vec_u16)vec_lde(0, &rounder_a), 0);
 
-    // we'll be able to pick-up our 9 char elements
-    // at src from those 32 bytes
-    // we load the first batch here, as inside the loop
-    // we can re-use 'src+stride' from one iteration
-    // as the 'src' of the next.
+    /* we'll be able to pick-up our 9 char elements at src from those
+     * 32 bytes we load the first batch here, as inside the loop we can
+     * reuse 'src + stride' from one iteration as the 'src' of the next. */
     src_0 = vec_ld(0, src);
     src_1 = vec_ld(16, src);
     srcvA = vec_perm(src_0, src_1, vec_lvsl(0, src));
 
     if (src_really_odd != 0x0000000F) {
-        // if src & 0xF == 0xF, then (src+1) is properly aligned
-        // on the second vector.
+        /* If src & 0xF == 0xF, then (src + 1) is properly aligned
+         * on the second vector. */
         srcvB = vec_perm(src_0, src_1, vec_lvsl(1, src));
     } else {
         srcvB = src_1;
@@ -81,17 +77,16 @@ void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int 
 
         dstv = vec_ld(0, dst);
 
-        // we we'll be able to pick-up our 9 char elements
-        // at src + stride from those 32 bytes
-        // then reuse the resulting 2 vectors srvcC and srcvD
-        // as the next srcvA and srcvB
+        /* We'll be able to pick-up our 9 char elements at src + stride from
+         * those 32 bytes then reuse the resulting 2 vectors srvcC and srcvD
+         * as the next srcvA and srcvB. */
         src_0 = vec_ld(stride + 0, src);
         src_1 = vec_ld(stride + 16, src);
         srcvC = vec_perm(src_0, src_1, vec_lvsl(stride + 0, src));
 
         if (src_really_odd != 0x0000000F) {
-            // if src & 0xF == 0xF, then (src+1) is properly aligned
-            // on the second vector.
+            /* If src & 0xF == 0xF, then (src + 1) is properly aligned
+             * on the second vector. */
             srcvD = vec_perm(src_0, src_1, vec_lvsl(stride + 1, src));
         } else {
             srcvD = src_1;
@@ -100,10 +95,9 @@ void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int 
         srcvC = vec_mergeh(vczero, srcvC);
         srcvD = vec_mergeh(vczero, srcvD);
 
-
-        // OK, now we (finally) do the math :-)
-        // those four instructions replaces 32 int muls & 32 int adds.
-        // isn't AltiVec nice ?
+        /* OK, now we (finally) do the math :-)
+         * Those four instructions replace 32 int muls & 32 int adds.
+         * Isn't AltiVec nice? */
         tempA = vec_mladd((vector unsigned short)srcvA, Av, rounderV);
         tempB = vec_mladd((vector unsigned short)srcvB, Bv, tempA);
         tempC = vec_mladd((vector unsigned short)srcvC, Cv, tempB);
