@@ -30,6 +30,7 @@
 void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */,
                      int stride, int h, int x16, int y16, int rounder)
 {
+    int i;
     const DECLARE_ALIGNED(16, unsigned short, rounder_a) = rounder;
     const DECLARE_ALIGNED(16, unsigned short, ABCD)[8] = {
         (16 - x16) * (16 - y16), /* A */
@@ -42,28 +43,26 @@ void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */,
         (const vector unsigned char) vec_splat_u8(0);
     register const vector unsigned short vcsr8 =
         (const vector unsigned short) vec_splat_u16(8);
-    register vector unsigned char dstv, dstv2, src_0, src_1,
-        srcvA, srcvB, srcvC, srcvD;
-    register vector unsigned short Av, Bv, Cv, Dv, rounderV,
-        tempA, tempB, tempC, tempD;
-    int i;
+    register vector unsigned char dstv, dstv2, srcvB, srcvC, srcvD;
+    register vector unsigned short tempB, tempC, tempD;
     unsigned long dst_odd        = (unsigned long) dst & 0x0000000F;
     unsigned long src_really_odd = (unsigned long) src & 0x0000000F;
-
-    tempA = vec_ld(0, (const unsigned short *) ABCD);
-    Av    = vec_splat(tempA, 0);
-    Bv    = vec_splat(tempA, 1);
-    Cv    = vec_splat(tempA, 2);
-    Dv    = vec_splat(tempA, 3);
-
-    rounderV = vec_splat((vec_u16) vec_lde(0, &rounder_a), 0);
+    register vector unsigned short tempA =
+        vec_ld(0, (const unsigned short *) ABCD);
+    register vector unsigned short Av = vec_splat(tempA, 0);
+    register vector unsigned short Bv = vec_splat(tempA, 1);
+    register vector unsigned short Cv = vec_splat(tempA, 2);
+    register vector unsigned short Dv = vec_splat(tempA, 3);
+    register vector unsigned short rounderV =
+        vec_splat((vec_u16) vec_lde(0, &rounder_a), 0);
 
     /* we'll be able to pick-up our 9 char elements at src from those
      * 32 bytes we load the first batch here, as inside the loop we can
      * reuse 'src + stride' from one iteration as the 'src' of the next. */
-    src_0 = vec_ld(0, src);
-    src_1 = vec_ld(16, src);
-    srcvA = vec_perm(src_0, src_1, vec_lvsl(0, src));
+    register vector unsigned char src_0 = vec_ld(0, src);
+    register vector unsigned char src_1 = vec_ld(16, src);
+    register vector unsigned char srcvA = vec_perm(src_0, src_1,
+                                                   vec_lvsl(0, src));
 
     if (src_really_odd != 0x0000000F)
         /* If src & 0xF == 0xF, then (src + 1) is properly aligned

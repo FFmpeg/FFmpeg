@@ -76,31 +76,28 @@
     vy4 = vec_subs(t2, t6);
 
 #define IDCT                                                                \
-    vec_s16 vx0, vx1, vx2, vx3, vx4, vx5, vx6, vx7;                         \
     vec_s16 vy0, vy1, vy2, vy3, vy4, vy5, vy6, vy7;                         \
-    vec_s16 a0, a1, a2, ma2, c4, mc4, zero, bias;                           \
     vec_s16 t0, t1, t2, t3, t4, t5, t6, t7, t8;                             \
-    vec_u16 shift;                                                          \
                                                                             \
-    c4   = vec_splat(constants[0], 0);                                      \
-    a0   = vec_splat(constants[0], 1);                                      \
-    a1   = vec_splat(constants[0], 2);                                      \
-    a2   = vec_splat(constants[0], 3);                                      \
-    mc4  = vec_splat(constants[0], 4);                                      \
-    ma2  = vec_splat(constants[0], 5);                                      \
-    bias = (vec_s16) vec_splat((vec_s32) constants[0], 3);                  \
+    vec_s16 c4   = vec_splat(constants[0], 0);                              \
+    vec_s16 a0   = vec_splat(constants[0], 1);                              \
+    vec_s16 a1   = vec_splat(constants[0], 2);                              \
+    vec_s16 a2   = vec_splat(constants[0], 3);                              \
+    vec_s16 mc4  = vec_splat(constants[0], 4);                              \
+    vec_s16 ma2  = vec_splat(constants[0], 5);                              \
+    vec_s16 bias = (vec_s16) vec_splat((vec_s32) constants[0], 3);          \
                                                                             \
-    zero  = vec_splat_s16(0);                                               \
-    shift = vec_splat_u16(4);                                               \
+    vec_s16 zero  = vec_splat_s16(0);                                       \
+    vec_u16 shift = vec_splat_u16(4);                                       \
                                                                             \
-    vx0 = vec_mradds(vec_sl(block[0], shift), constants[1], zero);          \
-    vx1 = vec_mradds(vec_sl(block[1], shift), constants[2], zero);          \
-    vx2 = vec_mradds(vec_sl(block[2], shift), constants[3], zero);          \
-    vx3 = vec_mradds(vec_sl(block[3], shift), constants[4], zero);          \
-    vx4 = vec_mradds(vec_sl(block[4], shift), constants[1], zero);          \
-    vx5 = vec_mradds(vec_sl(block[5], shift), constants[4], zero);          \
-    vx6 = vec_mradds(vec_sl(block[6], shift), constants[3], zero);          \
-    vx7 = vec_mradds(vec_sl(block[7], shift), constants[2], zero);          \
+    vec_s16 vx0 = vec_mradds(vec_sl(block[0], shift), constants[1], zero);  \
+    vec_s16 vx1 = vec_mradds(vec_sl(block[1], shift), constants[2], zero);  \
+    vec_s16 vx2 = vec_mradds(vec_sl(block[2], shift), constants[3], zero);  \
+    vec_s16 vx3 = vec_mradds(vec_sl(block[3], shift), constants[4], zero);  \
+    vec_s16 vx4 = vec_mradds(vec_sl(block[4], shift), constants[1], zero);  \
+    vec_s16 vx5 = vec_mradds(vec_sl(block[5], shift), constants[4], zero);  \
+    vec_s16 vx6 = vec_mradds(vec_sl(block[6], shift), constants[3], zero);  \
+    vec_s16 vx7 = vec_mradds(vec_sl(block[7], shift), constants[2], zero);  \
                                                                             \
     IDCT_HALF                                                               \
                                                                             \

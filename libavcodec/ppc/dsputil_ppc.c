@@ -51,8 +51,7 @@
  */
 static void clear_blocks_dcbz32_ppc(int16_t *blocks)
 {
-    register int misal = (unsigned long) blocks & 0x00000010;
-    register int i = 0;
+    register int misal = (unsigned long) blocks & 0x00000010, i = 0;
 
     if (misal) {
         ((unsigned long *) blocks)[0] = 0L;
@@ -77,8 +76,7 @@ static void clear_blocks_dcbz32_ppc(int16_t *blocks)
 static void clear_blocks_dcbz128_ppc(int16_t *blocks)
 {
 #if HAVE_DCBZL
-    register int misal = (unsigned long) blocks & 0x0000007f;
-    register int i = 0;
+    register int misal = (unsigned long) blocks & 0x0000007f, i = 0;
 
     if (misal) {
         /* We could probably also optimize this case,
@@ -104,8 +102,7 @@ static long check_dcbzl_effect(void)
 #if HAVE_DCBZL
     register char *fakedata = av_malloc(1024);
     register char *fakedata_middle;
-    register long zero = 0;
-    register long i = 0;
+    register long zero = 0, i = 0;
 
     if (!fakedata)
         return 0L;
