@@ -257,3 +257,242 @@ function ff_h264_h_loop_filter_chroma_neon, export=1
 
         ret
 endfunc
+
+.macro  biweight_16     macs, macd
+        dup             v0.16B,  w5
+        dup             v1.16B,  w6
+        mov             v4.16B,  v16.16B
+        mov             v6.16B,  v16.16B
+1:      subs            w3,  w3,  #2
+        ld1             {v20.16B}, [x0], x2
+        \macd           v4.8H,   v0.8B,  v20.8B
+        \macd\()2       v6.8H,   v0.16B, v20.16B
+        ld1             {v22.16B}, [x1], x2
+        \macs           v4.8H,   v1.8B,  v22.8B
+        \macs\()2       v6.8H,   v1.16B, v22.16B
+        mov             v24.16B, v16.16B
+        ld1             {v28.16B}, [x0], x2
+        mov             v26.16B, v16.16B
+        \macd           v24.8H,  v0.8B,  v28.8B
+        \macd\()2       v26.8H,  v0.16B, v28.16B
+        ld1             {v30.16B}, [x1], x2
+        \macs           v24.8H,  v1.8B,  v30.8B
+        \macs\()2       v26.8H,  v1.16B, v30.16B
+        sshl            v4.8H,   v4.8H,  v18.8H
+        sshl            v6.8H,   v6.8H,  v18.8H
+        sqxtun          v4.8B,   v4.8H
+        sqxtun2         v4.16B,  v6.8H
+        sshl            v24.8H,  v24.8H, v18.8H
+        sshl            v26.8H,  v26.8H, v18.8H
+        sqxtun          v24.8B,  v24.8H
+        sqxtun2         v24.16B, v26.8H
+        mov             v6.16B,  v16.16B
+        st1             {v4.16B},  [x7], x2
+        mov             v4.16B,  v16.16B
+        st1             {v24.16B}, [x7], x2
+        b.ne            1b
+        ret
+.endm
+
+.macro  biweight_8      macs, macd
+        dup             v0.8B,  w5
+        dup             v1.8B,  w6
+        mov             v2.16B,  v16.16B
+        mov             v20.16B, v16.16B
+1:      subs            w3,  w3,  #2
+        ld1             {v4.8B}, [x0], x2
+        \macd           v2.8H,  v0.8B,  v4.8B
+        ld1             {v5.8B}, [x1], x2
+        \macs           v2.8H,  v1.8B,  v5.8B
+        ld1             {v6.8B}, [x0], x2
+        \macd           v20.8H, v0.8B,  v6.8B
+        ld1             {v7.8B}, [x1], x2
+        \macs           v20.8H, v1.8B,  v7.8B
+        sshl            v2.8H,  v2.8H,  v18.8H
+        sqxtun          v2.8B,  v2.8H
+        sshl            v20.8H, v20.8H, v18.8H
+        sqxtun          v4.8B,  v20.8H
+        mov             v20.16B, v16.16B
+        st1             {v2.8B}, [x7], x2
+        mov             v2.16B,  v16.16B
+        st1             {v4.8B}, [x7], x2
+        b.ne            1b
+        ret
+.endm
+
+.macro  biweight_4      macs, macd
+        dup             v0.8B,  w5
+        dup             v1.8B,  w6
+        mov             v2.16B, v16.16B
+        mov             v20.16B,v16.16B
+1:      subs            w3,  w3,  #4
+        ld1             {v4.S}[0], [x0], x2
+        ld1             {v4.S}[1], [x0], x2
+        \macd           v2.8H,  v0.8B,  v4.8B
+        ld1             {v5.S}[0], [x1], x2
+        ld1             {v5.S}[1], [x1], x2
+        \macs           v2.8H,  v1.8B,  v5.8B
+        b.lt            2f
+        ld1             {v6.S}[0], [x0], x2
+        ld1             {v6.S}[1], [x0], x2
+        \macd           v20.8H, v0.8B,  v6.8B
+        ld1             {v7.S}[0], [x1], x2
+        ld1             {v7.S}[1], [x1], x2
+        \macs           v20.8H, v1.8B,  v7.8B
+        sshl            v2.8H,  v2.8H,  v18.8H
+        sqxtun          v2.8B,  v2.8H
+        sshl            v20.8H, v20.8H, v18.8H
+        sqxtun          v4.8B,  v20.8H
+        mov             v20.16B, v16.16B
+        st1             {v2.S}[0], [x7], x2
+        st1             {v2.S}[1], [x7], x2
+        mov             v2.16B,  v16.16B
+        st1             {v4.S}[0], [x7], x2
+        st1             {v4.S}[1], [x7], x2
+        b.ne            1b
+        ret
+2:      sshl            v2.8H,  v2.8H,  v18.8H
+        sqxtun          v2.8B,  v2.8H
+        st1             {v2.S}[0], [x7], x2
+        st1             {v2.S}[1], [x7], x2
+        ret
+.endm
+
+.macro  biweight_func   w
+function ff_biweight_h264_pixels_\w\()_neon, export=1
+        sxtw            x2,  w2
+        lsr             w8,  w5,  #31
+        add             w7,  w7,  #1
+        eor             w8,  w8,  w6,  lsr #30
+        orr             w7,  w7,  #1
+        dup             v18.8H,   w4
+        lsl             w7,  w7,  w4
+        not             v18.16B,  v18.16B
+        dup             v16.8H,   w7
+        mov             x7,  x0
+        cbz             w8,  10f
+        subs            w8,  w8,  #1
+        b.eq            20f
+        subs            w8,  w8,  #1
+        b.eq            30f
+        b               40f
+10:     biweight_\w     umlal, umlal
+20:     neg             w5, w5
+        biweight_\w     umlal, umlsl
+30:     neg             w5, w5
+        neg             w6, w6
+        biweight_\w     umlsl, umlsl
+40:     neg             w6, w6
+        biweight_\w     umlsl, umlal
+endfunc
+.endm
+
+        biweight_func   16
+        biweight_func   8
+        biweight_func   4
+
+.macro  weight_16       add
+        dup             v0.16B,  w4
+1:      subs            w2,  w2,  #2
+        ld1             {v20.16B}, [x0], x1
+        umull           v4.8H,   v0.8B,  v20.8B
+        umull2          v6.8H,   v0.16B, v20.16B
+        ld1             {v28.16B}, [x0], x1
+        umull           v24.8H,  v0.8B,  v28.8B
+        umull2          v26.8H,  v0.16B, v28.16B
+        \add            v4.8H,   v16.8H, v4.8H
+        srshl           v4.8H,   v4.8H,  v18.8H
+        \add            v6.8H,   v16.8H, v6.8H
+        srshl           v6.8H,   v6.8H,  v18.8H
+        sqxtun          v4.8B,   v4.8H
+        sqxtun2         v4.16B,  v6.8H
+        \add            v24.8H,  v16.8H, v24.8H
+        srshl           v24.8H,  v24.8H, v18.8H
+        \add            v26.8H,  v16.8H, v26.8H
+        srshl           v26.8H,  v26.8H, v18.8H
+        sqxtun          v24.8B,  v24.8H
+        sqxtun2         v24.16B, v26.8H
+        st1             {v4.16B},  [x5], x1
+        st1             {v24.16B}, [x5], x1
+        b.ne            1b
+        ret
+.endm
+
+.macro  weight_8        add
+        dup             v0.8B,  w4
+1:      subs            w2,  w2,  #2
+        ld1             {v4.8B}, [x0], x1
+        umull           v2.8H,  v0.8B,  v4.8B
+        ld1             {v6.8B}, [x0], x1
+        umull           v20.8H, v0.8B,  v6.8B
+        \add            v2.8H,  v16.8H,  v2.8H
+        srshl           v2.8H,  v2.8H,  v18.8H
+        sqxtun          v2.8B,  v2.8H
+        \add            v20.8H, v16.8H,  v20.8H
+        srshl           v20.8H, v20.8H, v18.8H
+        sqxtun          v4.8B,  v20.8H
+        st1             {v2.8B}, [x5], x1
+        st1             {v4.8B}, [x5], x1
+        b.ne            1b
+        ret
+.endm
+
+.macro  weight_4        add
+        dup             v0.8B,  w4
+1:      subs            w2,  w2,  #4
+        ld1             {v4.S}[0], [x0], x1
+        ld1             {v4.S}[1], [x0], x1
+        umull           v2.8H,  v0.8B,  v4.8B
+        b.lt            2f
+        ld1             {v6.S}[0], [x0], x1
+        ld1             {v6.S}[1], [x0], x1
+        umull           v20.8H, v0.8B,  v6.8B
+        \add            v2.8H,  v16.8H,  v2.8H
+        srshl           v2.8H,  v2.8H,  v18.8H
+        sqxtun          v2.8B,  v2.8H
+        \add            v20.8H, v16.8H,  v20.8H
+        srshl           v20.8H, v20.8h, v18.8H
+        sqxtun          v4.8B,  v20.8H
+        st1             {v2.S}[0], [x5], x1
+        st1             {v2.S}[1], [x5], x1
+        st1             {v4.S}[0], [x5], x1
+        st1             {v4.S}[1], [x5], x1
+        b.ne            1b
+        ret
+2:      \add            v2.8H,  v16.8H,  v2.8H
+        srshl           v2.8H,  v2.8H,  v18.8H
+        sqxtun          v2.8B,  v2.8H
+        st1             {v2.S}[0], [x5], x1
+        st1             {v2.S}[1], [x5], x1
+        ret
+.endm
+
+.macro  weight_func     w
+function ff_weight_h264_pixels_\w\()_neon, export=1
+        sxtw            x1,  w1
+        cmp             w3,  #1
+        mov             w6,  #1
+        lsl             w5,  w5,  w3
+        dup             v16.8H,  w5
+        mov             x5,  x0
+        b.le            20f
+        sub             w6,  w6,  w3
+        dup             v18.8H,  w6
+        cmp             w4, #0
+        b.lt            10f
+        weight_\w       shadd
+10:     neg             w4,  w4
+        weight_\w       shsub
+20:     neg             w6,  w3
+        dup             v18.8H,  w6
+        cmp             w4,  #0
+        b.lt            10f
+        weight_\w       add
+10:     neg             w4,  w4
+        weight_\w       sub
+endfunc
+.endm
+
+        weight_func     16
+        weight_func     8
+        weight_func     4
