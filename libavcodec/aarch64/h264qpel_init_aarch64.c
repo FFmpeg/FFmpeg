@@ -101,7 +101,7 @@ av_cold void ff_h264qpel_init_aarch64(H264QpelContext *c, int bit_depth)
     int cpu_flags = av_get_cpu_flags();
 
     if (have_neon(cpu_flags) && !high_bit_depth) {
-        /* c->put_h264_qpel_pixels_tab[0][ 0] = ff_put_h264_qpel16_mc00_neon; */
+        c->put_h264_qpel_pixels_tab[0][ 0] = ff_put_h264_qpel16_mc00_neon;
         c->put_h264_qpel_pixels_tab[0][ 1] = ff_put_h264_qpel16_mc10_neon;
         c->put_h264_qpel_pixels_tab[0][ 2] = ff_put_h264_qpel16_mc20_neon;
         c->put_h264_qpel_pixels_tab[0][ 3] = ff_put_h264_qpel16_mc30_neon;
@@ -118,7 +118,7 @@ av_cold void ff_h264qpel_init_aarch64(H264QpelContext *c, int bit_depth)
         c->put_h264_qpel_pixels_tab[0][14] = ff_put_h264_qpel16_mc23_neon;
         c->put_h264_qpel_pixels_tab[0][15] = ff_put_h264_qpel16_mc33_neon;
 
-        /* c->put_h264_qpel_pixels_tab[1][ 0] = ff_put_h264_qpel8_mc00_neon; */
+        c->put_h264_qpel_pixels_tab[1][ 0] = ff_put_h264_qpel8_mc00_neon;
         c->put_h264_qpel_pixels_tab[1][ 1] = ff_put_h264_qpel8_mc10_neon;
         c->put_h264_qpel_pixels_tab[1][ 2] = ff_put_h264_qpel8_mc20_neon;
         c->put_h264_qpel_pixels_tab[1][ 3] = ff_put_h264_qpel8_mc30_neon;
@@ -135,7 +135,7 @@ av_cold void ff_h264qpel_init_aarch64(H264QpelContext *c, int bit_depth)
         c->put_h264_qpel_pixels_tab[1][14] = ff_put_h264_qpel8_mc23_neon;
         c->put_h264_qpel_pixels_tab[1][15] = ff_put_h264_qpel8_mc33_neon;
 
-        /* c->avg_h264_qpel_pixels_tab[0][ 0] = ff_avg_h264_qpel16_mc00_neon; */
+        c->avg_h264_qpel_pixels_tab[0][ 0] = ff_avg_h264_qpel16_mc00_neon;
         c->avg_h264_qpel_pixels_tab[0][ 1] = ff_avg_h264_qpel16_mc10_neon;
         c->avg_h264_qpel_pixels_tab[0][ 2] = ff_avg_h264_qpel16_mc20_neon;
         c->avg_h264_qpel_pixels_tab[0][ 3] = ff_avg_h264_qpel16_mc30_neon;
@@ -152,7 +152,7 @@ av_cold void ff_h264qpel_init_aarch64(H264QpelContext *c, int bit_depth)
         c->avg_h264_qpel_pixels_tab[0][14] = ff_avg_h264_qpel16_mc23_neon;
         c->avg_h264_qpel_pixels_tab[0][15] = ff_avg_h264_qpel16_mc33_neon;
 
-        /* c->avg_h264_qpel_pixels_tab[1][ 0] = ff_avg_h264_qpel8_mc00_neon; */
+        c->avg_h264_qpel_pixels_tab[1][ 0] = ff_avg_h264_qpel8_mc00_neon;
         c->avg_h264_qpel_pixels_tab[1][ 1] = ff_avg_h264_qpel8_mc10_neon;
         c->avg_h264_qpel_pixels_tab[1][ 2] = ff_avg_h264_qpel8_mc20_neon;
         c->avg_h264_qpel_pixels_tab[1][ 3] = ff_avg_h264_qpel8_mc30_neon;
