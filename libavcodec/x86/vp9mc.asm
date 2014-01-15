@@ -209,13 +209,11 @@ cglobal %1_8tap_1d_v_ %+ %%px, 4, 7, 11, dst, src, dstride, sstride, filtery, sr
     mov   filteryq, r5mp
 %define hd r4mp
 %endif
-    sub       srcq, sstrideq
-    lea  sstride3q, [sstrideq*3]
-    sub       srcq, sstrideq
     mova        m6, [pw_256]
-    sub       srcq, sstrideq
+    lea  sstride3q, [sstrideq*3]
+    lea      src4q, [srcq+sstrideq]
+    sub       srcq, sstride3q
     mova        m7, [filteryq+ 0]
-    lea      src4q, [srcq+sstrideq*4]
 %if ARCH_X86_64 && mmsize > 8
     mova        m8, [filteryq+16]
     mova        m9, [filteryq+32]
@@ -279,13 +277,11 @@ filter_v_fn avg
 %macro filter_vx2_fn 1
 %assign %%px mmsize
 cglobal %1_8tap_1d_v_ %+ %%px, 6, 8, 14, dst, src, dstride, sstride, h, filtery, src4, sstride3
-    sub       srcq, sstrideq
-    lea  sstride3q, [sstrideq*3]
-    sub       srcq, sstrideq
     mova       m13, [pw_256]
-    sub       srcq, sstrideq
+    lea  sstride3q, [sstrideq*3]
+    lea      src4q, [srcq+sstrideq]
+    sub       srcq, sstride3q
     mova        m8, [filteryq+ 0]
-    lea      src4q, [srcq+sstrideq*4]
     mova        m9, [filteryq+16]
     mova       m10, [filteryq+32]
     mova       m11, [filteryq+48]
