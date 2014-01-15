@@ -3263,6 +3263,8 @@ int av_find_best_stream(AVFormatContext *ic,
             continue;
         if (st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED|AV_DISPOSITION_VISUAL_IMPAIRED))
             continue;
+        if (type == AVMEDIA_TYPE_AUDIO && !avctx->channels)
+            continue;
         if (decoder_ret) {
             decoder = find_decoder(ic, st, st->codec->codec_id);
             if (!decoder) {
