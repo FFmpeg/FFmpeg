@@ -1389,6 +1389,10 @@ static void flush_encoders(void)
                     stop_encoding = 1;
                     break;
                 }
+                if (ost->finished > 1) {
+                    av_free_packet(&pkt);
+                    continue;
+                }
                 if (pkt.pts != AV_NOPTS_VALUE)
                     pkt.pts = av_rescale_q(pkt.pts, enc->time_base, ost->st->time_base);
                 if (pkt.dts != AV_NOPTS_VALUE)
