@@ -1691,10 +1691,19 @@ static int transcode_init(void)
                 (video_sync_method ==  VSYNC_CFR ||
                  (video_sync_method ==  VSYNC_AUTO &&
                   !(oc->oformat->flags & (AVFMT_NOTIMESTAMPS | AVFMT_VARIABLE_FPS))))) {
-                ost->frame_rate = ist->framerate.num ? ist->framerate :
-                                  ist->st->avg_frame_rate.num ?
-                                  ist->st->avg_frame_rate :
-                                  (AVRational){25, 1};
+                if (ist->framerate.num)
+                    ost->frame_rate = ist->framerate;
+                else if (ist->st->avg_frame_rate.num)
+                    ost->frame_rate = ist->st->avg_frame_rate;
+                else {
+                    av_log(NULL, AV_LOG_WARNING, "Constant framerate requested "
+                           "for the output stream #%d:%d, but no information "
+                           "about the input framerate is available. Falling "
+                           "back to a default value of 25fps. Use the -r option "
+                           "if you want a different framerate.\n",
+                           ost->file_index, ost->index);
+                    ost->frame_rate = (AVRational){ 25, 1 };
+                }
 
                 if (ost->enc && ost->enc->supported_framerates && !ost->force_fps) {
                     int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
