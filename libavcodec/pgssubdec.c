@@ -232,7 +232,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
     ctx->pictures[picture_id].w = width;
     ctx->pictures[picture_id].h = height;
 
-    av_fast_malloc(&ctx->pictures[picture_id].rle, &ctx->pictures[picture_id].rle_buffer_size, rle_bitmap_len);
+    av_fast_padded_malloc(&ctx->pictures[picture_id].rle, &ctx->pictures[picture_id].rle_buffer_size, rle_bitmap_len);
 
     if (!ctx->pictures[picture_id].rle)
         return -1;
