@@ -77,6 +77,7 @@ typedef struct VC1DSPContext {
 } VC1DSPContext;
 
 void ff_vc1dsp_init(VC1DSPContext* c);
+void ff_vc1dsp_init_aarch64(VC1DSPContext* dsp);
 void ff_vc1dsp_init_arm(VC1DSPContext* dsp);
 void ff_vc1dsp_init_ppc(VC1DSPContext *c);
 void ff_vc1dsp_init_x86(VC1DSPContext* dsp);

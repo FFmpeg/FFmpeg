@@ -947,6 +947,8 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
     dsp->sprite_v_double_twoscale = sprite_v_double_twoscale_c;
 #endif /* CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER */
 
+    if (ARCH_AARCH64)
+        ff_vc1dsp_init_aarch64(dsp);
     if (ARCH_ARM)
         ff_vc1dsp_init_arm(dsp);
     if (ARCH_PPC)
