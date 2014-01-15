@@ -3281,13 +3281,15 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->drefs);
         if (!sc->pb_is_copied)
             avio_close(sc->pb);
+
         sc->pb = NULL;
         av_freep(&sc->chunk_offsets);
-        av_freep(&sc->keyframes);
-        av_freep(&sc->sample_sizes);
-        av_freep(&sc->stps_data);
         av_freep(&sc->stsc_data);
+        av_freep(&sc->sample_sizes);
+        av_freep(&sc->keyframes);
         av_freep(&sc->stts_data);
+        av_freep(&sc->stps_data);
+        av_freep(&sc->rap_group);
     }
 
     if (mov->dv_demux) {
