@@ -1381,7 +1381,6 @@ static void flush_encoders(void)
                     av_log(NULL, AV_LOG_FATAL, "%s encoding failed\n", desc);
                     exit_program(1);
                 }
-                *size += pkt.size;
                 if (ost->logfile && enc->stats_out) {
                     fprintf(ost->logfile, "%s", enc->stats_out);
                 }
@@ -1393,6 +1392,7 @@ static void flush_encoders(void)
                     av_free_packet(&pkt);
                     continue;
                 }
+                *size += pkt.size;
                 if (pkt.pts != AV_NOPTS_VALUE)
                     pkt.pts = av_rescale_q(pkt.pts, enc->time_base, ost->st->time_base);
                 if (pkt.dts != AV_NOPTS_VALUE)
