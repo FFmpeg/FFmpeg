@@ -1812,6 +1812,7 @@ static int matroska_read_header(AVFormatContext *s)
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->sample_rate = track->audio.out_samplerate;
             st->codec->channels = track->audio.channels;
+            if (!st->codec->bits_per_coded_sample)
             st->codec->bits_per_coded_sample = track->audio.bitdepth;
             if (st->codec->codec_id != AV_CODEC_ID_AAC)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
