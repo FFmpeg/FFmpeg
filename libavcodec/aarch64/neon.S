@@ -80,6 +80,30 @@
         trn2            \r7\().4S,  \t1\().4S,  \r7\().4S
 .endm
 
+.macro  transpose_4x16B r0, r1, r2, r3, t4, t5, t6, t7
+        trn1            \t4\().16B, \r0\().16B,  \r1\().16B
+        trn2            \t5\().16B, \r0\().16B,  \r1\().16B
+        trn1            \t6\().16B, \r2\().16B,  \r3\().16B
+        trn2            \t7\().16B, \r2\().16B,  \r3\().16B
+
+        trn1            \r0\().8H,  \t4\().8H,  \t6\().8H
+        trn2            \r2\().8H,  \t4\().8H,  \t6\().8H
+        trn1            \r1\().8H,  \t5\().8H,  \t7\().8H
+        trn2            \r3\().8H,  \t5\().8H,  \t7\().8H
+.endm
+
+.macro  transpose_4x8B  r0, r1, r2, r3, t4, t5, t6, t7
+        trn1            \t4\().8B,  \r0\().8B,  \r1\().8B
+        trn2            \t5\().8B,  \r0\().8B,  \r1\().8B
+        trn1            \t6\().8B,  \r2\().8B,  \r3\().8B
+        trn2            \t7\().8B,  \r2\().8B,  \r3\().8B
+
+        trn1            \r0\().4H,  \t4\().4H,  \t6\().4H
+        trn2            \r2\().4H,  \t4\().4H,  \t6\().4H
+        trn1            \r1\().4H,  \t5\().4H,  \t7\().4H
+        trn2            \r3\().4H,  \t5\().4H,  \t7\().4H
+.endm
+
 .macro  transpose_4x4H  r0, r1, r2, r3, r4, r5, r6, r7
         trn1            \r4\().4H,  \r0\().4H,  \r1\().4H
         trn2            \r5\().4H,  \r0\().4H,  \r1\().4H
