@@ -190,6 +190,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
                 pkt->data[4]      = jvf->video_type;
                 if ((size = avio_read(pb, pkt->data + JV_PREAMBLE_SIZE, size)) < 0)
                     return AVERROR(EIO);
+                memset(pkt->data + JV_PREAMBLE_SIZE + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
                 pkt->size         = size + JV_PREAMBLE_SIZE;
                 pkt->stream_index = 1;
