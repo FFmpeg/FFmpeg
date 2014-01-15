@@ -612,14 +612,14 @@ static void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w)
     register vector unsigned char vdst, vsrc;
 
     /* dst and src are 16 bytes-aligned (guaranteed). */
-    for (i = 0; (i + 15) < w; i += 16) {
+    for (i = 0; i + 15 < w; i += 16) {
         vdst = vec_ld(i, (unsigned char *) dst);
         vsrc = vec_ld(i, (unsigned char *) src);
         vdst = vec_add(vsrc, vdst);
         vec_st(vdst, i, (unsigned char *) dst);
     }
     /* If w is not a multiple of 16. */
-    for (; (i < w); i++)
+    for (; i < w; i++)
         dst[i] = src[i];
 }
 
@@ -658,10 +658,10 @@ static int hadamard8_diff8x8_altivec(/* MpegEncContext */ void *s, uint8_t *dst,
         register vector signed short srcV, dstV;                            \
         register vector signed short but0, but1, but2, op1, op2, op3;       \
         src1 = vec_ld(stride * i, src);                                     \
-        src2 = vec_ld((stride * i) + 15, src);                              \
+        src2 = vec_ld(stride * i + 15, src);                                \
         srcO = vec_perm(src1, src2, vec_lvsl(stride * i, src));             \
         dst1 = vec_ld(stride * i, dst);                                     \
-        dst2 = vec_ld((stride * i) + 15, dst);                              \
+        dst2 = vec_ld(stride * i + 15, dst);                                \
         dstO = vec_perm(dst1, dst2, vec_lvsl(stride * i, dst));             \
         /* Promote the unsigned chars to signed shorts. */                  \
         /* We're in the 8x8 function, we only care for the first 8. */      \
@@ -828,10 +828,10 @@ static int hadamard8_diff16x8_altivec(/* MpegEncContext */ void *s, uint8_t *dst
             op3S  __asm__ ("v30");                                          \
                                                                             \
         src1 = vec_ld(stride * i, src);                                     \
-        src2 = vec_ld((stride * i) + 16, src);                              \
+        src2 = vec_ld(stride * i + 16, src);                                \
         srcO = vec_perm(src1, src2, vec_lvsl(stride * i, src));             \
         dst1 = vec_ld(stride * i, dst);                                     \
-        dst2 = vec_ld((stride * i) + 16, dst);                              \
+        dst2 = vec_ld(stride * i + 16, dst);                                \
         dstO = vec_perm(dst1, dst2, vec_lvsl(stride * i, dst));             \
         /* Promote the unsigned chars to signed shorts. */                  \
         srcV = (vector signed short) vec_mergeh((vector signed char) vzero, \
