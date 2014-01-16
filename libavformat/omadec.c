@@ -173,7 +173,11 @@ static int nprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
     if(taglen + (((uint64_t)datalen)<<4) + 44 > size)
         return -1;
 
-    pos += 44 + taglen;
+    pos += 44;
+    if (size - pos < taglen)
+        return -1;
+
+    pos += taglen;
 
     if (datalen << 4 > size - pos)
         return -1;
