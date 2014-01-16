@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     avformat_network_init();
 
     for (i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], "-b")) {
+        if (!strcmp(argv[i], "-b") && i + 1 < argc) {
             bps = atoi(argv[i + 1]);
             i++;
         } else if (!input_url) {
