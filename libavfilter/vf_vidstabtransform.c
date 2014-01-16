@@ -47,11 +47,12 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption vidstabtransform_options[] = {
-    {"input",     "path to the file storing the transforms",                        OFFSET(input),
+    {"input",     "set path to the file storing the transforms", OFFSET(input),
                    AV_OPT_TYPE_STRING, {.str = DEFAULT_INPUT_NAME}, .flags = FLAGS },
-    {"smoothing", "number of frames*2 + 1 used for lowpass filtering",              OFFSETC(smoothing),
+    {"smoothing", "set number of frames*2 + 1 used for lowpass filtering", OFFSETC(smoothing),
                    AV_OPT_TYPE_INT,    {.i64 = 15},       0, 1000, FLAGS},
-    {"optalgo",   "camera path optimization algo",                                  OFFSETC(camPathAlgo),
+
+    {"optalgo",   "set camera path optimization algo", OFFSETC(camPathAlgo),
                    AV_OPT_TYPE_INT,    {.i64 = VSOptimalL1}, VSOptimalL1, VSAvg, FLAGS, "optalgo"},
     {  "opt",     "global optimization",                                            0, // from version 1.0 on
                    AV_OPT_TYPE_CONST,  {.i64 = VSOptimalL1 }, 0, 0, FLAGS, "optalgo"},
@@ -59,27 +60,31 @@ static const AVOption vidstabtransform_options[] = {
                    AV_OPT_TYPE_CONST,  {.i64 = VSGaussian }, 0, 0, FLAGS,  "optalgo"},
     {  "avg",     "simple averaging on motion",                                     0,
                    AV_OPT_TYPE_CONST,  {.i64 = VSAvg },      0, 0, FLAGS,  "optalgo"},
-    {"maxshift",  "maximal number of pixels to translate image",                    OFFSETC(maxShift),
+
+    {"maxshift",  "set maximal number of pixels to translate image", OFFSETC(maxShift),
                    AV_OPT_TYPE_INT,    {.i64 = -1},      -1, 500,  FLAGS},
-    {"maxangle",  "maximal angle in rad to rotate image",                           OFFSETC(maxAngle),
+    {"maxangle",  "set maximal angle in rad to rotate image", OFFSETC(maxAngle),
                    AV_OPT_TYPE_DOUBLE, {.dbl = -1.0},  -1.0, 3.14, FLAGS},
-    {"crop",      "set cropping mode",                                              OFFSETC(crop),
+
+    {"crop",      "set cropping mode", OFFSETC(crop),
                    AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS, "crop"},
     {  "keep",    "keep border",                                                    0,
                    AV_OPT_TYPE_CONST,  {.i64 = VSKeepBorder }, 0, 0, FLAGS, "crop"},
     {  "black",   "black border",                                                   0,
                    AV_OPT_TYPE_CONST,  {.i64 = VSCropBorder }, 0, 0, FLAGS, "crop"},
-    {"invert",    "1: invert transforms",                                           OFFSETC(invert),
+
+    {"invert",    "invert transforms", OFFSETC(invert),
                    AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
-    {"relative",  "consider transforms as 0: absolute, 1: relative",                OFFSETC(relative),
+    {"relative",  "consider transforms as relative", OFFSETC(relative),
                    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,    FLAGS},
-    {"zoom",      "percentage to zoom >0: zoom in, <0 zoom out",                    OFFSETC(zoom),
+    {"zoom",      "set percentage to zoom (>0: zoom in, <0: zoom out", OFFSETC(zoom),
                    AV_OPT_TYPE_DOUBLE, {.dbl = 0},     -100, 100,  FLAGS},
-    {"optzoom",   "0: nothing, 1: optimal static zoom, 2: optimal dynamic zoom",    OFFSETC(optZoom),
+    {"optzoom",   "set optimal zoom (0: nothing, 1: optimal static zoom, 2: optimal dynamic zoom)", OFFSETC(optZoom),
                    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 2,    FLAGS},
     {"zoomspeed", "for adative zoom: percent to zoom maximally each frame",         OFFSETC(zoomSpeed),
                    AV_OPT_TYPE_DOUBLE, {.dbl = 0.25},     0, 5,    FLAGS},
-    {"interpol",  "type of interpolation",                                          OFFSETC(interpolType),
+
+    {"interpol",  "set type of interpolation", OFFSETC(interpolType),
                    AV_OPT_TYPE_INT,    {.i64 = 2},        0, 3,    FLAGS, "interpol"},
     {  "no",      "no interpolation",                                               0,
                    AV_OPT_TYPE_CONST,  {.i64 = VS_Zero  },  0, 0,  FLAGS, "interpol"},
@@ -89,9 +94,10 @@ static const AVOption vidstabtransform_options[] = {
                    AV_OPT_TYPE_CONST,  {.i64 = VS_BiLinear},0, 0,  FLAGS, "interpol"},
     {  "bicubic", "bi-cubic",                                                       0,
                    AV_OPT_TYPE_CONST,  {.i64 = VS_BiCubic },0, 0,  FLAGS, "interpol"},
-    {"tripod",    "if 1: virtual tripod mode (equiv. to relative=0:smoothing=0)",   OFFSET(tripod),
+
+    {"tripod",    "enable virtual tripod mode (same as relative=0:smoothing=0)", OFFSET(tripod),
                    AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
-    {"debug",     "if 1: more output printed and global motions are stored to file",OFFSET(debug),
+    {"debug",     "enable debug mode and writer global motions information to file", OFFSET(debug),
                    AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
     {NULL}
 };

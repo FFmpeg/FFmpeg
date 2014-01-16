@@ -8136,23 +8136,27 @@ the unsharp filter, see below.
 To enable compilation of this filter you need to configure FFmpeg with
 @code{--enable-libvidstab}.
 
-This filter accepts the following options:
+@subsection Options
 
 @table @option
-
 @item input
-path to the file used to read the transforms (default: @file{transforms.trf})
+Set path to the file used to read the transforms. Default value is
+@file{transforms.trf}).
 
 @item smoothing
-Set the number of frames (value*2 + 1) used for lowpass filtering the camera movements
-(default: 10). For example a number of 10 means that 21 frames are used
-(10 in the past and 10 in the future) to smoothen the motion in the
-video. A larger values leads to a smoother video, but limits the
-acceleration of the camera (pan/tilt movements).
-0 is a special case where a static camera is simulated.
+Set the number of frames (value*2 + 1) used for lowpass filtering the
+camera movements. Default value is 10.
+
+For example a number of 10 means that 21 frames are used (10 in the
+past and 10 in the future) to smoothen the motion in the video. A
+larger values leads to a smoother video, but limits the acceleration
+of the camera (pan/tilt movements). 0 is a special case where a
+static camera is simulated.
 
 @item optalgo
-Set the camera path optimization algorithm:
+Set the camera path optimization algorithm.
+
+Accepted values are:
 @table @samp
 @item gauss
 gaussian kernel low-pass filter on camera motion (default)
@@ -8161,16 +8165,18 @@ averaging on transformations
 @end table
 
 @item maxshift
-maximal number of pixels to translate frames (default: -1 no limit)
+Set maximal number of pixels to translate frames. Default value is -1,
+meaning no limit.
 
 @item maxangle
-maximal angle in radians (degree*PI/180) to rotate frames (default: -1
-no limit)
+Set maximal angle in radians (degree*PI/180) to rotate frames. Default
+value is -1, meaning no limit.
 
 @item crop
-How to deal with borders that may be visible due to movement
-compensation. Available values are:
+Specify how to deal with borders that may be visible due to movement
+compensation.
 
+Available values are:
 @table @samp
 @item keep
 keep image information from previous frame (default)
@@ -8179,49 +8185,41 @@ fill the border black
 @end table
 
 @item invert
-@table @samp
-@item 0
-keep transforms normal (default)
-@item 1
-invert transforms
-@end table
+Invert transforms if set to 1. Default value is 0.
 
 @item relative
-consider transforms as
-@table @samp
-@item 0
-absolute
-@item 1
-relative to previous frame (default)
-@end table
+Consider transforms as relative to previsou frame if set to 1,
+absolute if set to 0. Default value is 0.
 
 @item zoom
-Set percentage to zoom (default: 0)
-@table @samp
-@item >0
-zoom in
-@item <0
-zoom out
-@end table
+Set percentage to zoom. A positive value will result in a zoom-in
+effect, a negative value in a zoom-out effect. Default value is 0 (no
+zoom).
 
 @item optzoom
-Set optimal zooming to avoid borders
+Set optimal zooming to avoid borders.
+
+Accepted values are:
 @table @samp
 @item 0
 disabled
 @item 1
-optimal static zoom value is determined (only very strong movements will lead to visible borders) (default)
+optimal static zoom value is determined (only very strong movements
+will lead to visible borders) (default)
 @item 2
-optimal adaptive zoom value is determined (no borders will be visible), see @option{zoomspeed}
+optimal adaptive zoom value is determined (no borders will be
+visible), see @option{zoomspeed}
 @end table
-Note that the value given at zoom is added to the one calculated
-here.
+
+Note that the value given at zoom is added to the one calculated here.
 
 @item zoomspeed
-Set percent to zoom maximally each frame (for @option{optzoom=2}). Range is from 0 to 5, default value is 0.2
+Set percent to zoom maximally each frame (enabled when
+@option{optzoom} is set to 2). Range is from 0 to 5, default value is
+0.25.
 
 @item interpol
-type of interpolation
+Specify type of interpolation.
 
 Available values are:
 @table @samp
@@ -8236,49 +8234,39 @@ cubic in both directions (slow)
 @end table
 
 @item tripod
-virtual tripod mode means that the video is stabilized such that the
-camera stays stationary. Use also @code{tripod} option of
-@ref{vidstabdetect}.
-@table @samp
-@item 0
-off (default)
-@item 1
-virtual tripod mode: equivalent to @code{relative=0:smoothing=0}
-@end table
+Enable virtual tripod mode if set to 1, which is equivalent to
+@code{relative=0:smoothing=0}. Default value is 0.
+
+Use also @code{tripod} option of @ref{vidstabdetect}.
 
 @item debug
-Increase log verbosity of set to 1. Also the detected global motions are written to the temporary file @file{global_motions.trf}.
-@table @samp
-@item 0
-disabled (default)
-@item 1
-enabled
-@end table
-
+Increase log verbosity if set to 1. Also the detected global motions
+are written to the temporary file @file{global_motions.trf}. Default
+value is 0.
 @end table
 
 @subsection Examples
 
 @itemize
 @item
-typical call with default default values:
- (note the unsharp filter which is always recommended)
+Use @command{ffmpeg} for a typical stabilization with default values:
 @example
 ffmpeg -i inp.mpeg -vf vidstabtransform,unsharp=5:5:0.8:3:3:0.4 inp_stabilized.mpeg
 @end example
 
+Note the use of the unsharp filter which is always recommended.
+
 @item
-zoom in a bit more and load transform data from a given file
+Zoom in a bit more and load transform data from a given file:
 @example
 vidstabtransform=zoom=5:input="mytransforms.trf"
 @end example
 
 @item
-smoothen the video even more
+Smoothen the video even more:
 @example
 vidstabtransform=smoothing=30
 @end example
-
 @end itemize
 
 @section vflip
