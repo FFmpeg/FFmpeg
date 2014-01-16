@@ -387,8 +387,32 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x670:
             avctx->pix_fmt = AV_PIX_FMT_YUV444P;
             break;
+        case 0x680:
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P9;
+            break;
+        case 0x690:
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
+            break;
+        case 0x6B0:
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P12;
+            break;
+        case 0x6D0:
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P14;
+            break;
         case 0x671:
             avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+            break;
+        case 0x681:
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P9;
+            break;
+        case 0x691:
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+            break;
+        case 0x6B1:
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P12;
+            break;
+        case 0x6D1:
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P14;
             break;
         case 0x672:
             avctx->pix_fmt = AV_PIX_FMT_YUV411P;
@@ -399,8 +423,17 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x675:
             avctx->pix_fmt = AV_PIX_FMT_YUV420P;
             break;
+        case 0x685:
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P9;
+            break;
         case 0x695:
             avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
+            break;
+        case 0x6B5:
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P12;
+            break;
+        case 0x6D5:
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P14;
             break;
         case 0x67A:
             avctx->pix_fmt = AV_PIX_FMT_YUV410P;
