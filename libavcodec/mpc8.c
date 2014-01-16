@@ -29,7 +29,6 @@
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "mpegaudiodsp.h"
 
@@ -119,7 +118,6 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     }
     memset(c->oldDSCF, 0, sizeof(c->oldDSCF));
     av_lfg_init(&c->rnd, 0xDEADBEEF);
-    ff_dsputil_init(&c->dsp, avctx);
     ff_mpadsp_init(&c->mpadsp);
 
     ff_mpc_init();
