@@ -28,8 +28,8 @@
 #include "libavutil/internal.h"
 #include "libavutil/samplefmt.h"
 #include "tak.h"
+#include "audiodsp.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "unary.h"
 
@@ -45,7 +45,7 @@ typedef struct MCDParam {
 
 typedef struct TAKDecContext {
     AVCodecContext *avctx;                          // parent AVCodecContext
-    DSPContext      dsp;
+    AudioDSPContext adsp;
     TAKStreamInfo   ti;
     GetBitContext   gb;                             // bitstream reader initialized to start at the current frame
 
@@ -172,7 +172,7 @@ static av_cold int tak_decode_init(AVCodecContext *avctx)
 {
     TAKDecContext *s = avctx->priv_data;
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_audiodsp_init(&s->adsp);
 
     s->avctx = avctx;
 
@@ -484,8 +484,8 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
     for (i = 0; i < subframe_size - filter_order; i++) {
         int v = 1 << (filter_quant - 1);
 
-        v += s->dsp.scalarproduct_int16(&s->residues[i], filter,
-                                        FFALIGN(filter_order, 16));
+        v += s->adsp.scalarproduct_int16(&s->residues[i], filter,
+                                         FFALIGN(filter_order, 16));
 
         v = (av_clip(v >> filter_quant, -8192, 8191) << dshift) - *decoded;
         *decoded++ = v;
@@ -654,8 +654,8 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
         for (i = 0; i < length2; i++) {
             int v = 1 << 9;
 
-            v += s->dsp.scalarproduct_int16(&s->residues[i], filter,
-                                            FFALIGN(filter_order, 16));
+            v += s->adsp.scalarproduct_int16(&s->residues[i], filter,
+                                             FFALIGN(filter_order, 16));
 
             p1[i] = (av_clip(v >> 10, -8192, 8191) << dshift) - p1[i];
         }

@@ -46,7 +46,4 @@ void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
                 int dxx, int dxy, int dyx, int dyy,
                 int shift, int r, int width, int height);
 
-void ff_vector_clipf_sse(float *dst, const float *src,
-                         float min, float max, int len);
-
 #endif /* AVCODEC_X86_DSPUTIL_X86_H */

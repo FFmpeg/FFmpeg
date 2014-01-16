@@ -2,6 +2,7 @@ OBJS                                   += x86/constants.o               \
                                           x86/fmtconvert_init.o         \
 
 OBJS-$(CONFIG_AC3DSP)                  += x86/ac3dsp_init.o
+OBJS-$(CONFIG_AUDIODSP)                += x86/audiodsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o
 OBJS-$(CONFIG_ENCODERS)                += x86/dsputilenc_mmx.o          \
@@ -44,6 +45,7 @@ OBJS-$(CONFIG_VP7_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_VP8_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 
+MMX-OBJS-$(CONFIG_AUDIODSP)            += x86/audiodsp_mmx.o
 MMX-OBJS-$(CONFIG_BLOCKDSP)            += x86/blockdsp_mmx.o
 MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
                                           x86/idct_mmx_xvid.o           \
@@ -61,6 +63,7 @@ YASM-OBJS                              += x86/deinterlace.o             \
                                           x86/fmtconvert.o              \
 
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
+YASM-OBJS-$(CONFIG_AUDIODSP)           += x86/audiodsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
 YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
 YASM-OBJS-$(CONFIG_DSPUTIL)            += x86/dsputil.o

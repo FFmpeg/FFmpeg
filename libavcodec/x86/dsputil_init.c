@@ -26,22 +26,8 @@
 #include "dsputil_x86.h"
 #include "idct_xvid.h"
 
-int32_t ff_scalarproduct_int16_mmxext(const int16_t *v1, const int16_t *v2,
-                                      int order);
-int32_t ff_scalarproduct_int16_sse2(const int16_t *v1, const int16_t *v2,
-                                    int order);
-
 void ff_bswap32_buf_ssse3(uint32_t *dst, const uint32_t *src, int w);
 void ff_bswap32_buf_sse2(uint32_t *dst, const uint32_t *src, int w);
-
-void ff_vector_clip_int32_mmx(int32_t *dst, const int32_t *src,
-                              int32_t min, int32_t max, unsigned int len);
-void ff_vector_clip_int32_sse2(int32_t *dst, const int32_t *src,
-                               int32_t min, int32_t max, unsigned int len);
-void ff_vector_clip_int32_int_sse2(int32_t *dst, const int32_t *src,
-                                   int32_t min, int32_t max, unsigned int len);
-void ff_vector_clip_int32_sse4(int32_t *dst, const int32_t *src,
-                               int32_t min, int32_t max, unsigned int len);
 
 static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                      int cpu_flags, unsigned high_bit_depth)
@@ -72,10 +58,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 
     c->gmc = ff_gmc_mmx;
 #endif /* HAVE_MMX_INLINE */
-
-#if HAVE_MMX_EXTERNAL
-    c->vector_clip_int32 = ff_vector_clip_int32_mmx;
-#endif /* HAVE_MMX_EXTERNAL */
 }
 
 static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
@@ -88,18 +70,6 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
         c->idct     = ff_idct_xvid_mmxext;
     }
 #endif /* HAVE_MMXEXT_INLINE */
-
-#if HAVE_MMXEXT_EXTERNAL
-    c->scalarproduct_int16          = ff_scalarproduct_int16_mmxext;
-#endif /* HAVE_MMXEXT_EXTERNAL */
-}
-
-static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
-                                     int cpu_flags, unsigned high_bit_depth)
-{
-#if HAVE_SSE_INLINE
-    c->vector_clipf = ff_vector_clipf_sse;
-#endif /* HAVE_SSE_INLINE */
 }
 
 static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
@@ -115,12 +85,6 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_SSE2_INLINE */
 
 #if HAVE_SSE2_EXTERNAL
-    c->scalarproduct_int16          = ff_scalarproduct_int16_sse2;
-    if (cpu_flags & AV_CPU_FLAG_ATOM) {
-        c->vector_clip_int32 = ff_vector_clip_int32_int_sse2;
-    } else {
-        c->vector_clip_int32 = ff_vector_clip_int32_sse2;
-    }
     c->bswap_buf = ff_bswap32_buf_sse2;
 #endif /* HAVE_SSE2_EXTERNAL */
 }
@@ -131,14 +95,6 @@ static av_cold void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
 #if HAVE_SSSE3_EXTERNAL
     c->bswap_buf = ff_bswap32_buf_ssse3;
 #endif /* HAVE_SSSE3_EXTERNAL */
-}
-
-static av_cold void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
-                                      int cpu_flags, unsigned high_bit_depth)
-{
-#if HAVE_SSE4_EXTERNAL
-    c->vector_clip_int32 = ff_vector_clip_int32_sse4;
-#endif /* HAVE_SSE4_EXTERNAL */
 }
 
 av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
@@ -152,17 +108,11 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
     if (X86_MMXEXT(cpu_flags))
         dsputil_init_mmxext(c, avctx, cpu_flags, high_bit_depth);
 
-    if (X86_SSE(cpu_flags))
-        dsputil_init_sse(c, avctx, cpu_flags, high_bit_depth);
-
     if (X86_SSE2(cpu_flags))
         dsputil_init_sse2(c, avctx, cpu_flags, high_bit_depth);
 
     if (EXTERNAL_SSSE3(cpu_flags))
         dsputil_init_ssse3(c, avctx, cpu_flags, high_bit_depth);
-
-    if (EXTERNAL_SSE4(cpu_flags))
-        dsputil_init_sse4(c, avctx, cpu_flags, high_bit_depth);
 
     if (CONFIG_ENCODERS)
         ff_dsputilenc_init_mmx(c, avctx, high_bit_depth);

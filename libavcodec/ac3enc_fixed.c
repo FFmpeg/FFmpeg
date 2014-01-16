@@ -29,6 +29,7 @@
 #define FFT_FLOAT 0
 #undef CONFIG_AC3ENC_FLOAT
 #include "internal.h"
+#include "audiodsp.h"
 #include "ac3enc.h"
 #include "eac3enc.h"
 
@@ -100,9 +101,10 @@ static void scale_coefficients(AC3EncodeContext *s)
 /*
  * Clip MDCT coefficients to allowable range.
  */
-static void clip_coefficients(DSPContext *dsp, int32_t *coef, unsigned int len)
+static void clip_coefficients(AudioDSPContext *adsp, int32_t *coef,
+                              unsigned int len)
 {
-    dsp->vector_clip_int32(coef, coef, COEF_MIN, COEF_MAX, len);
+    adsp->vector_clip_int32(coef, coef, COEF_MIN, COEF_MAX, len);
 }
 
 

@@ -34,7 +34,7 @@ av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx,
 {
     if (PPC_ALTIVEC(av_get_cpu_flags())) {
         ff_dsputil_init_altivec(c, avctx, high_bit_depth);
-        ff_int_init_altivec(c, avctx);
+
         c->gmc1 = ff_gmc1_altivec;
 
         if (!high_bit_depth) {
