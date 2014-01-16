@@ -143,6 +143,10 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
         av_log(s, AV_LOG_ERROR, "No seek table at given position\n");
         return;
     }
+    if (size < 0 || size >= INT_MAX / 2) {
+        av_log(s, AV_LOG_ERROR, "Bad seek table size\n");
+        return;
+    }
     if(!(buf = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE)))
         return;
     avio_read(s->pb, buf, size);
