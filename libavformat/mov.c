@@ -2138,10 +2138,6 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             st->sample_aspect_ratio = av_d2q(((double)st->codec->height * sc->width) /
                                              ((double)st->codec->width * sc->height), INT_MAX);
         }
-
-        if (st->duration != AV_NOPTS_VALUE && st->duration > 0)
-            av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
-                      sc->time_scale*st->nb_frames, st->duration, INT_MAX);
     }
 
     // done for ai5q, ai52, ai55, ai1q, ai12 and ai15.
