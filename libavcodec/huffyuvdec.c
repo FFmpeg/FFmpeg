@@ -725,6 +725,32 @@ static void add_bytes(HYuvContext *s, uint8_t *dst, uint8_t *src, int w)
     }
 }
 
+static void add_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src, const uint8_t *diff, int w, int *left, int *left_top)
+{
+    if (s->bps <= 8) {
+        s->dsp.add_hfyu_median_prediction(dst, src, diff, w, left, left_top);
+    } else {
+        //FIXME optimize
+        unsigned mask = s->n-1;
+        int i;
+        uint16_t l, lt;
+        const uint16_t *src16  = (const uint16_t *)src;
+        const uint16_t *diff16 = (const uint16_t *)diff;
+        uint16_t       *dst16  = (      uint16_t *)dst;
+
+        l  = *left;
+        lt = *left_top;
+
+        for(i=0; i<w; i++){
+            l  = (mid_pred(l, src16[i], (l + src16[i] - lt) & mask) + diff16[i]) & mask;
+            lt = src16[i];
+            dst16[i] = l;
+        }
+
+        *left     = l;
+        *left_top = lt;
+    }
+}
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
@@ -817,7 +843,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
                 lefttop = p->data[plane][0];
                 decode_plane_bitstream(s, w, plane);
-                s->dsp.add_hfyu_median_prediction(p->data[plane] + fake_stride, p->data[plane], s->temp[0], w, &left, &lefttop);
+                add_median_prediction(s, p->data[plane] + fake_stride, p->data[plane], s->temp[0], w, &left, &lefttop);
                 y++;
 
                 for (; y<h; y++) {
@@ -827,7 +853,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
                     dst = p->data[plane] + p->linesize[plane] * y;
 
-                    s->dsp.add_hfyu_median_prediction(dst, dst - fake_stride, s->temp[0], w, &left, &lefttop);
+                    add_median_prediction(s, dst, dst - fake_stride, s->temp[0], w, &left, &lefttop);
                 }
 
                 break;

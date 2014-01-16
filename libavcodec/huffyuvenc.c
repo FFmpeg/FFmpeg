@@ -153,6 +153,33 @@ static inline void sub_left_prediction_rgb24(HYuvContext *s, uint8_t *dst,
     *blue  = src[(w - 1) * 3 + 2];
 }
 
+static void sub_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int w, int *left, int *left_top)
+{
+    if (s->bps <= 8) {
+        s->dsp.sub_hfyu_median_prediction(dst, src1, src2, w , left, left_top);
+    } else {
+        int i;
+        uint16_t l, lt;
+        const uint16_t *src116 = (const uint16_t *)src1;
+        const uint16_t *src216 = (const uint16_t *)src2;
+        uint16_t       *dst16  = (      uint16_t *)dst;
+        unsigned mask = s->n - 1;
+
+        l  = *left;
+        lt = *left_top;
+
+        for(i=0; i<w; i++){
+            const int pred = mid_pred(l, src116[i], (l + src116[i] - lt) & mask);
+            lt = src116[i];
+            l  = src216[i];
+            dst16[i] = (l - pred) & mask;
+        }
+
+        *left     = l;
+        *left_top = lt;
+    }
+}
+
 static int store_table(HYuvContext *s, const uint8_t *len, uint8_t *buf)
 {
     int i;
@@ -857,7 +884,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 for (; y < h; y++) {
                     uint8_t *dst = p->data[plane] + p->linesize[plane] * y;
 
-                    s->dsp.sub_hfyu_median_prediction(s->temp[0], dst - fake_stride, dst, w , &left, &lefttop);
+                    sub_median_prediction(s, s->temp[0], dst - fake_stride, dst, w , &left, &lefttop);
 
                     encode_plane_bitstream(s, w, plane);
                 }
