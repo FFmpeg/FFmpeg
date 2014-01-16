@@ -152,7 +152,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;

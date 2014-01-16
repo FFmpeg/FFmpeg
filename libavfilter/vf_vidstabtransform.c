@@ -187,7 +187,7 @@ static int config_input(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "    smoothing = %d\n", tc->conf.smoothing);
     av_log(ctx, AV_LOG_INFO, "    optalgo   = %s\n",
            tc->conf.camPathAlgo == VSOptimalL1 ? "opt" :
-           (tc->conf.camPathAlgo == VSGaussian ? "gauss" : "avg" ));
+           (tc->conf.camPathAlgo == VSGaussian ? "gauss" : "avg"));
     av_log(ctx, AV_LOG_INFO, "    maxshift  = %d\n", tc->conf.maxShift);
     av_log(ctx, AV_LOG_INFO, "    maxangle  = %f\n", tc->conf.maxAngle);
     av_log(ctx, AV_LOG_INFO, "    crop      = %s\n", tc->conf.crop ? "Black" : "Keep");
@@ -195,9 +195,9 @@ static int config_input(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "    invert    = %s\n", tc->conf.invert ? "True" : "False");
     av_log(ctx, AV_LOG_INFO, "    zoom      = %f\n", tc->conf.zoom);
     av_log(ctx, AV_LOG_INFO, "    optzoom   = %s\n",
-           tc->conf.optZoom == 1 ? "Static (1)" : (tc->conf.optZoom == 2 ? "Dynamic (2)" : "Off (0)" ));
+           tc->conf.optZoom == 1 ? "Static (1)" : (tc->conf.optZoom == 2 ? "Dynamic (2)" : "Off (0)"));
     if (tc->conf.optZoom == 2)
-        av_log(ctx, AV_LOG_INFO, "    zoomspeed = %g\n", tc->conf.zoomSpeed );
+        av_log(ctx, AV_LOG_INFO, "    zoomspeed = %g\n", tc->conf.zoomSpeed);
     av_log(ctx, AV_LOG_INFO, "    interpol  = %s\n", getInterpolationTypeName(tc->conf.interpolType));
 
     f = fopen(tc->input, "r");
@@ -221,7 +221,7 @@ static int config_input(AVFilterLink *inlink)
     }
     fclose(f);
 
-    if (vsPreprocessTransforms(td, &tc->trans) != VS_OK ) {
+    if (vsPreprocessTransforms(td, &tc->trans) != VS_OK) {
         av_log(ctx, AV_LOG_ERROR, "error while preprocessing transforms\n");
         return AVERROR(EINVAL);
     }
