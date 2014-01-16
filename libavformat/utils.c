@@ -3008,11 +3008,7 @@ fail:
     return -1;
 }
 
-static void hex_dump_internal(void *avcl, FILE *f, int level,
-                              const uint8_t *buf, int size)
-{
-    int len, i, j, c;
-#define PRINT(...)                              \
+#define HEXDUMP_PRINT(...)                      \
     do {                                        \
         if (!f)                                 \
             av_log(avcl, level, __VA_ARGS__);   \
@@ -3020,27 +3016,31 @@ static void hex_dump_internal(void *avcl, FILE *f, int level,
             fprintf(f, __VA_ARGS__);            \
     } while (0)
 
+static void hex_dump_internal(void *avcl, FILE *f, int level,
+                              const uint8_t *buf, int size)
+{
+    int len, i, j, c;
+
     for (i = 0; i < size; i += 16) {
         len = size - i;
         if (len > 16)
             len = 16;
-        PRINT("%08x ", i);
+        HEXDUMP_PRINT("%08x ", i);
         for (j = 0; j < 16; j++) {
             if (j < len)
-                PRINT(" %02x", buf[i + j]);
+                HEXDUMP_PRINT(" %02x", buf[i + j]);
             else
-                PRINT("   ");
+                HEXDUMP_PRINT("   ");
         }
-        PRINT(" ");
+        HEXDUMP_PRINT(" ");
         for (j = 0; j < len; j++) {
             c = buf[i + j];
             if (c < ' ' || c > '~')
                 c = '.';
-            PRINT("%c", c);
+            HEXDUMP_PRINT("%c", c);
         }
-        PRINT("\n");
+        HEXDUMP_PRINT("\n");
     }
-#undef PRINT
 }
 
 void av_hex_dump(FILE *f, const uint8_t *buf, int size)
@@ -3056,31 +3056,23 @@ void av_hex_dump_log(void *avcl, int level, const uint8_t *buf, int size)
 static void pkt_dump_internal(void *avcl, FILE *f, int level, AVPacket *pkt,
                               int dump_payload, AVRational time_base)
 {
-#define PRINT(...)                              \
-    do {                                        \
-        if (!f)                                 \
-            av_log(avcl, level, __VA_ARGS__);   \
-        else                                    \
-            fprintf(f, __VA_ARGS__);            \
-    } while (0)
-    PRINT("stream #%d:\n", pkt->stream_index);
-    PRINT("  keyframe=%d\n", ((pkt->flags & AV_PKT_FLAG_KEY) != 0));
-    PRINT("  duration=%0.3f\n", pkt->duration * av_q2d(time_base));
+    HEXDUMP_PRINT("stream #%d:\n", pkt->stream_index);
+    HEXDUMP_PRINT("  keyframe=%d\n", (pkt->flags & AV_PKT_FLAG_KEY) != 0);
+    HEXDUMP_PRINT("  duration=%0.3f\n", pkt->duration * av_q2d(time_base));
     /* DTS is _always_ valid after av_read_frame() */
-    PRINT("  dts=");
+    HEXDUMP_PRINT("  dts=");
     if (pkt->dts == AV_NOPTS_VALUE)
-        PRINT("N/A");
+        HEXDUMP_PRINT("N/A");
     else
-        PRINT("%0.3f", pkt->dts * av_q2d(time_base));
+        HEXDUMP_PRINT("%0.3f", pkt->dts * av_q2d(time_base));
     /* PTS may not be known if B-frames are present. */
-    PRINT("  pts=");
+    HEXDUMP_PRINT("  pts=");
     if (pkt->pts == AV_NOPTS_VALUE)
-        PRINT("N/A");
+        HEXDUMP_PRINT("N/A");
     else
-        PRINT("%0.3f", pkt->pts * av_q2d(time_base));
-    PRINT("\n");
-    PRINT("  size=%d\n", pkt->size);
-#undef PRINT
+        HEXDUMP_PRINT("%0.3f", pkt->pts * av_q2d(time_base));
+    HEXDUMP_PRINT("\n");
+    HEXDUMP_PRINT("  size=%d\n", pkt->size);
     if (dump_payload)
         av_hex_dump(f, pkt->data, pkt->size);
 }
