@@ -441,11 +441,26 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x770:
             avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
             break;
+        case 0x780:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA444P9;
+            break;
+        case 0x790:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA444P10;
+            break;
         case 0x771:
             avctx->pix_fmt = AV_PIX_FMT_YUVA422P;
             break;
+        case 0x781:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA422P9;
+            break;
+        case 0x791:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA422P10;
+            break;
         case 0x775:
             avctx->pix_fmt = AV_PIX_FMT_YUVA420P;
+            break;
+        case 0x785:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA420P9;
             break;
         case 0x795:
             avctx->pix_fmt = AV_PIX_FMT_YUVA420P10;
