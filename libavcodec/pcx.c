@@ -183,7 +183,13 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     } else if (nplanes == 1 && bits_per_pixel == 8) {
         const uint8_t *palstart = bufstart + buf_size - 769;
 
-        for (y=0; y<h; y++, ptr+=stride) {
+        if (buf_size < 769) {
+            av_log(avctx, AV_LOG_ERROR, "File is too short\n");
+            ret = buf_size;
+            goto end;
+        }
+
+        for (y = 0; y < h; y++, ptr += stride) {
             buf = pcx_rle_decode(buf, buf_end,
                                  scanline, bytes_per_scanline, compressed);
             memcpy(ptr, scanline, w);

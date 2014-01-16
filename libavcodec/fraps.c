@@ -142,6 +142,11 @@ static int decode_frame(AVCodecContext *avctx,
     const int planes = 3;
     enum PixelFormat pix_fmt;
 
+    if (buf_size < 4) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too short\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     header = AV_RL32(buf);
     version = header & 0xff;
     header_size = (header & (1<<30))? 8 : 4; /* bit 30 means pad to 8 bytes */
@@ -180,7 +185,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
     avctx->pix_fmt = pix_fmt;
 
-    switch(version) {
+    switch (version) {
     case 0:
     default:
         /* Fraps v0 is a reordered YUV420 */
@@ -219,6 +224,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     case 1:
         /* Fraps v1 is an upside-down BGR24 */
+
         if (avctx->reget_buffer(avctx, f)) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
