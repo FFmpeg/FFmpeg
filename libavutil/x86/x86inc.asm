@@ -1058,25 +1058,25 @@ INIT_XMM
 ;%5+: operands
 %macro RUN_AVX_INSTR 5-8+
     %ifnum sizeof%6
-        %assign %%sizeofreg sizeof%6
+        %assign __sizeofreg sizeof%6
     %elifnum sizeof%5
-        %assign %%sizeofreg sizeof%5
+        %assign __sizeofreg sizeof%5
     %else
-        %assign %%sizeofreg mmsize
+        %assign __sizeofreg mmsize
     %endif
-    %assign %%emulate_avx 0
-    %if avx_enabled && %%sizeofreg >= 16
-        %xdefine %%instr v%1
+    %assign __emulate_avx 0
+    %if avx_enabled && __sizeofreg >= 16
+        %xdefine __instr v%1
     %else
-        %xdefine %%instr %1
+        %xdefine __instr %1
         %if %0 >= 7+%3
-            %assign %%emulate_avx 1
+            %assign __emulate_avx 1
         %endif
     %endif
 
-    %if %%emulate_avx
-        %xdefine %%src1 %6
-        %xdefine %%src2 %7
+    %if __emulate_avx
+        %xdefine __src1 %6
+        %xdefine __src2 %7
         %ifnidn %5, %6
             %if %0 >= 8
                 CHECK_AVX_INSTR_EMU {%1 %5, %6, %7, %8}, %5, %7, %8
@@ -1088,31 +1088,31 @@ INIT_XMM
                     ; 3-operand AVX instructions with a memory arg can only have it in src2,
                     ; whereas SSE emulation prefers to have it in src1 (i.e. the mov).
                     ; So, if the instruction is commutative with a memory arg, swap them.
-                    %xdefine %%src1 %7
-                    %xdefine %%src2 %6
+                    %xdefine __src1 %7
+                    %xdefine __src2 %6
                 %endif
             %endif
-            %if %%sizeofreg == 8
-                MOVQ %5, %%src1
+            %if __sizeofreg == 8
+                MOVQ %5, __src1
             %elif %2
-                MOVAPS %5, %%src1
+                MOVAPS %5, __src1
             %else
-                MOVDQA %5, %%src1
+                MOVDQA %5, __src1
             %endif
         %endif
         %if %0 >= 8
-            %1 %5, %%src2, %8
+            %1 %5, __src2, %8
         %else
-            %1 %5, %%src2
+            %1 %5, __src2
         %endif
     %elif %0 >= 8
-        %%instr %5, %6, %7, %8
+        __instr %5, %6, %7, %8
     %elif %0 == 7
-        %%instr %5, %6, %7
+        __instr %5, %6, %7
     %elif %0 == 6
-        %%instr %5, %6
+        __instr %5, %6
     %else
-        %%instr %5
+        __instr %5
     %endif
 %endmacro
 
