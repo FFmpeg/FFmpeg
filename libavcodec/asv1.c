@@ -535,6 +535,11 @@ static av_cold int decode_init(AVCodecContext *avctx){
     int i;
     const int scale= avctx->codec_id == CODEC_ID_ASV1 ? 1 : 2;
 
+    if (avctx->extradata_size < 1) {
+        av_log(avctx, AV_LOG_ERROR, "No extradata provided\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     common_init(avctx);
     init_vlcs(a);
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, scantab);

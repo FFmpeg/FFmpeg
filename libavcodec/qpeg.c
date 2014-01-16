@@ -203,7 +203,7 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
                     filled = 0;
                     dst -= stride;
                     height--;
-                    if(height < 0)
+                    if (height < 0)
                         break;
                 }
             }
@@ -216,7 +216,7 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
                     filled = 0;
                     dst -= stride;
                     height--;
-                    if(height < 0)
+                    if (height < 0)
                         break;
                 }
             }
