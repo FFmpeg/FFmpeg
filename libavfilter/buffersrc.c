@@ -120,7 +120,7 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
 {
     BufferSourceContext *s = ctx->priv;
     AVFrame *copy;
-    int ret;
+    int refcounted, ret;
 
     s->nb_failed_requests = 0;
 
@@ -129,6 +129,8 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
         return 0;
     } else if (s->eof)
         return AVERROR(EINVAL);
+
+    refcounted = !!frame->buf[0];
 
     if (!(flags & AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT)) {
 
@@ -157,10 +159,20 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
 
     if (!(copy = av_frame_alloc()))
         return AVERROR(ENOMEM);
-    av_frame_move_ref(copy, frame);
+
+    if (refcounted) {
+        av_frame_move_ref(copy, frame);
+    } else {
+        ret = av_frame_ref(copy, frame);
+        if (ret < 0) {
+            av_frame_free(&copy);
+            return ret;
+        }
+    }
 
     if ((ret = av_fifo_generic_write(s->fifo, &copy, sizeof(copy), NULL)) < 0) {
-        av_frame_move_ref(frame, copy);
+        if (refcounted)
+            av_frame_move_ref(frame, copy);
         av_frame_free(&copy);
         return ret;
     }
