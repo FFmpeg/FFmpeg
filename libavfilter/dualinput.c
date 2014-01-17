@@ -57,7 +57,7 @@ int ff_dualinput_init(AVFilterContext *ctx, FFDualInputContext *s)
     in[1].after  = EXT_INFINITY;
 
     if (s->shortest)
-        in[1].after = EXT_STOP;
+        in[0].after = in[1].after = EXT_STOP;
     if (!s->repeatlast) {
         in[0].after = EXT_STOP;
         in[1].sync  = 0;
