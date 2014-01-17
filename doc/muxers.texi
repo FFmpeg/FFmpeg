@@ -544,9 +544,10 @@ optionally an ID3v1 tag at the end. ID3v2.3 and ID3v2.4 are supported, the
 @code{id3v2_version} option controls which one is used. The legacy ID3v1 tag is
 not written by default, but may be enabled with the @code{write_id3v1} option.
 
-For seekable output the muxer also writes a Xing frame at the beginning, which
-contains the number of frames in the file. It is useful for computing duration
-of VBR files.
+The muxer may also write a Xing frame at the beginning, which contains the
+number of frames in the file. It is useful for computing duration of VBR files.
+The Xing frame is written if the output stream is seekable and if the
+@code{write_xing} option is set to 1 (the default).
 
 The muxer supports writing ID3v2 attached pictures (APIC frames). The pictures
 are supplied to the muxer in form of a video stream with a single packet. There

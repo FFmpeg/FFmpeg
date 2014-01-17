@@ -85,6 +85,7 @@ typedef struct MP3Context {
     ID3v2EncContext id3;
     int id3v2_version;
     int write_id3v1;
+    int write_xing;
 
     /* xing header */
     int64_t xing_offset;
@@ -125,7 +126,7 @@ static int mp3_write_xing(AVFormatContext *s)
     int              needed;
     const char      *vendor = (codec->flags & CODEC_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT;
 
-    if (!s->pb->seekable)
+    if (!s->pb->seekable || !mp3->write_xing)
         return 0;
 
     for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++) {
@@ -396,6 +397,8 @@ static const AVOption options[] = {
       offsetof(MP3Context, id3v2_version), AV_OPT_TYPE_INT, {.i64 = 4}, 3, 4, AV_OPT_FLAG_ENCODING_PARAM},
     { "write_id3v1", "Enable ID3v1 writing. ID3v1 tags are written in UTF-8 which may not be supported by most software.",
       offsetof(MP3Context, write_id3v1), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "write_xing",  "Write the Xing header containing file duration.",
+      offsetof(MP3Context, write_xing),  AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
