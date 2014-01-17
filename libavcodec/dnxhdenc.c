@@ -341,6 +341,11 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if (avctx->qmax <= 1) {
+        av_log(avctx, AV_LOG_ERROR, "qmax must be at least 2\n");
+        return AVERROR(EINVAL);
+    }
+
     ctx->thread[0] = ctx;
     for (i = 1; i < avctx->thread_count; i++) {
         ctx->thread[i] =  av_malloc(sizeof(DNXHDEncContext));
