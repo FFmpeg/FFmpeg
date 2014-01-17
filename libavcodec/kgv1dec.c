@@ -167,6 +167,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int decode_end(AVCodecContext *avctx)
+{
+    decode_flush(avctx);
+    return 0;
+}
+
 AVCodec ff_kgv1_decoder = {
     .name           = "kgv1",
     .long_name      = NULL_IF_CONFIG_SMALL("Kega Game Video"),
@@ -174,6 +180,7 @@ AVCodec ff_kgv1_decoder = {
     .id             = AV_CODEC_ID_KGV1,
     .priv_data_size = sizeof(KgvContext),
     .init           = decode_init,
+    .close          = decode_end,
     .decode         = decode_frame,
     .flush          = decode_flush,
     .capabilities   = CODEC_CAP_DR1,
