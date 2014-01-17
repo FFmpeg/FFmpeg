@@ -541,8 +541,10 @@ ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe
 
 The MP3 muxer writes a raw MP3 stream with an ID3v2 header at the beginning and
 optionally an ID3v1 tag at the end. ID3v2.3 and ID3v2.4 are supported, the
-@code{id3v2_version} option controls which one is used. The legacy ID3v1 tag is
-not written by default, but may be enabled with the @code{write_id3v1} option.
+@code{id3v2_version} option controls which one is used. Setting
+@code{id3v2_version} to 0 will disable the ID3v2 header completely. The legacy
+ID3v1 tag is not written by default, but may be enabled with the
+@code{write_id3v1} option.
 
 The muxer may also write a Xing frame at the beginning, which contains the
 number of frames in the file. It is useful for computing duration of VBR files.
@@ -572,6 +574,11 @@ with @code{map}:
 @example
 ffmpeg -i input.mp3 -i cover.png -c copy -map 0 -map 1
 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" out.mp3
+@end example
+
+Write a "clean" MP3 without any extra features:
+@example
+ffmpeg -i input.wav -write_xing 0 -id3v2_version 0 out.mp3
 @end example
 
 @section mpegts
