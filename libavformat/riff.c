@@ -42,6 +42,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_H264,         MKTAG('V', '2', '6', '4') },
     { AV_CODEC_ID_H264,         MKTAG('G', 'A', 'V', 'C') }, /* GeoVision camera */
     { AV_CODEC_ID_H264,         MKTAG('U', 'M', 'S', 'V') },
+    { AV_CODEC_ID_H264,         MKTAG('I', 'N', 'M', 'C') },
     { AV_CODEC_ID_H263,         MKTAG('H', '2', '6', '3') },
     { AV_CODEC_ID_H263,         MKTAG('X', '2', '6', '3') },
     { AV_CODEC_ID_H263,         MKTAG('T', '2', '6', '3') },
@@ -92,7 +93,6 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MPEG4,        MKTAG('D', 'M', 'K', '2') },
     { AV_CODEC_ID_MPEG4,        MKTAG('D', 'Y', 'M', '4') },
     { AV_CODEC_ID_MPEG4,        MKTAG('D', 'I', 'G', 'I') },
-    { AV_CODEC_ID_MPEG4,        MKTAG('I', 'N', 'M', 'C') },
     /* Ephv MPEG-4 */
     { AV_CODEC_ID_MPEG4,        MKTAG('E', 'P', 'H', 'V') },
     { AV_CODEC_ID_MPEG4,        MKTAG('E', 'M', '4', 'A') },
