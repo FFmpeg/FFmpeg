@@ -33,7 +33,7 @@ void ff_metadata_conv(AVDictionary **pm, const AVMetadataConv *d_conv,
     AVDictionary *dst = NULL;
     const char *key;
 
-    if (d_conv == s_conv)
+    if (d_conv == s_conv || !pm)
         return;
 
     while ((mtag = av_dict_get(*pm, "", mtag, AV_DICT_IGNORE_SUFFIX))) {
