@@ -26,13 +26,13 @@
 
 static int usage(const char *argv0, int ret)
 {
-    fprintf(stderr, "%s [-b bytespersec] input_url output_url\n", argv0);
+    fprintf(stderr, "%s [-b bytespersec] [-d duration] input_url output_url\n", argv0);
     return ret;
 }
 
 int main(int argc, char **argv)
 {
-    int bps = 0, ret, i;
+    int bps = 0, duration = 0, ret, i;
     const char *input_url = NULL, *output_url = NULL;
     int64_t stream_pos = 0;
     int64_t start_time;
@@ -45,6 +45,9 @@ int main(int argc, char **argv)
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-b") && i + 1 < argc) {
             bps = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-d") && i + 1 < argc) {
+            duration = atoi(argv[i + 1]);
             i++;
         } else if (!input_url) {
             input_url = argv[i];
@@ -62,6 +65,15 @@ int main(int argc, char **argv)
         av_strerror(ret, errbuf, sizeof(errbuf));
         fprintf(stderr, "Unable to open %s: %s\n", input_url, errbuf);
         return 1;
+    }
+    if (duration && !bps) {
+        int64_t size = avio_size(input);
+        if (size < 0) {
+            av_strerror(ret, errbuf, sizeof(errbuf));
+            fprintf(stderr, "Unable to get size of %s: %s\n", input_url, errbuf);
+            goto fail;
+        }
+        bps = size / duration;
     }
     ret = avio_open2(&output, output_url, AVIO_FLAG_WRITE, NULL, NULL);
     if (ret) {
