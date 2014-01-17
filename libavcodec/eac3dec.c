@@ -341,11 +341,6 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
         }
     }
 
-    /* default dolby matrix encoding modes */
-    s->dolby_surround_mode    = AC3_DSURMOD_NOTINDICATED;
-    s->dolby_surround_ex_mode = AC3_DSUREXMOD_NOTINDICATED;
-    s->dolby_headphone_mode   = AC3_DHEADPHONMOD_NOTINDICATED;
-
     /* mixing metadata */
     if (get_bits1(gbc)) {
         /* center and surround mix levels */
