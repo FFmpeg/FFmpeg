@@ -48,6 +48,7 @@
  * This stores all the private context for the codec.
  */
 struct xvid_context {
+    AVClass *class;
     void *encoder_handle;          /**< Handle for Xvid encoder */
     int xsize;                     /**< Frame x size */
     int ysize;                     /**< Frame y size */
