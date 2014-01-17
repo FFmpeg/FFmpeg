@@ -327,11 +327,11 @@ SECTION .text
 %endif
 
     ; calc fm mask
+%if cpuflag(ssse3)
     pxor                m0, m0
-    movd                m2, Id
-    movd                m3, Ed
-    pshufb              m2, m0                          ; I I I I ...
-    pshufb              m3, m0                          ; E E E E ...
+%endif
+    SPLATB_REG          m2, I, m0                       ; I I I I ...
+    SPLATB_REG          m3, E, m0                       ; E E E E ...
     mova                m0, [pb_80]
     pxor                m2, m0
     pxor                m3, m0
@@ -383,9 +383,10 @@ SECTION .text
     ABSSUB_CMP          m1, m9, m11, m6, m4, m5, m8     ; abs(p2 - p0) <= 1
     pand                m2, m1
     ABSSUB              m4, m10, m11, m5                ; abs(p1 - p0)
+%if cpuflag(ssse3)
     pxor                m0, m0
-    movd                m7, Hd
-    pshufb              m7, m0                          ; H H H H ...
+%endif
+    SPLATB_REG          m7, H, m0                       ; H H H H ...
     pxor                m7, m8
     pxor                m4, m8
     pcmpgtb             m0, m4, m7                      ; abs(p1 - p0) > H (1/2 hev condition)
@@ -595,6 +596,7 @@ cglobal vp9_loop_filter_h_16_16, 5,10,16, 256, dst, stride, E, I, H, mstride, ds
     RET
 %endmacro
 
+LPF_16_16_VH sse2
 LPF_16_16_VH ssse3
 LPF_16_16_VH avx
 

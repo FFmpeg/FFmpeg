@@ -217,10 +217,17 @@ filters_8tap_1d_fn2(avg, 32, avx2, ssse3)
 #undef filters_8tap_1d_fn3
 #undef filter_8tap_1d_fn
 
-void ff_vp9_loop_filter_v_16_16_ssse3(uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
-void ff_vp9_loop_filter_v_16_16_avx  (uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
-void ff_vp9_loop_filter_h_16_16_ssse3(uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
-void ff_vp9_loop_filter_h_16_16_avx  (uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
+#define lpf_funcs(size1, size2, opt) \
+void ff_vp9_loop_filter_v_##size1##_##size2##_##opt(uint8_t *dst, ptrdiff_t stride, \
+                                                    int E, int I, int H); \
+void ff_vp9_loop_filter_h_##size1##_##size2##_##opt(uint8_t *dst, ptrdiff_t stride, \
+                                                    int E, int I, int H)
+
+lpf_funcs(16, 16, sse2);
+lpf_funcs(16, 16, ssse3);
+lpf_funcs(16, 16, avx);
+
+#undef lpf_funcs
 
 #endif /* HAVE_YASM */
 
@@ -283,6 +290,10 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
         init_fpel(2, 1, 16, avg, sse2);
         init_fpel(1, 1, 32, avg, sse2);
         init_fpel(0, 1, 64, avg, sse2);
+        if (ARCH_X86_64) {
+            dsp->loop_filter_16[0] = ff_vp9_loop_filter_h_16_16_sse2;
+            dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_sse2;
+        }
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
