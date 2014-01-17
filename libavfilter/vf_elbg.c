@@ -36,7 +36,7 @@
 typedef struct {
     const AVClass *class;
     AVLFG lfg;
-    int lfg_seed;
+    unsigned int lfg_seed;
     int max_steps_nb;
     int *codeword;
     int codeword_length;
@@ -56,7 +56,7 @@ static const AVOption elbg_options[] = {
     { "nb_steps", "set max number of steps used to compute the mapping", OFFSET(max_steps_nb), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, FLAGS },
     { "n",        "set max number of steps used to compute the mapping", OFFSET(max_steps_nb), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, FLAGS },
     { "seed", "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
-    { "s",    "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
+    { "s",    "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT32_MAX, FLAGS },
     { NULL }
 };
 
