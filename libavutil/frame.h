@@ -419,12 +419,22 @@ typedef struct AVFrame {
     int            nb_side_data;
 
 /**
+ * @defgroup lavu_frame_flags AV_FRAME_FLAGS
+ * Flags describing additional frame properties.
+ *
+ * @{
+ */
+
+/**
  * The frame data may be corrupted, e.g. due to decoding errors.
  */
 #define AV_FRAME_FLAG_CORRUPT       (1 << 0)
+/**
+ * @}
+ */
 
     /**
-     * Frame flags, a combination of AV_FRAME_FLAG_*
+     * Frame flags, a combination of @ref lavu_frame_flags
      */
     int flags;
 
