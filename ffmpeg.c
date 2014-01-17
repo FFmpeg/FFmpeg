@@ -548,7 +548,7 @@ static void update_benchmark(const char *fmt, ...)
     }
 }
 
-static void close_all_output_streams(OutputStream *ost, int this_stream, int others)
+static void close_all_output_streams(OutputStream *ost, OSTFinished this_stream, OSTFinished others)
 {
     int i;
     for (i = 0; i < nb_output_streams; i++) {
@@ -658,7 +658,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     if (ret < 0) {
         print_error("av_interleaved_write_frame()", ret);
         main_return_code = 1;
-        close_all_output_streams(ost, 3, 1);
+        close_all_output_streams(ost, MUXER_FINISHED | ENCODER_FINISHED, ENCODER_FINISHED);
     }
 }
 
@@ -666,7 +666,7 @@ static void close_output_stream(OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
 
-    ost->finished |= 1;
+    ost->finished |= ENCODER_FINISHED;
     if (of->shortest) {
         int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, AV_TIME_BASE_Q);
         of->recording_time = FFMIN(of->recording_time, end);
@@ -1388,7 +1388,7 @@ static void flush_encoders(void)
                     stop_encoding = 1;
                     break;
                 }
-                if (ost->finished > 1) {
+                if (ost->finished & MUXER_FINISHED) {
                     av_free_packet(&pkt);
                     continue;
                 }
