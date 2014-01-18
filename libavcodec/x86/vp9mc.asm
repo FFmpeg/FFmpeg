@@ -381,7 +381,7 @@ cglobal %1%2, 5, 5, 4, dst, dstride, src, sstride, h
 INIT_MMX mmx
 fpel_fn put, 4,  strideq, strideq*2, stride3q, 4
 fpel_fn put, 8,  strideq, strideq*2, stride3q, 4
-INIT_MMX sse
+INIT_MMX mmxext
 fpel_fn avg, 4,  strideq, strideq*2, stride3q, 4
 fpel_fn avg, 8,  strideq, strideq*2, stride3q, 4
 INIT_XMM sse
