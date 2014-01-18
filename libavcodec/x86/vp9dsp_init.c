@@ -40,8 +40,8 @@ fpel_func(put,  8, mmx);
 fpel_func(put, 16, sse);
 fpel_func(put, 32, sse);
 fpel_func(put, 64, sse);
-fpel_func(avg,  4, sse);
-fpel_func(avg,  8, sse);
+fpel_func(avg,  4, mmxext);
+fpel_func(avg,  8, mmxext);
 fpel_func(avg, 16, sse2);
 fpel_func(avg, 32, sse2);
 fpel_func(avg, 64, sse2);
@@ -222,12 +222,15 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
         init_fpel(3, 0,  8, put, mmx);
     }
 
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
+        init_fpel(4, 1,  4, avg, mmxext);
+        init_fpel(3, 1,  8, avg, mmxext);
+    }
+
     if (EXTERNAL_SSE(cpu_flags)) {
         init_fpel(2, 0, 16, put, sse);
         init_fpel(1, 0, 32, put, sse);
         init_fpel(0, 0, 64, put, sse);
-        init_fpel(4, 1,  4, avg, sse);
-        init_fpel(3, 1,  8, avg, sse);
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
