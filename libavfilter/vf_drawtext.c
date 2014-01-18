@@ -50,6 +50,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
+#include FT_STROKER_H
 #if CONFIG_FONTCONFIG
 #include <fontconfig/fontconfig.h>
 #endif
@@ -134,6 +135,7 @@ typedef struct {
     int max_glyph_w;                ///< max glyph width
     int max_glyph_h;                ///< max glyph height
     int shadowx, shadowy;
+    int borderw;                    ///< border width
     unsigned int fontsize;          ///< font size to use
 
     short int draw_box;             ///< draw box around text - true or false
@@ -144,10 +146,12 @@ typedef struct {
     FFDrawContext dc;
     FFDrawColor fontcolor;          ///< foreground color
     FFDrawColor shadowcolor;        ///< shadow color
+    FFDrawColor bordercolor;        ///< border color
     FFDrawColor boxcolor;           ///< background color
 
     FT_Library library;             ///< freetype font library handle
     FT_Face face;                   ///< freetype font face handle
+    FT_Stroker stroker;             ///< freetype stroker handle
     struct AVTreeNode *glyphs;      ///< rendered glyphs, stored using the UTF-32 char code
     char *x_expr;                   ///< expression for x position
     char *y_expr;                   ///< expression for y position
@@ -178,6 +182,7 @@ static const AVOption drawtext_options[]= {
     {"textfile",    "set text file",        OFFSET(textfile),           AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX, FLAGS},
     {"fontcolor",   "set foreground color", OFFSET(fontcolor.rgba),     AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"boxcolor",    "set box color",        OFFSET(boxcolor.rgba),      AV_OPT_TYPE_COLOR,  {.str="white"}, CHAR_MIN, CHAR_MAX, FLAGS},
+    {"bordercolor", "set border color",     OFFSET(bordercolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"shadowcolor", "set shadow color",     OFFSET(shadowcolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"box",         "set box",              OFFSET(draw_box),           AV_OPT_TYPE_INT,    {.i64=0},     0,        1       , FLAGS},
     {"fontsize",    "set font size",        OFFSET(fontsize),           AV_OPT_TYPE_INT,    {.i64=0},     0,        INT_MAX , FLAGS},
@@ -185,6 +190,7 @@ static const AVOption drawtext_options[]= {
     {"y",           "set y expression",     OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
     {"shadowx",     "set x",                OFFSET(shadowx),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
     {"shadowy",     "set y",                OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
+    {"borderw",     "set border width",     OFFSET(borderw),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
     {"tabsize",     "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.i64=4},     0,        INT_MAX , FLAGS},
     {"basetime",    "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.i64=AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX , FLAGS},
 #if FF_API_DRAWTEXT_OLD_TIMELINE
@@ -245,6 +251,7 @@ typedef struct {
     FT_Glyph *glyph;
     uint32_t code;
     FT_Bitmap bitmap; ///< array holding bitmaps of font
+    FT_Bitmap border_bitmap; ///< array holding bitmaps of font border
     FT_BBox bbox;
     int advance;
     int bitmap_left;
@@ -284,6 +291,16 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
     if (FT_Get_Glyph(s->face->glyph, glyph->glyph)) {
         ret = AVERROR(EINVAL);
         goto error;
+    }
+    if (s->borderw) {
+        FT_Glyph border_glyph = *glyph->glyph;
+        if (FT_Glyph_StrokeBorder(&border_glyph, s->stroker, 0, 0) ||
+            FT_Glyph_To_Bitmap(&border_glyph, FT_RENDER_MODE_NORMAL, 0, 1)) {
+            ret = AVERROR_EXTERNAL;
+            goto error;
+        }
+        bitmapglyph = (FT_BitmapGlyph) border_glyph;
+        glyph->border_bitmap = bitmapglyph->bitmap;
     }
     if (FT_Glyph_To_Bitmap(glyph->glyph, FT_RENDER_MODE_NORMAL, 0, 1)) {
         ret = AVERROR_EXTERNAL;
@@ -490,6 +507,15 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
+    if (s->borderw) {
+        if (FT_Stroker_New(s->library, &s->stroker)) {
+            av_log(ctx, AV_LOG_ERROR, "Coult not init FT stroker\n");
+            return AVERROR_EXTERNAL;
+        }
+        FT_Stroker_Set(s->stroker, s->borderw << 6, FT_STROKER_LINECAP_ROUND,
+                       FT_STROKER_LINEJOIN_ROUND, 0);
+    }
+
     s->use_kerning = FT_HAS_KERNING(s->face);
 
     /* load the fallback glyph with code 0 */
@@ -546,6 +572,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     s->glyphs = NULL;
 
     FT_Done_Face(s->face);
+    FT_Stroker_Done(s->stroker);
     FT_Done_FreeType(s->library);
 
     av_bprint_finalize(&s->expanded_text, NULL);
@@ -565,6 +592,7 @@ static int config_input(AVFilterLink *inlink)
     ff_draw_init(&s->dc, inlink->format, 0);
     ff_draw_color(&s->dc, &s->fontcolor,   s->fontcolor.rgba);
     ff_draw_color(&s->dc, &s->shadowcolor, s->shadowcolor.rgba);
+    ff_draw_color(&s->dc, &s->bordercolor, s->bordercolor.rgba);
     ff_draw_color(&s->dc, &s->boxcolor,    s->boxcolor.rgba);
 
     s->var_values[VAR_w]     = s->var_values[VAR_W]     = s->var_values[VAR_MAIN_W] = inlink->w;
@@ -812,7 +840,8 @@ static int expand_text(AVFilterContext *ctx)
 }
 
 static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
-                       int width, int height, const uint8_t rgbcolor[4], FFDrawColor *color, int x, int y)
+                       int width, int height, const uint8_t rgbcolor[4],
+                       FFDrawColor *color, int x, int y, int borderw)
 {
     char *text = s->expanded_text.str;
     uint32_t code = 0;
@@ -821,6 +850,7 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
     Glyph *glyph = NULL;
 
     for (i = 0, p = text; *p; i++) {
+        FT_Bitmap bitmap;
         Glyph dummy = { 0 };
         GET_UTF8(code, *p++, continue;);
 
@@ -831,18 +861,20 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
         dummy.code = code;
         glyph = av_tree_find(s->glyphs, &dummy, (void *)glyph_cmp, NULL);
 
+        bitmap = borderw ? glyph->border_bitmap : glyph->bitmap;
+
         if (glyph->bitmap.pixel_mode != FT_PIXEL_MODE_MONO &&
             glyph->bitmap.pixel_mode != FT_PIXEL_MODE_GRAY)
             return AVERROR(EINVAL);
 
-        x1 = s->positions[i].x+s->x+x;
-        y1 = s->positions[i].y+s->y+y;
+        x1 = s->positions[i].x+s->x+x - borderw;
+        y1 = s->positions[i].y+s->y+y - borderw;
 
         ff_blend_mask(&s->dc, color,
                       frame->data, frame->linesize, width, height,
-                      glyph->bitmap.buffer, glyph->bitmap.pitch,
-                      glyph->bitmap.width, glyph->bitmap.rows,
-                      glyph->bitmap.pixel_mode == FT_PIXEL_MODE_MONO ? 0 : 3,
+                      bitmap.buffer, bitmap.pitch,
+                      bitmap.width, bitmap.rows,
+                      bitmap.pixel_mode == FT_PIXEL_MODE_MONO ? 0 : 3,
                       0, x1, y1);
     }
 
@@ -1003,12 +1035,17 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
 
     if (s->shadowx || s->shadowy) {
         if ((ret = draw_glyphs(s, frame, width, height, s->shadowcolor.rgba,
-                               &s->shadowcolor, s->shadowx, s->shadowy)) < 0)
+                               &s->shadowcolor, s->shadowx, s->shadowy, 0)) < 0)
             return ret;
     }
 
+    if (s->borderw) {
+        if ((ret = draw_glyphs(s, frame, width, height, s->bordercolor.rgba,
+                               &s->bordercolor, 0, 0, s->borderw)) < 0)
+            return ret;
+    }
     if ((ret = draw_glyphs(s, frame, width, height, s->fontcolor.rgba,
-                           &s->fontcolor, 0, 0)) < 0)
+                           &s->fontcolor, 0, 0, 0)) < 0)
         return ret;
 
     return 0;

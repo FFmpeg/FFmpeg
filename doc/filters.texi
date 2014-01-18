@@ -3548,6 +3548,16 @@ option, check the "Color" section in the ffmpeg-utils manual.
 
 The default value of @var{boxcolor} is "white".
 
+@item borderw
+Set the width of the border to be drawn around the text using @var{bordercolor}.
+The default value of @var{borderw} is 0.
+
+@item bordercolor
+Set the color to be used for drawing border around text. For the syntax of this
+option, check the "Color" section in the ffmpeg-utils manual.
+
+The default value of @var{bordercolor} is "black".
+
 @item expansion
 Select how the @var{text} is expanded. Can be either @code{none},
 @code{strftime} (deprecated) or
