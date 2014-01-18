@@ -637,6 +637,10 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
                      * Report the problem and keep the pair where it is,
                      * and mark this field valid.
                      */
+            if (h->short_ref[0] == h->cur_pic_ptr) {
+                av_log(h->avctx, AV_LOG_ERROR, "mmco: cannot assign current picture to short and long at the same time\n");
+                remove_short_at_index(h, 0);
+            }
 
             if (h->long_ref[mmco[i].long_arg] != h->cur_pic_ptr) {
                 if (h->cur_pic_ptr->long_ref) {
@@ -649,9 +653,6 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
                 }
                 av_assert0(!h->cur_pic_ptr->long_ref);
                 remove_long(h, mmco[i].long_arg, 0);
-                if (remove_short(h, h->cur_pic_ptr->frame_num, 0)) {
-                    av_log(h->avctx, AV_LOG_ERROR, "mmco: cannot assign current picture to short and long at the same time\n");
-                }
 
                 h->long_ref[mmco[i].long_arg]           = h->cur_pic_ptr;
                 h->long_ref[mmco[i].long_arg]->long_ref = 1;
