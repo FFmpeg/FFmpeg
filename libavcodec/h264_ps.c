@@ -252,7 +252,9 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
         if (sps->num_reorder_frames > 16U
             /* max_dec_frame_buffering || max_dec_frame_buffering > 16 */) {
             av_log(h->avctx, AV_LOG_ERROR,
-                   "illegal num_reorder_frames %d\n", sps->num_reorder_frames);
+                   "Clipping illegal num_reorder_frames %d\n",
+                   sps->num_reorder_frames);
+            sps->num_reorder_frames = 16;
             return AVERROR_INVALIDDATA;
         }
     }
