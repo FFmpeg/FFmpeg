@@ -3455,7 +3455,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     first_mb_in_slice = get_ue_golomb_long(&h->gb);
 
     if (first_mb_in_slice == 0) { // FIXME better field boundary detection
-        if (h0->current_slice && FIELD_PICTURE(h)) {
+        if (h0->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
             field_end(h, 1);
         }
 
