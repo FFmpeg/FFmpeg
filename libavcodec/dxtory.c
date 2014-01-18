@@ -135,7 +135,7 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
     if (!nslices || avctx->height % nslices) {
         avpriv_request_sample(avctx, "%d slices for %dx%d", nslices,
                               avctx->width, avctx->height);
-        return AVERROR(ENOSYS);
+        return AVERROR_PATCHWELCOME;
     }
 
     ref_slice_height = avctx->height / nslices;
