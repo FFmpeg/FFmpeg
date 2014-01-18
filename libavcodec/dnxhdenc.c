@@ -166,7 +166,7 @@ static av_cold int dnxhd_init_vlc(DNXHDEncContext *ctx)
     }
     return 0;
  fail:
-    return -1;
+    return AVERROR(ENOMEM);
 }
 
 static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
@@ -230,7 +230,7 @@ static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
 
     return 0;
  fail:
-    return -1;
+    return AVERROR(ENOMEM);
 }
 
 static av_cold int dnxhd_init_rc(DNXHDEncContext *ctx)
@@ -244,13 +244,13 @@ static av_cold int dnxhd_init_rc(DNXHDEncContext *ctx)
     ctx->lambda = 2<<LAMBDA_FRAC_BITS; // qscale 2
     return 0;
  fail:
-    return -1;
+    return AVERROR(ENOMEM);
 }
 
 static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
-    int i, index, bit_depth;
+    int i, index, bit_depth, ret;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV422P:
@@ -261,14 +261,14 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "pixel format is incompatible with DNxHD\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     ctx->cid = ff_dnxhd_find_cid(avctx, bit_depth);
     if (!ctx->cid) {
         av_log(avctx, AV_LOG_ERROR, "video parameters incompatible with DNxHD. Valid DNxHD profiles:\n");
         ff_dnxhd_print_profiles(avctx, AV_LOG_ERROR);
-        return -1;
+        return AVERROR(EINVAL);
     }
     av_log(avctx, AV_LOG_DEBUG, "cid %d\n", ctx->cid);
 
@@ -312,17 +312,17 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     if (avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
         ctx->m.intra_quant_bias = avctx->intra_quant_bias;
-    if (dnxhd_init_qmat(ctx, ctx->m.intra_quant_bias, 0) < 0) // XXX tune lbias/cbias
-        return -1;
+    if ((ret = dnxhd_init_qmat(ctx, ctx->m.intra_quant_bias, 0)) < 0) // XXX tune lbias/cbias
+        return ret;
 
     // Avid Nitris hardware decoder requires a minimum amount of padding in the coding unit payload
     if (ctx->nitris_compat)
         ctx->min_padding = 1600;
 
-    if (dnxhd_init_vlc(ctx) < 0)
-        return -1;
-    if (dnxhd_init_rc(ctx) < 0)
-        return -1;
+    if ((ret = dnxhd_init_vlc(ctx)) < 0)
+        return ret;
+    if ((ret = dnxhd_init_rc(ctx)) < 0)
+        return ret;
 
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->slice_size, ctx->m.mb_height*sizeof(uint32_t), fail);
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->slice_offs, ctx->m.mb_height*sizeof(uint32_t), fail);
@@ -338,7 +338,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     if (avctx->thread_count > MAX_THREADS) {
         av_log(avctx, AV_LOG_ERROR, "too many threads\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (avctx->qmax <= 1) {
@@ -354,7 +354,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     return 0;
  fail: //for FF_ALLOCZ_OR_GOTO
-    return -1;
+    return AVERROR(ENOMEM);
 }
 
 static int dnxhd_write_header(AVCodecContext *avctx, uint8_t *buf)
@@ -744,7 +744,7 @@ static int dnxhd_encode_rdo(AVCodecContext *avctx, DNXHDEncContext *ctx)
         //        lambda, last_higher, last_lower, bits, ctx->frame_bits);
         if (end) {
             if (bits > ctx->frame_bits)
-                return -1;
+                return AVERROR(EINVAL);
             break;
         }
         if (bits < ctx->frame_bits) {
@@ -763,7 +763,7 @@ static int dnxhd_encode_rdo(AVCodecContext *avctx, DNXHDEncContext *ctx)
             if (last_lower != INT_MAX)
                 lambda = (lambda+last_lower)>>1;
             else if ((int64_t)lambda + up_step > INT_MAX)
-                return -1;
+                return AVERROR(EINVAL);
             else
                 lambda += up_step;
             up_step = FFMIN((int64_t)up_step*5, INT_MAX);
@@ -825,7 +825,7 @@ static int dnxhd_find_qscale(DNXHDEncContext *ctx)
                 qscale += up_step++;
             down_step = 1;
             if (qscale >= ctx->m.avctx->qmax)
-                return -1;
+                return AVERROR(EINVAL);
         }
     }
     //av_dlog(ctx->m.avctx, "out qscale %d\n", qscale);
@@ -894,7 +894,7 @@ static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
     int max_bits = 0;
     int ret, x, y;
     if ((ret = dnxhd_find_qscale(ctx)) < 0)
-        return -1;
+        return ret;
     for (y = 0; y < ctx->m.mb_height; y++) {
         for (x = 0; x < ctx->m.mb_width; x++) {
             int mb = y*ctx->m.mb_width+x;
@@ -971,7 +971,7 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR,
                "picture could not fit ratecontrol constraints, increase qmax\n");
-        return -1;
+        return ret;
     }
 
     dnxhd_setup_threads_slices(ctx);
