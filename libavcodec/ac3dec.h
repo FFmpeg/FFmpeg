@@ -84,8 +84,13 @@ typedef struct AC3DecodeContext {
     int channel_mode;                       ///< channel mode                           (acmod)
     int lfe_on;                             ///< lfe channel in use
     int channel_map;                        ///< custom channel map
+    int preferred_downmix;                  ///< Preferred 2-channel downmix mode       (dmixmod)
     int center_mix_level;                   ///< Center mix level index
+    int center_mix_level_ltrt;              ///< Center mix level index for Lt/Rt       (ltrtcmixlev)
     int surround_mix_level;                 ///< Surround mix level index
+    int surround_mix_level_ltrt;            ///< Surround mix level index for Lt/Rt     (ltrtsurmixlev)
+    int lfe_mix_level_exists;               ///< indicates if lfemixlevcod is specified (lfemixlevcode)
+    int lfe_mix_level;                      ///< LFE mix level index                    (lfemixlevcod)
     int eac3;                               ///< indicates if current frame is E-AC-3
     int dolby_surround_mode;                ///< dolby surround mode                    (dsurmod)
     int dolby_surround_ex_mode;             ///< dolby surround ex mode                 (dsurexmod)
