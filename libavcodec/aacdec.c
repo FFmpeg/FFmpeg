@@ -189,6 +189,9 @@ static int frame_configure_elements(AVCodecContext *avctx)
         }
     }
 
+    if (!avctx->channels)
+        return 1;
+
     /* get output buffer */
     ac->frame->nb_samples = 2048;
     if ((ret = ff_get_buffer(avctx, ac->frame)) < 0) {
