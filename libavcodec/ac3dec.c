@@ -227,10 +227,6 @@ static int ac3_parse_header(AC3DecodeContext *s)
 
     skip_bits(gbc, 2); //skip copyright bit and original bitstream bit
 
-    /* default dolby matrix encoding modes */
-    s->dolby_surround_ex_mode = AC3_DSUREXMOD_NOTINDICATED;
-    s->dolby_headphone_mode   = AC3_DHEADPHONMOD_NOTINDICATED;
-
     /* skip the timecodes or parse the Alternate Bit Stream Syntax
        TODO: read & use the xbsi1 downmix levels */
     if (s->bitstream_id != 6) {
@@ -290,6 +286,8 @@ static int parse_frame_header(AC3DecodeContext *s)
     s->frame_type                   = hdr.frame_type;
     s->substreamid                  = hdr.substreamid;
     s->dolby_surround_mode          = hdr.dolby_surround_mode;
+    s->dolby_surround_ex_mode       = AC3_DSUREXMOD_NOTINDICATED;
+    s->dolby_headphone_mode         = AC3_DHEADPHONMOD_NOTINDICATED;
 
     if (s->lfe_on) {
         s->start_freq[s->lfe_ch]     = 0;
