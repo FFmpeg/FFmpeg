@@ -41,9 +41,10 @@
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 
+static int audio_is_eof, video_is_eof;
+
 #define STREAM_DURATION   10.0
 #define STREAM_FRAME_RATE 25 /* 25 images/s */
-#define STREAM_NB_FRAMES  ((int)(STREAM_DURATION * STREAM_FRAME_RATE))
 #define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P /* default pix_fmt */
 
 static int sws_flags = SWS_BICUBIC;
@@ -254,7 +255,7 @@ static void get_audio_frame(int16_t *samples, int frame_size, int nb_channels)
     }
 }
 
-static void write_audio_frame(AVFormatContext *oc, AVStream *st)
+static void write_audio_frame(AVFormatContext *oc, AVStream *st, int flush)
 {
     AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
@@ -263,6 +264,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     av_init_packet(&pkt);
     c = st->codec;
 
+    if (!flush) {
     get_audio_frame((int16_t *)src_samples_data[0], src_nb_samples, c->channels);
 
     /* convert samples from native format to destination codec format, using the resampler */
@@ -298,15 +300,19 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     avcodec_fill_audio_frame(audio_frame, c->channels, c->sample_fmt,
                              dst_samples_data[0], dst_samples_size, 0);
     samples_count += dst_nb_samples;
+    }
 
-    ret = avcodec_encode_audio2(c, &pkt, audio_frame, &got_packet);
+    ret = avcodec_encode_audio2(c, &pkt, flush ? NULL : audio_frame, &got_packet);
     if (ret < 0) {
         fprintf(stderr, "Error encoding audio frame: %s\n", av_err2str(ret));
         exit(1);
     }
 
-    if (!got_packet)
+    if (!got_packet) {
+        if (flush)
+            audio_is_eof = 1;
         return;
+    }
 
     ret = write_frame(oc, &c->time_base, st, &pkt);
     if (ret < 0) {
@@ -402,17 +408,13 @@ static void fill_yuv_image(AVPicture *pict, int frame_index,
     }
 }
 
-static void write_video_frame(AVFormatContext *oc, AVStream *st)
+static void write_video_frame(AVFormatContext *oc, AVStream *st, int flush)
 {
     int ret;
     static struct SwsContext *sws_ctx;
     AVCodecContext *c = st->codec;
 
-    if (frame_count >= STREAM_NB_FRAMES) {
-        /* No more frames to compress. The codec has a latency of a few
-         * frames if using B-frames, so we get the last frames by
-         * passing the same picture again. */
-    } else {
+    if (!flush) {
         if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
             /* as we only generate a YUV420P picture, we must convert it
              * to the codec pixel format if needed */
@@ -435,7 +437,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         }
     }
 
-    if (oc->oformat->flags & AVFMT_RAWPICTURE) {
+    if (oc->oformat->flags & AVFMT_RAWPICTURE && !flush) {
         /* Raw video case - directly store the picture in the packet */
         AVPacket pkt;
         av_init_packet(&pkt);
@@ -453,7 +455,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 
         /* encode the image */
         frame->pts = frame_count;
-        ret = avcodec_encode_video2(c, &pkt, frame, &got_packet);
+        ret = avcodec_encode_video2(c, &pkt, flush ? NULL : frame, &got_packet);
         if (ret < 0) {
             fprintf(stderr, "Error encoding video frame: %s\n", av_err2str(ret));
             exit(1);
@@ -463,6 +465,8 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         if (got_packet) {
             ret = write_frame(oc, &c->time_base, st, &pkt);
         } else {
+            if (flush)
+                video_is_eof = 1;
             ret = 0;
         }
     }
@@ -493,7 +497,7 @@ int main(int argc, char **argv)
     AVStream *audio_st, *video_st;
     AVCodec *audio_codec, *video_codec;
     double audio_time, video_time;
-    int ret;
+    int flush, ret;
 
     /* Initialize libavcodec, and register all codecs and formats. */
     av_register_all();
@@ -559,20 +563,23 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    for (;;) {
+    flush = 0;
+    while ((video_st && !video_is_eof) || (audio_st && !audio_is_eof)) {
         /* Compute current audio and video time. */
-        audio_time = audio_st ? audio_st->pts.val * av_q2d(audio_st->time_base) : 0.0;
-        video_time = video_st ? video_st->pts.val * av_q2d(video_st->time_base) : 0.0;
+        audio_time = (audio_st && !audio_is_eof) ? audio_st->pts.val * av_q2d(audio_st->time_base) : INFINITY;
+        video_time = (video_st && !video_is_eof) ? video_st->pts.val * av_q2d(video_st->time_base) : INFINITY;
 
-        if ((!audio_st || audio_time >= STREAM_DURATION) &&
-            (!video_st || video_time >= STREAM_DURATION))
-            break;
+        if (!flush &&
+            (!audio_st || audio_time >= STREAM_DURATION) &&
+            (!video_st || video_time >= STREAM_DURATION)) {
+            flush = 1;
+        }
 
         /* write interleaved audio and video frames */
-        if (!video_st || (video_st && audio_st && audio_time < video_time)) {
-            write_audio_frame(oc, audio_st);
-        } else {
-            write_video_frame(oc, video_st);
+        if (audio_st && !audio_is_eof && audio_time <= video_time) {
+            write_audio_frame(oc, audio_st, flush);
+        } else if (video_st && !video_is_eof && video_time < audio_time) {
+            write_video_frame(oc, video_st, flush);
         }
     }
 
