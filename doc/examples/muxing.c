@@ -310,7 +310,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
         return;
 
     ret = write_frame(oc, &c->time_base, st, &pkt);
-    if (ret != 0) {
+    if (ret < 0) {
         fprintf(stderr, "Error while writing audio frame: %s\n",
                 av_err2str(ret));
         exit(1);
@@ -467,7 +467,8 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
             ret = 0;
         }
     }
-    if (ret != 0) {
+
+    if (ret < 0) {
         fprintf(stderr, "Error while writing video frame: %s\n", av_err2str(ret));
         exit(1);
     }
