@@ -1634,8 +1634,12 @@ static int matroska_read_header(AVFormatContext *s)
         } else if (!strcmp(track->codec_id, "V_QUICKTIME")
                    && (track->codec_priv.size >= 86)
                    && (track->codec_priv.data != NULL)) {
-            fourcc = AV_RL32(track->codec_priv.data);
+            fourcc = AV_RL32(track->codec_priv.data + 4);
             codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
+            if (ff_codec_get_id(ff_codec_movvideo_tags, AV_RL32(track->codec_priv.data))) {
+                fourcc = AV_RL32(track->codec_priv.data);
+                codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
+            }
         } else if (codec_id == AV_CODEC_ID_ALAC && track->codec_priv.size && track->codec_priv.size < INT_MAX-12) {
             /* Only ALAC's magic cookie is stored in Matroska's track headers.
                Create the "atom size", "tag", and "tag version" fields the
