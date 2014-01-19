@@ -36,6 +36,7 @@
 
 #include <libavutil/opt.h>
 #include <libavutil/mathematics.h>
+#include <libavutil/timestamp.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
@@ -47,6 +48,30 @@
 #define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P /* default pix_fmt */
 
 static int sws_flags = SWS_BICUBIC;
+
+static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
+{
+    AVRational *time_base = &fmt_ctx->streams[pkt->stream_index]->time_base;
+
+    printf("pts:%s pts_time:%s dts:%s dts_time:%s duration:%s duration_time:%s stream_index:%d\n",
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, time_base),
+           av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, time_base),
+           pkt->stream_index);
+}
+
+static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
+{
+    /* rescale output packet timestamp values from codec to stream timebase */
+    pkt->pts = av_rescale_q_rnd(pkt->pts, *time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+    pkt->dts = av_rescale_q_rnd(pkt->dts, *time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+    pkt->duration = av_rescale_q(pkt->duration, *time_base, st->time_base);
+    pkt->stream_index = st->index;
+
+    /* Write the compressed frame to the media file. */
+    log_packet(fmt_ctx, pkt);
+    return av_interleaved_write_frame(fmt_ctx, pkt);
+}
 
 /* Add an output stream. */
 static AVStream *add_stream(AVFormatContext *oc, AVCodec **codec,
@@ -284,14 +309,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     if (!got_packet)
         return;
 
-    /* rescale output packet timestamp values from codec to stream timebase */
-    pkt.pts = av_rescale_q_rnd(pkt.pts, c->time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-    pkt.dts = av_rescale_q_rnd(pkt.dts, c->time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-    pkt.duration = av_rescale_q(pkt.duration, c->time_base, st->time_base);
-    pkt.stream_index = st->index;
-
-    /* Write the compressed frame to the media file. */
-    ret = av_interleaved_write_frame(oc, &pkt);
+    ret = write_frame(oc, &c->time_base, st, &pkt);
     if (ret != 0) {
         fprintf(stderr, "Error while writing audio frame: %s\n",
                 av_err2str(ret));
@@ -443,15 +461,8 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         }
         /* If size is zero, it means the image was buffered. */
 
-        if (!ret && got_packet && pkt.size) {
-            /* rescale output packet timestamp values from codec to stream timebase */
-            pkt.pts = av_rescale_q_rnd(pkt.pts, c->time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-            pkt.dts = av_rescale_q_rnd(pkt.dts, c->time_base, st->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-            pkt.duration = av_rescale_q(pkt.duration, c->time_base, st->time_base);
-            pkt.stream_index = st->index;
-
-            /* Write the compressed frame to the media file. */
-            ret = av_interleaved_write_frame(oc, &pkt);
+        if (got_packet) {
+            ret = write_frame(oc, &c->time_base, st, &pkt);
         } else {
             ret = 0;
         }
