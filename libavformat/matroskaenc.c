@@ -548,8 +548,18 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         if (qt_id) {
             if (!codec->codec_tag)
                 codec->codec_tag = ff_codec_get_tag(ff_codec_movvideo_tags, codec->codec_id);
-            if (codec->extradata_size)
+            if (codec->extradata_size) {
+                if (   ff_codec_get_id(ff_codec_movvideo_tags, codec->codec_tag) == codec->codec_id
+                    && ff_codec_get_id(ff_codec_movvideo_tags, AV_RL32(codec->extradata+4)) != codec->codec_id
+                ) {
+                    int i;
+                    avio_wb32(dyn_cp, 0x5a + codec->extradata_size);
+                    avio_wl32(dyn_cp, codec->codec_tag);
+                    for(i=0; i<0x5a-8; i++)
+                        avio_w8(dyn_cp, 0);
+                }
                 avio_write(dyn_cp, codec->extradata, codec->extradata_size);
+            }
         } else {
             if (!ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id))
                 av_log(s, AV_LOG_WARNING, "codec %s is not supported by this format\n",
