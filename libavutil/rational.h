@@ -46,6 +46,17 @@ typedef struct AVRational{
 } AVRational;
 
 /**
+ * Create a rational.
+ * Useful for compilers that do not support compound literals.
+ * @note  The return value is not reduced.
+ */
+static inline AVRational av_make_q(int num, int den)
+{
+    AVRational r = { num, den };
+    return r;
+}
+
+/**
  * Compare two rationals.
  * @param a first rational
  * @param b second rational

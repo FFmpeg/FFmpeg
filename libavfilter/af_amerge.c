@@ -259,7 +259,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     outbuf->pts = inbuf[0]->pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
                   inbuf[0]->pts +
                   av_rescale_q(am->in[0].pos,
-                               (AVRational){ 1, ctx->inputs[0]->sample_rate },
+                               av_make_q(1, ctx->inputs[0]->sample_rate),
                                ctx->outputs[0]->time_base);
 
     outbuf->nb_samples     = nb_samples;
