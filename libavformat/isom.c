@@ -574,3 +574,12 @@ void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout)
     avio_wb32(pb, 0);              // mNumberChannelDescriptions
 }
 
+const struct AVCodecTag *avformat_get_mov_video_tags(void)
+{
+    return ff_codec_movvideo_tags;
+}
+
+const struct AVCodecTag *avformat_get_mov_audio_tags(void)
+{
+    return ff_codec_movaudio_tags;
+}

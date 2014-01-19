@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-01-19 - xxxxxxx - lavf 55.25.100 - avformat.h
+    Add avformat_get_mov_video_tags() and avformat_get_mov_audio_tags().
+
 2014-01-19 - xxxxxxx - lavu 52.63.100 - rational.h
   Add av_make_q() function.
 

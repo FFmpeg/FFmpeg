@@ -2188,6 +2188,14 @@ const struct AVCodecTag *avformat_get_riff_video_tags(void);
  * @return the table mapping RIFF FourCCs for audio to AVCodecID.
  */
 const struct AVCodecTag *avformat_get_riff_audio_tags(void);
+/**
+ * @return the table mapping MOV FourCCs for video to libavcodec AVCodecID.
+ */
+const struct AVCodecTag *avformat_get_mov_video_tags(void);
+/**
+ * @return the table mapping MOV FourCCs for audio to AVCodecID.
+ */
+const struct AVCodecTag *avformat_get_mov_audio_tags(void);
 
 /**
  * @}
