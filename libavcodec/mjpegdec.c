@@ -1951,7 +1951,7 @@ eoi_parser:
                "marker parser used %d bytes (%d bits)\n",
                (get_bits_count(&s->gb) + 7) / 8, get_bits_count(&s->gb));
     }
-    if (s->got_picture) {
+    if (s->got_picture && s->cur_scan) {
         av_log(avctx, AV_LOG_WARNING, "EOI missing, emulating\n");
         goto eoi_parser;
     }
