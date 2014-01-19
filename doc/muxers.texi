@@ -837,7 +837,7 @@ In particular may be used in combination with the @file{ffmpeg} option
 @var{force_key_frames} may not be set accurately because of rounding
 issues, with the consequence that a key frame time may result set just
 before the specified time. For constant frame rate videos a value of
-1/2*@var{frame_rate} should address the worst case mismatch between
+1/(2*@var{frame_rate}) should address the worst case mismatch between
 the specified time and the time set by @var{force_key_frames}.
 
 @item segment_times @var{times}
