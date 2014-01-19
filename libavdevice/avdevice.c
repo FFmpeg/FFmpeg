@@ -44,3 +44,11 @@ int avdevice_app_to_dev_control_message(struct AVFormatContext *s, enum AVAppToD
         return AVERROR(ENOSYS);
     return s->oformat->control_message(s, type, data, data_size);
 }
+
+int avdevice_dev_to_app_control_message(struct AVFormatContext *s, enum AVDevToAppMessageType type,
+                                        void *data, size_t data_size)
+{
+    if (!s->control_message_cb)
+        return AVERROR(ENOSYS);
+    return s->control_message_cb(s, type, data, data_size);
+}
