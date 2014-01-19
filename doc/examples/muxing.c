@@ -41,8 +41,7 @@
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 
-/* 5 seconds stream duration */
-#define STREAM_DURATION   200.0
+#define STREAM_DURATION   10.0
 #define STREAM_FRAME_RATE 25 /* 25 images/s */
 #define STREAM_NB_FRAMES  ((int)(STREAM_DURATION * STREAM_FRAME_RATE))
 #define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P /* default pix_fmt */
