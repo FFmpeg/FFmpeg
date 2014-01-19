@@ -1722,6 +1722,15 @@ static int matroska_read_header(AVFormatContext *s)
                 return ret;
             codec_id = st->codec->codec_id;
             extradata_offset = FFMIN(track->codec_priv.size, 18);
+        } else if (!strcmp(track->codec_id, "A_QUICKTIME")
+                   && (track->codec_priv.size >= 86)
+                   && (track->codec_priv.data != NULL)) {
+            fourcc = AV_RL32(track->codec_priv.data + 4);
+            codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
+            if (ff_codec_get_id(ff_codec_movaudio_tags, AV_RL32(track->codec_priv.data))) {
+                fourcc = AV_RL32(track->codec_priv.data);
+                codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
+            }
         } else if (!strcmp(track->codec_id, "V_QUICKTIME")
                    && (track->codec_priv.size >= 86)
                    && (track->codec_priv.data != NULL)) {
