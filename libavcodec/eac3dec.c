@@ -349,12 +349,12 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
             if (s->channel_mode & 1) {
                 /* if three front channels exist */
                 s->center_mix_level_ltrt = get_bits(gbc, 3);
-                s->center_mix_level = get_bits(gbc, 3);
+                s->center_mix_level      = get_bits(gbc, 3);
             }
             if (s->channel_mode & 4) {
                 /* if a surround channel exists */
                 s->surround_mix_level_ltrt = av_clip(get_bits(gbc, 3), 3, 7);
-                s->surround_mix_level = av_clip(get_bits(gbc, 3), 3, 7);
+                s->surround_mix_level      = av_clip(get_bits(gbc, 3), 3, 7);
             }
         }
 
