@@ -1596,8 +1596,6 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
         int t = 0, b = 0;
         PutBitContext pb;
 
-        s->cur_scan++;
-
         /* find marker */
         while (src + t < buf_end) {
             uint8_t x = src[t++];
@@ -1783,6 +1781,7 @@ eoi_parser:
 
                 goto the_end;
             case SOS:
+                s->cur_scan++;
                 if ((ret = ff_mjpeg_decode_sos(s, NULL, NULL)) < 0 &&
                     (avctx->err_recognition & AV_EF_EXPLODE))
                     goto fail;
