@@ -1659,7 +1659,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                                           &unescaped_buf_size);
         /* EOF */
         if (start_code < 0) {
-            goto the_end;
+            break;
         } else if (unescaped_buf_size > INT_MAX / 8) {
             av_log(avctx, AV_LOG_ERROR,
                    "MJPEG packet 0x%x too big (%d/%d), corrupt data?\n",
