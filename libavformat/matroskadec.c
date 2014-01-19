@@ -1732,7 +1732,7 @@ static int matroska_read_header(AVFormatContext *s)
                 codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
             }
         } else if (!strcmp(track->codec_id, "V_QUICKTIME")
-                   && (track->codec_priv.size >= 86)
+                   && (track->codec_priv.size >= 21)
                    && (track->codec_priv.data != NULL)) {
             fourcc = AV_RL32(track->codec_priv.data + 4);
             codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
@@ -1740,6 +1740,8 @@ static int matroska_read_header(AVFormatContext *s)
                 fourcc = AV_RL32(track->codec_priv.data);
                 codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
             }
+            if (codec_id == AV_CODEC_ID_NONE && AV_RL32(track->codec_priv.data+4) == AV_RL32("SMI "))
+                codec_id = AV_CODEC_ID_SVQ3;
         } else if (codec_id == AV_CODEC_ID_PCM_S16BE) {
             switch (track->audio.bitdepth) {
             case  8:  codec_id = AV_CODEC_ID_PCM_U8;     break;
