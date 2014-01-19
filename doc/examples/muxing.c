@@ -518,9 +518,9 @@ int main(int argc, char **argv)
         printf("Could not deduce output format from file extension: using MPEG.\n");
         avformat_alloc_output_context2(&oc, NULL, "mpeg", filename);
     }
-    if (!oc) {
+    if (!oc)
         return 1;
-    }
+
     fmt = oc->oformat;
 
     /* Add the audio and video streams using the default format codecs
@@ -528,12 +528,10 @@ int main(int argc, char **argv)
     video_st = NULL;
     audio_st = NULL;
 
-    if (fmt->video_codec != AV_CODEC_ID_NONE) {
+    if (fmt->video_codec != AV_CODEC_ID_NONE)
         video_st = add_stream(oc, &video_codec, fmt->video_codec);
-    }
-    if (fmt->audio_codec != AV_CODEC_ID_NONE) {
+    if (fmt->audio_codec != AV_CODEC_ID_NONE)
         audio_st = add_stream(oc, &audio_codec, fmt->audio_codec);
-    }
 
     /* Now that all the parameters are set, we can open the audio and
      * video codecs and allocate the necessary encode buffers. */
