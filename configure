@@ -1246,6 +1246,7 @@ EXAMPLE_LIST="
     filtering_video_example
     metadata_example
     muxing_example
+    remuxing_example
     resampling_audio_example
     scaling_video_example
     transcode_aac_example

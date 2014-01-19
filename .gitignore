@@ -41,6 +41,7 @@
 /doc/examples/metadata
 /doc/examples/muxing
 /doc/examples/pc-uninstalled
+/doc/examples/remuxing
 /doc/examples/resampling_audio
 /doc/examples/scaling_video
 /doc/examples/transcode_aac

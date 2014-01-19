@@ -17,6 +17,7 @@ EXAMPLES=       decoding_encoding                  \
                 filtering_audio                    \
                 metadata                           \
                 muxing                             \
+                remuxing                           \
                 resampling_audio                   \
                 scaling_video                      \
                 transcode_aac                      \
