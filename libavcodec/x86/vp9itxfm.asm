@@ -58,6 +58,13 @@ VP9_IDCT_COEFFS  8423, 14053
 VP9_IDCT_COEFFS 13160,  9760
 VP9_IDCT_COEFFS  2404, 16207
 
+pw_5283_13377: times 4 dw 5283, 13377
+pw_9929_13377: times 4 dw 9929, 13377
+pw_15212_m13377: times 4 dw 15212, -13377
+pw_15212_9929: times 4 dw 15212, 9929
+pw_m5283_m15212: times 4 dw -5283, -15212
+pw_13377x2: times 8 dw 13377*2
+
 pd_8192: times 4 dd 8192
 pw_2048: times 8 dw 2048
 pw_1024: times 8 dw 1024
@@ -238,6 +245,68 @@ cglobal vp9_idct_idct_4x4_add, 4,4,0, dst, stride, block, eob
     mova       [blockq+24], m4
     VP9_IDCT4_WRITEOUT
     RET
+
+;-------------------------------------------------------------------------------------------
+; void vp9_iadst_iadst_4x4_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
+;-------------------------------------------------------------------------------------------
+
+%macro VP9_IADST4_1D 0
+    movq2dq           xmm0, m0
+    movq2dq           xmm1, m1
+    movq2dq           xmm2, m2
+    movq2dq           xmm3, m3
+    paddw               m3, m0
+    punpcklwd         xmm0, xmm1
+    punpcklwd         xmm2, xmm3
+    pmaddwd           xmm1, xmm0, [pw_5283_13377]
+    pmaddwd           xmm4, xmm0, [pw_9929_13377]
+    pmaddwd           xmm0, [pw_15212_m13377]
+    pmaddwd           xmm3, xmm2, [pw_15212_9929]
+    pmaddwd           xmm2, [pw_m5283_m15212]
+    psubw               m3, m2
+    paddd             xmm0, xmm2
+    paddd             xmm3, [pd_8192]
+    paddd             xmm2, [pd_8192]
+    paddd             xmm1, xmm3
+    paddd             xmm0, xmm3
+    paddd             xmm4, xmm2
+    psrad             xmm1, 14
+    psrad             xmm0, 14
+    psrad             xmm4, 14
+    pmulhrsw            m3, [pw_13377x2]        ; out2
+    packssdw          xmm0, xmm0
+    packssdw          xmm1, xmm1
+    packssdw          xmm4, xmm4
+    movdq2q             m0, xmm0                ; out3
+    movdq2q             m1, xmm1                ; out0
+    movdq2q             m2, xmm4                ; out1
+    SWAP                 0, 1, 2, 3
+%endmacro
+
+%macro IADST4_FN 5
+INIT_MMX %5
+cglobal vp9_%1_%3_4x4_add, 3, 3, 8, dst, stride, block, eob
+    mova                m0, [blockq+ 0]
+    mova                m1, [blockq+ 8]
+    mova                m2, [blockq+16]
+    mova                m3, [blockq+24]
+    mova                m6, [pw_11585x2]
+    mova                m7, [pd_8192]       ; rounding
+    VP9_%2_1D
+    TRANSPOSE4x4W  0, 1, 2, 3, 4
+    VP9_%4_1D
+    pxor                m4, m4  ; used for the block reset, and VP9_STORE_2X
+    mova       [blockq+ 0], m4
+    mova       [blockq+ 8], m4
+    mova       [blockq+16], m4
+    mova       [blockq+24], m4
+    VP9_IDCT4_WRITEOUT
+    RET
+%endmacro
+
+IADST4_FN idct,  IDCT4,  iadst, IADST4, ssse3
+IADST4_FN iadst, IADST4, idct,  IDCT4,  ssse3
+IADST4_FN iadst, IADST4, iadst, IADST4, ssse3
 
 %if ARCH_X86_64 ; TODO: 32-bit? (32-bit limited to 8 xmm reg, we use more)
 
