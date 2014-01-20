@@ -15,6 +15,11 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-01-xx - xxxxxxx - lavc 55.32.1 - avcodec.h
+  Edges are not required anymore on video buffers allocated by get_buffer2()
+  (i.e. as if the CODEC_FLAG_EMU_EDGE flag was always on). Deprecate
+  CODEC_FLAG_EMU_EDGE and avcodec_get_edge_width().
+
 2014-01-19 - xxxxxxx - lavf 55.25.100 - avformat.h
     Add avformat_get_mov_video_tags() and avformat_get_mov_audio_tags().
 

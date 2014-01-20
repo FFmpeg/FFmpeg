@@ -222,10 +222,12 @@ av_cold void avcodec_register(AVCodec *codec)
         codec->init_static_data(codec);
 }
 
+#if FF_API_EMU_EDGE
 unsigned avcodec_get_edge_width(void)
 {
     return EDGE_WIDTH;
 }
+#endif
 
 #if FF_API_SET_DIMENSIONS
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height)
@@ -1491,6 +1493,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 }
             }
         }
+
+#if FF_API_EMU_EDGE
+        /* force the emu edge flag on, since it's now always active */
+        avctx->flags |= CODEC_FLAG_EMU_EDGE;
+#endif
     }
 end:
     ff_unlock_avcodec();
