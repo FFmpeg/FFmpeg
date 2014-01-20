@@ -415,15 +415,21 @@ fail:
  */
 static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
 {
+    int edges_needed = av_codec_is_encoder(s->avctx->codec);
     int r, ret;
 
     pic->tf.f = &pic->f;
     if (s->codec_id != AV_CODEC_ID_WMV3IMAGE &&
         s->codec_id != AV_CODEC_ID_VC1IMAGE  &&
-        s->codec_id != AV_CODEC_ID_MSS2)
+        s->codec_id != AV_CODEC_ID_MSS2) {
+        if (edges_needed) {
+            pic->f.width  = s->avctx->width  + 2 * EDGE_WIDTH;
+            pic->f.height = s->avctx->height + 2 * EDGE_WIDTH;
+        }
+
         r = ff_thread_get_buffer(s->avctx, &pic->tf,
                                  pic->reference ? AV_GET_BUFFER_FLAG_REF : 0);
-    else {
+    } else {
         pic->f.width  = s->avctx->width;
         pic->f.height = s->avctx->height;
         pic->f.format = s->avctx->pix_fmt;
@@ -434,6 +440,18 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (%d %p)\n",
                r, pic->f.data[0]);
         return -1;
+    }
+
+    if (edges_needed) {
+        int i;
+        for (i = 0; pic->f.data[i]; i++) {
+            int offset = (EDGE_WIDTH >> (i ? s->chroma_y_shift : 0)) *
+                         pic->f.linesize[i] +
+                         (EDGE_WIDTH >> (i ? s->chroma_x_shift : 0));
+            pic->f.data[i] += offset;
+        }
+        pic->f.width  = s->avctx->width;
+        pic->f.height = s->avctx->height;
     }
 
     if (s->avctx->hwaccel) {
