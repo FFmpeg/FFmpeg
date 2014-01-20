@@ -680,26 +680,7 @@ static int left_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src, int
     if (s->bps <= 8) {
         return s->dsp.add_hfyu_left_prediction(dst, src, w, acc);
     } else {
-        //FIXME optimize
-        unsigned mask = s->n-1;
-        int i;
-        const uint16_t *src16 = (const uint16_t *)src;
-        uint16_t       *dst16 = (      uint16_t *)dst;
-
-        for(i=0; i<w-1; i++){
-            acc+= src16[i];
-            dst16[i]= acc & mask;
-            i++;
-            acc+= src16[i];
-            dst16[i]= acc & mask;
-        }
-
-        for(; i<w; i++){
-            acc+= src16[i];
-            dst16[i]= acc & mask;
-        }
-
-        return acc;
+        return s->llviddsp.add_hfyu_left_prediction_int16((      uint16_t *)dst, (const uint16_t *)src, s->n-1, w, acc);
     }
 }
 

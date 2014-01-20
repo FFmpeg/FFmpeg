@@ -59,10 +59,31 @@ static void diff_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *sr
         dst[i] = (src1[i] - src2[i]) & mask;
 }
 
+static int add_hfyu_left_prediction_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int acc){
+    int i;
+
+    for(i=0; i<w-1; i++){
+        acc+= src[i];
+        dst[i]= acc & mask;
+        i++;
+        acc+= src[i];
+        dst[i]= acc & mask;
+    }
+
+    for(; i<w; i++){
+        acc+= src[i];
+        dst[i]= acc & mask;
+    }
+
+    return acc;
+}
+
+
 void ff_llviddsp_init(LLVidDSPContext *c)
 {
     c->add_int16 = add_int16_c;
     c->diff_int16= diff_int16_c;
+    c->add_hfyu_left_prediction_int16   = add_hfyu_left_prediction_int16_c;
 
     if (ARCH_X86)
         ff_llviddsp_init_x86(c);
