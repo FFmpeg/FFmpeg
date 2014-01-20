@@ -108,6 +108,19 @@ static av_cold int libssh_open_file(LIBSSHContext *libssh, int flags, const char
     return 0;
 }
 
+static av_cold void libssh_stat_file(LIBSSHContext *libssh)
+{
+    sftp_attributes stat;
+
+    if (!(stat = sftp_fstat(libssh->file))) {
+        av_log(libssh, AV_LOG_WARNING, "Cannot stat remote file.\n");
+        libssh->filesize = -1;
+    } else {
+        libssh->filesize = stat->size;
+        sftp_attributes_free(stat);
+    }
+}
+
 static int libssh_close(URLContext *h)
 {
     LIBSSHContext *s = h->priv_data;
@@ -131,7 +144,6 @@ static int libssh_open(URLContext *h, const char *url, int flags)
     long timeout = s->rw_timeout * 1000;
     const char *user = NULL, *pass = NULL;
     char *end = NULL;
-    sftp_attributes stat;
 
     av_url_split(proto, sizeof(proto),
                  credencials, sizeof(credencials),
@@ -179,13 +191,7 @@ static int libssh_open(URLContext *h, const char *url, int flags)
     if ((ret = libssh_open_file(s, flags, path)) < 0)
         goto fail;
 
-    if (!(stat = sftp_fstat(s->file))) {
-        av_log(h, AV_LOG_WARNING, "Cannot stat remote file %s.\n", path);
-        s->filesize = -1;
-    } else {
-        s->filesize = stat->size;
-        sftp_attributes_free(stat);
-    }
+    libssh_stat_file(s);
 
     return 0;
 
