@@ -698,25 +698,7 @@ static void add_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *s
     if (s->bps <= 8) {
         s->dsp.add_hfyu_median_prediction(dst, src, diff, w, left, left_top);
     } else {
-        //FIXME optimize
-        unsigned mask = s->n-1;
-        int i;
-        uint16_t l, lt;
-        const uint16_t *src16  = (const uint16_t *)src;
-        const uint16_t *diff16 = (const uint16_t *)diff;
-        uint16_t       *dst16  = (      uint16_t *)dst;
-
-        l  = *left;
-        lt = *left_top;
-
-        for(i=0; i<w; i++){
-            l  = (mid_pred(l, src16[i], (l + src16[i] - lt) & mask) + diff16[i]) & mask;
-            lt = src16[i];
-            dst16[i] = l;
-        }
-
-        *left     = l;
-        *left_top = lt;
+        s->llviddsp.add_hfyu_median_prediction_int16((uint16_t *)dst, (const uint16_t *)src, (const uint16_t *)diff, s->n-1, w, left, left_top);
     }
 }
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,

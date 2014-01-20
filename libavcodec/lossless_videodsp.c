@@ -19,6 +19,7 @@
  */
 #include "avcodec.h"
 #include "lossless_videodsp.h"
+#include "libavcodec/mathops.h"
 
 static void add_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w){
     long i;
@@ -59,6 +60,23 @@ static void diff_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *sr
         dst[i] = (src1[i] - src2[i]) & mask;
 }
 
+static void add_hfyu_median_prediction_int16_c(uint16_t *dst, const uint16_t *src, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top){
+    int i;
+    uint16_t l, lt;
+
+    l  = *left;
+    lt = *left_top;
+
+    for(i=0; i<w; i++){
+        l  = (mid_pred(l, src[i], (l + src[i] - lt) & mask) + diff[i]) & mask;
+        lt = src[i];
+        dst[i] = l;
+    }
+
+    *left     = l;
+    *left_top = lt;
+}
+
 static int add_hfyu_left_prediction_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int acc){
     int i;
 
@@ -84,6 +102,7 @@ void ff_llviddsp_init(LLVidDSPContext *c)
     c->add_int16 = add_int16_c;
     c->diff_int16= diff_int16_c;
     c->add_hfyu_left_prediction_int16   = add_hfyu_left_prediction_int16_c;
+    c->add_hfyu_median_prediction_int16 = add_hfyu_median_prediction_int16_c;
 
     if (ARCH_X86)
         ff_llviddsp_init_x86(c);
