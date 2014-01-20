@@ -32,7 +32,7 @@ pb_zzzzzzzz67676767: db -1,-1,-1,-1,-1,-1,-1,-1, 6, 7, 6, 7, 6, 7, 6, 7
 SECTION_TEXT
 
 %macro ADD_INT16_LOOP 1 ; %1 = is_aligned
-    movd      m4, maskq
+    movd      m4, maskd
     SPLATW  m4, m4
     add     wq, wq
     test    wq, 2*mmsize - 1
