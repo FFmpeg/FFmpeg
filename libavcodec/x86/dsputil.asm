@@ -465,6 +465,71 @@ cglobal add_hfyu_left_prediction, 3,3,7, dst, src, w, left
 .src_unaligned:
     ADD_HFYU_LEFT_LOOP 0, 0
 
+
+%macro ADD_INT16_LOOP 1 ; %1 = is_aligned
+    movd      m4, maskq
+    punpcklwd m4, m4
+    punpcklwd m4, m4
+    punpcklwd m4, m4
+    add     wq, wq
+    test    wq, 2*mmsize - 1
+    jz %%.tomainloop
+%%.wordloop:
+    sub     wq, 2
+    mov     ax, [srcq+wq]
+    add     ax, [dstq+wq]
+    and     ax, maskw
+    mov     [dstq+wq], ax
+    test    wq, 2*mmsize - 1
+    jnz %%.wordloop
+%%.tomainloop:
+    add     srcq, wq
+    add     dstq, wq
+    neg     wq
+    jz      %%.end
+%%.loop:
+%if %1
+    mova    m0, [srcq+wq]
+    mova    m1, [dstq+wq]
+    mova    m2, [srcq+wq+mmsize]
+    mova    m3, [dstq+wq+mmsize]
+%else
+    movu    m0, [srcq+wq]
+    movu    m1, [dstq+wq]
+    movu    m2, [srcq+wq+mmsize]
+    movu    m3, [dstq+wq+mmsize]
+%endif
+    paddw   m0, m1
+    paddw   m2, m3
+    pand    m0, m4
+    pand    m2, m4
+%if %1
+    mova    [dstq+wq]       , m0
+    mova    [dstq+wq+mmsize], m2
+%else
+    movu    [dstq+wq]       , m0
+    movu    [dstq+wq+mmsize], m2
+%endif
+    add     wq, 2*mmsize
+    jl %%.loop
+%%.end:
+    RET
+%endmacro
+
+INIT_MMX mmx
+cglobal add_int16, 4,4,5, dst, src, mask, w
+    ADD_INT16_LOOP 1
+
+INIT_XMM sse2
+cglobal add_int16, 4,4,5, dst, src, mask, w
+    test srcq, mmsize-1
+    jnz .unaligned
+    test dstq, mmsize-1
+    jnz .unaligned
+    ADD_INT16_LOOP 1
+.unaligned:
+    ADD_INT16_LOOP 0
+
 ;-----------------------------------------------------------------------------
 ; void ff_vector_clip_int32(int32_t *dst, const int32_t *src, int32_t min,
 ;                           int32_t max, unsigned int len)
