@@ -84,6 +84,30 @@ static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user
     return 0;
 }
 
+static av_cold int libssh_open_file(LIBSSHContext *libssh, int flags, const char *file)
+{
+    int access;
+
+    if ((flags & AVIO_FLAG_WRITE) && (flags & AVIO_FLAG_READ)) {
+        access = O_CREAT | O_RDWR;
+        if (libssh->trunc)
+            access |= O_TRUNC;
+    } else if (flags & AVIO_FLAG_WRITE) {
+        access = O_CREAT | O_WRONLY;
+        if (libssh->trunc)
+            access |= O_TRUNC;
+    } else
+        access = O_RDONLY;
+
+    /* 0666 = -rw-rw-rw- = read+write for everyone, minus umask */
+    if (!(libssh->file = sftp_open(libssh->sftp, file, access, 0666))) {
+        av_log(libssh, AV_LOG_ERROR, "Error opening sftp file: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
 static int libssh_close(URLContext *h)
 {
     LIBSSHContext *s = h->priv_data;
@@ -103,7 +127,7 @@ static int libssh_open(URLContext *h, const char *url, int flags)
     static const int verbosity = SSH_LOG_NOLOG;
     LIBSSHContext *s = h->priv_data;
     char proto[10], path[MAX_URL_SIZE], hostname[1024], credencials[1024];
-    int port = 22, access, ret;
+    int port = 22, ret;
     long timeout = s->rw_timeout * 1000;
     const char *user = NULL, *pass = NULL;
     char *end = NULL;
@@ -152,24 +176,8 @@ static int libssh_open(URLContext *h, const char *url, int flags)
         goto fail;
     }
 
-    if ((flags & AVIO_FLAG_WRITE) && (flags & AVIO_FLAG_READ)) {
-        access = O_CREAT | O_RDWR;
-        if (s->trunc)
-            access |= O_TRUNC;
-    } else if (flags & AVIO_FLAG_WRITE) {
-        access = O_CREAT | O_WRONLY;
-        if (s->trunc)
-            access |= O_TRUNC;
-    } else {
-        access = O_RDONLY;
-    }
-
-    /* 0666 = -rw-rw-rw- = read+write for everyone, minus umask */
-    if (!(s->file = sftp_open(s->sftp, path, access, 0666))) {
-        av_log(h, AV_LOG_ERROR, "Error opening sftp file: %s\n", ssh_get_error(s->session));
-        ret = AVERROR(EIO);
+    if ((ret = libssh_open_file(s, flags, path)) < 0)
         goto fail;
-    }
 
     if (!(stat = sftp_fstat(s->file))) {
         av_log(h, AV_LOG_WARNING, "Cannot stat remote file %s.\n", path);
