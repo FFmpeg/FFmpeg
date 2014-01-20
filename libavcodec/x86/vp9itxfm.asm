@@ -95,6 +95,30 @@ SECTION .text
 %endif
 %endmacro
 
+%macro VP9_UNPACK_MULSUB_2D_4X 6 ; dst1 [src1], dst2 [src2], dst3, dst4, mul1, mul2
+    punpckhwd          m%4, m%2, m%1
+    punpcklwd          m%2, m%1
+    pmaddwd            m%3, m%4, [pw_m%5_%6]
+    pmaddwd            m%4, [pw_%6_%5]
+    pmaddwd            m%1, m%2, [pw_m%5_%6]
+    pmaddwd            m%2, [pw_%6_%5]
+%endmacro
+
+%macro VP9_RND_SH_SUMSUB_BA 6 ; dst1 [src1], dst2 [src2], src3, src4, tmp, round
+    SUMSUB_BA            d, %1, %2, %5
+    SUMSUB_BA            d, %3, %4, %5
+    paddd              m%1, %6
+    paddd              m%2, %6
+    paddd              m%3, %6
+    paddd              m%4, %6
+    psrad              m%1, 14
+    psrad              m%2, 14
+    psrad              m%3, 14
+    psrad              m%4, 14
+    packssdw           m%1, m%3
+    packssdw           m%2, m%4
+%endmacro
+
 %macro VP9_STORE_2X 5-6 dstq ; reg1, reg2, tmp1, tmp2, zero, dst
     movh               m%3, [%6]
     movh               m%4, [%6+strideq]
@@ -106,6 +130,18 @@ SECTION .text
     packuswb           m%4, m%5
     movh              [%6], m%3
     movh      [%6+strideq], m%4
+%endmacro
+
+%macro ZERO_BLOCK 4 ; mem, stride, nnzcpl, zero_reg
+%assign %%y 0
+%rep %3
+%assign %%x 0
+%rep %3*2/mmsize
+    mova      [%1+%%y+%%x], %4
+%assign %%x (%%x+mmsize)
+%endrep
+%assign %%y (%%y+%2)
+%endrep
 %endmacro
 
 ;-------------------------------------------------------------------------------------------
@@ -372,21 +408,90 @@ cglobal vp9_idct_idct_8x8_add, 4,4,13, dst, stride, block, eob
     VP9_IDCT8_1D
     TRANSPOSE8x8W  0, 1, 2, 3, 8, 9, 10, 11, 4
     VP9_IDCT8_1D
+
     pxor                m4, m4  ; used for the block reset, and VP9_STORE_2X
-    mova      [blockq+  0], m4
-    mova      [blockq+ 16], m4
-    mova      [blockq+ 32], m4
-    mova      [blockq+ 48], m4
-    mova      [blockq+ 64], m4
-    mova      [blockq+ 80], m4
-    mova      [blockq+ 96], m4
-    mova      [blockq+112], m4
+    ZERO_BLOCK      blockq, 16, 8, m4
     VP9_IDCT8_WRITEOUT
     RET
 %endmacro
 
 VP9_IDCT_IDCT_8x8_ADD_XMM ssse3
 VP9_IDCT_IDCT_8x8_ADD_XMM avx
+
+;---------------------------------------------------------------------------------------------
+; void vp9_iadst_iadst_8x8_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
+;---------------------------------------------------------------------------------------------
+
+%macro VP9_IADST8_1D 0 ; input/output=m0/1/2/3/8/9/10/11
+    VP9_UNPACK_MULSUB_2D_4X 11,  0,  4,  5, 16305,  1606    ; m11/4=t1[d], m0/5=t0[d]
+    VP9_UNPACK_MULSUB_2D_4X  3,  8,  6, 13, 10394, 12665    ; m3/6=t5[d], m8/13=t4[d]
+    VP9_RND_SH_SUMSUB_BA     8,  0, 13,  5, 14, m7          ; m8=t0[w], m0=t4[w]
+    VP9_RND_SH_SUMSUB_BA     3, 11,  6,  4, 14, m7          ; m3=t1[w], m11=t5[w]
+
+    VP9_UNPACK_MULSUB_2D_4X  9,  2,  4,  5, 14449,  7723    ; m9/4=t3[d], m2/5=t2[d]
+    VP9_UNPACK_MULSUB_2D_4X  1, 10,  6, 13,  4756, 15679    ; m1/6=t7[d], m10/13=t6[d]
+    VP9_RND_SH_SUMSUB_BA    10,  2, 13,  5, 14, m7          ; m10=t2[w], m2=t6[w]
+    VP9_RND_SH_SUMSUB_BA     1,  9,  6,  4, 14, m7          ; m1=t3[w], m9=t7[w]
+
+    ; m8=t0, m3=t1, m10=t2, m1=t3, m0=t4, m11=t5, m2=t6, m9=t7
+
+    VP9_UNPACK_MULSUB_2D_4X  0, 11,  4,  5, 15137,  6270    ; m0/4=t5[d], m11/5=t4[d]
+    VP9_UNPACK_MULSUB_2D_4X  9,  2,  6, 13,  6270, 15137    ; m9/6=t6[d], m2/13=t7[d]
+    VP9_RND_SH_SUMSUB_BA     9, 11,  6,  5, 14, m7
+    psignw                  m9, [pw_m1]                     ; m9=out1[w], m11=t6[w]
+    VP9_RND_SH_SUMSUB_BA     2,  0, 13,  4, 14, m7          ; m2=out6[w], m0=t7[w]
+
+    SUMSUB_BA                w, 10,  8, 14                  ; m10=out0[w], m8=t2[w]
+    SUMSUB_BA                w,  1,  3, 14
+    psignw                  m1, [pw_m1]                     ; m1=out7[w], m3=t3[w]
+
+    ; m10=out0, m9=out1, m8=t2, m3=t3, m11=t6, m0=t7, m2=out6, m1=out7
+
+    SUMSUB_BA                w,  3,  8,  4
+    SUMSUB_BA                w,  0, 11,  5
+    pmulhrsw                m3, m12
+    pmulhrsw               m11, m12
+    pmulhrsw                m8, m12                         ; out4
+    pmulhrsw                m0, m12                         ; out2
+    psignw                  m3, [pw_m1]                     ; out3
+    psignw                 m11, [pw_m1]                     ; out5
+
+    ; m10=out0, m9=out1, m0=out2, m3=out3, m8=out4, m11=out5, m2=out6, m1=out7
+
+    SWAP                     0, 10, 2
+    SWAP                    11,  1, 9
+%endmacro
+
+%macro IADST8_FN 5
+INIT_XMM %5
+cglobal vp9_%1_%3_8x8_add, 3, 3, 15, dst, stride, block, eob
+    mova                m0, [blockq+  0]    ; IN(0)
+    mova                m1, [blockq+ 16]    ; IN(1)
+    mova                m2, [blockq+ 32]    ; IN(2)
+    mova                m3, [blockq+ 48]    ; IN(3)
+    mova                m8, [blockq+ 64]    ; IN(4)
+    mova                m9, [blockq+ 80]    ; IN(5)
+    mova               m10, [blockq+ 96]    ; IN(6)
+    mova               m11, [blockq+112]    ; IN(7)
+
+    mova               m12, [pw_11585x2]    ; often used
+    mova                m7, [pd_8192]       ; rounding
+    VP9_%2_1D
+    TRANSPOSE8x8W  0, 1, 2, 3, 8, 9, 10, 11, 4
+    VP9_%4_1D
+
+    pxor                m4, m4  ; used for the block reset, and VP9_STORE_2X
+    ZERO_BLOCK      blockq, 16, 8, m4
+    VP9_IDCT8_WRITEOUT
+    RET
+%endmacro
+
+IADST8_FN idct,  IDCT8,  iadst, IADST8, ssse3
+IADST8_FN idct,  IDCT8,  iadst, IADST8, avx
+IADST8_FN iadst, IADST8, idct,  IDCT8,  ssse3
+IADST8_FN iadst, IADST8, idct,  IDCT8,  avx
+IADST8_FN iadst, IADST8, iadst, IADST8, ssse3
+IADST8_FN iadst, IADST8, iadst, IADST8, avx
 
 ;---------------------------------------------------------------------------------------------
 ; void vp9_idct_idct_16x16_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
@@ -637,18 +742,6 @@ VP9_IDCT_IDCT_8x8_ADD_XMM avx
 %endif ; %2 == 1/2
 %endmacro
 
-%macro ZERO_BLOCK 4 ; mem, stride, nnzcpl, zero_reg
-%assign %%y 0
-%rep %3
-%assign %%x 0
-%rep %3*2/mmsize
-    mova      [%1+%%y+%%x], %4
-%assign %%x (%%x+mmsize)
-%endrep
-%assign %%y (%%y+%2)
-%endrep
-%endmacro
-
 %macro VP9_STORE_2XFULL 6-7 strideq; dc, tmp1, tmp2, tmp3, tmp4, zero, stride
     mova               m%3, [dstq]
     mova               m%5, [dstq+%7]
@@ -744,30 +837,6 @@ VP9_IDCT_IDCT_16x16_ADD_XMM avx
 ;---------------------------------------------------------------------------------------------
 ; void vp9_iadst_iadst_16x16_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
 ;---------------------------------------------------------------------------------------------
-
-%macro VP9_UNPACK_MULSUB_2D_4X 6 ; dst1 [src1], dst2 [src2], dst3, dst4, mul1, mul2
-    punpckhwd          m%4, m%2, m%1
-    punpcklwd          m%2, m%1
-    pmaddwd            m%3, m%4, [pw_m%5_%6]
-    pmaddwd            m%4, [pw_%6_%5]
-    pmaddwd            m%1, m%2, [pw_m%5_%6]
-    pmaddwd            m%2, [pw_%6_%5]
-%endmacro
-
-%macro VP9_RND_SH_SUMSUB_BA 6 ; dst1 [src1], dst2 [src2], src3, src4, tmp, round
-    SUMSUB_BA            d, %1, %2, %5
-    SUMSUB_BA            d, %3, %4, %5
-    paddd              m%1, %6
-    paddd              m%2, %6
-    paddd              m%3, %6
-    paddd              m%4, %6
-    psrad              m%1, 14
-    psrad              m%2, 14
-    psrad              m%3, 14
-    psrad              m%4, 14
-    packssdw           m%1, m%3
-    packssdw           m%2, m%4
-%endmacro
 
 %macro VP9_IADST16_1D 2 ; src, pass
 %assign %%str 16*%2
