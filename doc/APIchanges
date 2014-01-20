@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-02-xx - xxxxxxx - lavf 55.11.0 - avformat.h
+  Add AVFormatContext.max_interleave_delta for controlling amount of buffering
+  when interleaving.
+
 2014-01-xx - xxxxxxx - lavc 55.32.1 - avcodec.h
   Edges are not required anymore on video buffers allocated by get_buffer2()
   (i.e. as if the CODEC_FLAG_EMU_EDGE flag was always on). Deprecate
