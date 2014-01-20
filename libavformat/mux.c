@@ -232,6 +232,9 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
             av_log(s, AV_LOG_WARNING,
                    "Codec for stream %d does not use global headers "
                    "but container format requires global headers\n", i);
+
+        if (codec->codec_type != AVMEDIA_TYPE_ATTACHMENT)
+            s->internal->nb_interleaved_streams++;
     }
 
     if (!s->priv_data && of->priv_data_size > 0) {
@@ -541,7 +544,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     for (i = 0; i < s->nb_streams; i++)
         stream_count += !!s->streams[i]->last_in_packet_buffer;
 
-    if (stream_count && (s->nb_streams == stream_count || flush)) {
+    if (stream_count && (s->internal->nb_interleaved_streams == stream_count || flush)) {
         pktl = s->packet_buffer;
         *out = pktl->pkt;
 

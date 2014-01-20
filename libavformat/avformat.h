@@ -796,6 +796,8 @@ typedef struct AVChapter {
     AVDictionary *metadata;
 } AVChapter;
 
+typedef struct AVFormatInternal AVFormatInternal;
+
 /**
  * Format I/O context.
  * New fields can be added to the end with minor version bumps.
@@ -1049,6 +1051,11 @@ typedef struct AVFormatContext {
      */
     AVRational offset_timebase;
 
+    /**
+     * An opaque field for libavformat internal usage.
+     * Must not be accessed in any way by callers.
+     */
+    AVFormatInternal *internal;
 } AVFormatContext;
 
 typedef struct AVPacketList {
