@@ -156,25 +156,7 @@ static void sub_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *s
     if (s->bps <= 8) {
         s->dsp.sub_hfyu_median_prediction(dst, src1, src2, w , left, left_top);
     } else {
-        int i;
-        uint16_t l, lt;
-        const uint16_t *src116 = (const uint16_t *)src1;
-        const uint16_t *src216 = (const uint16_t *)src2;
-        uint16_t       *dst16  = (      uint16_t *)dst;
-        unsigned mask = s->n - 1;
-
-        l  = *left;
-        lt = *left_top;
-
-        for(i=0; i<w; i++){
-            const int pred = mid_pred(l, src116[i], (l + src116[i] - lt) & mask);
-            lt = src116[i];
-            l  = src216[i];
-            dst16[i] = (l - pred) & mask;
-        }
-
-        *left     = l;
-        *left_top = lt;
+        s->llviddsp.sub_hfyu_median_prediction_int16((uint16_t *)dst, (const uint16_t *)src1, (const uint16_t *)src2, s->n - 1, w , left, left_top);
     }
 }
 

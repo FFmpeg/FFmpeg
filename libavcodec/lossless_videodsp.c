@@ -77,6 +77,24 @@ static void add_hfyu_median_prediction_int16_c(uint16_t *dst, const uint16_t *sr
     *left_top = lt;
 }
 
+static void sub_hfyu_median_prediction_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top){
+    int i;
+    uint16_t l, lt;
+
+    l  = *left;
+    lt = *left_top;
+
+    for(i=0; i<w; i++){
+        const int pred = mid_pred(l, src1[i], (l + src1[i] - lt) & mask);
+        lt = src1[i];
+        l  = src2[i];
+        dst[i] = (l - pred) & mask;
+    }
+
+    *left     = l;
+    *left_top = lt;
+}
+
 static int add_hfyu_left_prediction_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int acc){
     int i;
 
@@ -103,6 +121,7 @@ void ff_llviddsp_init(LLVidDSPContext *c)
     c->diff_int16= diff_int16_c;
     c->add_hfyu_left_prediction_int16   = add_hfyu_left_prediction_int16_c;
     c->add_hfyu_median_prediction_int16 = add_hfyu_median_prediction_int16_c;
+    c->sub_hfyu_median_prediction_int16 = sub_hfyu_median_prediction_int16_c;
 
     if (ARCH_X86)
         ff_llviddsp_init_x86(c);
