@@ -708,20 +708,7 @@ static void add_bytes(HYuvContext *s, uint8_t *dst, uint8_t *src, int w)
     if (s->bps <= 8) {
         s->dsp.add_bytes(dst, src, w);
     } else {
-        //FIXME optimize
-        const uint16_t *src16 = (const uint16_t *)src;
-        uint16_t       *dst16 = (      uint16_t *)dst;
-        long i;
-        unsigned long msb = 0x1000100010001ULL << (s->bps-1);
-        unsigned long lsb = msb - 0x1000100010001ULL;
-        unsigned long mask = lsb + msb;
-        for (i = 0; i <= w - (int)sizeof(long)/2; i += sizeof(long)/2) {
-            long a = *(long*)(src16+i);
-            long b = *(long*)(dst16+i);
-            *(long*)(dst16+i) = ((a&lsb) + (b&lsb)) ^ ((a^b)&msb);
-        }
-        for(; i<w; i++)
-            dst16[i] = (dst16[i] + src16[i]) & mask;
+        s->dsp.add_int16((uint16_t*)dst, (const uint16_t*)src, s->n - 1, w);
     }
 }
 

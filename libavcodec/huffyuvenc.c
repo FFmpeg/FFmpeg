@@ -38,19 +38,10 @@
 static inline void diff_bytes(HYuvContext *s, uint8_t *dst,
                               const uint8_t *src0, const uint8_t *src1, int w)
 {
-    int i;
     if (s->bps <= 8) {
         s->dsp.diff_bytes(dst, src0, src1, w);
     } else {
-        const uint16_t *src016 = (const uint16_t *)src0;
-        const uint16_t *src116 = (const uint16_t *)src1;
-        uint16_t       *dst16  = (      uint16_t *)dst;
-
-        for (i = 0; i < w; i++) {
-            dst16[i] = src016[i] - src116[i];
-        }
-
-        //FIXME optimize
+        s->dsp.diff_int16((uint16_t *)dst, (const uint16_t *)src0, (const uint16_t *)src1, s->n - 1, w);
     }
 }
 
