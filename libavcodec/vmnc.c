@@ -291,6 +291,11 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, GetByteContext *gb,
                         fg = vmnc_get_pixel(gb, bpp, c->bigendian);
                     xy = bytestream2_get_byte(gb);
                     wh = bytestream2_get_byte(gb);
+                    if (   (xy >> 4) + (wh >> 4) + 1 > w - i
+                        || (xy & 0xF) + (wh & 0xF)+1 > h - j) {
+                        av_log(c->avctx, AV_LOG_ERROR, "Rectangle outside picture\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     paint_rect(dst2, xy >> 4, xy & 0xF,
                                (wh>>4)+1, (wh & 0xF)+1, fg, bpp, stride);
                 }
