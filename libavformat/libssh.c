@@ -160,7 +160,7 @@ static av_cold void libssh_stat_file(LIBSSHContext *libssh)
     }
 }
 
-static int libssh_close(URLContext *h)
+static av_cold int libssh_close(URLContext *h)
 {
     LIBSSHContext *s = h->priv_data;
     if (s->file)
@@ -174,7 +174,7 @@ static int libssh_close(URLContext *h)
     return 0;
 }
 
-static int libssh_open(URLContext *h, const char *url, int flags)
+static av_cold int libssh_open(URLContext *h, const char *url, int flags)
 {
     LIBSSHContext *s = h->priv_data;
     char proto[10], path[MAX_URL_SIZE], hostname[1024], credencials[1024];
