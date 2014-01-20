@@ -552,6 +552,10 @@ is not specified.
 Truncate existing files on write, if set to 1. A value of 0 prevents
 truncating. Default value is 1.
 
+@item private_key
+Specify the path of the file containing private key to use during authorization.
+By default libssh searches for keys in the @file{~/.ssh/} directory.
+
 @end table
 
 Example: Play a file stored on remote server.

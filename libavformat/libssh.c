@@ -22,6 +22,7 @@
 #include <libssh/sftp.h>
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+#include "libavutil/attributes.h"
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"
@@ -34,7 +35,54 @@ typedef struct {
     int64_t filesize;
     int rw_timeout;
     int trunc;
+    char *priv_key;
 } LIBSSHContext;
+
+static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user, const char *password)
+{
+    int authorized = 0;
+    int auth_methods;
+
+    if (user)
+        ssh_options_set(libssh->session, SSH_OPTIONS_USER, user);
+
+    auth_methods = ssh_userauth_list(libssh->session, NULL);
+
+    if (auth_methods & SSH_AUTH_METHOD_PUBLICKEY) {
+        if (libssh->priv_key) {
+            ssh_string pub_key;
+            ssh_private_key priv_key;
+            int type;
+            if (!ssh_try_publickey_from_file(libssh->session, libssh->priv_key, &pub_key, &type)) {
+                priv_key = privatekey_from_file(libssh->session, libssh->priv_key, type, password);
+                if (ssh_userauth_pubkey(libssh->session, NULL, pub_key, priv_key) == SSH_AUTH_SUCCESS) {
+                    av_log(libssh, AV_LOG_DEBUG, "Authentication successful with selected private key.\n");
+                    authorized = 1;
+                }
+            } else {
+                av_log(libssh, AV_LOG_DEBUG, "Invalid key is provided.\n");
+                return AVERROR(EACCES);
+            }
+        } else if (ssh_userauth_autopubkey(libssh->session, password) == SSH_AUTH_SUCCESS) {
+            av_log(libssh, AV_LOG_DEBUG, "Authentication successful with auto selected key.\n");
+            authorized = 1;
+        }
+    }
+
+    if (!authorized && (auth_methods & SSH_AUTH_METHOD_PASSWORD)) {
+        if (ssh_userauth_password(libssh->session, NULL, password) == SSH_AUTH_SUCCESS) {
+            av_log(libssh, AV_LOG_DEBUG, "Authentication successful with password.\n");
+            authorized = 1;
+        }
+    }
+
+    if (!authorized) {
+        av_log(libssh, AV_LOG_ERROR, "Authentication failed.\n");
+        return AVERROR(EACCES);
+    }
+
+    return 0;
+}
 
 static int libssh_close(URLContext *h)
 {
@@ -82,8 +130,6 @@ static int libssh_open(URLContext *h, const char *url, int flags)
     ssh_options_set(s->session, SSH_OPTIONS_LOG_VERBOSITY, &verbosity);
     if (timeout > 0)
         ssh_options_set(s->session, SSH_OPTIONS_TIMEOUT_USEC, &timeout);
-    if (user)
-        ssh_options_set(s->session, SSH_OPTIONS_USER, user);
 
     if (ssh_connect(s->session) != SSH_OK) {
         av_log(h, AV_LOG_ERROR, "Connection failed. %s\n", ssh_get_error(s->session));
@@ -91,14 +137,8 @@ static int libssh_open(URLContext *h, const char *url, int flags)
         goto fail;
     }
 
-    if (ssh_userauth_autopubkey(s->session, pass) != SSH_AUTH_SUCCESS) {
-        av_log(s, AV_LOG_DEBUG, "Authentication using public key failed, trying password method.\n");
-        if (ssh_userauth_password(s->session, NULL, pass) != SSH_AUTH_SUCCESS) {
-            av_log(h, AV_LOG_ERROR, "Authentication failed.\n");
-            ret = AVERROR(EACCES);
-            goto fail;
-        }
-    }
+    if ((ret = libssh_authentication(s, user, pass)) < 0)
+        goto fail;
 
     if (!(s->sftp = sftp_new(s->session))) {
         av_log(h, AV_LOG_ERROR, "SFTP session creation failed: %s\n", ssh_get_error(s->session));
@@ -210,6 +250,7 @@ static int libssh_write(URLContext *h, const unsigned char *buf, int size)
 static const AVOption options[] = {
     {"timeout", "set timeout of socket I/O operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
     {"truncate", "Truncate existing files on write", OFFSET(trunc), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, E },
+    {"private_key", "set path to private key", OFFSET(priv_key), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D|E },
     {NULL}
 };
 
