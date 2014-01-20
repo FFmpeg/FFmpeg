@@ -708,7 +708,7 @@ static void add_bytes(HYuvContext *s, uint8_t *dst, uint8_t *src, int w)
     if (s->bps <= 8) {
         s->dsp.add_bytes(dst, src, w);
     } else {
-        s->dsp.add_int16((uint16_t*)dst, (const uint16_t*)src, s->n - 1, w);
+        s->llviddsp.add_int16((uint16_t*)dst, (const uint16_t*)src, s->n - 1, w);
     }
 }
 

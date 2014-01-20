@@ -81,6 +81,7 @@ av_cold void ff_huffyuv_common_init(AVCodecContext *avctx)
     s->flags = avctx->flags;
 
     ff_dsputil_init(&s->dsp, avctx);
+    ff_llviddsp_init(&s->llviddsp);
 
     s->width = avctx->width;
     s->height = avctx->height;

@@ -41,7 +41,7 @@ static inline void diff_bytes(HYuvContext *s, uint8_t *dst,
     if (s->bps <= 8) {
         s->dsp.diff_bytes(dst, src0, src1, w);
     } else {
-        s->dsp.diff_int16((uint16_t *)dst, (const uint16_t *)src0, (const uint16_t *)src1, s->n - 1, w);
+        s->llviddsp.diff_int16((uint16_t *)dst, (const uint16_t *)src0, (const uint16_t *)src1, s->n - 1, w);
     }
 }
 

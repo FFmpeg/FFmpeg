@@ -1888,45 +1888,6 @@ static void diff_bytes_c(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
         dst[i+0] = src1[i+0]-src2[i+0];
 }
 
-static void add_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w){
-    long i;
-    unsigned long pw_lsb = (mask >> 1) * 0x0001000100010001ULL;
-    unsigned long pw_msb = pw_lsb +  0x0001000100010001ULL;
-    for (i = 0; i <= w - (int)sizeof(long)/2; i += sizeof(long)/2) {
-        long a = *(long*)(src+i);
-        long b = *(long*)(dst+i);
-        *(long*)(dst+i) = ((a&pw_lsb) + (b&pw_lsb)) ^ ((a^b)&pw_msb);
-    }
-    for(; i<w; i++)
-        dst[i] = (dst[i] + src[i]) & mask;
-}
-
-static void diff_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w){
-    long i;
-#if !HAVE_FAST_UNALIGNED
-    if((long)src2 & (sizeof(long)-1)){
-        for(i=0; i+7<w; i+=8){
-            dst[i+0] = (src1[i+0]-src2[i+0]) & mask;
-            dst[i+1] = (src1[i+1]-src2[i+1]) & mask;
-            dst[i+2] = (src1[i+2]-src2[i+2]) & mask;
-            dst[i+3] = (src1[i+3]-src2[i+3]) & mask;
-        }
-    }else
-#endif
-    {
-        unsigned long pw_lsb = (mask >> 1) * 0x0001000100010001ULL;
-        unsigned long pw_msb = pw_lsb +  0x0001000100010001ULL;
-
-        for (i = 0; i <= w - (int)sizeof(long)/2; i += sizeof(long)/2) {
-            long a = *(long*)(src1+i);
-            long b = *(long*)(src2+i);
-            *(long*)(dst+i) = ((a|pw_msb) - (b&pw_lsb)) ^ ((a^b^pw_msb)&pw_msb);
-        }
-    }
-    for (; i<w; i++)
-        dst[i] = (src1[i] - src2[i]) & mask;
-}
-
 static void add_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1, const uint8_t *diff, int w, int *left, int *left_top){
     int i;
     uint8_t l, lt;
@@ -2812,8 +2773,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     c->add_bytes= add_bytes_c;
     c->diff_bytes= diff_bytes_c;
-    c->add_int16 = add_int16_c;
-    c->diff_int16= diff_int16_c;
     c->add_hfyu_median_prediction= add_hfyu_median_prediction_c;
     c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_c;
     c->add_hfyu_left_prediction  = add_hfyu_left_prediction_c;

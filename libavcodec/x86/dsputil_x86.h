@@ -116,8 +116,6 @@ void ff_clear_blocks_mmx(int16_t *blocks);
 void ff_clear_blocks_sse(int16_t *blocks);
 
 void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w);
-void ff_add_int16_mmx(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
-void ff_add_int16_sse2(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
 
 void ff_add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top,
                                         const uint8_t *diff, int w,
