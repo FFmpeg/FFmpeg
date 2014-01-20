@@ -120,7 +120,9 @@ typedef struct VP8ThreadData {
 #endif
     int thread_mb_pos; // (mb_y << 16) | (mb_x & 0xFFFF)
     int wait_mb_pos; // What the current thread is waiting on.
-    uint8_t *edge_emu_buffer;
+
+#define EDGE_EMU_LINESIZE 32
+    DECLARE_ALIGNED(16, uint8_t, edge_emu_buffer)[21 * EDGE_EMU_LINESIZE];
     VP8FilterStrength *filter_strength;
 } VP8ThreadData;
 
