@@ -398,11 +398,6 @@ static av_cold int dirac_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->frame_number = -1;
 
-    if (avctx->flags&CODEC_FLAG_EMU_EDGE) {
-        av_log(avctx, AV_LOG_ERROR, "Edge emulation not supported!\n");
-        return AVERROR_PATCHWELCOME;
-    }
-
     ff_dsputil_init(&s->dsp, avctx);
     ff_diracdsp_init(&s->diracdsp);
 
@@ -1646,6 +1641,29 @@ static int dirac_decode_frame_internal(DiracContext *s)
     return 0;
 }
 
+static int get_buffer_with_edge(AVCodecContext *avctx, AVFrame *f, int flags)
+{
+    int ret, i;
+    int chroma_x_shift, chroma_y_shift;
+    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_x_shift, &chroma_y_shift);
+
+    f->width  = avctx->width  + 2 * EDGE_WIDTH;
+    f->height = avctx->height + 2 * EDGE_WIDTH + 2;
+    ret = ff_get_buffer(avctx, f, flags);
+    if (ret < 0)
+        return ret;
+
+    for (i = 0; f->data[i]; i++) {
+        int offset = (EDGE_WIDTH >> (i && i<3 ? chroma_y_shift : 0)) *
+                     f->linesize[i] + 32;
+        f->data[i] += offset;
+    }
+    f->width  = avctx->width;
+    f->height = avctx->height;
+
+    return 0;
+}
+
 /**
  * Dirac Specification ->
  * 11.1.1 Picture Header. picture_header()
@@ -1689,7 +1707,7 @@ static int dirac_decode_picture_header(DiracContext *s)
             for (j = 0; j < MAX_FRAMES; j++)
                 if (!s->all_frames[j].avframe->data[0]) {
                     s->ref_pics[i] = &s->all_frames[j];
-                    ff_get_buffer(s->avctx, s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
+                    get_buffer_with_edge(s->avctx, s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
                     break;
                 }
     }
@@ -1829,7 +1847,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         pic->avframe->key_frame = s->num_refs == 0;             /* [DIRAC_STD] is_intra()      */
         pic->avframe->pict_type = s->num_refs + 1;              /* Definition of AVPictureType in avutil.h */
 
-        if ((ret = ff_get_buffer(avctx, pic->avframe, (parse_code & 0x0C) == 0x0C ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
+        if ((ret = get_buffer_with_edge(avctx, pic->avframe, (parse_code & 0x0C) == 0x0C ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
             return ret;
         s->current_picture = pic;
         s->plane[0].stride = pic->avframe->linesize[0];
