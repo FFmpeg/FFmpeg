@@ -69,15 +69,22 @@ static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst,
     } else {
         const uint16_t *src16 = (const uint16_t *)src;
         uint16_t       *dst16 = (      uint16_t *)dst;
-
-        for (i = 0; i < w; i++) {
-            const int temp = src16[i];
-            dst16[i] = temp - left;
-            left   = temp;
+        if (w < 32) {
+            for (i = 0; i < w; i++) {
+                const int temp = src16[i];
+                dst16[i] = temp - left;
+                left   = temp;
+            }
+            return left;
+        } else {
+            for (i = 0; i < 16; i++) {
+                const int temp = src16[i];
+                dst16[i] = temp - left;
+                left   = temp;
+            }
+            s->llviddsp.diff_int16(dst16 + 16, src16 + 16, src16 + 15, s->n - 1, w - 16);
+            return src16[w-1];
         }
-        return left;
-
-        //FIXME optimize
     }
 }
 
