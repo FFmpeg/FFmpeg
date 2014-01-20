@@ -1212,8 +1212,11 @@ static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                                 AVFrame *picture)
 {
+    AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
     int compno, reslevelno, bandno;
     int x, y;
+    int planar    = !!(pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR);
+    int pixelsize = planar ? 1 : pixdesc->nb_components;
 
     uint8_t *line;
     Jpeg2000T1Context t1;
@@ -1287,8 +1290,6 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             int32_t *i_datap = comp->i_data;
             int cbps = s->cbps[compno];
             int w = tile->comp[compno].coord[0][1] - s->image_offset_x;
-            int planar = !!picture->data[2];
-            int pixelsize = planar ? 1 : s->ncomponents;
             int plane = 0;
 
             if (planar)
@@ -1334,8 +1335,6 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             uint16_t *linel;
             int cbps = s->cbps[compno];
             int w = tile->comp[compno].coord[0][1] - s->image_offset_x;
-            int planar = !!picture->data[2];
-            int pixelsize = planar ? 1 : s->ncomponents;
             int plane = 0;
 
             if (planar)
