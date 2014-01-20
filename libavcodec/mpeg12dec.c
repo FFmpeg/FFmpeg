@@ -770,7 +770,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
             memset(s->last_mv, 0, sizeof(s->last_mv)); /* reset mv prediction */
         s->mb_intra = 1;
         // if 1, we memcpy blocks in xvmcvideo
-        if (CONFIG_XVMC && s->pack_pblocks) {
+        if ((CONFIG_MPEG1_XVMC_HWACCEL || CONFIG_MPEG2_XVMC_HWACCEL) && s->pack_pblocks) {
             ff_xvmc_pack_pblocks(s, -1); // inter are always full blocks
         }
 
@@ -986,7 +986,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
             }
 
             //if 1, we memcpy blocks in xvmcvideo
-            if (CONFIG_XVMC && s->pack_pblocks) {
+            if ((CONFIG_MPEG1_XVMC_HWACCEL || CONFIG_MPEG2_XVMC_HWACCEL) && s->pack_pblocks) {
                 ff_xvmc_pack_pblocks(s, cbp);
             }
 
@@ -1700,7 +1700,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
 
     for (;;) {
         // If 1, we memcpy blocks in xvmcvideo.
-        if (CONFIG_XVMC && s->pack_pblocks)
+        if ((CONFIG_MPEG1_XVMC_HWACCEL || CONFIG_MPEG2_XVMC_HWACCEL) && s->pack_pblocks)
             ff_xvmc_init_block(s); // set s->block
 
         if (mpeg_decode_mb(s, s->block) < 0)
