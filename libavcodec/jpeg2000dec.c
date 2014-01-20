@@ -344,7 +344,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
             break;
         }
     }
-    if (s->avctx->pix_fmt == AV_PIX_FMT_NONE) {
+    if (i == possible_fmts_nb) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Unknown pix_fmt, profile: %d, colour_space: %d, "
                "components: %d, precision: %d, "
@@ -354,6 +354,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
                ncomponents > 2 ? s->cdy[1] : 0,
                ncomponents > 2 ? s->cdx[2] : 0,
                ncomponents > 2 ? s->cdy[2] : 0);
+        return AVERROR_PATCHWELCOME;
     }
     s->avctx->bits_per_raw_sample = s->precision;
     return 0;
