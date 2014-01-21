@@ -51,10 +51,13 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
     void     *dxva_data;
     unsigned dxva_size;
     int      result;
+    HRESULT hr;
 
-    if (FAILED(IDirectXVideoDecoder_GetBuffer(ctx->decoder, type,
-                                              &dxva_data, &dxva_size))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to get a buffer for %d\n", type);
+    hr = IDirectXVideoDecoder_GetBuffer(ctx->decoder, type,
+                                        &dxva_data, &dxva_size);
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to get a buffer for %d: 0x%x\n",
+               type, hr);
         return -1;
     }
     if (size <= dxva_size) {
@@ -70,8 +73,12 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Buffer for type %d was too small\n", type);
         result = -1;
     }
-    if (FAILED(IDirectXVideoDecoder_ReleaseBuffer(ctx->decoder, type))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to release buffer type %d\n", type);
+
+    hr = IDirectXVideoDecoder_ReleaseBuffer(ctx->decoder, type);
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to release buffer type %d: 0x%x\n",
+               type, hr);
         result = -1;
     }
     return result;
@@ -143,14 +150,16 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, Picture *pic,
     exec.NumCompBuffers      = buffer_count;
     exec.pCompressedBuffers  = buffer;
     exec.pExtensionData      = NULL;
-    if (FAILED(IDirectXVideoDecoder_Execute(ctx->decoder, &exec))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to execute\n");
+    hr = IDirectXVideoDecoder_Execute(ctx->decoder, &exec);
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to execute: 0x%x\n", hr);
         result = -1;
     }
 
 end:
-    if (FAILED(IDirectXVideoDecoder_EndFrame(ctx->decoder, NULL))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to end frame\n");
+    hr = IDirectXVideoDecoder_EndFrame(ctx->decoder, NULL);
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to end frame: 0x%x\n", hr);
         result = -1;
     }
 
