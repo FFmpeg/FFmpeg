@@ -718,12 +718,6 @@ fail:
     if (pkt->stream_index == seg->reference_stream_index)
         seg->frame_count++;
 
-    if (ret < 0) {
-        if (seg->list)
-            avio_close(seg->list_pb);
-        avformat_free_context(oc);
-    }
-
     return ret;
 }
 
