@@ -705,7 +705,7 @@ static void deinterleaveBytes_c(const uint8_t *src, uint8_t *dst1, uint8_t *dst2
             dst1[w] = src[2 * w + 0];
             dst2[w] = src[2 * w + 1];
         }
-        src += srcStride;
+        src  += srcStride;
         dst1 += dst1Stride;
         dst2 += dst2Stride;
     }
