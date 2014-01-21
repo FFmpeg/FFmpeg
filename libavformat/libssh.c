@@ -108,6 +108,21 @@ static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user
     return 0;
 }
 
+static av_cold int libssh_create_sftp_session(LIBSSHContext *libssh)
+{
+    if (!(libssh->sftp = sftp_new(libssh->session))) {
+        av_log(libssh, AV_LOG_ERROR, "SFTP session creation failed: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(ENOMEM);
+    }
+
+    if (sftp_init(libssh->sftp) != SSH_OK) {
+        av_log(libssh, AV_LOG_ERROR, "Error initializing sftp session: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
 static av_cold int libssh_open_file(LIBSSHContext *libssh, int flags, const char *file)
 {
     int access;
@@ -186,17 +201,8 @@ static int libssh_open(URLContext *h, const char *url, int flags)
     if ((ret = libssh_authentication(s, user, pass)) < 0)
         goto fail;
 
-    if (!(s->sftp = sftp_new(s->session))) {
-        av_log(h, AV_LOG_ERROR, "SFTP session creation failed: %s\n", ssh_get_error(s->session));
-        ret = AVERROR(ENOMEM);
+    if ((ret = libssh_create_sftp_session(s)) < 0)
         goto fail;
-    }
-
-    if (sftp_init(s->sftp) != SSH_OK) {
-        av_log(h, AV_LOG_ERROR, "Error initializing sftp session: %s\n", ssh_get_error(s->session));
-        ret = AVERROR(EIO);
-        goto fail;
-    }
 
     if ((ret = libssh_open_file(s, flags, path)) < 0)
         goto fail;
