@@ -159,7 +159,7 @@ static int64_t libssh_seek(URLContext *h, int64_t pos, int whence)
         newpos = pos;
         break;
     case SEEK_CUR:
-        newpos = sftp_tell64(s->file);
+        newpos = sftp_tell64(s->file) + pos;
         break;
     case SEEK_END:
         newpos = s->filesize + pos;
