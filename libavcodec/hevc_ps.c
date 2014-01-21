@@ -636,7 +636,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     if (!s->vps_list[sps->vps_id]) {
-        av_log(s->avctx, AV_LOG_ERROR, "VPS does not exist \n");
+        av_log(s->avctx, AV_LOG_ERROR, "VPS %d does not exist\n",
+               sps->vps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
