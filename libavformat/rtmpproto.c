@@ -2511,9 +2511,9 @@ reconnect:
             (!strcmp(fname + len - 4, ".f4v") ||
              !strcmp(fname + len - 4, ".mp4"))) {
             memcpy(rt->playpath, "mp4:", 5);
-        } else if (len >= 4 && !strcmp(fname + len - 4, ".flv")) {
-            fname[len - 4] = '\0';
         } else {
+            if (len >= 4 && !strcmp(fname + len - 4, ".flv"))
+                fname[len - 4] = '\0';
             rt->playpath[0] = 0;
         }
         av_strlcat(rt->playpath, fname, PLAYPATH_MAX_LENGTH);
