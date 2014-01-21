@@ -63,7 +63,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
     hr = IDirectXVideoDecoder_GetBuffer(ctx->decoder, type,
                                         &dxva_data, &dxva_size);
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to get a buffer for %d: 0x%x\n",
+        av_log(avctx, AV_LOG_ERROR, "Failed to get a buffer for %u: 0x%lx\n",
                type, hr);
         return -1;
     }
@@ -77,14 +77,14 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
 
         result = 0;
     } else {
-        av_log(avctx, AV_LOG_ERROR, "Buffer for type %d was too small\n", type);
+        av_log(avctx, AV_LOG_ERROR, "Buffer for type %u was too small\n", type);
         result = -1;
     }
 
     hr = IDirectXVideoDecoder_ReleaseBuffer(ctx->decoder, type);
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR,
-               "Failed to release buffer type %d: 0x%x\n",
+               "Failed to release buffer type %u: 0x%lx\n",
                type, hr);
         result = -1;
     }
@@ -114,7 +114,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, Picture *pic,
     } while (hr == E_PENDING && ++runs < 50);
 
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%x\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%lx\n", hr);
         return -1;
     }
 
@@ -159,14 +159,14 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, Picture *pic,
     exec.pExtensionData      = NULL;
     hr = IDirectXVideoDecoder_Execute(ctx->decoder, &exec);
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to execute: 0x%x\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to execute: 0x%lx\n", hr);
         result = -1;
     }
 
 end:
     hr = IDirectXVideoDecoder_EndFrame(ctx->decoder, NULL);
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to end frame: 0x%x\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to end frame: 0x%lx\n", hr);
         result = -1;
     }
 
