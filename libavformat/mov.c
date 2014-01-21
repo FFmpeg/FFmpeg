@@ -1952,6 +1952,9 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->stts_count = i;
 
+    sc->duration_for_fps  += duration;
+    sc->nb_frames_for_fps += total_sample_count;
+
     if (pb->eof_reached)
         return AVERROR_EOF;
 
@@ -2393,10 +2396,6 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                                              ((double)st->codec->width * sc->height), INT_MAX);
         }
 
-        if (st->duration > 0)
-            av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
-                      sc->time_scale*st->nb_frames, st->duration, INT_MAX);
-
 #if FF_API_R_FRAME_RATE
         if (sc->stts_count == 1 || (sc->stts_count == 2 && sc->stts_data[1].count == 1))
             av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den,
@@ -2715,6 +2714,8 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         dts += sample_duration;
         offset += sample_size;
         sc->data_size += sample_size;
+        sc->duration_for_fps += sample_duration;
+        sc->nb_frames_for_fps ++;
     }
 
     if (pb->eof_reached)
@@ -3411,6 +3412,9 @@ static int mov_read_header(AVFormatContext *s)
         if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->codec_id == AV_CODEC_ID_AAC) {
             st->skip_samples = sc->start_pad;
         }
+        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && sc->nb_frames_for_fps > 0 && sc->duration_for_fps > 0)
+            av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
+                      sc->time_scale*sc->nb_frames_for_fps, sc->duration_for_fps, INT_MAX);
     }
 
     if (mov->trex_data) {
