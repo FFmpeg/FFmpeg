@@ -162,21 +162,21 @@ static av_cold void libssh_stat_file(LIBSSHContext *libssh)
 
 static av_cold int libssh_close(URLContext *h)
 {
-    LIBSSHContext *s = h->priv_data;
-    if (s->file)
-        sftp_close(s->file);
-    if (s->sftp)
-        sftp_free(s->sftp);
-    if (s->session) {
-        ssh_disconnect(s->session);
-        ssh_free(s->session);
+    LIBSSHContext *libssh = h->priv_data;
+    if (libssh->file)
+        sftp_close(libssh->file);
+    if (libssh->sftp)
+        sftp_free(libssh->sftp);
+    if (libssh->session) {
+        ssh_disconnect(libssh->session);
+        ssh_free(libssh->session);
     }
     return 0;
 }
 
 static av_cold int libssh_open(URLContext *h, const char *url, int flags)
 {
-    LIBSSHContext *s = h->priv_data;
+    LIBSSHContext *libssh = h->priv_data;
     char proto[10], path[MAX_URL_SIZE], hostname[1024], credencials[1024];
     int port = 22, ret;
     const char *user = NULL, *pass = NULL;
@@ -192,22 +192,22 @@ static av_cold int libssh_open(URLContext *h, const char *url, int flags)
     if (port <= 0 || port > 65535)
         port = 22;
 
-    if ((ret = libssh_create_ssh_session(s, hostname, port)) < 0)
+    if ((ret = libssh_create_ssh_session(libssh, hostname, port)) < 0)
         goto fail;
 
     user = av_strtok(credencials, ":", &end);
     pass = av_strtok(end, ":", &end);
 
-    if ((ret = libssh_authentication(s, user, pass)) < 0)
+    if ((ret = libssh_authentication(libssh, user, pass)) < 0)
         goto fail;
 
-    if ((ret = libssh_create_sftp_session(s)) < 0)
+    if ((ret = libssh_create_sftp_session(libssh)) < 0)
         goto fail;
 
-    if ((ret = libssh_open_file(s, flags, path)) < 0)
+    if ((ret = libssh_open_file(libssh, flags, path)) < 0)
         goto fail;
 
-    libssh_stat_file(s);
+    libssh_stat_file(libssh);
 
     return 0;
 
@@ -218,31 +218,31 @@ static av_cold int libssh_open(URLContext *h, const char *url, int flags)
 
 static int64_t libssh_seek(URLContext *h, int64_t pos, int whence)
 {
-    LIBSSHContext *s = h->priv_data;
+    LIBSSHContext *libssh = h->priv_data;
     int64_t newpos;
 
-    if (s->filesize == -1 && (whence == AVSEEK_SIZE || whence == SEEK_END)) {
+    if (libssh->filesize == -1 && (whence == AVSEEK_SIZE || whence == SEEK_END)) {
         av_log(h, AV_LOG_ERROR, "Error during seeking.\n");
         return AVERROR(EIO);
     }
 
     switch(whence) {
     case AVSEEK_SIZE:
-        return s->filesize;
+        return libssh->filesize;
     case SEEK_SET:
         newpos = pos;
         break;
     case SEEK_CUR:
-        newpos = sftp_tell64(s->file);
+        newpos = sftp_tell64(libssh->file);
         break;
     case SEEK_END:
-        newpos = s->filesize + pos;
+        newpos = libssh->filesize + pos;
         break;
     default:
         return AVERROR(EINVAL);
     }
 
-    if (sftp_seek64(s->file, newpos)) {
+    if (sftp_seek64(libssh->file, newpos)) {
         av_log(h, AV_LOG_ERROR, "Error during seeking.\n");
         return AVERROR(EIO);
     }
@@ -252,11 +252,11 @@ static int64_t libssh_seek(URLContext *h, int64_t pos, int whence)
 
 static int libssh_read(URLContext *h, unsigned char *buf, int size)
 {
-    LIBSSHContext *s = h->priv_data;
+    LIBSSHContext *libssh = h->priv_data;
     int bytes_read;
 
-    if ((bytes_read = sftp_read(s->file, buf, size)) < 0) {
-        av_log(h, AV_LOG_ERROR, "Read error.\n");
+    if ((bytes_read = sftp_read(libssh->file, buf, size)) < 0) {
+        av_log(libssh, AV_LOG_ERROR, "Read error.\n");
         return AVERROR(EIO);
     }
     return bytes_read;
@@ -264,11 +264,11 @@ static int libssh_read(URLContext *h, unsigned char *buf, int size)
 
 static int libssh_write(URLContext *h, const unsigned char *buf, int size)
 {
-    LIBSSHContext *s = h->priv_data;
+    LIBSSHContext *libssh = h->priv_data;
     int bytes_written;
 
-    if ((bytes_written = sftp_write(s->file, buf, size)) < 0) {
-        av_log(h, AV_LOG_ERROR, "Write error.\n");
+    if ((bytes_written = sftp_write(libssh->file, buf, size)) < 0) {
+        av_log(libssh, AV_LOG_ERROR, "Write error.\n");
         return AVERROR(EIO);
     }
     return bytes_written;
