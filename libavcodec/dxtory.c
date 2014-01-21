@@ -118,7 +118,8 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
 {
     GetByteContext gb;
     GetBitContext  gb2;
-    int nslices, slice, slice_height;
+    int nslices, slice, slice_height, ref_slice_height;
+    int cur_y, next_y;
     uint32_t off, slice_size;
     uint8_t *Y, *U, *V;
     int ret;
@@ -137,10 +138,10 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
         return AVERROR(ENOSYS);
     }
 
-    slice_height = avctx->height / nslices;
-    if ((avctx->width & 1) || (slice_height & 1)) {
-        avpriv_request_sample(avctx, "slice dimensions %dx%d",
-                              avctx->width, slice_height);
+    ref_slice_height = avctx->height / nslices;
+    if ((avctx->width & 1) || (avctx->height & 1)) {
+        avpriv_request_sample(avctx, "Frame dimensions %dx%d",
+                              avctx->width, avctx->height);
     }
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -151,8 +152,11 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
     U = pic->data[1];
     V = pic->data[2];
 
+    cur_y  = 0;
+    next_y = ref_slice_height;
     for (slice = 0; slice < nslices; slice++) {
-        slice_size = bytestream2_get_le32(&gb);
+        slice_size   = bytestream2_get_le32(&gb);
+        slice_height = (next_y & ~1) - (cur_y & ~1);
         if (slice_size > src_size - off) {
             av_log(avctx, AV_LOG_ERROR,
                    "invalid slice size %d (only %d bytes left)\n",
@@ -177,6 +181,8 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
         U += pic->linesize[1] * (slice_height >> 1);
         V += pic->linesize[2] * (slice_height >> 1);
         off += slice_size;
+        cur_y   = next_y;
+        next_y += ref_slice_height;
     }
 
     return 0;
