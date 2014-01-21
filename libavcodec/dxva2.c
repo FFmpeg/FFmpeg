@@ -21,6 +21,7 @@
  */
 
 #include "dxva2_internal.h"
+#include "libavutil/time.h"
 
 void *ff_dxva2_get_surface(const Picture *picture)
 {
@@ -87,12 +88,19 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, Picture *pic,
     unsigned               buffer_count = 0;
     DXVA2_DecodeBufferDesc buffer[4];
     DXVA2_DecodeExecuteParams exec = { 0 };
-    int      result;
+    int result, runs = 0;
+    HRESULT hr;
 
-    if (FAILED(IDirectXVideoDecoder_BeginFrame(ctx->decoder,
-                                               ff_dxva2_get_surface(pic),
-                                               NULL))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to begin frame\n");
+    do {
+        hr = IDirectXVideoDecoder_BeginFrame(ctx->decoder,
+                                             ff_dxva2_get_surface(pic),
+                                             NULL);
+        if (hr == E_PENDING)
+            av_usleep(2000);
+    } while (hr == E_PENDING && ++runs < 50);
+
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%x\n", hr);
         return -1;
     }
 
