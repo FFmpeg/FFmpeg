@@ -230,7 +230,6 @@ int main(int argc, char **argv)
         }
 
         if (packet.stream_index == audio_stream_index) {
-            avcodec_get_frame_defaults(frame);
             got_frame = 0;
             ret = avcodec_decode_audio4(dec_ctx, frame, &got_frame, &packet);
             if (ret < 0) {
