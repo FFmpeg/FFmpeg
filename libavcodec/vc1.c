@@ -837,7 +837,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     int mbmodetab, imvtab, icbptab, twomvbptab, fourmvbptab; /* useful only for debugging */
     int field_mode, fcm;
 
-    v->numref=0;
+    v->numref          = 0;
     v->p_frame_skipped = 0;
     if (v->second_field) {
         if(v->fcm!=2 || v->field_mode!=1)
@@ -1016,8 +1016,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                 v->reffield          = get_bits1(gb);
                 v->ref_field_type[0] = v->reffield ^ !v->cur_field_type;
             }
-        } else {
-            v->numref = 0;
         }
         if (v->extended_mv)
             v->mvrange = get_unary(gb, 0, 3);
