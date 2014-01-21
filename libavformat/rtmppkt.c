@@ -313,7 +313,8 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
 
     //if channel_id = 0, this is first presentation of prev_pkt, send full hdr.
     if (prev_pkt[pkt->channel_id].channel_id &&
-        pkt->extra == prev_pkt[pkt->channel_id].extra) {
+        pkt->extra == prev_pkt[pkt->channel_id].extra &&
+        pkt->timestamp >= prev_pkt[pkt->channel_id].timestamp) {
         if (pkt->type == prev_pkt[pkt->channel_id].type &&
             pkt->size == prev_pkt[pkt->channel_id].size) {
             mode = RTMP_PS_FOURBYTES;
