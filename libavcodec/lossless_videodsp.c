@@ -38,7 +38,7 @@ static void diff_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *sr
     long i;
 #if !HAVE_FAST_UNALIGNED
     if((long)src2 & (sizeof(long)-1)){
-        for(i=0; i+7<w; i+=8){
+        for(i=0; i+3<w; i+=4){
             dst[i+0] = (src1[i+0]-src2[i+0]) & mask;
             dst[i+1] = (src1[i+1]-src2[i+1]) & mask;
             dst[i+2] = (src1[i+2]-src2[i+2]) & mask;
