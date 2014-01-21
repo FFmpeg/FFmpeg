@@ -25,9 +25,7 @@ SECTION_TEXT
 
 %macro ADD_INT16_LOOP 1 ; %1 = is_aligned
     movd      m4, maskq
-    punpcklwd m4, m4
-    punpcklwd m4, m4
-    punpcklwd m4, m4
+    SPLATW  m4, m4
     add     wq, wq
     test    wq, 2*mmsize - 1
     jz %%.tomainloop
