@@ -173,6 +173,7 @@ itxfm_funcs(16, ssse3);
 itxfm_funcs(16, avx);
 itxfm_func(idct, idct, 32, ssse3);
 itxfm_func(idct, idct, 32, avx);
+itxfm_func(iwht, iwht, 4, mmx);
 
 #undef itxfm_func
 #undef itxfm_funcs
@@ -223,6 +224,10 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
     if (EXTERNAL_MMX(cpu_flags)) {
         init_fpel(4, 0,  4, put, mmx);
         init_fpel(3, 0,  8, put, mmx);
+        dsp->itxfm_add[4 /* lossless */][DCT_DCT] =
+        dsp->itxfm_add[4 /* lossless */][ADST_DCT] =
+        dsp->itxfm_add[4 /* lossless */][DCT_ADST] =
+        dsp->itxfm_add[4 /* lossless */][ADST_ADST] = ff_vp9_iwht_iwht_4x4_add_mmx;
     }
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {

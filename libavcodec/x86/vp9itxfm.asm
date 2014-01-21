@@ -152,6 +152,47 @@ SECTION .text
 %endmacro
 
 ;-------------------------------------------------------------------------------------------
+; void vp9_iwht_iwht_4x4_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
+;-------------------------------------------------------------------------------------------
+
+%macro VP9_IWHT4_1D 0
+    SWAP                 1, 2, 3
+    paddw               m0, m2
+    psubw               m3, m1
+    psubw               m4, m0, m3
+    psraw               m4, 1
+    psubw               m5, m4, m1
+    SWAP                 5, 1
+    psubw               m4, m2
+    SWAP                 4, 2
+    psubw               m0, m1
+    paddw               m3, m2
+    SWAP                 3, 2, 1
+%endmacro
+
+INIT_MMX mmx
+cglobal vp9_iwht_iwht_4x4_add, 3, 3, 0, dst, stride, block, eob
+    mova                m0, [blockq+0*8]
+    mova                m1, [blockq+1*8]
+    mova                m2, [blockq+2*8]
+    mova                m3, [blockq+3*8]
+    psraw               m0, 2
+    psraw               m1, 2
+    psraw               m2, 2
+    psraw               m3, 2
+
+    VP9_IWHT4_1D
+    TRANSPOSE4x4W        0, 1, 2, 3, 4
+    VP9_IWHT4_1D
+
+    pxor                m4, m4
+    VP9_STORE_2X         0, 1, 5, 6, 4
+    lea               dstq, [dstq+strideq*2]
+    VP9_STORE_2X         2, 3, 5, 6, 4
+    ZERO_BLOCK      blockq, 8, 4, m4
+    RET
+
+;-------------------------------------------------------------------------------------------
 ; void vp9_idct_idct_4x4_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
 ;-------------------------------------------------------------------------------------------
 
