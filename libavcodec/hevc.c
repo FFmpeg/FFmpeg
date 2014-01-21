@@ -597,6 +597,7 @@ static int hls_slice_header(HEVCContext *s)
         }
 
         sh->slice_qp_delta = get_se_golomb(gb);
+
         if (s->pps->pic_slice_level_chroma_qp_offsets_present_flag) {
             sh->slice_cb_qp_offset = get_se_golomb(gb);
             sh->slice_cr_qp_offset = get_se_golomb(gb);
