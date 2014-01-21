@@ -170,6 +170,8 @@ static int dxtory_decode_v1_444(AVCodecContext *avctx, AVFrame *pic,
 }
 
 const uint8_t def_lru[8] = { 0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xFF };
+const uint8_t def_lru_555[8] = { 0x00, 0x08, 0x10, 0x18, 0x1F };
+const uint8_t def_lru_565[8] = { 0x00, 0x08, 0x10, 0x20, 0x30, 0x3F };
 
 static inline uint8_t decode_sym(GetBitContext *gb, uint8_t lru[8])
 {
@@ -186,6 +188,110 @@ static inline uint8_t decode_sym(GetBitContext *gb, uint8_t lru[8])
     lru[0] = val;
 
     return val;
+}
+
+static inline uint8_t decode_sym_565(GetBitContext *gb, uint8_t lru[8],
+                                     int bits)
+{
+    uint8_t c, val;
+
+    c = get_unary(gb, 0, bits);
+    if (!c) {
+        val = get_bits(gb, bits);
+        memmove(lru + 1, lru, sizeof(*lru) * (6 - 1));
+    } else {
+        val = lru[c - 1];
+        memmove(lru + 1, lru, sizeof(*lru) * (c - 1));
+    }
+    lru[0] = val;
+
+    return val;
+}
+
+static int dx2_decode_slice_565(GetBitContext *gb, int width, int height,
+                                uint8_t *dst, int stride, int is_565)
+{
+    int x, y;
+    int r, g, b;
+    uint8_t lru[3][8];
+
+    memcpy(lru[0], def_lru_555, 8 * sizeof(*def_lru));
+    memcpy(lru[1], is_565 ? def_lru_565 : def_lru_555, 8 * sizeof(*def_lru));
+    memcpy(lru[2], def_lru_555, 8 * sizeof(*def_lru));
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            b = decode_sym_565(gb, lru[0], 5);
+            g = decode_sym_565(gb, lru[1], is_565 ? 6 : 5);
+            r = decode_sym_565(gb, lru[2], 5);
+            dst[x * 3 + 0] = (r << 3) | (r >> 2);
+            dst[x * 3 + 1] = is_565 ? (g << 2) | (g >> 4) : (g << 3) | (g >> 2);
+            dst[x * 3 + 2] = (b << 3) | (b >> 2);
+        }
+
+        dst += stride;
+    }
+
+    return 0;
+}
+
+static int dxtory_decode_v2_565(AVCodecContext *avctx, AVFrame *pic,
+                                const uint8_t *src, int src_size, int is_565)
+{
+    GetByteContext gb;
+    GetBitContext  gb2;
+    int nslices, slice, slice_height;
+    uint32_t off, slice_size;
+    uint8_t *dst;
+    int ret;
+
+    bytestream2_init(&gb, src, src_size);
+    nslices = bytestream2_get_le16(&gb);
+    off = FFALIGN(nslices * 4 + 2, 16);
+    if (src_size < off) {
+        av_log(avctx, AV_LOG_ERROR, "no slice data\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (!nslices || avctx->height % nslices) {
+        avpriv_request_sample(avctx, "%d slices for %dx%d", nslices,
+                              avctx->width, avctx->height);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    slice_height = avctx->height / nslices;
+    avctx->pix_fmt = AV_PIX_FMT_RGB24;
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        return ret;
+
+    dst = pic->data[0];
+    for (slice = 0; slice < nslices; slice++) {
+        slice_size = bytestream2_get_le32(&gb);
+        if (slice_size > src_size - off) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "invalid slice size %d (only %d bytes left)\n",
+                   slice_size, src_size - off);
+            return AVERROR_INVALIDDATA;
+        }
+        if (slice_size <= 16) {
+            av_log(avctx, AV_LOG_ERROR, "invalid slice size %d\n", slice_size);
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (AV_RL32(src + off) != slice_size - 16) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Slice sizes mismatch: got %d instead of %d\n",
+                   AV_RL32(src + off), slice_size - 16);
+        }
+        init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
+        dx2_decode_slice_565(&gb2, avctx->width, slice_height, dst,
+                             pic->linesize[0], is_565);
+
+        dst += pic->linesize[0] * slice_height;
+        off += slice_size;
+    }
+
+    return 0;
 }
 
 static int dx2_decode_slice_rgb(GetBitContext *gb, int width, int height,
@@ -609,10 +715,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         ret = dxtory_decode_v1_rgb(avctx, pic, src + 16, avpkt->size - 16,
                                    AV_PIX_FMT_RGB565LE, 2);
         break;
+    case 0x17000009:
+        ret = dxtory_decode_v2_565(avctx, pic, src + 16, avpkt->size - 16, 1);
+        break;
     case 0x18000001:
     case 0x19000001:
         ret = dxtory_decode_v1_rgb(avctx, pic, src + 16, avpkt->size - 16,
                                    AV_PIX_FMT_RGB555LE, 2);
+        break;
+    case 0x18000009:
+    case 0x19000009:
+        ret = dxtory_decode_v2_565(avctx, pic, src + 16, avpkt->size - 16, 0);
         break;
     default:
         avpriv_request_sample(avctx, "Frame header %X", AV_RB32(src));
