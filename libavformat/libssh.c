@@ -38,6 +38,30 @@ typedef struct {
     char *priv_key;
 } LIBSSHContext;
 
+static av_cold int libssh_create_ssh_session(LIBSSHContext *libssh, const char* hostname, unsigned int port)
+{
+    static const int verbosity = SSH_LOG_NOLOG;
+
+    if (!(libssh->session = ssh_new())) {
+        av_log(libssh, AV_LOG_ERROR, "SSH session creation failed: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(ENOMEM);
+    }
+    ssh_options_set(libssh->session, SSH_OPTIONS_HOST, hostname);
+    ssh_options_set(libssh->session, SSH_OPTIONS_PORT, &port);
+    ssh_options_set(libssh->session, SSH_OPTIONS_LOG_VERBOSITY, &verbosity);
+    if (libssh->rw_timeout > 0) {
+        long timeout = libssh->rw_timeout * 1000;
+        ssh_options_set(libssh->session, SSH_OPTIONS_TIMEOUT_USEC, &timeout);
+    }
+
+    if (ssh_connect(libssh->session) != SSH_OK) {
+        av_log(libssh, AV_LOG_ERROR, "Connection failed: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
 static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user, const char *password)
 {
     int authorized = 0;
@@ -137,11 +161,9 @@ static int libssh_close(URLContext *h)
 
 static int libssh_open(URLContext *h, const char *url, int flags)
 {
-    static const int verbosity = SSH_LOG_NOLOG;
     LIBSSHContext *s = h->priv_data;
     char proto[10], path[MAX_URL_SIZE], hostname[1024], credencials[1024];
     int port = 22, ret;
-    long timeout = s->rw_timeout * 1000;
     const char *user = NULL, *pass = NULL;
     char *end = NULL;
 
@@ -155,23 +177,11 @@ static int libssh_open(URLContext *h, const char *url, int flags)
     if (port <= 0 || port > 65535)
         port = 22;
 
-    if (!(s->session = ssh_new())) {
-        ret = AVERROR(ENOMEM);
+    if ((ret = libssh_create_ssh_session(s, hostname, port)) < 0)
         goto fail;
-    }
+
     user = av_strtok(credencials, ":", &end);
     pass = av_strtok(end, ":", &end);
-    ssh_options_set(s->session, SSH_OPTIONS_HOST, hostname);
-    ssh_options_set(s->session, SSH_OPTIONS_PORT, &port);
-    ssh_options_set(s->session, SSH_OPTIONS_LOG_VERBOSITY, &verbosity);
-    if (timeout > 0)
-        ssh_options_set(s->session, SSH_OPTIONS_TIMEOUT_USEC, &timeout);
-
-    if (ssh_connect(s->session) != SSH_OK) {
-        av_log(h, AV_LOG_ERROR, "Connection failed. %s\n", ssh_get_error(s->session));
-        ret = AVERROR(EIO);
-        goto fail;
-    }
 
     if ((ret = libssh_authentication(s, user, pass)) < 0)
         goto fail;
