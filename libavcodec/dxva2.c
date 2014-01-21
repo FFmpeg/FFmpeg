@@ -20,8 +20,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dxva2_internal.h"
+#include <assert.h>
+#include <string.h>
+
+#include "libavutil/log.h"
 #include "libavutil/time.h"
+
+#include "avcodec.h"
+#include "mpegvideo.h"
+#include "dxva2_internal.h"
 
 void *ff_dxva2_get_surface(const Picture *picture)
 {
