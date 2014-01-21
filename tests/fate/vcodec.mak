@@ -58,8 +58,10 @@ FATE_VCODEC-$(call ENCDEC, FFV1, AVI)   += ffv1 ffv1.0
 fate-vsynth%-ffv1:               ENCOPTS = -slices 4
 fate-vsynth%-ffv1.0:             CODEC   = ffv1
 
-FATE_VCODEC-$(call ENCDEC, FFVHUFF, AVI) += ffvhuff ffvhuff444
+FATE_VCODEC-$(call ENCDEC, FFVHUFF, AVI) += ffvhuff ffvhuff444 ffvhuff420p12 ffvhuff422p10left
 fate-vsynth%-ffvhuff444:         ENCOPTS = -strict -2 -vcodec ffvhuff -pix_fmt yuv444p
+fate-vsynth%-ffvhuff420p12:      ENCOPTS = -strict -2 -vcodec ffvhuff -pix_fmt yuv420p12le
+fate-vsynth%-ffvhuff422p10left:  ENCOPTS = -strict -2 -vcodec ffvhuff -pix_fmt yuv422p10le -pred left
 
 FATE_VCODEC-$(call ENCDEC, FLASHSV, FLV) += flashsv
 fate-vsynth%-flashsv:            ENCOPTS = -sws_flags neighbor+full_chroma_int
