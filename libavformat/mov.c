@@ -1940,6 +1940,12 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_dlog(c->fc, "sample_count=%d, sample_duration=%d\n",
                 sample_count, sample_duration);
 
+        if (   i+1 == entries
+            && i
+            && sample_count == 1
+            && total_sample_count > 100
+            && sample_duration/10 > duration / total_sample_count)
+            sample_duration = duration / total_sample_count;
         duration+=(int64_t)sample_duration*sample_count;
         total_sample_count+=sample_count;
     }
