@@ -2057,14 +2057,20 @@ static void decode_coeffs(AVCodecContext *ctx)
     const int16_t *y_band_counts = band_counts[b->tx];
     const int16_t *uv_band_counts = band_counts[b->uvtx];
 
+#define MERGE(la, end, step, rd) \
+    for (n = 0; n < end; n += step) \
+        la[n] = !!rd(&la[n])
+#define MERGE_CTX(step, rd) \
+    do { \
+        MERGE(l, end_y, step, rd); \
+        MERGE(a, end_x, step, rd); \
+    } while (0)
+
     /* y tokens */
-    if (b->tx > TX_4X4) { // FIXME slow
-        for (y = 0; y < end_y; y += step1d)
-            for (x = 1; x < step1d; x++)
-                l[y] |= l[y + x];
-        for (x = 0; x < end_x; x += step1d)
-            for (y = 1; y < step1d; y++)
-                a[x] |= a[x + y];
+    switch (b->tx) {
+    case TX_8X8:   MERGE_CTX(2, AV_RN16A); break;
+    case TX_16X16: MERGE_CTX(4, AV_RN32A); break;
+    case TX_32X32: MERGE_CTX(8, AV_RN64A); break;
     }
     for (n = 0, y = 0; y < end_y; y += step1d) {
         for (x = 0; x < end_x; x += step1d, n += step) {
@@ -2100,13 +2106,10 @@ static void decode_coeffs(AVCodecContext *ctx)
     for (pl = 0; pl < 2; pl++) {
         a = &s->above_uv_nnz_ctx[pl][col];
         l = &s->left_uv_nnz_ctx[pl][row & 7];
-        if (b->uvtx > TX_4X4) { // FIXME slow
-            for (y = 0; y < end_y; y += uvstep1d)
-                for (x = 1; x < uvstep1d; x++)
-                    l[y] |= l[y + x];
-            for (x = 0; x < end_x; x += uvstep1d)
-                for (y = 1; y < uvstep1d; y++)
-                    a[x] |= a[x + y];
+        switch (b->uvtx) {
+        case TX_8X8:   MERGE_CTX(2, AV_RN16A); break;
+        case TX_16X16: MERGE_CTX(4, AV_RN32A); break;
+        case TX_32X32: MERGE_CTX(8, AV_RN64A); break;
         }
         for (n = 0, y = 0; y < end_y; y += uvstep1d) {
             for (x = 0; x < end_x; x += uvstep1d, n += uvstep) {
