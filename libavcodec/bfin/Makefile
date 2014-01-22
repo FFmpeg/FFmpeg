@@ -1,6 +1,7 @@
 OBJS += bfin/dsputil_bfin.o                                             \
         bfin/fdct_bfin.o                                                \
         bfin/hpel_pixels_bfin.o                                         \
+        bfin/hpel_pixels_no_rnd.o                                       \
         bfin/idct_bfin.o                                                \
         bfin/pixels_bfin.o                                              \
 
