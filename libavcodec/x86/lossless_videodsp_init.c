@@ -23,6 +23,8 @@
 
 void ff_add_int16_mmx(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
 void ff_add_int16_sse2(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
+void ff_diff_int16_mmx (uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w);
+void ff_diff_int16_sse2(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w);
 int ff_add_hfyu_left_prediction_int16_ssse3(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int acc);
 int ff_add_hfyu_left_prediction_int16_sse4(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int acc);
 
@@ -32,10 +34,12 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c)
 
     if (EXTERNAL_MMX(cpu_flags)) {
         c->add_int16 = ff_add_int16_mmx;
+        c->diff_int16 = ff_diff_int16_mmx;
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->add_int16 = ff_add_int16_sse2;
+        c->diff_int16 = ff_diff_int16_sse2;
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {

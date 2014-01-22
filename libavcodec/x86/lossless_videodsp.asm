@@ -93,6 +93,72 @@ cglobal add_int16, 4,4,5, dst, src, mask, w
 .unaligned:
     ADD_INT16_LOOP 0
 
+%macro DIFF_INT16_LOOP 1 ; %1 = is_aligned
+    movd    m4, maskd
+    SPLATW  m4, m4
+    add     wq, wq
+    test    wq, 2*mmsize - 1
+    jz %%.tomainloop
+%%.wordloop:
+    sub     wq, 2
+    mov     ax, [src1q+wq]
+    sub     ax, [src2q+wq]
+    and     ax, maskw
+    mov     [dstq+wq], ax
+    test    wq, 2*mmsize - 1
+    jnz %%.wordloop
+%%.tomainloop:
+    add     src1q, wq
+    add     src2q, wq
+    add     dstq, wq
+    neg     wq
+    jz      %%.end
+%%.loop:
+%if %1
+    mova    m0, [src1q+wq]
+    mova    m1, [src2q+wq]
+    mova    m2, [src1q+wq+mmsize]
+    mova    m3, [src2q+wq+mmsize]
+%else
+    movu    m0, [src1q+wq]
+    movu    m1, [src2q+wq]
+    movu    m2, [src1q+wq+mmsize]
+    movu    m3, [src2q+wq+mmsize]
+%endif
+    psubw   m0, m1
+    psubw   m2, m3
+    pand    m0, m4
+    pand    m2, m4
+%if %1
+    mova    [dstq+wq]       , m0
+    mova    [dstq+wq+mmsize], m2
+%else
+    movu    [dstq+wq]       , m0
+    movu    [dstq+wq+mmsize], m2
+%endif
+    add     wq, 2*mmsize
+    jl %%.loop
+%%.end:
+    RET
+%endmacro
+
+INIT_MMX mmx
+cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
+    DIFF_INT16_LOOP 1
+
+INIT_XMM sse2
+cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
+    test src1q, mmsize-1
+    jnz .unaligned
+    test src2q, mmsize-1
+    jnz .unaligned
+    test dstq, mmsize-1
+    jnz .unaligned
+    DIFF_INT16_LOOP 1
+.unaligned:
+    DIFF_INT16_LOOP 0
+
+
 %macro ADD_HFYU_LEFT_LOOP_INT16 2 ; %1 = dst_is_aligned, %2 = src_is_aligned
     add     wq, wq
     add     srcq, wq
