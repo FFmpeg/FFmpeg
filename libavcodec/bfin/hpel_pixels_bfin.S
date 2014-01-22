@@ -102,7 +102,7 @@ DEFUN_END(put_pixels16uc)
 
 
 
-DEFUN(put_pixels8uc_nornd,mL1,
+DEFUN(put_pixels8uc_no_rnd,mL1,
         (uint8_t *block, const uint8_t *s0, const uint8_t *s1,
                  int line_size, int h)):
         i3=r0;        // dest
@@ -125,9 +125,9 @@ pp8$3:  DISALGNEXCPT                || R2 = [I1++]  || [I3++M3] = R7;
 
         (r7:6) = [sp++];
         RTS;
-DEFUN_END(put_pixels8uc_nornd)
+DEFUN_END(put_pixels8uc_no_rnd)
 
-DEFUN(put_pixels16uc_nornd,mL1,
+DEFUN(put_pixels16uc_no_rnd,mL1,
         (uint8_t *block, const uint8_t *s0, const uint8_t *s1,
                  int line_size, int h)):
         i3=r0;        // dest
@@ -159,7 +159,7 @@ pp16$3: DISALGNEXCPT                || R2 = [I1++]   || [I3++M3] = R7;
         (r7:6) = [sp++];
 
         RTS;
-DEFUN_END(put_pixels16uc_nornd)
+DEFUN_END(put_pixels16uc_no_rnd)
 
 DEFUN(z_put_pixels16_xy2,mL1,
         (uint8_t *block, const uint8_t *s0,
