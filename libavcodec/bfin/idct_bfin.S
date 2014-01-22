@@ -55,14 +55,9 @@ IDCT BFINidct: 88.3 kdct/s
 
 */
 
-#include "config.h"
-#include "config_bfin.h"
+#include "libavutil/bfin/asm.h"
 
-#if defined(__FDPIC__) && CONFIG_SRAM
-.section .l1.data.B,"aw",@progbits
-#else
-.data
-#endif
+SECTION_L1_DATA_B
 
 .align 4;
 coefs:
@@ -77,9 +72,7 @@ coefs:
 .short 0x18F9;           //cos(7pi/16)
 .short 0x7D8A;           //cos(pi/16)
 
-#if defined(__FDPIC__) && CONFIG_SRAM
-.section .l1.data.A,"aw",@progbits
-#endif
+SECTION_L1_DATA_A
 
 vtmp: .space 256
 

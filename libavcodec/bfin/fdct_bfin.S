@@ -125,21 +125,16 @@ DCT BFINfdct: err_inf=2 err2=0.16425938 syserr=0.00795000 maxout=2098 blockSumEr
 DCT BFINfdct: 92.1 kdct/s
 */
 
-#include "config.h"
-#include "config_bfin.h"
+#include "libavutil/bfin/asm.h"
 
-#if defined(__FDPIC__) && CONFIG_SRAM
-.section .l1.data.B,"aw",@progbits
-#else
-.data
-#endif
+SECTION_L1_DATA_B
+
 .align 4;
 dct_coeff:
 .short 0x5a82, 0x2d41, 0x187e, 0x3b21, 0x0c7c, 0x3ec5, 0x238e, 0x3537;
 
-#if defined(__FDPIC__) && CONFIG_SRAM
-.section .l1.data.A,"aw",@progbits
-#endif
+SECTION_L1_DATA_A
+
 .align 4
 vtmp:   .space 128
 
