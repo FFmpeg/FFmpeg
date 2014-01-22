@@ -22,6 +22,7 @@
 #include <libssh/sftp.h>
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+#include "libavutil/attributes.h"
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"
@@ -34,32 +35,152 @@ typedef struct {
     int64_t filesize;
     int rw_timeout;
     int trunc;
+    char *priv_key;
 } LIBSSHContext;
 
-static int libssh_close(URLContext *h)
+static av_cold int libssh_create_ssh_session(LIBSSHContext *libssh, const char* hostname, unsigned int port)
 {
-    LIBSSHContext *s = h->priv_data;
-    if (s->file)
-        sftp_close(s->file);
-    if (s->sftp)
-        sftp_free(s->sftp);
-    if (s->session) {
-        ssh_disconnect(s->session);
-        ssh_free(s->session);
+    static const int verbosity = SSH_LOG_NOLOG;
+
+    if (!(libssh->session = ssh_new())) {
+        av_log(libssh, AV_LOG_ERROR, "SSH session creation failed: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(ENOMEM);
+    }
+    ssh_options_set(libssh->session, SSH_OPTIONS_HOST, hostname);
+    ssh_options_set(libssh->session, SSH_OPTIONS_PORT, &port);
+    ssh_options_set(libssh->session, SSH_OPTIONS_LOG_VERBOSITY, &verbosity);
+    if (libssh->rw_timeout > 0) {
+        long timeout = libssh->rw_timeout * 1000;
+        ssh_options_set(libssh->session, SSH_OPTIONS_TIMEOUT_USEC, &timeout);
+    }
+
+    if (ssh_connect(libssh->session) != SSH_OK) {
+        av_log(libssh, AV_LOG_ERROR, "Connection failed: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
+static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user, const char *password)
+{
+    int authorized = 0;
+    int auth_methods;
+
+    if (user)
+        ssh_options_set(libssh->session, SSH_OPTIONS_USER, user);
+
+    auth_methods = ssh_userauth_list(libssh->session, NULL);
+
+    if (auth_methods & SSH_AUTH_METHOD_PUBLICKEY) {
+        if (libssh->priv_key) {
+            ssh_string pub_key;
+            ssh_private_key priv_key;
+            int type;
+            if (!ssh_try_publickey_from_file(libssh->session, libssh->priv_key, &pub_key, &type)) {
+                priv_key = privatekey_from_file(libssh->session, libssh->priv_key, type, password);
+                if (ssh_userauth_pubkey(libssh->session, NULL, pub_key, priv_key) == SSH_AUTH_SUCCESS) {
+                    av_log(libssh, AV_LOG_DEBUG, "Authentication successful with selected private key.\n");
+                    authorized = 1;
+                }
+            } else {
+                av_log(libssh, AV_LOG_DEBUG, "Invalid key is provided.\n");
+                return AVERROR(EACCES);
+            }
+        } else if (ssh_userauth_autopubkey(libssh->session, password) == SSH_AUTH_SUCCESS) {
+            av_log(libssh, AV_LOG_DEBUG, "Authentication successful with auto selected key.\n");
+            authorized = 1;
+        }
+    }
+
+    if (!authorized && (auth_methods & SSH_AUTH_METHOD_PASSWORD)) {
+        if (ssh_userauth_password(libssh->session, NULL, password) == SSH_AUTH_SUCCESS) {
+            av_log(libssh, AV_LOG_DEBUG, "Authentication successful with password.\n");
+            authorized = 1;
+        }
+    }
+
+    if (!authorized) {
+        av_log(libssh, AV_LOG_ERROR, "Authentication failed.\n");
+        return AVERROR(EACCES);
+    }
+
+    return 0;
+}
+
+static av_cold int libssh_create_sftp_session(LIBSSHContext *libssh)
+{
+    if (!(libssh->sftp = sftp_new(libssh->session))) {
+        av_log(libssh, AV_LOG_ERROR, "SFTP session creation failed: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(ENOMEM);
+    }
+
+    if (sftp_init(libssh->sftp) != SSH_OK) {
+        av_log(libssh, AV_LOG_ERROR, "Error initializing sftp session: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
+static av_cold int libssh_open_file(LIBSSHContext *libssh, int flags, const char *file)
+{
+    int access;
+
+    if ((flags & AVIO_FLAG_WRITE) && (flags & AVIO_FLAG_READ)) {
+        access = O_CREAT | O_RDWR;
+        if (libssh->trunc)
+            access |= O_TRUNC;
+    } else if (flags & AVIO_FLAG_WRITE) {
+        access = O_CREAT | O_WRONLY;
+        if (libssh->trunc)
+            access |= O_TRUNC;
+    } else
+        access = O_RDONLY;
+
+    /* 0666 = -rw-rw-rw- = read+write for everyone, minus umask */
+    if (!(libssh->file = sftp_open(libssh->sftp, file, access, 0666))) {
+        av_log(libssh, AV_LOG_ERROR, "Error opening sftp file: %s\n", ssh_get_error(libssh->session));
+        return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
+static av_cold void libssh_stat_file(LIBSSHContext *libssh)
+{
+    sftp_attributes stat;
+
+    if (!(stat = sftp_fstat(libssh->file))) {
+        av_log(libssh, AV_LOG_WARNING, "Cannot stat remote file.\n");
+        libssh->filesize = -1;
+    } else {
+        libssh->filesize = stat->size;
+        sftp_attributes_free(stat);
+    }
+}
+
+static av_cold int libssh_close(URLContext *h)
+{
+    LIBSSHContext *libssh = h->priv_data;
+    if (libssh->file)
+        sftp_close(libssh->file);
+    if (libssh->sftp)
+        sftp_free(libssh->sftp);
+    if (libssh->session) {
+        ssh_disconnect(libssh->session);
+        ssh_free(libssh->session);
     }
     return 0;
 }
 
-static int libssh_open(URLContext *h, const char *url, int flags)
+static av_cold int libssh_open(URLContext *h, const char *url, int flags)
 {
-    static const int verbosity = SSH_LOG_NOLOG;
-    LIBSSHContext *s = h->priv_data;
+    LIBSSHContext *libssh = h->priv_data;
     char proto[10], path[MAX_URL_SIZE], hostname[1024], credencials[1024];
-    int port = 22, access, ret;
-    long timeout = s->rw_timeout * 1000;
+    int port = 22, ret;
     const char *user = NULL, *pass = NULL;
     char *end = NULL;
-    sftp_attributes stat;
 
     av_url_split(proto, sizeof(proto),
                  credencials, sizeof(credencials),
@@ -71,73 +192,22 @@ static int libssh_open(URLContext *h, const char *url, int flags)
     if (port <= 0 || port > 65535)
         port = 22;
 
-    if (!(s->session = ssh_new())) {
-        ret = AVERROR(ENOMEM);
+    if ((ret = libssh_create_ssh_session(libssh, hostname, port)) < 0)
         goto fail;
-    }
+
     user = av_strtok(credencials, ":", &end);
     pass = av_strtok(end, ":", &end);
-    ssh_options_set(s->session, SSH_OPTIONS_HOST, hostname);
-    ssh_options_set(s->session, SSH_OPTIONS_PORT, &port);
-    ssh_options_set(s->session, SSH_OPTIONS_LOG_VERBOSITY, &verbosity);
-    if (timeout > 0)
-        ssh_options_set(s->session, SSH_OPTIONS_TIMEOUT_USEC, &timeout);
-    if (user)
-        ssh_options_set(s->session, SSH_OPTIONS_USER, user);
 
-    if (ssh_connect(s->session) != SSH_OK) {
-        av_log(h, AV_LOG_ERROR, "Connection failed. %s\n", ssh_get_error(s->session));
-        ret = AVERROR(EIO);
+    if ((ret = libssh_authentication(libssh, user, pass)) < 0)
         goto fail;
-    }
 
-    if (ssh_userauth_autopubkey(s->session, pass) != SSH_AUTH_SUCCESS) {
-        av_log(s, AV_LOG_DEBUG, "Authentication using public key failed, trying password method.\n");
-        if (ssh_userauth_password(s->session, NULL, pass) != SSH_AUTH_SUCCESS) {
-            av_log(h, AV_LOG_ERROR, "Authentication failed.\n");
-            ret = AVERROR(EACCES);
-            goto fail;
-        }
-    }
-
-    if (!(s->sftp = sftp_new(s->session))) {
-        av_log(h, AV_LOG_ERROR, "SFTP session creation failed: %s\n", ssh_get_error(s->session));
-        ret = AVERROR(ENOMEM);
+    if ((ret = libssh_create_sftp_session(libssh)) < 0)
         goto fail;
-    }
 
-    if (sftp_init(s->sftp) != SSH_OK) {
-        av_log(h, AV_LOG_ERROR, "Error initializing sftp session: %s\n", ssh_get_error(s->session));
-        ret = AVERROR(EIO);
+    if ((ret = libssh_open_file(libssh, flags, path)) < 0)
         goto fail;
-    }
 
-    if ((flags & AVIO_FLAG_WRITE) && (flags & AVIO_FLAG_READ)) {
-        access = O_CREAT | O_RDWR;
-        if (s->trunc)
-            access |= O_TRUNC;
-    } else if (flags & AVIO_FLAG_WRITE) {
-        access = O_CREAT | O_WRONLY;
-        if (s->trunc)
-            access |= O_TRUNC;
-    } else {
-        access = O_RDONLY;
-    }
-
-    /* 0666 = -rw-rw-rw- = read+write for everyone, minus umask */
-    if (!(s->file = sftp_open(s->sftp, path, access, 0666))) {
-        av_log(h, AV_LOG_ERROR, "Error opening sftp file: %s\n", ssh_get_error(s->session));
-        ret = AVERROR(EIO);
-        goto fail;
-    }
-
-    if (!(stat = sftp_fstat(s->file))) {
-        av_log(h, AV_LOG_WARNING, "Cannot stat remote file %s.\n", path);
-        s->filesize = -1;
-    } else {
-        s->filesize = stat->size;
-        sftp_attributes_free(stat);
-    }
+    libssh_stat_file(libssh);
 
     return 0;
 
@@ -148,31 +218,31 @@ static int libssh_open(URLContext *h, const char *url, int flags)
 
 static int64_t libssh_seek(URLContext *h, int64_t pos, int whence)
 {
-    LIBSSHContext *s = h->priv_data;
+    LIBSSHContext *libssh = h->priv_data;
     int64_t newpos;
 
-    if (s->filesize == -1 && (whence == AVSEEK_SIZE || whence == SEEK_END)) {
+    if (libssh->filesize == -1 && (whence == AVSEEK_SIZE || whence == SEEK_END)) {
         av_log(h, AV_LOG_ERROR, "Error during seeking.\n");
         return AVERROR(EIO);
     }
 
     switch(whence) {
     case AVSEEK_SIZE:
-        return s->filesize;
+        return libssh->filesize;
     case SEEK_SET:
         newpos = pos;
         break;
     case SEEK_CUR:
-        newpos = sftp_tell64(s->file);
+        newpos = sftp_tell64(libssh->file) + pos;
         break;
     case SEEK_END:
-        newpos = s->filesize + pos;
+        newpos = libssh->filesize + pos;
         break;
     default:
         return AVERROR(EINVAL);
     }
 
-    if (sftp_seek64(s->file, newpos)) {
+    if (sftp_seek64(libssh->file, newpos)) {
         av_log(h, AV_LOG_ERROR, "Error during seeking.\n");
         return AVERROR(EIO);
     }
@@ -182,11 +252,11 @@ static int64_t libssh_seek(URLContext *h, int64_t pos, int whence)
 
 static int libssh_read(URLContext *h, unsigned char *buf, int size)
 {
-    LIBSSHContext *s = h->priv_data;
+    LIBSSHContext *libssh = h->priv_data;
     int bytes_read;
 
-    if ((bytes_read = sftp_read(s->file, buf, size)) < 0) {
-        av_log(h, AV_LOG_ERROR, "Read error.\n");
+    if ((bytes_read = sftp_read(libssh->file, buf, size)) < 0) {
+        av_log(libssh, AV_LOG_ERROR, "Read error.\n");
         return AVERROR(EIO);
     }
     return bytes_read;
@@ -194,11 +264,11 @@ static int libssh_read(URLContext *h, unsigned char *buf, int size)
 
 static int libssh_write(URLContext *h, const unsigned char *buf, int size)
 {
-    LIBSSHContext *s = h->priv_data;
+    LIBSSHContext *libssh = h->priv_data;
     int bytes_written;
 
-    if ((bytes_written = sftp_write(s->file, buf, size)) < 0) {
-        av_log(h, AV_LOG_ERROR, "Write error.\n");
+    if ((bytes_written = sftp_write(libssh->file, buf, size)) < 0) {
+        av_log(libssh, AV_LOG_ERROR, "Write error.\n");
         return AVERROR(EIO);
     }
     return bytes_written;
@@ -210,6 +280,7 @@ static int libssh_write(URLContext *h, const unsigned char *buf, int size)
 static const AVOption options[] = {
     {"timeout", "set timeout of socket I/O operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
     {"truncate", "Truncate existing files on write", OFFSET(trunc), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, E },
+    {"private_key", "set path to private key", OFFSET(priv_key), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D|E },
     {NULL}
 };
 

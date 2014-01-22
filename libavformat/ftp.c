@@ -572,7 +572,7 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
         return AVERROR(EINVAL);
     }
 
-    if  (h->is_streamed)
+    if (h->is_streamed)
         return AVERROR(EIO);
 
     /* XXX: Simulate behaviour of lseek in file protocol, which could be treated as a reference */
