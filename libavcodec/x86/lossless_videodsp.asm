@@ -299,3 +299,42 @@ cglobal add_hfyu_median_prediction_int16, 7,7,0, dst, top, diff, mask, w, left, 
     movzx   r2d, word [topq-2]
     mov [left_topq], r2d
     RET
+
+cglobal sub_hfyu_median_prediction_int16, 7,7,0, dst, src1, src2, mask, w, left, left_top
+    add      wq, wq
+    movd    mm7, maskd
+    SPLATW  mm7, mm7
+    movq    mm0, [src1q]
+    movq    mm2, [src2q]
+    psllq   mm0, 16
+    psllq   mm2, 16
+    movd    mm6, [left_topq]
+    por     mm0, mm6
+    movd    mm6, [leftq]
+    por     mm2, mm6
+    xor     maskq, maskq
+.loop:
+    movq    mm1, [src1q + maskq]
+    movq    mm3, [src2q + maskq]
+    movq    mm4, mm2
+    psubw   mm2, mm0
+    paddw   mm2, mm1
+    pand    mm2, mm7
+    movq    mm5, mm4
+    pmaxsw  mm4, mm1
+    pminsw  mm1, mm5
+    pminsw  mm4, mm2
+    pmaxsw  mm4, mm1
+    psubw   mm3, mm4
+    pand    mm3, mm7
+    movq    [dstq + maskq], mm3
+    add     maskq, 8
+    movq    mm0, [src1q + maskq - 2]
+    movq    mm2, [src2q + maskq - 2]
+    cmp     maskq, wq
+        jb .loop
+    mov maskd, [src1q + wq - 2]
+    mov [left_topq], maskd
+    mov maskd, [src2q + wq - 2]
+    mov [leftq], maskd
+    RET
