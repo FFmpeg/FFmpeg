@@ -234,3 +234,68 @@ cglobal add_hfyu_left_prediction_int16, 4,4,8, dst, src, mask, w, left
     ADD_HFYU_LEFT_LOOP_INT16 0, 1
 .src_unaligned:
     ADD_HFYU_LEFT_LOOP_INT16 0, 0
+
+; void add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int mask, int w, int *left, int *left_top)
+INIT_MMX mmxext
+cglobal add_hfyu_median_prediction_int16, 7,7,0, dst, top, diff, mask, w, left, left_top
+    add      wq, wq
+    movd    mm6, maskd
+    SPLATW  mm6, mm6
+    movq    mm0, [topq]
+    movq    mm2, mm0
+    movd    mm4, [left_topq]
+    psllq   mm2, 16
+    movq    mm1, mm0
+    por     mm4, mm2
+    movd    mm3, [leftq]
+    psubw   mm0, mm4 ; t-tl
+    add    dstq, wq
+    add    topq, wq
+    add   diffq, wq
+    neg      wq
+    jmp .skip
+.loop:
+    movq    mm4, [topq+wq]
+    movq    mm0, mm4
+    psllq   mm4, 16
+    por     mm4, mm1
+    movq    mm1, mm0 ; t
+    psubw   mm0, mm4 ; t-tl
+.skip:
+    movq    mm2, [diffq+wq]
+%assign i 0
+%rep 4
+    movq    mm4, mm0
+    paddw   mm4, mm3 ; t-tl+l
+    pand    mm4, mm6
+    movq    mm5, mm3
+    pmaxsw  mm3, mm1
+    pminsw  mm5, mm1
+    pminsw  mm3, mm4
+    pmaxsw  mm3, mm5 ; median
+    paddw   mm3, mm2 ; +residual
+    pand    mm3, mm6
+%if i==0
+    movq    mm7, mm3
+    psllq   mm7, 48
+%else
+    movq    mm4, mm3
+    psrlq   mm7, 16
+    psllq   mm4, 48
+    por     mm7, mm4
+%endif
+%if i<3
+    psrlq   mm0, 16
+    psrlq   mm1, 16
+    psrlq   mm2, 16
+%endif
+%assign i i+1
+%endrep
+    movq [dstq+wq], mm7
+    add      wq, 8
+    jl .loop
+    movzx   r2d, word [dstq-2]
+    mov [leftq], r2d
+    movzx   r2d, word [topq-2]
+    mov [left_topq], r2d
+    RET
