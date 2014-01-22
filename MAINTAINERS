@@ -148,6 +148,7 @@ Codecs:
   cdxl.c                                Paul B Mahol
   celp_filters.*                        Vitor Sessak
   cinepak.c                             Roberto Togni
+  cinepakenc.c                          Rl / Aetey G.T. AB
   cljr                                  Alex Beregszaszi
   cllc.c                                Derek Buitenhuis
   cook.c, cookdata.h                    Benjamin Larsson
