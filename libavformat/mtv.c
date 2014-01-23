@@ -33,7 +33,7 @@
 #define MTV_HEADER_SIZE 512
 #define MTV_AUDIO_PADDING_SIZE 12
 #define MTV_IMAGE_DEFAULT_BPP 16
-#define AUDIO_SAMPLING_RATE 44100
+#define MTV_AUDIO_SAMPLING_RATE 44100
 
 typedef struct MTVDemuxContext {
 
@@ -176,7 +176,7 @@ static int mtv_read_header(AVFormatContext *s)
     if(!st)
         return AVERROR(ENOMEM);
 
-    avpriv_set_pts_info(st, 64, 1, AUDIO_SAMPLING_RATE);
+    avpriv_set_pts_info(st, 64, 1, MTV_AUDIO_SAMPLING_RATE);
     st->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id        = AV_CODEC_ID_MP3;
     st->codec->bit_rate        = mtv->audio_br;
