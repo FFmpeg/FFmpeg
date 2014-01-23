@@ -78,6 +78,13 @@ static int mtv_probe(AVProbeData *p)
     if(p->buf[51] != 16)
         return AVPROBE_SCORE_EXTENSION / 2; // But we are going to assume 16bpp anyway ..
 
+    /* We had enough data to parse header values
+     * but we expect to be able to get 512 bytes
+     * of header to be sure.
+     */
+    if (p->buf_size < MTV_HEADER_SIZE)
+        return AVPROBE_SCORE_EXTENSION;
+
     return AVPROBE_SCORE_MAX;
 }
 
