@@ -261,7 +261,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
 
-    ff_huffyuv_common_init(avctx);
     memset(s->vlc, 0, 4 * sizeof(VLC));
 
     s->interlaced = s->height > 288;
@@ -470,6 +469,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
+    ff_huffyuv_common_init(avctx);
 
     if ((avctx->pix_fmt == AV_PIX_FMT_YUV422P || avctx->pix_fmt == AV_PIX_FMT_YUV420P) && avctx->width & 1) {
         av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");
