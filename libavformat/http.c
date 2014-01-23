@@ -490,8 +490,11 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
                 av_free(cpath);
                 cpath = av_strdup(&param[5]);
             } else if (!av_strncasecmp("domain=", param, 7)) {
+                // if the cookie specifies a sub-domain, skip the leading dot thereby
+                // supporting URLs that point to sub-domains and the master domain
+                int leading_dot = (param[7] == '.');
                 av_free(cdomain);
-                cdomain = av_strdup(&param[7]);
+                cdomain = av_strdup(&param[7+leading_dot]);
             } else if (!av_strncasecmp("secure",  param, 6) ||
                        !av_strncasecmp("comment", param, 7) ||
                        !av_strncasecmp("max-age", param, 7) ||
