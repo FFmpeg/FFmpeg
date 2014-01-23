@@ -120,12 +120,12 @@ static int generate_joint_tables(HYuvContext *s)
         int p, i, y, u;
         for (p = 0; p < 4; p++) {
             int p0 = s->version > 2 ? p : 0;
-            for (i = y = 0; y < s->n; y++) {
+            for (i = y = 0; y < s->vlc_n; y++) {
                 int len0 = s->len[p0][y];
                 int limit = VLC_BITS - len0;
                 if(limit <= 0 || !len0)
                     continue;
-                for (u = 0; u < s->n; u++) {
+                for (u = 0; u < s->vlc_n; u++) {
                     int len1 = s->len[p][u];
                     if (len1 > limit || !len1)
                         continue;
@@ -201,13 +201,13 @@ static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length)
         count = 1 + s->alpha + 2*s->chroma;
 
     for (i = 0; i < count; i++) {
-        if (read_len_table(s->len[i], &gb, s->n) < 0)
+        if (read_len_table(s->len[i], &gb, s->vlc_n) < 0)
             return -1;
-        if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i], s->n) < 0) {
+        if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i], s->vlc_n) < 0) {
             return -1;
         }
         ff_free_vlc(&s->vlc[i]);
-        if ((ret = init_vlc(&s->vlc[i], VLC_BITS, s->n, s->len[i], 1, 1,
+        if ((ret = init_vlc(&s->vlc[i], VLC_BITS, s->vlc_n, s->len[i], 1, 1,
                            s->bits[i], 4, 4, 0)) < 0)
             return ret;
     }
@@ -280,6 +280,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->bps = 8;
     s->n = 1<<s->bps;
+    s->vlc_n = FFMIN(s->n, MAX_VLC_N);
     s->chroma = 1;
     if (s->version >= 2) {
         int method, interlace;
@@ -297,6 +298,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         } else {
             s->bps = (avctx->extradata[1] >> 4) + 1;
             s->n = 1<<s->bps;
+            s->vlc_n = FFMIN(s->n, MAX_VLC_N);
             s->chroma_h_shift = avctx->extradata[1] & 3;
             s->chroma_v_shift = (avctx->extradata[1] >> 2) & 3;
             s->yuv   = !!(((uint8_t*)avctx->extradata)[2] & 1);
@@ -374,6 +376,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x070:
             avctx->pix_fmt = AV_PIX_FMT_GRAY8;
             break;
+        case 0x0F0:
+            avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+            break;
         case 0x170:
             avctx->pix_fmt = AV_PIX_FMT_GRAY8A;
             break;
@@ -398,6 +403,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x6D0:
             avctx->pix_fmt = AV_PIX_FMT_YUV444P14;
             break;
+        case 0x6F0:
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P16;
+            break;
         case 0x671:
             avctx->pix_fmt = AV_PIX_FMT_YUV422P;
             break;
@@ -412,6 +420,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
             break;
         case 0x6D1:
             avctx->pix_fmt = AV_PIX_FMT_YUV422P14;
+            break;
+        case 0x6F1:
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P16;
             break;
         case 0x672:
             avctx->pix_fmt = AV_PIX_FMT_YUV411P;
@@ -434,6 +445,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x6D5:
             avctx->pix_fmt = AV_PIX_FMT_YUV420P14;
             break;
+        case 0x6F5:
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P16;
+            break;
         case 0x67A:
             avctx->pix_fmt = AV_PIX_FMT_YUV410P;
             break;
@@ -446,6 +460,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x790:
             avctx->pix_fmt = AV_PIX_FMT_YUVA444P10;
             break;
+        case 0x7F0:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA444P16;
+            break;
         case 0x771:
             avctx->pix_fmt = AV_PIX_FMT_YUVA422P;
             break;
@@ -455,6 +472,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x791:
             avctx->pix_fmt = AV_PIX_FMT_YUVA422P10;
             break;
+        case 0x7F1:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA422P16;
+            break;
         case 0x775:
             avctx->pix_fmt = AV_PIX_FMT_YUVA420P;
             break;
@@ -463,6 +483,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
             break;
         case 0x795:
             avctx->pix_fmt = AV_PIX_FMT_YUVA420P10;
+            break;
+        case 0x7F5:
+            avctx->pix_fmt = AV_PIX_FMT_YUVA420P16;
             break;
         default:
             return AVERROR_INVALIDDATA;
@@ -557,9 +580,16 @@ static void decode_422_bitstream(HYuvContext *s, int count)
         dst1 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
     }\
 }
-#define READ_2PIX_PLANE16(dst0, dst1, plane){\
+#define READ_2PIX_PLANE14(dst0, dst1, plane){\
     dst0 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
     dst1 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
+}
+
+#define READ_2PIX_PLANE16(dst0, dst1, plane){\
+    dst0 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3)<<2;\
+    dst0 += get_bits(&s->gb, 2);\
+    dst1 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3)<<2;\
+    dst1 += get_bits(&s->gb, 2);\
 }
 static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
 {
@@ -575,6 +605,16 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
         } else {
             for(i=0; i<count; i++){
                 READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane);
+            }
+        }
+    } else if (s->bps <= 14) {
+        if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+            for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
+                READ_2PIX_PLANE14(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane);
+            }
+        } else {
+            for(i=0; i<count; i++){
+                READ_2PIX_PLANE14(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane);
             }
         }
     } else {

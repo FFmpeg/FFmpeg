@@ -164,7 +164,7 @@ static int store_table(HYuvContext *s, const uint8_t *len, uint8_t *buf)
 {
     int i;
     int index = 0;
-    int n = s->n;
+    int n = s->vlc_n;
 
     for (i = 0; i < n;) {
         int val = len[i];
@@ -195,10 +195,10 @@ static int store_huffman_tables(HYuvContext *s, uint8_t *buf)
         count = 1 + s->alpha + 2*s->chroma;
 
     for (i = 0; i < count; i++) {
-        if ((ret = ff_huff_gen_len_table(s->len[i], s->stats[i], s->n)) < 0)
+        if ((ret = ff_huff_gen_len_table(s->len[i], s->stats[i], s->vlc_n)) < 0)
             return ret;
 
-        if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i], s->n) < 0) {
+        if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i], s->vlc_n) < 0) {
             return -1;
         }
 
@@ -254,6 +254,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV440P:
     case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YUVA444P:
     case AV_PIX_FMT_YUVA420P:
     case AV_PIX_FMT_YUVA422P:
@@ -263,20 +264,26 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV420P12:
     case AV_PIX_FMT_YUV420P14:
+    case AV_PIX_FMT_YUV420P16:
     case AV_PIX_FMT_YUV422P9:
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_YUV422P12:
     case AV_PIX_FMT_YUV422P14:
+    case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV444P9:
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV444P12:
     case AV_PIX_FMT_YUV444P14:
+    case AV_PIX_FMT_YUV444P16:
     case AV_PIX_FMT_YUVA420P9:
     case AV_PIX_FMT_YUVA420P10:
+    case AV_PIX_FMT_YUVA420P16:
     case AV_PIX_FMT_YUVA422P9:
     case AV_PIX_FMT_YUVA422P10:
+    case AV_PIX_FMT_YUVA422P16:
     case AV_PIX_FMT_YUVA444P9:
     case AV_PIX_FMT_YUVA444P10:
+    case AV_PIX_FMT_YUVA444P16:
         s->version = 3;
         break;
     case AV_PIX_FMT_RGB32:
@@ -290,6 +297,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
     s->n = 1<<s->bps;
+    s->vlc_n = FFMIN(s->n, MAX_VLC_N);
 
     avctx->bits_per_coded_sample = s->bitstream_bpp;
     s->decorrelate = s->bitstream_bpp >= 24 && !s->yuv && avctx->pix_fmt != AV_PIX_FMT_GBRP;
@@ -362,14 +370,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
         char *p = avctx->stats_in;
 
         for (i = 0; i < 4; i++)
-            for (j = 0; j < s->n; j++)
+            for (j = 0; j < s->vlc_n; j++)
                 s->stats[i][j] = 1;
 
         for (;;) {
             for (i = 0; i < 4; i++) {
                 char *next;
 
-                for (j = 0; j < s->n; j++) {
+                for (j = 0; j < s->vlc_n; j++) {
                     s->stats[i][j] += strtol(p, &next, 0);
                     if (next == p) return -1;
                     p = next;
@@ -379,8 +387,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     } else {
         for (i = 0; i < 4; i++)
-            for (j = 0; j < s->n; j++) {
-                int d = FFMIN(j, s->n - j);
+            for (j = 0; j < s->vlc_n; j++) {
+                int d = FFMIN(j, s->vlc_n - j);
 
                 s->stats[i][j] = 100000000 / (d + 1);
             }
@@ -394,14 +402,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->context) {
         for (i = 0; i < 4; i++) {
             int pels = s->width * s->height / (i ? 40 : 10);
-            for (j = 0; j < s->n; j++) {
-                int d = FFMIN(j, s->n - j);
+            for (j = 0; j < s->vlc_n; j++) {
+                int d = FFMIN(j, s->vlc_n - j);
                 s->stats[i][j] = pels/(d + 1);
             }
         }
     } else {
         for (i = 0; i < 4; i++)
-            for (j = 0; j < s->n; j++)
+            for (j = 0; j < s->vlc_n; j++)
                 s->stats[i][j]= 0;
     }
 
@@ -481,15 +489,26 @@ static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
 #define LOAD2\
             int y0 = s->temp[0][2 * i];\
             int y1 = s->temp[0][2 * i + 1];
-#define LOAD2_16\
+#define LOAD2_14\
             int y0 = s->temp16[0][2 * i] & mask;\
             int y1 = s->temp16[0][2 * i + 1] & mask;
+#define LOAD2_16\
+            int y0 = s->temp16[0][2 * i];\
+            int y1 = s->temp16[0][2 * i + 1];
 #define STAT2\
             s->stats[plane][y0]++;\
             s->stats[plane][y1]++;
+#define STAT2_16\
+            s->stats[plane][y0>>2]++;\
+            s->stats[plane][y1>>2]++;
 #define WRITE2\
             put_bits(&s->pb, s->len[plane][y0], s->bits[plane][y0]);\
             put_bits(&s->pb, s->len[plane][y1], s->bits[plane][y1]);
+#define WRITE2_16\
+            put_bits(&s->pb, s->len[plane][y0>>2], s->bits[plane][y0>>2]);\
+            put_bits(&s->pb, 2, y0&3);\
+            put_bits(&s->pb, s->len[plane][y1>>2], s->bits[plane][y1>>2]);\
+            put_bits(&s->pb, 2, y1&3);
 
     count /= 2;
 
@@ -515,11 +534,11 @@ static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
             WRITE2;
         }
     }
-    } else {
+    } else if (s->bps <= 14) {
         int mask = s->n - 1;
         if (s->flags & CODEC_FLAG_PASS1) {
             for (i = 0; i < count; i++) {
-                LOAD2_16;
+                LOAD2_14;
                 STAT2;
             }
         }
@@ -528,14 +547,36 @@ static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
 
         if (s->context) {
             for (i = 0; i < count; i++) {
-                LOAD2_16;
+                LOAD2_14;
                 STAT2;
                 WRITE2;
             }
         } else {
             for (i = 0; i < count; i++) {
-                LOAD2_16;
+                LOAD2_14;
                 WRITE2;
+            }
+        }
+    } else {
+        if (s->flags & CODEC_FLAG_PASS1) {
+            for (i = 0; i < count; i++) {
+                LOAD2_16;
+                STAT2_16;
+            }
+        }
+        if (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)
+            return 0;
+
+        if (s->context) {
+            for (i = 0; i < count; i++) {
+                LOAD2_16;
+                STAT2_16;
+                WRITE2_16;
+            }
+        } else {
+            for (i = 0; i < count; i++) {
+                LOAD2_16;
+                WRITE2_16;
             }
         }
     }
@@ -663,7 +704,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return size;
 
         for (i = 0; i < 4; i++)
-            for (j = 0; j < s->n; j++)
+            for (j = 0; j < s->vlc_n; j++)
                 s->stats[i][j] >>= 1;
     }
 
@@ -899,7 +940,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         char *p = avctx->stats_out;
         char *end = p + 1024*30;
         for (i = 0; i < 4; i++) {
-            for (j = 0; j < s->n; j++) {
+            for (j = 0; j < s->vlc_n; j++) {
                 snprintf(p, end-p, "%"PRIu64" ", s->stats[i][j]);
                 p += strlen(p);
                 s->stats[i][j]= 0;
@@ -968,16 +1009,16 @@ AVCodec ff_ffvhuff_encoder = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_GBRP,
-        AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_GRAY8A,
-        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV420P14,
-        AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV422P14,
-        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
-        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10,
-        AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10,
-        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV420P16,
+        AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV422P16,
+        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
+        AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P16,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },

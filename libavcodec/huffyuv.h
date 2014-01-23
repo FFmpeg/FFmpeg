@@ -39,8 +39,9 @@
 
 #define VLC_BITS 11
 
-#define MAX_BITS 14
+#define MAX_BITS 16
 #define MAX_N (1<<MAX_BITS)
+#define MAX_VLC_N 16384
 
 #if HAVE_BIGENDIAN
 #define B 3
@@ -73,6 +74,7 @@ typedef struct HYuvContext {
     int bgr32;                              //use bgr32 instead of bgr24
     int bps;
     int n;                                  // 1<<bps
+    int vlc_n;                              // number of vlc codes (FFMIN(1<<bps, MAX_VLC_N))
     int alpha;
     int chroma;
     int yuv;
@@ -85,9 +87,9 @@ typedef struct HYuvContext {
     int last_slice_end;
     uint8_t *temp[3];
     uint16_t *temp16[3];                    ///< identical to temp but 16bit type
-    uint64_t stats[4][MAX_N];
-    uint8_t len[4][MAX_N];
-    uint32_t bits[4][MAX_N];
+    uint64_t stats[4][MAX_VLC_N];
+    uint8_t len[4][MAX_VLC_N];
+    uint32_t bits[4][MAX_VLC_N];
     uint32_t pix_bgr_map[1<<VLC_BITS];
     VLC vlc[8];                             //Y,U,V,A,YY,YU,YV,AA
     uint8_t *bitstream_buffer;
