@@ -34,7 +34,7 @@ typedef struct LLVidDSPContext {
     int  (*add_hfyu_left_prediction_int16)(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int left);
 } LLVidDSPContext;
 
-void ff_llviddsp_init(LLVidDSPContext *llviddsp);
-void ff_llviddsp_init_x86(LLVidDSPContext *llviddsp);
+void ff_llviddsp_init(LLVidDSPContext *llviddsp, AVCodecContext *avctx);
+void ff_llviddsp_init_x86(LLVidDSPContext *llviddsp, AVCodecContext *avctx);
 
 #endif //AVCODEC_LOSSLESS_VIDEODSP_H

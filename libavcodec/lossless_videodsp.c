@@ -115,7 +115,7 @@ static int add_hfyu_left_prediction_int16_c(uint16_t *dst, const uint16_t *src, 
 }
 
 
-void ff_llviddsp_init(LLVidDSPContext *c)
+void ff_llviddsp_init(LLVidDSPContext *c, AVCodecContext *avctx)
 {
     c->add_int16 = add_int16_c;
     c->diff_int16= diff_int16_c;
@@ -124,5 +124,5 @@ void ff_llviddsp_init(LLVidDSPContext *c)
     c->sub_hfyu_median_prediction_int16 = sub_hfyu_median_prediction_int16_c;
 
     if (ARCH_X86)
-        ff_llviddsp_init_x86(c);
+        ff_llviddsp_init_x86(c, avctx);
 }

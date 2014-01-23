@@ -19,6 +19,7 @@
  */
 
 #include "../lossless_videodsp.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/x86/cpu.h"
 
 void ff_add_int16_mmx(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
@@ -31,7 +32,7 @@ void ff_add_hfyu_median_prediction_int16_mmxext(uint16_t *dst, const uint16_t *t
 void ff_sub_hfyu_median_prediction_int16_mmxext(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top);
 
 
-void ff_llviddsp_init_x86(LLVidDSPContext *c)
+void ff_llviddsp_init_x86(LLVidDSPContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
 
