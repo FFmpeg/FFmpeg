@@ -36,7 +36,6 @@
 #include <assert.h>
 #include "config.h"
 #include "attributes.h"
-#include "timer.h"
 #include "dict.h"
 
 #if ARCH_X86

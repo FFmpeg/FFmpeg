@@ -34,6 +34,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/timer.h"
 #include "avcodec.h"
 #include "dct.h"
 #include "dsputil.h"

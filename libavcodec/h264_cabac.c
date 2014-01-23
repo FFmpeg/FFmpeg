@@ -28,6 +28,7 @@
 #define CABAC(h) 1
 
 #include "libavutil/attributes.h"
+#include "libavutil/timer.h"
 #include "config.h"
 #include "cabac.h"
 #include "cabac_functions.h"

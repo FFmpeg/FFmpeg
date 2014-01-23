@@ -23,6 +23,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/timer.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dnxhddata.h"

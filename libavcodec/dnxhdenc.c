@@ -28,6 +28,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
+#include "libavutil/timer.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "internal.h"
