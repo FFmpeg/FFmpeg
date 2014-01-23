@@ -2106,16 +2106,13 @@ static int init_input_stream(int ist_index, char *error, int error_len)
         if (!av_dict_get(ist->opts, "threads", NULL, 0))
             av_dict_set(&ist->opts, "threads", "auto", 0);
         if ((ret = avcodec_open2(ist->st->codec, codec, &ist->opts)) < 0) {
-            char errbuf[128];
             if (ret == AVERROR_EXPERIMENTAL)
                 abort_codec_experimental(codec, 0);
-
-            av_strerror(ret, errbuf, sizeof(errbuf));
 
             snprintf(error, error_len,
                      "Error while opening decoder for input stream "
                      "#%d:%d : %s",
-                     ist->file_index, ist->st->index, errbuf);
+                     ist->file_index, ist->st->index, av_err2str(ret));
             return ret;
         }
         assert_avoptions(ist->opts);
@@ -2670,12 +2667,10 @@ static int transcode_init(void)
         oc = output_files[i]->ctx;
         oc->interrupt_callback = int_cb;
         if ((ret = avformat_write_header(oc, &output_files[i]->opts)) < 0) {
-            char errbuf[128];
-            av_strerror(ret, errbuf, sizeof(errbuf));
             snprintf(error, sizeof(error),
                      "Could not write header for output file #%d "
                      "(incorrect codec parameters ?): %s",
-                     i, errbuf);
+                     i, av_err2str(ret));
             ret = AVERROR(EINVAL);
             goto dump_format;
         }
@@ -3244,10 +3239,8 @@ static int process_input(int file_index)
 
     ret = output_packet(ist, &pkt);
     if (ret < 0) {
-        char buf[128];
-        av_strerror(ret, buf, sizeof(buf));
         av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d: %s\n",
-                ist->file_index, ist->st->index, buf);
+               ist->file_index, ist->st->index, av_err2str(ret));
         if (exit_on_error)
             exit_program(1);
     }
