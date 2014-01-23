@@ -52,12 +52,18 @@ typedef struct MTVDemuxContext {
 
 static int mtv_probe(AVProbeData *p)
 {
+    /* we need at least 57 bytes from the header
+     * to try parsing all required fields
+     */
+    if (p->buf_size < 57)
+        return 0;
+
     /* Magic is 'AMV' */
     if (*p->buf != 'A' || *(p->buf + 1) != 'M' || *(p->buf + 2) != 'V')
         return 0;
 
     /* Check for nonzero in bpp and (width|height) header fields */
-    if(p->buf_size < 57 || !(p->buf[51] && AV_RL16(&p->buf[52]) | AV_RL16(&p->buf[54])))
+    if(!(p->buf[51] && AV_RL16(&p->buf[52]) | AV_RL16(&p->buf[54])))
         return 0;
 
     /* If width or height are 0 then imagesize header field should not */
