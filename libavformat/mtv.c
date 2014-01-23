@@ -32,6 +32,7 @@
 #define MTV_ASUBCHUNK_DATA_SIZE 500
 #define MTV_HEADER_SIZE 512
 #define MTV_AUDIO_PADDING_SIZE 12
+#define MTV_IMAGE_DEFAULT_BPP 16
 #define AUDIO_SAMPLING_RATE 44100
 
 typedef struct MTVDemuxContext {
@@ -75,8 +76,13 @@ static int mtv_probe(AVProbeData *p)
             return 0;
     }
 
-    if(p->buf[51] != 16)
-        return AVPROBE_SCORE_EXTENSION / 2; // But we are going to assume 16bpp anyway ..
+    /* Image bpp is not an absolutely required
+     * field as we latter claim it should be 16
+     * no matter what. All samples in the wild
+     * are RGB565/555.
+     */
+    if(p->buf[51] != MTV_IMAGE_DEFAULT_BPP)
+        return AVPROBE_SCORE_EXTENSION / 2;
 
     /* We had enough data to parse header values
      * but we expect to be able to get 512 bytes
@@ -102,22 +108,30 @@ static int mtv_read_header(AVFormatContext *s)
     mtv->audio_identifier  = avio_rl24(pb);
     mtv->audio_br          = avio_rl16(pb);
     mtv->img_colorfmt      = avio_rl24(pb);
-    mtv->img_bpp           = avio_r8(pb);
+    mtv->img_bpp           = avio_r8(pb)>>3;
     mtv->img_width         = avio_rl16(pb);
     mtv->img_height        = avio_rl16(pb);
     mtv->img_segment_size  = avio_rl16(pb);
 
+    /* Assume 16bpp even if claimed otherwise.
+     * We know its going to be RGBG565/555 anyway
+     */
+    if (mtv->img_bpp != MTV_IMAGE_DEFAULT_BPP) {
+        av_log (s, AV_LOG_WARNING, "Header claims %dbpp (!= 16). Ignoring\n",
+                mtv->img_bpp);
+        mtv->img_bpp = MTV_IMAGE_DEFAULT_BPP;
+    }
+
     /* Calculate width and height if missing from header */
 
-    if(mtv->img_bpp>>3){
     if(!mtv->img_width && mtv->img_height)
-        mtv->img_width=mtv->img_segment_size / (mtv->img_bpp>>3)
+        mtv->img_width=mtv->img_segment_size / (mtv->img_bpp)
                         / mtv->img_height;
 
     if(!mtv->img_height && mtv->img_width)
-        mtv->img_height=mtv->img_segment_size / (mtv->img_bpp>>3)
+        mtv->img_height=mtv->img_segment_size / (mtv->img_bpp)
                         / mtv->img_width;
-    }
+
     if(!mtv->img_height || !mtv->img_width || !mtv->img_segment_size){
         av_log(s, AV_LOG_ERROR, "width or height or segment_size is invalid and I cannot calculate them from other information\n");
         return AVERROR(EINVAL);
