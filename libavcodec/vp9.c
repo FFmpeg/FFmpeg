@@ -1201,7 +1201,7 @@ static void fill_mv(VP9Context *s,
     VP9Block *b = s->b;
 
     if (mode == ZEROMV) {
-        memset(mv, 0, sizeof(*mv) * 2);
+        AV_ZERO64(mv);
     } else {
         int hp;
 
@@ -1317,7 +1317,8 @@ static void decode_mode(AVCodecContext *ctx)
         memset(&s->above_segpred_ctx[col], 0, w4);
         memset(&s->left_segpred_ctx[row7], 0, h4);
     }
-    if ((s->segmentation.enabled && s->segmentation.update_map) || s->keyframe) {
+    if (s->segmentation.enabled &&
+        (s->segmentation.update_map || s->keyframe || s->intraonly)) {
         uint8_t *segmap = s->frames[CUR_FRAME].segmentation_map;
 
         for (y = 0; y < h4; y++)
