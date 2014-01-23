@@ -285,23 +285,20 @@ input until the timestamps reach @var{position}.
 @var{position} may be either in seconds or in @code{hh:mm:ss[.xxx]} form.
 
 @item -itsoffset @var{offset} (@emph{input})
-Set the input time offset in seconds.
-@code{[-]hh:mm:ss[.xxx]} syntax is also supported.
-The offset is added to the timestamps of the input files.
-Specifying a positive offset means that the corresponding
-streams are delayed by @var{offset} seconds.
+Set the input time offset.
 
-@item -timestamp @var{time} (@emph{output})
+@var{offset} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
+
+The offset is added to the timestamps of the input files. Specifying
+a positive offset means that the corresponding streams are delayed by
+the time duration specified in @var{offset}.
+
+@item -timestamp @var{date} (@emph{output})
 Set the recording timestamp in the container.
-The syntax for @var{time} is:
-@example
-now|([(YYYY-MM-DD|YYYYMMDD)[T|t| ]]((HH:MM:SS[.m...])|(HHMMSS[.m...]))[Z|z])
-@end example
-If the value is "now" it takes the current time.
-Time is local time unless 'Z' or 'z' is appended, in which case it is
-interpreted as UTC.
-If the year-month-day part is not specified it takes the current
-year-month-day.
+
+@var{date} must be a time duration specification,
+see @ref{date syntax,,the Date section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 @item -metadata[:metadata_specifier] @var{key}=@var{value} (@emph{output,per-metadata})
 Set a metadata key/value pair.
