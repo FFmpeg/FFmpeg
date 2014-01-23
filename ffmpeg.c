@@ -3198,22 +3198,21 @@ static int process_input(int file_index)
         int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
         int64_t delta   = pkt_dts - ist->next_dts;
         if (is->iformat->flags & AVFMT_TS_DISCONT) {
-        if(delta < -1LL*dts_delta_threshold*AV_TIME_BASE ||
-            (delta > 1LL*dts_delta_threshold*AV_TIME_BASE &&
-                ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) ||
-            pkt_dts + AV_TIME_BASE/10 < FFMAX(ist->pts, ist->dts)){
-            ifile->ts_offset -= delta;
-            av_log(NULL, AV_LOG_DEBUG,
-                   "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n",
-                   delta, ifile->ts_offset);
-            pkt.dts -= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
-            if (pkt.pts != AV_NOPTS_VALUE)
-                pkt.pts -= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
-        }
+            if (delta < -1LL*dts_delta_threshold*AV_TIME_BASE ||
+                (delta > 1LL*dts_delta_threshold*AV_TIME_BASE &&
+                 ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) ||
+                pkt_dts + AV_TIME_BASE/10 < FFMAX(ist->pts, ist->dts)) {
+                ifile->ts_offset -= delta;
+                av_log(NULL, AV_LOG_DEBUG,
+                       "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n",
+                       delta, ifile->ts_offset);
+                pkt.dts -= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
+                if (pkt.pts != AV_NOPTS_VALUE)
+                    pkt.pts -= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
+            }
         } else {
             if ( delta < -1LL*dts_error_threshold*AV_TIME_BASE ||
-                (delta > 1LL*dts_error_threshold*AV_TIME_BASE && ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE)
-               ) {
+                (delta > 1LL*dts_error_threshold*AV_TIME_BASE && ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE)) {
                 av_log(NULL, AV_LOG_WARNING, "DTS %"PRId64", next:%"PRId64" st:%d invalid dropping\n", pkt.dts, ist->next_dts, pkt.stream_index);
                 pkt.dts = AV_NOPTS_VALUE;
             }
@@ -3221,8 +3220,7 @@ static int process_input(int file_index)
                 int64_t pkt_pts = av_rescale_q(pkt.pts, ist->st->time_base, AV_TIME_BASE_Q);
                 delta   = pkt_pts - ist->next_dts;
                 if ( delta < -1LL*dts_error_threshold*AV_TIME_BASE ||
-                    (delta > 1LL*dts_error_threshold*AV_TIME_BASE && ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE)
-                   ) {
+                    (delta > 1LL*dts_error_threshold*AV_TIME_BASE && ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE)) {
                     av_log(NULL, AV_LOG_WARNING, "PTS %"PRId64", next:%"PRId64" invalid dropping st:%d\n", pkt.pts, ist->next_dts, pkt.stream_index);
                     pkt.pts = AV_NOPTS_VALUE;
                 }
