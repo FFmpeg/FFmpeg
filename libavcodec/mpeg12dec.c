@@ -25,6 +25,7 @@
  * MPEG-1/2 decoder
  */
 
+#define UNCHECKED_BITSTREAM_READER 1
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/stereo3d.h"
