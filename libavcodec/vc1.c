@@ -604,7 +604,7 @@ static void rotate_luts(VC1Context *v)
         }                                                     \
     } while(0)
 
-    ROTATE(int *tmp,            &v->last_use_ic, &v->next_use_ic, v->curr_use_ic, &v->aux_use_ic);
+    ROTATE(int tmp,             &v->last_use_ic, &v->next_use_ic, v->curr_use_ic, &v->aux_use_ic);
     ROTATE(uint8_t tmp[2][256], v->last_luty,   v->next_luty,   v->curr_luty,   v->aux_luty);
     ROTATE(uint8_t tmp[2][256], v->last_lutuv,  v->next_lutuv,  v->curr_lutuv,  v->aux_lutuv);
 
