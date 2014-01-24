@@ -335,7 +335,7 @@ static inline int mpeg1_fast_decode_block_inter(MpegEncContext *s, int16_t *bloc
             }
 
             block[j] = level;
-            if (((int32_t)GET_CACHE(re, &s->gb)) <= (int32_t)0xBFFFFFFF)
+            if (((int32_t)GET_CACHE(re, &s->gb)) <= (int32_t)0xBFFFFFFF || i >= 64)
                 break;
             UPDATE_CACHE(re, &s->gb);
         }
