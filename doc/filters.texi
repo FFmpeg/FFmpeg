@@ -217,29 +217,45 @@ Follows a BNF description for the filtergraph syntax:
 
 @section Notes on filtergraph escaping
 
-Some filter arguments require the use of special characters, typically
-@code{:} to separate key=value pairs in a named options list. In this
-case the user should perform a first level escaping when specifying
-the filter arguments. For example, consider the following literal
-string to be embedded in the @ref{drawtext} filter arguments:
+Filtergraph description composition entails several levels of
+escaping. See @ref{quoting_and_escaping,,the "Quoting and escaping"
+section in the ffmpeg-utils(1) manual,ffmpeg-utils} for more
+information about the employed escaping procedure.
+
+A first level escaping affects the content of each filter option
+value, which may contain the special character @code{:} used to
+separate values, or one of the escaping characters @code{\'}.
+
+A second level escaping affects the whole filter description, which
+may contain the escaping characters @code{\'} or the special
+characters @code{[],;} used by the filtergraph description.
+
+Finally, when you specify a filtergraph on a shell commandline, you
+need to perform a third level escaping for the shell special
+characters contained within it.
+
+For example, consider the following string to be embedded in
+the @ref{drawtext} filter description @option{text} value:
 @example
 this is a 'string': may contain one, or more, special characters
 @end example
 
-Since @code{:} is special for the filter arguments syntax, it needs to
-be escaped, so you get:
+This string contains the @code{'} special escaping character, and the
+@code{:} special character, so it needs to be escaped in this way:
 @example
 text=this is a \'string\'\: may contain one, or more, special characters
 @end example
 
 A second level of escaping is required when embedding the filter
-arguments in a filtergraph description, in order to escape all the
+description in a filtergraph description, in order to escape all the
 filtergraph special characters. Thus the example above becomes:
 @example
 drawtext=text=this is a \\\'string\\\'\\: may contain one\, or more\, special characters
 @end example
+(note that in addition to the @code{\'} escaping special characters,
+also @code{,} needs to be escaped).
 
-Finally an additional level of escaping may be needed when writing the
+Finally an additional level of escaping is needed when writing the
 filtergraph description in a shell command, which depends on the
 escaping rules of the adopted shell. For example, assuming that
 @code{\} is special and needs to be escaped with another @code{\}, the
@@ -247,26 +263,6 @@ previous string will finally result in:
 @example
 -vf "drawtext=text=this is a \\\\\\'string\\\\\\'\\\\: may contain one\\, or more\\, special characters"
 @end example
-
-Sometimes, it might be more convenient to employ quoting in place of
-escaping. For example the string:
-@example
-Caesar: tu quoque, Brute, fili mi
-@end example
-
-Can be quoted in the filter arguments as:
-@example
-text='Caesar: tu quoque, Brute, fili mi'
-@end example
-
-And finally inserted in a filtergraph like:
-@example
-drawtext=text=\'Caesar: tu quoque\, Brute\, fili mi\'
-@end example
-
-See the ``Quoting and escaping'' section in the ffmpeg-utils manual
-for more information about the escaping and quoting rules adopted by
-FFmpeg.
 
 @chapter Timeline editing
 
