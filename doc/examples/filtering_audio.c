@@ -210,7 +210,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    avcodec_register_all();
     av_register_all();
     avfilter_register_all();
 
