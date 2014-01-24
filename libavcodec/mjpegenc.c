@@ -539,10 +539,9 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     if(s->avctx->flags & CODEC_FLAG_EMU_EDGE)
         return AVERROR(EINVAL);
 
-    pic = av_frame_alloc();
+    pic = av_frame_clone(pic_arg);
     if (!pic)
         return AVERROR(ENOMEM);
-    av_frame_ref(pic, pic_arg);
     //picture should be flipped upside-down
     for(i=0; i < 3; i++) {
         int vsample = i ? 2 >> chroma_v_shift : 2;
