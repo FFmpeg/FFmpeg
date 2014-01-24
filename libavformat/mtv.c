@@ -63,6 +63,10 @@ static int mtv_probe(AVProbeData *p)
     if (*p->buf != 'A' || *(p->buf + 1) != 'M' || *(p->buf + 2) != 'V')
         return 0;
 
+    /* Audio magic is always MP3 */
+    if (p->buf[43] != 'M' || p->buf[44] != 'P' || p->buf[45] != '3')
+        return 0;
+
     /* Check for nonzero in bpp and (width|height) header fields */
     if(!(p->buf[51] && AV_RL16(&p->buf[52]) | AV_RL16(&p->buf[54])))
         return 0;
