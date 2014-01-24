@@ -373,8 +373,8 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             {
-                const char *language;
-                language = lang && strlen(lang->value)==3 ? lang->value : "eng";
+                const char default_language[] = "und";
+                const char *language = lang && strlen(lang->value)==3 ? lang->value : default_language;
                 *q++ = 0x59;
                 *q++ = 8;
                 *q++ = language[0];
