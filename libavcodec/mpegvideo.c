@@ -34,7 +34,7 @@
 #include "libavutil/timer.h"
 #include "avcodec.h"
 #include "blockdsp.h"
-#include "dsputil.h"
+#include "idctdsp.h"
 #include "internal.h"
 #include "mathops.h"
 #include "mpegutils.h"
@@ -380,6 +380,7 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     ff_blockdsp_init(&s->bdsp, s->avctx);
     ff_dsputil_init(&s->dsp, s->avctx);
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
+    ff_idctdsp_init(&s->idsp, s->avctx);
     ff_mpegvideodsp_init(&s->mdsp);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
@@ -403,14 +404,14 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
      * note: only wmv uses different ones
      */
     if (s->alternate_scan) {
-        ff_init_scantable(s->dsp.idct_permutation, &s->inter_scantable  , ff_alternate_vertical_scan);
-        ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable  , ff_alternate_vertical_scan);
+        ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable, ff_alternate_vertical_scan);
+        ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable, ff_alternate_vertical_scan);
     } else {
-        ff_init_scantable(s->dsp.idct_permutation, &s->inter_scantable  , ff_zigzag_direct);
-        ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable  , ff_zigzag_direct);
+        ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable, ff_zigzag_direct);
+        ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable, ff_zigzag_direct);
     }
-    ff_init_scantable(s->dsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
-    ff_init_scantable(s->dsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
+    ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
+    ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
 
     return 0;
 }
@@ -2041,7 +2042,7 @@ static inline void put_dct(MpegEncContext *s,
                            int16_t *block, int i, uint8_t *dest, int line_size, int qscale)
 {
     s->dct_unquantize_intra(s, block, i, qscale);
-    s->dsp.idct_put (dest, line_size, block);
+    s->idsp.idct_put(dest, line_size, block);
 }
 
 /* add block[] to dest[] */
@@ -2049,7 +2050,7 @@ static inline void add_dct(MpegEncContext *s,
                            int16_t *block, int i, uint8_t *dest, int line_size)
 {
     if (s->block_last_index[i] >= 0) {
-        s->dsp.idct_add (dest, line_size, block);
+        s->idsp.idct_add(dest, line_size, block);
     }
 }
 
@@ -2059,7 +2060,7 @@ static inline void add_dequant_dct(MpegEncContext *s,
     if (s->block_last_index[i] >= 0) {
         s->dct_unquantize_inter(s, block, i, qscale);
 
-        s->dsp.idct_add (dest, line_size, block);
+        s->idsp.idct_add(dest, line_size, block);
     }
 }
 
@@ -2127,7 +2128,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
        av_log(s->avctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->mb_x, s->mb_y);
        for(i=0; i<6; i++){
            for(j=0; j<64; j++){
-               av_log(s->avctx, AV_LOG_DEBUG, "%5d", block[i][s->dsp.idct_permutation[j]]);
+               av_log(s->avctx, AV_LOG_DEBUG, "%5d",
+                      block[i][s->idsp.idct_permutation[j]]);
            }
            av_log(s->avctx, AV_LOG_DEBUG, "\n");
        }
@@ -2304,29 +2306,29 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     }
                 }
             }else{
-                s->dsp.idct_put(dest_y                          , dct_linesize, block[0]);
-                s->dsp.idct_put(dest_y              + block_size, dct_linesize, block[1]);
-                s->dsp.idct_put(dest_y + dct_offset             , dct_linesize, block[2]);
-                s->dsp.idct_put(dest_y + dct_offset + block_size, dct_linesize, block[3]);
+                s->idsp.idct_put(dest_y,                           dct_linesize, block[0]);
+                s->idsp.idct_put(dest_y              + block_size, dct_linesize, block[1]);
+                s->idsp.idct_put(dest_y + dct_offset,              dct_linesize, block[2]);
+                s->idsp.idct_put(dest_y + dct_offset + block_size, dct_linesize, block[3]);
 
                 if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                     if(s->chroma_y_shift){
-                        s->dsp.idct_put(dest_cb, uvlinesize, block[4]);
-                        s->dsp.idct_put(dest_cr, uvlinesize, block[5]);
+                        s->idsp.idct_put(dest_cb, uvlinesize, block[4]);
+                        s->idsp.idct_put(dest_cr, uvlinesize, block[5]);
                     }else{
 
                         dct_linesize = uvlinesize << s->interlaced_dct;
                         dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize * 8;
 
-                        s->dsp.idct_put(dest_cb,              dct_linesize, block[4]);
-                        s->dsp.idct_put(dest_cr,              dct_linesize, block[5]);
-                        s->dsp.idct_put(dest_cb + dct_offset, dct_linesize, block[6]);
-                        s->dsp.idct_put(dest_cr + dct_offset, dct_linesize, block[7]);
+                        s->idsp.idct_put(dest_cb,              dct_linesize, block[4]);
+                        s->idsp.idct_put(dest_cr,              dct_linesize, block[5]);
+                        s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, block[6]);
+                        s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, block[7]);
                         if(!s->chroma_x_shift){//Chroma444
-                            s->dsp.idct_put(dest_cb + 8,              dct_linesize, block[8]);
-                            s->dsp.idct_put(dest_cr + 8,              dct_linesize, block[9]);
-                            s->dsp.idct_put(dest_cb + 8 + dct_offset, dct_linesize, block[10]);
-                            s->dsp.idct_put(dest_cr + 8 + dct_offset, dct_linesize, block[11]);
+                            s->idsp.idct_put(dest_cb + 8,              dct_linesize, block[8]);
+                            s->idsp.idct_put(dest_cr + 8,              dct_linesize, block[9]);
+                            s->idsp.idct_put(dest_cb + 8 + dct_offset, dct_linesize, block[10]);
+                            s->idsp.idct_put(dest_cr + 8 + dct_offset, dct_linesize, block[11]);
                         }
                     }
                 }//gray

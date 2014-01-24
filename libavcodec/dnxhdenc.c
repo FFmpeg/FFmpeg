@@ -200,14 +200,14 @@ static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
 
     if (ctx->cid_table->bit_depth == 8) {
         for (i = 1; i < 64; i++) {
-            int j = ctx->m.dsp.idct_permutation[ff_zigzag_direct[i]];
+            int j = ctx->m.idsp.idct_permutation[ff_zigzag_direct[i]];
             weight_matrix[j] = ctx->cid_table->luma_weight[i];
         }
         ff_convert_matrix(&ctx->m, ctx->qmatrix_l, ctx->qmatrix_l16,
                           weight_matrix, ctx->m.intra_quant_bias, 1,
                           ctx->m.avctx->qmax, 1);
         for (i = 1; i < 64; i++) {
-            int j = ctx->m.dsp.idct_permutation[ff_zigzag_direct[i]];
+            int j = ctx->m.idsp.idct_permutation[ff_zigzag_direct[i]];
             weight_matrix[j] = ctx->cid_table->chroma_weight[i];
         }
         ff_convert_matrix(&ctx->m, ctx->qmatrix_c, ctx->qmatrix_c16,
@@ -228,7 +228,7 @@ static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
         // 10-bit
         for (qscale = 1; qscale <= ctx->m.avctx->qmax; qscale++) {
             for (i = 1; i < 64; i++) {
-                int j = ctx->m.dsp.idct_permutation[ff_zigzag_direct[i]];
+                int j = ctx->m.idsp.idct_permutation[ff_zigzag_direct[i]];
 
                 /* The quantization formula from the VC-3 standard is:
                  * quantized = sign(block[i]) * floor(abs(block[i]/s) * p /
@@ -308,6 +308,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_dsputil_init(&ctx->m.dsp, avctx);
+    ff_idctdsp_init(&ctx->m.idsp, avctx);
     ff_dct_common_init(&ctx->m);
     if (!ctx->m.dct_quantize)
         ctx->m.dct_quantize = ff_dct_quantize_c;
@@ -634,7 +635,7 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg,
 
             if (avctx->mb_decision == FF_MB_DECISION_RD || !RC_VARIANCE) {
                 dnxhd_unquantize_c(ctx, block, i, qscale, last_index);
-                ctx->m.dsp.idct(block);
+                ctx->m.idsp.idct(block);
                 ssd += dnxhd_ssd_block(block, src_block);
             }
         }

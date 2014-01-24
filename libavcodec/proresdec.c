@@ -34,7 +34,7 @@
 
 #include "libavutil/intmath.h"
 #include "avcodec.h"
-#include "dsputil.h"
+#include "idctdsp.h"
 #include "internal.h"
 #include "proresdata.h"
 #include "proresdsp.h"

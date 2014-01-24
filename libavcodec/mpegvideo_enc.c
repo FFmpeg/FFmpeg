@@ -38,6 +38,7 @@
 #include "avcodec.h"
 #include "dct.h"
 #include "dsputil.h"
+#include "idctdsp.h"
 #include "mpeg12.h"
 #include "mpegvideo.h"
 #include "h261.h"
@@ -86,7 +87,7 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
             dsp->fdct == ff_jpeg_fdct_islow_10 ||
             dsp->fdct == ff_faandct) {
             for (i = 0; i < 64; i++) {
-                const int j = dsp->idct_permutation[i];
+                const int j = s->idsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905
                  * Assume x = ff_aanscales[i] * qscale * quant_matrix[i]
                  *             19952 <=              x  <= 249205026
@@ -98,7 +99,7 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
             }
         } else if (dsp->fdct == ff_fdct_ifast) {
             for (i = 0; i < 64; i++) {
-                const int j = dsp->idct_permutation[i];
+                const int j = s->idsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905
                  * Assume x = ff_aanscales[i] * qscale * quant_matrix[i]
                  *             19952 <=              x  <= 249205026
@@ -111,7 +112,7 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
             }
         } else {
             for (i = 0; i < 64; i++) {
-                const int j = dsp->idct_permutation[i];
+                const int j = s->idsp.idct_permutation[i];
                 /* We can safely suppose that 16 <= quant_matrix[i] <= 255
                  * Assume x = qscale * quant_matrix[i]
                  * So             16 <=              x  <= 7905
@@ -755,7 +756,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 
     /* init q matrix */
     for (i = 0; i < 64; i++) {
-        int j = s->dsp.idct_permutation[i];
+        int j = s->idsp.idct_permutation[i];
         if (CONFIG_MPEG4_ENCODER && s->codec_id == AV_CODEC_ID_MPEG4 &&
             s->mpeg_quant) {
             s->intra_matrix[j] = ff_mpeg4_default_intra_matrix[i];
@@ -3360,7 +3361,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     if (s->out_format == FMT_MJPEG) {
         /* for mjpeg, we do include qscale in the matrix */
         for(i=1;i<64;i++){
-            int j= s->dsp.idct_permutation[i];
+            int j = s->idsp.idct_permutation[i];
 
             s->intra_matrix[j] = av_clip_uint8((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
         }
@@ -3589,7 +3590,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             if(s->out_format == FMT_H263){
                 unquant_coeff= alevel*qmul + qadd;
             }else{ //MPEG1
-                j= s->dsp.idct_permutation[ scantable[i] ]; //FIXME optimize
+                j = s->idsp.idct_permutation[scantable[i]]; // FIXME: optimize
                 if(s->mb_intra){
                         unquant_coeff = (int)(  alevel  * qscale * s->intra_matrix[j]) >> 3;
                         unquant_coeff =   (unquant_coeff - 1) | 1;
@@ -3795,7 +3796,7 @@ static int messed_sign=0;
 #endif
 
     if(basis[0][0] == 0)
-        build_basis(s->dsp.idct_permutation);
+        build_basis(s->idsp.idct_permutation);
 
     qmul= qscale*2;
     qadd= (qscale-1)|1;
@@ -4214,8 +4215,9 @@ int ff_dct_quantize_c(MpegEncContext *s,
     *overflow= s->max_qcoeff < max; //overflow might have happened
 
     /* we need this permutation so that we correct the IDCT, we only permute the !=0 elements */
-    if (s->dsp.idct_permutation_type != FF_NO_IDCT_PERM)
-        ff_block_permute(block, s->dsp.idct_permutation, scantable, last_non_zero);
+    if (s->idsp.idct_permutation_type != FF_NO_IDCT_PERM)
+        ff_block_permute(block, s->idsp.idct_permutation,
+                         scantable, last_non_zero);
 
     return last_non_zero;
 }

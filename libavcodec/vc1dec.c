@@ -109,24 +109,24 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
                 fieldtx = v->fieldtx_plane[topleft_mb_pos];
             stride_y       = s->linesize << fieldtx;
             v_dist         = (16 - fieldtx) >> (fieldtx == 0);
-            s->dsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][0],
-                                             s->dest[0] - 16 * s->linesize - 16,
-                                             stride_y);
-            s->dsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][1],
-                                             s->dest[0] - 16 * s->linesize - 8,
-                                             stride_y);
-            s->dsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][2],
-                                             s->dest[0] - v_dist * s->linesize - 16,
-                                             stride_y);
-            s->dsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][3],
-                                             s->dest[0] - v_dist * s->linesize - 8,
-                                             stride_y);
-            s->dsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][4],
-                                             s->dest[1] - 8 * s->uvlinesize - 8,
-                                             s->uvlinesize);
-            s->dsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][5],
-                                             s->dest[2] - 8 * s->uvlinesize - 8,
-                                             s->uvlinesize);
+            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][0],
+                                              s->dest[0] - 16 * s->linesize - 16,
+                                              stride_y);
+            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][1],
+                                              s->dest[0] - 16 * s->linesize - 8,
+                                              stride_y);
+            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][2],
+                                              s->dest[0] - v_dist * s->linesize - 16,
+                                              stride_y);
+            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][3],
+                                              s->dest[0] - v_dist * s->linesize - 8,
+                                              stride_y);
+            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][4],
+                                              s->dest[1] - 8 * s->uvlinesize - 8,
+                                              s->uvlinesize);
+            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][5],
+                                              s->dest[2] - 8 * s->uvlinesize - 8,
+                                              s->uvlinesize);
         }
         if (s->mb_x == s->mb_width - 1) {
             top_mb_pos = (s->mb_y - 1) * s->mb_stride + s->mb_x;
@@ -134,24 +134,24 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
                 fieldtx = v->fieldtx_plane[top_mb_pos];
             stride_y   = s->linesize << fieldtx;
             v_dist     = fieldtx ? 15 : 8;
-            s->dsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][0],
-                                             s->dest[0] - 16 * s->linesize,
-                                             stride_y);
-            s->dsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][1],
-                                             s->dest[0] - 16 * s->linesize + 8,
-                                             stride_y);
-            s->dsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][2],
-                                             s->dest[0] - v_dist * s->linesize,
-                                             stride_y);
-            s->dsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][3],
-                                             s->dest[0] - v_dist * s->linesize + 8,
-                                             stride_y);
-            s->dsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][4],
-                                             s->dest[1] - 8 * s->uvlinesize,
-                                             s->uvlinesize);
-            s->dsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][5],
-                                             s->dest[2] - 8 * s->uvlinesize,
-                                             s->uvlinesize);
+            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][0],
+                                              s->dest[0] - 16 * s->linesize,
+                                              stride_y);
+            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][1],
+                                              s->dest[0] - 16 * s->linesize + 8,
+                                              stride_y);
+            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][2],
+                                              s->dest[0] - v_dist * s->linesize,
+                                              stride_y);
+            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][3],
+                                              s->dest[0] - v_dist * s->linesize + 8,
+                                              stride_y);
+            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][4],
+                                              s->dest[1] - 8 * s->uvlinesize,
+                                              s->uvlinesize);
+            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][5],
+                                              s->dest[2] - 8 * s->uvlinesize,
+                                              s->uvlinesize);
         }
     }
 
@@ -3280,7 +3280,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
                 v->vc1dsp.vc1_inv_trans_8x8_dc(dst, linesize, block);
             else {
                 v->vc1dsp.vc1_inv_trans_8x8(block);
-                s->dsp.add_pixels_clamped(block, dst, linesize);
+                s->idsp.add_pixels_clamped(block, dst, linesize);
             }
         }
         break;
@@ -3611,7 +3611,10 @@ static int vc1_decode_p_mb(VC1Context *v)
                     if (v->rangeredfrm)
                         for (j = 0; j < 64; j++)
                             s->block[i][j] <<= 1;
-                    s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
+                    s->idsp.put_signed_pixels_clamped(s->block[i],
+                                                      s->dest[dst_idx] + off,
+                                                      i & 4 ? s->uvlinesize
+                                                            : s->linesize);
                     if (v->pq >= 9 && v->overlap) {
                         if (v->c_avail)
                             v->vc1dsp.vc1_h_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
@@ -3719,8 +3722,10 @@ static int vc1_decode_p_mb(VC1Context *v)
                     if (v->rangeredfrm)
                         for (j = 0; j < 64; j++)
                             s->block[i][j] <<= 1;
-                    s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off,
-                                                     (i & 4) ? s->uvlinesize : s->linesize);
+                    s->idsp.put_signed_pixels_clamped(s->block[i],
+                                                      s->dest[dst_idx] + off,
+                                                      (i & 4) ? s->uvlinesize
+                                                              : s->linesize);
                     if (v->pq >= 9 && v->overlap) {
                         if (v->c_avail)
                             v->vc1dsp.vc1_h_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
@@ -3869,7 +3874,9 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
                     stride_y = s->uvlinesize;
                     off = 0;
                 }
-                s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, stride_y);
+                s->idsp.put_signed_pixels_clamped(s->block[i],
+                                                  s->dest[dst_idx] + off,
+                                                  stride_y);
                 //TODO: loop filter
             }
 
@@ -4031,7 +4038,10 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
                 continue;
             v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
             off  = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
-            s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i & 4) ? s->uvlinesize : s->linesize);
+            s->idsp.put_signed_pixels_clamped(s->block[i],
+                                              s->dest[dst_idx] + off,
+                                              (i & 4) ? s->uvlinesize
+                                                      : s->linesize);
             // TODO: loop filter
         }
     } else {
@@ -4233,7 +4243,10 @@ static void vc1_decode_b_mb(VC1Context *v)
             if (v->rangeredfrm)
                 for (j = 0; j < 64; j++)
                     s->block[i][j] <<= 1;
-            s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
+            s->idsp.put_signed_pixels_clamped(s->block[i],
+                                              s->dest[dst_idx] + off,
+                                              i & 4 ? s->uvlinesize
+                                                    : s->linesize);
         } else if (val) {
             vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
                                first_block, s->dest[dst_idx] + off,
@@ -4305,7 +4318,10 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
                 for (j = 0; j < 64; j++)
                     s->block[i][j] <<= 1;
             off  = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
-            s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i & 4) ? s->uvlinesize : s->linesize);
+            s->idsp.put_signed_pixels_clamped(s->block[i],
+                                              s->dest[dst_idx] + off,
+                                              (i & 4) ? s->uvlinesize
+                                                      : s->linesize);
             // TODO: yet to perform loop filter
         }
     } else {
@@ -4524,7 +4540,9 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
                 stride_y = s->uvlinesize;
                 off = 0;
             }
-            s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, stride_y);
+            s->idsp.put_signed_pixels_clamped(s->block[i],
+                                              s->dest[dst_idx] + off,
+                                              stride_y);
         }
     } else {
         s->mb_intra = v->is_intra[s->mb_x] = 0;
@@ -4828,12 +4846,16 @@ static void vc1_decode_i_blocks(VC1Context *v)
                     if (v->rangeredfrm)
                         for (j = 0; j < 64; j++)
                             s->block[k][j] <<= 1;
-                    s->dsp.put_signed_pixels_clamped(s->block[k], dst[k], k & 4 ? s->uvlinesize : s->linesize);
+                    s->idsp.put_signed_pixels_clamped(s->block[k], dst[k],
+                                                      k & 4 ? s->uvlinesize
+                                                            : s->linesize);
                 } else {
                     if (v->rangeredfrm)
                         for (j = 0; j < 64; j++)
                             s->block[k][j] = (s->block[k][j] - 64) << 1;
-                    s->dsp.put_pixels_clamped(s->block[k], dst[k], k & 4 ? s->uvlinesize : s->linesize);
+                    s->idsp.put_pixels_clamped(s->block[k], dst[k],
+                                               k & 4 ? s->uvlinesize
+                                                     : s->linesize);
                 }
             }
 

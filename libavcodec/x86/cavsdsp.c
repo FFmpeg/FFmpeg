@@ -28,9 +28,10 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/cavsdsp.h"
+#include "libavcodec/idctdsp.h"
 #include "constants.h"
-#include "dsputil_x86.h"
 #include "fpel.h"
+#include "idctdsp.h"
 #include "config.h"
 
 #if HAVE_MMX_INLINE

@@ -19,7 +19,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "avcodec.h"
-#include "dsputil.h"
+#include "idctdsp.h"
 #include "mathops.h"
 #include "wmv2dsp.h"
 

@@ -44,8 +44,8 @@
 #include "config.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/mem.h"
-#include "dsputil_x86.h"
 #include "idct_xvid.h"
+#include "idctdsp.h"
 
 #if HAVE_MMX_INLINE
 

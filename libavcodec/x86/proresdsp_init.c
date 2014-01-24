@@ -22,7 +22,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/idctdsp.h"
 #include "libavcodec/proresdsp.h"
 
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,

@@ -136,9 +136,6 @@ dct_unquantize_mpeg2
 dct_unquantize_h263
     Used in MPEG-4/H.263 en/decoding.
 
-FIXME remaining functions?
-BTW, most of these functions are in dsputil.c/.h, some are in mpegvideo.c/.h.
-
 
 
 Alignment:

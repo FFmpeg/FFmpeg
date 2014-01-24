@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -18,13 +16,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ARM_DSPUTIL_ARM_H
-#define AVCODEC_ARM_DSPUTIL_ARM_H
+#ifndef AVCODEC_X86_IDCTDSP_H
+#define AVCODEC_X86_IDCTDSP_H
 
-#include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
+#include <stdint.h>
 
-void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx,
-                           unsigned high_bit_depth);
+void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
+                               int line_size);
+void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
+                               int line_size);
+void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
+                                      int line_size);
 
-#endif /* AVCODEC_ARM_DSPUTIL_ARM_H */
+#endif /* AVCODEC_X86_IDCTDSP_H */

@@ -32,7 +32,7 @@
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "bytestream.h"
-#include "dsputil.h"
+#include "idctdsp.h"
 #include "aandcttab.h"
 #include "eaidct.h"
 #include "internal.h"

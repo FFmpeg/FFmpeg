@@ -18,6 +18,7 @@ OBJS-$(CONFIG_H264QPEL)                += x86/h264_qpel.o
 OBJS-$(CONFIG_HPELDSP)                 += x86/hpeldsp_init.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += x86/huffyuvdsp_init.o
 OBJS-$(CONFIG_HUFFYUVENCDSP)           += x86/huffyuvencdsp_mmx.o
+OBJS-$(CONFIG_IDCTDSP)                 += x86/idctdsp_init.o
 OBJS-$(CONFIG_LPC)                     += x86/lpc.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += x86/mpegaudiodsp.o
 OBJS-$(CONFIG_MPEGVIDEO)               += x86/mpegvideo.o              \
@@ -49,13 +50,14 @@ OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 
 MMX-OBJS-$(CONFIG_AUDIODSP)            += x86/audiodsp_mmx.o
 MMX-OBJS-$(CONFIG_BLOCKDSP)            += x86/blockdsp_mmx.o
-MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
-                                          x86/idct_mmx_xvid.o           \
-                                          x86/idct_sse2_xvid.o          \
-                                          x86/simple_idct.o
+MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o
 MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o                \
                                           x86/hpeldsp_mmx.o
 MMX-OBJS-$(CONFIG_HUFFYUVDSP)          += x86/huffyuvdsp_mmx.o
+MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/idctdsp_mmx.o             \
+                                          x86/idct_mmx_xvid.o           \
+                                          x86/idct_sse2_xvid.o          \
+                                          x86/simple_idct.o
 MMX-OBJS-$(CONFIG_QPELDSP)             += x86/fpel_mmx.o
 
 MMX-OBJS-$(CONFIG_SVQ1_ENCODER)        += x86/svq1enc_mmx.o

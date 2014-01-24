@@ -37,8 +37,13 @@
 #include <altivec.h>
 #endif
 
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
-#include "dsputil_altivec.h"
+#include "libavcodec/idctdsp.h"
+
+#if HAVE_ALTIVEC
 
 #define IDCT_HALF                                       \
     /* 1st stage */                                     \
@@ -148,7 +153,7 @@ static const vec_s16 constants[5] = {
     { 19266, 26722, 25172, 22654,  19266,  22654, 25172, 26722 }
 };
 
-void ff_idct_put_altivec(uint8_t *dest, int stride, int16_t *blk)
+static void idct_put_altivec(uint8_t *dest, int stride, int16_t *blk)
 {
     vec_s16 *block = (vec_s16 *) blk;
     vec_u8 tmp;
@@ -177,7 +182,7 @@ void ff_idct_put_altivec(uint8_t *dest, int stride, int16_t *blk)
     COPY(dest, vx7);
 }
 
-void ff_idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
+static void idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
 {
     vec_s16 *block = (vec_s16 *) blk;
     vec_u8 tmp;
@@ -218,4 +223,23 @@ void ff_idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
     ADD(dest, vx6, perm0);
     dest += stride;
     ADD(dest, vx7, perm1);
+}
+
+#endif /* HAVE_ALTIVEC */
+
+av_cold void ff_idctdsp_init_ppc(IDCTDSPContext *c, AVCodecContext *avctx,
+                                 unsigned high_bit_depth)
+{
+#if HAVE_ALTIVEC
+    if (PPC_ALTIVEC(av_get_cpu_flags())) {
+        if (!high_bit_depth) {
+            if ((avctx->idct_algo == FF_IDCT_AUTO) ||
+                (avctx->idct_algo == FF_IDCT_ALTIVEC)) {
+                c->idct_add              = idct_add_altivec;
+                c->idct_put              = idct_put_altivec;
+                c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
+            }
+        }
+    }
+#endif /* HAVE_ALTIVEC */
 }
