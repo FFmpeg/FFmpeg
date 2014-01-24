@@ -1084,10 +1084,13 @@ static int reap_filters(void)
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
         OutputFile    *of = output_files[ost->file_index];
+        AVFilterContext *filter;
+        AVCodecContext *enc = ost->st->codec;
         int ret = 0;
 
         if (!ost->filter)
             continue;
+        filter = ost->filter->filter;
 
         if (!ost->filtered_frame && !(ost->filtered_frame = av_frame_alloc())) {
             return AVERROR(ENOMEM);
@@ -1095,7 +1098,7 @@ static int reap_filters(void)
         filtered_frame = ost->filtered_frame;
 
         while (1) {
-            ret = av_buffersink_get_frame_flags(ost->filter->filter, filtered_frame,
+            ret = av_buffersink_get_frame_flags(filter, filtered_frame,
                                                AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret < 0) {
                 if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
@@ -1111,29 +1114,25 @@ static int reap_filters(void)
             frame_pts = AV_NOPTS_VALUE;
             if (filtered_frame->pts != AV_NOPTS_VALUE) {
                 int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
-                filtered_frame->pts = frame_pts = av_rescale_q(filtered_frame->pts,
-                                                ost->filter->filter->inputs[0]->time_base,
-                                                ost->st->codec->time_base) -
-                                    av_rescale_q(start_time,
-                                                AV_TIME_BASE_Q,
-                                                ost->st->codec->time_base);
+                filtered_frame->pts = frame_pts =
+                    av_rescale_q(filtered_frame->pts, filter->inputs[0]->time_base, enc->time_base) -
+                    av_rescale_q(start_time, AV_TIME_BASE_Q, enc->time_base);
             }
             //if (ost->source_index >= 0)
             //    *filtered_frame= *input_streams[ost->source_index]->decoded_frame; //for me_threshold
 
-
-            switch (ost->filter->filter->inputs[0]->type) {
+            switch (filter->inputs[0]->type) {
             case AVMEDIA_TYPE_VIDEO:
                 filtered_frame->pts = frame_pts;
                 if (!ost->frame_aspect_ratio.num)
-                    ost->st->codec->sample_aspect_ratio = filtered_frame->sample_aspect_ratio;
+                    enc->sample_aspect_ratio = filtered_frame->sample_aspect_ratio;
 
                 do_video_out(of->ctx, ost, filtered_frame);
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 filtered_frame->pts = frame_pts;
-                if (!(ost->st->codec->codec->capabilities & CODEC_CAP_PARAM_CHANGE) &&
-                    ost->st->codec->channels != av_frame_get_channels(filtered_frame)) {
+                if (!(enc->codec->capabilities & CODEC_CAP_PARAM_CHANGE) &&
+                    enc->channels != av_frame_get_channels(filtered_frame)) {
                     av_log(NULL, AV_LOG_ERROR,
                            "Audio filter graph output is not normalized and encoder does not support parameter changes\n");
                     break;
