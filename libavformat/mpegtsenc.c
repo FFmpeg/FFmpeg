@@ -374,20 +374,55 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case AVMEDIA_TYPE_SUBTITLE:
             {
                 const char default_language[] = "und";
-                const char *language = lang && strlen(lang->value)==3 ? lang->value : default_language;
-                *q++ = 0x59;
-                *q++ = 8;
-                *q++ = language[0];
-                *q++ = language[1];
-                *q++ = language[2];
-                *q++ = 0x10; /* normal subtitles (0x20 = if hearing pb) */
-                if(st->codec->extradata_size == 4) {
-                    memcpy(q, st->codec->extradata, 4);
-                    q += 4;
-                } else {
-                    put16(&q, 1); /* page id */
-                    put16(&q, 1); /* ancillary page id */
-                }
+                const char *language = lang && strlen(lang->value) >= 3 ? lang->value : default_language;
+
+                if (st->codec->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
+                    /* The descriptor tag. subtitling_descriptor */
+                    *q++ = 0x59;
+                    *q++ = 8;
+                    *q++ = language[0];
+                    *q++ = language[1];
+                    *q++ = language[2];
+                    *q++ = 0x10; /* normal subtitles (0x20 = if hearing pb) */
+                    if(st->codec->extradata_size == 4) {
+                        memcpy(q, st->codec->extradata, 4);
+                        q += 4;
+                    } else {
+                        put16(&q, 1); /* page id */
+                        put16(&q, 1); /* ancillary page id */
+                    }
+                } else if (st->codec->codec_id == AV_CODEC_ID_DVB_TELETEXT) {
+                    uint8_t *len_ptr = NULL;
+                    int extradata_copied = 0;
+
+                    /* The descriptor tag. teletext_descriptor */
+                    *q++ = 0x56;
+                    len_ptr = q++;
+
+                    while (strlen(language) >= 3) {
+                        *q++ = *language++;
+                        *q++ = *language++;
+                        *q++ = *language++;
+                        /* Skip comma */
+                        if (*language != '\0')
+                            language++;
+
+                        if (st->codec->extradata_size - 1 > extradata_copied) {
+                            memcpy(q, st->codec->extradata + extradata_copied, 2);
+                            extradata_copied += 2;
+                            q += 2;
+                        } else {
+                            /* The Teletext descriptor:
+                             * teletext_type: This 5-bit field indicates the type of Teletext page indicated. (0x01 Initial Teletext page)
+                             * teletext_magazine_number: This is a 3-bit field which identifies the magazine number.
+                             * teletext_page_number: This is an 8-bit field giving two 4-bit hex digits identifying the page number. */
+                            *q++ = 0x08;
+                            *q++ = 0x00;
+                        }
+                    }
+
+                    *len_ptr = q - len_ptr - 1;
+                 }
             }
             break;
         case AVMEDIA_TYPE_VIDEO:
@@ -859,7 +894,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     MpegTSWrite *ts = s->priv_data;
     uint8_t buf[TS_PACKET_SIZE];
     uint8_t *q;
-    int val, is_start, len, header_len, write_pcr, is_dvb_subtitle, flags;
+    int val, is_start, len, header_len, write_pcr, is_dvb_subtitle, is_dvb_teletext, flags;
     int afc_len, stuffing_len;
     int64_t pcr = -1; /* avoid warning */
     int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
@@ -923,11 +958,13 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         }
         if (is_start) {
             int pes_extension = 0;
+            int pes_header_stuffing_bytes = 0;
             /* write PES header */
             *q++ = 0x00;
             *q++ = 0x00;
             *q++ = 0x01;
             is_dvb_subtitle = 0;
+            is_dvb_teletext = 0;
             if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
                 if (st->codec->codec_id == AV_CODEC_ID_DIRAC) {
                     *q++ = 0xfd;
@@ -944,9 +981,12 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 *q++ = 0xfd;
             } else {
                 *q++ = 0xbd;
-                if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE &&
-                    st->codec->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
-                    is_dvb_subtitle = 1;
+                if(st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+                    if (st->codec->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
+                        is_dvb_subtitle = 1;
+                    } else if (st->codec->codec_id == AV_CODEC_ID_DVB_TELETEXT) {
+                        is_dvb_teletext = 1;
+                    }
                 }
             }
             header_len = 0;
@@ -982,6 +1022,10 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                         pes_extension = 1;
                         flags |= 0x01;
                         header_len += 3;
+            }
+            if (is_dvb_teletext) {
+                pes_header_stuffing_bytes = 0x24 - header_len;
+                header_len = 0x24;
             }
             len = payload_size + header_len + 3;
             /* 3 extra bytes should be added to DVB subtitle payload: 0x20 0x00 at the beginning and trailing 0xff */
@@ -1035,6 +1079,10 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                  * subtitle_stream_id: for DVB subtitle stream shall be identified by the value 0x00 */
                 *q++ = 0x20;
                 *q++ = 0x00;
+            }
+            if (is_dvb_teletext) {
+                memset(q, 0xff, pes_header_stuffing_bytes);
+                q += pes_header_stuffing_bytes;
             }
             is_start = 0;
         }
