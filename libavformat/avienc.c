@@ -405,10 +405,10 @@ static int avi_write_header(AVFormatContext *s)
 
     /* some padding for easier tag editing */
     if (padding) {
-    list2 = ff_start_tag(pb, "JUNK");
-    for (i = padding; i > 0; i -= 4)
-        avio_wl32(pb, 0);
-    ff_end_tag(pb, list2);
+        list2 = ff_start_tag(pb, "JUNK");
+        for (i = padding; i > 0; i -= 4)
+            avio_wl32(pb, 0);
+        ff_end_tag(pb, list2);
     }
 
     avi->movi_list = ff_start_tag(pb, "LIST");
