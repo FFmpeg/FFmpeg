@@ -613,7 +613,7 @@ static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s, int16_t *bloc
             UPDATE_CACHE(re, &s->gb);
             GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
 
-            if (level == 127) {
+            if (level >= 64) {
                 break;
             } else if (level != 0) {
                 scantable += run;
