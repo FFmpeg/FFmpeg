@@ -489,8 +489,9 @@ static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s,
         }
 
         block[j] = level;
-        if (((int32_t)GET_CACHE(re, &s->gb)) <= (int32_t)0xBFFFFFFF)
+        if (((int32_t)GET_CACHE(re, &s->gb)) <= (int32_t)0xBFFFFFFF || i >= 64)
             break;
+
         UPDATE_CACHE(re, &s->gb);
     }
 end:
