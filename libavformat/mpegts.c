@@ -1470,11 +1470,46 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         }
         break;
     case 0x56: /* DVB teletext descriptor */
-        language[0] = get8(pp, desc_end);
-        language[1] = get8(pp, desc_end);
-        language[2] = get8(pp, desc_end);
-        language[3] = 0;
-        av_dict_set(&st->metadata, "language", language, 0);
+        {
+            uint8_t *extradata = NULL;
+            int language_count = desc_len / 5;
+
+            if (desc_len > 0 && desc_len % 5 != 0)
+                return AVERROR_INVALIDDATA;
+
+            if (language_count > 0) {
+                /* 4 bytes per language code (3 bytes) with comma or NUL byte should fit language buffer */
+                if (language_count > sizeof(language) / 4) {
+                    language_count = sizeof(language) / 4;
+                }
+
+                if (st->codec->extradata == NULL) {
+                    if (ff_alloc_extradata(st->codec, language_count * 2)) {
+                        return AVERROR(ENOMEM);
+                    }
+                }
+
+               if (st->codec->extradata_size < language_count * 2)
+                   return AVERROR_INVALIDDATA;
+
+               extradata = st->codec->extradata;
+
+                for (i = 0; i < language_count; i++) {
+                    language[i * 4 + 0] = get8(pp, desc_end);
+                    language[i * 4 + 1] = get8(pp, desc_end);
+                    language[i * 4 + 2] = get8(pp, desc_end);
+                    language[i * 4 + 3] = ',';
+
+                    memcpy(extradata, *pp, 2);
+                    extradata += 2;
+
+                    *pp += 2;
+                }
+
+                language[i * 4 - 1] = 0;
+                av_dict_set(&st->metadata, "language", language, 0);
+            }
+        }
         break;
     case 0x59: /* subtitling descriptor */
         language[0] = get8(pp, desc_end);
