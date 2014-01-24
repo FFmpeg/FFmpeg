@@ -52,8 +52,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
             break;
         }
     }
-
-    c->gmc = ff_gmc_mmx;
 #endif /* HAVE_MMX_INLINE */
 }
 

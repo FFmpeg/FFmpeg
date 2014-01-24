@@ -34,10 +34,6 @@
 
 extern uint32_t ff_square_tab[512];
 
-void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
-              int dxx, int dxy, int dyx, int dyy, int shift, int r,
-              int width, int height);
-
 struct MpegEncContext;
 /* Motion estimation:
  * h is limited to { width / 2, width, 2 * width },
@@ -84,18 +80,6 @@ typedef struct DSPContext {
                                uint8_t *pixels /* align 8 */,
                                int line_size);
     int (*sum_abs_dctelem)(int16_t *block /* align 16 */);
-    /**
-     * translational global motion compensation.
-     */
-    void (*gmc1)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
-                 int srcStride, int h, int x16, int y16, int rounder);
-    /**
-     * global motion compensation.
-     */
-    void (*gmc)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
-                int stride, int h, int ox, int oy,
-                int dxx, int dxy, int dyx, int dyy,
-                int shift, int r, int width, int height);
 
     int (*pix_sum)(uint8_t *pix, int line_size);
     int (*pix_norm1)(uint8_t *pix, int line_size);

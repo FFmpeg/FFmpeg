@@ -380,6 +380,7 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     ff_blockdsp_init(&s->bdsp, s->avctx);
     ff_dsputil_init(&s->dsp, s->avctx);
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
+    ff_mpegvideodsp_init(&s->mdsp);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;

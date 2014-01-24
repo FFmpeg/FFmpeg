@@ -23,12 +23,13 @@
 #include "libavutil/mem.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
-#include "dsputil_altivec.h"
+#include "libavcodec/mpegvideodsp.h"
 
+#if HAVE_ALTIVEC
 /* AltiVec-enhanced gmc1. ATM this code assumes stride is a multiple of 8
  * to preserve proper dst alignment. */
-void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */,
-                     int stride, int h, int x16, int y16, int rounder)
+static void gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */,
+                         int stride, int h, int x16, int y16, int rounder)
 {
     int i;
     const DECLARE_ALIGNED(16, unsigned short, rounder_a) = rounder;
@@ -121,4 +122,12 @@ void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */,
         dst += stride;
         src += stride;
     }
+}
+#endif /* HAVE_ALTIVEC */
+
+av_cold void ff_mpegvideodsp_init_ppc(MpegVideoDSPContext *c)
+{
+#if HAVE_ALTIVEC
+    c->gmc1 = gmc1_altivec;
+#endif /* HAVE_ALTIVEC */
 }
