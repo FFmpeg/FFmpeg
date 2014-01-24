@@ -902,6 +902,7 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                     put_s(dyn_bc, bytestream_get_le32(&data));
                     sm_data_count+=2;
                 }
+                break;
             case AV_PKT_DATA_SKIP_SAMPLES:
                 if (AV_RL32(data)) {
                     put_str(dyn_bc, "SkipStart");
