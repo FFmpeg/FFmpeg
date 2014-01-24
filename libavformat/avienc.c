@@ -154,6 +154,7 @@ static int avi_write_header(AVFormatContext *s)
     AVCodecContext *stream, *video_enc;
     int64_t list1, list2, strh, strf;
     AVDictionaryEntry *t = NULL;
+    int padding;
 
     if (s->nb_streams > AVI_MAX_STREAM_COUNT) {
         av_log(s, AV_LOG_ERROR, "AVI does not support >%d streams\n",
@@ -397,11 +398,18 @@ static int avi_write_header(AVFormatContext *s)
 
     ff_riff_write_info(s);
 
+
+    padding = s->metadata_header_padding;
+    if (padding < 0)
+        padding = 1016;
+
     /* some padding for easier tag editing */
+    if (padding) {
     list2 = ff_start_tag(pb, "JUNK");
-    for (i = 0; i < 1016; i += 4)
+    for (i = padding; i > 0; i -= 4)
         avio_wl32(pb, 0);
     ff_end_tag(pb, list2);
+    }
 
     avi->movi_list = ff_start_tag(pb, "LIST");
     ffio_wfourcc(pb, "movi");
