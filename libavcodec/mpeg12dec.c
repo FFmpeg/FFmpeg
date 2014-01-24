@@ -196,7 +196,7 @@ end:
         CLOSE_READER(re, &s->gb);
     }
     s->block_last_index[n] = i;
-   return 0;
+    return 0;
 }
 
 int ff_mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int n)
