@@ -999,7 +999,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     int (*filter_frame)(AVFilterLink *, AVFrame *);
     AVFilterContext *dstctx = link->dst;
     AVFilterPad *dst = link->dstpad;
-    AVFrame *out;
+    AVFrame *out = NULL;
     int ret;
     AVFilterCommand *cmd= link->dst->command_queue;
     int64_t pts;
