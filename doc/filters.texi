@@ -9341,7 +9341,8 @@ Enable true-peak mode.
 
 If enabled, the peak lookup is done on an over-sampled version of the input
 stream for better peak accuracy. It logs a message for true-peak.
-(identified by @code{TPK}). This mode requires a build with @code{libswresample}.
+(identified by @code{TPK}) and true-peak per frame (identified by @code{FTPK}).
+This mode requires a build with @code{libswresample}.
 @end table
 
 @end table
