@@ -2773,13 +2773,34 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
         if (!b->skip) {
             decode_coeffs(ctx);
         } else {
-            int pl;
+            int row7 = s->row7;
 
-            memset(&s->above_y_nnz_ctx[col * 2], 0, w4 * 2);
-            memset(&s->left_y_nnz_ctx[(row & 7) << 1], 0, h4 * 2);
-            for (pl = 0; pl < 2; pl++) {
-                memset(&s->above_uv_nnz_ctx[pl][col], 0, w4);
-                memset(&s->left_uv_nnz_ctx[pl][row & 7], 0, h4);
+#define SPLAT_ZERO_CTX(v, n) \
+    switch (n) { \
+    case 1:  v = 0;          break; \
+    case 2:  AV_ZERO16(&v);  break; \
+    case 4:  AV_ZERO32(&v);  break; \
+    case 8:  AV_ZERO64(&v);  break; \
+    case 16: AV_ZERO128(&v); break; \
+    }
+#define SPLAT_ZERO_YUV(dir, var, off, n) \
+    do { \
+        SPLAT_ZERO_CTX(s->dir##_y_##var[off * 2], n * 2); \
+        SPLAT_ZERO_CTX(s->dir##_uv_##var[0][off], n); \
+        SPLAT_ZERO_CTX(s->dir##_uv_##var[1][off], n); \
+    } while (0)
+
+            switch (w4) {
+            case 1: SPLAT_ZERO_YUV(above, nnz_ctx, col, 1); break;
+            case 2: SPLAT_ZERO_YUV(above, nnz_ctx, col, 2); break;
+            case 4: SPLAT_ZERO_YUV(above, nnz_ctx, col, 4); break;
+            case 8: SPLAT_ZERO_YUV(above, nnz_ctx, col, 8); break;
+            }
+            switch (h4) {
+            case 1: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 1); break;
+            case 2: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 2); break;
+            case 4: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 4); break;
+            case 8: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 8); break;
             }
         }
         if (s->pass == 1) {
