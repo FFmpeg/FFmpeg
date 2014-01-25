@@ -236,6 +236,7 @@ static int config_props(AVFilterLink *outlink)
     double var_values[VARS_NB], res;
     char *expr;
     int ret;
+    int factor_w, factor_h;
 
     var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
     var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
@@ -273,15 +274,17 @@ static int config_props(AVFilterLink *outlink)
     /* Check if it is requested that the result has to be divisible by a some
      * factor (w or h = -n with n being the factor). After we got the factor,
      * we set w/h back to -1 so that the automatic scaling is done. */
-    int factor_w = 1;
-    int factor_h = 1;
+    factor_w = 1;
+    factor_h = 1;
     if (w < -1) {
         factor_w = -w;
         w = -1;
+        scale->w = -1;
     }
     if (h < -1) {
         factor_h = -h;
         h = -1;
+        scale->h = -1;
     }
 
     if (w == -1 && h == -1)
@@ -301,7 +304,6 @@ static int config_props(AVFilterLink *outlink)
      * factor is 1 */
     w = (w / factor_w) * factor_w;
     h = (h / factor_h) * factor_h;
-
 
     /* Note that force_original_aspect_ratio may overwrite the previous set
      * dimensions so that it is not divisible by the set factors anymore. */
