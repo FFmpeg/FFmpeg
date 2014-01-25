@@ -81,6 +81,7 @@ typedef struct {
      * New dimensions. Special values are:
      *   0 = original width/height
      *  -1 = keep original aspect
+     *  -N = try to keep aspect but make sure it is divisible by N
      */
     int w, h;
     char *size_str;
