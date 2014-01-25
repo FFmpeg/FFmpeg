@@ -1287,6 +1287,7 @@ static void decode_mode(AVCodecContext *ctx)
     int w4 = FFMIN(s->cols - col, bwh_tab[1][b->bs][0]);
     int h4 = FFMIN(s->rows - row, bwh_tab[1][b->bs][1]), y;
     int have_a = row > 0, have_l = col > s->tiling.tile_col_start;
+    int vref, filter_id;
 
     if (!s->segmentation.enabled) {
         b->seg_id = 0;
@@ -1780,9 +1781,10 @@ static void decode_mode(AVCodecContext *ctx)
                 c = 3;
             }
 
-            b->filter = vp8_rac_get_tree(&s->c, vp9_filter_tree,
+            filter_id = vp8_rac_get_tree(&s->c, vp9_filter_tree,
                                          s->prob.p.filter[c]);
-            s->counts.filter[c][b->filter]++;
+            s->counts.filter[c][filter_id]++;
+            b->filter = vp9_filter_lut[filter_id];
         } else {
             b->filter = s->filtermode;
         }
@@ -1839,27 +1841,80 @@ static void decode_mode(AVCodecContext *ctx)
             AV_COPY32(&b->mv[2][1], &b->mv[0][1]);
             AV_COPY32(&b->mv[3][1], &b->mv[0][1]);
         }
+
+        vref = b->ref[b->comp ? s->signbias[s->varcompref[0]] : 0];
     }
 
-    // FIXME this can probably be optimized
-    memset(&s->above_skip_ctx[col], b->skip, w4);
-    memset(&s->left_skip_ctx[row7], b->skip, h4);
-    memset(&s->above_txfm_ctx[col], b->tx, w4);
-    memset(&s->left_txfm_ctx[row7], b->tx, h4);
-    memset(&s->above_partition_ctx[col], above_ctx[b->bs], w4);
-    memset(&s->left_partition_ctx[row7], left_ctx[b->bs], h4);
+#if HAVE_FAST_64BIT
+#define SPLAT_CTX(var, val, n) \
+    switch (n) { \
+    case 1:  var = val;                                    break; \
+    case 2:  AV_WN16A(&var, val *             0x0101);     break; \
+    case 4:  AV_WN32A(&var, val *         0x01010101);     break; \
+    case 8:  AV_WN64A(&var, val * 0x0101010101010101ULL);  break; \
+    case 16: { \
+        uint64_t v64 = val * 0x0101010101010101ULL; \
+        AV_WN64A(              &var,     v64); \
+        AV_WN64A(&((uint8_t *) &var)[8], v64); \
+        break; \
+    } \
+    }
+#else
+#define SPLAT_CTX(var, val, n) \
+    switch (n) { \
+    case 1:  var = val;                         break; \
+    case 2:  AV_WN16A(&var, val *     0x0101);  break; \
+    case 4:  AV_WN32A(&var, val * 0x01010101);  break; \
+    case 8: { \
+        uint32_t v32 = val * 0x01010101); \
+        AV_WN32A(              &var,     v32); \
+        AV_WN32A(&((uint8_t *) &var)[4], v32); \
+        break; \
+    } \
+    case 16: { \
+        uint32_t v32 = val * 0x01010101); \
+        AV_WN32A(              &var,      v32); \
+        AV_WN32A(&((uint8_t *) &var)[4],  v32); \
+        AV_WN32A(&((uint8_t *) &var)[8],  v32); \
+        AV_WN32A(&((uint8_t *) &var)[12], v32); \
+        break; \
+    } \
+    }
+#endif
+
+    switch (bwh_tab[1][b->bs][0]) {
+#define SET_CTXS(dir, off, n) \
+    do { \
+        SPLAT_CTX(s->dir##_skip_ctx[off],      b->skip,          n); \
+        SPLAT_CTX(s->dir##_txfm_ctx[off],      b->tx,            n); \
+        SPLAT_CTX(s->dir##_partition_ctx[off], dir##_ctx[b->bs], n); \
+        if (!s->keyframe && !s->intraonly) { \
+            SPLAT_CTX(s->dir##_intra_ctx[off], b->intra,   n); \
+            SPLAT_CTX(s->dir##_comp_ctx[off],  b->comp,    n); \
+            SPLAT_CTX(s->dir##_mode_ctx[off],  b->mode[3], n); \
+            if (!b->intra) { \
+                SPLAT_CTX(s->dir##_ref_ctx[off], vref, n); \
+                if (s->filtermode == FILTER_SWITCHABLE) { \
+                    SPLAT_CTX(s->dir##_filter_ctx[off], filter_id, n); \
+                } \
+            } \
+        } \
+    } while (0)
+    case 1: SET_CTXS(above, col, 1); break;
+    case 2: SET_CTXS(above, col, 2); break;
+    case 4: SET_CTXS(above, col, 4); break;
+    case 8: SET_CTXS(above, col, 8); break;
+    }
+    switch (bwh_tab[1][b->bs][1]) {
+    case 1: SET_CTXS(left, row7, 1); break;
+    case 2: SET_CTXS(left, row7, 2); break;
+    case 4: SET_CTXS(left, row7, 4); break;
+    case 8: SET_CTXS(left, row7, 8); break;
+    }
+#undef SPLAT_CTX
+#undef SET_CTXS
+
     if (!s->keyframe && !s->intraonly) {
-        memset(&s->above_intra_ctx[col], b->intra, w4);
-        memset(&s->left_intra_ctx[row7], b->intra, h4);
-        memset(&s->above_comp_ctx[col], b->comp, w4);
-        memset(&s->left_comp_ctx[row7], b->comp, h4);
-        memset(&s->above_mode_ctx[col], b->mode[3], w4);
-        memset(&s->left_mode_ctx[row7], b->mode[3], h4);
-        if (s->filtermode == FILTER_SWITCHABLE && !b->intra ) {
-            memset(&s->above_filter_ctx[col], b->filter, w4);
-            memset(&s->left_filter_ctx[row7], b->filter, h4);
-            b->filter = vp9_filter_lut[b->filter];
-        }
         if (b->bs > BS_8x8) {
             int mv0 = AV_RN32A(&b->mv[3][0]), mv1 = AV_RN32A(&b->mv[3][1]);
 
@@ -1882,14 +1937,6 @@ static void decode_mode(AVCodecContext *ctx)
                 AV_WN32A(&s->left_mv_ctx[row7 * 2 + n][0], mv0);
                 AV_WN32A(&s->left_mv_ctx[row7 * 2 + n][1], mv1);
             }
-        }
-
-        if (!b->intra) { // FIXME write 0xff or -1 if intra, so we can use this
-                         // as a direct check in above branches
-            int vref = b->ref[b->comp ? s->signbias[s->varcompref[0]] : 0];
-
-            memset(&s->above_ref_ctx[col], vref, w4);
-            memset(&s->left_ref_ctx[row7], vref, h4);
         }
     }
 
