@@ -295,16 +295,14 @@ static int config_props(AVFilterLink *outlink)
         w = inlink->w;
     if (!(h = scale->h))
         h = inlink->h;
-    if (w == -1)
-        w = av_rescale(h, inlink->w, inlink->h);
-    if (h == -1)
-        h = av_rescale(w, inlink->h, inlink->w);
 
     /* Make sure that the result is divisible by the factor we determined
      * earlier. If no factor was set, it is nothing will happen as the default
      * factor is 1 */
-    w = (w / factor_w) * factor_w;
-    h = (h / factor_h) * factor_h;
+    if (w == -1)
+        w = av_rescale(h, inlink->w, inlink->h * factor_w) * factor_w;
+    if (h == -1)
+        h = av_rescale(w, inlink->h, inlink->w * factor_h) * factor_h;
 
     /* Note that force_original_aspect_ratio may overwrite the previous set
      * dimensions so that it is not divisible by the set factors anymore. */
