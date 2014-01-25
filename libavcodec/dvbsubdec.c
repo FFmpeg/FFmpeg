@@ -236,7 +236,6 @@ typedef struct DVBSubContext {
     DVBSubCLUT   *clut_list;
     DVBSubObject *object_list;
 
-    int display_list_size;
     DVBSubRegionDisplay *display_list;
     DVBSubDisplayDefinition *display_definition;
 } DVBSubContext;
@@ -1179,7 +1178,6 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
 
     tmp_display_list = ctx->display_list;
     ctx->display_list = NULL;
-    ctx->display_list_size = 0;
 
     while (buf + 5 < buf_end) {
         region_id = *buf++;
@@ -1207,7 +1205,6 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
 
         display->next = ctx->display_list;
         ctx->display_list = display;
-        ctx->display_list_size++;
 
         av_dlog(avctx, "Region %d, (%d,%d)\n", region_id, display->x_pos, display->y_pos);
     }
