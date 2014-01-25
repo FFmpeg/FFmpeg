@@ -241,29 +241,51 @@ SECTION .text
     lea mstrideq, [strideq]
     neg mstrideq
 
+    lea stride3q, [strideq+2*strideq]
+    mov mstride3q, stride3q
+    neg mstride3q
+
 %ifidn %1, h
     lea dstq, [dstq + 8*strideq - 8] ; go from top center (h pos) to center left (v pos)
-    lea                  dst1q, [dstq  + 8*mstrideq]        ; dst1 = &dst[stride * -8]
-    lea                  dst2q, [dst1q + 1* strideq]        ; dst2 = &dst[stride * -7]
-    movu                    m0, [dst1q             ]        ;  m0 = dst[stride * -8] (p7)
-    movu                    m1, [dst2q             ]        ;  m1 = dst[stride * -7] (p6)
-    movu                    m2, [dst1q + 2* strideq]        ;  m2 = dst[stride * -6] (p5)
-    movu                    m3, [dst2q + 2* strideq]        ;  m3 = dst[stride * -5] (p4)
-    lea                  dst1q, [dstq]                      ; dst1 = &dst[stride * +0]
-    lea                  dst2q, [dstq + 1*strideq]          ; dst2 = &dst[stride * +1]
-    movu                    m4, [dst1q + 4*mstrideq]        ;  m4 = dst[stride * -4] (p3)
-    movu                    m5, [dst2q + 4*mstrideq]        ;  m5 = dst[stride * -3] (p2)
-    movu                    m6, [dst1q + 2*mstrideq]        ;  m6 = dst[stride * -2] (p1)
-    movu                    m7, [dst2q + 2*mstrideq]        ;  m7 = dst[stride * -1] (p0)
-    movu                    m8, [dst1q]                     ;  m8 = dst[stride * +0] (q0)
-    movu                    m9, [dst2q]                     ;  m9 = dst[stride * +1] (q1)
-    movu                   m10, [dst1q + 2* strideq]        ; m10 = dst[stride * +2] (q2)
-    movu                   m11, [dst2q + 2* strideq]        ; m11 = dst[stride * +3] (q3)
-    movu                   m12, [dst1q + 4* strideq]        ; m12 = dst[stride * +4] (q4)
-    movu                   m13, [dst2q + 4* strideq]        ; m13 = dst[stride * +5] (q5)
-    lea                  dst1q, [dstq  + 8* strideq]        ; dst1 = &dst[stride * +8]
-    movu                   m14, [dst1q + 2*mstrideq]        ; m14 = dst[stride * +6] (q6)
-    movu                   m15, [dst1q + 1*mstrideq]        ; m15 = dst[stride * +7] (q7)
+%endif
+
+    lea dst1q, [dstq + 2*mstride3q]                         ; dst1q = &dst[stride * -6]
+    lea dst2q, [dstq + 2* stride3q]                         ; dst2q = &dst[stride * +6]
+
+%define P7 dst1q + 2*mstrideq
+%define P6 dst1q +   mstrideq
+%define P5 dst1q
+%define P4 dst1q +    strideq
+%define P3 dstq  + 4*mstrideq
+%define P2 dstq  +   mstride3q
+%define P1 dstq  + 2*mstrideq
+%define P0 dstq  +   mstrideq
+%define Q0 dstq
+%define Q1 dstq  +   strideq
+%define Q2 dstq  + 2*strideq
+%define Q3 dstq  +   stride3q
+%define Q4 dstq  + 4*strideq
+%define Q5 dst2q + mstrideq
+%define Q6 dst2q
+%define Q7 dst2q +  strideq
+
+%ifidn %1, h
+    movu                    m0, [P7]
+    movu                    m1, [P6]
+    movu                    m2, [P5]
+    movu                    m3, [P4]
+    movu                    m4, [P3]
+    movu                    m5, [P2]
+    movu                    m6, [P1]
+    movu                    m7, [P0]
+    movu                    m8, [Q0]
+    movu                    m9, [Q1]
+    movu                   m10, [Q2]
+    movu                   m11, [Q3]
+    movu                   m12, [Q4]
+    movu                   m13, [Q5]
+    movu                   m14, [Q6]
+    movu                   m15, [Q7]
     TRANSPOSE16x16B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, [rsp]
     mova           [rsp +   0],  m0                         ; dst[stride * -8] (p7)
     mova           [rsp +  16],  m1                         ; dst[stride * -7] (p6)
@@ -293,16 +315,14 @@ SECTION .text
     pxor                m2, m0
     pxor                m3, m0
 %ifidn %1, v
-    lea              dst1q, [dstq  + 2*mstrideq]        ; dst1 = &dst[stride * -2]
-    lea              dst2q, [dstq  + 2* strideq]        ; dst2 = &dst[stride * +2]
-    mova                m8, [dstq  + 4*mstrideq]        ; m8  = dst[stride * -4] (p3)
-    mova                m9, [dst1q + 1*mstrideq]        ; m9  = dst[stride * -3] (p2)
-    mova               m10, [dstq  + 2*mstrideq]        ; m10 = dst[stride * -2] (p1)
-    mova               m11, [dstq  + 1*mstrideq]        ; m11 = dst[stride * -1] (p0)
-    mova               m12, [dstq              ]        ; m12 = dst[stride * +0] (q0)
-    mova               m13, [dstq  + 1* strideq]        ; m13 = dst[stride * +1] (q1)
-    mova               m14, [dstq  + 2* strideq]        ; m14 = dst[stride * +2] (q2)
-    mova               m15, [dst2q + 1* strideq]        ; m15 = dst[stride * +3] (q3)
+    mova                m8, [P3]
+    mova                m9, [P2]
+    mova               m10, [P1]
+    mova               m11, [P0]
+    mova               m12, [Q0]
+    mova               m13, [Q1]
+    mova               m14, [Q2]
+    mova               m15, [Q3]
 %else
     SWAP                 8,  4, 12
     SWAP                 9,  5, 13
@@ -367,10 +387,8 @@ SECTION .text
     ; (m0: hev, m2: flat8in, m3: fm, m6: pb_81, m9..15: p2 p1 p0 q0 q1 q2 q3)
     ; calc flat8out mask
 %ifidn %1, v
-    lea                 dst2q, [dstq  + 8*mstrideq]     ; dst2 = &dst[stride * -8] (p7)
-    lea                 dst1q, [dst2q + 1*strideq]      ; dst1 = &dst[stride * -7] (p6)
-    mova                m8, [dst2q]                     ; m8 = p7
-    mova                m9, [dst1q]                     ; m9 = p6
+    mova                m8, [P7]
+    mova                m9, [P6]
 %else
     mova                m8, [rsp +  0]                  ; m8 = p7
     mova                m9, [rsp + 16]                  ; m9 = p6
@@ -379,8 +397,8 @@ SECTION .text
     ABSSUB_CMP          m7, m9, m11, m6, m4, m5         ; abs(p6 - p0) <= 1
     pand                m1, m7
 %ifidn %1, v
-    mova                m8, [dst1q + 1*strideq]         ; m8 = dst[stride * -6] (p5)
-    mova                m9, [dst1q + 2*strideq]         ; m9 = dst[stride * -5] (p4)
+    mova                m8, [P5]
+    mova                m9, [P4]
 %else
     mova                m8, [rsp + 32]                  ; m8 = p5
     mova                m9, [rsp + 48]                  ; m9 = p4
@@ -390,10 +408,8 @@ SECTION .text
     ABSSUB_CMP          m7, m9, m11, m6, m4, m5         ; abs(p4 - p0) <= 1
     pand                m1, m7
 %ifidn %1, v
-    lea                 dst2q, [dstq  + 4*strideq]      ; dst2 = &dst[stride * +4] (q4)
-    lea                 dst1q, [dst2q + 1*strideq]      ; dst1 = &dst[stride * +5] (q5)
-    mova                m14, [dst2q]                    ; m14 = q4
-    mova                m15, [dst1q]                    ; m15 = q5
+    mova                m14, [Q4]
+    mova                m15, [Q5]
 %else
     mova                m14, [rsp + 192]                ; m14 = q4
     mova                m15, [rsp + 208]                ; m15 = q5
@@ -403,8 +419,8 @@ SECTION .text
     ABSSUB_CMP          m7, m15, m12, m6, m4, m5        ; abs(q5 - q0) <= 1
     pand                m1, m7
 %ifidn %1, v
-    mova                m14, [dst1q + 1*strideq]        ; m14 = dst[stride * +6] (q6)
-    mova                m15, [dst1q + 2*strideq]        ; m15 = dst[stride * +7] (q7)
+    mova                m14, [Q6]
+    mova                m15, [Q7]
 %else
     mova                m14, [rsp + 224]                ; m14 = q6
     mova                m15, [rsp + 240]                ; m15 = q7
@@ -495,16 +511,13 @@ SECTION .text
     pand                m2, m3                          ;               mask(fm) & mask(in)
     pandn               m3, m1, m2                      ; ~mask(out) & (mask(fm) & mask(in))
 %ifidn %1, v
-    lea              dst1q, [dstq + 2*strideq]          ; dst1 = &dst[stride * +2] (q2)
-    mova                m8, [dst1q]                     ; m8 = q2
-    mova                m9, [dst1q + 1*strideq]         ; m9 = q3
-    lea              dst1q, [dstq + 4*mstrideq]         ; dst1 = &dst[stride * -4] (p3)
-    lea              dst2q, [dst1q + 1*strideq]         ; dst2 = &dst[stride * -3] (p2)
-    mova               m14, [dst1q]                     ; m14 = p3
-    mova               m15, [dst2q]                     ; m15 = p2
-    FILTER_INIT         m4, m5, m6, m7, [dst2q            ], 6,                     m3, m15 ; [p2]
-    FILTER_UPDATE       m6, m7, m4, m5, [dst2q + 1*strideq], m14, m15, m10, m13, 3, m3      ; [p1] -p3 -p2 +p1 +q1
-    FILTER_UPDATE       m4, m5, m6, m7, [dst2q + 2*strideq], m14, m10, m11,  m8, 3, m3      ; [p0] -p3 -p1 +p0 +q2
+    mova               m14, [P3]
+    mova               m15, [P2]
+    mova                m8, [Q2]
+    mova                m9, [Q3]
+    FILTER_INIT         m4, m5, m6, m7, [dstq +  mstride3q], 6,                     m3, m15 ; [p2]
+    FILTER_UPDATE       m6, m7, m4, m5, [dstq +2*mstrideq ], m14, m15, m10, m13, 3, m3      ; [p1] -p3 -p2 +p1 +q1
+    FILTER_UPDATE       m4, m5, m6, m7, [dstq +  mstrideq ], m14, m10, m11,  m8, 3, m3      ; [p0] -p3 -p1 +p0 +q2
     FILTER_UPDATE       m6, m7, m4, m5, [dstq             ], m14, m11, m12,  m9, 3, m3      ; [q0] -p3 -p0 +q0 +q3
     FILTER_UPDATE       m4, m5, m6, m7, [dstq  + 1*strideq], m15, m12, m13,  m9, 3, m3      ; [q1] -p2 -q0 +q1 +q3
     FILTER_UPDATE       m6, m7, m4, m5, [dstq  + 2*strideq], m10, m13,  m8,  m9, 3, m3,  m8 ; [q2] -p1 -q1 +q2 +q3
@@ -544,43 +557,36 @@ SECTION .text
 
     pand            m1, m2                                                              ; mask(out) & (mask(fm) & mask(in))
 %ifidn %1, v
-    lea             dst1q, [dstq  + 8*mstrideq]                                         ; dst1 = &dst[stride * -8] (p7)
-    lea             dst2q, [dst1q + 1* strideq]                                         ; dst2 = &dst[stride * -7] (p6)
-    mova            m2, [dst1q]                                                         ; m2 = p7
-    mova            m3, [dst2q]                                                         ; m3 = p6
-    mova            m8, [dst1q + 2*strideq]                                             ; m8 = p5 (dst[stride * -6])
-    mova            m9, [dst2q + 2*strideq]                                             ; m9 = p4 (dst[stride * -5])
-    FILTER_INIT     m4, m5, m6, m7, [dst2q], 14,                                m1,  m3 ; [p6]
-    FILTER_UPDATE   m6, m7, m4, m5, [dst2q + 1*strideq],  m2,  m3,  m8, m13, 4, m1,  m8 ; [p5] -p7 -p6 +p5 +q1
-    lea             dst1q, [dstq + 1*strideq]                                           ; dst1 = &dst[stride * +1] (q1)
-    mova            m13, [dst1q + 1*strideq]                                            ; m13=dst[stride * +2] (q2)
-    FILTER_UPDATE   m4, m5, m6, m7, [dst2q + 2*strideq],  m2,  m8,  m9, m13, 4, m1,  m9 ; [p4] -p7 -p5 +p4 +q2
-    lea             dst2q, [dst2q + 4*strideq]
-    mova            m13, [dst1q + 2*strideq]                                            ; m13=dst[stride * +3] (q3)
-    FILTER_UPDATE   m6, m7, m4, m5, [dst2q + 1*mstrideq], m2,  m9, m14, m13, 4, m1, m14 ; [p3] -p7 -p4 +p3 +q3
-    mova            m13, [dstq  + 4*strideq]                                            ; m13=dst[stride * +4] (q4)
-    FILTER_UPDATE   m4, m5, m6, m7, [dst2q],              m2, m14, m15, m13, 4, m1      ; [p2] -p7 -p3 +p2 +q4
-    mova            m13, [dst1q + 4*strideq]                                            ; m13=dst[stride * +5] (q5)
-    FILTER_UPDATE   m6, m7, m4, m5, [dst2q + 1*strideq],  m2, m15, m10, m13, 4, m1      ; [p1] -p7 -p2 +p1 +q5
-    lea             dst1q, [dst1q + 4*strideq]                                          ; dst1 = &dst[stride * +5] (q5)
-    mova            m13, [dst1q + 1*strideq]                                            ; m13=dst[stride * +6] (q6)
-    FILTER_UPDATE   m4, m5, m6, m7, [dst2q + 2*strideq],  m2, m10, m11, m13, 4, m1      ; [p0] -p7 -p1 +p0 +q6
-    lea             dst2q, [dst2q + 4*strideq]
-    mova            m13, [dst1q + 2*strideq]                                            ; m13=dst[stride * +7] (q7)
-    FILTER_UPDATE   m6, m7, m4, m5, [dst2q + 1*mstrideq], m2, m11, m12, m13, 4, m1      ; [q0] -p7 -p0 +q0 +q7
-    mova            m2, [dst2q]                                                         ; m2=dst[stride * +1] (q1)
-    FILTER_UPDATE   m4, m5, m6, m7, [dst2q],              m3, m12,  m2, m13, 4, m1      ; [q1] -p6 -q0 +q1 +q7
-    mova            m3, [dst2q + 1*strideq]                                             ; m3=dst[stride * +2] (q2)
-    FILTER_UPDATE   m6, m7, m4, m5, [dst2q + 1*strideq],  m8,  m2,  m3, m13, 4, m1      ; [q2] -p5 -q1 +q2 +q7
-    mova            m8, [dst2q + 2*strideq]                                             ; m8=dst[stride * +3] (q3)
-    FILTER_UPDATE   m4, m5, m6, m7, [dst2q + 2*strideq],  m9,  m3,  m8, m13, 4, m1,  m8 ; [q3] -p4 -q2 +q3 +q7
-    lea             dst2q, [dst2q + 4*strideq]
-    mova            m9, [dst2q + 1*mstrideq]                                            ; m9=dst[stride * +4] (q4)
-    FILTER_UPDATE   m6, m7, m4, m5, [dst2q + 1*mstrideq],m14,  m8,  m9, m13, 4, m1,  m9 ; [q4] -p3 -q3 +q4 +q7
-    mova            m14, [dst2q]                                                        ; m14=dst[stride * +5] (q5)
-    FILTER_UPDATE   m4, m5, m6, m7, [dst2q],             m15,  m9, m14, m13, 4, m1, m14 ; [q5] -p2 -q4 +q5 +q7
-    mova            m15, [dst2q + 1*strideq]                                            ; m15=dst[stride * +6] (q6)
-    FILTER_UPDATE   m6, m7, m4, m5, [dst2q + 1*strideq], m10, m14, m15, m13, 4, m1, m15 ; [q6] -p1 -q5 +q6 +q7
+    mova            m2, [P7]
+    mova            m3, [P6]
+    mova            m8, [P5]
+    mova            m9, [P4]
+    FILTER_INIT     m4, m5, m6, m7, [P6],  14,                   m1,  m3
+    FILTER_UPDATE   m6, m7, m4, m5, [P5],  m2,  m3,  m8, m13, 4, m1,  m8 ; [p5] -p7 -p6 +p5 +q1
+    mova            m13, [Q2]
+    FILTER_UPDATE   m4, m5, m6, m7, [P4],  m2,  m8,  m9, m13, 4, m1,  m9 ; [p4] -p7 -p5 +p4 +q2
+    mova            m13, [Q3]
+    FILTER_UPDATE   m6, m7, m4, m5, [P3],  m2,  m9, m14, m13, 4, m1, m14 ; [p3] -p7 -p4 +p3 +q3
+    mova            m13, [Q4]
+    FILTER_UPDATE   m4, m5, m6, m7, [P2],  m2, m14, m15, m13, 4, m1      ; [p2] -p7 -p3 +p2 +q4
+    mova            m13, [Q5]
+    FILTER_UPDATE   m6, m7, m4, m5, [P1],  m2, m15, m10, m13, 4, m1      ; [p1] -p7 -p2 +p1 +q5
+    mova            m13, [Q6]
+    FILTER_UPDATE   m4, m5, m6, m7, [P0],  m2, m10, m11, m13, 4, m1      ; [p0] -p7 -p1 +p0 +q6
+    mova            m13, [Q7]
+    FILTER_UPDATE   m6, m7, m4, m5, [Q0],  m2, m11, m12, m13, 4, m1      ; [q0] -p7 -p0 +q0 +q7
+    mova            m2, [Q1]
+    FILTER_UPDATE   m4, m5, m6, m7, [Q1],  m3, m12,  m2, m13, 4, m1      ; [q1] -p6 -q0 +q1 +q7
+    mova            m3, [Q2]
+    FILTER_UPDATE   m6, m7, m4, m5, [Q2],  m8,  m2,  m3, m13, 4, m1      ; [q2] -p5 -q1 +q2 +q7
+    mova            m8, [Q3]
+    FILTER_UPDATE   m4, m5, m6, m7, [Q3],  m9,  m3,  m8, m13, 4, m1,  m8 ; [q3] -p4 -q2 +q3 +q7
+    mova            m9, [Q4]
+    FILTER_UPDATE   m6, m7, m4, m5, [Q4], m14,  m8,  m9, m13, 4, m1,  m9 ; [q4] -p3 -q3 +q4 +q7
+    mova            m14, [Q5]
+    FILTER_UPDATE   m4, m5, m6, m7, [Q5], m15,  m9, m14, m13, 4, m1, m14 ; [q5] -p2 -q4 +q5 +q7
+    mova            m15, [Q6]
+    FILTER_UPDATE   m6, m7, m4, m5, [Q6], m10, m14, m15, m13, 4, m1, m15 ; [q6] -p1 -q5 +q6 +q7
 %else
     mova            m2, [rsp +  0]                                                      ; m2 = p7
     mova            m3, [rsp + 16]                                                      ; m3 = p6
@@ -632,36 +638,31 @@ SECTION .text
     mova                   m14, [rsp + 224]                                             ; dst[stride * +6] (q6)
     mova                   m15, [rsp + 240]                                             ; dst[stride * +7] (q7)
     TRANSPOSE16x16B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, [rsp]
-    lea                  dst1q, [dstq  + 8*mstrideq]                                    ; dst1 = &dst[stride * -8]
-    lea                  dst2q, [dst1q + 1* strideq]                                    ; dst2 = &dst[stride * -7]
-    movu  [dst1q             ],  m0                                                     ; dst[stride * -8] (p7)
-    movu  [dst2q             ],  m1                                                     ; dst[stride * -7] (p6)
-    movu  [dst1q + 2* strideq],  m2                                                     ; dst[stride * -6] (p5)
-    movu  [dst2q + 2* strideq],  m3                                                     ; dst[stride * -5] (p4)
-    lea                  dst1q, [dstq]                                                  ; dst1 = &dst[stride * +0]
-    lea                  dst2q, [dstq + 1*strideq]                                      ; dst2 = &dst[stride * +1]
-    movu  [dst1q + 4*mstrideq],  m4                                                     ; dst[stride * -4] (p3)
-    movu  [dst2q + 4*mstrideq],  m5                                                     ; dst[stride * -3] (p2)
-    movu  [dst1q + 2*mstrideq],  m6                                                     ; dst[stride * -2] (p1)
-    movu  [dst2q + 2*mstrideq],  m7                                                     ; dst[stride * -1] (p0)
-    movu  [dst1q             ],  m8                                                     ; dst[stride * +0] (q0)
-    movu  [dst2q             ],  m9                                                     ; dst[stride * +1] (q1)
-    movu  [dst1q + 2* strideq], m10                                                     ; dst[stride * +2] (q2)
-    movu  [dst2q + 2* strideq], m11                                                     ; dst[stride * +3] (q3)
-    movu  [dst1q + 4* strideq], m12                                                     ; dst[stride * +4] (q4)
-    movu  [dst2q + 4* strideq], m13                                                     ; dst[stride * +5] (q5)
-    lea                  dst1q, [dstq + 8*strideq]                                      ; dst1 = &dst[stride * +8]
-    movu  [dst1q + 2*mstrideq], m14                                                     ; dst[stride * +6] (q6)
-    movu  [dst1q + 1*mstrideq], m15                                                     ; dst[stride * +7] (q7)
+    movu  [P7],  m0
+    movu  [P6],  m1
+    movu  [P5],  m2
+    movu  [P4],  m3
+    movu  [P3],  m4
+    movu  [P2],  m5
+    movu  [P1],  m6
+    movu  [P0],  m7
+    movu  [Q0],  m8
+    movu  [Q1],  m9
+    movu  [Q2], m10
+    movu  [Q3], m11
+    movu  [Q4], m12
+    movu  [Q5], m13
+    movu  [Q6], m14
+    movu  [Q7], m15
 %endif
 %endmacro
 
 %macro LPF_16_16_VH 1
 INIT_XMM %1
-cglobal vp9_loop_filter_v_16_16, 5,8,16,      dst, stride, E, I, H, mstride, dst1, dst2
+cglobal vp9_loop_filter_v_16_16, 5,10,16,      dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
     LPF_16_16 v
     RET
-cglobal vp9_loop_filter_h_16_16, 5,8,16, 256, dst, stride, E, I, H, mstride, dst1, dst2
+cglobal vp9_loop_filter_h_16_16, 5,10,16, 256, dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
     LPF_16_16 h
     RET
 %endmacro
