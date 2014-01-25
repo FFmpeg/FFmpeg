@@ -81,6 +81,7 @@ typedef struct {
      * New dimensions. Special values are:
      *   0 = original width/height
      *  -1 = keep original aspect
+     *  -N = try to keep aspect but make sure it is divisible by N
      */
     int w, h;
     char *size_str;
@@ -236,6 +237,7 @@ static int config_props(AVFilterLink *outlink)
     double var_values[VARS_NB], res;
     char *expr;
     int ret;
+    int factor_w, factor_h;
 
     var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
     var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
@@ -270,11 +272,22 @@ static int config_props(AVFilterLink *outlink)
     w = scale->w;
     h = scale->h;
 
-    /* sanity check params */
-    if (w <  -1 || h <  -1) {
-        av_log(ctx, AV_LOG_ERROR, "Size values less than -1 are not acceptable.\n");
-        return AVERROR(EINVAL);
+    /* Check if it is requested that the result has to be divisible by a some
+     * factor (w or h = -n with n being the factor). After we got the factor,
+     * we set w/h back to -1 so that the automatic scaling is done. */
+    factor_w = 1;
+    factor_h = 1;
+    if (w < -1) {
+        factor_w = -w;
+        w = -1;
+        scale->w = -1;
     }
+    if (h < -1) {
+        factor_h = -h;
+        h = -1;
+        scale->h = -1;
+    }
+
     if (w == -1 && h == -1)
         scale->w = scale->h = 0;
 
@@ -287,6 +300,14 @@ static int config_props(AVFilterLink *outlink)
     if (h == -1)
         h = av_rescale(w, inlink->h, inlink->w);
 
+    /* Make sure that the result is divisible by the factor we determined
+     * earlier. If no factor was set, it is nothing will happen as the default
+     * factor is 1 */
+    w = (w / factor_w) * factor_w;
+    h = (h / factor_h) * factor_h;
+
+    /* Note that force_original_aspect_ratio may overwrite the previous set
+     * dimensions so that it is not divisible by the set factors anymore. */
     if (scale->force_original_aspect_ratio) {
         int tmp_w = av_rescale(h, inlink->w, inlink->h);
         int tmp_h = av_rescale(w, inlink->h, inlink->w);
