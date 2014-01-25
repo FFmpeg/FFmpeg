@@ -9334,13 +9334,14 @@ Disable any peak mode (default).
 @item sample
 Enable sample-peak mode.
 
-Simple peak mode looking for the higher sample value.
+Simple peak mode looking for the higher sample value. It logs a message
+for sample-peak (identified by @code{SPK}).
 @item true
 Enable true-peak mode.
 
 If enabled, the peak lookup is done on an over-sampled version of the input
-stream for better peak accuracy. This mode requires a build with
-@code{libswresample}.
+stream for better peak accuracy. It logs a message for true-peak.
+(identified by @code{TPK}). This mode requires a build with @code{libswresample}.
 @end table
 
 @end table
