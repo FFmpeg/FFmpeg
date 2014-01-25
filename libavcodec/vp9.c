@@ -210,19 +210,31 @@ typedef struct VP9Context {
     enum CompPredMode comppredmode;
 
     // contextual (left/above) cache
-    uint8_t left_partition_ctx[8], *above_partition_ctx;
-    uint8_t left_mode_ctx[16], *above_mode_ctx;
+    DECLARE_ALIGNED(16, uint8_t, left_y_nnz_ctx)[16];
+    DECLARE_ALIGNED(16, uint8_t, left_mode_ctx)[16];
+    DECLARE_ALIGNED(16, VP56mv, left_mv_ctx)[16][2];
+    DECLARE_ALIGNED(8, uint8_t, left_uv_nnz_ctx)[2][8];
+    DECLARE_ALIGNED(8, uint8_t, left_partition_ctx)[8];
+    DECLARE_ALIGNED(8, uint8_t, left_skip_ctx)[8];
+    DECLARE_ALIGNED(8, uint8_t, left_txfm_ctx)[8];
+    DECLARE_ALIGNED(8, uint8_t, left_segpred_ctx)[8];
+    DECLARE_ALIGNED(8, uint8_t, left_intra_ctx)[8];
+    DECLARE_ALIGNED(8, uint8_t, left_comp_ctx)[8];
+    DECLARE_ALIGNED(8, uint8_t, left_ref_ctx)[8];
+    DECLARE_ALIGNED(8, uint8_t, left_filter_ctx)[8];
+    uint8_t *above_partition_ctx;
+    uint8_t *above_mode_ctx;
     // FIXME maybe merge some of the below in a flags field?
-    uint8_t left_y_nnz_ctx[16], *above_y_nnz_ctx;
-    uint8_t left_uv_nnz_ctx[2][8], *above_uv_nnz_ctx[2];
-    uint8_t left_skip_ctx[8], *above_skip_ctx; // 1bit
-    uint8_t left_txfm_ctx[8], *above_txfm_ctx; // 2bit
-    uint8_t left_segpred_ctx[8], *above_segpred_ctx; // 1bit
-    uint8_t left_intra_ctx[8], *above_intra_ctx; // 1bit
-    uint8_t left_comp_ctx[8], *above_comp_ctx; // 1bit
-    uint8_t left_ref_ctx[8], *above_ref_ctx; // 2bit
-    uint8_t left_filter_ctx[8], *above_filter_ctx;
-    VP56mv left_mv_ctx[16][2], (*above_mv_ctx)[2];
+    uint8_t *above_y_nnz_ctx;
+    uint8_t *above_uv_nnz_ctx[2];
+    uint8_t *above_skip_ctx; // 1bit
+    uint8_t *above_txfm_ctx; // 2bit
+    uint8_t *above_segpred_ctx; // 1bit
+    uint8_t *above_intra_ctx; // 1bit
+    uint8_t *above_comp_ctx; // 1bit
+    uint8_t *above_ref_ctx; // 2bit
+    uint8_t *above_filter_ctx;
+    VP56mv (*above_mv_ctx)[2];
 
     // whole-frame cache
     uint8_t *intra_pred_data[3];
@@ -303,7 +315,7 @@ static int update_size(AVCodecContext *ctx, int w, int h)
 
     av_assert0(w > 0 && h > 0);
 
-    if (s->above_partition_ctx && w == ctx->width && h == ctx->height)
+    if (s->intra_pred_data[0] && w == ctx->width && h == ctx->height)
         return 0;
 
     ctx->width  = w;
@@ -314,27 +326,27 @@ static int update_size(AVCodecContext *ctx, int w, int h)
     s->rows     = (h + 7) >> 3;
 
 #define assign(var, type, n) var = (type) p; p += s->sb_cols * n * sizeof(*var)
-    av_freep(&s->above_partition_ctx);
+    av_freep(&s->intra_pred_data[0]);
     p = av_malloc(s->sb_cols * (240 + sizeof(*s->lflvl) + 16 * sizeof(*s->above_mv_ctx)));
     if (!p)
         return AVERROR(ENOMEM);
-    assign(s->above_partition_ctx, uint8_t *,              8);
-    assign(s->above_skip_ctx,      uint8_t *,              8);
-    assign(s->above_txfm_ctx,      uint8_t *,              8);
-    assign(s->above_mode_ctx,      uint8_t *,             16);
-    assign(s->above_y_nnz_ctx,     uint8_t *,             16);
-    assign(s->above_uv_nnz_ctx[0], uint8_t *,              8);
-    assign(s->above_uv_nnz_ctx[1], uint8_t *,              8);
     assign(s->intra_pred_data[0],  uint8_t *,             64);
     assign(s->intra_pred_data[1],  uint8_t *,             32);
     assign(s->intra_pred_data[2],  uint8_t *,             32);
+    assign(s->above_y_nnz_ctx,     uint8_t *,             16);
+    assign(s->above_mode_ctx,      uint8_t *,             16);
+    assign(s->above_mv_ctx,        VP56mv(*)[2],          16);
+    assign(s->above_partition_ctx, uint8_t *,              8);
+    assign(s->above_skip_ctx,      uint8_t *,              8);
+    assign(s->above_txfm_ctx,      uint8_t *,              8);
+    assign(s->above_uv_nnz_ctx[0], uint8_t *,              8);
+    assign(s->above_uv_nnz_ctx[1], uint8_t *,              8);
     assign(s->above_segpred_ctx,   uint8_t *,              8);
     assign(s->above_intra_ctx,     uint8_t *,              8);
     assign(s->above_comp_ctx,      uint8_t *,              8);
     assign(s->above_ref_ctx,       uint8_t *,              8);
     assign(s->above_filter_ctx,    uint8_t *,              8);
     assign(s->lflvl,               struct VP9Filter *,     1);
-    assign(s->above_mv_ctx,        VP56mv(*)[2],          16);
 #undef assign
 
     // these will be re-allocated a little later
@@ -3481,7 +3493,7 @@ static void adapt_probs(VP9Context *s)
 
 static void free_buffers(VP9Context *s)
 {
-    av_freep(&s->above_partition_ctx);
+    av_freep(&s->intra_pred_data[0]);
     av_freep(&s->b_base);
     av_freep(&s->block_base);
 }
@@ -3806,8 +3818,8 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     VP9Context *s = dst->priv_data, *ssrc = src->priv_data;
 
     // detect size changes in other threads
-    if (s->above_partition_ctx &&
-        (!ssrc->above_partition_ctx || s->cols != ssrc->cols || s->rows != ssrc->rows)) {
+    if (s->intra_pred_data[0] &&
+        (!ssrc->intra_pred_data[0] || s->cols != ssrc->cols || s->rows != ssrc->rows)) {
         free_buffers(s);
     }
 
