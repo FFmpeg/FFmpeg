@@ -9322,6 +9322,27 @@ verbose logging level
 
 By default, the logging level is set to @var{info}. If the @option{video} or
 the @option{metadata} options are set, it switches to @var{verbose}.
+
+@item peak
+Set peak mode(s).
+
+Available modes can be cumulated (the option is a @code{flag} type). Possible
+values are:
+@table @samp
+@item none
+Disable any peak mode (default).
+@item sample
+Enable sample-peak mode.
+
+Simple peak mode looking for the higher sample value.
+@item true
+Enable true-peak mode.
+
+If enabled, the peak lookup is done on an over-sampled version of the input
+stream for better peak accuracy. This mode requires a build with
+@code{libswresample}.
+@end table
+
 @end table
 
 @subsection Examples

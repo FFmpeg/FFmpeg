@@ -22,6 +22,8 @@ FFLIBS-$(CONFIG_SCALE_FILTER)                += swscale
 FFLIBS-$(CONFIG_SHOWSPECTRUM_FILTER)         += avcodec
 FFLIBS-$(CONFIG_SMARTBLUR_FILTER)            += swscale
 FFLIBS-$(CONFIG_SUBTITLES_FILTER)            += avformat avcodec
+EBUR128LIBS-$(CONFIG_SWRESAMPLE)              = swresample
+FFLIBS-$(CONFIG_EBUR128_FILTER)              += $(EBUR128LIBS-yes)
 
 HEADERS = asrc_abuffer.h                                                \
           avcodec.h                                                     \
