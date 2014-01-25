@@ -557,8 +557,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
     av_reduce(&sw, &sh, avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den, 4096);
     x4->params.vui.i_sar_width  = sw;
     x4->params.vui.i_sar_height = sh;
-    x4->params.i_fps_num = x4->params.i_timebase_den = avctx->time_base.den;
-    x4->params.i_fps_den = x4->params.i_timebase_num = avctx->time_base.num;
+    x4->params.i_timebase_den = avctx->time_base.den;
+    x4->params.i_timebase_num = avctx->time_base.num;
+    x4->params.i_fps_num = avctx->time_base.den;
+    x4->params.i_fps_den = avctx->time_base.num * avctx->ticks_per_frame;
 
     x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
 
