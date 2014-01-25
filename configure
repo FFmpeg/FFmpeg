@@ -2702,7 +2702,7 @@ probe_cc(){
     elif $_cc -v 2>&1 | grep -q clang; then
         _type=clang
         _ident=$($_cc --version | head -n1)
-        _depflags='-MMD'
+        _depflags='-MMD -MF $(@:.o=.d) -MT $@'
         _cflags_speed='-O3'
         _cflags_size='-Os'
     elif $_cc -V 2>&1 | grep -q Sun; then
