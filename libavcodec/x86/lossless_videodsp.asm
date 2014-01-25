@@ -31,7 +31,7 @@ pb_zzzzzzzz67676767: db -1,-1,-1,-1,-1,-1,-1,-1, 6, 7, 6, 7, 6, 7, 6, 7
 
 SECTION_TEXT
 
-%macro ADD_INT16_LOOP 1 ; %1 = a/u (aligned/unaligned)
+%macro INT16_LOOP 2 ; %1 = a/u (aligned/unaligned), %2 = add/sub
     movd      m4, maskd
     SPLATW  m4, m4
     add     wq, wq
@@ -39,24 +39,41 @@ SECTION_TEXT
     jz %%.tomainloop
 %%.wordloop:
     sub     wq, 2
+%ifidn %2, add
     mov     ax, [srcq+wq]
     add     ax, [dstq+wq]
+%else
+    mov     ax, [src1q+wq]
+    sub     ax, [src2q+wq]
+%endif
     and     ax, maskw
     mov     [dstq+wq], ax
     test    wq, 2*mmsize - 1
     jnz %%.wordloop
 %%.tomainloop:
+%ifidn %2, add
     add     srcq, wq
+%else
+    add     src1q, wq
+    add     src2q, wq
+%endif
     add     dstq, wq
     neg     wq
     jz      %%.end
 %%.loop:
+%ifidn %2, add
     mov%1   m0, [srcq+wq]
     mov%1   m1, [dstq+wq]
     mov%1   m2, [srcq+wq+mmsize]
     mov%1   m3, [dstq+wq+mmsize]
-    paddw   m0, m1
-    paddw   m2, m3
+%else
+    mov%1   m0, [src1q+wq]
+    mov%1   m1, [src2q+wq]
+    mov%1   m2, [src1q+wq+mmsize]
+    mov%1   m3, [src2q+wq+mmsize]
+%endif
+    p%2w    m0, m1
+    p%2w    m2, m3
     pand    m0, m4
     pand    m2, m4
     mov%1   [dstq+wq]       , m0
@@ -69,7 +86,7 @@ SECTION_TEXT
 
 INIT_MMX mmx
 cglobal add_int16, 4,4,5, dst, src, mask, w
-    ADD_INT16_LOOP a
+    INT16_LOOP a, add
 
 INIT_XMM sse2
 cglobal add_int16, 4,4,5, dst, src, mask, w
@@ -77,50 +94,13 @@ cglobal add_int16, 4,4,5, dst, src, mask, w
     jnz .unaligned
     test dstq, mmsize-1
     jnz .unaligned
-    ADD_INT16_LOOP a
+    INT16_LOOP a, add
 .unaligned:
-    ADD_INT16_LOOP u
-
-%macro DIFF_INT16_LOOP 1 ; %1 = a/u (aligned/unaligned)
-    movd    m4, maskd
-    SPLATW  m4, m4
-    add     wq, wq
-    test    wq, 2*mmsize - 1
-    jz %%.tomainloop
-%%.wordloop:
-    sub     wq, 2
-    mov     ax, [src1q+wq]
-    sub     ax, [src2q+wq]
-    and     ax, maskw
-    mov     [dstq+wq], ax
-    test    wq, 2*mmsize - 1
-    jnz %%.wordloop
-%%.tomainloop:
-    add     src1q, wq
-    add     src2q, wq
-    add     dstq, wq
-    neg     wq
-    jz      %%.end
-%%.loop:
-    mov%1   m0, [src1q+wq]
-    mov%1   m1, [src2q+wq]
-    mov%1   m2, [src1q+wq+mmsize]
-    mov%1   m3, [src2q+wq+mmsize]
-    psubw   m0, m1
-    psubw   m2, m3
-    pand    m0, m4
-    pand    m2, m4
-    mov%1   [dstq+wq]       , m0
-    mov%1   [dstq+wq+mmsize], m2
-    add     wq, 2*mmsize
-    jl %%.loop
-%%.end:
-    RET
-%endmacro
+    INT16_LOOP u, add
 
 INIT_MMX mmx
 cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
-    DIFF_INT16_LOOP a
+    INT16_LOOP a, sub
 
 INIT_XMM sse2
 cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
@@ -130,9 +110,9 @@ cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
     jnz .unaligned
     test dstq, mmsize-1
     jnz .unaligned
-    DIFF_INT16_LOOP a
+    INT16_LOOP a, sub
 .unaligned:
-    DIFF_INT16_LOOP u
+    INT16_LOOP u, sub
 
 
 %macro ADD_HFYU_LEFT_LOOP_INT16 2 ; %1 = dst alignment (a/u), %2 = src alignment (a/u)
