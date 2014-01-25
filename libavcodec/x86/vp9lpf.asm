@@ -40,6 +40,11 @@ pb_fe:  times 16 db 0xfe
 pw_4:   times  8 dw 4
 pw_8:   times  8 dw 8
 
+; with mix functions, two 8-bit thresholds are stored in a 16-bit storage,
+; the following mask is used to splat both in the same register
+mask_mix: times 8 db 0
+          times 8 db 1
+
 SECTION .text
 
 ; %1 = abs(%2-%3)
@@ -236,6 +241,38 @@ SECTION .text
     SWAP %12, %14
 %endmacro
 
+; transpose 16 half lines (high part) to 8 full centered lines
+%macro TRANSPOSE16x8B 16
+    punpcklbw   m%1,  m%2
+    punpcklbw   m%3,  m%4
+    punpcklbw   m%5,  m%6
+    punpcklbw   m%7,  m%8
+    punpcklbw   m%9,  m%10
+    punpcklbw   m%11, m%12
+    punpcklbw   m%13, m%14
+    punpcklbw   m%15, m%16
+    SBUTTERFLY  wd,  %1,  %3,  %2
+    SBUTTERFLY  wd,  %5,  %7,  %2
+    SBUTTERFLY  wd,  %9,  %11, %2
+    SBUTTERFLY  wd,  %13, %15, %2
+    SBUTTERFLY  dq,  %1,  %5,  %2
+    SBUTTERFLY  dq,  %3,  %7,  %2
+    SBUTTERFLY  dq,  %9,  %13, %2
+    SBUTTERFLY  dq,  %11, %15, %2
+    SBUTTERFLY  qdq, %1,  %9,  %2
+    SBUTTERFLY  qdq, %3,  %11, %2
+    SBUTTERFLY  qdq, %5,  %13, %2
+    SBUTTERFLY  qdq, %7,  %15, %2
+    SWAP %5, %1
+    SWAP %6, %9
+    SWAP %7, %1
+    SWAP %8, %13
+    SWAP %9, %3
+    SWAP %10, %11
+    SWAP %11, %1
+    SWAP %12, %15
+%endmacro
+
 %macro DEFINE_REAL_P7_TO_Q7 0
 %define P7 dst1q + 2*mstrideq
 %define P6 dst1q +   mstrideq
@@ -255,7 +292,7 @@ SECTION .text
 %define Q7 dst2q +  strideq
 %endmacro
 
-%macro LPF_16_16 1
+%macro LOOPFILTER 2 ; %1=v/h %2=size1
     lea mstrideq, [strideq]
     neg mstrideq
 
@@ -264,7 +301,13 @@ SECTION .text
     neg mstride3q
 
 %ifidn %1, h
+%if %2 == 88
+%define movx movh
+    lea dstq, [dstq + 8*strideq - 4]
+%else
+%define movx movu
     lea dstq, [dstq + 8*strideq - 8] ; go from top center (h pos) to center left (v pos)
+%endif
 %endif
 
     lea dst1q, [dstq + 2*mstride3q]                         ; dst1q = &dst[stride * -6]
@@ -273,24 +316,22 @@ SECTION .text
     DEFINE_REAL_P7_TO_Q7
 
 %ifidn %1, h
-    movu                    m0, [P7]
-    movu                    m1, [P6]
-    movu                    m2, [P5]
-    movu                    m3, [P4]
-    movu                    m4, [P3]
-    movu                    m5, [P2]
-    movu                    m6, [P1]
-    movu                    m7, [P0]
-    movu                    m8, [Q0]
-    movu                    m9, [Q1]
-    movu                   m10, [Q2]
-    movu                   m11, [Q3]
-    movu                   m12, [Q4]
-    movu                   m13, [Q5]
-    movu                   m14, [Q6]
-    movu                   m15, [Q7]
-    TRANSPOSE16x16B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, [rsp]
-
+    movx                    m0, [P7]
+    movx                    m1, [P6]
+    movx                    m2, [P5]
+    movx                    m3, [P4]
+    movx                    m4, [P3]
+    movx                    m5, [P2]
+    movx                    m6, [P1]
+    movx                    m7, [P0]
+    movx                    m8, [Q0]
+    movx                    m9, [Q1]
+    movx                   m10, [Q2]
+    movx                   m11, [Q3]
+    movx                   m12, [Q4]
+    movx                   m13, [Q5]
+    movx                   m14, [Q6]
+    movx                   m15, [Q7]
 %define P7 rsp +   0
 %define P6 rsp +  16
 %define P5 rsp +  32
@@ -308,10 +349,15 @@ SECTION .text
 %define Q6 rsp + 224
 %define Q7 rsp + 240
 
+%if %2 != 88
+    TRANSPOSE16x16B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, [rsp]
     mova           [P7],  m0
     mova           [P6],  m1
     mova           [P5],  m2
     mova           [P4],  m3
+%else
+    TRANSPOSE16x8B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+%endif
     mova           [P3],  m4
     mova           [P2],  m5
     mova           [P1],  m6
@@ -320,18 +366,28 @@ SECTION .text
     mova           [Q1],  m9
     mova           [Q2], m10
     mova           [Q3], m11
+%if %2 != 88
     mova           [Q4], m12
     mova           [Q5], m13
     mova           [Q6], m14
     mova           [Q7], m15
 %endif
+%endif
 
     ; calc fm mask
+%if %2 == 16
 %if cpuflag(ssse3)
     pxor                m0, m0
 %endif
     SPLATB_REG          m2, I, m0                       ; I I I I ...
     SPLATB_REG          m3, E, m0                       ; E E E E ...
+%elif %2 == 88
+    mova                m0, [mask_mix]
+    movd                m2, Id
+    movd                m3, Ed
+    pshufb              m2, m0
+    pshufb              m3, m0
+%endif
     mova                m0, [pb_80]
     pxor                m2, m0
     pxor                m3, m0
@@ -383,10 +439,15 @@ SECTION .text
     ABSSUB_CMP          m1, m9, m11, m6, m4, m5, m8     ; abs(p2 - p0) <= 1
     pand                m2, m1
     ABSSUB              m4, m10, m11, m5                ; abs(p1 - p0)
+%if %2 != 88
 %if cpuflag(ssse3)
     pxor                m0, m0
 %endif
     SPLATB_REG          m7, H, m0                       ; H H H H ...
+%else
+    movd                m7, Hd
+    pshufb              m7, [mask_mix]
+%endif
     pxor                m7, m8
     pxor                m4, m8
     pcmpgtb             m0, m4, m7                      ; abs(p1 - p0) > H (1/2 hev condition)
@@ -403,6 +464,7 @@ SECTION .text
     ABSSUB_CMP          m1, m15, m12, m6, m4, m5, m8    ; abs(q3 - q0) <= 1
     pand                m2, m1                          ; flat8in final value
 
+%if %2 != 88
     ; (m0: hev, m2: flat8in, m3: fm, m6: pb_81, m9..15: p2 p1 p0 q0 q1 q2 q3)
     ; calc flat8out mask
     mova                m8, [P7]
@@ -428,6 +490,7 @@ SECTION .text
     pand                m1, m7
     ABSSUB_CMP          m7, m15, m12, m6, m4, m5        ; abs(q5 - q0) <= 1
     pand                m1, m7                          ; flat8out final value
+%endif
 
     ; if (fm) {
     ;     if (out && in) filter_14()
@@ -441,7 +504,7 @@ SECTION .text
     ; f2:  fm & ~f14 & ~f6 & hev => fm & ~(out & in) & ~(~out & in) & hev          => fm &  ~in &  hev
     ; f4:  fm & ~f14 & ~f6 & ~f2 => fm & ~(out & in) & ~(~out & in) & ~(~in & hev) => fm &  ~in & ~hev
 
-    ; (m0: hev, m1: flat8out, m2: flat8in, m3: fm, m8..15: p5 p4 p1 p0 q0 q1 q6 q7)
+    ; (m0: hev, [m1: flat8out], m2: flat8in, m3: fm, m8..15: p5 p4 p1 p0 q0 q1 q6 q7)
     ; filter2()
     mova                m6, [pb_80]
     pxor                m15, m12, m6                    ; q0 ^ 0x80
@@ -464,7 +527,7 @@ SECTION .text
     MASK_APPLY          m7, m12, m6, m5                 ; m7 = filter2(q0) & mask / we write it in filter4()
     MASK_APPLY          m8, m11, m6, m5                 ; m8 = filter2(p0) & mask / we write it in filter4()
 
-    ; (m0: hev, m1: flat8out, m2: flat8in, m3: fm, m7..m8: q0' p0', m10..13: p1 p0 q0 q1, m14: pb_10, m15: q0-p0)
+    ; (m0: hev, [m1: flat8out], m2: flat8in, m3: fm, m7..m8: q0' p0', m10..13: p1 p0 q0 q1, m14: pb_10, m15: q0-p0)
     ; filter4()
     mova                m4, m15
     paddsb              m15, m4                         ; 2 * (q0 - p0)
@@ -491,11 +554,15 @@ SECTION .text
     mova                [P1], m7
     mova                [Q1], m4
 
-    ; (m1: flat8out, m2: flat8in, m3: fm, m10..13: p1 p0 q0 q1)
+    ; ([m1: flat8out], m2: flat8in, m3: fm, m10..13: p1 p0 q0 q1)
     ; filter6()
     pxor                m0, m0
+%if %2 == 88
+    pand                m3, m2
+%else
     pand                m2, m3                          ;               mask(fm) & mask(in)
     pandn               m3, m1, m2                      ; ~mask(out) & (mask(fm) & mask(in))
+%endif
     mova               m14, [P3]
     mova               m15, [P2]
     mova                m8, [Q2]
@@ -507,7 +574,7 @@ SECTION .text
     FILTER_UPDATE       m4, m5, m6, m7, [Q1], m15, m12, m13,  m9, 3, m3         ; [q1] -p2 -q0 +q1 +q3
     FILTER_UPDATE       m6, m7, m4, m5, [Q2], m10, m13,  m8,  m9, 3, m3,  m8    ; [q2] -p1 -q1 +q2 +q3
 
-    ; (m0: 0, m1: flat8out, m2: fm & flat8in, m8..15: q2 q3 p1 p0 q0 q1 p3 p2)
+    ; (m0: 0, [m1: flat8out], m2: fm & flat8in, m8..15: q2 q3 p1 p0 q0 q1 p3 p2)
     ; filter14()
     ;
     ;                            m2  m3  m8  m9 m14 m15 m10 m11 m12 m13
@@ -528,6 +595,7 @@ SECTION .text
     ; q5  +5  -p2 -q4 +q5 +q7                 .  q5   .               .
     ; q6  +6  -p1 -q5 +q6 +q7                     .  q6   .           .
 
+%if %2 != 88
     pand            m1, m2                                                              ; mask(out) & (mask(fm) & mask(in))
     mova            m2, [P7]
     mova            m3, [P6]
@@ -547,8 +615,10 @@ SECTION .text
     FILTER_UPDATE   m6, m7, m4, m5, [Q4], m14,  m8,  m9, m13, 4, m1,  m9,  m9, [Q4]     ; [q4] -p3 -q3 +q4 +q7
     FILTER_UPDATE   m4, m5, m6, m7, [Q5], m15,  m9, m14, m13, 4, m1, m14, m14, [Q5]     ; [q5] -p2 -q4 +q5 +q7
     FILTER_UPDATE   m6, m7, m4, m5, [Q6], m10, m14, m15, m13, 4, m1, m15, m15, [Q6]     ; [q6] -p1 -q5 +q6 +q7
+%endif
 
 %ifidn %1, h
+%if %2 != 88
     mova                    m0, [P7]
     mova                    m1, [P6]
     mova                    m2, [P5]
@@ -583,21 +653,81 @@ SECTION .text
     movu  [Q5], m13
     movu  [Q6], m14
     movu  [Q7], m15
+%else
+    ; the following code do a transpose of 8 full lines to 16 half
+    ; lines (high part). It is inlined to avoid the need of a staging area
+    mova                    m0, [P3]
+    mova                    m1, [P2]
+    mova                    m2, [P1]
+    mova                    m3, [P0]
+    mova                    m4, [Q0]
+    mova                    m5, [Q1]
+    mova                    m6, [Q2]
+    mova                    m7, [Q3]
+    DEFINE_REAL_P7_TO_Q7
+    SBUTTERFLY  bw,  0,  1, 8
+    SBUTTERFLY  bw,  2,  3, 8
+    SBUTTERFLY  bw,  4,  5, 8
+    SBUTTERFLY  bw,  6,  7, 8
+    SBUTTERFLY  wd,  0,  2, 8
+    SBUTTERFLY  wd,  1,  3, 8
+    SBUTTERFLY  wd,  4,  6, 8
+    SBUTTERFLY  wd,  5,  7, 8
+    SBUTTERFLY  dq,  0,  4, 8
+    SBUTTERFLY  dq,  1,  5, 8
+    SBUTTERFLY  dq,  2,  6, 8
+    SBUTTERFLY  dq,  3,  7, 8
+    movh  [P7], m0
+    punpckhqdq m0, m8
+    movh  [P6], m0
+    movh  [Q0], m1
+    punpckhqdq  m1, m9
+    movh  [Q1], m1
+    movh  [P3], m2
+    punpckhqdq  m2, m10
+    movh  [P2], m2
+    movh  [Q4], m3
+    punpckhqdq m3, m11
+    movh  [Q5], m3
+    movh  [P5], m4
+    punpckhqdq m4, m12
+    movh  [P4], m4
+    movh  [Q2], m5
+    punpckhqdq m5, m13
+    movh  [Q3], m5
+    movh  [P1], m6
+    punpckhqdq m6, m14
+    movh  [P0], m6
+    movh  [Q6], m7
+    punpckhqdq m7, m8
+    movh  [Q7], m7
 %endif
+%endif
+
+    RET
 %endmacro
 
 %macro LPF_16_16_VH 1
 INIT_XMM %1
 cglobal vp9_loop_filter_v_16_16, 5,10,16,      dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
-    LPF_16_16 v
-    RET
+    LOOPFILTER v, 16
 cglobal vp9_loop_filter_h_16_16, 5,10,16, 256, dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
-    LPF_16_16 h
-    RET
+    LOOPFILTER h, 16
+%endmacro
+
+%macro LPF_88_16_VH 1
+INIT_XMM %1
+cglobal vp9_loop_filter_v_88_16, 5,10,16,      dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
+    LOOPFILTER v, 88
+cglobal vp9_loop_filter_h_88_16, 5,10,16, 256, dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
+    LOOPFILTER h, 88
 %endmacro
 
 LPF_16_16_VH sse2
 LPF_16_16_VH ssse3
 LPF_16_16_VH avx
+
+LPF_88_16_VH ssse3
+LPF_88_16_VH avx
 
 %endif ; x86-64
