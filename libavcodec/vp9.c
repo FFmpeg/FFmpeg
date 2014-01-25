@@ -2137,11 +2137,44 @@ static void decode_coeffs(AVCodecContext *ctx)
             }
         }
     }
-    if (b->tx > TX_4X4) { // FIXME slow
-        for (y = 0; y < end_y; y += step1d)
-            memset(&l[y + 1], l[y], FFMIN(end_y - y - 1, step1d - 1));
-        for (x = 0; x < end_x; x += step1d)
-            memset(&a[x + 1], a[x], FFMIN(end_x - x - 1, step1d - 1));
+#define SPLAT(la, end, step, cond) \
+    if (step == 2) { \
+        for (n = 1; n < end; n += step) \
+            la[n] = la[n - 1]; \
+    } else if (step == 4) { \
+        if (cond) { \
+            for (n = 0; n < end; n += step) \
+                AV_WN32A(&la[n], la[n] * 0x01010101); \
+        } else { \
+            for (n = 0; n < end; n += step) \
+                memset(&la[n + 1], la[n], FFMIN(end - n - 1, 3)); \
+        } \
+    } else /* step == 8 */ { \
+        if (cond) { \
+            if (HAVE_FAST_64BIT) { \
+                for (n = 0; n < end; n += step) \
+                    AV_WN64A(&la[n], la[n] * 0x0101010101010101ULL); \
+            } else { \
+                for (n = 0; n < end; n += step) { \
+                    uint32_t v32 = la[n] * 0x01010101; \
+                    AV_WN32A(&la[n],     v32); \
+                    AV_WN32A(&la[n + 4], v32); \
+                } \
+            } \
+        } else { \
+            for (n = 0; n < end; n += step) \
+                memset(&la[n + 1], la[n], FFMIN(end - n - 1, 7)); \
+        } \
+    }
+#define SPLAT_CTX(step) \
+    do { \
+        SPLAT(a, end_x, step, end_x == w4); \
+        SPLAT(l, end_y, step, end_y == h4); \
+    } while (0)
+    switch (b->tx) {
+    case TX_8X8:   SPLAT_CTX(2); break;
+    case TX_16X16: SPLAT_CTX(4); break;
+    case TX_32X32: SPLAT_CTX(8); break;
     }
 
     p = s->prob.coef[b->uvtx][1 /* uv */][!b->intra];
@@ -2173,11 +2206,10 @@ static void decode_coeffs(AVCodecContext *ctx)
                 }
             }
         }
-        if (b->uvtx > TX_4X4) { // FIXME slow
-            for (y = 0; y < end_y; y += uvstep1d)
-                memset(&l[y + 1], l[y], FFMIN(end_y - y - 1, uvstep1d - 1));
-            for (x = 0; x < end_x; x += uvstep1d)
-                memset(&a[x + 1], a[x], FFMIN(end_x - x - 1, uvstep1d - 1));
+        switch (b->uvtx) {
+        case TX_8X8:   SPLAT_CTX(2); break;
+        case TX_16X16: SPLAT_CTX(4); break;
+        case TX_32X32: SPLAT_CTX(8); break;
         }
     }
 }
