@@ -6911,6 +6911,11 @@ maintains the aspect ratio of the input image, calculated from the
 other specified dimension. If both of them are -1, the input size is
 used
 
+If one of the values is -n with n > 1, the scale filter will also use a value
+that maintains the aspect ratio of the input image, calculated from the other
+specified dimension. After that it will, however, make sure that the calculated
+dimension is divisible by n and adjust the value if necessary.
+
 See below for the list of accepted constants for use in the dimension
 expression.
 
