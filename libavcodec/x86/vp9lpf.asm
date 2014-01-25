@@ -93,11 +93,16 @@ SECTION .text
     mova                %5, %1
 %endmacro
 
-%macro FILTER_UPDATE 11-12 ; tmp1, tmp2, cacheL, cacheH, dstp, -, -, +, +, rshift, [source]
+%macro FILTER_UPDATE 11-14 ; tmp1, tmp2, cacheL, cacheH, dstp, -, -, +, +, rshift, [source], [preload reg + value]
+%if %0 == 13 ; no source + preload
+    mova                %12, %13
+%elif %0 == 14 ; source + preload
+    mova                %13, %14
+%endif
     FILTER_SUBx2_ADDx2  %1, l, %3, %6, %7, %8, %9, %10
     FILTER_SUBx2_ADDx2  %2, h, %4, %6, %7, %8, %9, %10
     packuswb            %1, %2
-%if %0 == 12
+%if %0 == 12 || %0 == 14
     MASK_APPLY          %1, %12, %11, %2
 %else
     MASK_APPLY          %1, %5, %11, %2
@@ -537,31 +542,19 @@ SECTION .text
     mova            m8, [P5]
     mova            m9, [P4]
     FILTER_INIT     m4, m5, m6, m7, [P6],  14,                   m1,  m3
-    FILTER_UPDATE   m6, m7, m4, m5, [P5],  m2,  m3,  m8, m13, 4, m1,  m8 ; [p5] -p7 -p6 +p5 +q1
-    mova            m13, [Q2]
-    FILTER_UPDATE   m4, m5, m6, m7, [P4],  m2,  m8,  m9, m13, 4, m1,  m9 ; [p4] -p7 -p5 +p4 +q2
-    mova            m13, [Q3]
-    FILTER_UPDATE   m6, m7, m4, m5, [P3],  m2,  m9, m14, m13, 4, m1, m14 ; [p3] -p7 -p4 +p3 +q3
-    mova            m13, [Q4]
-    FILTER_UPDATE   m4, m5, m6, m7, [P2],  m2, m14, m15, m13, 4, m1      ; [p2] -p7 -p3 +p2 +q4
-    mova            m13, [Q5]
-    FILTER_UPDATE   m6, m7, m4, m5, [P1],  m2, m15, m10, m13, 4, m1      ; [p1] -p7 -p2 +p1 +q5
-    mova            m13, [Q6]
-    FILTER_UPDATE   m4, m5, m6, m7, [P0],  m2, m10, m11, m13, 4, m1      ; [p0] -p7 -p1 +p0 +q6
-    mova            m13, [Q7]
-    FILTER_UPDATE   m6, m7, m4, m5, [Q0],  m2, m11, m12, m13, 4, m1      ; [q0] -p7 -p0 +q0 +q7
-    mova            m2, [Q1]
-    FILTER_UPDATE   m4, m5, m6, m7, [Q1],  m3, m12,  m2, m13, 4, m1      ; [q1] -p6 -q0 +q1 +q7
-    mova            m3, [Q2]
-    FILTER_UPDATE   m6, m7, m4, m5, [Q2],  m8,  m2,  m3, m13, 4, m1      ; [q2] -p5 -q1 +q2 +q7
-    mova            m8, [Q3]
-    FILTER_UPDATE   m4, m5, m6, m7, [Q3],  m9,  m3,  m8, m13, 4, m1,  m8 ; [q3] -p4 -q2 +q3 +q7
-    mova            m9, [Q4]
-    FILTER_UPDATE   m6, m7, m4, m5, [Q4], m14,  m8,  m9, m13, 4, m1,  m9 ; [q4] -p3 -q3 +q4 +q7
-    mova            m14, [Q5]
-    FILTER_UPDATE   m4, m5, m6, m7, [Q5], m15,  m9, m14, m13, 4, m1, m14 ; [q5] -p2 -q4 +q5 +q7
-    mova            m15, [Q6]
-    FILTER_UPDATE   m6, m7, m4, m5, [Q6], m10, m14, m15, m13, 4, m1, m15 ; [q6] -p1 -q5 +q6 +q7
+    FILTER_UPDATE   m6, m7, m4, m5, [P5],  m2,  m3,  m8, m13, 4, m1,  m8                ; [p5] -p7 -p6 +p5 +q1
+    FILTER_UPDATE   m4, m5, m6, m7, [P4],  m2,  m8,  m9, m13, 4, m1,  m9, m13, [Q2]     ; [p4] -p7 -p5 +p4 +q2
+    FILTER_UPDATE   m6, m7, m4, m5, [P3],  m2,  m9, m14, m13, 4, m1, m14, m13, [Q3]     ; [p3] -p7 -p4 +p3 +q3
+    FILTER_UPDATE   m4, m5, m6, m7, [P2],  m2, m14, m15, m13, 4, m1,      m13, [Q4]     ; [p2] -p7 -p3 +p2 +q4
+    FILTER_UPDATE   m6, m7, m4, m5, [P1],  m2, m15, m10, m13, 4, m1,      m13, [Q5]     ; [p1] -p7 -p2 +p1 +q5
+    FILTER_UPDATE   m4, m5, m6, m7, [P0],  m2, m10, m11, m13, 4, m1,      m13, [Q6]     ; [p0] -p7 -p1 +p0 +q6
+    FILTER_UPDATE   m6, m7, m4, m5, [Q0],  m2, m11, m12, m13, 4, m1,      m13, [Q7]     ; [q0] -p7 -p0 +q0 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q1],  m3, m12,  m2, m13, 4, m1,       m2, [Q1]     ; [q1] -p6 -q0 +q1 +q7
+    FILTER_UPDATE   m6, m7, m4, m5, [Q2],  m8,  m2,  m3, m13, 4, m1,       m3, [Q2]     ; [q2] -p5 -q1 +q2 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q3],  m9,  m3,  m8, m13, 4, m1,  m8,  m8, [Q3]     ; [q3] -p4 -q2 +q3 +q7
+    FILTER_UPDATE   m6, m7, m4, m5, [Q4], m14,  m8,  m9, m13, 4, m1,  m9,  m9, [Q4]     ; [q4] -p3 -q3 +q4 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q5], m15,  m9, m14, m13, 4, m1, m14, m14, [Q5]     ; [q5] -p2 -q4 +q5 +q7
+    FILTER_UPDATE   m6, m7, m4, m5, [Q6], m10, m14, m15, m13, 4, m1, m15, m15, [Q6]     ; [q6] -p1 -q5 +q6 +q7
 
 %ifidn %1, h
     mova                    m0, [P7]
