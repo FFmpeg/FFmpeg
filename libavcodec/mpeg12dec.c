@@ -474,7 +474,6 @@ static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s,
 
         if (level != 0) {
             i += run;
-            check_scantable_index(s, i);
             j  = scantable[i];
             level = ((level * 2 + 1) * qscale) >> 1;
             level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
@@ -486,7 +485,6 @@ static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s,
             level = SHOW_SBITS(re, &s->gb, 12); SKIP_BITS(re, &s->gb, 12);
 
             i += run;
-            check_scantable_index(s, i);
             j  = scantable[i];
             if (level < 0) {
                 level = ((-level * 2 + 1) * qscale) >> 1;
@@ -497,7 +495,7 @@ static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s,
         }
 
         block[j] = level;
-        if (((int32_t)GET_CACHE(re, &s->gb)) <= (int32_t)0xBFFFFFFF)
+        if (((int32_t)GET_CACHE(re, &s->gb)) <= (int32_t)0xBFFFFFFF || i > 63)
             break;
 
         UPDATE_CACHE(re, &s->gb);
