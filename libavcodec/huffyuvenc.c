@@ -947,6 +947,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             }
             snprintf(p, end-p, "\n");
             p++;
+            if (end <= p)
+                return AVERROR(ENOMEM);
         }
     } else
         avctx->stats_out[0] = '\0';
