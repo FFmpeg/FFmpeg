@@ -36,7 +36,6 @@
 #include <assert.h>
 #include "config.h"
 #include "attributes.h"
-#include "timer.h"
 #include "cpu.h"
 #include "dict.h"
 #include "version.h"

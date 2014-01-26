@@ -31,6 +31,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/timer.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "h264chroma.h"

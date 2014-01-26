@@ -27,6 +27,7 @@
 #include "common.h"
 #include "base64.h"
 #include "intreadwrite.h"
+#include "timer.h"
 
 /* ---------------- private code */
 static const uint8_t map2[256] =

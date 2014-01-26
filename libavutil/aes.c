@@ -23,6 +23,7 @@
 #include "common.h"
 #include "aes.h"
 #include "intreadwrite.h"
+#include "timer.h"
 
 typedef union {
     uint64_t u64[2];
