@@ -628,11 +628,10 @@ static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s, int16_t *bloc
             UPDATE_CACHE(re, &s->gb);
             GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
 
-            if (level >= 64) {
+            if (level >= 64 || i > 63) {
                 break;
             } else if (level != 0) {
                 i += run;
-                check_scantable_index(s, i);
                 j  = scantable[i];
                 level = (level * qscale * quant_matrix[j]) >> 4;
                 level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
@@ -643,7 +642,6 @@ static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s, int16_t *bloc
                 UPDATE_CACHE(re, &s->gb);
                 level = SHOW_SBITS(re, &s->gb, 12); SKIP_BITS(re, &s->gb, 12);
                 i += run;
-                check_scantable_index(s, i);
                 j  = scantable[i];
                 if (level < 0) {
                     level = (-level * qscale * quant_matrix[j]) >> 4;
