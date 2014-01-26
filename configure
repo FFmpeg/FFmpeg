@@ -1804,6 +1804,7 @@ x86_64_suggest="fast_cmov"
 
 amd3dnow_deps="mmx"
 amd3dnowext_deps="amd3dnow"
+i686_deps="x86"
 mmx_deps="x86"
 mmxext_deps="mmx"
 sse_deps="mmxext"
