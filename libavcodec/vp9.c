@@ -467,7 +467,6 @@ static int decode_frame_header(AVCodecContext *ctx,
     last_invisible    = s->invisible;
     s->invisible      = !get_bits1(&s->gb);
     s->errorres       = get_bits1(&s->gb);
-    // FIXME disable this upon resolution change
     s->use_last_frame_mvs = !s->errorres && !last_invisible;
     if (s->keyframe) {
         if (get_bits_long(&s->gb, 24) != VP9_SYNCCODE) { // synccode
@@ -526,6 +525,8 @@ static int decode_frame_header(AVCodecContext *ctx,
                 w = get_bits(&s->gb, 16) + 1;
                 h = get_bits(&s->gb, 16) + 1;
             }
+            s->use_last_frame_mvs &= s->frames[LAST_FRAME].tf.f->width == w &&
+                                     s->frames[LAST_FRAME].tf.f->height == h;
             if (get_bits1(&s->gb)) // display size
                 skip_bits(&s->gb, 32);
             s->highprecisionmvs = get_bits1(&s->gb);
