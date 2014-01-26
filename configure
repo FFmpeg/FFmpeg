@@ -1241,6 +1241,7 @@ COMPONENT_LIST="
 "
 
 EXAMPLE_LIST="
+    avio_reading_example
     decoding_encoding_example
     demuxing_decoding_example
     filtering_audio_example
@@ -2390,6 +2391,7 @@ tinterlace_pad_test_deps="tinterlace_filter"
 zmq_filter_deps="libzmq"
 
 # examples
+avio_reading="avformat avcodec avutil"
 decoding_encoding_example_deps="avcodec avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"
 filtering_audio_example_deps="avfilter avcodec avformat avutil"

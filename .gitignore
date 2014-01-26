@@ -34,6 +34,7 @@
 /doc/config.texi
 /doc/avoptions_codec.texi
 /doc/avoptions_format.texi
+/doc/examples/avio_reading
 /doc/examples/decoding_encoding
 /doc/examples/demuxing_decoding
 /doc/examples/filtering_audio
