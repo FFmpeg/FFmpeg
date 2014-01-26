@@ -154,7 +154,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     case 8:
         sce = 2;
         cpe = 3;
-        if (avctx->channel_layout == AV_CH_LAYOUT_7POINT1_WIDE_BACK) {
+        if (avctx->channel_layout == AV_CH_LAYOUT_7POINT1) {
             mode = MODE_7_1_REAR_SURROUND;
         } else {
             // MODE_1_2_2_2_1 and MODE_7_1_FRONT_CENTER use the same channel layout
@@ -395,7 +395,7 @@ static const uint64_t aac_channel_layout[] = {
     AV_CH_LAYOUT_5POINT0_BACK,
     AV_CH_LAYOUT_5POINT1_BACK,
     AV_CH_LAYOUT_7POINT1_WIDE,
-    AV_CH_LAYOUT_7POINT1_WIDE_BACK,
+    AV_CH_LAYOUT_7POINT1,
     0,
 };
 
