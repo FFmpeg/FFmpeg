@@ -1120,6 +1120,7 @@ avconv -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @c man end EXAMPLES
 
 @include eval.texi
+@include decoders.texi
 @include encoders.texi
 @include demuxers.texi
 @include muxers.texi

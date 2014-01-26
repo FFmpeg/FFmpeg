@@ -155,6 +155,7 @@ Seek to percentage in file corresponding to fraction of width.
 @c man end
 
 @include eval.texi
+@include decoders.texi
 @include demuxers.texi
 @include muxers.texi
 @include indevs.texi

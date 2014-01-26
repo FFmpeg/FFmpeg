@@ -1,0 +1,56 @@
+@chapter Decoders
+@c man begin DECODERS
+
+Decoders are configured elements in Libav which allow the decoding of
+multimedia streams.
+
+When you configure your Libav build, all the supported native decoders
+are enabled by default. Decoders requiring an external library must be enabled
+manually via the corresponding @code{--enable-lib} option. You can list all
+available decoders using the configure option @code{--list-decoders}.
+
+You can disable all the decoders with the configure option
+@code{--disable-decoders} and selectively enable / disable single decoders
+with the options @code{--enable-decoder=@var{DECODER}} /
+@code{--disable-decoder=@var{DECODER}}.
+
+The option @code{-decoders} of the av* tools will display the list of
+enabled decoders.
+
+@c man end DECODERS
+
+@chapter Audio Decoders
+@c man begin AUDIO DECODERS
+
+A description of some of the currently available audio decoders
+follows.
+
+@section ac3
+
+AC-3 audio decoder.
+
+This decoder implements part of ATSC A/52:2010 and ETSI TS 102 366, as well as
+the undocumented RealAudio 3 (a.k.a. dnet).
+
+@subsubsection AC-3 Decoder Options
+
+@table @option
+
+@item -drc_scale @var{value}
+Dynamic Range Scale Factor. The factor to apply to dynamic range values
+from the AC-3 stream. This factor is applied exponentially.
+There are 3 notable scale factor ranges:
+@table @option
+@item drc_scale == 0
+DRC disabled. Produces full range audio.
+@item 0 < drc_scale <= 1
+DRC enabled.  Applies a fraction of the stream DRC value.
+Audio reproduction is between full range and full compression.
+@item drc_scale > 1
+DRC enabled. Applies drc_scale asymmetrically.
+Loud sounds are fully compressed.  Soft sounds are enhanced.
+@end table
+
+@end table
+
+@c man end AUDIO DECODERS
