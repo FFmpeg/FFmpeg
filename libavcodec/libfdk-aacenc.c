@@ -394,7 +394,7 @@ static const uint64_t aac_channel_layout[] = {
     AV_CH_LAYOUT_4POINT0,
     AV_CH_LAYOUT_5POINT0_BACK,
     AV_CH_LAYOUT_5POINT1_BACK,
-    AV_CH_LAYOUT_7POINT1_WIDE,
+    AV_CH_LAYOUT_7POINT1_WIDE_BACK,
     AV_CH_LAYOUT_7POINT1,
     0,
 };
