@@ -217,7 +217,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_huffyuv_common_init(avctx);
 
     avctx->extradata = av_mallocz(3*MAX_N + 4);
-    avctx->stats_out = av_mallocz(21*MAX_N*3 + 4); // 21*256*3(%llu ) + 3(\n) + 1(0) = 16132
+#define STATS_OUT_SIZE 21*MAX_N*3 + 4
+    avctx->stats_out = av_mallocz(STATS_OUT_SIZE); // 21*256*3(%llu ) + 3(\n) + 1(0) = 16132
     if (!avctx->extradata || !avctx->stats_out) {
         av_freep(&avctx->stats_out);
         return AVERROR(ENOMEM);
@@ -938,7 +939,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if ((s->flags&CODEC_FLAG_PASS1) && (s->picture_number & 31) == 0) {
         int j;
         char *p = avctx->stats_out;
-        char *end = p + 1024*30;
+        char *end = p + STATS_OUT_SIZE;
         for (i = 0; i < 4; i++) {
             for (j = 0; j < s->vlc_n; j++) {
                 snprintf(p, end-p, "%"PRIu64" ", s->stats[i][j]);
