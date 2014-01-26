@@ -125,14 +125,18 @@ static int generate_joint_tables(HYuvContext *s)
                 int limit = VLC_BITS - len0;
                 if(limit <= 0 || !len0)
                     continue;
+                if((sign_extend(y, 8) & (s->vlc_n-1)) != y)
+                    continue;
                 for (u = 0; u < s->vlc_n; u++) {
                     int len1 = s->len[p][u];
                     if (len1 > limit || !len1)
                         continue;
+                    if((sign_extend(u, 8) & (s->vlc_n-1)) != u)
+                        continue;
                     av_assert0(i < (1 << VLC_BITS));
                     len[i] = len0 + len1;
                     bits[i] = (s->bits[p0][y] << len1) + s->bits[p][u];
-                    symbols[i] = (y << 8) + u; //FIXME
+                    symbols[i] = (y << 8) + (u & 0xFF);
                     if(symbols[i] != 0xffff) // reserved to mean "invalid"
                         i++;
                 }
@@ -581,8 +585,14 @@ static void decode_422_bitstream(HYuvContext *s, int count)
     }\
 }
 #define READ_2PIX_PLANE14(dst0, dst1, plane){\
-    dst0 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
-    dst1 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
+    int16_t code = get_vlc2(&s->gb, s->vlc[4+plane].table, VLC_BITS, 1);\
+    if(code != (int16_t)0xffff){\
+        dst0 = code>>8;\
+        dst1 = sign_extend(code, 8);\
+    }else{\
+        dst0 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
+        dst1 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
+    }\
 }
 
 #define READ_2PIX_PLANE16(dst0, dst1, plane){\
