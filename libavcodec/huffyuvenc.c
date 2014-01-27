@@ -254,6 +254,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV411P:
     case AV_PIX_FMT_YUV440P:
     case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRP9:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRP16:
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YUVA444P:
@@ -301,7 +306,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->vlc_n = FFMIN(s->n, MAX_VLC_N);
 
     avctx->bits_per_coded_sample = s->bitstream_bpp;
-    s->decorrelate = s->bitstream_bpp >= 24 && !s->yuv && avctx->pix_fmt != AV_PIX_FMT_GBRP;
+    s->decorrelate = s->bitstream_bpp >= 24 && !s->yuv && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
     s->predictor = avctx->prediction_method;
     s->interlaced = avctx->flags&CODEC_FLAG_INTERLACED_ME ? 1 : 0;
     if (avctx->context_model == 1) {
@@ -1012,6 +1017,7 @@ AVCodec ff_ffvhuff_encoder = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_GBRAP,
