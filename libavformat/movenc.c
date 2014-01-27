@@ -899,10 +899,13 @@ static AVRational find_fps(AVFormatContext *s, AVStream *st)
 
 static int mov_get_mpeg2_xdcam_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
-    int tag = MKTAG('m', '2', 'v', '1'); //fallback tag
+    int tag = track->enc->codec_tag;
     int interlaced = track->enc->field_order > AV_FIELD_PROGRESSIVE;
     AVStream *st = track->st;
     int rate = av_q2d(find_fps(s, st));
+
+    if (!tag)
+        tag = MKTAG('m', '2', 'v', '1'); //fallback tag
 
     if (track->enc->pix_fmt == AV_PIX_FMT_YUV420P) {
         if (track->enc->width == 1280 && track->enc->height == 720) {
