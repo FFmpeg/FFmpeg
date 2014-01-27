@@ -22,7 +22,7 @@
 
 #include "dxva2_internal.h"
 
-#define MAX_SLICES (SLICE_MAX_START_CODE - SLICE_MIN_START_CODE + 1)
+#define MAX_SLICES 1024
 struct dxva2_picture_context {
     DXVA_PictureParameters pp;
     DXVA_QmatrixData       qm;
