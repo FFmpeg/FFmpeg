@@ -21,6 +21,24 @@
 
 #include <stdint.h>
 
+#include "version.h"
+
+#if FF_API_DEINTERLACE
+
+void ff_deinterlace_line_mmx(uint8_t *dst,
+                             const uint8_t *lum_m4, const uint8_t *lum_m3,
+                             const uint8_t *lum_m2, const uint8_t *lum_m1,
+                             const uint8_t *lum,
+                             int size);
+
+void ff_deinterlace_line_inplace_mmx(const uint8_t *lum_m4,
+                                     const uint8_t *lum_m3,
+                                     const uint8_t *lum_m2,
+                                     const uint8_t *lum_m1,
+                                     const uint8_t *lum, int size);
+
+#endif /* FF_API_DEINTERLACE */
+
 /* 1/2^n downscaling functions */
 void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 void ff_shrink44(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);

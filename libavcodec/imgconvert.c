@@ -40,10 +40,6 @@
 #include "libavutil/imgutils.h"
 
 #if HAVE_MMX_EXTERNAL
-#include "x86/dsputil_x86.h"
-#endif
-
-#if HAVE_MMX_EXTERNAL
 #define deinterlace_line_inplace ff_deinterlace_line_inplace_mmx
 #define deinterlace_line         ff_deinterlace_line_mmx
 #else
