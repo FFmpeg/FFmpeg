@@ -1641,7 +1641,6 @@ threads_if_any="$THREADS_LIST"
 # subsystems
 dct_select="rdft"
 error_resilience_select="dsputil"
-lpc_select="dsputil"
 mdct_select="fft"
 rdft_select="fft"
 mpegaudio_select="mpegaudiodsp"
