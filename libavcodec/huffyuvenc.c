@@ -349,7 +349,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (s->bitstream_bpp >= 24 && s->predictor == MEDIAN) {
+    if (s->bitstream_bpp >= 24 && s->predictor == MEDIAN && s->version <= 2) {
         av_log(avctx, AV_LOG_ERROR,
                "Error: RGB is incompatible with median predictor\n");
         return AVERROR(EINVAL);
