@@ -29,7 +29,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "copy_block.h"
 #include "dct.h"
@@ -2417,30 +2416,8 @@ av_cold void ff_dsputil_static_init(void)
     }
 }
 
-int ff_check_alignment(void){
-    static int did_fail=0;
-    LOCAL_ALIGNED_16(int, aligned, [4]);
-
-    if((intptr_t)aligned & 15){
-        if(!did_fail){
-#if HAVE_MMX || HAVE_ALTIVEC
-            av_log(NULL, AV_LOG_ERROR,
-                "Compiler did not align stack variables. Libavcodec has been miscompiled\n"
-                "and may be very slow or crash. This is not a bug in libavcodec,\n"
-                "but in the compiler. You may try recompiling using gcc >= 4.2.\n"
-                "Do not report crashes to Libav developers.\n");
-#endif
-            did_fail=1;
-        }
-        return -1;
-    }
-    return 0;
-}
-
 av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 {
-    ff_check_alignment();
-
 #if CONFIG_ENCODERS
     if (avctx->bits_per_raw_sample == 10) {
         c->fdct    = ff_jpeg_fdct_islow_10;

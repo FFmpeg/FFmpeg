@@ -293,8 +293,6 @@ typedef struct DSPContext {
 void ff_dsputil_static_init(void);
 void ff_dsputil_init(DSPContext* p, AVCodecContext *avctx);
 
-int ff_check_alignment(void);
-
 void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type);
 
 void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
