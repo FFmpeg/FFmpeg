@@ -36,3 +36,19 @@ const char * avdevice_license(void)
 #define LICENSE_PREFIX "libavdevice license: "
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
+
+int avdevice_app_to_dev_control_message(struct AVFormatContext *s, enum AVAppToDevMessageType type,
+                                        void *data, size_t data_size)
+{
+    if (!s->oformat || !s->oformat->control_message)
+        return AVERROR(ENOSYS);
+    return s->oformat->control_message(s, type, data, data_size);
+}
+
+int avdevice_dev_to_app_control_message(struct AVFormatContext *s, enum AVDevToAppMessageType type,
+                                        void *data, size_t data_size)
+{
+    if (!s->control_message_cb)
+        return AVERROR(ENOSYS);
+    return s->control_message_cb(s, type, data, data_size);
+}

@@ -21,6 +21,7 @@ version <next>
 - framepack filter
 - XYZ12 rawvideo support in NUT
 - Exif metadata support in WebP decoder
+- OpenGL device
 
 
 version 2.1:

@@ -66,4 +66,124 @@ const char *avdevice_license(void);
  */
 void avdevice_register_all(void);
 
+typedef struct AVDeviceRect {
+    int x;      /**< x coordinate of top left corner */
+    int y;      /**< y coordinate of top left corner */
+    int width;  /**< width */
+    int height; /**< height */
+} AVDeviceRect;
+
+/**
+ * Message types used by avdevice_app_to_dev_control_message().
+ */
+enum AVAppToDevMessageType {
+    /**
+     * Dummy message.
+     */
+    AV_APP_TO_DEV_NONE = MKBETAG('N','O','N','E'),
+
+    /**
+     * Window size change message.
+     *
+     * Message is sent to the device every time the application changes the size
+     * of the window device renders to.
+     * Message should also be sent right after window is created.
+     *
+     * data: AVDeviceRect: new window size.
+     */
+    AV_APP_TO_DEV_WINDOW_SIZE = MKBETAG('G','E','O','M'),
+
+    /**
+     * Repaint request message.
+     *
+     * Message is sent to the device when window have to be rapainted.
+     *
+     * data: AVDeviceRect: area required to be repainted.
+     *       NULL: whole area is required to be repainted.
+     */
+    AV_APP_TO_DEV_WINDOW_REPAINT = MKBETAG('R','E','P','A')
+};
+
+/**
+ * Message types used by avdevice_dev_to_app_control_message().
+ */
+enum AVDevToAppMessageType {
+    /**
+     * Dummy message.
+     */
+    AV_DEV_TO_APP_NONE = MKBETAG('N','O','N','E'),
+
+    /**
+     * Create window buffer message.
+     *
+     * Device requests to create a window buffer. Exact meaning is device-
+     * and application-dependent. Message is sent before rendering first
+     * frame and all one-shot initializations should be done here.
+     *
+     * data: NULL.
+     */
+    AV_DEV_TO_APP_CREATE_WINDOW_BUFFER = MKBETAG('B','C','R','E'),
+
+    /**
+     * Prepare window buffer message.
+     *
+     * Device requests to prepare a window buffer for rendering.
+     * Exact meaning is device- and application-dependent.
+     * Message is sent before rendering of each frame.
+     *
+     * data: NULL.
+     */
+    AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER = MKBETAG('B','P','R','E'),
+
+    /**
+     * Display window buffer message.
+     *
+     * Device requests to display a window buffer.
+     * Message is sent when new frame is ready to be displyed.
+     * Usually buffers need to be swapped in handler of this message.
+     *
+     * data: NULL.
+     */
+    AV_DEV_TO_APP_DISPLAY_WINDOW_BUFFER = MKBETAG('B','D','I','S'),
+
+    /**
+     * Destroy window buffer message.
+     *
+     * Device requests to destroy a window buffer.
+     * Message is sent when device is about to be destroyed and window
+     * buffer is not required anymore.
+     *
+     * data: NULL.
+     */
+    AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER = MKBETAG('B','D','E','S')
+};
+
+/**
+ * Send control message from application to device.
+ *
+ * @param s         device context.
+ * @param type      message type.
+ * @param data      message data. Exact type depends on message type.
+ * @param data_size size of message data.
+ * @return >= 0 on success, negative on error.
+ *         AVERROR(ENOSYS) when device doesn't implement handler of the message.
+ */
+int avdevice_app_to_dev_control_message(struct AVFormatContext *s,
+                                        enum AVAppToDevMessageType type,
+                                        void *data, size_t data_size);
+
+/**
+ * Send control message from device to application.
+ *
+ * @param s         device context.
+ * @param type      message type.
+ * @param data      message data. Can be NULL.
+ * @param data_size size of message data.
+ * @return >= 0 on success, negative on error.
+ *         AVERROR(ENOSYS) when application doesn't implement handler of the message.
+ */
+int avdevice_dev_to_app_control_message(struct AVFormatContext *s,
+                                        enum AVDevToAppMessageType type,
+                                        void *data, size_t data_size);
+
 #endif /* AVDEVICE_AVDEVICE_H */

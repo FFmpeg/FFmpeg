@@ -251,6 +251,7 @@ External library support:
   --enable-libzvbi         enable teletext support via libzvbi [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL code
+  --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl [no]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-zlib           disable zlib [autodetect]
@@ -1311,6 +1312,7 @@ EXTERNAL_LIBRARY_LIST="
     libzvbi
     openal
     opencl
+    opengl
     openssl
     x11grab
     zlib
@@ -1554,6 +1556,7 @@ HAVE_LIST="
     dxva_h
     ebp_available
     ebx_available
+    ES2_gl_h
     fast_64bit
     fast_clz
     fast_cmov
@@ -1570,6 +1573,7 @@ HAVE_LIST="
     getservbyport
     gettimeofday
     glob
+    glXGetProcAddress
     gnu_as
     gnu_windres
     gsm_h
@@ -1603,6 +1607,7 @@ HAVE_LIST="
     mprotect
     nanosleep
     openjpeg_1_5_openjpeg_h
+    OpenGL_gl3_h
     PeekNamedPipe
     perl
     pod2man
@@ -1656,6 +1661,7 @@ HAVE_LIST="
     vdpau_x11
     vfp_args
     VirtualAlloc
+    wglGetProcAddress
     windows_h
     winsock2_h
     xform_asm
@@ -2262,6 +2268,7 @@ libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
 libv4l2_indev_deps="libv4l2"
 openal_indev_deps="openal"
+opengl_outdev_deps="opengl"
 oss_indev_deps_any="soundcard_h sys_soundcard_h"
 oss_outdev_deps_any="soundcard_h sys_soundcard_h"
 pulse_indev_deps="libpulse"
@@ -4498,6 +4505,12 @@ enabled opencl            && { check_lib2 OpenCL/cl.h clEnqueueNDRangeKernel -Wl
                              { check_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
                                check_cpp_condition "CL/cl.h" "defined(CL_VERSION_1_2)" ||
                                die "ERROR: opencl must be installed and version must be 1.2 or compatible"; }
+enabled opengl            && { check_lib GL/glx.h glXGetProcAddress "-lGL" ||
+                               check_lib2 windows.h wglGetProcAddress "-lopengl32 -lgdi32" ||
+                               check_lib2 OpenGL/gl3.h glGetError "-Wl,-framework,OpenGL" ||
+                               check_lib2 ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
+                               die "ERROR: opengl not found."
+                             }
 enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||

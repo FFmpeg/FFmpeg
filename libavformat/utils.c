@@ -107,6 +107,8 @@ MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, video_codec)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, audio_codec)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, subtitle_codec)
 MAKE_ACCESSORS(AVFormatContext, format, int, metadata_header_padding)
+MAKE_ACCESSORS(AVFormatContext, format, void *, opaque)
+MAKE_ACCESSORS(AVFormatContext, format, av_format_control_message, control_message_cb)
 
 static AVCodec *find_decoder(AVFormatContext *s, AVStream *st, enum AVCodecID codec_id)
 {
