@@ -510,6 +510,16 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, did_split;
 
+    if (s->output_ts_offset) {
+        AVStream *st = s->streams[pkt->stream_index];
+        int64_t offset = av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, st->time_base);
+
+        if (pkt->dts != AV_NOPTS_VALUE)
+            pkt->dts += offset;
+        if (pkt->pts != AV_NOPTS_VALUE)
+            pkt->pts += offset;
+    }
+
     if (s->avoid_negative_ts > 0) {
         AVStream *st = s->streams[pkt->stream_index];
         int64_t offset = st->mux_ts_offset;

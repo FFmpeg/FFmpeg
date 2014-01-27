@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-02-02 - xxxxxxx - lavf 55.29.100 - avformat.h
+  Add output_ts_offset muxing option to AVFormatContext.
+
 2014-01-27 - 102bd64 - lavd 55.7.100 - avdevice.h
                        lavf 55.28.100 - avformat.h
   Add avdevice_dev_to_app_control_message() function.

@@ -1380,6 +1380,11 @@ typedef struct AVFormatContext {
      */
     av_format_control_message control_message_cb;
 
+    /**
+     * Output timestamp offset, in microseconds.
+     * Muxing: set by user via AVOptions (NO direct access)
+     */
+    int64_t output_ts_offset;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);

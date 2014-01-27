@@ -148,6 +148,18 @@ Correct single timestamp overflows if set to 1. Default is 1.
 Flush the underlying I/O stream after each packet. Default 1 enables it, and
 has the effect of reducing the latency; 0 disables it and may slightly
 increase performance in some cases.
+
+@item output_ts_offset @var{offset} (@emph{output})
+Set the output time offset.
+
+@var{offset} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
+
+The offset is added by the muxer to the output timestamps.
+
+Specifying a positive offset means that the corresponding streams are
+delayed bt the time duration specified in @var{offset}. Default value
+is @code{0} (meaning that no offset is applied).
 @end table
 
 @c man end FORMAT OPTIONS
