@@ -180,7 +180,8 @@ static inline void libopenjpeg_copy_to_packed16(AVFrame *picture, opj_image_t *i
         img_ptr = (uint16_t*) (picture->data[0] + y*picture->linesize[0]);
         for (x = 0; x < picture->width; x++, index++) {
             for (c = 0; c < image->numcomps; c++) {
-                *img_ptr++ = 0x8000 * image->comps[c].sgnd + ((unsigned)image->comps[c].data[index] << adjust[c]);
+                *img_ptr++ = (1 << image->comps[c].prec - 1) * image->comps[c].sgnd +
+                             (unsigned)image->comps[c].data[index] << adjust[c];
             }
         }
     }
@@ -217,7 +218,8 @@ static inline void libopenjpeg_copyto16(AVFrame *picture, opj_image_t *image) {
         for (y = 0; y < image->comps[index].h; y++) {
             img_ptr = (uint16_t*) (picture->data[index] + y * picture->linesize[index]);
             for (x = 0; x < image->comps[index].w; x++) {
-                *img_ptr = 0x8000 * image->comps[index].sgnd + ((unsigned)*comp_data << adjust[index]);
+                *img_ptr = (1 << image->comps[index].prec - 1) * image->comps[index].sgnd +
+                           (unsigned)*comp_data << adjust[index];
                 img_ptr++;
                 comp_data++;
             }
