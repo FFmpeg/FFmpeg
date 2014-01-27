@@ -27,6 +27,7 @@
 #include "libavutil/x86/asm.h"
 #include "constants.h"
 #include "dsputil_x86.h"
+#include "inline_asm.h"
 
 #if HAVE_INLINE_ASM
 
