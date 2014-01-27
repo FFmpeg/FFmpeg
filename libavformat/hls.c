@@ -387,6 +387,7 @@ fail:
 static int open_input(HLSContext *c, struct playlist *pls)
 {
     AVDictionary *opts = NULL;
+    AVDictionary *opts2 = NULL;
     int ret;
     struct segment *seg = pls->segments[pls->cur_seq_no - pls->start_seq_no];
 
@@ -395,6 +396,9 @@ static int open_input(HLSContext *c, struct playlist *pls)
     av_dict_set(&opts, "cookies", c->cookies, 0);
     av_dict_set(&opts, "headers", c->headers, 0);
     av_dict_set(&opts, "seekable", "0", 0);
+
+    // Same opts for key request (ffurl_open mutilates the opts so it cannot be used twice)
+    av_dict_copy(&opts2, opts, 0);
 
     if (seg->key_type == KEY_NONE) {
         ret = ffurl_open(&pls->input, seg->url, AVIO_FLAG_READ,
@@ -405,7 +409,7 @@ static int open_input(HLSContext *c, struct playlist *pls)
         if (strcmp(seg->key, pls->key_url)) {
             URLContext *uc;
             if (ffurl_open(&uc, seg->key, AVIO_FLAG_READ,
-                           &pls->parent->interrupt_callback, &opts) == 0) {
+                           &pls->parent->interrupt_callback, &opts2) == 0) {
                 if (ffurl_read_complete(uc, pls->key, sizeof(pls->key))
                     != sizeof(pls->key)) {
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
@@ -430,9 +434,7 @@ static int open_input(HLSContext *c, struct playlist *pls)
             goto cleanup;
         av_opt_set(pls->input->priv_data, "key", key, 0);
         av_opt_set(pls->input->priv_data, "iv", iv, 0);
-        /* Need to repopulate options */
-        av_dict_free(&opts);
-        av_dict_set(&opts, "seekable", "0", 0);
+
         if ((ret = ffurl_connect(pls->input, &opts)) < 0) {
             ffurl_close(pls->input);
             pls->input = NULL;
@@ -445,6 +447,7 @@ static int open_input(HLSContext *c, struct playlist *pls)
 
 cleanup:
     av_dict_free(&opts);
+    av_dict_free(&opts2);
     return ret;
 }
 
