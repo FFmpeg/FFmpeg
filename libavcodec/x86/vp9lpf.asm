@@ -292,6 +292,17 @@ SECTION .text
 %define Q7 dst2q +  strideq
 %endmacro
 
+; ..............AB -> AAAAAAAABBBBBBBB
+%macro SPLATB_MIX 1-2 [mask_mix]
+%if cpuflag(ssse3)
+    pshufb     %1, %2
+%else
+    punpcklbw  %1, %1
+    punpcklwd  %1, %1
+    punpckldq  %1, %1
+%endif
+%endmacro
+
 %macro LOOPFILTER 2 ; %1=v/h %2=size1
     lea mstrideq, [strideq]
     neg mstrideq
@@ -382,11 +393,13 @@ SECTION .text
     SPLATB_REG          m2, I, m0                       ; I I I I ...
     SPLATB_REG          m3, E, m0                       ; E E E E ...
 %elif %2 == 88
+%if cpuflag(ssse3)
     mova                m0, [mask_mix]
+%endif
     movd                m2, Id
     movd                m3, Ed
-    pshufb              m2, m0
-    pshufb              m3, m0
+    SPLATB_MIX          m2, m0
+    SPLATB_MIX          m3, m0
 %endif
     mova                m0, [pb_80]
     pxor                m2, m0
@@ -446,7 +459,7 @@ SECTION .text
     SPLATB_REG          m7, H, m0                       ; H H H H ...
 %else
     movd                m7, Hd
-    pshufb              m7, [mask_mix]
+    SPLATB_MIX          m7
 %endif
     pxor                m7, m8
     pxor                m4, m8
@@ -727,6 +740,7 @@ LPF_16_16_VH sse2
 LPF_16_16_VH ssse3
 LPF_16_16_VH avx
 
+LPF_88_16_VH sse2
 LPF_88_16_VH ssse3
 LPF_88_16_VH avx
 
