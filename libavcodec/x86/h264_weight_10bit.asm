@@ -35,8 +35,8 @@ cextern pw_1
 SECTION .text
 
 ;-----------------------------------------------------------------------------
-; void h264_weight(uint8_t *dst, int stride, int height, int log2_denom,
-;                  int weight, int offset);
+; void ff_h264_weight_16_10(uint8_t *dst, int stride, int height,
+;                           int log2_denom, int weight, int offset);
 ;-----------------------------------------------------------------------------
 %macro WEIGHT_PROLOGUE 0
 .prologue:
@@ -151,8 +151,9 @@ WEIGHT_FUNC_HALF_MM
 
 
 ;-----------------------------------------------------------------------------
-; void h264_biweight(uint8_t *dst, uint8_t *src, int stride, int height,
-;                    int log2_denom, int weightd, int weights, int offset);
+; void ff_h264_biweight_16_10(uint8_t *dst, uint8_t *src, int stride,
+;                             int height, int log2_denom, int weightd,
+;                             int weights, int offset);
 ;-----------------------------------------------------------------------------
 %if ARCH_X86_32
 DECLARE_REG_TMP 3

@@ -118,9 +118,9 @@ cglobal sbr_hf_g_filt, 5, 6, 5
 .end:
     RET
 
-; static void sbr_hf_gen_c(float (*X_high)[2], const float (*X_low)[2],
-;                          const float alpha0[2], const float alpha1[2],
-;                          float bw, int start, int end)
+; void ff_sbr_hf_gen_sse(float (*X_high)[2], const float (*X_low)[2],
+;                        const float alpha0[2], const float alpha1[2],
+;                        float bw, int start, int end)
 ;
 cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     ; load alpha factors
@@ -247,7 +247,7 @@ cglobal sbr_neg_odd_64, 1,2,4,z
     REP_RET
 
 INIT_XMM sse2
-; sbr_qmf_deint_bfly(float *v, const float *src0, const float *src1)
+; void ff_sbr_qmf_deint_bfly_sse2(float *v, const float *src0, const float *src1)
 cglobal sbr_qmf_deint_bfly, 3,5,8, v,src0,src1,vrev,c
     mov               cq, 64*4-2*mmsize
     lea            vrevq, [vq + 64*4]
