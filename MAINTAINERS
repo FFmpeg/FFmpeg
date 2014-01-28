@@ -303,6 +303,7 @@ libavdevice
   iec61883.c                            Georg Lippitsch
   lavfi                                 Stefano Sabatini
   libdc1394.c                           Roman Shaposhnik
+  opengl_enc.c                          Lukasz Marek
   pulse_audio_enc.c                     Lukasz Marek
   sdl                                   Stefano Sabatini
   v4l2.c                                Luca Abeni
