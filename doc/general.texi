@@ -997,6 +997,7 @@ performance on systems without hardware floating point support).
 @multitable @columnfractions .4 .1
 @item Name         @tab Support
 @item file         @tab X
+@item FTP          @tab X
 @item Gopher       @tab X
 @item HLS          @tab X
 @item HTTP         @tab X
@@ -1012,6 +1013,7 @@ performance on systems without hardware floating point support).
 @item RTMPTS       @tab X
 @item RTP          @tab X
 @item SCTP         @tab X
+@item SFTP         @tab E
 @item TCP          @tab X
 @item TLS          @tab X
 @item UDP          @tab X
@@ -1031,13 +1033,14 @@ performance on systems without hardware floating point support).
 @item caca              @tab        @tab X
 @item DV1394            @tab X      @tab
 @item Lavfi virtual device @tab X   @tab
-@item Linux framebuffer @tab X      @tab
+@item Linux framebuffer @tab X      @tab X
 @item JACK              @tab X      @tab
 @item LIBCDIO           @tab X
 @item LIBDC1394         @tab X      @tab
 @item OpenAL            @tab X
+@item OpenGL            @tab        @tab X
 @item OSS               @tab X      @tab X
-@item Pulseaudio        @tab X      @tab
+@item PulseAudio        @tab X      @tab X
 @item SDL               @tab        @tab X
 @item Video4Linux2      @tab X      @tab X
 @item VfW capture       @tab X      @tab
