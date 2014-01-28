@@ -92,6 +92,8 @@ static av_always_inline int ff_guidcmp(const void *g1, const void *g2)
 }
 
 void ff_get_guid(AVIOContext *s, ff_asf_guid *g);
+void ff_put_guid(AVIOContext *s, const ff_asf_guid *g);
+const ff_asf_guid *get_codec_guid(enum AVCodecID id, const AVCodecGuid *av_guid);
 
 enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid);
 

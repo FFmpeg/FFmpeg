@@ -31,7 +31,6 @@
 #include "avio_internal.h"
 #include "internal.h"
 #include "wtv.h"
-#include "asf.h"
 
 #define WTV_BIGSECTOR_SIZE (1 << WTV_BIGSECTOR_BITS)
 #define INDEX_BASE 0x2
@@ -129,16 +128,6 @@ typedef struct {
 } WTVRootEntryTable;
 
 #define write_pad(pb, size) ffio_fill(pb, 0, size)
-
-static const ff_asf_guid *get_codec_guid(enum AVCodecID id, const AVCodecGuid *av_guid)
-{
-    int i;
-    for (i = 0; av_guid[i].id != AV_CODEC_ID_NONE; i++) {
-        if (id == av_guid[i].id)
-            return &(av_guid[i].guid);
-    }
-    return NULL;
-}
 
 /**
  * Write chunk header. If header chunk (0x80000000 set) then add to list of header chunks

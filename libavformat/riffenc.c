@@ -312,3 +312,19 @@ void ff_riff_write_info(AVFormatContext *s)
             ff_riff_write_info_tag(s->pb, t->key, t->value);
     ff_end_tag(pb, list_pos);
 }
+
+void ff_put_guid(AVIOContext *s, const ff_asf_guid *g)
+{
+    av_assert0(sizeof(*g) == 16);
+    avio_write(s, *g, sizeof(*g));
+}
+
+const ff_asf_guid *get_codec_guid(enum AVCodecID id, const AVCodecGuid *av_guid)
+{
+    int i;
+    for (i = 0; av_guid[i].id != AV_CODEC_ID_NONE; i++) {
+        if (id == av_guid[i].id)
+            return &(av_guid[i].guid);
+    }
+    return NULL;
+}

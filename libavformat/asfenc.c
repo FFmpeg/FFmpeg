@@ -223,12 +223,6 @@ static const AVCodecTag codec_asf_bmp_tags[] = {
 
 #define PREROLL_TIME 3100
 
-void ff_put_guid(AVIOContext *s, const ff_asf_guid *g)
-{
-    av_assert0(sizeof(*g) == 16);
-    avio_write(s, *g, sizeof(*g));
-}
-
 static void put_str16(AVIOContext *s, const char *tag)
 {
     int len;
