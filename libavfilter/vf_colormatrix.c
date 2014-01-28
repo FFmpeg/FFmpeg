@@ -359,6 +359,13 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     } else
         color->mode = color->source * 4 + color->dest;
 
+    switch(color->dest) {
+    case COLOR_MODE_BT709    : av_frame_set_colorspace(out, AVCOL_SPC_BT709)    ; break;
+    case COLOR_MODE_FCC      : av_frame_set_colorspace(out, AVCOL_SPC_FCC)      ; break;
+    case COLOR_MODE_SMPTE240M: av_frame_set_colorspace(out, AVCOL_SPC_SMPTE240M); break;
+    case COLOR_MODE_BT601    : av_frame_set_colorspace(out, AVCOL_SPC_BT470BG)  ; break;
+    }
+
     calc_coefficients(ctx);
 
     if (in->format == AV_PIX_FMT_YUV422P)
