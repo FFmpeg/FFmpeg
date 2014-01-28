@@ -413,6 +413,8 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_AAC,             0x1600 },
     { AV_CODEC_ID_AAC_LATM,        0x1602 },
     { AV_CODEC_ID_AC3,             0x2000 },
+    /* There is no Microsoft Format Tag for E-AC3, the GUID has to be used */
+    { AV_CODEC_ID_EAC3,            0x2000 },
     { AV_CODEC_ID_DTS,             0x2001 },
     { AV_CODEC_ID_SONIC,           0x2048 },
     { AV_CODEC_ID_SONIC_LS,        0x2048 },

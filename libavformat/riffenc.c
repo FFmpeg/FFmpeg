@@ -72,6 +72,7 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
 
     waveformatextensible = (enc->channels > 2 && enc->channel_layout) ||
                            enc->sample_rate > 48000 ||
+                           enc->codec_id == AV_CODEC_ID_EAC3 ||
                            av_get_bits_per_sample(enc->codec_id) > 16;
 
     if (waveformatextensible)
@@ -183,10 +184,14 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
         /* dwChannelMask */
         avio_wl32(pb, enc->channel_layout);
         /* GUID + next 3 */
+        if (enc->codec_id == AV_CODEC_ID_EAC3) {
+            ff_put_guid(pb, get_codec_guid(enc->codec_id, ff_codec_wav_guids));
+        } else {
         avio_wl32(pb, enc->codec_tag);
         avio_wl32(pb, 0x00100000);
         avio_wl32(pb, 0xAA000080);
         avio_wl32(pb, 0x719B3800);
+        }
     } else {
         avio_wl16(pb, riff_extradata - riff_extradata_start); /* cbSize */
     }
