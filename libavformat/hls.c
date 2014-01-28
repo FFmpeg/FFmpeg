@@ -398,10 +398,7 @@ static int open_input(HLSContext *c, struct playlist *pls)
     av_dict_set(&opts, "seekable", "0", 0);
 
     // Same opts for key request (ffurl_open mutilates the opts so it cannot be used twice)
-    av_dict_set(&opts2, "user-agent", c->user_agent, 0);
-    av_dict_set(&opts2, "cookies", c->cookies, 0);
-    av_dict_set(&opts2, "headers", c->headers, 0);
-    av_dict_set(&opts2, "seekable", "0", 0);
+    av_dict_copy(&opts2, opts, 0);
 
     if (seg->key_type == KEY_NONE) {
         ret = ffurl_open(&pls->input, seg->url, AVIO_FLAG_READ,
