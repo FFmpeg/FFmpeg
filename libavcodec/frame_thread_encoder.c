@@ -133,6 +133,13 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     if(avctx->thread_count <= 1)
         return 0;
 
+    if (avctx->codec_id == AV_CODEC_ID_HUFFYUV ||
+        avctx->codec_id == AV_CODEC_ID_FFVHUFF) {
+        // huffyuv doesnt support these with multiple frame threads currently
+        if (avctx->context_model > 0 || (avctx->flags & CODEC_FLAG_PASS1))
+            return 0;
+    }
+
     if(avctx->thread_count > MAX_THREADS)
         return AVERROR(EINVAL);
 

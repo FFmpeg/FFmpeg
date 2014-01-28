@@ -996,6 +996,7 @@ AVCodec ff_huffyuv_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
+    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
@@ -1013,6 +1014,7 @@ AVCodec ff_ffvhuff_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
+    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
