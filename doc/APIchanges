@@ -15,6 +15,14 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-01-27 - 102bd64 - lavd 55.7.100 - avdevice.h
+                       lavf 55.28.100 - avformat.h
+    Add avdevice_dev_to_app_control_message() function
+
+2014-01-27 - 7151411 - lavd 55.6.100 - avdevice.h
+                       lavf 55.27.100 - avformat.h
+    Add avdevice_app_to_dev_control_message() function
+
 2014-01-xx - xxxxxxx - lavc 55.32.1 - avcodec.h
   Edges are not required anymore on video buffers allocated by get_buffer2()
   (i.e. as if the CODEC_FLAG_EMU_EDGE flag was always on). Deprecate
