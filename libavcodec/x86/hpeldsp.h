@@ -16,22 +16,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-#include "libavcodec/pixels.h"
-#include "hpeldsp.h"
-#include "inline_asm.h"
+#ifndef AVCODEC_X86_HPELDSP_H
+#define AVCODEC_X86_HPELDSP_H
 
-#if HAVE_INLINE_ASM
+#include <stddef.h>
+#include <stdint.h>
 
-#define DEF(x, y) ff_ ## x ## _ ## y ## _mmx
-#define SET_RND  MOVQ_WTWO
-#define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX(a, b, c, d, e, f)
-#define PAVGB(a, b, c, e)               PAVGB_MMX(a, b, c, e)
-#define STATIC
+void ff_avg_pixels8_x2_mmx(uint8_t *block, const uint8_t *pixels,
+                           ptrdiff_t line_size, int h);
 
-#include "rnd_template.c"
+void ff_avg_pixels8_xy2_mmx(uint8_t *block, const uint8_t *pixels,
+                            ptrdiff_t line_size, int h);
+void ff_avg_pixels16_xy2_mmx(uint8_t *block, const uint8_t *pixels,
+                             ptrdiff_t line_size, int h);
 
-CALL_2X_PIXELS_EXPORT(ff_avg_pixels16_xy2_mmx, ff_avg_pixels8_xy2_mmx, 8)
-CALL_2X_PIXELS_EXPORT(ff_put_pixels16_xy2_mmx, ff_put_pixels8_xy2_mmx, 8)
+void ff_put_pixels8_xy2_mmx(uint8_t *block, const uint8_t *pixels,
+                            ptrdiff_t line_size, int h);
+void ff_put_pixels16_xy2_mmx(uint8_t *block, const uint8_t *pixels,
+                             ptrdiff_t line_size, int h);
 
-#endif /* HAVE_INLINE_ASM */
+#endif /* AVCODEC_X86_HPELDSP_H */
