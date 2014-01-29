@@ -1981,7 +1981,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 
         // stop find_stream_info from waiting for more streams
         // when all programs have received a PMT
-        if( ts->stream->ctx_flags & AVFMTCTX_NOHEADER) {
+        if(ts->stream->ctx_flags & AVFMTCTX_NOHEADER) {
             int i;
             for(i=0; i<ts->nb_prg; i++) {
                 if (!ts->prg[i].pmt_found)
