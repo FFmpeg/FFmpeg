@@ -2175,7 +2175,7 @@ static void compute_chapters_end(AVFormatContext *s)
 static int get_std_framerate(int i)
 {
     if (i < 60 * 12)
-        return i * 1001;
+        return (i + 1) * 1001;
     else
         return ((const int[]) { 24, 30, 60, 12, 15 })[i - 60 * 12] * 1000 * 12;
 }
@@ -2458,7 +2458,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
                 /* Round guessed framerate to a "standard" framerate if it's
                  * within 1% of the original estimate. */
-                for (j = 1; j < MAX_STD_TIMEBASES; j++) {
+                for (j = 0; j < MAX_STD_TIMEBASES; j++) {
                     AVRational std_fps = { get_std_framerate(j), 12 * 1001 };
                     double error       = fabs(av_q2d(st->avg_frame_rate) /
                                               av_q2d(std_fps) - 1);
