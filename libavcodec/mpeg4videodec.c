@@ -2044,6 +2044,35 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (e == 1)
         ctx->xvid_build = build;
 
+    if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1) {
+        if (s->stream_codec_tag == AV_RL32("XVID") ||
+            s->codec_tag        == AV_RL32("XVID") ||
+            s->codec_tag        == AV_RL32("XVIX") ||
+            s->codec_tag        == AV_RL32("RMP4") ||
+            s->codec_tag        == AV_RL32("ZMP4") ||
+            s->codec_tag        == AV_RL32("SIPP"))
+            ctx->xvid_build = 0;
+    }
+
+    if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1)
+        if (s->codec_tag == AV_RL32("DIVX") && s->vo_type == 0 &&
+            s->vol_control_parameters == 0)
+            ctx->divx_version = 400;  // divx 4
+
+    if (ctx->xvid_build >= 0 && ctx->divx_version >= 0) {
+        ctx->divx_version =
+        ctx->divx_build   = -1;
+    }
+
+#if HAVE_MMX
+    if (ctx->xvid_build >= 0                &&
+        s->avctx->idct_algo == FF_IDCT_AUTO &&
+        (av_get_cpu_flags() & AV_CPU_FLAG_MMX)) {
+        s->avctx->idct_algo = FF_IDCT_XVIDMMX;
+        ff_dct_common_init(s);
+    }
+#endif
+
     return 0;
 }
 
@@ -2405,26 +2434,6 @@ end:
         s->low_delay = 1;
     s->avctx->has_b_frames = !s->low_delay;
 
-    if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1) {
-        if (s->stream_codec_tag == AV_RL32("XVID") ||
-            s->codec_tag        == AV_RL32("XVID") ||
-            s->codec_tag        == AV_RL32("XVIX") ||
-            s->codec_tag        == AV_RL32("RMP4") ||
-            s->codec_tag        == AV_RL32("ZMP4") ||
-            s->codec_tag        == AV_RL32("SIPP"))
-            ctx->xvid_build = 0;
-    }
-
-    if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1)
-        if (s->codec_tag == AV_RL32("DIVX") && s->vo_type == 0 &&
-            s->vol_control_parameters == 0)
-            ctx->divx_version = 400;  // divx 4
-
-    if (ctx->xvid_build >= 0 && ctx->divx_version >= 0) {
-        ctx->divx_version =
-        ctx->divx_build   = -1;
-    }
-
     if (s->workaround_bugs & FF_BUG_AUTODETECT) {
         if (s->codec_tag == AV_RL32("XVIX"))
             s->workaround_bugs |= FF_BUG_XVID_ILACE;
@@ -2475,15 +2484,6 @@ end:
             s->workaround_bugs |= FF_BUG_HPEL_CHROMA;
     }
 
-#if HAVE_MMX
-    if (s->codec_id == AV_CODEC_ID_MPEG4 && ctx->xvid_build >= 0 &&
-        s->avctx->idct_algo == FF_IDCT_AUTO &&
-        (av_get_cpu_flags() & AV_CPU_FLAG_MMX)) {
-        s->avctx->idct_algo = FF_IDCT_XVIDMMX;
-        ff_dct_common_init(s);
-        s->picture_number = 0;
-    }
-#endif
 
     if (s->avctx->debug & FF_DEBUG_BUGS)
         av_log(s->avctx, AV_LOG_DEBUG,
