@@ -1,5 +1,5 @@
 /*
- * MMX optimized forward DCT
+ * SIMD-optimized forward DCT
  * The gcc porting is Copyright (c) 2001 Fabrice Bellard.
  * cleanup/optimizations are Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  * SSE2 optimization is Copyright (c) 2004 Denes Balatoni.

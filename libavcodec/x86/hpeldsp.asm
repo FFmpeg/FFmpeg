@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* MMX optimized hpel functions
+;* SIMD-optimized halfpel functions
 ;*
 ;* This file is part of Libav.
 ;*
