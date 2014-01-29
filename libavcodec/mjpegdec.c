@@ -2090,7 +2090,7 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     } else if (s->picture_ptr)
         av_frame_unref(s->picture_ptr);
 
-    av_free(s->buffer);
+    av_freep(&s->buffer);
     av_freep(&s->stereo3d);
     av_freep(&s->ljpeg_buffer);
     s->ljpeg_buffer_size = 0;
