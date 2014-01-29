@@ -3022,10 +3022,9 @@ void ff_MPV_decode_mb(MpegEncContext *s, int16_t block[12][64]){
 /**
  * @param h is the normal height, this will be reduced automatically if needed for the last row
  */
-void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
+void ff_draw_horiz_band(AVCodecContext *avctx, Picture *cur,
                         Picture *last, int y, int h, int picture_structure,
-                        int first_field, int low_delay,
-                        int v_edge_pos, int h_edge_pos)
+                        int first_field, int low_delay)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int vshift = desc->log2_chroma_h;
@@ -3074,10 +3073,9 @@ void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
 
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h)
 {
-    ff_draw_horiz_band(s->avctx, &s->dsp, s->current_picture_ptr,
+    ff_draw_horiz_band(s->avctx, s->current_picture_ptr,
                        s->last_picture_ptr, y, h, s->picture_structure,
-                       s->first_field, s->low_delay,
-                       s->v_edge_pos, s->h_edge_pos);
+                       s->first_field, s->low_delay);
 }
 
 void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
