@@ -133,6 +133,12 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
                "or a constant quantizer if you want to use multiple cpu cores\n");
         avctx->thread_count = 1;
     }
+    if(   avctx->thread_count > 1
+       && avctx->codec_id == AV_CODEC_ID_MJPEG
+       && !(avctx->flags & CODEC_FLAG_QSCALE))
+        av_log(avctx, AV_LOG_WARNING,
+               "MJPEG CBR encoding works badly with frame multi-threading, consider "
+               "using -threads 1, -thread_type slice or a constant quantizer.\n");
     if(!avctx->thread_count) {
         avctx->thread_count = av_cpu_count();
         avctx->thread_count = FFMIN(avctx->thread_count, MAX_THREADS);
