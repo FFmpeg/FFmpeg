@@ -2948,6 +2948,8 @@ static int read_thread(void *arg)
                 packet_queue_put_nullpacket(&is->videoq, is->video_stream);
             if (is->audio_stream >= 0)
                 packet_queue_put_nullpacket(&is->audioq, is->audio_stream);
+            if (is->subtitle_stream >= 0)
+                packet_queue_put_nullpacket(&is->subtitleq, is->subtitle_stream);
             SDL_Delay(10);
             eof=0;
             continue;
