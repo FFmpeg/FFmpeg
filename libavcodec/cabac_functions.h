@@ -35,6 +35,9 @@
 #if ARCH_AARCH64
 #   include "aarch64/cabac.h"
 #endif
+#if ARCH_ARM
+#   include "arm/cabac.h"
+#endif
 #if ARCH_X86
 #   include "x86/cabac.h"
 #endif
