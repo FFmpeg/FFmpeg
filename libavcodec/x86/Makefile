@@ -44,11 +44,9 @@ MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
                                           x86/fpel_mmx.o                \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
-                                          x86/rnd_mmx.o                 \
                                           x86/simple_idct.o
 MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o                \
-                                          x86/hpeldsp_mmx.o             \
-                                          x86/rnd_mmx.o
+                                          x86/hpeldsp_mmx.o
 
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 

@@ -128,12 +128,21 @@ CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_mmx, put_no_rnd_pixels8_xy2_mmx, 8)
 #include "hpeldsp_rnd_template.c"
 
 #undef DEF
+#define DEF(x, y) ff_ ## x ## _ ## y ## _mmx
+#define STATIC
+
+#include "rnd_template.c"
+
+#undef DEF
 #undef SET_RND
 #undef PAVGBP
 #undef PAVGB
 
 CALL_2X_PIXELS(avg_pixels16_y2_mmx, avg_pixels8_y2_mmx, 8)
 CALL_2X_PIXELS(put_pixels16_y2_mmx, put_pixels8_y2_mmx, 8)
+
+CALL_2X_PIXELS_EXPORT(ff_avg_pixels16_xy2_mmx, ff_avg_pixels8_xy2_mmx, 8)
+CALL_2X_PIXELS_EXPORT(ff_put_pixels16_xy2_mmx, ff_put_pixels8_xy2_mmx, 8)
 
 #endif /* HAVE_INLINE_ASM */
 
