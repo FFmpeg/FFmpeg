@@ -79,7 +79,7 @@ static void roqvideo_decode_frame(RoqContext *ri)
         for (yp = ypos; yp < ypos + 16; yp += 8)
             for (xp = xpos; xp < xpos + 16; xp += 8) {
                 if (bytestream2_tell(&ri->gb) >= chunk_start + chunk_size) {
-                    av_log(ri->avctx, AV_LOG_ERROR, "Input buffer too small\n");
+                    av_log(ri->avctx, AV_LOG_VERBOSE, "Chunk is too short\n");
                     return;
                 }
                 if (vqflg_pos < 0) {
@@ -114,7 +114,7 @@ static void roqvideo_decode_frame(RoqContext *ri)
                         if(k & 0x02) y += 4;
 
                         if (bytestream2_tell(&ri->gb) >= chunk_start + chunk_size) {
-                            av_log(ri->avctx, AV_LOG_ERROR, "Input buffer too small\n");
+                            av_log(ri->avctx, AV_LOG_VERBOSE, "Chunk is too short\n");
                             return;
                         }
                         if (vqflg_pos < 0) {
