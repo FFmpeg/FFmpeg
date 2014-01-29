@@ -108,6 +108,7 @@ include $(SRC_PATH)/tests/fate/vpx.mak
 include $(SRC_PATH)/tests/fate/vqf.mak
 include $(SRC_PATH)/tests/fate/wavpack.mak
 include $(SRC_PATH)/tests/fate/wma.mak
+include $(SRC_PATH)/tests/fate/xvid.mak
 
 FATE_AVCONV += $(FATE_AVCONV-yes)
 FATE-$(CONFIG_AVCONV) += $(FATE_AVCONV)
