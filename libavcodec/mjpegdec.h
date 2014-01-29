@@ -31,6 +31,7 @@
 
 #include "libavutil/log.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/stereo3d.h"
 
 #include "avcodec.h"
 #include "get_bits.h"
@@ -121,6 +122,8 @@ typedef struct MJpegDecodeContext {
 
     int extern_huff;
     AVDictionary *exif_metadata;
+
+    AVStereo3D *stereo3d; ///!< stereoscopic information (cached, since it is read before frame allocation)
 
     const AVPixFmtDescriptor *pix_desc;
 } MJpegDecodeContext;
