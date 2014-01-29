@@ -412,7 +412,7 @@ OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood_aud.o
 OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood_vqa.o
 OBJS-$(CONFIG_WTV_DEMUXER)               += wtvdec.o wtv_common.o asfdec.o asf.o asfcrypt.o \
                                             avlanguage.o mpegts.o isom.o
-OBJS-$(CONFIG_WTV_MUXER)                 += wtvenc.o wtv_common.o asf.o asfenc.o
+OBJS-$(CONFIG_WTV_MUXER)                 += wtvenc.o wtv_common.o
 OBJS-$(CONFIG_WV_DEMUXER)                += wvdec.o wv.o apetag.o img2.o
 OBJS-$(CONFIG_WV_MUXER)                  += wvenc.o wv.o apetag.o img2.o
 OBJS-$(CONFIG_XA_DEMUXER)                += xa.o
