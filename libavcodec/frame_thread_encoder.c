@@ -125,6 +125,14 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
        || !(avctx->codec->capabilities & CODEC_CAP_INTRA_ONLY))
         return 0;
 
+    if(   !avctx->thread_count
+       && avctx->codec_id == AV_CODEC_ID_MJPEG
+       && !(avctx->flags & CODEC_FLAG_QSCALE)) {
+        av_log(avctx, AV_LOG_DEBUG,
+               "Forcing thread count to 1 for MJPEG encoding, use -thread_type slice "
+               "or a constant quantizer if you want to use multiple cpu cores\n");
+        avctx->thread_count = 1;
+    }
     if(!avctx->thread_count) {
         avctx->thread_count = av_cpu_count();
         avctx->thread_count = FFMIN(avctx->thread_count, MAX_THREADS);
