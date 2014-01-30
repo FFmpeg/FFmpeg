@@ -125,6 +125,7 @@ static int64_t getmaxrss(void);
 static int run_as_daemon  = 0;
 static int64_t video_size = 0;
 static int64_t audio_size = 0;
+static int64_t data_size = 0;
 static int64_t subtitle_size = 0;
 static int64_t extra_size = 0;
 static int nb_frames_dup = 0;
@@ -1313,7 +1314,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     }
 
     if (is_last_report) {
-        int64_t raw= audio_size + video_size + subtitle_size + extra_size;
+        int64_t raw= audio_size + video_size + data_size + subtitle_size + extra_size;
         av_log(NULL, AV_LOG_INFO, "\n");
         av_log(NULL, AV_LOG_INFO, "video:%1.0fkB audio:%1.0fkB subtitle:%1.0f global headers:%1.0fkB muxing overhead %f%%\n",
                video_size / 1024.0,
@@ -1322,7 +1323,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                extra_size / 1024.0,
                100.0 * (total_size - raw) / raw
         );
-        if(video_size + audio_size + subtitle_size + extra_size == 0){
+        if(video_size + data_size + audio_size + subtitle_size + extra_size == 0){
             av_log(NULL, AV_LOG_WARNING, "Output file is empty, nothing was encoded (check -ss / -t / -frames parameters if used)\n");
         }
     }
@@ -1478,6 +1479,8 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     else if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         video_size += pkt->size;
         ost->sync_opts++;
+    } else if (ost->st->codec->codec_type == AVMEDIA_TYPE_DATA) {
+        data_size += pkt->size;
     } else if (ost->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         subtitle_size += pkt->size;
     }
