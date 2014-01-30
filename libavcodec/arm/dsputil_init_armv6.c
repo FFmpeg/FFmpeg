@@ -44,7 +44,7 @@ int ff_pix_abs16_y2_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
                           int line_size, int h);
 
 int ff_pix_abs8_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
-                       int line_size, int h);
+                      int line_size, int h);
 
 int ff_sse16_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
                    int line_size, int h);
@@ -64,10 +64,10 @@ av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx)
         c->idct                  = ff_simple_idct_armv6;
         c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
     }
+    c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
 
     if (!high_bit_depth)
         c->get_pixels = ff_get_pixels_armv6;
-    c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
     c->diff_pixels = ff_diff_pixels_armv6;
 
     c->pix_abs[0][0] = ff_pix_abs16_armv6;
