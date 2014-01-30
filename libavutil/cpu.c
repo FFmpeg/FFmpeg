@@ -181,6 +181,10 @@ int av_cpu_count(void)
 
 #include <stdio.h>
 
+#if !HAVE_GETOPT
+#include "compat/getopt.c"
+#endif
+
 static const struct {
     int flag;
     const char *name;
@@ -224,17 +228,50 @@ static const struct {
     { 0 }
 };
 
-int main(void)
+static void print_cpu_flags(int cpu_flags, const char *type)
 {
-    int cpu_flags = av_get_cpu_flags();
     int i;
 
-    printf("cpu_flags = 0x%08X\n", cpu_flags);
-    printf("cpu_flags =");
+    fprintf(stderr, "cpu_flags(%s) = 0x%08X\n", type, cpu_flags);
+    fprintf(stderr, "cpu_flags_str(%s) =", type);
     for (i = 0; cpu_flag_tab[i].flag; i++)
         if (cpu_flags & cpu_flag_tab[i].flag)
-            printf(" %s", cpu_flag_tab[i].name);
-    printf("\n");
+            fprintf(stderr, " %s", cpu_flag_tab[i].name);
+    fprintf(stderr, "\n");
+}
+
+
+int main(int argc, char **argv)
+{
+    int cpu_flags_raw = av_get_cpu_flags();
+    int cpu_flags_eff;
+
+    if (cpu_flags_raw < 0)
+        return 1;
+
+    for (;;) {
+        int c = getopt(argc, argv, "c:");
+        if (c == -1)
+            break;
+        switch (c) {
+        case 'c':
+        {
+            int cpuflags = av_parse_cpu_flags(optarg);
+            if (cpuflags < 0)
+                return 2;
+            av_set_cpu_flags_mask(cpuflags);
+            break;
+        }
+        }
+    }
+
+    cpu_flags_eff = av_get_cpu_flags();
+
+    if (cpu_flags_eff < 0)
+        return 3;
+
+    print_cpu_flags(cpu_flags_raw, "raw");
+    print_cpu_flags(cpu_flags_eff, "effective");
 
     return 0;
 }
