@@ -14,7 +14,7 @@ You can disable all the encoders with the configure option
 with the options @code{--enable-encoder=@var{ENCODER}} /
 @code{--disable-encoder=@var{ENCODER}}.
 
-The option @code{-codecs} of the ff* tools will display the list of
+The option @code{-encoders} of the ff* tools will display the list of
 enabled encoders.
 
 @c man end ENCODERS
