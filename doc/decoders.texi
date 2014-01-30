@@ -14,7 +14,7 @@ You can disable all the decoders with the configure option
 with the options @code{--enable-decoder=@var{DECODER}} /
 @code{--disable-decoder=@var{DECODER}}.
 
-The option @code{-codecs} of the ff* tools will display the list of
+The option @code{-decoders} of the ff* tools will display the list of
 enabled decoders.
 
 @c man end DECODERS
@@ -51,6 +51,37 @@ top-field-first is assumed
 
 @chapter Audio Decoders
 @c man begin AUDIO DECODERS
+
+A description of some of the currently available audio decoders
+follows.
+
+@section ac3
+
+AC-3 audio decoder.
+
+This decoder implements part of ATSC A/52:2010 and ETSI TS 102 366, as well as
+the undocumented RealAudio 3 (a.k.a. dnet).
+
+@subsubsection AC-3 Decoder Options
+
+@table @option
+
+@item -drc_scale @var{value}
+Dynamic Range Scale Factor. The factor to apply to dynamic range values
+from the AC-3 stream. This factor is applied exponentially.
+There are 3 notable scale factor ranges:
+@table @option
+@item drc_scale == 0
+DRC disabled. Produces full range audio.
+@item 0 < drc_scale <= 1
+DRC enabled.  Applies a fraction of the stream DRC value.
+Audio reproduction is between full range and full compression.
+@item drc_scale > 1
+DRC enabled. Applies drc_scale asymmetrically.
+Loud sounds are fully compressed.  Soft sounds are enhanced.
+@end table
+
+@end table
 
 @section ffwavesynth
 
