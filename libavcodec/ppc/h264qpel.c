@@ -25,7 +25,7 @@
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/h264qpel.h"
-#include "dsputil_altivec.h"
+#include "hpeldsp_altivec.h"
 
 #if HAVE_ALTIVEC
 
