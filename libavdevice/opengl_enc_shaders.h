@@ -23,7 +23,7 @@
 
 #include "libavutil/pixfmt.h"
 
-const char *FF_OPENGL_VERTEX_SHADER =
+static const char * const FF_OPENGL_VERTEX_SHADER =
     "uniform mat4 u_projectionMatrix;"
     "uniform mat4 u_modelViewMatrix;"
 
@@ -41,7 +41,7 @@ const char *FF_OPENGL_VERTEX_SHADER =
 /**
  * Fragment shader for packet RGBA formats.
  */
-const char *FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET =
+static const char * const FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET =
 #if defined(GL_ES_VERSION_2_0)
     "precision mediump float;"
 #endif
@@ -58,7 +58,7 @@ const char *FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET =
 /**
  * Fragment shader for packet RGB formats.
  */
-const char *FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET =
+static const char * const FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET =
 #if defined(GL_ES_VERSION_2_0)
     "precision mediump float;"
 #endif
@@ -75,7 +75,7 @@ const char *FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET =
 /**
  * Fragment shader for planar RGBA formats.
  */
-const char *FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR =
+static const char * const FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR =
 #if defined(GL_ES_VERSION_2_0)
     "precision mediump float;"
 #endif
@@ -97,7 +97,7 @@ const char *FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR =
 /**
  * Fragment shader for planar RGB formats.
  */
-const char *FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR =
+static const char * const FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR =
 #if defined(GL_ES_VERSION_2_0)
     "precision mediump float;"
 #endif
@@ -118,7 +118,7 @@ const char *FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR =
 /**
  * Fragment shader for planar YUV formats.
  */
-const char *FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR =
+static const char * const  FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR =
 #if defined(GL_ES_VERSION_2_0)
     "precision mediump float;"
 #endif
@@ -147,7 +147,7 @@ const char *FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR =
 /**
  * Fragment shader for planar YUVA formats.
  */
-const char *FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR =
+static const char * const FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR =
 #if defined(GL_ES_VERSION_2_0)
     "precision mediump float;"
 #endif
