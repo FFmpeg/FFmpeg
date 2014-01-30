@@ -45,6 +45,11 @@ pw_8:   times  8 dw 8
 mask_mix: times 8 db 0
           times 8 db 1
 
+mask_mix84: times 8 db 0xff
+            times 8 db 0x00
+mask_mix48: times 8 db 0x00
+            times 8 db 0xff
+
 SECTION .text
 
 ; %1 = abs(%2-%3)
@@ -312,7 +317,7 @@ SECTION .text
     neg mstride3q
 
 %ifidn %1, h
-%if %2 == 88
+%if %2 > 16
 %define movx movh
     lea dstq, [dstq + 8*strideq - 4]
 %else
@@ -360,7 +365,7 @@ SECTION .text
 %define Q6 rsp + 224
 %define Q7 rsp + 240
 
-%if %2 != 88
+%if %2 == 16
     TRANSPOSE16x16B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, [rsp]
     mova           [P7],  m0
     mova           [P6],  m1
@@ -377,7 +382,7 @@ SECTION .text
     mova           [Q1],  m9
     mova           [Q2], m10
     mova           [Q3], m11
-%if %2 != 88
+%if %2 == 16
     mova           [Q4], m12
     mova           [Q5], m13
     mova           [Q6], m14
@@ -392,7 +397,7 @@ SECTION .text
 %endif
     SPLATB_REG          m2, I, m0                       ; I I I I ...
     SPLATB_REG          m3, E, m0                       ; E E E E ...
-%elif %2 == 88
+%else
 %if cpuflag(ssse3)
     mova                m0, [mask_mix]
 %endif
@@ -452,7 +457,7 @@ SECTION .text
     ABSSUB_CMP          m1, m9, m11, m6, m4, m5, m8     ; abs(p2 - p0) <= 1
     pand                m2, m1
     ABSSUB              m4, m10, m11, m5                ; abs(p1 - p0)
-%if %2 != 88
+%if %2 == 16
 %if cpuflag(ssse3)
     pxor                m0, m0
 %endif
@@ -476,8 +481,11 @@ SECTION .text
     pand                m2, m1
     ABSSUB_CMP          m1, m15, m12, m6, m4, m5, m8    ; abs(q3 - q0) <= 1
     pand                m2, m1                          ; flat8in final value
+%if %2 == 84 || %2 == 48
+    pand                m2, [mask_mix%2]
+%endif
 
-%if %2 != 88
+%if %2 == 16
     ; (m0: hev, m2: flat8in, m3: fm, m6: pb_81, m9..15: p2 p1 p0 q0 q1 q2 q3)
     ; calc flat8out mask
     mova                m8, [P7]
@@ -570,7 +578,7 @@ SECTION .text
     ; ([m1: flat8out], m2: flat8in, m3: fm, m10..13: p1 p0 q0 q1)
     ; filter6()
     pxor                m0, m0
-%if %2 == 88
+%if %2 > 16
     pand                m3, m2
 %else
     pand                m2, m3                          ;               mask(fm) & mask(in)
@@ -608,7 +616,7 @@ SECTION .text
     ; q5  +5  -p2 -q4 +q5 +q7                 .  q5   .               .
     ; q6  +6  -p1 -q5 +q6 +q7                     .  q6   .           .
 
-%if %2 != 88
+%if %2 == 16
     pand            m1, m2                                                              ; mask(out) & (mask(fm) & mask(in))
     mova            m2, [P7]
     mova            m3, [P6]
@@ -631,7 +639,7 @@ SECTION .text
 %endif
 
 %ifidn %1, h
-%if %2 != 88
+%if %2 == 16
     mova                    m0, [P7]
     mova                    m1, [P6]
     mova                    m2, [P5]
@@ -720,28 +728,23 @@ SECTION .text
     RET
 %endmacro
 
-%macro LPF_16_16_VH 1
-INIT_XMM %1
-cglobal vp9_loop_filter_v_16_16, 5,10,16,      dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
-    LOOPFILTER v, 16
-cglobal vp9_loop_filter_h_16_16, 5,10,16, 256, dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
-    LOOPFILTER h, 16
+%macro LPF_16_VH 2
+INIT_XMM %2
+cglobal vp9_loop_filter_v_%1_16, 5,10,16,      dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
+    LOOPFILTER v, %1
+cglobal vp9_loop_filter_h_%1_16, 5,10,16, 256, dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
+    LOOPFILTER h, %1
 %endmacro
 
-%macro LPF_88_16_VH 1
-INIT_XMM %1
-cglobal vp9_loop_filter_v_88_16, 5,10,16,      dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
-    LOOPFILTER v, 88
-cglobal vp9_loop_filter_h_88_16, 5,10,16, 256, dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
-    LOOPFILTER h, 88
+%macro LPF_16_VH_ALL_OPTS 1
+LPF_16_VH %1, sse2
+LPF_16_VH %1, ssse3
+LPF_16_VH %1, avx
 %endmacro
 
-LPF_16_16_VH sse2
-LPF_16_16_VH ssse3
-LPF_16_16_VH avx
-
-LPF_88_16_VH sse2
-LPF_88_16_VH ssse3
-LPF_88_16_VH avx
+LPF_16_VH_ALL_OPTS 16
+LPF_16_VH_ALL_OPTS 48
+LPF_16_VH_ALL_OPTS 84
+LPF_16_VH_ALL_OPTS 88
 
 %endif ; x86-64
