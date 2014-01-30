@@ -17,15 +17,15 @@ API changes, most recent first:
 
 2014-01-27 - 102bd64 - lavd 55.7.100 - avdevice.h
                        lavf 55.28.100 - avformat.h
-    Add avdevice_dev_to_app_control_message() function
+  Add avdevice_dev_to_app_control_message() function.
 
 2014-01-27 - 7151411 - lavd 55.6.100 - avdevice.h
                        lavf 55.27.100 - avformat.h
-    Add avdevice_app_to_dev_control_message() function
+  Add avdevice_app_to_dev_control_message() function.
 
 2014-01-24 - 86bee79 - lavf 55.26.100 - avformat.h
-    New AVFormatContext option metadata_header_padding to allow control over the
-    amount of padding added.
+   Add AVFormatContext option metadata_header_padding to allow control over the
+   amount of padding added.
 
 2014-01-xx - xxxxxxx - lavc 55.32.1 - avcodec.h
   Edges are not required anymore on video buffers allocated by get_buffer2()
@@ -33,7 +33,7 @@ API changes, most recent first:
   CODEC_FLAG_EMU_EDGE and avcodec_get_edge_width().
 
 2014-01-19 - xxxxxxx - lavf 55.25.100 - avformat.h
-    Add avformat_get_mov_video_tags() and avformat_get_mov_audio_tags().
+  Add avformat_get_mov_video_tags() and avformat_get_mov_audio_tags().
 
 2014-01-19 - xxxxxxx - lavu 52.63.100 - rational.h
   Add av_make_q() function.
