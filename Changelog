@@ -22,6 +22,8 @@ version <next>
 - XYZ12 rawvideo support in NUT
 - Exif metadata support in WebP decoder
 - OpenGL device
+- Use metadata_header_padding to control padding in ID3 tags (currently used in
+  MP3, AIFF, and OMA files), FLAC header, and the AVI "junk" block.
 
 
 version 2.1:

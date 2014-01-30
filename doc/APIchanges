@@ -23,6 +23,10 @@ API changes, most recent first:
                        lavf 55.27.100 - avformat.h
     Add avdevice_app_to_dev_control_message() function
 
+2014-01-24 - 86bee79 - lavf 55.26.100 - avformat.h
+    New AVFormatContext option metadata_header_padding to allow control over the
+    amount of padding added.
+
 2014-01-xx - xxxxxxx - lavc 55.32.1 - avcodec.h
   Edges are not required anymore on video buffers allocated by get_buffer2()
   (i.e. as if the CODEC_FLAG_EMU_EDGE flag was always on). Deprecate
