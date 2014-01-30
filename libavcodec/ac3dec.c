@@ -782,8 +782,13 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     i = !s->channel_mode;
     do {
         if (get_bits1(gbc)) {
-            s->dynamic_range[i] = powf(dynamic_range_tab[get_bits(gbc, 8)],
-                                       s->drc_scale);
+            /* Allow asymmetric application of DRC when drc_scale > 1.
+               Amplification of quiet sounds is enhanced */
+            float range = dynamic_range_tab[get_bits(gbc, 8)];
+            if (range > 1.0 || s->drc_scale <= 1.0)
+                s->dynamic_range[i] = powf(range, s->drc_scale);
+            else
+                s->dynamic_range[i] = range;
         } else if (blk == 0) {
             s->dynamic_range[i] = 1.0f;
         }
@@ -1504,7 +1509,7 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(AC3DecodeContext, x)
 #define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM)
 static const AVOption options[] = {
-    { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 1.0, PAR },
+    { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 6.0, PAR },
 
 {"dmix_mode", "Preferred Stereo Downmix Mode", OFFSET(preferred_stereo_downmix), AV_OPT_TYPE_INT, {.i64 = -1 }, -1, 2, 0, "dmix_mode"},
 {"ltrt_cmixlev",   "Lt/Rt Center Mix Level",   OFFSET(ltrt_center_mix_level),    AV_OPT_TYPE_FLOAT, {.dbl = -1.0 }, -1.0, 2.0, 0},
