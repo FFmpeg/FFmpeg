@@ -107,7 +107,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
             ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    if (!(data = av_buffer_alloc(len))) {
+    if (!(data = av_buffer_alloc(len + FF_INPUT_BUFFER_PADDING_SIZE))) {
         RETURN_ERROR(AVERROR(ENOMEM));
     }
     if (avio_read(pb, data->data, len) != len) {
