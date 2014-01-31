@@ -307,6 +307,11 @@ static void audio_decode_example(const char *outfilename, const char *filename)
             int data_size = av_samples_get_buffer_size(NULL, c->channels,
                                                        decoded_frame->nb_samples,
                                                        c->sample_fmt, 1);
+            if (data_size < 0) {
+                /* This should not occur, checking just for paranoia */
+                fprintf(stderr, "Failed to calculate data size\n");
+                exit(1);
+            }
             fwrite(decoded_frame->data[0], 1, data_size, outfile);
         }
         avpkt.size -= len;
