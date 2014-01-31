@@ -721,11 +721,9 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->ti.bps != avctx->bits_per_raw_sample) {
-        avctx->bits_per_raw_sample = s->ti.bps;
-        if ((ret = set_bps_params(avctx)) < 0)
-            return ret;
-    }
+    avctx->bits_per_raw_sample = s->ti.bps;
+    if ((ret = set_bps_params(avctx)) < 0)
+        return ret;
     if (s->ti.sample_rate != avctx->sample_rate) {
         avctx->sample_rate = s->ti.sample_rate;
         set_sample_rate_params(avctx);
