@@ -329,7 +329,14 @@ static int hds_write_header(AVFormatContext *s)
     int ret = 0, i;
     AVOutputFormat *oformat;
 
-    mkdir(s->filename, 0777);
+    if (mkdir(s->filename, 0777)) {
+        int is_error = errno != EEXIST;
+        av_log(s, is_error ? AV_LOG_ERROR : AV_LOG_VERBOSE, "Failed to create directory %s\n", s->filename);
+        if (is_error) {
+            ret = AVERROR(errno);
+            goto fail;
+        }
+    }
 
     oformat = av_guess_format("flv", NULL, NULL);
     if (!oformat) {
