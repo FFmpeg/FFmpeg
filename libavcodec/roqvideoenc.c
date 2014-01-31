@@ -57,6 +57,7 @@
 #include <string.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/opt.h"
 #include "roqvideo.h"
 #include "bytestream.h"
 #include "elbg.h"
@@ -69,7 +70,7 @@
  * Maximum number of generated 4x4 codebooks. Can't be 256 to workaround a
  * Quake 3 bug.
  */
-#define MAX_CBS_4x4 255
+#define MAX_CBS_4x4 256
 
 #define MAX_CBS_2x2 256 ///< Maximum number of 2x2 codebooks.
 
@@ -540,7 +541,7 @@ static void remap_codebooks(RoqContext *enc, RoqTempdata *tempData)
     int i, j, idx=0;
 
     /* Make remaps for the final codebook usage */
-    for (i=0; i<MAX_CBS_4x4; i++) {
+    for (i=0; i<(enc->quake3_compat ? MAX_CBS_4x4-1 : MAX_CBS_4x4); i++) {
         if (tempData->codebooks.usedCB4[i]) {
             tempData->i2f4[i] = idx;
             tempData->f2i4[idx] = i;
@@ -847,9 +848,9 @@ static void generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
     }
 
     /* Create 4x4 codebooks */
-    generate_codebook(enc, tempData, points, max, results4, 4, MAX_CBS_4x4);
+    generate_codebook(enc, tempData, points, max, results4, 4, (enc->quake3_compat ? MAX_CBS_4x4-1 : MAX_CBS_4x4));
 
-    codebooks->numCB4 = MAX_CBS_4x4;
+    codebooks->numCB4 = (enc->quake3_compat ? MAX_CBS_4x4-1 : MAX_CBS_4x4);
 
     tempData->closest_cb2 = av_malloc(max*4*sizeof(int));
 
@@ -901,10 +902,10 @@ static void roq_encode_video(RoqContext *enc)
         gather_data_for_cel(tempData->cel_evals + i, enc, tempData);
 
     /* Quake 3 can't handle chunks bigger than 65535 bytes */
-    if (tempData->mainChunkSize/8 > 65535) {
+    if (tempData->mainChunkSize/8 > 65535 && enc->quake3_compat) {
         av_log(enc->avctx, AV_LOG_ERROR,
-               "Warning, generated a frame too big (%d > 65535), "
-               "try using a smaller qscale value.\n",
+               "Warning, generated a frame too big for Quake (%d > 65535), "
+               "now switching to a bigger qscale value.\n",
                tempData->mainChunkSize/8);
         enc->lambda *= 1.5;
         tempData->mainChunkSize = 0;
@@ -1073,6 +1074,20 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
+#define OFFSET(x) offsetof(RoqContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "quake3_compat", "Whether to respect known limitations in Quake 3 decoder", OFFSET(quake3_compat), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
+    { NULL },
+};
+
+static const AVClass roq_class = {
+    .class_name = "RoQ",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_roq_encoder = {
     .name                 = "roqvideo",
     .long_name            = NULL_IF_CONFIG_SMALL("id RoQ video"),
@@ -1085,4 +1100,5 @@ AVCodec ff_roq_encoder = {
     .supported_framerates = (const AVRational[]){ {30,1}, {0,0} },
     .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P,
                                                         AV_PIX_FMT_NONE },
+    .priv_class     = &roq_class,
 };
