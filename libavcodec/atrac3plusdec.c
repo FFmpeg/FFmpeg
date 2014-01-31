@@ -77,35 +77,42 @@ static av_cold int set_channel_params(ATRAC3PContext *ctx,
 {
     memset(ctx->channel_blocks, 0, sizeof(ctx->channel_blocks));
 
-    switch (avctx->channel_layout) {
-    case AV_CH_FRONT_LEFT:
-    case AV_CH_LAYOUT_MONO:
+    switch (avctx->channels) {
+    case 1:
+        if (avctx->channel_layout != AV_CH_FRONT_LEFT)
+            avctx->channel_layout = AV_CH_LAYOUT_MONO;
+
         ctx->num_channel_blocks = 1;
         ctx->channel_blocks[0]  = CH_UNIT_MONO;
         break;
-    case AV_CH_LAYOUT_STEREO:
+    case 2:
+        avctx->channel_layout   = AV_CH_LAYOUT_STEREO;
         ctx->num_channel_blocks = 1;
         ctx->channel_blocks[0]  = CH_UNIT_STEREO;
         break;
-    case AV_CH_LAYOUT_SURROUND:
+    case 3:
+        avctx->channel_layout   = AV_CH_LAYOUT_SURROUND;
         ctx->num_channel_blocks = 2;
         ctx->channel_blocks[0]  = CH_UNIT_STEREO;
         ctx->channel_blocks[1]  = CH_UNIT_MONO;
         break;
-    case AV_CH_LAYOUT_4POINT0:
+    case 4:
+        avctx->channel_layout   = AV_CH_LAYOUT_4POINT0;
         ctx->num_channel_blocks = 3;
         ctx->channel_blocks[0]  = CH_UNIT_STEREO;
         ctx->channel_blocks[1]  = CH_UNIT_MONO;
         ctx->channel_blocks[2]  = CH_UNIT_MONO;
         break;
-    case AV_CH_LAYOUT_5POINT1_BACK:
+    case 6:
+        avctx->channel_layout   = AV_CH_LAYOUT_5POINT1_BACK;
         ctx->num_channel_blocks = 4;
         ctx->channel_blocks[0]  = CH_UNIT_STEREO;
         ctx->channel_blocks[1]  = CH_UNIT_MONO;
         ctx->channel_blocks[2]  = CH_UNIT_STEREO;
         ctx->channel_blocks[3]  = CH_UNIT_MONO;
         break;
-    case AV_CH_LAYOUT_6POINT1_BACK:
+    case 7:
+        avctx->channel_layout   = AV_CH_LAYOUT_6POINT1_BACK;
         ctx->num_channel_blocks = 5;
         ctx->channel_blocks[0]  = CH_UNIT_STEREO;
         ctx->channel_blocks[1]  = CH_UNIT_MONO;
@@ -113,7 +120,8 @@ static av_cold int set_channel_params(ATRAC3PContext *ctx,
         ctx->channel_blocks[3]  = CH_UNIT_MONO;
         ctx->channel_blocks[4]  = CH_UNIT_MONO;
         break;
-    case AV_CH_LAYOUT_7POINT1:
+    case 8:
+        avctx->channel_layout   = AV_CH_LAYOUT_7POINT1;
         ctx->num_channel_blocks = 5;
         ctx->channel_blocks[0]  = CH_UNIT_STEREO;
         ctx->channel_blocks[1]  = CH_UNIT_MONO;
@@ -123,7 +131,7 @@ static av_cold int set_channel_params(ATRAC3PContext *ctx,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
-               "Unsupported channel layout: %"PRIx64"!\n", avctx->channel_layout);
+               "Unsupported channel count: %d!\n", avctx->channels);
         return AVERROR_INVALIDDATA;
     }
 
