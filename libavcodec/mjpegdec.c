@@ -2052,12 +2052,12 @@ the_end:
                 h = FF_CEIL_RSHIFT(h, vshift);
             }
             if(dst){
-                uint8_t *dst2 = dst + s->linesize[index]*(h-1);
+                uint8_t *dst2 = dst + s->picture_ptr->linesize[index]*(h-1);
                 for (i=0; i<h/2; i++) {
                     for (j=0; j<w; j++)
                         FFSWAP(int, dst[j], dst2[j]);
-                    dst  += s->linesize[index];
-                    dst2 -= s->linesize[index];
+                    dst  += s->picture_ptr->linesize[index];
+                    dst2 -= s->picture_ptr->linesize[index];
                 }
             }
         }
