@@ -54,6 +54,7 @@ static av_cold int mxpeg_decode_end(AVCodecContext *avctx)
     for (i = 0; i < 2; ++i)
         av_frame_free(&s->picture[i]);
 
+    s->bitmask_size = 0;
     av_freep(&s->mxm_bitmask);
     av_freep(&s->completion_bitmask);
 
