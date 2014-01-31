@@ -1100,6 +1100,7 @@ static void shift_output(MJpegDecodeContext *s, uint8_t *ptr, int linesize)
 
 static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                              int Al, const uint8_t *mb_bitmask,
+                             int mb_bitmask_size,
                              const AVFrame *reference)
 {
     int i, mb_x, mb_y;
@@ -1109,8 +1110,13 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
     GetBitContext mb_bitmask_gb;
     int bytes_per_pixel = 1 + (s->bits > 8);
 
-    if (mb_bitmask)
+    if (mb_bitmask) {
+        if (mb_bitmask_size != (s->mb_width * s->mb_height + 7)>>3) {
+            av_log(s->avctx, AV_LOG_ERROR, "mb_bitmask_size mismatches\n");
+            return AVERROR_INVALIDDATA;
+        }
         init_get_bits(&mb_bitmask_gb, mb_bitmask, s->mb_width * s->mb_height);
+    }
 
     s->restart_count = 0;
 
@@ -1265,7 +1271,7 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
 }
 
 int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
-                        const AVFrame *reference)
+                        int mb_bitmask_size, const AVFrame *reference)
 {
     int len, nb_components, i, h, v, predictor, point_transform;
     int index, id, ret;
@@ -1397,7 +1403,7 @@ next_field:
         } else {
             if ((ret = mjpeg_decode_scan(s, nb_components,
                                          prev_shift, point_transform,
-                                         mb_bitmask, reference)) < 0)
+                                         mb_bitmask, mb_bitmask_size, reference)) < 0)
                 return ret;
         }
     }
@@ -1963,7 +1969,7 @@ eoi_parser:
             goto the_end;
         case SOS:
             s->cur_scan++;
-            if ((ret = ff_mjpeg_decode_sos(s, NULL, NULL)) < 0 &&
+            if ((ret = ff_mjpeg_decode_sos(s, NULL, 0, NULL)) < 0 &&
                 (avctx->err_recognition & AV_EF_EXPLODE))
                 goto fail;
             break;

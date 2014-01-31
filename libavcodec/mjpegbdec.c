@@ -119,7 +119,7 @@ read_header:
                       8 * FFMIN(field_size, buf_end - buf_ptr - sos_offs));
         s->mjpb_skiptosod = (sod_offs - sos_offs - show_bits(&s->gb, 16));
         s->start_code = SOS;
-        if (ff_mjpeg_decode_sos(s, NULL, NULL) < 0 &&
+        if (ff_mjpeg_decode_sos(s, NULL, 0, NULL) < 0 &&
             (avctx->err_recognition & AV_EF_EXPLODE))
           return AVERROR_INVALIDDATA;
     }
