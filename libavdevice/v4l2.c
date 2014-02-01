@@ -742,9 +742,12 @@ static int v4l2_set_parameters(AVFormatContext *s1)
                    "The driver does not allow to change time per frame\n");
         }
     }
-    s1->streams[0]->avg_frame_rate.num = tpf->denominator;
-    s1->streams[0]->avg_frame_rate.den = tpf->numerator;
-    s1->streams[0]->r_frame_rate = s1->streams[0]->avg_frame_rate;
+    if (tpf->denominator > 0 && tpf->numerator > 0) {
+        s1->streams[0]->avg_frame_rate.num = tpf->denominator;
+        s1->streams[0]->avg_frame_rate.den = tpf->numerator;
+        s1->streams[0]->r_frame_rate = s1->streams[0]->avg_frame_rate;
+    } else
+        av_log(s1, AV_LOG_WARNING, "Time per frame unknown\n");
 
     return 0;
 }
