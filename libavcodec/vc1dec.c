@@ -2132,6 +2132,9 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
         return;
     }
     if (!v->field_mode) {
+        if (direct && s->next_picture_ptr->field_picture)
+            av_log(s->avctx, AV_LOG_WARNING, "Mixed frame/field direct mode not supported\n");
+
         s->mv[0][0][0] = scale_mv(s->next_picture.motion_val[1][xy][0], v->bfraction, 0, s->quarter_sample);
         s->mv[0][0][1] = scale_mv(s->next_picture.motion_val[1][xy][1], v->bfraction, 0, s->quarter_sample);
         s->mv[1][0][0] = scale_mv(s->next_picture.motion_val[1][xy][0], v->bfraction, 1, s->quarter_sample);
@@ -4453,6 +4456,8 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         direct = v->direct_mb_plane[mb_pos];
 
     if (direct) {
+        if (s->next_picture_ptr->field_picture)
+            av_log(s->avctx, AV_LOG_WARNING, "Mixed frame/field direct mode not supported\n");
         s->mv[0][0][0] = s->current_picture.motion_val[0][s->block_index[0]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][0], v->bfraction, 0, s->quarter_sample);
         s->mv[0][0][1] = s->current_picture.motion_val[0][s->block_index[0]][1] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][1], v->bfraction, 0, s->quarter_sample);
         s->mv[1][0][0] = s->current_picture.motion_val[1][s->block_index[0]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][0], v->bfraction, 1, s->quarter_sample);
