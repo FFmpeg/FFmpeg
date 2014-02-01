@@ -495,16 +495,18 @@ static int init_convert_timestamp(AVFormatContext *ctx, int64_t ts)
         return 0;
     }
 #if HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)
-    now = av_gettime_monotonic();
-    if (s->ts_mode == V4L_TS_MONO2ABS ||
-        (ts <= now + 1 * AV_TIME_BASE && ts >= now - 10 * AV_TIME_BASE)) {
-        int64_t period = av_rescale_q(1, ctx->streams[0]->codec->time_base,
-                                      AV_TIME_BASE_Q);
-        av_log(ctx, AV_LOG_INFO, "Detected monotonic timestamps, converting\n");
-        /* microseconds instead of seconds, MHz instead of Hz */
-        s->timefilter = ff_timefilter_new(1, period, 1.0E-6);
-        s->ts_mode = V4L_TS_CONVERT_READY;
-        return 0;
+    if (ctx->streams[0]->codec->time_base.den) {
+        now = av_gettime_monotonic();
+        if (s->ts_mode == V4L_TS_MONO2ABS ||
+            (ts <= now + 1 * AV_TIME_BASE && ts >= now - 10 * AV_TIME_BASE)) {
+            int64_t period = av_rescale_q(1, ctx->streams[0]->codec->time_base,
+                                         AV_TIME_BASE_Q);
+            av_log(ctx, AV_LOG_INFO, "Detected monotonic timestamps, converting\n");
+            /* microseconds instead of seconds, MHz instead of Hz */
+            s->timefilter = ff_timefilter_new(1, period, 1.0E-6);
+            s->ts_mode = V4L_TS_CONVERT_READY;
+            return 0;
+        }
     }
 #endif
     av_log(ctx, AV_LOG_ERROR, "Unknown timestamps\n");
@@ -892,7 +894,8 @@ static int v4l2_read_header(AVFormatContext *s1)
         st->codec->codec_tag = MKTAG('Y', 'V', '1', '2');
     st->codec->width = s->width;
     st->codec->height = s->height;
-    st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
+    if (st->codec->time_base.num)
+        st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
 out:
     return res;
