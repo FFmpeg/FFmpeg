@@ -459,6 +459,11 @@ static int av_cold opengl_load_procedures(OpenGLContext *opengl)
 {
     FFOpenGLFunctions *procs = &opengl->glprocs;
 
+#if HAVE_SDL
+    if (!opengl->no_window)
+        return opengl_sdl_load_procedures(opengl);
+#endif
+
     procs->glActiveTexture = glActiveTexture;
     procs->glGenBuffers = glGenBuffers;
     procs->glDeleteBuffers = glDeleteBuffers;
@@ -503,6 +508,11 @@ static int av_cold opengl_load_procedures(OpenGLContext *opengl)
         av_log(opengl, AV_LOG_ERROR, "Cannot load OpenGL function: '%s'\n", #name); \
         return AVERROR(ENOSYS); \
     }
+
+#if HAVE_SDL
+    if (!opengl->no_window)
+        return opengl_sdl_load_procedures(opengl);
+#endif
 
     LOAD_OPENGL_FUN(glActiveTexture, FF_PFNGLACTIVETEXTUREPROC)
     LOAD_OPENGL_FUN(glGenBuffers, FF_PFNGLGENBUFFERSPROC)
@@ -1064,12 +1074,7 @@ static av_cold int opengl_write_header(AVFormatContext *h)
         goto fail;
     }
 
-    if (!opengl->no_window) {
-#if HAVE_SDL
-        if ((ret = opengl_sdl_load_procedures(opengl)) < 0)
-            goto fail;
-#endif
-    } else if ((ret = opengl_load_procedures(opengl)) < 0)
+    if ((ret = opengl_load_procedures(opengl)) < 0)
         goto fail;
 
     opengl_fill_color_map(opengl);
