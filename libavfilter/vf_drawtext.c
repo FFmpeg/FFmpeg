@@ -640,6 +640,8 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
         int ret;
         uninit(ctx);
         s->reinit = 1;
+        if ((ret = av_set_options_string(ctx, arg, "=", ":")) < 0)
+            return ret;
         if ((ret = init(ctx)) < 0)
             return ret;
         return config_input(ctx->inputs[0]);
