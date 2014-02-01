@@ -219,6 +219,53 @@ typedef struct OpenGLContext {
     int window_height;
 } OpenGLContext;
 
+static const struct OpenGLFormatDesc {
+    enum AVPixelFormat fixel_format;
+    const char * const * fragment_shader;
+    GLenum format;
+    GLenum type;
+} opengl_format_desc[] = {
+    { AV_PIX_FMT_YUV420P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV444P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV422P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV410P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV411P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV440P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV420P16,  &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUV422P16,  &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUV444P16,  &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUVA420P,   &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUVA444P,   &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUVA422P,   &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUVA420P16, &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUVA422P16, &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUVA444P16, &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_RGB24,      &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_BGR24,      &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_0RGB,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_RGB0,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_0BGR,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_BGR0,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_RGB565,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_SHORT_5_6_5 },
+    { AV_PIX_FMT_BGR565,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_SHORT_5_6_5 },
+    { AV_PIX_FMT_RGB555,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, FF_GL_UNSIGNED_SHORT_1_5_5_5_REV },
+    { AV_PIX_FMT_BGR555,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, FF_GL_UNSIGNED_SHORT_1_5_5_5_REV },
+    { AV_PIX_FMT_RGB8,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, FF_GL_UNSIGNED_BYTE_3_3_2 },
+    { AV_PIX_FMT_BGR8,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, FF_GL_UNSIGNED_BYTE_2_3_3_REV },
+    { AV_PIX_FMT_RGB48,      &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_ARGB,       &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_RGBA,       &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_ABGR,       &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_BGRA,       &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_RGBA64,     &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_BGRA64,     &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_GBRP,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_GBRP16,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR,  GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_GBRAP,      &FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR, GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_GBRAP16,    &FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR, GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_NONE,       NULL }
+};
+
 static av_cold int opengl_prepare_vertex(AVFormatContext *s);
 static int opengl_draw(AVFormatContext *h, AVPacket *pkt, int repaint);
 static av_cold int opengl_init_context(OpenGLContext *opengl);
@@ -539,38 +586,12 @@ static av_cold int opengl_read_limits(OpenGLContext *opengl)
     return AVERROR_EXTERNAL;
 }
 
-static av_always_inline const char * opengl_get_fragment_shader_code(enum AVPixelFormat format)
+static const char* opengl_get_fragment_shader_code(enum AVPixelFormat format)
 {
-    switch (format) {
-    case AV_PIX_FMT_YUV420P:    case AV_PIX_FMT_YUV444P:
-    case AV_PIX_FMT_YUV422P:    case AV_PIX_FMT_YUV410P:
-    case AV_PIX_FMT_YUV411P:    case AV_PIX_FMT_YUV440P:
-    case AV_PIX_FMT_YUV420P16:  case AV_PIX_FMT_YUV422P16:
-    case AV_PIX_FMT_YUV444P16:
-        return FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR;
-    case AV_PIX_FMT_YUVA420P:   case AV_PIX_FMT_YUVA444P:
-    case AV_PIX_FMT_YUVA422P:
-    case AV_PIX_FMT_YUVA420P16: case AV_PIX_FMT_YUVA422P16:
-    case AV_PIX_FMT_YUVA444P16:
-        return FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR;
-    case AV_PIX_FMT_RGB24:      case AV_PIX_FMT_BGR24:
-    case AV_PIX_FMT_0RGB:       case AV_PIX_FMT_RGB0:
-    case AV_PIX_FMT_0BGR:       case AV_PIX_FMT_BGR0:
-    case AV_PIX_FMT_RGB565:     case AV_PIX_FMT_BGR565:
-    case AV_PIX_FMT_RGB555:     case AV_PIX_FMT_BGR555:
-    case AV_PIX_FMT_RGB8:       case AV_PIX_FMT_BGR8:
-    case AV_PIX_FMT_RGB48:
-        return FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET;
-    case AV_PIX_FMT_ARGB:       case AV_PIX_FMT_RGBA:
-    case AV_PIX_FMT_ABGR:       case AV_PIX_FMT_BGRA:
-    case AV_PIX_FMT_RGBA64:     case AV_PIX_FMT_BGRA64:
-        return FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET;
-    case AV_PIX_FMT_GBRP:       case AV_PIX_FMT_GBRP16:
-        return FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR;
-    case AV_PIX_FMT_GBRAP: case AV_PIX_FMT_GBRAP16:
-        return FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR;
-    default:
-        break;
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(opengl_format_desc); i++) {
+        if (opengl_format_desc[i].fixel_format == format)
+            return *opengl_format_desc[i].fragment_shader;
     }
     return NULL;
 }
@@ -593,59 +614,13 @@ static av_always_inline int opengl_type_size(GLenum type)
 
 static av_cold void opengl_get_texture_params(OpenGLContext *opengl)
 {
-    switch(opengl->pix_fmt) {
-    case AV_PIX_FMT_YUV420P:    case AV_PIX_FMT_YUV444P:
-    case AV_PIX_FMT_YUV422P:    case AV_PIX_FMT_YUV410P:
-    case AV_PIX_FMT_YUV411P:    case AV_PIX_FMT_YUV440P:
-    case AV_PIX_FMT_YUVA420P:   case AV_PIX_FMT_YUVA444P:
-    case AV_PIX_FMT_YUVA422P:
-    case AV_PIX_FMT_GBRP:       case AV_PIX_FMT_GBRAP:
-        opengl->format = GL_RED_COMPONENT;
-        opengl->type   = GL_UNSIGNED_BYTE;
-        break;
-    case AV_PIX_FMT_YUV420P16:  case AV_PIX_FMT_YUV422P16:
-    case AV_PIX_FMT_YUV444P16:
-    case AV_PIX_FMT_YUVA420P16: case AV_PIX_FMT_YUVA422P16:
-    case AV_PIX_FMT_YUVA444P16:
-    case AV_PIX_FMT_GBRP16:     case AV_PIX_FMT_GBRAP16:
-        opengl->format = GL_RED_COMPONENT;
-        opengl->type   = GL_UNSIGNED_SHORT;
-        break;
-    case AV_PIX_FMT_RGB24:      case AV_PIX_FMT_BGR24:
-        opengl->format = GL_RGB;
-        opengl->type   = GL_UNSIGNED_BYTE;
-        break;
-    case AV_PIX_FMT_ARGB:       case AV_PIX_FMT_RGBA:
-    case AV_PIX_FMT_ABGR:       case AV_PIX_FMT_BGRA:
-    case AV_PIX_FMT_0RGB:       case AV_PIX_FMT_RGB0:
-    case AV_PIX_FMT_0BGR:       case AV_PIX_FMT_BGR0:
-        opengl->format = GL_RGBA;
-        opengl->type   = GL_UNSIGNED_BYTE;
-        break;
-    case AV_PIX_FMT_RGB8:
-        opengl->format = GL_RGB;
-        opengl->type   = FF_GL_UNSIGNED_BYTE_3_3_2;
-        break;
-    case AV_PIX_FMT_BGR8:
-        opengl->format = GL_RGB;
-        opengl->type   = FF_GL_UNSIGNED_BYTE_2_3_3_REV;
-        break;
-    case AV_PIX_FMT_RGB555:     case AV_PIX_FMT_BGR555:
-        opengl->format = GL_RGBA;
-        opengl->type   = FF_GL_UNSIGNED_SHORT_1_5_5_5_REV;
-        break;
-    case AV_PIX_FMT_RGB565:     case AV_PIX_FMT_BGR565:
-        opengl->format = GL_RGB;
-        opengl->type   = GL_UNSIGNED_SHORT_5_6_5;
-        break;
-    case AV_PIX_FMT_RGB48:
-        opengl->format = GL_RGB;
-        opengl->type   = GL_UNSIGNED_SHORT;
-        break;
-    case AV_PIX_FMT_RGBA64:     case AV_PIX_FMT_BGRA64:
-        opengl->format = GL_RGBA;
-        opengl->type   = GL_UNSIGNED_SHORT;
-        break;
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(opengl_format_desc); i++) {
+        if (opengl_format_desc[i].fixel_format == opengl->pix_fmt) {
+            opengl->format = opengl_format_desc[i].format;
+            opengl->type = opengl_format_desc[i].type;
+            break;
+        }
     }
 }
 
