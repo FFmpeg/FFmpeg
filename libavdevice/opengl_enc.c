@@ -889,6 +889,49 @@ static int opengl_prepare(OpenGLContext *opengl)
     return AVERROR_EXTERNAL;
 }
 
+static int opengl_create_window(AVFormatContext *h)
+{
+    OpenGLContext *opengl = h->priv_data;
+    int ret;
+
+    if (!opengl->no_window) {
+#if HAVE_SDL
+        if ((ret = opengl_sdl_create_window(h)) < 0) {
+            av_log(opengl, AV_LOG_ERROR, "Cannot create default SDL window.\n");
+            return ret;
+        }
+#else
+        av_log(opengl, AV_LOG_ERROR, "FFmpeg is compiled without SDL. Cannot create default window.\n");
+        return AVERROR(ENOSYS);
+#endif
+    } else {
+        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_CREATE_WINDOW_BUFFER, NULL , 0)) < 0) {
+            av_log(opengl, AV_LOG_ERROR, "Application failed to create window buffer.\n");
+            return ret;
+        }
+        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER, NULL , 0)) < 0) {
+            av_log(opengl, AV_LOG_ERROR, "Application failed to prepare window buffer.\n");
+            return ret;
+        }
+    }
+    return 0;
+}
+
+static int opengl_release_window(AVFormatContext *h)
+{
+    int ret;
+    OpenGLContext *opengl = h->priv_data;
+    if (!opengl->no_window) {
+#if HAVE_SDL
+        SDL_Quit();
+#endif
+    } else if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER, NULL , 0) < 0)) {
+        av_log(opengl, AV_LOG_ERROR, "Application failed to release window buffer.\n");
+        return ret;
+    }
+    return 0;
+}
+
 static av_cold int opengl_write_trailer(AVFormatContext *h)
 {
     OpenGLContext *opengl = h->priv_data;
@@ -901,13 +944,7 @@ static av_cold int opengl_write_trailer(AVFormatContext *h)
     if (opengl && opengl->glprocs.glDeleteBuffers)
         opengl->glprocs.glDeleteBuffers(2, &opengl->index_buffer);
 
-#if HAVE_SDL
-    if (!opengl->no_window)
-        SDL_Quit();
-#endif
-    if (opengl->no_window &&
-        avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER, NULL , 0) < 0)
-        av_log(opengl, AV_LOG_ERROR, "Application failed to release window buffer.\n");
+    opengl_release_window(h);
 
     return 0;
 }
@@ -991,25 +1028,8 @@ static av_cold int opengl_write_header(AVFormatContext *h)
     if (!opengl->window_title && !opengl->no_window)
         opengl->window_title = av_strdup(h->filename);
 
-    if (!opengl->no_window) {
-#if HAVE_SDL
-        if ((ret = opengl_sdl_create_window(h)) < 0)
-            goto fail;
-#else
-        av_log(opengl, AV_LOG_ERROR, "FFmpeg is compiled without SDL. Cannot create default window.\n");
-        ret = AVERROR(ENOSYS);
+    if ((ret = opengl_create_window(h)))
         goto fail;
-#endif
-    } else {
-        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_CREATE_WINDOW_BUFFER, NULL , 0)) < 0) {
-            av_log(opengl, AV_LOG_ERROR, "Application failed to create window buffer.\n");
-            goto fail;
-        }
-        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER, NULL , 0)) < 0) {
-            av_log(opengl, AV_LOG_ERROR, "Application failed to prepare window buffer.\n");
-            goto fail;
-        }
-    }
 
     if ((ret = opengl_read_limits(opengl)) < 0)
         goto fail;
