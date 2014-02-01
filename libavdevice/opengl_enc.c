@@ -188,6 +188,8 @@ typedef struct OpenGLContext {
 
     /* Current OpenGL configuration */
     GLuint program;                    ///< Shader program
+    GLuint vertex_shader;              ///< Vertex shader
+    GLuint fragment_shader;            ///< Fragment shader for current pix_pmt
     GLuint texture_name[4];            ///< Textures' IDs
     GLuint index_buffer;               ///< Index buffer
     GLuint vertex_buffer;              ///< Vertex buffer
@@ -270,6 +272,32 @@ static av_cold int opengl_prepare_vertex(AVFormatContext *s);
 static int opengl_draw(AVFormatContext *h, AVPacket *pkt, int repaint);
 static av_cold int opengl_init_context(OpenGLContext *opengl);
 
+static av_cold void opengl_deinit_context(OpenGLContext *opengl)
+{
+    glDeleteTextures(4, opengl->texture_name);
+    opengl->texture_name[0] = opengl->texture_name[1] =
+    opengl->texture_name[2] = opengl->texture_name[3] = 0;
+    if (opengl->glprocs.glUseProgram)
+        opengl->glprocs.glUseProgram(0);
+    if (opengl->glprocs.glDeleteProgram) {
+        opengl->glprocs.glDeleteProgram(opengl->program);
+        opengl->program = 0;
+    }
+    if (opengl->glprocs.glDeleteShader) {
+        opengl->glprocs.glDeleteShader(opengl->vertex_shader);
+        opengl->glprocs.glDeleteShader(opengl->fragment_shader);
+        opengl->vertex_shader = opengl->fragment_shader = 0;
+    }
+    if (opengl->glprocs.glBindBuffer) {
+        opengl->glprocs.glBindBuffer(FF_GL_ARRAY_BUFFER, 0);
+        opengl->glprocs.glBindBuffer(FF_GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+    if (opengl->glprocs.glDeleteBuffers) {
+        opengl->glprocs.glDeleteBuffers(2, &opengl->index_buffer);
+        opengl->vertex_buffer = opengl->index_buffer = 0;
+    }
+}
+
 static int opengl_resize(AVFormatContext *h, int width, int height)
 {
     int ret = 0;
@@ -349,8 +377,7 @@ static int opengl_sdl_process_events(AVFormatContext *h)
             SDL_VideoDriverName(buffer, sizeof(buffer));
             reinit = !av_strncasecmp(buffer, "quartz", sizeof(buffer));
             if (reinit) {
-                glDeleteTextures(4, opengl->texture_name);
-                opengl->glprocs.glDeleteBuffers(2, &opengl->index_buffer);
+                opengl_deinit_context(opengl);
             }
             if ((ret = opengl_sdl_recreate_window(opengl, event.resize.w, event.resize.h)) < 0)
                 return ret;
@@ -731,7 +758,6 @@ static av_cold GLuint opengl_load_shader(OpenGLContext *opengl, GLenum type, con
 
 static av_cold int opengl_compile_shaders(OpenGLContext *opengl, enum AVPixelFormat pix_fmt)
 {
-    GLuint vertex_shader = 0, fragment_shader = 0;
     GLint result;
     const char *fragment_shader_code = opengl_get_fragment_shader_code(pix_fmt);
 
@@ -741,15 +767,15 @@ static av_cold int opengl_compile_shaders(OpenGLContext *opengl, enum AVPixelFor
         return AVERROR(EINVAL);
     }
 
-    vertex_shader = opengl_load_shader(opengl, FF_GL_VERTEX_SHADER,
-                                       FF_OPENGL_VERTEX_SHADER);
-    if (!vertex_shader) {
+    opengl->vertex_shader = opengl_load_shader(opengl, FF_GL_VERTEX_SHADER,
+                                               FF_OPENGL_VERTEX_SHADER);
+    if (!opengl->vertex_shader) {
         av_log(opengl, AV_LOG_ERROR, "Vertex shader loading failed.\n");
         goto fail;
     }
-    fragment_shader = opengl_load_shader(opengl, FF_GL_FRAGMENT_SHADER,
-                                         fragment_shader_code);
-    if (!fragment_shader) {
+    opengl->fragment_shader = opengl_load_shader(opengl, FF_GL_FRAGMENT_SHADER,
+                                                 fragment_shader_code);
+    if (!opengl->fragment_shader) {
         av_log(opengl, AV_LOG_ERROR, "Fragment shader loading failed.\n");
         goto fail;
     }
@@ -758,8 +784,8 @@ static av_cold int opengl_compile_shaders(OpenGLContext *opengl, enum AVPixelFor
     if (!opengl->program)
         goto fail;
 
-    opengl->glprocs.glAttachShader(opengl->program, vertex_shader);
-    opengl->glprocs.glAttachShader(opengl->program, fragment_shader);
+    opengl->glprocs.glAttachShader(opengl->program, opengl->vertex_shader);
+    opengl->glprocs.glAttachShader(opengl->program, opengl->fragment_shader);
     opengl->glprocs.glLinkProgram(opengl->program);
 
     opengl->glprocs.glGetProgramiv(opengl->program, FF_GL_LINK_STATUS, &result);
@@ -792,10 +818,10 @@ static av_cold int opengl_compile_shaders(OpenGLContext *opengl, enum AVPixelFor
     OPENGL_ERROR_CHECK(opengl);
     return 0;
   fail:
-    opengl->glprocs.glDeleteShader(vertex_shader);
-    opengl->glprocs.glDeleteShader(fragment_shader);
+    opengl->glprocs.glDeleteShader(opengl->vertex_shader);
+    opengl->glprocs.glDeleteShader(opengl->fragment_shader);
     opengl->glprocs.glDeleteProgram(opengl->program);
-    opengl->program = 0;
+    opengl->fragment_shader = opengl->vertex_shader = opengl->program = 0;
     return AVERROR_EXTERNAL;
 }
 
@@ -940,10 +966,7 @@ static av_cold int opengl_write_trailer(AVFormatContext *h)
         avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER, NULL , 0) < 0)
         av_log(opengl, AV_LOG_ERROR, "Application failed to prepare window buffer.\n");
 
-    glDeleteTextures(4, opengl->texture_name);
-    if (opengl && opengl->glprocs.glDeleteBuffers)
-        opengl->glprocs.glDeleteBuffers(2, &opengl->index_buffer);
-
+    opengl_deinit_context(opengl);
     opengl_release_window(h);
 
     return 0;
