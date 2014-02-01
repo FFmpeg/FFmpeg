@@ -735,8 +735,11 @@ static int v4l2_set_parameters(AVFormatContext *s1)
             return AVERROR(errno);
         }
     }
-    s1->streams[0]->codec->time_base.den = tpf->denominator;
-    s1->streams[0]->codec->time_base.num = tpf->numerator;
+    if (tpf->denominator > 0 && tpf->numerator > 0) {
+        s1->streams[0]->codec->time_base.den = tpf->denominator;
+        s1->streams[0]->codec->time_base.num = tpf->numerator;
+    } else
+        av_log(s1, AV_LOG_WARNING, "Time per frame unknown\n");
 
     return 0;
 }
