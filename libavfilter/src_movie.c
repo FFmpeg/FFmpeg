@@ -386,10 +386,10 @@ static int movie_config_output_props(AVFilterLink *outlink)
 }
 
 static char *describe_frame_to_str(char *dst, size_t dst_size,
-                                    AVFrame *frame,
-                                    AVFilterLink *link)
+                                   AVFrame *frame, enum AVMediaType frame_type,
+                                   AVFilterLink *link)
 {
-    switch (frame->type) {
+    switch (frame_type) {
     case AVMEDIA_TYPE_VIDEO:
         snprintf(dst, dst_size,
                  "video pts:%s time:%s size:%dx%d aspect:%d/%d",
@@ -405,14 +405,11 @@ static char *describe_frame_to_str(char *dst, size_t dst_size,
                  frame->nb_samples);
                  break;
     default:
-        snprintf(dst, dst_size, "%s BUG", av_get_media_type_string(frame->type));
+        snprintf(dst, dst_size, "%s BUG", av_get_media_type_string(frame_type));
         break;
     }
     return dst;
 }
-
-#define describe_frameref(f, link) \
-    describe_frame_to_str((char[1024]){0}, 1024, f, link)
 
 static int rewind_file(AVFilterContext *ctx)
 {
@@ -452,6 +449,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
 {
     MovieContext *movie = ctx->priv;
     AVPacket *pkt = &movie->pkt;
+    enum AVMediaType frame_type;
     MovieStream *st;
     int ret, got_frame = 0, pkt_out_id;
     AVFilterLink *outlink;
@@ -501,7 +499,8 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     if (!movie->frame)
         return AVERROR(ENOMEM);
 
-    switch (st->st->codec->codec_type) {
+    frame_type = st->st->codec->codec_type;
+    switch (frame_type) {
     case AVMEDIA_TYPE_VIDEO:
         ret = avcodec_decode_video2(st->st->codec, movie->frame, &got_frame, pkt);
         break;
@@ -537,10 +536,10 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
         return 0;
     }
 
-    av_dlog(ctx, "movie_push_frame(): file:'%s' %s\n", movie->file_name,
-            describe_frameref(movie->frame, outlink));
-
     movie->frame->pts = av_frame_get_best_effort_timestamp(movie->frame);
+    av_dlog(ctx, "movie_push_frame(): file:'%s' %s\n", movie->file_name,
+            describe_frame_to_str((char[1024]){0}, 1024, movie->frame, frame_type, outlink));
+
     ret = ff_filter_frame(outlink, movie->frame);
     movie->frame = NULL;
 
