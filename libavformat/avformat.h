@@ -1252,14 +1252,14 @@ typedef struct AVFormatContext {
     /**
      * Correct single timestamp overflows
      * - encoding: unused
-     * - decoding: Set by user via AVOPtions (NO direct access)
+     * - decoding: Set by user via AVOptions (NO direct access)
      */
     unsigned int correct_ts_overflow;
 
     /**
      * Force seeking to any (also non key) frames.
      * - encoding: unused
-     * - decoding: Set by user via AVOPtions (NO direct access)
+     * - decoding: Set by user via AVOptions (NO direct access)
      */
     int seek2any;
 
