@@ -1805,10 +1805,16 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
         if (more_data < 0)
             return more_data;
 
-        if (more_data && x1 < s->sps->width)
+        if (more_data && x1 < s->sps->width) {
             more_data = hls_coding_quadtree(s, x1, y0, log2_cb_size - 1, cb_depth + 1);
-        if (more_data && y1 < s->sps->height)
+            if (more_data < 0)
+                return more_data;
+        }
+        if (more_data && y1 < s->sps->height) {
             more_data = hls_coding_quadtree(s, x0, y1, log2_cb_size - 1, cb_depth + 1);
+            if (more_data < 0)
+                return more_data;
+        }
         if (more_data && x1 < s->sps->width &&
             y1 < s->sps->height) {
             return hls_coding_quadtree(s, x1, y1, log2_cb_size - 1, cb_depth + 1);
