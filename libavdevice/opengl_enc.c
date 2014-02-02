@@ -407,6 +407,7 @@ static int av_cold opengl_sdl_create_window(AVFormatContext *h)
     av_log(opengl, AV_LOG_INFO, "SDL driver: '%s'.\n", SDL_VideoDriverName(buffer, sizeof(buffer)));
     message.width = opengl->surface->w;
     message.height = opengl->surface->h;
+    SDL_WM_SetCaption(opengl->window_title, NULL);
     opengl_control_message(h, AV_APP_TO_DEV_WINDOW_SIZE, &message, sizeof(AVDeviceRect));
     return 0;
 }
