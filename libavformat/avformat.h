@@ -338,6 +338,8 @@ typedef struct AVProbeData {
 } AVProbeData;
 
 #define AVPROBE_SCORE_RETRY (AVPROBE_SCORE_MAX/4)
+#define AVPROBE_SCORE_STREAM_RETRY (AVPROBE_SCORE_MAX/4-1)
+
 #define AVPROBE_SCORE_EXTENSION  50 ///< score for file extension
 #define AVPROBE_SCORE_MAX       100 ///< maximum score
 
