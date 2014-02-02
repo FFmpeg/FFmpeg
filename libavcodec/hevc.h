@@ -840,6 +840,8 @@ typedef struct HEVCContext {
     HEVCNAL *nals;
     int nb_nals;
     int nals_allocated;
+    // type of the first VCL NAL of the current frame
+    enum NALUnitType first_nal_type;
 
     // for checking the frame checksums
     struct AVMD5 *md5_ctx;

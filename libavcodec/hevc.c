@@ -2471,6 +2471,7 @@ static int hevc_frame_start(HEVCContext *s)
 
     lc->start_of_tiles_x = 0;
     s->is_decoded        = 0;
+    s->first_nal_type    = s->nal_unit_type;
 
     if (s->pps->tiles_enabled_flag)
         lc->end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
@@ -2592,6 +2593,13 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 return ret;
         } else if (!s->ref) {
             av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (s->nal_unit_type != s->first_nal_type) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Non-matching NAL types of the VCL NALUs: %d %d\n",
+                   s->first_nal_type, s->nal_unit_type);
             return AVERROR_INVALIDDATA;
         }
 
