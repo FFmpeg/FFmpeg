@@ -83,7 +83,10 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
         }
         c->planes        = 3;
-        avctx->codec_tag = MKTAG('U', 'L', 'Y', '0');
+        if (avctx->colorspace == AVCOL_SPC_BT709)
+            avctx->codec_tag = MKTAG('U', 'L', 'H', '0');
+        else
+            avctx->codec_tag = MKTAG('U', 'L', 'Y', '0');
         original_format  = UTVIDEO_420;
         break;
     case AV_PIX_FMT_YUV422P:
@@ -93,7 +96,10 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
         }
         c->planes        = 3;
-        avctx->codec_tag = MKTAG('U', 'L', 'Y', '2');
+        if (avctx->colorspace == AVCOL_SPC_BT709)
+            avctx->codec_tag = MKTAG('U', 'L', 'H', '2');
+        else
+            avctx->codec_tag = MKTAG('U', 'L', 'Y', '2');
         original_format  = UTVIDEO_422;
         break;
     default:
