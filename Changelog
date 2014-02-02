@@ -3,6 +3,23 @@ releases are sorted from youngest to oldest.
 
 version 0.8.10:
 
+- oggparseogm: check timing variables
+- mathematics: remove asserts from av_rescale_rnd()
+- vc1: Always reset numref when parsing a new frame header.
+- h264: reset num_reorder_frames if it is invalid
+- h264: check that an IDR NAL only contains I slices
+- mov: Free an earlier allocated array if allocating a new one
+- segafilm: fix leaks if reading the header fails
+- h264_cavlc: check the size of the intra PCM data.
+- cavs: Check for negative cbp
+- avi: DV in AVI must be considered single stream
+- avutil: use align == 0 for default alignment in audio sample buffer functions
+- flashsv: Check diff_start diff_height values
+- dsputil/pngdsp: fix signed/unsigned type in end comparison
+- vqavideo: check chunk sizes before reading chunks
+- avi: directly resync on DV in AVI read failure
+- get_bits: change the failure condition in init_get_bits
+- twinvq: Cope with gcc-4.8.2 miscompilation
 - pthread: Avoid spurious wakeups
 - pthread: Fix deadlock during thread initialization
 - mpegvideo: Initialize chroma_*_shift and codec_tag even if the size is 0
