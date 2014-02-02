@@ -29,7 +29,6 @@
  * @example doc/examples/avio_reading.c
  */
 
-
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
