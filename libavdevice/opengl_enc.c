@@ -548,16 +548,14 @@ static int av_cold opengl_load_procedures(OpenGLContext *opengl)
 }
 #endif
 
-static av_always_inline void opengl_make_identity(float matrix[16])
+static void opengl_make_identity(float matrix[16])
 {
     memset(matrix, 0, 16 * sizeof(float));
     matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.0f;
 }
 
-static av_always_inline void opengl_make_ortho(float matrix[16],
-                                               float left,   float right,
-                                               float bottom, float top,
-                                               float nearZ,  float farZ)
+static void opengl_make_ortho(float matrix[16], float left, float right,
+                              float bottom, float top, float nearZ, float farZ)
 {
     float ral = right + left;
     float rsl = right - left;
@@ -634,7 +632,7 @@ static const char* opengl_get_fragment_shader_code(enum AVPixelFormat format)
     return NULL;
 }
 
-static av_always_inline int opengl_type_size(GLenum type)
+static int opengl_type_size(GLenum type)
 {
     switch(type) {
     case GL_UNSIGNED_SHORT:
