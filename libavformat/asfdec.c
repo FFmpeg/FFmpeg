@@ -1465,6 +1465,13 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
             return ret;
     }
 
+    /* explicitly handle the case of seeking to 0 */
+    if (!pts) {
+        asf_reset_header(s);
+        avio_seek(s->pb, s->data_offset, SEEK_SET);
+        return 0;
+    }
+
     if (!asf->index_read)
         ret = asf_build_simple_index(s, stream_index);
 
