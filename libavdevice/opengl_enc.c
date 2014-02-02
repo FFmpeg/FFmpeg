@@ -960,7 +960,7 @@ static int opengl_release_window(AVFormatContext *h)
 #if HAVE_SDL
         SDL_Quit();
 #endif
-    } else if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER, NULL , 0) < 0)) {
+    } else if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER, NULL , 0)) < 0) {
         av_log(opengl, AV_LOG_ERROR, "Application failed to release window buffer.\n");
         return ret;
     }
