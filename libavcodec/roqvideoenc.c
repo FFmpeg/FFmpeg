@@ -963,7 +963,7 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
     enc->framesSinceKeyframe = 0;
     if ((avctx->width & 0xf) || (avctx->height & 0xf)) {
         av_log(avctx, AV_LOG_ERROR, "Dimensions must be divisible by 16\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (((avctx->width)&(avctx->width-1))||((avctx->height)&(avctx->height-1)))
@@ -1097,7 +1097,6 @@ AVCodec ff_roq_encoder = {
     .init                 = roq_encode_init,
     .encode2              = roq_encode_frame,
     .close                = roq_encode_end,
-    .supported_framerates = (const AVRational[]){ {30,1}, {0,0} },
     .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P,
                                                         AV_PIX_FMT_NONE },
     .priv_class     = &roq_class,

@@ -139,7 +139,7 @@ FATE_VIDEO-$(call DEMDEC, IDCIN, IDCIN) += fate-id-cin-video
 fate-id-cin-video: CMD = framecrc -i $(TARGET_SAMPLES)/idcin/idlog-2MB.cin -pix_fmt rgb24
 
 FATE_VIDEO-$(call ENCDEC, ROQ PGMYUV, ROQ IMAGE2) += fate-idroq-video-encode
-fate-idroq-video-encode: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_SAMPLES)/ffmpeg-synthetic/vsynth1/%02d.pgm -sws_flags +bitexact -vf pad=512:512:80:112 -f roq -t 0.2
+fate-idroq-video-encode: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_SAMPLES)/ffmpeg-synthetic/vsynth1/%02d.pgm -r 30 -sws_flags +bitexact -vf pad=512:512:80:112 -f roq -t 0.2
 
 FATE_IFF-$(CONFIG_IFF_BYTERUN1_DECODER) += fate-iff-byterun1
 fate-iff-byterun1: CMD = framecrc -i $(TARGET_SAMPLES)/iff/ASH.LBM -pix_fmt rgb24
