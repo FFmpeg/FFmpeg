@@ -63,7 +63,7 @@
 #define APIENTRY
 #endif
 
-/* GL_RED_COMPONENT is used for plannar pixel types.
+/* FF_GL_RED_COMPONENT is used for plannar pixel types.
  * Only red component is sampled in shaders.
  * On some platforms GL_RED is not availabe and GL_LUMINANCE have to be used,
  * but since OpenGL 3.0 GL_LUMINANCE is deprecated.
@@ -71,11 +71,11 @@
  * GL_LUMINANCE produces RGBA = value, value, value, 1.
  * Note: GL_INTENSITY may also be used which produce RGBA = value, value, value, value. */
 #if defined(GL_RED)
-#define GL_RED_COMPONENT GL_RED
+#define FF_GL_RED_COMPONENT GL_RED
 #elif defined(GL_LUMINANCE)
-#define GL_RED_COMPONENT GL_LUMINANCE
+#define FF_GL_RED_COMPONENT GL_LUMINANCE
 #else
-#define GL_RED_COMPONENT 0x1903; //GL_RED
+#define FF_GL_RED_COMPONENT 0x1903; //GL_RED
 #endif
 
 /* Constants not defined for iOS */
@@ -188,6 +188,8 @@ typedef struct OpenGLContext {
 
     /* Current OpenGL configuration */
     GLuint program;                    ///< Shader program
+    GLuint vertex_shader;              ///< Vertex shader
+    GLuint fragment_shader;            ///< Fragment shader for current pix_pmt
     GLuint texture_name[4];            ///< Textures' IDs
     GLuint index_buffer;               ///< Index buffer
     GLuint vertex_buffer;              ///< Vertex buffer
@@ -219,9 +221,82 @@ typedef struct OpenGLContext {
     int window_height;
 } OpenGLContext;
 
+static const struct OpenGLFormatDesc {
+    enum AVPixelFormat fixel_format;
+    const char * const * fragment_shader;
+    GLenum format;
+    GLenum type;
+} opengl_format_desc[] = {
+    { AV_PIX_FMT_YUV420P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV444P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV422P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV410P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV411P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV440P,    &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUV420P16,  &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUV422P16,  &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUV444P16,  &FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUVA420P,   &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUVA444P,   &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUVA422P,   &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_YUVA420P16, &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUVA422P16, &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_YUVA444P16, &FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_RGB24,      &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_BGR24,      &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_0RGB,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_RGB0,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_0BGR,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_BGR0,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_RGB565,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_SHORT_5_6_5 },
+    { AV_PIX_FMT_BGR565,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_SHORT_5_6_5 },
+    { AV_PIX_FMT_RGB555,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, FF_GL_UNSIGNED_SHORT_1_5_5_5_REV },
+    { AV_PIX_FMT_BGR555,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGBA, FF_GL_UNSIGNED_SHORT_1_5_5_5_REV },
+    { AV_PIX_FMT_RGB8,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, FF_GL_UNSIGNED_BYTE_3_3_2 },
+    { AV_PIX_FMT_BGR8,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, FF_GL_UNSIGNED_BYTE_2_3_3_REV },
+    { AV_PIX_FMT_RGB48,      &FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET,  GL_RGB, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_ARGB,       &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_RGBA,       &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_ABGR,       &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_BGRA,       &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_RGBA64,     &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_BGRA64,     &FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET, GL_RGBA, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_GBRP,       &FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_GBRP16,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_GBRAP,      &FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_GBRAP16,    &FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_NONE,       NULL }
+};
+
 static av_cold int opengl_prepare_vertex(AVFormatContext *s);
 static int opengl_draw(AVFormatContext *h, AVPacket *pkt, int repaint);
 static av_cold int opengl_init_context(OpenGLContext *opengl);
+
+static av_cold void opengl_deinit_context(OpenGLContext *opengl)
+{
+    glDeleteTextures(4, opengl->texture_name);
+    opengl->texture_name[0] = opengl->texture_name[1] =
+    opengl->texture_name[2] = opengl->texture_name[3] = 0;
+    if (opengl->glprocs.glUseProgram)
+        opengl->glprocs.glUseProgram(0);
+    if (opengl->glprocs.glDeleteProgram) {
+        opengl->glprocs.glDeleteProgram(opengl->program);
+        opengl->program = 0;
+    }
+    if (opengl->glprocs.glDeleteShader) {
+        opengl->glprocs.glDeleteShader(opengl->vertex_shader);
+        opengl->glprocs.glDeleteShader(opengl->fragment_shader);
+        opengl->vertex_shader = opengl->fragment_shader = 0;
+    }
+    if (opengl->glprocs.glBindBuffer) {
+        opengl->glprocs.glBindBuffer(FF_GL_ARRAY_BUFFER, 0);
+        opengl->glprocs.glBindBuffer(FF_GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+    if (opengl->glprocs.glDeleteBuffers) {
+        opengl->glprocs.glDeleteBuffers(2, &opengl->index_buffer);
+        opengl->vertex_buffer = opengl->index_buffer = 0;
+    }
+}
 
 static int opengl_resize(AVFormatContext *h, int width, int height)
 {
@@ -302,8 +377,7 @@ static int opengl_sdl_process_events(AVFormatContext *h)
             SDL_VideoDriverName(buffer, sizeof(buffer));
             reinit = !av_strncasecmp(buffer, "quartz", sizeof(buffer));
             if (reinit) {
-                glDeleteTextures(4, opengl->texture_name);
-                opengl->glprocs.glDeleteBuffers(2, &opengl->index_buffer);
+                opengl_deinit_context(opengl);
             }
             if ((ret = opengl_sdl_recreate_window(opengl, event.resize.w, event.resize.h)) < 0)
                 return ret;
@@ -333,6 +407,7 @@ static int av_cold opengl_sdl_create_window(AVFormatContext *h)
     av_log(opengl, AV_LOG_INFO, "SDL driver: '%s'.\n", SDL_VideoDriverName(buffer, sizeof(buffer)));
     message.width = opengl->surface->w;
     message.height = opengl->surface->h;
+    SDL_WM_SetCaption(opengl->window_title, NULL);
     opengl_control_message(h, AV_APP_TO_DEV_WINDOW_SIZE, &message, sizeof(AVDeviceRect));
     return 0;
 }
@@ -385,6 +460,11 @@ static int av_cold opengl_load_procedures(OpenGLContext *opengl)
 {
     FFOpenGLFunctions *procs = &opengl->glprocs;
 
+#if HAVE_SDL
+    if (!opengl->no_window)
+        return opengl_sdl_load_procedures(opengl);
+#endif
+
     procs->glActiveTexture = glActiveTexture;
     procs->glGenBuffers = glGenBuffers;
     procs->glDeleteBuffers = glDeleteBuffers;
@@ -430,6 +510,11 @@ static int av_cold opengl_load_procedures(OpenGLContext *opengl)
         return AVERROR(ENOSYS); \
     }
 
+#if HAVE_SDL
+    if (!opengl->no_window)
+        return opengl_sdl_load_procedures(opengl);
+#endif
+
     LOAD_OPENGL_FUN(glActiveTexture, FF_PFNGLACTIVETEXTUREPROC)
     LOAD_OPENGL_FUN(glGenBuffers, FF_PFNGLGENBUFFERSPROC)
     LOAD_OPENGL_FUN(glDeleteBuffers, FF_PFNGLDELETEBUFFERSPROC)
@@ -463,16 +548,14 @@ static int av_cold opengl_load_procedures(OpenGLContext *opengl)
 }
 #endif
 
-static av_always_inline void opengl_make_identity(float matrix[16])
+static void opengl_make_identity(float matrix[16])
 {
     memset(matrix, 0, 16 * sizeof(float));
     matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.0f;
 }
 
-static av_always_inline void opengl_make_ortho(float matrix[16],
-                                               float left,   float right,
-                                               float bottom, float top,
-                                               float nearZ,  float farZ)
+static void opengl_make_ortho(float matrix[16], float left, float right,
+                              float bottom, float top, float nearZ, float farZ)
 {
     float ral = right + left;
     float rsl = right - left;
@@ -539,43 +622,17 @@ static av_cold int opengl_read_limits(OpenGLContext *opengl)
     return AVERROR_EXTERNAL;
 }
 
-static av_always_inline const char * opengl_get_fragment_shader_code(enum AVPixelFormat format)
+static const char* opengl_get_fragment_shader_code(enum AVPixelFormat format)
 {
-    switch (format) {
-    case AV_PIX_FMT_YUV420P:    case AV_PIX_FMT_YUV444P:
-    case AV_PIX_FMT_YUV422P:    case AV_PIX_FMT_YUV410P:
-    case AV_PIX_FMT_YUV411P:    case AV_PIX_FMT_YUV440P:
-    case AV_PIX_FMT_YUV420P16:  case AV_PIX_FMT_YUV422P16:
-    case AV_PIX_FMT_YUV444P16:
-        return FF_OPENGL_FRAGMENT_SHADER_YUV_PLANAR;
-    case AV_PIX_FMT_YUVA420P:   case AV_PIX_FMT_YUVA444P:
-    case AV_PIX_FMT_YUVA422P:
-    case AV_PIX_FMT_YUVA420P16: case AV_PIX_FMT_YUVA422P16:
-    case AV_PIX_FMT_YUVA444P16:
-        return FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR;
-    case AV_PIX_FMT_RGB24:      case AV_PIX_FMT_BGR24:
-    case AV_PIX_FMT_0RGB:       case AV_PIX_FMT_RGB0:
-    case AV_PIX_FMT_0BGR:       case AV_PIX_FMT_BGR0:
-    case AV_PIX_FMT_RGB565:     case AV_PIX_FMT_BGR565:
-    case AV_PIX_FMT_RGB555:     case AV_PIX_FMT_BGR555:
-    case AV_PIX_FMT_RGB8:       case AV_PIX_FMT_BGR8:
-    case AV_PIX_FMT_RGB48:
-        return FF_OPENGL_FRAGMENT_SHADER_RGB_PACKET;
-    case AV_PIX_FMT_ARGB:       case AV_PIX_FMT_RGBA:
-    case AV_PIX_FMT_ABGR:       case AV_PIX_FMT_BGRA:
-    case AV_PIX_FMT_RGBA64:     case AV_PIX_FMT_BGRA64:
-        return FF_OPENGL_FRAGMENT_SHADER_RGBA_PACKET;
-    case AV_PIX_FMT_GBRP:       case AV_PIX_FMT_GBRP16:
-        return FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR;
-    case AV_PIX_FMT_GBRAP: case AV_PIX_FMT_GBRAP16:
-        return FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR;
-    default:
-        break;
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(opengl_format_desc); i++) {
+        if (opengl_format_desc[i].fixel_format == format)
+            return *opengl_format_desc[i].fragment_shader;
     }
     return NULL;
 }
 
-static av_always_inline int opengl_type_size(GLenum type)
+static int opengl_type_size(GLenum type)
 {
     switch(type) {
     case GL_UNSIGNED_SHORT:
@@ -593,59 +650,13 @@ static av_always_inline int opengl_type_size(GLenum type)
 
 static av_cold void opengl_get_texture_params(OpenGLContext *opengl)
 {
-    switch(opengl->pix_fmt) {
-    case AV_PIX_FMT_YUV420P:    case AV_PIX_FMT_YUV444P:
-    case AV_PIX_FMT_YUV422P:    case AV_PIX_FMT_YUV410P:
-    case AV_PIX_FMT_YUV411P:    case AV_PIX_FMT_YUV440P:
-    case AV_PIX_FMT_YUVA420P:   case AV_PIX_FMT_YUVA444P:
-    case AV_PIX_FMT_YUVA422P:
-    case AV_PIX_FMT_GBRP:       case AV_PIX_FMT_GBRAP:
-        opengl->format = GL_RED_COMPONENT;
-        opengl->type   = GL_UNSIGNED_BYTE;
-        break;
-    case AV_PIX_FMT_YUV420P16:  case AV_PIX_FMT_YUV422P16:
-    case AV_PIX_FMT_YUV444P16:
-    case AV_PIX_FMT_YUVA420P16: case AV_PIX_FMT_YUVA422P16:
-    case AV_PIX_FMT_YUVA444P16:
-    case AV_PIX_FMT_GBRP16:     case AV_PIX_FMT_GBRAP16:
-        opengl->format = GL_RED_COMPONENT;
-        opengl->type   = GL_UNSIGNED_SHORT;
-        break;
-    case AV_PIX_FMT_RGB24:      case AV_PIX_FMT_BGR24:
-        opengl->format = GL_RGB;
-        opengl->type   = GL_UNSIGNED_BYTE;
-        break;
-    case AV_PIX_FMT_ARGB:       case AV_PIX_FMT_RGBA:
-    case AV_PIX_FMT_ABGR:       case AV_PIX_FMT_BGRA:
-    case AV_PIX_FMT_0RGB:       case AV_PIX_FMT_RGB0:
-    case AV_PIX_FMT_0BGR:       case AV_PIX_FMT_BGR0:
-        opengl->format = GL_RGBA;
-        opengl->type   = GL_UNSIGNED_BYTE;
-        break;
-    case AV_PIX_FMT_RGB8:
-        opengl->format = GL_RGB;
-        opengl->type   = FF_GL_UNSIGNED_BYTE_3_3_2;
-        break;
-    case AV_PIX_FMT_BGR8:
-        opengl->format = GL_RGB;
-        opengl->type   = FF_GL_UNSIGNED_BYTE_2_3_3_REV;
-        break;
-    case AV_PIX_FMT_RGB555:     case AV_PIX_FMT_BGR555:
-        opengl->format = GL_RGBA;
-        opengl->type   = FF_GL_UNSIGNED_SHORT_1_5_5_5_REV;
-        break;
-    case AV_PIX_FMT_RGB565:     case AV_PIX_FMT_BGR565:
-        opengl->format = GL_RGB;
-        opengl->type   = GL_UNSIGNED_SHORT_5_6_5;
-        break;
-    case AV_PIX_FMT_RGB48:
-        opengl->format = GL_RGB;
-        opengl->type   = GL_UNSIGNED_SHORT;
-        break;
-    case AV_PIX_FMT_RGBA64:     case AV_PIX_FMT_BGRA64:
-        opengl->format = GL_RGBA;
-        opengl->type   = GL_UNSIGNED_SHORT;
-        break;
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(opengl_format_desc); i++) {
+        if (opengl_format_desc[i].fixel_format == opengl->pix_fmt) {
+            opengl->format = opengl_format_desc[i].format;
+            opengl->type = opengl_format_desc[i].type;
+            break;
+        }
     }
 }
 
@@ -756,7 +767,6 @@ static av_cold GLuint opengl_load_shader(OpenGLContext *opengl, GLenum type, con
 
 static av_cold int opengl_compile_shaders(OpenGLContext *opengl, enum AVPixelFormat pix_fmt)
 {
-    GLuint vertex_shader = 0, fragment_shader = 0;
     GLint result;
     const char *fragment_shader_code = opengl_get_fragment_shader_code(pix_fmt);
 
@@ -766,15 +776,15 @@ static av_cold int opengl_compile_shaders(OpenGLContext *opengl, enum AVPixelFor
         return AVERROR(EINVAL);
     }
 
-    vertex_shader = opengl_load_shader(opengl, FF_GL_VERTEX_SHADER,
-                                       FF_OPENGL_VERTEX_SHADER);
-    if (!vertex_shader) {
+    opengl->vertex_shader = opengl_load_shader(opengl, FF_GL_VERTEX_SHADER,
+                                               FF_OPENGL_VERTEX_SHADER);
+    if (!opengl->vertex_shader) {
         av_log(opengl, AV_LOG_ERROR, "Vertex shader loading failed.\n");
         goto fail;
     }
-    fragment_shader = opengl_load_shader(opengl, FF_GL_FRAGMENT_SHADER,
-                                         fragment_shader_code);
-    if (!fragment_shader) {
+    opengl->fragment_shader = opengl_load_shader(opengl, FF_GL_FRAGMENT_SHADER,
+                                                 fragment_shader_code);
+    if (!opengl->fragment_shader) {
         av_log(opengl, AV_LOG_ERROR, "Fragment shader loading failed.\n");
         goto fail;
     }
@@ -783,8 +793,8 @@ static av_cold int opengl_compile_shaders(OpenGLContext *opengl, enum AVPixelFor
     if (!opengl->program)
         goto fail;
 
-    opengl->glprocs.glAttachShader(opengl->program, vertex_shader);
-    opengl->glprocs.glAttachShader(opengl->program, fragment_shader);
+    opengl->glprocs.glAttachShader(opengl->program, opengl->vertex_shader);
+    opengl->glprocs.glAttachShader(opengl->program, opengl->fragment_shader);
     opengl->glprocs.glLinkProgram(opengl->program);
 
     opengl->glprocs.glGetProgramiv(opengl->program, FF_GL_LINK_STATUS, &result);
@@ -817,10 +827,10 @@ static av_cold int opengl_compile_shaders(OpenGLContext *opengl, enum AVPixelFor
     OPENGL_ERROR_CHECK(opengl);
     return 0;
   fail:
-    opengl->glprocs.glDeleteShader(vertex_shader);
-    opengl->glprocs.glDeleteShader(fragment_shader);
+    opengl->glprocs.glDeleteShader(opengl->vertex_shader);
+    opengl->glprocs.glDeleteShader(opengl->fragment_shader);
     opengl->glprocs.glDeleteProgram(opengl->program);
-    opengl->program = 0;
+    opengl->fragment_shader = opengl->vertex_shader = opengl->program = 0;
     return AVERROR_EXTERNAL;
 }
 
@@ -914,6 +924,49 @@ static int opengl_prepare(OpenGLContext *opengl)
     return AVERROR_EXTERNAL;
 }
 
+static int opengl_create_window(AVFormatContext *h)
+{
+    OpenGLContext *opengl = h->priv_data;
+    int ret;
+
+    if (!opengl->no_window) {
+#if HAVE_SDL
+        if ((ret = opengl_sdl_create_window(h)) < 0) {
+            av_log(opengl, AV_LOG_ERROR, "Cannot create default SDL window.\n");
+            return ret;
+        }
+#else
+        av_log(opengl, AV_LOG_ERROR, "FFmpeg is compiled without SDL. Cannot create default window.\n");
+        return AVERROR(ENOSYS);
+#endif
+    } else {
+        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_CREATE_WINDOW_BUFFER, NULL , 0)) < 0) {
+            av_log(opengl, AV_LOG_ERROR, "Application failed to create window buffer.\n");
+            return ret;
+        }
+        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER, NULL , 0)) < 0) {
+            av_log(opengl, AV_LOG_ERROR, "Application failed to prepare window buffer.\n");
+            return ret;
+        }
+    }
+    return 0;
+}
+
+static int opengl_release_window(AVFormatContext *h)
+{
+    int ret;
+    OpenGLContext *opengl = h->priv_data;
+    if (!opengl->no_window) {
+#if HAVE_SDL
+        SDL_Quit();
+#endif
+    } else if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER, NULL , 0) < 0)) {
+        av_log(opengl, AV_LOG_ERROR, "Application failed to release window buffer.\n");
+        return ret;
+    }
+    return 0;
+}
+
 static av_cold int opengl_write_trailer(AVFormatContext *h)
 {
     OpenGLContext *opengl = h->priv_data;
@@ -922,17 +975,8 @@ static av_cold int opengl_write_trailer(AVFormatContext *h)
         avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER, NULL , 0) < 0)
         av_log(opengl, AV_LOG_ERROR, "Application failed to prepare window buffer.\n");
 
-    glDeleteTextures(4, opengl->texture_name);
-    if (opengl && opengl->glprocs.glDeleteBuffers)
-        opengl->glprocs.glDeleteBuffers(2, &opengl->index_buffer);
-
-#if HAVE_SDL
-    if (!opengl->no_window)
-        SDL_Quit();
-#endif
-    if (opengl->no_window &&
-        avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER, NULL , 0) < 0)
-        av_log(opengl, AV_LOG_ERROR, "Application failed to release window buffer.\n");
+    opengl_deinit_context(opengl);
+    opengl_release_window(h);
 
     return 0;
 }
@@ -1016,25 +1060,8 @@ static av_cold int opengl_write_header(AVFormatContext *h)
     if (!opengl->window_title && !opengl->no_window)
         opengl->window_title = av_strdup(h->filename);
 
-    if (!opengl->no_window) {
-#if HAVE_SDL
-        if ((ret = opengl_sdl_create_window(h)) < 0)
-            goto fail;
-#else
-        av_log(opengl, AV_LOG_ERROR, "FFmpeg is compiled without SDL. Cannot create default window.\n");
-        ret = AVERROR(ENOSYS);
+    if ((ret = opengl_create_window(h)))
         goto fail;
-#endif
-    } else {
-        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_CREATE_WINDOW_BUFFER, NULL , 0)) < 0) {
-            av_log(opengl, AV_LOG_ERROR, "Application failed to create window buffer.\n");
-            goto fail;
-        }
-        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER, NULL , 0)) < 0) {
-            av_log(opengl, AV_LOG_ERROR, "Application failed to prepare window buffer.\n");
-            goto fail;
-        }
-    }
 
     if ((ret = opengl_read_limits(opengl)) < 0)
         goto fail;
@@ -1046,12 +1073,7 @@ static av_cold int opengl_write_header(AVFormatContext *h)
         goto fail;
     }
 
-    if (!opengl->no_window) {
-#if HAVE_SDL
-        if ((ret = opengl_sdl_load_procedures(opengl)) < 0)
-            goto fail;
-#endif
-    } else if ((ret = opengl_load_procedures(opengl)) < 0)
+    if ((ret = opengl_load_procedures(opengl)) < 0)
         goto fail;
 
     opengl_fill_color_map(opengl);
