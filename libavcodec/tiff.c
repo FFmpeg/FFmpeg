@@ -79,6 +79,7 @@ static void free_geotags(TiffContext *const s)
             av_freep(&s->geotags[i].val);
     }
     av_freep(&s->geotags);
+    s->geotag_count = 0;
 }
 
 #define RET_GEOKEY(TYPE, array, element)\
