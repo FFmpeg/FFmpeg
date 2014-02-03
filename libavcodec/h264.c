@@ -1314,6 +1314,8 @@ static void init_dequant_tables(H264Context *h)
 {
     int i, x;
     init_dequant4_coeff_table(h);
+    memset(h->dequant8_coeff, 0, sizeof(h->dequant8_coeff));
+
     if (h->pps.transform_8x8_mode)
         init_dequant8_coeff_table(h);
     if (h->sps.transform_bypass) {
