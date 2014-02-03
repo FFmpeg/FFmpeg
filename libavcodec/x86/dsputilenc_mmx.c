@@ -26,7 +26,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dct.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_x86.h"
@@ -823,7 +822,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                     unsigned high_bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
-    const int dct_algo = avctx->dct_algo;
 
     if (EXTERNAL_MMX(cpu_flags)) {
         if (!high_bit_depth)
@@ -837,10 +835,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
 
 #if HAVE_INLINE_ASM
     if (INLINE_MMX(cpu_flags)) {
-        if (!high_bit_depth &&
-            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
-            c->fdct = ff_fdct_mmx;
-
         c->sum_abs_dctelem = sum_abs_dctelem_mmx;
 
         c->sse[0]  = sse16_mmx;
@@ -855,10 +849,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
     }
 
     if (INLINE_MMXEXT(cpu_flags)) {
-        if (!high_bit_depth &&
-            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
-            c->fdct = ff_fdct_mmxext;
-
         c->sum_abs_dctelem = sum_abs_dctelem_mmxext;
         c->vsad[4]         = vsad_intra16_mmxext;
 
@@ -868,10 +858,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
     }
 
     if (INLINE_SSE2(cpu_flags)) {
-        if (!high_bit_depth &&
-            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
-            c->fdct = ff_fdct_sse2;
-
         c->sum_abs_dctelem = sum_abs_dctelem_sse2;
     }
 

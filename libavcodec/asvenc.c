@@ -28,6 +28,7 @@
 
 #include "asv.h"
 #include "avcodec.h"
+#include "fdctdsp.h"
 #include "mathops.h"
 #include "mpeg12data.h"
 
@@ -163,13 +164,13 @@ static inline void dct_get(ASV1Context *a, const AVFrame *frame,
     a->dsp.get_pixels(block[2], ptr_y + 8*linesize    , linesize);
     a->dsp.get_pixels(block[3], ptr_y + 8*linesize + 8, linesize);
     for(i=0; i<4; i++)
-        a->dsp.fdct(block[i]);
+        a->fdsp.fdct(block[i]);
 
     if(!(a->avctx->flags&CODEC_FLAG_GRAY)){
         a->dsp.get_pixels(block[4], ptr_cb, frame->linesize[1]);
         a->dsp.get_pixels(block[5], ptr_cr, frame->linesize[2]);
         for(i=4; i<6; i++)
-            a->dsp.fdct(block[i]);
+            a->fdsp.fdct(block[i]);
     }
 }
 
@@ -248,6 +249,7 @@ static av_cold int encode_init(AVCodecContext *avctx){
 
     ff_asv_common_init(avctx);
     ff_dsputil_init(&a->dsp, avctx);
+    ff_fdctdsp_init(&a->fdsp, avctx);
 
     if(avctx->global_quality == 0) avctx->global_quality= 4*FF_QUALITY_SCALE;
 

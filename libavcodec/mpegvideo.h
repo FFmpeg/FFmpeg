@@ -32,6 +32,7 @@
 #include "blockdsp.h"
 #include "dsputil.h"
 #include "error_resilience.h"
+#include "fdctdsp.h"
 #include "get_bits.h"
 #include "h263dsp.h"
 #include "hpeldsp.h"
@@ -355,6 +356,7 @@ typedef struct MpegEncContext {
 
     BlockDSPContext bdsp;
     DSPContext dsp;             ///< pointers for accelerated dsp functions
+    FDCTDSPContext fdsp;
     HpelDSPContext hdsp;
     IDCTDSPContext idsp;
     MpegVideoDSPContext mdsp;

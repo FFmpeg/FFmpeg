@@ -1,8 +1,4 @@
 /*
- * Copyright (c) 2002 Brian Foley
- * Copyright (c) 2002 Dieter Shirley
- * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -20,19 +16,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <string.h>
+#ifndef AVCODEC_FDCTDSP_H
+#define AVCODEC_FDCTDSP_H
 
-#include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
-#include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
-#include "dsputil_altivec.h"
+#include <stdint.h>
 
-av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx,
-                                 unsigned high_bit_depth)
-{
-    if (PPC_ALTIVEC(av_get_cpu_flags())) {
-        ff_dsputil_init_altivec(c, avctx, high_bit_depth);
-    }
-}
+#include "avcodec.h"
+
+typedef struct FDCTDSPContext {
+    void (*fdct)(int16_t *block /* align 16 */);
+    void (*fdct248)(int16_t *block /* align 16 */);
+} FDCTDSPContext;
+
+void ff_fdctdsp_init(FDCTDSPContext *c, AVCodecContext *avctx);
+void ff_fdctdsp_init_ppc(FDCTDSPContext *c, AVCodecContext *avctx,
+                         unsigned high_bit_depth);
+void ff_fdctdsp_init_x86(FDCTDSPContext *c, AVCodecContext *avctx,
+                         unsigned high_bit_depth);
+
+#endif /* AVCODEC_FDCTDSP_H */

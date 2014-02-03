@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "dsputil.h"
+#include "fdctdsp.h"
 #include "internal.h"
 #include "mpegvideo.h"
 #include "dnxhdenc.h"
@@ -100,7 +101,7 @@ static int dnxhd_10bit_dct_quantize(MpegEncContext *ctx, int16_t *block,
     int last_non_zero = 0;
     int i;
 
-    ctx->dsp.fdct(block);
+    ctx->fdsp.fdct(block);
 
     // Divide by 4 with rounding, to compensate scaling of DCT coefficients
     block[0] = (block[0] + 2) >> 2;
@@ -308,6 +309,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_dsputil_init(&ctx->m.dsp, avctx);
+    ff_fdctdsp_init(&ctx->m.fdsp, avctx);
     ff_idctdsp_init(&ctx->m.idsp, avctx);
     ff_mpegvideoencdsp_init(&ctx->m.mpvencdsp, avctx);
     ff_dct_common_init(&ctx->m);

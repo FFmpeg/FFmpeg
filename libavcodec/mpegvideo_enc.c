@@ -77,15 +77,15 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
                        const uint16_t *quant_matrix,
                        int bias, int qmin, int qmax, int intra)
 {
-    DSPContext *dsp = &s->dsp;
+    FDCTDSPContext *fdsp = &s->fdsp;
     int qscale;
     int shift = 0;
 
     for (qscale = qmin; qscale <= qmax; qscale++) {
         int i;
-        if (dsp->fdct == ff_jpeg_fdct_islow_8 ||
-            dsp->fdct == ff_jpeg_fdct_islow_10 ||
-            dsp->fdct == ff_faandct) {
+        if (fdsp->fdct == ff_jpeg_fdct_islow_8  ||
+            fdsp->fdct == ff_jpeg_fdct_islow_10 ||
+            fdsp->fdct == ff_faandct) {
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905
@@ -97,7 +97,7 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
                 qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) /
                                         (qscale * quant_matrix[j]));
             }
-        } else if (dsp->fdct == ff_fdct_ifast) {
+        } else if (fdsp->fdct == ff_fdct_ifast) {
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905
@@ -136,7 +136,7 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
 
         for (i = intra; i < 64; i++) {
             int64_t max = 8191;
-            if (dsp->fdct == ff_fdct_ifast) {
+            if (fdsp->fdct == ff_fdct_ifast) {
                 max = (8191LL * ff_aanscales[i]) >> 14;
             }
             while (((max * qmat[qscale][i]) >> shift) > INT_MAX) {
@@ -701,6 +701,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     if (ARCH_X86)
         ff_MPV_encode_init_x86(s);
 
+    ff_fdctdsp_init(&s->fdsp, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_qpeldsp_init(&s->qdsp);
 
@@ -3492,7 +3493,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     uint8_t * last_length;
     const int lambda= s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
 
-    s->dsp.fdct (block);
+    s->fdsp.fdct(block);
 
     if(s->dct_error_sum)
         s->denoise_dct(s, block);
@@ -3587,7 +3588,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         int dct_coeff= FFABS(block[ scantable[i] ]);
         int best_score=256*256*256*120;
 
-        if (s->dsp.fdct == ff_fdct_ifast)
+        if (s->fdsp.fdct == ff_fdct_ifast)
             dct_coeff= (dct_coeff*ff_inv_aanscales[ scantable[i] ]) >> 12;
         zero_distortion= dct_coeff*dct_coeff;
 
@@ -3919,7 +3920,7 @@ STOP_TIMER("init rem[]")
 STOP_TIMER("rem*w*w")}
 {START_TIMER
 #endif
-            s->dsp.fdct(d1);
+            s->fdsp.fdct(d1);
 #ifdef REFINE_STATS
 STOP_TIMER("dct")}
 #endif
@@ -4166,7 +4167,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
     int max=0;
     unsigned int threshold1, threshold2;
 
-    s->dsp.fdct (block);
+    s->fdsp.fdct(block);
 
     if(s->dct_error_sum)
         s->denoise_dct(s, block);
