@@ -87,6 +87,7 @@ static int aac_adtstoasc_filter(AVBitStreamFilterContext *bsfc,
             buf_size -= get_bits_count(&gb)/8;
             buf      += get_bits_count(&gb)/8;
         }
+        av_free(avctx->extradata);
         avctx->extradata_size = 2 + pce_size;
         avctx->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
