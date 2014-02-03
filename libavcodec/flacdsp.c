@@ -128,4 +128,6 @@ av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt,
 
     if (ARCH_ARM)
         ff_flacdsp_init_arm(c, fmt, bps);
+    if (ARCH_X86)
+        ff_flacdsp_init_x86(c, fmt, bps);
 }
