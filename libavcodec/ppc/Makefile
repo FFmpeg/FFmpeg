@@ -15,6 +15,7 @@ OBJS-$(CONFIG_MPEGAUDIODSP)            += ppc/mpegaudiodsp_altivec.o
 OBJS-$(CONFIG_MPEGVIDEO)               += ppc/mpegvideo_altivec.o      \
                                           ppc/mpegvideodsp.o
 OBJS-$(CONFIG_MPEGVIDEOENC)            += ppc/mpegvideoencdsp.o
+OBJS-$(CONFIG_PIXBLOCKDSP)             += ppc/pixblockdsp.o
 OBJS-$(CONFIG_VIDEODSP)                += ppc/videodsp_ppc.o
 OBJS-$(CONFIG_VP3DSP)                  += ppc/vp3dsp_altivec.o
 

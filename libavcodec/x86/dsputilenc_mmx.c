@@ -30,11 +30,6 @@
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_x86.h"
 
-void ff_get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size);
-void ff_get_pixels_sse2(int16_t *block, const uint8_t *pixels, int line_size);
-void ff_diff_pixels_mmx(int16_t *block, const uint8_t *s1, const uint8_t *s2,
-                        int stride);
-
 #if HAVE_INLINE_ASM
 
 static int sse8_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
@@ -822,16 +817,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                     unsigned high_bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
-
-    if (EXTERNAL_MMX(cpu_flags)) {
-        if (!high_bit_depth)
-            c->get_pixels = ff_get_pixels_mmx;
-        c->diff_pixels = ff_diff_pixels_mmx;
-    }
-
-    if (EXTERNAL_SSE2(cpu_flags))
-        if (!high_bit_depth)
-            c->get_pixels = ff_get_pixels_sse2;
 
 #if HAVE_INLINE_ASM
     if (INLINE_MMX(cpu_flags)) {

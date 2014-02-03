@@ -1558,6 +1558,7 @@ CONFIG_EXTRA="
     mpegvideo
     mpegvideoenc
     nettle
+    pixblockdsp
     qpeldsp
     rangecoder
     riffdec
@@ -1706,7 +1707,7 @@ threads_if_any="$THREADS_LIST"
 
 # subsystems
 dct_select="rdft"
-dsputil_select="fdctdsp idctdsp"
+dsputil_select="fdctdsp idctdsp pixblockdsp"
 error_resilience_select="dsputil"
 intrax8_select="error_resilience"
 mdct_select="fft"
@@ -1715,7 +1716,7 @@ mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideo_select="blockdsp dsputil hpeldsp idctdsp videodsp"
-mpegvideoenc_select="dsputil mpegvideo qpeldsp"
+mpegvideoenc_select="dsputil mpegvideo pixblockdsp qpeldsp"
 
 # decoders / encoders
 aac_decoder_select="mdct sinewin"
@@ -1732,9 +1733,9 @@ amrwb_decoder_select="lsp"
 amv_decoder_select="sp5x_decoder"
 ape_decoder_select="bswapdsp"
 asv1_decoder_select="blockdsp bswapdsp idctdsp"
-asv1_encoder_select="bswapdsp dsputil fdctdsp"
+asv1_encoder_select="bswapdsp fdctdsp pixblockdsp"
 asv2_decoder_select="blockdsp bswapdsp idctdsp"
-asv2_encoder_select="bswapdsp dsputil fdctdsp"
+asv2_encoder_select="bswapdsp fdctdsp pixblockdsp"
 atrac1_decoder_select="mdct sinewin"
 atrac3_decoder_select="mdct"
 atrac3p_decoder_select="mdct sinewin"
@@ -1749,9 +1750,9 @@ cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
 dca_decoder_select="mdct"
 dnxhd_decoder_select="blockdsp idctdsp"
-dnxhd_encoder_select="aandcttables blockdsp dsputil fdctdsp idctdsp mpegvideoenc"
+dnxhd_encoder_select="aandcttables blockdsp fdctdsp idctdsp mpegvideoenc pixblockdsp"
 dvvideo_decoder_select="dvprofile idctdsp"
-dvvideo_encoder_select="dsputil dvprofile fdctdsp"
+dvvideo_encoder_select="dsputil dvprofile fdctdsp pixblockdsp"
 dxa_decoder_deps="zlib"
 eac3_decoder_select="ac3_decoder"
 eac3_encoder_select="ac3_encoder"

@@ -39,6 +39,7 @@
 #include "idctdsp.h"
 #include "mpegvideodsp.h"
 #include "mpegvideoencdsp.h"
+#include "pixblockdsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
 #include "parser.h"
@@ -361,6 +362,7 @@ typedef struct MpegEncContext {
     IDCTDSPContext idsp;
     MpegVideoDSPContext mdsp;
     MpegvideoEncDSPContext mpvencdsp;
+    PixblockDSPContext pdsp;
     QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H263DSPContext h263dsp;

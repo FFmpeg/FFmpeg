@@ -35,13 +35,6 @@
 
 uint32_t ff_square_tab[512] = { 0, };
 
-#define BIT_DEPTH 16
-#include "dsputilenc_template.c"
-#undef BIT_DEPTH
-
-#define BIT_DEPTH 8
-#include "dsputilenc_template.c"
-
 static int sse4_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                   int line_size, int h)
 {
@@ -108,27 +101,6 @@ static int sse16_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         pix2 += line_size;
     }
     return s;
-}
-
-static void diff_pixels_c(int16_t *restrict block, const uint8_t *s1,
-                          const uint8_t *s2, int stride)
-{
-    int i;
-
-    /* read the pixels */
-    for (i = 0; i < 8; i++) {
-        block[0] = s1[0] - s2[0];
-        block[1] = s1[1] - s2[1];
-        block[2] = s1[2] - s2[2];
-        block[3] = s1[3] - s2[3];
-        block[4] = s1[4] - s2[4];
-        block[5] = s1[5] - s2[5];
-        block[6] = s1[6] - s2[6];
-        block[7] = s1[7] - s2[7];
-        s1      += stride;
-        s2      += stride;
-        block   += 8;
-    }
 }
 
 static int sum_abs_dctelem_c(int16_t *block)
@@ -577,7 +549,7 @@ static int dct_sad8x8_c(MpegEncContext *s, uint8_t *src1,
 
     assert(h == 8);
 
-    s->dsp.diff_pixels(temp, src1, src2, stride);
+    s->pdsp.diff_pixels(temp, src1, src2, stride);
     s->fdsp.fdct(temp);
     return s->dsp.sum_abs_dctelem(temp);
 }
@@ -617,7 +589,7 @@ static int dct264_sad8x8_c(MpegEncContext *s, uint8_t *src1,
     int16_t dct[8][8];
     int i, sum = 0;
 
-    s->dsp.diff_pixels(dct[0], src1, src2, stride);
+    s->pdsp.diff_pixels(dct[0], src1, src2, stride);
 
 #define SRC(x) dct[i][x]
 #define DST(x, v) dct[i][x] = v
@@ -644,7 +616,7 @@ static int dct_max8x8_c(MpegEncContext *s, uint8_t *src1,
 
     assert(h == 8);
 
-    s->dsp.diff_pixels(temp, src1, src2, stride);
+    s->pdsp.diff_pixels(temp, src1, src2, stride);
     s->fdsp.fdct(temp);
 
     for (i = 0; i < 64; i++)
@@ -663,7 +635,7 @@ static int quant_psnr8x8_c(MpegEncContext *s, uint8_t *src1,
     assert(h == 8);
     s->mb_intra = 0;
 
-    s->dsp.diff_pixels(temp, src1, src2, stride);
+    s->pdsp.diff_pixels(temp, src1, src2, stride);
 
     memcpy(bak, temp, 64 * sizeof(int16_t));
 
@@ -694,7 +666,7 @@ static int rd8x8_c(MpegEncContext *s, uint8_t *src1, uint8_t *src2,
     copy_block8(lsrc1, src1, 8, stride, 8);
     copy_block8(lsrc2, src2, 8, stride, 8);
 
-    s->dsp.diff_pixels(temp, lsrc1, lsrc2, 8);
+    s->pdsp.diff_pixels(temp, lsrc1, lsrc2, 8);
 
     s->block_last_index[0 /* FIXME */] =
     last                               =
@@ -766,7 +738,7 @@ static int bit8x8_c(MpegEncContext *s, uint8_t *src1, uint8_t *src2,
 
     assert(h == 8);
 
-    s->dsp.diff_pixels(temp, src1, src2, stride);
+    s->pdsp.diff_pixels(temp, src1, src2, stride);
 
     s->block_last_index[0 /* FIXME */] =
     last                               =
@@ -932,8 +904,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
 {
     const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-    c->diff_pixels = diff_pixels_c;
-
     c->sum_abs_dctelem = sum_abs_dctelem_c;
 
     /* TODO [0] 16  [1] 8 */
@@ -974,16 +944,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->vsse[5] = vsse_intra8_c;
     c->nsse[0] = nsse16_c;
     c->nsse[1] = nsse8_c;
-
-    switch (avctx->bits_per_raw_sample) {
-    case 9:
-    case 10:
-        c->get_pixels = get_pixels_16_c;
-        break;
-    default:
-        c->get_pixels = get_pixels_8_c;
-        break;
-    }
 
     if (ARCH_ARM)
         ff_dsputil_init_arm(c, avctx, high_bit_depth);
