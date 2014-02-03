@@ -26,10 +26,12 @@
  * filter by Gustavo Sverzut Barbieri
  */
 
+#include "config.h"
+#if HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 #include <time.h>
 
-#include "config.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/common.h"
