@@ -311,8 +311,13 @@ static void decode_interframe_v4a(AVCodecContext *avctx, uint8_t *src,
             offset  = writeoffset;
             offset += bytestream2_get_le16(&gb);
 
-            if (delta)
+            if (delta) {
+                if (offset < 0x10000) {
+                    av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
+                    break;
+                }
                 offset -= 0x10000;
+            }
 
             if (offset + hnm->width + count >= hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
