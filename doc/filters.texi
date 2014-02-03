@@ -1728,6 +1728,20 @@ overlay input width and height
 
 @item w, h
 same as @var{overlay_w} and @var{overlay_h}
+
+@item eof_action
+The action to take when EOF is encountered on the secondary input, accepts one
+of the following values:
+
+@table @option
+@item repeat
+repeat the last frame (the default)
+@item endall
+end both streams
+@item pass
+pass through the main input
+@end table
+
 @end table
 
 Be aware that frames are taken from each input video in timestamp
@@ -1753,6 +1767,11 @@ avconv -i input -i logo1 -i logo2 -filter_complex
 # add a transparent color layer on top of the main video,
 # WxH specifies the size of the main input to the overlay filter
 color=red@.3:WxH [over]; [in][over] overlay [out]
+
+# mask 10-20 seconds of a video by applying the delogo filter to a section
+avconv -i test.avi -codec:v:0 wmv2 -ar 11025 -b:v 9000k
+-vf '[in]split[split_main][split_delogo];[split_delogo]trim=start=360:end=371,delogo=0:0:640:480[delogoed];[split_main][delogoed]overlay=eof_action=pass[out]'
+masked.avi
 @end example
 
 You can chain together more overlays but the efficiency of such

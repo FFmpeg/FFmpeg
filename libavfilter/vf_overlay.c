@@ -60,6 +60,16 @@ enum var_name {
     VAR_VARS_NB
 };
 
+enum EOFAction {
+    EOF_ACTION_REPEAT,
+    EOF_ACTION_ENDALL,
+    EOF_ACTION_PASS
+};
+
+static const char *eof_action_str[] = {
+    "repeat", "endall", "pass"
+};
+
 #define MAIN    0
 #define OVERLAY 1
 
@@ -71,6 +81,8 @@ typedef struct {
     int hsub, vsub;             ///< chroma subsampling values
 
     char *x_expr, *y_expr;
+
+    enum EOFAction eof_action;  ///< action to take on EOF from source
 
     AVFrame *main;
     AVFrame *over_prev, *over_next;
@@ -145,12 +157,13 @@ static int config_input_overlay(AVFilterLink *inlink)
     s->x = res;
 
     av_log(ctx, AV_LOG_VERBOSE,
-           "main w:%d h:%d fmt:%s overlay x:%d y:%d w:%d h:%d fmt:%s\n",
+           "main w:%d h:%d fmt:%s overlay x:%d y:%d w:%d h:%d fmt:%s eof_action:%s\n",
            ctx->inputs[MAIN]->w, ctx->inputs[MAIN]->h,
            av_get_pix_fmt_name(ctx->inputs[MAIN]->format),
            s->x, s->y,
            ctx->inputs[OVERLAY]->w, ctx->inputs[OVERLAY]->h,
-           av_get_pix_fmt_name(ctx->inputs[OVERLAY]->format));
+           av_get_pix_fmt_name(ctx->inputs[OVERLAY]->format),
+           eof_action_str[s->eof_action]);
 
     if (s->x < 0 || s->y < 0 ||
         s->x + var_values[VAR_OVERLAY_W] > var_values[VAR_MAIN_W] ||
@@ -291,8 +304,12 @@ static int output_frame(AVFilterContext *ctx)
 static int handle_overlay_eof(AVFilterContext *ctx)
 {
     OverlayContext *s = ctx->priv;
-    if (s->over_prev)
+    /* Repeat previous frame on secondary input */
+    if (s->over_prev && s->eof_action == EOF_ACTION_REPEAT)
         blend_frame(ctx, s->main, s->over_prev, s->x, s->y);
+    /* End both streams */
+    else if (s->eof_action == EOF_ACTION_ENDALL)
+        return AVERROR_EOF;
     return output_frame(ctx);
 }
 
@@ -311,8 +328,7 @@ static int request_frame(AVFilterLink *outlink)
             return ret;
     }
 
-    /* get a new frame on the overlay input, on EOF
-     * reuse previous */
+    /* get a new frame on the overlay input, on EOF check setting 'eof_action' */
     if (!s->over_next) {
         ret = ff_request_frame(ctx->inputs[OVERLAY]);
         if (ret == AVERROR_EOF)
@@ -354,6 +370,12 @@ static const AVOption options[] = {
         "main video.",          OFFSET(x_expr), AV_OPT_TYPE_STRING, { .str = "0" }, .flags = FLAGS },
     { "y", "Vertical position of the top edge of the overlaid video on the "
         "main video.",          OFFSET(y_expr), AV_OPT_TYPE_STRING, { .str = "0" }, .flags = FLAGS },
+    { "eof_action", "Action to take when encountering EOF from secondary input ",
+        OFFSET(eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
+        EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, "eof_action" },
+        { "repeat", "Repeat the previous frame.",   0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, "eof_action" },
+        { "endall", "End both streams.",            0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, "eof_action" },
+        { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, "eof_action" },
     { NULL },
 };
 
