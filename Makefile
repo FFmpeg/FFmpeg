@@ -31,7 +31,7 @@ OBJS-ffmpeg                   += ffmpeg_opt.o ffmpeg_filter.o
 OBJS-ffmpeg-$(HAVE_VDPAU_X11) += ffmpeg_vdpau.o
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
-TOOLS       = qt-faststart trasher
+TOOLS       = qt-faststart trasher uncoded_frame
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 
 FFLIBS-$(CONFIG_AVDEVICE) += avdevice
@@ -61,6 +61,8 @@ $(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
 	$(LD) $(LDFLAGS) $(LD_O) $^ $(ELIBS)
 
 tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
+tools/uncoded_frame$(EXESUF): $(FF_DEP_LIBS)
+tools/uncoded_frame$(EXESUF): ELIBS = $(FF_EXTRALIBS)
 
 config.h: .config
 .config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))
