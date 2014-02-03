@@ -3430,6 +3430,12 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                pps_id);
         return AVERROR_INVALIDDATA;
     }
+    if (h0->au_pps_id >= 0 && pps_id != h0->au_pps_id) {
+        av_log(h->avctx, AV_LOG_ERROR,
+               "PPS change from %d to %d forbidden\n",
+               h0->au_pps_id, pps_id);
+        return AVERROR_INVALIDDATA;
+    }
     h->pps = *h0->pps_buffers[pps_id];
 
     if (!h0->sps_buffers[h->pps.sps_id]) {
@@ -4022,6 +4028,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     if (h->ref_count[0]) h->er.last_pic = &h->ref_list[0][0];
     if (h->ref_count[1]) h->er.next_pic = &h->ref_list[1][0];
     h->er.ref_count = h->ref_count[0];
+    h0->au_pps_id = pps_id;
 
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->avctx, AV_LOG_DEBUG,
@@ -4788,6 +4795,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                 continue;
 
 again:
+            if (   !(avctx->active_thread_type & FF_THREAD_FRAME)
+                || nals_needed >= nal_index)
+                h->au_pps_id = -1;
             /* Ignore per frame NAL unit type during extradata
              * parsing. Decoding slices is not possible in codec init
              * with frame-mt */
