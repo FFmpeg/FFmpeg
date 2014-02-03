@@ -921,34 +921,6 @@ WRAPPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WRAPPER8_16_SQ(rd8x8_c, rd16_c)
 WRAPPER8_16_SQ(bit8x8_c, bit16_c)
 
-/* draw the edges of width 'w' of an image of size width, height */
-// FIXME: Check that this is OK for MPEG-4 interlaced.
-static void draw_edges_8_c(uint8_t *buf, int wrap, int width, int height,
-                           int w, int h, int sides)
-{
-    uint8_t *ptr = buf, *last_line;
-    int i;
-
-    /* left and right */
-    for (i = 0; i < height; i++) {
-        memset(ptr - w, ptr[0], w);
-        memset(ptr + width, ptr[width - 1], w);
-        ptr += wrap;
-    }
-
-    /* top and bottom + corners */
-    buf -= w;
-    last_line = buf + (height - 1) * wrap;
-    if (sides & EDGE_TOP)
-        for (i = 0; i < h; i++)
-            // top
-            memcpy(buf - (i + 1) * wrap, buf, width + w + w);
-    if (sides & EDGE_BOTTOM)
-        for (i = 0; i < h; i++)
-            // bottom
-            memcpy(last_line + (i + 1) * wrap, last_line, width + w + w);
-}
-
 /* init static data */
 av_cold void ff_dsputil_static_init(void)
 {
@@ -1022,8 +994,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->vsse[5] = vsse_intra8_c;
     c->nsse[0] = nsse16_c;
     c->nsse[1] = nsse8_c;
-
-    c->draw_edges = draw_edges_8_c;
 
     switch (avctx->bits_per_raw_sample) {
     case 9:

@@ -83,12 +83,6 @@ typedef struct DSPContext {
     /* (I)DCT */
     void (*fdct)(int16_t *block /* align 16 */);
     void (*fdct248)(int16_t *block /* align 16 */);
-
-    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height,
-                       int w, int h, int sides);
-#define EDGE_WIDTH 16
-#define EDGE_TOP    1
-#define EDGE_BOTTOM 2
 } DSPContext;
 
 void ff_dsputil_static_init(void);

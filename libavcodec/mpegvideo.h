@@ -80,6 +80,8 @@ enum OutputFormat {
 
 #define INPLACE_OFFSET 16
 
+#define EDGE_WIDTH 16
+
 /* Start codes. */
 #define SEQ_END_CODE            0x000001b7
 #define SEQ_START_CODE          0x000001b3

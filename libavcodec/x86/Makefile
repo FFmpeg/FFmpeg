@@ -51,7 +51,6 @@ OBJS-$(CONFIG_VP8_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 
 MMX-OBJS-$(CONFIG_AUDIODSP)            += x86/audiodsp_mmx.o
-MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/fdct.o
 MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o                \
                                           x86/hpeldsp_mmx.o

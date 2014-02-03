@@ -1391,18 +1391,22 @@ static void frame_end(MpegEncContext *s)
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
         int hshift = desc->log2_chroma_w;
         int vshift = desc->log2_chroma_h;
-        s->dsp.draw_edges(s->current_picture.f->data[0], s->linesize,
-                          s->h_edge_pos, s->v_edge_pos,
-                          EDGE_WIDTH, EDGE_WIDTH,
-                          EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(s->current_picture.f->data[1], s->uvlinesize,
-                          s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
-                          EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
-                          EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(s->current_picture.f->data[2], s->uvlinesize,
-                          s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
-                          EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
-                          EDGE_TOP | EDGE_BOTTOM);
+        s->mpvencdsp.draw_edges(s->current_picture.f->data[0], s->linesize,
+                                s->h_edge_pos, s->v_edge_pos,
+                                EDGE_WIDTH, EDGE_WIDTH,
+                                EDGE_TOP | EDGE_BOTTOM);
+        s->mpvencdsp.draw_edges(s->current_picture.f->data[1], s->uvlinesize,
+                                s->h_edge_pos >> hshift,
+                                s->v_edge_pos >> vshift,
+                                EDGE_WIDTH >> hshift,
+                                EDGE_WIDTH >> vshift,
+                                EDGE_TOP | EDGE_BOTTOM);
+        s->mpvencdsp.draw_edges(s->current_picture.f->data[2], s->uvlinesize,
+                                s->h_edge_pos >> hshift,
+                                s->v_edge_pos >> vshift,
+                                EDGE_WIDTH >> hshift,
+                                EDGE_WIDTH >> vshift,
+                                EDGE_TOP | EDGE_BOTTOM);
     }
 
     emms_c();

@@ -41,6 +41,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
+#include "mpegvideo.h"
 #include "thread.h"
 #include "internal.h"
 #include "bytestream.h"
