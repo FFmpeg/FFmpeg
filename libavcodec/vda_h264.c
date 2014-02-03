@@ -41,6 +41,9 @@ static void vda_decoder_callback(void *vda_hw_ctx,
 {
     struct vda_context *vda_ctx = vda_hw_ctx;
 
+    if (infoFlags & kVDADecodeInfo_FrameDropped)
+        vda_ctx->cv_buffer = NULL;
+
     if (!image_buffer)
         return;
 
