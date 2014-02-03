@@ -367,11 +367,15 @@ static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
     int i, r, g, b, a = 0;
     DVBSubContext *ctx = avctx->priv_data;
 
-    if (!avctx->extradata || avctx->extradata_size != 4) {
-        av_log(avctx, AV_LOG_WARNING, "Invalid extradata, subtitle streams may be combined!\n");
+    if (!avctx->extradata || (avctx->extradata_size < 4) || ((avctx->extradata_size % 5 != 0) && (avctx->extradata_size != 4))) {
+        av_log(avctx, AV_LOG_WARNING, "Invalid DVB subtitles stream extradata!\n");
         ctx->composition_id = -1;
         ctx->ancillary_id   = -1;
     } else {
+        if (avctx->extradata_size > 5) {
+            av_log(avctx, AV_LOG_WARNING, "Decoding first DVB subtitles sub-stream\n");
+        }
+
         ctx->composition_id = AV_RB16(avctx->extradata);
         ctx->ancillary_id   = AV_RB16(avctx->extradata + 2);
     }
