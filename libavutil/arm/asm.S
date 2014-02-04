@@ -72,11 +72,14 @@ ELF     .size   \name, . - \name
         .align          \align
     .if \export
         .global EXTERN_ASM\name
+ELF     .type   EXTERN_ASM\name, %function
+        .func   EXTERN_ASM\name
 EXTERN_ASM\name:
-    .endif
+    .else
 ELF     .type   \name, %function
         .func   \name
 \name:
+    .endif
 .endm
 
 .macro  const   name, align=2
