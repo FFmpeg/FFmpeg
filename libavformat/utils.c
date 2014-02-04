@@ -433,7 +433,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
                           unsigned int offset, unsigned int max_probe_size)
 {
     AVProbeData pd = { filename ? filename : "", NULL, -offset };
-    unsigned char *buf = NULL;
+    uint8_t *buf = NULL;
     uint8_t *mime_type;
     int ret = 0, probe_size, buf_offset = 0;
     int score = 0;
