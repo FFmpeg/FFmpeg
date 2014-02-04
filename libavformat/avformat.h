@@ -1457,28 +1457,36 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
 /**
  * Write a packet to an output media file ensuring correct interleaving.
  *
- * The packet must contain one audio or video frame.
- * If the packets are already correctly interleaved, the application should
- * call av_write_frame() instead as it is slightly faster. It is also important
- * to keep in mind that completely non-interleaved input will need huge amounts
- * of memory to interleave with this, so it is preferable to interleave at the
- * demuxer level.
+ * This function will buffer the packets internally as needed to make sure the
+ * packets in the output file are properly interleaved in the order of
+ * increasing dts. Callers doing their own interleaving should call
+ * av_write_frame() instead of this function.
  *
  * @param s media file handle
- * @param pkt The packet containing the data to be written. pkt->buf must be set
- * to a valid AVBufferRef describing the packet data. Libavformat takes
- * ownership of this reference and will unref it when it sees fit. The caller
- * must not access the data through this reference after this function returns.
- * This can be NULL (at any time, not just at the end), to flush the
- * interleaving queues.
- * Packet's @ref AVPacket.stream_index "stream_index" field must be set to the
- * index of the corresponding stream in @ref AVFormatContext.streams
- * "s.streams".
- * It is very strongly recommended that timing information (@ref AVPacket.pts
- * "pts", @ref AVPacket.dts "dts" @ref AVPacket.duration "duration") is set to
- * correct values.
+ * @param pkt @parblock
+ *            The packet containing the data to be written.
+ *
+ *            If the packet is reference-counted, this function will take
+ *            ownership of this reference and unreference it later when it sees
+ *            fit.
+ *            The caller must not access the data through this reference after
+ *            this function returns. If the packet is not reference-counted,
+ *            libavformat will make a copy.
+ *
+ *            This parameter can be NULL (at any time, not just at the end), to
+ *            flush the interleaving queues.
+ *
+ *            Packet's @ref AVPacket.stream_index "stream_index" field must be
+ *            set to the index of the corresponding stream in @ref
+ *            AVFormatContext.streams "s->streams". It is very strongly
+ *            recommended that timing information (@ref AVPacket.pts "pts", @ref
+ *            AVPacket.dts "dts", @ref AVPacket.duration "duration") is set to
+ *            correct values.
+ *            @endparblock
  *
  * @return 0 on success, a negative AVERROR on error.
+ *
+ * @see av_write_frame(), AVFormatContext.max_interleave_delta
  */
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
 
