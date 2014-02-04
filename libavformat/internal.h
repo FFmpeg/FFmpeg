@@ -46,6 +46,14 @@ typedef struct CodecMime{
     enum AVCodecID id;
 } CodecMime;
 
+struct AVFormatInternal {
+    /**
+     * Number of streams relevant for interleaving.
+     * Muxing only.
+     */
+    int nb_interleaved_streams;
+};
+
 #ifdef __GNUC__
 #define dynarray_add(tab, nb_ptr, elem)\
 do {\

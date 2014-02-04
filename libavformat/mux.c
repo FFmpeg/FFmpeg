@@ -320,6 +320,9 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
             av_log(s, AV_LOG_WARNING,
                    "Codec for stream %d does not use global headers "
                    "but container format requires global headers\n", i);
+
+        if (codec->codec_type != AVMEDIA_TYPE_ATTACHMENT)
+            s->internal->nb_interleaved_streams++;
     }
 
     if (!s->priv_data && of->priv_data_size > 0) {
@@ -727,7 +730,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
         }
     }
 
-    if (s->nb_streams == stream_count) {
+    if (s->internal->nb_interleaved_streams == stream_count) {
         flush = 1;
     } else if (!flush) {
         for (i=0; i < s->nb_streams; i++) {
@@ -742,7 +745,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
                 delta_dts_max= FFMAX(delta_dts_max, delta_dts);
             }
         }
-        if (s->nb_streams == stream_count+noninterleaved_count &&
+        if (s->internal->nb_interleaved_streams == stream_count+noninterleaved_count &&
            delta_dts_max > 20*AV_TIME_BASE) {
             av_log(s, AV_LOG_DEBUG, "flushing with %d noninterleaved\n", noninterleaved_count);
             flush = 1;
