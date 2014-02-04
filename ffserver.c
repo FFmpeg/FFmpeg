@@ -2275,7 +2275,9 @@ static int http_prepare_data(HTTPContext *c)
     av_freep(&c->pb_buffer);
     switch(c->state) {
     case HTTPSTATE_SEND_DATA_HEADER:
-        memset(&c->fmt_ctx, 0, sizeof(c->fmt_ctx));
+        ctx = avformat_alloc_context();
+        c->fmt_ctx = *ctx;
+        av_freep(&ctx);
         av_dict_copy(&(c->fmt_ctx.metadata), c->stream->metadata, 0);
         c->fmt_ctx.streams = av_mallocz(sizeof(AVStream *) * c->stream->nb_streams);
 
@@ -3818,7 +3820,7 @@ static void build_feed_streams(void)
             }
         }
         if (avio_check(feed->feed_filename, AVIO_FLAG_WRITE) <= 0) {
-            AVFormatContext s1 = {0}, *s = &s1;
+            AVFormatContext *s = avformat_alloc_context();
 
             if (feed->readonly) {
                 http_log("Unable to create feed file '%s' as it is marked readonly\n",
@@ -3842,6 +3844,9 @@ static void build_feed_streams(void)
             /* XXX: need better api */
             av_freep(&s->priv_data);
             avio_close(s->pb);
+            s->streams = NULL;
+            s->nb_streams = 0;
+            avformat_free_context(s);
         }
         /* get feed size and write index */
         fd = open(feed->feed_filename, O_RDONLY);
