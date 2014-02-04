@@ -3526,9 +3526,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
     if (h->pps.sps_id != h->current_sps_id ||
         h0->sps_buffers[h->pps.sps_id]->new) {
-        h0->sps_buffers[h->pps.sps_id]->new = 0;
 
-        h->current_sps_id = h->pps.sps_id;
         h->sps            = *h0->sps_buffers[h->pps.sps_id];
 
         if (h->mb_width  != h->sps.mb_width ||
@@ -4111,6 +4109,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     if (h->ref_count[1]) h->er.next_pic = &h->ref_list[1][0];
     h->er.ref_count = h->ref_count[0];
     h0->au_pps_id = pps_id;
+    h->sps.new =
+    h0->sps_buffers[h->pps.sps_id]->new = 0;
+    h->current_sps_id = h->pps.sps_id;
 
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->avctx, AV_LOG_DEBUG,
