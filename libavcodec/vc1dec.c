@@ -2113,6 +2113,8 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
     int r_x, r_y;
     const uint8_t *is_intra = v->mb_type[0];
 
+    av_assert0(!v->field_mode);
+
     r_x = v->range_x;
     r_y = v->range_y;
     /* scale MV difference to be quad-pel */
@@ -2131,7 +2133,6 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
         s->current_picture.motion_val[1][xy + v->blocks_off][1] = 0;
         return;
     }
-    if (!v->field_mode) {
         if (direct && s->next_picture_ptr->field_picture)
             av_log(s->avctx, AV_LOG_WARNING, "Mixed frame/field direct mode not supported\n");
 
@@ -2145,7 +2146,6 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
         s->mv[0][0][1] = av_clip(s->mv[0][0][1], -60 - (s->mb_y << 6), (s->mb_height << 6) - 4 - (s->mb_y << 6));
         s->mv[1][0][0] = av_clip(s->mv[1][0][0], -60 - (s->mb_x << 6), (s->mb_width  << 6) - 4 - (s->mb_x << 6));
         s->mv[1][0][1] = av_clip(s->mv[1][0][1], -60 - (s->mb_y << 6), (s->mb_height << 6) - 4 - (s->mb_y << 6));
-    }
     if (direct) {
         s->current_picture.motion_val[0][xy + v->blocks_off][0] = s->mv[0][0][0];
         s->current_picture.motion_val[0][xy + v->blocks_off][1] = s->mv[0][0][1];
