@@ -2127,10 +2127,10 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
     xy = s->block_index[0];
 
     if (s->mb_intra) {
-        s->current_picture.motion_val[0][xy + v->blocks_off][0] =
-        s->current_picture.motion_val[0][xy + v->blocks_off][1] =
-        s->current_picture.motion_val[1][xy + v->blocks_off][0] =
-        s->current_picture.motion_val[1][xy + v->blocks_off][1] = 0;
+        s->current_picture.motion_val[0][xy][0] =
+        s->current_picture.motion_val[0][xy][1] =
+        s->current_picture.motion_val[1][xy][0] =
+        s->current_picture.motion_val[1][xy][1] = 0;
         return;
     }
         if (direct && s->next_picture_ptr->field_picture)
@@ -2147,10 +2147,10 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
         s->mv[1][0][0] = av_clip(s->mv[1][0][0], -60 - (s->mb_x << 6), (s->mb_width  << 6) - 4 - (s->mb_x << 6));
         s->mv[1][0][1] = av_clip(s->mv[1][0][1], -60 - (s->mb_y << 6), (s->mb_height << 6) - 4 - (s->mb_y << 6));
     if (direct) {
-        s->current_picture.motion_val[0][xy + v->blocks_off][0] = s->mv[0][0][0];
-        s->current_picture.motion_val[0][xy + v->blocks_off][1] = s->mv[0][0][1];
-        s->current_picture.motion_val[1][xy + v->blocks_off][0] = s->mv[1][0][0];
-        s->current_picture.motion_val[1][xy + v->blocks_off][1] = s->mv[1][0][1];
+        s->current_picture.motion_val[0][xy][0] = s->mv[0][0][0];
+        s->current_picture.motion_val[0][xy][1] = s->mv[0][0][1];
+        s->current_picture.motion_val[1][xy][0] = s->mv[1][0][0];
+        s->current_picture.motion_val[1][xy][1] = s->mv[1][0][1];
         return;
     }
 
