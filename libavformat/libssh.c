@@ -19,6 +19,7 @@
  */
 
 #include <fcntl.h>
+#define LIBSSH_STATIC
 #include <libssh/sftp.h>
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
