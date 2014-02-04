@@ -69,6 +69,16 @@ enum var_name {
     VAR_VARS_NB
 };
 
+enum EOFAction {
+    EOF_ACTION_REPEAT,
+    EOF_ACTION_ENDALL,
+    EOF_ACTION_PASS
+};
+
+static const char *eof_action_str[] = {
+    "repeat", "endall", "pass"
+};
+
 #define MAIN    0
 #define OVERLAY 1
 
@@ -103,6 +113,9 @@ typedef struct {
 
     double var_values[VAR_VARS_NB];
     char *x_expr, *y_expr;
+
+    enum EOFAction eof_action;  ///< action to take on EOF from source
+
     AVExpr *x_pexpr, *y_pexpr;
 } OverlayContext;
 
@@ -309,11 +322,12 @@ static int config_input_overlay(AVFilterLink *inlink)
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
-           "main w:%d h:%d fmt:%s overlay w:%d h:%d fmt:%s\n",
+           "main w:%d h:%d fmt:%s overlay w:%d h:%d fmt:%s eof_action:%s\n",
            ctx->inputs[MAIN]->w, ctx->inputs[MAIN]->h,
            av_get_pix_fmt_name(ctx->inputs[MAIN]->format),
            ctx->inputs[OVERLAY]->w, ctx->inputs[OVERLAY]->h,
-           av_get_pix_fmt_name(ctx->inputs[OVERLAY]->format));
+           av_get_pix_fmt_name(ctx->inputs[OVERLAY]->format),
+           eof_action_str[s->eof_action]);
     return 0;
 }
 
@@ -581,6 +595,15 @@ static av_cold int init(AVFilterContext *ctx)
                "The rgb option is deprecated and is overriding the format option, use format instead\n");
         s->format = OVERLAY_FORMAT_RGB;
     }
+    if (!s->dinput.repeatlast || s->eof_action == EOF_ACTION_PASS) {
+        s->dinput.repeatlast = 0;
+        s->eof_action = EOF_ACTION_PASS;
+    }
+    if (s->dinput.shortest || s->eof_action == EOF_ACTION_ENDALL) {
+        s->dinput.shortest = 1;
+        s->eof_action = EOF_ACTION_ENDALL;
+    }
+
     s->dinput.process = do_blend;
     return 0;
 }
@@ -591,6 +614,12 @@ static av_cold int init(AVFilterContext *ctx)
 static const AVOption overlay_options[] = {
     { "x", "set the x expression", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "y", "set the y expression", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "eof_action", "Action to take when encountering EOF from secondary input ",
+        OFFSET(eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
+        EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, "eof_action" },
+        { "repeat", "Repeat the previous frame.",   0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, "eof_action" },
+        { "endall", "End both streams.",            0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, "eof_action" },
+        { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, "eof_action" },
     { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_FRAME}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },

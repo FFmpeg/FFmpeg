@@ -5909,6 +5909,19 @@ on the main video. Default value is "0" for both expressions. In case
 the expression is invalid, it is set to a huge value (meaning that the
 overlay will not be displayed within the output visible area).
 
+@item eof_action
+The action to take when EOF is encountered on the secondary input, accepts one
+of the following values:
+
+@table @option
+@item repeat
+repeat the last frame (the default)
+@item endall
+end both streams
+@item pass
+pass through the main input
+@end table
+
 @item eval
 Set when the expressions for @option{x}, and @option{y} are evaluated.
 
@@ -5990,6 +6003,7 @@ the position in the file of the input frame, NAN if unknown
 
 @item t
 timestamp expressed in seconds, NAN if the input timestamp is unknown
+
 @end table
 
 Note that the @var{n}, @var{pos}, @var{t} variables are available only
@@ -6083,6 +6097,14 @@ nullsrc=size=200x100 [background];
 [background][left]       overlay=shortest=1       [background+left];
 [background+left][right] overlay=shortest=1:x=100 [left+right]
 "
+@end example
+
+@item
+mask 10-20 seconds of a video by applying the delogo filter to a section
+@example
+ffmpeg -i test.avi -codec:v:0 wmv2 -ar 11025 -b:v 9000k
+-vf '[in]split[split_main][split_delogo];[split_delogo]trim=start=360:end=371,delogo=0:0:640:480[delogoed];[split_main][delogoed]overlay=eof_action=pass[out]'
+masked.avi
 @end example
 
 @item
