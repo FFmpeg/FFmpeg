@@ -979,7 +979,8 @@ static int decode_pic(AVSContext *h)
     if (h->cur.f->data[0])
         h->avctx->release_buffer(h->avctx, h->cur.f);
 
-    if ((ret = ff_get_buffer(h->avctx, h->cur.f)) < 0)
+    ret = ff_get_buffer(h->avctx, h->cur.f);
+    if (ret < 0)
         return ret;
 
     if (!h->edge_emu_buffer) {
