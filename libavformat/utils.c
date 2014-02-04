@@ -3373,7 +3373,8 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
             continue;
         if (wanted_stream_nb >= 0 && real_stream_index != wanted_stream_nb)
             continue;
-        if (st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED |
+        if (wanted_stream_nb != real_stream_index &&
+            st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED |
                                AV_DISPOSITION_VISUAL_IMPAIRED))
             continue;
         if (type == AVMEDIA_TYPE_AUDIO && !avctx->channels)
