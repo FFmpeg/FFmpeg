@@ -78,6 +78,8 @@ static int ogg_save(AVFormatContext *s)
         struct ogg_stream *os = ogg->streams + i;
         os->buf = av_mallocz(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
         memcpy(os->buf, ost->streams[i].buf, os->bufpos);
+        os->new_metadata      = NULL;
+        os->new_metadata_size = 0;
     }
 
     ogg->state = ost;
@@ -144,6 +146,8 @@ static int ogg_reset(AVFormatContext *s)
             os->lastpts = 0;
         }
         os->end_trimming = 0;
+        av_freep(&os->new_metadata);
+        os->new_metadata_size = 0;
     }
 
     ogg->page_pos = -1;
@@ -641,6 +645,7 @@ static int ogg_read_close(AVFormatContext *s)
             ogg->streams[i].codec->cleanup(s, i);
         }
         av_freep(&ogg->streams[i].private);
+        av_freep(&ogg->streams[i].new_metadata);
     }
     av_freep(&ogg->streams);
     return 0;
@@ -787,6 +792,15 @@ retry:
         }
         AV_WL32(side_data + 4, os->end_trimming);
         os->end_trimming = 0;
+    }
+
+    if (os->new_metadata) {
+        uint8_t *side_data = av_packet_new_side_data(pkt,
+                                                     AV_PKT_DATA_METADATA_UPDATE,
+                                                     os->new_metadata_size);
+        memcpy(side_data, os->new_metadata, os->new_metadata_size);
+        av_freep(&os->new_metadata);
+        os->new_metadata_size = 0;
     }
 
     return psize;
