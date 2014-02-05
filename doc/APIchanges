@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-02-xx - xxxxxxx - lavf 55.11.0 - avformat.h
+  Add AVFormatContext.max_interleave_delta for controlling amount of buffering
+  when interleaving.
+
 2014-02-02 - xxxxxxx - lavf 55.29.100 - avformat.h
   Add output_ts_offset muxing option to AVFormatContext.
 

@@ -713,7 +713,6 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 {
     AVPacketList *pktl;
     int stream_count = 0, noninterleaved_count = 0;
-    int64_t delta_dts_max = 0;
     int i, ret;
 
     if (pkt) {
@@ -730,27 +729,38 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
         }
     }
 
-    if (s->internal->nb_interleaved_streams == stream_count) {
+    if (s->internal->nb_interleaved_streams == stream_count)
         flush = 1;
-    } else if (!flush) {
-        for (i=0; i < s->nb_streams; i++) {
-            if (s->streams[i]->last_in_packet_buffer) {
-                int64_t delta_dts =
-                    av_rescale_q(s->streams[i]->last_in_packet_buffer->pkt.dts,
-                                s->streams[i]->time_base,
-                                AV_TIME_BASE_Q) -
-                    av_rescale_q(s->packet_buffer->pkt.dts,
-                                s->streams[s->packet_buffer->pkt.stream_index]->time_base,
-                                AV_TIME_BASE_Q);
-                delta_dts_max= FFMAX(delta_dts_max, delta_dts);
-            }
+
+    if (s->max_interleave_delta > 0 && s->packet_buffer && !flush) {
+        AVPacket *top_pkt = &s->packet_buffer->pkt;
+        int64_t delta_dts = INT64_MIN;
+        int64_t top_dts = av_rescale_q(top_pkt->dts,
+                                       s->streams[top_pkt->stream_index]->time_base,
+                                       AV_TIME_BASE_Q);
+
+        for (i = 0; i < s->nb_streams; i++) {
+            int64_t last_dts;
+            const AVPacketList *last = s->streams[i]->last_in_packet_buffer;
+
+            if (!last)
+                continue;
+
+            last_dts = av_rescale_q(last->pkt.dts,
+                                    s->streams[i]->time_base,
+                                    AV_TIME_BASE_Q);
+            delta_dts = FFMAX(delta_dts, last_dts - top_dts);
         }
-        if (s->internal->nb_interleaved_streams == stream_count+noninterleaved_count &&
-           delta_dts_max > 20*AV_TIME_BASE) {
-            av_log(s, AV_LOG_DEBUG, "flushing with %d noninterleaved\n", noninterleaved_count);
+
+        if (delta_dts > s->max_interleave_delta) {
+            av_log(s, AV_LOG_DEBUG,
+                   "Delay between the first packet and last packet in the "
+                   "muxing queue is %"PRId64" > %"PRId64": forcing output\n",
+                   delta_dts, s->max_interleave_delta);
             flush = 1;
         }
     }
+
     if (stream_count && flush) {
         AVStream *st;
         pktl = s->packet_buffer;
