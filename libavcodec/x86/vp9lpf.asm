@@ -759,30 +759,17 @@ SECTION .text
     movd  [Q6], m14
     movd  [Q7], m15
 %else
-    mova                    m4, [P3]
-    mova                    m5, [P2]
-    mova                    m6, [P1]
-    mova                    m7, [P0]
-    mova                    m8, [Q0]
-    mova                    m9, [Q1]
-    mova                   m10, [Q2]
-    mova                   m11, [Q3]
-
-    DEFINE_REAL_P7_TO_Q7
-
-    ; the following code do a transpose of 8 full centered lines to 16 half
+    ; the following code do a transpose of 8 full lines to 16 half
     ; lines (high part). It is inlined to avoid the need of a staging area
-
-    ; move from [-4;4] to [-8;0]
-    SWAP 0, 4
-    SWAP 1, 5
-    SWAP 2, 6
-    SWAP 3, 7
-    SWAP 4, 8
-    SWAP 5, 9
-    SWAP 6, 10
-    SWAP 7, 11
-
+    mova                    m0, [P3]
+    mova                    m1, [P2]
+    mova                    m2, [P1]
+    mova                    m3, [P0]
+    mova                    m4, [Q0]
+    mova                    m5, [Q1]
+    mova                    m6, [Q2]
+    mova                    m7, [Q3]
+    DEFINE_REAL_P7_TO_Q7
     SBUTTERFLY  bw,  0,  1, 8
     SBUTTERFLY  bw,  2,  3, 8
     SBUTTERFLY  bw,  4,  5, 8
