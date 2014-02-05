@@ -155,10 +155,15 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                     av_log(as, AV_LOG_WARNING, "Failed to parse cover art block.\n");
                     continue;
                 }
-            } else if (!ogm_chapter(as, tt, ct))
+            } else if (!ogm_chapter(as, tt, ct)) {
+                if (m && av_dict_get(*m, tt, NULL, 0)) {
+                    av_dict_set(m, tt, ";", AV_DICT_APPEND);
+                }
                 av_dict_set(m, tt, ct,
                             AV_DICT_DONT_STRDUP_KEY |
-                            AV_DICT_DONT_STRDUP_VAL);
+                            AV_DICT_APPEND);
+                av_freep(&ct);
+            }
         }
     }
 
