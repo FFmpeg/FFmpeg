@@ -284,6 +284,18 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
         if (ret < 0)
             return ret;
     }
+#if ARCH_X86_64
+    if (!s->dl_handle) {
+        ret = load_path(ctx, &s->dl_handle, "/usr/local/lib64/frei0r-1/", dl_name);
+        if (ret < 0)
+            return ret;
+    }
+    if (!s->dl_handle) {
+        ret = load_path(ctx, &s->dl_handle, "/usr/lib64/frei0r-1/", dl_name);
+        if (ret < 0)
+            return ret;
+    }
+#endif
     if (!s->dl_handle) {
         av_log(ctx, AV_LOG_ERROR, "Could not find module '%s'\n", dl_name);
         return AVERROR(EINVAL);
