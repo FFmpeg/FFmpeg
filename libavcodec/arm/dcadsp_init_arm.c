@@ -24,16 +24,22 @@
 #include "libavutil/attributes.h"
 #include "libavcodec/dcadsp.h"
 
-void ff_dca_lfe_fir_vfp(float *out, const float *in, const float *coefs,
-                        int decifactor, float scale);
+void ff_dca_lfe_fir0_neon(float *out, const float *in, const float *coefs,
+                          float scale);
+void ff_dca_lfe_fir1_neon(float *out, const float *in, const float *coefs,
+                          float scale);
+
+void ff_dca_lfe_fir32_vfp(float *out, const float *in, const float *coefs,
+                          float scale);
+void ff_dca_lfe_fir64_vfp(float *out, const float *in, const float *coefs,
+                          float scale);
+
 void ff_dca_qmf_32_subbands_vfp(float samples_in[32][8], int sb_act,
                                 SynthFilterContext *synth, FFTContext *imdct,
                                 float synth_buf_ptr[512],
                                 int *synth_buf_offset, float synth_buf2[32],
                                 const float window[512], float *samples_out,
                                 float raXin[32], float scale);
-void ff_dca_lfe_fir_neon(float *out, const float *in, const float *coefs,
-                         int decifactor, float scale);
 
 void ff_synth_filter_float_vfp(FFTContext *imdct,
                                float *synth_buf_ptr, int *synth_buf_offset,
@@ -52,11 +58,14 @@ av_cold void ff_dcadsp_init_arm(DCADSPContext *s)
     int cpu_flags = av_get_cpu_flags();
 
     if (have_vfp(cpu_flags) && !have_vfpv3(cpu_flags)) {
-        s->lfe_fir = ff_dca_lfe_fir_vfp;
+        s->lfe_fir[0]      = ff_dca_lfe_fir32_vfp;
+        s->lfe_fir[1]      = ff_dca_lfe_fir64_vfp;
         s->qmf_32_subbands = ff_dca_qmf_32_subbands_vfp;
     }
-    if (have_neon(cpu_flags))
-        s->lfe_fir = ff_dca_lfe_fir_neon;
+    if (have_neon(cpu_flags)) {
+        s->lfe_fir[0] = ff_dca_lfe_fir0_neon;
+        s->lfe_fir[1] = ff_dca_lfe_fir1_neon;
+    }
 }
 
 av_cold void ff_synth_filter_init_arm(SynthFilterContext *s)

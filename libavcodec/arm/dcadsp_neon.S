@@ -20,17 +20,23 @@
 
 #include "libavutil/arm/asm.S"
 
-function ff_dca_lfe_fir_neon, export=1
+function ff_dca_lfe_fir0_neon, export=1
         push            {r4-r6,lr}
+NOVFP   vmov            s0,  r3                 @ scale
+        mov             r3,  #32                @ decifactor
+        mov             r6,  #256/32
+        b               dca_lfe_fir
+endfunc
 
+function ff_dca_lfe_fir1_neon, export=1
+        push            {r4-r6,lr}
+NOVFP   vmov            s0,  r3                 @ scale
+        mov             r3,  #64                @ decifactor
+        mov             r6,  #256/64
+dca_lfe_fir:
         add             r4,  r0,  r3,  lsl #2   @ out2
         add             r5,  r2,  #256*4-16     @ cf1
         sub             r1,  r1,  #12
-        cmp             r3,  #32
-        ite             eq
-        moveq           r6,  #256/32
-        movne           r6,  #256/64
-NOVFP   vldr            s0,  [sp, #16]          @ scale
         mov             lr,  #-16
 1:
         vmov.f32        q2,  #0.0               @ v0
