@@ -32,6 +32,7 @@ struct oggopus_private {
     int64_t cur_dts;
 };
 
+#define OPUS_SEEK_PREROLL_MS 80
 #define OPUS_HEAD_SIZE 19
 
 static int opus_header(AVFormatContext *avf, int idx)
@@ -66,6 +67,9 @@ static int opus_header(AVFormatContext *avf, int idx)
         memcpy(st->codec->extradata, packet, os->psize);
 
         st->codec->sample_rate = 48000;
+        av_codec_set_seek_preroll(st->codec,
+                                  av_rescale(OPUS_SEEK_PREROLL_MS,
+                                             st->codec->sample_rate, 1000));
         avpriv_set_pts_info(st, 64, 1, 48000);
         priv->need_comments = 1;
         return 1;
