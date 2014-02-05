@@ -141,13 +141,16 @@ static int cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t *
 
     s->width  = AV_RL16(&buf[4]);
     s->height = AV_RL16(&buf[6]);
-    if (s->avctx->width!=s->width || s->avctx->height!=s->height) {
+
+    if (s->width  != s->avctx->width ||
+        s->height != s->avctx->height) {
         av_frame_unref(s->last_frame);
         av_frame_unref(s->last2_frame);
-        ret = ff_set_dimensions(s->avctx, s->width, s->height);
-        if (ret < 0)
-            return ret;
     }
+
+    ret = ff_set_dimensions(s->avctx, s->width, s->height);
+    if (ret < 0)
+        return ret;
 
     fps = AV_RL16(&buf[10]);
     if (fps > 0)
