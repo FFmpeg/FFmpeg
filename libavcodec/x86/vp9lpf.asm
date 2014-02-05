@@ -481,17 +481,15 @@ SECTION .text
     pxor                m4, m8
     pcmpgtb             m0, m4, m7                      ; abs(p1 - p0) > H (1/2 hev condition)
     pxor                m4, m8
-    mova                m1, m4
-    CMP_LTE             m1, m6, m5, m8                  ; abs(p1 - p0) <= 1
-    pand                m2, m1                          ; (flat8in)
+    CMP_LTE             m4, m6, m5, m8                  ; abs(p1 - p0) <= 1
+    pand                m2, m4                          ; (flat8in)
     ABSSUB              m4, m13, m12, m1                ; abs(q1 - q0)
     pxor                m4, m8
     pcmpgtb             m5, m4, m7                      ; abs(q1 - q0) > H (2/2 hev condition)
-    pxor                m4, m8
     por                 m0, m5                          ; hev final value
-    mova                m1, m4
-    CMP_LTE             m1, m6, m5, m8                  ; abs(q1 - q0) <= 1
-    pand                m2, m1                          ; (flat8in)
+    pxor                m4, m8
+    CMP_LTE             m4, m6, m5, m8                  ; abs(q1 - q0) <= 1
+    pand                m2, m4                          ; (flat8in)
     ABSSUB_CMP          m1, m14, m12, m6, m4, m5, m8    ; abs(q2 - q0) <= 1
     pand                m2, m1
     ABSSUB_CMP          m1, m15, m12, m6, m4, m5, m8    ; abs(q3 - q0) <= 1
