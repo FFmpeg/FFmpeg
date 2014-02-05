@@ -25,11 +25,12 @@
  * @author Peter Ross <pross@xvid.org>
  */
 
+#include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
 #include "internal.h"
-#include "libavutil/intreadwrite.h"
 
 typedef struct JvContext {
     DSPContext dsp;
@@ -62,19 +63,19 @@ static inline void decode2x2(GetBitContext *gb, uint8_t *dst, int linesize)
     case 1:
         v[0] = get_bits(gb, 8);
         for (j = 0; j < 2; j++)
-            memset(dst + j*linesize, v[0], 2);
+            memset(dst + j * linesize, v[0], 2);
         break;
     case 2:
         v[0] = get_bits(gb, 8);
         v[1] = get_bits(gb, 8);
         for (j = 0; j < 2; j++)
             for (i = 0; i < 2; i++)
-                dst[j*linesize + i] = v[get_bits1(gb)];
+                dst[j * linesize + i] = v[get_bits1(gb)];
         break;
     case 3:
         for (j = 0; j < 2; j++)
             for (i = 0; i < 2; i++)
-                dst[j*linesize + i] = get_bits(gb, 8);
+                dst[j * linesize + i] = get_bits(gb, 8);
     }
 }
 
@@ -89,29 +90,30 @@ static inline void decode4x4(GetBitContext *gb, uint8_t *dst, int linesize)
     case 1:
         v[0] = get_bits(gb, 8);
         for (j = 0; j < 4; j++)
-            memset(dst + j*linesize, v[0], 4);
+            memset(dst + j * linesize, v[0], 4);
         break;
     case 2:
         v[0] = get_bits(gb, 8);
         v[1] = get_bits(gb, 8);
         for (j = 2; j >= 0; j -= 2) {
             for (i = 0; i < 4; i++)
-                dst[j*linesize + i]     = v[get_bits1(gb)];
+                dst[j * linesize + i] = v[get_bits1(gb)];
             for (i = 0; i < 4; i++)
-                dst[(j+1)*linesize + i] = v[get_bits1(gb)];
+                dst[(j + 1) * linesize + i] = v[get_bits1(gb)];
         }
         break;
     case 3:
         for (j = 0; j < 4; j += 2)
             for (i = 0; i < 4; i += 2)
-                decode2x2(gb, dst + j*linesize + i, linesize);
+                decode2x2(gb, dst + j * linesize + i, linesize);
     }
 }
 
 /**
  * Decode 8x8 block
  */
-static inline void decode8x8(GetBitContext *gb, uint8_t *dst, int linesize, DSPContext *dsp)
+static inline void decode8x8(GetBitContext *gb, uint8_t *dst, int linesize,
+                             DSPContext *dsp)
 {
     int i, j, v[2];
 
@@ -124,22 +126,21 @@ static inline void decode8x8(GetBitContext *gb, uint8_t *dst, int linesize, DSPC
         v[0] = get_bits(gb, 8);
         v[1] = get_bits(gb, 8);
         for (j = 7; j >= 0; j--)
-            for (i = 0; i <  8; i++)
-                dst[j*linesize + i] = v[get_bits1(gb)];
+            for (i = 0; i < 8; i++)
+                dst[j * linesize + i] = v[get_bits1(gb)];
         break;
     case 3:
         for (j = 0; j < 8; j += 4)
             for (i = 0; i < 8; i += 4)
-                decode4x4(gb, dst + j*linesize + i, linesize);
+                decode4x4(gb, dst + j * linesize + i, linesize);
     }
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
-    JvContext *s           = avctx->priv_data;
-    const uint8_t *buf     = avpkt->data;
+    JvContext *s = avctx->priv_data;
+    const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = buf + avpkt->size;
     int video_size, video_type, i, j, ret;
 
@@ -164,16 +165,19 @@ static int decode_frame(AVCodecContext *avctx,
 
             for (j = 0; j < avctx->height; j += 8)
                 for (i = 0; i < avctx->width; i += 8)
-                    decode8x8(&gb, s->frame->data[0] + j * s->frame->linesize[0] + i,
+                    decode8x8(&gb,
+                              s->frame->data[0] + j * s->frame->linesize[0] + i,
                               s->frame->linesize[0], &s->dsp);
 
             buf += video_size;
         } else if (video_type == 2) {
             int v = *buf++;
             for (j = 0; j < avctx->height; j++)
-                memset(s->frame->data[0] + j * s->frame->linesize[0], v, avctx->width);
+                memset(s->frame->data[0] + j * s->frame->linesize[0],
+                       v, avctx->width);
         } else {
-            av_log(avctx, AV_LOG_WARNING, "unsupported frame type %i\n", video_type);
+            av_log(avctx, AV_LOG_WARNING,
+                   "unsupported frame type %i\n", video_type);
             return AVERROR_INVALIDDATA;
         }
     }
@@ -191,7 +195,7 @@ static int decode_frame(AVCodecContext *avctx,
         s->frame->key_frame           = 1;
         s->frame->pict_type           = AV_PICTURE_TYPE_I;
         s->frame->palette_has_changed = s->palette_has_changed;
-        s->palette_has_changed       = 0;
+        s->palette_has_changed        = 0;
         memcpy(s->frame->data[1], s->palette, AVPALETTE_SIZE);
 
         if ((ret = av_frame_ref(data, s->frame)) < 0)
