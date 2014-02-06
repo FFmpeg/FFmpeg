@@ -73,6 +73,7 @@ $(foreach W,$(VP9_SIZE_A),$(eval $(foreach H,$(VP9_SIZE_A),$(eval $(call FATE_VP
 $(foreach W,$(VP9_SIZE_B),$(eval $(foreach H,$(VP9_SIZE_B),$(eval $(call FATE_VP9_SUITE,03-size-$(W)x$(H),$(1),$(2))))))
 $(eval $(call FATE_VP9_SUITE,03-deltaq,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,2pass-akiyo,$(1),$(2)))
+$(eval $(call FATE_VP9_SUITE,parallelmode-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,segmentation-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,tiling-pedestrian,$(1),$(2)))
 endef
