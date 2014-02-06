@@ -1118,23 +1118,23 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
      * samples_out: An array holding interpolated samples
      */
 
-    int decifactor;
+    int idx;
     const float *prCoeff;
     int deciindex;
 
     /* Select decimation filter */
     if (decimation_select == 1) {
-        decifactor = 64;
+        idx = 1;
         prCoeff = lfe_fir_128;
     } else {
-        decifactor = 32;
+        idx = 0;
         prCoeff = lfe_fir_64;
     }
     /* Interpolation */
     for (deciindex = 0; deciindex < num_deci_sample; deciindex++) {
-        s->dcadsp.lfe_fir(samples_out, samples_in, prCoeff, decifactor, scale);
+        s->dcadsp.lfe_fir[idx](samples_out, samples_in, prCoeff, scale);
         samples_in++;
-        samples_out += 2 * decifactor;
+        samples_out += 2 * 32 * (1 + idx);
     }
 }
 

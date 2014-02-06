@@ -47,16 +47,43 @@ void ff_synth_filter_float_neon(FFTContext *imdct,
                                 float out[32], const float in[32],
                                 float scale);
 
+static void lfe_fir0_vfp(float *out, const float *in, const float *coefs,
+                         float scale)
+{
+    ff_dca_lfe_fir_vfp(out, in, coefs, 32, scale);
+}
+
+static void lfe_fir1_vfp(float *out, const float *in, const float *coefs,
+                         float scale)
+{
+    ff_dca_lfe_fir_vfp(out, in, coefs, 64, scale);
+}
+
+static void lfe_fir0_neon(float *out, const float *in, const float *coefs,
+                          float scale)
+{
+    ff_dca_lfe_fir_neon(out, in, coefs, 32, scale);
+}
+
+static void lfe_fir1_neon(float *out, const float *in, const float *coefs,
+                          float scale)
+{
+    ff_dca_lfe_fir_neon(out, in, coefs, 64, scale);
+}
+
 av_cold void ff_dcadsp_init_arm(DCADSPContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
     if (have_vfp(cpu_flags) && !have_vfpv3(cpu_flags)) {
-        s->lfe_fir = ff_dca_lfe_fir_vfp;
+        s->lfe_fir[0]      = lfe_fir0_vfp;
+        s->lfe_fir[1]      = lfe_fir1_vfp;
         s->qmf_32_subbands = ff_dca_qmf_32_subbands_vfp;
     }
-    if (have_neon(cpu_flags))
-        s->lfe_fir = ff_dca_lfe_fir_neon;
+    if (have_neon(cpu_flags)) {
+        s->lfe_fir[0] = lfe_fir0_neon;
+        s->lfe_fir[1] = lfe_fir1_neon;
+    }
 }
 
 av_cold void ff_synth_filter_init_arm(SynthFilterContext *s)
