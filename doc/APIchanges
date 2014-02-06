@@ -13,62 +13,62 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
-2014-02-xx - xxxxxxx - lavf 55.11.0 - avformat.h
+2014-02-04 - d9ae103 - lavf 55.11.0 - avformat.h
   Add AVFormatContext.max_interleave_delta for controlling amount of buffering
   when interleaving.
 
-2014-01-xx - xxxxxxx - lavc 55.32.1 - avcodec.h
+2014-01-20 - 93c553c - lavc 55.32.1 - avcodec.h
   Edges are not required anymore on video buffers allocated by get_buffer2()
   (i.e. as if the CODEC_FLAG_EMU_EDGE flag was always on). Deprecate
   CODEC_FLAG_EMU_EDGE and avcodec_get_edge_width().
 
-2013-12-xx - xxxxxxx - lavu 53.2.0 - frame.h
+2014-01-05 - 5b4797a - lavu 53.2.0 - frame.h
   Add AV_FRAME_DATA_MATRIXENCODING value to the AVFrameSideDataType enum, which
   identifies AVMatrixEncoding data.
 
-2013-12-xx - xxxxxxx - lavu 53.1.0 - channel_layout.h
+2014-01-05 - 5c437fb - lavu 53.1.0 - channel_layout.h
   Add values for various Dolby flags to the AVMatrixEncoding enum.
 
-2013-12-xx - xxxxxxx - lavc 55.30.0 - avcodec.h
+2013-12-20 - 2a41826 - lavc 55.30.0 - avcodec.h
   Add HEVC profiles
 
-2013-12-xx - xxxxxxx - lavc 55.28.1 - avcodec.h
+2013-12-11 - b9fb59d,9431356,d7b3ee9 - lavc 55.28.1 - avcodec.h
   av_frame_alloc(), av_frame_unref() and av_frame_free() now can and should be
   used instead of avcodec_alloc_frame(), avcodec_get_frame_defaults() and
   avcodec_free_frame() respectively. The latter three functions are deprecated.
 
-2013-11-xx - xxxxxxx- - lavu 52.20.0 - frame.h
+2013-12-09 - 7e244c6- - lavu 52.20.0 - frame.h
   Add AV_FRAME_DATA_STEREO3D value to the AVFrameSideDataType enum and
   stereo3d.h API, that identify codec-independent stereo3d information.
 
-2013-11-xx - xxxxxxx- - lavu 52.19.0 - frame.h
+2013-11-26 - 1eaac1d- - lavu 52.19.0 - frame.h
   Add AV_FRAME_DATA_A53_CC value to the AVFrameSideDataType enum, which
   identifies ATSC A53 Part 4 Closed Captions data.
 
-2013-11-xx - xxxxxxx - lavu 52.18.0 - mem.h
+2013-11-14 - cce3e0a - lavu 52.18.0 - mem.h
   Move av_fast_malloc() and av_fast_realloc() for libavcodec to libavutil.
 
-2013-10-xx - xxxxxxx - lavc 55.27.0 - avcodec.h
+2013-11-14 - 8941971 - lavc 55.27.0 - avcodec.h
   Deprecate AVCodecContext.error_rate, it is replaced by the 'error_rate'
   private option of the mpegvideo encoder family.
 
-2013-11-xx - xxxxxxx - lavc 55.26.0 - vdpau.h
+2013-11-14 - 728c465 - lavc 55.26.0 - vdpau.h
   Add av_vdpau_get_profile().
   Add av_vdpau_alloc_context(). This function must from now on be
   used for allocating AVVDPAUContext.
 
-2013-11-xx - xxxxxxx - lavc 55.25.0 - avcodec.h
+2013-11-04 - cd8f772 - lavc 55.25.0 - avcodec.h
   Add ITU-R BT.2020 and other not yet included values to color primaries,
   transfer characteristics and colorspaces.
 
-2013-08-xx - xxxxxxx - lavu 52.17.0 - avframe.h
+2013-10-31 - 28096e0 - lavu 52.17.0 - avframe.h
   Add AVFrame.flags and AV_FRAME_FLAG_CORRUPT.
 
-2013-08-xx - xxxxxxx - lavfi 3.11.0 - avfilter.h
+2013-09-28 - 0767bfd - lavfi 3.11.0 - avfilter.h
   Add AVFilterGraph.execute and AVFilterGraph.opaque for custom slice threading
   implementations.
 
-2013-09-21 - xxxxxxx - lavu 52.16.0 - pixfmt.h
+2013-09-21 - e208e6d - lavu 52.16.0 - pixfmt.h
   Add interleaved 4:2:2 8/10-bit formats AV_PIX_FMT_NV16 and
   AV_PIX_FMT_NV20.
 
