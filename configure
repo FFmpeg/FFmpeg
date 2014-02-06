@@ -3178,10 +3178,12 @@ elif enabled ppc; then
         e500v2)
             cpuflags="-mcpu=8548 -mhard-float -mfloat-gprs=double"
             disable altivec
+            disable dcbzl
         ;;
         e500)
             cpuflags="-mcpu=8540 -mhard-float"
             disable altivec
+            disable dcbzl
         ;;
     esac
 
