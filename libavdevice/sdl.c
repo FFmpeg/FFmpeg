@@ -292,7 +292,7 @@ static int sdl_write_header(AVFormatContext *s)
 
     /* wait until the video system has been inited */
     SDL_LockMutex(sdl->mutex);
-    if (!sdl->inited) {
+    while (!sdl->inited) {
         SDL_CondWait(sdl->init_cond, sdl->mutex);
     }
     SDL_UnlockMutex(sdl->mutex);
