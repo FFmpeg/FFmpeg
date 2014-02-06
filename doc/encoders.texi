@@ -623,6 +623,9 @@ VBR encoding, enabled through the @option{vbr} or @option{flags
 +qscale} options, is experimental and only works with some
 combinations of parameters.
 
+Support for encoding 7.1 audio is only available with libfdk-aac 0.1.3 or
+higher.
+
 For more information see the fdk-aac project at
 @url{http://sourceforge.net/p/opencore-amr/fdk-aac/}.
 
