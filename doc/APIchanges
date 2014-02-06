@@ -208,6 +208,10 @@ lavd 54.0.0, lavfi 3.5.0
   Add avresample_set_channel_mapping() for input channel reordering,
   duplication, and silencing.
 
+------------------------------8<-------------------------------------
+                   9 branch was cut here
+----------------------------->8--------------------------------------
+
 2012-12-29 - d8fd06c - lavu 52.3.0 - avstring.h
   Add av_basename() and av_dirname().
 
