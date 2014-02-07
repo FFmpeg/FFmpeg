@@ -106,8 +106,8 @@ function ff_h264_idct_add16_neon, export=1
         mov             w9,  w3         // stride
         movrel          x7,  scan8
         mov             x10, #16
-        movrel          x13, ff_h264_idct_dc_add_neon
-        movrel          x14, ff_h264_idct_add_neon
+        movrel          x13, X(ff_h264_idct_dc_add_neon)
+        movrel          x14, X(ff_h264_idct_add_neon)
 1:      mov             w2,  w9
         ldrb            w3,  [x7], #1
         ldrsw           x0,  [x5], #4
@@ -133,8 +133,8 @@ function ff_h264_idct_add16intra_neon, export=1
         mov             w9,  w3         // stride
         movrel          x7,  scan8
         mov             x10, #16
-        movrel          x13, ff_h264_idct_dc_add_neon
-        movrel          x14, ff_h264_idct_add_neon
+        movrel          x13, X(ff_h264_idct_dc_add_neon)
+        movrel          x14, X(ff_h264_idct_add_neon)
 1:      mov             w2,  w9
         ldrb            w3,  [x7], #1
         ldrsw           x0,  [x5], #4
@@ -160,8 +160,8 @@ function ff_h264_idct_add8_neon, export=1
         add             x5,  x1,  #16*4         // block_offset
         add             x9,  x2,  #16*32        // block
         mov             w19, w3                 // stride
-        movrel          x13, ff_h264_idct_dc_add_neon
-        movrel          x14, ff_h264_idct_add_neon
+        movrel          x13, X(ff_h264_idct_dc_add_neon)
+        movrel          x14, X(ff_h264_idct_add_neon)
         movrel          x7,  scan8+16
         mov             x10, #0
         mov             x11, #16
@@ -374,8 +374,8 @@ function ff_h264_idct8_add4_neon, export=1
         mov             w2,  w3
         movrel          x7,  scan8
         mov             w10, #16
-        movrel          x13, ff_h264_idct8_dc_add_neon
-        movrel          x14, ff_h264_idct8_add_neon
+        movrel          x13, X(ff_h264_idct8_dc_add_neon)
+        movrel          x14, X(ff_h264_idct8_add_neon)
 1:      ldrb            w9,  [x7], #4
         ldrsw           x0,  [x5], #16
         ldrb            w9,  [x4, w9, UXTW]
