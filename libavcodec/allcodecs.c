@@ -140,6 +140,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(ESCAPE130,         escape130);
     REGISTER_ENCDEC (FFV1,              ffv1);
     REGISTER_ENCDEC (FFVHUFF,           ffvhuff);
+    REGISTER_DECODER(FIC,               fic);
     REGISTER_ENCDEC (FLASHSV,           flashsv);
     REGISTER_DECODER(FLASHSV2,          flashsv2);
     REGISTER_DECODER(FLIC,              flic);
