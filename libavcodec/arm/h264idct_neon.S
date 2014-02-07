@@ -113,8 +113,8 @@ function ff_h264_idct_add16_neon, export=1
         movne           lr,  #0
         cmp             lr,  #0
         ite             ne
-        adrne           lr,  ff_h264_idct_dc_add_neon + CONFIG_THUMB
-        adreq           lr,  ff_h264_idct_add_neon    + CONFIG_THUMB
+        adrne           lr,  X(ff_h264_idct_dc_add_neon) + CONFIG_THUMB
+        adreq           lr,  X(ff_h264_idct_add_neon)    + CONFIG_THUMB
         blx             lr
 2:      subs            ip,  ip,  #1
         add             r1,  r1,  #32
@@ -138,8 +138,8 @@ function ff_h264_idct_add16intra_neon, export=1
         cmp             r8,  #0
         ldrsh           r8,  [r1]
         iteet           ne
-        adrne           lr,  ff_h264_idct_add_neon    + CONFIG_THUMB
-        adreq           lr,  ff_h264_idct_dc_add_neon + CONFIG_THUMB
+        adrne           lr,  X(ff_h264_idct_add_neon)    + CONFIG_THUMB
+        adreq           lr,  X(ff_h264_idct_dc_add_neon) + CONFIG_THUMB
         cmpeq           r8,  #0
         blxne           lr
         subs            ip,  ip,  #1
@@ -166,8 +166,8 @@ function ff_h264_idct_add8_neon, export=1
         cmp             r8,  #0
         ldrsh           r8,  [r1]
         iteet           ne
-        adrne           lr,  ff_h264_idct_add_neon    + CONFIG_THUMB
-        adreq           lr,  ff_h264_idct_dc_add_neon + CONFIG_THUMB
+        adrne           lr,  X(ff_h264_idct_add_neon)    + CONFIG_THUMB
+        adreq           lr,  X(ff_h264_idct_dc_add_neon) + CONFIG_THUMB
         cmpeq           r8,  #0
         blxne           lr
         add             r12, r12, #1
@@ -388,8 +388,8 @@ function ff_h264_idct8_add4_neon, export=1
         movne           lr,  #0
         cmp             lr,  #0
         ite             ne
-        adrne           lr,  ff_h264_idct8_dc_add_neon + CONFIG_THUMB
-        adreq           lr,  ff_h264_idct8_add_neon    + CONFIG_THUMB
+        adrne           lr,  X(ff_h264_idct8_dc_add_neon) + CONFIG_THUMB
+        adreq           lr,  X(ff_h264_idct8_add_neon)    + CONFIG_THUMB
         blx             lr
 2:      subs            r12, r12, #4
         add             r1,  r1,  #128

@@ -100,7 +100,7 @@ function ff_dct_unquantize_h263_intra_neon, export=1
         smulbb          r4,  r4,  r6
 2:      lsl             r0,  r3,  #1
         add             r3,  r12, #1
-        bl              ff_dct_unquantize_h263_neon
+        bl              X(ff_dct_unquantize_h263_neon)
         vmov.16         d0[0], r4
         vst1.16         {d0[0]},  [r5]
         pop             {r4-r6,pc}

@@ -133,8 +133,8 @@ function ff_conv_fltp_to_s16_neon, export=1
         cmp             r3,  #2
         itt             lt
         ldrlt           r1,  [r1]
-        blt             ff_conv_flt_to_s16_neon
-        beq             ff_conv_fltp_to_s16_2ch_neon
+        blt             X(ff_conv_flt_to_s16_neon)
+        beq             X(ff_conv_fltp_to_s16_2ch_neon)
 
         push            {r4-r8, lr}
         cmp             r3,  #4
