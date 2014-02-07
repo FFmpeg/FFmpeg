@@ -80,11 +80,22 @@ The transcoding process in @command{ffmpeg} for each output can be described by
 the following diagram:
 
 @example
- _______              ______________               _________              ______________            ________
-|       |            |              |             |         |            |              |          |        |
-| input |  demuxer   | encoded data |   decoder   | decoded |  encoder   | encoded data |  muxer   | output |
-| file  | ---------> | packets      |  ---------> | frames  | ---------> | packets      | -------> | file   |
-|_______|            |______________|             |_________|            |______________|          |________|
+ _______              ______________
+|       |            |              |
+| input |  demuxer   | encoded data |   decoder
+| file  | ---------> | packets      | -----+
+|_______|            |______________|      |
+                                           v
+                                       _________
+                                      |         |
+                                      | decoded |
+                                      | frames  |
+ ________             ______________  |_________|
+|        |           |              |      |
+| output | <-------- | encoded data | <----+
+| file   |   muxer   | packets      |   encoder
+|________|           |______________|
+
 
 @end example
 
@@ -112,11 +123,11 @@ the same type. In the above diagram they can be represented by simply inserting
 an additional step between decoding and encoding:
 
 @example
- _________                        __________              ______________
-|         |                      |          |            |              |
-| decoded |  simple filtergraph  | filtered |  encoder   | encoded data |
-| frames  | -------------------> | frames   | ---------> | packets      |
-|_________|                      |__________|            |______________|
+ _________               __________              ______________
+|         |  simple     |          |            |              |
+| decoded |  fltrgrph   | filtered |  encoder   | encoded data |
+| frames  | ----------> | frames   | ---------> | packets      |
+|_________|             |__________|            |______________|
 
 @end example
 
@@ -125,10 +136,10 @@ Simple filtergraphs are configured with the per-stream @option{-filter} option
 A simple filtergraph for video can look for example like this:
 
 @example
- _______        _____________        _______        _____        ________
-|       |      |             |      |       |      |     |      |        |
-| input | ---> | deinterlace | ---> | scale | ---> | fps | ---> | output |
-|_______|      |_____________|      |_______|      |_____|      |________|
+ _______        _____________        _______        ________
+|       |      |             |      |       |      |        |
+| input | ---> | deinterlace | ---> | scale | ---> | output |
+|_______|      |_____________|      |_______|      |________|
 
 @end example
 
