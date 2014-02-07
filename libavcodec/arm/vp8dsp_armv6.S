@@ -359,14 +359,14 @@ endfunc
 function ff_vp8_idct_dc_add4uv_armv6, export=1
         push            {r4, lr}
 
-        bl              ff_vp8_idct_dc_add_armv6
+        bl              X(ff_vp8_idct_dc_add_armv6)
         add             r0,  r0,  #4
-        bl              ff_vp8_idct_dc_add_armv6
+        bl              X(ff_vp8_idct_dc_add_armv6)
         add             r0,  r0,  r2,  lsl #2
         sub             r0,  r0,  #4
-        bl              ff_vp8_idct_dc_add_armv6
+        bl              X(ff_vp8_idct_dc_add_armv6)
         add             r0,  r0,  #4
-        bl              ff_vp8_idct_dc_add_armv6
+        bl              X(ff_vp8_idct_dc_add_armv6)
 
         pop             {r4, pc}
 endfunc
@@ -375,13 +375,13 @@ endfunc
 function ff_vp8_idct_dc_add4y_armv6, export=1
         push            {r4, lr}
 
-        bl              ff_vp8_idct_dc_add_armv6
+        bl              X(ff_vp8_idct_dc_add_armv6)
         add             r0,  r0,  #4
-        bl              ff_vp8_idct_dc_add_armv6
+        bl              X(ff_vp8_idct_dc_add_armv6)
         add             r0,  r0,  #4
-        bl              ff_vp8_idct_dc_add_armv6
+        bl              X(ff_vp8_idct_dc_add_armv6)
         add             r0,  r0,  #4
-        bl              ff_vp8_idct_dc_add_armv6
+        bl              X(ff_vp8_idct_dc_add_armv6)
 
         pop             {r4, pc}
 endfunc

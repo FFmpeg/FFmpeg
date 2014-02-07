@@ -23,11 +23,11 @@
 .macro  call_2x_pixels  type, subp
 function ff_\type\()_pixels16\subp\()_armv6, export=1
         push            {r0-r3, lr}
-        bl              ff_\type\()_pixels8\subp\()_armv6
+        bl              X(ff_\type\()_pixels8\subp\()_armv6)
         pop             {r0-r3, lr}
         add             r0,  r0,  #8
         add             r1,  r1,  #8
-        b               ff_\type\()_pixels8\subp\()_armv6
+        b               X(ff_\type\()_pixels8\subp\()_armv6)
 endfunc
 .endm
 

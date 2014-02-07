@@ -129,7 +129,7 @@ function ff_imdct_calc_neon, export=1
         lsl             r4,  r4,  r3
         add             r1,  r1,  r4
 
-        bl              ff_imdct_half_neon
+        bl              X(ff_imdct_half_neon)
 
         add             r0,  r5,  r4,  lsl #2
         add             r1,  r5,  r4,  lsl #1
