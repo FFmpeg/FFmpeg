@@ -276,7 +276,7 @@ static av_cold int evrc_decode_init(AVCodecContext *avctx)
  */
 static int decode_lspf(EVRCContext *e)
 {
-    const float **codebooks = evrc_lspq_codebooks[e->bitrate];
+    const float * const *codebooks = evrc_lspq_codebooks[e->bitrate];
     int i, j, k = 0;
 
     for (i = 0; i < evrc_lspq_nb_codebooks[e->bitrate]; i++) {

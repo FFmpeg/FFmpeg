@@ -1437,21 +1437,21 @@ static const float evrc_lspq_quant_codebook2[16][5] = {
 {0.22787990, 0.31779197, 0.33831909, 0.40044111, 0.41185561},
 {0.27896860, 0.32261974, 0.35658112, 0.40206763, 0.42370448}};
 
-static const float const *evrc_lspq_full_codebooks[] = {
+static const float * const evrc_lspq_full_codebooks[] = {
     evrc_lspq_full_codebook1[0], evrc_lspq_full_codebook2[0],
     evrc_lspq_full_codebook3[0], evrc_lspq_full_codebook4[0],
 };
 
-static const float const *evrc_lspq_half_codebooks[] = {
+static const float * const evrc_lspq_half_codebooks[] = {
     evrc_lspq_half_codebook1[0], evrc_lspq_half_codebook2[0],
     evrc_lspq_half_codebook3[0],
 };
 
-static const float const *evrc_lspq_quant_codebooks[] = {
+static const float * const evrc_lspq_quant_codebooks[] = {
     evrc_lspq_quant_codebook1[0], evrc_lspq_quant_codebook2[0],
 };
 
-static const float const **evrc_lspq_codebooks[] = {
+static const float * const *evrc_lspq_codebooks[] = {
     0,
     evrc_lspq_quant_codebooks,
     0,
