@@ -235,7 +235,6 @@ int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const DVprofile *d)
 av_cold int ff_dvvideo_init(AVCodecContext *avctx)
 {
     DVVideoContext *s = avctx->priv_data;
-    DSPContext dsp;
     static int done = 0;
     int i, j;
 
@@ -291,23 +290,6 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
         }
         ff_free_vlc(&dv_vlc);
     }
-
-    /* Generic DSP setup */
-    ff_dsputil_init(&dsp, avctx);
-    ff_set_cmp(&dsp, dsp.ildct_cmp, avctx->ildct_cmp);
-    s->get_pixels = dsp.get_pixels;
-    s->ildct_cmp = dsp.ildct_cmp[5];
-
-    /* 88DCT setup */
-    s->fdct[0]     = dsp.fdct;
-    s->idct_put[0] = dsp.idct_put;
-    for (i = 0; i < 64; i++)
-       s->dv_zigzag[0][i] = dsp.idct_permutation[ff_zigzag_direct[i]];
-
-    /* 248DCT setup */
-    s->fdct[1]     = dsp.fdct248;
-    s->idct_put[1] = ff_simple_idct248_put;  // FIXME: need to add it to DSP
-    memcpy(s->dv_zigzag[1], ff_dv_zigzag248_direct, sizeof(s->dv_zigzag[1]));
 
     s->avctx = avctx;
     avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
