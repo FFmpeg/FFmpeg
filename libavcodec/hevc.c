@@ -2049,13 +2049,16 @@ static void restore_tqb_pixels(HEVCContext *s)
 
 static int hevc_frame_start(HEVCContext *s)
 {
-    HEVCLocalContext *lc     = s->HEVClc;
+    HEVCLocalContext *lc = s->HEVClc;
+    int pic_size_in_ctb  = ((s->sps->width  >> s->sps->log2_min_cb_size) + 1) *
+                           ((s->sps->height >> s->sps->log2_min_cb_size) + 1);
     int ret;
 
     memset(s->horizontal_bs, 0, 2 * s->bs_width * (s->bs_height + 1));
     memset(s->vertical_bs,   0, 2 * s->bs_width * (s->bs_height + 1));
     memset(s->cbf_luma,      0, s->sps->min_tb_width * s->sps->min_tb_height);
     memset(s->is_pcm,        0, s->sps->min_pu_width * s->sps->min_pu_height);
+    memset(s->tab_slice_address, -1, pic_size_in_ctb * sizeof(*s->tab_slice_address));
 
     lc->start_of_tiles_x = 0;
     s->is_decoded        = 0;
