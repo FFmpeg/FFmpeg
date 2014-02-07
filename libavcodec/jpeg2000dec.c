@@ -1213,7 +1213,7 @@ static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                                 AVFrame *picture)
 {
-    AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
     int compno, reslevelno, bandno;
     int x, y;
     int planar    = !!(pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR);
