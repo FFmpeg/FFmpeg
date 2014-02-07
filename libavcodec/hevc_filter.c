@@ -150,6 +150,9 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC,
     else
         qPy_b = s->qp_y_tab[x_cb + (y_cb - 1) * min_cb_width];
 
+    av_assert2(qPy_a >= -s->sps->qp_bd_offset && qPy_a < 52);
+    av_assert2(qPy_b >= -s->sps->qp_bd_offset && qPy_b < 52);
+
     return (qPy_a + qPy_b + 1) >> 1;
 }
 
