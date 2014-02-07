@@ -1803,7 +1803,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
     if (s->sh.dependent_slice_segment_flag) {
         int prev_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts - 1];
-        if (s->tab_slice_address[prev_rs] == -1) {
+        if (s->tab_slice_address[prev_rs] != s->sh.slice_addr) {
             av_log(s->avctx, AV_LOG_ERROR, "Previous slice segment missing\n");
             return AVERROR_INVALIDDATA;
         }
