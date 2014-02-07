@@ -6786,11 +6786,11 @@ pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 
 @item in_w, iw
 @item in_h, ih
-the input video width and heigth
+the input video width and height
 
 @item out_w, ow
 @item out_h, oh
-the output width and heigth, that is the size of the padded area as
+the output width and height, that is the size of the padded area as
 specified by the @var{width} and @var{height} expressions
 
 @item rotw(a)
