@@ -528,8 +528,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
     } else
 #endif
-    if (m->avctx->request_channel_layout == s->ch_layout &&
-        m->max_decoded_substream > substr) {
+    if ((s->ch_layout & m->avctx->request_channel_layout) ==
+        m->avctx->request_channel_layout && m->max_decoded_substream > substr) {
         av_log(m->avctx, AV_LOG_DEBUG,
                "Extracting %d-channel downmix (0x%"PRIx64") from substream %d. "
                "Further substreams will be skipped.\n",
