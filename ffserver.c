@@ -637,7 +637,7 @@ static void start_multicast(void)
 static int http_server(void)
 {
     int server_fd = 0, rtsp_server_fd = 0;
-    int ret, delay, delay1;
+    int ret, delay;
     struct pollfd *poll_table, *poll_entry;
     HTTPContext *c, *c_next;
 
@@ -711,9 +711,9 @@ static int http_server(void)
                     /* when ffserver is doing the timing, we work by
                        looking at which packet needs to be sent every
                        10 ms */
-                    delay1 = 10; /* one tick wait XXX: 10 ms assumed */
-                    if (delay1 < delay)
-                        delay = delay1;
+                    /* one tick wait XXX: 10 ms assumed */
+                    if (delay > 10)
+                        delay = 10;
                 }
                 break;
             case HTTPSTATE_WAIT_REQUEST:
