@@ -1411,6 +1411,9 @@ AVX_INSTR pfmul, 1, 0, 1
     %macro %1 4-7 %1, %2, %3
         %if cpuflag(xop)
             v%5 %1, %2, %3, %4
+        %elifidn %1, %4
+            %6 %2, %3
+            %7 %1, %2
         %else
             %6 %1, %2, %3
             %7 %1, %4
@@ -1420,6 +1423,7 @@ AVX_INSTR pfmul, 1, 0, 1
 
 FMA_INSTR  pmacsdd,  pmulld, paddd
 FMA_INSTR  pmacsww,  pmullw, paddw
+FMA_INSTR pmacsdql,  pmuldq, paddq
 FMA_INSTR pmadcswd, pmaddwd, paddd
 
 ; tzcnt is equivalent to "rep bsf" and is backwards-compatible with bsf.
