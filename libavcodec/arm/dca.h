@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "libavcodec/dcadsp.h"
 #include "libavcodec/mathops.h"
 
 #if HAVE_ARMV6_INLINE && AV_GCC_VERSION_AT_LEAST(4,4)

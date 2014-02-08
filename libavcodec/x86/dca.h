@@ -23,6 +23,7 @@
 #if ARCH_X86_64 && HAVE_SSE2_INLINE
 # include "libavutil/x86/asm.h"
 # include "libavutil/mem.h"
+#include "libavcodec/dcadsp.h"
 
 # define int8x8_fmul_int32 int8x8_fmul_int32
 static inline void int8x8_fmul_int32(av_unused DCADSPContext *dsp,
