@@ -82,7 +82,6 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC,
     int xQgBase              = xBase - (xBase & MinCuQpDeltaSizeMask);
     int yQgBase              = yBase - (yBase & MinCuQpDeltaSizeMask);
     int min_cb_width         = s->sps->min_cb_width;
-    int min_cb_height        = s->sps->min_cb_height;
     int x_cb                 = xQgBase >> s->sps->log2_min_cb_size;
     int y_cb                 = yQgBase >> s->sps->log2_min_cb_size;
     int availableA           = (xBase   & ctb_size_mask) &&

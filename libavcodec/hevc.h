@@ -731,7 +731,6 @@ typedef struct HEVCLocalContext {
     uint8_t ctb_up_flag;
     uint8_t ctb_up_right_flag;
     uint8_t ctb_up_left_flag;
-    int     start_of_tiles_x;
     int     end_of_tiles_x;
     int     end_of_tiles_y;
     /* +7 is for subpixel interpolation, *2 for high bit depths */
