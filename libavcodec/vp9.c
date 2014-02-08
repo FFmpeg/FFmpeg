@@ -525,8 +525,11 @@ static int decode_frame_header(AVCodecContext *ctx,
                 w = get_bits(&s->gb, 16) + 1;
                 h = get_bits(&s->gb, 16) + 1;
             }
-            s->use_last_frame_mvs &= s->frames[LAST_FRAME].tf.f->width == w &&
-                                     s->frames[LAST_FRAME].tf.f->height == h;
+            // Note that in this code, "CUR_FRAME" is actually before we
+            // have formally allocated a frame, and thus actually represents
+            // the _last_ frame
+            s->use_last_frame_mvs &= s->frames[CUR_FRAME].tf.f->width == w &&
+                                     s->frames[CUR_FRAME].tf.f->height == h;
             if (get_bits1(&s->gb)) // display size
                 skip_bits(&s->gb, 32);
             s->highprecisionmvs = get_bits1(&s->gb);
