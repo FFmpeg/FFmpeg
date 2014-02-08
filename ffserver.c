@@ -628,7 +628,6 @@ static void start_multicast(void)
                 }
             }
 
-            /* change state to send data */
             rtp_c->state = HTTPSTATE_SEND_DATA;
         }
     }
