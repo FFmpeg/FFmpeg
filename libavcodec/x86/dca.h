@@ -18,7 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if ARCH_X86_64
+#include "config.h"
+
+#if ARCH_X86_64 && HAVE_SSE2_INLINE
 # include "libavutil/x86/asm.h"
 # include "libavutil/mem.h"
 
@@ -49,4 +51,4 @@ static inline void int8x8_fmul_int32(av_unused DCADSPContext *dsp,
     );
 }
 
-#endif /* ARCH_X86_64 */
+#endif /* ARCH_X86_64 && HAVE_SSE2_INLINE */
