@@ -263,6 +263,12 @@ static av_cold int encode_init(AVCodecContext *avctx){
 
     return 0;
 }
+static av_cold int asv_encode_close(AVCodecContext *avctx)
+{
+    av_frame_free(&avctx->coded_frame);
+
+    return 0;
+}
 
 #if CONFIG_ASV1_ENCODER
 AVCodec ff_asv1_encoder = {
@@ -273,6 +279,7 @@ AVCodec ff_asv1_encoder = {
     .priv_data_size = sizeof(ASV1Context),
     .init           = encode_init,
     .encode2        = encode_frame,
+    .close          = asv_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_NONE },
 };
@@ -287,6 +294,7 @@ AVCodec ff_asv2_encoder = {
     .priv_data_size = sizeof(ASV1Context),
     .init           = encode_init,
     .encode2        = encode_frame,
+    .close          = asv_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_NONE },
 };
