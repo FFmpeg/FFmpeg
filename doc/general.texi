@@ -301,6 +301,8 @@ library:
     @tab also known as DVB Transport Stream
 @item MPEG-4                    @tab X @tab X
     @tab MPEG-4 is a variant of QuickTime.
+@item Mirillis FIC video        @tab   @tab X
+    @tab No cursor rendering.
 @item MIME multipart JPEG       @tab X @tab
 @item MSN TCP webcam            @tab   @tab X
     @tab Used by MSN Messenger webcam streams.
