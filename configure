@@ -1533,7 +1533,6 @@ CONFIG_EXTRA="
     blockdsp
     bswapdsp
     cabac
-    dsputil
     dvprofile
     fdctdsp
     gcrypt
@@ -1552,6 +1551,7 @@ CONFIG_EXTRA="
     intrax8
     lgplv3
     lpc
+    me_cmp
     mpeg_er
     mpegaudio
     mpegaudiodsp
@@ -1707,24 +1707,24 @@ threads_if_any="$THREADS_LIST"
 
 # subsystems
 dct_select="rdft"
-dsputil_select="fdctdsp idctdsp pixblockdsp"
-error_resilience_select="dsputil"
+error_resilience_select="me_cmp"
 intrax8_select="error_resilience"
 mdct_select="fft"
 rdft_select="fft"
+me_cmp_select="fdctdsp idctdsp pixblockdsp"
 mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
-mpegvideo_select="blockdsp dsputil hpeldsp idctdsp videodsp"
-mpegvideoenc_select="dsputil mpegvideo pixblockdsp qpeldsp"
+mpegvideo_select="blockdsp hpeldsp idctdsp me_cmp videodsp"
+mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 
 # decoders / encoders
 aac_decoder_select="mdct sinewin"
 aac_encoder_select="audio_frame_queue mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
-ac3_encoder_select="ac3dsp audiodsp dsputil mdct"
-ac3_fixed_encoder_select="ac3dsp audiodsp dsputil mdct"
+ac3_encoder_select="ac3dsp audiodsp mdct me_cmp"
+ac3_fixed_encoder_select="ac3dsp audiodsp mdct me_cmp"
 aic_decoder_select="golomb idctdsp"
 alac_encoder_select="lpc"
 als_decoder_select="bswapdsp"
@@ -1752,7 +1752,7 @@ dca_decoder_select="mdct"
 dnxhd_decoder_select="blockdsp idctdsp"
 dnxhd_encoder_select="aandcttables blockdsp fdctdsp idctdsp mpegvideoenc pixblockdsp"
 dvvideo_decoder_select="dvprofile idctdsp"
-dvvideo_encoder_select="dsputil dvprofile fdctdsp pixblockdsp"
+dvvideo_encoder_select="dvprofile fdctdsp me_cmp pixblockdsp"
 dxa_decoder_deps="zlib"
 eac3_decoder_select="ac3_decoder"
 eac3_encoder_select="ac3_encoder"
@@ -1856,7 +1856,7 @@ shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
 sp5x_decoder_select="mjpeg_decoder"
 svq1_decoder_select="hpeldsp"
-svq1_encoder_select="aandcttables dsputil hpeldsp mpegvideoenc"
+svq1_encoder_select="aandcttables hpeldsp me_cmp mpegvideoenc"
 svq3_decoder_select="h264_decoder hpeldsp tpeldsp"
 svq3_decoder_suggest="zlib"
 tak_decoder_select="audiodsp"

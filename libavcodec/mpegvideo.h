@@ -30,13 +30,13 @@
 
 #include "avcodec.h"
 #include "blockdsp.h"
-#include "dsputil.h"
 #include "error_resilience.h"
 #include "fdctdsp.h"
 #include "get_bits.h"
 #include "h263dsp.h"
 #include "hpeldsp.h"
 #include "idctdsp.h"
+#include "me_cmp.h"
 #include "mpegvideodsp.h"
 #include "mpegvideoencdsp.h"
 #include "pixblockdsp.h"
@@ -356,10 +356,10 @@ typedef struct MpegEncContext {
     int h263_long_vectors;      ///< use horrible h263v1 long vector mode
 
     BlockDSPContext bdsp;
-    DSPContext dsp;             ///< pointers for accelerated dsp functions
     FDCTDSPContext fdsp;
     HpelDSPContext hdsp;
     IDCTDSPContext idsp;
+    MECmpContext mecc;
     MpegVideoDSPContext mdsp;
     MpegvideoEncDSPContext mpvencdsp;
     PixblockDSPContext pdsp;

@@ -31,8 +31,8 @@
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
+#include "libavcodec/me_cmp.h"
 
 #if HAVE_ALTIVEC
 static int sad16_x2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
@@ -744,7 +744,7 @@ static int hadamard8_diff16_altivec(MpegEncContext *s, uint8_t *dst,
 }
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_me_cmp_init_ppc(MECmpContext *c, AVCodecContext *avctx)
 {
 #if HAVE_ALTIVEC
     if (!PPC_ALTIVEC(av_get_cpu_flags()))

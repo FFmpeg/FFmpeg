@@ -28,7 +28,7 @@
 #define AVCODEC_DV_H
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "me_cmp.h"
 #include "get_bits.h"
 #include "dv_profile.h"
 

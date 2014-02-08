@@ -23,7 +23,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "me_cmp.h"
 #include "thread.h"
 
 ///< current MB is the first after a resync marker
@@ -52,7 +52,7 @@ typedef struct ERPicture {
 
 typedef struct ERContext {
     AVCodecContext *avctx;
-    DSPContext *dsp;
+    MECmpContext *mecc;
 
     int *mb_index2xy;
     int mb_num;

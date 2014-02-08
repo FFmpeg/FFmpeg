@@ -30,13 +30,13 @@
 
 #include "libavutil/intreadwrite.h"
 #include "cabac.h"
-#include "dsputil.h"
 #include "error_resilience.h"
 #include "get_bits.h"
 #include "h264chroma.h"
 #include "h264dsp.h"
 #include "h264pred.h"
 #include "h264qpel.h"
+#include "me_cmp.h"
 #include "mpegutils.h"
 #include "parser.h"
 #include "qpeldsp.h"
@@ -302,7 +302,7 @@ typedef struct H264Picture {
  */
 typedef struct H264Context {
     AVCodecContext *avctx;
-    DSPContext       dsp;
+    MECmpContext mecc;
     VideoDSPContext vdsp;
     H264DSPContext h264dsp;
     H264ChromaContext h264chroma;

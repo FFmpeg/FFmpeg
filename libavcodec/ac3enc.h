@@ -35,9 +35,9 @@
 #include "ac3.h"
 #include "ac3dsp.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "mathops.h"
+#include "me_cmp.h"
 #include "put_bits.h"
 #include "audiodsp.h"
 
@@ -162,9 +162,9 @@ typedef struct AC3EncodeContext {
     AC3EncOptions options;                  ///< encoding options
     AVCodecContext *avctx;                  ///< parent AVCodecContext
     PutBitContext pb;                       ///< bitstream writer context
-    DSPContext dsp;
     AudioDSPContext adsp;
     AVFloatDSPContext fdsp;
+    MECmpContext mecc;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
     FFTContext mdct;                        ///< FFT context for MDCT calculation
     const SampleType *mdct_window;          ///< MDCT window function array

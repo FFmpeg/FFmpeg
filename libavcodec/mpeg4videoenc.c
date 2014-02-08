@@ -689,7 +689,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                         b_pic = pic->f->data[0] + offset;
                         if (!pic->shared)
                             b_pic += INPLACE_OFFSET;
-                        diff = s->dsp.sad[0](NULL, p_pic, b_pic, s->linesize, 16);
+                        diff = s->mecc.sad[0](NULL, p_pic, b_pic, s->linesize, 16);
                         if (diff > s->qscale * 70) {  // FIXME check that 70 is optimal
                             s->mb_skipped = 0;
                             break;

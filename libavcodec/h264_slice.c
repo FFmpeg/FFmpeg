@@ -31,7 +31,6 @@
 #include "internal.h"
 #include "cabac.h"
 #include "cabac_functions.h"
-#include "dsputil.h"
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264.h"
@@ -1119,7 +1118,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             if (!c)
                 return AVERROR(ENOMEM);
             c->avctx             = h->avctx;
-            c->dsp               = h->dsp;
+            c->mecc              = h->mecc;
             c->vdsp              = h->vdsp;
             c->h264dsp           = h->h264dsp;
             c->h264qpel          = h->h264qpel;
