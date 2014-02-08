@@ -110,6 +110,7 @@ typedef struct VP9Context {
     uint8_t keyframe, last_keyframe;
     uint8_t invisible;
     uint8_t use_last_frame_mvs;
+    uint8_t use_last_frame_segmap;
     uint8_t errorres;
     uint8_t colorspace;
     uint8_t fullrange;
@@ -278,7 +279,7 @@ static int vp9_alloc_frame(AVCodecContext *ctx, VP9Frame *f)
 
     // retain segmentation map if it doesn't update
     if (s->segmentation.enabled && !s->segmentation.update_map &&
-        !s->keyframe && !s->intraonly) {
+        s->use_last_frame_segmap) {
         memcpy(f->segmentation_map, s->frames[LAST_FRAME].segmentation_map, sz);
     }
 
@@ -625,6 +626,10 @@ static int decode_frame_header(AVCodecContext *ctx,
                 for (i = 0; i < 3; i++)
                     s->prob.segpred[i] = get_bits1(&s->gb) ?
                                          get_bits(&s->gb, 8) : 255;
+        } else {
+            s->use_last_frame_segmap = !s->keyframe && !s->intraonly &&
+                s->frames[CUR_FRAME].tf.f->width == w &&
+                s->frames[CUR_FRAME].tf.f->height == h;
         }
 
         if (get_bits1(&s->gb)) {
@@ -1279,11 +1284,11 @@ static void decode_mode(AVCodecContext *ctx)
     int h4 = FFMIN(s->rows - row, bwh_tab[1][b->bs][1]), y;
     int have_a = row > 0, have_l = col > s->tiling.tile_col_start;
 
-    if (!s->segmentation.enabled) {
+    if (!s->segmentation.enabled ||
+        (!s->segmentation.update_map && !s->use_last_frame_segmap)) {
         b->seg_id = 0;
     } else if (s->keyframe || s->intraonly) {
-        b->seg_id = s->segmentation.update_map ?
-            vp8_rac_get_tree(&s->c, vp9_segmentation_tree, s->prob.seg) : 0;
+        b->seg_id = vp8_rac_get_tree(&s->c, vp9_segmentation_tree, s->prob.seg);
     } else if (!s->segmentation.update_map ||
                (s->segmentation.temporal &&
                 vp56_rac_get_prob_branchy(&s->c,
