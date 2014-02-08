@@ -230,6 +230,7 @@ typedef struct VP9Context {
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[71*80];
 
     // block reconstruction intermediates
+    int block_alloc_using_2pass;
     int16_t *block_base, *block, *uvblock_base[2], *uvblock[2];
     uint8_t *eob_base, *uveob_base[2], *eob, *uveob[2];
     struct { int x, y; } min_mv, max_mv;
@@ -336,9 +337,23 @@ static int update_size(AVCodecContext *ctx, int w, int h)
     assign(s->above_mv_ctx,        VP56mv(*)[2],          16);
 #undef assign
 
+    // these will be re-allocated a little later
+    av_freep(&s->b_base);
+    av_freep(&s->block_base);
+
+    return 0;
+}
+
+static int update_block_buffers(AVCodecContext *ctx)
+{
+    VP9Context *s = ctx->priv_data;
+
+    if (s->b_base && s->block_base && s->block_alloc_using_2pass == s->uses_2pass)
+        return 0;
+
     av_free(s->b_base);
     av_free(s->block_base);
-    if (ctx->active_thread_type == FF_THREAD_FRAME && s->refreshctx && !s->parallelmode) {
+    if (s->uses_2pass) {
         int sbs = s->sb_cols * s->sb_rows;
 
         s->b_base = av_malloc(sizeof(VP9Block) * s->cols * s->rows);
@@ -361,6 +376,7 @@ static int update_size(AVCodecContext *ctx, int w, int h)
         s->uveob_base[0] = s->eob_base + 256;
         s->uveob_base[1] = s->uveob_base[0] + 64;
     }
+    s->block_alloc_using_2pass = s->uses_2pass;
 
     return 0;
 }
@@ -3563,6 +3579,11 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     memset(s->above_segpred_ctx, 0, s->cols);
     s->pass = s->uses_2pass =
         ctx->active_thread_type == FF_THREAD_FRAME && s->refreshctx && !s->parallelmode;
+    if ((res = update_block_buffers(ctx)) < 0) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Failed to allocate block buffers\n");
+        return res;
+    }
     if (s->refreshctx && s->parallelmode) {
         int j, k, l, m;
 
