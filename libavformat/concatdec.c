@@ -132,9 +132,16 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
 
     if (cat->avf)
         avformat_close_input(&cat->avf);
+
+    cat->avf = avformat_alloc_context();
+    if (!cat->avf)
+        return AVERROR(ENOMEM);
+
+    cat->avf->interrupt_callback = avf->interrupt_callback;
     if ((ret = avformat_open_input(&cat->avf, file->url, NULL, NULL)) < 0 ||
         (ret = avformat_find_stream_info(cat->avf, NULL)) < 0) {
         av_log(avf, AV_LOG_ERROR, "Impossible to open '%s'\n", file->url);
+        avformat_close_input(&cat->avf);
         return ret;
     }
     cat->cur_file = file;
