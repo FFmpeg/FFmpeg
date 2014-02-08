@@ -73,12 +73,12 @@ static int parse(AVCodecParserContext *ctx,
 #define case_n(a, rd) \
             case a: \
                 while (n_frames--) { \
-                    int sz = rd; \
+                    unsigned sz = rd; \
                     idx += a; \
                     if (sz > size) { \
                         s->n_frames = 0; \
                         av_log(avctx, AV_LOG_ERROR, \
-                               "Superframe packet size too big: %d > %d\n", \
+                               "Superframe packet size too big: %u > %d\n", \
                                sz, size); \
                         return size; \
                     } \
