@@ -645,7 +645,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
     GetByteContext bc, tbc;
     int magic;
     int got_header = 0;
-    uint32_t chunk_size;
+    uint32_t chunk_size, r_mask, g_mask, b_mask;
     int chunk_type, chunk_start;
     int i;
     int ret;
@@ -723,6 +723,25 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             c->tiles_x = (c->width  + c->tile_width  - 1) / c->tile_width;
             c->tiles_y = (c->height + c->tile_height - 1) / c->tile_height;
             c->bpp = bytestream2_get_byte(&bc);
+            if (c->bpp == 32) {
+                if (bytestream2_get_bytes_left(&bc) < 16 || (chunk_size - 21) < 16 ) {
+                    av_log(avctx, AV_LOG_ERROR, "Display info: missing bitmasks!\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                r_mask = bytestream2_get_be32(&bc);
+                g_mask = bytestream2_get_be32(&bc);
+                b_mask = bytestream2_get_be32(&bc);
+                if (r_mask != 0xFF0000 || g_mask != 0xFF00 || b_mask != 0xFF) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Invalid or unsupported bitmasks: R=%X, G=%X, B=%X\n",
+                           r_mask, g_mask, b_mask);
+                    return AVERROR_PATCHWELCOME;
+                }
+            } else {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Unsupported bpp=%d in the display info!\n", c->bpp);
+                return AVERROR_PATCHWELCOME;
+            }
             if (g2m_init_buffers(c)) {
                 ret = AVERROR(ENOMEM);
                 goto header_fail;
