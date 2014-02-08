@@ -286,12 +286,6 @@ SECTION .text
     SWAP %12, %15
 %endmacro
 
-; %2 = punpckhqdq(%1, %2)
-%macro PUNPCKHQDQ_SWAP 3 ; a, b, tmp
-    punpckhqdq m%3, m%1, m%2
-    SWAP %3, %2
-%endmacro
-
 %macro DEFINE_REAL_P7_TO_Q7 0-1 0
 %define P7 dst1q + 2*mstrideq  + %1
 %define P6 dst1q +   mstrideq  + %1
@@ -728,36 +722,30 @@ SECTION .text
     SBUTTERFLY  dq, 1, 5, 8
     SBUTTERFLY  dq, 2, 6, 8
     SBUTTERFLY  dq, 3, 7, 8
-    PUNPCKHQDQ_SWAP 0,  8, 15
-    movd  [P7],  m0
-    PUNPCKHQDQ_SWAP 1,  9,  0
-    PUNPCKHQDQ_SWAP 2,  10, 0
-    PUNPCKHQDQ_SWAP 3,  11, 0
-    PUNPCKHQDQ_SWAP 4,  12, 0
-    PUNPCKHQDQ_SWAP 5,  13, 0
-    PUNPCKHQDQ_SWAP 6,  14, 0
-    PUNPCKHQDQ_SWAP 7,  15, 0
-    SWAP 1,  8
-    SWAP 2,  4
-    SWAP 3,  12
-    SWAP 5,  10
-    SWAP 7,  14
-    SWAP 11, 13
-    movd  [P6],  m1
-    movd  [P5],  m2
-    movd  [P4],  m3
-    movd  [P3],  m4
-    movd  [P2],  m5
-    movd  [P1],  m6
-    movd  [P0],  m7
-    movd  [Q0],  m8
-    movd  [Q1],  m9
-    movd  [Q2], m10
-    movd  [Q3], m11
-    movd  [Q4], m12
-    movd  [Q5], m13
-    movd  [Q6], m14
-    movd  [Q7], m15
+    movd  [P7], m0
+    punpckhqdq m0, m8
+    movd  [P6], m0
+    movd  [Q0], m1
+    punpckhqdq  m1, m9
+    movd  [Q1], m1
+    movd  [P3], m2
+    punpckhqdq  m2, m10
+    movd  [P2], m2
+    movd  [Q4], m3
+    punpckhqdq m3, m11
+    movd  [Q5], m3
+    movd  [P5], m4
+    punpckhqdq m4, m12
+    movd  [P4], m4
+    movd  [Q2], m5
+    punpckhqdq m5, m13
+    movd  [Q3], m5
+    movd  [P1], m6
+    punpckhqdq m6, m14
+    movd  [P0], m6
+    movd  [Q6], m7
+    punpckhqdq m7, m8
+    movd  [Q7], m7
 %else
     ; the following code do a transpose of 8 full lines to 16 half
     ; lines (high part). It is inlined to avoid the need of a staging area
@@ -782,36 +770,30 @@ SECTION .text
     SBUTTERFLY  dq,  1,  5, 8
     SBUTTERFLY  dq,  2,  6, 8
     SBUTTERFLY  dq,  3,  7, 8
-    PUNPCKHQDQ_SWAP  0,  8, 15
-    movh  [P7],  m0
-    PUNPCKHQDQ_SWAP 1, 9,  0
-    PUNPCKHQDQ_SWAP 2, 10, 0
-    PUNPCKHQDQ_SWAP 3, 11, 0
-    PUNPCKHQDQ_SWAP 4, 12, 0
-    PUNPCKHQDQ_SWAP 5, 13, 0
-    PUNPCKHQDQ_SWAP 6, 14, 0
-    PUNPCKHQDQ_SWAP 7, 15, 0
-    SWAP  1, 8
-    SWAP  2, 4
-    SWAP  3, 12
-    SWAP  5, 10
-    SWAP  7, 14
-    SWAP 11, 13
-    movh  [P6],  m1
-    movh  [P5],  m2
-    movh  [P4],  m3
-    movh  [P3],  m4
-    movh  [P2],  m5
-    movh  [P1],  m6
-    movh  [P0],  m7
-    movh  [Q0],  m8
-    movh  [Q1],  m9
-    movh  [Q2], m10
-    movh  [Q3], m11
-    movh  [Q4], m12
-    movh  [Q5], m13
-    movh  [Q6], m14
-    movh  [Q7], m15
+    movh  [P7], m0
+    punpckhqdq m0, m8
+    movh  [P6], m0
+    movh  [Q0], m1
+    punpckhqdq  m1, m9
+    movh  [Q1], m1
+    movh  [P3], m2
+    punpckhqdq  m2, m10
+    movh  [P2], m2
+    movh  [Q4], m3
+    punpckhqdq m3, m11
+    movh  [Q5], m3
+    movh  [P5], m4
+    punpckhqdq m4, m12
+    movh  [P4], m4
+    movh  [Q2], m5
+    punpckhqdq m5, m13
+    movh  [Q3], m5
+    movh  [P1], m6
+    punpckhqdq m6, m14
+    movh  [P0], m6
+    movh  [Q6], m7
+    punpckhqdq m7, m8
+    movh  [Q7], m7
 %endif
 %endif
 
