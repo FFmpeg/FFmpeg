@@ -24,7 +24,8 @@
 
 SECTION .text
 
-INIT_XMM sse4
+%macro LPC_32 1
+INIT_XMM %1
 cglobal flac_lpc_32, 5,6,5, decoded, coeffs, pred_order, qlevel, len, j
     sub    lend, pred_orderd
     jle .ret
@@ -43,25 +44,21 @@ ALIGN 16
     test   jq, jq
     jz .end_order
 .loop_order:
-    pmuldq m0, m1
-    paddq  m2, m0
+    pmacsdql m2, m0, m1, m2
     movd   m0, [decodedq+jq*4]
-    pmuldq m1, m0
-    paddq  m3, m1
+    pmacsdql m3, m1, m0, m3
     movd   m1, [coeffsq+jq*4]
     inc    jq
     jl .loop_order
 .end_order:
-    pmuldq m0, m1
-    paddq  m2, m0
+    pmacsdql m2, m0, m1, m2
     psrlq  m2, m4
     movd   m0, [decodedq]
     paddd  m0, m2
     movd   [decodedq], m0
     sub  lend, 2
     jl .ret
-    pmuldq m1, m0
-    paddq  m3, m1
+    pmacsdql m3, m1, m0, m3
     psrlq  m3, m4
     movd   m1, [decodedq+4]
     paddd  m1, m3
@@ -69,3 +66,9 @@ ALIGN 16
     jg .loop_sample
 .ret:
     REP_RET
+%endmacro
+
+%if HAVE_XOP_EXTERNAL
+LPC_32 xop
+%endif
+LPC_32 sse4

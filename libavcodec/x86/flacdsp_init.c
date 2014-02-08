@@ -24,6 +24,8 @@
 
 void ff_flac_lpc_32_sse4(int32_t *samples, const int coeffs[32], int order,
                          int qlevel, int len);
+void ff_flac_lpc_32_xop(int32_t *samples, const int coeffs[32], int order,
+                        int qlevel, int len);
 
 av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt,
                                  int bps)
@@ -34,6 +36,10 @@ av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt,
     if (EXTERNAL_SSE4(cpu_flags)) {
         if (bps > 16 && CONFIG_FLAC_DECODER)
             c->lpc = ff_flac_lpc_32_sse4;
+    }
+    if (EXTERNAL_XOP(cpu_flags)) {
+        if (bps > 16)
+            c->lpc = ff_flac_lpc_32_xop;
     }
 #endif
 }
