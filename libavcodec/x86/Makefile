@@ -8,7 +8,6 @@ OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o
 OBJS-$(CONFIG_ENCODERS)                += x86/dsputilenc_mmx.o          \
-                                          x86/fdct.o                    \
                                           x86/motion_est.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
 OBJS-$(CONFIG_H263DSP)                 += x86/h263dsp_init.o
@@ -52,6 +51,7 @@ OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 
 MMX-OBJS-$(CONFIG_AUDIODSP)            += x86/audiodsp_mmx.o
 MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o
+MMX-OBJS-$(CONFIG_ENCODERS)            += x86/fdct.o
 MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o                \
                                           x86/hpeldsp_mmx.o
 MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/idctdsp_mmx.o             \
