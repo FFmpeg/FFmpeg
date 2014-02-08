@@ -4810,6 +4810,18 @@ elif enabled_any msvc icl; then
     fi
 fi
 
+case $as_type in
+    clang)
+        add_asflags -Qunused-arguments
+    ;;
+esac
+
+case $ld_type in
+    clang)
+        check_ldflags -Qunused-arguments
+    ;;
+esac
+
 case $target_os in
     osf1)
         enabled ccc && add_ldflags '-Wl,-expect_unresolved,*'
