@@ -2200,6 +2200,9 @@ static int mxf_read_close(AVFormatContext *s)
 
     for (i = 0; i < mxf->metadata_sets_count; i++) {
         switch (mxf->metadata_sets[i]->type) {
+        case Descriptor:
+            av_freep(&((MXFDescriptor *)mxf->metadata_sets[i])->extradata);
+            break;
         case MultipleDescriptor:
             av_freep(&((MXFDescriptor *)mxf->metadata_sets[i])->sub_descriptors_refs);
             break;
