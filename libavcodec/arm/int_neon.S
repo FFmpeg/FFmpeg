@@ -21,8 +21,6 @@
 
 #include "libavutil/arm/asm.S"
 
-        .fpu neon
-
 function ff_scalarproduct_int16_neon, export=1
         vmov.i16        q0,  #0
         vmov.i16        q1,  #0
