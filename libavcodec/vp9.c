@@ -1268,6 +1268,52 @@ static void fill_mv(VP9Context *s,
     }
 }
 
+static av_always_inline void setctx_2d(uint8_t *ptr, int w, int h,
+                                       ptrdiff_t stride, int v)
+{
+    switch (w) {
+    case 1:
+        do {
+            *ptr = v;
+            ptr += stride;
+        } while (--h);
+        break;
+    case 2: {
+        int v16 = v * 0x0101;
+        do {
+            AV_WN16A(ptr, v16);
+            ptr += stride;
+        } while (--h);
+        break;
+    }
+    case 4: {
+        uint32_t v32 = v * 0x01010101;
+        do {
+            AV_WN32A(ptr, v32);
+            ptr += stride;
+        } while (--h);
+        break;
+    }
+    case 8: {
+#if HAVE_FAST_64BIT
+        uint64_t v64 = v * 0x0101010101010101ULL;
+        do {
+            AV_WN64A(ptr, v64);
+            ptr += stride;
+        } while (--h);
+#else
+        uint32_t l32 = v * 0x01010101;
+        do {
+            AV_WN32A(ptr,     v32);
+            AV_WN32A(ptr + 4, v32);
+            ptr += stride;
+        } while (--h);
+#endif
+        break;
+    }
+    }
+}
+
 static void decode_mode(AVCodecContext *ctx)
 {
     static const uint8_t left_ctx[N_BS_SIZES] = {
@@ -1320,10 +1366,8 @@ static void decode_mode(AVCodecContext *ctx)
     }
     if (s->segmentation.enabled &&
         (s->segmentation.update_map || s->keyframe || s->intraonly)) {
-        uint8_t *segmap = s->frames[CUR_FRAME].segmentation_map;
-
-        for (y = 0; y < h4; y++)
-            memset(&segmap[(y + row) * 8 * s->sb_cols + col], b->seg_id, w4);
+        setctx_2d(&s->frames[CUR_FRAME].segmentation_map[row * 8 * s->sb_cols + col],
+                  w4, h4, 8 * s->sb_cols, b->seg_id);
     }
 
     b->skip = s->segmentation.enabled &&
@@ -2831,7 +2875,7 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
     VP9Context *s = ctx->priv_data;
     VP9Block *b = s->b;
     enum BlockSize bs = bl * 3 + bp;
-    int y, w4 = bwh_tab[1][bs][0], h4 = bwh_tab[1][bs][1], lvl;
+    int w4 = bwh_tab[1][bs][0], h4 = bwh_tab[1][bs][1], lvl;
     int emu[2];
     AVFrame *f = s->frames[CUR_FRAME].tf.f;
 
@@ -2960,12 +3004,11 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
         (lvl = s->segmentation.feat[b->seg_id].lflvl[b->intra ? 0 : b->ref[0] + 1]
                                                     [b->mode[3] != ZEROMV]) > 0) {
         int x_end = FFMIN(s->cols - col, w4), y_end = FFMIN(s->rows - row, h4);
-        int skip_inter = !b->intra && b->skip;
+        int skip_inter = !b->intra && b->skip, col7 = s->col7, row7 = s->row7;
 
-        for (y = 0; y < h4; y++)
-            memset(&lflvl->level[((row & 7) + y) * 8 + (col & 7)], lvl, w4);
-        mask_edges(lflvl, 0, row & 7, col & 7, x_end, y_end, 0, 0, b->tx, skip_inter);
-        mask_edges(lflvl, 1, row & 7, col & 7, x_end, y_end,
+        setctx_2d(&lflvl->level[row7 * 8 + col7], w4, h4, 8, lvl);
+        mask_edges(lflvl, 0, row7, col7, x_end, y_end, 0, 0, b->tx, skip_inter);
+        mask_edges(lflvl, 1, row7, col7, x_end, y_end,
                    s->cols & 1 && col + w4 >= s->cols ? s->cols & 7 : 0,
                    s->rows & 1 && row + h4 >= s->rows ? s->rows & 7 : 0,
                    b->uvtx, skip_inter);
