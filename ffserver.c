@@ -753,8 +753,8 @@ static int http_server(void)
         for(c = first_http_ctx; c != NULL; c = c_next) {
             c_next = c->next;
             if (handle_connection(c) < 0) {
-                /* close and free the connection */
                 log_connection(c);
+                /* close and free the connection */
                 close_connection(c);
             }
         }
