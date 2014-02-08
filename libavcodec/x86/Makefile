@@ -4,6 +4,7 @@ OBJS                                   += x86/constants.o               \
 OBJS-$(CONFIG_AAC_DECODER)             += x86/sbrdsp_init.o
 OBJS-$(CONFIG_AC3DSP)                  += x86/ac3dsp_init.o
 OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
+OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc.o
 OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o            \
@@ -62,6 +63,7 @@ YASM-OBJS                              += x86/deinterlace.o             \
 
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
+YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
 YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o\
                                           x86/dwt_yasm.o
