@@ -120,6 +120,68 @@ ffmpeg -i INPUT -pix_fmt rgb24 -f caca -list_dither colors -
 @end example
 @end itemize
 
+@section decklink
+
+The decklink output device provides playback capabilities for Blackmagic
+DeckLink devices.
+
+To enable this output device, you need the Blackmagic DeckLink SDK and you
+need to configure with the appropriate @code{--extra-cflags}
+and @code{--extra-ldflags}.
+On Windows, you need to run the IDL files through @command{widl}.
+
+DeckLink is very picky about the formats it supports. Pixel format is always
+uyvy422, framerate and video size must be determined for your device with
+@command{-list_formats 1}. Audio sample rate is always 48 kHz.
+
+@subsection Options
+
+@table @option
+
+@item list_devices
+If set to @option{true}, print a list of devices and exit.
+Defaults to @option{false}.
+
+@item list_formats
+If set to @option{true}, print a list of supported formats and exit.
+Defaults to @option{false}.
+
+@item preroll
+Amount of time to preroll video in seconds.
+Defaults to @option{0.5}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+List output devices:
+@example
+ffmpeg -i test.avi -f decklink -list_devices 1 dummy
+@end example
+
+@item
+List supported formats:
+@example
+ffmpeg -i test.avi -f decklink -list_formats 1 'DeckLink Mini Monitor'
+@end example
+
+@item
+Play video clip:
+@example
+ffmpeg -i test.avi -f decklink -pix_fmt uyvy422 'DeckLink Mini Monitor'
+@end example
+
+@item
+Play video clip with non-standard framerate or video size:
+@example
+ffmpeg -i test.avi -f decklink -pix_fmt uyvy422 -s 720x486 -r 24000/1001 'DeckLink Mini Monitor'
+@end example
+
+@end itemize
+
 @section fbdev
 
 Linux framebuffer output device.
