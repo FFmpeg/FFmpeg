@@ -637,7 +637,8 @@ AVOutputFormat ff_ogg_muxer = {
 #endif
                          ,
     .priv_data_size    = sizeof(OGGContext),
-    .audio_codec       = AV_CODEC_ID_FLAC,
+    .audio_codec       = CONFIG_LIBVORBIS_ENCODER ?
+                         AV_CODEC_ID_VORBIS : AV_CODEC_ID_FLAC,
     .video_codec       = AV_CODEC_ID_THEORA,
     .write_header      = ogg_write_header,
     .write_packet      = ogg_write_packet,
