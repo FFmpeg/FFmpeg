@@ -2379,11 +2379,11 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
 
             if (n_px_need <= n_px_have) {
                 for (i = 0; i < n_px_need; i++)
-                    l[i] = dst[i * stride - 1];
+                    l[n_px_need - 1 - i] = dst[i * stride - 1];
             } else {
                 for (i = 0; i < n_px_have; i++)
-                    l[i] = dst[i * stride - 1];
-                memset(&l[i], l[i - 1], n_px_need - n_px_have);
+                    l[n_px_need - 1 - i] = dst[i * stride - 1];
+                memset(l, l[n_px_need - n_px_have], n_px_need - n_px_have);
             }
         } else {
             memset(l, 129, 4 << tx);
@@ -2405,6 +2405,8 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
     int tx = 4 * s->lossless + b->tx, uvtx = b->uvtx + 4 * s->lossless;
     int uvstep1d = 1 << b->uvtx, p;
     uint8_t *dst = s->dst[0], *dst_r = s->frames[CUR_FRAME].tf.f->data[0] + y_off;
+    LOCAL_ALIGNED_16(uint8_t, a_buf, [48]);
+    LOCAL_ALIGNED_16(uint8_t, l, [32]);
 
     for (n = 0, y = 0; y < end_y; y += step1d) {
         uint8_t *ptr = dst, *ptr_r = dst_r;
@@ -2412,8 +2414,7 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
                                ptr_r += 4 * step1d, n += step) {
             int mode = b->mode[b->bs > BS_8x8 && b->tx == TX_4X4 ?
                                y * 2 + x : 0];
-            LOCAL_ALIGNED_16(uint8_t, a_buf, [48]);
-            uint8_t *a = &a_buf[16], l[32];
+            uint8_t *a = &a_buf[16];
             enum TxfmType txtp = vp9_intra_txfm_type[mode];
             int eob = b->skip ? 0 : b->tx > TX_8X8 ? AV_RN16A(&s->eob[n]) : s->eob[n];
 
@@ -2444,8 +2445,7 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
             for (x = 0; x < end_x; x += uvstep1d, ptr += 4 * uvstep1d,
                                    ptr_r += 4 * uvstep1d, n += step) {
                 int mode = b->uvmode;
-                LOCAL_ALIGNED_16(uint8_t, a_buf, [48]);
-                uint8_t *a = &a_buf[16], l[32];
+                uint8_t *a = &a_buf[16];
                 int eob = b->skip ? 0 : b->uvtx > TX_8X8 ? AV_RN16A(&s->uveob[p][n]) : s->uveob[p][n];
 
                 mode = check_intra_mode(s, mode, &a, ptr_r,
