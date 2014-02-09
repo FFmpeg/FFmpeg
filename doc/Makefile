@@ -54,7 +54,7 @@ doc/%.1: doc/%.pod $(GENTEXI)
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
 $(DOCS) doc/doxy/html: | doc/
-$(DOC_EXAMPLES:%=%.o): | doc/examples
+$(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
 OBJDIRS += doc/examples
 
 DOXY_TEMPLATES  = doxy_stylesheet.css footer.html header.html
