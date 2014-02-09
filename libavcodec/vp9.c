@@ -1302,7 +1302,7 @@ static av_always_inline void setctx_2d(uint8_t *ptr, int w, int h,
             ptr += stride;
         } while (--h);
 #else
-        uint32_t l32 = v * 0x01010101;
+        uint32_t v32 = v * 0x01010101;
         do {
             AV_WN32A(ptr,     v32);
             AV_WN32A(ptr + 4, v32);
@@ -1910,13 +1910,13 @@ static void decode_mode(AVCodecContext *ctx)
     case 2:  AV_WN16A(&var, val *     0x0101);  break; \
     case 4:  AV_WN32A(&var, val * 0x01010101);  break; \
     case 8: { \
-        uint32_t v32 = val * 0x01010101); \
+        uint32_t v32 = val * 0x01010101; \
         AV_WN32A(              &var,     v32); \
         AV_WN32A(&((uint8_t *) &var)[4], v32); \
         break; \
     } \
     case 16: { \
-        uint32_t v32 = val * 0x01010101); \
+        uint32_t v32 = val * 0x01010101; \
         AV_WN32A(              &var,      v32); \
         AV_WN32A(&((uint8_t *) &var)[4],  v32); \
         AV_WN32A(&((uint8_t *) &var)[8],  v32); \
