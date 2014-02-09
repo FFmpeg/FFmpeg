@@ -168,7 +168,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
             " js 1b                             \n\t"
             PMAX(MM"3", MM"0")
             "movd "MM"3, %%"REG_a"              \n\t"
-            "movzb %%al, %%"REG_a"              \n\t" // last_non_zero_p1
+            "movzbl %%al, %%eax                 \n\t" // last_non_zero_p1
             : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat), "r" (bias),
               "r" (inv_zigzag_direct16 + 64), "r" (temp_block + 64)
@@ -202,7 +202,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
             " js 1b                             \n\t"
             PMAX(MM"3", MM"0")
             "movd "MM"3, %%"REG_a"              \n\t"
-            "movzb %%al, %%"REG_a"              \n\t" // last_non_zero_p1
+            "movzbl %%al, %%eax                 \n\t" // last_non_zero_p1
             : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat+64), "r" (bias+64),
               "r" (inv_zigzag_direct16 + 64), "r" (temp_block + 64)
