@@ -2753,6 +2753,7 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
     spectral_to_sample(ac);
 
     ac->frame->nb_samples = samples;
+    ac->frame->sample_rate = avctx->sample_rate;
     *got_frame_ptr = 1;
 
     skip_bits_long(gb, get_bits_left(gb));
@@ -2885,15 +2886,17 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     multiplier = (ac->oc[1].m4ac.sbr == 1) ? ac->oc[1].m4ac.ext_sample_rate > ac->oc[1].m4ac.sample_rate : 0;
     samples <<= multiplier;
 
-    if (samples)
-        ac->frame->nb_samples = samples;
-    *got_frame_ptr = !!samples;
-
     if (ac->oc[1].status && audio_found) {
         avctx->sample_rate = ac->oc[1].m4ac.sample_rate << multiplier;
         avctx->frame_size = samples;
         ac->oc[1].status = OC_LOCKED;
     }
+
+    if (samples) {
+        ac->frame->nb_samples = samples;
+        ac->frame->sample_rate = avctx->sample_rate;
+    }
+    *got_frame_ptr = !!samples;
 
     return 0;
 fail:
