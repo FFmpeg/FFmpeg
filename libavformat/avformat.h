@@ -2085,7 +2085,8 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  *            correct values.
  *            @endparblock
  *
- * @return 0 on success, a negative AVERROR on error.
+ * @return 0 on success, a negative AVERROR on error. Libavformat will always
+ *         take care of freeing the packet, even if this function fails.
  *
  * @see av_write_frame(), AVFormatContext.max_interleave_delta
  */
