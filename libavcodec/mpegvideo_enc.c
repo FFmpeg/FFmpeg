@@ -3511,6 +3511,8 @@ static int encode_picture(MpegEncContext *s, int picture_number)
             chroma_matrix =
             luma_matrix = s->avctx->intra_matrix;
         }
+        if (s->avctx->chroma_intra_matrix)
+            chroma_matrix = s->avctx->chroma_intra_matrix;
 
         /* for mjpeg, we do include qscale in the matrix */
         for(i=1;i<64;i++){
