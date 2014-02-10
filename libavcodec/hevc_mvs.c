@@ -569,8 +569,12 @@ static av_always_inline void dist_scale(HEVCContext *s, Mv *mv,
     int ref_pic_elist      = refPicList[elist].list[TAB_MVF(x, y).ref_idx[elist]];
     int ref_pic_curr       = refPicList[ref_idx_curr].list[ref_idx];
 
-    if (ref_pic_elist != ref_pic_curr)
-        mv_scale(mv, mv, s->poc - ref_pic_elist, s->poc - ref_pic_curr);
+    if (ref_pic_elist != ref_pic_curr) {
+        int poc_diff = s->poc - ref_pic_elist;
+        if (!poc_diff)
+            poc_diff = 1;
+        mv_scale(mv, mv, poc_diff, s->poc - ref_pic_curr);
+    }
 }
 
 static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index,
