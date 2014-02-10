@@ -173,6 +173,58 @@
  *
  * @defgroup lavf_encoding Muxing
  * @{
+ * Muxers take encoded data in the form of @ref AVPacket "AVPackets" and write
+ * it into files or other output bytestreams in the specified container format.
+ *
+ * The main API functions for muxing are avformat_write_header() for writing the
+ * file header, av_write_frame() / av_interleaved_write_frame() for writing the
+ * packets and av_write_trailer() for finalizing the file.
+ *
+ * At the beginning of the muxing process, the caller must first call
+ * avformat_alloc_context() to create a muxing context. The caller then sets up
+ * the muxer by filling the various fields in this context:
+ *
+ * - The @ref AVFormatContext.oformat "oformat" field must be set to select the
+ *   muxer that will be used.
+ * - Unless the format is of the AVFMT_NOFILE type, the @ref AVFormatContext.pb
+ *   "pb" field must be set to an opened IO context, either returned from
+ *   avio_open2() or a custom one.
+ * - Unless the format is of the AVFMT_NOSTREAMS type, at least one stream must
+ *   be created with the avformat_new_stream() function. The caller should fill
+ *   the @ref AVStream.codec "stream codec context" information, such as the
+ *   codec @ref AVCodecContext.codec_type "type", @ref AVCodecContext.codec_id
+ *   "id" and other parameters (e.g. width / height, the pixel or sample format,
+ *   etc.) as known. The @ref AVCodecContext.time_base "codec timebase" should
+ *   be set to the timebase that the caller desires to use for this stream (note
+ *   that the timebase actually used by the muxer can be different, as will be
+ *   described later).
+ * - The caller may fill in additional information, such as @ref
+ *   AVFormatContext.metadata "global" or @ref AVStream.metadata "per-stream"
+ *   metadata, @ref AVFormatContext.chapters "chapters", @ref
+ *   AVFormatContext.programs "programs", etc. as described in the
+ *   AVFormatContext documentation. Whether such information will actually be
+ *   stored in the output depends on what the container format and the muxer
+ *   support.
+ *
+ * When the muxing context is fully set up, the caller must call
+ * avformat_write_header() to initialize the muxer internals and write the file
+ * header. Whether anything actually is written to the IO context at this step
+ * depends on the muxer, but this function must always be called. Any muxer
+ * private options must be passed in the options parameter to this function.
+ *
+ * The data is then sent to the muxer by repeatedly calling av_write_frame() or
+ * av_interleaved_write_frame() (consult those functions' documentation for
+ * discussion on the difference between them; only one of them may be used with
+ * a single muxing context, they should not be mixed). Do note that the timing
+ * information on the packets sent to the muxer must be in the corresponding
+ * AVStream's timebase. That timebase is set by the muxer (in the
+ * avformat_write_header() step) and may be different from the timebase the
+ * caller set on the codec context.
+ *
+ * Once all the data has been written, the caller must call av_write_trailer()
+ * to flush any buffered packets and finalize the output file, then close the IO
+ * context (if any) and finally free the muxing context with
+ * avformat_free_context().
  * @}
  *
  * @defgroup lavf_io I/O Read/Write
