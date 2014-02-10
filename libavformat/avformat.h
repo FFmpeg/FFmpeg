@@ -1935,18 +1935,34 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options);
 /**
  * Write a packet to an output media file.
  *
- * The packet shall contain one audio or video frame.
- * The packet must be correctly interleaved according to the container
- * specification, if not then av_interleaved_write_frame must be used.
+ * This function passes the packet directly to the muxer, without any buffering
+ * or reordering. The caller is responsible for correctly interleaving the
+ * packets if the format requires it. Callers that want libavformat to handle
+ * the interleaving should call av_interleaved_write_frame() instead of this
+ * function.
  *
  * @param s media file handle
- * @param pkt The packet, which contains the stream_index, buf/buf_size,
- *            dts/pts, ...
- *            This can be NULL (at any time, not just at the end), in
- *            order to immediately flush data buffered within the muxer,
- *            for muxers that buffer up data internally before writing it
- *            to the output.
+ * @param pkt @parblock
+ *            The packet containing the data to be written. Note that unlike
+ *            av_interleaved_write_frame(), this function does not take
+ *            ownership of the packet passed to it (though some muxers may make
+ *            an internal reference to the input packet).
+ *
+ *            This parameter can be NULL (at any time, not just at the end), in
+ *            order to immediately flush data buffered within the muxer, for
+ *            muxers that buffer up data internally before writing it to the
+ *            output.
+ *
+ *            Packet's @ref AVPacket.stream_index "stream_index" field must be
+ *            set to the index of the corresponding stream in @ref
+ *            AVFormatContext.streams "s->streams". It is very strongly
+ *            recommended that timing information (@ref AVPacket.pts "pts", @ref
+ *            AVPacket.dts "dts", @ref AVPacket.duration "duration") is set to
+ *            correct values.
+ *            @endparblock
  * @return < 0 on error, = 0 if OK, 1 if flushed and there is no more data to flush
+ *
+ * @see av_interleaved_write_frame()
  */
 int av_write_frame(AVFormatContext *s, AVPacket *pkt);
 
