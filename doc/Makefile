@@ -104,7 +104,7 @@ doc/%.3: doc/%.pod $(GENTEXI)
 	$(M)pod2man --section=3 --center=" " --release=" " $< > $@
 
 $(DOCS) doc/doxy/html: | doc/
-$(DOC_EXAMPLES:%=%.o): | doc/examples
+$(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
 OBJDIRS += doc/examples
 
 doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(INSTHEADERS)
