@@ -171,6 +171,8 @@ typedef struct OptionsContext {
     int        nb_intra_matrices;
     SpecifierOpt *inter_matrices;
     int        nb_inter_matrices;
+    SpecifierOpt *chroma_intra_matrices;
+    int        nb_chroma_intra_matrices;
     SpecifierOpt *top_field_first;
     int        nb_top_field_first;
     SpecifierOpt *metadata_map;
