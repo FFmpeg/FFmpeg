@@ -74,7 +74,11 @@ static int pcm_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
 
     bps= av_get_bits_per_sample(s->streams[0]->codec->codec_id);
-    assert(bps); // if false there IS a bug elsewhere (NOT in this function)
+    if (!bps) {
+        av_log(s, AV_LOG_ERROR, "Unknown number of bytes per sample.\n");
+        return AVERROR(EINVAL);
+    }
+
     pkt->dts=
     pkt->pts= pkt->pos*8 / (bps * s->streams[0]->codec->channels);
 
