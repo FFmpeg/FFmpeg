@@ -25,6 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "libavutil/intreadwrite.h"
+
 #include "mathops.h"
 
 #include "bit_depth_template.c"
