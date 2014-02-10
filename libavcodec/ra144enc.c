@@ -60,7 +60,6 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     ractx = avctx->priv_data;
     ractx->lpc_coef[0] = ractx->lpc_tables[0];
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
-    AV_ZERO128(ractx->buffer_a+BLOCKSIZE);
     ractx->avctx = avctx;
     ff_dsputil_init(&ractx->dsp, avctx);
     ret = ff_lpc_init(&ractx->lpc_ctx, avctx->frame_size, LPC_ORDER,
