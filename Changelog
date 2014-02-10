@@ -25,6 +25,7 @@ version <next>
 - Use metadata_header_padding to control padding in ID3 tags (currently used in
   MP3, AIFF, and OMA files), FLAC header, and the AVI "junk" block.
 - Mirillis FIC video decoder
+- Support DNx444
 
 
 version 2.1:

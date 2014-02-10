@@ -42,10 +42,11 @@ typedef struct DNXHDContext {
     VLC ac_vlc, dc_vlc, run_vlc;
     int last_dc[3];
     DSPContext dsp;
-    DECLARE_ALIGNED(16, int16_t, blocks)[8][64];
+    DECLARE_ALIGNED(16, int16_t, blocks)[12][64];
     ScanTable scantable;
     const CIDEntry *cid_table;
     int bit_depth; // 8, 10 or 0 if not initialized at all.
+    int is_444;
     void (*decode_dct_block)(struct DNXHDContext *ctx, int16_t *block,
                              int n, int qscale);
     int last_qscale;
@@ -58,6 +59,7 @@ typedef struct DNXHDContext {
 
 static void dnxhd_decode_dct_block_8(DNXHDContext *ctx, int16_t *block, int n, int qscale);
 static void dnxhd_decode_dct_block_10(DNXHDContext *ctx, int16_t *block, int n, int qscale);
+static void dnxhd_decode_dct_block_10_444(DNXHDContext *ctx, int16_t *block, int n, int qscale);
 
 static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 {
@@ -106,13 +108,14 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid)
 static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
                                const uint8_t *buf, int buf_size, int first_field)
 {
-    static const uint8_t header_prefix[] = { 0x00, 0x00, 0x02, 0x80, 0x01 };
+    static const uint8_t header_prefix[]    = { 0x00, 0x00, 0x02, 0x80, 0x01 };
+    static const uint8_t header_prefix444[] = { 0x00, 0x00, 0x02, 0x80, 0x02 };
     int i, cid, ret;
 
     if (buf_size < 0x280)
         return AVERROR_INVALIDDATA;
 
-    if (memcmp(buf, header_prefix, 5)) {
+    if (memcmp(buf, header_prefix, 5) && memcmp(buf, header_prefix444, 5)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "error in header\n");
         return AVERROR_INVALIDDATA;
     }
@@ -128,7 +131,17 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     av_dlog(ctx->avctx, "width %d, height %d\n", ctx->width, ctx->height);
 
-    if (buf[0x21] & 0x40) {
+    ctx->is_444 = 0;
+    if (buf[0x4] == 0x2) {
+        ctx->avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
+        ctx->avctx->bits_per_raw_sample = 10;
+        if (ctx->bit_depth != 10) {
+            ff_dsputil_init(&ctx->dsp, ctx->avctx);
+            ctx->bit_depth = 10;
+            ctx->decode_dct_block = dnxhd_decode_dct_block_10_444;
+        }
+        ctx->is_444 = 1;
+    } else if (buf[0x21] & 0x40) {
         ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         ctx->avctx->bits_per_raw_sample = 10;
         if (ctx->bit_depth != 10) {
@@ -199,14 +212,25 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
     const int eob_index     = ctx->cid_table->eob_index;
     OPEN_READER(bs, &ctx->gb);
 
-    if (n&2) {
-        component = 1 + (n&1);
-        scale = ctx->chroma_scale;
-        weight_matrix = ctx->cid_table->chroma_weight;
+    if (!ctx->is_444) {
+        if (n&2) {
+            component = 1 + (n&1);
+            scale = ctx->chroma_scale;
+            weight_matrix = ctx->cid_table->chroma_weight;
+        } else {
+            component = 0;
+            scale = ctx->luma_scale;
+            weight_matrix = ctx->cid_table->luma_weight;
+        }
     } else {
-        component = 0;
-        scale = ctx->luma_scale;
-        weight_matrix = ctx->cid_table->luma_weight;
+        component = (n >> 1) % 3;
+        if (component) {
+            scale = ctx->chroma_scale;
+            weight_matrix = ctx->cid_table->chroma_weight;
+        } else {
+            scale = ctx->luma_scale;
+            weight_matrix = ctx->cid_table->luma_weight;
+        }
     }
 
     UPDATE_CACHE(bs, &ctx->gb);
@@ -278,6 +302,12 @@ static void dnxhd_decode_dct_block_10(DNXHDContext *ctx, int16_t *block,
     dnxhd_decode_dct_block(ctx, block, n, qscale, 6, 8, 4);
 }
 
+static void dnxhd_decode_dct_block_10_444(DNXHDContext *ctx, int16_t *block,
+                                          int n, int qscale)
+{
+    dnxhd_decode_dct_block(ctx, block, n, qscale, 6, 32, 6);
+}
+
 static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame, int x, int y)
 {
     int shift1 = ctx->bit_depth == 10;
@@ -302,6 +332,12 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame, int x, int
         ctx->dsp.clear_block(ctx->blocks[i]);
         ctx->decode_dct_block(ctx, ctx->blocks[i], i, qscale);
     }
+    if (ctx->is_444) {
+        for (; i < 12; i++) {
+            ctx->dsp.clear_block(ctx->blocks[i]);
+            ctx->decode_dct_block(ctx, ctx->blocks[i], i, qscale);
+        }
+    }
 
     if (frame->interlaced_frame) {
         dct_linesize_luma   <<= 1;
@@ -309,8 +345,8 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame, int x, int
     }
 
     dest_y = frame->data[0] + ((y * dct_linesize_luma)   << 4) + (x << (4 + shift1));
-    dest_u = frame->data[1] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1));
-    dest_v = frame->data[2] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1));
+    dest_u = frame->data[1] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1 + ctx->is_444));
+    dest_v = frame->data[2] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1 + ctx->is_444));
 
     if (ctx->cur_field) {
         dest_y += frame->linesize[0];
@@ -320,17 +356,36 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame, int x, int
 
     dct_y_offset = dct_linesize_luma << 3;
     dct_x_offset = 8 << shift1;
-    ctx->dsp.idct_put(dest_y,                               dct_linesize_luma, ctx->blocks[0]);
-    ctx->dsp.idct_put(dest_y + dct_x_offset,                dct_linesize_luma, ctx->blocks[1]);
-    ctx->dsp.idct_put(dest_y + dct_y_offset,                dct_linesize_luma, ctx->blocks[4]);
-    ctx->dsp.idct_put(dest_y + dct_y_offset + dct_x_offset, dct_linesize_luma, ctx->blocks[5]);
+    if (!ctx->is_444) {
+        ctx->dsp.idct_put(dest_y,                               dct_linesize_luma, ctx->blocks[0]);
+        ctx->dsp.idct_put(dest_y + dct_x_offset,                dct_linesize_luma, ctx->blocks[1]);
+        ctx->dsp.idct_put(dest_y + dct_y_offset,                dct_linesize_luma, ctx->blocks[4]);
+        ctx->dsp.idct_put(dest_y + dct_y_offset + dct_x_offset, dct_linesize_luma, ctx->blocks[5]);
 
-    if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
-        dct_y_offset = dct_linesize_chroma << 3;
-        ctx->dsp.idct_put(dest_u,                dct_linesize_chroma, ctx->blocks[2]);
-        ctx->dsp.idct_put(dest_v,                dct_linesize_chroma, ctx->blocks[3]);
-        ctx->dsp.idct_put(dest_u + dct_y_offset, dct_linesize_chroma, ctx->blocks[6]);
-        ctx->dsp.idct_put(dest_v + dct_y_offset, dct_linesize_chroma, ctx->blocks[7]);
+        if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
+            dct_y_offset = dct_linesize_chroma << 3;
+            ctx->dsp.idct_put(dest_u,                dct_linesize_chroma, ctx->blocks[2]);
+            ctx->dsp.idct_put(dest_v,                dct_linesize_chroma, ctx->blocks[3]);
+            ctx->dsp.idct_put(dest_u + dct_y_offset, dct_linesize_chroma, ctx->blocks[6]);
+            ctx->dsp.idct_put(dest_v + dct_y_offset, dct_linesize_chroma, ctx->blocks[7]);
+        }
+    } else {
+        ctx->dsp.idct_put(dest_y,                               dct_linesize_luma, ctx->blocks[0]);
+        ctx->dsp.idct_put(dest_y + dct_x_offset,                dct_linesize_luma, ctx->blocks[1]);
+        ctx->dsp.idct_put(dest_y + dct_y_offset,                dct_linesize_luma, ctx->blocks[6]);
+        ctx->dsp.idct_put(dest_y + dct_y_offset + dct_x_offset, dct_linesize_luma, ctx->blocks[7]);
+
+        if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
+            dct_y_offset = dct_linesize_chroma << 3;
+            ctx->dsp.idct_put(dest_u,                               dct_linesize_chroma, ctx->blocks[2]);
+            ctx->dsp.idct_put(dest_u + dct_x_offset,                dct_linesize_chroma, ctx->blocks[3]);
+            ctx->dsp.idct_put(dest_u + dct_y_offset,                dct_linesize_chroma, ctx->blocks[8]);
+            ctx->dsp.idct_put(dest_u + dct_y_offset + dct_x_offset, dct_linesize_chroma, ctx->blocks[9]);
+            ctx->dsp.idct_put(dest_v,                               dct_linesize_chroma, ctx->blocks[4]);
+            ctx->dsp.idct_put(dest_v + dct_x_offset,                dct_linesize_chroma, ctx->blocks[5]);
+            ctx->dsp.idct_put(dest_v + dct_y_offset,                dct_linesize_chroma, ctx->blocks[10]);
+            ctx->dsp.idct_put(dest_v + dct_y_offset + dct_x_offset, dct_linesize_chroma, ctx->blocks[11]);
+        }
     }
 
     return 0;
