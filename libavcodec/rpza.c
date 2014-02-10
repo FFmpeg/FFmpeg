@@ -34,6 +34,7 @@
  * pixels shall be stored in native CPU endianness.
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,13 +74,13 @@ static void rpza_decode_stream(RpzaContext *s)
     int stride = s->frame->linesize[0] / 2;
     int row_inc = stride - 4;
     int chunk_size;
-    unsigned char opcode;
+    uint8_t opcode;
     int n_blocks;
-    unsigned short colorA = 0, colorB;
-    unsigned short color4[4];
-    unsigned char index, idx;
-    unsigned short ta, tb;
-    unsigned short *pixels = (unsigned short *)s->frame->data[0];
+    uint16_t colorA = 0, colorB;
+    uint16_t color4[4];
+    uint8_t index, idx;
+    uint16_t ta, tb;
+    uint16_t *pixels = (uint16_t *)s->frame->data[0];
 
     int row_ptr = 0;
     int pixel_ptr = -4;
