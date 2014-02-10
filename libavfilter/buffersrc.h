@@ -22,10 +22,17 @@
 
 /**
  * @file
+ * @ingroup lavfi_buffersrc
  * Memory buffer source API.
  */
 
 #include "avfilter.h"
+
+/**
+ * @defgroup lavfi_buffersrc Buffer source API
+ * @ingroup lavfi
+ * @{
+ */
 
 #if FF_API_AVFILTERBUFFER
 /**
@@ -70,5 +77,9 @@ int av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame);
  * while this function takes ownership of the reference passed to it.
  */
 int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame);
+
+/**
+ * @}
+ */
 
 #endif /* AVFILTER_BUFFERSRC_H */
