@@ -3170,6 +3170,33 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
     }
 }
 
+static void seek_chapter(VideoState *is, int incr)
+{
+    int64_t pos = get_master_clock(is) * AV_TIME_BASE;
+    int i;
+
+    if (!is->ic->nb_chapters)
+        return;
+
+    /* find the current chapter */
+    for (i = 0; i < is->ic->nb_chapters; i++) {
+        AVChapter *ch = is->ic->chapters[i];
+        if (av_compare_ts(pos, AV_TIME_BASE_Q, ch->start, ch->time_base) < 0) {
+            i--;
+            break;
+        }
+    }
+
+    i += incr;
+    i = FFMAX(i, 0);
+    if (i >= is->ic->nb_chapters)
+        return;
+
+    av_log(NULL, AV_LOG_VERBOSE, "Seeking to chapter %d.\n", i);
+    stream_seek(is, av_rescale_q(is->ic->chapters[i]->start, is->ic->chapters[i]->time_base,
+                                 AV_TIME_BASE_Q), 0, 0);
+}
+
 /* handle an event sent by the GUI */
 static void event_loop(VideoState *cur_stream)
 {
@@ -3219,11 +3246,19 @@ static void event_loop(VideoState *cur_stream)
                 toggle_audio_display(cur_stream);
                 break;
             case SDLK_PAGEUP:
-                incr = 600.0;
-                goto do_seek;
+                if (cur_stream->ic->nb_chapters <= 1) {
+                    incr = 600.0;
+                    goto do_seek;
+                }
+                seek_chapter(cur_stream, 1);
+                break;
             case SDLK_PAGEDOWN:
-                incr = -600.0;
-                goto do_seek;
+                if (cur_stream->ic->nb_chapters <= 1) {
+                    incr = -600.0;
+                    goto do_seek;
+                }
+                seek_chapter(cur_stream, -1);
+                break;
             case SDLK_LEFT:
                 incr = -10.0;
                 goto do_seek;

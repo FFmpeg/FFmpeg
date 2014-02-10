@@ -201,6 +201,8 @@ Seek backward/forward 10 seconds.
 Seek backward/forward 1 minute.
 
 @item page down/page up
+Seek to the previous/next chapter.
+or if there are no chapters
 Seek backward/forward 10 minutes.
 
 @item mouse click
