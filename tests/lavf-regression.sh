@@ -303,7 +303,7 @@ do_audio_only s16.voc "-ac 2" "-acodec pcm_s16le"
 fi
 
 if [ -n "$do_ogg" ] ; then
-do_audio_only ogg "" "-acodec flac"
+do_audio_only ogg "" "-c:a flac"
 fi
 
 if [ -n "$do_rso" ] ; then
