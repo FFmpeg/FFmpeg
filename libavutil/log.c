@@ -94,20 +94,20 @@ const char *av_default_item_name(void *ptr)
     return (*(AVClass **) ptr)->class_name;
 }
 
-void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
+void av_log_default_callback(void *avcl, int level, const char *fmt, va_list vl)
 {
     static int print_prefix = 1;
     static int count;
     static char prev[1024];
     char line[1024];
     static int is_atty;
-    AVClass* avc = ptr ? *(AVClass **) ptr : NULL;
+    AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
     if (level > av_log_level)
         return;
     line[0] = 0;
     if (print_prefix && avc) {
         if (avc->parent_log_context_offset) {
-            AVClass** parent = *(AVClass ***) (((uint8_t *) ptr) +
+            AVClass** parent = *(AVClass ***) (((uint8_t *) avcl) +
                                    avc->parent_log_context_offset);
             if (parent && *parent) {
                 snprintf(line, sizeof(line), "[%s @ %p] ",
@@ -115,7 +115,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
             }
         }
         snprintf(line + strlen(line), sizeof(line) - strlen(line), "[%s @ %p] ",
-                 avc->item_name(ptr), ptr);
+                 avc->item_name(avcl), avcl);
     }
 
     vsnprintf(line + strlen(line), sizeof(line) - strlen(line), fmt, vl);
