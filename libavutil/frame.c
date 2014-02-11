@@ -191,15 +191,11 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
         if (ret < 0)
             return ret;
 
-        if (src->nb_samples) {
-            int ch = av_get_channel_layout_nb_channels(src->channel_layout);
-            av_samples_copy(dst->extended_data, src->extended_data, 0, 0,
-                            dst->nb_samples, ch, dst->format);
-        } else {
-            av_image_copy(dst->data, dst->linesize, src->data, src->linesize,
-                          dst->format, dst->width, dst->height);
-        }
-        return 0;
+        ret = av_frame_copy(dst, src);
+        if (ret < 0)
+            av_frame_unref(dst);
+
+        return ret;
     }
 
     /* ref the buffers */
@@ -335,13 +331,10 @@ int av_frame_make_writable(AVFrame *frame)
     if (ret < 0)
         return ret;
 
-    if (tmp.nb_samples) {
-        int ch = av_get_channel_layout_nb_channels(tmp.channel_layout);
-        av_samples_copy(tmp.extended_data, frame->extended_data, 0, 0,
-                        frame->nb_samples, ch, frame->format);
-    } else {
-        av_image_copy(tmp.data, tmp.linesize, frame->data, frame->linesize,
-                      frame->format, frame->width, frame->height);
+    ret = av_frame_copy(&tmp, frame);
+    if (ret < 0) {
+        av_frame_unref(&tmp);
+        return ret;
     }
 
     ret = av_frame_copy_props(&tmp, frame);
@@ -476,4 +469,60 @@ AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
             return frame->side_data[i];
     }
     return NULL;
+}
+
+static int frame_copy_video(AVFrame *dst, const AVFrame *src)
+{
+    const uint8_t *src_data[4];
+    int i, planes;
+
+    if (dst->width  != src->width ||
+        dst->height != src->height)
+        return AVERROR(EINVAL);
+
+    planes = av_pix_fmt_count_planes(dst->format);
+    for (i = 0; i < planes; i++)
+        if (!dst->data[i] || !src->data[i])
+            return AVERROR(EINVAL);
+
+    memcpy(src_data, src->data, sizeof(src_data));
+    av_image_copy(dst->data, dst->linesize,
+                  src_data, src->linesize,
+                  dst->format, dst->width, dst->height);
+
+    return 0;
+}
+
+static int frame_copy_audio(AVFrame *dst, const AVFrame *src)
+{
+    int planar   = av_sample_fmt_is_planar(dst->format);
+    int channels = av_get_channel_layout_nb_channels(dst->channel_layout);
+    int planes   = planar ? channels : 1;
+    int i;
+
+    if (dst->nb_samples     != src->nb_samples ||
+        dst->channel_layout != src->channel_layout)
+        return AVERROR(EINVAL);
+
+    for (i = 0; i < planes; i++)
+        if (!dst->extended_data[i] || !src->extended_data[i])
+            return AVERROR(EINVAL);
+
+    av_samples_copy(dst->extended_data, src->extended_data, 0, 0,
+                    dst->nb_samples, channels, dst->format);
+
+    return 0;
+}
+
+int av_frame_copy(AVFrame *dst, const AVFrame *src)
+{
+    if (dst->format != src->format || dst->format < 0)
+        return AVERROR(EINVAL);
+
+    if (dst->width > 0 && dst->height > 0)
+        return frame_copy_video(dst, src);
+    else if (dst->nb_samples > 0 && dst->channel_layout)
+        return frame_copy_audio(dst, src);
+
+    return AVERROR(EINVAL);
 }
