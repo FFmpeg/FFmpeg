@@ -23,6 +23,7 @@ version <next>:
 - RTP depacketization of T.140 text (RFC 4103)
 - VP9 RTP payload format (draft 0) experimental depacketizer
 - TDSC decoder
+- DTS lossless extension (XLL) decoding (not lossless, disabled by default)
 
 
 version 11:
