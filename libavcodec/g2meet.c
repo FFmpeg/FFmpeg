@@ -253,19 +253,25 @@ static int jpg_decode_data(JPGContext *c, int width, int height,
     mb_h  = (height + 15) >> 4;
 
     if (!num_mbs)
-        num_mbs = mb_w * mb_h;
+        num_mbs = mb_w * mb_h * 4;
 
     for (i = 0; i < 3; i++)
         c->prev_dc[i] = 1024;
     bx = by = 0;
+    c->dsp.clear_blocks(c->block[0]);
     for (mb_y = 0; mb_y < mb_h; mb_y++) {
         for (mb_x = 0; mb_x < mb_w; mb_x++) {
-            if (mask && !mask[mb_x]) {
+            if (mask && !mask[mb_x * 2] && !mask[mb_x * 2 + 1] &&
+                !mask[mb_x * 2 +     mask_stride] &&
+                !mask[mb_x * 2 + 1 + mask_stride]) {
                 bx += 16;
                 continue;
             }
             for (j = 0; j < 2; j++) {
                 for (i = 0; i < 2; i++) {
+                    if (mask && !mask[mb_x * 2 + i + j * mask_stride])
+                        continue;
+                    num_mbs--;
                     if ((ret = jpg_decode_block(c, &gb, 0,
                                                 c->block[i + j * 2])) != 0)
                         return ret;
@@ -290,14 +296,14 @@ static int jpg_decode_data(JPGContext *c, int width, int height,
                 }
             }
 
-            if (!--num_mbs)
+            if (!num_mbs)
                 return 0;
             bx += 16;
         }
         bx  = 0;
         by += 16;
         if (mask)
-            mask += mask_stride;
+            mask += mask_stride * 2;
     }
 
     return 0;
@@ -405,7 +411,7 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
 
     nblocks = *src++ + 1;
     cblocks = 0;
-    bstride = FFALIGN(width, 16) >> 4;
+    bstride = FFALIGN(width, 16) >> 3;
     // blocks are coded LSB and we need normal bitreader for JPEG data
     bits = 0;
     for (i = 0; i < (FFALIGN(height, 16) >> 4); i++) {
@@ -422,14 +428,17 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
             cblocks += coded;
             if (cblocks > nblocks)
                 return AVERROR_INVALIDDATA;
-            c->kempf_flags[j + i * bstride] = coded;
+            c->kempf_flags[j * 2 +      i * 2      * bstride] =
+            c->kempf_flags[j * 2 + 1 +  i * 2      * bstride] =
+            c->kempf_flags[j * 2 +     (i * 2 + 1) * bstride] =
+            c->kempf_flags[j * 2 + 1 + (i * 2 + 1) * bstride] = coded;
         }
     }
 
     memset(c->jpeg_tile, 0, c->tile_stride * height);
     jpg_decode_data(&c->jc, width, height, src, src_end - src,
                     c->jpeg_tile, c->tile_stride,
-                    c->kempf_flags, bstride, nblocks, 0);
+                    c->kempf_flags, bstride, nblocks * 4, 0);
 
     kempf_restore_buf(c->kempf_buf, dlen, dst, c->framebuf_stride,
                       c->jpeg_tile, c->tile_stride,
