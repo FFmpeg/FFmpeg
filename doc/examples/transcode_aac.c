@@ -17,7 +17,10 @@
  */
 
 /**
- * @file simple audio converter
+ * @file
+ * simple audio converter
+ *
+ * @example doc/examples/transcode_aac.c
  * Convert an input audio file to AAC in an MP4 container using Libav.
  * @author Andreas Unterweger (dustsigns@gmail.com)
  */
