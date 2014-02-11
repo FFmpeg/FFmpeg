@@ -57,11 +57,12 @@ $(DOCS) doc/doxy/html: | doc/
 $(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
 OBJDIRS += doc/examples
 
+DOXY_INPUT      = $(addprefix $(SRC_PATH)/, $(INSTHEADERS))
 DOXY_TEMPLATES  = doxy_stylesheet.css footer.html header.html
 DOXY_TEMPLATES := $(addprefix $(SRC_PATH)/doc/doxy/, $(DOXY_TEMPLATES))
 
-doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(DOXY_TEMPLATES) $(INSTHEADERS)
-	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $^
+doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(DOXY_INPUT) $(DOXY_TEMPLATES)
+	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $< $(DOXY_INPUT)
 
 install-progs-$(CONFIG_POD2MAN): install-man
 install-progs-$(CONFIG_TEXI2HTML): install-doc
