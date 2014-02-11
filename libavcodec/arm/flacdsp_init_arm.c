@@ -27,6 +27,6 @@ void ff_flac_lpc_16_arm(int32_t *samples, const int coeffs[32], int order,
 av_cold void ff_flacdsp_init_arm(FLACDSPContext *c, enum AVSampleFormat fmt,
                                  int bps)
 {
-    if (bps <= 16)
+    if (bps <= 16 && CONFIG_FLAC_DECODER)
         c->lpc = ff_flac_lpc_16_arm;
 }

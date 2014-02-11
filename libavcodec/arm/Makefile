@@ -15,6 +15,7 @@ OBJS-$(CONFIG_FFT)                     += arm/fft_init_arm.o            \
                                           arm/fft_fixed_init_arm.o
 OBJS-$(CONFIG_FLAC_DECODER)            += arm/flacdsp_init_arm.o        \
                                           arm/flacdsp_arm.o
+OBJS-$(CONFIG_FLAC_ENCODER)            += arm/flacdsp_init_arm.o
 OBJS-$(CONFIG_H264CHROMA)              += arm/h264chroma_init_arm.o
 OBJS-$(CONFIG_H264DSP)                 += arm/h264dsp_init_arm.o
 OBJS-$(CONFIG_H264PRED)                += arm/h264pred_init_arm.o
