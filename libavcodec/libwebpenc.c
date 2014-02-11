@@ -161,9 +161,7 @@ static int libwebp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             ret = av_frame_get_buffer(alt_frame, 32);
             if (ret < 0)
                 goto end;
-            av_image_copy(alt_frame->data, alt_frame->linesize,
-                          frame->data, frame->linesize,
-                          avctx->pix_fmt, frame->width, frame->height);
+            av_frame_copy(alt_frame, frame);
             frame = alt_frame;
         }
         pic->use_argb  = 0;
