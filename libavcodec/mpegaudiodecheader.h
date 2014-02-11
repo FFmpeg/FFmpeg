@@ -56,6 +56,8 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header);
    header, otherwise the coded frame size in bytes */
 int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bitrate);
 
+int avpriv_mpa_decode_header2(uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bitrate, enum AVCodecID *codec_id);
+
 /* fast header check for resync */
 static inline int ff_mpa_check_header(uint32_t header){
     /* header */

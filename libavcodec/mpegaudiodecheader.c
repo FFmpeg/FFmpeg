@@ -108,7 +108,7 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     return 0;
 }
 
-int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate)
+int avpriv_mpa_decode_header2(uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate, enum AVCodecID *codec_id)
 {
     MPADecodeHeader s1, *s = &s1;
 
@@ -121,16 +121,16 @@ int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_r
 
     switch(s->layer) {
     case 1:
-        avctx->codec_id = AV_CODEC_ID_MP1;
+        *codec_id = AV_CODEC_ID_MP1;
         *frame_size = 384;
         break;
     case 2:
-        avctx->codec_id = AV_CODEC_ID_MP2;
+        *codec_id = AV_CODEC_ID_MP2;
         *frame_size = 1152;
         break;
     default:
     case 3:
-        avctx->codec_id = AV_CODEC_ID_MP3;
+        *codec_id = AV_CODEC_ID_MP3;
         if (s->lsf)
             *frame_size = 576;
         else
@@ -142,4 +142,9 @@ int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_r
     *channels = s->nb_channels;
     *bit_rate = s->bit_rate;
     return s->frame_size;
+}
+
+int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate)
+{
+    return avpriv_mpa_decode_header2(head, sample_rate, channels, frame_size, bit_rate, &avctx->codec_id);
 }
