@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-02-11 - 1b05ac2 - lavf 55.32.100 - avformat.h
+  Add av_write_uncoded_frame() and av_interleaved_write_uncoded_frame().
+
 2014-02-04 - 3adb5f8 / d9ae103 - lavf 55.30.100 / 55.11.0 - avformat.h
   Add AVFormatContext.max_interleave_delta for controlling amount of buffering
   when interleaving.

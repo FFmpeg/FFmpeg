@@ -398,4 +398,18 @@ int ff_rfps_add_frame(AVFormatContext *ic, AVStream *st, int64_t dts);
 
 void ff_rfps_calculate(AVFormatContext *ic);
 
+/**
+ * Flags for AVFormatContext.write_uncoded_frame()
+ */
+enum AVWriteUncodedFrameFlags {
+
+    /**
+     * Query whether the feature is possible on this stream.
+     * The frame argument is ignored.
+     */
+    AV_WRITE_UNCODED_FRAME_QUERY           = 0x0001,
+
+};
+
+
 #endif /* AVFORMAT_INTERNAL_H */
