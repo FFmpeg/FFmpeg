@@ -23,6 +23,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
+#include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
 void ff_simple_idct_neon(int16_t *data);
