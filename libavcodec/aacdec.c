@@ -2872,6 +2872,7 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
     spectral_to_sample(ac);
 
     ac->frame->nb_samples = samples;
+    ac->frame->sample_rate = avctx->sample_rate;
     *got_frame_ptr = 1;
 
     skip_bits_long(gb, get_bits_left(gb));
@@ -3006,22 +3007,6 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
 
     multiplier = (ac->oc[1].m4ac.sbr == 1) ? ac->oc[1].m4ac.ext_sample_rate > ac->oc[1].m4ac.sample_rate : 0;
     samples <<= multiplier;
-    /* for dual-mono audio (SCE + SCE) */
-    is_dmono = ac->dmono_mode && sce_count == 2 &&
-               ac->oc[1].channel_layout == (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT);
-
-    if (samples)
-        ac->frame->nb_samples = samples;
-    else
-        av_frame_unref(ac->frame);
-    *got_frame_ptr = !!samples;
-
-    if (is_dmono) {
-        if (ac->dmono_mode == 1)
-            ((AVFrame *)data)->data[1] =((AVFrame *)data)->data[0];
-        else if (ac->dmono_mode == 2)
-            ((AVFrame *)data)->data[0] =((AVFrame *)data)->data[1];
-    }
 
     if (ac->oc[1].status && audio_found) {
         avctx->sample_rate = ac->oc[1].m4ac.sample_rate << multiplier;
@@ -3035,6 +3020,25 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         if (side && side_size>=4)
             AV_WL32(side, 2*AV_RL32(side));
     }
+
+    *got_frame_ptr = !!samples;
+    if (samples) {
+        ac->frame->nb_samples = samples;
+        ac->frame->sample_rate = avctx->sample_rate;
+    } else
+        av_frame_unref(ac->frame);
+    *got_frame_ptr = !!samples;
+
+    /* for dual-mono audio (SCE + SCE) */
+    is_dmono = ac->dmono_mode && sce_count == 2 &&
+               ac->oc[1].channel_layout == (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT);
+    if (is_dmono) {
+        if (ac->dmono_mode == 1)
+            ((AVFrame *)data)->data[1] =((AVFrame *)data)->data[0];
+        else if (ac->dmono_mode == 2)
+            ((AVFrame *)data)->data[0] =((AVFrame *)data)->data[1];
+    }
+
     return 0;
 fail:
     pop_output_configuration(ac);
