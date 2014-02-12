@@ -182,7 +182,7 @@ int main(int argc, char **argv)
             st->stream->codec->channel_layout = st->link->channel_layout;
             st->stream->codec->channels = avfilter_link_get_channels(st->link);
             st->stream->codec->sample_rate = st->link->sample_rate;
-            st->stream->codec->sample_fmt = st->link->format; 
+            st->stream->codec->sample_fmt = st->link->format;
             break;
         default:
             av_assert0(!"reached");
@@ -245,12 +245,12 @@ int main(int argc, char **argv)
                 ret = av_interleaved_write_uncoded_frame(st->mux,
                                                          st->stream->index,
                                                          frame);
+                frame = NULL;
                 if (ret < 0) {
                     av_log(st->stream->codec, AV_LOG_ERROR,
                            "Error writing frame: %s\n", av_err2str(ret));
                     goto fail;
                 }
-                frame = NULL;
             }
         }
     }
