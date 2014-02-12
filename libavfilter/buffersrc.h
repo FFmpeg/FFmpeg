@@ -79,8 +79,9 @@ unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src);
 
 #if FF_API_AVFILTERBUFFER
 /**
- * Add a buffer to the filtergraph s.
+ * Add a buffer to a filtergraph.
  *
+ * @param ctx an instance of the buffersrc filter
  * @param buf buffer containing frame data to be passed down the filtergraph.
  * This function will take ownership of buf, the user must not free it.
  * A NULL buf signals EOF -- i.e. no more frames will be sent to this filter.
@@ -88,13 +89,13 @@ unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src);
  * @deprecated use av_buffersrc_write_frame() or av_buffersrc_add_frame()
  */
 attribute_deprecated
-int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf);
+int av_buffersrc_buffer(AVFilterContext *ctx, AVFilterBufferRef *buf);
 #endif
 
 /**
  * Add a frame to the buffer source.
  *
- * @param s an instance of the buffersrc filter.
+ * @param ctx   an instance of the buffersrc filter
  * @param frame frame to be added. If the frame is reference counted, this
  * function will make a new reference to it. Otherwise the frame data will be
  * copied.
@@ -104,12 +105,12 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf);
  * This function is equivalent to av_buffersrc_add_frame_flags() with the
  * AV_BUFFERSRC_FLAG_KEEP_REF flag.
  */
-int av_buffersrc_write_frame(AVFilterContext *s, const AVFrame *frame);
+int av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame);
 
 /**
  * Add a frame to the buffer source.
  *
- * @param s an instance of the buffersrc filter.
+ * @param ctx   an instance of the buffersrc filter
  * @param frame frame to be added. If the frame is reference counted, this
  * function will take ownership of the reference(s) and reset the frame.
  * Otherwise the frame data will be copied. If this function returns an error,
