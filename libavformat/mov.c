@@ -2162,6 +2162,11 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                         rap_group_index++;
                     }
                 }
+                if (sc->keyframe_absent
+                    && !sc->stps_count
+                    && !rap_group_present
+                    && st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                     keyframe = 1;
                 if (keyframe)
                     distance = 0;
                 sample_size = sc->stsz_sample_size > 0 ? sc->stsz_sample_size : sc->sample_sizes[current_sample];
