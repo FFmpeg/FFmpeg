@@ -185,10 +185,10 @@ static int get_category(void *ptr){
     return avc->category + 16;
 }
 
-static void format_line(void *ptr, int level, const char *fmt, va_list vl,
+static void format_line(void *avcl, int level, const char *fmt, va_list vl,
                         AVBPrint part[3], int *print_prefix, int type[2])
 {
-    AVClass* avc = ptr ? *(AVClass **) ptr : NULL;
+    AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
     av_bprint_init(part+0, 0, 1);
     av_bprint_init(part+1, 0, 1);
     av_bprint_init(part+2, 0, 65536);
@@ -196,7 +196,7 @@ static void format_line(void *ptr, int level, const char *fmt, va_list vl,
     if(type) type[0] = type[1] = AV_CLASS_CATEGORY_NA + 16;
     if (*print_prefix && avc) {
         if (avc->parent_log_context_offset) {
-            AVClass** parent = *(AVClass ***) (((uint8_t *) ptr) +
+            AVClass** parent = *(AVClass ***) (((uint8_t *) avcl) +
                                    avc->parent_log_context_offset);
             if (parent && *parent) {
                 av_bprintf(part+0, "[%s @ %p] ",
@@ -205,8 +205,8 @@ static void format_line(void *ptr, int level, const char *fmt, va_list vl,
             }
         }
         av_bprintf(part+1, "[%s @ %p] ",
-                 avc->item_name(ptr), ptr);
-        if(type) type[1] = get_category(ptr);
+                 avc->item_name(avcl), avcl);
+        if(type) type[1] = get_category(avcl);
     }
 
     av_vbprintf(part+2, fmt, vl);
