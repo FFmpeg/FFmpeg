@@ -2041,7 +2041,6 @@ avplay_select="rdft"
 avprobe_deps="avcodec avformat"
 avserver_deps="avformat fork !shared"
 avserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
-avserver_extralibs='$ldl'
 
 # documentation
 pod2man_deps="doc"
