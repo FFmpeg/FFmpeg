@@ -139,7 +139,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     if (!ctx->encoder) {
         av_log(avctx, AV_LOG_ERROR, "Cannot open libx265 encoder.\n");
         libx265_encode_close(avctx);
-        return AVERROR_EXTERNAL;
+        return AVERROR_INVALIDDATA;
     }
 
     ret = x265_encoder_headers(ctx->encoder, &nal, &nnal);
