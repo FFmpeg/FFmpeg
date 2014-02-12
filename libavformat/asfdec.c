@@ -1473,8 +1473,8 @@ static int asf_build_simple_index(AVFormatContext *s, int stream_index)
     int64_t current_pos = avio_tell(s->pb);
     int ret = 0;
 
-    if(avio_seek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET) < 0) {
-        return AVERROR_INVALIDDATA;
+    if((ret = avio_seek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET)) < 0) {
+        return ret;
     }
 
     if ((ret = ff_get_guid(s->pb, &g)) < 0)
