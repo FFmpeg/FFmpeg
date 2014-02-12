@@ -29,11 +29,14 @@
 #include "avio_internal.h"
 #include "riff.h"
 
-void ff_get_guid(AVIOContext *s, ff_asf_guid *g)
+int ff_get_guid(AVIOContext *s, ff_asf_guid *g)
 {
     av_assert0(sizeof(*g) == 16); //compiler will optimize this out
-    if (avio_read(s, *g, sizeof(*g)) < (int)sizeof(*g))
+    if (avio_read(s, *g, sizeof(*g)) < (int)sizeof(*g)) {
         memset(*g, 0, sizeof(*g));
+        return AVERROR_INVALIDDATA;
+    }
+    return 0;
 }
 
 enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
