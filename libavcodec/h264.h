@@ -146,6 +146,7 @@ typedef enum {
  * Sequence parameter set
  */
 typedef struct SPS {
+    unsigned int sps_id;
     int profile_idc;
     int level_idc;
     int chroma_format_idc;
@@ -353,7 +354,6 @@ typedef struct H264Context {
     ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
     ptrdiff_t mb_uvlinesize;
 
-    unsigned current_sps_id; ///< id of the current SPS
     SPS sps; ///< current sps
 
     /**
