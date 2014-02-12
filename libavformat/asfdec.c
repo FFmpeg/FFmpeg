@@ -1159,6 +1159,16 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
         asf_st = asf->asf_st;
         av_assert0(asf_st);
 
+        if (!asf_st->frag_offset && asf->packet_frag_offset) {
+            av_dlog(s, "skipping asf data pkt with fragment offset for "
+                    "stream:%d, expected:%d but got %d from pkt)\n",
+                    asf->stream_index, asf_st->frag_offset,
+                    asf->packet_frag_offset);
+            avio_skip(pb, asf->packet_frag_size);
+            asf->packet_size_left -= asf->packet_frag_size;
+            continue;
+        }
+
         if (asf->packet_replic_size == 1) {
             // frag_offset is here used as the beginning timestamp
             asf->packet_frag_timestamp = asf->packet_time_start;
