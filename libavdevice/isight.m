@@ -39,7 +39,7 @@ const AVRational kISightTimeBase_q = {
 typedef struct {
     AVClass*        class;
 
-    float           frame_rate;
+    AVRational      frame_rate;
     int             frames_captured;
     int64_t         first_pts;
     pthread_mutex_t frame_lock;
@@ -184,7 +184,7 @@ static int isight_read_header(AVFormatContext *s)
     ctx->qt_delegate = [[FFMPEG_FrameReceiver alloc] initWithContext:ctx];
     [ctx->video_output setDelegate:ctx->qt_delegate];
     [ctx->video_output setAutomaticallyDropsLateVideoFrames:YES];
-    [ctx->video_output setMinimumVideoFrameInterval:1.0/ctx->frame_rate];
+    [ctx->video_output setMinimumVideoFrameInterval:(float)ctx->frame_rate.den/ctx->frame_rate.num];
 
     success = [ctx->capture_session addOutput:ctx->video_output error:nil];
 
@@ -238,7 +238,7 @@ fail:
 static int isight_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     CaptureContext* ctx = (CaptureContext*)s->priv_data;
-
+    
     do {
         lock_frames(ctx);
 
@@ -255,7 +255,10 @@ static int isight_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             CVPixelBufferUnlockBaseAddress(ctx->current_frame, 0);
             CVBufferRelease(ctx->current_frame);
+            
             ctx->current_frame = nil;
+            
+            av_log( s, AV_LOG_DEBUG, "read frame pts %lld\n", pkt->pts );
         } else {
             pkt->data = NULL;
         }
@@ -265,8 +268,8 @@ static int isight_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         unlock_frames(ctx);
-    } while ( pkt->data );
-
+    } while ( !pkt->data );
+    
     return 0;
 }
 
@@ -282,11 +285,10 @@ static int isight_close(AVFormatContext *s)
 
 static const AVOption options[] = {
     { "frame_rate", "set frame rate", offsetof(CaptureContext, frame_rate),
-        AV_OPT_TYPE_FLOAT,
-        { .dbl = 30.0 },
-        0.1, 30.0,
-        AV_OPT_FLAG_VIDEO_PARAM,
-        NULL },
+        AV_OPT_TYPE_VIDEO_RATE,
+        { .str = "25" },
+        0, 0,
+        AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
