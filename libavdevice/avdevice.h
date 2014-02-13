@@ -119,8 +119,13 @@ enum AVDevToAppMessageType {
      * Device requests to create a window buffer. Exact meaning is device-
      * and application-dependent. Message is sent before rendering first
      * frame and all one-shot initializations should be done here.
+     * Application is allowed to ignore preferred window buffer size.
      *
-     * data: NULL.
+     * @note: Application is obligated to inform about window buffer size
+     *        with AV_APP_TO_DEV_WINDOW_SIZE message.
+     *
+     * data: AVDeviceRect: preferred size of the window buffer.
+     *       NULL: no preferred size of the window buffer.
      */
     AV_DEV_TO_APP_CREATE_WINDOW_BUFFER = MKBETAG('B','C','R','E'),
 
