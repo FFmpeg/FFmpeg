@@ -287,8 +287,7 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url);
 static void rtsp_cmd_options(HTTPContext *c, const char *url);
 static void rtsp_cmd_setup(HTTPContext *c, const char *url, RTSPMessageHeader *h);
 static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPMessageHeader *h);
-static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPMessageHeader *h);
-static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPMessageHeader *h);
+static void rtsp_cmd_interrupt(HTTPContext *c, const char *url, RTSPMessageHeader *h, int pause_only);
 
 /* SDP handling */
 static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
@@ -2962,9 +2961,9 @@ static int rtsp_parse_request(HTTPContext *c)
     else if (!strcmp(cmd, "PLAY"))
         rtsp_cmd_play(c, url, header);
     else if (!strcmp(cmd, "PAUSE"))
-        rtsp_cmd_pause(c, url, header);
+        rtsp_cmd_interrupt(c, url, header, 1);
     else if (!strcmp(cmd, "TEARDOWN"))
-        rtsp_cmd_teardown(c, url, header);
+        rtsp_cmd_interrupt(c, url, header, 0);
     else
         rtsp_reply_error(c, RTSP_STATUS_METHOD);
 
@@ -3318,7 +3317,7 @@ static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPMessageHeader *h)
     avio_printf(c->pb, "\r\n");
 }
 
-static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPMessageHeader *h)
+static void rtsp_cmd_interrupt(HTTPContext *c, const char *url, RTSPMessageHeader *h, int pause_only)
 {
     HTTPContext *rtp_c;
 
@@ -3328,29 +3327,14 @@ static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPMessageHeader *h
         return;
     }
 
-    if (rtp_c->state != HTTPSTATE_SEND_DATA &&
-        rtp_c->state != HTTPSTATE_WAIT_FEED) {
-        rtsp_reply_error(c, RTSP_STATUS_STATE);
-        return;
-    }
-
-    rtp_c->state = HTTPSTATE_READY;
-    rtp_c->first_pts = AV_NOPTS_VALUE;
-    /* now everything is OK, so we can send the connection parameters */
-    rtsp_reply_header(c, RTSP_STATUS_OK);
-    /* session ID */
-    avio_printf(c->pb, "Session: %s\r\n", rtp_c->session_id);
-    avio_printf(c->pb, "\r\n");
-}
-
-static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPMessageHeader *h)
-{
-    HTTPContext *rtp_c;
-
-    rtp_c = find_rtp_session_with_url(url, h->session_id);
-    if (!rtp_c) {
-        rtsp_reply_error(c, RTSP_STATUS_SESSION);
-        return;
+    if (pause_only) {
+        if (rtp_c->state != HTTPSTATE_SEND_DATA &&
+            rtp_c->state != HTTPSTATE_WAIT_FEED) {
+            rtsp_reply_error(c, RTSP_STATUS_STATE);
+            return;
+        }
+        rtp_c->state = HTTPSTATE_READY;
+        rtp_c->first_pts = AV_NOPTS_VALUE;
     }
 
     /* now everything is OK, so we can send the connection parameters */
@@ -3359,10 +3343,9 @@ static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPMessageHeader
     avio_printf(c->pb, "Session: %s\r\n", rtp_c->session_id);
     avio_printf(c->pb, "\r\n");
 
-    /* abort the session */
-    close_connection(rtp_c);
+    if (!pause_only)
+        close_connection(rtp_c);
 }
-
 
 /********************************************************************/
 /* RTP handling */
