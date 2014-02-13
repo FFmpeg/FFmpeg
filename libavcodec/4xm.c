@@ -31,8 +31,8 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "blockdsp.h"
+#include "bswapdsp.h"
 #include "bytestream.h"
-#include "dsputil.h"
 #include "get_bits.h"
 #include "internal.h"
 
@@ -132,8 +132,8 @@ typedef struct CFrameBuffer {
 
 typedef struct FourXContext {
     AVCodecContext *avctx;
-    DSPContext dsp;
     BlockDSPContext bdsp;
+    BswapDSPContext bbdsp;
     uint16_t *frame_buffer;
     uint16_t *last_frame_buffer;
     GetBitContext pre_gb;          ///< ac/dc prefix
@@ -442,8 +442,8 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
                    bitstream_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!f->bitstream_buffer)
         return AVERROR(ENOMEM);
-    f->dsp.bswap_buf(f->bitstream_buffer, (const uint32_t*)(buf + extra),
-                     bitstream_size / 4);
+    f->bbdsp.bswap_buf(f->bitstream_buffer, (const uint32_t *) (buf + extra),
+                       bitstream_size / 4);
     memset((uint8_t*)f->bitstream_buffer + bitstream_size,
            0, FF_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&f->gb, f->bitstream_buffer, 8 * bitstream_size);
@@ -765,8 +765,8 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
                    prestream_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!f->bitstream_buffer)
         return AVERROR(ENOMEM);
-    f->dsp.bswap_buf(f->bitstream_buffer, (const uint32_t*)prestream,
-                     prestream_size / 4);
+    f->bbdsp.bswap_buf(f->bitstream_buffer, (const uint32_t *) prestream,
+                       prestream_size / 4);
     memset((uint8_t*)f->bitstream_buffer + prestream_size,
            0, FF_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&f->pre_gb, f->bitstream_buffer, 8 * prestream_size);
@@ -956,7 +956,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     f->version = AV_RL32(avctx->extradata) >> 16;
     ff_blockdsp_init(&f->bdsp, avctx);
-    ff_dsputil_init(&f->dsp, avctx);
+    ff_bswapdsp_init(&f->bbdsp);
     f->avctx = avctx;
     init_vlcs(f);
 

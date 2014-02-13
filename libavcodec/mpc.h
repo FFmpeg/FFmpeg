@@ -31,8 +31,8 @@
 
 #include "libavutil/lfg.h"
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "mpegaudio.h"
 #include "mpegaudiodsp.h"
 
@@ -50,7 +50,7 @@ typedef struct Band {
 }Band;
 
 typedef struct MPCContext {
-    DSPContext dsp;
+    BswapDSPContext bdsp;
     MPADSPContext mpadsp;
     GetBitContext gb;
     int IS, MSS, gapless;

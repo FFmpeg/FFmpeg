@@ -26,9 +26,6 @@
 #include "dsputil_x86.h"
 #include "idct_xvid.h"
 
-void ff_bswap32_buf_ssse3(uint32_t *dst, const uint32_t *src, int w);
-void ff_bswap32_buf_sse2(uint32_t *dst, const uint32_t *src, int w);
-
 static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                      int cpu_flags, unsigned high_bit_depth)
 {
@@ -83,18 +80,6 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
         c->idct_permutation_type = FF_SSE2_IDCT_PERM;
     }
 #endif /* HAVE_SSE2_INLINE */
-
-#if HAVE_SSE2_EXTERNAL
-    c->bswap_buf = ff_bswap32_buf_sse2;
-#endif /* HAVE_SSE2_EXTERNAL */
-}
-
-static av_cold void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
-                                       int cpu_flags, unsigned high_bit_depth)
-{
-#if HAVE_SSSE3_EXTERNAL
-    c->bswap_buf = ff_bswap32_buf_ssse3;
-#endif /* HAVE_SSSE3_EXTERNAL */
 }
 
 av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
@@ -110,9 +95,6 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
 
     if (X86_SSE2(cpu_flags))
         dsputil_init_sse2(c, avctx, cpu_flags, high_bit_depth);
-
-    if (EXTERNAL_SSSE3(cpu_flags))
-        dsputil_init_ssse3(c, avctx, cpu_flags, high_bit_depth);
 
     if (CONFIG_ENCODERS)
         ff_dsputilenc_init_mmx(c, avctx, high_bit_depth);

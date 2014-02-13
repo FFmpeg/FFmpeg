@@ -21,7 +21,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
+#include "bswapdsp.h"
 #include "internal.h"
 
 #define MAX_HUFF_CODES 16
@@ -37,7 +37,7 @@ typedef struct HuffCode {
 typedef struct MotionPixelsContext {
     AVCodecContext *avctx;
     AVFrame *frame;
-    DSPContext dsp;
+    BswapDSPContext bdsp;
     uint8_t *changes_map;
     int offset_bits_len;
     int codes_count, current_codes_count;
@@ -71,7 +71,7 @@ static av_cold int mp_decode_init(AVCodecContext *avctx)
 
     motionpixels_tableinit();
     mp->avctx = avctx;
-    ff_dsputil_init(&mp->dsp, avctx);
+    ff_bswapdsp_init(&mp->bdsp);
     mp->changes_map = av_mallocz(avctx->width * h4);
     mp->offset_bits_len = av_log2(avctx->width * avctx->height) + 1;
     mp->vpt = av_mallocz(avctx->height * sizeof(YuvPixel));
@@ -277,7 +277,8 @@ static int mp_decode_frame(AVCodecContext *avctx,
     av_fast_malloc(&mp->bswapbuf, &mp->bswapbuf_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!mp->bswapbuf)
         return AVERROR(ENOMEM);
-    mp->dsp.bswap_buf((uint32_t *)mp->bswapbuf, (const uint32_t *)buf, buf_size / 4);
+    mp->bdsp.bswap_buf((uint32_t *) mp->bswapbuf, (const uint32_t *) buf,
+                       buf_size / 4);
     if (buf_size & 3)
         memcpy(mp->bswapbuf + (buf_size & ~3), buf + (buf_size & ~3), buf_size & 3);
     memset(mp->bswapbuf + buf_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);

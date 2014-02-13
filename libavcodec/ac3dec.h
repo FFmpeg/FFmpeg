@@ -54,8 +54,8 @@
 #include "libavutil/lfg.h"
 #include "ac3.h"
 #include "ac3dsp.h"
+#include "bswapdsp.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "fmtconvert.h"
 
@@ -200,7 +200,7 @@ typedef struct AC3DecodeContext {
 ///@}
 
 ///@name Optimization
-    DSPContext dsp;                         ///< for optimization
+    BswapDSPContext bdsp;
     AVFloatDSPContext fdsp;
     AC3DSPContext ac3dsp;
     FmtConvertContext fmt_conv;             ///< optimized conversion functions

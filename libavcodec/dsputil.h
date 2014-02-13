@@ -122,9 +122,6 @@ typedef struct DSPContext {
 
     me_cmp_func pix_abs[2][4];
 
-    void (*bswap_buf)(uint32_t *dst, const uint32_t *src, int w);
-    void (*bswap16_buf)(uint16_t *dst, const uint16_t *src, int len);
-
     /* (I)DCT */
     void (*fdct)(int16_t *block /* align 16 */);
     void (*fdct248)(int16_t *block /* align 16 */);

@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* MMX optimized DSP utils
+;* optimized bswap buffer functions
 ;* Copyright (c) 2008 Loren Merritt
 ;*
 ;* This file is part of Libav.
