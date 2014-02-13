@@ -285,10 +285,10 @@ static int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, in
         /* Read potentially unaligned pixels into t1 and t2
            Since we're reading 16 pixels, and actually only want 8,
            mask out the last 8 pixels. The 0s don't change the sum. */
-        vector unsigned char pix1l = vec_ld( 0, pix1);
-        vector unsigned char pix1r = vec_ld(15, pix1);
-        vector unsigned char pix2l = vec_ld( 0, pix2);
-        vector unsigned char pix2r = vec_ld(15, pix2);
+        vector unsigned char pix1l = vec_ld(0, pix1);
+        vector unsigned char pix1r = vec_ld(7, pix1);
+        vector unsigned char pix2l = vec_ld(0, pix2);
+        vector unsigned char pix2r = vec_ld(7, pix2);
         t1 = vec_and(vec_perm(pix1l, pix1r, perm1), permclear);
         t2 = vec_and(vec_perm(pix2l, pix2r, perm2), permclear);
 
@@ -367,10 +367,10 @@ static int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, in
         /* Read potentially unaligned pixels into t1 and t2
            Since we're reading 16 pixels, and actually only want 8,
            mask out the last 8 pixels. The 0s don't change the sum. */
-        vector unsigned char pix1l = vec_ld( 0, pix1);
-        vector unsigned char pix1r = vec_ld(15, pix1);
-        vector unsigned char pix2l = vec_ld( 0, pix2);
-        vector unsigned char pix2r = vec_ld(15, pix2);
+        vector unsigned char pix1l = vec_ld(0, pix1);
+        vector unsigned char pix1r = vec_ld(7, pix1);
+        vector unsigned char pix2l = vec_ld(0, pix2);
+        vector unsigned char pix2r = vec_ld(7, pix2);
         t1 = vec_and(vec_perm(pix1l, pix1r, perm1), permclear);
         t2 = vec_and(vec_perm(pix2l, pix2r, perm2), permclear);
 
@@ -489,8 +489,8 @@ static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels, i
         // Read potentially unaligned pixels.
         // We're reading 16 pixels, and actually only want 8,
         // but we simply ignore the extras.
-        vector unsigned char pixl = vec_ld( 0, pixels);
-        vector unsigned char pixr = vec_ld(15, pixels);
+        vector unsigned char pixl = vec_ld(0, pixels);
+        vector unsigned char pixr = vec_ld(7, pixels);
         bytes = vec_perm(pixl, pixr, perm);
 
         // convert the bytes into shorts
