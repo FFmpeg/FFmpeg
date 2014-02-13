@@ -4031,8 +4031,7 @@ static int ffserver_opt_preset(const char *arg,
     return ret;
 }
 
-static AVOutputFormat *ffserver_guess_format(const char *short_name, const char *filename,
-                                             const char *mime_type)
+static AVOutputFormat *ffserver_guess_format(const char *short_name, const char *filename, const char *mime_type)
 {
     AVOutputFormat *fmt = av_guess_format(short_name, filename, mime_type);
 
