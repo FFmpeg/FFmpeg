@@ -1943,7 +1943,7 @@ static void compute_status(HTTPContext *c)
     }
 
     avio_printf(pb, "HTTP/1.0 200 OK\r\n");
-    avio_printf(pb, "Content-type: %s\r\n", "text/html");
+    avio_printf(pb, "Content-type: text/html\r\n");
     avio_printf(pb, "Pragma: no-cache\r\n");
     avio_printf(pb, "\r\n");
 
