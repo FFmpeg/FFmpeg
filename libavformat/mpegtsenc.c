@@ -377,20 +377,43 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 const char *language = lang && strlen(lang->value) >= 3 ? lang->value : default_language;
 
                 if (st->codec->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
-                    /* The descriptor tag. subtitling_descriptor */
-                    *q++ = 0x59;
-                    *q++ = 8;
-                    *q++ = language[0];
-                    *q++ = language[1];
-                    *q++ = language[2];
-                    *q++ = 0x10; /* normal subtitles (0x20 = if hearing pb) */
-                    if(st->codec->extradata_size == 4) {
-                        memcpy(q, st->codec->extradata, 4);
-                        q += 4;
-                    } else {
-                        put16(&q, 1); /* page id */
-                        put16(&q, 1); /* ancillary page id */
+                    uint8_t *len_ptr;
+                    int extradata_copied = 0;
+
+                    *q++ = 0x59; /* subtitling_descriptor */
+                    len_ptr = q++;
+
+                    while (strlen(language) >= 3 && (sizeof(data) - (q - data)) >= 8) { /* 8 bytes per DVB subtitle substream data */
+                        *q++ = *language++;
+                        *q++ = *language++;
+                        *q++ = *language++;
+                        /* Skip comma */
+                        if (*language != '\0')
+                            language++;
+
+                        if (st->codec->extradata_size - extradata_copied >= 5) {
+                            *q++ = st->codec->extradata[extradata_copied + 4]; /* subtitling_type */
+                            memcpy(q, st->codec->extradata + extradata_copied, 4); /* composition_page_id and ancillary_page_id */
+                            extradata_copied += 5;
+                            q += 4;
+                        } else {
+                            /* subtitling_type:
+                             * 0x10 - normal with no monitor aspect ratio criticality
+                             * 0x20 - for the hard of hearing with no monitor aspect ratio criticality */
+                            *q++ = (st->disposition & AV_DISPOSITION_HEARING_IMPAIRED) ? 0x20 : 0x10;
+                            if ((st->codec->extradata_size == 4) && (extradata_copied == 0)) {
+                                /* support of old 4-byte extradata format */
+                                memcpy(q, st->codec->extradata, 4); /* composition_page_id and ancillary_page_id */
+                                extradata_copied += 4;
+                                q += 4;
+                            } else {
+                                put16(&q, 1); /* composition_page_id */
+                                put16(&q, 1); /* ancillary_page_id */
+                            }
+                        }
                     }
+
+                    *len_ptr = q - len_ptr - 1;
                 } else if (st->codec->codec_id == AV_CODEC_ID_DVB_TELETEXT) {
                     uint8_t *len_ptr = NULL;
                     int extradata_copied = 0;
