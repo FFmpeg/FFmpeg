@@ -238,7 +238,7 @@ int ff_h264_decode_sei(H264Context *h)
             if (ret < 0)
                 return ret;
             break;
-        case SEI_BUFFERING_PERIOD:
+        case SEI_TYPE_BUFFERING_PERIOD:
             ret = decode_buffering_period(h);
             if (ret < 0)
                 return ret;

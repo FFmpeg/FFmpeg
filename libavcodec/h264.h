@@ -120,7 +120,7 @@ enum {
  * SEI message types
  */
 typedef enum {
-    SEI_BUFFERING_PERIOD            = 0,   ///< buffering period (H.264, D.1.1)
+    SEI_TYPE_BUFFERING_PERIOD       = 0,   ///< buffering period (H.264, D.1.1)
     SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
     SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
     SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
