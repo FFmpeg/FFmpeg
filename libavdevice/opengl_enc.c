@@ -56,6 +56,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavdevice/avdevice.h"
 #include "opengl_enc_shaders.h"
 
@@ -82,6 +83,7 @@
 #define FF_GL_UNSIGNED_BYTE_3_3_2 0x8032
 #define FF_GL_UNSIGNED_BYTE_2_3_3_REV 0x8362
 #define FF_GL_UNSIGNED_SHORT_1_5_5_5_REV 0x8366
+#define FF_GL_UNPACK_ROW_LENGTH          0x0CF2
 
 /* MinGW exposes only OpenGL 1.1 API */
 #define FF_GL_ARRAY_BUFFER                0x8892
@@ -185,6 +187,7 @@ typedef struct OpenGLContext {
     GLint max_viewport_width;          ///< Maximum viewport size
     GLint max_viewport_height;         ///< Maximum viewport size
     int non_pow_2_textures;            ///< 1 when non power of 2 textures are supported
+    int unpack_subimage;               ///< 1 when GL_EXT_unpack_subimage is available
 
     /* Current OpenGL configuration */
     GLuint program;                    ///< Shader program
@@ -265,11 +268,13 @@ static const struct OpenGLFormatDesc {
     { AV_PIX_FMT_GBRP16,     &FF_OPENGL_FRAGMENT_SHADER_RGB_PLANAR,  FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
     { AV_PIX_FMT_GBRAP,      &FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
     { AV_PIX_FMT_GBRAP16,    &FF_OPENGL_FRAGMENT_SHADER_RGBA_PLANAR, FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
+    { AV_PIX_FMT_GRAY8,      &FF_OPENGL_FRAGMENT_SHADER_GRAY,        FF_GL_RED_COMPONENT, GL_UNSIGNED_BYTE },
+    { AV_PIX_FMT_GRAY16,     &FF_OPENGL_FRAGMENT_SHADER_GRAY,        FF_GL_RED_COMPONENT, GL_UNSIGNED_SHORT },
     { AV_PIX_FMT_NONE,       NULL }
 };
 
 static av_cold int opengl_prepare_vertex(AVFormatContext *s);
-static int opengl_draw(AVFormatContext *h, AVPacket *pkt, int repaint);
+static int opengl_draw(AVFormatContext *h, void *intput, int repaint, int is_pkt);
 static av_cold int opengl_init_context(OpenGLContext *opengl);
 
 static av_cold void opengl_deinit_context(OpenGLContext *opengl)
@@ -313,7 +318,7 @@ static int opengl_resize(AVFormatContext *h, int width, int height)
         }
         if ((ret = opengl_prepare_vertex(h)) < 0)
             goto end;
-        ret = opengl_draw(h, NULL, 1);
+        ret = opengl_draw(h, NULL, 1, 0);
     }
   end:
     return ret;
@@ -610,8 +615,14 @@ static av_cold int opengl_read_limits(OpenGLContext *opengl)
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &opengl->max_texture_size);
     glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &opengl->max_viewport_width);
     opengl->non_pow_2_textures = major >= 2 || strstr(extensions, "GL_ARB_texture_non_power_of_two");
+#if defined(GL_ES_VERSION_2_0)
+    opengl->unpack_subimage = !!strstr(extensions, "GL_EXT_unpack_subimage");
+#else
+    opengl->unpack_subimage = 1;
+#endif
 
     av_log(opengl, AV_LOG_DEBUG, "Non Power of 2 textures support: %s\n", opengl->non_pow_2_textures ? "Yes" : "No");
+    av_log(opengl, AV_LOG_DEBUG, "Unpack Subimage extension support: %s\n", opengl->unpack_subimage ? "Yes" : "No");
     av_log(opengl, AV_LOG_DEBUG, "Max texture size: %dx%d\n", opengl->max_texture_size, opengl->max_texture_size);
     av_log(opengl, AV_LOG_DEBUG, "Max viewport size: %dx%d\n",
            opengl->max_viewport_width, opengl->max_viewport_height);
@@ -1135,7 +1146,45 @@ static uint8_t* opengl_get_plane_pointer(OpenGLContext *opengl, AVPacket *pkt, i
     return data;
 }
 
-static int opengl_draw(AVFormatContext *h, AVPacket *pkt, int repaint)
+#define LOAD_TEXTURE_DATA(comp_index, sub)                                                  \
+{                                                                                           \
+    int width = sub ? FF_CEIL_RSHIFT(opengl->width, desc->log2_chroma_w) : opengl->width;   \
+    int height = sub ? FF_CEIL_RSHIFT(opengl->height, desc->log2_chroma_h): opengl->height; \
+    uint8_t *data;                                                                          \
+    int plane = desc->comp[comp_index].plane;                                               \
+                                                                                            \
+    glBindTexture(GL_TEXTURE_2D, opengl->texture_name[comp_index]);                         \
+    if (!is_pkt) {                                                                          \
+        GLint length = ((AVFrame *)input)->linesize[plane];                                 \
+        int bytes_per_pixel = opengl_type_size(opengl->type);                               \
+        if (!(desc->flags & AV_PIX_FMT_FLAG_PLANAR))                                        \
+            bytes_per_pixel *= desc->nb_components;                                         \
+        data = ((AVFrame *)input)->data[plane];                                             \
+        if (!(length % bytes_per_pixel) &&                                                  \
+            (opengl->unpack_subimage || ((length / bytes_per_pixel) == width))) {           \
+            length /= bytes_per_pixel;                                                      \
+            if (length != width)                                                            \
+                glPixelStorei(FF_GL_UNPACK_ROW_LENGTH, length);                             \
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,                          \
+                            opengl->format, opengl->type, data);                            \
+            if (length != width)                                                            \
+                glPixelStorei(FF_GL_UNPACK_ROW_LENGTH, 0);                                  \
+        } else {                                                                            \
+            int h;                                                                          \
+            for (h = 0; h < height; h++) {                                                  \
+                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, h, width, 1,                           \
+                                opengl->format, opengl->type, data);                        \
+                data += length;                                                             \
+            }                                                                               \
+        }                                                                                   \
+    } else {                                                                                \
+        data = opengl_get_plane_pointer(opengl, input, comp_index, desc);                   \
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,                              \
+                        opengl->format, opengl->type, data);                                \
+    }                                                                                       \
+}
+
+static int opengl_draw(AVFormatContext *h, void *input, int repaint, int is_pkt)
 {
     OpenGLContext *opengl = h->priv_data;
     enum AVPixelFormat pix_fmt = h->streams[0]->codec->pix_fmt;
@@ -1155,23 +1204,12 @@ static int opengl_draw(AVFormatContext *h, AVPacket *pkt, int repaint)
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (!repaint) {
-        glBindTexture(GL_TEXTURE_2D, opengl->texture_name[0]);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, opengl->width, opengl->height, opengl->format, opengl->type,
-                        opengl_get_plane_pointer(opengl, pkt, 0, desc));
+        LOAD_TEXTURE_DATA(0, 0)
         if (desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
-            int width_chroma = FF_CEIL_RSHIFT(opengl->width, desc->log2_chroma_w);
-            int height_chroma = FF_CEIL_RSHIFT(opengl->height, desc->log2_chroma_h);
-            glBindTexture(GL_TEXTURE_2D, opengl->texture_name[1]);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width_chroma, height_chroma, opengl->format, opengl->type,
-                            opengl_get_plane_pointer(opengl, pkt, 1, desc));
-            glBindTexture(GL_TEXTURE_2D, opengl->texture_name[2]);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width_chroma, height_chroma, opengl->format, opengl->type,
-                            opengl_get_plane_pointer(opengl, pkt, 2, desc));
-            if (desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
-                glBindTexture(GL_TEXTURE_2D, opengl->texture_name[3]);
-                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, opengl->width, opengl->height, opengl->format, opengl->type,
-                                opengl_get_plane_pointer(opengl, pkt, 3, desc));
-            }
+            LOAD_TEXTURE_DATA(1, 1)
+            LOAD_TEXTURE_DATA(2, 1)
+            if (desc->flags & AV_PIX_FMT_FLAG_ALPHA)
+                LOAD_TEXTURE_DATA(3, 0)
         }
     }
     ret = AVERROR_EXTERNAL;
@@ -1209,7 +1247,15 @@ static int opengl_draw(AVFormatContext *h, AVPacket *pkt, int repaint)
 
 static int opengl_write_packet(AVFormatContext *h, AVPacket *pkt)
 {
-    return opengl_draw(h, pkt, 0);
+    return opengl_draw(h, pkt, 0, 1);
+}
+
+static int opengl_write_frame(AVFormatContext *h, int stream_index,
+                              AVFrame **frame, unsigned flags)
+{
+    if ((flags & AV_WRITE_UNCODED_FRAME_QUERY))
+        return 0;
+    return opengl_draw(h, *frame, 0, 0);
 }
 
 #define OFFSET(x) offsetof(OpenGLContext, x)
@@ -1236,6 +1282,7 @@ AVOutputFormat ff_opengl_muxer = {
     .video_codec    = AV_CODEC_ID_RAWVIDEO,
     .write_header   = opengl_write_header,
     .write_packet   = opengl_write_packet,
+    .write_uncoded_frame = opengl_write_frame,
     .write_trailer  = opengl_write_trailer,
     .control_message = opengl_control_message,
     .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,

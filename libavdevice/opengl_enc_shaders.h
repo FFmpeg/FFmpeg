@@ -173,4 +173,16 @@ static const char * const FF_OPENGL_FRAGMENT_SHADER_YUVA_PLANAR =
                                        "1.5958, -0.81290, 0.0) * yuv, texture2D(u_texture3, texture_coordinate).r), 0.0, 1.0);"
     "}";
 
+static const char * const FF_OPENGL_FRAGMENT_SHADER_GRAY =
+#if defined(GL_ES_VERSION_2_0)
+    "precision mediump float;"
+#endif
+    "uniform sampler2D u_texture0;"
+    "varying vec2 texture_coordinate;"
+    "void main()"
+    "{"
+        "float c = texture2D(u_texture0, texture_coordinate);"
+        "gl_FragColor = vec4(c, c, c, 1.0);"
+    "}";
+
 #endif /* AVDEVICE_OPENGL_SHADERS_H */
