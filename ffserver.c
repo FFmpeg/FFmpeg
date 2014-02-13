@@ -2224,8 +2224,8 @@ static int open_input_stream(HTTPContext *c, const char *info)
         return ret;
     }
 
-    /* choose stream as clock source (we favorize video stream if
-       present) for packet sending */
+    /* choose stream as clock source (we favor the video stream if
+     * present) for packet sending */
     c->pts_stream_index = 0;
     for(i=0;i<c->stream->nb_streams;i++) {
         if (c->pts_stream_index == 0 &&
@@ -2292,8 +2292,8 @@ static int http_prepare_data(HTTPContext *c)
 
             *(c->fmt_ctx.streams[i]) = *src;
             c->fmt_ctx.streams[i]->priv_data = 0;
-            c->fmt_ctx.streams[i]->codec->frame_number = 0; /* XXX: should be done in
-                                           AVStream, not in codec */
+            /* XXX: should be done in AVStream, not in codec */
+            c->fmt_ctx.streams[i]->codec->frame_number = 0;
         }
         /* set output format parameters */
         c->fmt_ctx.oformat = c->stream->fmt;
@@ -2311,7 +2311,7 @@ static int http_prepare_data(HTTPContext *c)
         /*
          * HACK to avoid mpeg ps muxer to spit many underflow errors
          * Default value from FFmpeg
-         * Try to set it use configuration option
+         * Try to set it using configuration option
          */
         c->fmt_ctx.max_delay = (int)(0.7*AV_TIME_BASE);
 
@@ -2362,7 +2362,7 @@ static int http_prepare_data(HTTPContext *c)
                         goto redo;
                     } else {
                     no_loop:
-                        /* must send trailer now because eof or error */
+                        /* must send trailer now because EOF or error */
                         c->state = HTTPSTATE_SEND_DATA_TRAILER;
                     }
                 }
@@ -2404,8 +2404,8 @@ static int http_prepare_data(HTTPContext *c)
                 send_it:
                     ist = c->fmt_in->streams[source_index];
                     /* specific handling for RTP: we use several
-                       output stream (one for each RTP
-                       connection). XXX: need more abstract handling */
+                     * output streams (one for each RTP connection).
+                     * XXX: need more abstract handling */
                     if (c->is_packetized) {
                         /* compute send time and duration */
                         c->cur_pts = av_rescale_q(pkt.dts, ist->time_base, AV_TIME_BASE_Q);
@@ -2495,7 +2495,7 @@ static int http_prepare_data(HTTPContext *c)
 
 /* should convert the format at the same time */
 /* send data starting at c->buffer_ptr to the output connection
-   (either UDP or TCP connection) */
+ * (either UDP or TCP) */
 static int http_send_data(HTTPContext *c)
 {
     int len, ret;
@@ -3551,7 +3551,7 @@ static AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec, int cop
         }
     } else {
         /* live streams must use the actual feed's codec since it may be
-         * updated later to carry extradata needed by the streams.
+         * updated later to carry extradata needed by them.
          */
         fst->codec = codec;
     }
