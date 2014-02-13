@@ -25,12 +25,10 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include "internal.h"
 #include "avcodec.h"
-#include "h264.h"
 #include "golomb.h"
-
-#include <assert.h>
+#include "h264.h"
+#include "internal.h"
 
 static const uint8_t sei_num_clock_ts_table[9] = {
     1, 1, 1, 2, 2, 3, 3, 2, 3
