@@ -259,7 +259,7 @@ static void mpegts_write_pat(AVFormatContext *s)
                           data, q - data);
 }
 
-static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
+static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 {
     MpegTSWrite *ts = s->priv_data;
     uint8_t data[1012], *q, *desc_length_ptr, *program_info_length_ptr;
@@ -315,6 +315,10 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             stream_type = STREAM_TYPE_PRIVATE_DATA;
             break;
         }
+
+        if (q - data > sizeof(data) - 32)
+            return AVERROR(EINVAL);
+
         *q++ = stream_type;
         put16(&q, 0xe000 | ts_st->pid);
         desc_length_ptr = q;
@@ -346,7 +350,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 len_ptr = q++;
                 *len_ptr = 0;
 
-                for (p = lang->value; next && *len_ptr < 255 / 4 * 4; p = next + 1) {
+                for (p = lang->value; next && *len_ptr < 255 / 4 * 4 && q - data < sizeof(data) - 4; p = next + 1) {
                     next = strchr(p, ',');
                     if (strlen(p) != 3 && (!next || next != p + 3))
                         continue; /* not a 3-letter code */
@@ -418,6 +422,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     }
     mpegts_write_section1(&service->pmt, PMT_TID, service->sid, ts->tables_version, 0, 0,
                           data, q - data);
+    return 0;
 }
 
 /* NOTE: str == NULL is accepted for an empty string */
