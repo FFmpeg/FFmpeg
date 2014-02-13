@@ -1003,9 +1003,7 @@ static int handle_connection(HTTPContext *c)
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) &&
                 ff_neterrno() != AVERROR(EINTR)) {
-                /* error : close connection */
-                av_freep(&c->pb_buffer);
-                return -1;
+                goto close_connection;
             }
         } else {
             c->buffer_ptr += len;
@@ -1063,10 +1061,8 @@ static int handle_connection(HTTPContext *c)
         break;
 
     case RTSPSTATE_SEND_REPLY:
-        if (c->poll_entry->revents & (POLLERR | POLLHUP)) {
-            av_freep(&c->pb_buffer);
-            return -1;
-        }
+        if (c->poll_entry->revents & (POLLERR | POLLHUP))
+            goto close_connection;
         /* no need to write if no events */
         if (!(c->poll_entry->revents & POLLOUT))
             return 0;
@@ -1074,9 +1070,7 @@ static int handle_connection(HTTPContext *c)
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) &&
                 ff_neterrno() != AVERROR(EINTR)) {
-                /* error : close connection */
-                av_freep(&c->pb_buffer);
-                return -1;
+                goto close_connection;
             }
         } else {
             c->buffer_ptr += len;
@@ -1121,6 +1115,10 @@ static int handle_connection(HTTPContext *c)
         return -1;
     }
     return 0;
+
+close_connection:
+    av_freep(&c->pb_buffer);
+    return -1;
 }
 
 static int extract_rates(char *rates, int ratelen, const char *request)
