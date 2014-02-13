@@ -182,6 +182,8 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int ret;
     int i;
 
+    x265_picture_init(ctx->params, &x265pic);
+
     if (pic) {
         for (i = 0; i < 3; i++) {
            x265pic.planes[i] = pic->data[i];
