@@ -62,7 +62,7 @@ typedef struct LUT3DContext {
     char *file;
     uint8_t rgba_map[4];
     int step;
-    void (*interp)(const struct LUT3DContext*, AVFrame *out, const AVFrame *in);
+    avfilter_action_func *interp;
     struct rgbvec lut[MAX_LEVEL][MAX_LEVEL][MAX_LEVEL];
     int lutsize;
 #if CONFIG_HALDCLUT_FILTER
@@ -73,6 +73,10 @@ typedef struct LUT3DContext {
     FFDualInputContext dinput;
 #endif
 } LUT3DContext;
+
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
 
 #define OFFSET(x) offsetof(LUT3DContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -195,19 +199,25 @@ static inline struct rgbvec interp_tetrahedral(const LUT3DContext *lut3d,
 }
 
 #define DEFINE_INTERP_FUNC(name, nbits)                                                             \
-static void interp_##nbits##_##name(const LUT3DContext *lut3d, AVFrame *out, const AVFrame *in)     \
+static int interp_##nbits##_##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)         \
 {                                                                                                   \
     int x, y;                                                                                       \
+    const LUT3DContext *lut3d = ctx->priv;                                                          \
+    const ThreadData *td = arg;                                                                     \
+    const AVFrame *in  = td->in;                                                                    \
+    const AVFrame *out = td->out;                                                                   \
     const int direct = out == in;                                                                   \
     const int step = lut3d->step;                                                                   \
     const uint8_t r = lut3d->rgba_map[R];                                                           \
     const uint8_t g = lut3d->rgba_map[G];                                                           \
     const uint8_t b = lut3d->rgba_map[B];                                                           \
     const uint8_t a = lut3d->rgba_map[A];                                                           \
-    uint8_t       *dstrow = out->data[0];                                                           \
-    const uint8_t *srcrow = in ->data[0];                                                           \
+    const int slice_start = (in->height *  jobnr   ) / nb_jobs;                                     \
+    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;                                     \
+    uint8_t       *dstrow = out->data[0] + slice_start * out->linesize[0];                          \
+    const uint8_t *srcrow = in ->data[0] + slice_start * in ->linesize[0];                          \
                                                                                                     \
-    for (y = 0; y < in->height; y++) {                                                              \
+    for (y = slice_start; y < slice_end; y++) {                                                     \
         uint##nbits##_t *dst = (uint##nbits##_t *)dstrow;                                           \
         const uint##nbits##_t *src = (const uint##nbits##_t *)srcrow;                               \
         for (x = 0; x < in->width * step; x += step) {                                              \
@@ -225,6 +235,7 @@ static void interp_##nbits##_##name(const LUT3DContext *lut3d, AVFrame *out, con
         dstrow += out->linesize[0];                                                                 \
         srcrow += in ->linesize[0];                                                                 \
     }                                                                                               \
+    return 0;                                                                                       \
 }
 
 DEFINE_INTERP_FUNC(nearest,     8)
@@ -490,6 +501,7 @@ static AVFrame *apply_lut(AVFilterLink *inlink, AVFrame *in)
     LUT3DContext *lut3d = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
+    ThreadData td;
 
     if (av_frame_is_writable(in)) {
         out = in;
@@ -502,7 +514,9 @@ static AVFrame *apply_lut(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    lut3d->interp(lut3d, out, in);
+    td.in  = in;
+    td.out = out;
+    ctx->internal->execute(ctx, lut3d->interp, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
 
     if (out != in)
         av_frame_free(&in);
@@ -605,7 +619,7 @@ AVFilter ff_vf_lut3d = {
     .inputs        = lut3d_inputs,
     .outputs       = lut3d_outputs,
     .priv_class    = &lut3d_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
 #endif
 
@@ -784,6 +798,6 @@ AVFilter ff_vf_haldclut = {
     .inputs        = haldclut_inputs,
     .outputs       = haldclut_outputs,
     .priv_class    = &haldclut_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
 #endif
