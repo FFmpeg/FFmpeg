@@ -93,7 +93,6 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    x265_param_default(ctx->params);
     if (x265_param_default_preset(ctx->params, ctx->preset, ctx->tune) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid preset or tune.\n");
         return AVERROR(EINVAL);
