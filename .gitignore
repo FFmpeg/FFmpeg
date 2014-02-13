@@ -33,6 +33,7 @@
 /doc/avoptions_format.texi
 /doc/doxy/html/
 /doc/examples/avcodec
+/doc/examples/filter_audio
 /doc/examples/metadata
 /doc/examples/output
 /doc/examples/transcode_aac
