@@ -4688,7 +4688,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
  * @param h h264 master context
  * @param context_count number of contexts to execute
  */
-static int execute_decode_slices(H264Context *h, int context_count)
+static int execute_decode_slices(H264Context *h, unsigned context_count)
 {
     AVCodecContext *const avctx = h->avctx;
     H264Context *hx;
@@ -4737,7 +4737,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
     AVCodecContext *const avctx = h->avctx;
     H264Context *hx; ///< thread context
     int buf_index;
-    int context_count;
+    unsigned context_count;
     int next_avc;
     int pass = !(avctx->active_thread_type & FF_THREAD_FRAME);
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
