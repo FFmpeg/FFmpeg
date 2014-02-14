@@ -36,22 +36,20 @@ static inline void
 dca_lfe_fir(float *out, const float *in, const float *coefs,
             int decifactor)
 {
-    float *out2 = out + decifactor;
-    const float *cf0 = coefs;
-    const float *cf1 = coefs + 256;
+    float *out2    = out + 2 * decifactor - 1;
+    int num_coeffs = 256 / decifactor;
     int j, k;
 
     /* One decimated sample generates 2*decifactor interpolated ones */
     for (k = 0; k < decifactor; k++) {
         float v0 = 0.0;
         float v1 = 0.0;
-        for (j = 0; j < 256 / decifactor; j++) {
-            float s = in[-j];
-            v0 += s * *cf0++;
-            v1 += s * *--cf1;
+        for (j = 0; j < num_coeffs; j++, coefs++) {
+            v0 += in[-j] * *coefs;
+            v1 += in[j + 1 - num_coeffs] * *coefs;
         }
         *out++  = v0;
-        *out2++ = v1;
+        *out2-- = v1;
     }
 }
 
