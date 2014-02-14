@@ -258,6 +258,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_VP6A,         MKTAG('V', 'P', '6', 'A') },
     { AV_CODEC_ID_VP6F,         MKTAG('V', 'P', '6', 'F') },
     { AV_CODEC_ID_VP6F,         MKTAG('F', 'L', 'V', '4') },
+    { AV_CODEC_ID_VP7,          MKTAG('V', 'P', '7', '0') },
+    { AV_CODEC_ID_VP7,          MKTAG('V', 'P', '7', '1') },
     { AV_CODEC_ID_VP8,          MKTAG('V', 'P', '8', '0') },
     { AV_CODEC_ID_VP9,          MKTAG('V', 'P', '9', '0') },
     { AV_CODEC_ID_ASV1,         MKTAG('A', 'S', 'V', '1') },
