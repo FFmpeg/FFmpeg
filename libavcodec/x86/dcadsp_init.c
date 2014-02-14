@@ -26,6 +26,8 @@
 void ff_int8x8_fmul_int32_sse(float *dst, const int8_t *src, int scale);
 void ff_int8x8_fmul_int32_sse2(float *dst, const int8_t *src, int scale);
 void ff_int8x8_fmul_int32_sse4(float *dst, const int8_t *src, int scale);
+void ff_dca_lfe_fir0_sse(float *out, const float *in, const float *coefs);
+void ff_dca_lfe_fir1_sse(float *out, const float *in, const float *coefs);
 
 av_cold void ff_dcadsp_init_x86(DCADSPContext *s)
 {
@@ -35,6 +37,8 @@ av_cold void ff_dcadsp_init_x86(DCADSPContext *s)
 #if ARCH_X86_32
         s->int8x8_fmul_int32 = ff_int8x8_fmul_int32_sse;
 #endif
+        s->lfe_fir[0]        = ff_dca_lfe_fir0_sse;
+        s->lfe_fir[1]        = ff_dca_lfe_fir1_sse;
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
