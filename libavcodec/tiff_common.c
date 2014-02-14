@@ -75,7 +75,7 @@ unsigned ff_tget(GetByteContext *gb, int type, int le)
     }
 }
 
-static char *auto_sep(int count, char *sep, int i, int columns)
+static const char *auto_sep(int count, const char *sep, int i, int columns)
 {
     if (sep)
         return i ? sep : "";
