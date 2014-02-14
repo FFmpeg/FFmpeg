@@ -8,4 +8,5 @@ shift 2
 doxygen - <<EOF
 @INCLUDE        = ${DOXYFILE}
 INPUT           = $@
+EXAMPLE_PATH    = ${SRC_PATH}/
 EOF
