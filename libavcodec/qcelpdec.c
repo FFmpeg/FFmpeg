@@ -319,7 +319,8 @@ static void compute_svector(QCELPContext *q, const float *gain,
             tmp_gain = gain[i] * QCELP_RATE_FULL_CODEBOOK_RATIO;
             cindex   = -q->frame.cindex[i];
             for (j = 0; j < 10; j++)
-                *cdn_vector++ = tmp_gain * qcelp_rate_full_codebook[cindex++ & 127];
+                *cdn_vector++ = tmp_gain *
+                                qcelp_rate_full_codebook[cindex++ & 127];
         }
         break;
     case RATE_HALF:
@@ -327,7 +328,8 @@ static void compute_svector(QCELPContext *q, const float *gain,
             tmp_gain = gain[i] * QCELP_RATE_HALF_CODEBOOK_RATIO;
             cindex   = -q->frame.cindex[i];
             for (j = 0; j < 40; j++)
-                *cdn_vector++ = tmp_gain * qcelp_rate_half_codebook[cindex++ & 127];
+                *cdn_vector++ = tmp_gain *
+                                qcelp_rate_half_codebook[cindex++ & 127];
         }
         break;
     case RATE_QUARTER:
@@ -372,7 +374,8 @@ static void compute_svector(QCELPContext *q, const float *gain,
         for (i = 0; i < 4; i++) {
             tmp_gain = gain[i] * QCELP_RATE_FULL_CODEBOOK_RATIO;
             for (j = 0; j < 40; j++)
-                *cdn_vector++ = tmp_gain * qcelp_rate_full_codebook[cbseed++ & 127];
+                *cdn_vector++ = tmp_gain *
+                                qcelp_rate_full_codebook[cbseed++ & 127];
         }
         break;
     case SILENCE:
@@ -433,7 +436,8 @@ static const float *do_pitchfilter(float memory[303], const float v_in[160],
             for (v_len = v_in + 40; v_in < v_len; v_in++) {
                 if (pfrac[i]) { // If it is a fractional lag...
                     for (j = 0, *v_out = 0.0; j < 4; j++)
-                        *v_out += qcelp_hammsinc_table[j] * (v_lag[j - 4] + v_lag[3 - j]);
+                        *v_out += qcelp_hammsinc_table[j] *
+                                  (v_lag[j - 4] + v_lag[3 - j]);
                 } else
                     *v_out = *v_lag;
 
@@ -509,7 +513,8 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
 
         apply_gain_ctrl(cdn_vector, v_synthesis_filtered, v_pre_filtered);
     } else {
-        memcpy(q->pitch_synthesis_filter_mem, cdn_vector + 17, 143 * sizeof(float));
+        memcpy(q->pitch_synthesis_filter_mem,
+               cdn_vector + 17, 143 * sizeof(float));
         memcpy(q->pitch_pre_filter_mem, cdn_vector + 17, 143 * sizeof(float));
         memset(q->pitch_gain, 0, sizeof(q->pitch_gain));
         memset(q->pitch_lag,  0, sizeof(q->pitch_lag));
@@ -766,7 +771,8 @@ erasure:
     formant_mem = q->formant_mem + 10;
     for (i = 0; i < 4; i++) {
         interpolate_lpc(q, quantized_lspf, lpc, i);
-        ff_celp_lp_synthesis_filterf(formant_mem, lpc, outbuffer + i * 40, 40, 10);
+        ff_celp_lp_synthesis_filterf(formant_mem, lpc,
+                                     outbuffer + i * 40, 40, 10);
         formant_mem += 40;
     }
 
