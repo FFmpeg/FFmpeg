@@ -139,3 +139,21 @@ static void FUNC(flac_lpc_encode_c)(int32_t *res, const int32_t *smp, int len,
     }
 #endif
 }
+
+/* Comment for clarity/de-obfuscation.
+ *
+ * for (int i = order; i < len; i++) {
+ *     int32_t p = 0;
+ *     for (int j = 0; j < order; j++) {
+ *         int c = coefs[j];
+ *         int s = smp[(i-1)-j];
+ *         p    += c*s;
+ *     }
+ *     res[i] = smp[i] - (p >> shift);
+ * }
+ *
+ * The CONFIG_SMALL code above simplifies to this, in the case of SAMPLE_SIZE
+ * not being equal to 32 (at the present time that means for 16-bit audio). The
+ * code above does 2 samples per iteration.  Commit bfdd5bc ( made all the way
+ * back in 2007) says that way is faster.
+ */
