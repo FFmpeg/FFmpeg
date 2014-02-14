@@ -60,7 +60,7 @@
 #define VERT_VP8_PRED         10    ///< for VP8, #VERT_PRED is the average of
                                     ///< (left col+cur col x2+right col) / 4;
                                     ///< this is the "unaveraged" one
-#define HOR_VP8_PRED          11    ///< unaveraged version of #HOR_PRED, see
+#define HOR_VP8_PRED          14    ///< unaveraged version of #HOR_PRED, see
                                     ///< #VERT_VP8_PRED for details
 #define DC_127_PRED           12
 #define DC_129_PRED           13
