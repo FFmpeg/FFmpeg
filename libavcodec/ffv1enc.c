@@ -405,7 +405,7 @@ static int encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
     return 0;
 }
 
-static int encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int stride[3])
+static int encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, const int stride[3])
 {
     int x, y, p, i;
     const int ring_size = s->avctx->context_model ? 3 : 2;
