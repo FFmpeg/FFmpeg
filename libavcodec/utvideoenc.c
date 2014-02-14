@@ -58,7 +58,7 @@ static av_cold int utvideo_encode_close(AVCodecContext *avctx)
 static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 {
     UtvideoContext *c = avctx->priv_data;
-    int i;
+    int i, subsampled_height;
     uint32_t original_format;
 
     c->avctx           = avctx;
@@ -132,6 +132,26 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         return AVERROR_OPTION_NOT_FOUND;
     }
 
+    /*
+     * Check the asked slice count for obviously invalid
+     * values (> 256 or negative).
+     */
+    if (avctx->slices > 256 || avctx->slices < 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Slice count %d is not supported in Ut Video (theoretical range is 0-256).\n",
+               avctx->slices);
+        return AVERROR(EINVAL);
+    }
+
+    /* Check that the slice count is not larger than the subsampled height */
+    subsampled_height = avctx->height >> av_pix_fmt_desc_get(avctx->pix_fmt)->log2_chroma_h;
+    if (avctx->slices > subsampled_height) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Slice count %d is larger than the subsampling-applied height %d.\n",
+               avctx->slices, subsampled_height);
+        return AVERROR(EINVAL);
+    }
+
     avctx->coded_frame = av_frame_alloc();
 
     if (!avctx->coded_frame) {
@@ -181,9 +201,19 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     /*
      * Set how many slices are going to be used.
-     * Set one slice for now.
+     * By default uses multiple slices depending on the subsampled height.
+     * This enables multithreading in the official decoder.
      */
-    c->slices = 1;
+    if (!avctx->slices) {
+        c->slices = subsampled_height / 120;
+
+        if (!c->slices)
+            c->slices = 1;
+        else if (c->slices > 256)
+            c->slices = 256;
+    } else {
+        c->slices = avctx->slices;
+    }
 
     /* Set compression mode */
     c->compression = COMP_HUFF;
