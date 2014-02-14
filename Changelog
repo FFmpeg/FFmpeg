@@ -27,6 +27,7 @@ version <next>
 - Mirillis FIC video decoder
 - Support DNx444
 - libx265 encoder
+- dejudder filter
 
 
 version 2.1:

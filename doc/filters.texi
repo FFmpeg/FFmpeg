@@ -3215,6 +3215,38 @@ Set whether or not chroma is considered in the metric calculations. Default is
 @code{1}.
 @end table
 
+@section dejudder
+
+Remove judder produced by partially interlaced telecined content.
+
+Judder can be introduced, for instance, by @ref{pullup} filter. If the original
+source was partially telecined content then the output of @code{pullup,dejudder}
+will have a variable frame rate. May change the recorded frame rate of the
+container. Aside from that change, this filter will not affect constant frame
+rate video.
+
+The option available in this filter is:
+@table @option
+
+@item cycle
+Specify the length of the window over which the judder repeats.
+
+Accepts any interger greater than 1. Useful values are:
+@table @samp
+
+@item 4
+If the original was telecined from 24 to 30 fps (Film to NTSC).
+
+@item 5
+If the original was telecined from 25 to 30 fps (PAL to NTSC).
+
+@item 20
+If a mixture of the two.
+@end table
+
+The default is @samp{4}.
+@end table
+
 @section delogo
 
 Suppress a TV station logo by a simple interpolation of the surrounding
@@ -6633,6 +6665,7 @@ On this example the input file being processed is compared with the
 reference file @file{ref_movie.mpg}. The PSNR of each individual frame
 is stored in @file{stats.log}.
 
+@anchor{pullup}
 @section pullup
 
 Pulldown reversal (inverse telecine) filter, capable of handling mixed
