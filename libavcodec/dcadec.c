@@ -50,14 +50,10 @@
 #if ARCH_ARM
 #   include "arm/dca.h"
 #endif
-#if ARCH_X86
-#   include "x86/dca.h"
-#endif
 
 //#define TRACE
 
 #define DCA_PRIM_CHANNELS_MAX  (7)
-#define DCA_SUBBANDS          (32)
 #define DCA_ABITS_MAX         (32)      /* Should be 28 */
 #define DCA_SUBSUBFRAMES_MAX   (4)
 #define DCA_SUBFRAMES_MAX     (16)
@@ -340,7 +336,7 @@ typedef struct {
     int prediction_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];      ///< prediction VQ coefs
     int bitalloc[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];           ///< bit allocation index
     int transition_mode[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];    ///< transition mode (transients)
-    int scale_factor[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][2];    ///< scale factors (2 if transient)
+    int32_t scale_factor[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][2];///< scale factors (2 if transient)
     int joint_huff[DCA_PRIM_CHANNELS_MAX];                       ///< joint subband scale factors codebook
     int joint_scale_factor[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS]; ///< joint subband scale factors
     float downmix_coef[DCA_PRIM_CHANNELS_MAX + 1][2];            ///< stereo downmix coefficients
@@ -353,7 +349,7 @@ typedef struct {
     uint8_t  core_downmix_amode;                                 ///< audio channel arrangement of embedded downmix
     uint16_t core_downmix_codes[DCA_PRIM_CHANNELS_MAX + 1][4];   ///< embedded downmix coefficients (9-bit codes)
 
-    int high_freq_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];       ///< VQ encoded high frequency subbands
+    int32_t  high_freq_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];  ///< VQ encoded high frequency subbands
 
     float lfe_data[2 * DCA_LFE_MAX * (DCA_BLOCKS_MAX + 4)];      ///< Low frequency effect data
     int lfe_scale_factor;
@@ -1088,14 +1084,6 @@ static int decode_blockcodes(int code1, int code2, int levels, int32_t *values)
 static const uint8_t abits_sizes[7]  = { 7, 10, 12, 13, 15, 17, 19 };
 static const uint8_t abits_levels[7] = { 3,  5,  7,  9, 13, 17, 25 };
 
-#ifndef int8x8_fmul_int32
-static inline void int8x8_fmul_int32(DCADSPContext *dsp, float *dst,
-                                     const int8_t *src, int scale)
-{
-    dsp->int8x8_fmul_int32(dst, src, scale);
-}
-#endif
-
 static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
 {
     int k, l;
@@ -1220,20 +1208,16 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
         /*
          * Decode VQ encoded high frequencies
          */
-        for (l = s->vq_start_subband[k]; l < s->subband_activity[k]; l++) {
-            /* 1 vector -> 32 samples but we only need the 8 samples
-             * for this subsubframe. */
-            int hfvq = s->high_freq_vq[k][l];
-
+        if (s->subband_activity[k] > s->vq_start_subband[k]) {
             if (!s->debug_flag & 0x01) {
                 av_log(s->avctx, AV_LOG_DEBUG,
                        "Stream with high frequencies VQ coding\n");
                 s->debug_flag |= 0x01;
             }
-
-            int8x8_fmul_int32(&s->dcadsp, subband_samples[k][l],
-                              &high_freq_vq[hfvq][subsubframe * 8],
-                              s->scale_factor[k][l][0]);
+            s->dcadsp.decode_hf(subband_samples[k], s->high_freq_vq[k],
+                                high_freq_vq, subsubframe * 8,
+                                s->scale_factor[k], s->vq_start_subband[k],
+                                s->subband_activity[k]);
         }
     }
 

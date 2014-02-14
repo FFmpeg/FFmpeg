@@ -26,18 +26,35 @@ pf_inv16:  times 4 dd 0x3D800000 ; 1/16
 
 SECTION_TEXT
 
-; void int8x8_fmul_int32_sse2(float *dst, const int8_t *src, int scale)
-%macro INT8X8_FMUL_INT32 0
-cglobal int8x8_fmul_int32, 3,3,5, dst, src, scale
-    cvtsi2ss    m0, scalem
+; void decode_hf(float dst[DCA_SUBBANDS][8], const int32_t vq_num[DCA_SUBBANDS],
+;                const int8_t hf_vq[1024][32], intptr_t vq_offset,
+;                int32_t scale[DCA_SUBBANDS][2], intptr_t start, intptr_t end)
+
+%macro DECODE_HF 0
+cglobal decode_hf, 6,6,5, dst, num, src, offset, scale, start, end
+    lea       srcq, [srcq + offsetq]
+    shl     startq, 2
+    mov    offsetd, endm
+%define DICT offsetq
+    shl    offsetq, 2
+    mov       endm, offsetq
+.loop:
+%if ARCH_X86_64
+    mov    offsetd, [scaleq + 2 * startq]
+    cvtsi2ss    m0, offsetd
+%else
+    cvtsi2ss    m0, [scaleq + 2 * startq]
+%endif
+    mov    offsetd, [numq + startq]
     mulss       m0, [pf_inv16]
+    shl       DICT, 5
     shufps      m0, m0, 0
 %if cpuflag(sse2)
 %if cpuflag(sse4)
-    pmovsxbd    m1, [srcq+0]
-    pmovsxbd    m2, [srcq+4]
+    pmovsxbd    m1, [srcq + DICT + 0]
+    pmovsxbd    m2, [srcq + DICT + 4]
 %else
-    movq        m1, [srcq]
+    movq        m1, [srcq + DICT]
     punpcklbw   m1, m1
     mova        m2, m1
     punpcklwd   m1, m1
@@ -48,8 +65,8 @@ cglobal int8x8_fmul_int32, 3,3,5, dst, src, scale
     cvtdq2ps    m1, m1
     cvtdq2ps    m2, m2
 %else
-    movd       mm0, [srcq+0]
-    movd       mm1, [srcq+4]
+    movd       mm0, [srcq + DICT + 0]
+    movd       mm1, [srcq + DICT + 4]
     punpcklbw  mm0, mm0
     punpcklbw  mm1, mm1
     movq       mm2, mm0
@@ -67,27 +84,33 @@ cglobal int8x8_fmul_int32, 3,3,5, dst, src, scale
     cvtpi2ps    m3, mm2
     cvtpi2ps    m4, mm3
     shufps      m0, m0, 0
-    emms
     shufps      m1, m3, q1010
     shufps      m2, m4, q1010
 %endif
     mulps       m1, m0
     mulps       m2, m0
-    mova [dstq+ 0], m1
-    mova [dstq+16], m2
+    mova [dstq + 8 * startq +  0], m1
+    mova [dstq + 8 * startq + 16], m2
+    add     startq, 4
+    cmp     startq, endm
+    jl       .loop
+.end:
+%if notcpuflag(sse2)
+    emms
+%endif
     REP_RET
 %endmacro
 
 %if ARCH_X86_32
 INIT_XMM sse
-INT8X8_FMUL_INT32
+DECODE_HF
 %endif
 
 INIT_XMM sse2
-INT8X8_FMUL_INT32
+DECODE_HF
 
 INIT_XMM sse4
-INT8X8_FMUL_INT32
+DECODE_HF
 
 ; %1=v0/v1  %2=in1  %3=in2
 %macro FIR_LOOP 2-3
