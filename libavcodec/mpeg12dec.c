@@ -48,6 +48,8 @@ typedef struct Mpeg1Context {
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
     int repeat_field;           /* true if we must repeat the field */
     AVPanScan pan_scan;         /* some temporary storage for the panscan */
+    AVStereo3D stereo3d;
+    int has_stereo3d;
     uint8_t *a53_caption;
     int a53_caption_size;
     int slice_count;
@@ -1642,6 +1644,15 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
                 memcpy(sd->data, s1->a53_caption, s1->a53_caption_size);
             av_freep(&s1->a53_caption);
         }
+
+        if (s1->has_stereo3d) {
+            AVStereo3D *stereo = av_stereo3d_create_side_data(&s->current_picture_ptr->f);
+            if (!stereo)
+                return AVERROR(ENOMEM);
+
+            *stereo = s1->stereo3d;
+            s1->has_stereo3d = 0;
+        }
         if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_finish_setup(avctx);
     } else { // second field
@@ -2272,28 +2283,21 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
             S3D_video_format_type == 0x08 ||
             S3D_video_format_type == 0x23) {
             Mpeg1Context *s1   = avctx->priv_data;
-            MpegEncContext *s  = &s1->mpeg_enc_ctx;
-            AVStereo3D *stereo;
-            if (!s->current_picture_ptr)
-                return;
 
-            stereo =
-                av_stereo3d_create_side_data(&s->current_picture_ptr->f);
-            if (!stereo)
-                return;
+            s1->has_stereo3d = 1;
 
             switch (S3D_video_format_type) {
             case 0x03:
-                stereo->type = AV_STEREO3D_SIDEBYSIDE;
+                s1->stereo3d.type = AV_STEREO3D_SIDEBYSIDE;
                 break;
             case 0x04:
-                stereo->type = AV_STEREO3D_TOPBOTTOM;
+                s1->stereo3d.type = AV_STEREO3D_TOPBOTTOM;
                 break;
             case 0x08:
-                stereo->type = AV_STEREO3D_2D;
+                s1->stereo3d.type = AV_STEREO3D_2D;
                 break;
             case 0x23:
-                stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
+                s1->stereo3d.type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
                 break;
             }
         }
