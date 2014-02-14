@@ -315,18 +315,22 @@ DECLARE_LOOP_FILTER(sse4)
     c->put_vp8_bilinear_pixels_tab[IDX][2][2] = ff_put_vp8_bilinear ## SIZE ## _hv_ ## OPT
 
 
-av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
+av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c, int vp7)
 {
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMX(cpu_flags)) {
+        if (!vp7) {
         c->vp8_idct_dc_add    = ff_vp8_idct_dc_add_mmx;
         c->vp8_idct_dc_add4uv = ff_vp8_idct_dc_add4uv_mmx;
+        }
 #if ARCH_X86_32
+        if (!vp7) {
         c->vp8_idct_dc_add4y  = ff_vp8_idct_dc_add4y_mmx;
         c->vp8_idct_add       = ff_vp8_idct_add_mmx;
         c->vp8_luma_dc_wht    = ff_vp8_luma_dc_wht_mmx;
+        }
         c->put_vp8_epel_pixels_tab[0][0][0]     =
         c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_mmx;
 #endif
@@ -334,6 +338,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->put_vp8_bilinear_pixels_tab[1][0][0] = ff_put_vp8_pixels8_mmx;
 
 #if ARCH_X86_32
+        if (!vp7) {
         c->vp8_v_loop_filter_simple = ff_vp8_v_loop_filter_simple_mmx;
         c->vp8_h_loop_filter_simple = ff_vp8_h_loop_filter_simple_mmx;
 
@@ -346,6 +351,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->vp8_h_loop_filter16y       = ff_vp8_h_loop_filter16y_mbedge_mmx;
         c->vp8_v_loop_filter8uv       = ff_vp8_v_loop_filter8uv_mbedge_mmx;
         c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_mmx;
+        }
 #endif
     }
 
@@ -360,6 +366,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         VP8_BILINEAR_MC_FUNC(0, 16, mmxext);
         VP8_BILINEAR_MC_FUNC(1,  8, mmxext);
 
+        if (!vp7) {
         c->vp8_v_loop_filter_simple   = ff_vp8_v_loop_filter_simple_mmxext;
         c->vp8_h_loop_filter_simple   = ff_vp8_h_loop_filter_simple_mmxext;
 
@@ -372,12 +379,15 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->vp8_h_loop_filter16y       = ff_vp8_h_loop_filter16y_mbedge_mmxext;
         c->vp8_v_loop_filter8uv       = ff_vp8_v_loop_filter8uv_mbedge_mmxext;
         c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_mmxext;
+        }
 #endif
     }
 
     if (EXTERNAL_SSE(cpu_flags)) {
+        if (!vp7) {
         c->vp8_idct_add                         = ff_vp8_idct_add_sse;
         c->vp8_luma_dc_wht                      = ff_vp8_luma_dc_wht_sse;
+        }
         c->put_vp8_epel_pixels_tab[0][0][0]     =
         c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_sse;
     }
@@ -388,6 +398,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         VP8_BILINEAR_MC_FUNC(0, 16, sse2);
         VP8_BILINEAR_MC_FUNC(1, 8, sse2);
 
+        if (!vp7) {
         c->vp8_v_loop_filter_simple = ff_vp8_v_loop_filter_simple_sse2;
 
         c->vp8_v_loop_filter16y_inner = ff_vp8_v_loop_filter16y_inner_sse2;
@@ -395,9 +406,11 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 
         c->vp8_v_loop_filter16y       = ff_vp8_v_loop_filter16y_mbedge_sse2;
         c->vp8_v_loop_filter8uv       = ff_vp8_v_loop_filter8uv_mbedge_sse2;
+        }
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
+        if (!vp7) {
         c->vp8_idct_dc_add4y          = ff_vp8_idct_dc_add4y_sse2;
 
         c->vp8_h_loop_filter_simple = ff_vp8_h_loop_filter_simple_sse2;
@@ -407,6 +420,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 
         c->vp8_h_loop_filter16y       = ff_vp8_h_loop_filter16y_mbedge_sse2;
         c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_sse2;
+        }
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
@@ -417,6 +431,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         VP8_BILINEAR_MC_FUNC(1, 8, ssse3);
         VP8_BILINEAR_MC_FUNC(2, 4, ssse3);
 
+        if (!vp7) {
         c->vp8_v_loop_filter_simple = ff_vp8_v_loop_filter_simple_ssse3;
         c->vp8_h_loop_filter_simple = ff_vp8_h_loop_filter_simple_ssse3;
 
@@ -429,14 +444,17 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->vp8_h_loop_filter16y       = ff_vp8_h_loop_filter16y_mbedge_ssse3;
         c->vp8_v_loop_filter8uv       = ff_vp8_v_loop_filter8uv_mbedge_ssse3;
         c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_ssse3;
+        }
     }
 
     if (EXTERNAL_SSE4(cpu_flags)) {
+        if (!vp7) {
         c->vp8_idct_dc_add                  = ff_vp8_idct_dc_add_sse4;
 
         c->vp8_h_loop_filter_simple   = ff_vp8_h_loop_filter_simple_sse4;
         c->vp8_h_loop_filter16y       = ff_vp8_h_loop_filter16y_mbedge_sse4;
         c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_sse4;
+        }
     }
 #endif /* HAVE_YASM */
 }

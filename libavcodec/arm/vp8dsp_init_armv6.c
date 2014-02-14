@@ -40,8 +40,9 @@ VP8_BILIN(16, armv6);
 VP8_BILIN(8,  armv6);
 VP8_BILIN(4,  armv6);
 
-av_cold void ff_vp8dsp_init_armv6(VP8DSPContext *dsp)
+av_cold void ff_vp8dsp_init_armv6(VP8DSPContext *dsp, int vp7)
 {
+    if (!vp7) {
     dsp->vp8_luma_dc_wht    = ff_vp8_luma_dc_wht_armv6;
     dsp->vp8_luma_dc_wht_dc = ff_vp8_luma_dc_wht_dc_armv6;
 
@@ -62,6 +63,7 @@ av_cold void ff_vp8dsp_init_armv6(VP8DSPContext *dsp)
 
     dsp->vp8_v_loop_filter_simple = ff_vp8_v_loop_filter16_simple_armv6;
     dsp->vp8_h_loop_filter_simple = ff_vp8_h_loop_filter16_simple_armv6;
+    }
 
     dsp->put_vp8_epel_pixels_tab[0][0][0] = ff_put_vp8_pixels16_armv6;
     dsp->put_vp8_epel_pixels_tab[0][0][2] = ff_put_vp8_epel16_h6_armv6;

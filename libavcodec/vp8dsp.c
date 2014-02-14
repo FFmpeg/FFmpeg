@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010 David Conrad
  * Copyright (C) 2010 Ronald S. Bultje
+ * Copyright (C) 2014 Peter Ross
  *
  * This file is part of FFmpeg.
  *
@@ -27,6 +28,89 @@
 #include "dsputil.h"
 #include "vp8dsp.h"
 #include "libavutil/common.h"
+
+static void vp7_luma_dc_wht_c(int16_t block[4][4][16], int16_t dc[16])
+{
+    int i, a1, b1, c1, d1;
+    int16_t tmp[16];
+
+    for (i = 0; i < 4; i++) {
+        a1 = (dc[i*4+0] + dc[i*4+2]) * 23170;
+        b1 = (dc[i*4+0] - dc[i*4+2]) * 23170;
+        c1 = dc[i*4+1] * 12540 - dc[i*4+3] * 30274;
+        d1 = dc[i*4+1] * 30274 + dc[i*4+3] * 12540;
+        tmp[i*4+0] = (a1 + d1) >> 14;
+        tmp[i*4+3] = (a1 - d1) >> 14;
+        tmp[i*4+1] = (b1 + c1) >> 14;
+        tmp[i*4+2] = (b1 - c1) >> 14;
+    }
+
+    for (i = 0; i < 4; i++) {
+        a1 = (tmp[i + 0] + tmp[i + 8]) * 23170;
+        b1 = (tmp[i + 0] - tmp[i + 8]) * 23170;
+        c1 = tmp[i + 4] * 12540 - tmp[i + 12] * 30274;
+        d1 = tmp[i + 4] * 30274 + tmp[i + 12] * 12540;
+        block[0][i][0] = (a1 + d1 + 0x20000) >> 18;
+        block[3][i][0] = (a1 - d1 + 0x20000) >> 18;
+        block[1][i][0] = (b1 + c1 + 0x20000) >> 18;
+        block[2][i][0] = (b1 - c1 + 0x20000) >> 18;
+    }
+}
+
+static void vp7_luma_dc_wht_dc_c(int16_t block[4][4][16], int16_t dc[16])
+{
+    int i, val = (23170 * (23170 * dc[0] >> 14) + 0x20000) >> 18;
+    dc[0] = 0;
+
+    for (i = 0; i < 4; i++) {
+        block[i][0][0] = val;
+        block[i][1][0] = val;
+        block[i][2][0] = val;
+        block[i][3][0] = val;
+    }
+}
+
+static void vp7_idct_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
+{
+    int i, a1, b1, c1, d1;
+    int16_t tmp[16];
+
+    for (i = 0; i < 4; i++) {
+        a1 = (block[i*4+0] + block[i*4+2]) * 23170;
+        b1 = (block[i*4+0] - block[i*4+2]) * 23170;
+        c1 = block[i*4+1] * 12540 - block[i*4+3] * 30274;
+        d1 = block[i*4+1] * 30274 + block[i*4+3] * 12540;
+        tmp[i*4+0] = (a1 + d1) >> 14;
+        tmp[i*4+3] = (a1 - d1) >> 14;
+        tmp[i*4+1] = (b1 + c1) >> 14;
+        tmp[i*4+2] = (b1 - c1) >> 14;
+    }
+
+    for (i = 0; i < 4; i++) {
+        a1 = (tmp[i + 0] + tmp[i + 8]) * 23170;
+        b1 = (tmp[i + 0] - tmp[i + 8]) * 23170;
+        c1 = tmp[i + 4] * 12540 - tmp[i + 12] * 30274;
+        d1 = tmp[i + 4] * 30274 + tmp[i + 12] * 12540;
+        dst[0*stride+i] = av_clip_uint8(dst[0*stride+i] + ((a1 + d1 + 0x20000) >> 18));
+        dst[3*stride+i] = av_clip_uint8(dst[3*stride+i] + ((a1 - d1 + 0x20000) >> 18));
+        dst[1*stride+i] = av_clip_uint8(dst[1*stride+i] + ((b1 + c1 + 0x20000) >> 18));
+        dst[2*stride+i] = av_clip_uint8(dst[2*stride+i] + ((b1 - c1 + 0x20000) >> 18));
+    }
+}
+
+static void vp7_idct_dc_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
+{
+    int i, dc = (23170 * (23170 * block[0] >> 14) + 0x20000) >> 18;
+    block[0] = 0;
+
+    for (i = 0; i < 4; i++) {
+        dst[0] = av_clip_uint8(dst[0] + dc);
+        dst[1] = av_clip_uint8(dst[1] + dc);
+        dst[2] = av_clip_uint8(dst[2] + dc);
+        dst[3] = av_clip_uint8(dst[3] + dc);
+        dst += stride;
+    }
+}
 
 // TODO: Maybe add dequant
 static void vp8_luma_dc_wht_c(int16_t block[4][4][16], int16_t dc[16])
@@ -127,21 +211,25 @@ static void vp8_idct_dc_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
     }
 }
 
-static void vp8_idct_dc_add4uv_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)
-{
-    vp8_idct_dc_add_c(dst+stride*0+0, block[0], stride);
-    vp8_idct_dc_add_c(dst+stride*0+4, block[1], stride);
-    vp8_idct_dc_add_c(dst+stride*4+0, block[2], stride);
-    vp8_idct_dc_add_c(dst+stride*4+4, block[3], stride);
+#define MK_IDCT_DC_ADD4_C(name) \
+static void name ## _idct_dc_add4uv_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)\
+{\
+    name ## _idct_dc_add_c(dst+stride*0+0, block[0], stride);\
+    name ## _idct_dc_add_c(dst+stride*0+4, block[1], stride);\
+    name ## _idct_dc_add_c(dst+stride*4+0, block[2], stride);\
+    name ## _idct_dc_add_c(dst+stride*4+4, block[3], stride);\
+}\
+\
+static void name ## _idct_dc_add4y_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)\
+{\
+    name ## _idct_dc_add_c(dst+ 0, block[0], stride);\
+    name ## _idct_dc_add_c(dst+ 4, block[1], stride);\
+    name ## _idct_dc_add_c(dst+ 8, block[2], stride);\
+    name ## _idct_dc_add_c(dst+12, block[3], stride);\
 }
 
-static void vp8_idct_dc_add4y_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)
-{
-    vp8_idct_dc_add_c(dst+ 0, block[0], stride);
-    vp8_idct_dc_add_c(dst+ 4, block[1], stride);
-    vp8_idct_dc_add_c(dst+ 8, block[2], stride);
-    vp8_idct_dc_add_c(dst+12, block[3], stride);
-}
+MK_IDCT_DC_ADD4_C(vp7)
+MK_IDCT_DC_ADD4_C(vp8)
 
 // because I like only having two parameters to pass functions...
 #define LOAD_PIXELS\
@@ -156,7 +244,7 @@ static void vp8_idct_dc_add4y_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t st
 
 #define clip_int8(n) (cm[n+0x80]-0x80)
 
-static av_always_inline void filter_common(uint8_t *p, ptrdiff_t stride, int is4tap)
+static av_always_inline void filter_common(uint8_t *p, ptrdiff_t stride, int is4tap, int vpn)
 {
     LOAD_PIXELS
     int a, f1, f2;
@@ -172,7 +260,11 @@ static av_always_inline void filter_common(uint8_t *p, ptrdiff_t stride, int is4
     // We deviate from the spec here with c(a+3) >> 3
     // since that's what libvpx does.
     f1 = FFMIN(a+4, 127) >> 3;
-    f2 = FFMIN(a+3, 127) >> 3;
+
+    if (vpn == 7)
+        f2 = f1 - ((a & 7) == 4);
+    else
+        f2 = FFMIN(a+3, 127) >> 3;
 
     // Despite what the spec says, we do need to clamp here to
     // be bitexact with libvpx.
@@ -187,7 +279,13 @@ static av_always_inline void filter_common(uint8_t *p, ptrdiff_t stride, int is4
     }
 }
 
-static av_always_inline int simple_limit(uint8_t *p, ptrdiff_t stride, int flim)
+static av_always_inline int vp7_simple_limit(uint8_t *p, ptrdiff_t stride, int flim)
+{
+    LOAD_PIXELS
+    return FFABS(p0-q0) <= flim;
+}
+
+static av_always_inline int vp8_simple_limit(uint8_t *p, ptrdiff_t stride, int flim)
 {
     LOAD_PIXELS
     return 2*FFABS(p0-q0) + (FFABS(p1-q1) >> 1) <= flim;
@@ -197,13 +295,17 @@ static av_always_inline int simple_limit(uint8_t *p, ptrdiff_t stride, int flim)
  * E - limit at the macroblock edge
  * I - limit for interior difference
  */
-static av_always_inline int normal_limit(uint8_t *p, ptrdiff_t stride, int E, int I)
-{
-    LOAD_PIXELS
-    return simple_limit(p, stride, E)
-        && FFABS(p3-p2) <= I && FFABS(p2-p1) <= I && FFABS(p1-p0) <= I
-        && FFABS(q3-q2) <= I && FFABS(q2-q1) <= I && FFABS(q1-q0) <= I;
+#define NORMAL_LIMIT(vpn) \
+static av_always_inline int vp ## vpn ## _normal_limit(uint8_t *p, ptrdiff_t stride, int E, int I)\
+{\
+    LOAD_PIXELS\
+    return vp ## vpn ## _simple_limit(p, stride, E)\
+        && FFABS(p3-p2) <= I && FFABS(p2-p1) <= I && FFABS(p1-p0) <= I\
+        && FFABS(q3-q2) <= I && FFABS(q2-q1) <= I && FFABS(q1-q0) <= I;\
 }
+
+NORMAL_LIMIT(7)
+NORMAL_LIMIT(8)
 
 // high edge variance
 static av_always_inline int hev(uint8_t *p, ptrdiff_t stride, int thresh)
@@ -234,74 +336,84 @@ static av_always_inline void filter_mbedge(uint8_t *p, ptrdiff_t stride)
     p[ 2*stride] = cm[q2 - a2];
 }
 
-#define LOOP_FILTER(dir, size, stridea, strideb, maybe_inline) \
-static maybe_inline void vp8_ ## dir ## _loop_filter ## size ## _c(uint8_t *dst, ptrdiff_t stride,\
+#define LOOP_FILTER(vpn, dir, size, stridea, strideb, maybe_inline) \
+static maybe_inline void vp ## vpn ## _ ## dir ## _loop_filter ## size ## _c(uint8_t *dst, ptrdiff_t stride,\
                                      int flim_E, int flim_I, int hev_thresh)\
 {\
     int i;\
 \
     for (i = 0; i < size; i++)\
-        if (normal_limit(dst+i*stridea, strideb, flim_E, flim_I)) {\
+        if (vp ## vpn ## _normal_limit(dst+i*stridea, strideb, flim_E, flim_I)) {\
             if (hev(dst+i*stridea, strideb, hev_thresh))\
-                filter_common(dst+i*stridea, strideb, 1);\
+                filter_common(dst+i*stridea, strideb, 1, vpn);\
             else\
                 filter_mbedge(dst+i*stridea, strideb);\
         }\
 }\
 \
-static maybe_inline void vp8_ ## dir ## _loop_filter ## size ## _inner_c(uint8_t *dst, ptrdiff_t stride,\
+static maybe_inline void vp ## vpn ## _ ## dir ## _loop_filter ## size ## _inner_c(uint8_t *dst, ptrdiff_t stride,\
                                       int flim_E, int flim_I, int hev_thresh)\
 {\
     int i;\
 \
     for (i = 0; i < size; i++)\
-        if (normal_limit(dst+i*stridea, strideb, flim_E, flim_I)) {\
+        if (vp ## vpn ## _normal_limit(dst+i*stridea, strideb, flim_E, flim_I)) {\
             int hv = hev(dst+i*stridea, strideb, hev_thresh);\
             if (hv) \
-                filter_common(dst+i*stridea, strideb, 1);\
+                filter_common(dst+i*stridea, strideb, 1, vpn);\
             else \
-                filter_common(dst+i*stridea, strideb, 0);\
+                filter_common(dst+i*stridea, strideb, 0, vpn);\
         }\
 }
 
-LOOP_FILTER(v, 16, 1, stride,)
-LOOP_FILTER(h, 16, stride, 1,)
+LOOP_FILTER(7, v, 16, 1, stride,)
+LOOP_FILTER(7, h, 16, stride, 1,)
 
-#define UV_LOOP_FILTER(dir, stridea, strideb) \
-LOOP_FILTER(dir, 8, stridea, strideb, av_always_inline) \
-static void vp8_ ## dir ## _loop_filter8uv_c(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,\
+LOOP_FILTER(8, v, 16, 1, stride,)
+LOOP_FILTER(8, h, 16, stride, 1,)
+
+#define UV_LOOP_FILTER(vpn, dir, stridea, strideb) \
+LOOP_FILTER(vpn, dir, 8, stridea, strideb, av_always_inline) \
+static void vp ## vpn ## _ ## dir ## _loop_filter8uv_c(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,\
                                       int fE, int fI, int hev_thresh)\
 {\
-  vp8_ ## dir ## _loop_filter8_c(dstU, stride, fE, fI, hev_thresh);\
-  vp8_ ## dir ## _loop_filter8_c(dstV, stride, fE, fI, hev_thresh);\
+  vp ## vpn ## _ ## dir ## _loop_filter8_c(dstU, stride, fE, fI, hev_thresh);\
+  vp ## vpn ## _ ## dir ## _loop_filter8_c(dstV, stride, fE, fI, hev_thresh);\
 }\
-static void vp8_ ## dir ## _loop_filter8uv_inner_c(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,\
+static void vp ## vpn ## _ ## dir ## _loop_filter8uv_inner_c(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,\
                                       int fE, int fI, int hev_thresh)\
 {\
-  vp8_ ## dir ## _loop_filter8_inner_c(dstU, stride, fE, fI, hev_thresh);\
-  vp8_ ## dir ## _loop_filter8_inner_c(dstV, stride, fE, fI, hev_thresh);\
+  vp ## vpn ## _ ## dir ## _loop_filter8_inner_c(dstU, stride, fE, fI, hev_thresh);\
+  vp ## vpn ## _ ## dir ## _loop_filter8_inner_c(dstV, stride, fE, fI, hev_thresh);\
 }
 
-UV_LOOP_FILTER(v, 1, stride)
-UV_LOOP_FILTER(h, stride, 1)
+UV_LOOP_FILTER(7, v, 1, stride)
+UV_LOOP_FILTER(7, h, stride, 1)
 
-static void vp8_v_loop_filter_simple_c(uint8_t *dst, ptrdiff_t stride, int flim)
-{
-    int i;
+UV_LOOP_FILTER(8, v, 1, stride)
+UV_LOOP_FILTER(8, h, stride, 1)
 
-    for (i = 0; i < 16; i++)
-        if (simple_limit(dst+i, stride, flim))
-            filter_common(dst+i, stride, 1);
+#define LOOP_FILTER_SIMPLE(vpn) \
+static void vp ## vpn ## _v_loop_filter_simple_c(uint8_t *dst, ptrdiff_t stride, int flim)\
+{\
+    int i;\
+\
+    for (i = 0; i < 16; i++)\
+        if (vp ## vpn ## _simple_limit(dst+i, stride, flim))\
+            filter_common(dst+i, stride, 1, vpn);\
+}\
+\
+static void vp ## vpn ## _h_loop_filter_simple_c(uint8_t *dst, ptrdiff_t stride, int flim)\
+{\
+    int i;\
+\
+    for (i = 0; i < 16; i++)\
+        if (vp ## vpn ## _simple_limit(dst+i*stride, 1, flim))\
+            filter_common(dst+i*stride, 1, 1, vpn);\
 }
 
-static void vp8_h_loop_filter_simple_c(uint8_t *dst, ptrdiff_t stride, int flim)
-{
-    int i;
-
-    for (i = 0; i < 16; i++)
-        if (simple_limit(dst+i*stride, 1, flim))
-            filter_common(dst+i*stride, 1, 1);
-}
+LOOP_FILTER_SIMPLE(7)
+LOOP_FILTER_SIMPLE(8)
 
 static const uint8_t subpel_filters[7][6] = {
     { 0,   6, 123,  12,   1,   0 },
@@ -491,27 +603,29 @@ VP8_BILINEAR(4)
     dsp->put_vp8_bilinear_pixels_tab[IDX][2][1] = put_vp8_bilinear ## SIZE ## _hv_c; \
     dsp->put_vp8_bilinear_pixels_tab[IDX][2][2] = put_vp8_bilinear ## SIZE ## _hv_c
 
-av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
+av_cold void ff_vp8dsp_init(VP8DSPContext *dsp, int vp7)
 {
-    dsp->vp8_luma_dc_wht    = vp8_luma_dc_wht_c;
-    dsp->vp8_luma_dc_wht_dc = vp8_luma_dc_wht_dc_c;
-    dsp->vp8_idct_add       = vp8_idct_add_c;
-    dsp->vp8_idct_dc_add    = vp8_idct_dc_add_c;
-    dsp->vp8_idct_dc_add4y  = vp8_idct_dc_add4y_c;
-    dsp->vp8_idct_dc_add4uv = vp8_idct_dc_add4uv_c;
+#define VPX(f) vp7 ? vp7 ## _ ## f : vp8 ## _ ## f
 
-    dsp->vp8_v_loop_filter16y = vp8_v_loop_filter16_c;
-    dsp->vp8_h_loop_filter16y = vp8_h_loop_filter16_c;
-    dsp->vp8_v_loop_filter8uv = vp8_v_loop_filter8uv_c;
-    dsp->vp8_h_loop_filter8uv = vp8_h_loop_filter8uv_c;
+    dsp->vp8_luma_dc_wht    = VPX(luma_dc_wht_c);
+    dsp->vp8_luma_dc_wht_dc = VPX(luma_dc_wht_dc_c);
+    dsp->vp8_idct_add       = VPX(idct_add_c);
+    dsp->vp8_idct_dc_add    = VPX(idct_dc_add_c);
+    dsp->vp8_idct_dc_add4y  = VPX(idct_dc_add4y_c);
+    dsp->vp8_idct_dc_add4uv = VPX(idct_dc_add4uv_c);
 
-    dsp->vp8_v_loop_filter16y_inner = vp8_v_loop_filter16_inner_c;
-    dsp->vp8_h_loop_filter16y_inner = vp8_h_loop_filter16_inner_c;
-    dsp->vp8_v_loop_filter8uv_inner = vp8_v_loop_filter8uv_inner_c;
-    dsp->vp8_h_loop_filter8uv_inner = vp8_h_loop_filter8uv_inner_c;
+    dsp->vp8_v_loop_filter16y = VPX(v_loop_filter16_c);
+    dsp->vp8_h_loop_filter16y = VPX(h_loop_filter16_c);
+    dsp->vp8_v_loop_filter8uv = VPX(v_loop_filter8uv_c);
+    dsp->vp8_h_loop_filter8uv = VPX(h_loop_filter8uv_c);
 
-    dsp->vp8_v_loop_filter_simple = vp8_v_loop_filter_simple_c;
-    dsp->vp8_h_loop_filter_simple = vp8_h_loop_filter_simple_c;
+    dsp->vp8_v_loop_filter16y_inner = VPX(v_loop_filter16_inner_c);
+    dsp->vp8_h_loop_filter16y_inner = VPX(h_loop_filter16_inner_c);
+    dsp->vp8_v_loop_filter8uv_inner = VPX(v_loop_filter8uv_inner_c);
+    dsp->vp8_h_loop_filter8uv_inner = VPX(h_loop_filter8uv_inner_c);
+
+    dsp->vp8_v_loop_filter_simple = VPX(v_loop_filter_simple_c);
+    dsp->vp8_h_loop_filter_simple = VPX(h_loop_filter_simple_c);
 
     VP8_MC_FUNC(0, 16);
     VP8_MC_FUNC(1, 8);
@@ -522,9 +636,9 @@ av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
     VP8_BILINEAR_MC_FUNC(2, 4);
 
     if (ARCH_ARM)
-        ff_vp8dsp_init_arm(dsp);
+        ff_vp8dsp_init_arm(dsp, vp7);
     if (ARCH_PPC)
         ff_vp8dsp_init_ppc(dsp);
     if (ARCH_X86)
-        ff_vp8dsp_init_x86(dsp);
+        ff_vp8dsp_init_x86(dsp, vp7);
 }
