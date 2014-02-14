@@ -184,17 +184,22 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         case JV_VIDEO:
             jv->state++;
             if (jvf->video_size || jvf->palette_size) {
+                int ret;
                 int size = jvf->video_size + jvf->palette_size;
                 if (av_new_packet(pkt, size + JV_PREAMBLE_SIZE))
                     return AVERROR(ENOMEM);
 
                 AV_WL32(pkt->data, jvf->video_size);
-                pkt->data[4]  = jvf->video_type;
-                if ((size = avio_read(pb, pkt->data + JV_PREAMBLE_SIZE, size)) < 0)
-                    return AVERROR(EIO);
-                memset(pkt->data + JV_PREAMBLE_SIZE + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-
-                pkt->size         = size + JV_PREAMBLE_SIZE;
+                pkt->data[4] = jvf->video_type;
+                ret = avio_read(pb, pkt->data + JV_PREAMBLE_SIZE, size);
+                if (ret < 0)
+                    return ret;
+                if (ret < size) {
+                    memset(pkt->data + JV_PREAMBLE_SIZE + ret, 0,
+                           FF_INPUT_BUFFER_PADDING_SIZE);
+                    pkt->flags |= AV_PKT_FLAG_CORRUPT;
+                }
+                pkt->size         = ret + JV_PREAMBLE_SIZE;
                 pkt->stream_index = 1;
                 pkt->pts          = jv->pts;
                 if (jvf->video_type != 1)
