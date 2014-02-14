@@ -29,17 +29,21 @@ SECTION .text
 ;-----------------------------------------------------------------------------
 %macro VECTOR_FMUL 0
 cglobal vector_fmul, 4,4,2, dst, src0, src1, len
-    lea       lenq, [lend*4 - 2*mmsize]
+    lea       lenq, [lend*4 - 64]
 ALIGN 16
 .loop:
-    mova      m0,   [src0q + lenq]
-    mova      m1,   [src0q + lenq + mmsize]
-    mulps     m0, m0, [src1q + lenq]
-    mulps     m1, m1, [src1q + lenq + mmsize]
-    mova      [dstq + lenq], m0
-    mova      [dstq + lenq + mmsize], m1
+%assign a 0
+%rep 32/mmsize
+    mova      m0,   [src0q + lenq + (a+0)*mmsize]
+    mova      m1,   [src0q + lenq + (a+1)*mmsize]
+    mulps     m0, m0, [src1q + lenq + (a+0)*mmsize]
+    mulps     m1, m1, [src1q + lenq + (a+1)*mmsize]
+    mova      [dstq + lenq + (a+0)*mmsize], m0
+    mova      [dstq + lenq + (a+1)*mmsize], m1
+%assign a a+2
+%endrep
 
-    sub       lenq, 2*mmsize
+    sub       lenq, 64
     jge       .loop
     REP_RET
 %endmacro
@@ -72,15 +76,19 @@ cglobal vector_fmac_scalar, 4,4,3, dst, src, mul, len
     vinsertf128  m0, m0, xmm0, 1
 %endif
 %endif
-    lea    lenq, [lend*4-2*mmsize]
+    lea    lenq, [lend*4-64]
 .loop:
-    mulps    m1, m0, [srcq+lenq       ]
-    mulps    m2, m0, [srcq+lenq+mmsize]
-    addps    m1, m1, [dstq+lenq       ]
-    addps    m2, m2, [dstq+lenq+mmsize]
-    mova  [dstq+lenq       ], m1
-    mova  [dstq+lenq+mmsize], m2
-    sub    lenq, 2*mmsize
+%assign a 0
+%rep 32/mmsize
+    mulps    m1, m0, [srcq+lenq+(a+0)*mmsize]
+    mulps    m2, m0, [srcq+lenq+(a+1)*mmsize]
+    addps    m1, m1, [dstq+lenq+(a+0)*mmsize]
+    addps    m2, m2, [dstq+lenq+(a+1)*mmsize]
+    mova  [dstq+lenq+(a+0)*mmsize], m1
+    mova  [dstq+lenq+(a+1)*mmsize], m2
+%assign a a+2
+%endrep
+    sub    lenq, 64
     jge .loop
     REP_RET
 %endmacro
