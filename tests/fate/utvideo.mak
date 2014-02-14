@@ -28,7 +28,7 @@ fate-utvideo_yuv422_median: CMD = framecrc -i $(TARGET_SAMPLES)/utvideo/utvideo_
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, UTVIDEO) += $(FATE_UTVIDEO)
 fate-utvideo: $(FATE_UTVIDEO)
 
-fate-utvideoenc%: CMD = framemd5 -f image2 -vcodec pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -vcodec utvideo -sws_flags +accurate_rnd+bitexact ${OPTS}
+fate-utvideoenc%: CMD = framemd5 -f image2 -vcodec pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -vcodec utvideo -slices 1 -sws_flags +accurate_rnd+bitexact ${OPTS}
 
 FATE_UTVIDEOENC += fate-utvideoenc_rgba_left
 fate-utvideoenc_rgba_left: OPTS = -pix_fmt rgba -pred left
