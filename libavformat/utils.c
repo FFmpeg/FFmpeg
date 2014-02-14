@@ -1154,7 +1154,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* Interpolate PTS and DTS if they are not present. We skip H264
      * currently because delay and has_b_frames are not reliably set. */
     if ((delay == 0 || (delay == 1 && pc)) &&
-        st->codec->codec_id != AV_CODEC_ID_H264) {
+        st->codec->codec_id != AV_CODEC_ID_H264 &&
+        st->codec->codec_id != AV_CODEC_ID_HEVC) {
         if (presentation_delayed) {
             /* DTS = decompression timestamp */
             /* PTS = presentation timestamp */
@@ -1199,7 +1200,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             pkt->dts = st->pts_buffer[0];
     }
     // We skipped it above so we try here.
-    if (st->codec->codec_id == AV_CODEC_ID_H264)
+    if (st->codec->codec_id == AV_CODEC_ID_H264 ||
+        st->codec->codec_id == AV_CODEC_ID_HEVC)
         // This should happen on the first packet
         update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts, pkt);
     if (pkt->dts > st->cur_dts)
