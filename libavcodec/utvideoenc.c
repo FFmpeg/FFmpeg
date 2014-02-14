@@ -207,11 +207,10 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     if (!avctx->slices) {
         c->slices = subsampled_height / 120;
 
-        if (!c->slices) {
+        if (!c->slices)
             c->slices = 1;
-        } else if (c->slices > 256) {
+        else if (c->slices > 256)
             c->slices = 256;
-        }
     } else {
         c->slices = avctx->slices;
     }
