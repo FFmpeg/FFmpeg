@@ -27,7 +27,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/bfin/attributes.h"
 #include "libavcodec/hpeldsp.h"
-#include "hpeldsp_bfin.h"
+#include "pixels.h"
 
 void ff_bfin_put_pixels8uc_no_rnd(uint8_t *block, const uint8_t *s0,
                                   const uint8_t *s1, int line_size,

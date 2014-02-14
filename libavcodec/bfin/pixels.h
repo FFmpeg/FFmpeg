@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_BFIN_HPELDSP_BFIN_H
-#define AVCODEC_BFIN_HPELDSP_BFIN_H
+#ifndef AVCODEC_BFIN_PIXELS_H
+#define AVCODEC_BFIN_PIXELS_H
 
 #include <stdint.h>
 
@@ -37,4 +37,4 @@ void ff_bfin_put_pixels16uc(uint8_t *block, const uint8_t *s0,
                             const uint8_t *s1, int dest_size, int line_size,
                             int h) attribute_l1_text;
 
-#endif /* AVCODEC_BFIN_HPELDSP_BFIN_H */
+#endif /* AVCODEC_BFIN_PIXELS_H */
