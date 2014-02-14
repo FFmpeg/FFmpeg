@@ -107,8 +107,10 @@ $(DOCS) doc/doxy/html: | doc/
 $(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
 OBJDIRS += doc/examples
 
-doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(INSTHEADERS)
-	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $^
+DOXY_INPUT      = $(addprefix $(SRC_PATH)/, $(INSTHEADERS))
+
+doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(DOXY_INPUT)
+	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $< $(DOXY_INPUT)
 
 install-doc: install-html install-man
 
