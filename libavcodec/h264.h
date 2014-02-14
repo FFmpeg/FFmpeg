@@ -163,6 +163,7 @@ typedef enum {
  * Sequence parameter set
  */
 typedef struct SPS {
+    unsigned int sps_id;
     int profile_idc;
     int level_idc;
     int chroma_format_idc;

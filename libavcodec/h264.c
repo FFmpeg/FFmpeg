@@ -3523,10 +3523,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         return AVERROR_INVALIDDATA;
     }
 
-    if (h->pps.sps_id != h->current_sps_id ||
+    if (h->pps.sps_id != h->sps.sps_id ||
+        h->pps.sps_id != h->current_sps_id ||
         h0->sps_buffers[h->pps.sps_id]->new) {
 
-        h->sps            = *h0->sps_buffers[h->pps.sps_id];
+        h->sps = *h0->sps_buffers[h->pps.sps_id];
 
         if (h->mb_width  != h->sps.mb_width ||
             h->mb_height != h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag) ||
