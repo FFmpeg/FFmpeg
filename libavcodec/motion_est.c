@@ -390,10 +390,9 @@ static int sad_hpel_motion_search(MpegEncContext * s,
     int mx, my, dminh;
     uint8_t *pix, *ptr;
     int stride= c->stride;
-    const int flags= c->sub_flags;
     LOAD_COMMON
 
-    av_assert2(flags == 0);
+    av_assert2(c->sub_flags == 0);
 
     if(c->skip){
         *mx_ptr = 0;
