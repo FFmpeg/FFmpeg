@@ -24,15 +24,11 @@
 #include "libavutil/attributes.h"
 #include "libavcodec/dcadsp.h"
 
-void ff_dca_lfe_fir0_neon(float *out, const float *in, const float *coefs,
-                          float scale);
-void ff_dca_lfe_fir1_neon(float *out, const float *in, const float *coefs,
-                          float scale);
+void ff_dca_lfe_fir0_neon(float *out, const float *in, const float *coefs);
+void ff_dca_lfe_fir1_neon(float *out, const float *in, const float *coefs);
 
-void ff_dca_lfe_fir32_vfp(float *out, const float *in, const float *coefs,
-                          float scale);
-void ff_dca_lfe_fir64_vfp(float *out, const float *in, const float *coefs,
-                          float scale);
+void ff_dca_lfe_fir32_vfp(float *out, const float *in, const float *coefs);
+void ff_dca_lfe_fir64_vfp(float *out, const float *in, const float *coefs);
 
 void ff_dca_qmf_32_subbands_vfp(float samples_in[32][8], int sb_act,
                                 SynthFilterContext *synth, FFTContext *imdct,

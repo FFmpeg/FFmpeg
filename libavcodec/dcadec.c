@@ -947,7 +947,7 @@ static void qmf_32_subbands(DCAContext *s, int chans,
 
 static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
                                   int num_deci_sample, float *samples_in,
-                                  float *samples_out, float scale)
+                                  float *samples_out)
 {
     /* samples_in: An array holding decimated samples.
      *   Samples in current subframe starts from samples_in[0],
@@ -971,7 +971,7 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
     }
     /* Interpolation */
     for (deciindex = 0; deciindex < num_deci_sample; deciindex++) {
-        s->dcadsp.lfe_fir[idx](samples_out, samples_in, prCoeff, scale);
+        s->dcadsp.lfe_fir[idx](samples_out, samples_in, prCoeff);
         samples_in++;
         samples_out += 2 * 32 * (1 + idx);
     }
@@ -1265,8 +1265,7 @@ static int dca_filter_channels(DCAContext *s, int block_index)
     if (s->lfe) {
         lfe_interpolation_fir(s, s->lfe, 2 * s->lfe,
                               s->lfe_data + 2 * s->lfe * (block_index + 4),
-                              s->samples_chanptr[dca_lfe_index[s->amode]],
-                              1.0 / (256.0 * 32768.0));
+                              s->samples_chanptr[dca_lfe_index[s->amode]]);
         /* Outputs 20bits pcm samples */
     }
 

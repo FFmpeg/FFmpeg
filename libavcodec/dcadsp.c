@@ -34,7 +34,7 @@ static void int8x8_fmul_int32_c(float *dst, const int8_t *src, int scale)
 
 static inline void
 dca_lfe_fir(float *out, const float *in, const float *coefs,
-            int decifactor, float scale)
+            int decifactor)
 {
     float *out2 = out + decifactor;
     const float *cf0 = coefs;
@@ -50,8 +50,8 @@ dca_lfe_fir(float *out, const float *in, const float *coefs,
             v0 += s * *cf0++;
             v1 += s * *--cf1;
         }
-        *out++  = v0 * scale;
-        *out2++ = v1 * scale;
+        *out++  = v0;
+        *out2++ = v1;
     }
 }
 
@@ -83,16 +83,14 @@ static void dca_qmf_32_subbands(float samples_in[32][8], int sb_act,
     }
 }
 
-static void dca_lfe_fir0_c(float *out, const float *in, const float *coefs,
-                           float scale)
+static void dca_lfe_fir0_c(float *out, const float *in, const float *coefs)
 {
-    dca_lfe_fir(out, in, coefs, 32, scale);
+    dca_lfe_fir(out, in, coefs, 32);
 }
 
-static void dca_lfe_fir1_c(float *out, const float *in, const float *coefs,
-                           float scale)
+static void dca_lfe_fir1_c(float *out, const float *in, const float *coefs)
 {
-    dca_lfe_fir(out, in, coefs, 64, scale);
+    dca_lfe_fir(out, in, coefs, 64);
 }
 
 av_cold void ff_dcadsp_init(DCADSPContext *s)
