@@ -110,6 +110,30 @@ static void vp8_decode_flush(AVCodecContext *avctx)
     vp8_decode_flush_impl(avctx, 0);
 }
 
+static VP8Frame * vp8_find_free_buffer(VP8Context *s)
+{
+    VP8Frame *frame = NULL;
+    int i;
+
+    // find a free buffer
+    for (i = 0; i < 5; i++)
+        if (&s->frames[i] != s->framep[VP56_FRAME_CURRENT] &&
+            &s->frames[i] != s->framep[VP56_FRAME_PREVIOUS] &&
+            &s->frames[i] != s->framep[VP56_FRAME_GOLDEN] &&
+            &s->frames[i] != s->framep[VP56_FRAME_GOLDEN2]) {
+            frame = &s->frames[i];
+            break;
+        }
+    if (i == 5) {
+        av_log(s->avctx, AV_LOG_FATAL, "Ran out of free frames!\n");
+        abort();
+    }
+    if (frame->tf.f->data[0])
+        vp8_release_frame(s, frame);
+
+    return frame;
+}
+
 static int update_dimensions(VP8Context *s, int width, int height)
 {
     AVCodecContext *avctx = s->avctx;
@@ -1866,21 +1890,7 @@ int ff_vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             &s->frames[i] != s->framep[VP56_FRAME_GOLDEN2])
             vp8_release_frame(s, &s->frames[i]);
 
-    // find a free buffer
-    for (i = 0; i < 5; i++)
-        if (&s->frames[i] != prev_frame &&
-            &s->frames[i] != s->framep[VP56_FRAME_PREVIOUS] &&
-            &s->frames[i] != s->framep[VP56_FRAME_GOLDEN] &&
-            &s->frames[i] != s->framep[VP56_FRAME_GOLDEN2]) {
-            curframe = s->framep[VP56_FRAME_CURRENT] = &s->frames[i];
-            break;
-        }
-    if (i == 5) {
-        av_log(avctx, AV_LOG_FATAL, "Ran out of free frames!\n");
-        abort();
-    }
-    if (curframe->tf.f->data[0])
-        vp8_release_frame(s, curframe);
+    curframe = s->framep[VP56_FRAME_CURRENT] = vp8_find_free_buffer(s);
 
     // Given that arithmetic probabilities are updated every frame, it's quite likely
     // that the values we have on a random interframe are complete junk if we didn't
