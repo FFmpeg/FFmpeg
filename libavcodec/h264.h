@@ -385,11 +385,7 @@ typedef struct H264Context {
 
     unsigned current_sps_id; ///< id of the current SPS
     SPS sps; ///< current sps
-
-    /**
-     * current pps
-     */
-    PPS pps; // FIXME move to Picture perhaps? (->no) do we need that?
+    PPS pps; ///< current pps
 
     int au_pps_id; ///< pps_id of current access unit
 

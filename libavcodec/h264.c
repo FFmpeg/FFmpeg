@@ -3432,7 +3432,7 @@ int ff_set_ref_count(H264Context *h)
 
 /**
  * Decode a slice header.
- * This will also call ff_MPV_common_init() and frame_start() as needed.
+ * This will (re)intialize the decoder and call h264_frame_start() as needed.
  *
  * @param h h264context
  * @param h0 h264 master context (differs from 'h' when doing sliced based
