@@ -633,7 +633,7 @@ static qcelp_packet_rate determine_bitrate(AVCodecContext *avctx,
         (*buf)++;
     } else if ((bitrate = buf_size2bitrate(buf_size + 1)) >= 0) {
         av_log(avctx, AV_LOG_WARNING,
-               "Bitrate byte is missing, guessing the bitrate from packet size.\n");
+               "Bitrate byte missing, guessing bitrate from packet size.\n");
     } else
         return I_F_Q;
 
@@ -703,7 +703,7 @@ static int qcelp_decode_frame(AVCodecContext *avctx, void *data,
     outbuffer = (float *)frame->data[0];
 
     if ((q->bitrate = determine_bitrate(avctx, buf_size, &buf)) == I_F_Q) {
-        warn_insufficient_frame_quality(avctx, "bitrate cannot be determined.");
+        warn_insufficient_frame_quality(avctx, "Bitrate cannot be determined.");
         goto erasure;
     }
 

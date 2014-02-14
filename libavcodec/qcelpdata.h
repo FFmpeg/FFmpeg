@@ -66,7 +66,7 @@ typedef struct QCELPFrame {
 } QCELPFrame;
 
 /**
- * pre-calculated table for hammsinc function
+ * Pre-calculated table for hammsinc function.
  * Only half of the table is needed because of symmetry.
  *
  * TIA/EIA/IS-733 2.4.5.2-2/3
@@ -82,7 +82,7 @@ typedef struct QCELPBitmap {
 #define QCELP_OF(variable, bit, len) {offsetof(QCELPFrame, variable), bit, len}
 
 /**
- * bitmap unpacking tables for RATE_FULL
+ * Bitmap unpacking tables for RATE_FULL
  *
  * TIA/EIA/IS-733 Table 2.4.7.1-1
  */
@@ -169,7 +169,7 @@ static const QCELPBitmap qcelp_rate_full_bitmap[] = {
 };
 
 /**
- * bitmap unpacking tables for RATE_HALF
+ * Bitmap unpacking tables for RATE_HALF
  *
  * TIA/EIA/IS-733 Table 2.4.7.2-1
  */
@@ -211,7 +211,7 @@ static const QCELPBitmap qcelp_rate_half_bitmap[] = {
 };
 
 /**
- * bitmap unpacking tables for RATE_QUARTER
+ * Bitmap unpacking tables for RATE_QUARTER
  *
  * TIA/EIA/IS-733 Table 2.4.7.3-1
  */
@@ -232,7 +232,7 @@ static const QCELPBitmap qcelp_rate_quarter_bitmap[] = {
 };
 
 /**
- * bitmap unpacking tables for RATE_OCTAVE
+ * Bitmap unpacking tables for RATE_OCTAVE
  *
  * trick: CBSEED is written into QCELPContext.cbsign[15],
  * which is not used for RATE_OCTAVE.
@@ -262,7 +262,7 @@ static const QCELPBitmap qcelp_rate_octave_bitmap[] = {
 };
 
 /**
- * position of the bitmapping data for each packet type in
+ * Bitmapping data position for each packet type in
  * the QCELPContext
  */
 static const QCELPBitmap * const qcelp_unpacking_bitmaps_per_rate[5] = {
@@ -420,12 +420,12 @@ static const qcelp_vector * const qcelp_lspvq[5] = {
 };
 
 /**
- * the final gain scalefactor before clipping into a usable output float
+ * The final gain scalefactor before clipping into a usable output float
  */
 #define QCELP_SCALE 8192.
 
 /**
- * table for computing Ga (decoded linear codebook gain magnitude)
+ * Table for computing Ga (decoded linear codebook gain magnitude)
  *
  * @note The table could fit in int16_t in x*8 form, but it seems
  *       to be slower on x86
@@ -452,7 +452,7 @@ static const float qcelp_g12ga[61] = {
  1000.000/QCELP_SCALE};
 
 /**
- * circular codebook for rate 1 frames in x*100 form
+ * Circular codebook for rate 1 frames in x*100 form
  *
  * TIA/EIA/IS-733 2.4.6.1-2
  */
@@ -477,7 +477,7 @@ static const int16_t qcelp_rate_full_codebook[128] = {
 #define QCELP_RATE_FULL_CODEBOOK_RATIO .01
 
 /**
- * circular codebook for rate 1/2 frames in x*2 form
+ * Circular codebook for rate 1/2 frames in x*2 form
  *
  * TIA/EIA/IS-733 2.4.6.1-1
  */
@@ -511,7 +511,7 @@ static const int8_t qcelp_rate_half_codebook[128] = {
 #define QCELP_SQRT1887 1.373681186
 
 /**
- * table for impulse response of BPF used to filter
+ * Table for impulse response of BPF used to filter
  * the white excitation for bitrate 1/4 synthesis
  *
  * Only half the tables are needed because of symmetry.
@@ -526,14 +526,14 @@ static const double qcelp_rnd_fir_coefs[11] = {
 
 /**
  * This spread factor is used, for bitrate 1/8 and I_F_Q,
- * to force the LSP frequencies to be at least 80 Hz apart.
+ * to force LSP frequencies to be at least 80 Hz apart.
  *
  * TIA/EIA/IS-733 2.4.3.3.2
  */
 #define QCELP_LSP_SPREAD_FACTOR 0.02
 
 /**
- * predictor coefficient for the conversion of LSP codes
+ * Predictor coefficient for the conversion of LSP codes
  * to LSP frequencies for 1/8 and I_F_Q
  *
  * TIA/EIA/IS-733 2.4.3.2.7-2
@@ -541,7 +541,7 @@ static const double qcelp_rnd_fir_coefs[11] = {
 #define QCELP_LSP_OCTAVE_PREDICTOR 29.0/32
 
 /**
- * initial coefficient to perform bandwidth expansion on LPC
+ * Initial coefficient to perform bandwidth expansion on LPC
  *
  * @note: 0.9883 looks like an approximation of 253/256.
  *
