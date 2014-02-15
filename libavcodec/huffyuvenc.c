@@ -217,11 +217,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_huffyuv_common_init(avctx);
 
     avctx->extradata = av_mallocz(3*MAX_N + 4);
-#define STATS_OUT_SIZE 21*MAX_N*3 + 4
-    avctx->stats_out = av_mallocz(STATS_OUT_SIZE); // 21*256*3(%llu ) + 3(\n) + 1(0) = 16132
-    if (!avctx->extradata || !avctx->stats_out) {
-        av_freep(&avctx->stats_out);
+    if (!avctx->extradata)
         return AVERROR(ENOMEM);
+    if (s->flags&CODEC_FLAG_PASS1) {
+#define STATS_OUT_SIZE 21*MAX_N*3 + 4
+        avctx->stats_out = av_mallocz(STATS_OUT_SIZE); // 21*256*3(%llu ) + 3(\n) + 1(0) = 16132
+        if (!avctx->stats_out)
+            return AVERROR(ENOMEM);
     }
     s->version = 2;
 
@@ -956,7 +958,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             if (end <= p)
                 return AVERROR(ENOMEM);
         }
-    } else
+    } else if (avctx->stats_out)
         avctx->stats_out[0] = '\0';
     if (!(s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)) {
         flush_put_bits(&s->pb);
