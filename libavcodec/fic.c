@@ -212,6 +212,7 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "Could not allocate slice data.\n");
         return AVERROR(ENOMEM);
     }
+    memset(ctx->slice_data, 0, nslices * sizeof(ctx->slice_data[0]));
 
     for (slice = 0; slice < nslices; slice++) {
         unsigned slice_off = AV_RB32(src + tsize + FIC_HEADER_SIZE + slice * 4);
