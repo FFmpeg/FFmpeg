@@ -44,12 +44,18 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV420P:
         in_format = UTVF_YV12;
         avctx->bits_per_coded_sample = 12;
-        avctx->codec_tag = MKTAG('U', 'L', 'Y', '0');
+        if (avctx->colorspace == AVCOL_SPC_BT709)
+            avctx->codec_tag = MKTAG('U', 'L', 'H', '0');
+        else
+            avctx->codec_tag = MKTAG('U', 'L', 'Y', '0');
         break;
     case AV_PIX_FMT_YUYV422:
         in_format = UTVF_YUYV;
         avctx->bits_per_coded_sample = 16;
-        avctx->codec_tag = MKTAG('U', 'L', 'Y', '2');
+        if (avctx->colorspace == AVCOL_SPC_BT709)
+            avctx->codec_tag = MKTAG('U', 'L', 'H', '2');
+        else
+            avctx->codec_tag = MKTAG('U', 'L', 'Y', '2');
         break;
     case AV_PIX_FMT_BGR24:
         in_format = UTVF_NFCC_BGR_BU;
