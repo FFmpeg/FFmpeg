@@ -184,8 +184,10 @@ static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
         out_frame = frame;
     } else {
         out_frame = ff_get_audio_buffer(inlink, nb_samples);
-        if (!out_frame)
+        if (!out_frame) {
+            av_frame_free(&frame);
             return AVERROR(ENOMEM);
+        }
         av_frame_copy_props(out_frame, frame);
     }
 
@@ -235,8 +237,10 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
             if (count >= s->delay_samples) {
                 if (!out_frame) {
                     out_frame = ff_get_audio_buffer(inlink, nb_samples - i);
-                    if (!out_frame)
+                    if (!out_frame) {
+                        av_frame_free(&frame);
                         return AVERROR(ENOMEM);
+                    }
                     av_frame_copy_props(out_frame, frame);
                     out_frame->pts = s->pts;
                     s->pts += av_rescale_q(nb_samples - i, (AVRational){1, inlink->sample_rate}, inlink->time_base);
