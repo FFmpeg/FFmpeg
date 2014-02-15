@@ -95,7 +95,7 @@ static void sub_hfyu_median_prediction_int16_c(uint16_t *dst, const uint16_t *sr
     *left_top = lt;
 }
 
-static int add_hfyu_left_prediction_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int acc){
+static int add_hfyu_left_prediction_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc){
     int i;
 
     for(i=0; i<w-1; i++){
