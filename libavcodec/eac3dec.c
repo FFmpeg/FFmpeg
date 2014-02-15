@@ -360,7 +360,6 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
 
         /* lfe mix level */
         if (s->lfe_on && (s->lfe_mix_level_exists = get_bits1(gbc))) {
-            // TODO: use LFE mix level
             s->lfe_mix_level = get_bits(gbc, 5);
         }
 
