@@ -34,7 +34,7 @@ SECTION_TEXT
 %macro INT16_LOOP 2 ; %1 = a/u (aligned/unaligned), %2 = add/sub
     movd    m4, maskd
     SPLATW  m4, m4
-    add     wq, wq
+    add     wd, wd
     test    wq, 2*mmsize - 1
     jz %%.tomainloop
 %%.wordloop:
@@ -116,7 +116,7 @@ cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
 
 
 %macro ADD_HFYU_LEFT_LOOP_INT16 2 ; %1 = dst alignment (a/u), %2 = src alignment (a/u)
-    add     wq, wq
+    add     wd, wd
     add     srcq, wq
     add     dstq, wq
     neg     wq
@@ -190,7 +190,7 @@ cglobal add_hfyu_left_prediction_int16, 4,4,8, dst, src, mask, w, left
 ; void add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int mask, int w, int *left, int *left_top)
 INIT_MMX mmxext
 cglobal add_hfyu_median_prediction_int16, 7,7,0, dst, top, diff, mask, w, left, left_top
-    add      wq, wq
+    add      wd, wd
     movd    mm6, maskd
     SPLATW  mm6, mm6
     movq    mm0, [topq]
@@ -253,7 +253,7 @@ cglobal add_hfyu_median_prediction_int16, 7,7,0, dst, top, diff, mask, w, left, 
     RET
 
 cglobal sub_hfyu_median_prediction_int16, 7,7,0, dst, src1, src2, mask, w, left, left_top
-    add      wq, wq
+    add      wd, wd
     movd    mm7, maskd
     SPLATW  mm7, mm7
     movq    mm0, [src1q]
