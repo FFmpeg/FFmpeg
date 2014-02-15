@@ -162,8 +162,12 @@ AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx);
  * @param frame pointer to an allocated frame that will be filled with data.
  *              The data must be freed using av_frame_unref() / av_frame_free()
  *
- * @return >= 0 in case of success, a negative AVERROR code in case of
- *         failure.
+ * @return
+ *         - >= 0 if a frame was successfully returned.
+ *         - AVERROR(EAGAIN) if no frames are available at this point; more
+ *           input frames must be added to the filtergraph to get more output.
+ *         - AVERROR_EOF if there will be no more output frames on this sink.
+ *         - A different negative AVERROR code in other failure cases.
  */
 int av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame);
 
@@ -177,6 +181,9 @@ int av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame);
  *              The data must be freed using av_frame_unref() / av_frame_free()
  *              frame will contain exactly nb_samples audio samples, except at
  *              the end of stream, when it can contain less than nb_samples.
+ *
+ * @return The return codes have the same meaning as for
+ *         av_buffersink_get_samples().
  *
  * @warning do not mix this function with av_buffersink_get_frame(). Use only one or
  * the other with a single sink, not both.
