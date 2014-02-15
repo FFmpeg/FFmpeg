@@ -22,11 +22,18 @@
 
 /**
  * @file
+ * @ingroup lavfi_buffersrc
  * Memory buffer source API.
  */
 
 #include "libavcodec/avcodec.h"
 #include "avfilter.h"
+
+/**
+ * @defgroup lavfi_buffersrc Buffer source API
+ * @ingroup lavfi
+ * @{
+ */
 
 enum {
 
@@ -145,5 +152,9 @@ int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame);
 int av_buffersrc_add_frame_flags(AVFilterContext *buffer_src,
                                  AVFrame *frame, int flags);
 
+
+/**
+ * @}
+ */
 
 #endif /* AVFILTER_BUFFERSRC_H */

@@ -21,10 +21,17 @@
 
 /**
  * @file
+ * @ingroup lavfi_buffersink
  * memory buffer sink API for audio and video
  */
 
 #include "avfilter.h"
+
+/**
+ * @defgroup lavfi_buffersink Buffer sink API
+ * @ingroup lavfi
+ * @{
+ */
 
 #if FF_API_AVFILTERBUFFER
 /**
@@ -189,5 +196,9 @@ int av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame);
  * the other with a single sink, not both.
  */
 int av_buffersink_get_samples(AVFilterContext *ctx, AVFrame *frame, int nb_samples);
+
+/**
+ * @}
+ */
 
 #endif /* AVFILTER_BUFFERSINK_H */
