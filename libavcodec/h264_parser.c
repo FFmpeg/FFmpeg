@@ -76,13 +76,15 @@ static int h264_find_frame_end(H264Context *h, const uint8_t *buf,
             else
                 state >>= 1;           // 2->1, 1->0, 0->0
         } else if (state <= 5) {
-            int v = buf[i] & 0x1F;
-            if (v == 6 || v == 7 || v == 8 || v == 9) {
+            int nalu_type = buf[i] & 0x1F;
+            if (nalu_type == NAL_SEI || nalu_type == NAL_SPS ||
+                nalu_type == NAL_PPS || nalu_type == NAL_AUD) {
                 if (pc->frame_start_found) {
                     i++;
                     goto found;
                 }
-            } else if (v == 1 || v == 2 || v == 5) {
+            } else if (nalu_type == NAL_SLICE || nalu_type == NAL_DPA ||
+                       nalu_type == NAL_IDR_SLICE) {
                 state += 8;
                 continue;
             }
