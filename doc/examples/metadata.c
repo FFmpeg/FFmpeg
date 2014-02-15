@@ -22,7 +22,7 @@
 
 /**
  * @file
- * @example libavformat/metadata-example.c
+ * @example metadata.c
  * Shows how the metadata API can be used in application programs.
  */
 

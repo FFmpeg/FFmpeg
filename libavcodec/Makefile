@@ -697,8 +697,6 @@ SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 
-EXAMPLES = api
-
 TESTPROGS = dct                                                         \
             fft                                                         \
             fft-fixed                                                   \

@@ -392,8 +392,6 @@ OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 SKIPHEADERS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh.h
 SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 
-EXAMPLES  = metadata                                                    \
-
 TESTPROGS = seek                                                        \
             srtp                                                        \
             url                                                         \
