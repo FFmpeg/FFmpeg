@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-xx-xx - xxxxxxx - lavu 53.04.0  - opt.h
+  Add AV_OPT_FLAG_EXPORT and AV_OPT_FLAG_READONLY to mark options meant (only)
+  for reading.
+
 2014-xx-xx - xxxxxxx - lavu 53.03.01 - opt.h
   Deprecate unused AV_OPT_FLAG_METADATA.
 
