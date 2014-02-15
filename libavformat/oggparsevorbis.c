@@ -421,7 +421,7 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         os->lastdts                 = os->granule - duration;
         if (s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = FFMAX(os->lastpts, 0);
-            if (s->streams[idx]->duration)
+            if (s->streams[idx]->duration != AV_NOPTS_VALUE)
                 s->streams[idx]->duration -= s->streams[idx]->start_time;
         }
         priv->final_pts          = AV_NOPTS_VALUE;
