@@ -31,6 +31,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
+#include "libavutil/downmix_info.h"
 #include "libavutil/opt.h"
 #include "internal.h"
 #include "aac_ac3_parser.h"
@@ -75,6 +76,15 @@ static const float gain_levels[9] = {
     LEVEL_MINUS_6DB,
     LEVEL_ZERO,
     LEVEL_MINUS_9DB
+};
+
+/** Adjustments in dB gain (LFE, +10 to -21 dB) */
+static const float gain_levels_lfe[32] = {
+    3.162275, 2.818382, 2.511886, 2.238719, 1.995261, 1.778278, 1.584893,
+    1.412536, 1.258924, 1.122018, 1.000000, 0.891251, 0.794328, 0.707946,
+    0.630957, 0.562341, 0.501187, 0.446683, 0.398107, 0.354813, 0.316227,
+    0.281838, 0.251188, 0.223872, 0.199526, 0.177828, 0.158489, 0.141253,
+    0.125892, 0.112201, 0.100000, 0.089125
 };
 
 /**
@@ -1312,6 +1322,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     const uint8_t *channel_map;
     const float *output[AC3_MAX_CHANNELS];
     enum AVMatrixEncoding matrix_encoding;
+    AVDownmixInfo *downmix_info;
 
     /* copy input buffer to decoder context to avoid reading past the end
        of the buffer, which can be caused by a damaged input stream. */
@@ -1488,6 +1499,33 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     }
     if ((ret = ff_side_data_update_matrix_encoding(frame, matrix_encoding)) < 0)
         return ret;
+
+    /* AVDownmixInfo */
+    if ((downmix_info = av_downmix_info_update_side_data(frame))) {
+        switch (s->preferred_downmix) {
+        case AC3_DMIXMOD_LTRT:
+            downmix_info->preferred_downmix_type = AV_DOWNMIX_TYPE_LTRT;
+            break;
+        case AC3_DMIXMOD_LORO:
+            downmix_info->preferred_downmix_type = AV_DOWNMIX_TYPE_LORO;
+            break;
+        case AC3_DMIXMOD_DPLII:
+            downmix_info->preferred_downmix_type = AV_DOWNMIX_TYPE_DPLII;
+            break;
+        default:
+            downmix_info->preferred_downmix_type = AV_DOWNMIX_TYPE_UNKNOWN;
+            break;
+        }
+        downmix_info->center_mix_level        = gain_levels[s->       center_mix_level];
+        downmix_info->center_mix_level_ltrt   = gain_levels[s->  center_mix_level_ltrt];
+        downmix_info->surround_mix_level      = gain_levels[s->     surround_mix_level];
+        downmix_info->surround_mix_level_ltrt = gain_levels[s->surround_mix_level_ltrt];
+        if (s->lfe_mix_level_exists)
+            downmix_info->lfe_mix_level       = gain_levels_lfe[s->lfe_mix_level];
+        else
+            downmix_info->lfe_mix_level       = 0.0; // -inf dB
+    } else
+        return AVERROR(ENOMEM);
 
     *got_frame_ptr = 1;
 
