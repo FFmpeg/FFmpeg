@@ -766,8 +766,7 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 
     switch (avctx->codec->type) {
     case AVMEDIA_TYPE_VIDEO:
-        if (frame->format < 0)
-            frame->format              = avctx->pix_fmt;
+        frame->format              = avctx->pix_fmt;
         if (!frame->sample_aspect_ratio.num)
             frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
         if (av_frame_get_colorspace(frame) == AVCOL_SPC_UNSPECIFIED)
