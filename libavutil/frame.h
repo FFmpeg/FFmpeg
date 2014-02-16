@@ -87,6 +87,11 @@ enum AVFrameSideDataType {
      * The data is the AVMatrixEncoding enum defined in libavutil/channel_layout.h.
      */
     AV_FRAME_DATA_MATRIXENCODING,
+    /**
+     * Metadata relevant to a downmix procedure.
+     * The data is the AVDownmixInfo struct defined in libavutil/downmix_info.h.
+     */
+    AV_FRAME_DATA_DOWNMIX_INFO,
 };
 
 typedef struct AVFrameSideData {

@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-02-xx - xxxxxxx - lavu 53.3.0 - frame.h
+  Add AV_FRAME_DATA_DOWNMIX_INFO value to the AVFrameSideDataType enum and
+  downmix_info.h API, which identify downmix-related metadata.
+
 2014-02-11 - 1b05ac2 - lavf 55.32.100 - avformat.h
   Add av_write_uncoded_frame() and av_interleaved_write_uncoded_frame().
 
