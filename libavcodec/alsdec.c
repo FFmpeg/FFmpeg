@@ -688,7 +688,11 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         } else {
             *bd->opt_order = sconf->max_order;
         }
-
+        if (*bd->opt_order > bd->block_length) {
+            *bd->opt_order = bd->block_length;
+            av_log(avctx, AV_LOG_ERROR, "Predictor order too large.\n");
+            return AVERROR_INVALIDDATA;
+        }
         opt_order = *bd->opt_order;
 
         if (opt_order) {
