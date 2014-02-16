@@ -733,8 +733,7 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
     case AVMEDIA_TYPE_VIDEO:
         frame->width  = FFMAX(avctx->width,  FF_CEIL_RSHIFT(avctx->coded_width,  avctx->lowres));
         frame->height = FFMAX(avctx->height, FF_CEIL_RSHIFT(avctx->coded_height, avctx->lowres));
-        if (frame->format < 0)
-            frame->format              = avctx->pix_fmt;
+        frame->format              = avctx->pix_fmt;
         if (!frame->sample_aspect_ratio.num)
             frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
         if (av_frame_get_colorspace(frame) == AVCOL_SPC_UNSPECIFIED)
