@@ -29,6 +29,24 @@
 #include "vp8dsp.h"
 #include "libavutil/common.h"
 
+#define MK_IDCT_DC_ADD4_C(name) \
+static void name ## _idct_dc_add4uv_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)\
+{\
+    name ## _idct_dc_add_c(dst+stride*0+0, block[0], stride);\
+    name ## _idct_dc_add_c(dst+stride*0+4, block[1], stride);\
+    name ## _idct_dc_add_c(dst+stride*4+0, block[2], stride);\
+    name ## _idct_dc_add_c(dst+stride*4+4, block[3], stride);\
+}\
+\
+static void name ## _idct_dc_add4y_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)\
+{\
+    name ## _idct_dc_add_c(dst+ 0, block[0], stride);\
+    name ## _idct_dc_add_c(dst+ 4, block[1], stride);\
+    name ## _idct_dc_add_c(dst+ 8, block[2], stride);\
+    name ## _idct_dc_add_c(dst+12, block[3], stride);\
+}
+
+#if CONFIG_VP7_DECODER
 static void vp7_luma_dc_wht_c(int16_t block[4][4][16], int16_t dc[16])
 {
     int i, a1, b1, c1, d1;
@@ -120,7 +138,11 @@ static void vp7_idct_dc_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
     }
 }
 
+MK_IDCT_DC_ADD4_C(vp7)
+#endif
+
 // TODO: Maybe add dequant
+#if CONFIG_VP8_DECODER
 static void vp8_luma_dc_wht_c(int16_t block[4][4][16], int16_t dc[16])
 {
     int i, t0, t1, t2, t3;
@@ -219,25 +241,8 @@ static void vp8_idct_dc_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
     }
 }
 
-#define MK_IDCT_DC_ADD4_C(name) \
-static void name ## _idct_dc_add4uv_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)\
-{\
-    name ## _idct_dc_add_c(dst+stride*0+0, block[0], stride);\
-    name ## _idct_dc_add_c(dst+stride*0+4, block[1], stride);\
-    name ## _idct_dc_add_c(dst+stride*4+0, block[2], stride);\
-    name ## _idct_dc_add_c(dst+stride*4+4, block[3], stride);\
-}\
-\
-static void name ## _idct_dc_add4y_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)\
-{\
-    name ## _idct_dc_add_c(dst+ 0, block[0], stride);\
-    name ## _idct_dc_add_c(dst+ 4, block[1], stride);\
-    name ## _idct_dc_add_c(dst+ 8, block[2], stride);\
-    name ## _idct_dc_add_c(dst+12, block[3], stride);\
-}
-
-MK_IDCT_DC_ADD4_C(vp7)
 MK_IDCT_DC_ADD4_C(vp8)
+#endif
 
 // because I like only having two parameters to pass functions...
 #define LOAD_PIXELS\
@@ -374,12 +379,6 @@ static maybe_inline void vp ## vpn ## _ ## dir ## _loop_filter ## size ## _inner
         }\
 }
 
-LOOP_FILTER(7, v, 16, 1, stride,)
-LOOP_FILTER(7, h, 16, stride, 1,)
-
-LOOP_FILTER(8, v, 16, 1, stride,)
-LOOP_FILTER(8, h, 16, stride, 1,)
-
 #define UV_LOOP_FILTER(vpn, dir, stridea, strideb) \
 LOOP_FILTER(vpn, dir, 8, stridea, strideb, av_always_inline) \
 static void vp ## vpn ## _ ## dir ## _loop_filter8uv_c(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,\
@@ -394,12 +393,6 @@ static void vp ## vpn ## _ ## dir ## _loop_filter8uv_inner_c(uint8_t *dstU, uint
   vp ## vpn ## _ ## dir ## _loop_filter8_inner_c(dstU, stride, fE, fI, hev_thresh);\
   vp ## vpn ## _ ## dir ## _loop_filter8_inner_c(dstV, stride, fE, fI, hev_thresh);\
 }
-
-UV_LOOP_FILTER(7, v, 1, stride)
-UV_LOOP_FILTER(7, h, stride, 1)
-
-UV_LOOP_FILTER(8, v, 1, stride)
-UV_LOOP_FILTER(8, h, stride, 1)
 
 #define LOOP_FILTER_SIMPLE(vpn) \
 static void vp ## vpn ## _v_loop_filter_simple_c(uint8_t *dst, ptrdiff_t stride, int flim)\
@@ -420,8 +413,21 @@ static void vp ## vpn ## _h_loop_filter_simple_c(uint8_t *dst, ptrdiff_t stride,
             filter_common(dst+i*stride, 1, 1, vpn);\
 }
 
+#if CONFIG_VP7_DECODER
+LOOP_FILTER(7, v, 16, 1, stride,)
+LOOP_FILTER(7, h, 16, stride, 1,)
+UV_LOOP_FILTER(7, v, 1, stride)
+UV_LOOP_FILTER(7, h, stride, 1)
 LOOP_FILTER_SIMPLE(7)
+#endif
+
+#if CONFIG_VP8_DECODER
+LOOP_FILTER(8, v, 16, 1, stride,)
+LOOP_FILTER(8, h, 16, stride, 1,)
+UV_LOOP_FILTER(8, v, 1, stride)
+UV_LOOP_FILTER(8, h, stride, 1)
 LOOP_FILTER_SIMPLE(8)
+#endif
 
 static const uint8_t subpel_filters[7][6] = {
     { 0,   6, 123,  12,   1,   0 },
@@ -613,7 +619,13 @@ VP8_BILINEAR(4)
 
 av_cold void ff_vp8dsp_init(VP8DSPContext *dsp, int vp7)
 {
-#define VPX(f) vp7 ? vp7 ## _ ## f : vp8 ## _ ## f
+#if CONFIG_VP7_DECODER && CONFIG_VP8_DECODER
+#define VPX(f) vp7 ? vp7_ ## f : vp8_ ## f
+#elif CONFIG_VP7_DECODER
+#define VPX(f) vp7_ ## f
+#else // CONFIG_VP8_DECODER
+#define VPX(f) vp8_ ## f
+#endif
 
     dsp->vp8_luma_dc_wht    = VPX(luma_dc_wht_c);
     dsp->vp8_luma_dc_wht_dc = VPX(luma_dc_wht_dc_c);
