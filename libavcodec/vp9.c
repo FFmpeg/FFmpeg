@@ -2011,12 +2011,13 @@ static void decode_mode(AVCodecContext *ctx)
     }
 }
 
-// FIXME remove tx argument, and merge cnt/eob arguments?
-static int decode_coeffs_b(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
-                           enum TxfmMode tx, unsigned (*cnt)[6][3],
-                           unsigned (*eob)[6][2], uint8_t (*p)[6][11],
-                           int nnz, const int16_t *scan, const int16_t (*nb)[2],
-                           const int16_t *band_counts, const int16_t *qmul)
+// FIXME merge cnt/eob arguments?
+static av_always_inline int
+decode_coeffs_b_generic(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
+                        int is_tx32x32, unsigned (*cnt)[6][3],
+                        unsigned (*eob)[6][2], uint8_t (*p)[6][11],
+                        int nnz, const int16_t *scan, const int16_t (*nb)[2],
+                        const int16_t *band_counts, const int16_t *qmul)
 {
     int i = 0, band = 0, band_left = band_counts[band];
     uint8_t *tp = p[0][nnz];
@@ -2108,7 +2109,7 @@ static int decode_coeffs_b(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
         }
         if (!--band_left)
             band_left = band_counts[++band];
-        if (tx == TX_32X32) // FIXME slow
+        if (is_tx32x32)
             coef[rc] = ((vp8_rac_get(c) ? -val : val) * qmul[!!i]) / 2;
         else
             coef[rc] = (vp8_rac_get(c) ? -val : val) * qmul[!!i];
@@ -2117,6 +2118,26 @@ static int decode_coeffs_b(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
     } while (++i < n_coeffs);
 
     return i;
+}
+
+static int decode_coeffs_b(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
+                           unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
+                           uint8_t (*p)[6][11], int nnz, const int16_t *scan,
+                           const int16_t (*nb)[2], const int16_t *band_counts,
+                           const int16_t *qmul)
+{
+    return decode_coeffs_b_generic(c, coef, n_coeffs, 0, cnt, eob, p,
+                                   nnz, scan, nb, band_counts, qmul);
+}
+
+static int decode_coeffs_b32(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
+                             unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
+                             uint8_t (*p)[6][11], int nnz, const int16_t *scan,
+                             const int16_t (*nb)[2], const int16_t *band_counts,
+                             const int16_t *qmul)
+{
+    return decode_coeffs_b_generic(c, coef, n_coeffs, 1, cnt, eob, p,
+                                   nnz, scan, nb, band_counts, qmul);
 }
 
 static void decode_coeffs(AVCodecContext *ctx)
@@ -2130,8 +2151,7 @@ static void decode_coeffs(AVCodecContext *ctx)
     int w4 = bwh_tab[1][b->bs][0] << 1, h4 = bwh_tab[1][b->bs][1] << 1;
     int end_x = FFMIN(2 * (s->cols - col), w4);
     int end_y = FFMIN(2 * (s->rows - row), h4);
-    int n, pl, x, y, step1d = 1 << b->tx, step = 1 << (b->tx * 2);
-    int uvstep1d = 1 << b->uvtx, uvstep = 1 << (b->uvtx * 2), res;
+    int n, pl, x, y, res;
     int16_t (*qmul)[2] = s->segmentation.feat[b->seg_id].qmul;
     int tx = 4 * s->lossless + b->tx;
     const int16_t * const *yscans = vp9_scans[tx];
@@ -2158,29 +2178,22 @@ static void decode_coeffs(AVCodecContext *ctx)
         MERGE(a, end_x, step, rd); \
     } while (0)
 
-    /* y tokens */
-    switch (b->tx) {
-    case TX_8X8:   MERGE_CTX(2, AV_RN16A); break;
-    case TX_16X16: MERGE_CTX(4, AV_RN32A); break;
-    case TX_32X32: MERGE_CTX(8, AV_RN64A); break;
+#define DECODE_Y_COEF_LOOP(step, mode_index, v) \
+    for (n = 0, y = 0; y < end_y; y += step) { \
+        for (x = 0; x < end_x; x += step, n += step * step) { \
+            enum TxfmType txtp = vp9_intra_txfm_type[b->mode[mode_index]]; \
+            res = decode_coeffs_b##v(&s->c, s->block + 16 * n, 16 * step * step, \
+                                     c, e, p, a[x] + l[y], yscans[txtp], \
+                                     ynbs[txtp], y_band_counts, qmul[0]); \
+            a[x] = l[y] = !!res; \
+            if (step >= 4) { \
+                AV_WN16A(&s->eob[n], res); \
+            } else { \
+                s->eob[n] = res; \
+            } \
+        } \
     }
-    for (n = 0, y = 0; y < end_y; y += step1d) {
-        for (x = 0; x < end_x; x += step1d, n += step) {
-            enum TxfmType txtp = vp9_intra_txfm_type[b->mode[b->tx == TX_4X4 &&
-                                                             b->bs > BS_8x8 ?
-                                                             n : 0]];
-            int nnz = a[x] + l[y];
-            res = decode_coeffs_b(&s->c, s->block + 16 * n, 16 * step,
-                                  b->tx, c, e, p, nnz, yscans[txtp],
-                                  ynbs[txtp], y_band_counts, qmul[0]);
-            a[x] = l[y] = !!res;
-            if (b->tx > TX_8X8) {
-                AV_WN16A(&s->eob[n], res);
-            } else {
-                s->eob[n] = res;
-            }
-        }
-    }
+
 #define SPLAT(la, end, step, cond) \
     if (step == 2) { \
         for (n = 1; n < end; n += step) \
@@ -2215,10 +2228,38 @@ static void decode_coeffs(AVCodecContext *ctx)
         SPLAT(a, end_x, step, end_x == w4); \
         SPLAT(l, end_y, step, end_y == h4); \
     } while (0)
+
+    /* y tokens */
     switch (b->tx) {
-    case TX_8X8:   SPLAT_CTX(2); break;
-    case TX_16X16: SPLAT_CTX(4); break;
-    case TX_32X32: SPLAT_CTX(8); break;
+    case TX_4X4:
+        DECODE_Y_COEF_LOOP(1, b->bs > BS_8x8 ? n : 0,);
+        break;
+    case TX_8X8:
+        MERGE_CTX(2, AV_RN16A);
+        DECODE_Y_COEF_LOOP(2, 0,);
+        SPLAT_CTX(2);
+        break;
+    case TX_16X16:
+        MERGE_CTX(4, AV_RN32A);
+        DECODE_Y_COEF_LOOP(4, 0,);
+        SPLAT_CTX(4);
+        break;
+    case TX_32X32:
+        MERGE_CTX(8, AV_RN64A);
+        DECODE_Y_COEF_LOOP(8, 0, 32);
+        SPLAT_CTX(8);
+        break;
+    }
+
+#define DECODE_UV_COEF_LOOP(step) \
+    for (n = 0, y = 0; y < end_y; y += step) { \
+        for (x = 0; x < end_x; x += step, n += step * step) { \
+            res = decode_coeffs_b(&s->c, s->uvblock[pl] + 16 * n, \
+                                  16 * step * step, c, e, p, a[x] + l[y], \
+                                  uvscan, uvnb, uv_band_counts, qmul[1]); \
+            a[x] = l[y] = !!res; \
+            s->uveob[pl][n] = res; \
+        } \
     }
 
     p = s->prob.coef[b->uvtx][1 /* uv */][!b->intra];
@@ -2232,28 +2273,30 @@ static void decode_coeffs(AVCodecContext *ctx)
         a = &s->above_uv_nnz_ctx[pl][col];
         l = &s->left_uv_nnz_ctx[pl][row & 7];
         switch (b->uvtx) {
-        case TX_8X8:   MERGE_CTX(2, AV_RN16A); break;
-        case TX_16X16: MERGE_CTX(4, AV_RN32A); break;
-        case TX_32X32: MERGE_CTX(8, AV_RN64A); break;
-        }
-        for (n = 0, y = 0; y < end_y; y += uvstep1d) {
-            for (x = 0; x < end_x; x += uvstep1d, n += uvstep) {
-                int nnz = a[x] + l[y];
-                res = decode_coeffs_b(&s->c, s->uvblock[pl] + 16 * n,
-                                      16 * uvstep, b->uvtx, c, e, p, nnz,
-                                      uvscan, uvnb, uv_band_counts, qmul[1]);
-                a[x] = l[y] = !!res;
-                if (b->uvtx > TX_8X8) {
-                    AV_WN16A(&s->uveob[pl][n], res);
-                } else {
-                    s->uveob[pl][n] = res;
-                }
-            }
-        }
-        switch (b->uvtx) {
-        case TX_8X8:   SPLAT_CTX(2); break;
-        case TX_16X16: SPLAT_CTX(4); break;
-        case TX_32X32: SPLAT_CTX(8); break;
+        case TX_4X4:
+            DECODE_UV_COEF_LOOP(1);
+            break;
+        case TX_8X8:
+            MERGE_CTX(2, AV_RN16A);
+            DECODE_UV_COEF_LOOP(2);
+            SPLAT_CTX(2);
+            break;
+        case TX_16X16:
+            MERGE_CTX(4, AV_RN32A);
+            DECODE_UV_COEF_LOOP(4);
+            SPLAT_CTX(4);
+            break;
+        case TX_32X32:
+            MERGE_CTX(8, AV_RN64A);
+            // a 64x64 (max) uv block can ever only contain 1 tx32x32 block
+            // so there is no need to loop
+            res = decode_coeffs_b32(&s->c, s->uvblock[pl],
+                                    1024, c, e, p, a[0] + l[0],
+                                    uvscan, uvnb, uv_band_counts, qmul[1]);
+            a[0] = l[0] = !!res;
+            AV_WN16A(&s->uveob[pl][0], res);
+            SPLAT_CTX(8);
+            break;
         }
     }
 }
