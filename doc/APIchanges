@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-02-16 - db3c970 - lavf 55.33.100 - avio.h
+  Add avio_find_protocol_name() to find out the name of the protocol that would
+  be selected for a given URL.
+
 2014-02-xx - xxxxxxx - lavu 53.3.0 - frame.h
   Add AV_FRAME_DATA_DOWNMIX_INFO value to the AVFrameSideDataType enum and
   downmix_info.h API, which identify downmix-related metadata.
