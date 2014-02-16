@@ -4014,8 +4014,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         if (h->deblocking_filter) {
             h->slice_alpha_c0_offset += get_se_golomb(&h->gb) << 1;
             h->slice_beta_offset     += get_se_golomb(&h->gb) << 1;
-            if (h->slice_alpha_c0_offset > 104U ||
-                h->slice_beta_offset     > 104U) {
+            if (h->slice_alpha_c0_offset < 52 - 12 || h->slice_alpha_c0_offset > 52 + 12 ||
+                h->slice_beta_offset     < 52 - 12 || h->slice_beta_offset     > 52 + 12) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "deblocking filter parameters %d %d out of range\n",
                        h->slice_alpha_c0_offset, h->slice_beta_offset);
