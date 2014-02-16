@@ -342,6 +342,7 @@ struct AVFormatContext;
  * Allocate and read the payload of a packet and initialize its
  * fields with default values.
  *
+ * @param s    associated IO context
  * @param pkt packet
  * @param size desired payload size
  * @return >0 (read size) if OK, AVERROR_xxx otherwise
@@ -357,6 +358,7 @@ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size);
  * when there is no reasonable way to know (an upper bound of)
  * the final size.
  *
+ * @param s    associated IO context
  * @param pkt packet
  * @param size amount of data to read
  * @return >0 (read size) if OK, AVERROR_xxx otherwise, previous data
@@ -1269,6 +1271,7 @@ const AVClass *avformat_get_class(void);
  *
  * When muxing, should be called by the user before avformat_write_header().
  *
+ * @param s media file handle
  * @param c If non-NULL, the AVCodecContext corresponding to the new stream
  * will be initialized to use this codec. This is needed for e.g. codec-specific
  * defaults to be set, so codec should be provided if it is known.
@@ -1297,6 +1300,7 @@ AVInputFormat *av_find_input_format(const char *short_name);
 /**
  * Guess the file format.
  *
+ * @param pd        data to be probed
  * @param is_opened Whether the file is already opened; determines whether
  *                  demuxers with or without AVFMT_NOFILE are probed.
  */
@@ -1305,6 +1309,7 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened);
 /**
  * Guess the file format.
  *
+ * @param pd        data to be probed
  * @param is_opened Whether the file is already opened; determines whether
  *                  demuxers with or without AVFMT_NOFILE are probed.
  * @param score_max A probe score larger that this is required to accept a
@@ -1438,6 +1443,8 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt);
 /**
  * Seek to the keyframe at timestamp.
  * 'timestamp' in 'stream_index'.
+ *
+ * @param s media file handle
  * @param stream_index If stream_index is (-1), a default
  * stream is selected, and timestamp is automatically converted
  * from AV_TIME_BASE units to the stream specific time_base.
@@ -1464,6 +1471,7 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
  * If flags contain AVSEEK_FLAG_ANY, then non-keyframes are treated as
  * keyframes (this may not be supported by all demuxers).
  *
+ * @param s media file handle
  * @param stream_index index of the stream which is used as time base reference
  * @param min_ts smallest acceptable timestamp
  * @param ts target timestamp
@@ -1700,6 +1708,7 @@ void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
  *
  * @param tags list of supported codec_id-codec_tag pairs, as stored
  * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
+ * @param tag  codec tag to match to a codec ID
  */
 enum AVCodecID av_codec_get_id(const struct AVCodecTag * const *tags, unsigned int tag);
 
@@ -1709,6 +1718,7 @@ enum AVCodecID av_codec_get_id(const struct AVCodecTag * const *tags, unsigned i
  *
  * @param tags list of supported codec_id-codec_tag pairs, as stored
  * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
+ * @param id   codec ID to match to a codec tag
  */
 unsigned int av_codec_get_tag(const struct AVCodecTag * const *tags, enum AVCodecID id);
 
@@ -1716,6 +1726,9 @@ int av_find_default_stream_index(AVFormatContext *s);
 
 /**
  * Get the index for a specific timestamp.
+ *
+ * @param st        stream that the timestamp belongs to
+ * @param timestamp timestamp to retrieve the index for
  * @param flags if AVSEEK_FLAG_BACKWARD then the returned index will correspond
  *                 to the timestamp which is <= the requested one, if backward
  *                 is 0, then it will be >=
@@ -1812,6 +1825,7 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size);
  * Return a positive value if the given filename has one of the given
  * extensions, 0 otherwise.
  *
+ * @param filename   file name to check against the given extensions
  * @param extensions a comma-separated list of filename extensions
  */
 int av_match_ext(const char *filename, const char *extensions);
@@ -1819,6 +1833,8 @@ int av_match_ext(const char *filename, const char *extensions);
 /**
  * Test if the given container can store a codec.
  *
+ * @param ofmt           container to check for compatibility
+ * @param codec_id       codec to potentially store in container
  * @param std_compliance standards compliance level, one of FF_COMPLIANCE_*
  *
  * @return 1 if codec with ID codec_id can be stored in ofmt, 0 if it cannot.

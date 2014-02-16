@@ -4108,7 +4108,9 @@ void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
 /**
  * Put a string representing the codec tag codec_tag in buf.
  *
+ * @param buf       buffer to place codec tag in
  * @param buf_size size in bytes of buf
+ * @param codec_tag codec tag to assign
  * @return the length of the string that would have been generated if
  * enough space had been available, excluding the trailing null
  */
