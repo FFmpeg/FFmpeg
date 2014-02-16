@@ -112,7 +112,7 @@ to enable it.
 @float note
 x265 is under the GNU Public License Version 2 or later
 (see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for
-details), you must upgrade FFmpeg's license to GPL in order to use it.
+details), you must upgrade Libav's license to GPL in order to use it.
 @end float
 
 @section libilbc
