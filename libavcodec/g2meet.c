@@ -733,8 +733,10 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             c->tiles_y = (c->height + c->tile_height - 1) / c->tile_height;
             c->bpp = bytestream2_get_byte(&bc);
             if (c->bpp == 32) {
-                if (bytestream2_get_bytes_left(&bc) < 16 || (chunk_size - 21) < 16 ) {
-                    av_log(avctx, AV_LOG_ERROR, "Display info: missing bitmasks!\n");
+                if (bytestream2_get_bytes_left(&bc) < 16 ||
+                    (chunk_size - 21) < 16 ) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Display info: missing bitmasks!\n");
                     return AVERROR_INVALIDDATA;
                 }
                 r_mask = bytestream2_get_be32(&bc);
@@ -747,8 +749,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                     return AVERROR_PATCHWELCOME;
                 }
             } else {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Unsupported bpp=%d in the display info!\n", c->bpp);
+                avpriv_request_sample(avctx, "bpp=%d", c->bpp);
                 return AVERROR_PATCHWELCOME;
             }
             if (g2m_init_buffers(c)) {
