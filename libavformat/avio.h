@@ -318,6 +318,7 @@ int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
  *
  * @param s Used to return the pointer to the created AVIOContext.
  * In case of failure the pointed to value is set to NULL.
+ * @param url resource to access
  * @param flags flags which control how the resource indicated by url
  * is to be opened
  * @return 0 in case of success, a negative value corresponding to an
@@ -333,6 +334,7 @@ int avio_open(AVIOContext **s, const char *url, int flags);
  *
  * @param s Used to return the pointer to the created AVIOContext.
  * In case of failure the pointed to value is set to NULL.
+ * @param url resource to access
  * @param flags flags which control how the resource indicated by url
  * is to be opened
  * @param int_cb an interrupt callback to be used at the protocols level
@@ -406,6 +408,8 @@ const char *avio_enum_protocols(void **opaque, int output);
 /**
  * Pause and resume playing - only meaningful if using a network streaming
  * protocol (e.g. MMS).
+ *
+ * @param h     IO context from which to call the read_pause function pointer
  * @param pause 1 for pause, 0 for resume
  */
 int     avio_pause(AVIOContext *h, int pause);
@@ -413,6 +417,8 @@ int     avio_pause(AVIOContext *h, int pause);
 /**
  * Seek to a given timestamp relative to some component stream.
  * Only meaningful if using a network streaming protocol (e.g. MMS.).
+ *
+ * @param h IO context from which to call the seek function pointers
  * @param stream_index The stream index that the timestamp is relative to.
  *        If stream_index is (-1) the timestamp should be in AV_TIME_BASE
  *        units from the beginning of the presentation.
