@@ -38,7 +38,7 @@ av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt,
             c->lpc = ff_flac_lpc_32_sse4;
     }
     if (EXTERNAL_XOP(cpu_flags)) {
-        if (bps > 16)
+        if (bps > 16 && CONFIG_FLAC_DECODER)
             c->lpc = ff_flac_lpc_32_xop;
     }
 #endif
