@@ -27,10 +27,19 @@
  * overlapped 8x8 block sums, rather than the original gaussian weights.
  */
 
+#include "config.h"
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#if HAVE_ISATTY
+#if HAVE_IO_H
+#include <io.h>
+#endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#endif
 
 #define FFSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 #define FFMIN(a,b) ((a) > (b) ? (b) : (a))
@@ -149,9 +158,29 @@ uint64_t ssd_plane( const uint8_t *pix1, const uint8_t *pix2, int size )
     return ssd;
 }
 
-double ssd_to_psnr( uint64_t ssd, uint64_t denom )
+static double ssd_to_psnr( uint64_t ssd, uint64_t denom )
 {
     return -10*log((double)ssd/(denom*255*255))/log(10);
+}
+
+static double ssim_db( double ssim, double weight )
+{
+    return 10*(log(weight)/log(10)-log(weight-ssim)/log(10));
+}
+
+static void print_results(uint64_t ssd[3], double ssim[3], int frames, int w, int h)
+{
+    printf( "PSNR Y:%.3f  U:%.3f  V:%.3f  All:%.3f | ",
+            ssd_to_psnr( ssd[0], (uint64_t)frames*w*h ),
+            ssd_to_psnr( ssd[1], (uint64_t)frames*w*h/4 ),
+            ssd_to_psnr( ssd[2], (uint64_t)frames*w*h/4 ),
+            ssd_to_psnr( ssd[0] + ssd[1] + ssd[2], (uint64_t)frames*w*h*3/2 ) );
+    printf( "SSIM Y:%.5f U:%.5f V:%.5f All:%.5f (%.5f)",
+            ssim[0] / frames,
+            ssim[1] / frames,
+            ssim[2] / frames,
+            (ssim[0]*4 + ssim[1] + ssim[2]) / (frames*6),
+            ssim_db(ssim[0] * 4 + ssim[1] + ssim[2], frames*6));
 }
 
 int main(int argc, char* argv[])
@@ -163,7 +192,7 @@ int main(int argc, char* argv[])
     double ssim[3] = {0,0,0};
     int frame_size, w, h;
     int frames, seek;
-    int i;
+    int i, istty = 1;
 
     if( argc<4 || 2 != sscanf(argv[3], "%dx%d", &w, &h) )
     {
@@ -186,31 +215,39 @@ int main(int argc, char* argv[])
     seek = argc<5 ? 0 : atoi(argv[4]);
     fseek(f[seek<0], seek < 0 ? -seek : seek, SEEK_SET);
 
+#if HAVE_ISATTY
+    istty = isatty(0) && isatty(2);
+#endif
     for( frames=0;; frames++ )
     {
+        uint64_t ssd_one[3];
+        double ssim_one[3];
         if( fread(buf[0], frame_size, 1, f[0]) != 1) break;
         if( fread(buf[1], frame_size, 1, f[1]) != 1) break;
         for( i=0; i<3; i++ )
         {
-            ssd[i]  += ssd_plane ( plane[0][i], plane[1][i], w*h>>2*!!i );
-            ssim[i] += ssim_plane( plane[0][i], w>>!!i,
-                                   plane[1][i], w>>!!i,
-                                   w>>!!i, h>>!!i, temp, NULL );
+            ssd_one[i]  = ssd_plane ( plane[0][i], plane[1][i], w*h>>2*!!i );
+            ssim_one[i] = ssim_plane( plane[0][i], w>>!!i,
+                                     plane[1][i], w>>!!i,
+                                     w>>!!i, h>>!!i, temp, NULL );
+            ssd[i] += ssd_one[i];
+            ssim[i] += ssim_one[i];
         }
+
+        printf("Frame %d | ", frames);
+        print_results(ssd_one, ssim_one, 1, w, h);
+        if (istty) {
+            printf("                \r");
+            fflush(stdout);
+        } else
+            printf("\n");
     }
 
     if( !frames ) return 0;
 
-    printf( "PSNR Y:%.3f  U:%.3f  V:%.3f  All:%.3f\n",
-            ssd_to_psnr( ssd[0], (uint64_t)frames*w*h ),
-            ssd_to_psnr( ssd[1], (uint64_t)frames*w*h/4 ),
-            ssd_to_psnr( ssd[2], (uint64_t)frames*w*h/4 ),
-            ssd_to_psnr( ssd[0] + ssd[1] + ssd[2], (uint64_t)frames*w*h*3/2 ) );
-    printf( "SSIM Y:%.5f U:%.5f V:%.5f All:%.5f\n",
-            ssim[0] / frames,
-            ssim[1] / frames,
-            ssim[2] / frames,
-            (ssim[0]*4 + ssim[1] + ssim[2]) / (frames*6) );
+    printf("Total %d frames | ", frames);
+    print_results(ssd, ssim, frames, w, h);
+    printf("\n");
 
     return 0;
 }
