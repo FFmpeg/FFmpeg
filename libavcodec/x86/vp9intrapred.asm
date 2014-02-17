@@ -638,7 +638,7 @@ cglobal vp9_ipred_dl_16x16, 4, 4, 6, dst, stride, l, a
     RET
 
 INIT_XMM %1
-cglobal vp9_ipred_dl_32x32, 4, 4, 8, dst, stride, cnt, a, dst16
+cglobal vp9_ipred_dl_32x32, 4, 5, 8, dst, stride, cnt, a, dst16
     mova                    m5, [pb_1toE_2xF]
     mova                    m0, [aq]
     mova                    m1, [aq+16]
@@ -1344,7 +1344,7 @@ cglobal vp9_ipred_hu_16x16, 3, 4, 5, dst, stride, l
     RET
 
 INIT_XMM %1
-cglobal vp9_ipred_hu_32x32, 3, 3, 7, dst, stride, l
+cglobal vp9_ipred_hu_32x32, 3, 7, 7, dst, stride, l
     mova                    m0, [lq]
     mova                    m1, [lq+16]
     mova                    m2, [pb_Fto0]
