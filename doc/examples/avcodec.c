@@ -24,10 +24,10 @@
  * @file
  * libavcodec API use example.
  *
+ * @example avcodec.c
  * Note that libavcodec only handles codecs (mpeg, mpeg4, etc...),
  * not file formats (avi, vob, mp4, mov, mkv, mxf, flv, mpegts, mpegps, etc...). See library 'libavformat' for the
  * format handling
- * @example doc/examples/decoding_encoding.c
  */
 
 #include <math.h>

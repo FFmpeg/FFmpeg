@@ -1245,7 +1245,7 @@ COMPONENT_LIST="
 
 EXAMPLE_LIST="
     avio_reading_example
-    decoding_encoding_example
+    avcodec_example
     demuxing_decoding_example
     filtering_audio_example
     filtering_video_example
@@ -2403,7 +2403,7 @@ zmq_filter_deps="libzmq"
 
 # examples
 avio_reading="avformat avcodec avutil"
-decoding_encoding_example_deps="avcodec avutil"
+avcodec_example_deps="avcodec avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"
 filtering_audio_example_deps="avfilter avcodec avformat avutil"
 filtering_video_example_deps="avfilter avcodec avformat avutil"

@@ -5,7 +5,6 @@ LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
 LIBMINOR   := $(lib$(NAME)_VERSION_MINOR)
 INCINSTDIR := $(INCDIR)/lib$(NAME)
 
-LIB_EXAMPLES := $(LIB_EXAMPLES) $(EXAMPLES)
 INSTHEADERS := $(INSTHEADERS) $(HEADERS:%=$(SUBDIR)%)
 
 all-$(CONFIG_STATIC): $(SUBDIR)$(LIBNAME)
@@ -43,10 +42,10 @@ install-libs-$(CONFIG_STATIC): install-lib$(NAME)-static
 install-libs-$(CONFIG_SHARED): install-lib$(NAME)-shared
 
 define RULES
-$(EXAMPLES) $(TOOLS): THISLIB = $(FULLNAME:%=$(LD_LIB))
-$(TESTPROGS):         THISLIB = $(SUBDIR)$(LIBNAME)
+$(TOOLS):     THISLIB = $(FULLNAME:%=$(LD_LIB))
+$(TESTPROGS): THISLIB = $(SUBDIR)$(LIBNAME)
 
-$(EXAMPLES) $(TESTPROGS) $(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
+$(TESTPROGS) $(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
 	$$(LD) $(LDFLAGS) $$(LD_O) $$(filter %.o,$$^) $$(THISLIB) $(FFEXTRALIBS) $$(ELIBS)
 
 $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
@@ -62,7 +61,7 @@ $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(DEP_LIBS)
 endif
 
 clean::
-	$(RM) $(addprefix $(SUBDIR),*-example$(EXESUF) *-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
+	$(RM) $(addprefix $(SUBDIR),*-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
 	    $(CLEANSUFFIXES:%=$(SUBDIR)$(ARCH)/%)
 
 distclean:: clean
@@ -106,8 +105,7 @@ endef
 
 $(eval $(RULES))
 
-$(EXAMPLES) $(TOOLS): $(DEP_LIBS) $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
-$(TESTPROGS):         $(DEP_LIBS) $(SUBDIR)$(LIBNAME)
+$(TOOLS):     $(DEP_LIBS) $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
+$(TESTPROGS): $(DEP_LIBS) $(SUBDIR)$(LIBNAME)
 
-examples: $(EXAMPLES)
 testprogs: $(TESTPROGS)
