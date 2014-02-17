@@ -99,9 +99,11 @@ enum DCTTransformType {
 
 /**
  * Set up DCT.
+ *
  * @param nbits           size of the input array:
  *                        (1 << nbits)     for DCT-II, DCT-III and DST-I
  *                        (1 << nbits) + 1 for DCT-I
+ * @param type            the type of transform
  *
  * @note the first element of the input of DST-I is ignored
  */
