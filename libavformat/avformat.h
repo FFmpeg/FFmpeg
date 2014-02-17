@@ -2062,24 +2062,22 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options);
  * function.
  *
  * @param s media file handle
- * @param pkt @parblock
- *            The packet containing the data to be written. Note that unlike
+ * @param pkt The packet containing the data to be written. Note that unlike
  *            av_interleaved_write_frame(), this function does not take
  *            ownership of the packet passed to it (though some muxers may make
  *            an internal reference to the input packet).
- *
+ *            <br>
  *            This parameter can be NULL (at any time, not just at the end), in
  *            order to immediately flush data buffered within the muxer, for
  *            muxers that buffer up data internally before writing it to the
  *            output.
- *
+ *            <br>
  *            Packet's @ref AVPacket.stream_index "stream_index" field must be
  *            set to the index of the corresponding stream in @ref
  *            AVFormatContext.streams "s->streams". It is very strongly
  *            recommended that timing information (@ref AVPacket.pts "pts", @ref
  *            AVPacket.dts "dts", @ref AVPacket.duration "duration") is set to
  *            correct values.
- *            @endparblock
  * @return < 0 on error, = 0 if OK, 1 if flushed and there is no more data to flush
  *
  * @see av_interleaved_write_frame()
@@ -2095,26 +2093,24 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  * av_write_frame() instead of this function.
  *
  * @param s media file handle
- * @param pkt @parblock
- *            The packet containing the data to be written.
- *
+ * @param pkt The packet containing the data to be written.
+ *            <br>
  *            If the packet is reference-counted, this function will take
  *            ownership of this reference and unreference it later when it sees
  *            fit.
  *            The caller must not access the data through this reference after
  *            this function returns. If the packet is not reference-counted,
  *            libavformat will make a copy.
- *
+ *            <br>
  *            This parameter can be NULL (at any time, not just at the end), to
  *            flush the interleaving queues.
- *
+ *            <br>
  *            Packet's @ref AVPacket.stream_index "stream_index" field must be
  *            set to the index of the corresponding stream in @ref
  *            AVFormatContext.streams "s->streams". It is very strongly
  *            recommended that timing information (@ref AVPacket.pts "pts", @ref
  *            AVPacket.dts "dts", @ref AVPacket.duration "duration") is set to
  *            correct values.
- *            @endparblock
  *
  * @return 0 on success, a negative AVERROR on error. Libavformat will always
  *         take care of freeing the packet, even if this function fails.
