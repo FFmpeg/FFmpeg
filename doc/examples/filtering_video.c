@@ -24,7 +24,7 @@
 /**
  * @file
  * API example for decoding and filtering
- * @example doc/examples/filtering_video.c
+ * @example filtering_video.c
  */
 
 #define _XOPEN_SOURCE 600 /* for usleep */

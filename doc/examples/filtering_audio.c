@@ -25,7 +25,7 @@
 /**
  * @file
  * API example for audio decoding and filtering
- * @example doc/examples/filtering_audio.c
+ * @example filtering_audio.c
  */
 
 #include <unistd.h>

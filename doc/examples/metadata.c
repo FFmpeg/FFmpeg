@@ -23,7 +23,7 @@
 /**
  * @file
  * Shows how the metadata API can be used in application programs.
- * @example doc/examples/metadata.c
+ * @example metadata.c
  */
 
 #include <stdio.h>
