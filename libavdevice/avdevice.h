@@ -191,4 +191,43 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s,
                                         enum AVDevToAppMessageType type,
                                         void *data, size_t data_size);
 
+/**
+ * Structure describes basic parameters of the device.
+ */
+typedef struct AVDeviceInfo {
+    char *device_name;                   /**< device name, format depends on device */
+    char *device_description;            /**< human friendly name */
+} AVDeviceInfo;
+
+/**
+ * List of devices.
+ */
+typedef struct AVDeviceInfoList {
+    AVDeviceInfo **devices;              /**< list of autodetected devices */
+    int nb_devices;                      /**< number of autodetected devices */
+    int default_device;                  /**< index of default device or -1 if no default */
+} AVDeviceInfoList;
+
+/**
+ * List devices.
+ *
+ * Returns available device names and their parameters.
+ *
+ * @note: Some devices may accept system-dependent device names that cannot be
+ *        autodetected. The list returned by this function cannot be assumed to
+ *        be always completed.
+ *
+ * @param s                device context.
+ * @param[out] device_list list of autodetected devices.
+ * @return count of autodetected devices, negative on error.
+ */
+int avdevice_list_devices(struct AVFormatContext *s, AVDeviceInfoList **device_list);
+
+/**
+ * Convinient function to free result of avdevice_list_devices().
+ *
+ * @param devices device list to be freed.
+ */
+void avdevice_free_list_devices(AVDeviceInfoList **device_list);
+
 #endif /* AVDEVICE_AVDEVICE_H */

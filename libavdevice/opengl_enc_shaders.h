@@ -181,7 +181,7 @@ static const char * const FF_OPENGL_FRAGMENT_SHADER_GRAY =
     "varying vec2 texture_coordinate;"
     "void main()"
     "{"
-        "float c = texture2D(u_texture0, texture_coordinate);"
+        "float c = texture2D(u_texture0, texture_coordinate).r;"
         "gl_FragColor = vec4(c, c, c, 1.0);"
     "}";
 
