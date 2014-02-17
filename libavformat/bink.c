@@ -79,6 +79,7 @@ static int read_header(AVFormatContext *s)
     uint32_t pos, next_pos;
     uint16_t flags;
     int keyframe;
+    int ret;
 
     vst = avformat_new_stream(s, NULL);
     if (!vst)
@@ -177,8 +178,9 @@ static int read_header(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "invalid frame index table\n");
             return AVERROR(EIO);
         }
-        av_add_index_entry(vst, pos, i, next_pos - pos, 0,
-                           keyframe ? AVINDEX_KEYFRAME : 0);
+        if ((ret = av_add_index_entry(vst, pos, i, next_pos - pos, 0,
+                                      keyframe ? AVINDEX_KEYFRAME : 0)) < 0)
+            return ret;
     }
 
     avio_skip(pb, 4);
