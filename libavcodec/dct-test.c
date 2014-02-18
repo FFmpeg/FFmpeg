@@ -45,13 +45,11 @@
 #include "aandcttab.h"
 #include "faandct.h"
 #include "faanidct.h"
+#include "ppc/fdct.h"
 #include "x86/fdct.h"
 #include "x86/idct_xvid.h"
 #include "x86/simple_idct.h"
 #include "dctref.h"
-
-// ALTIVEC
-void ff_fdct_altivec(int16_t *block);
 
 // ARM
 void ff_j_rev_dct_arm(int16_t *data);

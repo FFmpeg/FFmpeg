@@ -16,11 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PPC_FDCTDSP_H
-#define AVCODEC_PPC_FDCTDSP_H
+#ifndef AVCODEC_PPC_FDCT_H
+#define AVCODEC_PPC_FDCT_H
 
 #include <stdint.h>
 
 void ff_fdct_altivec(int16_t *block);
 
-#endif /* AVCODEC_PPC_FDCTDSP_H */
+#endif /* AVCODEC_PPC_FDCT_H */
