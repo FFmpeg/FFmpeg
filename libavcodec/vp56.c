@@ -664,9 +664,9 @@ av_cold int ff_vp56_init(AVCodecContext *avctx, int flip, int has_alpha)
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
     ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);
     for (i = 0; i < 64; i++) {
-#define T(x) (x >> 3) | ((x & 7) << 3)
-        s->idct_scantable[i] = T(ff_zigzag_direct[i]);
-#undef T
+#define TRANSPOSE(x) (x >> 3) | ((x & 7) << 3)
+        s->idct_scantable[i] = TRANSPOSE(ff_zigzag_direct[i]);
+#undef TRANSPOSE
     }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->frames); i++) {
