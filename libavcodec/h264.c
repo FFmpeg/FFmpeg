@@ -3471,8 +3471,12 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
          h->height != h->avctx->coded_height  ||
          needs_reinit)) {
         if (h != h0) {
-            av_log(h->avctx, AV_LOG_ERROR, "changing width/height on "
-                   "slice %d\n", h0->current_slice + 1);
+            av_log(h->avctx, AV_LOG_ERROR,
+                   "changing width %d -> %d / height %d -> %d on "
+                   "slice %d\n",
+                   h->width, h->avctx->coded_width,
+                   h->height, h->avctx->coded_height,
+                   h0->current_slice + 1);
             return AVERROR_INVALIDDATA;
         }
 
