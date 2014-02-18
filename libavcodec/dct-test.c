@@ -45,18 +45,12 @@
 #include "aandcttab.h"
 #include "faandct.h"
 #include "faanidct.h"
+#include "arm/idct.h"
 #include "ppc/fdct.h"
 #include "x86/fdct.h"
 #include "x86/idct_xvid.h"
 #include "x86/simple_idct.h"
 #include "dctref.h"
-
-// ARM
-void ff_j_rev_dct_arm(int16_t *data);
-void ff_simple_idct_arm(int16_t *data);
-void ff_simple_idct_armv5te(int16_t *data);
-void ff_simple_idct_armv6(int16_t *data);
-void ff_simple_idct_neon(int16_t *data);
 
 struct algo {
     const char *name;

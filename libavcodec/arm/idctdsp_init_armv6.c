@@ -23,11 +23,8 @@
 #include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/idctdsp.h"
+#include "idct.h"
 #include "idctdsp_arm.h"
-
-void ff_simple_idct_armv6(int16_t *data);
-void ff_simple_idct_put_armv6(uint8_t *dest, int line_size, int16_t *data);
-void ff_simple_idct_add_armv6(uint8_t *dest, int line_size, int16_t *data);
 
 void ff_add_pixels_clamped_armv6(const int16_t *block, uint8_t *pixels,
                                  int line_size);
