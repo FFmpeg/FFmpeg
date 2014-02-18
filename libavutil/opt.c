@@ -195,6 +195,15 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
 static int set_string_number(void *obj, void *target_obj, const AVOption *o, const char *val, void *dst)
 {
     int ret = 0, notfirst = 0;
+    int num, den;
+    char c;
+
+    if (sscanf(val, "%d%*1[:/]%d%c", &num, &den, &c) == 2) {
+        if ((ret = write_number(obj, o, dst, 1, den, num)) >= 0)
+            return ret;
+        ret = 0;
+    }
+
     for (;;) {
         int i, den = 1;
         char buf[256];
