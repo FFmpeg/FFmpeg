@@ -86,6 +86,7 @@ typedef int64_t CoefSumType;
 #define AC3ENC_OPT_SMALL_ROOM       2
 #define AC3ENC_OPT_DOWNMIX_LTRT     1
 #define AC3ENC_OPT_DOWNMIX_LORO     2
+#define AC3ENC_OPT_DOWNMIX_DPLII    3 // reserved value in A/52, but used by encoders to indicate DPL2
 #define AC3ENC_OPT_ADCONV_STANDARD  0
 #define AC3ENC_OPT_ADCONV_HDCD      1
 
