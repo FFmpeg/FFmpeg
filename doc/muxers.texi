@@ -179,141 +179,6 @@ images.
 
 @end table
 
-@section MOV/MP4/ISMV
-
-The mov/mp4/ismv muxer supports fragmentation. Normally, a MOV/MP4
-file has all the metadata about all packets stored in one location
-(written at the end of the file, it can be moved to the start for
-better playback using the @command{qt-faststart} tool). A fragmented
-file consists of a number of fragments, where packets and metadata
-about these packets are stored together. Writing a fragmented
-file has the advantage that the file is decodable even if the
-writing is interrupted (while a normal MOV/MP4 is undecodable if
-it is not properly finished), and it requires less memory when writing
-very long files (since writing normal MOV/MP4 files stores info about
-every single packet in memory until the file is closed). The downside
-is that it is less compatible with other applications.
-
-Fragmentation is enabled by setting one of the AVOptions that define
-how to cut the file into fragments:
-
-@table @option
-@item -movflags frag_keyframe
-Start a new fragment at each video keyframe.
-@item -frag_duration @var{duration}
-Create fragments that are @var{duration} microseconds long.
-@item -frag_size @var{size}
-Create fragments that contain up to @var{size} bytes of payload data.
-@item -movflags frag_custom
-Allow the caller to manually choose when to cut fragments, by
-calling @code{av_write_frame(ctx, NULL)} to write a fragment with
-the packets written so far. (This is only useful with other
-applications integrating libavformat, not from @command{avconv}.)
-@item -min_frag_duration @var{duration}
-Don't create fragments that are shorter than @var{duration} microseconds long.
-@end table
-
-If more than one condition is specified, fragments are cut when
-one of the specified conditions is fulfilled. The exception to this is
-@code{-min_frag_duration}, which has to be fulfilled for any of the other
-conditions to apply.
-
-Additionally, the way the output file is written can be adjusted
-through a few other options:
-
-@table @option
-@item -movflags empty_moov
-Write an initial moov atom directly at the start of the file, without
-describing any samples in it. Generally, an mdat/moov pair is written
-at the start of the file, as a normal MOV/MP4 file, containing only
-a short portion of the file. With this option set, there is no initial
-mdat atom, and the moov atom only describes the tracks but has
-a zero duration.
-
-Files written with this option set do not work in QuickTime.
-This option is implicitly set when writing ismv (Smooth Streaming) files.
-@item -movflags separate_moof
-Write a separate moof (movie fragment) atom for each track. Normally,
-packets for all tracks are written in a moof atom (which is slightly
-more efficient), but with this option set, the muxer writes one moof/mdat
-pair for each track, making it easier to separate tracks.
-
-This option is implicitly set when writing ismv (Smooth Streaming) files.
-@item -movflags faststart
-Run a second pass moving the index (moov atom) to the beginning of the file.
-This operation can take a while, and will not work in various situations such
-as fragmented output, thus it is not enabled by default.
-@end table
-
-Smooth Streaming content can be pushed in real time to a publishing
-point on IIS with this muxer. Example:
-@example
-avconv -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
-@end example
-
-@section mpegts
-
-MPEG transport stream muxer.
-
-This muxer implements ISO 13818-1 and part of ETSI EN 300 468.
-
-The muxer options are:
-
-@table @option
-@item -mpegts_original_network_id @var{number}
-Set the original_network_id (default 0x0001). This is unique identifier
-of a network in DVB. Its main use is in the unique identification of a
-service through the path Original_Network_ID, Transport_Stream_ID.
-@item -mpegts_transport_stream_id @var{number}
-Set the transport_stream_id (default 0x0001). This identifies a
-transponder in DVB.
-@item -mpegts_service_id @var{number}
-Set the service_id (default 0x0001) also known as program in DVB.
-@item -mpegts_pmt_start_pid @var{number}
-Set the first PID for PMT (default 0x1000, max 0x1f00).
-@item -mpegts_start_pid @var{number}
-Set the first PID for data packets (default 0x0100, max 0x0f00).
-@end table
-
-The recognized metadata settings in mpegts muxer are @code{service_provider}
-and @code{service_name}. If they are not set the default for
-@code{service_provider} is "Libav" and the default for
-@code{service_name} is "Service01".
-
-@example
-avconv -i file.mpg -c copy \
-     -mpegts_original_network_id 0x1122 \
-     -mpegts_transport_stream_id 0x3344 \
-     -mpegts_service_id 0x5566 \
-     -mpegts_pmt_start_pid 0x1500 \
-     -mpegts_start_pid 0x150 \
-     -metadata service_provider="Some provider" \
-     -metadata service_name="Some Channel" \
-     -y out.ts
-@end example
-
-@section null
-
-Null muxer.
-
-This muxer does not generate any output file, it is mainly useful for
-testing or benchmarking purposes.
-
-For example to benchmark decoding with @command{avconv} you can use the
-command:
-@example
-avconv -benchmark -i INPUT -f null out.null
-@end example
-
-Note that the above command does not read or write the @file{out.null}
-file, but specifying the output file is required by the @command{avconv}
-syntax.
-
-Alternatively you can write the command as:
-@example
-avconv -benchmark -i INPUT -f null -
-@end example
-
 @section matroska
 
 Matroska container muxer.
@@ -398,36 +263,76 @@ have no effect if it is not.
 
 @end table
 
-@section segment
+@section MOV/MP4/ISMV
 
-Basic stream segmenter.
+The mov/mp4/ismv muxer supports fragmentation. Normally, a MOV/MP4
+file has all the metadata about all packets stored in one location
+(written at the end of the file, it can be moved to the start for
+better playback using the @command{qt-faststart} tool). A fragmented
+file consists of a number of fragments, where packets and metadata
+about these packets are stored together. Writing a fragmented
+file has the advantage that the file is decodable even if the
+writing is interrupted (while a normal MOV/MP4 is undecodable if
+it is not properly finished), and it requires less memory when writing
+very long files (since writing normal MOV/MP4 files stores info about
+every single packet in memory until the file is closed). The downside
+is that it is less compatible with other applications.
 
-The segmenter muxer outputs streams to a number of separate files of nearly
-fixed duration. Output filename pattern can be set in a fashion similar to
-@ref{image2}.
-
-Every segment starts with a video keyframe, if a video stream is present.
-The segment muxer works best with a single constant frame rate video.
-
-Optionally it can generate a flat list of the created segments, one segment
-per line.
+Fragmentation is enabled by setting one of the AVOptions that define
+how to cut the file into fragments:
 
 @table @option
-@item segment_format @var{format}
-Override the inner container format, by default it is guessed by the filename
-extension.
-@item segment_time @var{t}
-Set segment duration to @var{t} seconds.
-@item segment_list @var{name}
-Generate also a listfile named @var{name}.
-@item segment_list_size @var{size}
-Overwrite the listfile once it reaches @var{size} entries.
-@item segment_wrap @var{limit}
-Wrap around segment index once it reaches @var{limit}.
+@item -movflags frag_keyframe
+Start a new fragment at each video keyframe.
+@item -frag_duration @var{duration}
+Create fragments that are @var{duration} microseconds long.
+@item -frag_size @var{size}
+Create fragments that contain up to @var{size} bytes of payload data.
+@item -movflags frag_custom
+Allow the caller to manually choose when to cut fragments, by
+calling @code{av_write_frame(ctx, NULL)} to write a fragment with
+the packets written so far. (This is only useful with other
+applications integrating libavformat, not from @command{avconv}.)
+@item -min_frag_duration @var{duration}
+Don't create fragments that are shorter than @var{duration} microseconds long.
 @end table
 
+If more than one condition is specified, fragments are cut when
+one of the specified conditions is fulfilled. The exception to this is
+@code{-min_frag_duration}, which has to be fulfilled for any of the other
+conditions to apply.
+
+Additionally, the way the output file is written can be adjusted
+through a few other options:
+
+@table @option
+@item -movflags empty_moov
+Write an initial moov atom directly at the start of the file, without
+describing any samples in it. Generally, an mdat/moov pair is written
+at the start of the file, as a normal MOV/MP4 file, containing only
+a short portion of the file. With this option set, there is no initial
+mdat atom, and the moov atom only describes the tracks but has
+a zero duration.
+
+Files written with this option set do not work in QuickTime.
+This option is implicitly set when writing ismv (Smooth Streaming) files.
+@item -movflags separate_moof
+Write a separate moof (movie fragment) atom for each track. Normally,
+packets for all tracks are written in a moof atom (which is slightly
+more efficient), but with this option set, the muxer writes one moof/mdat
+pair for each track, making it easier to separate tracks.
+
+This option is implicitly set when writing ismv (Smooth Streaming) files.
+@item -movflags faststart
+Run a second pass moving the index (moov atom) to the beginning of the file.
+This operation can take a while, and will not work in various situations such
+as fragmented output, thus it is not enabled by default.
+@end table
+
+Smooth Streaming content can be pushed in real time to a publishing
+point on IIS with this muxer. Example:
 @example
-avconv -i in.mkv -c copy -map 0 -f segment -list out.list out%03d.nut
+avconv -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
 @end example
 
 @section mp3
@@ -473,6 +378,69 @@ Write a "clean" MP3 without any extra features:
 avconv -i input.wav -write_xing 0 -id3v2_version 0 out.mp3
 @end example
 
+@section mpegts
+
+MPEG transport stream muxer.
+
+This muxer implements ISO 13818-1 and part of ETSI EN 300 468.
+
+The muxer options are:
+
+@table @option
+@item -mpegts_original_network_id @var{number}
+Set the original_network_id (default 0x0001). This is unique identifier
+of a network in DVB. Its main use is in the unique identification of a
+service through the path Original_Network_ID, Transport_Stream_ID.
+@item -mpegts_transport_stream_id @var{number}
+Set the transport_stream_id (default 0x0001). This identifies a
+transponder in DVB.
+@item -mpegts_service_id @var{number}
+Set the service_id (default 0x0001) also known as program in DVB.
+@item -mpegts_pmt_start_pid @var{number}
+Set the first PID for PMT (default 0x1000, max 0x1f00).
+@item -mpegts_start_pid @var{number}
+Set the first PID for data packets (default 0x0100, max 0x0f00).
+@end table
+
+The recognized metadata settings in mpegts muxer are @code{service_provider}
+and @code{service_name}. If they are not set the default for
+@code{service_provider} is "Libav" and the default for
+@code{service_name} is "Service01".
+
+@example
+avconv -i file.mpg -c copy \
+     -mpegts_original_network_id 0x1122 \
+     -mpegts_transport_stream_id 0x3344 \
+     -mpegts_service_id 0x5566 \
+     -mpegts_pmt_start_pid 0x1500 \
+     -mpegts_start_pid 0x150 \
+     -metadata service_provider="Some provider" \
+     -metadata service_name="Some Channel" \
+     -y out.ts
+@end example
+
+@section null
+
+Null muxer.
+
+This muxer does not generate any output file, it is mainly useful for
+testing or benchmarking purposes.
+
+For example to benchmark decoding with @command{avconv} you can use the
+command:
+@example
+avconv -benchmark -i INPUT -f null out.null
+@end example
+
+Note that the above command does not read or write the @file{out.null}
+file, but specifying the output file is required by the @command{avconv}
+syntax.
+
+Alternatively you can write the command as:
+@example
+avconv -benchmark -i INPUT -f null -
+@end example
+
 @section ogg
 
 Ogg container muxer.
@@ -487,5 +455,37 @@ possible. A value of 1 will effectively use 1 packet-per-page in most
 situations, giving a small seek granularity at the cost of additional container
 overhead.
 @end table
+
+@section segment
+
+Basic stream segmenter.
+
+The segmenter muxer outputs streams to a number of separate files of nearly
+fixed duration. Output filename pattern can be set in a fashion similar to
+@ref{image2}.
+
+Every segment starts with a video keyframe, if a video stream is present.
+The segment muxer works best with a single constant frame rate video.
+
+Optionally it can generate a flat list of the created segments, one segment
+per line.
+
+@table @option
+@item segment_format @var{format}
+Override the inner container format, by default it is guessed by the filename
+extension.
+@item segment_time @var{t}
+Set segment duration to @var{t} seconds.
+@item segment_list @var{name}
+Generate also a listfile named @var{name}.
+@item segment_list_size @var{size}
+Overwrite the listfile once it reaches @var{size} entries.
+@item segment_wrap @var{limit}
+Wrap around segment index once it reaches @var{limit}.
+@end table
+
+@example
+avconv -i in.mkv -c copy -map 0 -f segment -list out.list out%03d.nut
+@end example
 
 @c man end MUXERS
