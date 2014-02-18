@@ -493,7 +493,7 @@ static av_cold void cavsdsp_init_mmx(CAVSDSPContext *c,
     c->avg_cavs_qpel_pixels_tab[1][0] = avg_cavs_qpel8_mc00_mmx;
 
     c->cavs_idct8_add = cavs_idct8_add_mmx;
-    c->idct_perm      = FF_TRANSPOSE_IDCT_PERM;
+    c->idct_perm      = FF_IDCT_PERM_TRANSPOSE;
 }
 #endif /* HAVE_MMX_INLINE */
 

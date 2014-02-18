@@ -53,7 +53,7 @@ static av_cold int tqi_decode_init(AVCodecContext *avctx)
     ff_blockdsp_init(&s->bdsp, avctx);
     ff_bswapdsp_init(&t->bsdsp);
     ff_idctdsp_init(&s->idsp, avctx);
-    ff_init_scantable_permutation(s->idsp.idct_permutation, FF_NO_IDCT_PERM);
+    ff_init_scantable_permutation(s->idsp.idct_permutation, FF_IDCT_PERM_NONE);
     ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable, ff_zigzag_direct);
     s->qscale = 1;
     avctx->time_base = (AVRational){1, 15};

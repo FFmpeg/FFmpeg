@@ -4223,7 +4223,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
     *overflow= s->max_qcoeff < max; //overflow might have happened
 
     /* we need this permutation so that we correct the IDCT, we only permute the !=0 elements */
-    if (s->idsp.idct_permutation_type != FF_NO_IDCT_PERM)
+    if (s->idsp.perm_type != FF_IDCT_PERM_NONE)
         ff_block_permute(block, s->idsp.idct_permutation,
                          scantable, last_non_zero);
 
