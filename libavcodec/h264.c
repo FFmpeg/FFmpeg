@@ -3368,7 +3368,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     if (slice_type > 9) {
         av_log(h->avctx, AV_LOG_ERROR,
                "slice type %d too large at %d %d\n",
-               h->slice_type, h->mb_x, h->mb_y);
+               slice_type, h->mb_x, h->mb_y);
         return AVERROR_INVALIDDATA;
     }
     if (slice_type > 4) {
