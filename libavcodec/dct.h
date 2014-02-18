@@ -60,8 +60,4 @@ void ff_fdct248_islow_10(int16_t *data);
 
 void ff_j_rev_dct(int16_t *data);
 
-void ff_fdct_mmx(int16_t *block);
-void ff_fdct_mmxext(int16_t *block);
-void ff_fdct_sse2(int16_t *block);
-
 #endif /* AVCODEC_DCT_H */
