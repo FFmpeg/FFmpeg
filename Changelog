@@ -6,6 +6,7 @@ version <next>:
 - subfile protocol
 - Phantom Cine demuxer
 - replaygain data export
+- VP7 video decoder
 
 
 version 2.2:

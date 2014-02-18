@@ -238,6 +238,7 @@ typedef struct VP8Context {
         uint8_t pred8x8c[3];
         uint8_t token[4][16][3][NUM_DCT_TOKENS-1];
         uint8_t mvc[2][19];
+        uint8_t scan[16];
     } prob[2];
 
     VP8Macroblock *macroblocks_base;
@@ -271,6 +272,31 @@ typedef struct VP8Context {
      * 1 -> Macroblocks for entire frame alloced (sliced thread).
      */
     int mb_layout;
+
+    void (*decode_mb_row_no_filter)(AVCodecContext *avctx, void *tdata, int jobnr, int threadnr);
+    void (*filter_mb_row)(AVCodecContext *avctx, void *tdata, int jobnr, int threadnr);
+
+    int vp7;
+
+    /**
+     * Fade bit present in bitstream (VP7)
+     */
+    int fade_present;
+
+    /**
+     * Interframe DC prediction (VP7)
+     * [0] VP56_FRAME_PREVIOUS
+     * [1] VP56_FRAME_GOLDEN
+     */
+    uint16_t inter_dc_pred[2][2];
+
+    /**
+     * Macroblock features (VP7)
+     */
+    uint8_t feature_enabled[4];
+    uint8_t feature_present_prob[4];
+    uint8_t feature_index_prob[4][3];
+    uint8_t feature_value[4][4];
 } VP8Context;
 
 int ff_vp8_decode_init(AVCodecContext *avctx);
