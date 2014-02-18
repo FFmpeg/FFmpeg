@@ -3316,15 +3316,13 @@ static int mov_write_header(AVFormatContext *s)
 
     enable_tracks(s);
 
-    if (mov->mode == MODE_ISM) {
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
         /* If no fragmentation options have been set, set a default. */
         if (!(mov->flags & (FF_MOV_FLAG_FRAG_KEYFRAME |
                             FF_MOV_FLAG_FRAG_CUSTOM)) &&
             !mov->max_fragment_duration && !mov->max_fragment_size)
             mov->flags |= FF_MOV_FLAG_FRAG_KEYFRAME;
-    }
-
-    if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
+    } else {
         if (mov->flags & FF_MOV_FLAG_FASTSTART)
             mov->reserved_moov_pos = avio_tell(pb);
         mov_write_mdat_tag(pb, mov);
