@@ -473,7 +473,7 @@ ffmpeg -i INPUT -f md5 -
 
 See also the @ref{framemd5} muxer.
 
-@section mov/mp4/ismv
+@section mov, mp4, ismv
 
 MOV/MP4/ISMV (Smooth Streaming) muxer.
 
