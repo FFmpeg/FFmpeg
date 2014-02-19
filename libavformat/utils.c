@@ -2595,7 +2595,7 @@ int av_read_pause(AVFormatContext *s)
 
 void avformat_free_context(AVFormatContext *s)
 {
-    int i;
+    int i, j;
     AVStream *st;
 
     av_opt_free(s);
@@ -2605,6 +2605,12 @@ void avformat_free_context(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         /* free all data in a stream component */
         st = s->streams[i];
+
+        for (j = 0; j < st->nb_side_data; j++)
+            av_freep(&st->side_data[j].data);
+        av_freep(&st->side_data);
+        st->nb_side_data = 0;
+
         if (st->parser) {
             av_parser_close(st->parser);
         }
