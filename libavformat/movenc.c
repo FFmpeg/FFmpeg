@@ -3926,7 +3926,7 @@ static int mov_write_header(AVFormatContext *s)
 
     enable_tracks(s);
 
-    if (mov->mode == MODE_ISM) {
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
         /* If no fragmentation options have been set, set a default. */
         if (!(mov->flags & (FF_MOV_FLAG_FRAG_KEYFRAME |
                             FF_MOV_FLAG_FRAG_CUSTOM)) &&
