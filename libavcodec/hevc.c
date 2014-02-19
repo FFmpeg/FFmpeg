@@ -2285,9 +2285,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                s->nal_unit_type);
-        if (s->avctx->err_recognition & AV_EF_EXPLODE)
-            return ret;
-        return 0;
+        goto fail;
     } else if (!ret)
         return 0;
 
@@ -2295,23 +2293,23 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     case NAL_VPS:
         ret = ff_hevc_decode_nal_vps(s);
         if (ret < 0)
-            return ret;
+            goto fail;
         break;
     case NAL_SPS:
         ret = ff_hevc_decode_nal_sps(s);
         if (ret < 0)
-            return ret;
+            goto fail;
         break;
     case NAL_PPS:
         ret = ff_hevc_decode_nal_pps(s);
         if (ret < 0)
-            return ret;
+            goto fail;
         break;
     case NAL_SEI_PREFIX:
     case NAL_SEI_SUFFIX:
         ret = ff_hevc_decode_nal_sei(s);
         if (ret < 0)
-            return ret;
+            goto fail;
         break;
     case NAL_TRAIL_R:
     case NAL_TRAIL_N:
@@ -2357,7 +2355,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 return ret;
         } else if (!s->ref) {
             av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
-            return AVERROR_INVALIDDATA;
+            goto fail;
         }
 
         if (s->nal_unit_type != s->first_nal_type) {
@@ -2373,8 +2371,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             if (ret < 0) {
                 av_log(s->avctx, AV_LOG_WARNING,
                        "Error constructing the reference lists for the current slice.\n");
-                if (s->avctx->err_recognition & AV_EF_EXPLODE)
-                    return ret;
+                goto fail;
             }
         }
 
@@ -2390,8 +2387,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 restore_tqb_pixels(s);
         }
 
-        if (ctb_addr_ts < 0)
-            return ctb_addr_ts;
+        if (ctb_addr_ts < 0) {
+            ret = ctb_addr_ts;
+            goto fail;
+        }
         break;
     case NAL_EOS_NUT:
     case NAL_EOB_NUT:
@@ -2406,6 +2405,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                "Skipping NAL unit %d\n", s->nal_unit_type);
     }
 
+    return 0;
+fail:
+    if (s->avctx->err_recognition & AV_EF_EXPLODE)
+        return ret;
     return 0;
 }
 
@@ -2619,8 +2622,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
-            if (s->avctx->err_recognition & AV_EF_EXPLODE)
-                goto fail;
+            goto fail;
         }
     }
 
