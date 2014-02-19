@@ -1034,7 +1034,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         goto err;
     }
     if (!s->sps_list[pps->sps_id]) {
-        av_log(s->avctx, AV_LOG_ERROR, "SPS does not exist \n");
+        av_log(s->avctx, AV_LOG_ERROR, "SPS %u does not exist.\n", pps->sps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
