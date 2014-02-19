@@ -186,4 +186,9 @@ int ff_set_dimensions(AVCodecContext *s, int width, int height);
 int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
 
+/**
+ * Set various frame properties from the codec context / packet data.
+ */
+int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
+
 #endif /* AVCODEC_INTERNAL_H */
