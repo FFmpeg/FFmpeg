@@ -1480,7 +1480,6 @@ static int init_input_stream(int ist_index, char *error, int error_len)
     ist->last_dts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
     ist->next_dts = AV_NOPTS_VALUE;
     init_pts_correction(&ist->pts_ctx);
-    ist->is_start = 1;
 
     return 0;
 }

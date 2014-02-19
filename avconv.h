@@ -229,7 +229,6 @@ typedef struct InputStream {
     int64_t       last_dts;
     PtsCorrectionContext pts_ctx;
     double ts_scale;
-    int is_start;            /* is 1 at the start and after a discontinuity */
     int showed_multi_packet_warning;
     AVDictionary *opts;
     AVRational framerate;               /* framerate forced with -r */
