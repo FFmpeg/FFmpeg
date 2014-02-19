@@ -2297,8 +2297,10 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                             ROUNDED_DIV(s->last_non_b_time - s->pp_time, ctx->t_frame)) * 2;
         s->pb_field_time = (ROUNDED_DIV(s->time, ctx->t_frame) -
                             ROUNDED_DIV(s->last_non_b_time - s->pp_time, ctx->t_frame)) * 2;
-        if (!s->progressive_sequence) {
-            if (s->pp_field_time <= s->pb_field_time || s->pb_field_time <= 1)
+        if (s->pp_field_time <= s->pb_field_time || s->pb_field_time <= 1) {
+            s->pb_field_time = 2;
+            s->pp_field_time = 4;
+            if (!s->progressive_sequence)
                 return FRAME_SKIPPED;
         }
     }
