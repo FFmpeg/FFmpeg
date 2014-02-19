@@ -639,6 +639,7 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     AVPacketList **next_point, *this_pktl;
     AVStream *st   = s->streams[pkt->stream_index];
     int chunked    = s->max_chunk_size || s->max_chunk_duration;
+    int ret;
 
     this_pktl      = av_mallocz(sizeof(AVPacketList));
     if (!this_pktl)
@@ -654,7 +655,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
         av_assert0(((AVFrame *)pkt->data)->buf);
     } else {
-        av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-allocated memory
+        // duplicate the packet if it uses non-allocated memory
+        if ((ret = av_dup_packet(&this_pktl->pkt)) < 0) {
+            av_free(this_pktl);
+            return ret;
+        }
         av_copy_packet_side_data(&this_pktl->pkt, &this_pktl->pkt); // copy side data
     }
 
