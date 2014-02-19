@@ -259,16 +259,10 @@ OBJS-$(CONFIG_MPEG1VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
 OBJS-$(CONFIG_MPEG2VIDEO_DECODER)      += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG2VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
 OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o
-OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o \
-                                          h263dec.o h263.o ituh263dec.o \
-                                          mpeg4videodec.o
-OBJS-$(CONFIG_MSMPEG4V2_ENCODER)       += msmpeg4.o msmpeg4enc.o msmpeg4data.o \
-                                          h263.o
-OBJS-$(CONFIG_MSMPEG4V3_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o \
-                                          h263dec.o h263.o ituh263dec.o \
-                                          mpeg4videodec.o
-OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4.o msmpeg4enc.o msmpeg4data.o \
-                                          h263.o
+OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o
+OBJS-$(CONFIG_MSMPEG4V2_ENCODER)       += msmpeg4enc.o msmpeg4.o msmpeg4data.o
+OBJS-$(CONFIG_MSMPEG4V3_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o
+OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4enc.o msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o msrledec.o
 OBJS-$(CONFIG_MSA1_DECODER)            += mss3.o mss34dsp.o
 OBJS-$(CONFIG_MSS1_DECODER)            += mss1.o mss12.o
