@@ -256,6 +256,7 @@ External library support:
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl [no]
   --enable-x11grab         enable X11 grabbing [no]
+  --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
 
 Advanced options (experts only):
@@ -1333,6 +1334,7 @@ EXTERNAL_LIBRARY_LIST="
     opengl
     openssl
     x11grab
+    xlib
     zlib
 "
 
@@ -2523,6 +2525,7 @@ enable swscale_alpha
 
 # Enable hwaccels by default.
 enable dxva2 vaapi vdpau xvmc
+enable xlib
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
@@ -4398,7 +4401,8 @@ check_func_headers windows.h SetConsoleTextAttribute
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
-check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
+enabled xlib &&
+    check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
 check_header cl/cl.h
 check_header direct.h
@@ -4655,7 +4659,8 @@ if enabled libcdio; then
     die "ERROR: libcdio-paranoia not found"
 fi
 
-check_lib X11/Xlib.h XOpenDisplay -lX11 && enable xlib
+enabled xlib &&
+    check_lib X11/Xlib.h XOpenDisplay -lX11 || disable xlib
 
 enabled x11grab                                           &&
 require Xext X11/extensions/XShm.h XShmCreateImage -lXext &&
