@@ -229,6 +229,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int nb_samples        = buf->nb_samples;
     AVFrame *out_buf;
+    int ret;
 
     if (vol->volume == 1.0 || vol->volume_i == 256)
         return ff_filter_frame(outlink, buf);
@@ -240,7 +241,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         out_buf = ff_get_audio_buffer(inlink, nb_samples);
         if (!out_buf)
             return AVERROR(ENOMEM);
-        out_buf->pts = buf->pts;
+        ret = av_frame_copy_props(out_buf, buf);
+        if (ret < 0) {
+            av_frame_free(&out_buf);
+            av_frame_free(&buf);
+            return ret;
+        }
     }
 
     if (vol->precision != PRECISION_FIXED || vol->volume_i > 0) {
