@@ -233,6 +233,9 @@ typedef struct InputStream {
     AVDictionary *opts;
     AVRational framerate;               /* framerate forced with -r */
 
+    /* number of packets successfully read for this stream */
+    uint64_t nb_packets;
+
     int resample_height;
     int resample_width;
     int resample_pix_fmt;
