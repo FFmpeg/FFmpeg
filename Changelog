@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - libx265 encoder
 - shuffleplanes filter
+- replaygain data export
 
 
 version 10:
