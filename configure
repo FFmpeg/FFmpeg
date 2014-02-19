@@ -1859,6 +1859,7 @@ atomics_gcc_if="sync_val_compare_and_swap"
 atomics_suncc_if="atomic_cas_ptr machine_rw_barrier"
 atomics_win32_if="MemoryBarrier"
 atomics_native_if_any="$ATOMICS_LIST"
+w32threads_deps="atomics_native"
 threads_if_any="$THREADS_LIST"
 
 # subsystems
