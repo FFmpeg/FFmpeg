@@ -53,6 +53,7 @@
         .syntax unified
 T       .thumb
 ELF     .eabi_attribute 25, 1           @ Tag_ABI_align_preserved
+ELF     .section .note.GNU-stack,"",%progbits @ Mark stack as non-executable
 
 .macro  function name, export=0, align=2
         .set            .Lpic_idx, 0
