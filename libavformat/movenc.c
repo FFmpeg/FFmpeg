@@ -3926,13 +3926,6 @@ static int mov_write_header(AVFormatContext *s)
 
     enable_tracks(s);
 
-    if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
-        /* If no fragmentation options have been set, set a default. */
-        if (!(mov->flags & (FF_MOV_FLAG_FRAG_KEYFRAME |
-                            FF_MOV_FLAG_FRAG_CUSTOM)) &&
-            !mov->max_fragment_duration && !mov->max_fragment_size)
-            mov->flags |= FF_MOV_FLAG_FRAG_KEYFRAME;
-    }
 
     if (mov->reserved_moov_size){
         mov->reserved_moov_pos= avio_tell(pb);
@@ -3940,7 +3933,13 @@ static int mov_write_header(AVFormatContext *s)
             avio_skip(pb, mov->reserved_moov_size);
     }
 
-    if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
+        /* If no fragmentation options have been set, set a default. */
+        if (!(mov->flags & (FF_MOV_FLAG_FRAG_KEYFRAME |
+                            FF_MOV_FLAG_FRAG_CUSTOM)) &&
+            !mov->max_fragment_duration && !mov->max_fragment_size)
+            mov->flags |= FF_MOV_FLAG_FRAG_KEYFRAME;
+    } else {
         if (mov->flags & FF_MOV_FLAG_FASTSTART)
             mov->reserved_moov_pos = avio_tell(pb);
         mov_write_mdat_tag(pb, mov);
