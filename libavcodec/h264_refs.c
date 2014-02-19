@@ -220,16 +220,16 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
         for (i = 0; i < h->ref_count[list]; i++)
             COPY_PICTURE(&h->ref_list[list][i], &h->default_ref_list[list][i]);
 
-        if (get_bits1(&h->gb)) {
+        if (get_bits1(&h->gb)) {    // ref_pic_list_modification_flag_l[01]
             int pred = h->curr_pic_num;
 
             for (index = 0; ; index++) {
-                unsigned int reordering_of_pic_nums_idc = get_ue_golomb_31(&h->gb);
+                unsigned int modification_of_pic_nums_idc = get_ue_golomb_31(&h->gb);
                 unsigned int pic_id;
                 int i;
                 Picture *ref = NULL;
 
-                if (reordering_of_pic_nums_idc == 3)
+                if (modification_of_pic_nums_idc == 3)
                     break;
 
                 if (index >= h->ref_count[list]) {
@@ -237,7 +237,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
                     return -1;
                 }
 
-                switch (reordering_of_pic_nums_idc) {
+                switch (modification_of_pic_nums_idc) {
                 case 0:
                 case 1: {
                     const unsigned int abs_diff_pic_num = get_ue_golomb(&h->gb) + 1;
@@ -249,7 +249,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
                         return AVERROR_INVALIDDATA;
                     }
 
-                    if (reordering_of_pic_nums_idc == 0)
+                    if (modification_of_pic_nums_idc == 0)
                         pred -= abs_diff_pic_num;
                     else
                         pred += abs_diff_pic_num;
@@ -293,7 +293,8 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
                 }
                 default:
                     av_log(h->avctx, AV_LOG_ERROR,
-                           "illegal reordering_of_pic_nums_idc\n");
+                           "illegal modification_of_pic_nums_idc %u\n",
+                           modification_of_pic_nums_idc);
                     return AVERROR_INVALIDDATA;
                 }
 
