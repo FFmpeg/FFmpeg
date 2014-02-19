@@ -34,6 +34,7 @@
 #include "formats.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "version.h"
 #include "video.h"
 
 enum ScanMode {
@@ -49,7 +50,9 @@ enum FieldType {
 typedef struct {
     const AVClass *class;
     enum ScanMode scan;    // top or bottom field first scanning
+#if FF_API_INTERLACE_LOWPASS_SET
     int lowpass;           // enable or disable low pass filterning
+#endif
     AVFrame *cur, *next;   // the two frames from which the new one is obtained
 } InterlaceContext;
 
@@ -62,8 +65,10 @@ static const AVOption interlace_options[] = {
         AV_OPT_TYPE_CONST, {.i64 = MODE_TFF }, INT_MIN, INT_MAX, .flags = V, .unit = "scan" },
     { "bff", "bottom field first", 0,
         AV_OPT_TYPE_CONST, {.i64 = MODE_BFF }, INT_MIN, INT_MAX, .flags = V, .unit = "scan" },
-    { "lowpass", "enable vertical low-pass filter", OFFSET(lowpass),
+#if FF_API_INTERLACE_LOWPASS_SET
+    { "lowpass", "(deprecated, this option is always set)", OFFSET(lowpass),
         AV_OPT_TYPE_INT,   {.i64 = 1 },        0, 1, .flags = V },
+#endif
     { NULL }
 };
 
@@ -96,6 +101,11 @@ static int config_out_props(AVFilterLink *outlink)
     AVFilterLink *inlink = outlink->src->inputs[0];
     InterlaceContext *s = ctx->priv;
 
+#if FF_API_INTERLACE_LOWPASS_SET
+    if (!s->lowpass)
+        av_log(ctx, AV_LOG_WARNING, "This option is deprecated and always set.\n");
+#endif
+
     if (inlink->h < 2) {
         av_log(ctx, AV_LOG_ERROR, "input video height is too small\n");
         return AVERROR_INVALIDDATA;
@@ -110,15 +120,14 @@ static int config_out_props(AVFilterLink *outlink)
     outlink->frame_rate.den *= 2;
     outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
-    av_log(ctx, AV_LOG_VERBOSE, "%s interlacing %s lowpass filter\n",
-           s->scan == MODE_TFF ? "tff" : "bff", (s->lowpass) ? "with" : "without");
+    av_log(ctx, AV_LOG_VERBOSE, "%s interlacing\n",
+           s->scan == MODE_TFF ? "tff" : "bff");
 
     return 0;
 }
 
 static void copy_picture_field(AVFrame *src_frame, AVFrame *dst_frame,
-                               AVFilterLink *inlink, enum FieldType field_type,
-                               int lowpass)
+                               AVFilterLink *inlink, enum FieldType field_type)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int vsub = desc->log2_chroma_h;
@@ -129,6 +138,8 @@ static void copy_picture_field(AVFrame *src_frame, AVFrame *dst_frame,
         int linesize = av_image_get_linesize(inlink->format, inlink->w, plane);
         uint8_t *dstp = dst_frame->data[plane];
         const uint8_t *srcp = src_frame->data[plane];
+        int srcp_linesize;
+        int dstp_linesize;
 
         av_assert0(linesize >= 0);
 
@@ -137,29 +148,24 @@ static void copy_picture_field(AVFrame *src_frame, AVFrame *dst_frame,
             srcp += src_frame->linesize[plane];
         if (field_type == FIELD_LOWER)
             dstp += dst_frame->linesize[plane];
-        if (lowpass) {
-            int srcp_linesize = src_frame->linesize[plane] * 2;
-            int dstp_linesize = dst_frame->linesize[plane] * 2;
-            for (j = lines; j > 0; j--) {
-                const uint8_t *srcp_above = srcp - src_frame->linesize[plane];
-                const uint8_t *srcp_below = srcp + src_frame->linesize[plane];
-                if (j == lines)
-                    srcp_above = srcp; // there is no line above
-                if (j == 1)
-                    srcp_below = srcp; // there is no line below
-                for (i = 0; i < linesize; i++) {
-                    // this calculation is an integer representation of
-                    // '0.5 * current + 0.25 * above + 0.25 * below'
-                    // '1 +' is for rounding.
-                    dstp[i] = (1 + srcp[i] + srcp[i] + srcp_above[i] + srcp_below[i]) >> 2;
-                }
-                dstp += dstp_linesize;
-                srcp += srcp_linesize;
+
+        srcp_linesize = src_frame->linesize[plane] * 2;
+        dstp_linesize = dst_frame->linesize[plane] * 2;
+        for (j = lines; j > 0; j--) {
+            const uint8_t *srcp_above = srcp - src_frame->linesize[plane];
+            const uint8_t *srcp_below = srcp + src_frame->linesize[plane];
+            if (j == lines)
+                srcp_above = srcp; // there is no line above
+            if (j == 1)
+                srcp_below = srcp; // there is no line below
+            for (i = 0; i < linesize; i++) {
+                // this calculation is an integer representation of
+                // '0.5 * current + 0.25 * above + 0.25 * below'
+                // '1 +' is for rounding.
+                dstp[i] = (1 + srcp[i] + srcp[i] + srcp_above[i] + srcp_below[i]) >> 2;
             }
-        } else {
-            av_image_copy_plane(dstp, dst_frame->linesize[plane] * 2,
-                                srcp, src_frame->linesize[plane] * 2,
-                                linesize, lines);
+            dstp += dstp_linesize;
+            srcp += srcp_linesize;
         }
     }
 }
@@ -202,11 +208,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     out->pts             /= 2;  // adjust pts to new framerate
 
     /* copy upper/lower field from cur */
-    copy_picture_field(s->cur, out, inlink, tff ? FIELD_UPPER : FIELD_LOWER, s->lowpass);
+    copy_picture_field(s->cur, out, inlink, tff ? FIELD_UPPER : FIELD_LOWER);
     av_frame_free(&s->cur);
 
     /* copy lower/upper field from next */
-    copy_picture_field(s->next, out, inlink, tff ? FIELD_LOWER : FIELD_UPPER, s->lowpass);
+    copy_picture_field(s->next, out, inlink, tff ? FIELD_LOWER : FIELD_UPPER);
     av_frame_free(&s->next);
 
     ret = ff_filter_frame(outlink, out);
