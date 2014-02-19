@@ -858,14 +858,18 @@ static void print_report(int is_last_report, int64_t timer_start)
     fflush(stderr);
 
     if (is_last_report) {
-        int64_t raw= audio_size + video_size + extra_size;
+        int64_t raw   = audio_size + video_size + extra_size;
+        float percent = 0.0;
+
+        if (raw)
+            percent = 100.0 * (total_size - raw) / raw;
+
         av_log(NULL, AV_LOG_INFO, "\n");
         av_log(NULL, AV_LOG_INFO, "video:%1.0fkB audio:%1.0fkB global headers:%1.0fkB muxing overhead %f%%\n",
                video_size / 1024.0,
                audio_size / 1024.0,
                extra_size / 1024.0,
-               100.0 * (total_size - raw) / raw
-        );
+               percent);
     }
 }
 
