@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-02-xx - xxxxxxx - lavu 53.08.0 - frame.h
+  Add av_frame_remove_side_data() for removing a single side data
+  instance from a frame.
+
 2014-02-xx - xxxxxxx - lavu 53.07.0 - frame.h, replaygain.h
   Add AV_FRAME_DATA_REPLAYGAIN for exporting replaygain tags.
   Add a new header replaygain.h with the AVReplayGain struct.
