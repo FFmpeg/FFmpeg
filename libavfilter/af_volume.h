@@ -35,10 +35,18 @@ enum PrecisionType {
     PRECISION_DOUBLE,
 };
 
+enum ReplayGainType {
+    REPLAYGAIN_DROP,
+    REPLAYGAIN_IGNORE,
+    REPLAYGAIN_TRACK,
+    REPLAYGAIN_ALBUM,
+};
+
 typedef struct VolumeContext {
     const AVClass *class;
     AVFloatDSPContext fdsp;
     enum PrecisionType precision;
+    enum ReplayGainType replaygain;
     double volume;
     int    volume_i;
     int    channels;

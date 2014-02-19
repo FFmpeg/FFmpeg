@@ -28,7 +28,10 @@
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
+#include "libavutil/replaygain.h"
+
 #include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -50,6 +53,12 @@ static const AVOption options[] = {
         { "fixed",  "8-bit fixed-point.",     0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FIXED  }, INT_MIN, INT_MAX, A, "precision" },
         { "float",  "32-bit floating-point.", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FLOAT  }, INT_MIN, INT_MAX, A, "precision" },
         { "double", "64-bit floating-point.", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_DOUBLE }, INT_MIN, INT_MAX, A, "precision" },
+    { "replaygain", "Apply replaygain side data when present",
+            OFFSET(replaygain), AV_OPT_TYPE_INT, { .i64 = REPLAYGAIN_DROP }, REPLAYGAIN_DROP, REPLAYGAIN_ALBUM, A, "replaygain" },
+        { "drop",   "replaygain side data is dropped", 0, AV_OPT_TYPE_CONST, { .i64 = REPLAYGAIN_DROP   }, 0, 0, A, "replaygain" },
+        { "ignore", "replaygain side data is ignored", 0, AV_OPT_TYPE_CONST, { .i64 = REPLAYGAIN_IGNORE }, 0, 0, A, "replaygain" },
+        { "track",  "track gain is preferred",         0, AV_OPT_TYPE_CONST, { .i64 = REPLAYGAIN_TRACK  }, 0, 0, A, "replaygain" },
+        { "album",  "album gain is preferred",         0, AV_OPT_TYPE_CONST, { .i64 = REPLAYGAIN_ALBUM  }, 0, 0, A, "replaygain" },
     { NULL },
 };
 
@@ -229,7 +238,37 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int nb_samples        = buf->nb_samples;
     AVFrame *out_buf;
+    AVFrameSideData *sd = av_frame_get_side_data(buf, AV_FRAME_DATA_REPLAYGAIN);
     int ret;
+
+    if (sd && vol->replaygain != REPLAYGAIN_IGNORE) {
+        if (vol->replaygain != REPLAYGAIN_DROP) {
+            AVReplayGain *replaygain = (AVReplayGain*)sd->data;
+            int32_t gain;
+            float g;
+
+            if (vol->replaygain == REPLAYGAIN_TRACK &&
+                replaygain->track_gain != INT32_MIN)
+                gain = replaygain->track_gain;
+            else if (replaygain->album_gain != INT32_MIN)
+                gain = replaygain->album_gain;
+            else {
+                av_log(inlink->dst, AV_LOG_WARNING, "Both ReplayGain gain "
+                       "values are unknown.\n");
+                gain = 100000;
+            }
+            g = gain / 100000.0f;
+
+            av_log(inlink->dst, AV_LOG_VERBOSE,
+                   "Using gain %f dB from replaygain side data.\n", g);
+
+            vol->volume   = pow(10, g / 20);
+            vol->volume_i = (int)(vol->volume * 256 + 0.5);
+
+            volume_init(vol);
+        }
+        av_frame_remove_side_data(buf, AV_FRAME_DATA_REPLAYGAIN);
+    }
 
     if (vol->volume == 1.0 || vol->volume_i == 256)
         return ff_filter_frame(outlink, buf);
