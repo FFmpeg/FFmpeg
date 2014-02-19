@@ -923,6 +923,12 @@ enum AVPacketSideDataType {
      * @endcode
      */
     AV_PKT_DATA_H263_MB_INFO,
+
+    /**
+     * This side data should be associated with an audio stream and contains
+     * ReplayGain information in form of the AVReplayGain struct.
+     */
+    AV_PKT_DATA_REPLAYGAIN,
 };
 
 typedef struct AVPacketSideData {
