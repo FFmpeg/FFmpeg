@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-02-xx - xxxxxxx - lavc 55.35.0 - avcodec.h
+  Give the name AVPacketSideData to the previously anonymous struct used for
+  AVPacket.side_data.
+
 2014-xx-xx - xxxxxxx - lavu 53.06.0 - pixfmt.h
   Add RGBA64 pixel format and variants.
 
