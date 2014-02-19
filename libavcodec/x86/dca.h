@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_X86_DCA_H
+#define AVCODEC_X86_DCA_H
+
 #include "config.h"
 
 #if ARCH_X86_64 && HAVE_SSE2_INLINE
@@ -53,3 +56,5 @@ static inline void int8x8_fmul_int32(av_unused DCADSPContext *dsp,
 }
 
 #endif /* ARCH_X86_64 && HAVE_SSE2_INLINE */
+
+#endif /* AVCODEC_X86_DCA_H */
