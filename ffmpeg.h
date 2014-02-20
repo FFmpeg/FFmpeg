@@ -44,6 +44,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
+#include "libavutil/threadmessage.h"
 
 #include "libswresample/swresample.h"
 
@@ -336,13 +337,10 @@ typedef struct InputFile {
     int accurate_seek;
 
 #if HAVE_PTHREADS
+    AVThreadMessageQueue *in_thread_queue;
     pthread_t thread;           /* thread reading from this file */
     int non_blocking;           /* reading packets from the thread should not block */
-    int finished;               /* the thread has exited */
     int joined;                 /* the thread has been joined */
-    pthread_mutex_t fifo_lock;  /* lock for access to fifo */
-    pthread_cond_t  fifo_cond;  /* the main thread will signal on this cond after reading from fifo */
-    AVFifoBuffer *fifo;         /* demuxed packets are stored here; freed by the main thread */
 #endif
 } InputFile;
 
