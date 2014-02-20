@@ -374,6 +374,9 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
                  o->type != AV_OPT_TYPE_CHANNEL_LAYOUT))
         return AVERROR(EINVAL);
 
+    if (o->flags & AV_OPT_FLAG_READONLY)
+        return AVERROR(EINVAL);
+
     dst = ((uint8_t*)target_obj) + o->offset;
     switch (o->type) {
     case AV_OPT_TYPE_STRING:   return set_string(obj, o, val, dst);
@@ -425,7 +428,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
 #define OPT_EVAL_NUMBER(name, opttype, vartype)\
     int av_opt_eval_ ## name(void *obj, const AVOption *o, const char *val, vartype *name ## _out)\
     {\
-        if (!o || o->type != opttype)\
+        if (!o || o->type != opttype || o->flags & AV_OPT_FLAG_READONLY)\
             return AVERROR(EINVAL);\
         return set_string_number(obj, obj, o, val, name ## _out);\
     }
@@ -445,6 +448,9 @@ static int set_number(void *obj, const char *name, double num, int den, int64_t 
 
     if (!o || !target_obj)
         return AVERROR_OPTION_NOT_FOUND;
+
+    if (o->flags & AV_OPT_FLAG_READONLY)
+        return AVERROR(EINVAL);
 
     dst = ((uint8_t*)target_obj) + o->offset;
     return write_number(obj, o, dst, num, den, intnum);
@@ -502,7 +508,7 @@ int av_opt_set_bin(void *obj, const char *name, const uint8_t *val, int len, int
     if (!o || !target_obj)
         return AVERROR_OPTION_NOT_FOUND;
 
-    if (o->type != AV_OPT_TYPE_BINARY)
+    if (o->type != AV_OPT_TYPE_BINARY || o->flags & AV_OPT_FLAG_READONLY)
         return AVERROR(EINVAL);
 
     ptr = len ? av_malloc(len) : NULL;
@@ -1042,6 +1048,8 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_VIDEO_PARAM   ) ? 'V' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_EXPORT)         ? 'X' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_READONLY)       ? 'R' : '.');
 
         if (opt->help)
             av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
@@ -1145,6 +1153,10 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
         if ((opt->flags & mask) != flags)
             continue;
 #endif
+
+        if (opt->flags & AV_OPT_FLAG_READONLY)
+            continue;
+
         switch (opt->type) {
             case AV_OPT_TYPE_CONST:
                 /* Nothing to be done here */

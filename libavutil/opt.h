@@ -288,6 +288,15 @@ typedef struct AVOption {
 #define AV_OPT_FLAG_AUDIO_PARAM     8
 #define AV_OPT_FLAG_VIDEO_PARAM     16
 #define AV_OPT_FLAG_SUBTITLE_PARAM  32
+/**
+ * The option is inteded for exporting values to the caller.
+ */
+#define AV_OPT_FLAG_EXPORT          64
+/**
+ * The option may not be set through the AVOptions API, only read.
+ * This flag only makes sense when AV_OPT_FLAG_EXPORT is also set.
+ */
+#define AV_OPT_FLAG_READONLY        128
 #define AV_OPT_FLAG_FILTERING_PARAM (1<<16) ///< a generic parameter which can be set by the user for filtering
 //FIXME think about enc-audio, ... style flags
 
