@@ -2960,11 +2960,15 @@ static void *input_thread(void *arg)
 
         av_dup_packet(&pkt);
         av_fifo_generic_write(f->fifo, &pkt, sizeof(pkt), NULL);
+        pthread_cond_signal(&f->fifo_cond);
 
         pthread_mutex_unlock(&f->fifo_lock);
     }
 
+    pthread_mutex_lock(&f->fifo_lock);
     f->finished = 1;
+    pthread_cond_signal(&f->fifo_cond);
+    pthread_mutex_unlock(&f->fifo_lock);
     return NULL;
 }
 
@@ -3016,6 +3020,10 @@ static int init_input_threads(void)
         if (!(f->fifo = av_fifo_alloc(8*sizeof(AVPacket))))
             return AVERROR(ENOMEM);
 
+        if (f->ctx->pb ? !f->ctx->pb->seekable :
+            strcmp(f->ctx->iformat->name, "lavfi"))
+            f->non_blocking = 1;
+
         pthread_mutex_init(&f->fifo_lock, NULL);
         pthread_cond_init (&f->fifo_cond, NULL);
 
@@ -3031,14 +3039,22 @@ static int get_input_packet_mt(InputFile *f, AVPacket *pkt)
 
     pthread_mutex_lock(&f->fifo_lock);
 
+    while (1) {
     if (av_fifo_size(f->fifo)) {
         av_fifo_generic_read(f->fifo, pkt, sizeof(*pkt), NULL);
         pthread_cond_signal(&f->fifo_cond);
+        break;
     } else {
-        if (f->finished)
+        if (f->finished) {
             ret = AVERROR_EOF;
-        else
+            break;
+        }
+        if (f->non_blocking) {
             ret = AVERROR(EAGAIN);
+            break;
+        }
+        pthread_cond_wait(&f->fifo_cond, &f->fifo_lock);
+    }
     }
 
     pthread_mutex_unlock(&f->fifo_lock);
