@@ -31,7 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/internal.h"
 
-static av_cold int raw_init_encoder(AVCodecContext *avctx)
+static av_cold int raw_encode_init(AVCodecContext *avctx)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
@@ -75,6 +75,6 @@ AVCodec ff_rawvideo_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_RAWVIDEO,
     .priv_data_size = sizeof(AVFrame),
-    .init           = raw_init_encoder,
+    .init           = raw_encode_init,
     .encode2        = raw_encode,
 };

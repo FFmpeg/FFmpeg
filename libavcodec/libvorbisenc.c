@@ -80,8 +80,7 @@ static int vorbis_error_to_averror(int ov_err)
     }
 }
 
-static av_cold int oggvorbis_init_encoder(vorbis_info *vi,
-                                          AVCodecContext *avctx)
+static av_cold int oggvorbis_encode_init_internal(vorbis_info *vi, AVCodecContext *avctx)
 {
     OggVorbisEncContext *s = avctx->priv_data;
     double cfreq;
@@ -200,7 +199,7 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avctx)
     int ret;
 
     vorbis_info_init(&s->vi);
-    if ((ret = oggvorbis_init_encoder(&s->vi, avctx))) {
+    if ((ret = oggvorbis_encode_init_internal(&s->vi, avctx))) {
         av_log(avctx, AV_LOG_ERROR, "encoder setup failed\n");
         goto error;
     }

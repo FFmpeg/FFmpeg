@@ -33,7 +33,7 @@
 #include "dv.h"
 #include "dv_tablegen.h"
 
-static av_cold int dvvideo_init_encoder(AVCodecContext *avctx)
+static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 {
     if (!avpriv_dv_codec_profile(avctx)) {
         av_log(avctx, AV_LOG_ERROR, "Found no DV profile for %ix%i %s video. "
@@ -702,7 +702,7 @@ AVCodec ff_dvvideo_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DVVIDEO,
     .priv_data_size = sizeof(DVVideoContext),
-    .init           = dvvideo_init_encoder,
+    .init           = dvvideo_encode_init,
     .encode2        = dvvideo_encode_frame,
     .close          = dvvideo_encode_close,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
