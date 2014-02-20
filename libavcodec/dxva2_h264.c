@@ -218,8 +218,8 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
         slice->num_ref_idx_l0_active_minus1 = h->ref_count[0] - 1;
     if (h->list_count > 1)
         slice->num_ref_idx_l1_active_minus1 = h->ref_count[1] - 1;
-    slice->slice_alpha_c0_offset_div2   = h->slice_alpha_c0_offset / 2 - 26;
-    slice->slice_beta_offset_div2       = h->slice_beta_offset     / 2 - 26;
+    slice->slice_alpha_c0_offset_div2   = h->slice_alpha_c0_offset / 2;
+    slice->slice_beta_offset_div2       = h->slice_beta_offset     / 2;
     slice->Reserved8Bits                = 0;
 
     for (list = 0; list < 2; list++) {
