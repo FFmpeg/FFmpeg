@@ -73,9 +73,8 @@ int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
 }
 
 /* XXX: make it use less memory */
-static int av_mpeg4_decode_header(AVCodecParserContext *s1,
-                                  AVCodecContext *avctx,
-                                  const uint8_t *buf, int buf_size)
+static int mpeg4_decode_header(AVCodecParserContext *s1, AVCodecContext *avctx,
+                               const uint8_t *buf, int buf_size)
 {
     struct Mp4vParseContext *pc = s1->priv_data;
     Mpeg4DecContext *dec_ctx = &pc->dec_ctx;
@@ -143,7 +142,7 @@ static int mpeg4video_parse(AVCodecParserContext *s,
             return buf_size;
         }
     }
-    av_mpeg4_decode_header(s, avctx, buf, buf_size);
+    mpeg4_decode_header(s, avctx, buf, buf_size);
 
     *poutbuf      = buf;
     *poutbuf_size = buf_size;
