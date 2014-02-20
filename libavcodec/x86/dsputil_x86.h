@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_X86_DSPUTIL_MMX_H
-#define AVCODEC_X86_DSPUTIL_MMX_H
+#ifndef AVCODEC_X86_DSPUTIL_X86_H
+#define AVCODEC_X86_DSPUTIL_X86_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -195,4 +195,4 @@ STATIC void PFX1 ## _pixels16 ## TYPE ## CPUEXT(uint8_t *block,         \
                                                line_size, h);           \
 }
 
-#endif /* AVCODEC_X86_DSPUTIL_MMX_H */
+#endif /* AVCODEC_X86_DSPUTIL_X86_H */
