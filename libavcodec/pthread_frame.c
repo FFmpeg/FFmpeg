@@ -317,6 +317,7 @@ static int submit_packet(PerThreadContext *p, AVPacket *avpkt)
     FrameThreadContext *fctx = p->parent;
     PerThreadContext *prev_thread = fctx->prev_thread;
     const AVCodec *codec = p->avctx->codec;
+    int ret;
 
     if (!avpkt->size && !(codec->capabilities & CODEC_CAP_DELAY)) return 0;
 
@@ -340,6 +341,7 @@ static int submit_packet(PerThreadContext *p, AVPacket *avpkt)
         }
     }
 
+    av_packet_free_side_data(&p->avpkt);
     av_buffer_unref(&p->avpkt.buf);
     p->avpkt = *avpkt;
     if (avpkt->buf)
@@ -354,6 +356,8 @@ static int submit_packet(PerThreadContext *p, AVPacket *avpkt)
         memcpy(p->buf, avpkt->data, avpkt->size);
         memset(p->buf + avpkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     }
+    if ((ret = av_copy_packet_side_data(&p->avpkt, avpkt)) < 0)
+        return ret;
 
     p->state = STATE_SETTING_UP;
     pthread_cond_signal(&p->input_cond);
@@ -592,6 +596,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         pthread_cond_destroy(&p->input_cond);
         pthread_cond_destroy(&p->progress_cond);
         pthread_cond_destroy(&p->output_cond);
+        av_packet_free_side_data(&p->avpkt);
         av_buffer_unref(&p->avpkt.buf);
         av_freep(&p->buf);
         av_freep(&p->released_buffers);
