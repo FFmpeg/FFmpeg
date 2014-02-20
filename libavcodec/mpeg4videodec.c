@@ -1916,6 +1916,11 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         else
             s->quarter_sample = 0;
 
+        if (get_bits_left(gb) < 4) {
+            av_log(s->avctx, AV_LOG_ERROR, "VOL Header truncated\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         if (!get_bits1(gb)) {
             int pos               = get_bits_count(gb);
             int estimation_method = get_bits(gb, 2);
