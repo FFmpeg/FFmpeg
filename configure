@@ -2758,6 +2758,11 @@ case "$toolchain" in
         add_cflags  -fsanitize=thread -pie
         add_ldflags -fsanitize=thread -pie
     ;;
+    clang-usan)
+        cc_default="clang"
+        add_cflags  -fsanitize=undefined
+        add_ldflags -fsanitize=undefined
+    ;;
     gcc-asan)
         cc_default="gcc"
         add_cflags  -fsanitize=address
@@ -2767,6 +2772,11 @@ case "$toolchain" in
         cc_default="gcc"
         add_cflags  -fsanitize=thread -pie -fPIC
         add_ldflags -fsanitize=thread -pie -fPIC
+    ;;
+    gcc-usan)
+        cc_default="gcc"
+        add_cflags  -fsanitize=undefined
+        add_ldflags -fsanitize=undefined
     ;;
     valgrind-massif)
         target_exec_default=${valgrind:-"valgrind"}
