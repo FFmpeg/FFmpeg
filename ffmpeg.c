@@ -1340,7 +1340,12 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     }
 
     if (is_last_report) {
-        int64_t raw= audio_size + video_size + data_size + subtitle_size + extra_size;
+        int64_t raw   = audio_size + video_size + data_size + subtitle_size + extra_size;
+        float percent = 0.0;
+
+        if (raw)
+            percent = 100.0 * (total_size - raw) / raw;
+
         av_log(NULL, AV_LOG_INFO, "\n");
         av_log(NULL, AV_LOG_INFO, "video:%1.0fkB audio:%1.0fkB subtitle:%1.0f data:%1.0f global headers:%1.0fkB muxing overhead %f%%\n",
                video_size / 1024.0,
@@ -1348,8 +1353,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                subtitle_size / 1024.0,
                data_size / 1024.0,
                extra_size / 1024.0,
-               100.0 * (total_size - raw) / raw
-        );
+               percent);
         if(video_size + data_size + audio_size + subtitle_size + extra_size == 0){
             av_log(NULL, AV_LOG_WARNING, "Output file is empty, nothing was encoded (check -ss / -t / -frames parameters if used)\n");
         }
