@@ -1454,7 +1454,7 @@ ARCH_EXT_LIST_X86='
     amd3dnowext
     avx
     avx2
-    xop
+    cpunop
     fma4
     i686
     mmx
@@ -1465,6 +1465,7 @@ ARCH_EXT_LIST_X86='
     sse4
     sse42
     ssse3
+    xop
 '
 
 ARCH_EXT_LIST="
@@ -1548,7 +1549,6 @@ HAVE_LIST="
     clock_gettime
     closesocket
     CommandLineToArgvW
-    cpunop
     CryptGenRandom
     dcbzl
     dev_bktr_ioctl_bt848_h
