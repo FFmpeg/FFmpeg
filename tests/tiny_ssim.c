@@ -32,14 +32,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#if HAVE_ISATTY
-#if HAVE_IO_H
-#include <io.h>
-#endif
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#endif
 
 #define FFSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 #define FFMIN(a,b) ((a) > (b) ? (b) : (a))
@@ -192,7 +184,7 @@ int main(int argc, char* argv[])
     double ssim[3] = {0,0,0};
     int frame_size, w, h;
     int frames, seek;
-    int i, istty = 1;
+    int i;
 
     if( argc<4 || 2 != sscanf(argv[3], "%dx%d", &w, &h) )
     {
@@ -215,9 +207,6 @@ int main(int argc, char* argv[])
     seek = argc<5 ? 0 : atoi(argv[4]);
     fseek(f[seek<0], seek < 0 ? -seek : seek, SEEK_SET);
 
-#if HAVE_ISATTY
-    istty = isatty(0) && isatty(2);
-#endif
     for( frames=0;; frames++ )
     {
         uint64_t ssd_one[3];
@@ -236,11 +225,8 @@ int main(int argc, char* argv[])
 
         printf("Frame %d | ", frames);
         print_results(ssd_one, ssim_one, 1, w, h);
-        if (istty) {
-            printf("                \r");
-            fflush(stdout);
-        } else
-            printf("\n");
+        printf("                \r");
+        fflush(stdout);
     }
 
     if( !frames ) return 0;
