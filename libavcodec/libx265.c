@@ -99,10 +99,15 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     }
 
     ctx->params->frameNumThreads = avctx->thread_count;
-    ctx->params->frameRate       = (int) (avctx->time_base.den / avctx->time_base.num);
+    ctx->params->fpsNum          = avctx->time_base.den;
+    ctx->params->fpsDenom        = avctx->time_base.num * avctx->ticks_per_frame;
     ctx->params->sourceWidth     = avctx->width;
     ctx->params->sourceHeight    = avctx->height;
-    ctx->params->inputBitDepth   = av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth_minus1 + 1;
+
+    if (x265_max_bit_depth == 8)
+        ctx->params->internalBitDepth = 8;
+    else if (x265_max_bit_depth == 12)
+        ctx->params->internalBitDepth = 10;
 
     if (avctx->bit_rate > 0) {
         ctx->params->rc.bitrate         = avctx->bit_rate / 1000;
@@ -189,7 +194,8 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
            x265pic.stride[i] = pic->linesize[i];
         }
 
-        x265pic.pts = pic->pts;
+        x265pic.pts      = pic->pts;
+        x265pic.bitDepth = av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth_minus1 + 1;
     }
 
     ret = x265_encoder_encode(ctx->encoder, &nal, &nnal,
