@@ -3062,6 +3062,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             for (i = 0; i < ic->nb_streams; i++)
                 if (!ic->streams[i]->r_frame_rate.num &&
                     ic->streams[i]->info->duration_count <= 1 &&
+                    ic->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
                     strcmp(ic->iformat->name, "image2"))
                     av_log(ic, AV_LOG_WARNING,
                            "Stream #%d: not enough frames to estimate rate; "
