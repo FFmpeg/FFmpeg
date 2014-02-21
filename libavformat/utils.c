@@ -2382,7 +2382,9 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
 
     for (i = 0; i < ic->nb_streams; i++) {
         st = ic->streams[i];
-        if (st->start_time == AV_NOPTS_VALUE && st->first_dts == AV_NOPTS_VALUE)
+        if (st->start_time == AV_NOPTS_VALUE &&
+            st->first_dts == AV_NOPTS_VALUE &&
+            st->codec->codec_type != AVMEDIA_TYPE_UNKNOWN)
             av_log(st->codec, AV_LOG_WARNING,
                    "start time is not set in estimate_timings_from_pts\n");
 
