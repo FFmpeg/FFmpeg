@@ -29,6 +29,10 @@
 #include "avcodec.h"
 #include "internal.h"
 
+#if defined(_MSC_VER)
+#define X265_API_IMPORTS 1
+#endif
+
 typedef struct libx265Context {
     const AVClass *class;
 
