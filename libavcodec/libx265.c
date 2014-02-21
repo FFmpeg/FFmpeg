@@ -77,6 +77,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     libx265Context *ctx = avctx->priv_data;
     x265_nal *nal;
     uint8_t *buf;
+    int sar_num, sar_den;
     int nnal;
     int ret;
     int i;
@@ -112,6 +113,15 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->fpsDenom        = avctx->time_base.num * avctx->ticks_per_frame;
     ctx->params->sourceWidth     = avctx->width;
     ctx->params->sourceHeight    = avctx->height;
+
+    av_reduce(&sar_num, &sar_den,
+              avctx->sample_aspect_ratio.num,
+              avctx->sample_aspect_ratio.den, 4096);
+    ctx->params->bEnableVuiParametersPresentFlag = 1;
+    ctx->params->bEnableAspectRatioIdc           = 1;
+    ctx->params->aspectRatioIdc                  = 255;
+    ctx->params->sarWidth                        = sar_num;
+    ctx->params->sarHeight                       = sar_den;
 
     if (x265_max_bit_depth == 8)
         ctx->params->internalBitDepth = 8;
