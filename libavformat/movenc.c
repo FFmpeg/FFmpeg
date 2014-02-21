@@ -3255,6 +3255,17 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     int size = pkt->size;
     uint8_t *reformatted_data = NULL;
 
+    if (trk->entry) {
+        int64_t duration = pkt->dts - trk->cluster[trk->entry - 1].dts;
+        if (duration < 0 || duration > INT_MAX) {
+            av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" / timestamp: %"PRId64" is out of range for mov/mp4 format\n",
+                duration, pkt->dts
+            );
+
+            pkt->dts = trk->cluster[trk->entry - 1].dts + 1;
+            pkt->pts = AV_NOPTS_VALUE;
+        }
+    }
     if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
         int ret;
         if (mov->fragments > 0) {
