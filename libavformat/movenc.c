@@ -614,7 +614,12 @@ static int get_cluster_duration(MOVTrack *track, int cluster_idx)
     else
         next_dts = track->cluster[cluster_idx + 1].dts;
 
-    return next_dts - track->cluster[cluster_idx].dts;
+    next_dts -= track->cluster[cluster_idx].dts;
+
+    av_assert0(next_dts >= 0);
+    av_assert0(next_dts <= INT_MAX);
+
+    return next_dts;
 }
 
 static int get_samples_per_packet(MOVTrack *track)
