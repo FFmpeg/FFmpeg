@@ -538,7 +538,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         AVStream *st = s->streams[pkt->stream_index];
         int64_t offset = st->mux_ts_offset;
 
-        if (pkt->dts < 0 && pkt->dts != AV_NOPTS_VALUE && !s->offset) {
+        if ((pkt->dts < 0 || s->avoid_negative_ts == 2) && pkt->dts != AV_NOPTS_VALUE && !s->offset) {
             s->offset = -pkt->dts;
             s->offset_timebase = st->time_base;
         }
