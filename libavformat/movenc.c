@@ -3761,7 +3761,7 @@ static int mov_write_header(AVFormatContext *s)
     }
 
     if (!supports_edts(mov) && s->avoid_negative_ts < 0) {
-        s->avoid_negative_ts = 1;
+        s->avoid_negative_ts = 2;
     }
 
     /* Non-seekable output is ok if using fragmentation. If ism_lookahead
