@@ -1192,16 +1192,27 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
              */
             if (s->prediction_mode[k][l]) {
                 int n;
-                for (m = 0; m < 8; m++) {
-                    for (n = 1; n <= 4; n++)
+                if (s->predictor_history)
+                    subband_samples[k][l][0] += (adpcm_vb[s->prediction_vq[k][l]][0] *
+                                                 s->subband_samples_hist[k][l][3] +
+                                                 adpcm_vb[s->prediction_vq[k][l]][1] *
+                                                 s->subband_samples_hist[k][l][2] +
+                                                 adpcm_vb[s->prediction_vq[k][l]][2] *
+                                                 s->subband_samples_hist[k][l][1] +
+                                                 adpcm_vb[s->prediction_vq[k][l]][3] *
+                                                 s->subband_samples_hist[k][l][0]) *
+                                                (1.0f / 8192);
+                for (m = 1; m < 8; m++) {
+                    float sum = adpcm_vb[s->prediction_vq[k][l]][0] *
+                                subband_samples[k][l][m - 1];
+                    for (n = 2; n <= 4; n++)
                         if (m >= n)
-                            subband_samples[k][l][m] +=
-                                (adpcm_vb[s->prediction_vq[k][l]][n - 1] *
-                                 subband_samples[k][l][m - n] / 8192);
+                            sum += adpcm_vb[s->prediction_vq[k][l]][n - 1] *
+                                   subband_samples[k][l][m - n];
                         else if (s->predictor_history)
-                            subband_samples[k][l][m] +=
-                                (adpcm_vb[s->prediction_vq[k][l]][n - 1] *
-                                 s->subband_samples_hist[k][l][m - n + 4] / 8192);
+                            sum += adpcm_vb[s->prediction_vq[k][l]][n - 1] *
+                                   s->subband_samples_hist[k][l][m - n + 4];
+                    subband_samples[k][l][m] += sum * 1.0f / 8192;
                 }
             }
         }
