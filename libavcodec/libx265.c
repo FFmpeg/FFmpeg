@@ -81,6 +81,15 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     int ret;
     int i;
 
+    if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL &&
+        !av_pix_fmt_desc_get(avctx->pix_fmt)->log2_chroma_w &&
+        !av_pix_fmt_desc_get(avctx->pix_fmt)->log2_chroma_h) {
+        av_log(avctx, AV_LOG_ERROR,
+               "4:4:4 support is not fully defined for HEVC yet. "
+               "Set -strict experimental to encode anyway.\n");
+        return AVERROR(ENOSYS);
+    }
+
     avctx->coded_frame = av_frame_alloc();
     if (!avctx->coded_frame) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
@@ -108,6 +117,17 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         ctx->params->internalBitDepth = 8;
     else if (x265_max_bit_depth == 12)
         ctx->params->internalBitDepth = 10;
+
+    switch (avctx->pix_fmt) {
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV420P10:
+        ctx->params->internalCsp = X265_CSP_I420;
+        break;
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV444P10:
+        ctx->params->internalCsp = X265_CSP_I444;
+        break;
+    }
 
     if (avctx->bit_rate > 0) {
         ctx->params->rc.bitrate         = avctx->bit_rate / 1000;
@@ -243,12 +263,15 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static const enum AVPixelFormat x265_csp_eight[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat x265_csp_twelve[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_YUV420P10,
+    AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_NONE
 };
 
