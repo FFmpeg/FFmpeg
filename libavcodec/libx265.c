@@ -235,7 +235,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ret = x265_encoder_encode(ctx->encoder, &nal, &nnal,
                               pic ? &x265pic : NULL, &x265pic_out);
     if (ret < 0)
-        return AVERROR_UNKNOWN;
+        return AVERROR_EXTERNAL;
 
     if (!nnal)
         return 0;
