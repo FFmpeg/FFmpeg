@@ -14,12 +14,12 @@ SOURCE=`pwd`
 SSL=$SOURCE/../openssl
 
 
-TOOLCHAIN=/tmp/vplayer
+TOOLCHAIN=/tmp/vitamio
 SYSROOT=$TOOLCHAIN/sysroot/
 if [ -d $TOOLCHAIN ]; then
-    echo "Toolchain is already built."
+    echo "Toolchain is already build."
 else
-		$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.7 \
+		$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.8 \
 			--system=linux-x86_64 --platform=android-14 --install-dir=$TOOLCHAIN
 fi
 
@@ -30,11 +30,8 @@ export AR=arm-linux-androideabi-ar
 
 CFLAGS="-std=c99 -O3 -Wall -mthumb -pipe -fpic -fasm \
   -finline-limit=300 -ffast-math \
-  -fstrict-aliasing -Werror=strict-aliasing \
-  -fmodulo-sched -fmodulo-sched-allow-regmoves \
-  -fgraphite -fgraphite-identity -floop-block -floop-flatten \
-  -floop-interchange -floop-strip-mine -floop-parallelize-all -ftree-loop-linear \
   -Wno-psabi -Wa,--noexecstack \
+  -fdiagnostics-color=always \
   -D__ARM_ARCH_5__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5TE__ \
   -DANDROID -DNDEBUG \
   -I$SSL/include "
@@ -133,6 +130,6 @@ for version in neon; do
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
   arm-linux-androideabi-strip --strip-unneeded $PREFIX/libffmpeg.so
 
-  adb push $PREFIX/libffmpeg.so /data/data/me.abitno.vplayer.t/libs/
+  adb push $PREFIX/libffmpeg.so /data/data/io.vov.vitamio.demo/libs/
 
 done
