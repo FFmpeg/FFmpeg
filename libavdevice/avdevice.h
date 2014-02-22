@@ -66,6 +66,42 @@ const char *avdevice_license(void);
  */
 void avdevice_register_all(void);
 
+/**
+ * Audio input devices iterator.
+ *
+ * If d is NULL, returns the first registered input audio/video device,
+ * if d is non-NULL, returns the next registered input audio/video device after d
+ * or NULL if d is the last one.
+ */
+AVInputFormat *av_input_audio_device_next(AVInputFormat  *d);
+
+/**
+ * Video input devices iterator.
+ *
+ * If d is NULL, returns the first registered input audio/video device,
+ * if d is non-NULL, returns the next registered input audio/video device after d
+ * or NULL if d is the last one.
+ */
+AVInputFormat *av_input_video_device_next(AVInputFormat  *d);
+
+/**
+ * Audio output devices iterator.
+ *
+ * If d is NULL, returns the first registered output audio/video device,
+ * if d is non-NULL, returns the next registered output audio/video device after d
+ * or NULL if d is the last one.
+ */
+AVOutputFormat *av_output_audio_device_next(AVOutputFormat *d);
+
+/**
+ * Video output devices iterator.
+ *
+ * If d is NULL, returns the first registered output audio/video device,
+ * if d is non-NULL, returns the next registered output audio/video device after d
+ * or NULL if d is the last one.
+ */
+AVOutputFormat *av_output_video_device_next(AVOutputFormat *d);
+
 typedef struct AVDeviceRect {
     int x;      /**< x coordinate of top left corner */
     int y;      /**< y coordinate of top left corner */
