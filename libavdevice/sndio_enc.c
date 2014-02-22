@@ -76,6 +76,13 @@ static int audio_write_trailer(AVFormatContext *s1)
     return 0;
 }
 
+static const AVClass sndio_muxer_class = {
+    .class_name     = "sndio outdev",
+    .item_name      = av_default_item_name,
+    .version        = LIBAVUTIL_VERSION_INT,
+    .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
+};
+
 AVOutputFormat ff_sndio_muxer = {
     .name           = "sndio",
     .long_name      = NULL_IF_CONFIG_SMALL("sndio audio playback"),
@@ -89,4 +96,5 @@ AVOutputFormat ff_sndio_muxer = {
     .write_packet   = audio_write_packet,
     .write_trailer  = audio_write_trailer,
     .flags          = AVFMT_NOFILE,
+    .priv_class     = &sndio_muxer_class,
 };

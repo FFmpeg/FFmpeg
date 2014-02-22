@@ -633,6 +633,7 @@ static const AVClass x11_class = {
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
 /** x11 grabber device demuxer declaration */

@@ -142,6 +142,13 @@ audio_get_output_timestamp(AVFormatContext *s1, int stream,
     *dts = s->timestamp - delay;
 }
 
+static const AVClass alsa_muxer_class = {
+    .class_name     = "ALSA muxer",
+    .item_name      = av_default_item_name,
+    .version        = LIBAVUTIL_VERSION_INT,
+    .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
+};
+
 AVOutputFormat ff_alsa_muxer = {
     .name           = "alsa",
     .long_name      = NULL_IF_CONFIG_SMALL("ALSA audio output"),
@@ -154,4 +161,5 @@ AVOutputFormat ff_alsa_muxer = {
     .write_uncoded_frame = audio_write_frame,
     .get_output_timestamp = audio_get_output_timestamp,
     .flags          = AVFMT_NOFILE,
+    .priv_class     = &alsa_muxer_class,
 };
