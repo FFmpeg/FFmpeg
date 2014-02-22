@@ -166,6 +166,13 @@ struct SwrContext *swr_alloc(void);
 int swr_init(struct SwrContext *s);
 
 /**
+ * Check whether an swr context has been initialized or not.
+ *
+ * @return positive if it has been initialized, 0 if not initialized
+ */
+int swr_is_initialized(struct SwrContext *s);
+
+/**
  * Allocate SwrContext if needed and set/reset common parameters.
  *
  * This function does not require s to be allocated with swr_alloc(). On the

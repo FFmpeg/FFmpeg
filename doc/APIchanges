@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-02-xx - xxxxxxx - lswr 0.18.100 - swresample.h
+  Add swr_is_initialized() for checking whether a resample context is initialized.
+
 2014-02-xx - xxxxxxx - lavr 1.2.0 - avresample.h
   Add avresample_is_open() for checking whether a resample context is open.
 

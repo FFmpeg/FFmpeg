@@ -733,6 +733,10 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     return out_count;
 }
 
+int swr_is_initialized(struct SwrContext *s) {
+    return !!s->in_buffer.ch_count;
+}
+
 int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_count,
                                 const uint8_t *in_arg [SWR_CH_MAX], int  in_count){
     AudioData * in= &s->in;
