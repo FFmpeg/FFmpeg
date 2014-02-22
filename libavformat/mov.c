@@ -1536,6 +1536,10 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
         // force sample rate for qcelp when not stored in mov
         if (st->codec->codec_tag != MKTAG('Q','c','l','p'))
             st->codec->sample_rate = 8000;
+        // FIXME: Why is the following needed for some files?
+        sc->samples_per_frame = 160;
+        if (!sc->bytes_per_frame)
+            sc->bytes_per_frame = 35;
         break;
     case AV_CODEC_ID_AMR_NB:
         st->codec->channels    = 1;
