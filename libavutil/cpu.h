@@ -49,6 +49,7 @@
 #define AV_CPU_FLAG_FMA4         0x0800 ///< Bulldozer FMA4 functions
 #define AV_CPU_FLAG_CMOV         0x1000 ///< i686 cmov
 #define AV_CPU_FLAG_AVX2         0x8000 ///< AVX2 functions: requires OS support even if YMM registers aren't used
+#define AV_CPU_FLAG_FMA3        0x10000 ///< Haswell FMA3 functions
 
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
 
