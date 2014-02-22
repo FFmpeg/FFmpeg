@@ -218,33 +218,12 @@ static void free_temp(AudioData *a){
     memset(a, 0, sizeof(*a));
 }
 
-av_cold void swr_free(SwrContext **ss){
-    SwrContext *s= *ss;
-    if(s){
-        free_temp(&s->postin);
-        free_temp(&s->midbuf);
-        free_temp(&s->preout);
-        free_temp(&s->in_buffer);
-        free_temp(&s->silence);
-        free_temp(&s->drop_temp);
-        free_temp(&s->dither.noise);
-        free_temp(&s->dither.temp);
-        swri_audio_convert_free(&s-> in_convert);
-        swri_audio_convert_free(&s->out_convert);
-        swri_audio_convert_free(&s->full_convert);
-        if (s->resampler)
-            s->resampler->free(&s->resample);
-        swri_rematrix_free(s);
-    }
-
-    av_freep(ss);
-}
-
-av_cold int swr_init(struct SwrContext *s){
-    int ret;
+static void clear_context(SwrContext *s){
     s->in_buffer_index= 0;
     s->in_buffer_count= 0;
     s->resample_in_constraint= 0;
+    memset(s->in.ch, 0, sizeof(s->in.ch));
+    memset(s->out.ch, 0, sizeof(s->out.ch));
     free_temp(&s->postin);
     free_temp(&s->midbuf);
     free_temp(&s->preout);
@@ -253,14 +232,29 @@ av_cold int swr_init(struct SwrContext *s){
     free_temp(&s->drop_temp);
     free_temp(&s->dither.noise);
     free_temp(&s->dither.temp);
-    memset(s->in.ch, 0, sizeof(s->in.ch));
-    memset(s->out.ch, 0, sizeof(s->out.ch));
     swri_audio_convert_free(&s-> in_convert);
     swri_audio_convert_free(&s->out_convert);
     swri_audio_convert_free(&s->full_convert);
     swri_rematrix_free(s);
 
     s->flushed = 0;
+}
+
+av_cold void swr_free(SwrContext **ss){
+    SwrContext *s= *ss;
+    if(s){
+        clear_context(s);
+        if (s->resampler)
+            s->resampler->free(&s->resample);
+    }
+
+    av_freep(ss);
+}
+
+av_cold int swr_init(struct SwrContext *s){
+    int ret;
+
+    clear_context(s);
 
     if(s-> in_sample_fmt >= AV_SAMPLE_FMT_NB){
         av_log(s, AV_LOG_ERROR, "Requested input sample format %d is invalid\n", s->in_sample_fmt);
