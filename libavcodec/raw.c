@@ -181,6 +181,19 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_XYZ12LE,      MKTAG('X', 'Y', 'Z' , 36 ) },
     { AV_PIX_FMT_XYZ12BE,      MKTAG(36 , 'Z' , 'Y', 'X') },
 
+    { AV_PIX_FMT_BAYER_BGGR8,    MKTAG(0xBA, 'B', 'G', 8   ) },
+    { AV_PIX_FMT_BAYER_BGGR16LE, MKTAG(0xBA, 'B', 'G', 16  ) },
+    { AV_PIX_FMT_BAYER_BGGR16BE, MKTAG(16  , 'G', 'B', 0xBA) },
+    { AV_PIX_FMT_BAYER_RGGB8,    MKTAG(0xBA, 'R', 'G', 8   ) },
+    { AV_PIX_FMT_BAYER_RGGB16LE, MKTAG(0xBA, 'R', 'G', 16  ) },
+    { AV_PIX_FMT_BAYER_RGGB16BE, MKTAG(16  , 'G', 'R', 0xBA) },
+    { AV_PIX_FMT_BAYER_GBRG8,    MKTAG(0xBA, 'G', 'B', 8   ) },
+    { AV_PIX_FMT_BAYER_GBRG16LE, MKTAG(0xBA, 'G', 'B', 16  ) },
+    { AV_PIX_FMT_BAYER_GBRG16BE, MKTAG(16,   'B', 'G', 0xBA) },
+    { AV_PIX_FMT_BAYER_GRBG8,    MKTAG(0xBA, 'G', 'R', 8   ) },
+    { AV_PIX_FMT_BAYER_GRBG16LE, MKTAG(0xBA, 'G', 'R', 16  ) },
+    { AV_PIX_FMT_BAYER_GRBG16BE, MKTAG(16,   'R', 'G', 0xBA) },
+
     /* quicktime */
     { AV_PIX_FMT_YUV420P, MKTAG('R', '4', '2', '0') }, /* Radius DV YUV PAL */
     { AV_PIX_FMT_YUV411P, MKTAG('R', '4', '1', '1') }, /* Radius DV YUV NTSC */
