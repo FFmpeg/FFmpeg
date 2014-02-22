@@ -172,6 +172,14 @@ AVAudioResampleContext *avresample_alloc_context(void);
 int avresample_open(AVAudioResampleContext *avr);
 
 /**
+ * Check whether an AVAudioResampleContext is open or closed.
+ *
+ * @param avr AVAudioResampleContext to check
+ * @return 1 if avr is open, 0 if avr is closed.
+ */
+int avresample_is_open(AVAudioResampleContext *avr);
+
+/**
  * Close AVAudioResampleContext.
  *
  * This closes the context, but it does not change the parameters. The context

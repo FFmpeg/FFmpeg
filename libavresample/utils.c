@@ -254,6 +254,11 @@ error:
     return ret;
 }
 
+int avresample_is_open(AVAudioResampleContext *avr)
+{
+    return !!avr->out_fifo;
+}
+
 void avresample_close(AVAudioResampleContext *avr)
 {
     ff_audio_data_free(&avr->in_buffer);
