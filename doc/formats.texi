@@ -125,17 +125,25 @@ Consider things that a sane encoder should not do as an error.
 Use wallclock as timestamps.
 
 @item avoid_negative_ts @var{integer} (@emph{output})
-Shift timestamps to make them non-negative. A value of 1 enables shifting,
-a value of 0 disables it, the default value of -1 enables shifting
-when required by the target format.
+
+Possible values:
+@table @samp
+@item make_non_negative
+Shift timestamps to make them non-negative.
+Also note that this affects only leading negative timestamps, and not
+non-monotonic negative timestamps.
+@item make_zero
+Shift timestamps so that the first timestamp is 0.
+@item auto (default)
+Enables shifting when required by the target format.
+@item disabled
+Disables shifting of timestamp.
+@end table
 
 When shifting is enabled, all output timestamps are shifted by the
 same amount. Audio, video, and subtitles desynching and relative
 timestamp differences are preserved compared to how they would have
 been without shifting.
-
-Also note that this affects only leading negative timestamps, and not
-non-monotonic negative timestamps.
 
 @item skip_initial_bytes @var{integer} (@emph{input})
 Set number of bytes to skip before reading header and frames if set to 1.
