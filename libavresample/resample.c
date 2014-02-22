@@ -42,7 +42,6 @@ struct ResampleContext {
     int linear;
     enum AVResampleFilterType filter_type;
     int kaiser_beta;
-    double factor;
     void (*set_filter)(void *filter, double *tab, int phase, int tap_count);
     void (*resample_one)(struct ResampleContext *c, void *dst0,
                          int dst_index, const void *src0,
@@ -94,10 +93,10 @@ static double bessel(double x)
 }
 
 /* Build a polyphase filterbank. */
-static int build_filter(ResampleContext *c)
+static int build_filter(ResampleContext *c, double factor)
 {
     int ph, i;
-    double x, y, w, factor;
+    double x, y, w;
     double *tab;
     int tap_count    = c->filter_length;
     int phase_count  = 1 << c->phase_shift;
@@ -106,9 +105,6 @@ static int build_filter(ResampleContext *c)
     tab = av_malloc(tap_count * sizeof(*tab));
     if (!tab)
         return AVERROR(ENOMEM);
-
-    /* if upsampling, only need to interpolate, no filter */
-    factor = FFMIN(c->factor, 1.0);
 
     for (ph = 0; ph < phase_count; ph++) {
         double norm = 0;
@@ -176,7 +172,6 @@ ResampleContext *ff_audio_resample_init(AVAudioResampleContext *avr)
     c->phase_shift   = avr->phase_shift;
     c->phase_mask    = phase_count - 1;
     c->linear        = avr->linear_interp;
-    c->factor        = factor;
     c->filter_length = FFMAX((int)ceil(avr->filter_size / factor), 1);
     c->filter_type   = avr->filter_type;
     c->kaiser_beta   = avr->kaiser_beta;
@@ -209,7 +204,7 @@ ResampleContext *ff_audio_resample_init(AVAudioResampleContext *avr)
     if (!c->filter_bank)
         goto error;
 
-    if (build_filter(c) < 0)
+    if (build_filter(c, factor) < 0)
         goto error;
 
     memcpy(&c->filter_bank[(c->filter_length * phase_count + 1) * felem_size],
