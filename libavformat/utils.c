@@ -2441,9 +2441,13 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
 
     avio_seek(ic->pb, old_offset, SEEK_SET);
     for (i = 0; i < ic->nb_streams; i++) {
+        int j;
+
         st              = ic->streams[i];
         st->cur_dts     = st->first_dts;
         st->last_IP_pts = AV_NOPTS_VALUE;
+        for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
+            st->pts_buffer[j] = AV_NOPTS_VALUE;
     }
 }
 
