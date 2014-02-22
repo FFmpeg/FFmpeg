@@ -49,6 +49,7 @@ const struct fmt_map avpriv_fmt_conversion_table[] = {
 #ifdef V4L2_PIX_FMT_CPIA1
     { AV_PIX_FMT_NONE,    AV_CODEC_ID_CPIA,     V4L2_PIX_FMT_CPIA1   },
 #endif
+    { AV_PIX_FMT_BAYER_RGGB8, AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_SRGGB8 },
     { AV_PIX_FMT_NONE,    AV_CODEC_ID_NONE,     0                    },
 };
 
