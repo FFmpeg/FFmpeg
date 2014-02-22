@@ -137,16 +137,21 @@ int ff_get_cpu_flags_x86(void)
                     rval |= AV_CPU_FLAG_FMA3;
             }
         }
-#if HAVE_AVX2
-    if (max_std_level >= 7) {
-        cpuid(7, eax, ebx, ecx, edx);
-        if (ebx&0x00000020)
-            rval |= AV_CPU_FLAG_AVX2;
-        /* TODO: BMI1/2 */
-    }
-#endif /* HAVE_AVX2 */
 #endif /* HAVE_AVX */
 #endif /* HAVE_SSE */
+    }
+    if (max_std_level >= 7) {
+        cpuid(7, eax, ebx, ecx, edx);
+#if HAVE_AVX2
+        if (ebx & 0x00000020)
+            rval |= AV_CPU_FLAG_AVX2;
+#endif /* HAVE_AVX2 */
+        /* BMI1/2 don't need OS support */
+        if (ebx & 0x00000008) {
+            rval |= AV_CPU_FLAG_BMI1;
+            if (ebx & 0x00000100)
+                rval |= AV_CPU_FLAG_BMI2;
+        }
     }
 
     cpuid(0x80000000, max_ext_level, ebx, ecx, edx);

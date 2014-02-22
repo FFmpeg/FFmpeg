@@ -50,6 +50,8 @@
 #define AV_CPU_FLAG_CMOV         0x1000 ///< i686 cmov
 #define AV_CPU_FLAG_AVX2         0x8000 ///< AVX2 functions: requires OS support even if YMM registers aren't used
 #define AV_CPU_FLAG_FMA3        0x10000 ///< Haswell FMA3 functions
+#define AV_CPU_FLAG_BMI1        0x20000 ///< Bit Manipulation Instruction Set 1
+#define AV_CPU_FLAG_BMI2        0x40000 ///< Bit Manipulation Instruction Set 2
 
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
 
