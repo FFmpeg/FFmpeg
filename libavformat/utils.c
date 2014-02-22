@@ -962,6 +962,48 @@ static AVPacketList *get_next_pkt(AVFormatContext *s, AVStream *st, AVPacketList
     return NULL;
 }
 
+static int64_t select_from_pts_buffer(AVStream *st, int64_t *pts_buffer, int64_t dts) {
+    int onein_oneout = st->codec->codec_id != AV_CODEC_ID_H264 &&
+                       st->codec->codec_id != AV_CODEC_ID_HEVC;
+
+    if(!onein_oneout) {
+        int delay = st->codec->has_b_frames;
+        int i;
+
+        if (dts == AV_NOPTS_VALUE) {
+            int64_t best_score = INT64_MAX;
+            for (i = 0; i<delay; i++) {
+                if (st->pts_reorder_error_count[i]) {
+                    int64_t score = st->pts_reorder_error[i] / st->pts_reorder_error_count[i];
+                    if (score < best_score) {
+                        best_score = score;
+                        dts = pts_buffer[i];
+                    }
+                }
+            }
+        } else {
+            for (i = 0; i<delay; i++) {
+                if (pts_buffer[i] != AV_NOPTS_VALUE) {
+                    int64_t diff =  FFABS(pts_buffer[i] - dts)
+                                    + (uint64_t)st->pts_reorder_error[i];
+                    diff = FFMAX(diff, st->pts_reorder_error[i]);
+                    st->pts_reorder_error[i] = diff;
+                    st->pts_reorder_error_count[i]++;
+                    if (st->pts_reorder_error_count[i] > 250) {
+                        st->pts_reorder_error[i] >>= 1;
+                        st->pts_reorder_error_count[i] >>= 1;
+                    }
+                }
+            }
+        }
+    }
+
+    if (dts == AV_NOPTS_VALUE)
+        dts = pts_buffer[0];
+
+    return dts;
+}
+
 static void update_initial_timestamps(AVFormatContext *s, int stream_index,
                                       int64_t dts, int64_t pts, AVPacket *pkt)
 {
@@ -1004,8 +1046,8 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
             pts_buffer[0] = pktl->pkt.pts;
             for (i = 0; i<delay && pts_buffer[i] > pts_buffer[i + 1]; i++)
                 FFSWAP(int64_t, pts_buffer[i], pts_buffer[i + 1]);
-            if (pktl->pkt.dts == AV_NOPTS_VALUE)
-                pktl->pkt.dts = pts_buffer[0];
+
+            pktl->pkt.dts = select_from_pts_buffer(st, pts_buffer, pktl->pkt.dts);
         }
     }
 
@@ -1197,8 +1239,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         st->pts_buffer[0] = pkt->pts;
         for (i = 0; i<delay && st->pts_buffer[i] > st->pts_buffer[i + 1]; i++)
             FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i + 1]);
-        if (pkt->dts == AV_NOPTS_VALUE)
-            pkt->dts = st->pts_buffer[0];
+
+        pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);
     }
     // We skipped it above so we try here.
     if (!onein_oneout)
