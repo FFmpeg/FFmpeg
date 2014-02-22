@@ -3275,7 +3275,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             }
         }
     }
-    h->qp_thresh = 15 +
+    h->qp_thresh = 15 -
                    FFMIN(h->slice_alpha_c0_offset, h->slice_beta_offset) -
                    FFMAX3(0,
                           h->pps.chroma_qp_index_offset[0],
