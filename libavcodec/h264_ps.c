@@ -554,7 +554,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
                sps->timing_info_present_flag ? sps->num_units_in_tick : 0,
                sps->timing_info_present_flag ? sps->time_scale : 0,
                sps->bit_depth_luma,
-               h->sps.bitstream_restriction_flag ? sps->num_reorder_frames : -1
+               sps->bitstream_restriction_flag ? sps->num_reorder_frames : -1
                );
     }
     sps->new = 1;
