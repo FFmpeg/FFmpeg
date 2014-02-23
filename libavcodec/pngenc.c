@@ -113,6 +113,22 @@ static void sub_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, i
     }
 }
 
+static void sub_left_prediction(DSPContext *dsp, uint8_t *dst, const uint8_t *src, int bpp, int size)
+{
+    const uint8_t *src1 = src + bpp;
+    const uint8_t *src2 = src;
+    int x, unaligned_w;
+
+    memcpy(dst, src, bpp);
+    dst += bpp;
+    size -= bpp;
+    unaligned_w = FFMIN(32 - bpp, size);
+    for (x = 0; x < unaligned_w; x++)
+        *dst++ = *src1++ - *src2++;
+    size -= unaligned_w;
+    dsp->diff_bytes(dst, src1, src2, size);
+}
+
 static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
                            uint8_t *src, uint8_t *top, int size, int bpp)
 {
@@ -123,8 +139,7 @@ static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
         memcpy(dst, src, size);
         break;
     case PNG_FILTER_VALUE_SUB:
-        dsp->diff_bytes(dst, src, src-bpp, size);
-        memcpy(dst, src, bpp);
+        sub_left_prediction(dsp, dst, src, bpp, size);
         break;
     case PNG_FILTER_VALUE_UP:
         dsp->diff_bytes(dst, src, top, size);
