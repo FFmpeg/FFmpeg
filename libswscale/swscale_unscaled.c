@@ -968,6 +968,160 @@ static int rgbToPlanarRgbWrapper(SwsContext *c, const uint8_t *src[],
     return srcSliceH;
 }
 
+#define BAYER_GBRG
+#define BAYER_8
+#define BAYER_RENAME(x) bayer_gbrg8_to_##x
+#include "bayer_template.c"
+
+#define BAYER_GBRG
+#define BAYER_16LE
+#define BAYER_RENAME(x) bayer_gbrg16le_to_##x
+#include "bayer_template.c"
+
+#define BAYER_GBRG
+#define BAYER_16BE
+#define BAYER_RENAME(x) bayer_gbrg16be_to_##x
+#include "bayer_template.c"
+
+#define BAYER_GRBG
+#define BAYER_8
+#define BAYER_RENAME(x) bayer_grbg8_to_##x
+#include "bayer_template.c"
+
+#define BAYER_GRBG
+#define BAYER_16LE
+#define BAYER_RENAME(x) bayer_grbg16le_to_##x
+#include "bayer_template.c"
+
+#define BAYER_GRBG
+#define BAYER_16BE
+#define BAYER_RENAME(x) bayer_grbg16be_to_##x
+#include "bayer_template.c"
+
+#define BAYER_BGGR
+#define BAYER_8
+#define BAYER_RENAME(x) bayer_bggr8_to_##x
+#include "bayer_template.c"
+
+#define BAYER_BGGR
+#define BAYER_16LE
+#define BAYER_RENAME(x) bayer_bggr16le_to_##x
+#include "bayer_template.c"
+
+#define BAYER_BGGR
+#define BAYER_16BE
+#define BAYER_RENAME(x) bayer_bggr16be_to_##x
+#include "bayer_template.c"
+
+#define BAYER_RGGB
+#define BAYER_8
+#define BAYER_RENAME(x) bayer_rggb8_to_##x
+#include "bayer_template.c"
+
+#define BAYER_RGGB
+#define BAYER_16LE
+#define BAYER_RENAME(x) bayer_rggb16le_to_##x
+#include "bayer_template.c"
+
+#define BAYER_RGGB
+#define BAYER_16BE
+#define BAYER_RENAME(x) bayer_rggb16be_to_##x
+#include "bayer_template.c"
+
+static int bayer_to_rgb24_wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+                                  int srcSliceH, uint8_t* dst[], int dstStride[])
+{
+    uint8_t *dstPtr= dst[0];
+    const uint8_t *srcPtr= src[0];
+    int i;
+    void (*copy)       (const uint8_t *src, int src_stride, uint8_t *dst, int dst_stride, int width);
+    void (*interpolate)(const uint8_t *src, int src_stride, uint8_t *dst, int dst_stride, int width);
+
+    switch(c->srcFormat) {
+#define CASE(pixfmt, prefix) \
+    case pixfmt: copy        = bayer_##prefix##_to_rgb24_copy; \
+                 interpolate = bayer_##prefix##_to_rgb24_interpolate; \
+                 break;
+    CASE(AV_PIX_FMT_BAYER_BGGR8,    bggr8)
+    CASE(AV_PIX_FMT_BAYER_BGGR16LE, bggr16le)
+    CASE(AV_PIX_FMT_BAYER_BGGR16BE, bggr16be)
+    CASE(AV_PIX_FMT_BAYER_RGGB8,    rggb8)
+    CASE(AV_PIX_FMT_BAYER_RGGB16LE, rggb16le)
+    CASE(AV_PIX_FMT_BAYER_RGGB16BE, rggb16be)
+    CASE(AV_PIX_FMT_BAYER_GBRG8,    gbrg8)
+    CASE(AV_PIX_FMT_BAYER_GBRG16LE, gbrg16le)
+    CASE(AV_PIX_FMT_BAYER_GBRG16BE, gbrg16be)
+    CASE(AV_PIX_FMT_BAYER_GRBG8,    grbg8)
+    CASE(AV_PIX_FMT_BAYER_GRBG16LE, grbg16le)
+    CASE(AV_PIX_FMT_BAYER_GRBG16BE, grbg16be)
+#undef CASE
+    default: return 0;
+    }
+
+    copy(srcPtr, srcStride[0], dstPtr, dstStride[0], c->srcW);
+    srcPtr += 2 * srcStride[0];
+    dstPtr += 2 * dstStride[0];
+
+    for (i = 2; i < srcSliceH - 2; i += 2) {
+        interpolate(srcPtr, srcStride[0], dstPtr, dstStride[0], c->srcW);
+        srcPtr += 2 * srcStride[0];
+        dstPtr += 2 * dstStride[0];
+    }
+
+    copy(srcPtr, srcStride[0], dstPtr, dstStride[0], c->srcW);
+    return srcSliceH;
+}
+
+static int bayer_to_yv12_wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+                                 int srcSliceH, uint8_t* dst[], int dstStride[])
+{
+    const uint8_t *srcPtr= src[0];
+    uint8_t *dstY= dst[0];
+    uint8_t *dstU= dst[1];
+    uint8_t *dstV= dst[2];
+    int i;
+    void (*copy)       (const uint8_t *src, int src_stride, uint8_t *dstY, uint8_t *dstU, uint8_t *dstV, int luma_stride, int width, int32_t *rgb2yuv);
+    void (*interpolate)(const uint8_t *src, int src_stride, uint8_t *dstY, uint8_t *dstU, uint8_t *dstV, int luma_stride, int width, int32_t *rgb2yuv);
+
+    switch(c->srcFormat) {
+#define CASE(pixfmt, prefix) \
+    case pixfmt: copy        = bayer_##prefix##_to_yv12_copy; \
+                 interpolate = bayer_##prefix##_to_yv12_interpolate; \
+                 break;
+    CASE(AV_PIX_FMT_BAYER_BGGR8,    bggr8)
+    CASE(AV_PIX_FMT_BAYER_BGGR16LE, bggr16le)
+    CASE(AV_PIX_FMT_BAYER_BGGR16BE, bggr16be)
+    CASE(AV_PIX_FMT_BAYER_RGGB8,    rggb8)
+    CASE(AV_PIX_FMT_BAYER_RGGB16LE, rggb16le)
+    CASE(AV_PIX_FMT_BAYER_RGGB16BE, rggb16be)
+    CASE(AV_PIX_FMT_BAYER_GBRG8,    gbrg8)
+    CASE(AV_PIX_FMT_BAYER_GBRG16LE, gbrg16le)
+    CASE(AV_PIX_FMT_BAYER_GBRG16BE, gbrg16be)
+    CASE(AV_PIX_FMT_BAYER_GRBG8,    grbg8)
+    CASE(AV_PIX_FMT_BAYER_GRBG16LE, grbg16le)
+    CASE(AV_PIX_FMT_BAYER_GRBG16BE, grbg16be)
+#undef CASE
+    default: return 0;
+    }
+
+    copy(srcPtr, srcStride[0], dstY, dstU, dstV, dstStride[0], c->srcW, c->input_rgb2yuv_table);
+    srcPtr += 2 * srcStride[0];
+    dstY   += 2 * dstStride[0];
+    dstU   +=     dstStride[1];
+    dstV   +=     dstStride[1];
+
+    for (i = 2; i < srcSliceH - 2; i += 2) {
+        interpolate(srcPtr, srcStride[0], dstY, dstU, dstV, dstStride[0], c->srcW, c->input_rgb2yuv_table);
+        srcPtr += 2 * srcStride[0];
+        dstY   += 2 * dstStride[0];
+        dstU   +=     dstStride[1];
+        dstV   +=     dstStride[1];
+    }
+
+    copy(srcPtr, srcStride[0], dstY, dstU, dstV, dstStride[0], c->srcW, c->input_rgb2yuv_table);
+    return srcSliceH;
+}
+
 #define isRGBA32(x) (            \
            (x) == AV_PIX_FMT_ARGB   \
         || (x) == AV_PIX_FMT_RGBA   \
@@ -1491,8 +1645,23 @@ void ff_get_unscaled_swscale(SwsContext *c)
         isPackedRGB(srcFormat) && dstFormat == AV_PIX_FMT_GBRP)
         c->swscale = rgbToPlanarRgbWrapper;
 
+    if (isBayer(srcFormat)) {
+        if (dstFormat == AV_PIX_FMT_RGB24)
+            c->swscale = bayer_to_rgb24_wrapper;
+        else if (dstFormat == AV_PIX_FMT_YUV420P)
+            c->swscale = bayer_to_yv12_wrapper;
+        else if (!isBayer(dstFormat)) {
+            av_log(c, AV_LOG_ERROR, "unsupported bayer conversion\n");
+            av_assert0(0);
+        }
+    }
+
     /* bswap 16 bits per pixel/component packed formats */
-    if (IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGR444) ||
+    if (IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BAYER_BGGR16) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BAYER_RGGB16) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BAYER_GBRG16) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BAYER_GRBG16) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGR444) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGR48)  ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGRA64) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGR555) ||

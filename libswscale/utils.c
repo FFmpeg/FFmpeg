@@ -207,6 +207,18 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_GBRAP]       = { 1, 1 },
     [AV_PIX_FMT_GBRAP16LE]   = { 1, 0 },
     [AV_PIX_FMT_GBRAP16BE]   = { 1, 0 },
+    [AV_PIX_FMT_BAYER_BGGR8] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_RGGB8] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_GBRG8] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_GRBG8] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_BGGR16LE] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_BGGR16BE] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_RGGB16LE] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_RGGB16BE] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_GBRG16LE] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_GBRG16BE] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_GRBG16LE] = { 1, 0 },
+    [AV_PIX_FMT_BAYER_GRBG16BE] = { 1, 0 },
 };
 
 int sws_isSupportedInput(enum AVPixelFormat pix_fmt)

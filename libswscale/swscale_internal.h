@@ -749,8 +749,24 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
         || (x) == AV_PIX_FMT_BGR24       \
     )
 
+#define isBayer(x) ( \
+           (x)==AV_PIX_FMT_BAYER_BGGR8    \
+        || (x)==AV_PIX_FMT_BAYER_BGGR16LE \
+        || (x)==AV_PIX_FMT_BAYER_BGGR16BE \
+        || (x)==AV_PIX_FMT_BAYER_RGGB8    \
+        || (x)==AV_PIX_FMT_BAYER_RGGB16LE \
+        || (x)==AV_PIX_FMT_BAYER_RGGB16BE \
+        || (x)==AV_PIX_FMT_BAYER_GBRG8    \
+        || (x)==AV_PIX_FMT_BAYER_GBRG16LE \
+        || (x)==AV_PIX_FMT_BAYER_GBRG16BE \
+        || (x)==AV_PIX_FMT_BAYER_GRBG8    \
+        || (x)==AV_PIX_FMT_BAYER_GRBG16LE \
+        || (x)==AV_PIX_FMT_BAYER_GRBG16BE \
+    )
+
 #define isAnyRGB(x) \
     (           \
+          isBayer(x)          ||    \
           isRGBinInt(x)       ||    \
           isBGRinInt(x)       ||    \
           isRGB(x)      \
