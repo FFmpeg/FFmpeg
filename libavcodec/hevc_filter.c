@@ -283,11 +283,15 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
 static int get_pcm(HEVCContext *s, int x, int y)
 {
     int log2_min_pu_size = s->sps->log2_min_pu_size;
-    int x_pu             = x >> log2_min_pu_size;
-    int y_pu             = y >> log2_min_pu_size;
+    int x_pu, y_pu;
 
-    if (x < 0 || x_pu >= s->sps->min_pu_width ||
-        y < 0 || y_pu >= s->sps->min_pu_height)
+    if (x < 0 || y < 0)
+        return 2;
+
+    x_pu = x >> log2_min_pu_size;
+    y_pu = y >> log2_min_pu_size;
+
+    if (x_pu >= s->sps->min_pu_width || y_pu >= s->sps->min_pu_height)
         return 2;
     return s->is_pcm[y_pu * s->sps->min_pu_width + x_pu];
 }
