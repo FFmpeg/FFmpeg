@@ -452,6 +452,18 @@ static int alloc_picture(H264Context *h, Picture *pic)
             pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;
         }
     }
+    if (!h->avctx->hwaccel && CONFIG_GRAY && h->flags & CODEC_FLAG_GRAY && pic->f.data[2]) {
+        int h_chroma_shift, v_chroma_shift;
+        av_pix_fmt_get_chroma_sub_sample(pic->f.format,
+                                         &h_chroma_shift, &v_chroma_shift);
+
+        for(i=0; i<FF_CEIL_RSHIFT(h->avctx->height, v_chroma_shift); i++) {
+            memset(pic->f.data[1] + pic->f.linesize[1]*i,
+                   0x80, FF_CEIL_RSHIFT(h->avctx->width, h_chroma_shift));
+            memset(pic->f.data[2] + pic->f.linesize[2]*i,
+                   0x80, FF_CEIL_RSHIFT(h->avctx->width, h_chroma_shift));
+        }
+    }
 
     if (!h->qscale_table_pool) {
         ret = init_table_pools(h);
