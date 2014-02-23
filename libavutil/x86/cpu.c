@@ -133,7 +133,7 @@ int ff_get_cpu_flags_x86(void)
             xgetbv(0, eax, edx);
             if ((eax & 0x6) == 0x6) {
                 rval |= AV_CPU_FLAG_AVX;
-                if (ecx&0x00001000)
+                if (ecx & 0x00001000)
                     rval |= AV_CPU_FLAG_FMA3;
             }
         }
