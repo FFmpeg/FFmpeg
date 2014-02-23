@@ -3758,7 +3758,7 @@ EOF
         check_yasm "movbe ecx, [5]" && enable yasm ||
             die "yasm/nasm not found or too old. Use --disable-yasm for a crippled build."
         check_yasm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
-        check_yasm "CPU amdnop" && enable cpunop
+        check_yasm "CPU amdnop" || disable cpunop
     fi
 
     case "$cpu" in
