@@ -1283,7 +1283,7 @@ static void FUNC(hevc_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _xstride,
             const int p0 = P0;
             const int q0 = Q0;
             const int q1 = Q1;
-            delta0 = av_clip((((q0 - p0) << 2) + p1 - q1 + 4) >> 3, -tc, tc);
+            delta0 = av_clip((((q0 - p0) * 4) + p1 - q1 + 4) >> 3, -tc, tc);
             if (!no_p)
                 P0 = av_clip_pixel(p0 + delta0);
             if (!no_q)
