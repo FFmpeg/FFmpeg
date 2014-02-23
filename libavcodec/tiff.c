@@ -195,7 +195,7 @@ static char *doubles2str(double *dp, int count, const char *sep)
     char *ap, *ap0;
     uint64_t component_len;
     if (!sep) sep = ", ";
-    component_len = 15LL + strlen(sep);
+    component_len = 24LL + strlen(sep);
     if (count >= (INT_MAX - 1)/component_len)
         return NULL;
     ap = av_malloc(component_len * count + 1);
@@ -204,7 +204,7 @@ static char *doubles2str(double *dp, int count, const char *sep)
     ap0   = ap;
     ap[0] = '\0';
     for (i = 0; i < count; i++) {
-        unsigned l = snprintf(ap, component_len, "%f%s", dp[i], sep);
+        unsigned l = snprintf(ap, component_len, "%.15g%s", dp[i], sep);
         if(l >= component_len) {
             av_free(ap0);
             return NULL;
