@@ -155,6 +155,18 @@ AVBufferRef *av_buffer_ref(AVBufferRef *buf);
 void av_buffer_unref(AVBufferRef **buf);
 
 /**
+ * Free a given reference and pass underlaying data to user provided pointer.
+ * If there is more than one reference then data is copied.
+ *
+ * @param buf  the reference to be released. The pointer is set to NULL on return.
+ * @param data pointer to be passed with underlaying data.
+ * @return 0 on success, a negative AVERROR on failure.
+ *
+ * @note on error buffer is properly released and *data is set to NULL.
+ */
+int av_buffer_release(AVBufferRef **buf, uint8_t **data);
+
+/**
  * @return 1 if the caller may write to the data referred to by buf (which is
  * true if and only if buf is the only reference to the underlying AVBuffer).
  * Return 0 otherwise.
