@@ -674,6 +674,19 @@ int av_frame_is_writable(AVFrame *frame);
 int av_frame_make_writable(AVFrame *frame);
 
 /**
+ * Copy the frame data from src to dst.
+ *
+ * This function does not allocate anything, dst must be already initialized and
+ * allocated with the same parameters as src.
+ *
+ * This function only copies the frame data (i.e. the contents of the data /
+ * extended data arrays), not any other properties.
+ *
+ * @return >= 0 on success, a negative AVERROR on error.
+ */
+int av_frame_copy(AVFrame *dst, const AVFrame *src);
+
+/**
  * Copy only "metadata" fields from src to dst.
  *
  * Metadata for the purpose of this function are those fields that do not affect
