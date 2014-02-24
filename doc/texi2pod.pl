@@ -324,6 +324,8 @@ $sects{FOOTNOTES} .= "=back\n" if exists $sects{FOOTNOTES};
 
 unshift @sects_sequence, "NAME";
 for $sect (@sects_sequence) {
+    # always use utf8
+    print "=encoding utf8\n";
     if(exists $sects{$sect}) {
         $head = $sect;
         $head =~ s/SEEALSO/SEE ALSO/;
