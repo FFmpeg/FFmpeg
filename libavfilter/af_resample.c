@@ -251,6 +251,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         if (ret > 0) {
             out->nb_samples = ret;
+
+            ret = av_frame_copy_props(out, in);
+            if (ret < 0) {
+                av_frame_free(&out);
+                goto fail;
+            }
+
+            out->sample_rate = outlink->sample_rate;
             if (in->pts != AV_NOPTS_VALUE) {
                 out->pts = av_rescale_q(in->pts, inlink->time_base,
                                             outlink->time_base) -
