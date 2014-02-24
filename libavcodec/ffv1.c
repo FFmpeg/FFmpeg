@@ -141,8 +141,6 @@ av_cold int ffv1_common_init(AVCodecContext *avctx)
     if (!avctx->width || !avctx->height)
         return AVERROR_INVALIDDATA;
 
-    ff_dsputil_init(&s->dsp, avctx);
-
     s->width  = avctx->width;
     s->height = avctx->height;
 
