@@ -1407,25 +1407,6 @@ AVX_INSTR pfmul, 1, 0, 1
 %undef i
 %undef j
 
-%macro FMA_INSTR 3
-    %macro %1 4-7 %1, %2, %3
-        %if cpuflag(xop)
-            v%5 %1, %2, %3, %4
-        %elifidn %1, %4
-            %6 %2, %3
-            %7 %1, %2
-        %else
-            %6 %1, %2, %3
-            %7 %1, %4
-        %endif
-    %endmacro
-%endmacro
-
-FMA_INSTR  pmacsdd,  pmulld, paddd
-FMA_INSTR  pmacsww,  pmullw, paddw
-FMA_INSTR pmacsdql,  pmuldq, paddq
-FMA_INSTR pmadcswd, pmaddwd, paddd
-
 ; tzcnt is equivalent to "rep bsf" and is backwards-compatible with bsf.
 ; This lets us use tzcnt without bumping the yasm version requirement yet.
 %define tzcnt rep bsf

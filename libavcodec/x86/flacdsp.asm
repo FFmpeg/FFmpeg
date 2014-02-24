@@ -44,21 +44,21 @@ ALIGN 16
     test   jq, jq
     jz .end_order
 .loop_order:
-    pmacsdql m2, m0, m1, m2
+    PMACSDQL m2, m0, m1, m2, m0
     movd   m0, [decodedq+jq*4]
-    pmacsdql m3, m1, m0, m3
+    PMACSDQL m3, m1, m0, m3, m1
     movd   m1, [coeffsq+jq*4]
     inc    jq
     jl .loop_order
 .end_order:
-    pmacsdql m2, m0, m1, m2
+    PMACSDQL m2, m0, m1, m2, m0
     psrlq  m2, m4
     movd   m0, [decodedq]
     paddd  m0, m2
     movd   [decodedq], m0
     sub  lend, 2
     jl .ret
-    pmacsdql m3, m1, m0, m3
+    PMACSDQL m3, m1, m0, m3, m1
     psrlq  m3, m4
     movd   m1, [decodedq+4]
     paddd  m1, m3

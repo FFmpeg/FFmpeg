@@ -666,6 +666,25 @@
 %endif
 %endmacro
 
+%macro PMA_EMU 4
+    %macro %1 5-8 %2, %3, %4
+        %if cpuflag(xop)
+            v%6 %1, %2, %3, %4
+        %elifidn %1, %4
+            %7 %5, %2, %3
+            %8 %1, %4, %5
+        %else
+            %7 %1, %2, %3
+            %8 %1, %4
+        %endif
+    %endmacro
+%endmacro
+
+PMA_EMU  PMACSWW,  pmacsww,  pmullw, paddw
+PMA_EMU  PMACSDD,  pmacsdd,  pmulld, paddd ; sse4 emulation
+PMA_EMU PMACSDQL, pmacsdql,  pmuldq, paddq ; sse4 emulation
+PMA_EMU PMADCSWD, pmadcswd, pmaddwd, paddd
+
 ; Wrapper for non-FMA version of fmaddps
 %macro FMULADD_PS 5
     %if cpuflag(fma3) || cpuflag(fma4)
