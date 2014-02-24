@@ -1427,7 +1427,7 @@ a float number which specifies chroma temporal strength, defaults to
 Simple interlacing filter from progressive contents. This interleaves upper (or
 lower) lines from odd frames with lower (or upper) lines from even frames,
 halving the frame rate and preserving image height. A vertical lowpass filter
-is always applied in order to avoid twitter effects and reduce moire patterns.
+is always applied in order to avoid twitter effects and reduce moiré patterns.
 
 @example
    Original        Original             New Frame
