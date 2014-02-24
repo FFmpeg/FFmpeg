@@ -65,7 +65,7 @@ API changes, most recent first:
   Add ITU-R BT.2020 and other not yet included values to color primaries,
   transfer characteristics and colorspaces.
 
-2013-10-31 - 28096e0 - lavu 52.17.0 - avframe.h
+2013-10-31 - 28096e0 - lavu 52.17.0 - frame.h
   Add AVFrame.flags and AV_FRAME_FLAG_CORRUPT.
 
 2013-09-28 - 0767bfd - lavfi 3.11.0 - avfilter.h
