@@ -614,6 +614,7 @@ static int frame_copy_audio(AVFrame *dst, const AVFrame *src)
     int i;
 
     if (dst->nb_samples     != src->nb_samples ||
+        dst->channels       != src->channels ||
         dst->channel_layout != src->channel_layout)
         return AVERROR(EINVAL);
 
