@@ -4274,7 +4274,7 @@ enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h hea
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libaacplus        && require "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
 enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
-enabled libbluray         && require libbluray libbluray/bluray.h bd_open -lbluray
+enabled libbluray         && require_pkg_config libbluray libbluray/bluray.h bd_open
 enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                              { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
