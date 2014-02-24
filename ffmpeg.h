@@ -255,7 +255,6 @@ typedef struct InputStream {
     int64_t filter_in_rescale_delta_last;
 
     double ts_scale;
-    int is_start;            /* is 1 at the start and after a discontinuity */
     int saw_first_ts;
     int showed_multi_packet_warning;
     AVDictionary *opts;

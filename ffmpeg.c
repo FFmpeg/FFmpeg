@@ -2156,7 +2156,6 @@ static int init_input_stream(int ist_index, char *error, int error_len)
 
     ist->next_pts = AV_NOPTS_VALUE;
     ist->next_dts = AV_NOPTS_VALUE;
-    ist->is_start = 1;
 
     return 0;
 }
