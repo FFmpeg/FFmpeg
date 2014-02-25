@@ -32,6 +32,7 @@ version 2.2:
 - Support DNx444
 - libx265 encoder
 - dejudder filter
+- subfile protocol
 
 
 version 2.1:

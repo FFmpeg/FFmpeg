@@ -951,6 +951,30 @@ this binary block are used as master key, the following 14 bytes are
 used as master salt.
 @end table
 
+@section subfile
+
+Virtually extract a segment of a file or another stream.
+The underlying stream must be seekable.
+
+Accepted options:
+@table @option
+@item start
+Start offset of the extracted segment, in bytes.
+@item end
+End offset of the extracted segment, in bytes.
+@end table
+
+Examples:
+
+Extract a chapter from a DVD VOB file (start and end sectors obtained
+externally and multiplied by 2048):
+@example
+subfile,,start,153391104,end,268142592,,:/media/dvd/VIDEO_TS/VTS_08_1.VOB
+@end example
+
+Play an AVI file directly from a TAR archive:
+subfile,,start,183241728,end,366490624,,:archive.tar
+
 @section tcp
 
 Transmission Control Protocol.
