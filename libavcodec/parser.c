@@ -98,8 +98,7 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
         if (   s->cur_offset + off >= s->cur_frame_offset[i]
             && (s->frame_offset < s->cur_frame_offset[i] ||
               (!s->frame_offset && !s->next_frame_offset)) // first field/frame
-            // check disabled since MPEG-TS does not send complete PES packets
-            && /*s->next_frame_offset + off <*/  s->cur_frame_end[i]){
+            && s->cur_frame_end[i]) {
             s->dts= s->cur_frame_dts[i];
             s->pts= s->cur_frame_pts[i];
             s->pos= s->cur_frame_pos[i];
@@ -186,9 +185,7 @@ int av_parser_change(AVCodecParserContext *s,
     *poutbuf= (uint8_t *) buf;
     *poutbuf_size= buf_size;
     if(avctx->extradata){
-        if(  (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER))
-            /*||(s->pict_type != AV_PICTURE_TYPE_I && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_NOKEY))*/
-            /*||(? && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_BEGIN)*/){
+        if ((keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER))) {
             int size= buf_size + avctx->extradata_size;
             *poutbuf_size= size;
             *poutbuf= av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -211,8 +208,6 @@ void av_parser_close(AVCodecParserContext *s)
         av_free(s);
     }
 }
-
-/*****************************************************/
 
 int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size)
 {
@@ -289,8 +284,6 @@ void ff_parse_close(AVCodecParserContext *s)
 
     av_freep(&pc->buffer);
 }
-
-/*************************/
 
 int ff_mpeg4video_split(AVCodecContext *avctx,
                            const uint8_t *buf, int buf_size)
