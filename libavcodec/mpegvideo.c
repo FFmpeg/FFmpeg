@@ -1774,6 +1774,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             return -1;
         }
 
+        if (!avctx->hwaccel) {
         for(i=0; i<avctx->height; i++)
             memset(s->last_picture_ptr->f.data[0] + s->last_picture_ptr->f.linesize[0]*i,
                    0x80, avctx->width);
@@ -1787,6 +1788,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         if(s->codec_id == AV_CODEC_ID_FLV1 || s->codec_id == AV_CODEC_ID_H263){
             for(i=0; i<avctx->height; i++)
             memset(s->last_picture_ptr->f.data[0] + s->last_picture_ptr->f.linesize[0]*i, 16, avctx->width);
+        }
         }
 
         ff_thread_report_progress(&s->last_picture_ptr->tf, INT_MAX, 0);
