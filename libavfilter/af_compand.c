@@ -46,6 +46,7 @@ typedef struct CompandContext {
     char *attacks, *decays, *points;
     CompandSegment *segments;
     ChanParam *channels;
+    int nb_segments;
     double in_min_lin;
     double out_min_lin;
     double curve_dB;
@@ -160,11 +161,11 @@ static double get_volume(CompandContext *s, double in_lin)
 
     in_log = log(in_lin);
 
-    for (i = 1;; i++)
-        if (in_log <= s->segments[i + 1].x)
+    for (i = 1; i < s->nb_segments; i++)
+        if (in_log <= s->segments[i].x)
             break;
 
-    cs = &s->segments[i];
+    cs = &s->segments[i - 1];
     in_log -= cs->x;
     out_log = cs->y + in_log * (cs->a * in_log + cs->b);
 
@@ -318,7 +319,8 @@ static int config_output(AVFilterLink *outlink)
     uninit(ctx);
 
     s->channels = av_mallocz_array(outlink->channels, sizeof(*s->channels));
-    s->segments = av_mallocz_array((nb_points + 4) * 2, sizeof(*s->segments));
+    s->nb_segments = (nb_points + 4) * 2;
+    s->segments = av_mallocz_array(s->nb_segments, sizeof(*s->segments));
 
     if (!s->channels || !s->segments)
         return AVERROR(ENOMEM);
