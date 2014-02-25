@@ -1605,6 +1605,7 @@ static int matroska_read_header(AVFormatContext *s)
         uint32_t fourcc = 0;
         AVIOContext b;
         char* key_id_base64 = NULL;
+        int bit_depth = -1;
 
         /* Apply some sanity checks. */
         if (track->type != MATROSKA_TRACK_TYPE_VIDEO &&
@@ -1708,6 +1709,7 @@ static int matroska_read_header(AVFormatContext *s)
             && track->codec_priv.size >= 40
             && track->codec_priv.data != NULL) {
             track->ms_compat = 1;
+            bit_depth = AV_RL16(track->codec_priv.data + 14);
             fourcc = AV_RL32(track->codec_priv.data + 16);
             codec_id = ff_codec_get_id(ff_codec_bmp_tags, fourcc);
             extradata_offset = 40;
@@ -1879,6 +1881,8 @@ static int matroska_read_header(AVFormatContext *s)
 
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_tag  = fourcc;
+            if (bit_depth >= 0)
+                st->codec->bits_per_coded_sample = bit_depth;
             st->codec->width  = track->video.pixel_width;
             st->codec->height = track->video.pixel_height;
             av_reduce(&st->sample_aspect_ratio.num,
