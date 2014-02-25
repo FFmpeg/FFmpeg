@@ -1248,6 +1248,7 @@ EXAMPLE_LIST="
     avio_reading_example
     avcodec_example
     demuxing_decoding_example
+    filter_audio_example
     filtering_audio_example
     filtering_video_example
     metadata_example
@@ -2409,6 +2410,7 @@ zmq_filter_deps="libzmq"
 avio_reading="avformat avcodec avutil"
 avcodec_example_deps="avcodec avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"
+filter_audio_example_deps="avfilter avutil"
 filtering_audio_example_deps="avfilter avcodec avformat avutil"
 filtering_video_example_deps="avfilter avcodec avformat avutil"
 metadata_example_deps="avformat avutil"

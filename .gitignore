@@ -38,6 +38,7 @@
 /doc/examples/avio_reading
 /doc/examples/avcodec
 /doc/examples/demuxing_decoding
+/doc/examples/filter_audio
 /doc/examples/filtering_audio
 /doc/examples/filtering_video
 /doc/examples/metadata
