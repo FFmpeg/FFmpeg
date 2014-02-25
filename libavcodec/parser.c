@@ -177,8 +177,8 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
                      const uint8_t *buf, int buf_size, int keyframe)
 {
     if (s && s->parser->split) {
-        if ((avctx->flags  & CODEC_FLAG_GLOBAL_HEADER) ||
-            (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER)) {
+        if (avctx->flags  & CODEC_FLAG_GLOBAL_HEADER ||
+            avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER) {
             int i = s->parser->split(avctx, buf, buf_size);
             buf      += i;
             buf_size -= i;
@@ -189,14 +189,14 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
     *poutbuf      = (uint8_t *) buf;
     *poutbuf_size = buf_size;
     if (avctx->extradata) {
-        if ((keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER))) {
+        if (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER)) {
             int size = buf_size + avctx->extradata_size;
 
             *poutbuf_size = size;
             *poutbuf      = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
 
             memcpy(*poutbuf, avctx->extradata, avctx->extradata_size);
-            memcpy((*poutbuf) + avctx->extradata_size, buf,
+            memcpy(*poutbuf + avctx->extradata_size, buf,
                    buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
             return 1;
         }
@@ -238,7 +238,7 @@ int ff_combine_frame(ParseContext *pc, int next,
     /* copy into buffer end return */
     if (next == END_NOT_FOUND) {
         void *new_buffer = av_fast_realloc(pc->buffer, &pc->buffer_size,
-                                           (*buf_size) + pc->index +
+                                           *buf_size + pc->index +
                                            FF_INPUT_BUFFER_PADDING_SIZE);
 
         if (!new_buffer) {
@@ -274,8 +274,8 @@ int ff_combine_frame(ParseContext *pc, int next,
 
     /* store overread bytes */
     for (; next < 0; next++) {
-        pc->state   = (pc->state   << 8) | pc->buffer[pc->last_index + next];
-        pc->state64 = (pc->state64 << 8) | pc->buffer[pc->last_index + next];
+        pc->state   = pc->state   << 8 | pc->buffer[pc->last_index + next];
+        pc->state64 = pc->state64 << 8 | pc->buffer[pc->last_index + next];
         pc->overread++;
     }
 
@@ -302,7 +302,7 @@ int ff_mpeg4video_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
     uint32_t state = -1;
 
     for (i = 0; i < buf_size; i++) {
-        state = (state << 8) | buf[i];
+        state = state << 8 | buf[i];
         if (state == 0x1B3 || state == 0x1B6)
             return i - 3;
     }
