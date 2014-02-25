@@ -329,6 +329,8 @@ $chapters{FOOTNOTES} .= "=back\n" if exists $chapters{FOOTNOTES};
 
 unshift @chapters_sequence, "NAME";
 for $chapter (@chapters_sequence) {
+    # always use utf8
+    print "=encoding utf8\n";
     if (exists $chapters{$chapter}) {
         $head = uc($chapter);
         print "=head1 $head\n\n";
