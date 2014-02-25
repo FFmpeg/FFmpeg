@@ -167,6 +167,12 @@ static void pulse_get_output_timestamp(AVFormatContext *h, int stream, int64_t *
     *dts = s->timestamp - latency;
 }
 
+static int pulse_get_device_list(AVFormatContext *h, AVDeviceInfoList *device_list)
+{
+    PulseData *s = h->priv_data;
+    return ff_pulse_audio_get_devices(device_list, s->server, 1);
+}
+
 #define OFFSET(a) offsetof(PulseData, a)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 
@@ -199,6 +205,7 @@ AVOutputFormat ff_pulse_muxer = {
     .write_uncoded_frame = pulse_write_frame,
     .write_trailer  = pulse_write_trailer,
     .get_output_timestamp = pulse_get_output_timestamp,
+    .get_device_list = pulse_get_device_list,
     .flags          = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
     .priv_class     = &pulse_muxer_class,
 };
