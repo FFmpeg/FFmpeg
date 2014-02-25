@@ -276,9 +276,24 @@ void av_freep(void *ptr);
  * @param tab_ptr pointer to the array to grow
  * @param nb_ptr  pointer to the number of elements in the array
  * @param elem    element to add
- * @see av_dynarray2_add()
+ * @see av_dynarray_add_nofree(), av_dynarray2_add()
  */
 void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem);
+
+/**
+ * Add an element to a dynamic array.
+ *
+ * Function has the same functionality as av_dynarray_add(),
+ * but it doesn't free memory on fails. It returns error code
+ * instead and leave current buffer untouched.
+ *
+ * @param tab_ptr pointer to the array to grow
+ * @param nb_ptr  pointer to the number of elements in the array
+ * @param elem    element to add
+ * @return >=0 on success, negative otherwise.
+ * @see av_dynarray_add(), av_dynarray2_add()
+ */
+int av_dynarray_add_nofree(void *tab_ptr, int *nb_ptr, void *elem);
 
 /**
  * Add an element of size elem_size to a dynamic array.
@@ -299,7 +314,7 @@ void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem);
  *                  the new added element is not filled.
  * @return          pointer to the data of the element to copy in the new allocated space.
  *                  If NULL, the new allocated space is left uninitialized."
- * @see av_dynarray_add()
+ * @see av_dynarray_add(), av_dynarray_add_nofree()
  */
 void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
                        const uint8_t *elem_data);
