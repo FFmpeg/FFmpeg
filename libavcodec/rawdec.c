@@ -226,6 +226,17 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
             linesize_align = 16;
         }
         buf = dst;
+    } else if (context->is_lt_16bpp) {
+        int i;
+        uint8_t *dst = frame->buf[0]->data;
+        if (desc->flags & AV_PIX_FMT_FLAG_BE) {
+            for (i = 0; i + 1 < buf_size; i += 2)
+                AV_WB16(dst + i, AV_RB16(buf + i) << (16 - avctx->bits_per_coded_sample));
+        } else {
+            for (i = 0; i + 1 < buf_size; i += 2)
+                AV_WL16(dst + i, AV_RL16(buf + i) << (16 - avctx->bits_per_coded_sample));
+        }
+        buf = dst;
     } else if (need_copy) {
         memcpy(frame->buf[0]->data, buf, buf_size);
         buf = frame->buf[0]->data;
@@ -240,19 +251,6 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < expected frame_size %d\n", buf_size, len);
         av_buffer_unref(&frame->buf[0]);
         return AVERROR(EINVAL);
-    }
-
-    if (context->is_lt_16bpp) {
-        int i;
-        uint8_t *dst = frame->buf[0]->data;
-        if (desc->flags & AV_PIX_FMT_FLAG_BE) {
-            for (i = 0; i + 1 < buf_size; i += 2)
-                AV_WB16(dst + i, AV_RB16(buf + i) << (16 - avctx->bits_per_coded_sample));
-        } else {
-            for (i = 0; i + 1 < buf_size; i += 2)
-                AV_WL16(dst + i, AV_RL16(buf + i) << (16 - avctx->bits_per_coded_sample));
-        }
-        buf = dst;
     }
 
     if ((res = avpicture_fill(picture, buf, avctx->pix_fmt,
