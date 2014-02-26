@@ -53,7 +53,7 @@ typedef struct CompandContext {
     double gain_dB;
     double initial_volume;
     double delay;
-    uint8_t **delayptrs;
+    AVFrame *delay_frame;
     int delay_samples;
     int delay_count;
     int delay_index;
@@ -96,9 +96,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&s->channels);
     av_freep(&s->segments);
-    if (s->delayptrs)
-        av_freep(&s->delayptrs[0]);
-    av_freep(&s->delayptrs);
+    av_frame_free(&s->delay_frame);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -222,8 +220,9 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
     av_assert1(channels > 0); /* would corrupt delay_count and delay_index */
 
     for (chan = 0; chan < channels; chan++) {
+        AVFrame *delay_frame = s->delay_frame;
         const double *src = (double *)frame->extended_data[chan];
-        double *dbuf = (double *)s->delayptrs[chan];
+        double *dbuf      = (double *)delay_frame->extended_data[chan];
         ChanParam *cp = &s->channels[chan];
         double *dst;
 
@@ -282,7 +281,8 @@ static int compand_drain(AVFilterLink *outlink)
             (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
 
     for (chan = 0; chan < channels; chan++) {
-        double *dbuf = (double *)s->delayptrs[chan];
+        AVFrame *delay_frame = s->delay_frame;
+        double *dbuf = (double *)delay_frame->extended_data[chan];
         double *dst = (double *)frame->extended_data[chan];
         ChanParam *cp = &s->channels[chan];
 
@@ -308,6 +308,8 @@ static int config_output(AVFilterLink *outlink)
     char *p, *saveptr = NULL;
     int new_nb_items, num;
     int i;
+    int err;
+
 
     count_items(s->attacks, &nb_attacks);
     count_items(s->decays, &nb_decays);
@@ -470,18 +472,27 @@ static int config_output(AVFilterLink *outlink)
     }
 
     s->delay_samples = s->delay * sample_rate;
-    if (s->delay_samples > 0) {
-        int ret;
-        if ((ret = av_samples_alloc_array_and_samples(&s->delayptrs, NULL,
-                                                      outlink->channels,
-                                                      s->delay_samples,
-                                                      outlink->format, 0)) < 0)
-            return ret;
-        s->compand = compand_delay;
-        outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    } else {
+    if (s->delay_samples <= 0) {
         s->compand = compand_nodelay;
+        return 0;
     }
+
+    s->delay_frame = av_frame_alloc();
+    if (!s->delay_frame) {
+        uninit(ctx);
+        return AVERROR(ENOMEM);
+    }
+
+    s->delay_frame->format         = outlink->format;
+    s->delay_frame->nb_samples     = s->delay_samples;
+    s->delay_frame->channel_layout = outlink->channel_layout;
+
+    err = av_frame_get_buffer(s->delay_frame, 32);
+    if (err)
+        return err;
+
+    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
+    s->compand = compand_delay;
     return 0;
 }
 
