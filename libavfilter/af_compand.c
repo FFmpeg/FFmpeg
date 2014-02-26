@@ -290,6 +290,7 @@ static int compand_drain(AVFilterLink *outlink)
     int chan, i, dindex;
     AVFrame *frame = NULL;
 
+    /* 2048 is to limit output frame size during drain */
     frame = ff_get_audio_buffer(outlink, FFMIN(2048, s->delay_count));
     if (!frame)
         return AVERROR(ENOMEM);
@@ -305,7 +306,8 @@ static int compand_drain(AVFilterLink *outlink)
 
         dindex = s->delay_index;
         for (i = 0; i < frame->nb_samples; i++) {
-            dst[i] = av_clipd(dbuf[dindex] * get_volume(s, cp->volume), -1, 1);
+            dst[i] = av_clipd(dbuf[dindex] * get_volume(s, cp->volume),
+                              -1, 1);
             dindex = MOD(dindex + 1, s->delay_samples);
         }
     }
@@ -320,7 +322,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx  = outlink->src;
     CompandContext *s     = ctx->priv;
     const int sample_rate = outlink->sample_rate;
-    double radius         = s->curve_dB * M_LN10 / 20;
+    double radius         = s->curve_dB * M_LN10 / 20.0;
     int nb_attacks, nb_decays, nb_points;
     char *p, *saveptr = NULL;
     const int channels    = outlink->channels;
@@ -338,7 +340,7 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     }
 
-    if ((nb_attacks > channels) || (nb_decays > channels)) {
+    if (nb_attacks > channels || nb_decays > channels) {
         av_log(ctx, AV_LOG_ERROR, "Number of attacks/decays bigger than number of channels.\n");
         return AVERROR(EINVAL);
     }
