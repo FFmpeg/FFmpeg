@@ -344,14 +344,14 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     }
 
-    if ((nb_attacks > outlink->channels) || (nb_decays > outlink->channels)) {
+    if ((nb_attacks > channels) || (nb_decays > channels)) {
         av_log(ctx, AV_LOG_ERROR, "Number of attacks/decays bigger than number of channels.\n");
         return AVERROR(EINVAL);
     }
 
     uninit(ctx);
 
-    s->channels = av_mallocz_array(outlink->channels, sizeof(*s->channels));
+    s->channels = av_mallocz_array(channels, sizeof(*s->channels));
     s->nb_segments = (nb_points + 4) * 2;
     s->segments = av_mallocz_array(s->nb_segments, sizeof(*s->segments));
 
@@ -486,7 +486,7 @@ static int config_output(AVFilterLink *outlink)
     s->in_min_lin  = exp(s->segments[1].x);
     s->out_min_lin = exp(s->segments[1].y);
 
-    for (i = 0; i < outlink->channels; i++) {
+    for (i = 0; i < channels; i++) {
         ChanParam *cp = &s->channels[i];
 
         if (cp->attack > 1.0 / sample_rate)
