@@ -51,6 +51,7 @@ static int sdr2_read_header(AVFormatContext *s)
     st->codec->width      = avio_rl32(s->pb);
     st->codec->height     = avio_rl32(s->pb);
     st->codec->codec_id   = AV_CODEC_ID_H264;
+    st->need_parsing      = AVSTREAM_PARSE_FULL;
 
     ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     ast->codec->channels    = 1;
