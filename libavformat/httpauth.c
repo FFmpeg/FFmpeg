@@ -225,7 +225,7 @@ static char *make_digest_auth(HTTPAuthState *state, const char *username,
     av_strlcatf(authstr, len, ",uri=\"%s\"",       uri);
     av_strlcatf(authstr, len, ",response=\"%s\"",  response);
     if (digest->algorithm[0])
-        av_strlcatf(authstr, len, ",algorithm=%s",  digest->algorithm);
+        av_strlcatf(authstr, len, ",algorithm=\"%s\"",  digest->algorithm);
     if (digest->opaque[0])
         av_strlcatf(authstr, len, ",opaque=\"%s\"", digest->opaque);
     if (digest->qop[0]) {
