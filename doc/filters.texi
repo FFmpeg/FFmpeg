@@ -1267,79 +1267,76 @@ side_right.wav
 @end example
 
 @section compand
-
 Compress or expand audio dynamic range.
 
 A description of the accepted options follows.
 
 @table @option
+
 @item attacks
 @item decays
-Set list of times in seconds for each channel over which the instantaneous
-level of the input signal is averaged to determine its volume.
-@option{attacks} refers to increase of volume and @option{decays} refers
-to decrease of volume.
-For most situations, the attack time (response to the audio getting louder)
-should be shorter than the decay time because the human ear is more sensitive
-to sudden loud audio than sudden soft audio.
-Typical value for attack is @code{0.3} seconds and for decay @code{0.8}
-seconds.
+Set list of times in seconds for each channel over which the instantaneous level
+of the input signal is averaged to determine its volume. @var{attacks} refers to
+increase of volume and @var{decays} refers to decrease of volume. For most
+situations, the attack time (response to the audio getting louder) should be
+shorter than the decay time because the human ear is more sensitive to sudden
+loud audio than sudden soft audio. A typical value for attack is 0.3 seconds and
+a typical value for decay is 0.8 seconds.
 
 @item points
-Set list of points for transfer function, specified in dB relative to maximum
-possible signal amplitude.
-Each key points list need to be defined using the following syntax:
-@code{x0/y0 x1/y1 x2/y2 ...}.
+Set list of points for the transfer function, specified in dB relative to the
+maximum possible signal amplitude. Each key points list must be defined using
+the following syntax: @code{x0/y0|x1/y1|x2/y2|....} or
+@code{x0/y0 x1/y1 x2/y2 ....}
 
-The input values must be in strictly increasing order but the transfer
-function does not have to be monotonically rising.
-The point @code{0/0} is assumed but may be overridden (by @code{0/out-dBn}).
-Typical values for the transfer function are @code{-70/-70 -60/-20}.
+The input values must be in strictly increasing order but the transfer function
+does not have to be monotonically rising. The point @code{0/0} is assumed but
+may be overridden (by @code{0/out-dBn}). Typical values for the transfer
+function are @code{-70/-70|-60/-20}.
 
 @item soft-knee
-Set amount for which the points at where adjacent line segments on the
-transfer function meet will be rounded. Defaults is @code{0.01}.
+Set the curve radius in dB for all joints. Defaults to 0.01.
 
 @item gain
-Set additional gain in dB to be applied at all points on the transfer function
-and allows easy adjustment of the overall gain.
-Default is @code{0}.
+Set additional gain in dB to be applied at all points on the transfer function.
+This allows easy adjustment of the overall gain. Defaults to 0.
 
 @item volume
 Set initial volume in dB to be assumed for each channel when filtering starts.
-This permits the user to supply a nominal level initially, so that,
-for example, a very large gain is not applied to initial signal levels before
-the companding has begun to operate. A typical value for audio which is
-initially quiet is -90 dB. Default is @code{0}.
+This permits the user to supply a nominal level initially, so that, for
+example, a very large gain is not applied to initial signal levels before the
+companding has begun to operate. A typical value for audio which is initially
+quiet is -90 dB. Defaults to 0.
 
 @item delay
-Set delay in seconds. Default is @code{0}. The input audio
-is analysed immediately, but audio is delayed before being fed to the
-volume adjuster. Specifying a delay approximately equal to the attack/decay
-times allows the filter to effectively operate in predictive rather than
-reactive mode.
+Set delay in seconds. The input audio is analyzed immediately, but audio is
+delayed before being fed to the volume adjuster. Specifying a delay
+approximately equal to the attack/decay times allows the filter to effectively
+operate in predictive rather than reactive mode. Defaults to 0.
+
 @end table
 
 @subsection Examples
+
 @itemize
 @item
-Make music with both quiet and loud passages suitable for listening
-in a noisy environment:
+Make music with both quiet and loud passages suitable for listening in a noisy
+environment:
 @example
-compand=.3 .3:1 1:-90/-60 -60/-40 -40/-30 -20/-20:6:0:-90:0.2
+compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2
 @end example
 
 @item
-Noise-gate for when the noise is at a lower level than the signal:
+Noise gate for when the noise is at a lower level than the signal:
 @example
-compand=.1 .1:.2 .2:-900/-900 -50.1/-900 -50/-50:.01:0:-90:.1
+compand=.1|.1:.2|.2:-900/-900|-50.1/-900|-50/-50:.01:0:-90:.1
 @end example
 
 @item
-Here is another noise-gate, this time for when the noise is at a higher level
+Here is another noise gate, this time for when the noise is at a higher level
 than the signal (making it, in some ways, similar to squelch):
 @example
-compand=.1 .1:.1 .1:-45.1/-45.1 -45/-900 0/-900:.01:45:-90:.1
+compand=.1|.1:.1|.1:-45.1/-45.1|-45/-900|0/-900:.01:45:-90:.1
 @end example
 @end itemize
 
