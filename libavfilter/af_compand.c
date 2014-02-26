@@ -134,7 +134,7 @@ static void count_items(char *item_str, int *nb_items)
 
     *nb_items = 1;
     for (p = item_str; *p; p++) {
-        if (*p == ' ')
+        if (*p == ' ' || *p == '|')
             (*nb_items)++;
     }
 }
@@ -329,7 +329,7 @@ static int config_output(AVFilterLink *outlink)
 
     p = s->attacks;
     for (i = 0, new_nb_items = 0; i < nb_attacks; i++) {
-        char *tstr = av_strtok(p, " ", &saveptr);
+        char *tstr = av_strtok(p, " |", &saveptr);
         p = NULL;
         new_nb_items += sscanf(tstr, "%lf", &s->channels[i].attack) == 1;
         if (s->channels[i].attack < 0)
@@ -339,7 +339,7 @@ static int config_output(AVFilterLink *outlink)
 
     p = s->decays;
     for (i = 0, new_nb_items = 0; i < nb_decays; i++) {
-        char *tstr = av_strtok(p, " ", &saveptr);
+        char *tstr = av_strtok(p, " |", &saveptr);
         p = NULL;
         new_nb_items += sscanf(tstr, "%lf", &s->channels[i].decay) == 1;
         if (s->channels[i].decay < 0)
@@ -357,7 +357,7 @@ static int config_output(AVFilterLink *outlink)
 #define S(x) s->segments[2 * ((x) + 1)]
     p = s->points;
     for (i = 0, new_nb_items = 0; i < nb_points; i++) {
-        char *tstr = av_strtok(p, " ", &saveptr);
+        char *tstr = av_strtok(p, " |", &saveptr);
         p = NULL;
         if (sscanf(tstr, "%lf/%lf", &S(i).x, &S(i).y) != 2) {
             av_log(ctx, AV_LOG_ERROR,
