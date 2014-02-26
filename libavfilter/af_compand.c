@@ -324,16 +324,20 @@ static int config_output(AVFilterLink *outlink)
     s->nb_segments = (nb_points + 4) * 2;
     s->segments = av_mallocz_array(s->nb_segments, sizeof(*s->segments));
 
-    if (!s->channels || !s->segments)
+    if (!s->channels || !s->segments) {
+        uninit(ctx);
         return AVERROR(ENOMEM);
+    }
 
     p = s->attacks;
     for (i = 0, new_nb_items = 0; i < nb_attacks; i++) {
         char *tstr = av_strtok(p, " |", &saveptr);
         p = NULL;
         new_nb_items += sscanf(tstr, "%lf", &s->channels[i].attack) == 1;
-        if (s->channels[i].attack < 0)
+        if (s->channels[i].attack < 0) {
+            uninit(ctx);
             return AVERROR(EINVAL);
+        }
     }
     nb_attacks = new_nb_items;
 
@@ -342,8 +346,10 @@ static int config_output(AVFilterLink *outlink)
         char *tstr = av_strtok(p, " |", &saveptr);
         p = NULL;
         new_nb_items += sscanf(tstr, "%lf", &s->channels[i].decay) == 1;
-        if (s->channels[i].decay < 0)
+        if (s->channels[i].decay < 0) {
+            uninit(ctx);
             return AVERROR(EINVAL);
+        }
     }
     nb_decays = new_nb_items;
 
@@ -351,6 +357,7 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR,
                 "Number of attacks %d differs from number of decays %d.\n",
                 nb_attacks, nb_decays);
+        uninit(ctx);
         return AVERROR(EINVAL);
     }
 
@@ -362,11 +369,13 @@ static int config_output(AVFilterLink *outlink)
         if (sscanf(tstr, "%lf/%lf", &S(i).x, &S(i).y) != 2) {
             av_log(ctx, AV_LOG_ERROR,
                     "Invalid and/or missing input/output value.\n");
+            uninit(ctx);
             return AVERROR(EINVAL);
         }
         if (i && S(i - 1).x > S(i).x) {
             av_log(ctx, AV_LOG_ERROR,
                     "Transfer function input values must be increasing.\n");
+            uninit(ctx);
             return AVERROR(EINVAL);
         }
         S(i).y -= S(i).x;
