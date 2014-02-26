@@ -1,6 +1,10 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version <next>:
+- compand audio filter
+
+
 version 10:
 - av_strnstr
 - support ID3v2 tags in ASF files
