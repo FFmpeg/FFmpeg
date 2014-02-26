@@ -25,9 +25,11 @@
  */
 
 #include <float.h>
+
 #include "avcodec.h"
 #include "internal.h"
 #include "fft.h"
+#include "mathops.h"
 #include "vorbis.h"
 #include "vorbis_enc_data.h"
 
