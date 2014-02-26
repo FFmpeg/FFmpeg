@@ -183,6 +183,7 @@ static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
     const int nb_samples = frame->nb_samples;
     AVFrame *out_frame;
     int chan, i;
+    int err;
 
     if (av_frame_is_writable(frame)) {
         out_frame = frame;
@@ -192,7 +193,12 @@ static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
             av_frame_free(&frame);
             return AVERROR(ENOMEM);
         }
-        av_frame_copy_props(out_frame, frame);
+        err = av_frame_copy_props(out_frame, frame);
+        if (err < 0) {
+            av_frame_free(&out_frame);
+            av_frame_free(&frame);
+            return err;
+        }
     }
 
     for (chan = 0; chan < channels; chan++) {
@@ -223,6 +229,7 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
     const int nb_samples = frame->nb_samples;
     int chan, i, av_uninit(dindex), oindex, av_uninit(count);
     AVFrame *out_frame   = NULL;
+    int err;
 
     if (s->pts == AV_NOPTS_VALUE) {
         s->pts = (frame->pts == AV_NOPTS_VALUE) ? 0 : frame->pts;
@@ -250,7 +257,12 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
                         av_frame_free(&frame);
                         return AVERROR(ENOMEM);
                     }
-                    av_frame_copy_props(out_frame, frame);
+                    err = av_frame_copy_props(out_frame, frame);
+                    if (err < 0) {
+                        av_frame_free(&out_frame);
+                        av_frame_free(&frame);
+                        return err;
+                    }
                     out_frame->pts = s->pts;
                     s->pts += av_rescale_q(nb_samples - i,
                         (AVRational){ 1, inlink->sample_rate },
@@ -317,6 +329,7 @@ static int config_output(AVFilterLink *outlink)
     double radius         = s->curve_dB * M_LN10 / 20;
     int nb_attacks, nb_decays, nb_points;
     char *p, *saveptr = NULL;
+    const int channels    = outlink->channels;
     int new_nb_items, num;
     int i;
     int err;
@@ -325,6 +338,11 @@ static int config_output(AVFilterLink *outlink)
     count_items(s->attacks, &nb_attacks);
     count_items(s->decays, &nb_decays);
     count_items(s->points, &nb_points);
+
+    if (channels <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid number of channels: %d\n", channels);
+        return AVERROR(EINVAL);
+    }
 
     if ((nb_attacks > outlink->channels) || (nb_decays > outlink->channels)) {
         av_log(ctx, AV_LOG_ERROR, "Number of attacks/decays bigger than number of channels.\n");
