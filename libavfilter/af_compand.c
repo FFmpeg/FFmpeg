@@ -66,13 +66,13 @@ typedef struct CompandContext {
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption compand_options[] = {
-    { "attacks", "set time over which increase of volume is determined", OFFSET(attacks), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, A },
-    { "decays", "set time over which decrease of volume is determined", OFFSET(decays), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, A },
-    { "points", "set points of transfer function", OFFSET(points), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, A },
-    { "soft-knee", "set soft-knee", OFFSET(curve_dB), AV_OPT_TYPE_DOUBLE, {.dbl=0.01}, 0.01, 900, A },
-    { "gain", "set output gain", OFFSET(gain_dB), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, A },
-    { "volume", "set initial volume", OFFSET(initial_volume), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 0, A },
-    { "delay", "set delay for samples before sending them to volume adjuster", OFFSET(delay), AV_OPT_TYPE_DOUBLE, {.dbl=0}, 0, 20, A },
+    { "attacks", "set time over which increase of volume is determined", OFFSET(attacks), AV_OPT_TYPE_STRING, { .str=NULL}, 0, 0, A },
+    { "decays", "set time over which decrease of volume is determined", OFFSET(decays), AV_OPT_TYPE_STRING, { .str=NULL}, 0, 0, A },
+    { "points", "set points of transfer function", OFFSET(points), AV_OPT_TYPE_STRING, { .str=NULL}, 0, 0, A },
+    { "soft-knee", "set soft-knee", OFFSET(curve_dB), AV_OPT_TYPE_DOUBLE, { .dbl = 0.01 }, 0.01, 900, A },
+    { "gain", "set output gain", OFFSET(gain_dB), AV_OPT_TYPE_DOUBLE, { .dbl = 0 }, -900, 900, A },
+    { "volume", "set initial volume", OFFSET(initial_volume), AV_OPT_TYPE_DOUBLE, { .dbl = 0 }, -900, 0, A },
+    { "delay", "set delay for samples before sending them to volume adjuster", OFFSET(delay), AV_OPT_TYPE_DOUBLE, { .dbl = 0 }, 0, 20, A },
     { NULL }
 };
 
@@ -137,7 +137,6 @@ static void count_items(char *item_str, int *nb_items)
         if (*p == ' ')
             (*nb_items)++;
     }
-
 }
 
 static void update_volume(ChanParam *cp, double in)
@@ -164,7 +163,6 @@ static double get_volume(CompandContext *s, double in_lin)
     for (i = 1; i < s->nb_segments; i++)
         if (in_log <= s->segments[i].x)
             break;
-
     cs = &s->segments[i - 1];
     in_log -= cs->x;
     out_log = cs->y + in_log * (cs->a * in_log + cs->b);
@@ -174,7 +172,7 @@ static double get_volume(CompandContext *s, double in_lin)
 
 static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
 {
-    CompandContext *s = ctx->priv;
+    CompandContext *s    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     const int channels = inlink->channels;
     const int nb_samples = frame->nb_samples;
@@ -214,12 +212,12 @@ static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
 
 static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
 {
-    CompandContext *s = ctx->priv;
+    CompandContext *s    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     const int channels = inlink->channels;
     const int nb_samples = frame->nb_samples;
     int chan, i, av_uninit(dindex), oindex, av_uninit(count);
-    AVFrame *out_frame = NULL;
+    AVFrame *out_frame   = NULL;
 
     av_assert1(channels > 0); /* would corrupt delay_count and delay_index */
 
@@ -244,11 +242,14 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
                     }
                     av_frame_copy_props(out_frame, frame);
                     out_frame->pts = s->pts;
-                    s->pts += av_rescale_q(nb_samples - i, (AVRational){1, inlink->sample_rate}, inlink->time_base);
+                    s->pts += av_rescale_q(nb_samples - i,
+                        (AVRational){ 1, inlink->sample_rate },
+                        inlink->time_base);
                 }
 
                 dst = (double *)out_frame->extended_data[chan];
-                dst[oindex++] = av_clipd(dbuf[dindex] * get_volume(s, cp->volume), -1, 1);
+                dst[oindex++] = av_clipd(dbuf[dindex] *
+                        get_volume(s, cp->volume), -1, 1);
             } else {
                 count++;
             }
@@ -268,7 +269,7 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
 static int compand_drain(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    CompandContext *s = ctx->priv;
+    CompandContext *s    = ctx->priv;
     const int channels = outlink->channels;
     int chan, i, dindex;
     AVFrame *frame = NULL;
@@ -277,7 +278,8 @@ static int compand_drain(AVFilterLink *outlink)
     if (!frame)
         return AVERROR(ENOMEM);
     frame->pts = s->pts;
-    s->pts += av_rescale_q(frame->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
+    s->pts += av_rescale_q(frame->nb_samples,
+            (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
 
     for (chan = 0; chan < channels; chan++) {
         double *dbuf = (double *)s->delayptrs[chan];
@@ -298,10 +300,10 @@ static int compand_drain(AVFilterLink *outlink)
 
 static int config_output(AVFilterLink *outlink)
 {
-    AVFilterContext *ctx = outlink->src;
-    CompandContext *s = ctx->priv;
+    AVFilterContext *ctx  = outlink->src;
+    CompandContext *s     = ctx->priv;
     const int sample_rate = outlink->sample_rate;
-    double radius = s->curve_dB * M_LN10 / 20;
+    double radius         = s->curve_dB * M_LN10 / 20;
     int nb_attacks, nb_decays, nb_points;
     char *p, *saveptr = NULL;
     int new_nb_items, num;
@@ -346,7 +348,9 @@ static int config_output(AVFilterLink *outlink)
     nb_decays = new_nb_items;
 
     if (nb_attacks != nb_decays) {
-        av_log(ctx, AV_LOG_ERROR, "Number of attacks %d differs from number of decays %d.\n", nb_attacks, nb_decays);
+        av_log(ctx, AV_LOG_ERROR,
+                "Number of attacks %d differs from number of decays %d.\n",
+                nb_attacks, nb_decays);
         return AVERROR(EINVAL);
     }
 
@@ -356,11 +360,13 @@ static int config_output(AVFilterLink *outlink)
         char *tstr = av_strtok(p, " ", &saveptr);
         p = NULL;
         if (sscanf(tstr, "%lf/%lf", &S(i).x, &S(i).y) != 2) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid and/or missing input/output value.\n");
+            av_log(ctx, AV_LOG_ERROR,
+                    "Invalid and/or missing input/output value.\n");
             return AVERROR(EINVAL);
         }
         if (i && S(i - 1).x > S(i).x) {
-            av_log(ctx, AV_LOG_ERROR, "Transfer function input values must be increasing.\n");
+            av_log(ctx, AV_LOG_ERROR,
+                    "Transfer function input values must be increasing.\n");
             return AVERROR(EINVAL);
         }
         S(i).y -= S(i).x;
@@ -427,11 +433,11 @@ static int config_output(AVFilterLink *outlink)
         L(2).x = x;
         L(2).y = y;
 
-        in1 = cx - L(3).x;
+        in1  = cx - L(3).x;
         out1 = cy - L(3).y;
-        in2 = L(2).x - L(3).x;
+        in2  = L(2).x - L(3).x;
         out2 = L(2).y - L(3).y;
-        L(3).a = (out2 / in2 - out1 / in1) / (in2-in1);
+        L(3).a = (out2 / in2 - out1 / in1) / (in2 - in1);
         L(3).b = out1 / in1 - L(3).a * in1;
     }
     L(3).x = 0;
@@ -473,7 +479,7 @@ static int config_output(AVFilterLink *outlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
-    CompandContext *s = ctx->priv;
+    CompandContext *s    = ctx->priv;
 
     return s->compand(ctx, frame);
 }
@@ -481,7 +487,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    CompandContext *s = ctx->priv;
+    CompandContext *s    = ctx->priv;
     int ret;
 
     ret = ff_request_frame(ctx->inputs[0]);
@@ -511,14 +517,16 @@ static const AVFilterPad compand_outputs[] = {
     { NULL }
 };
 
+
 AVFilter ff_af_compand = {
-    .name          = "compand",
-    .description   = NULL_IF_CONFIG_SMALL("Compress or expand audio dynamic range."),
-    .query_formats = query_formats,
-    .priv_size     = sizeof(CompandContext),
-    .priv_class    = &compand_class,
-    .init          = init,
-    .uninit        = uninit,
-    .inputs        = compand_inputs,
-    .outputs       = compand_outputs,
+    .name           = "compand",
+    .description    = NULL_IF_CONFIG_SMALL(
+            "Compress or expand audio dynamic range."),
+    .query_formats  = query_formats,
+    .priv_size      = sizeof(CompandContext),
+    .priv_class     = &compand_class,
+    .init           = init,
+    .uninit         = uninit,
+    .inputs         = compand_inputs,
+    .outputs        = compand_outputs,
 };
