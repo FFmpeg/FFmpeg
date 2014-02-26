@@ -3,6 +3,7 @@
  * Copyright (c) 1999 Nick Bailey
  * Copyright (c) 2007 Rob Sykes <robs@users.sourceforge.net>
  * Copyright (c) 2013 Paul B Mahol
+ * Copyright (c) 2014 Andrew Kelley
  *
  * This file is part of FFmpeg.
  *
