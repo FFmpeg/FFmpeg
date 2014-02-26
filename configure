@@ -2016,6 +2016,7 @@ unix_protocol_select="network"
 # filters
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
+compand_filter_deps="strtok_r"
 cropdetect_filter_deps="gpl"
 delogo_filter_deps="gpl"
 drawtext_filter_deps="libfreetype"
