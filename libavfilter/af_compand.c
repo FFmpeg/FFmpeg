@@ -23,6 +23,11 @@
  *
  */
 
+/**
+ * @file
+ * audio compand filter
+ */
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
@@ -224,7 +229,7 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
         AVFrame *delay_frame = s->delay_frame;
         const double *src = (double *)frame->extended_data[chan];
         double *dbuf      = (double *)delay_frame->extended_data[chan];
-        ChanParam *cp = &s->channels[chan];
+        ChanParam *cp        = &s->channels[chan];
         double *dst;
 
         count  = s->delay_count;
