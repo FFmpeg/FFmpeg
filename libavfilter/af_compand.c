@@ -72,9 +72,9 @@ typedef struct CompandContext {
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption compand_options[] = {
-    { "attacks", "set time over which increase of volume is determined", OFFSET(attacks), AV_OPT_TYPE_STRING, { .str=NULL}, 0, 0, A },
-    { "decays", "set time over which decrease of volume is determined", OFFSET(decays), AV_OPT_TYPE_STRING, { .str=NULL}, 0, 0, A },
-    { "points", "set points of transfer function", OFFSET(points), AV_OPT_TYPE_STRING, { .str=NULL}, 0, 0, A },
+    { "attacks", "set time over which increase of volume is determined", OFFSET(attacks), AV_OPT_TYPE_STRING, { .str = "0.3" }, 0, 0, A },
+    { "decays", "set time over which decrease of volume is determined", OFFSET(decays), AV_OPT_TYPE_STRING, { .str = "0.8" }, 0, 0, A },
+    { "points", "set points of transfer function", OFFSET(points), AV_OPT_TYPE_STRING, { .str = "-70/-70|-60/-20" }, 0, 0, A },
     { "soft-knee", "set soft-knee", OFFSET(curve_dB), AV_OPT_TYPE_DOUBLE, { .dbl = 0.01 }, 0.01, 900, A },
     { "gain", "set output gain", OFFSET(gain_dB), AV_OPT_TYPE_DOUBLE, { .dbl = 0 }, -900, 900, A },
     { "volume", "set initial volume", OFFSET(initial_volume), AV_OPT_TYPE_DOUBLE, { .dbl = 0 }, -900, 0, A },
@@ -88,12 +88,6 @@ static av_cold int init(AVFilterContext *ctx)
 {
     CompandContext *s = ctx->priv;
     s->pts            = AV_NOPTS_VALUE;
-
-    if (!s->attacks || !s->decays || !s->points) {
-        av_log(ctx, AV_LOG_ERROR, "Missing attacks and/or decays and/or points.\n");
-        return AVERROR(EINVAL);
-    }
-
     return 0;
 }
 
