@@ -74,7 +74,7 @@ following directive is recognized:
 Path to a file to read; special characters and spaces must be escaped with
 backslash or single quotes.
 
-All subsequent directives apply to that file.
+All subsequent file-related directives apply to that file.
 
 @item @code{ffconcat version 1.0}
 Identify the script type and version. It also sets the @option{safe} option
@@ -91,6 +91,22 @@ file is not available or accurate.
 
 If the duration is set for all files, then it is possible to seek in the
 whole concatenated video.
+
+@item @code{stream}
+Introduce a stream in the virtual file.
+All subsequent stream-related directives apply to the last introduced
+stream.
+Some streams properties must be set in order to allow identifying the
+matching streams in the subfiles.
+If no streams are defined in the script, the streams from the first file are
+copied.
+
+@item @code{exact_stream_id @var{id}}
+Set the id of the stream.
+If this directive is given, the string with the corresponding id in the
+subfiles will be used.
+This is especially useful for MPEG-PS (VOB) files, where the order of the
+streams is not reliable.
 
 @end table
 
