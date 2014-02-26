@@ -29,6 +29,7 @@
 
 #include <string.h>
 
+#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
@@ -330,7 +331,7 @@ static int config_output(AVFilterLink *outlink)
     CompandContext *s     = ctx->priv;
     const int sample_rate = outlink->sample_rate;
     double radius         = s->curve_dB * M_LN10 / 20.0;
-    char *p, *saveptr     = NULL;
+    const char *p;
     const int channels    =
         av_get_channel_layout_nb_channels(outlink->channel_layout);
     int nb_attacks, nb_decays, nb_points;
@@ -368,25 +369,34 @@ static int config_output(AVFilterLink *outlink)
 
     p = s->attacks;
     for (i = 0, new_nb_items = 0; i < nb_attacks; i++) {
-        char *tstr = strtok_r(p, "|", &saveptr);
-        p = NULL;
+        char *tstr = av_get_token(&p, "|");
+        if (!tstr)
+            return AVERROR(ENOMEM);
+
         new_nb_items += sscanf(tstr, "%f", &s->channels[i].attack) == 1;
+        av_freep(&tstr);
         if (s->channels[i].attack < 0) {
             uninit(ctx);
             return AVERROR(EINVAL);
         }
+        if (*p)
+            p++;
     }
     nb_attacks = new_nb_items;
 
     p = s->decays;
     for (i = 0, new_nb_items = 0; i < nb_decays; i++) {
-        char *tstr = strtok_r(p, "|", &saveptr);
-        p = NULL;
+        char *tstr = av_get_token(&p, "|");
+        if (!tstr)
+            return AVERROR(ENOMEM);
         new_nb_items += sscanf(tstr, "%f", &s->channels[i].decay) == 1;
+        av_freep(&tstr);
         if (s->channels[i].decay < 0) {
             uninit(ctx);
             return AVERROR(EINVAL);
         }
+        if (*p)
+            p++;
     }
     nb_decays = new_nb_items;
 
@@ -401,9 +411,13 @@ static int config_output(AVFilterLink *outlink)
 #define S(x) s->segments[2 * ((x) + 1)]
     p = s->points;
     for (i = 0, new_nb_items = 0; i < nb_points; i++) {
-        char *tstr = strtok_r(p, "|", &saveptr);
-        p = NULL;
-        if (sscanf(tstr, "%f/%f", &S(i).x, &S(i).y) != 2) {
+        char *tstr = av_get_token(&p, "|");
+        if (!tstr)
+            return AVERROR(ENOMEM);
+
+        err = sscanf(tstr, "%f/%f", &S(i).x, &S(i).y);
+        av_freep(&tstr);
+        if (err != 2) {
             av_log(ctx, AV_LOG_ERROR,
                     "Invalid and/or missing input/output value.\n");
             uninit(ctx);
@@ -418,6 +432,8 @@ static int config_output(AVFilterLink *outlink)
         S(i).y -= S(i).x;
         av_log(ctx, AV_LOG_DEBUG, "%d: x=%f y=%f\n", i, S(i).x, S(i).y);
         new_nb_items++;
+        if (*p)
+            p++;
     }
     num = new_nb_items;
 
