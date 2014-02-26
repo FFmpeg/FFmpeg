@@ -32,8 +32,8 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
-#include "avfilter.h"
 #include "audio.h"
+#include "avfilter.h"
 #include "internal.h"
 
 typedef struct ChanParam {
@@ -49,10 +49,10 @@ typedef struct CompandSegment {
 
 typedef struct CompandContext {
     const AVClass *class;
+    int nb_segments;
     char *attacks, *decays, *points;
     CompandSegment *segments;
     ChanParam *channels;
-    int nb_segments;
     double in_min_lin;
     double out_min_lin;
     double curve_dB;
@@ -323,9 +323,9 @@ static int config_output(AVFilterLink *outlink)
     CompandContext *s     = ctx->priv;
     const int sample_rate = outlink->sample_rate;
     double radius         = s->curve_dB * M_LN10 / 20.0;
-    int nb_attacks, nb_decays, nb_points;
-    char *p, *saveptr = NULL;
+    char *p, *saveptr     = NULL;
     const int channels    = outlink->channels;
+    int nb_attacks, nb_decays, nb_points;
     int new_nb_items, num;
     int i;
     int err;
@@ -341,7 +341,8 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (nb_attacks > channels || nb_decays > channels) {
-        av_log(ctx, AV_LOG_ERROR, "Number of attacks/decays bigger than number of channels.\n");
+        av_log(ctx, AV_LOG_ERROR,
+                "Number of attacks/decays bigger than number of channels.\n");
         return AVERROR(EINVAL);
     }
 
