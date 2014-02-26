@@ -87,6 +87,7 @@ AVFILTER_DEFINE_CLASS(compand);
 static av_cold int init(AVFilterContext *ctx)
 {
     CompandContext *s = ctx->priv;
+    s->pts            = AV_NOPTS_VALUE;
 
     if (!s->attacks || !s->decays || !s->points) {
         av_log(ctx, AV_LOG_ERROR, "Missing attacks and/or decays and/or points.\n");
@@ -222,6 +223,10 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
     const int nb_samples = frame->nb_samples;
     int chan, i, av_uninit(dindex), oindex, av_uninit(count);
     AVFrame *out_frame   = NULL;
+
+    if (s->pts == AV_NOPTS_VALUE) {
+        s->pts = (frame->pts == AV_NOPTS_VALUE) ? 0 : frame->pts;
+    }
 
     av_assert1(channels > 0); /* would corrupt delay_count and delay_index */
 
