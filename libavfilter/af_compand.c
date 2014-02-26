@@ -173,7 +173,7 @@ static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
 {
     CompandContext *s    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    const int channels = inlink->channels;
+    const int channels   = inlink->channels;
     const int nb_samples = frame->nb_samples;
     AVFrame *out_frame;
     int chan, i;
@@ -233,8 +233,8 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
 
     for (chan = 0; chan < channels; chan++) {
         AVFrame *delay_frame = s->delay_frame;
-        const double *src = (double *)frame->extended_data[chan];
-        double *dbuf      = (double *)delay_frame->extended_data[chan];
+        const double *src    = (double *)frame->extended_data[chan];
+        double *dbuf         = (double *)delay_frame->extended_data[chan];
         ChanParam *cp        = &s->channels[chan];
         double *dst;
 
@@ -286,9 +286,9 @@ static int compand_drain(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     CompandContext *s    = ctx->priv;
-    const int channels = outlink->channels;
+    const int channels   = outlink->channels;
+    AVFrame *frame       = NULL;
     int chan, i, dindex;
-    AVFrame *frame = NULL;
 
     /* 2048 is to limit output frame size during drain */
     frame = ff_get_audio_buffer(outlink, FFMIN(2048, s->delay_count));
@@ -307,7 +307,7 @@ static int compand_drain(AVFilterLink *outlink)
         dindex = s->delay_index;
         for (i = 0; i < frame->nb_samples; i++) {
             dst[i] = av_clipd(dbuf[dindex] * get_volume(s, cp->volume),
-                              -1, 1);
+                    -1, 1);
             dindex = MOD(dindex + 1, s->delay_samples);
         }
     }
