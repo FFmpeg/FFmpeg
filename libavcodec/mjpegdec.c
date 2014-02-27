@@ -378,6 +378,11 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         if (s->rgb)
             s->avctx->pix_fmt = s->bits <= 9 ? AV_PIX_FMT_ABGR : AV_PIX_FMT_RGBA64;
         else {
+            if (s->adobe_transform == 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "CMYK Unsupported\n");
+                if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                    goto unk_pixfmt;
+            }
             s->avctx->pix_fmt = s->bits <= 8 ? AV_PIX_FMT_YUVA444P : AV_PIX_FMT_YUVA444P16;
             s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         }
@@ -1836,6 +1841,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     av_dict_free(&s->exif_metadata);
     av_freep(&s->stereo3d);
+    s->adobe_transform = -1;
 
     buf_ptr = buf;
     buf_end = buf + buf_size;
