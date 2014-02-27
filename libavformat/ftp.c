@@ -575,10 +575,12 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
     if (h->is_streamed)
         return AVERROR(EIO);
 
-    /* XXX: Simulate behaviour of lseek in file protocol, which could be treated as a reference */
-    new_pos = FFMAX(0, new_pos);
-    fake_pos = s->filesize != -1 ? FFMIN(new_pos, s->filesize) : new_pos;
+    if (new_pos < 0) {
+        av_log(h, AV_LOG_ERROR, "Seeking to nagative position.\n");
+        return AVERROR(EINVAL);
+    }
 
+    fake_pos = s->filesize != -1 ? FFMIN(new_pos, s->filesize) : new_pos;
     if (fake_pos != s->position) {
         if ((err = ftp_abort(h)) < 0)
             return err;
