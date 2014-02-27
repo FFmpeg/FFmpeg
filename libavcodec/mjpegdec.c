@@ -378,13 +378,12 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         if (s->rgb)
             s->avctx->pix_fmt = s->bits <= 9 ? AV_PIX_FMT_ABGR : AV_PIX_FMT_RGBA64;
         else {
-            if (s->adobe_transform == 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "CMYK Unsupported\n");
-                if (s->avctx->err_recognition & AV_EF_EXPLODE)
-                    goto unk_pixfmt;
+            if (s->adobe_transform == 0 && s->bits <= 8) {
+                s->avctx->pix_fmt = AV_PIX_FMT_GBRAP;
+            } else {
+                s->avctx->pix_fmt = s->bits <= 8 ? AV_PIX_FMT_YUVA444P : AV_PIX_FMT_YUVA444P16;
+                s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
             }
-            s->avctx->pix_fmt = s->bits <= 8 ? AV_PIX_FMT_YUVA444P : AV_PIX_FMT_YUVA444P16;
-            s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         }
         av_assert0(s->nb_components == 4);
         break;
@@ -2068,6 +2067,28 @@ the_end:
                     dst  += s->picture_ptr->linesize[index];
                     dst2 -= s->picture_ptr->linesize[index];
                 }
+            }
+        }
+    }
+    if (s->adobe_transform == 0 && s->avctx->pix_fmt == AV_PIX_FMT_GBRAP) {
+        int w = s->picture_ptr->width;
+        int h = s->picture_ptr->height;
+        for (i=0; i<h; i++) {
+            int j;
+            uint8_t *dst[4];
+            for (index=0; index<4; index++) {
+                dst[index] =   s->picture_ptr->data[index]
+                             + s->picture_ptr->linesize[index]*i;
+            }
+            for (j=0; j<w; j++) {
+                int k = dst[3][j];
+                int r = dst[0][j] * k;
+                int g = dst[1][j] * k;
+                int b = dst[2][j] * k;
+                dst[0][j] = g*257 >> 16;
+                dst[1][j] = b*257 >> 16;
+                dst[2][j] = r*257 >> 16;
+                dst[3][j] = 255;
             }
         }
     }
