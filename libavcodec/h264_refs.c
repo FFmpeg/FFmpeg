@@ -75,7 +75,7 @@ static int build_def_list(Picture *def, int def_len,
     int index = 0;
 
     while (i[0] < len || i[1] < len) {
-        while (i[0] < len && !(in[i[0]] && (in[i[0]]->reference & sel)))
+        while (i[0] < len && !(in[i[0]] && (in[i[0]]->reference & sel) && (!in[i[0]]->invalid_gap || sel==3)))
             i[0]++;
         while (i[1] < len && !(in[i[1]] && (in[i[1]]->reference & (sel ^ 3))))
             i[1]++;

@@ -3788,6 +3788,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             h->prev_frame_num++;
             h->prev_frame_num        %= 1 << h->sps.log2_max_frame_num;
             h->cur_pic_ptr->frame_num = h->prev_frame_num;
+            h->cur_pic_ptr->invalid_gap = !h->sps.gaps_in_frame_num_allowed_flag;
             ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 0);
             ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 1);
             ret = ff_generate_sliding_window_mmcos(h, 1);
