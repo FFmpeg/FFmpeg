@@ -357,16 +357,12 @@ static int alloc_scratch_buffers(H264Context *h, int linesize)
     // edge emu needs blocksize + filter length - 1
     // (= 21x21 for  h264)
     h->edge_emu_buffer = av_mallocz(alloc_size * 2 * 21);
-    h->me.scratchpad   = av_mallocz(alloc_size * 2 * 16 * 2);
 
-    if (!h->bipred_scratchpad || !h->edge_emu_buffer || !h->me.scratchpad) {
+    if (!h->bipred_scratchpad || !h->edge_emu_buffer) {
         av_freep(&h->bipred_scratchpad);
         av_freep(&h->edge_emu_buffer);
-        av_freep(&h->me.scratchpad);
         return AVERROR(ENOMEM);
     }
-
-    h->me.temp = h->me.scratchpad;
 
     return 0;
 }
@@ -1204,7 +1200,6 @@ static void free_tables(H264Context *h, int free_rbsp)
         av_freep(&hx->bipred_scratchpad);
         av_freep(&hx->edge_emu_buffer);
         av_freep(&hx->dc_val_base);
-        av_freep(&hx->me.scratchpad);
         av_freep(&hx->er.mb_index2xy);
         av_freep(&hx->er.error_status_table);
         av_freep(&hx->er.er_temp_buffer);
@@ -1374,7 +1369,6 @@ static void clone_tables(H264Context *dst, H264Context *src, int i)
     dst->cur_pic                = src->cur_pic;
     dst->bipred_scratchpad      = NULL;
     dst->edge_emu_buffer        = NULL;
-    dst->me.scratchpad          = NULL;
     ff_h264_pred_init(&dst->hpc, src->avctx->codec_id, src->sps.bit_depth_luma,
                       src->sps.chroma_format_idc);
 }
@@ -1716,7 +1710,6 @@ static int decode_update_thread_context(AVCodecContext *dst,
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
         memset(&h->er, 0, sizeof(h->er));
-        memset(&h->me, 0, sizeof(h->me));
         memset(&h->mb, 0, sizeof(h->mb));
         memset(&h->mb_luma_dc, 0, sizeof(h->mb_luma_dc));
         memset(&h->mb_padding, 0, sizeof(h->mb_padding));
@@ -3367,8 +3360,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     int needs_reinit = 0;
     int field_pic_flag, bottom_field_flag;
 
-    h->me.qpel_put = h->h264qpel.put_h264_qpel_pixels_tab;
-    h->me.qpel_avg = h->h264qpel.avg_h264_qpel_pixels_tab;
+    h->qpel_put = h->h264qpel.put_h264_qpel_pixels_tab;
+    h->qpel_avg = h->h264qpel.avg_h264_qpel_pixels_tab;
 
     first_mb_in_slice = get_ue_golomb(&h->gb);
 

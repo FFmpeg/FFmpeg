@@ -30,6 +30,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "cabac.h"
+#include "dsputil.h"
 #include "error_resilience.h"
 #include "get_bits.h"
 #include "mpegvideo.h"
@@ -302,7 +303,6 @@ typedef struct H264Context {
     H264DSPContext h264dsp;
     H264ChromaContext h264chroma;
     H264QpelContext h264qpel;
-    MotionEstContext me;
     ParseContext parse_context;
     GetBitContext gb;
     ERContext er;
@@ -693,6 +693,10 @@ typedef struct H264Context {
     AVBufferPool *mb_type_pool;
     AVBufferPool *motion_val_pool;
     AVBufferPool *ref_index_pool;
+
+    /* Motion Estimation */
+    qpel_mc_func (*qpel_put)[16];
+    qpel_mc_func (*qpel_avg)[16];
 } H264Context;
 
 extern const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM + 1]; ///< One chroma qp table for each supported bit depth (8, 9, 10).
