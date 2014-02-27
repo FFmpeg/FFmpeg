@@ -232,12 +232,18 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
     }
 
     /* see: http://piksel.org/frei0r/1.2/spec/1.2/spec/group__pluglocations.html */
-    if ((path = av_strdup(getenv("FREI0R_PATH")))) {
-        char *p, *ptr = NULL;
-        for (p = path; p = strtok_r(p, ":", &ptr); p = NULL)
-            if (s->dl_handle = load_path(ctx, p, dl_name))
-                break;
-        av_free(path);
+    if (path = getenv("FREI0R_PATH")) {
+        while(*path) {
+            char *ptr = av_get_token((const char **)&path, ":");
+            if (!ptr)
+                return AVERROR(ENOMEM);
+            s->dl_handle = load_path(ctx, ptr, dl_name);
+            av_freep(&ptr);
+            if (s->dl_handle)
+                break;              /* found */
+            if (*path)
+                path++              /* skip ':' */
+        }
     }
     if (!s->dl_handle && (path = getenv("HOME"))) {
         char prefix[1024];
