@@ -1515,12 +1515,12 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     }
 
     if (id == AV_RB32("Adob") && (get_bits(&s->gb, 8) == 'e')) {
-        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-            av_log(s->avctx, AV_LOG_INFO, "mjpeg: Adobe header found\n");
         skip_bits(&s->gb, 16); /* version */
         skip_bits(&s->gb, 16); /* flags0 */
         skip_bits(&s->gb, 16); /* flags1 */
-        skip_bits(&s->gb,  8); /* transform */
+        s->adobe_transform = get_bits(&s->gb,  8);
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+            av_log(s->avctx, AV_LOG_INFO, "mjpeg: Adobe header found, transform=%d\n", s->adobe_transform);
         len -= 7;
         goto out;
     }
