@@ -497,7 +497,7 @@ unk_pixfmt:
     s->picture_ptr->key_frame = 1;
     s->got_picture            = 1;
 
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 4; i++)
         s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;
 
     av_dlog(s->avctx, "%d %d %d %d %d %d\n",
