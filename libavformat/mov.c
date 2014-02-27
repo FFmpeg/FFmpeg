@@ -1572,11 +1572,7 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
         }
         break;
     case AV_CODEC_ID_AC3:
-        st->need_parsing = AVSTREAM_PARSE_FULL;
-        break;
     case AV_CODEC_ID_MPEG1VIDEO:
-        st->need_parsing = AVSTREAM_PARSE_FULL;
-        break;
     case AV_CODEC_ID_VC1:
         st->need_parsing = AVSTREAM_PARSE_FULL;
         break;
