@@ -38,6 +38,6 @@ typedef struct ProresDSPContext {
 
 void ff_proresdsp_init(ProresDSPContext *dsp);
 
-void ff_proresdsp_x86_init(ProresDSPContext *dsp);
+void ff_proresdsp_init_x86(ProresDSPContext *dsp);
 
 #endif /* AVCODEC_PRORESDSP_H */
