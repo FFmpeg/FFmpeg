@@ -50,7 +50,7 @@ ps_cosh_sse3:  dd 1.0, -0.50190991877167369479,  1.0, -5.73685662283492756461
                dd 1.0, -0.51763809020504152469,  1.0, -1.93185165257813657349
                dd 1.0, -0.55168895948124587824, -1.0,  1.18310079157624925896
                dd 1.0, -0.61038729438072803416, -1.0,  0.87172339781054900991
-               dd 1.0,  0.70710678118654752439,  0.0,  0.0
+               dd 1.0, -0.70710678118654752439,  0.0,  0.0
 
 costabs:  times 4 dd  0.98480773
           times 4 dd  0.93969262
@@ -124,6 +124,19 @@ SECTION_TEXT
 %else
     mulps    %1, [ps_cosh + %3]
     PSHUFD   %2, %1, 0xb1
+    xorps    %1, [ps_p1m1p1m1]
+    addps    %1, %2
+%endif
+%endmacro
+
+%macro BUTTERF2 3
+%if cpuflag(sse3)
+    mulps    %1, %1, [ps_cosh_sse3 + %3]
+    PSHUFD   %2, %1, 0xe1
+    addsubps %1, %1, %2
+%else
+    mulps    %1, [ps_cosh + %3]
+    PSHUFD   %2, %1, 0xe1
     xorps    %1, [ps_p1m1p1m1]
     addps    %1, %2
 %endif
@@ -279,11 +292,7 @@ cglobal imdct36_float, 4,4,9, out, buf, in, win
     BUTTERF  m7, m2, 16
     BUTTERF  m3, m6, 32
     BUTTERF  m4, m1, 48
-
-    mulps   m5, m5, [ps_cosh + 64]
-    PSHUFD  m1, m5, 0xe1
-    xorps   m5, m5, [ps_p1m1p1m1]
-    addps   m5, m5, m1
+    BUTTERF2 m5, m1, 64
 
     ; permutates:
     ; m0    0  1  2  3     =>     2  6 10 14   m1
