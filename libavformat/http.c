@@ -484,8 +484,10 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
         char *param, *next_param, *cdomain = NULL, *cpath = NULL, *cvalue = NULL;
         set_cookies = NULL;
 
-        while ((param = av_strtok(cookie, "; ", &next_param))) {
+        while ((param = av_strtok(cookie, ";", &next_param))) {
             cookie = NULL;
+            /* skip leading spaces */
+            param += strspn(param, " ");
             if        (!av_strncasecmp("path=",   param, 5)) {
                 av_free(cpath);
                 cpath = av_strdup(&param[5]);
@@ -498,8 +500,9 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
             } else if (!av_strncasecmp("secure",  param, 6) ||
                        !av_strncasecmp("comment", param, 7) ||
                        !av_strncasecmp("max-age", param, 7) ||
-                       !av_strncasecmp("version", param, 7)) {
-                // ignore Comment, Max-Age, Secure and Version
+                       !av_strncasecmp("version", param, 7) ||
+                       !av_strncasecmp("expires", param, 7)) {
+                // ignore Comment, Max-Age, Secure, Version and Expires
             } else {
                 av_free(cvalue);
                 cvalue = av_strdup(param);
