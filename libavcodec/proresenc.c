@@ -190,9 +190,9 @@ typedef struct ProresContext {
     int16_t quants[MAX_STORED_Q][64];
     int16_t custom_q[64];
     const uint8_t *quant_mat;
+    const uint8_t *scantable;
 
     ProresDSPContext dsp;
-    ScanTable  scantable;
 
     int mb_width, mb_height;
     int mbs_per_slice;
@@ -426,7 +426,7 @@ static int encode_slice_plane(ProresContext *ctx, PutBitContext *pb,
 
     encode_dcs(pb, blocks, blocks_per_slice, qmat[0]);
     encode_acs(pb, blocks, blocks_per_slice, plane_size_factor,
-               ctx->scantable.permutated, qmat);
+               ctx->scantable, qmat);
     flush_put_bits(pb);
 
     return (put_bits_count(pb) - saved_pos) >> 3;
@@ -673,7 +673,7 @@ static int estimate_slice_plane(ProresContext *ctx, int *error, int plane,
 
     bits  = estimate_dcs(error, td->blocks[plane], blocks_per_slice, qmat[0]);
     bits += estimate_acs(error, td->blocks[plane], blocks_per_slice,
-                         plane_size_factor, ctx->scantable.permutated, qmat);
+                         plane_size_factor, ctx->scantable, qmat);
 
     return FFALIGN(bits, 8);
 }
@@ -1080,9 +1080,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     ff_proresdsp_init(&ctx->dsp);
-    ff_init_scantable(ctx->dsp.dct_permutation, &ctx->scantable,
-                      interlaced ? ff_prores_interlaced_scan
-                                 : ff_prores_progressive_scan);
+    ctx->scantable = interlaced ? ff_prores_interlaced_scan
+                                : ff_prores_progressive_scan;
 
     mps = ctx->mbs_per_slice;
     if (mps & (mps - 1)) {
