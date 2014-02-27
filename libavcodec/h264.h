@@ -39,6 +39,8 @@
 #include "h264qpel.h"
 #include "rectangle.h"
 
+#define H264_MAX_PICTURE_COUNT 32
+
 #define MAX_SPS_COUNT          32
 #define MAX_PPS_COUNT         256
 

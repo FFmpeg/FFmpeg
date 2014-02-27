@@ -279,7 +279,7 @@ static void release_unused_pictures(H264Context *h, int remove_current)
     int i;
 
     /* release non reference frames */
-    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
+    for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         if (h->DPB[i].f.buf[0] && !h->DPB[i].reference &&
             (remove_current || &h->DPB[i] != h->cur_pic_ptr)) {
             unref_picture(h, &h->DPB[i]);
@@ -467,11 +467,11 @@ static int find_unused_picture(H264Context *h)
 {
     int i;
 
-    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
+    for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         if (pic_is_unused(h, &h->DPB[i]))
             break;
     }
-    if (i == MAX_PICTURE_COUNT)
+    if (i == H264_MAX_PICTURE_COUNT)
         return AVERROR_INVALIDDATA;
 
     if (h->DPB[i].needs_realloc) {
@@ -1185,11 +1185,11 @@ static void free_tables(H264Context *h, int free_rbsp)
     av_buffer_pool_uninit(&h->ref_index_pool);
 
     if (free_rbsp && h->DPB) {
-        for (i = 0; i < MAX_PICTURE_COUNT; i++)
+        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
             unref_picture(h, &h->DPB[i]);
         av_freep(&h->DPB);
     } else if (h->DPB) {
-        for (i = 0; i < MAX_PICTURE_COUNT; i++)
+        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
             h->DPB[i].needs_realloc = 1;
     }
 
@@ -1338,10 +1338,10 @@ int ff_h264_alloc_tables(H264Context *h)
         init_dequant_tables(h);
 
     if (!h->DPB) {
-        h->DPB = av_mallocz_array(MAX_PICTURE_COUNT, sizeof(*h->DPB));
+        h->DPB = av_mallocz_array(H264_MAX_PICTURE_COUNT, sizeof(*h->DPB));
         if (!h->DPB)
             return AVERROR(ENOMEM);
-        for (i = 0; i < MAX_PICTURE_COUNT; i++)
+        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
             av_frame_unref(&h->DPB[i].f);
         av_frame_unref(&h->cur_pic.f);
     }
@@ -1595,7 +1595,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 #undef REBASE_PICTURE
 #define REBASE_PICTURE(pic, new_ctx, old_ctx)             \
     ((pic && pic >= old_ctx->DPB &&                       \
-      pic < old_ctx->DPB + MAX_PICTURE_COUNT) ?           \
+      pic < old_ctx->DPB + H264_MAX_PICTURE_COUNT) ?           \
      &new_ctx->DPB[pic - old_ctx->DPB] : NULL)
 
 static void copy_picture_range(H264Picture **to, H264Picture **from, int count,
@@ -1607,7 +1607,7 @@ static void copy_picture_range(H264Picture **to, H264Picture **from, int count,
     for (i = 0; i < count; i++) {
         assert((IN_RANGE(from[i], old_base, sizeof(*old_base)) ||
                 IN_RANGE(from[i], old_base->DPB,
-                         sizeof(H264Picture) * MAX_PICTURE_COUNT) ||
+                         sizeof(H264Picture) * H264_MAX_PICTURE_COUNT) ||
                 !from[i]));
         to[i] = REBASE_PICTURE(from[i], new_base, old_base);
     }
@@ -1767,7 +1767,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
     h->droppable            = h1->droppable;
     h->low_delay            = h1->low_delay;
 
-    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
+    for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         unref_picture(h, &h->DPB[i]);
         if (h1->DPB[i].f.buf[0] &&
             (ret = ref_picture(h, &h->DPB[i], &h1->DPB[i])) < 0)
@@ -2801,7 +2801,7 @@ static void flush_dpb(AVCodecContext *avctx)
     flush_change(h);
 
     if (h->DPB)
-        for (i = 0; i < MAX_PICTURE_COUNT; i++)
+        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
             unref_picture(h, &h->DPB[i]);
     h->cur_pic_ptr = NULL;
     unref_picture(h, &h->cur_pic);
