@@ -912,8 +912,6 @@ void ff_thread_flush(AVCodecContext *avctx)
     if (fctx->prev_thread) {
         if (fctx->prev_thread != &fctx->threads[0])
             update_context_from_thread(fctx->threads[0].avctx, fctx->prev_thread->avctx, 0);
-        if (avctx->codec->flush)
-            avctx->codec->flush(fctx->threads[0].avctx);
     }
 
     fctx->next_decoding = fctx->next_finished = 0;
@@ -925,6 +923,9 @@ void ff_thread_flush(AVCodecContext *avctx)
         p->got_frame = 0;
 
         release_delayed_buffers(p);
+
+        if (avctx->codec->flush)
+            avctx->codec->flush(fctx->threads[0].avctx);
     }
 }
 
