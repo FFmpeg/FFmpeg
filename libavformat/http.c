@@ -959,6 +959,8 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
         off += s->off;
     else if (whence == SEEK_END)
         off += s->filesize;
+    else if (whence != SEEK_SET)
+        return AVERROR(EINVAL);
     if (off < 0)
         return AVERROR(EINVAL);
     s->off = off;
