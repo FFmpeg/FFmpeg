@@ -75,7 +75,7 @@ static int build_def_list(Picture *def, int def_len,
     int index = 0;
 
     while (i[0] < len || i[1] < len) {
-        while (i[0] < len && !(in[i[0]] && (in[i[0]]->reference & sel) && (!in[i[0]]->invalid_gap || sel==3)))
+        while (i[0] < len && !(in[i[0]] && (in[i[0]]->reference & sel)))
             i[0]++;
         while (i[1] < len && !(in[i[1]] && (in[i[1]]->reference & (sel ^ 3))))
             i[1]++;
@@ -749,6 +749,15 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
         } else {
             pic = h->short_ref[h->short_ref_count - 1];
             remove_short(h, pic->frame_num, 0);
+        }
+    }
+
+    for (i = 0; i<h->short_ref_count; i++) {
+        pic = h->short_ref[i];
+        if (pic->invalid_gap) {
+            int d = (h->cur_pic_ptr->frame_num - pic->frame_num) & ((1 << h->sps.log2_max_frame_num)-1);
+            if (d > h->sps.ref_frame_count)
+                remove_short(h, pic->frame_num, 0);
         }
     }
 
