@@ -20,9 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
-#include "dct.h"
 #include "dsputil.h"
 #include "proresdsp.h"
 #include "simple_idct.h"
@@ -33,7 +33,6 @@
 
 #define CLIP_AND_BIAS(x) (av_clip((x) + BIAS, CLIP_MIN, CLIP_MAX))
 
-#if CONFIG_PRORES_DECODER
 /**
  * Add bias value, clamp and output pixels of a slice
  */
@@ -55,26 +54,9 @@ static void prores_idct_put_c(uint16_t *out, int linesize, int16_t *block, const
     ff_prores_idct(block, qmat);
     put_pixels(out, linesize >> 1, block);
 }
-#endif
-
-#if CONFIG_PRORES_ENCODER
-static void prores_fdct_c(const uint16_t *src, int linesize, int16_t *block)
-{
-    int x, y;
-    const uint16_t *tsrc = src;
-
-    for (y = 0; y < 8; y++) {
-        for (x = 0; x < 8; x++)
-            block[y * 8 + x] = tsrc[x];
-        tsrc += linesize >> 1;
-    }
-    ff_jpeg_fdct_islow_10(block);
-}
-#endif
 
 av_cold void ff_proresdsp_init(ProresDSPContext *dsp)
 {
-#if CONFIG_PRORES_DECODER
     dsp->idct_put = prores_idct_put_c;
     dsp->idct_permutation_type = FF_NO_IDCT_PERM;
 
@@ -83,8 +65,4 @@ av_cold void ff_proresdsp_init(ProresDSPContext *dsp)
 
     ff_init_scantable_permutation(dsp->idct_permutation,
                                   dsp->idct_permutation_type);
-#endif
-#if CONFIG_PRORES_ENCODER
-    dsp->fdct                 = prores_fdct_c;
-#endif
 }
