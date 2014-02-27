@@ -367,6 +367,7 @@ static int ref_picture(H264Context *h, Picture *dst, Picture *src)
     dst->crop_left     = src->crop_left;
     dst->crop_top      = src->crop_top;
     dst->recovered     = src->recovered;
+    dst->invalid_gap   = src->invalid_gap;
 
     return 0;
 fail:
@@ -1978,6 +1979,7 @@ static int h264_frame_start(H264Context *h)
     pic->f.key_frame = 0;
     pic->mmco_reset  = 0;
     pic->recovered   = 0;
+    pic->invalid_gap = 0;
 
     if ((ret = alloc_picture(h, pic)) < 0)
         return ret;
