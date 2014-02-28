@@ -535,7 +535,7 @@ static int check_opcodes(MMCO *mmco1, MMCO *mmco2, int n_mmcos)
 int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
 {
     MMCO mmco_temp[MAX_MMCO_COUNT], *mmco = first_slice ? h->mmco : mmco_temp;
-    int mmco_index = 0, i;
+    int mmco_index = 0, i = 0;
 
     assert(h->long_ref_count + h->short_ref_count <= h->sps.ref_frame_count);
 
