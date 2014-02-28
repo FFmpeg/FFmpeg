@@ -22,6 +22,8 @@
 #include "avfft.h"
 #include "synth_filter.h"
 
+#define DCA_SUBBANDS 64
+
 typedef struct DCADSPContext {
     void (*lfe_fir[2])(float *out, const float *in, const float *coefs);
     void (*qmf_32_subbands)(float samples_in[32][8], int sb_act,
@@ -30,7 +32,11 @@ typedef struct DCADSPContext {
                             int *synth_buf_offset, float synth_buf2[32],
                             const float window[512], float *samples_out,
                             float raXin[32], float scale);
-    void (*int8x8_fmul_int32)(float *dst, const int8_t *src, int scale);
+    void (*decode_hf)(float dst[DCA_SUBBANDS][8],
+                      const int32_t vq_num[DCA_SUBBANDS],
+                      const int8_t hf_vq[1024][32], intptr_t vq_offset,
+                      int32_t scale[DCA_SUBBANDS][2],
+                      intptr_t start, intptr_t end);
 } DCADSPContext;
 
 void ff_dcadsp_init(DCADSPContext *s);

@@ -1540,7 +1540,6 @@ HAVE_LIST="
     altivec_h
     arpa_inet_h
     asm_mod_q
-    asm_mod_y
     asm_types_h
     atomic_cas_ptr
     atomics_native
@@ -4147,7 +4146,6 @@ EOF
             $ARCH_EXT_LIST_ARM
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
-    check_inline_asm asm_mod_y '"vmul.i32 d0, d0, %y0" :: "x"(0)'
 
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
 
