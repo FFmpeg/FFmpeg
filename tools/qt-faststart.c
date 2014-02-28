@@ -41,10 +41,10 @@
 
 #define BE_16(x) ((((uint8_t*)(x))[0] <<  8) | ((uint8_t*)(x))[1])
 
-#define BE_32(x) ((((uint8_t*)(x))[0] << 24) |  \
-                  (((uint8_t*)(x))[1] << 16) |  \
-                  (((uint8_t*)(x))[2] <<  8) |  \
-                   ((uint8_t*)(x))[3])
+#define BE_32(x) (((uint32_t)(((uint8_t*)(x))[0]) << 24) |  \
+                             (((uint8_t*)(x))[1]  << 16) |  \
+                             (((uint8_t*)(x))[2]  <<  8) |  \
+                              ((uint8_t*)(x))[3])
 
 #define BE_64(x) (((uint64_t)(((uint8_t*)(x))[0]) << 56) |  \
                   ((uint64_t)(((uint8_t*)(x))[1]) << 48) |  \
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
         if (fread(atom_bytes, ATOM_PREAMBLE_SIZE, 1, infile) != 1) {
             break;
         }
-        atom_size = (uint32_t) BE_32(&atom_bytes[0]);
+        atom_size = BE_32(&atom_bytes[0]);
         atom_type = BE_32(&atom_bytes[4]);
 
         /* keep ftyp atom */
