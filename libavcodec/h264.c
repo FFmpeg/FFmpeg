@@ -1195,7 +1195,7 @@ static void free_tables(H264Context *h, int free_rbsp)
 
     h->cur_pic_ptr = NULL;
 
-    for (i = 0; i < MAX_THREADS; i++) {
+    for (i = 0; i < H264_MAX_THREADS; i++) {
         hx = h->thread_context[i];
         if (!hx)
             continue;
@@ -3224,12 +3224,12 @@ static int h264_slice_header_init(H264Context *h, int reinit)
         return ret;
     }
 
-    if (nb_slices > MAX_THREADS || (nb_slices > h->mb_height && h->mb_height)) {
+    if (nb_slices > H264_MAX_THREADS || (nb_slices > h->mb_height && h->mb_height)) {
         int max_slices;
         if (h->mb_height)
-            max_slices = FFMIN(MAX_THREADS, h->mb_height);
+            max_slices = FFMIN(H264_MAX_THREADS, h->mb_height);
         else
-            max_slices = MAX_THREADS;
+            max_slices = H264_MAX_THREADS;
         av_log(h->avctx, AV_LOG_WARNING, "too many threads/slices %d,"
                " reducing to %d\n", nb_slices, max_slices);
         nb_slices = max_slices;
