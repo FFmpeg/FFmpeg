@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include "config.h"
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
@@ -231,6 +232,13 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
     f0r_plugin_info_t *pi;
     char *path;
     int ret = 0;
+    int i;
+    static const char* const frei0r_pathlist[] = {
+        "/usr/local/lib/frei0r-1/",
+        "/usr/lib/frei0r-1/",
+        "/usr/local/lib64/frei0r-1/",
+        "/usr/lib64/frei0r-1/"
+    };
 
     if (!dl_name) {
         av_log(ctx, AV_LOG_ERROR, "No filter name provided.\n");
@@ -274,28 +282,11 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
         if (ret < 0)
             return ret;
     }
-    if (!s->dl_handle) {
-        ret = load_path(ctx, &s->dl_handle, "/usr/local/lib/frei0r-1/", dl_name);
+    for (i = 0; !s->dl_handle && i < FF_ARRAY_ELEMS(frei0r_pathlist); i++) {
+        ret = load_path(ctx, &s->dl_handle, frei0r_pathlist[i], dl_name);
         if (ret < 0)
             return ret;
     }
-    if (!s->dl_handle) {
-        ret = load_path(ctx, &s->dl_handle, "/usr/lib/frei0r-1/", dl_name);
-        if (ret < 0)
-            return ret;
-    }
-#if ARCH_X86_64
-    if (!s->dl_handle) {
-        ret = load_path(ctx, &s->dl_handle, "/usr/local/lib64/frei0r-1/", dl_name);
-        if (ret < 0)
-            return ret;
-    }
-    if (!s->dl_handle) {
-        ret = load_path(ctx, &s->dl_handle, "/usr/lib64/frei0r-1/", dl_name);
-        if (ret < 0)
-            return ret;
-    }
-#endif
     if (!s->dl_handle) {
         av_log(ctx, AV_LOG_ERROR, "Could not find module '%s'\n", dl_name);
         return AVERROR(EINVAL);
