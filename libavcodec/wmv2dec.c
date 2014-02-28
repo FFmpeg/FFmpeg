@@ -19,6 +19,7 @@
  */
 
 #include "avcodec.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "mathops.h"

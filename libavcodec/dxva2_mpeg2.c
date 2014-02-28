@@ -22,6 +22,7 @@
 
 #include "libavutil/log.h"
 #include "dxva2_internal.h"
+#include "mpegutils.h"
 
 #define MAX_SLICES 1024
 struct dxva2_picture_context {

@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "h264.h"
 #include "golomb.h"
+#include "mpegutils.h"
 
 #include <assert.h>
 

@@ -38,6 +38,7 @@
 #include "h264dsp.h"
 #include "h264pred.h"
 #include "h264qpel.h"
+#include "mpegutils.h"
 #include "rectangle.h"
 
 #define H264_MAX_PICTURE_COUNT 32

@@ -32,6 +32,7 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "internal.h"
+#include "mpegutils.h"
 #include "svq1.h"
 #include "svq1enc_cb.h"
 

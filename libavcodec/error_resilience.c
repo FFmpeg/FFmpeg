@@ -30,6 +30,7 @@
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "error_resilience.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "rectangle.h"
 #include "thread.h"

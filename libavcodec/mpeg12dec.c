@@ -36,6 +36,7 @@
 #include "internal.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "thread.h"
 #include "version.h"

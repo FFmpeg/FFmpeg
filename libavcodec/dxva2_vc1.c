@@ -21,6 +21,7 @@
  */
 
 #include "dxva2_internal.h"
+#include "mpegutils.h"
 #include "vc1.h"
 #include "vc1data.h"
 

@@ -34,6 +34,7 @@
 #include "h264data.h" // FIXME FIXME FIXME
 #include "h264_mvpred.h"
 #include "golomb.h"
+#include "mpegutils.h"
 
 #include <assert.h>
 
