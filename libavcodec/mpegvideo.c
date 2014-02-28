@@ -2482,13 +2482,32 @@ void ff_MPV_report_decode_progress(MpegEncContext *s)
 }
 
 #if CONFIG_ERROR_RESILIENCE
+void ff_mpeg_set_erpic(ERPicture *dst, Picture *src)
+{
+    int i;
+
+    if (!src)
+        return;
+
+    dst->f = &src->f;
+    dst->tf = &src->tf;
+
+    for (i = 0; i < 2; i++) {
+        dst->motion_val[i] = src->motion_val[i];
+        dst->ref_index[i] = src->ref_index[i];
+    }
+
+    dst->mb_type = src->mb_type;
+    dst->field_picture = src->field_picture;
+}
+
 void ff_mpeg_er_frame_start(MpegEncContext *s)
 {
     ERContext *er = &s->er;
 
-    er->cur_pic  = s->current_picture_ptr;
-    er->last_pic = s->last_picture_ptr;
-    er->next_pic = s->next_picture_ptr;
+    ff_mpeg_set_erpic(&er->cur_pic, s->current_picture_ptr);
+    ff_mpeg_set_erpic(&er->next_pic, s->next_picture_ptr);
+    ff_mpeg_set_erpic(&er->last_pic, s->last_picture_ptr);
 
     er->pp_time           = s->pp_time;
     er->pb_time           = s->pb_time;

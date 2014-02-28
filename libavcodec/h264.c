@@ -2974,9 +2974,11 @@ static int field_end(H264Context *h, int in_setup)
      * causes problems for the first MB line, too.
      */
     if (CONFIG_ERROR_RESILIENCE && !FIELD_PICTURE(h)) {
-        h->er.cur_pic  = h->cur_pic_ptr;
-        h->er.last_pic = h->ref_count[0] ? &h->ref_list[0][0] : NULL;
-        h->er.next_pic = h->ref_count[1] ? &h->ref_list[1][0] : NULL;
+        ff_mpeg_set_erpic(&h->er.cur_pic, h->cur_pic_ptr);
+        ff_mpeg_set_erpic(&h->er.last_pic,
+                          h->ref_count[0] ? &h->ref_list[0][0] : NULL);
+        ff_mpeg_set_erpic(&h->er.next_pic,
+                          h->ref_count[1] ? &h->ref_list[1][0] : NULL);
         ff_er_frame_end(&h->er);
     }
     emms_c();
