@@ -32,7 +32,7 @@ void ff_prores_idct_put_10_sse4(uint16_t *dst, int linesize,
 void ff_prores_idct_put_10_avx (uint16_t *dst, int linesize,
                                 int16_t *block, const int16_t *qmat);
 
-av_cold void ff_proresdsp_x86_init(ProresDSPContext *dsp, AVCodecContext *avctx)
+av_cold void ff_proresdsp_init_x86(ProresDSPContext *dsp, AVCodecContext *avctx)
 {
 #if ARCH_X86_64
     int cpu_flags = av_get_cpu_flags();
