@@ -327,6 +327,12 @@ static int set_string_fmt(void *obj, const AVOption *o, const char *val, uint8_t
     min = FFMAX(o->min, -1);
     max = FFMIN(o->max, fmt_nb-1);
 
+    // hack for compatibility with old ffmpeg
+    if(min == 0 && max == 0) {
+        min = -1;
+        max = fmt_nb-1;
+    }
+
     if (fmt < min || fmt > max) {
         av_log(obj, AV_LOG_ERROR,
                "Value %d for parameter '%s' out of %s format range [%d - %d]\n",
