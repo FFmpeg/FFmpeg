@@ -77,7 +77,7 @@
 #define CO64_ATOM QT_ATOM('c', 'o', '6', '4')
 
 #define ATOM_PREAMBLE_SIZE    8
-#define COPY_BUFFER_SIZE   1024
+#define COPY_BUFFER_SIZE  65536
 
 int main(int argc, char *argv[])
 {
