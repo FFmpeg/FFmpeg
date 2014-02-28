@@ -22,24 +22,25 @@
 #include <stdint.h>
 
 #include "libavutil/mathematics.h"
+
 #include "avformat.h"
 #include "internal.h"
 
 #define MAX_LINESIZE 2000
 
-typedef struct ASSContext{
+typedef struct ASSContext {
     uint8_t *event_buffer;
     uint8_t **event;
     unsigned int event_count;
     unsigned int event_index;
-}ASSContext;
+} ASSContext;
 
 static int probe(AVProbeData *p)
 {
-    const char *header= "[Script Info]";
+    const char *header = "[Script Info]";
 
-    if(   !memcmp(p->buf  , header, strlen(header))
-       || !memcmp(p->buf+3, header, strlen(header)))
+    if (!memcmp(p->buf, header, strlen(header)) ||
+        !memcmp(p->buf + 3, header, strlen(header)))
         return AVPROBE_SCORE_MAX;
 
     return 0;
@@ -59,15 +60,15 @@ static int64_t get_pts(const uint8_t *p)
 {
     int hour, min, sec, hsec;
 
-    if(sscanf(p, "%*[^,],%d:%d:%d%*c%d", &hour, &min, &sec, &hsec) != 4)
+    if (sscanf(p, "%*[^,],%d:%d:%d%*c%d", &hour, &min, &sec, &hsec) != 4)
         return AV_NOPTS_VALUE;
 
     av_dlog(NULL, "%d %d %d %d [%s]\n", hour, min, sec, hsec, p);
 
-    min+= 60*hour;
-    sec+= 60*min;
+    min += 60 * hour;
+    sec += 60 * min;
 
-    return sec*100+hsec;
+    return sec * 100 + hsec;
 }
 
 static int event_cmp(const void *_a, const void *_b)
@@ -82,54 +83,56 @@ static int read_header(AVFormatContext *s)
     ASSContext *ass = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int allocated[2]={0};
-    uint8_t *p, **dst[2]={0};
-    int pos[2]={0};
+    int allocated[2] = { 0 };
+    uint8_t *p, **dst[2] = { 0 };
+    int pos[2] = { 0 };
 
     st = avformat_new_stream(s, NULL);
     if (!st)
         return -1;
     avpriv_set_pts_info(st, 64, 1, 100);
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id= AV_CODEC_ID_SSA;
+    st->codec->codec_id   = AV_CODEC_ID_SSA;
 
-    header_remaining= INT_MAX;
+    header_remaining = INT_MAX;
     dst[0] = &st->codec->extradata;
     dst[1] = &ass->event_buffer;
-    while(!pb->eof_reached){
+    while (!pb->eof_reached) {
         uint8_t line[MAX_LINESIZE];
 
         len = ff_get_line(pb, line, sizeof(line));
 
-        if(!memcmp(line, "[Events]", 8))
-            header_remaining= 2;
-        else if(line[0]=='[')
-            header_remaining= INT_MAX;
+        if (!memcmp(line, "[Events]", 8))
+            header_remaining = 2;
+        else if (line[0] == '[')
+            header_remaining = INT_MAX;
 
-        i= header_remaining==0;
+        i = header_remaining == 0;
 
-        if(i && get_pts(line) == AV_NOPTS_VALUE)
+        if (i && get_pts(line) == AV_NOPTS_VALUE)
             continue;
 
-        p = av_fast_realloc(*(dst[i]), &allocated[i], pos[i]+MAX_LINESIZE);
-        if(!p)
+        p = av_fast_realloc(*(dst[i]), &allocated[i], pos[i] + MAX_LINESIZE);
+        if (!p)
             goto fail;
-        *(dst[i])= p;
-        memcpy(p + pos[i], line, len+1);
+        *(dst[i]) = p;
+        memcpy(p + pos[i], line, len + 1);
         pos[i] += len;
-        if(i) ass->event_count++;
-        else  header_remaining--;
+        if (i)
+            ass->event_count++;
+        else
+            header_remaining--;
     }
-    st->codec->extradata_size= pos[0];
+    st->codec->extradata_size = pos[0];
 
-    if(ass->event_count >= UINT_MAX / sizeof(*ass->event))
+    if (ass->event_count >= UINT_MAX / sizeof(*ass->event))
         goto fail;
 
-    ass->event= av_malloc(ass->event_count * sizeof(*ass->event));
-    p= ass->event_buffer;
-    for(i=0; i<ass->event_count; i++){
-        ass->event[i]= p;
-        while(*p && *p != '\n')
+    ass->event = av_malloc(ass->event_count * sizeof(*ass->event));
+    p = ass->event_buffer;
+    for (i = 0; i < ass->event_count; i++) {
+        ass->event[i] = p;
+        while (*p && *p != '\n')
             p++;
         p++;
     }
@@ -149,16 +152,16 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     ASSContext *ass = s->priv_data;
     uint8_t *p, *end;
 
-    if(ass->event_index >= ass->event_count)
+    if (ass->event_index >= ass->event_count)
         return AVERROR(EIO);
 
-    p= ass->event[ ass->event_index ];
+    p = ass->event[ass->event_index];
 
-    end= strchr(p, '\n');
-    av_new_packet(pkt, end ? end-p+1 : strlen(p));
+    end = strchr(p, '\n');
+    av_new_packet(pkt, end ? end - p + 1 : strlen(p));
     pkt->flags |= AV_PKT_FLAG_KEY;
-    pkt->pos= p - ass->event_buffer + s->streams[0]->codec->extradata_size;
-    pkt->pts= pkt->dts= get_pts(p);
+    pkt->pos    = p - ass->event_buffer + s->streams[0]->codec->extradata_size;
+    pkt->pts    = pkt->dts = get_pts(p);
     memcpy(pkt->data, p, pkt->size);
 
     ass->event_index++;
@@ -182,21 +185,21 @@ static int read_seek2(AVFormatContext *s, int stream_index,
         int64_t min_ts_diff = INT64_MAX;
         if (stream_index == -1) {
             AVRational time_base = s->streams[0]->time_base;
-            ts = av_rescale_q(ts, AV_TIME_BASE_Q, time_base);
+            ts     = av_rescale_q(ts, AV_TIME_BASE_Q, time_base);
             min_ts = av_rescale_rnd(min_ts, time_base.den,
-                                    time_base.num * (int64_t)AV_TIME_BASE,
+                                    time_base.num * (int64_t) AV_TIME_BASE,
                                     AV_ROUND_UP);
             max_ts = av_rescale_rnd(max_ts, time_base.den,
-                                    time_base.num * (int64_t)AV_TIME_BASE,
+                                    time_base.num * (int64_t) AV_TIME_BASE,
                                     AV_ROUND_DOWN);
         }
         /* TODO: ass->event[] is sorted by pts so we could do a binary search */
-        for (i=0; i<ass->event_count; i++) {
-            int64_t pts = get_pts(ass->event[i]);
+        for (i = 0; i < ass->event_count; i++) {
+            int64_t pts     = get_pts(ass->event[i]);
             int64_t ts_diff = FFABS(pts - ts);
             if (pts >= min_ts && pts <= max_ts && ts_diff < min_ts_diff) {
                 min_ts_diff = ts_diff;
-                idx = i;
+                idx         = i;
             }
         }
         if (idx < 0)
