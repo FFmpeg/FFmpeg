@@ -1705,10 +1705,10 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
 
     for (i = 0; i < 64; i++) {
-#define T(x) (x >> 3) | ((x & 7) << 3)
-        s->idct_permutation[i] = T(i);
-        s->idct_scantable[i] = T(ff_zigzag_direct[i]);
-#undef T
+#define TRANSPOSE(x) (x >> 3) | ((x & 7) << 3)
+        s->idct_permutation[i] = TRANSPOSE(i);
+        s->idct_scantable[i]   = TRANSPOSE(ff_zigzag_direct[i]);
+#undef TRANSPOSE
     }
 
     /* initialize to an impossible value which will force a recalculation
