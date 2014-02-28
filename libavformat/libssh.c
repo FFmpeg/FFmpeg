@@ -243,6 +243,11 @@ static int64_t libssh_seek(URLContext *h, int64_t pos, int whence)
         return AVERROR(EINVAL);
     }
 
+    if (newpos < 0) {
+        av_log(h, AV_LOG_ERROR, "Seeking to nagative position.\n");
+        return AVERROR(EINVAL);
+    }
+
     if (sftp_seek64(libssh->file, newpos)) {
         av_log(h, AV_LOG_ERROR, "Error during seeking.\n");
         return AVERROR(EIO);
