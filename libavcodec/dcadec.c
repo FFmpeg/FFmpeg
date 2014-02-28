@@ -1373,7 +1373,7 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
                         else if (s->predictor_history)
                             sum += adpcm_vb[s->prediction_vq[k][l]][n - 1] *
                                    s->subband_samples_hist[k][l][m - n + 4];
-                    subband_samples[k][l][m] += sum * 1.0f / 8192;
+                    subband_samples[k][l][m] += sum * (1.0f / 8192);
                 }
             }
         }
