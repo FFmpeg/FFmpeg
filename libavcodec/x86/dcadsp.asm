@@ -99,7 +99,7 @@ INT8X8_FMUL_INT32
 %else
 %define OFFSET      NUM_COEF*count
 %endif
-; for v0, incrementint and for v1, decrementing
+; for v0, incrementing and for v1, decrementing
     mova        va, [cf0q + OFFSET]
     mova        vb, [cf0q + OFFSET + 4*NUM_COEF]
 %if %0 == 3
@@ -133,7 +133,7 @@ INT8X8_FMUL_INT32
     jl   .loop%1
 %endmacro
 
-; dca_lfe_fir(float *out, float *in, float *coefs)
+; void dca_lfe_fir(float *out, float *in, float *coefs)
 %macro DCA_LFE_FIR 1
 cglobal dca_lfe_fir%1, 3,3,6-%1, out, in, cf0
 %define IN1       m3
