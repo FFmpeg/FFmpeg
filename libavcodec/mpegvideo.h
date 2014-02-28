@@ -124,16 +124,6 @@ typedef struct Picture{
      */
     void *hwaccel_picture_private;
 
-    int field_poc[2];           ///< h264 top/bottom POC
-    int poc;                    ///< h264 frame POC
-    int frame_num;              ///< h264 frame_num (raw frame_num from slice header)
-    int mmco_reset;             ///< h264 MMCO_RESET set this 1. Reordering code must not mix pictures before and after MMCO_RESET.
-    int pic_id;                 /**< h264 pic_num (short -> no wrap version of pic_num,
-                                     pic_num & max_pic_num; long -> long_pic_num) */
-    int long_ref;               ///< 1->long term reference 0->short term reference
-    int ref_poc[2][2][32];      ///< h264 POCs of the frames used as reference (FIXME need per slice)
-    int ref_count[2][2];        ///< number of entries in ref_poc              (FIXME need per slice)
-    int mbaff;                  ///< h264 1 -> MBAFF frame 0-> not MBAFF
     int field_picture;          ///< whether or not the picture was encoded in separate fields
 
     int mb_var_sum;             ///< sum of MB variance for current frame
@@ -144,7 +134,6 @@ typedef struct Picture{
 
     int reference;
     int shared;
-    int recovered;              ///< Picture at IDR or recovery point + recovery count
 } Picture;
 
 /**
