@@ -86,8 +86,5 @@ av_cold void ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
 #endif
 #if CONFIG_PRORES_KS_ENCODER
     dsp->fdct                 = prores_fdct_c;
-    dsp->dct_permutation_type = FF_NO_IDCT_PERM;
-    ff_init_scantable_permutation(dsp->dct_permutation,
-                                  dsp->dct_permutation_type);
 #endif
 }
