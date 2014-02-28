@@ -195,7 +195,9 @@ typedef struct ProresContext {
     const uint8_t *quant_mat;
     const uint8_t *scantable;
 
-    void (* fdct) (const uint16_t *src, int linesize, int16_t *block);
+    void (* fdct)(DSPContext *dsp, const uint16_t *src,
+                  int linesize, int16_t *block);
+    DSPContext dsp;
 
     int mb_width, mb_height;
     int mbs_per_slice;
@@ -264,27 +266,27 @@ static void get_slice_data(ProresContext *ctx, const uint16_t *src,
                        mb_width * sizeof(*emu_buf));
         }
         if (!is_chroma) {
-            ctx->fdct(esrc, elinesize, blocks);
+            ctx->fdct(&ctx->dsp, esrc, elinesize, blocks);
             blocks += 64;
             if (blocks_per_mb > 2) {
-                ctx->fdct(esrc + 8, elinesize, blocks);
+                ctx->fdct(&ctx->dsp, esrc + 8, elinesize, blocks);
                 blocks += 64;
             }
-            ctx->fdct(esrc + elinesize * 4, elinesize, blocks);
+            ctx->fdct(&ctx->dsp, esrc + elinesize * 4, elinesize, blocks);
             blocks += 64;
             if (blocks_per_mb > 2) {
-                ctx->fdct(esrc + elinesize * 4 + 8, elinesize, blocks);
+                ctx->fdct(&ctx->dsp, esrc + elinesize * 4 + 8, elinesize, blocks);
                 blocks += 64;
             }
         } else {
-            ctx->fdct(esrc, elinesize, blocks);
+            ctx->fdct(&ctx->dsp, esrc, elinesize, blocks);
             blocks += 64;
-            ctx->fdct(esrc + elinesize * 4, elinesize, blocks);
+            ctx->fdct(&ctx->dsp, esrc + elinesize * 4, elinesize, blocks);
             blocks += 64;
             if (blocks_per_mb > 2) {
-                ctx->fdct(esrc + 8, elinesize, blocks);
+                ctx->fdct(&ctx->dsp, esrc + 8, elinesize, blocks);
                 blocks += 64;
-                ctx->fdct(esrc + elinesize * 4 + 8, elinesize, blocks);
+                ctx->fdct(&ctx->dsp, esrc + elinesize * 4 + 8, elinesize, blocks);
                 blocks += 64;
             }
         }
@@ -1064,7 +1066,8 @@ static av_cold int encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static void prores_fdct(const uint16_t *src, int linesize, int16_t *block)
+static void prores_fdct(DSPContext *dsp, const uint16_t *src,
+                        int linesize, int16_t *block)
 {
     int x, y;
     const uint16_t *tsrc = src;
@@ -1074,7 +1077,7 @@ static void prores_fdct(const uint16_t *src, int linesize, int16_t *block)
             block[y * 8 + x] = tsrc[x];
         tsrc += linesize >> 1;
     }
-    ff_jpeg_fdct_islow_10(block);
+    dsp->fdct(block);
 }
 
 static av_cold int encode_init(AVCodecContext *avctx)
@@ -1093,6 +1096,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ctx->fdct      = prores_fdct;
     ctx->scantable = interlaced ? ff_prores_interlaced_scan
                                 : ff_prores_progressive_scan;
+    ff_dsputil_init(&ctx->dsp, avctx);
 
     mps = ctx->mbs_per_slice;
     if (mps & (mps - 1)) {
