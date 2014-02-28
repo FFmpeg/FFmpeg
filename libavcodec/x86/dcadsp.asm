@@ -178,19 +178,19 @@ DCA_LFE_FIR 1
 
 INIT_XMM sse2
 %macro INNER_LOOP   1
-    ; reading backwards:  ptr1=synth_buf+j+i   ptr2=synth_big+j-i
-    ;~ a += window[i + j     ]*(-synth_buf[15 - i + j      ])
-    ;~ b += window[i + j + 16]*( synth_buf[     i + j      ])
-    pshufd        m5, [ptr2 + j + (15-3)*4], q0123
+    ; reading backwards:  ptr1 = synth_buf + j + i; ptr2 = synth_buf + j - i
+    ;~ a += window[i + j]      * (-synth_buf[15 - i + j])
+    ;~ b += window[i + j + 16] * (synth_buf[i + j])
+    pshufd        m5, [ptr2 + j + (15 - 3) * 4], q0123
     mova          m6, [ptr1 + j]
 %if ARCH_X86_64
-    pshufd       m11, [ptr2 + j + (15-3)*4 - mmsize], q0123
+    pshufd       m11, [ptr2 + j + (15 - 3) * 4 - mmsize], q0123
     mova         m12, [ptr1 + j + mmsize]
 %endif
-    mulps         m6, [win  + %1 + j + 16*4]
+    mulps         m6, [win  + %1 + j + 16 * 4]
     mulps         m5, [win  + %1 + j]
 %if ARCH_X86_64
-    mulps        m12, [win  + %1 + j + mmsize + 16*4]
+    mulps        m12, [win  + %1 + j + mmsize + 16 * 4]
     mulps        m11, [win  + %1 + j + mmsize]
 %endif
     addps         m2, m6
@@ -199,19 +199,19 @@ INIT_XMM sse2
     addps         m8, m12
     subps         m7, m11
 %endif
-    ;~ c += window[i + j + 32]*( synth_buf[16 + i + j      ])
-    ;~ d += window[i + j + 48]*( synth_buf[31 - i + j      ])
-    pshufd        m6, [ptr2 + j + (31-3)*4], q0123
-    mova          m5, [ptr1 + j + 16*4]
+    ;~ c += window[i + j + 32] * (synth_buf[16 + i + j])
+    ;~ d += window[i + j + 48] * (synth_buf[31 - i + j])
+    pshufd        m6, [ptr2 + j + (31 - 3) * 4], q0123
+    mova          m5, [ptr1 + j + 16 * 4]
 %if ARCH_X86_64
-    pshufd       m12, [ptr2 + j + (31-3)*4 - mmsize], q0123
-    mova         m11, [ptr1 + j + mmsize + 16*4]
+    pshufd       m12, [ptr2 + j + (31 - 3) * 4 - mmsize], q0123
+    mova         m11, [ptr1 + j + mmsize + 16 * 4]
 %endif
-    mulps         m5, [win  + %1 + j + 32*4]
-    mulps         m6, [win  + %1 + j + 48*4]
+    mulps         m5, [win  + %1 + j + 32 * 4]
+    mulps         m6, [win  + %1 + j + 48 * 4]
 %if ARCH_X86_64
-    mulps        m11, [win  + %1 + j + mmsize + 32*4]
-    mulps        m12, [win  + %1 + j + mmsize + 48*4]
+    mulps        m11, [win  + %1 + j + mmsize + 32 * 4]
+    mulps        m12, [win  + %1 + j + mmsize + 48 * 4]
 %endif
     addps         m3, m5
     addps         m4, m6
@@ -219,13 +219,13 @@ INIT_XMM sse2
     addps         m9, m11
     addps        m10, m12
 %endif
-    sub            j, 64*4
+    sub            j, 64 * 4
 %endmacro
 
 ; void ff_synth_filter_inner_sse2(float *synth_buf, float synth_buf2[32],
 ;                                 const float window[512], float out[32],
 ;                                 intptr_t offset, float scale)
-cglobal synth_filter_inner, 0,6+4*ARCH_X86_64,7+6*ARCH_X86_64, \
+cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
                               synth_buf, synth_buf2, window, out, off, scale
 %define scale m0
 %if ARCH_X86_32 || WIN64
@@ -243,18 +243,18 @@ cglobal synth_filter_inner, 0,6+4*ARCH_X86_64,7+6*ARCH_X86_64, \
     shl          r5q, 2
     mov         OFFQ, r5q
 %define i        r5q
-    mov            i, 16*4-(ARCH_X86_64+1)*mmsize  ; main loop counter
+    mov            i, 16 * 4 - (ARCH_X86_64 + 1) * mmsize  ; main loop counter
 
 %define buf2     synth_buf2q
 %if ARCH_X86_32
     mov         buf2, synth_buf2mp
 %endif
 .mainloop
-    ; m1=a  m2=b  m3=c  m4=d
+    ; m1 = a  m2 = b  m3 = c  m4 = d
     pxor          m3, m3
     pxor          m4, m4
     mova          m1, [buf2 + i]
-    mova          m2, [buf2 + i + 16*4]
+    mova          m2, [buf2 + i + 16 * 4]
 %if ARCH_X86_32
 %define ptr1     r0q
 %define ptr2     r1q
@@ -264,17 +264,15 @@ cglobal synth_filter_inner, 0,6+4*ARCH_X86_64,7+6*ARCH_X86_64, \
     mov         ptr1, synth_bufm
     add          win, i
     add         ptr1, i
-%else
+%else ; ARCH_X86_64
 %define ptr1     r6q
 %define ptr2     r7q ; must be loaded
 %define win      r8q
 %define j        r9q
-%if ARCH_X86_64
     pxor          m9, m9
     pxor         m10, m10
     mova          m7, [buf2 + i + mmsize]
-    mova          m8, [buf2 + i + mmsize + 16*4]
-%endif
+    mova          m8, [buf2 + i + mmsize + 16 * 4]
     lea          win, [windowq + i]
     lea         ptr1, [synth_bufq + i]
 %endif
@@ -286,15 +284,15 @@ cglobal synth_filter_inner, 0,6+4*ARCH_X86_64,7+6*ARCH_X86_64, \
     INNER_LOOP  0
     jge       .loop1
 
-    mov            j, 448*4
+    mov            j, 448 * 4
     sub            j, OFFQ
     jz          .end
     sub         ptr1, j
     sub         ptr2, j
     add          win, OFFQ ; now at j-64, so define OFFSET
-    sub            j, 64*4
+    sub            j, 64 * 4
 .loop2:
-    INNER_LOOP  64*4
+    INNER_LOOP  64 * 4
     jge       .loop2
 
 .end:
@@ -302,30 +300,30 @@ cglobal synth_filter_inner, 0,6+4*ARCH_X86_64,7+6*ARCH_X86_64, \
     mov         buf2, synth_buf2m ; needed for next iteration anyway
     mov         outq, outmp       ; j, which will be set again during it
 %endif
-    ;~ out[i     ] = a*scale;
-    ;~ out[i + 16] = b*scale;
+    ;~ out[i]      = a * scale;
+    ;~ out[i + 16] = b * scale;
     mulps         m1, scale
     mulps         m2, scale
 %if ARCH_X86_64
     mulps         m7, scale
     mulps         m8, scale
 %endif
-    ;~ synth_buf2[i     ] = c;
+    ;~ synth_buf2[i]      = c;
     ;~ synth_buf2[i + 16] = d;
-    mova   [buf2 + i +  0*4], m3
-    mova   [buf2 + i + 16*4], m4
+    mova   [buf2 + i +  0 * 4], m3
+    mova   [buf2 + i + 16 * 4], m4
 %if ARCH_X86_64
-    mova   [buf2 + i +  0*4 + mmsize], m9
-    mova   [buf2 + i + 16*4 + mmsize], m10
+    mova   [buf2 + i +  0 * 4 + mmsize], m9
+    mova   [buf2 + i + 16 * 4 + mmsize], m10
 %endif
-    ;~ out[i     ] = a;
+    ;~ out[i]      = a;
     ;~ out[i + 16] = a;
-    mova   [outq + i +  0*4], m1
-    mova   [outq + i + 16*4], m2
+    mova   [outq + i +  0 * 4], m1
+    mova   [outq + i + 16 * 4], m2
 %if ARCH_X86_64
-    mova   [outq + i +  0*4 + mmsize], m7
-    mova   [outq + i + 16*4 + mmsize], m8
+    mova   [outq + i +  0 * 4 + mmsize], m7
+    mova   [outq + i + 16 * 4 + mmsize], m8
 %endif
-    sub            i, (ARCH_X86_64+1)*mmsize
+    sub            i, (ARCH_X86_64 + 1) * mmsize
     jge    .mainloop
     RET

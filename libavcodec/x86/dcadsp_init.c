@@ -66,7 +66,7 @@ static void synth_filter_sse2(FFTContext *imdct,
     ff_synth_filter_inner_sse2(synth_buf, synth_buf2, window,
                                out, *synth_buf_offset, scale);
 
-    *synth_buf_offset= (*synth_buf_offset - 32)&511;
+    *synth_buf_offset = (*synth_buf_offset - 32) & 511;
 }
 
 av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
