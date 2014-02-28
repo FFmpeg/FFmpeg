@@ -22,7 +22,6 @@
 
 function ff_dca_lfe_fir0_neon, export=1
         push            {r4-r6,lr}
-NOVFP   vmov            s0,  r3                 @ scale
         mov             r3,  #32                @ decifactor
         mov             r6,  #256/32
         b               dca_lfe_fir
@@ -30,7 +29,6 @@ endfunc
 
 function ff_dca_lfe_fir1_neon, export=1
         push            {r4-r6,lr}
-NOVFP   vmov            s0,  r3                 @ scale
         mov             r3,  #64                @ decifactor
         mov             r6,  #256/64
 dca_lfe_fir:
@@ -57,8 +55,7 @@ dca_lfe_fir:
         subs            r3,  r3,  #1
         vadd.f32        d4,  d4,  d5
         vadd.f32        d6,  d6,  d7
-        vpadd.f32       d4,  d4,  d6
-        vmul.f32        d5,  d4,  d0[0]
+        vpadd.f32       d5,  d4,  d6
         vst1.32         {d5[0]},  [r0,:32]!
         vst1.32         {d5[1]},  [r4,:32]!
         bne             1b

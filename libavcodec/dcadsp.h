@@ -23,8 +23,7 @@
 #include "synth_filter.h"
 
 typedef struct DCADSPContext {
-    void (*lfe_fir[2])(float *out, const float *in, const float *coefs,
-                       float scale);
+    void (*lfe_fir[2])(float *out, const float *in, const float *coefs);
     void (*qmf_32_subbands)(float samples_in[32][8], int sb_act,
                             SynthFilterContext *synth, FFTContext *imdct,
                             float synth_buf_ptr[512],
