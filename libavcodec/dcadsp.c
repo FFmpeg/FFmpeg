@@ -36,8 +36,7 @@ static inline void
 dca_lfe_fir(float *out, const float *in, const float *coefs,
             int decifactor)
 {
-    float *out2 = out + 2*decifactor-1;
-    const float *cf0 = coefs;
+    float *out2    = out + 2 * decifactor - 1;
     int num_coeffs = 256 / decifactor;
     int j, k;
 
@@ -45,10 +44,9 @@ dca_lfe_fir(float *out, const float *in, const float *coefs,
     for (k = 0; k < decifactor; k++) {
         float v0 = 0.0;
         float v1 = 0.0;
-        for (j = 0; j < num_coeffs; j++, cf0++) {
-            v0 += in[-j] * *cf0;
-            v1 += in[1+j-num_coeffs] * *cf0;
-
+        for (j = 0; j < num_coeffs; j++, coefs++) {
+            v0 += in[-j] * *coefs;
+            v1 += in[j + 1 - num_coeffs] * *coefs;
         }
         *out++  = v0;
         *out2-- = v1;
