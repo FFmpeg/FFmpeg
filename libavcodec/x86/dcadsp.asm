@@ -199,15 +199,23 @@ INIT_XMM sse
 DCA_LFE_FIR 0
 DCA_LFE_FIR 1
 
-INIT_XMM sse2
+%macro SHUF 2
+%if cpuflag(sse2)
+    pshufd        %1, %2, q0123
+%else
+    mova          %1, %2
+    shufps        %1, %1, q0123
+%endif
+%endmacro
+
 %macro INNER_LOOP   1
     ; reading backwards:  ptr1 = synth_buf + j + i; ptr2 = synth_buf + j - i
     ;~ a += window[i + j]      * (-synth_buf[15 - i + j])
     ;~ b += window[i + j + 16] * (synth_buf[i + j])
-    pshufd        m5, [ptr2 + j + (15 - 3) * 4], q0123
+    SHUF          m5, [ptr2 + j + (15 - 3) * 4]
     mova          m6, [ptr1 + j]
 %if ARCH_X86_64
-    pshufd       m11, [ptr2 + j + (15 - 3) * 4 - mmsize], q0123
+    SHUF         m11, [ptr2 + j + (15 - 3) * 4 - mmsize]
     mova         m12, [ptr1 + j + mmsize]
 %endif
     mulps         m6, [win  + %1 + j + 16 * 4]
@@ -224,10 +232,10 @@ INIT_XMM sse2
 %endif
     ;~ c += window[i + j + 32] * (synth_buf[16 + i + j])
     ;~ d += window[i + j + 48] * (synth_buf[31 - i + j])
-    pshufd        m6, [ptr2 + j + (31 - 3) * 4], q0123
+    SHUF          m6, [ptr2 + j + (31 - 3) * 4]
     mova          m5, [ptr1 + j + 16 * 4]
 %if ARCH_X86_64
-    pshufd       m12, [ptr2 + j + (31 - 3) * 4 - mmsize], q0123
+    SHUF         m12, [ptr2 + j + (31 - 3) * 4 - mmsize]
     mova         m11, [ptr1 + j + mmsize + 16 * 4]
 %endif
     mulps         m5, [win  + %1 + j + 32 * 4]
@@ -245,9 +253,10 @@ INIT_XMM sse2
     sub            j, 64 * 4
 %endmacro
 
-; void ff_synth_filter_inner_sse2(float *synth_buf, float synth_buf2[32],
-;                                 const float window[512], float out[32],
-;                                 intptr_t offset, float scale)
+; void ff_synth_filter_inner_<opt>(float *synth_buf, float synth_buf2[32],
+;                                  const float window[512], float out[32],
+;                                  intptr_t offset, float scale)
+%macro SYNTH_FILTER 0
 cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
                               synth_buf, synth_buf2, window, out, off, scale
 %define scale m0
@@ -258,7 +267,7 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
 %else
 %define OFFQ  offq
 %endif
-    pshufd        m0, m0, 0
+    SPLATD        m0
     ; prepare inner counter limit 1
     mov          r5q, 480
     sub          r5q, offmp
@@ -274,8 +283,8 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
 %endif
 .mainloop
     ; m1 = a  m2 = b  m3 = c  m4 = d
-    pxor          m3, m3
-    pxor          m4, m4
+    xorps         m3, m3
+    xorps         m4, m4
     mova          m1, [buf2 + i]
     mova          m2, [buf2 + i + 16 * 4]
 %if ARCH_X86_32
@@ -292,8 +301,8 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
 %define ptr2     r7q ; must be loaded
 %define win      r8q
 %define j        r9q
-    pxor          m9, m9
-    pxor         m10, m10
+    xorps         m9, m9
+    xorps        m10, m10
     mova          m7, [buf2 + i + mmsize]
     mova          m8, [buf2 + i + mmsize + 16 * 4]
     lea          win, [windowq + i]
@@ -350,3 +359,11 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
     sub            i, (ARCH_X86_64 + 1) * mmsize
     jge    .mainloop
     RET
+%endmacro
+
+%if ARCH_X86_32
+INIT_XMM sse
+SYNTH_FILTER
+%endif
+INIT_XMM sse2
+SYNTH_FILTER
