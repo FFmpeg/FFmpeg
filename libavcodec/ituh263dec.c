@@ -750,6 +750,8 @@ int ff_h263_decode_mb(MpegEncContext *s,
         }
 
         if(IS_DIRECT(mb_type)){
+            if (!s->pp_time)
+                return AVERROR_INVALIDDATA;
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
             mb_type |= ff_mpeg4_set_direct_mv(s, 0, 0);
         }else{
