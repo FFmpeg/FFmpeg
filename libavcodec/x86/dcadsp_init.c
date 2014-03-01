@@ -80,6 +80,7 @@ static void synth_filter_##opt(FFTContext *imdct,                              \
 SYNTH_FILTER_FUNC(sse)
 #endif
 SYNTH_FILTER_FUNC(sse2)
+SYNTH_FILTER_FUNC(avx)
 
 av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
 {
@@ -92,5 +93,8 @@ av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
 #endif
     if (EXTERNAL_SSE2(cpu_flags)) {
         s->synth_filter_float = synth_filter_sse2;
+    }
+    if (EXTERNAL_AVX(cpu_flags)) {
+        s->synth_filter_float = synth_filter_avx;
     }
 }
