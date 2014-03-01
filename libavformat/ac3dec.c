@@ -28,7 +28,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
 {
     int max_frames, first_frames = 0, frames;
     const uint8_t *buf, *buf2, *end;
-    AC3HeaderInfo hdr;
+    AC3HeaderInfo *phdr = NULL;
     GetBitContext gbc;
     enum AVCodecID codec_id = AV_CODEC_ID_AC3;
 
@@ -55,27 +55,28 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
                 init_get_bits(&gbc, buf3, 54);
             }else
                 init_get_bits(&gbc, buf2, 54);
-            if(avpriv_ac3_parse_header(&gbc, &hdr) < 0)
+            if(avpriv_ac3_parse_header2(&gbc, &phdr) < 0)
                 break;
-            if(buf2 + hdr.frame_size > end)
+            if(buf2 + phdr->frame_size > end)
                 break;
             if (buf[0] == 0x77 && buf[1] == 0x0B) {
-                av_assert0(hdr.frame_size <= sizeof(buf3));
-                for(i=8; i<hdr.frame_size; i+=2) {
+                av_assert0(phdr->frame_size <= sizeof(buf3));
+                for(i=8; i<phdr->frame_size; i+=2) {
                     buf3[i  ] = buf[i+1];
                     buf3[i+1] = buf[i  ];
                 }
             }
-            if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, gbc.buffer + 2, hdr.frame_size - 2))
+            if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, gbc.buffer + 2, phdr->frame_size - 2))
                 break;
-            if (hdr.bitstream_id > 10)
+            if (phdr->bitstream_id > 10)
                 codec_id = AV_CODEC_ID_EAC3;
-            buf2 += hdr.frame_size;
+            buf2 += phdr->frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
         if(buf == p->buf)
             first_frames = frames;
     }
+    av_freep(&phdr);
     if(codec_id != expected_codec_id) return 0;
     // keep this in sync with mp3 probe, both need to avoid
     // issues with MPEG-files!
