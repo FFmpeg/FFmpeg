@@ -37,7 +37,7 @@
 #define ftello(x)       _ftelli64(x)
 #endif
 
-#define FFMIN(a,b) ((a) > (b) ? (b) : (a))
+#define MIN(a,b) ((a) > (b) ? (b) : (a))
 
 #define BE_16(x) ((((uint8_t*)(x))[0] <<  8) | ((uint8_t*)(x))[1])
 
@@ -316,7 +316,7 @@ int main(int argc, char *argv[])
     }
 
     /* copy the remainder of the infile, from offset 0 -> last_offset - 1 */
-    bytes_to_copy = FFMIN(COPY_BUFFER_SIZE, last_offset);
+    bytes_to_copy = MIN(COPY_BUFFER_SIZE, last_offset);
     copy_buffer = malloc(bytes_to_copy);
     if (!copy_buffer) {
         printf("could not allocate %d bytes for copy_buffer\n", bytes_to_copy);
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
     }
     printf(" copying rest of file...\n");
     while (last_offset) {
-        bytes_to_copy = FFMIN(bytes_to_copy, last_offset);
+        bytes_to_copy = MIN(bytes_to_copy, last_offset);
 
         if (fread(copy_buffer, bytes_to_copy, 1, infile) != 1) {
             perror(argv[1]);
