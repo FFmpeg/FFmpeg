@@ -234,9 +234,20 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
         if (s->eof_reached)
             return AVERROR_EOF;
         s->buf_ptr = s->buf_end + offset - s->pos;
-    } else {
+    } else if(!s->write_flag && offset1 < 0 && -offset1 < buffer_size>>1 && s->seek && offset > 0) {
         int64_t res;
 
+        pos -= FFMIN(buffer_size>>1, pos);
+        if ((res = s->seek(s->opaque, pos, SEEK_SET)) < 0)
+            return res;
+        s->buf_end =
+        s->buf_ptr = s->buffer;
+        s->pos = pos;
+        s->eof_reached = 0;
+        fill_buffer(s);
+        return avio_seek(s, offset, SEEK_SET | force);
+    } else {
+        int64_t res;
         if (s->write_flag) {
             flush_buffer(s);
             s->must_flush = 1;
