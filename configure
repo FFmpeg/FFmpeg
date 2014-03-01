@@ -4423,13 +4423,6 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     check_code cc "pthread.h" "static pthread_mutex_t atomic_lock = PTHREAD_MUTEX_INITIALIZER" || disable pthreads
 fi
 
-for thread in $THREADS_LIST; do
-    if enabled $thread; then
-        test -n "$thread_type" &&
-            die "ERROR: Only one thread type must be selected." ||
-            thread_type="$thread"
-    fi
-done
 
 if enabled pthreads; then
   check_func pthread_cancel
@@ -4910,6 +4903,14 @@ merge_deps() {
 }
 
 merge_deps libavfilter $FILTER_LIST
+
+for thread in $THREADS_LIST; do
+    if enabled $thread; then
+        test -n "$thread_type" &&
+            die "ERROR: Only one thread type must be selected." ||
+            thread_type="$thread"
+    fi
+done
 
 echo "install prefix            $prefix"
 echo "source path               $source_path"
