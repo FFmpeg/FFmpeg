@@ -41,10 +41,10 @@
 
 #define BE_16(x) ((((uint8_t*)(x))[0] <<  8) | ((uint8_t*)(x))[1])
 
-#define BE_32(x) ((((uint8_t*)(x))[0] << 24) |  \
-                  (((uint8_t*)(x))[1] << 16) |  \
-                  (((uint8_t*)(x))[2] <<  8) |  \
-                   ((uint8_t*)(x))[3])
+#define BE_32(x) (((uint32_t)(((uint8_t*)(x))[0]) << 24) |  \
+                             (((uint8_t*)(x))[1]  << 16) |  \
+                             (((uint8_t*)(x))[2]  <<  8) |  \
+                              ((uint8_t*)(x))[3])
 
 #define BE_64(x) (((uint64_t)(((uint8_t*)(x))[0]) << 56) |  \
                   ((uint64_t)(((uint8_t*)(x))[1]) << 48) |  \
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
         if (fread(atom_bytes, ATOM_PREAMBLE_SIZE, 1, infile) != 1) {
             break;
         }
-        atom_size = (uint32_t) BE_32(&atom_bytes[0]);
+        atom_size = BE_32(&atom_bytes[0]);
         atom_type = BE_32(&atom_bytes[4]);
 
         /* keep ftyp atom */
@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
         atom_type = BE_32(&moov_atom[i]);
         if (atom_type == STCO_ATOM) {
             printf(" patching stco atom...\n");
-            atom_size = (uint32_t)BE_32(&moov_atom[i - 4]);
+            atom_size = BE_32(&moov_atom[i - 4]);
             if (i + atom_size - 4 > moov_atom_size) {
                 printf(" bad atom size\n");
                 goto error_out;
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
                 goto error_out;
             }
             for (j = 0; j < offset_count; j++) {
-                current_offset  = (uint32_t)BE_32(&moov_atom[i + 12 + j * 4]);
+                current_offset  = BE_32(&moov_atom[i + 12 + j * 4]);
                 current_offset += moov_atom_size;
                 moov_atom[i + 12 + j * 4 + 0] = (current_offset >> 24) & 0xFF;
                 moov_atom[i + 12 + j * 4 + 1] = (current_offset >> 16) & 0xFF;
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
             i += atom_size - 4;
         } else if (atom_type == CO64_ATOM) {
             printf(" patching co64 atom...\n");
-            atom_size = (uint32_t)BE_32(&moov_atom[i - 4]);
+            atom_size = BE_32(&moov_atom[i - 4]);
             if (i + atom_size - 4 > moov_atom_size) {
                 printf(" bad atom size\n");
                 goto error_out;
