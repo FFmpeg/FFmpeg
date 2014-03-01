@@ -243,7 +243,6 @@ OBJS-$(CONFIG_HEVC_DECODER)            += hevc.o hevc_mvs.o hevc_ps.o hevc_sei.o
 OBJS-$(CONFIG_HNM4_VIDEO_DECODER)      += hnm4video.o
 OBJS-$(CONFIG_HUFFYUV_DECODER)         += huffyuv.o huffyuvdec.o
 OBJS-$(CONFIG_HUFFYUV_ENCODER)         += huffyuv.o huffyuvenc.o
-OBJS-$(CONFIG_IAC_DECODER)             += imc.o
 OBJS-$(CONFIG_IDCIN_DECODER)           += idcinvideo.o
 OBJS-$(CONFIG_IDF_DECODER)             += bintext.o cga_data.o
 OBJS-$(CONFIG_IFF_BYTERUN1_DECODER)    += iff.o
