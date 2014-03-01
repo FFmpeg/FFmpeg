@@ -3,6 +3,9 @@ releases are sorted from youngest to oldest.
 
 version <next>
 
+
+version 2.2:
+
 - HNM version 4 demuxer and video decoder
 - Live HDS muxer
 - setsar/setdar filters now support variables in ratio expressions
