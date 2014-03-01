@@ -31,11 +31,14 @@
  * Parse the header up to the lfeon element, which is the first 52 or 54 bits
  * depending on the audio coding mode.
  * @param[in]  gbc BitContext containing the first 54 bits of the frame.
- * @param[out] hdr Pointer to struct where header info is written.
+ * @param[out] hdr Pointer to Pointer to struct where header info is written.
+ *                 will be allocated if NULL
  * @return Returns 0 on success, -1 if there is a sync word mismatch,
  * -2 if the bsid (version) element is invalid, -3 if the fscod (sample rate)
  * element is invalid, or -4 if the frmsizecod (bit rate) element is invalid.
  */
+int avpriv_ac3_parse_header2(GetBitContext *gbc, AC3HeaderInfo **hdr);
+
 int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr);
 
 #endif /* AVCODEC_AC3_PARSER_H */
