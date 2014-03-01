@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     uint32_t atom_type   = 0;
     uint64_t atom_size   = 0;
     uint64_t atom_offset = 0;
-    uint64_t last_offset;
+    int64_t last_offset;
     unsigned char *moov_atom = NULL;
     unsigned char *ftyp_atom = NULL;
     uint64_t moov_atom_size;
