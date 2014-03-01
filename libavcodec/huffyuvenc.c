@@ -988,7 +988,6 @@ static av_cold int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-#if CONFIG_HUFFYUV_ENCODER
 AVCodec ff_huffyuv_encoder = {
     .name           = "huffyuv",
     .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
@@ -1004,7 +1003,6 @@ AVCodec ff_huffyuv_encoder = {
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
 };
-#endif
 
 #if CONFIG_FFVHUFF_ENCODER
 AVCodec ff_ffvhuff_encoder = {

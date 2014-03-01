@@ -1098,7 +1098,6 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-#if CONFIG_HUFFYUV_DECODER
 AVCodec ff_huffyuv_decoder = {
     .name             = "huffyuv",
     .long_name        = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
@@ -1112,7 +1111,6 @@ AVCodec ff_huffyuv_decoder = {
                         CODEC_CAP_FRAME_THREADS,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
 };
-#endif
 
 #if CONFIG_FFVHUFF_DECODER
 AVCodec ff_ffvhuff_decoder = {
