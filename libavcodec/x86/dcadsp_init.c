@@ -82,6 +82,7 @@ SYNTH_FILTER_FUNC(sse)
 #endif
 SYNTH_FILTER_FUNC(sse2)
 SYNTH_FILTER_FUNC(avx)
+SYNTH_FILTER_FUNC(fma3)
 #endif
 
 av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
@@ -99,6 +100,9 @@ av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
     }
     if (EXTERNAL_AVX(cpu_flags)) {
         s->synth_filter_float = synth_filter_avx;
+    }
+    if (EXTERNAL_FMA3(cpu_flags)) {
+        s->synth_filter_float = synth_filter_fma3;
     }
 #endif
 }
