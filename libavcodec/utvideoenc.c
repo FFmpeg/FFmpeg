@@ -468,7 +468,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
          * get the offset in bits and convert to bytes.
          */
         offset += write_huff_codes(dst + sstart * width, c->slice_bits,
-                                   width * (send - sstart), width,
+                                   width * height + 4, width,
                                    send - sstart, he) >> 3;
 
         slice_len = offset - slice_len;
@@ -525,8 +525,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     bytestream2_init_writer(&pb, dst, pkt->size);
 
-    av_fast_malloc(&c->slice_bits, &c->slice_bits_size,
-                   width * height + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_padded_malloc(&c->slice_bits, &c->slice_bits_size, width * height + 4);
 
     if (!c->slice_bits) {
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 2.\n");
