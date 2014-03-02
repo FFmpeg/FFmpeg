@@ -717,7 +717,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR,
                        "Unknown compression method %d\n",
                        c->compression);
-                return AVERROR_PATCHWELCOME;
+                ret = AVERROR_PATCHWELCOME;
+                goto header_fail;
             }
             c->tile_width  = bytestream2_get_be32(&bc);
             c->tile_height = bytestream2_get_be32(&bc);
@@ -737,7 +738,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                     (chunk_size - 21) < 16 ) {
                     av_log(avctx, AV_LOG_ERROR,
                            "Display info: missing bitmasks!\n");
-                    return AVERROR_INVALIDDATA;
+                    ret = AVERROR_INVALIDDATA;
+                    goto header_fail;
                 }
                 r_mask = bytestream2_get_be32(&bc);
                 g_mask = bytestream2_get_be32(&bc);
@@ -746,11 +748,13 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                     av_log(avctx, AV_LOG_ERROR,
                            "Invalid or unsupported bitmasks: R=%X, G=%X, B=%X\n",
                            r_mask, g_mask, b_mask);
-                    return AVERROR_PATCHWELCOME;
+                    ret = AVERROR_PATCHWELCOME;
+                    goto header_fail;
                 }
             } else {
                 avpriv_request_sample(avctx, "bpp=%d", c->bpp);
-                return AVERROR_PATCHWELCOME;
+                ret = AVERROR_PATCHWELCOME;
+                goto header_fail;
             }
             if (g2m_init_buffers(c)) {
                 ret = AVERROR(ENOMEM);
