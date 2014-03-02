@@ -904,12 +904,14 @@ fail:
 static int read_gab2_sub(AVStream *st, AVPacket *pkt)
 {
     if (pkt->size >= 7 &&
+        pkt->size < INT_MAX - AVPROBE_PADDING_SIZE &&
         !strcmp(pkt->data, "GAB2") && AV_RL16(pkt->data + 5) == 2) {
         uint8_t desc[256];
         int score      = AVPROBE_SCORE_EXTENSION, ret;
         AVIStream *ast = st->priv_data;
         AVInputFormat *sub_demuxer;
         AVRational time_base;
+        int size;
         AVIOContext *pb = avio_alloc_context(pkt->data + 7,
                                              pkt->size - 7,
                                              0, NULL, NULL, NULL, NULL);
@@ -927,9 +929,15 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt)
         avio_rl16(pb);   /* flags? */
         avio_rl32(pb);   /* data size */
 
-        pd = (AVProbeData) { .buf      = pb->buf_ptr,
-                             .buf_size = pb->buf_end - pb->buf_ptr };
-        if (!(sub_demuxer = av_probe_input_format2(&pd, 1, &score)))
+        size = pb->buf_end - pb->buf_ptr;
+        pd = (AVProbeData) { .buf      = av_mallocz(size + AVPROBE_PADDING_SIZE),
+                             .buf_size = size };
+        if (!pd.buf)
+            goto error;
+        memcpy(pd.buf, pb->buf_ptr, size);
+        sub_demuxer = av_probe_input_format2(&pd, 1, &score);
+        av_freep(&pd.buf);
+        if (!sub_demuxer)
             goto error;
 
         if (!(ast->sub_ctx = avformat_alloc_context()))
