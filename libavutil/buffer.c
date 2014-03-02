@@ -117,35 +117,6 @@ void av_buffer_unref(AVBufferRef **buf)
     }
 }
 
-int av_buffer_release(AVBufferRef **buf, uint8_t **data)
-{
-    AVBuffer *b;
-    int ret = 0;
-
-    if (data)
-        *data = NULL;
-    if (!buf || !*buf)
-        return 0;
-    b = (*buf)->buffer;
-    av_freep(buf);
-
-    if (data && avpriv_atomic_int_get(&b->refcount) > 1) {
-        *data = av_memdup(b->data, b->size);
-        if (!*data)
-            ret = AVERROR(ENOMEM);
-    }
-
-    if (!avpriv_atomic_int_add_and_fetch(&b->refcount, -1)) {
-        if (data && !*data) {
-            ret = 0;
-            *data = b->data;
-        } else
-            b->free(b->opaque, b->data);
-        av_freep(&b);
-    }
-    return ret;
-}
-
 int av_buffer_is_writable(const AVBufferRef *buf)
 {
     if (buf->buffer->flags & AV_BUFFER_FLAG_READONLY)
