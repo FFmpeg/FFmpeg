@@ -27,16 +27,16 @@
 #include "libavcodec/internal.h"
 #include "libavutil/bprint.h"
 
-typedef struct ASSContext{
+typedef struct ASSContext {
     FFDemuxSubtitlesQueue q;
-}ASSContext;
+} ASSContext;
 
 static int ass_probe(AVProbeData *p)
 {
-    const char *header= "[Script Info]";
+    const char *header = "[Script Info]";
 
-    if(   !memcmp(p->buf  , header, strlen(header))
-       || !memcmp(p->buf+3, header, strlen(header)))
+    if (!memcmp(p->buf, header, strlen(header)) ||
+        !memcmp(p->buf + 3, header, strlen(header)))
         return AVPROBE_SCORE_MAX;
 
     return 0;
@@ -94,9 +94,9 @@ static int ass_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 100);
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id= AV_CODEC_ID_SSA;
+    st->codec->codec_id   = AV_CODEC_ID_SSA;
 
-    header_remaining= INT_MAX;
+    header_remaining = INT_MAX;
 
     av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_init(&line,   0, AV_BPRINT_SIZE_UNLIMITED);
@@ -108,9 +108,9 @@ static int ass_read_header(AVFormatContext *s)
             break;
 
         if (!memcmp(line.str, "[Events]", 8))
-            header_remaining= 2;
-        else if (line.str[0]=='[')
-            header_remaining= INT_MAX;
+            header_remaining = 2;
+        else if (line.str[0] == '[')
+            header_remaining = INT_MAX;
 
         if (header_remaining) {
             av_bprintf(&header, "%s", line.str);
