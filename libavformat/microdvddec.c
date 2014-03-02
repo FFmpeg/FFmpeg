@@ -71,22 +71,29 @@ static int get_duration(const char *buf)
     return -1;
 }
 
+static const char *bom = "\xEF\xBB\xBF";
+
 static int microdvd_read_header(AVFormatContext *s)
 {
     AVRational pts_info = (AVRational){ 2997, 125 };  /* default: 23.976 fps */
     MicroDVDContext *microdvd = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     int i = 0;
-    char line[MAX_LINESIZE];
+    char line_buf[MAX_LINESIZE];
 
     if (!st)
         return AVERROR(ENOMEM);
 
     while (!url_feof(s->pb)) {
-        char *p = line;
+        char *p;
         AVPacket *sub;
         int64_t pos = avio_tell(s->pb);
-        int len = ff_get_line(s->pb, line, sizeof(line));
+        int len = ff_get_line(s->pb, line_buf, sizeof(line_buf));
+        char *line = line_buf;
+
+        if (!strncmp(line, bom, 3))
+            line += 3;
+        p = line;
 
         if (!len)
             break;
