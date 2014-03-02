@@ -405,14 +405,10 @@ static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
     }
 }
 
-static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts,
-                                                unsigned int pid,
-                                                SectionCallback *section_cb,
-                                                void *opaque,
-                                                int check_crc)
+static MpegTSFilter *mpegts_open_filter(MpegTSContext *ts, unsigned int pid,
+                                        enum MpegTSFilterType type)
 {
     MpegTSFilter *filter;
-    MpegTSSectionFilter *sec;
 
     av_dlog(ts->stream, "Filter: pid=0x%x\n", pid);
 
@@ -423,12 +419,26 @@ static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts,
         return NULL;
     ts->pids[pid] = filter;
 
-    filter->type    = MPEGTS_SECTION;
+    filter->type    = type;
     filter->pid     = pid;
     filter->es_id   = -1;
     filter->last_cc = -1;
     filter->last_pcr= -1;
 
+    return filter;
+}
+
+static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts,
+                                                unsigned int pid,
+                                                SectionCallback *section_cb,
+                                                void *opaque,
+                                                int check_crc)
+{
+    MpegTSFilter *filter;
+    MpegTSSectionFilter *sec;
+
+    if (!(filter = mpegts_open_filter(ts, pid, MPEGTS_SECTION)))
+        return NULL;
     sec = &filter->u.section_filter;
     sec->section_cb  = section_cb;
     sec->opaque      = opaque;
@@ -448,17 +458,8 @@ static MpegTSFilter *mpegts_open_pes_filter(MpegTSContext *ts, unsigned int pid,
     MpegTSFilter *filter;
     MpegTSPESFilter *pes;
 
-    if (pid >= NB_PID_MAX || ts->pids[pid])
+    if (!(filter = mpegts_open_filter(ts, pid, MPEGTS_PES)))
         return NULL;
-    filter = av_mallocz(sizeof(MpegTSFilter));
-    if (!filter)
-        return NULL;
-
-    ts->pids[pid] = filter;
-    filter->type    = MPEGTS_PES;
-    filter->pid     = pid;
-    filter->es_id   = -1;
-    filter->last_cc = -1;
 
     pes = &filter->u.pes_filter;
     pes->pes_cb = pes_cb;
