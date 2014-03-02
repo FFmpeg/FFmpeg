@@ -155,6 +155,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             left[i] = 128;
             top[i]  = 128;
         }
+        top[-1] = 128;
     }
     if (cand_bottom_left) {
         for (i = size + bottom_left_size; i < (size << 1); i++)
