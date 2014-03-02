@@ -1705,10 +1705,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             break;
         pid = get16(&p, p_end);
         if (pid < 0)
-            break;
+            goto out;
         pid &= 0x1fff;
         if (pid == ts->current_pid)
-            break;
+            goto out;
 
         /* now create stream */
         if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
@@ -1754,11 +1754,11 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
         desc_list_len = get16(&p, p_end);
         if (desc_list_len < 0)
-            break;
+            goto out;
         desc_list_len &= 0xfff;
         desc_list_end = p + desc_list_len;
         if (desc_list_end > p_end)
-            break;
+            goto out;
         for(;;) {
             if (ff_parse_mpeg2_descriptor(ts->stream, st, stream_type, &p, desc_list_end,
                 mp4_descr, mp4_descr_count, pid, ts) < 0)
