@@ -60,7 +60,7 @@ enum MpegTSFilterType {
 typedef struct MpegTSFilter MpegTSFilter;
 
 typedef int PESCallback (MpegTSFilter *f, const uint8_t *buf, int len,
-                         int is_start, int64_t pos, int64_t cur_pcr);
+                         int is_start, int64_t pos);
 
 typedef struct MpegTSPESFilter {
     PESCallback *pes_cb;
@@ -85,6 +85,7 @@ struct MpegTSFilter {
     int pid;
     int es_id;
     int last_cc; /* last cc code (-1 if first packet) */
+    int64_t last_pcr;
     enum MpegTSFilterType type;
     union {
         MpegTSPESFilter pes_filter;
@@ -216,7 +217,6 @@ typedef struct PESContext {
     uint8_t header[MAX_PES_HEADER_SIZE];
     AVBufferRef *buffer;
     SLConfigDescr sl;
-    int64_t last_pcr;
 } PESContext;
 
 extern AVInputFormat ff_mpegts_demuxer;
@@ -427,6 +427,7 @@ static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts,
     filter->pid     = pid;
     filter->es_id   = -1;
     filter->last_cc = -1;
+    filter->last_pcr= -1;
 
     sec = &filter->u.section_filter;
     sec->section_cb  = section_cb;
@@ -891,7 +892,7 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl,
 /* return non zero if a packet could be constructed */
 static int mpegts_push_data(MpegTSFilter *filter,
                             const uint8_t *buf, int buf_size, int is_start,
-                            int64_t pos, int64_t pcr)
+                            int64_t pos)
 {
     PESContext *pes   = filter->u.pes_filter.opaque;
     MpegTSContext *ts = pes->ts;
@@ -900,9 +901,6 @@ static int mpegts_push_data(MpegTSFilter *filter,
 
     if (!ts->pkt)
         return 0;
-
-    if (pcr != -1)
-        pes->last_pcr = pcr;
 
     if (is_start) {
         if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
@@ -1068,12 +1066,12 @@ skip:
                             MpegTSFilter *f = pes->ts->pids[p->pcr_pid];
                             if (f && f->type == MPEGTS_PES) {
                                 PESContext *pcrpes = f->u.pes_filter.opaque;
-                                if (pcrpes && pcrpes->last_pcr != -1 && pcrpes->st && pcrpes->st->discard != AVDISCARD_ALL) {
+                                if (f->last_pcr != -1 && pcrpes && pcrpes->st && pcrpes->st->discard != AVDISCARD_ALL) {
                                     // teletext packets do not always have correct timestamps,
                                     // the standard says they should be handled after 40.6 ms at most,
                                     // and the pcr error to this packet should be no more than 100 ms.
                                     // TODO: we should interpolate the PCR, not just use the last one
-                                    int64_t pcr = pcrpes->last_pcr / 300;
+                                    int64_t pcr = f->last_pcr / 300;
                                     pes->st->pts_wrap_reference = pcrpes->st->pts_wrap_reference;
                                     pes->st->pts_wrap_behavior = pcrpes->st->pts_wrap_behavior;
                                     if (pes->dts == AV_NOPTS_VALUE || pes->dts < pcr) {
@@ -1146,7 +1144,6 @@ static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid)
     pes->state   = MPEGTS_SKIP;
     pes->pts     = AV_NOPTS_VALUE;
     pes->dts     = AV_NOPTS_VALUE;
-    pes->last_pcr= -1;
     tss          = mpegts_open_pes_filter(ts, pid, mpegts_push_data, pes);
     if (!tss) {
         av_free(pes);
@@ -2093,14 +2090,13 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 
     } else {
         int ret;
-        int64_t pcr = -1;
         int64_t pcr_h;
         int pcr_l;
         if (parse_pcr(&pcr_h, &pcr_l, packet) == 0)
-            pcr = pcr_h * 300 + pcr_l;
+            tss->last_pcr = pcr_h * 300 + pcr_l;
         // Note: The position here points actually behind the current packet.
         if ((ret = tss->u.pes_filter.pes_cb(tss, p, p_end - p, is_start,
-                                            pos - ts->raw_packet_size, pcr)) < 0)
+                                            pos - ts->raw_packet_size)) < 0)
             return ret;
     }
 
@@ -2217,9 +2213,9 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
                     av_buffer_unref(&pes->buffer);
                     pes->data_index = 0;
                     pes->state = MPEGTS_SKIP; /* skip until pes header */
-                    pes->last_pcr = -1;
                 }
                 ts->pids[i]->last_cc = -1;
+                ts->pids[i]->last_pcr = -1;
             }
         }
     }
