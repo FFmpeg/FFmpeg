@@ -199,6 +199,14 @@ INIT_XMM sse
 DCA_LFE_FIR 0
 DCA_LFE_FIR 1
 
+%macro SETZERO 1
+%if cpuflag(sse2) && notcpuflag(avx)
+    pxor          %1, %1
+%else
+    xorps         %1, %1, %1
+%endif
+%endmacro
+
 %macro SHUF 3
 %if cpuflag(avx)
     mova          %3, [%2 - 16]
@@ -265,7 +273,12 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
                               synth_buf, synth_buf2, window, out, off, scale
 %define scale m0
 %if ARCH_X86_32 || WIN64
+%if cpuflag(sse2) && notcpuflag(avx)
+    movd          m0, scalem
+    SPLATD        m0
+%else
     VBROADCASTSS  m0, scalem
+%endif
 ; Make sure offset is in a register and not on the stack
 %define OFFQ  r4q
 %else
@@ -290,8 +303,8 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
 %endif
 .mainloop
     ; m1 = a  m2 = b  m3 = c  m4 = d
-    xorps         m3, m3, m3
-    xorps         m4, m4, m4
+    SETZERO       m3
+    SETZERO       m4
     mova          m1, [buf2 + i]
     mova          m2, [buf2 + i + 16 * 4]
 %if ARCH_X86_32
@@ -308,8 +321,8 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
 %define ptr2     r7q ; must be loaded
 %define win      r8q
 %define j        r9q
-    xorps         m9, m9, m9
-    xorps        m10, m10, m10
+    SETZERO       m9
+    SETZERO      m10
     mova          m7, [buf2 + i + mmsize]
     mova          m8, [buf2 + i + mmsize + 16 * 4]
     lea          win, [windowq + i]
