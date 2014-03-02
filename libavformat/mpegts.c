@@ -1071,16 +1071,28 @@ skip:
                     while ((p = av_find_program_from_stream(pes->stream, p, pes->st->index))) {
                         if (p->pcr_pid != -1 && p->discard != AVDISCARD_ALL) {
                             MpegTSFilter *f = pes->ts->pids[p->pcr_pid];
-                            if (f && f->type == MPEGTS_PES) {
-                                PESContext *pcrpes = f->u.pes_filter.opaque;
-                                if (f->last_pcr != -1 && pcrpes && pcrpes->st && pcrpes->st->discard != AVDISCARD_ALL) {
+                            if (f) {
+                                AVStream *st = NULL;
+                                if (f->type == MPEGTS_PES) {
+                                    PESContext *pcrpes = f->u.pes_filter.opaque;
+                                    if (pcrpes)
+                                        st = pcrpes->st;
+                                } else if (f->type == MPEGTS_PCR) {
+                                    int i;
+                                    for (i = 0; i < p->nb_stream_indexes; i++) {
+                                        AVStream *pst = pes->stream->streams[p->stream_index[i]];
+                                        if (pst->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                                            st = pst;
+                                    }
+                                }
+                                if (f->last_pcr != -1 && st && st->discard != AVDISCARD_ALL) {
                                     // teletext packets do not always have correct timestamps,
                                     // the standard says they should be handled after 40.6 ms at most,
                                     // and the pcr error to this packet should be no more than 100 ms.
                                     // TODO: we should interpolate the PCR, not just use the last one
                                     int64_t pcr = f->last_pcr / 300;
-                                    pes->st->pts_wrap_reference = pcrpes->st->pts_wrap_reference;
-                                    pes->st->pts_wrap_behavior = pcrpes->st->pts_wrap_behavior;
+                                    pes->st->pts_wrap_reference = st->pts_wrap_reference;
+                                    pes->st->pts_wrap_behavior = st->pts_wrap_behavior;
                                     if (pes->dts == AV_NOPTS_VALUE || pes->dts < pcr) {
                                         pes->pts = pes->dts = pcr;
                                     } else if (pes->dts > pcr + 3654 + 9000) {
