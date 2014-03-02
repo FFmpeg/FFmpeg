@@ -691,6 +691,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
         }
         switch (chunk_type) {
         case DISPLAY_INFO:
+            got_header =
             c->got_header = 0;
             if (chunk_size < 21) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid display info size %d\n",
