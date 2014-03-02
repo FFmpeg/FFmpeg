@@ -55,6 +55,7 @@
 enum MpegTSFilterType {
     MPEGTS_PES,
     MPEGTS_SECTION,
+    MPEGTS_PCR,
 };
 
 typedef struct MpegTSFilter MpegTSFilter;
@@ -465,6 +466,11 @@ static MpegTSFilter *mpegts_open_pes_filter(MpegTSContext *ts, unsigned int pid,
     pes->pes_cb = pes_cb;
     pes->opaque = opaque;
     return filter;
+}
+
+static MpegTSFilter *mpegts_open_pcr_filter(MpegTSContext *ts, unsigned int pid)
+{
+    return mpegts_open_filter(ts, pid, MPEGTS_PCR);
 }
 
 static void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
@@ -1824,6 +1830,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         p = desc_list_end;
     }
 
+    if (!ts->pids[pcr_pid])
+        mpegts_open_pcr_filter(ts, pcr_pid);
+
 out:
     for (i = 0; i < mp4_descr_count; i++)
         av_free(mp4_descr[i].dec_config_descr);
@@ -2029,7 +2038,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         }
     }
 
-    if (!has_payload)
+    if (!has_payload && tss->type != MPEGTS_PCR)
         return 0;
     p = packet + 4;
     if (has_adaptation) {
@@ -2038,7 +2047,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     }
     /* if past the end of packet, ignore */
     p_end = packet + TS_PACKET_SIZE;
-    if (p >= p_end)
+    if (p > p_end || (p == p_end && tss->type != MPEGTS_PCR))
         return 0;
 
     pos = avio_tell(ts->stream->pb);
@@ -2096,9 +2105,11 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         if (parse_pcr(&pcr_h, &pcr_l, packet) == 0)
             tss->last_pcr = pcr_h * 300 + pcr_l;
         // Note: The position here points actually behind the current packet.
-        if ((ret = tss->u.pes_filter.pes_cb(tss, p, p_end - p, is_start,
-                                            pos - ts->raw_packet_size)) < 0)
-            return ret;
+        if (tss->type == MPEGTS_PES) {
+            if ((ret = tss->u.pes_filter.pes_cb(tss, p, p_end - p, is_start,
+                                                pos - ts->raw_packet_size)) < 0)
+                return ret;
+        }
     }
 
     return 0;
