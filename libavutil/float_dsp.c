@@ -124,7 +124,9 @@ av_cold void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
     fdsp->butterflies_float = butterflies_float_c;
     fdsp->scalarproduct_float = avpriv_scalarproduct_float_c;
 
-#if ARCH_ARM
+#if   ARCH_AARCH64
+    ff_float_dsp_init_aarch64(fdsp);
+#elif ARCH_ARM
     ff_float_dsp_init_arm(fdsp);
 #elif ARCH_PPC
     ff_float_dsp_init_ppc(fdsp, bit_exact);
