@@ -37,14 +37,14 @@
 #define ftello(x)       _ftelli64(x)
 #endif
 
-#define FFMIN(a,b) ((a) > (b) ? (b) : (a))
+#define MIN(a,b) ((a) > (b) ? (b) : (a))
 
 #define BE_16(x) ((((uint8_t*)(x))[0] <<  8) | ((uint8_t*)(x))[1])
 
-#define BE_32(x) ((((uint8_t*)(x))[0] << 24) |  \
-                  (((uint8_t*)(x))[1] << 16) |  \
-                  (((uint8_t*)(x))[2] <<  8) |  \
-                   ((uint8_t*)(x))[3])
+#define BE_32(x) (((uint32_t)(((uint8_t*)(x))[0]) << 24) |  \
+                             (((uint8_t*)(x))[1]  << 16) |  \
+                             (((uint8_t*)(x))[2]  <<  8) |  \
+                              ((uint8_t*)(x))[3])
 
 #define BE_64(x) (((uint64_t)(((uint8_t*)(x))[0]) << 56) |  \
                   ((uint64_t)(((uint8_t*)(x))[1]) << 48) |  \
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     uint32_t atom_type   = 0;
     uint64_t atom_size   = 0;
     uint64_t atom_offset = 0;
-    uint64_t last_offset;
+    int64_t last_offset;
     unsigned char *moov_atom = NULL;
     unsigned char *ftyp_atom = NULL;
     uint64_t moov_atom_size;
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
         if (fread(atom_bytes, ATOM_PREAMBLE_SIZE, 1, infile) != 1) {
             break;
         }
-        atom_size = (uint32_t) BE_32(&atom_bytes[0]);
+        atom_size = BE_32(&atom_bytes[0]);
         atom_type = BE_32(&atom_bytes[4]);
 
         /* keep ftyp atom */
@@ -137,9 +137,9 @@ int main(int argc, char *argv[])
                        atom_size);
                 goto error_out;
             }
-            if (   fseeko(infile, -ATOM_PREAMBLE_SIZE, SEEK_CUR)
-                || fread(ftyp_atom, atom_size, 1, infile) != 1
-                || (start_offset = ftello(infile))<0) {
+            if (fseeko(infile, -ATOM_PREAMBLE_SIZE, SEEK_CUR) ||
+                fread(ftyp_atom, atom_size, 1, infile) != 1 ||
+                (start_offset = ftello(infile)) < 0) {
                 perror(argv[1]);
                 goto error_out;
             }
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
             } else {
                 ret = fseeko(infile, atom_size - ATOM_PREAMBLE_SIZE, SEEK_CUR);
             }
-            if(ret) {
+            if (ret) {
                 perror(argv[1]);
                 goto error_out;
             }
@@ -203,6 +203,10 @@ int main(int argc, char *argv[])
         goto error_out;
     }
     last_offset    = ftello(infile);
+    if (last_offset < 0) {
+        perror(argv[1]);
+        goto error_out;
+    }
     moov_atom_size = atom_size;
     moov_atom      = malloc(moov_atom_size);
     if (!moov_atom) {
@@ -230,18 +234,18 @@ int main(int argc, char *argv[])
         atom_type = BE_32(&moov_atom[i]);
         if (atom_type == STCO_ATOM) {
             printf(" patching stco atom...\n");
-            atom_size = (uint32_t)BE_32(&moov_atom[i - 4]);
+            atom_size = BE_32(&moov_atom[i - 4]);
             if (i + atom_size - 4 > moov_atom_size) {
                 printf(" bad atom size\n");
                 goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
-            if (i + 12LL + offset_count * 4LL > moov_atom_size) {
-                printf(" bad atom size\n");
+            if (i + 12 + offset_count * UINT64_C(4) > moov_atom_size) {
+                printf(" bad atom size/element count\n");
                 goto error_out;
             }
             for (j = 0; j < offset_count; j++) {
-                current_offset  = (uint32_t)BE_32(&moov_atom[i + 12 + j * 4]);
+                current_offset  = BE_32(&moov_atom[i + 12 + j * 4]);
                 current_offset += moov_atom_size;
                 moov_atom[i + 12 + j * 4 + 0] = (current_offset >> 24) & 0xFF;
                 moov_atom[i + 12 + j * 4 + 1] = (current_offset >> 16) & 0xFF;
@@ -251,14 +255,14 @@ int main(int argc, char *argv[])
             i += atom_size - 4;
         } else if (atom_type == CO64_ATOM) {
             printf(" patching co64 atom...\n");
-            atom_size = (uint32_t)BE_32(&moov_atom[i - 4]);
+            atom_size = BE_32(&moov_atom[i - 4]);
             if (i + atom_size - 4 > moov_atom_size) {
                 printf(" bad atom size\n");
                 goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
-            if (i + 12LL + offset_count * 8LL > moov_atom_size) {
-                printf(" bad atom size\n");
+            if (i + 12 + offset_count * UINT64_C(8) > moov_atom_size) {
+                printf(" bad atom size/element count\n");
                 goto error_out;
             }
             for (j = 0; j < offset_count; j++) {
@@ -316,7 +320,7 @@ int main(int argc, char *argv[])
     }
 
     /* copy the remainder of the infile, from offset 0 -> last_offset - 1 */
-    bytes_to_copy = FFMIN(COPY_BUFFER_SIZE, last_offset);
+    bytes_to_copy = MIN(COPY_BUFFER_SIZE, last_offset);
     copy_buffer = malloc(bytes_to_copy);
     if (!copy_buffer) {
         printf("could not allocate %d bytes for copy_buffer\n", bytes_to_copy);
@@ -324,7 +328,7 @@ int main(int argc, char *argv[])
     }
     printf(" copying rest of file...\n");
     while (last_offset) {
-        bytes_to_copy = FFMIN(bytes_to_copy, last_offset);
+        bytes_to_copy = MIN(bytes_to_copy, last_offset);
 
         if (fread(copy_buffer, bytes_to_copy, 1, infile) != 1) {
             perror(argv[1]);
