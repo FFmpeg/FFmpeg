@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 10.1:
+- arm: hpeldsp: fix put_pixels8_y2_{,no_rnd_}armv6
+- arm: hpeldsp: prevent overreads in armv6 asm (bug/646)
+- avfilter: Add missing emms_c when needed
 - rtmpproto: Check the buffer sizes when copying app/playpath strings
 - swscale: Fix an undefined behaviour
 - vp9: Read the frame size as unsigned
