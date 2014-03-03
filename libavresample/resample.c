@@ -44,9 +44,11 @@ struct ResampleContext {
     int kaiser_beta;
     double factor;
     void (*set_filter)(void *filter, double *tab, int phase, int tap_count);
-    void (*resample_one)(struct ResampleContext *c, int no_filter, void *dst0,
+    void (*resample_one)(struct ResampleContext *c, void *dst0,
                          int dst_index, const void *src0, int src_size,
                          int index, int frac);
+    void (*resample_nearest)(void *dst0, int dst_index,
+                             const void *src0, int index);
     int padding_size;
 };
 
@@ -178,18 +180,22 @@ ResampleContext *ff_audio_resample_init(AVAudioResampleContext *avr)
     switch (avr->internal_sample_fmt) {
     case AV_SAMPLE_FMT_DBLP:
         c->resample_one  = resample_one_dbl;
+        c->resample_nearest = resample_nearest_dbl;
         c->set_filter    = set_filter_dbl;
         break;
     case AV_SAMPLE_FMT_FLTP:
         c->resample_one  = resample_one_flt;
+        c->resample_nearest = resample_nearest_flt;
         c->set_filter    = set_filter_flt;
         break;
     case AV_SAMPLE_FMT_S32P:
         c->resample_one  = resample_one_s32;
+        c->resample_nearest = resample_nearest_s32;
         c->set_filter    = set_filter_s32;
         break;
     case AV_SAMPLE_FMT_S16P:
         c->resample_one  = resample_one_s16;
+        c->resample_nearest = resample_nearest_s16;
         c->set_filter    = set_filter_s16;
         break;
     }
@@ -332,7 +338,8 @@ reinit_fail:
 }
 
 static int resample(ResampleContext *c, void *dst, const void *src,
-                    int *consumed, int src_size, int dst_size, int update_ctx)
+                    int *consumed, int src_size, int dst_size, int update_ctx,
+                    int nearest_neighbour)
 {
     int dst_index;
     int index         = c->index;
@@ -344,8 +351,7 @@ static int resample(ResampleContext *c, void *dst, const void *src,
     if (!dst != !src)
         return AVERROR(EINVAL);
 
-    if (compensation_distance == 0 && c->filter_length == 1 &&
-        c->phase_shift == 0) {
+    if (nearest_neighbour) {
         int64_t index2 = ((int64_t)index) << 32;
         int64_t incr   = (1LL << 32) * c->dst_incr / c->src_incr;
         dst_size       = FFMIN(dst_size,
@@ -354,7 +360,7 @@ static int resample(ResampleContext *c, void *dst, const void *src,
 
         if (dst) {
             for(dst_index = 0; dst_index < dst_size; dst_index++) {
-                c->resample_one(c, 1, dst, dst_index, src, 0, index2 >> 32, 0);
+                c->resample_nearest(dst, dst_index, src, index2 >> 32);
                 index2 += incr;
             }
         } else {
@@ -372,7 +378,7 @@ static int resample(ResampleContext *c, void *dst, const void *src,
                 break;
 
             if (dst)
-                c->resample_one(c, 0, dst, dst_index, src, src_size, index, frac);
+                c->resample_one(c, dst, dst_index, src, src_size, index, frac);
 
             frac  += dst_incr_frac;
             index += dst_incr;
@@ -412,6 +418,9 @@ int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src)
 {
     int ch, in_samples, in_leftover, consumed = 0, out_samples = 0;
     int ret = AVERROR(EINVAL);
+    int nearest_neighbour = (c->compensation_distance == 0 &&
+                             c->filter_length == 1 &&
+                             c->phase_shift == 0);
 
     in_samples  = src ? src->nb_samples : 0;
     in_leftover = c->buffer->nb_samples;
@@ -432,7 +441,7 @@ int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src)
     /* TODO: try to calculate this without the dummy resample() run */
     if (!dst->read_only && dst->allow_realloc) {
         out_samples = resample(c, NULL, NULL, NULL, c->buffer->nb_samples,
-                               INT_MAX, 0);
+                               INT_MAX, 0, nearest_neighbour);
         ret = ff_audio_data_realloc(dst, out_samples);
         if (ret < 0) {
             av_log(c->avr, AV_LOG_ERROR, "error reallocating output\n");
@@ -445,7 +454,7 @@ int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src)
         out_samples = resample(c, (void *)dst->data[ch],
                                (const void *)c->buffer->data[ch], &consumed,
                                c->buffer->nb_samples, dst->allocated_samples,
-                               ch + 1 == c->buffer->channels);
+                               ch + 1 == c->buffer->channels, nearest_neighbour);
     }
     if (out_samples < 0) {
         av_log(c->avr, AV_LOG_ERROR, "error during resampling\n");

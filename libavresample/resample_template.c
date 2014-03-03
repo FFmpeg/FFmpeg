@@ -54,16 +54,20 @@
 #define DBL_TO_FELEM(d, v) d = av_clip_int16(lrint(v * (1 << 15)))
 #endif
 
-static void SET_TYPE(resample_one)(ResampleContext *c, int no_filter,
+static void SET_TYPE(resample_nearest)(void *dst0, int dst_index, const void *src0, int index)
+{
+    FELEM *dst = dst0;
+    const FELEM *src = src0;
+    dst[dst_index] = src[index];
+}
+
+static void SET_TYPE(resample_one)(ResampleContext *c,
                                    void *dst0, int dst_index, const void *src0,
                                    int src_size, int index, int frac)
 {
     FELEM *dst = dst0;
     const FELEM *src = src0;
 
-    if (no_filter) {
-        dst[dst_index] = src[index];
-    } else {
         int i;
         int sample_index = index >> c->phase_shift;
         FELEM2 val = 0;
@@ -87,7 +91,6 @@ static void SET_TYPE(resample_one)(ResampleContext *c, int no_filter,
         }
 
         OUT(dst[dst_index], val);
-    }
 }
 
 static void SET_TYPE(set_filter)(void *filter0, double *tab, int phase,
