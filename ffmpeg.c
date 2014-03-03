@@ -1894,7 +1894,8 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
-        if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
+        if (!check_output_constraints(ist, ost) || !ost->encoding_needed
+            || ost->enc->type != AVMEDIA_TYPE_SUBTITLE)
             continue;
 
         do_subtitle_out(output_files[ost->file_index]->ctx, ost, ist, &subtitle);
