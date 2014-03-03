@@ -122,6 +122,7 @@ TESTPROGS = adler32                                                     \
             des                                                         \
             eval                                                        \
             fifo                                                        \
+            float_dsp                                                   \
             hmac                                                        \
             lfg                                                         \
             lls                                                         \
