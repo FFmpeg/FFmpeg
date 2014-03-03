@@ -1167,6 +1167,10 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     if (codec->codec_id == AV_CODEC_ID_H264 && codec->extradata_size > 0 &&
         (AV_RB24(codec->extradata) == 1 || AV_RB32(codec->extradata) == 1))
         ff_avc_parse_nal_units_buf(pkt->data, &data, &size);
+    else if (codec->codec_id == AV_CODEC_ID_HEVC && codec->extradata_size > 6 &&
+             (AV_RB24(codec->extradata) == 1 || AV_RB32(codec->extradata) == 1))
+        /* extradata is Annex B, assume the bitstream is too and convert it */
+        ff_hevc_annexb2mp4_buf(pkt->data, &data, &size, 0, NULL);
     else if (codec->codec_id == AV_CODEC_ID_WAVPACK) {
         int ret = mkv_strip_wavpack(pkt->data, &data, &size);
         if (ret < 0) {
