@@ -1120,6 +1120,28 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (s->flags & AVFMT_FLAG_NOFILLIN)
         return;
 
+    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && pkt->dts != AV_NOPTS_VALUE) {
+        if (pkt->dts == pkt->pts && st->last_dts_for_order_check != AV_NOPTS_VALUE) {
+            if (st->last_dts_for_order_check <= pkt->dts) {
+                st->dts_ordered++;
+            } else {
+                av_log(s, st->dts_misordered ? AV_LOG_DEBUG : AV_LOG_WARNING,
+                       "DTS %"PRIi64" < %"PRIi64" out of order\n",
+                       pkt->dts,
+                       st->last_dts_for_order_check);
+                st->dts_misordered++;
+            }
+            if (st->dts_ordered + st->dts_misordered > 250) {
+                st->dts_ordered    >>= 1;
+                st->dts_misordered >>= 1;
+            }
+        }
+
+        st->last_dts_for_order_check = pkt->dts;
+        if (st->dts_ordered < 8*st->dts_misordered && pkt->dts == pkt->pts)
+            pkt->dts = AV_NOPTS_VALUE;
+    }
+
     if ((s->flags & AVFMT_FLAG_IGNDTS) && pkt->pts != AV_NOPTS_VALUE)
         pkt->dts = AV_NOPTS_VALUE;
 
@@ -1664,6 +1686,7 @@ void ff_read_frame_flush(AVFormatContext *s)
             st->parser = NULL;
         }
         st->last_IP_pts = AV_NOPTS_VALUE;
+        st->last_dts_for_order_check = AV_NOPTS_VALUE;
         if (st->first_dts == AV_NOPTS_VALUE)
             st->cur_dts = RELATIVE_TS_BASE;
         else
@@ -2488,6 +2511,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
         st              = ic->streams[i];
         st->cur_dts     = st->first_dts;
         st->last_IP_pts = AV_NOPTS_VALUE;
+        st->last_dts_for_order_check = AV_NOPTS_VALUE;
         for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
             st->pts_buffer[j] = AV_NOPTS_VALUE;
     }
@@ -3623,6 +3647,7 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
     /* default pts setting is MPEG-like */
     avpriv_set_pts_info(st, 33, 1, 90000);
     st->last_IP_pts = AV_NOPTS_VALUE;
+    st->last_dts_for_order_check = AV_NOPTS_VALUE;
     for (i = 0; i < MAX_REORDER_DELAY + 1; i++)
         st->pts_buffer[i] = AV_NOPTS_VALUE;
 
