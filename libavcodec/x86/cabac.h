@@ -23,8 +23,8 @@
 
 #include "libavcodec/cabac.h"
 #include "libavutil/attributes.h"
+#include "libavutil/macros.h"
 #include "libavutil/x86/asm.h"
-#include "libavutil/internal.h"
 #include "config.h"
 
 #if HAVE_INLINE_ASM
