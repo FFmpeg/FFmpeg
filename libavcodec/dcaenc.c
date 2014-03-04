@@ -29,6 +29,7 @@
 #include "dcadata.h"
 #include "dcaenc.h"
 #include "internal.h"
+#include "mathops.h"
 #include "put_bits.h"
 
 #define MAX_CHANNELS 6

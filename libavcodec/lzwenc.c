@@ -26,8 +26,9 @@
  */
 
 #include "avcodec.h"
-#include "put_bits.h"
 #include "lzw.h"
+#include "mathops.h"
+#include "put_bits.h"
 
 #define LZW_MAXBITS 12
 #define LZW_SIZTABLE (1<<LZW_MAXBITS)

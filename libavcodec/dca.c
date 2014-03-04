@@ -25,8 +25,10 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "put_bits.h"
+#include "libavutil/error.h"
+
 #include "dca.h"
+#include "put_bits.h"
 
 const uint32_t avpriv_dca_sample_rates[16] =
 {

@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "mathops.h"
 #include "put_bits.h"
 
 #define AES3_HEADER_LEN 4
