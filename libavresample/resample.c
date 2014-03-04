@@ -181,22 +181,22 @@ ResampleContext *ff_audio_resample_init(AVAudioResampleContext *avr)
 
     switch (avr->internal_sample_fmt) {
     case AV_SAMPLE_FMT_DBLP:
-        c->resample_one  = resample_one_dbl;
+        c->resample_one  = c->linear ? resample_linear_dbl : resample_one_dbl;
         c->resample_nearest = resample_nearest_dbl;
         c->set_filter    = set_filter_dbl;
         break;
     case AV_SAMPLE_FMT_FLTP:
-        c->resample_one  = resample_one_flt;
+        c->resample_one  = c->linear ? resample_linear_flt : resample_one_flt;
         c->resample_nearest = resample_nearest_flt;
         c->set_filter    = set_filter_flt;
         break;
     case AV_SAMPLE_FMT_S32P:
-        c->resample_one  = resample_one_s32;
+        c->resample_one  = c->linear ? resample_linear_s32 : resample_one_s32;
         c->resample_nearest = resample_nearest_s32;
         c->set_filter    = set_filter_s32;
         break;
     case AV_SAMPLE_FMT_S16P:
-        c->resample_one  = resample_one_s16;
+        c->resample_one  = c->linear ? resample_linear_s16 : resample_one_s16;
         c->resample_nearest = resample_nearest_s16;
         c->set_filter    = set_filter_s16;
         break;
