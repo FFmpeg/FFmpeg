@@ -60,6 +60,7 @@ void ff_synth_filter_inner_sse2(float *synth_buf_ptr, float synth_buf2[32],
                                 const float window[512],
                                 float out[32], intptr_t offset, float scale);
 
+#if HAVE_YASM
 static void synth_filter_sse2(FFTContext *imdct,
                               float *synth_buf_ptr, int *synth_buf_offset,
                               float synth_buf2[32], const float window[512],
@@ -74,12 +75,15 @@ static void synth_filter_sse2(FFTContext *imdct,
 
     *synth_buf_offset = (*synth_buf_offset - 32) & 511;
 }
+#endif /* HAVE_YASM */
 
 av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
 {
+#if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         s->synth_filter_float = synth_filter_sse2;
     }
+#endif /* HAVE_YASM */
 }
