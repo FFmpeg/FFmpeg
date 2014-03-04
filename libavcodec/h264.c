@@ -212,8 +212,8 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
 void ff_h264_draw_horiz_band(H264Context *h, int y, int height)
 {
     AVCodecContext *avctx = h->avctx;
-    Picture *cur  = &h->cur_pic;
-    Picture *last = h->ref_list[0][0].f.data[0] ? &h->ref_list[0][0] : NULL;
+    AVFrame *cur  = &h->cur_pic.f;
+    AVFrame *last = h->ref_list[0][0].f.data[0] ? &h->ref_list[0][0].f : NULL;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int vshift = desc->log2_chroma_h;
     const int field_pic = h->picture_structure != PICT_FRAME;
@@ -232,11 +232,11 @@ void ff_h264_draw_horiz_band(H264Context *h, int y, int height)
         int offset[AV_NUM_DATA_POINTERS];
         int i;
 
-        if (cur->f.pict_type == AV_PICTURE_TYPE_B || h->low_delay ||
+        if (cur->pict_type == AV_PICTURE_TYPE_B || h->low_delay ||
             (avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
-            src = &cur->f;
+            src = cur;
         else if (last)
-            src = &last->f;
+            src = last;
         else
             return;
 
