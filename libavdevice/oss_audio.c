@@ -296,6 +296,7 @@ static const AVClass oss_demuxer_class = {
     .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
+    .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
 AVInputFormat ff_oss_demuxer = {
@@ -311,6 +312,13 @@ AVInputFormat ff_oss_demuxer = {
 #endif
 
 #if CONFIG_OSS_OUTDEV
+static const AVClass oss_muxer_class = {
+    .class_name     = "OSS muxer",
+    .item_name      = av_default_item_name,
+    .version        = LIBAVUTIL_VERSION_INT,
+    .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
+};
+
 AVOutputFormat ff_oss_muxer = {
     .name           = "oss",
     .long_name      = NULL_IF_CONFIG_SMALL("OSS (Open Sound System) playback"),
@@ -324,5 +332,6 @@ AVOutputFormat ff_oss_muxer = {
     .write_packet   = audio_write_packet,
     .write_trailer  = audio_write_trailer,
     .flags          = AVFMT_NOFILE,
+    .priv_class     = &oss_muxer_class,
 };
 #endif
