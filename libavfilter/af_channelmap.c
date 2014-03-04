@@ -197,7 +197,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
             s->map[i].out_channel_idx = i;
             break;
         case MAP_ONE_STR:
-            if (!get_channel(&mapping, &in_ch, ',')) {
+            if (get_channel(&mapping, &in_ch, ',') < 0) {
                 av_log(ctx, AV_LOG_ERROR, err);
                 ret = AVERROR(EINVAL);
                 goto fail;
