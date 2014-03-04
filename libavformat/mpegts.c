@@ -29,7 +29,6 @@
 #include "libavutil/avassert.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/get_bits.h"
-#include "libavcodec/mathops.h"
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
@@ -45,6 +44,13 @@
 #define MAX_PES_PAYLOAD 200*1024
 
 #define MAX_MP4_DESCR_COUNT 16
+
+#define MOD_UNLIKELY(modulus, dividend, divisor, prev_dividend) \
+    do { \
+        if ((prev_dividend) == 0 || (dividend) - (prev_dividend) != (divisor)) \
+            (modulus) = (dividend) % (divisor); \
+        (prev_dividend) = (dividend); \
+    } while (0)
 
 enum MpegTSFilterType {
     MPEGTS_PES,

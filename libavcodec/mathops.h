@@ -195,15 +195,6 @@ if ((y) < (x)) {\
 #   define FASTDIV(a,b) ((uint32_t)((((uint64_t)a) * ff_inverse[b]) >> 32))
 #endif /* FASTDIV */
 
-#ifndef MOD_UNLIKELY
-#   define MOD_UNLIKELY(modulus, dividend, divisor, prev_dividend) \
-    do { \
-        if ((prev_dividend) == 0 || (dividend) - (prev_dividend) != (divisor)) \
-            (modulus) = (dividend) % (divisor); \
-        (prev_dividend) = (dividend); \
-    } while (0)
-#endif
-
 static inline av_const unsigned int ff_sqrt(unsigned int a)
 {
     unsigned int b;
