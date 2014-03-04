@@ -319,6 +319,17 @@ static int decode_slice(MpegEncContext *s)
         }
     }
 
+    if (s->codec_id == AV_CODEC_ID_H263          &&
+        (s->workaround_bugs & FF_BUG_AUTODETECT) &&
+        get_bits_left(&s->gb) >= 8               &&
+        get_bits_left(&s->gb) < 300              &&
+        s->pict_type == AV_PICTURE_TYPE_I        &&
+        show_bits(&s->gb, 8) == 0                &&
+        !s->data_partitioning) {
+
+        s->padding_bug_score += 32;
+    }
+
     if (s->workaround_bugs & FF_BUG_AUTODETECT) {
         if (s->padding_bug_score > -2 && !s->data_partitioning)
             s->workaround_bugs |= FF_BUG_NO_PADDING;
