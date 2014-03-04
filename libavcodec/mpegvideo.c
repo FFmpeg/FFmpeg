@@ -2313,8 +2313,9 @@ void ff_MPV_decode_mb(MpegEncContext *s, int16_t block[12][64]){
 /**
  * @param h is the normal height, this will be reduced automatically if needed for the last row
  */
-void ff_draw_horiz_band(AVCodecContext *avctx, Picture *cur,
-                        Picture *last, int y, int h, int picture_structure,
+void ff_draw_horiz_band(AVCodecContext *avctx,
+                        AVFrame *cur, AVFrame *last,
+                        int y, int h, int picture_structure,
                         int first_field, int low_delay)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
@@ -2334,15 +2335,15 @@ void ff_draw_horiz_band(AVCodecContext *avctx, Picture *cur,
         int offset[AV_NUM_DATA_POINTERS];
         int i;
 
-        if(cur->f.pict_type == AV_PICTURE_TYPE_B || low_delay ||
+        if (cur->pict_type == AV_PICTURE_TYPE_B || low_delay ||
            (avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
-            src = &cur->f;
+            src = cur;
         else if (last)
-            src = &last->f;
+            src = last;
         else
             return;
 
-        if (cur->f.pict_type == AV_PICTURE_TYPE_B &&
+        if (cur->pict_type == AV_PICTURE_TYPE_B &&
             picture_structure == PICT_FRAME &&
             avctx->codec_id != AV_CODEC_ID_SVQ3) {
             for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
@@ -2364,8 +2365,8 @@ void ff_draw_horiz_band(AVCodecContext *avctx, Picture *cur,
 
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h)
 {
-    ff_draw_horiz_band(s->avctx, &s->current_picture,
-                       &s->last_picture, y, h, s->picture_structure,
+    ff_draw_horiz_band(s->avctx, &s->current_picture.f,
+                       &s->last_picture.f, y, h, s->picture_structure,
                        s->first_field, s->low_delay);
 }
 

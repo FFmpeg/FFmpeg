@@ -1267,8 +1267,8 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                     (h->pict_type == AV_PICTURE_TYPE_P && mb_type < 8) ? (mb_type - 1) : -1;
         }
 
-        ff_draw_horiz_band(avctx, s->cur_pic,
-                           s->last_pic->f.data[0] ? s->last_pic : NULL,
+        ff_draw_horiz_band(avctx, &s->cur_pic->f,
+                           s->last_pic->f.data[0] ? &s->last_pic->f : NULL,
                            16 * h->mb_y, 16, h->picture_structure, 0,
                            h->low_delay);
     }
