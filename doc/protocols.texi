@@ -733,6 +733,8 @@ The following values are accepted:
 Accept packets only from negotiated peer address and port.
 @item listen
 Act as a server, listening for an incoming connection.
+@item prefer_tcp
+Try TCP for RTP transport first, if TCP is available as RTSP RTP transport.
 @end table
 
 Default value is @samp{none}.
