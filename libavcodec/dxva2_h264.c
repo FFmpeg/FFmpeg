@@ -194,8 +194,18 @@ static void fill_slice_short(DXVA_Slice_H264_Short *slice,
     slice->wBadSliceChopping     = 0;
 }
 
+static int get_refpic_index(const DXVA_PicParams_H264 *pp, int surface_index)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(pp->RefFrameList); i++) {
+        if ((pp->RefFrameList[i].bPicEntry & 0x7f) == surface_index)
+          return i;
+    }
+    return 0x7f;
+}
+
 static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
-                            unsigned position, unsigned size)
+                            const DXVA_PicParams_H264 *pp, unsigned position, unsigned size)
 {
     const H264Context *h = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
@@ -228,8 +238,8 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
             if (list < h->list_count && i < h->ref_count[list]) {
                 const Picture *r = &h->ref_list[list][i];
                 unsigned plane;
-                fill_picture_entry(&slice->RefPicList[list][i],
-                                   ff_dxva2_get_surface_index(ctx, r),
+                unsigned index = get_refpic_index(pp, ff_dxva2_get_surface_index(ctx, r));
+                fill_picture_entry(&slice->RefPicList[list][i], index,
                                    r->reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
                     int w, o;
@@ -414,7 +424,7 @@ static int dxva2_h264_decode_slice(AVCodecContext *avctx,
                          position, size);
     else
         fill_slice_long(avctx, &ctx_pic->slice_long[ctx_pic->slice_count],
-                        position, size);
+                        &ctx_pic->pp, position, size);
     ctx_pic->slice_count++;
 
     if (h->slice_type != AV_PICTURE_TYPE_I && h->slice_type != AV_PICTURE_TYPE_SI)
