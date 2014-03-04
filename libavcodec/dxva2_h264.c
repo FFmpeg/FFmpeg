@@ -115,6 +115,8 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     pp->bit_depth_chroma_minus8       = h->sps.bit_depth_chroma - 8;
     if (ctx->workaround & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG)
         pp->Reserved16Bits            = 0;
+    else if (ctx->workaround & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
+        pp->Reserved16Bits            = 0x34c;
     else
         pp->Reserved16Bits            = 3; /* FIXME is there a way to detect the right mode ? */
     pp->StatusReportFeedbackNumber    = 1 + ctx->report_id++;
@@ -238,7 +240,11 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
             if (list < h->list_count && i < h->ref_count[list]) {
                 const Picture *r = &h->ref_list[list][i];
                 unsigned plane;
-                unsigned index = get_refpic_index(pp, ff_dxva2_get_surface_index(ctx, r));
+                unsigned index;
+                if (ctx->workaround & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
+                    index = ff_dxva2_get_surface_index(ctx, r);
+                else
+                    index = get_refpic_index(pp, ff_dxva2_get_surface_index(ctx, r));
                 fill_picture_entry(&slice->RefPicList[list][i], index,
                                    r->reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
