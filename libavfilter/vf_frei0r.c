@@ -242,7 +242,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
             if (s->dl_handle)
                 break;              /* found */
             if (*path)
-                path++              /* skip ':' */
+                path++;             /* skip ':' */
         }
     }
     if (!s->dl_handle && (path = getenv("HOME"))) {
