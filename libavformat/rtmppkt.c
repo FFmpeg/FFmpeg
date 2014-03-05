@@ -194,7 +194,7 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
     type  = prev_pkt[channel_id].type;
     extra = prev_pkt[channel_id].extra;
 
-    hdr >>= 6;
+    hdr >>= 6; // header size indicator
     if (hdr == RTMP_PS_ONEBYTE) {
         ts_field = prev_pkt[channel_id].ts_delta;
     } else {
