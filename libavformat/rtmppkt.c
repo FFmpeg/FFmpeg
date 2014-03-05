@@ -305,18 +305,30 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
     int written = 0;
     int ret;
     RTMPPacket *prev_pkt;
+    int use_delta; // flag if using timestamp delta, not RTMP_PS_TWELVEBYTES
+    uint32_t timestamp; // full 32-bit timestamp or delta value
 
     if ((ret = ff_rtmp_check_alloc_array(prev_pkt_ptr, nb_prev_pkt,
                                          pkt->channel_id)) < 0)
         return ret;
     prev_pkt = *prev_pkt_ptr;
 
-    pkt->ts_delta = pkt->timestamp - prev_pkt[pkt->channel_id].timestamp;
-
     //if channel_id = 0, this is first presentation of prev_pkt, send full hdr.
-    if (prev_pkt[pkt->channel_id].channel_id &&
+    use_delta = prev_pkt[pkt->channel_id].channel_id &&
         pkt->extra == prev_pkt[pkt->channel_id].extra &&
-        pkt->timestamp >= prev_pkt[pkt->channel_id].timestamp) {
+        pkt->timestamp >= prev_pkt[pkt->channel_id].timestamp;
+
+    timestamp = pkt->timestamp;
+    if (use_delta) {
+        timestamp -= prev_pkt[pkt->channel_id].timestamp;
+    }
+    if (timestamp >= 0xFFFFFF) {
+        pkt->ts_delta = 0xFFFFFF;
+    } else {
+        pkt->ts_delta = timestamp;
+    }
+
+    if (use_delta) {
         if (pkt->type == prev_pkt[pkt->channel_id].type &&
             pkt->size == prev_pkt[pkt->channel_id].size) {
             mode = RTMP_PS_FOURBYTES;
@@ -337,29 +349,22 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
         bytestream_put_le16(&p, pkt->channel_id - 64);
     }
     if (mode != RTMP_PS_ONEBYTE) {
-        uint32_t timestamp = pkt->timestamp;
-        if (mode != RTMP_PS_TWELVEBYTES)
-            timestamp = pkt->ts_delta;
-        bytestream_put_be24(&p, timestamp >= 0xFFFFFF ? 0xFFFFFF : timestamp);
+        bytestream_put_be24(&p, pkt->ts_delta);
         if (mode != RTMP_PS_FOURBYTES) {
             bytestream_put_be24(&p, pkt->size);
             bytestream_put_byte(&p, pkt->type);
             if (mode == RTMP_PS_TWELVEBYTES)
                 bytestream_put_le32(&p, pkt->extra);
         }
-        if (timestamp >= 0xFFFFFF)
-            bytestream_put_be32(&p, timestamp);
     }
+    if (pkt->ts_delta == 0xFFFFFF)
+        bytestream_put_be32(&p, timestamp);
     // save history
     prev_pkt[pkt->channel_id].channel_id = pkt->channel_id;
     prev_pkt[pkt->channel_id].type       = pkt->type;
     prev_pkt[pkt->channel_id].size       = pkt->size;
     prev_pkt[pkt->channel_id].timestamp  = pkt->timestamp;
-    if (mode != RTMP_PS_TWELVEBYTES) {
-        prev_pkt[pkt->channel_id].ts_delta   = pkt->ts_delta;
-    } else {
-        prev_pkt[pkt->channel_id].ts_delta   = pkt->timestamp;
-    }
+    prev_pkt[pkt->channel_id].ts_delta   = pkt->ts_delta;
     prev_pkt[pkt->channel_id].extra      = pkt->extra;
 
     if ((ret = ffurl_write(h, pkt_hdr, p - pkt_hdr)) < 0)
