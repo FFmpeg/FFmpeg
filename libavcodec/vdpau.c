@@ -480,7 +480,7 @@ do {                        \
         default:                               return AVERROR(EINVAL);
         }
     case AV_CODEC_ID_H264:
-        switch (avctx->profile) {
+        switch (avctx->profile & ~FF_PROFILE_H264_INTRA) {
         case FF_PROFILE_H264_CONSTRAINED_BASELINE:
         case FF_PROFILE_H264_BASELINE:         PROFILE(VDP_DECODER_PROFILE_H264_BASELINE);
         case FF_PROFILE_H264_MAIN:             PROFILE(VDP_DECODER_PROFILE_H264_MAIN);
