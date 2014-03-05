@@ -384,7 +384,7 @@ static int vorbis_packet(AVFormatContext *s, int idx)
      * here we parse the duration of each packet in the first page and compare
      * the total duration to the page granule to find the encoder delay and
      * set the first timestamp */
-    if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS)) {
+    if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS) && (int64_t)os->granule>=0) {
         int seg, d;
         uint8_t *last_pkt  = os->buf + os->pstart;
         uint8_t *next_pkt  = last_pkt;
