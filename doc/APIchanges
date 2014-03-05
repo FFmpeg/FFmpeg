@@ -132,7 +132,7 @@ API changes, most recent first:
   Deprecate AVCodecContext.error_rate, it is replaced by the 'error_rate'
   private option of the mpegvideo encoder family.
 
-2013-11-14 - 31c09b7 / 728c465 - lavc 55.26.0 - vdpau.h
+2013-11-14 - 31c09b7 / 728c465 - lavc 55.42.100 / 55.26.0 - vdpau.h
   Add av_vdpau_get_profile().
   Add av_vdpau_alloc_context(). This function must from now on be
   used for allocating AVVDPAUContext.
