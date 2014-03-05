@@ -282,6 +282,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
         }
     }
 
+    emms_c();
+
     if (buf != out_buf)
         avfilter_unref_buffer(buf);
 
