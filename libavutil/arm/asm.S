@@ -216,6 +216,13 @@ T       ldr             \rt, [\rn]
 T       add             \rn, \rn, \rm
 .endm
 
+.macro  ldrc_pre        cc,  rt,  rn,  rm:vararg
+A       ldr\cc          \rt, [\rn, \rm]!
+T       itt             \cc
+T       add\cc          \rn, \rn, \rm
+T       ldr\cc          \rt, [\rn]
+.endm
+
 .macro  ldrd_reg        rt,  rt2, rn,  rm
 A       ldrd            \rt, \rt2, [\rn, \rm]
 T       add             \rt, \rn, \rm
