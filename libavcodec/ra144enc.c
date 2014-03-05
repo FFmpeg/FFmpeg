@@ -376,6 +376,7 @@ static void ra144_encode_subblock(RA144Context *ractx,
 
         ff_copy_and_dup(ractx->buffer_a, ractx->adapt_cb, cba_idx + BLOCKSIZE / 2 - 1);
         m[0] = (ff_irms(&ractx->dsp, ractx->buffer_a) * rms) >> 12;
+        emms_c();
     }
     fixed_cb_search(work + LPC_ORDER, coefs, data, cba_idx, &cb1_idx, &cb2_idx);
     for (i = 0; i < BLOCKSIZE; i++) {
