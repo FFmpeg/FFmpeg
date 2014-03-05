@@ -169,6 +169,7 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
 
     uint8_t buf[16];
     int channel_id, timestamp, size;
+    uint32_t ts_field; // non-extended timestamp or delta field
     uint32_t extra = 0;
     enum RTMPPacketType type;
     int written = 0;
@@ -195,12 +196,12 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
 
     hdr >>= 6;
     if (hdr == RTMP_PS_ONEBYTE) {
-        timestamp = prev_pkt[channel_id].ts_delta;
+        ts_field = prev_pkt[channel_id].ts_delta;
     } else {
         if (ffurl_read_complete(h, buf, 3) != 3)
             return AVERROR(EIO);
         written += 3;
-        timestamp = AV_RB24(buf);
+        ts_field = AV_RB24(buf);
         if (hdr != RTMP_PS_FOURBYTES) {
             if (ffurl_read_complete(h, buf, 3) != 3)
                 return AVERROR(EIO);
@@ -217,11 +218,13 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
                 extra = AV_RL32(buf);
             }
         }
-        if (timestamp == 0xFFFFFF) {
-            if (ffurl_read_complete(h, buf, 4) != 4)
-                return AVERROR(EIO);
-            timestamp = AV_RB32(buf);
-        }
+    }
+    if (ts_field == 0xFFFFFF) {
+        if (ffurl_read_complete(h, buf, 4) != 4)
+            return AVERROR(EIO);
+        timestamp = AV_RB32(buf);
+    } else {
+        timestamp = ts_field;
     }
     if (hdr != RTMP_PS_TWELVEBYTES)
         timestamp += prev_pkt[channel_id].timestamp;
@@ -232,8 +235,7 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
             return ret;
         p->read = written;
         p->offset = 0;
-        prev_pkt[channel_id].ts_delta   = timestamp -
-                                          prev_pkt[channel_id].timestamp;
+        prev_pkt[channel_id].ts_delta   = ts_field;
         prev_pkt[channel_id].timestamp  = timestamp;
     } else {
         // previous packet in this channel hasn't completed reading
