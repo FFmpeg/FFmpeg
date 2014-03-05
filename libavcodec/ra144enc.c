@@ -34,7 +34,6 @@
 #include "celp_filters.h"
 #include "ra144.h"
 
-
 static av_cold int ra144_encode_close(AVCodecContext *avctx)
 {
     RA144Context *ractx = avctx->priv_data;
