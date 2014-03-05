@@ -61,6 +61,9 @@ cglobal scalarproduct_int16, 3,3,3, v1, v2, order
 %endif
     paddd   m2, m0
     movd   eax, m2
+%if mmsize == 8
+    emms
+%endif
     RET
 
 ; int scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
