@@ -102,7 +102,7 @@ static int iec61883_callback(unsigned char *data, int length,
     DVPacket *packet;
     int ret;
 
-#ifdef THREADS
+#if THREADS
     pthread_mutex_lock(&dv->mutex);
 #endif
 
@@ -139,7 +139,7 @@ static int iec61883_callback(unsigned char *data, int length,
     ret = 0;
 
 exit:
-#ifdef THREADS
+#if THREADS
     pthread_cond_broadcast(&dv->cond);
     pthread_mutex_unlock(&dv->mutex);
 #endif
@@ -151,7 +151,7 @@ static void *iec61883_receive_task(void *opaque)
     struct iec61883_data *dv = (struct iec61883_data *)opaque;
     int result;
 
-#ifdef THREADS
+#if THREADS
     while (dv->thread_loop)
 #endif
     {
@@ -168,7 +168,7 @@ static void *iec61883_receive_task(void *opaque)
             raw1394_loop_iterate(dv->raw1394);
         } else if (dv->receiving) {
             av_log(NULL, AV_LOG_ERROR, "No more input data available\n");
-#ifdef THREADS
+#if THREADS
             pthread_mutex_lock(&dv->mutex);
             dv->eof = 1;
             pthread_cond_broadcast(&dv->cond);
@@ -413,7 +413,7 @@ static int iec61883_read_packet(AVFormatContext *context, AVPacket *pkt)
      * Try to parse frames from queue
      */
 
-#ifdef THREADS
+#if THREADS
     pthread_mutex_lock(&dv->mutex);
     while ((size = dv->parse_queue(dv, pkt)) == -1)
         if (!dv->eof)
