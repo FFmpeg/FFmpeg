@@ -278,6 +278,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         }
     }
 
+    emms_c();
+
     if (buf != out_buf)
         av_frame_free(&buf);
 

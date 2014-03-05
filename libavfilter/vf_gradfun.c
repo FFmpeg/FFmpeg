@@ -118,6 +118,7 @@ static void filter(GradFunContext *ctx, uint8_t *dst, uint8_t *src, int width, i
         ctx->filter_line(dst + y * dst_linesize, src + y * src_linesize, dc - r / 2, width, thresh, dither[y & 7]);
         if (++y >= height) break;
     }
+    emms_c();
 }
 
 static av_cold int init(AVFilterContext *ctx)
