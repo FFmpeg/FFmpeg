@@ -213,8 +213,8 @@ static int decode_main_header(NUTContext *nut)
     end  = get_packetheader(nut, bc, 1, MAIN_STARTCODE);
     end += avio_tell(bc);
 
-    tmp = ffio_read_varlen(bc);
-    if (tmp < 2 && tmp > NUT_VERSION) {
+    nut->version = ffio_read_varlen(bc);
+    if (tmp < NUT_MIN_VERSION && tmp > NUT_MAX_VERSION) {
         av_log(s, AV_LOG_ERROR, "Version %"PRId64" not supported.\n",
                tmp);
         return AVERROR(ENOSYS);
@@ -318,6 +318,11 @@ static int decode_main_header(NUTContext *nut)
             nut->header[i] = hdr;
         }
         assert(nut->header_len[0] == 0);
+    }
+
+    // flags had been effectively introduced in version 4
+    if (nut->version > NUT_STABLE_VERSION) {
+        nut->flags = ffio_read_varlen(bc);
     }
 
     if (skip_reserved(bc, end) || ffio_get_checksum(bc)) {
@@ -547,6 +552,14 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr)
     ff_nut_reset_ts(nut, nut->time_base[tmp % nut->time_base_count],
                     tmp / nut->time_base_count);
 
+    if (nut->flags & NUT_BROADCAST) {
+        tmp = ffio_read_varlen(bc);
+        av_log(s, AV_LOG_VERBOSE, "Syncpoint wallclock %"PRId64"\n",
+               av_rescale_q(tmp / nut->time_base_count,
+                            nut->time_base[tmp % nut->time_base_count],
+                            AV_TIME_BASE_Q));
+    }
+
     if (skip_reserved(bc, end) || ffio_get_checksum(bc)) {
         av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
         return AVERROR_INVALIDDATA;
@@ -728,7 +741,8 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id,
     int size, flags, size_mul, pts_delta, i, reserved_count;
     uint64_t tmp;
 
-    if (avio_tell(bc) > nut->last_syncpoint_pos + nut->max_distance) {
+    if (!(nut->flags & NUT_PIPE) &&
+        avio_tell(bc) > nut->last_syncpoint_pos + nut->max_distance) {
         av_log(s, AV_LOG_ERROR,
                "Last frame must have been damaged %"PRId64" > %"PRId64" + %d\n",
                avio_tell(bc), nut->last_syncpoint_pos, nut->max_distance);
@@ -781,8 +795,9 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id,
 
     if (flags & FLAG_CHECKSUM) {
         avio_rb32(bc); // FIXME check this
-    } else if (size > 2 * nut->max_distance || FFABS(stc->last_pts - *pts) >
-               stc->max_pts_distance) {
+    } else if (!(nut->flags & NUT_PIPE) &&
+               size > 2 * nut->max_distance ||
+               FFABS(stc->last_pts - *pts) > stc->max_pts_distance) {
         av_log(s, AV_LOG_ERROR, "frame size > 2max_distance and no checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -932,6 +947,10 @@ static int read_seek(AVFormatContext *s, int stream_index,
     Syncpoint *sp, *next_node[2] = { &nopts_sp, &nopts_sp };
     int64_t pos, pos2, ts;
     int i;
+
+    if (nut->flags & NUT_PIPE) {
+        return AVERROR(ENOSYS);
+    }
 
     if (st->index_entries) {
         int index = av_index_search_timestamp(st, pts, flags);

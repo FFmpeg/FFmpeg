@@ -25,6 +25,8 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/tree.h"
 #include "libavutil/dict.h"
+#include "libavutil/time.h"
+#include "libavutil/opt.h"
 #include "libavcodec/mpegaudiodata.h"
 #include "nut.h"
 #include "internal.h"
@@ -325,7 +327,7 @@ static void write_mainheader(NUTContext *nut, AVIOContext *bc)
         tmp_head_idx;
     int64_t tmp_match;
 
-    ff_put_v(bc, NUT_VERSION);
+    ff_put_v(bc, nut->version);
     ff_put_v(bc, nut->avf->nb_streams);
     ff_put_v(bc, nut->max_distance);
     ff_put_v(bc, nut->time_base_count);
@@ -405,6 +407,9 @@ static void write_mainheader(NUTContext *nut, AVIOContext *bc)
         ff_put_v(bc, nut->header_len[i]);
         avio_write(bc, nut->header[i], nut->header_len[i]);
     }
+    // flags had been effectively introduced in version 4
+    if (nut->version > NUT_STABLE_VERSION)
+        ff_put_v(bc, nut->flags);
 }
 
 static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc,
@@ -643,6 +648,16 @@ static int nut_write_header(AVFormatContext *s)
 
     nut->avf = s;
 
+    nut->version = NUT_STABLE_VERSION + !!nut->flags;
+    if (nut->flags && s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        av_log(s, AV_LOG_ERROR,
+               "The additional syncpoint modes require version %d, "
+               "that is currently not finalized, "
+               "please set -f_strict experimental in order to enable it.\n",
+               nut->version);
+        return AVERROR_EXPERIMENTAL;
+    }
+
     nut->stream = av_mallocz(sizeof(StreamContext) * s->nb_streams);
     if (s->nb_chapters)
         nut->chapter = av_mallocz(sizeof(ChapterContext) * s->nb_chapters);
@@ -789,7 +804,8 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 //FIXME: Ensure store_sp is 1 in the first place.
 
-    if (store_sp) {
+    if (store_sp &&
+        (!(nut->flags & NUT_PIPE) || nut->last_syncpoint_pos == INT_MIN)) {
         Syncpoint *sp, dummy = { .pos = INT64_MAX };
 
         ff_nut_reset_ts(nut, *nus->time_base, pkt->dts);
@@ -815,6 +831,11 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         put_tt(nut, nus->time_base, dyn_bc, pkt->dts);
         ff_put_v(dyn_bc, sp ? (nut->last_syncpoint_pos - sp->pos) >> 4 : 0);
+
+        if (nut->flags & NUT_BROADCAST) {
+            put_tt(nut, nus->time_base, dyn_bc,
+                   av_rescale_q(av_gettime(), AV_TIME_BASE_Q, *nus->time_base));
+        }
         put_packet(nut, bc, dyn_bc, 1, SYNCPOINT_STARTCODE);
 
         if ((ret = ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0 /*unused*/, pkt->dts)) < 0)
@@ -917,7 +938,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     nus->last_pts   = pkt->pts;
 
     //FIXME just store one per syncpoint
-    if (flags & FLAG_KEY)
+    if (flags & FLAG_KEY && !(nut->flags & NUT_PIPE))
         av_add_index_entry(
             s->streams[pkt->stream_index],
             nut->last_syncpoint_pos,
@@ -945,6 +966,23 @@ static int nut_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+#define OFFSET(x) offsetof(NUTContext, x)
+#define E AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "syncpoints",  "NUT syncpoint behaviour",                         OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0},             INT_MIN, INT_MAX, E, "syncpoints" },
+    { "default",     "",                                                0,             AV_OPT_TYPE_CONST, {.i64 = 0},             INT_MIN, INT_MAX, E, "syncpoints" },
+    { "none",        "Disable syncpoints, low overhead and unseekable", 0,             AV_OPT_TYPE_CONST, {.i64 = NUT_PIPE},      INT_MIN, INT_MAX, E, "syncpoints" },
+    { "timestamped", "Extend syncpoints with a wallclock timestamp",    0,             AV_OPT_TYPE_CONST, {.i64 = NUT_BROADCAST}, INT_MIN, INT_MAX, E, "syncpoints" },
+    { NULL },
+};
+
+static const AVClass class = {
+    .class_name = "nutenc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_nut_muxer = {
     .name           = "nut",
     .long_name      = NULL_IF_CONFIG_SMALL("NUT"),
@@ -959,4 +997,5 @@ AVOutputFormat ff_nut_muxer = {
     .write_trailer  = nut_write_trailer,
     .flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag      = ff_nut_codec_tags,
+    .priv_class     = &class,
 };

@@ -444,6 +444,23 @@ Alternatively you can write the command as:
 avconv -benchmark -i INPUT -f null -
 @end example
 
+@section nut
+
+@table @option
+@item -syncpoints @var{flags}
+Change the syncpoint usage in nut:
+@table @option
+@item @var{default} use the normal low-overhead seeking aids.
+@item @var{none} do not use the syncpoints at all, reducing the overhead but making the stream non-seekable;
+@item @var{timestamped} extend the syncpoint with a wallclock field.
+@end table
+The @var{none} and @var{timestamped} flags are experimental.
+@end table
+
+@example
+avconv -i INPUT -f_strict experimental -syncpoints none - | processor
+@end example
+
 @section ogg
 
 Ogg container muxer.
