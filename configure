@@ -3816,19 +3816,21 @@ elif check_func dlopen -ldl; then
 fi
 
 if ! disabled network; then
-    check_type "sys/types.h sys/socket.h" socklen_t
+    check_func getaddrinfo $network_extralibs
+    check_func getservbyport $network_extralibs
+    check_func inet_aton $network_extralibs
+
     check_type netdb.h "struct addrinfo"
     check_type netinet/in.h "struct group_source_req" -D_BSD_SOURCE
     check_type netinet/in.h "struct ip_mreq_source" -D_BSD_SOURCE
     check_type netinet/in.h "struct ipv6_mreq" -D_DARWIN_C_SOURCE
-    check_type netinet/in.h "struct sockaddr_in6"
     check_type poll.h "struct pollfd"
-    check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
-    check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
     check_type netinet/sctp.h "struct sctp_event_subscribe"
-    check_func getaddrinfo $network_extralibs
-    check_func getservbyport $network_extralibs
-    check_func inet_aton $network_extralibs
+    check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
+    check_type netinet/in.h "struct sockaddr_in6"
+    check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
+    check_type "sys/types.h sys/socket.h" socklen_t
+
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
         check_func closesocket
@@ -3838,55 +3840,55 @@ if ! disabled network; then
         { check_func_headers winsock2.h closesocket -lws2_32 &&
             network_extralibs="-lws2_32"; } || disable winsock2_h network
         check_func_headers ws2tcpip.h getaddrinfo $network_extralibs
+
         check_type ws2tcpip.h socklen_t
         check_type ws2tcpip.h "struct addrinfo"
         check_type ws2tcpip.h "struct group_source_req"
         check_type ws2tcpip.h "struct ip_mreq_source"
         check_type ws2tcpip.h "struct ipv6_mreq"
         check_type winsock2.h "struct pollfd"
+        check_struct winsock2.h "struct sockaddr" sa_len
         check_type ws2tcpip.h "struct sockaddr_in6"
         check_type ws2tcpip.h "struct sockaddr_storage"
-        check_struct winsock2.h "struct sockaddr" sa_len
     else
         disable network
     fi
 fi
 
-# Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
-check_func nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
+check_builtin atomic_cas_ptr atomic.h "void **ptr; void *oldval, *newval; atomic_cas_ptr(ptr, oldval, newval)"
+check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
+check_builtin MemoryBarrier windows.h "MemoryBarrier()"
+check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
+
+check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
+check_func  ${malloc_prefix}memalign            && enable memalign
+check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
 check_func  fcntl
 check_func  fork
-check_func_headers stdlib.h getenv
 check_func  gethrtime
 check_func  getopt
 check_func  getrusage
-check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_func  gettimeofday
 check_func  isatty
 check_func  localtime_r
 check_func  mach_absolute_time
-check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  mkstemp
 check_func  mmap
 check_func  mprotect
-check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
-check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
+# Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
+check_func  nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
+check_func  sched_getaffinity
 check_func  setrlimit
 check_func  strerror_r
 check_func  strptime
-check_func  sched_getaffinity
-check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
-check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
-check_builtin atomic_cas_ptr atomic.h "void **ptr; void *oldval, *newval; atomic_cas_ptr(ptr, oldval, newval)"
-check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_func  sysconf
 check_func  sysctl
 check_func  usleep
+
 check_func_headers io.h setmode
-check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
-check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
-check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
+check_func_headers stdlib.h getenv
+
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
@@ -3915,6 +3917,12 @@ check_header vdpau/vdpau_x11.h
 check_header VideoDecodeAcceleration/VDADecoder.h
 check_header windows.h
 check_header X11/extensions/XvMClib.h
+
+check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
+check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
+check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
+
+check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex &&
