@@ -7409,6 +7409,36 @@ Adler-32 checksum (printed in hexadecimal) of each plane of the input frame,
 expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3}]"
 @end table
 
+@section shuffleplanes
+
+Reorder and/or duplicate video planes.
+
+This filter accepts the following options:
+
+@table @option
+
+@item map0
+The index of the input plane to be used as the first output plane.
+
+@item map1
+The index of the input plane to be used as the second output plane.
+
+@item map2
+The index of the input plane to be used as the third output plane.
+
+@item map3
+The index of the input plane to be used as the fourth output plane.
+
+@end table
+
+The first plane has the index 0. The default is to keep the input unchanged.
+
+E.g.
+@example
+ffmpeg -i INPUT -vf shuffleplanes=0:2:1:3 OUTPUT
+@end example
+swaps the second and third planes of the input.
+
 @anchor{smartblur}
 @section smartblur
 
