@@ -2937,6 +2937,13 @@ typedef struct AVHWAccel {
      */
     int capabilities;
 
+    /*****************************************************************
+     * No fields below this line are part of the public API. They
+     * may not be used outside of libavcodec and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
     struct AVHWAccel *next;
 
     /**
