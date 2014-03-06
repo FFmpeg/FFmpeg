@@ -92,6 +92,19 @@ HTTP (Hyper Text Transfer Protocol).
 This protocol accepts the following options:
 
 @table @option
+@item chunked_post
+If set to 1 use chunked Transfer-Encoding for posts, default is 1.
+
+@item headers
+Set custom HTTP headers, can override built in default headers. The
+value must be a string encoding the headers.
+
+@item multiple_requests
+Use persistent connections if set to 1, default is 0.
+
+@item post_data
+Set custom HTTP post data.
+
 @item user_agent
 Override the User-Agent header. If not specified a string of the form
 "Lavf/<version>" will be used.
