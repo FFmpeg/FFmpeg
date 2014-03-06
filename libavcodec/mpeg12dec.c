@@ -1188,12 +1188,12 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
 #if FF_API_XVMC
 FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->xvmc_acceleration)
-        return avctx->get_format(avctx, pixfmt_xvmc_mpg2_420);
+        return ff_get_format(avctx, pixfmt_xvmc_mpg2_420);
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_XVMC */
 
     if (s->chroma_format < 2)
-        return avctx->get_format(avctx, mpeg12_hwaccel_pixfmt_list_420);
+        return ff_get_format(avctx, mpeg12_hwaccel_pixfmt_list_420);
     else if (s->chroma_format == 2)
         return AV_PIX_FMT_YUV422P;
     else

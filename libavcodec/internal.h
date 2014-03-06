@@ -187,6 +187,13 @@ int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
 
 /**
+ * Select the (possibly hardware accelerated) pixel format.
+ * This is a wrapper around AVCodecContext.get_format() and should be used
+ * instead of calling get_format() directly.
+ */
+int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
+
+/**
  * Set various frame properties from the codec context / packet data.
  */
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);

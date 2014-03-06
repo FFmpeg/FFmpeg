@@ -864,6 +864,11 @@ enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const en
     return fmt[0];
 }
 
+int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
+{
+    return avctx->get_format(avctx, fmt);
+}
+
 #if FF_API_AVFRAME_LAVC
 void avcodec_get_frame_defaults(AVFrame *frame)
 {

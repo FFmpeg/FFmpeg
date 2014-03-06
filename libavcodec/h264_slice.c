@@ -1008,11 +1008,11 @@ static enum AVPixelFormat get_pixel_format(H264Context *h)
             return h->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ422P
                                                              : AV_PIX_FMT_YUV422P;
         } else {
-            return h->avctx->get_format(h->avctx, h->avctx->codec->pix_fmts ?
-                                        h->avctx->codec->pix_fmts :
-                                        h->avctx->color_range == AVCOL_RANGE_JPEG ?
-                                        h264_hwaccel_pixfmt_list_jpeg_420 :
-                                        h264_hwaccel_pixfmt_list_420);
+            return ff_get_format(h->avctx, h->avctx->codec->pix_fmts ?
+                                 h->avctx->codec->pix_fmts :
+                                 h->avctx->color_range == AVCOL_RANGE_JPEG ?
+                                 h264_hwaccel_pixfmt_list_jpeg_420 :
+                                 h264_hwaccel_pixfmt_list_420);
         }
         break;
     default:
