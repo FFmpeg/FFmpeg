@@ -135,7 +135,7 @@ typedef struct {
     AVRational edit_rate;
     int intra_only;
     uint64_t sample_count;
-    int64_t original_duration;  ///< duration before multiplying st->duration by SampleRate/EditRate
+    int64_t original_duration; /* st->duration in SampleRate/EditRate units */
 } MXFTrack;
 
 typedef struct {
@@ -1475,7 +1475,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         }
         avpriv_set_pts_info(st, 64, material_track->edit_rate.den, material_track->edit_rate.num);
 
-        /* ensure SourceTrack EditRate == MaterialTrack EditRate since only the former is accessible via st->priv_data */
+        /* ensure SourceTrack EditRate == MaterialTrack EditRate since only
+         * the former is accessible via st->priv_data */
         source_track->edit_rate = material_track->edit_rate;
 
         PRINT_KEY(mxf->fc, "data definition   ul", source_track->sequence->data_definition_ul);
@@ -1615,7 +1616,9 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 
             /* if duration is set, rescale it from EditRate to SampleRate */
             if (st->duration != AV_NOPTS_VALUE)
-                st->duration = av_rescale_q(st->duration, av_inv_q(material_track->edit_rate), st->time_base);
+                st->duration = av_rescale_q(st->duration,
+                                            av_inv_q(material_track->edit_rate),
+                                            st->time_base);
 
             /* TODO: implement AV_CODEC_ID_RAWAUDIO */
             if (st->codec->codec_id == AV_CODEC_ID_PCM_S16LE) {
@@ -2230,7 +2233,8 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, int64_t current_offset
     return next_ofs;
 }
 
-static int mxf_compute_sample_count(MXFContext *mxf, int stream_index, uint64_t *sample_count)
+static int mxf_compute_sample_count(MXFContext *mxf, int stream_index,
+                                    uint64_t *sample_count)
 {
     int i, total = 0, size = 0;
     AVStream *st = mxf->fc->streams[stream_index];
@@ -2242,13 +2246,16 @@ static int mxf_compute_sample_count(MXFContext *mxf, int stream_index, uint64_t 
     if ((sample_rate.num / sample_rate.den) == 48000)
         spf = ff_mxf_get_samples_per_frame(mxf->fc, time_base);
     if (!spf) {
-        int remainder = (sample_rate.num * time_base.num) % (time_base.den * sample_rate.den);
+        int remainder = (sample_rate.num * time_base.num) %
+                        (time_base.den * sample_rate.den);
         *sample_count = av_q2d(av_mul_q((AVRational){mxf->current_edit_unit, 1},
                                         av_mul_q(sample_rate, time_base)));
         if (remainder)
             av_log(mxf->fc, AV_LOG_WARNING,
-                   "seeking detected on stream #%d with time base (%d/%d) and sample rate (%d/%d), audio pts won't be accurate.\n",
-                   stream_index, time_base.num, time_base.den, sample_rate.num, sample_rate.den);
+                   "seeking detected on stream #%d with time base (%d/%d) and "
+                   "sample rate (%d/%d), audio pts won't be accurate.\n",
+                   stream_index, time_base.num, time_base.den,
+                   sample_rate.num, sample_rate.den);
         return 0;
     }
 
@@ -2267,15 +2274,19 @@ static int mxf_compute_sample_count(MXFContext *mxf, int stream_index, uint64_t 
     return 0;
 }
 
-static int mxf_set_audio_pts(MXFContext *mxf, AVCodecContext *codec, AVPacket *pkt)
+static int mxf_set_audio_pts(MXFContext *mxf, AVCodecContext *codec,
+                             AVPacket *pkt)
 {
     MXFTrack *track = mxf->fc->streams[pkt->stream_index]->priv_data;
+    int64_t bits_per_sample = av_get_bits_per_sample(codec->codec_id);
+
     pkt->pts = track->sample_count;
+
     if (   codec->channels <= 0
-        || av_get_bits_per_sample(codec->codec_id) <= 0
-        || codec->channels * (int64_t)av_get_bits_per_sample(codec->codec_id) < 8)
+        || bits_per_sample <= 0
+        || codec->channels * (int64_t)bits_per_sample < 8)
         return AVERROR(EINVAL);
-    track->sample_count += pkt->size / (codec->channels * (int64_t)av_get_bits_per_sample(codec->codec_id) / 8);
+    track->sample_count += pkt->size / (codec->channels * (int64_t)bits_per_sample / 8);
     return 0;
 }
 
@@ -2344,8 +2355,10 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             pkt->pos = klv.offset;
 
             codec = s->streams[index]->codec;
+
             if (codec->codec_type == AVMEDIA_TYPE_VIDEO && next_ofs >= 0) {
-                /* mxf->current_edit_unit good - see if we have an index table to derive timestamps from */
+                /* mxf->current_edit_unit good - see if we have an
+                 * index table to derive timestamps from */
                 MXFIndexTable *t = &mxf->index_tables[0];
 
                 if (mxf->nb_index_tables >= 1 && mxf->current_edit_unit < t->nb_ptses) {
@@ -2527,7 +2540,8 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 
     /* if audio then truncate sample_time to EditRate */
     if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-        sample_time = av_rescale_q(sample_time, st->time_base, av_inv_q(source_track->edit_rate));
+        sample_time = av_rescale_q(sample_time, st->time_base,
+                                   av_inv_q(source_track->edit_rate));
 
     if (mxf->nb_index_tables <= 0) {
     if (!s->bit_rate)
