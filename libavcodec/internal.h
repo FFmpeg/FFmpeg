@@ -103,15 +103,6 @@ struct AVCodecDefault {
 };
 
 /**
- * Return the hardware accelerated codec for codec codec_id and
- * pixel format pix_fmt.
- *
- * @param avctx The codec context containing the codec_id and pixel format.
- * @return the hardware accelerated codec, or NULL if none was found.
- */
-AVHWAccel *ff_find_hwaccel(AVCodecContext *avctx);
-
-/**
  * Return the index into tab at which {a,b} match elements {[0],[1]} of tab.
  * If there is no such matching pair then size is returned.
  */

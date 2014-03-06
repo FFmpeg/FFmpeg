@@ -864,9 +864,41 @@ enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const en
     return fmt[0];
 }
 
+static AVHWAccel *find_hwaccel(enum AVCodecID codec_id,
+                               enum AVPixelFormat pix_fmt)
+{
+    AVHWAccel *hwaccel = NULL;
+
+    while ((hwaccel = av_hwaccel_next(hwaccel)))
+        if (hwaccel->id == codec_id
+            && hwaccel->pix_fmt == pix_fmt)
+            return hwaccel;
+    return NULL;
+}
+
+
 int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
 {
-    return avctx->get_format(avctx, fmt);
+    const AVPixFmtDescriptor *desc;
+    enum AVPixelFormat ret = avctx->get_format(avctx, fmt);
+
+    desc = av_pix_fmt_desc_get(ret);
+    if (!desc)
+        return AV_PIX_FMT_NONE;
+
+    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        avctx->hwaccel = find_hwaccel(avctx->codec_id, ret);
+        if (!avctx->hwaccel) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Could not find an AVHWAccel for the pixel format: %s",
+                   desc->name);
+            return AV_PIX_FMT_NONE;
+        }
+    } else {
+        avctx->hwaccel = NULL;
+    }
+
+    return ret;
 }
 
 #if FF_API_AVFRAME_LAVC
@@ -2205,20 +2237,6 @@ void av_register_hwaccel(AVHWAccel *hwaccel)
 AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel)
 {
     return hwaccel ? hwaccel->next : first_hwaccel;
-}
-
-AVHWAccel *ff_find_hwaccel(AVCodecContext *avctx)
-{
-    enum AVCodecID codec_id = avctx->codec->id;
-    enum AVPixelFormat pix_fmt = avctx->pix_fmt;
-
-    AVHWAccel *hwaccel = NULL;
-
-    while ((hwaccel = av_hwaccel_next(hwaccel)))
-        if (hwaccel->id == codec_id
-            && hwaccel->pix_fmt == pix_fmt)
-            return hwaccel;
-    return NULL;
 }
 
 int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))

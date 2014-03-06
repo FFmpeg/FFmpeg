@@ -5598,7 +5598,6 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
     else
         avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-    avctx->hwaccel = ff_find_hwaccel(avctx);
     v->s.avctx = avctx;
 
     if (ff_vc1_init_common(v) < 0)
