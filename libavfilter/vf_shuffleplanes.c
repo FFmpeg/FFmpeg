@@ -125,7 +125,7 @@ fail:
 }
 
 #define OFFSET(x) offsetof(ShufflePlanesContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption shuffleplanes_options[] = {
     { "map0", "Index of the input plane to be used as the first output plane ",  OFFSET(map[0]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 4, FLAGS },
     { "map1", "Index of the input plane to be used as the second output plane ", OFFSET(map[1]), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 4, FLAGS },
