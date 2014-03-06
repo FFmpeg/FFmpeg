@@ -1891,10 +1891,14 @@ static int mxf_parse_handle_essence(MXFContext *mxf)
 
     if (mxf->parsing_backward) {
         return mxf_seek_to_previous_partition(mxf);
-    } else if (mxf->footer_partition || mxf->last_partition){
-        uint64_t offset;
+    } else {
+        uint64_t offset = mxf->footer_partition ? mxf->footer_partition
+                                                : mxf->last_partition;
 
-        offset = mxf->footer_partition ? mxf->footer_partition : mxf->last_partition;
+        if (!offset) {
+            av_dlog(mxf->fc, "no last partition\n");
+            return 0;
+        }
 
         av_dlog(mxf->fc, "seeking to last partition\n");
 
@@ -1908,16 +1912,15 @@ static int mxf_parse_handle_essence(MXFContext *mxf)
 
         /* seek to last partition and parse backward */
         if ((ret = avio_seek(pb, mxf->run_in + offset, SEEK_SET)) < 0) {
-            av_log(mxf->fc, AV_LOG_ERROR, "failed to seek to last partition @ 0x%"PRIx64" (%"PRId64") - partial file?\n",
+            av_log(mxf->fc, AV_LOG_ERROR,
+                   "failed to seek to last partition @ 0x%" PRIx64
+                   " (%"PRId64") - partial file?\n",
                    mxf->run_in + offset, ret);
             return ret;
         }
 
         mxf->current_partition = NULL;
         mxf->parsing_backward = 1;
-    } else {
-        av_dlog(mxf->fc, "can't find last partition\n");
-        return 0;
     }
 
     return 1;
