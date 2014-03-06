@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/log.h"
 #include "dxva2_internal.h"
 
 #define MAX_SLICES 1024
@@ -232,9 +233,11 @@ static int dxva2_mpeg2_decode_slice(AVCodecContext *avctx,
         s->current_picture_ptr->hwaccel_picture_private;
     unsigned position;
 
-    if (ctx_pic->slice_count >= MAX_SLICES)
+    if (ctx_pic->slice_count >= MAX_SLICES) {
+        avpriv_request_sample(avctx, "%d slices in dxva2",
+                              ctx_pic->slice_count);
         return -1;
-
+    }
     if (!ctx_pic->bitstream)
         ctx_pic->bitstream = buffer;
     ctx_pic->bitstream_size += size;
