@@ -112,17 +112,17 @@ struct vda_context {
     OSType              cv_pix_fmt_type;
 
     /**
-     * The current bitstream buffer.
+     * unused
      */
     uint8_t             *priv_bitstream;
 
     /**
-     * The current size of the bitstream.
+     * unused
      */
     int                 priv_bitstream_size;
 
     /**
-     * The reference size used for fast reallocation.
+     * unused
      */
     int                 priv_allocated_size;
 };
