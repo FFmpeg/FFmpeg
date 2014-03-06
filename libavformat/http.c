@@ -56,6 +56,7 @@ typedef struct {
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
     char *headers;
+    char *mime_type;
     /* Set if the server correctly handles Connection: close and will close
      * the connection after feeding us the content. */
     int willclose;
@@ -92,6 +93,7 @@ static const AVOption options[] = {
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {"multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
 {"post_data", "custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D|E },
+{"mime_type", "export the MIME type", OFFSET(mime_type), AV_OPT_TYPE_STRING, {0}, 0, 0, 0  },
 {"icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D },
 {"icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
 {"icy_metadata_packet", "return current ICY metadata packet", OFFSET(icy_metadata_packet), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
@@ -468,6 +470,9 @@ static int process_line(URLContext *h, char *line, int line_count,
         } else if (!av_strcasecmp(tag, "Connection")) {
             if (!strcmp(p, "close"))
                 s->willclose = 1;
+        } else if (!av_strcasecmp (tag, "Content-Type")) {
+            av_free(s->mime_type);
+            s->mime_type = av_strdup(p);
         } else if (!av_strcasecmp (tag, "Icy-MetaInt")) {
             s->icy_metaint = strtoll(p, NULL, 10);
         } else if (!av_strncasecmp(tag, "Icy-", 4)) {
