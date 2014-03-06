@@ -58,6 +58,8 @@ SLIBOBJS-$(HAVE_GNU_WINDRES)             += avdeviceres.o
 
 SKIPHEADERS-$(CONFIG_DECKLINK)           += decklink_enc.h
 SKIPHEADERS-$(CONFIG_DSHOW_INDEV)        += dshow_capture.h
+SKIPHEADERS-$(CONFIG_FBDEV_INDEV)        += fbdev_common.h
+SKIPHEADERS-$(CONFIG_FBDEV_OUTDEV)       += fbdev_common.h
 SKIPHEADERS-$(CONFIG_LIBPULSE)           += pulse_audio_common.h
 SKIPHEADERS-$(CONFIG_V4L2_INDEV)         += v4l2-common.h
 SKIPHEADERS-$(CONFIG_V4L2_OUTDEV)        += v4l2-common.h
