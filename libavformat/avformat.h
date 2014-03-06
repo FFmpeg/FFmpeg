@@ -1158,6 +1158,11 @@ typedef struct AVFormatContext {
      */
     int64_t max_interleave_delta;
 
+    /**
+     * Allow non-standard and experimental extension
+     * @see AVCodecContext.strict_std_compliance
+     */
+    int strict_std_compliance;
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and

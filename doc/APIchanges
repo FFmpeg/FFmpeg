@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-05-24 - xxxxxxx - lavf 55.19.0 - avformat.h
+  Add strict_std_compliance and related AVOptions to support experimental
+  muxing.
+
 2014-05-19 - xxxxxxx - lavf 55.18.0 - avformat.h
   Add av_stream_get_side_data() to access stream-level side data
   in the same way as av_packet_get_side_data().
