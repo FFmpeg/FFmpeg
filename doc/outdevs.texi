@@ -42,7 +42,7 @@ ffmpeg -i INPUT -f alsa hw:1,7
 
 CACA output device.
 
-This output device allows to show a video stream in CACA window.
+This output device allows one to show a video stream in CACA window.
 Only one CACA window is allowed per application, so you can
 have only one instance of this output device in an application.
 
@@ -302,7 +302,7 @@ ffmpeg  -i INPUT -f pulse "stream name"
 
 SDL (Simple DirectMedia Layer) output device.
 
-This output device allows to show a video stream in an SDL
+This output device allows one to show a video stream in an SDL
 window. Only one SDL window is allowed per application, so you can
 have only one instance of this output device in an application.
 
@@ -361,7 +361,7 @@ sndio audio output device.
 
 XV (XVideo) output device.
 
-This output device allows to show a video stream in a X Window System
+This output device allows one to show a video stream in a X Window System
 window.
 
 @subsection Options

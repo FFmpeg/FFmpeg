@@ -13,7 +13,7 @@
 @c man begin DESCRIPTION
 
 The FFmpeg rescaler provides a high-level interface to the libswscale
-library image conversion utilities. In particular it allows to perform
+library image conversion utilities. In particular it allows one to perform
 image rescaling and pixel format conversion.
 
 @c man end DESCRIPTION

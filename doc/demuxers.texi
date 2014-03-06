@@ -296,7 +296,7 @@ teletext packet PTS and DTS values untouched.
 
 Raw video demuxer.
 
-This demuxer allows to read raw video data. Since there is no header
+This demuxer allows one to read raw video data. Since there is no header
 specifying the assumed video parameters, the user must specify them
 in order to be able to decode the data correctly.
 

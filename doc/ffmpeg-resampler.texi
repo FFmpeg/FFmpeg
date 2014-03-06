@@ -14,7 +14,7 @@
 
 The FFmpeg resampler provides a high-level interface to the
 libswresample library audio resampling utilities. In particular it
-allows to perform audio resampling, audio channel layout rematrixing,
+allows one to perform audio resampling, audio channel layout rematrixing,
 and convert audio format and packing layout.
 
 @c man end DESCRIPTION
