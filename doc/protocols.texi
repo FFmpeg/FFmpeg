@@ -114,6 +114,12 @@ If the server supports ICY metadata, and @option{icy} was set to 1, this
 contains the last non-empty metadata packet sent by the server. It should be
 polled in regular intervals by applications interested in mid-stream metadata
 updates.
+
+@item offset
+Set initial byte offset.
+
+@item end_offset
+Try to limit the request to bytes preceding this offset.
 @end table
 
 @section mmst
