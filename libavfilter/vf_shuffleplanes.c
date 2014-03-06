@@ -34,7 +34,7 @@ typedef struct ShufflePlanesContext {
     int planes;
 
     /* mapping indices */
-    uint8_t map[4];
+    int map[4];
 
     /* set to 1 if some plane is used more than once, so we need to make a copy */
     int copy;
