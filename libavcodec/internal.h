@@ -95,6 +95,11 @@ typedef struct AVCodecInternal {
      * packet into every function.
      */
     AVPacket *pkt;
+
+    /**
+     * hwaccel-specific private data
+     */
+    void *hwaccel_priv_data;
 } AVCodecInternal;
 
 struct AVCodecDefault {

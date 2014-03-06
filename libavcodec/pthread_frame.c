@@ -206,6 +206,7 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
 
         dst->hwaccel = src->hwaccel;
         dst->hwaccel_context = src->hwaccel_context;
+        dst->internal->hwaccel_priv_data = src->internal->hwaccel_priv_data;
     }
 
     if (for_user) {

@@ -893,16 +893,37 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
     if (!desc)
         return AV_PIX_FMT_NONE;
 
+    if (avctx->hwaccel && avctx->hwaccel->uninit)
+        avctx->hwaccel->uninit(avctx);
+    av_freep(&avctx->internal->hwaccel_priv_data);
+    avctx->hwaccel = NULL;
+
     if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
-        avctx->hwaccel = find_hwaccel(avctx->codec_id, ret);
-        if (!avctx->hwaccel) {
+        AVHWAccel *hwaccel;
+        int err;
+
+        hwaccel = find_hwaccel(avctx->codec_id, ret);
+        if (!hwaccel) {
             av_log(avctx, AV_LOG_ERROR,
                    "Could not find an AVHWAccel for the pixel format: %s",
                    desc->name);
             return AV_PIX_FMT_NONE;
         }
-    } else {
-        avctx->hwaccel = NULL;
+
+        if (hwaccel->priv_data_size) {
+            avctx->internal->hwaccel_priv_data = av_mallocz(hwaccel->priv_data_size);
+            if (!avctx->internal->hwaccel_priv_data)
+                return AV_PIX_FMT_NONE;
+        }
+
+        if (hwaccel->init) {
+            err = hwaccel->init(avctx);
+            if (err < 0) {
+                av_freep(&avctx->internal->hwaccel_priv_data);
+                return AV_PIX_FMT_NONE;
+            }
+        }
+        avctx->hwaccel = hwaccel;
     }
 
     return ret;
@@ -1688,6 +1709,11 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
             av_buffer_pool_uninit(&pool->pools[i]);
         av_freep(&avctx->internal->pool);
+
+        if (avctx->hwaccel && avctx->hwaccel->uninit)
+            avctx->hwaccel->uninit(avctx);
+        av_freep(&avctx->internal->hwaccel_priv_data);
+
         av_freep(&avctx->internal);
     }
 
