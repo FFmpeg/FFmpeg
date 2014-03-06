@@ -295,7 +295,7 @@ int avfilter_config_links(AVFilterContext *filter)
 
             if ((config_link = link->dstpad->config_props))
                 if ((ret = config_link(link)) < 0) {
-                    av_log(link->src, AV_LOG_ERROR,
+                    av_log(link->dst, AV_LOG_ERROR,
                            "Failed to configure input pad on %s\n",
                            link->dst->name);
                     return ret;
