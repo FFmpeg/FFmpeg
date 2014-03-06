@@ -83,7 +83,7 @@ SYNTH_FILTER_FUNC(sse)
 SYNTH_FILTER_FUNC(sse2)
 SYNTH_FILTER_FUNC(avx)
 SYNTH_FILTER_FUNC(fma3)
-#endif
+#endif /* HAVE_YASM */
 
 av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
 {
@@ -104,5 +104,5 @@ av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
     if (EXTERNAL_FMA3(cpu_flags)) {
         s->synth_filter_float = synth_filter_fma3;
     }
-#endif
+#endif /* HAVE_YASM */
 }
