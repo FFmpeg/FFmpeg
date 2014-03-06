@@ -57,6 +57,7 @@ typedef struct {
     HTTPAuthState proxy_auth_state;
     char *headers;
     char *mime_type;
+    char *user_agent;
     /* Set if the server correctly handles Connection: close and will close
      * the connection after feeding us the content. */
     int willclose;
@@ -88,9 +89,12 @@ typedef struct {
 #define OFFSET(x) offsetof(HTTPContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
+#define DEFAULT_USER_AGENT "Lavf/" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 static const AVOption options[] = {
 {"chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+{"user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = DEFAULT_USER_AGENT}, 0, 0, D },
+{"user-agent", "override User-Agent header, for compatibility with ffmpeg", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = DEFAULT_USER_AGENT}, 0, 0, D },
 {"multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
 {"post_data", "custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D|E },
 {"mime_type", "export the MIME type", OFFSET(mime_type), AV_OPT_TYPE_STRING, {0}, 0, 0, 0  },
@@ -562,8 +566,8 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 
     /* set default headers if needed */
     if (!has_header(s->headers, "\r\nUser-Agent: "))
-       len += av_strlcatf(headers + len, sizeof(headers) - len,
-                          "User-Agent: %s\r\n", LIBAVFORMAT_IDENT);
+        len += av_strlcatf(headers + len, sizeof(headers) - len,
+                           "User-Agent: %s\r\n", s->user_agent);
     if (!has_header(s->headers, "\r\nAccept: "))
         len += av_strlcpy(headers + len, "Accept: */*\r\n",
                           sizeof(headers) - len);
