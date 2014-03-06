@@ -465,5 +465,5 @@ AVHWAccel ff_h264_dxva2_hwaccel = {
     .start_frame    = dxva2_h264_start_frame,
     .decode_slice   = dxva2_h264_decode_slice,
     .end_frame      = dxva2_h264_end_frame,
-    .priv_data_size = sizeof(struct dxva2_picture_context),
+    .frame_priv_data_size = sizeof(struct dxva2_picture_context),
 };

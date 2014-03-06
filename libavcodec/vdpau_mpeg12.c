@@ -103,7 +103,7 @@ AVHWAccel ff_mpeg1_vdpau_hwaccel = {
     .start_frame    = vdpau_mpeg_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg_decode_slice,
-    .priv_data_size = sizeof(struct vdpau_picture_context),
+    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
 };
 #endif
 
@@ -116,6 +116,6 @@ AVHWAccel ff_mpeg2_vdpau_hwaccel = {
     .start_frame    = vdpau_mpeg_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg_decode_slice,
-    .priv_data_size = sizeof(struct vdpau_picture_context),
+    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
 };
 #endif

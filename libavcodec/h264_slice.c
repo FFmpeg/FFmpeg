@@ -258,8 +258,8 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
     if (h->avctx->hwaccel) {
         const AVHWAccel *hwaccel = h->avctx->hwaccel;
         av_assert0(!pic->hwaccel_picture_private);
-        if (hwaccel->priv_data_size) {
-            pic->hwaccel_priv_buf = av_buffer_allocz(hwaccel->priv_data_size);
+        if (hwaccel->frame_priv_data_size) {
+            pic->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
             if (!pic->hwaccel_priv_buf)
                 return AVERROR(ENOMEM);
             pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;
