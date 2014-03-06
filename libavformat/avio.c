@@ -270,7 +270,7 @@ int ffurl_open(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options)
 {
     int ret = ffurl_alloc(puc, filename, flags, int_cb);
-    if (ret)
+    if (ret < 0)
         return ret;
     if (options && (*puc)->prot->priv_data_class &&
         (ret = av_opt_set_dict((*puc)->priv_data, options)) < 0)
@@ -399,7 +399,7 @@ int avio_check(const char *url, int flags)
 {
     URLContext *h;
     int ret = ffurl_alloc(&h, url, flags, NULL);
-    if (ret)
+    if (ret < 0)
         return ret;
 
     if (h->prot->url_check) {

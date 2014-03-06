@@ -979,15 +979,20 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
     else if ((s->filesize == -1 && whence == SEEK_END) || h->is_streamed)
         return -1;
 
-    /* we save the old context in case the seek fails */
-    old_buf_size = s->buf_end - s->buf_ptr;
-    memcpy(old_buf, s->buf_ptr, old_buf_size);
-    s->hd = NULL;
     if (whence == SEEK_CUR)
         off += s->off;
     else if (whence == SEEK_END)
         off += s->filesize;
+    else if (whence != SEEK_SET)
+        return AVERROR(EINVAL);
+    if (off < 0)
+        return AVERROR(EINVAL);
     s->off = off;
+
+    /* we save the old context in case the seek fails */
+    old_buf_size = s->buf_end - s->buf_ptr;
+    memcpy(old_buf, s->buf_ptr, old_buf_size);
+    s->hd = NULL;
 
     /* if it fails, continue on old connection */
     av_dict_copy(&options, s->chained_options, 0);

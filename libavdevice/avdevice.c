@@ -101,6 +101,7 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s, enum AVDevToA
 
 int avdevice_list_devices(AVFormatContext *s, AVDeviceInfoList **device_list)
 {
+    int ret;
     av_assert0(s);
     av_assert0(device_list);
     av_assert0(s->oformat || s->iformat);
@@ -113,8 +114,12 @@ int avdevice_list_devices(AVFormatContext *s, AVDeviceInfoList **device_list)
     if (!(*device_list))
         return AVERROR(ENOMEM);
     if (s->oformat)
-        return s->oformat->get_device_list(s, *device_list);
-    return s->iformat->get_device_list(s, *device_list);
+        ret = s->oformat->get_device_list(s, *device_list);
+    else
+        ret = s->iformat->get_device_list(s, *device_list);
+    if (ret < 0)
+        avdevice_free_list_devices(device_list);
+    return ret;
 }
 
 void avdevice_free_list_devices(AVDeviceInfoList **device_list)
