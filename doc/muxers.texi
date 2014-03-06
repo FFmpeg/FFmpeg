@@ -758,7 +758,7 @@ The segment muxer supports the following options:
 @table @option
 @item reference_stream @var{specifier}
 Set the reference stream, as specified by the string @var{specifier}.
-If @var{specifier} is set to @code{auto}, the reference is choosen
+If @var{specifier} is set to @code{auto}, the reference is chosen
 automatically. Otherwise it must be a stream specifier (see the ``Stream
 specifiers'' chapter in the ffmpeg manual) which specifies the
 reference stream. The default value is @code{auto}.

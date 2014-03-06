@@ -172,7 +172,7 @@ terminated when the next special character (belonging to the set
 
 The name and arguments of the filter are optionally preceded and
 followed by a list of link labels.
-A link label allows to name a link and associate it to a filter output
+A link label allows one to name a link and associate it to a filter output
 or input pad. The preceding labels @var{in_link_1}
 ... @var{in_link_N}, are associated to the filter input pads,
 the following labels @var{out_link_1} ... @var{out_link_M}, are
@@ -3921,7 +3921,7 @@ The high threshold selects the "strong" edge pixels, which are then
 connected through 8-connectivity with the "weak" edge pixels selected
 by the low threshold.
 
-@var{low} and @var{high} threshold values must be choosen in the range
+@var{low} and @var{high} threshold values must be chosen in the range
 [0,1], and @var{low} should be lesser or equal to @var{high}.
 
 Default value for @var{low} is @code{20/255}, and default value for @var{high}
@@ -5238,7 +5238,7 @@ Set progressive threshold.
 
 Deinterleave or interleave fields.
 
-This filter allows to process interlaced images fields without
+This filter allows one to process interlaced images fields without
 deinterlacing them. Deinterleaving splits the input frame into 2
 fields (so called half pictures). Odd lines are moved to the top
 half of the output image, even lines to the bottom half.
@@ -6860,7 +6860,7 @@ rotate=A*sin(2*PI/T*t)
 @end example
 
 @item
-Rotate the video, output size is choosen so that the whole rotating
+Rotate the video, output size is chosen so that the whole rotating
 input video is always completely contained in the output:
 @example
 rotate='2*PI*t:ow=hypot(iw,ih):oh=ow'
@@ -6983,7 +6983,7 @@ Default value is @samp{0}.
 @item flags
 Set libswscale scaling flags. See
 @ref{sws_flags,,the ffmpeg-scaler manual,ffmpeg-scaler} for the
-complete list of values. If not explictly specified the filter applies
+complete list of values. If not explicitly specified the filter applies
 the default flags.
 
 @item size, s
@@ -7797,7 +7797,7 @@ Produce 8x8 PNG tiles of all keyframes (@option{-skip_frame nokey}) in a movie:
 ffmpeg -skip_frame nokey -i file.avi -vf 'scale=128:72,tile=8x8' -an -vsync 0 keyframes%03d.png
 @end example
 The @option{-vsync 0} is necessary to prevent @command{ffmpeg} from
-duplicating each output frame to accomodate the originally detected frame
+duplicating each output frame to accommodate the originally detected frame
 rate.
 
 @item
@@ -8394,7 +8394,7 @@ Set dithering to reduce the circular banding effects. Default is @code{1}
 (enabled).
 
 @item aspect
-Set vignette aspect. This setting allows to adjust the shape of the vignette.
+Set vignette aspect. This setting allows one to adjust the shape of the vignette.
 Setting this value to the SAR of the input will make a rectangular vignetting
 following the dimensions of the video.
 
@@ -8903,7 +8903,7 @@ horizontally, vertically, or diagonally adjacent.
 
 At each interaction the grid evolves according to the adopted rule,
 which specifies the number of neighbor alive cells which will make a
-cell stay alive or born. The @option{rule} option allows to specify
+cell stay alive or born. The @option{rule} option allows one to specify
 the rule to adopt.
 
 This source accepts the following options:
@@ -10323,7 +10323,7 @@ Note that when the movie is looped the source timestamps are not
 changed, so it will generate non monotonically increasing timestamps.
 @end table
 
-This filter allows to overlay a second video on top of main input of
+This filter allows one to overlay a second video on top of main input of
 a filtergraph as shown in this graph:
 @example
 input -----------> deltapts0 --> overlay --> output

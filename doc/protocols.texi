@@ -960,7 +960,7 @@ used as master salt.
 
 @section tcp
 
-Trasmission Control Protocol.
+Transmission Control Protocol.
 
 The required syntax for a TCP url is:
 @example
@@ -1066,7 +1066,7 @@ udp://@var{hostname}:@var{port}[?@var{options}]
 @var{options} contains a list of &-separated options of the form @var{key}=@var{val}.
 
 In case threading is enabled on the system, a circular buffer is used
-to store the incoming data, which allows to reduce loss of data due to
+to store the incoming data, which allows one to reduce loss of data due to
 UDP socket buffer overruns. The @var{fifo_size} and
 @var{overrun_nonfatal} options are related to this buffer.
 

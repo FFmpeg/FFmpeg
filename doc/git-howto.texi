@@ -299,7 +299,7 @@ the current branch history.
 git commit --amend
 @end example
 
-allows to amend the last commit details quickly.
+allows one to amend the last commit details quickly.
 
 @example
 git rebase -i origin/master

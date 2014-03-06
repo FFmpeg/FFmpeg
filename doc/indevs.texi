@@ -409,7 +409,7 @@ OpenAL is part of Core Audio, the official Mac OS X Audio interface.
 See @url{http://developer.apple.com/technologies/mac/audio-and-video.html}
 @end table
 
-This device allows to capture from an audio input device handled
+This device allows one to capture from an audio input device handled
 through OpenAL.
 
 You need to specify the name of the device to capture in the provided
@@ -617,7 +617,7 @@ Select the pixel format (only valid for raw video input).
 
 @item input_format
 Set the preferred pixel format (for raw video) or a codec name.
-This option allows to select the input format, when several are
+This option allows one to select the input format, when several are
 available.
 
 @item framerate
@@ -678,7 +678,7 @@ other filename will be interpreted as device number 0.
 
 X11 video input device.
 
-This device allows to capture a region of an X11 display.
+This device allows one to capture a region of an X11 display.
 
 The filename passed as input has the syntax:
 @example

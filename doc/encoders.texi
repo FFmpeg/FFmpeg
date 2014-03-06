@@ -807,7 +807,7 @@ while producing the worst quality.
 
 @item reservoir
 Enable use of bit reservoir when set to 1. Default value is 1. LAME
-has this enabled by default, but can be overriden by use
+has this enabled by default, but can be overridden by use
 @option{--nores} option.
 
 @item joint_stereo (@emph{-m j})
@@ -1525,7 +1525,7 @@ for detail retention (adaptive quantization, psy-RD, psy-trellis).
 Many libx264 encoder options are mapped to FFmpeg global codec
 options, while unique encoder options are provided through private
 options. Additionally the @option{x264opts} and @option{x264-params}
-private options allows to pass a list of key=value tuples as accepted
+private options allows one to pass a list of key=value tuples as accepted
 by the libx264 @code{x264_param_parse} function.
 
 The x264 project website is at
@@ -1853,7 +1853,7 @@ Override the x264 configuration using a :-separated list of key=value
 parameters.
 
 This option is functionally the same as the @option{x264opts}, but is
-duplicated for compability with the Libav fork.
+duplicated for compatibility with the Libav fork.
 
 For example to specify libx264 encoding options with @command{ffmpeg}:
 @example
@@ -2047,7 +2047,7 @@ Set physical density of pixels, in dots per meter, unset by default
 Apple ProRes encoder.
 
 FFmpeg contains 2 ProRes encoders, the prores-aw and prores-ks encoder.
-The used encoder can be choosen with the @code{-vcodec} option.
+The used encoder can be chosen with the @code{-vcodec} option.
 
 @subsection Private Options for prores-ks
 

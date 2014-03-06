@@ -1056,7 +1056,7 @@ which can be obtained with @code{ffmpeg -opencl_bench} or @code{av_opencl_get_de
 @item device_idx
 Select the index of the device used to run OpenCL code.
 
-The specifed index must be one of the indexes in the device list which
+The specified index must be one of the indexes in the device list which
 can be obtained with @code{ffmpeg -opencl_bench} or @code{av_opencl_get_device_list()}.
 
 @end table
