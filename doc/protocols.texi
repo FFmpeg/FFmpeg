@@ -92,6 +92,10 @@ HTTP (Hyper Text Transfer Protocol).
 This protocol accepts the following options:
 
 @table @option
+@item user_agent
+Override the User-Agent header. If not specified a string of the form
+"Lavf/<version>" will be used.
+
 @item mime_type
 Export the MIME type.
 
