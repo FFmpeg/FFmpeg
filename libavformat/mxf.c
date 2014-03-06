@@ -107,7 +107,7 @@ int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum AVPixelFormat *
     return -1;
 }
 
-static const MXFSamplesPerFrame mxf_samples_per_frames[] = {
+static const MXFSamplesPerFrame mxf_spf[] = {
     { { 1001, 24000 }, { 2002, 0,    0,    0,    0,    0 } }, // FILM 23.976
     { { 1, 24},        { 2000, 0,    0,    0,    0,    0 } }, // FILM 24
     { { 1001, 30000 }, { 1602, 1601, 1602, 1601, 1602, 0 } }, // NTSC 29.97
@@ -116,22 +116,33 @@ static const MXFSamplesPerFrame mxf_samples_per_frames[] = {
     { { 1, 50 },       { 960,  0,    0,    0,    0,    0 } }, // PAL 50
 };
 
-const MXFSamplesPerFrame *ff_mxf_get_samples_per_frame(AVFormatContext *s, AVRational time_base)
-{
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(mxf_samples_per_frames); i++) {
-        if (!av_cmp_q(mxf_samples_per_frames[i].time_base, time_base))
-            return &mxf_samples_per_frames[i];
-    }
+static const AVRational mxf_time_base[] = {
+    { 1001, 24000 },
+    { 1, 24},
+    { 1001, 30000 },
+    { 1001, 60000 },
+    { 1, 25 },
+    { 1, 50 },
+    { 0, 0}
+};
 
-    // Find closest container time base for approximative codec time base like 1/29.97, 1/30, ...
-    for (i = 0; i < FF_ARRAY_ELEMS(mxf_samples_per_frames); i++) {
-        if (fabs(av_q2d(mxf_samples_per_frames[i].time_base) - av_q2d(time_base)) < 0.0001) {
-            av_log(s, AV_LOG_WARNING, "%d/%d input time base matched %d/%d container time base\n",
-                   time_base.num, time_base.den,
-                   mxf_samples_per_frames[i].time_base.num, mxf_samples_per_frames[i].time_base.den);
-            return &mxf_samples_per_frames[i];
-        }
-    }
-    return NULL;
+const MXFSamplesPerFrame *ff_mxf_get_samples_per_frame(AVFormatContext *s,
+                                                       AVRational time_base)
+{
+    int idx = av_find_nearest_q_idx(time_base, mxf_time_base);
+    AVRational diff = av_sub_q(time_base, mxf_time_base[idx]);
+
+    diff.num = abs(diff.num);
+
+    if (av_cmp_q(diff, (AVRational){1, 1000}) >= 0)
+        return NULL;
+
+    if (av_cmp_q(time_base, mxf_time_base[idx]))
+        av_log(s, AV_LOG_WARNING,
+               "%d/%d input time base matched %d/%d container time base\n",
+               time_base.num, time_base.den,
+               mxf_spf[idx].time_base.num,
+               mxf_spf[idx].time_base.den);
+
+    return &mxf_spf[idx];
 }
