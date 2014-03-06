@@ -1663,7 +1663,7 @@ static int mxf_read_utf16_string(AVIOContext *pb, int size, char** str)
     if (size < 0)
         return AVERROR(EINVAL);
 
-    buf_size = size + size/2 + 1;
+    buf_size = size + size / 2 + 1;
     *str = av_malloc(buf_size);
     if (!*str)
         return AVERROR(ENOMEM);
@@ -1696,7 +1696,7 @@ static int mxf_uid_to_str(UID uid, char **str)
 
 static int mxf_timestamp_to_str(uint64_t timestamp, char **str)
 {
-    struct tm time = {0};
+    struct tm time = { 0 };
     time.tm_year = (timestamp >> 48) - 1900;
     time.tm_mon  = (timestamp >> 40 & 0xFF) - 1;
     time.tm_mday = (timestamp >> 32 & 0xFF);
