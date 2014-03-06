@@ -1451,15 +1451,13 @@ ARCH_EXT_LIST_ARM='
     vfpv3
 '
 
-ARCH_EXT_LIST_X86='
+ARCH_EXT_LIST_X86_SIMD='
     amd3dnow
     amd3dnowext
     avx
     avx2
-    cpunop
     fma3
     fma4
-    i686
     mmx
     mmxext
     sse
@@ -1470,6 +1468,12 @@ ARCH_EXT_LIST_X86='
     ssse3
     xop
 '
+
+ARCH_EXT_LIST_X86="
+    $ARCH_EXT_LIST_X86_SIMD
+    cpunop
+    i686
+"
 
 ARCH_EXT_LIST="
     $ARCH_EXT_LIST_ARM
@@ -1838,7 +1842,7 @@ mmx_external_deps="yasm"
 mmx_inline_deps="inline_asm"
 mmx_suggest="mmx_external mmx_inline"
 
-for ext in $(filter_out mmx $ARCH_EXT_LIST_X86); do
+for ext in $(filter_out mmx $ARCH_EXT_LIST_X86_SIMD); do
     eval dep=\$${ext}_deps
     eval ${ext}_external_deps='"${dep}_external"'
     eval ${ext}_inline_deps='"${dep}_inline"'
