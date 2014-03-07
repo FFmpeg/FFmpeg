@@ -189,7 +189,7 @@ typedef struct {
     EbmlBin bin;
 
     AVStream *stream;
-} MatroskaAttachement;
+} MatroskaAttachment;
 
 typedef struct {
     uint64_t start;
@@ -438,16 +438,16 @@ static EbmlSyntax matroska_tracks[] = {
 };
 
 static EbmlSyntax matroska_attachment[] = {
-    { MATROSKA_ID_FILEUID,      EBML_UINT, 0, offsetof(MatroskaAttachement, uid) },
-    { MATROSKA_ID_FILENAME,     EBML_UTF8, 0, offsetof(MatroskaAttachement, filename) },
-    { MATROSKA_ID_FILEMIMETYPE, EBML_STR,  0, offsetof(MatroskaAttachement, mime) },
-    { MATROSKA_ID_FILEDATA,     EBML_BIN,  0, offsetof(MatroskaAttachement, bin) },
+    { MATROSKA_ID_FILEUID,      EBML_UINT, 0, offsetof(MatroskaAttachment, uid) },
+    { MATROSKA_ID_FILENAME,     EBML_UTF8, 0, offsetof(MatroskaAttachment, filename) },
+    { MATROSKA_ID_FILEMIMETYPE, EBML_STR,  0, offsetof(MatroskaAttachment, mime) },
+    { MATROSKA_ID_FILEDATA,     EBML_BIN,  0, offsetof(MatroskaAttachment, bin) },
     { MATROSKA_ID_FILEDESC,     EBML_NONE },
     { 0 }
 };
 
 static EbmlSyntax matroska_attachments[] = {
-    { MATROSKA_ID_ATTACHEDFILE, EBML_NEST, sizeof(MatroskaAttachement), offsetof(MatroskaDemuxContext, attachments), { .n = matroska_attachment } },
+    { MATROSKA_ID_ATTACHEDFILE, EBML_NEST, sizeof(MatroskaAttachment), offsetof(MatroskaDemuxContext, attachments), { .n = matroska_attachment } },
     { 0 }
 };
 
@@ -1384,7 +1384,7 @@ static void matroska_convert_tags(AVFormatContext *s)
 
     for (i = 0; i < matroska->tags.nb_elem; i++) {
         if (tags[i].target.attachuid) {
-            MatroskaAttachement *attachment = matroska->attachments.elem;
+            MatroskaAttachment *attachment = matroska->attachments.elem;
             for (j = 0; j < matroska->attachments.nb_elem; j++)
                 if (attachment[j].uid == tags[i].target.attachuid &&
                     attachment[j].stream)
@@ -1571,9 +1571,9 @@ static void matroska_metadata_creation_time(AVDictionary **metadata, int64_t dat
 static int matroska_read_header(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    EbmlList *attachements_list = &matroska->attachments;
-    EbmlList *chapters_list     = &matroska->chapters;
-    MatroskaAttachement *attachements;
+    EbmlList *attachments_list = &matroska->attachments;
+    EbmlList *chapters_list    = &matroska->chapters;
+    MatroskaAttachment *attachments;
     MatroskaChapter *chapters;
     MatroskaTrack *tracks;
     uint64_t max_start = 0;
@@ -2038,32 +2038,32 @@ static int matroska_read_header(AVFormatContext *s)
         }
     }
 
-    attachements = attachements_list->elem;
-    for (j = 0; j < attachements_list->nb_elem; j++) {
-        if (!(attachements[j].filename && attachements[j].mime &&
-              attachements[j].bin.data && attachements[j].bin.size > 0)) {
+    attachments = attachments_list->elem;
+    for (j = 0; j < attachments_list->nb_elem; j++) {
+        if (!(attachments[j].filename && attachments[j].mime &&
+              attachments[j].bin.data && attachments[j].bin.size > 0)) {
             av_log(matroska->ctx, AV_LOG_ERROR, "incomplete attachment\n");
         } else {
             AVStream *st = avformat_new_stream(s, NULL);
             if (st == NULL)
                 break;
-            av_dict_set(&st->metadata, "filename", attachements[j].filename, 0);
-            av_dict_set(&st->metadata, "mimetype", attachements[j].mime, 0);
+            av_dict_set(&st->metadata, "filename", attachments[j].filename, 0);
+            av_dict_set(&st->metadata, "mimetype", attachments[j].mime, 0);
             st->codec->codec_id   = AV_CODEC_ID_NONE;
             st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
-            if (ff_alloc_extradata(st->codec, attachements[j].bin.size))
+            if (ff_alloc_extradata(st->codec, attachments[j].bin.size))
                 break;
-            memcpy(st->codec->extradata, attachements[j].bin.data,
-                   attachements[j].bin.size);
+            memcpy(st->codec->extradata, attachments[j].bin.data,
+                   attachments[j].bin.size);
 
             for (i = 0; ff_mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
-                if (!strncmp(ff_mkv_mime_tags[i].str, attachements[j].mime,
+                if (!strncmp(ff_mkv_mime_tags[i].str, attachments[j].mime,
                              strlen(ff_mkv_mime_tags[i].str))) {
                     st->codec->codec_id = ff_mkv_mime_tags[i].id;
                     break;
                 }
             }
-            attachements[j].stream = st;
+            attachments[j].stream = st;
         }
     }
 
