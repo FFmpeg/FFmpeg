@@ -43,7 +43,7 @@ static void fill_picture_parameters(AVCodecContext *avctx,
     // determine if intensity compensation is needed
     if (s->pict_type == AV_PICTURE_TYPE_P) {
       if ((v->fcm == ILACE_FRAME && v->intcomp) || (v->fcm != ILACE_FRAME && v->mv_mode == MV_PMODE_INTENSITY_COMP)) {
-        if (v->lumscale != 32 || v->lumshift != 0 || (s->picture_structure != PICT_FRAME && (v->lumscale2 != 32 && v->lumshift2 != 0)))
+        if (v->lumscale != 32 || v->lumshift != 0 || (s->picture_structure != PICT_FRAME && (v->lumscale2 != 32 || v->lumshift2 != 0)))
           intcomp = 1;
       }
     }
