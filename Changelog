@@ -61,7 +61,6 @@ version 10:
 - framepack filter
 - Mirillis FIC video decoder
 - Support DNx444
-- libx265 encoder
 
 
 version 9:
