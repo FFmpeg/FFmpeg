@@ -279,7 +279,7 @@ int main (int argc, char **argv)
         audio_dec_ctx = audio_stream->codec;
         audio_dst_file = fopen(audio_dst_filename, "wb");
         if (!audio_dst_file) {
-            fprintf(stderr, "Could not open destination file %s\n", video_dst_filename);
+            fprintf(stderr, "Could not open destination file %s\n", audio_dst_filename);
             ret = 1;
             goto end;
         }
