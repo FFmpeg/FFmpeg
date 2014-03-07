@@ -3108,6 +3108,10 @@ case "$arch" in
         check_64bit ppc ppc64 'sizeof(void *) > 4'
         spic=$shared
     ;;
+    s390)
+        check_64bit s390 s390x 'sizeof(void *) > 4'
+        spic=$shared
+    ;;
     sparc)
         check_64bit sparc sparc64 'sizeof(void *) > 4'
         spic=$shared
