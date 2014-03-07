@@ -78,7 +78,7 @@ typedef struct RTMPPacket {
     int            channel_id; ///< RTMP channel ID (nothing to do with audio/video channels though)
     RTMPPacketType type;       ///< packet payload type
     uint32_t       timestamp;  ///< packet full timestamp
-    uint32_t       ts_delta;   ///< timestamp increment to the previous one in milliseconds (latter only for media packets)
+    uint32_t       ts_delta;   ///< 24-bit timestamp or increment to the previous one, in milliseconds (latter only for media packets). Clipped to a maximum of 0xFFFFFF, indicating an extended timestamp field.
     uint32_t       extra;      ///< probably an additional channel ID used during streaming data
     uint8_t        *data;      ///< packet payload
     int            size;       ///< packet payload size
