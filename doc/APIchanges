@@ -21,20 +21,20 @@ API changes, most recent first:
   Add av_output_audio_device_next().
   Add av_output_video_device_next().
 
-2014-xx-xx - fff5262 / 1155fd0 - lavu 52.66.100 / 53.5.0 - frame.h
+2014-02-24 - fff5262 / 1155fd0 - lavu 52.66.100 / 53.5.0 - frame.h
   Add av_frame_copy() for copying the frame data.
 
-2014-02-xx - a66be60 - lswr 0.18.100 - swresample.h
+2014-02-24 - a66be60 - lswr 0.18.100 - swresample.h
   Add swr_is_initialized() for checking whether a resample context is initialized.
 
-2014-02-xx - 5367c0b / 7e86c27 - lavr 1.2.0 - avresample.h
+2014-02-22 - 5367c0b / 7e86c27 - lavr 1.2.0 - avresample.h
   Add avresample_is_open() for checking whether a resample context is open.
 
-2014-xx-xx - 6a24d77 / c3ecd96 - lavu 52.65.100 / 53.4.0  - opt.h
+2014-02-19 - 6a24d77 / c3ecd96 - lavu 52.65.100 / 53.4.0  - opt.h
   Add AV_OPT_FLAG_EXPORT and AV_OPT_FLAG_READONLY to mark options meant (only)
   for reading.
 
-2014-xx-xx - f4c8d00 / 6bb8720 - lavu 52.64.101 / 53.3.1 - opt.h
+2014-02-19 - f4c8d00 / 6bb8720 - lavu 52.64.101 / 53.3.1 - opt.h
   Deprecate unused AV_OPT_FLAG_METADATA.
 
 2014-02-xx - xxxxxxx - lavd 55.10.100 - avdevice.h
@@ -44,7 +44,7 @@ API changes, most recent first:
   Add avio_find_protocol_name() to find out the name of the protocol that would
   be selected for a given URL.
 
-2014-02-xx - a2bc6c1 / c98f316 - lavu 52.64.100 / 53.3.0 - frame.h
+2014-02-15 - a2bc6c1 / c98f316 - lavu 52.64.100 / 53.3.0 - frame.h
   Add AV_FRAME_DATA_DOWNMIX_INFO value to the AVFrameSideDataType enum and
   downmix_info.h API, which identify downmix-related metadata.
 
@@ -94,10 +94,10 @@ API changes, most recent first:
 2013-12-22 - 911676c - lavu 52.59.100 - avstring.h
   Add av_strnlen() function.
 
-2013-12-xx - 64f73ac - lavu 52.57.100 - opencl.h
+2013-12-09 - 64f73ac - lavu 52.57.100 - opencl.h
   Add av_opencl_benchmark() function.
 
-2013-11-xx - 82b2e9c - lavu 52.56.100 - ffversion.h
+2013-11-30 - 82b2e9c - lavu 52.56.100 - ffversion.h
   Moves version.h to libavutil/ffversion.h.
   Install ffversion.h and make it public.
 
@@ -114,13 +114,13 @@ API changes, most recent first:
   Add AV_FRAME_DATA_A53_CC value to the AVFrameSideDataType enum, which
   identifies ATSC A53 Part 4 Closed Captions data.
 
-2013-11-XX - 6859065 - lavu 52.54.100 - avstring.h
+2013-11-22 - 6859065 - lavu 52.54.100 - avstring.h
   Add av_utf8_decode() function.
 
 2013-11-22 - fb7d70c - lavc 55.44.100 - avcodec.h
   Add HEVC profiles
 
-2013-11-xx - c28b61c - lavc 55.44.100 - avcodec.h
+2013-11-20 - c28b61c - lavc 55.44.100 - avcodec.h
   Add av_packet_{un,}pack_dictionary()
   Add AV_PKT_METADATA_UPDATE side data type, used to transmit key/value
   strings between a stream and the application.
@@ -158,7 +158,7 @@ API changes, most recent first:
   Add AV_OPT_TYPE_CHANNEL_LAYOUT and channel layout option handlers
   av_opt_get_channel_layout() and av_opt_set_channel_layout().
 
-2013-10-xx - ccf96f8 -libswscale 2.5.101 - options.c
+2013-10-06 - ccf96f8 -libswscale 2.5.101 - options.c
   Change default scaler to bicubic
 
 2013-10-03 - e57dba0 - lavc 55.34.100 - avcodec.h
@@ -191,10 +191,10 @@ API changes, most recent first:
 2013-08-15 - 1e0e193 - lsws 2.5.100 -
   Add a sws_dither AVOption, allowing to set the dither algorithm used
 
-2013-08-xx - d404fe35 - lavc 55.27.100 - vdpau.h
+2013-08-11 - d404fe35 - lavc 55.27.100 - vdpau.h
   Add a render2 alternative to the render callback function.
 
-2013-08-xx - af05edc - lavc 55.26.100 - vdpau.h
+2013-08-11 - af05edc - lavc 55.26.100 - vdpau.h
   Add allocation function for AVVDPAUContext, allowing
   to extend it in the future without breaking ABI/API.
 
