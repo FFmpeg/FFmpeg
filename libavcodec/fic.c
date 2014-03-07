@@ -166,6 +166,10 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
     if (memcmp(src, fic_header, 7))
         av_log(avctx, AV_LOG_WARNING, "Invalid FIC Header.\n");
 
+    /* Is it a skip frame? */
+    if (src[17])
+        goto skip;
+
     nslices = src[13];
     if (!nslices) {
         av_log(avctx, AV_LOG_ERROR, "Zero slices found.\n");
@@ -246,6 +250,7 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
                              NULL, nslices, sizeof(ctx->slice_data[0])) < 0)
         return ret;
 
+skip:
     *got_frame = 1;
     if ((ret = av_frame_ref(data, ctx->frame)) < 0)
         return ret;
