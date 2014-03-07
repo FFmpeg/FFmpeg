@@ -38,8 +38,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/common.h"
 #include "avcodec.h"
 
 typedef struct RpzaContext {
@@ -125,6 +127,8 @@ static void rpza_decode_stream(RpzaContext *s)
                 n_blocks = 1;
             }
         }
+
+        n_blocks = FFMIN(n_blocks, total_blocks);
 
         switch (opcode & 0xe0) {
 
