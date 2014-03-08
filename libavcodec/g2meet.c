@@ -198,8 +198,8 @@ static int jpg_decode_block(JPGContext *c, GetBitContext *gb,
         return AVERROR_INVALIDDATA;
     if (dc)
         dc = get_xbits(gb, dc);
-    dc = dc * qmat[0] + c->prev_dc[plane];
-    block[0] = dc;
+    dc                = dc * qmat[0] + c->prev_dc[plane];
+    block[0]          = dc;
     c->prev_dc[plane] = dc;
 
     pos = 0;
@@ -214,8 +214,8 @@ static int jpg_decode_block(JPGContext *c, GetBitContext *gb,
         if (val) {
             int nbits = val;
 
-            val = get_xbits(gb, nbits);
-            val *= qmat[ff_zigzag_direct[pos]];
+            val                                 = get_xbits(gb, nbits);
+            val                                *= qmat[ff_zigzag_direct[pos]];
             block[c->scantable.permutated[pos]] = val;
         }
     }
@@ -359,7 +359,7 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
     width  = FFMIN(c->width  - tile_x * c->tile_width,  c->tile_width);
     height = FFMIN(c->height - tile_y * c->tile_height, c->tile_height);
 
-    hdr = *src++;
+    hdr      = *src++;
     sub_type = hdr >> 5;
     if (sub_type == 0) {
         int j;
@@ -381,19 +381,21 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
     npal = *src++ + 1;
     if (src_end - src < npal * 3)
         return AVERROR_INVALIDDATA;
-    memcpy(pal, src, npal * 3); src += npal * 3;
+    memcpy(pal, src, npal * 3);
+    src += npal * 3;
     if (sub_type != 2) {
         for (i = 0; i < npal; i++) {
             if (!memcmp(pal + i * 3, transp, 3)) {
-               tidx = i;
-               break;
+                tidx = i;
+                break;
             }
         }
     }
 
     if (src_end - src < 2)
         return 0;
-    zsize = (src[0] << 8) | src[1]; src += 2;
+    zsize = (src[0] << 8) | src[1];
+    src  += 2;
 
     if (src_end - src < zsize + (sub_type != 2))
         return AVERROR_INVALIDDATA;
@@ -491,12 +493,12 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
     uint32_t cursor_hot_x, cursor_hot_y;
     int cursor_fmt, err;
 
-    cur_size      = bytestream2_get_be32(gb);
-    cursor_w      = bytestream2_get_byte(gb);
-    cursor_h      = bytestream2_get_byte(gb);
-    cursor_hot_x  = bytestream2_get_byte(gb);
-    cursor_hot_y  = bytestream2_get_byte(gb);
-    cursor_fmt    = bytestream2_get_byte(gb);
+    cur_size     = bytestream2_get_be32(gb);
+    cursor_w     = bytestream2_get_byte(gb);
+    cursor_h     = bytestream2_get_byte(gb);
+    cursor_hot_x = bytestream2_get_byte(gb);
+    cursor_hot_y = bytestream2_get_byte(gb);
+    cursor_fmt   = bytestream2_get_byte(gb);
 
     cursor_stride = FFALIGN(cursor_w, cursor_fmt==1 ? 32 : 1) * 4;
 
@@ -544,7 +546,7 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
                 bits = bytestream2_get_be32(gb);
                 for (k = 0; k < 32; k++) {
                     dst[0] = !!(bits & 0x80000000);
-                    dst += 4;
+                    dst   += 4;
                     bits <<= 1;
                 }
             }
@@ -558,18 +560,24 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
                     int mask_bit = !!(bits & 0x80000000);
                     switch (dst[0] * 2 + mask_bit) {
                     case 0:
-                        dst[0] = 0xFF; dst[1] = 0x00;
-                        dst[2] = 0x00; dst[3] = 0x00;
+                        dst[0] = 0xFF;
+                        dst[1] = 0x00;
+                        dst[2] = 0x00;
+                        dst[3] = 0x00;
                         break;
                     case 1:
-                        dst[0] = 0xFF; dst[1] = 0xFF;
-                        dst[2] = 0xFF; dst[3] = 0xFF;
+                        dst[0] = 0xFF;
+                        dst[1] = 0xFF;
+                        dst[2] = 0xFF;
+                        dst[3] = 0xFF;
                         break;
                     default:
-                        dst[0] = 0x00; dst[1] = 0x00;
-                        dst[2] = 0x00; dst[3] = 0x00;
+                        dst[0] = 0x00;
+                        dst[1] = 0x00;
+                        dst[2] = 0x00;
+                        dst[3] = 0x00;
                     }
-                    dst += 4;
+                    dst   += 4;
                     bits <<= 1;
                 }
             }
@@ -733,10 +741,10 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             }
             c->tiles_x = (c->width  + c->tile_width  - 1) / c->tile_width;
             c->tiles_y = (c->height + c->tile_height - 1) / c->tile_height;
-            c->bpp = bytestream2_get_byte(&bc);
+            c->bpp     = bytestream2_get_byte(&bc);
             if (c->bpp == 32) {
                 if (bytestream2_get_bytes_left(&bc) < 16 ||
-                    (chunk_size - 21) < 16 ) {
+                    (chunk_size - 21) < 16) {
                     av_log(avctx, AV_LOG_ERROR,
                            "Display info: missing bitmasks!\n");
                     ret = AVERROR_INVALIDDATA;
@@ -840,7 +848,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
 
         for (i = 0; i < avctx->height; i++)
             memcpy(pic->data[0] + i * pic->linesize[0],
-                   c->framebuf  + i * c->framebuf_stride,
+                   c->framebuf + i * c->framebuf_stride,
                    c->width * 3);
         g2m_paint_cursor(c, pic->data[0], pic->linesize[0]);
 
@@ -848,15 +856,18 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     return buf_size;
+
 header_fail:
-    c->width   = c->height  = 0;
-    c->tiles_x = c->tiles_y = 0;
+    c->width   =
+    c->height  = 0;
+    c->tiles_x =
+    c->tiles_y = 0;
     return ret;
 }
 
 static av_cold int g2m_decode_init(AVCodecContext *avctx)
 {
-    G2MContext * const c = avctx->priv_data;
+    G2MContext *const c = avctx->priv_data;
     int ret;
 
     if ((ret = jpg_init(avctx, &c->jc)) != 0) {
@@ -872,7 +883,7 @@ static av_cold int g2m_decode_init(AVCodecContext *avctx)
 
 static av_cold int g2m_decode_end(AVCodecContext *avctx)
 {
-    G2MContext * const c = avctx->priv_data;
+    G2MContext *const c = avctx->priv_data;
 
     jpg_free_context(&c->jc);
 
