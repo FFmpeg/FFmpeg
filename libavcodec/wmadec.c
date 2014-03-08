@@ -100,6 +100,9 @@ static av_cold int wma_decode_init(AVCodecContext * avctx)
         }
     }
 
+    for (i=0; i<MAX_CHANNELS; i++)
+        s->max_exponent[i] = 1.0;
+
     if(ff_wma_init(avctx, flags2)<0)
         return -1;
 
