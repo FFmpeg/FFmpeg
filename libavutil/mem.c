@@ -39,6 +39,7 @@
 #include "avassert.h"
 #include "avutil.h"
 #include "common.h"
+#include "dynarray.h"
 #include "intreadwrite.h"
 #include "mem.h"
 
@@ -279,65 +280,33 @@ void *av_memdup(const void *p, size_t size)
 
 void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem)
 {
-    /* see similar ffmpeg.c:grow_array() */
-    int nb, nb_alloc;
-    intptr_t *tab;
+    intptr_t *tab = *(intptr_t**)tab_ptr;
 
-    nb = *nb_ptr;
-    tab = *(intptr_t**)tab_ptr;
-    if ((nb & (nb - 1)) == 0) {
-        if (nb == 0) {
-            nb_alloc = 1;
-        } else {
-            if (nb > INT_MAX / (2 * sizeof(intptr_t)))
-                goto fail;
-            nb_alloc = nb * 2;
-        }
-        tab = av_realloc(tab, nb_alloc * sizeof(intptr_t));
-        if (!tab)
-            goto fail;
-        *(intptr_t**)tab_ptr = tab;
-    }
-    tab[nb++] = (intptr_t)elem;
-    *nb_ptr = nb;
-    return;
-
-fail:
-    av_freep(tab_ptr);
-    *nb_ptr = 0;
+    AV_DYNARRAY_ADD(INT_MAX, sizeof(*tab), tab, *nb_ptr, {
+        tab[*nb_ptr] = (intptr_t)elem;
+        *(intptr_t **)tab_ptr = tab;
+    }, {
+        *nb_ptr = 0;
+        av_freep(tab_ptr);
+    });
 }
 
 void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
                        const uint8_t *elem_data)
 {
-    int nb = *nb_ptr, nb_alloc;
-    uint8_t *tab = *tab_ptr, *tab_elem_data;
+    uint8_t *tab_elem_data = NULL;
 
-    if ((nb & (nb - 1)) == 0) {
-        if (nb == 0) {
-            nb_alloc = 1;
-        } else {
-            if (nb > INT_MAX / (2 * elem_size))
-                goto fail;
-            nb_alloc = nb * 2;
-        }
-        tab = av_realloc(tab, nb_alloc * elem_size);
-        if (!tab)
-            goto fail;
-        *tab_ptr = tab;
-    }
-    *nb_ptr = nb + 1;
-    tab_elem_data = tab + nb*elem_size;
-    if (elem_data)
-        memcpy(tab_elem_data, elem_data, elem_size);
-    else if (CONFIG_MEMORY_POISONING)
-        memset(tab_elem_data, FF_MEMORY_POISON, elem_size);
+    AV_DYNARRAY_ADD(INT_MAX, elem_size, *tab_ptr, *nb_ptr, {
+        tab_elem_data = (uint8_t *)*tab_ptr + (*nb_ptr) * elem_size;
+        if (elem_data)
+            memcpy(tab_elem_data, elem_data, elem_size);
+        else if (CONFIG_MEMORY_POISONING)
+            memset(tab_elem_data, FF_MEMORY_POISON, elem_size);
+    }, {
+        av_freep(tab_ptr);
+        *nb_ptr = 0;
+    });
     return tab_elem_data;
-
-fail:
-    av_freep(tab_ptr);
-    *nb_ptr = 0;
-    return NULL;
 }
 
 static void fill16(uint8_t *dst, int len)
