@@ -1058,11 +1058,11 @@ static int push_samples(ATempoContext *atempo,
                      outlink->time_base);
 
     ret = ff_filter_frame(outlink, atempo->dst_buffer);
-    if (ret < 0)
-        return ret;
     atempo->dst_buffer = NULL;
     atempo->dst        = NULL;
     atempo->dst_end    = NULL;
+    if (ret < 0)
+        return ret;
 
     atempo->nsamples_out += n_out;
     return 0;

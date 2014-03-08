@@ -85,18 +85,28 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
     ConcatContext *cat = avf->priv_data;
     ConcatFile *file;
     char *url = NULL;
-    size_t url_len;
+    const char *proto;
+    size_t url_len, proto_len;
     int ret;
 
     if (cat->safe > 0 && !safe_filename(filename)) {
         av_log(avf, AV_LOG_ERROR, "Unsafe file name '%s'\n", filename);
         FAIL(AVERROR(EPERM));
     }
-    url_len = strlen(avf->filename) + strlen(filename) + 16;
-    if (!(url = av_malloc(url_len)))
-        FAIL(AVERROR(ENOMEM));
-    ff_make_absolute_url(url, url_len, avf->filename, filename);
-    av_freep(&filename);
+
+    proto = avio_find_protocol_name(filename);
+    proto_len = proto ? strlen(proto) : 0;
+    if (!memcmp(filename, proto, proto_len) &&
+        (filename[proto_len] == ':' || filename[proto_len] == ',')) {
+        url = filename;
+        filename = NULL;
+    } else {
+        url_len = strlen(avf->filename) + strlen(filename) + 16;
+        if (!(url = av_malloc(url_len)))
+            FAIL(AVERROR(ENOMEM));
+        ff_make_absolute_url(url, url_len, avf->filename, filename);
+        av_freep(&filename);
+    }
 
     if (cat->nb_files >= *nb_files_alloc) {
         size_t n = FFMAX(*nb_files_alloc * 2, 16);
