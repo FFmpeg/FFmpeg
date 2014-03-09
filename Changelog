@@ -1,11 +1,12 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version <next>:
+version 10~beta2:
 - compand audio filter
+- and many various smaller fixes, for a full changelog, please refer to:
+  cf. https://git.libav.org/?p=libav.git;a=shortlog;h=refs/tags/v10_beta2
 
-
-version 10:
+version 10~beta1:
 - av_strnstr
 - support ID3v2 tags in ASF files
 - reference-counting for AVFrame and AVPacket data
