@@ -71,7 +71,7 @@ int ff_hevc_annexb2mp4(AVIOContext *pb, const uint8_t *buf_in,
  *        or to discard them (non-zero)
  * @param ps_count address of the variable where the number of discarded
  *        parameter set NAL units shall be written, may be NULL
- * @return 0 in case of success, a negative value corresponding to an AVERROR
+ * @return >=0 in case of success, a negative value corresponding to an AVERROR
  *         code in case of failure
  */
 int ff_hevc_annexb2mp4_buf(const uint8_t *buf_in, uint8_t **buf_out,
@@ -89,7 +89,7 @@ int ff_hevc_annexb2mp4_buf(const uint8_t *buf_in, uint8_t **buf_out,
  * @param size size (in bytes) of the data buffer
  * @param ps_array_completeness whether all parameter sets are in the hvcC (1)
  *        or there may be additional parameter sets in the bitstream (0)
- * @return 0 in case of success, a negative value corresponding to an AVERROR
+ * @return >=0 in case of success, a negative value corresponding to an AVERROR
  *         code in case of failure
  */
 int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
