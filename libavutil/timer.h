@@ -32,6 +32,10 @@
 
 #include "config.h"
 
+#if HAVE_MACH_MACH_TIME_H
+#include <mach/mach_time.h>
+#endif
+
 #include "log.h"
 
 #if   ARCH_ARM
@@ -44,8 +48,12 @@
 #   include "x86/timer.h"
 #endif
 
-#if !defined(AV_READ_TIME) && HAVE_GETHRTIME
-#   define AV_READ_TIME gethrtime
+#if !defined(AV_READ_TIME)
+#   if HAVE_GETHRTIME
+#       define AV_READ_TIME gethrtime
+#   elif HAVE_MACH_ABSOLUTE_TIME
+#       define AV_READ_TIME mach_absolute_time
+#   endif
 #endif
 
 #ifdef AV_READ_TIME
@@ -68,7 +76,7 @@
             tskip_count++;                                                \
         if (((tcount + tskip_count) & (tcount + tskip_count - 1)) == 0) { \
             av_log(NULL, AV_LOG_ERROR,                                    \
-                   "%"PRIu64" decicycles in %s, %d runs, %d skips\n",     \
+                   "%"PRIu64" UNITS in %s, %d runs, %d skips\n",          \
                    tsum * 10 / tcount, id, tcount, tskip_count);          \
         }                                                                 \
     }
