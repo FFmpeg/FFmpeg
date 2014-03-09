@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/log.h"
 
 #include <libzvbi.h>
 
@@ -36,6 +37,7 @@
 #define MAX_BUFFERED_PAGES 25
 #define BITMAP_CHAR_WIDTH  12
 #define BITMAP_CHAR_HEIGHT 10
+#define MAX_SLICES 64
 
 typedef struct TeletextPage
 {
@@ -64,11 +66,10 @@ typedef struct TeletextContext
     int             handler_ret;
 
     vbi_decoder *   vbi;
-    vbi_dvb_demux * dx;
 #ifdef DEBUG
     vbi_export *    ex;
 #endif
-    vbi_sliced      sliced[64];
+    vbi_sliced      sliced[MAX_SLICES];
 } TeletextContext;
 
 static int chop_spaces_utf8(const unsigned char* t, int len)
@@ -272,10 +273,7 @@ static int gen_sub_bitmap(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_pa
         b = VBI_B(page->color_map[ci]);
         a = VBI_A(page->color_map[ci]);
         ((uint32_t *)sub_rect->pict.data[1])[ci] = RGBA(r, g, b, a);
-#ifdef DEBUG
-        av_log(ctx, AV_LOG_DEBUG, "palette %0x\n",
-               ((uint32_t *)sub_rect->pict.data[1])[ci]);
-#endif
+        av_dlog(ctx, "palette %0x\n", ((uint32_t *)sub_rect->pict.data[1])[ci]);
     }
     ((uint32_t *)sub_rect->pict.data[1])[cmax] = RGBA(0, 0, 0, 0);
     sub_rect->type = SUBTITLE_BITMAP;
@@ -360,15 +358,46 @@ static void handler(vbi_event *ev, void *user_data)
     vbi_unref_page(&page);
 }
 
+static inline int data_identifier_is_teletext(int data_identifier) {
+    /* See EN 301 775 section 4.4.2. */
+    return (data_identifier >= 0x10 && data_identifier <= 0x1F ||
+            data_identifier >= 0x99 && data_identifier <= 0x9B);
+}
+
+static int slice_to_vbi_lines(TeletextContext *ctx, uint8_t* buf, int size)
+{
+    int lines = 0;
+    while (size >= 2 && lines < MAX_SLICES) {
+        int data_unit_id     = buf[0];
+        int data_unit_length = buf[1];
+        if (data_unit_length + 2 > size)
+            return AVERROR_INVALIDDATA;
+        if (data_unit_id == 0x02 || data_unit_id == 0x03) {
+            if (data_unit_length != 0x2c)
+                return AVERROR_INVALIDDATA;
+            else {
+                int line_offset  = buf[2] & 0x1f;
+                int field_parity = buf[2] & 0x20;
+                int i;
+                ctx->sliced[lines].id = VBI_SLICED_TELETEXT_B;
+                ctx->sliced[lines].line = (line_offset > 0 ? (line_offset + (field_parity ? 0 : 313)) : 0);
+                for (i = 0; i < 42; i++)
+                    ctx->sliced[lines].data[i] = vbi_rev8(buf[4 + i]);
+                lines++;
+            }
+        }
+        size -= data_unit_length + 2;
+        buf += data_unit_length + 2;
+    }
+    if (size)
+        av_log(ctx, AV_LOG_WARNING, "%d bytes remained after slicing data\n", size);
+    return lines;
+}
+
 static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *pkt)
 {
     TeletextContext *ctx = avctx->priv_data;
     AVSubtitle      *sub = data;
-    const uint8_t   *buf = pkt->data;
-    int             left = pkt->size;
-    uint8_t         pesheader[45] = {0x00, 0x00, 0x01, 0xbd, 0x00, 0x00, 0x85, 0x80, 0x24, 0x21, 0x00, 0x01, 0x00, 0x01};
-    int             pesheader_size = sizeof(pesheader);
-    const uint8_t   *pesheader_buf = pesheader;
     int             ret = 0;
 
     if (!ctx->vbi) {
@@ -380,43 +409,34 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
             return AVERROR(ENOMEM);
         }
     }
-    if (!ctx->dx && (!(ctx->dx = vbi_dvb_pes_demux_new (/* callback */ NULL, NULL))))
-        return AVERROR(ENOMEM);
 
     if (avctx->pkt_timebase.den && pkt->pts != AV_NOPTS_VALUE)
         ctx->pts = av_rescale_q(pkt->pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
 
-    if (left) {
+    if (pkt->size) {
+        int lines;
+        const int full_pes_size = pkt->size + 45; /* PES header is 45 bytes */
+
         // We allow unreasonably big packets, even if the standard only allows a max size of 1472
-        if ((pesheader_size + left) < 184 || (pesheader_size + left) > 65504 || (pesheader_size + left) % 184 != 0)
+        if (full_pes_size < 184 || full_pes_size > 65504 || full_pes_size % 184 != 0)
             return AVERROR_INVALIDDATA;
-
-        memset(pesheader + 14, 0xff, pesheader_size - 14);
-        AV_WB16(pesheader + 4, left + pesheader_size - 6);
-
-        /* PTS is deliberately left as 0 in the PES header, otherwise libzvbi uses
-         * it to detect dropped frames. Unforunatey the guessed packet PTS values
-         * (see mpegts demuxer) are not accurate enough to pass that test. */
-        vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, NULL, &pesheader_buf, &pesheader_size);
 
         ctx->handler_ret = pkt->size;
 
-        while (left > 0) {
-            int64_t pts = 0;
-            unsigned int lines = vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, &pts, &buf, &left);
-#ifdef DEBUG
-            av_log(avctx, AV_LOG_DEBUG,
-                   "ctx=%p buf_size=%d left=%u lines=%u pts=%f pkt_pts=%f\n",
-                   ctx, pkt->size, left, lines, (double)pts/90000.0, (double)pkt->pts/90000.0);
-#endif
+        if (data_identifier_is_teletext(*pkt->data)) {
+            if ((lines = slice_to_vbi_lines(ctx, pkt->data + 1, pkt->size - 1)) < 0)
+                return lines;
+            av_dlog(avctx, "ctx=%p buf_size=%d lines=%u pkt_pts=%7.3f\n",
+                    ctx, pkt->size, lines, (double)pkt->pts/90000.0);
             if (lines > 0) {
-#ifdef DEBUGx
+#ifdef DEBUG
                 int i;
-                for(i=0; i<lines; ++i)
-                    av_log(avctx, AV_LOG_DEBUG,
-                           "lines=%d id=%x\n", i, ctx->sliced[i].id);
+                av_log(avctx, AV_LOG_DEBUG, "line numbers:");
+                for(i = 0; i < lines; i++)
+                    av_log(avctx, AV_LOG_DEBUG, " %d", ctx->sliced[i].line);
+                av_log(avctx, AV_LOG_DEBUG, "\n");
 #endif
-                vbi_decode(ctx->vbi, ctx->sliced, lines, (double)pts/90000.0);
+                vbi_decode(ctx->vbi, ctx->sliced, lines, 0.0);
                 ctx->lines_processed += lines;
             }
         }
@@ -479,7 +499,6 @@ static int teletext_init_decoder(AVCodecContext *avctx)
         avctx->height = 25 * BITMAP_CHAR_HEIGHT;
     }
 
-    ctx->dx = NULL;
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
 
@@ -497,16 +516,12 @@ static int teletext_close_decoder(AVCodecContext *avctx)
 {
     TeletextContext *ctx = avctx->priv_data;
 
-#ifdef DEBUG
-    av_log(avctx, AV_LOG_DEBUG, "lines_total=%u\n", ctx->lines_processed);
-#endif
+    av_dlog(avctx, "lines_total=%u\n", ctx->lines_processed);
     while (ctx->nb_pages)
         subtitle_rect_free(&ctx->pages[--ctx->nb_pages].sub_rect);
     av_freep(&ctx->pages);
 
-    vbi_dvb_demux_delete(ctx->dx);
     vbi_decoder_delete(ctx->vbi);
-    ctx->dx = NULL;
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
     return 0;
