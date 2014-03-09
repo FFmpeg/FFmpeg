@@ -56,6 +56,10 @@
 #   endif
 #endif
 
+#ifndef FF_TIMER_UNITS
+#   define FF_TIMER_UNITS "UNITS"
+#endif
+
 #ifdef AV_READ_TIME
 #define START_TIMER                             \
     uint64_t tend;                              \
@@ -76,7 +80,7 @@
             tskip_count++;                                                \
         if (((tcount + tskip_count) & (tcount + tskip_count - 1)) == 0) { \
             av_log(NULL, AV_LOG_ERROR,                                    \
-                   "%"PRIu64" UNITS in %s, %d runs, %d skips\n",          \
+                   "%"PRIu64" " FF_TIMER_UNITS " in %s, %d runs, %d skips\n",          \
                    tsum * 10 / tcount, id, tcount, tskip_count);          \
         }                                                                 \
     }
