@@ -839,6 +839,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
         return 0;
 
     if      (track->enc->codec_id == AV_CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
+    else if (track->enc->codec_id == AV_CODEC_ID_HEVC)      tag = MKTAG('h','e','v','1');
     else if (track->enc->codec_id == AV_CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
     else if (track->enc->codec_id == AV_CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
     else if (track->enc->codec_id == AV_CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
