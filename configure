@@ -1272,6 +1272,7 @@ EXAMPLE_LIST="
     resampling_audio_example
     scaling_video_example
     transcode_aac_example
+    transcoding_example
 "
 
 EXTERNAL_LIBRARY_LIST="
@@ -2482,6 +2483,7 @@ remuxing_example_deps="avcodec avformat avutil"
 resampling_audio_example_deps="avutil swresample"
 scaling_video_example_deps="avutil swscale"
 transcode_aac_example_deps="avcodec avformat swresample"
+transcoding_example_deps="avfilter avcodec avformat avutil"
 
 # libraries
 avcodec_deps="avutil"
