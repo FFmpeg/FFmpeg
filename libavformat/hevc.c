@@ -1056,7 +1056,7 @@ int ff_hevc_annexb2mp4(AVIOContext *pb, const uint8_t *buf_in,
     }
 
 end:
-    free(start);
+    av_free(start);
     if (ps_count)
         *ps_count = num_ps;
     return ret;
