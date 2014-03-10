@@ -80,10 +80,17 @@ cglobal vector_fmac_scalar, 4,4,3, dst, src, mul, len
 .loop:
 %assign a 0
 %rep 32/mmsize
+%if cpuflag(fma3)
+    mova     m1, [dstq+lenq+(a+0)*mmsize]
+    mova     m2, [dstq+lenq+(a+1)*mmsize]
+    fmaddps  m1, m0, [srcq+lenq+(a+0)*mmsize], m1
+    fmaddps  m2, m0, [srcq+lenq+(a+1)*mmsize], m2
+%else
     mulps    m1, m0, [srcq+lenq+(a+0)*mmsize]
     mulps    m2, m0, [srcq+lenq+(a+1)*mmsize]
     addps    m1, m1, [dstq+lenq+(a+0)*mmsize]
     addps    m2, m2, [dstq+lenq+(a+1)*mmsize]
+%endif
     mova  [dstq+lenq+(a+0)*mmsize], m1
     mova  [dstq+lenq+(a+1)*mmsize], m2
 %assign a a+2
@@ -97,6 +104,10 @@ INIT_XMM sse
 VECTOR_FMAC_SCALAR
 %if HAVE_AVX_EXTERNAL
 INIT_YMM avx
+VECTOR_FMAC_SCALAR
+%endif
+%if HAVE_FMA3_EXTERNAL
+INIT_YMM fma3
 VECTOR_FMAC_SCALAR
 %endif
 
@@ -182,16 +193,23 @@ VECTOR_DMUL_SCALAR
 ;                 const float *src2, int len)
 ;-----------------------------------------------------------------------------
 %macro VECTOR_FMUL_ADD 0
-cglobal vector_fmul_add, 5,5,2, dst, src0, src1, src2, len
+cglobal vector_fmul_add, 5,5,4, dst, src0, src1, src2, len
     lea       lenq, [lend*4 - 2*mmsize]
 ALIGN 16
 .loop:
     mova    m0,   [src0q + lenq]
     mova    m1,   [src0q + lenq + mmsize]
+%if cpuflag(fma3)
+    mova    m2,     [src2q + lenq]
+    mova    m3,     [src2q + lenq + mmsize]
+    fmaddps m0, m0, [src1q + lenq], m2
+    fmaddps m1, m1, [src1q + lenq + mmsize], m3
+%else
     mulps   m0, m0, [src1q + lenq]
     mulps   m1, m1, [src1q + lenq + mmsize]
     addps   m0, m0, [src2q + lenq]
     addps   m1, m1, [src2q + lenq + mmsize]
+%endif
     mova    [dstq + lenq], m0
     mova    [dstq + lenq + mmsize], m1
 
@@ -204,6 +222,10 @@ INIT_XMM sse
 VECTOR_FMUL_ADD
 %if HAVE_AVX_EXTERNAL
 INIT_YMM avx
+VECTOR_FMUL_ADD
+%endif
+%if HAVE_FMA3_EXTERNAL
+INIT_YMM fma3
 VECTOR_FMUL_ADD
 %endif
 
