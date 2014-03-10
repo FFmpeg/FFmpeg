@@ -71,8 +71,8 @@ int ff_hevc_annexb2mp4(AVIOContext *pb, const uint8_t *buf_in,
  *        or to discard them (non-zero)
  * @param ps_count address of the variable where the number of discarded
  *        parameter set NAL units shall be written, may be NULL
- * @return >=0 in case of success, a negative value corresponding to an AVERROR
- *         code in case of failure
+ * @return the amount (in bytes) of data written in case of success, a negative
+ *         value corresponding to an AVERROR code in case of failure
  */
 int ff_hevc_annexb2mp4_buf(const uint8_t *buf_in, uint8_t **buf_out,
                            int *size, int filter_ps, int *ps_count);
