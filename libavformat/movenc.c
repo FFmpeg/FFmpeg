@@ -3598,7 +3598,7 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
             track->enc->extradata = buf;
             track->enc->extradata_size = size;
         } else {
-            av_free(&buf);
+            av_freep(&buf);
         }
     }
 #endif
