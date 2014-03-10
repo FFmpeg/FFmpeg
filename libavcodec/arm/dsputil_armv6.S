@@ -146,10 +146,11 @@ function ff_put_pixels8_y2_armv6, export=1
         eor             r7,  r5,  r7
         uadd8           r10, r10, r6
         and             r7,  r7,  r12
-        ldr_pre         r6,  r1,  r2
+        ldrc_pre        ne,  r6,  r1,  r2
         uadd8           r11, r11, r7
         strd_post       r8,  r9,  r0,  r2
-        ldr             r7,  [r1, #4]
+        it              ne
+        ldrne           r7,  [r1, #4]
         strd_post       r10, r11, r0,  r2
         bne             1b
 
@@ -198,9 +199,10 @@ function ff_put_pixels8_y2_no_rnd_armv6, export=1
         uhadd8          r9,  r5,  r7
         ldr             r5,  [r1, #4]
         uhadd8          r12, r4,  r6
-        ldr_pre         r6,  r1,  r2
+        ldrc_pre        ne,  r6,  r1,  r2
         uhadd8          r14, r5,  r7
-        ldr             r7,  [r1, #4]
+        it              ne
+        ldrne           r7,  [r1, #4]
         stm             r0,  {r8,r9}
         add             r0,  r0,  r2
         stm             r0,  {r12,r14}

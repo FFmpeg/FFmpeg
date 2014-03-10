@@ -107,6 +107,9 @@ static inline uint8_t lag_get_rac(lag_rac *l)
         l->range -= range_scaled * l->prob[255];
     }
 
+    if (!l->range)
+        l->range = 0x80;
+
     l->low -= range_scaled * l->prob[val];
 
     return val;
