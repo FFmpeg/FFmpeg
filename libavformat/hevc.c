@@ -402,10 +402,10 @@ static void skip_scaling_list_data(GetBitContext *gb)
                 num_coeffs = FFMIN(64, 1 << (4 + (i << 1)));
 
                 if (i > 1)
-                    get_se_golomb(gb); // scaling_list_dc_coef_minus8[i-2][j]
+                    get_se_golomb_long(gb); // scaling_list_dc_coef_minus8[i-2][j]
 
                 for (k = 0; k < num_coeffs; k++)
-                    get_se_golomb(gb); // scaling_list_delta_coef
+                    get_se_golomb_long(gb); // scaling_list_delta_coef
             }
 }
 
@@ -593,7 +593,7 @@ static int hvcc_parse_pps(GetBitContext *gb,
 
     get_ue_golomb_long(gb); // num_ref_idx_l0_default_active_minus1
     get_ue_golomb_long(gb); // num_ref_idx_l1_default_active_minus1
-    get_se_golomb     (gb); // init_qp_minus26
+    get_se_golomb_long(gb); // init_qp_minus26
 
     /*
      * constrained_intra_pred_flag u(1)
@@ -604,8 +604,8 @@ static int hvcc_parse_pps(GetBitContext *gb,
     if (get_bits1(gb))          // cu_qp_delta_enabled_flag
         get_ue_golomb_long(gb); // diff_cu_qp_delta_depth
 
-    get_se_golomb(gb); // pps_cb_qp_offset
-    get_se_golomb(gb); // pps_cr_qp_offset
+    get_se_golomb_long(gb); // pps_cb_qp_offset
+    get_se_golomb_long(gb); // pps_cr_qp_offset
 
     /*
      * weighted_pred_flag               u(1)
