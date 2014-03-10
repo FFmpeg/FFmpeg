@@ -30,6 +30,7 @@
 
 #include "libavutil/common.h"
 #include "avcodec.h"
+#include "internal.h"
 
 typedef struct JpeglsContext {
     AVCodecContext *avctx;
@@ -42,8 +43,6 @@ typedef struct JLSState {
     int near, twonear;
     int run_index[4];
 } JLSState;
-
-extern const uint8_t ff_log2_run[32];
 
 /**
  * Calculate initial JPEG-LS parameters
