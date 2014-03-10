@@ -41,6 +41,9 @@ fate-filter-drawbox: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf drawbox=224:24:88:
 FATE_FILTER_VSYNTH-$(CONFIG_FADE_FILTER) += fate-filter-fade
 fate-filter-fade: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf fade=in:5:15,fade=out:30:15
 
+FATE_FILTER_VSYNTH-$(call ALLYES, TELECINE_FILTER FIELDMATCH_FILTER) += fate-filter-fieldmatch
+fate-filter-fieldmatch: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf telecine,fieldmatch
+
 FATE_FILTER_VSYNTH-$(call ALLYES, INTERLACE_FILTER FIELDORDER_FILTER) += fate-filter-fieldorder
 fate-filter-fieldorder: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf interlace=tff,fieldorder=bff -sws_flags +accurate_rnd+bitexact
 
