@@ -264,7 +264,7 @@ static int http_getc(HTTPContext *s)
         if (len < 0) {
             return len;
         } else if (len == 0) {
-            return -1;
+            return AVERROR_EOF;
         } else {
             s->buf_ptr = s->buffer;
             s->buf_end = s->buffer + len;
@@ -327,7 +327,7 @@ static int process_line(URLContext *h, char *line, int line_count,
             end += strspn(end, SPACE_CHARS);
             av_log(h, AV_LOG_WARNING, "HTTP error %d %s\n",
                    s->http_code, end);
-            return -1;
+            return AVERROR(EIO);
         }
     } else {
         while (*p != '\0' && *p != ':')
@@ -732,13 +732,13 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
     URLContext *old_hd = s->hd;
     int64_t old_off = s->off;
     uint8_t old_buf[BUFFER_SIZE];
-    int old_buf_size;
+    int old_buf_size, ret;
     AVDictionary *options = NULL;
 
     if (whence == AVSEEK_SIZE)
         return s->filesize;
     else if ((s->filesize == -1 && whence == SEEK_END) || h->is_streamed)
-        return -1;
+        return AVERROR(ENOSYS);
 
     /* we save the old context in case the seek fails */
     old_buf_size = s->buf_end - s->buf_ptr;
@@ -752,14 +752,14 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
 
     /* if it fails, continue on old connection */
     av_dict_copy(&options, s->chained_options, 0);
-    if (http_open_cnx(h, &options) < 0) {
+    if ((ret = http_open_cnx(h, &options)) < 0) {
         av_dict_free(&options);
         memcpy(s->buffer, old_buf, old_buf_size);
         s->buf_ptr = s->buffer;
         s->buf_end = s->buffer + old_buf_size;
         s->hd = old_hd;
         s->off = old_off;
-        return -1;
+        return ret;
     }
     av_dict_free(&options);
     ffurl_close(old_hd);
