@@ -89,6 +89,26 @@ m3u8 files.
 
 HTTP (Hyper Text Transfer Protocol).
 
+This protocol accepts the following options:
+
+@table @option
+@item icy
+If set to 1 request ICY (SHOUTcast) metadata from the server. If the server
+supports this, the metadata has to be retrieved by the application by reading
+the @option{icy_metadata_headers} and @option{icy_metadata_packet} options.
+The default is 0.
+
+@item icy_metadata_headers
+If the server supports ICY metadata, this contains the ICY-specific HTTP reply
+headers, separated by newline characters.
+
+@item icy_metadata_packet
+If the server supports ICY metadata, and @option{icy} was set to 1, this
+contains the last non-empty metadata packet sent by the server. It should be
+polled in regular intervals by applications interested in mid-stream metadata
+updates.
+@end table
+
 @section mmst
 
 MMS (Microsoft Media Server) protocol over TCP.

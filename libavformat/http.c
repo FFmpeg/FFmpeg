@@ -68,6 +68,13 @@ typedef struct {
     int multiple_requests;
     uint8_t *post_data;
     int post_datalen;
+    int icy;
+    /* how much data was read since the last ICY metadata packet */
+    int icy_data_read;
+    /* after how many bytes of read data a new metadata packet will be found */
+    int icy_metaint;
+    char *icy_metadata_headers;
+    char *icy_metadata_packet;
 #if CONFIG_ZLIB
     int compressed;
     z_stream inflate_stream;
@@ -85,6 +92,9 @@ static const AVOption options[] = {
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {"multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
 {"post_data", "custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D|E },
+{"icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D },
+{"icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
+{"icy_metadata_packet", "return current ICY metadata packet", OFFSET(icy_metadata_packet), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
 {"auth_type", "HTTP authentication type", OFFSET(auth_state.auth_type), AV_OPT_TYPE_INT, {.i64 = HTTP_AUTH_NONE}, HTTP_AUTH_NONE, HTTP_AUTH_BASIC, D|E, "auth_type" },
 {"none", "No auth method set, autodetect", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_NONE}, 0, 0, D|E, "auth_type" },
 {"basic", "HTTP basic authentication", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_BASIC}, 0, 0, D|E, "auth_type" },
@@ -225,6 +235,7 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     int ret;
 
     s->off = 0;
+    s->icy_data_read = 0;
     av_free(s->location);
     s->location = av_strdup(uri);
     if (!s->location)
@@ -380,6 +391,23 @@ static int parse_content_encoding(URLContext *h, char *p)
     return 0;
 }
 
+// Concat all Icy- header lines
+static int parse_icy(HTTPContext *s, const char *tag, const char *p)
+{
+    int len = 4 + strlen(p) + strlen(tag);
+    int ret;
+
+    if (s->icy_metadata_headers)
+        len += strlen(s->icy_metadata_headers);
+
+    if ((ret = av_reallocp(&s->icy_metadata_headers, len)) < 0)
+        return ret;
+
+    av_strlcatf(s->icy_metadata_headers, len, "%s: %s\n", tag, p);
+
+    return 0;
+}
+
 static int process_line(URLContext *h, char *line, int line_count,
                         int *new_location)
 {
@@ -440,6 +468,11 @@ static int process_line(URLContext *h, char *line, int line_count,
         } else if (!av_strcasecmp(tag, "Connection")) {
             if (!strcmp(p, "close"))
                 s->willclose = 1;
+        } else if (!av_strcasecmp (tag, "Icy-MetaInt")) {
+            s->icy_metaint = strtoll(p, NULL, 10);
+        } else if (!av_strncasecmp(tag, "Icy-", 4)) {
+            if ((ret = parse_icy(s, tag, p)) < 0)
+                return ret;
         } else if (!av_strcasecmp(tag, "Content-Encoding")) {
             if ((ret = parse_content_encoding(h, p)) < 0)
                 return ret;
@@ -552,6 +585,10 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (!has_header(s->headers, "\r\nContent-Length: ") && s->post_data)
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Content-Length: %d\r\n", s->post_datalen);
+    if (!has_header(s->headers, "\r\nIcy-MetaData: ") && s->icy) {
+        len += av_strlcatf(headers + len, sizeof(headers) - len,
+                           "Icy-MetaData: %d\r\n", 1);
+    }
 
     /* now add in custom headers */
     if (s->headers)
@@ -585,6 +622,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->buf_end = s->buffer;
     s->line_count = 0;
     s->off = 0;
+    s->icy_data_read = 0;
     s->filesize = -1;
     s->willclose = 0;
     s->end_chunked_post = 0;
@@ -662,7 +700,7 @@ static int http_buf_read_compressed(URLContext *h, uint8_t *buf, int size)
 }
 #endif
 
-static int http_read(URLContext *h, uint8_t *buf, int size)
+static int http_read_stream(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
     int err, new_location;
@@ -702,6 +740,70 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
         return http_buf_read_compressed(h, buf, size);
 #endif
     return http_buf_read(h, buf, size);
+}
+
+static int http_read_stream_all(URLContext *h, uint8_t *buf, int size)
+{
+    int pos = 0;
+    while (pos < size) {
+        int len = http_read_stream(h, buf + pos, size - pos);
+        if (len < 0)
+            return len;
+        pos += len;
+    }
+    return pos;
+}
+
+static int store_icy(URLContext *h, int size)
+{
+    HTTPContext *s = h->priv_data;
+    /* until next metadata packet */
+    int remaining = s->icy_metaint - s->icy_data_read;
+
+    if (remaining < 0)
+        return AVERROR_INVALIDDATA;
+
+    if (!remaining) {
+        // The metadata packet is variable sized. It has a 1 byte header
+        // which sets the length of the packet (divided by 16). If it's 0,
+        // the metadata doesn't change. After the packet, icy_metaint bytes
+        // of normal data follow.
+        uint8_t ch;
+        int len = http_read_stream_all(h, &ch, 1);
+        if (len < 0)
+            return len;
+        if (ch > 0) {
+            char data[255 * 16 + 1];
+            int ret;
+            len = ch * 16;
+            ret = http_read_stream_all(h, data, len);
+            if (ret < 0)
+                return ret;
+            data[len + 1] = 0;
+            if ((ret = av_opt_set(s, "icy_metadata_packet", data, 0)) < 0)
+                return ret;
+        }
+        s->icy_data_read = 0;
+        remaining = s->icy_metaint;
+    }
+
+    return FFMIN(size, remaining);
+}
+
+static int http_read(URLContext *h, uint8_t *buf, int size)
+{
+    HTTPContext *s = h->priv_data;
+
+    if (s->icy_metaint > 0) {
+        size = store_icy(h, size);
+        if (size < 0)
+            return size;
+    }
+
+    size = http_read_stream(h, buf, size);
+    if (size > 0)
+        s->icy_data_read += size;
+    return size;
 }
 
 /* used only when posting data */
