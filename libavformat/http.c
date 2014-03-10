@@ -49,17 +49,23 @@ typedef struct {
     unsigned char buffer[BUFFER_SIZE], *buf_ptr, *buf_end;
     int line_count;
     int http_code;
-    int64_t chunksize;      /**< Used if "Transfer-Encoding: chunked" otherwise -1. */
+    /* Used if "Transfer-Encoding: chunked" otherwise -1. */
+    int64_t chunksize;
     int64_t off, filesize;
     char *location;
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
     char *headers;
-    int willclose;          /**< Set if the server correctly handles Connection: close and will close the connection after feeding us the content. */
+    /* Set if the server correctly handles Connection: close and will close
+     * the connection after feeding us the content. */
+    int willclose;
     int chunked_post;
-    int end_chunked_post;   /**< A flag which indicates if the end of chunked encoding has been sent. */
-    int end_header;         /**< A flag which indicates we have finished to read POST reply. */
-    int multiple_requests;  /**< A flag which indicates if we use persistent connections. */
+    /* A flag which indicates if the end of chunked encoding has been sent. */
+    int end_chunked_post;
+    /* A flag which indicates we have finished to read POST reply. */
+    int end_header;
+    /* A flag which indicates if we use persistent connections. */
+    int multiple_requests;
     uint8_t *post_data;
     int post_datalen;
 #if CONFIG_ZLIB
