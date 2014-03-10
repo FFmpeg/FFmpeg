@@ -107,6 +107,7 @@ int av_sample_fmt_is_planar(enum AVSampleFormat sample_fmt);
  * @param nb_channels   the number of channels
  * @param nb_samples    the number of samples in a single channel
  * @param sample_fmt    the sample format
+ * @param align         buffer size alignment (0 = default, 1 = no alignment)
  * @return              required buffer size, or negative error code on failure
  */
 int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
@@ -130,7 +131,7 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
  * @param nb_channels      the number of channels
  * @param nb_samples       the number of samples in a single channel
  * @param sample_fmt       the sample format
- * @param align            buffer size alignment (1 = no alignment required)
+ * @param align            buffer size alignment (0 = default, 1 = no alignment)
  * @return                 0 on success or a negative error code on failure
  */
 int av_samples_fill_arrays(uint8_t **audio_data, int *linesize, uint8_t *buf,
@@ -146,7 +147,7 @@ int av_samples_fill_arrays(uint8_t **audio_data, int *linesize, uint8_t *buf,
  * @param[out] linesize    aligned size for audio buffer(s)
  * @param nb_channels      number of audio channels
  * @param nb_samples       number of samples per channel
- * @param align            buffer size alignment (1 = no alignment required)
+ * @param align            buffer size alignment (0 = default, 1 = no alignment)
  * @return                 0 on success or a negative error code on failure
  * @see av_samples_fill_arrays()
  */
