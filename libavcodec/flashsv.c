@@ -389,7 +389,9 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                     s->diff_start  = get_bits(&gb, 8);
                     s->diff_height = get_bits(&gb, 8);
                     if (s->diff_start + s->diff_height > cur_blk_height) {
-                        av_log(avctx, AV_LOG_ERROR, "Block parameters invalid\n");
+                        av_log(avctx, AV_LOG_ERROR,
+                               "Block parameters invalid: %d + %d > %d\n",
+                               s->diff_start, s->diff_height, cur_blk_height);
                         return AVERROR_INVALIDDATA;
                     }
                     av_log(avctx, AV_LOG_DEBUG,

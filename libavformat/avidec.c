@@ -1051,6 +1051,8 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
         int size = avpriv_dv_get_packet(avi->dv_demux, pkt);
         if (size >= 0)
             return size;
+        else
+            goto resync;
     }
 
     if(avi->non_interleaved){
