@@ -54,8 +54,6 @@
 #define MAX_QUANT_TABLES 8
 #define MAX_CONTEXT_INPUTS 5
 
-extern const uint8_t ff_log2_run[41];
-
 typedef struct VlcState {
     int16_t drift;
     uint16_t error_sum;

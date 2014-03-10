@@ -245,4 +245,6 @@ int ff_set_dimensions(AVCodecContext *s, int width, int height);
 int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
 
+extern const uint8_t ff_log2_run[41];
+
 #endif /* AVCODEC_INTERNAL_H */
