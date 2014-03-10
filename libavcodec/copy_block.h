@@ -26,35 +26,32 @@
 static inline void copy_block8(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
-    for(i=0; i<h; i++)
-    {
+    for (i = 0; i < h; i++) {
         AV_COPY64U(dst, src);
-        dst+=dstStride;
-        src+=srcStride;
+        dst += dstStride;
+        src += srcStride;
     }
 }
 
 static inline void copy_block9(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
-    for(i=0; i<h; i++)
-    {
+    for (i = 0; i < h; i++) {
         AV_COPY64U(dst, src);
-        dst[8]= src[8];
-        dst+=dstStride;
-        src+=srcStride;
+        dst[8] = src[8];
+        dst   += dstStride;
+        src   += srcStride;
     }
 }
 
 static inline void copy_block17(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
-    for(i=0; i<h; i++)
-    {
+    for (i = 0; i < h; i++) {
         AV_COPY128U(dst, src);
-        dst[16]= src[16];
-        dst+=dstStride;
-        src+=srcStride;
+        dst[16] = src[16];
+        dst    += dstStride;
+        src    += srcStride;
     }
 }
 
