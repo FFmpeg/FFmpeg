@@ -43,7 +43,7 @@
  * Only tracks with associated descriptors will be decoded. "Highly Desirable" SMPTE 377M D.1
  */
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "libavutil/aes.h"
 #include "libavutil/mathematics.h"
@@ -526,7 +526,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
             /* only nag once */
             if (!mxf->op)
                 av_log(mxf->fc, AV_LOG_WARNING,
-                       "\"OPAtom\" with %u ECs - assuming %s\n",
+                       "\"OPAtom\" with %"PRIu32" ECs - assuming %s\n",
                        nb_essence_containers,
                        op == OP1a ? "OP1a" : "OPAtom");
 
@@ -539,14 +539,15 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     }
 
     if (partition->kag_size <= 0 || partition->kag_size > (1 << 20)) {
-        av_log(mxf->fc, AV_LOG_WARNING, "invalid KAGSize %i - guessing ", partition->kag_size);
+        av_log(mxf->fc, AV_LOG_WARNING, "invalid KAGSize %"PRId32" - guessing ",
+               partition->kag_size);
 
         if (mxf->op == OPSonyOpt)
             partition->kag_size = 512;
         else
             partition->kag_size = 1;
 
-        av_log(mxf->fc, AV_LOG_WARNING, "%i\n", partition->kag_size);
+        av_log(mxf->fc, AV_LOG_WARNING, "%"PRId32"\n", partition->kag_size);
     }
 
     return 0;
@@ -2296,7 +2297,9 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             AVCodecContext *codec;
 
             if (index < 0) {
-                av_log(s, AV_LOG_ERROR, "error getting stream index %d\n", AV_RB32(klv.key+12));
+                av_log(s, AV_LOG_ERROR,
+                       "error getting stream index %"PRIu32"\n",
+                       AV_RB32(klv.key + 12));
                 goto skip;
             }
 

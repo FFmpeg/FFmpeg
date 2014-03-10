@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
@@ -269,7 +271,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         case DEINT_ID_VBRF:
             break;
         default:
-            av_log(NULL,0,"Unknown interleaver %X\n", ast->deint_id);
+            av_log(NULL, 0 ,"Unknown interleaver %"PRIX32"\n", ast->deint_id);
             return AVERROR_INVALIDDATA;
         }
 

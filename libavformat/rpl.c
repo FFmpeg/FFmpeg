@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdlib.h>
 
 #include "libavutil/avstring.h"
@@ -224,7 +224,7 @@ static int rpl_read_header(AVFormatContext *s)
         }
         if (ast->codec->codec_id == AV_CODEC_ID_NONE) {
             av_log(s, AV_LOG_WARNING,
-                   "RPL audio format %i not supported yet!\n",
+                   "RPL audio format %"PRId32" not supported yet!\n",
                    audio_format);
         }
         avpriv_set_pts_info(ast, 32, 1, ast->codec->bit_rate);

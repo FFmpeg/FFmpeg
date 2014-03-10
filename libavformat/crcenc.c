@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "libavutil/adler32.h"
 #include "avformat.h"
 
@@ -48,7 +50,7 @@ static int crc_write_trailer(struct AVFormatContext *s)
     CRCState *crc = s->priv_data;
     char buf[64];
 
-    snprintf(buf, sizeof(buf), "CRC=0x%08x\n", crc->crcval);
+    snprintf(buf, sizeof(buf), "CRC=0x%08"PRIx32"\n", crc->crcval);
     avio_write(s->pb, buf, strlen(buf));
 
     return 0;
