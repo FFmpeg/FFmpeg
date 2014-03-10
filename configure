@@ -1399,6 +1399,7 @@ CONFIG_LIST="
     network
     nonfree
     pic
+    pod2man
     raise_major
     rdft
     runtime_cpudetect
@@ -1413,19 +1414,19 @@ CONFIG_LIST="
     xmm_clobber_test
 "
 
-THREADS_LIST='
+THREADS_LIST="
     pthreads
-    w32threads
     os2threads
-'
+    w32threads
+"
 
-ATOMICS_LIST='
+ATOMICS_LIST="
     atomics_gcc
     atomics_suncc
     atomics_win32
-'
+"
 
-ARCH_LIST='
+ARCH_LIST="
     aarch64
     alpha
     arm
@@ -1450,18 +1451,18 @@ ARCH_LIST='
     x86
     x86_32
     x86_64
-'
+"
 
-ARCH_EXT_LIST_ARM='
+ARCH_EXT_LIST_ARM="
     armv5te
     armv6
     armv6t2
     neon
     vfp
     vfpv3
-'
+"
 
-ARCH_EXT_LIST_X86_SIMD='
+ARCH_EXT_LIST_X86_SIMD="
     amd3dnow
     amd3dnowext
     avx
@@ -1477,7 +1478,7 @@ ARCH_EXT_LIST_X86_SIMD='
     sse42
     ssse3
     xop
-'
+"
 
 ARCH_EXT_LIST_X86="
     $ARCH_EXT_LIST_X86_SIMD
@@ -1497,18 +1498,18 @@ ARCH_EXT_LIST="
     mipsdspr2
 "
 
-HAVE_LIST_CMDLINE='
+HAVE_LIST_CMDLINE="
     inline_asm
     symver
     yasm
-'
+"
 
-HAVE_LIST_PUB='
+HAVE_LIST_PUB="
     bigendian
     fast_unaligned
     incompatible_libav_abi
     incompatible_fork_abi
-'
+"
 
 MATH_FUNCS="
     atanf
@@ -1542,11 +1543,11 @@ HAVE_LIST="
     $ARCH_EXT_LIST
     $(add_suffix _external $ARCH_EXT_LIST)
     $(add_suffix _inline   $ARCH_EXT_LIST)
+    $ATOMICS_LIST
     $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
-    $THREADS_LIST
-    $ATOMICS_LIST
     $MATH_FUNCS
+    $THREADS_LIST
     access
     aligned_malloc
     aligned_stack
@@ -1592,9 +1593,9 @@ HAVE_LIST="
     GetProcessAffinityMask
     GetProcessMemoryInfo
     GetProcessTimes
-    GetSystemTimeAsFileTime
     getrusage
     getservbyport
+    GetSystemTimeAsFileTime
     gettimeofday
     glob
     glXGetProcAddress
@@ -1603,8 +1604,8 @@ HAVE_LIST="
     gsm_h
     ibm_asm
     inet_aton
-    io_h
     inline_asm_labels
+    io_h
     isatty
     jack_port_get_latency_range
     kbhit
@@ -1669,8 +1670,6 @@ HAVE_LIST="
     symver_asm_label
     symver_gnu_asm
     sync_val_compare_and_swap
-    sysconf
-    sysctl
     sys_mman_h
     sys_param_h
     sys_resource_h
@@ -1679,6 +1678,8 @@ HAVE_LIST="
     sys_time_h
     sys_un_h
     sys_videoio_h
+    sysconf
+    sysctl
     termios_h
     texi2html
     threads
@@ -1748,7 +1749,7 @@ CMDLINE_SELECT="
     stripping
 "
 
-PATHS_LIST='
+PATHS_LIST="
     bindir
     datadir
     docdir
@@ -1757,7 +1758,7 @@ PATHS_LIST='
     mandir
     prefix
     shlibdir
-'
+"
 
 CMDLINE_SET="
     $PATHS_LIST
@@ -1981,8 +1982,8 @@ mdec_decoder_select="dsputil error_resilience mpegvideo"
 metasound_decoder_select="lsp mdct sinewin"
 mimic_decoder_select="dsputil hpeldsp"
 mjpeg_decoder_select="dsputil hpeldsp exif"
-mjpegb_decoder_select="mjpeg_decoder"
 mjpeg_encoder_select="aandcttables dsputil mpegvideoenc"
+mjpegb_decoder_select="mjpeg_decoder"
 mlp_decoder_select="dsputil mlp_parser"
 motionpixels_decoder_select="dsputil"
 mp1_decoder_select="mpegaudio"
@@ -2044,9 +2045,9 @@ svq3_decoder_select="h264_decoder hpeldsp mpegvideo"
 svq3_decoder_suggest="zlib"
 tak_decoder_select="dsputil"
 theora_decoder_select="vp3_decoder"
+thp_decoder_select="mjpeg_decoder"
 tiff_decoder_suggest="zlib"
 tiff_encoder_suggest="zlib"
-thp_decoder_select="mjpeg_decoder"
 truehd_decoder_select="mlp_parser"
 truemotion2_decoder_select="dsputil"
 truespeech_decoder_select="dsputil"
@@ -2328,8 +2329,8 @@ ffrtmphttp_protocol_deps="!librtmp_protocol"
 ffrtmphttp_protocol_select="http_protocol"
 ftp_protocol_select="tcp_protocol"
 gopher_protocol_select="network"
-httpproxy_protocol_select="tcp_protocol"
 http_protocol_select="tcp_protocol"
+httpproxy_protocol_select="tcp_protocol"
 https_protocol_select="tls_protocol"
 librtmp_protocol_deps="librtmp"
 librtmpe_protocol_deps="librtmp"
@@ -2396,7 +2397,6 @@ mpdecimate_filter_deps="gpl avcodec"
 mptestsrc_filter_deps="gpl"
 negate_filter_deps="lut_filter"
 perspective_filter_deps="gpl"
-resample_filter_deps="avresample"
 ocv_filter_deps="libopencv"
 owdenoise_filter_deps="gpl"
 pan_filter_deps="swresample"
@@ -2404,6 +2404,7 @@ phase_filter_deps="gpl"
 pp_filter_deps="gpl postproc"
 pullup_filter_deps="gpl"
 removelogo_filter_deps="avcodec avformat swscale"
+resample_filter_deps="avresample"
 sab_filter_deps="gpl swscale"
 scale_filter_deps="swscale"
 smartblur_filter_deps="gpl swscale"
@@ -2843,7 +2844,7 @@ case "$toolchain" in
         add_ldflags -fprofile-arcs -ftest-coverage
     ;;
     hardened)
-        add_cflags -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-strict-overflow -fstack-protector-all
+        add_cflags  -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-strict-overflow -fstack-protector-all
         add_ldflags -Wl,-z,relro -Wl,-z,now
     ;;
     ?*)
