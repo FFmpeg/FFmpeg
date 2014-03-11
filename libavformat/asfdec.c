@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -943,13 +945,13 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
     // the following checks prevent overflows and infinite loops
     if (!packet_length || packet_length >= (1U << 29)) {
         av_log(s, AV_LOG_ERROR,
-               "invalid packet_length %d at:%"PRId64"\n",
+               "invalid packet_length %"PRIu32" at:%"PRId64"\n",
                packet_length, avio_tell(pb));
         return AVERROR_INVALIDDATA;
     }
     if (padsize >= packet_length) {
         av_log(s, AV_LOG_ERROR,
-               "invalid padsize %d at:%"PRId64"\n", padsize, avio_tell(pb));
+               "invalid padsize %"PRIu32" at:%"PRId64"\n", padsize, avio_tell(pb));
         return AVERROR_INVALIDDATA;
     }
 
@@ -968,7 +970,7 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
     if (rsize > packet_length - padsize) {
         asf->packet_size_left = 0;
         av_log(s, AV_LOG_ERROR,
-               "invalid packet header length %d for pktlen %d-%d at %"PRId64"\n",
+               "invalid packet header length %d for pktlen %"PRIu32"-%"PRIu32" at %"PRId64"\n",
                rsize, packet_length, padsize, avio_tell(pb));
         return AVERROR_INVALIDDATA;
     }

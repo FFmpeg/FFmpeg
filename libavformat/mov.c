@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
 #include <limits.h>
 #include <stdint.h>
 
@@ -767,7 +768,7 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
     av_dict_set(&c->fc->metadata, "major_brand", type, 0);
     minor_ver = avio_rb32(pb); /* minor version */
-    snprintf(minor_ver_str, sizeof(minor_ver_str), "%d", minor_ver);
+    snprintf(minor_ver_str, sizeof(minor_ver_str), "%"PRIu32"", minor_ver);
     av_dict_set(&c->fc->metadata, "minor_version", minor_ver_str, 0);
 
     comp_brand_size = atom.size - 8;
@@ -1649,7 +1650,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 
         id = mov_codec_id(st, format);
 
-        av_dlog(c->fc, "size=%"PRId64" 4CC= %c%c%c%c codec_type=%d\n", size,
+        av_dlog(c->fc, "size=%"PRId64" 4CC= %"PRIu8"%"PRIu8"%"PRIu8"%"PRIu8" codec_type=%d\n", size,
                 (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff,
                 (format >> 24) & 0xff, st->codec->codec_type);
 

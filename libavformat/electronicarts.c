@@ -25,6 +25,8 @@
  * by Robin Kay (komadori at gekkou.co.uk)
  */
 
+#include <inttypes.h>
+
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -152,7 +154,7 @@ static int process_audio_header_elements(AVFormatContext *s)
                     break;
                 case 0x8A:
                     av_log(s, AV_LOG_DEBUG,
-                           "element 0x%02x set to 0x%08x\n",
+                           "element 0x%02x set to 0x%08"PRIx32"\n",
                            subbyte, read_arbitrary(pb));
                     av_log(s, AV_LOG_DEBUG, "exited audio subheader\n");
                     in_subheader = 0;
@@ -171,7 +173,7 @@ static int process_audio_header_elements(AVFormatContext *s)
                     break;
                 default:
                     av_log(s, AV_LOG_DEBUG,
-                           "element 0x%02x set to 0x%08x\n",
+                           "element 0x%02x set to 0x%08"PRIx32"\n",
                            subbyte, read_arbitrary(pb));
                     break;
                 }
@@ -183,7 +185,7 @@ static int process_audio_header_elements(AVFormatContext *s)
             break;
         default:
             av_log(s, AV_LOG_DEBUG,
-                   "header element 0x%02x set to 0x%08x\n",
+                   "header element 0x%02x set to 0x%08"PRIx32"\n",
                    byte, read_arbitrary(pb));
             break;
         }

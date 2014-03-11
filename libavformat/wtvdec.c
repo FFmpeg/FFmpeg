@@ -25,6 +25,8 @@
  * @author Peter Ross <pross@xvid.org>
  */
 
+#include <inttypes.h>
+
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
@@ -35,7 +37,7 @@
 
 /* Macros for formating GUIDs */
 #define PRI_PRETTY_GUID \
-    "%08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x"
+    "%08"PRIx32"-%04"PRIx16"-%04"PRIx16"-%02x%02x%02x%02x%02x%02x%02x%02x"
 #define ARG_PRETTY_GUID(g) \
     AV_RL32(g),AV_RL16(g+4),AV_RL16(g+6),g[8],g[9],g[10],g[11],g[12],g[13],g[14],g[15]
 #define LEN_PRETTY_GUID 34
@@ -471,7 +473,7 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
         return;
 
     if (type == 0 && length == 4) {
-        snprintf(buf, buf_size, "%"PRIi32, avio_rl32(pb));
+        snprintf(buf, buf_size, "%u", avio_rl32(pb));
     } else if (type == 1) {
         avio_get_str16le(pb, length, buf, buf_size);
         if (!strlen(buf)) {

@@ -25,7 +25,7 @@
  * Microsoft XMV demuxer
  */
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "libavutil/intreadwrite.h"
 
@@ -155,7 +155,7 @@ static int xmv_read_header(AVFormatContext *s)
 
     file_version = avio_rl32(pb);
     if ((file_version != 4) && (file_version != 2))
-        avpriv_request_sample(s, "Uncommon version %d", file_version);
+        avpriv_request_sample(s, "Uncommon version %"PRIu32"", file_version);
 
 
     /* Video track */
@@ -219,7 +219,7 @@ static int xmv_read_header(AVFormatContext *s)
 
         if (!packet->channels || !packet->sample_rate ||
              packet->channels >= UINT16_MAX / XMV_BLOCK_ALIGN_SIZE) {
-            av_log(s, AV_LOG_ERROR, "Invalid parameters for audio track %d.\n",
+            av_log(s, AV_LOG_ERROR, "Invalid parameters for audio track %"PRIu16".\n",
                    audio_track);
             ret = AVERROR_INVALIDDATA;
             goto fail;

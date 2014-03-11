@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -98,12 +100,13 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
             first = 0;
         frame_size = AV_RL32(pkt->data + pkt->size - 8);
         if (frame_size > INT_MAX - 4) {
-            av_log(s, AV_LOG_ERROR, "Too large chunk size: %d\n", frame_size);
+            av_log(s, AV_LOG_ERROR, "Too large chunk size: %"PRIu32"\n", frame_size);
             return AVERROR(EIO);
         }
         if (AV_RL32(pkt->data + pkt->size - 12) == MKTAG('E', 'O', 'F', 'R')) {
             if (frame_size) {
-                av_log(s, AV_LOG_WARNING, "skipping %d bytes of end-of-frame marker chunk\n",
+                av_log(s, AV_LOG_WARNING,
+                       "skipping %"PRIu32" bytes of end-of-frame marker chunk\n",
                        frame_size);
                 avio_skip(pb, frame_size);
             }

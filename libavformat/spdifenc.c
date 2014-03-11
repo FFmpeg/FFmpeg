@@ -44,6 +44,8 @@
  *      dependent from data-type (spaces between packets are filled by zeros)
  */
 
+#include <inttypes.h>
+
 #include "avformat.h"
 #include "avio_internal.h"
 #include "spdif.h"
@@ -274,7 +276,7 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR, "stray DTS-HD frame\n");
         return AVERROR_INVALIDDATA;
     default:
-        av_log(s, AV_LOG_ERROR, "bad DTS syncword 0x%x\n", syncword_dts);
+        av_log(s, AV_LOG_ERROR, "bad DTS syncword 0x%"PRIx32"\n", syncword_dts);
         return AVERROR_INVALIDDATA;
     }
     blocks++;
@@ -369,8 +371,8 @@ static int spdif_header_aac(AVFormatContext *s, AVPacket *pkt)
         ctx->data_type = IEC61937_MPEG2_AAC_LSF_4096;
         break;
     default:
-        av_log(s, AV_LOG_ERROR, "%i samples in AAC frame not supported\n",
-               hdr.samples);
+        av_log(s, AV_LOG_ERROR,
+               "%"PRIu32" samples in AAC frame not supported\n", hdr.samples);
         return AVERROR(EINVAL);
     }
     //TODO Data type dependent info (LC profile/SBR)

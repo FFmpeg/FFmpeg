@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
@@ -139,14 +141,14 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
     }
 
     if (tag_bytes > file_size - APE_TAG_FOOTER_BYTES) {
-        av_log(s, AV_LOG_ERROR, "Invalid tag size %u.\n", tag_bytes);
+        av_log(s, AV_LOG_ERROR, "Invalid tag size %"PRIu32".\n", tag_bytes);
         return 0;
     }
     tag_start = file_size - tag_bytes - APE_TAG_FOOTER_BYTES;
 
     fields = avio_rl32(pb);    /* number of fields */
     if (fields > 65536) {
-        av_log(s, AV_LOG_ERROR, "Too many tag fields (%d)\n", fields);
+        av_log(s, AV_LOG_ERROR, "Too many tag fields (%"PRIu32")\n", fields);
         return 0;
     }
 

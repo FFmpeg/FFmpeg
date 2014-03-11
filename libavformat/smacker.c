@@ -23,6 +23,8 @@
  * Based on http://wiki.multimedia.cx/index.php?title=Smacker
  */
 
+#include <inttypes.h>
+
 #include "libavutil/bswap.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
@@ -142,7 +144,7 @@ static int smacker_read_header(AVFormatContext *s)
     smk->pad = avio_rl32(pb);
     /* setup data */
     if(smk->frames > 0xFFFFFF) {
-        av_log(s, AV_LOG_ERROR, "Too many frames: %i\n", smk->frames);
+        av_log(s, AV_LOG_ERROR, "Too many frames: %"PRIu32"\n", smk->frames);
         return AVERROR_INVALIDDATA;
     }
     smk->frm_size = av_malloc_array(smk->frames, sizeof(*smk->frm_size));
@@ -221,7 +223,9 @@ static int smacker_read_header(AVFormatContext *s)
 
     /* load trees to extradata, they will be unpacked by decoder */
     if(ff_alloc_extradata(st->codec, smk->treesize + 16)){
-        av_log(s, AV_LOG_ERROR, "Cannot allocate %i bytes of extradata\n", smk->treesize + 16);
+        av_log(s, AV_LOG_ERROR,
+               "Cannot allocate %"PRIu32" bytes of extradata\n",
+               smk->treesize + 16);
         av_freep(&smk->frm_size);
         av_freep(&smk->frm_flags);
         return AVERROR(ENOMEM);

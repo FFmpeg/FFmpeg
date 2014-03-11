@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "avformat.h"
@@ -293,7 +295,9 @@ static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     }
     st = s->streams[0];
     if (map_cnt > 1000) {
-        av_log(s, AV_LOG_ERROR, "too many index entries %u (%x)\n", map_cnt, map_cnt);
+        av_log(s, AV_LOG_ERROR,
+               "too many index entries %"PRIu32" (%"PRIx32")\n",
+               map_cnt, map_cnt);
         map_cnt = 1000;
     }
     if (pkt_len < 4 * map_cnt) {
