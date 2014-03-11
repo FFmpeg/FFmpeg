@@ -222,6 +222,7 @@ Advanced options (experts only):
   --target-path=DIR        path to view of build directory on target
   --target-samples=DIR     path to samples directory on target
   --toolchain=NAME         set tool defaults according to NAME
+  --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --nm=NM                  use nm tool
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
