@@ -730,7 +730,10 @@ static int rv10_decode_frame(AVCodecContext *avctx,
             offset + FFMAX(size, size2) > buf_size)
             return AVERROR_INVALIDDATA;
 
-        if (rv10_decode_packet(avctx, buf + offset, size, size2) > 8 * size)
+        if ((ret = rv10_decode_packet(avctx, buf + offset, size, size2)) < 0)
+            return ret;
+
+        if (ret > 8 * size)
             i++;
     }
 
