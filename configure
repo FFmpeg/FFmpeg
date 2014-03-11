@@ -270,6 +270,7 @@ Advanced options (experts only):
   --target-samples=DIR     path to samples directory on target
   --tempprefix=PATH        force fixed dir/prefix instead of mktemp for checks
   --toolchain=NAME         set tool defaults according to NAME
+  --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
