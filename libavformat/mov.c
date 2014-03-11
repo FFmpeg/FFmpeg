@@ -1330,6 +1330,7 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
         if (color_greyscale) {
             int color_index, color_dec;
             /* compute the greyscale palette */
+            st->codec->bits_per_coded_sample = color_depth;
             color_count = 1 << color_depth;
             color_index = 255;
             color_dec   = 256 / (color_count - 1);

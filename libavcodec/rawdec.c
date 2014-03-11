@@ -109,7 +109,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     if (   avctx->codec_tag == MKTAG('r','a','w',' ')
         || avctx->codec_tag == MKTAG('N','O','1','6'))
         avctx->pix_fmt = avpriv_find_pix_fmt(pix_fmt_bps_mov,
-                                      avctx->bits_per_coded_sample & 0x1f);
+                                      avctx->bits_per_coded_sample);
     else if (avctx->codec_tag == MKTAG('W', 'R', 'A', 'W'))
         avctx->pix_fmt = avpriv_find_pix_fmt(pix_fmt_bps_avi,
                                       avctx->bits_per_coded_sample);
@@ -135,7 +135,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
             memset(context->palette->data, 0, AVPALETTE_SIZE);
     }
 
-    if (((avctx->bits_per_coded_sample & 0x1f) == 4 || (avctx->bits_per_coded_sample & 0x1f) == 2) &&
+    if ((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
         avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
        (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))) {
         context->is_2_4_bpp = 1;
@@ -209,14 +209,14 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         int i;
         uint8_t *dst = frame->buf[0]->data;
         buf_size = context->frame_size - AVPALETTE_SIZE;
-        if ((avctx->bits_per_coded_sample & 0x1f) == 4) {
+        if (avctx->bits_per_coded_sample == 4) {
             for (i = 0; 2 * i + 1 < buf_size && i<avpkt->size; i++) {
                 dst[2 * i + 0] = buf[i] >> 4;
                 dst[2 * i + 1] = buf[i] & 15;
             }
             linesize_align = 8;
         } else {
-            av_assert0((avctx->bits_per_coded_sample & 0x1f) == 2);
+            av_assert0(avctx->bits_per_coded_sample == 2);
             for (i = 0; 4 * i + 3 < buf_size && i<avpkt->size; i++) {
                 dst[4 * i + 0] = buf[i] >> 6;
                 dst[4 * i + 1] = buf[i] >> 4 & 3;

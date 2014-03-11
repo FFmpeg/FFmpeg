@@ -119,7 +119,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    if ((avctx->bits_per_coded_sample & 0x1f) <= 8) {
+    if (avctx->bits_per_coded_sample <= 8) {
         const uint8_t *pal = av_packet_get_side_data(avpkt,
                                                      AV_PKT_DATA_PALETTE,
                                                      NULL);
