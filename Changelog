@@ -16,6 +16,7 @@ version <next>:
 - VP7 video decoder
 - LucasArts SMUSH SANM video decoder
 - LucasArts SMUSH VIMA audio decoder (ADPCM)
+- LucasArts SMUSH demuxer
 
 
 version 10:
