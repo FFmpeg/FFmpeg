@@ -151,7 +151,7 @@ typedef struct vorbis_context_s {
     uint8_t       mode_count;
     vorbis_mode  *modes;
     uint8_t       mode_number; // mode number for the current packet
-    uint8_t       previous_window;
+    int8_t       previous_window;
     float        *channel_residues;
     float        *saved;
 } vorbis_context;
@@ -989,7 +989,7 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
     if (!vc->channel_residues || !vc->saved)
         return AVERROR(ENOMEM);
 
-    vc->previous_window  = 0;
+    vc->previous_window  = -1;
 
     ff_mdct_init(&vc->mdct[0], bl0, 1, -1.0);
     ff_mdct_init(&vc->mdct[1], bl1, 1, -1.0);
@@ -1548,7 +1548,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc, float **floor_ptr)
 {
     GetBitContext *gb = &vc->gb;
     FFTContext *mdct;
-    unsigned previous_window = vc->previous_window;
+    int previous_window = vc->previous_window;
     unsigned mode_number, blockflag, blocksize;
     int i, j;
     uint8_t no_residue[255];
@@ -1581,9 +1581,11 @@ static int vorbis_parse_audio_packet(vorbis_context *vc, float **floor_ptr)
     blocksize = vc->blocksize[blockflag];
     vlen = blocksize / 2;
     if (blockflag) {
-        previous_window = get_bits(gb, 1);
-        skip_bits1(gb); // next_window
-    }
+        int code = get_bits(gb, 2);
+        if (previous_window < 0)
+            previous_window = code>>1;
+    } else if (previous_window < 0)
+        previous_window = 0;
 
     memset(ch_res_ptr,   0, sizeof(float) * vc->audio_channels * vlen); //FIXME can this be removed ?
     for (i = 0; i < vc->audio_channels; ++i)
@@ -1812,7 +1814,7 @@ static av_cold void vorbis_decode_flush(AVCodecContext *avctx)
         memset(vc->saved, 0, (vc->blocksize[1] / 4) * vc->audio_channels *
                              sizeof(*vc->saved));
     }
-    vc->previous_window = 0;
+    vc->previous_window = -1;
 }
 
 AVCodec ff_vorbis_decoder = {
