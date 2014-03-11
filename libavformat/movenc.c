@@ -3351,6 +3351,15 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             size = ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
         }
+    } else if (enc->codec_id == AV_CODEC_ID_HEVC && trk->vos_len > 6 &&
+               (AV_RB24(trk->vos_data) == 1 || AV_RB32(trk->vos_data) == 1)) {
+        /* extradata is Annex B, assume the bitstream is too and convert it */
+        if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
+            ff_hevc_annexb2mp4_buf(pkt->data, &reformatted_data, &size, 0, NULL);
+            avio_write(pb, reformatted_data, size);
+        } else {
+            size = ff_hevc_annexb2mp4(pb, pkt->data, pkt->size, 0, NULL);
+        }
     } else {
         avio_write(pb, pkt->data, size);
     }
