@@ -546,6 +546,9 @@ static int decode_frame(AVCodecContext *avctx,
     for (;;) {
         if (bytestream2_get_bytes_left(&s->gb) <= 0) {
             av_log(avctx, AV_LOG_ERROR, "No bytes left\n");
+            if (   s->state & PNG_ALLIMAGE
+                && avctx->strict_std_compliance <= FF_COMPLIANCE_NORMAL)
+                goto exit_loop;
             goto fail;
         }
 
