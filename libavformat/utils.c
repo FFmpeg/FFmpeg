@@ -2395,7 +2395,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             /* check max_analyze_duration */
             if (av_rescale_q(pkt->dts - st->info->fps_first_dts, st->time_base,
                              AV_TIME_BASE_Q) >= ic->max_analyze_duration) {
-                av_log(ic, AV_LOG_WARNING, "max_analyze_duration reached\n");
+                av_log(ic, AV_LOG_WARNING, "max_analyze_duration %d reached\n",
+                       ic->max_analyze_duration);
                 break;
             }
         }
