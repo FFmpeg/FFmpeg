@@ -2371,7 +2371,13 @@ void av_url_split(char *proto,         int proto_size,
                   char *path,          int path_size,
                   const char *url);
 
-
+/**
+ * log a nice Dump of input format context or output format context
+ * @param ic already initialized Format Context, must not be NULL.
+ * @param index index of the stream to dump information about
+ * @param url name of file or URL of stream to print information about
+ * @param is_output Select whether specified context is of input(0) or output(1)
+ */
 void av_dump_format(AVFormatContext *ic,
                     int index,
                     const char *url,
