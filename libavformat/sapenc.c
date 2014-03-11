@@ -140,7 +140,8 @@ static int sap_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    s->start_time_realtime = av_gettime();
+    if (s->start_time_realtime == 0  ||  s->start_time_realtime == AV_NOPTS_VALUE)
+        s->start_time_realtime = av_gettime();
     for (i = 0; i < s->nb_streams; i++) {
         URLContext *fd;
 

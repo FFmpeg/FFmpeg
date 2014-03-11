@@ -119,7 +119,7 @@ static int rtp_write_header(AVFormatContext *s1)
         s->ssrc = av_get_random_seed();
     s->first_packet = 1;
     s->first_rtcp_ntp_time = ff_ntp_time();
-    if (s1->start_time_realtime)
+    if (s1->start_time_realtime != 0  &&  s1->start_time_realtime != AV_NOPTS_VALUE)
         /* Round the NTP time to whole milliseconds. */
         s->first_rtcp_ntp_time = (s1->start_time_realtime / 1000) * 1000 +
                                  NTP_OFFSET_US;

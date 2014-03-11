@@ -1275,7 +1275,12 @@ typedef struct AVFormatContext {
      * Start time of the stream in real world time, in microseconds
      * since the Unix epoch (00:00 1st January 1970). That is, pts=0 in the
      * stream was captured at this real world time.
-     * Muxing only, set by the caller before avformat_write_header().
+     * - muxing: Set by the caller before avformat_write_header(). If set to
+     *           either 0 or AV_NOPTS_VALUE, then the current wall-time will
+     *           be used.
+     * - demuxing: Set by libavformat. AV_NOPTS_VALUE if unknown. Note that
+     *             the value may become known after some number of frames
+     *             have been received.
      */
     int64_t start_time_realtime;
 

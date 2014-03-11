@@ -2071,6 +2071,16 @@ redo:
                             st2->time_base);
                     }
                 }
+                // Make real NTP start time available in AVFormatContext
+                if (s->start_time_realtime == AV_NOPTS_VALUE) {
+                    s->start_time_realtime = av_rescale (rtpctx->first_rtcp_ntp_time - (NTP_OFFSET << 32), 1000000, 1LL << 32);
+                    if (rtpctx->st) {
+                        s->start_time_realtime -=
+                            av_rescale (rtpctx->rtcp_ts_offset,
+                                        (uint64_t) rtpctx->st->time_base.num * 1000000,
+                                                   rtpctx->st->time_base.den);
+                    }
+                }
             }
             if (ret == -RTCP_BYE) {
                 rt->nb_byes++;

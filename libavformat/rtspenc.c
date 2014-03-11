@@ -51,7 +51,8 @@ int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
     char *sdp;
     AVFormatContext sdp_ctx, *ctx_array[1];
 
-    s->start_time_realtime = av_gettime();
+    if (s->start_time_realtime == 0  ||  s->start_time_realtime == AV_NOPTS_VALUE)
+        s->start_time_realtime = av_gettime();
 
     /* Announce the stream */
     sdp = av_mallocz(SDP_MAX_SIZE);
