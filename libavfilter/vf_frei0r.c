@@ -81,7 +81,7 @@ static void *load_sym(AVFilterContext *ctx, const char *sym_name)
     Frei0rContext *s = ctx->priv;
     void *sym = dlsym(s->dl_handle, sym_name);
     if (!sym)
-        av_log(ctx, AV_LOG_ERROR, "Could not find symbol '%s' in loaded module\n", sym_name);
+        av_log(ctx, AV_LOG_ERROR, "Could not find symbol '%s' in loaded module.\n", sym_name);
     return sym;
 }
 
@@ -129,7 +129,7 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
     return 0;
 
 fail:
-    av_log(ctx, AV_LOG_ERROR, "Invalid value '%s' for parameter '%s'\n",
+    av_log(ctx, AV_LOG_ERROR, "Invalid value '%s' for parameter '%s'.\n",
            param, info.name);
     return AVERROR(EINVAL);
 }
@@ -202,11 +202,11 @@ static int set_params(AVFilterContext *ctx, const char *params)
         default: /* F0R_PARAM_STRING */
             v = s;
             s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "'%s'\n", s);
+            av_log(ctx, AV_LOG_DEBUG, "'%s'", s);
             break;
         }
 #endif
-        av_log(ctx, AV_LOG_VERBOSE, "\n");
+        av_log(ctx, AV_LOG_VERBOSE, ".\n");
     }
 
     return 0;
@@ -217,7 +217,7 @@ static int load_path(AVFilterContext *ctx, void **handle_ptr, const char *prefix
     char *path = av_asprintf("%s%s%s", prefix, name, SLIBSUF);
     if (!path)
         return AVERROR(ENOMEM);
-    av_log(ctx, AV_LOG_DEBUG, "Looking for frei0r effect in '%s'\n", path);
+    av_log(ctx, AV_LOG_DEBUG, "Looking for frei0r effect in '%s'.\n", path);
     *handle_ptr = dlopen(path, RTLD_NOW|RTLD_LOCAL);
     av_free(path);
     return 0;
@@ -288,7 +288,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
             return ret;
     }
     if (!s->dl_handle) {
-        av_log(ctx, AV_LOG_ERROR, "Could not find module '%s'\n", dl_name);
+        av_log(ctx, AV_LOG_ERROR, "Could not find module '%s'.\n", dl_name);
         return AVERROR(EINVAL);
     }
 
@@ -304,7 +304,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
         return AVERROR(EINVAL);
 
     if (f0r_init() < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Could not init the frei0r module\n");
+        av_log(ctx, AV_LOG_ERROR, "Could not init the frei0r module.\n");
         return AVERROR(EINVAL);
     }
 
@@ -312,7 +312,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
     pi = &s->plugin_info;
     if (pi->plugin_type != type) {
         av_log(ctx, AV_LOG_ERROR,
-               "Invalid type '%s' for the plugin\n",
+               "Invalid type '%s' for this plugin\n",
                pi->plugin_type == F0R_PLUGIN_TYPE_FILTER ? "filter" :
                pi->plugin_type == F0R_PLUGIN_TYPE_SOURCE ? "source" :
                pi->plugin_type == F0R_PLUGIN_TYPE_MIXER2 ? "mixer2" :
@@ -359,7 +359,7 @@ static int config_input_props(AVFilterLink *inlink)
     if (s->destruct && s->instance)
         s->destruct(s->instance);
     if (!(s->instance = s->construct(inlink->w, inlink->h))) {
-        av_log(ctx, AV_LOG_ERROR, "Impossible to load frei0r instance\n");
+        av_log(ctx, AV_LOG_ERROR, "Impossible to load frei0r instance.\n");
         return AVERROR(EINVAL);
     }
 
@@ -476,7 +476,7 @@ static int source_config_props(AVFilterLink *outlink)
     if (s->destruct && s->instance)
         s->destruct(s->instance);
     if (!(s->instance = s->construct(outlink->w, outlink->h))) {
-        av_log(ctx, AV_LOG_ERROR, "Impossible to load frei0r instance\n");
+        av_log(ctx, AV_LOG_ERROR, "Impossible to load frei0r instance.\n");
         return AVERROR(EINVAL);
     }
     if (!s->params) {
