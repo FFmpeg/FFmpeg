@@ -479,6 +479,10 @@ static int source_config_props(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR, "Impossible to load frei0r instance\n");
         return AVERROR(EINVAL);
     }
+    if (!s->params) {
+        av_log(ctx, AV_LOG_ERROR, "frei0r filter parameters not set.\n");
+        return AVERROR(EINVAL);
+    }
 
     return set_params(ctx, s->params);
 }
