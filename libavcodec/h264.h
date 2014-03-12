@@ -252,6 +252,43 @@ typedef struct MMCO {
     int long_arg;       ///< index, pic_num, or num long refs depending on opcode
 } MMCO;
 
+typedef struct H264Picture {
+    struct AVFrame f;
+    ThreadFrame tf;
+
+    AVBufferRef *qscale_table_buf;
+    int8_t *qscale_table;
+
+    AVBufferRef *motion_val_buf[2];
+    int16_t (*motion_val[2])[2];
+
+    AVBufferRef *mb_type_buf;
+    uint32_t *mb_type;
+
+    AVBufferRef *hwaccel_priv_buf;
+    void *hwaccel_picture_private; ///< hardware accelerator private data
+
+    AVBufferRef *ref_index_buf[2];
+    int8_t *ref_index[2];
+
+    int field_poc[2];       ///< top/bottom POC
+    int poc;                ///< frame POC
+    int frame_num;          ///< frame_num (raw frame_num from slice header)
+    int mmco_reset;         /**< MMCO_RESET set this 1. Reordering code must
+                                 not mix pictures before and after MMCO_RESET. */
+    int pic_id;             /**< pic_num (short -> no wrap version of pic_num,
+                                 pic_num & max_pic_num; long -> long_pic_num) */
+    int long_ref;           ///< 1->long term reference 0->short term reference
+    int ref_poc[2][2][32];  ///< POCs of the frames used as reference (FIXME need per slice)
+    int ref_count[2][2];    ///< number of entries in ref_poc         (FIXME need per slice)
+    int mbaff;              ///< 1 -> MBAFF frame 0-> not MBAFF
+    int field_picture;      ///< whether or not picture was encoded in separate fields
+
+    int needs_realloc;      ///< picture needs to be reallocated (eg due to a frame size change)
+    int reference;
+    int recovered;          ///< picture at IDR or recovery point + recovery count
+} H264Picture;
+
 /**
  * H264Context
  */
@@ -267,9 +304,9 @@ typedef struct H264Context {
     GetBitContext gb;
     ERContext er;
 
-    Picture *DPB;
-    Picture *cur_pic_ptr;
-    Picture cur_pic;
+    H264Picture *DPB;
+    H264Picture *cur_pic_ptr;
+    H264Picture cur_pic;
 
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
     int chroma_qp[2];   // QPc
@@ -401,7 +438,7 @@ typedef struct H264Context {
     unsigned int ref_count[2];          ///< counts frames or fields, depending on current mb mode
     unsigned int list_count;
     uint8_t *list_counts;               ///< Array of list_count per MB specifying the slice type
-    Picture ref_list[2][48];            /**< 0..15: frame refs, 16..47: mbaff field refs.
+    H264Picture ref_list[2][48];        /**< 0..15: frame refs, 16..47: mbaff field refs.
                                          *   Reordered version of default_ref_list
                                          *   according to picture reordering in slice header */
     int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
@@ -516,12 +553,12 @@ typedef struct H264Context {
 
     int redundant_pic_count;
 
-    Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
-    Picture *short_ref[32];
-    Picture *long_ref[32];
-    Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?
+    H264Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
+    H264Picture *short_ref[32];
+    H264Picture *long_ref[32];
+    H264Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?
     int last_pocs[MAX_DELAYED_PIC_COUNT];
-    Picture *next_output_pic;
+    H264Picture *next_output_pic;
     int outputed_poc;
     int next_outputed_poc;
 

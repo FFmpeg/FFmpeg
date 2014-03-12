@@ -68,9 +68,9 @@
 typedef struct {
     H264Context h;
     HpelDSPContext hdsp;
-    Picture *cur_pic;
-    Picture *next_pic;
-    Picture *last_pic;
+    H264Picture *cur_pic;
+    H264Picture *next_pic;
+    H264Picture *last_pic;
     int halfpel_flag;
     int thirdpel_flag;
     int unknown_flag;
@@ -291,8 +291,8 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
                                     int mx, int my, int dxy,
                                     int thirdpel, int dir, int avg)
 {
-    H264Context *h     = &s->h;
-    const Picture *pic = (dir == 0) ? s->last_pic : s->next_pic;
+    H264Context *h = &s->h;
+    const H264Picture *pic = (dir == 0) ? s->last_pic : s->next_pic;
     uint8_t *src, *dest;
     int i, emu = 0;
     int blocksize = 2 - (width >> 3); // 16->0, 8->1, 4->2
@@ -1030,7 +1030,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void free_picture(AVCodecContext *avctx, Picture *pic)
+static void free_picture(AVCodecContext *avctx, H264Picture *pic)
 {
     int i;
     for (i = 0; i < 2; i++) {
@@ -1042,7 +1042,7 @@ static void free_picture(AVCodecContext *avctx, Picture *pic)
     av_frame_unref(&pic->f);
 }
 
-static int get_buffer(AVCodecContext *avctx, Picture *pic)
+static int get_buffer(AVCodecContext *avctx, H264Picture *pic)
 {
     SVQ3Context *s = avctx->priv_data;
     H264Context *h = &s->h;
@@ -1125,7 +1125,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     h->pict_type = h->slice_type;
 
     if (h->pict_type != AV_PICTURE_TYPE_B)
-        FFSWAP(Picture*, s->next_pic, s->last_pic);
+        FFSWAP(H264Picture*, s->next_pic, s->last_pic);
 
     av_frame_unref(&s->cur_pic->f);
 
@@ -1285,7 +1285,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         *got_frame = 1;
 
     if (h->pict_type != AV_PICTURE_TYPE_B) {
-        FFSWAP(Picture*, s->cur_pic, s->next_pic);
+        FFSWAP(H264Picture*, s->cur_pic, s->next_pic);
     } else {
         av_frame_unref(&s->cur_pic->f);
     }

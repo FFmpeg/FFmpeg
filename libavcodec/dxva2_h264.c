@@ -44,7 +44,7 @@ static void fill_picture_entry(DXVA_PicEntry_H264 *pic,
 static void fill_picture_parameters(struct dxva_context *ctx, const H264Context *h,
                                     DXVA_PicParams_H264 *pp)
 {
-    const Picture *current_picture = h->cur_pic_ptr;
+    const H264Picture *current_picture = h->cur_pic_ptr;
     int i, j;
 
     memset(pp, 0, sizeof(*pp));
@@ -56,7 +56,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     pp->UsedForReferenceFlags  = 0;
     pp->NonExistingFrameFlags  = 0;
     for (i = 0, j = 0; i < FF_ARRAY_ELEMS(pp->RefFrameList); i++) {
-        const Picture *r;
+        const H264Picture *r;
         if (j < h->short_ref_count) {
             r = h->short_ref[j++];
         } else {
@@ -226,7 +226,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
         unsigned i;
         for (i = 0; i < FF_ARRAY_ELEMS(slice->RefPicList[list]); i++) {
             if (list < h->list_count && i < h->ref_count[list]) {
-                const Picture *r = &h->ref_list[list][i];
+                const H264Picture *r = &h->ref_list[list][i];
                 unsigned plane;
                 fill_picture_entry(&slice->RefPicList[list][i],
                                    ff_dxva2_get_surface_index(ctx, r),
@@ -277,7 +277,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const H264Context *h = avctx->priv_data;
     const unsigned mb_count = h->mb_width * h->mb_height;
     struct dxva_context *ctx = avctx->hwaccel_context;
-    const Picture *current_picture = h->cur_pic_ptr;
+    const H264Picture *current_picture = h->cur_pic_ptr;
     struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     DXVA_Slice_H264_Short *slice = NULL;
     uint8_t  *dxva_data, *current, *end;
@@ -397,7 +397,7 @@ static int dxva2_h264_decode_slice(AVCodecContext *avctx,
 {
     const H264Context *h = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
-    const Picture *current_picture = h->cur_pic_ptr;
+    const H264Picture *current_picture = h->cur_pic_ptr;
     struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     unsigned position;
 
