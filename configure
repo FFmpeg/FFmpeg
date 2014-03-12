@@ -280,6 +280,8 @@ Advanced options (experts only):
   --cxx=CXX                use C compiler CXX [$cxx_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
   --ld=LD                  use linker LD [$ld_default]
+  --pkg-config=PKGCONF     use pkg-config PKGCONF [$pkg_config_default]
+  --pkg-config-flags=FLAGS pass additional flags to pkgconf []
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
   --host-cppflags=HCPPFLAGS use HCPPFLAGS when compiling for host
@@ -1045,8 +1047,8 @@ check_pkg_config(){
     funcs="$3"
     shift 3
     check_cmd $pkg_config --exists --print-errors $pkgandversion || return
-    pkg_cflags=$($pkg_config --cflags $pkg)
-    pkg_libs=$($pkg_config --libs $pkg)
+    pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
+    pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
         set_safe ${pkg}_cflags $pkg_cflags   &&
         set_safe ${pkg}_libs   $pkg_libs
@@ -1789,6 +1791,7 @@ CMDLINE_SET="
     nm
     optflags
     pkg_config
+    pkg_config_flags
     progs_suffix
     random_seed
     samples
