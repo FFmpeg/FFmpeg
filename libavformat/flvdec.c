@@ -938,6 +938,10 @@ retry_duration:
                 flv->wrong_dts = 1;
                 av_log(s, AV_LOG_WARNING,
                        "negative cts, previous timestamps might be wrong\n");
+            } else if (FFABS(dts - pts) > 1000*60*15) {
+                av_log(s, AV_LOG_WARNING,
+                       "invalid timestamps %"PRId64" %"PRId64"\n", dts, pts);
+                dts = pts = AV_NOPTS_VALUE;
             }
             if (flv->wrong_dts)
                 dts = AV_NOPTS_VALUE;
