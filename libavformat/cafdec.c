@@ -288,7 +288,7 @@ static int read_header(AVFormatContext *s)
         default:
 #define _(x) ((x) >= ' ' ? (x) : ' ')
             av_log(s, AV_LOG_WARNING,
-                   "skipping CAF chunk: %08"PRIX32" (%"PRIu8"%"PRIu8"%"PRIu8"%"PRIu8"), size %"PRId64"\n",
+                   "skipping CAF chunk: %08"PRIX32" (%c%c%c%c), size %"PRId64"\n",
                 tag, _(tag>>24), _((tag>>16)&0xFF), _((tag>>8)&0xFF), _(tag&0xFF), size);
 #undef _
         case MKBETAG('f','r','e','e'):
