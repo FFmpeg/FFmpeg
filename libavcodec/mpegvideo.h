@@ -710,9 +710,6 @@ void ff_MPV_common_init_x86(MpegEncContext *s);
 void ff_MPV_common_init_arm(MpegEncContext *s);
 void ff_MPV_common_init_ppc(MpegEncContext *s);
 void ff_clean_intra_table_entries(MpegEncContext *s);
-void ff_draw_horiz_band(AVCodecContext *avctx, AVFrame *cur, AVFrame *last,
-                        int y, int h, int picture_structure, int first_field,
-                        int low_delay);
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
 void ff_print_debug_info(MpegEncContext *s, Picture *p);
