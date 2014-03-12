@@ -52,7 +52,7 @@ typedef struct {
     /* Used if "Transfer-Encoding: chunked" otherwise -1. */
     int64_t chunksize;
     char *content_type;
-    int64_t off, filesize, req_end_offset;
+    int64_t off, end_off, filesize;
     char *location;
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
@@ -115,7 +115,7 @@ static const AVOption options[] = {
 {"send_expect_100", "Force sending an Expect: 100-continue header for POST", OFFSET(send_expect_100), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
 {"location", "The actual location of the data received", OFFSET(location), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {"offset", "initial byte offset", OFFSET(off), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX, D },
-{"end_offset", "try to limit the request to bytes preceding this offset", OFFSET(req_end_offset), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX, D },
+{"end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX, D },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
@@ -707,12 +707,12 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     // Note: we send this on purpose even when s->off is 0 when we're probing,
     // since it allows us to detect more reliably if a (non-conforming)
     // server supports seeking by analysing the reply headers.
-    if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->req_end_offset || s->seekable == -1)) {
+    if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable == -1)) {
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Range: bytes=%"PRId64"-", s->off);
-        if (s->req_end_offset)
+        if (s->end_off)
             len += av_strlcatf(headers + len, sizeof(headers) - len,
-                               "%"PRId64, s->req_end_offset - 1);
+                               "%"PRId64, s->end_off - 1);
         len += av_strlcpy(headers + len, "\r\n",
                           sizeof(headers) - len);
     }
