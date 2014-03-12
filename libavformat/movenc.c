@@ -2502,7 +2502,10 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
             int src_trk = mov->tracks[i].src_track;
             mov->tracks[src_trk].tref_tag = mov->tracks[i].tag;
             mov->tracks[src_trk].tref_id  = mov->tracks[i].track_id;
-            mov->tracks[i].track_duration = mov->tracks[src_trk].track_duration;
+            //src_trk may have a different timescale than the tmcd track
+            mov->tracks[i].track_duration = av_rescale(mov->tracks[src_trk].track_duration,
+                                                       mov->tracks[i].timescale,
+                                                       mov->tracks[src_trk].timescale);
         }
     }
 
