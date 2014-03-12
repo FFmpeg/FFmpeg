@@ -62,6 +62,38 @@ fate-pngparser: CMD = framecrc -f image2pipe -i $(TARGET_SAMPLES)/png1/libav_4x_
 FATE_SAMPLES_AVCONV-$(call DEMDEC, IMAGE2, PTX) += fate-ptx
 fate-ptx: CMD = framecrc -i $(TARGET_SAMPLES)/ptx/_113kw_pic.ptx -pix_fmt rgb24
 
+FATE_SGI += fate-sgi-gray
+fate-sgi-gray: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/vulap_gray.sgi -pix_fmt gray
+
+FATE_SGI += fate-sgi-gray16
+fate-sgi-gray16: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/vulap_gray16.sgi -pix_fmt gray16
+
+FATE_SGI += fate-sgi-rgb24
+fate-sgi-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/vulap_rgb24.sgi -pix_fmt rgb24
+
+FATE_SGI += fate-sgi-rgb24-rle
+fate-sgi-rgb24-rle: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/uvmap_rgb24_rle.sgi -pix_fmt rgb24
+
+FATE_SGI += fate-sgi-rgb48
+fate-sgi-rgb48: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/vulap_rgb48.sgi -pix_fmt rgb48be
+
+FATE_SGI += fate-sgi-rgb48-rle
+fate-sgi-rgb48-rle: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/uvmap_rgb48_rle.sgi -pix_fmt rgb48be
+
+FATE_SGI += fate-sgi-rgba
+fate-sgi-rgba: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/vulap_rgba.sgi -pix_fmt rgba
+
+FATE_SGI += fate-sgi-rgba64
+fate-sgi-rgba64: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/vulap_rgba64.sgi -pix_fmt rgba64be
+
+FATE_SGI += fate-sgi-rgba64-rle
+fate-sgi-rgba64-rle: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/maya_rgba64_rle.sgi -pix_fmt rgba64be
+
+FATE_SGI-$(call DEMDEC, IMAGE2, SGI) += $(FATE_SGI)
+
+FATE_SAMPLES_AVCONV += $(FATE_SGI-yes)
+fate-sgi: $(FATE_SGI-yes)
+
 FATE_SUNRASTER += fate-sunraster-1bit-raw
 fate-sunraster-1bit-raw: CMD = framecrc -i $(TARGET_SAMPLES)/sunraster/lena-1bit-raw.sun
 
