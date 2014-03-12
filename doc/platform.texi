@@ -51,8 +51,8 @@ The toolchain provided with Xcode is sufficient to build the basic
 unacelerated code.
 
 OS X on PowerPC or ARM (iPhone) requires a preprocessor from
-@url{http://github.com/yuvi/gas-preprocessor} to build the optimized
-assembler functions. Just download the Perl script and put it somewhere
+@url{git://git.libav.org/gas-preprocessor.git} to build the optimized
+assembler functions. Put the Perl script somewhere
 in your PATH, Libav's configure will pick it up automatically.
 
 OS X on AMD64 and x86 requires @command{yasm} to build most of the
