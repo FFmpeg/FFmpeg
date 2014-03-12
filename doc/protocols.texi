@@ -233,8 +233,9 @@ value must be a string encoding the headers.
 Force a content type.
 
 @item user-agent
-Override User-Agent header. If not specified the protocol will use a
-string describing the libavformat build.
+@item user_agent
+Override the User-Agent header. If not specified the protocol will use a
+string describing the libavformat build. ("Lavf/<version>")
 
 @item multiple_requests
 Use persistent connections if set to 1. By default it is 0.

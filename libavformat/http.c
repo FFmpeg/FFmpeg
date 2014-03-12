@@ -52,13 +52,13 @@ typedef struct {
     /* Used if "Transfer-Encoding: chunked" otherwise -1. */
     int64_t chunksize;
     char *content_type;
-    char *user_agent;
     int64_t off, filesize, req_end_offset;
     char *location;
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
     char *headers;
     char *mime_type;
+    char *user_agent;
     /* Set if the server correctly handles Connection: close and will close
      * the connection after feeding us the content. */
     int willclose;
@@ -100,6 +100,7 @@ static const AVOption options[] = {
 {"chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
 {"headers", "set custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {"content_type", "force a content type", OFFSET(content_type), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+{"user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = DEFAULT_USER_AGENT}, 0, 0, D },
 {"user-agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = DEFAULT_USER_AGENT}, 0, 0, D },
 {"multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
 {"post_data", "set custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D|E },
