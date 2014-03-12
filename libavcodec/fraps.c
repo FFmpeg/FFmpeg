@@ -175,6 +175,8 @@ static int decode_frame(AVCodecContext *avctx,
         av_frame_unref(f);
     }
     avctx->pix_fmt = pix_fmt;
+    avctx->color_range = version & 1 ? AVCOL_RANGE_UNSPECIFIED
+                                     : AVCOL_RANGE_JPEG;
 
     expected_size = header_size;
 
