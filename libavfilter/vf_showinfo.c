@@ -22,6 +22,8 @@
  * filter for showing textual video frame information
  */
 
+#include <inttypes.h>
+
 #include "libavutil/adler32.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
@@ -57,7 +59,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     av_log(ctx, AV_LOG_INFO,
            "n:%d pts:%"PRId64" pts_time:%f "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
-           "checksum:%u plane_checksum:[%u %u %u %u]\n",
+           "checksum:%"PRIu32" plane_checksum:[%"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32"]\n",
            showinfo->frame,
            frame->pts, frame->pts * av_q2d(inlink->time_base),
            desc->name,
