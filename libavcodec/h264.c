@@ -35,7 +35,6 @@
 #include "dsputil.h"
 #include "error_resilience.h"
 #include "avcodec.h"
-#include "mpegvideo.h"
 #include "h264.h"
 #include "h264data.h"
 #include "h264chroma.h"

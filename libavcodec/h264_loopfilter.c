@@ -29,7 +29,6 @@
 #include "libavutil/intreadwrite.h"
 #include "internal.h"
 #include "avcodec.h"
-#include "mpegvideo.h"
 #include "h264.h"
 #include "mathops.h"
 #include "mpegutils.h"

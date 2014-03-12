@@ -44,7 +44,6 @@
 #include "internal.h"
 #include "avcodec.h"
 #include "mpegutils.h"
-#include "mpegvideo.h"
 #include "h264.h"
 
 #include "h264data.h" // FIXME FIXME FIXME

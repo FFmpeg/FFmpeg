@@ -32,7 +32,6 @@
 #include <stdint.h>
 
 #include "libavutil/rational.h"
-#include "mpegvideo.h"
 #include "h264.h"
 
 static const uint8_t golomb_to_pict_type[5] = {
