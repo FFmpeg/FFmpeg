@@ -1204,7 +1204,7 @@ function ff_put_vp8_\name\size\()_\hv\()_armv6, export=1
         mov             r4,  #\size
         stm             r12, {r4, r5}
         orr             r12, r6,  r7
-        b               vp8_put_\name\()_\hv\()_armv6 + 4
+        b               bl_put_\name\()_\hv\()_armv6
 endfunc
 .endm
 
@@ -1300,6 +1300,7 @@ vp8_mc_hv               bilin,  4, h,  v,  2
 
 function vp8_put_epel_h6_armv6
         push            {r1, r4-r11, lr}
+bl_put_epel_h6_armv6:
         sub             r2,  r2,  #2
         movrel          lr,  sixtap_filters_13245600 - 16
         add             lr,  lr,  r12, lsl #3
@@ -1358,6 +1359,7 @@ endfunc
 
 function vp8_put_epel_v6_armv6
         push            {r1, r4-r11, lr}
+bl_put_epel_v6_armv6:
         movrel          lr,  sixtap_filters_13245600 - 16
         add             lr,  lr,  r12, lsl #3
         str             r3,  [sp, #48]
@@ -1437,6 +1439,7 @@ endfunc
 
 function vp8_put_epel_h4_armv6
         push            {r1, r4-r11, lr}
+bl_put_epel_h4_armv6:
         subs            r2,  r2,  #1
         movrel          lr,  fourtap_filters_1324 - 4
         add             lr,  lr,  r12, lsl #2
@@ -1483,6 +1486,7 @@ endfunc
 
 function vp8_put_epel_v4_armv6
         push            {r1, r4-r11, lr}
+bl_put_epel_v4_armv6:
         movrel          lr,  fourtap_filters_1324 - 4
         add             lr,  lr,  r12, lsl #2
         ldm             lr,  {r5, r6}
@@ -1544,6 +1548,7 @@ endfunc
 
 function vp8_put_bilin_h_armv6
         push            {r1, r4-r11, lr}
+bl_put_bilin_h_armv6:
         rsb             r5,  r12, r12, lsl #16
         ldr             r12, [sp, #44]
         sub             r3,  r3,  r4
@@ -1589,6 +1594,7 @@ endfunc
 
 function vp8_put_bilin_v_armv6
         push            {r1, r4-r11, lr}
+bl_put_bilin_v_armv6:
         rsb             r5,  r12, r12, lsl #16
         ldr             r12, [sp, #44]
         add             r5,  r5,  #8
