@@ -410,6 +410,7 @@ static int parse_content_encoding(URLContext *h, const char *p)
 static int parse_icy(HTTPContext *s, const char *tag, const char *p)
 {
     int len = 4 + strlen(p) + strlen(tag);
+    int is_first = !s->icy_metadata_headers;
     int ret;
 
     if (s->icy_metadata_headers)
@@ -417,6 +418,9 @@ static int parse_icy(HTTPContext *s, const char *tag, const char *p)
 
     if ((ret = av_reallocp(&s->icy_metadata_headers, len)) < 0)
         return ret;
+
+    if (is_first)
+        *s->icy_metadata_headers = '\0';
 
     av_strlcatf(s->icy_metadata_headers, len, "%s: %s\n", tag, p);
 
