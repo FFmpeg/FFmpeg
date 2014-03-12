@@ -1530,6 +1530,12 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
                     return 1;
         }
         return 0;
+    } else if (*spec == 'i' && *(spec + 1) == ':') {
+        int stream_id;
+        char *endptr;
+        spec += 2;
+        stream_id = strtol(spec, &endptr, 0);
+        return stream_id == st->id;
     } else if (!*spec) /* empty specifier, matches everything */
         return 1;
 
