@@ -52,7 +52,7 @@ unacelerated code.
 
 Mac OS X on PowerPC or ARM (iPhone) requires a preprocessor from
 @url{https://github.com/FFmpeg/gas-preprocessor} or
-@url{https://github.com/yuvi/gas-preprocessor} to build the optimized
+@url{https://github.com/yuvi/gas-preprocessor}(currently outdated) to build the optimized
 assembler functions. Put the Perl script somewhere
 in your PATH, FFmpeg's configure will pick it up automatically.
 
