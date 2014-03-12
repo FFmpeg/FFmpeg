@@ -358,7 +358,7 @@ static int parse_location(HTTPContext *s, const char *p)
 }
 
 /* "bytes $from-$to/$document_size" */
-static void parse_content_range(URLContext *h, char *p)
+static void parse_content_range(URLContext *h, const char *p)
 {
     HTTPContext *s = h->priv_data;
     const char *slash;
@@ -373,7 +373,7 @@ static void parse_content_range(URLContext *h, char *p)
         h->is_streamed = 0; /* we _can_ in fact seek */
 }
 
-static int parse_content_encoding(URLContext *h, char *p)
+static int parse_content_encoding(URLContext *h, const char *p)
 {
     HTTPContext *s = h->priv_data;
 
