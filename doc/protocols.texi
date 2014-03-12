@@ -225,6 +225,9 @@ value is -1.
 @item chunked_post
 If set to 1 use chunked Transfer-Encoding for posts, default is 1.
 
+@item content_type
+Set a specific content type for the POST messages.
+
 @item headers
 Set custom HTTP headers, can override built in default headers. The
 value must be a string encoding the headers.
@@ -234,9 +237,6 @@ Use persistent connections if set to 1, default is 0.
 
 @item post_data
 Set custom HTTP post data.
-
-@item content_type
-Force a content type.
 
 @item user-agent
 @item user_agent
