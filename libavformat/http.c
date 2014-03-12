@@ -58,6 +58,7 @@ typedef struct {
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
     char *headers;
+    char *mime_type;
     /* Set if the server correctly handles Connection: close and will close
      * the connection after feeding us the content. */
     int willclose;
@@ -73,7 +74,6 @@ typedef struct {
     int post_datalen;
     int is_akamai;
     int is_mediagateway;
-    char *mime_type;
     char *cookies;          ///< holds newline (\n) delimited Set-Cookie header field values (without the "Set-Cookie: " field name)
     int icy;
     /* how much data was read since the last ICY metadata packet */
@@ -103,7 +103,7 @@ static const AVOption options[] = {
 {"user-agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = DEFAULT_USER_AGENT}, 0, 0, D },
 {"multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
 {"post_data", "set custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D|E },
-{"mime_type", "set MIME type", OFFSET(mime_type), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
+{"mime_type", "export the MIME type", OFFSET(mime_type), AV_OPT_TYPE_STRING, {0}, 0, 0, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY  },
 {"cookies", "set cookies to be sent in applicable future requests, use newline delimited Set-Cookie HTTP field value syntax", OFFSET(cookies), AV_OPT_TYPE_STRING, {0}, 0, 0, D },
 {"icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D },
 {"icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, {0}, 0, 0, AV_OPT_FLAG_EXPORT },
@@ -490,7 +490,8 @@ static int process_line(URLContext *h, char *line, int line_count,
                 s->is_mediagateway = 1;
             }
         } else if (!av_strcasecmp (tag, "Content-Type")) {
-            av_free(s->mime_type); s->mime_type = av_strdup(p);
+            av_free(s->mime_type);
+            s->mime_type = av_strdup(p);
         } else if (!av_strcasecmp (tag, "Set-Cookie")) {
             if (!s->cookies) {
                 if (!(s->cookies = av_strdup(p)))
