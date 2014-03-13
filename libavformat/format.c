@@ -19,9 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avformat.h"
-#include "internal.h"
 #include "libavutil/avstring.h"
+
+#include "avio_internal.h"
+#include "avformat.h"
+#include "id3v2.h"
+#include "internal.h"
 
 /**
  * @file
@@ -180,4 +183,138 @@ AVInputFormat *av_find_input_format(const char *short_name)
         if (match_format(short_name, fmt->name))
             return fmt;
     return NULL;
+}
+
+AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened,
+                                      int *score_max)
+{
+    AVProbeData lpd = *pd;
+    AVInputFormat *fmt1 = NULL, *fmt;
+    int score, id3 = 0;
+
+    if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
+        int id3len = ff_id3v2_tag_len(lpd.buf);
+        if (lpd.buf_size > id3len + 16) {
+            lpd.buf      += id3len;
+            lpd.buf_size -= id3len;
+        }
+        id3 = 1;
+    }
+
+    fmt = NULL;
+    while ((fmt1 = av_iformat_next(fmt1))) {
+        if (!is_opened == !(fmt1->flags & AVFMT_NOFILE))
+            continue;
+        score = 0;
+        if (fmt1->read_probe) {
+            score = fmt1->read_probe(&lpd);
+        } else if (fmt1->extensions) {
+            if (av_match_ext(lpd.filename, fmt1->extensions))
+                score = AVPROBE_SCORE_EXTENSION;
+        }
+        if (score > *score_max) {
+            *score_max = score;
+            fmt        = fmt1;
+        } else if (score == *score_max)
+            fmt = NULL;
+    }
+
+    // A hack for files with huge id3v2 tags -- try to guess by file extension.
+    if (!fmt && is_opened && *score_max < AVPROBE_SCORE_EXTENSION / 2) {
+        while ((fmt = av_iformat_next(fmt)))
+            if (fmt->extensions &&
+                av_match_ext(lpd.filename, fmt->extensions)) {
+                *score_max = AVPROBE_SCORE_EXTENSION / 2;
+                break;
+            }
+    }
+
+    if (!fmt && id3 && *score_max < AVPROBE_SCORE_EXTENSION / 2 - 1) {
+        while ((fmt = av_iformat_next(fmt)))
+            if (fmt->extensions && av_match_ext("mp3", fmt->extensions)) {
+                *score_max = AVPROBE_SCORE_EXTENSION / 2 - 1;
+                break;
+            }
+    }
+
+    return fmt;
+}
+
+AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
+{
+    int score = 0;
+    return av_probe_input_format2(pd, is_opened, &score);
+}
+
+/* size of probe buffer, for guessing file type from file contents */
+#define PROBE_BUF_MIN 2048
+#define PROBE_BUF_MAX (1 << 20)
+
+int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
+                          const char *filename, void *logctx,
+                          unsigned int offset, unsigned int max_probe_size)
+{
+    AVProbeData pd = { filename ? filename : "" };
+    uint8_t *buf = NULL;
+    int ret = 0, probe_size;
+
+    if (!max_probe_size)
+        max_probe_size = PROBE_BUF_MAX;
+    else if (max_probe_size > PROBE_BUF_MAX)
+        max_probe_size = PROBE_BUF_MAX;
+    else if (max_probe_size < PROBE_BUF_MIN)
+        return AVERROR(EINVAL);
+
+    if (offset >= max_probe_size)
+        return AVERROR(EINVAL);
+    avio_skip(pb, offset);
+    max_probe_size -= offset;
+
+    for (probe_size = PROBE_BUF_MIN; probe_size <= max_probe_size && !*fmt;
+         probe_size = FFMIN(probe_size << 1,
+                            FFMAX(max_probe_size, probe_size + 1))) {
+        int score = probe_size < max_probe_size ? AVPROBE_SCORE_MAX / 4 : 0;
+
+        /* Read probe data. */
+        if ((ret = av_reallocp(&buf, probe_size + AVPROBE_PADDING_SIZE)) < 0)
+            return ret;
+        if ((ret = avio_read(pb, buf + pd.buf_size,
+                             probe_size - pd.buf_size)) < 0) {
+            /* Fail if error was not end of file, otherwise, lower score. */
+            if (ret != AVERROR_EOF) {
+                av_free(buf);
+                return ret;
+            }
+            score = 0;
+            ret   = 0;          /* error was end of file, nothing read */
+        }
+        pd.buf_size += ret;
+        pd.buf       = buf;
+
+        memset(pd.buf + pd.buf_size, 0, AVPROBE_PADDING_SIZE);
+
+        /* Guess file format. */
+        *fmt = av_probe_input_format2(&pd, 1, &score);
+        if (*fmt) {
+            /* This can only be true in the last iteration. */
+            if (score <= AVPROBE_SCORE_MAX / 4) {
+                av_log(logctx, AV_LOG_WARNING,
+                       "Format detected only with low score of %d, "
+                       "misdetection possible!\n", score);
+            } else
+                av_log(logctx, AV_LOG_DEBUG,
+                       "Probed with size=%d and score=%d\n", probe_size, score);
+        }
+    }
+
+    if (!*fmt) {
+        av_free(buf);
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* Rewind. Reuse probe buffer to avoid seeking. */
+    if ((ret = ffio_rewind_with_probe_data(pb, buf, pd.buf_size)) < 0)
+        av_free(buf);
+
+    return ret;
 }
