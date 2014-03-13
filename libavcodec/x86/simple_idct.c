@@ -21,6 +21,7 @@
  */
 #include "libavcodec/simple_idct.h"
 #include "libavutil/mem.h"
+#include "libavutil/x86/asm.h"
 #include "dsputil_x86.h"
 
 #if HAVE_INLINE_ASM

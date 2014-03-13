@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "libavutil/x86/asm.h"
 #include "constants.h"
