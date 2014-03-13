@@ -36,7 +36,7 @@ pb_bswap32: db 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
 SECTION_TEXT
 
 %macro SCALARPRODUCT 0
-; int scalarproduct_int16(int16_t *v1, int16_t *v2, int order)
+; int ff_scalarproduct_int16(int16_t *v1, int16_t *v2, int order)
 cglobal scalarproduct_int16, 3,3,3, v1, v2, order
     shl orderq, 1
     add v1q, orderq
@@ -66,7 +66,8 @@ cglobal scalarproduct_int16, 3,3,3, v1, v2, order
 %endif
     RET
 
-; int scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
+; int ff_scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3,
+;                                     int order, int mul)
 cglobal scalarproduct_and_madd_int16, 4,4,8, v1, v2, v3, order, mul
     shl orderq, 1
     movd    m7, mulm
@@ -162,7 +163,8 @@ align 16
 %endif
 %endmacro
 
-; int scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
+; int ff_scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3,
+;                                     int order, int mul)
 INIT_XMM ssse3
 cglobal scalarproduct_and_madd_int16, 4,5,10, v1, v2, v3, order, mul
     shl orderq, 1
@@ -336,7 +338,9 @@ INIT_XMM ssse3, atom
 APPLY_WINDOW_INT16 1
 
 
-; void add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top)
+; void ff_add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top,
+;                                           const uint8_t *diff, int w,
+;                                           int *left, int *left_top)
 INIT_MMX mmxext
 cglobal add_hfyu_median_prediction, 6,6,0, dst, top, diff, w, left, left_top
     movq    mm0, [topq]
@@ -439,7 +443,8 @@ cglobal add_hfyu_median_prediction, 6,6,0, dst, top, diff, w, left, left_top
     RET
 %endmacro
 
-; int add_hfyu_left_prediction(uint8_t *dst, const uint8_t *src, int w, int left)
+; int ff_add_hfyu_left_prediction(uint8_t *dst, const uint8_t *src,
+;                                 int w, int left)
 INIT_MMX ssse3
 cglobal add_hfyu_left_prediction, 3,3,7, dst, src, w, left
 .skip_prologue:
@@ -601,7 +606,7 @@ VECTOR_CLIP_INT32 6, 1, 0, 0
     add      r0, 16
 %endmacro
 
-; void bswap_buf(uint32_t *dst, const uint32_t *src, int w);
+; void ff_bswap_buf(uint32_t *dst, const uint32_t *src, int w);
 %macro BSWAP32_BUF 0
 %if cpuflag(ssse3)
 cglobal bswap32_buf, 3,4,3

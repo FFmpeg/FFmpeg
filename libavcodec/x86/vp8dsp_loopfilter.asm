@@ -43,7 +43,7 @@ cextern pb_80
 SECTION .text
 
 ;-----------------------------------------------------------------------------
-; void vp8_h/v_loop_filter_simple_<opt>(uint8_t *dst, int stride, int flim);
+; void ff_vp8_h/v_loop_filter_simple_<opt>(uint8_t *dst, int stride, int flim);
 ;-----------------------------------------------------------------------------
 
 ; macro called with 7 mm register indexes as argument, and 4 regular registers
@@ -429,8 +429,8 @@ INIT_XMM sse4
 SIMPLE_LOOPFILTER h, 5
 
 ;-----------------------------------------------------------------------------
-; void vp8_h/v_loop_filter<size>_inner_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
-;                                            int flimE, int flimI, int hev_thr);
+; void ff_vp8_h/v_loop_filter<size>_inner_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
+;                                               int flimE, int flimI, int hev_thr);
 ;-----------------------------------------------------------------------------
 
 %macro INNER_LOOPFILTER 2
@@ -921,8 +921,8 @@ INNER_LOOPFILTER v,  8
 INNER_LOOPFILTER h,  8
 
 ;-----------------------------------------------------------------------------
-; void vp8_h/v_loop_filter<size>_mbedge_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
-;                                            int flimE, int flimI, int hev_thr);
+; void ff_vp8_h/v_loop_filter<size>_mbedge_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
+;                                                int flimE, int flimI, int hev_thr);
 ;-----------------------------------------------------------------------------
 
 %macro MBEDGE_LOOPFILTER 2

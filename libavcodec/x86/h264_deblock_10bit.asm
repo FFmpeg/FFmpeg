@@ -152,7 +152,8 @@ cextern pw_4
 
 %macro DEBLOCK_LUMA 0
 ;-----------------------------------------------------------------------------
-; void deblock_v_luma( uint16_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
+; void ff_deblock_v_luma_10(uint16_t *pix, int stride, int alpha, int beta,
+;                           int8_t *tc0)
 ;-----------------------------------------------------------------------------
 cglobal deblock_v_luma_10, 5,5,8*(mmsize/16)
     %assign pad 5*mmsize+12-(stack_offset&15)
@@ -600,7 +601,8 @@ DEBLOCK_LUMA_64
 
 %if ARCH_X86_64
 ;-----------------------------------------------------------------------------
-; void deblock_v_luma_intra( uint16_t *pix, int stride, int alpha, int beta )
+; void ff_deblock_v_luma_intra_10(uint16_t *pix, int stride, int alpha,
+;                                 int beta)
 ;-----------------------------------------------------------------------------
 %macro DEBLOCK_LUMA_INTRA_64 0
 cglobal deblock_v_luma_intra_10, 4,7,16
@@ -651,7 +653,8 @@ cglobal deblock_v_luma_intra_10, 4,7,16
     REP_RET
 
 ;-----------------------------------------------------------------------------
-; void deblock_h_luma_intra( uint16_t *pix, int stride, int alpha, int beta )
+; void ff_deblock_h_luma_intra_10(uint16_t *pix, int stride, int alpha,
+;                                 int beta)
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_luma_intra_10, 4,7,16
     %define t0 m15
@@ -723,7 +726,8 @@ DEBLOCK_LUMA_INTRA_64
 
 %macro DEBLOCK_LUMA_INTRA 0
 ;-----------------------------------------------------------------------------
-; void deblock_v_luma_intra( uint16_t *pix, int stride, int alpha, int beta )
+; void ff_deblock_v_luma_intra_10(uint16_t *pix, int stride, int alpha,
+;                                 int beta)
 ;-----------------------------------------------------------------------------
 cglobal deblock_v_luma_intra_10, 4,7,8*(mmsize/16)
     LUMA_INTRA_INIT 3
@@ -751,7 +755,8 @@ cglobal deblock_v_luma_intra_10, 4,7,8*(mmsize/16)
     RET
 
 ;-----------------------------------------------------------------------------
-; void deblock_h_luma_intra( uint16_t *pix, int stride, int alpha, int beta )
+; void ff_deblock_h_luma_intra_10(uint16_t *pix, int stride, int alpha,
+;                                 int beta)
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_luma_intra_10, 4,7,8*(mmsize/16)
     LUMA_INTRA_INIT 8
@@ -849,7 +854,8 @@ DEBLOCK_LUMA_INTRA
 
 %macro DEBLOCK_CHROMA 0
 ;-----------------------------------------------------------------------------
-; void deblock_v_chroma( uint16_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
+; void ff_deblock_v_chroma_10(uint16_t *pix, int stride, int alpha, int beta,
+;                             int8_t *tc0)
 ;-----------------------------------------------------------------------------
 cglobal deblock_v_chroma_10, 5,7-(mmsize/16),8*(mmsize/16)
     mov         r5, r0
@@ -883,7 +889,8 @@ cglobal deblock_v_chroma_10, 5,7-(mmsize/16),8*(mmsize/16)
 %endif
 
 ;-----------------------------------------------------------------------------
-; void deblock_v_chroma_intra( uint16_t *pix, int stride, int alpha, int beta )
+; void ff_deblock_v_chroma_intra_10(uint16_t *pix, int stride, int alpha,
+;                                   int beta)
 ;-----------------------------------------------------------------------------
 cglobal deblock_v_chroma_intra_10, 4,6-(mmsize/16),8*(mmsize/16)
     mov         r4, r0

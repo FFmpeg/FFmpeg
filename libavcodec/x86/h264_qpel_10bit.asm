@@ -167,7 +167,7 @@ stub_%1_h264_qpel%3_%2_10 %+ SUFFIX:
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc00(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc00(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro COPY4 0
     movu          m0, [r1     ]
@@ -221,7 +221,7 @@ MC00 put
 MC00 avg
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc20(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc20(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC_CACHE 1
 %define OP_MOV mova
@@ -305,7 +305,7 @@ cglobal_mc %1, mc20, %2, 3,4,9
 MC_CACHE MC20
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc30(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc30(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC30 2
 cglobal_mc %1, mc30, %2, 3,5,9
@@ -316,7 +316,7 @@ cglobal_mc %1, mc30, %2, 3,5,9
 MC_CACHE MC30
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc10(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc10(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC10 2
 cglobal_mc %1, mc10, %2, 3,5,9
@@ -383,7 +383,7 @@ cglobal_mc %1, mc10, %2, 3,5,9
 MC_CACHE MC10
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc02(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc02(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro V_FILT 10
 v_filt%9_%10_10
@@ -432,7 +432,7 @@ cglobal_mc %1, mc02, %2, 3,4,8
 MC MC02
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc01(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc01(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC01 2
 cglobal_mc %1, mc01, %2, 3,5,8
@@ -458,7 +458,7 @@ cglobal_mc %1, mc01, %2, 3,5,8
 MC MC01
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc03(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc03(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC03 2
 cglobal_mc %1, mc03, %2, 3,5,8
@@ -469,7 +469,7 @@ cglobal_mc %1, mc03, %2, 3,5,8
 MC MC03
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc11(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc11(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro H_FILT_AVG 2-3
 h_filt%1_%2_10:
@@ -551,7 +551,7 @@ cglobal_mc %1, mc11, %2, 3,6,8
 MC MC11
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc31(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc31(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC31 2
 cglobal_mc %1, mc31, %2, 3,6,8
@@ -563,7 +563,7 @@ cglobal_mc %1, mc31, %2, 3,6,8
 MC MC31
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc13(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc13(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC13 2
 cglobal_mc %1, mc13, %2, 3,7,12
@@ -574,7 +574,7 @@ cglobal_mc %1, mc13, %2, 3,7,12
 MC MC13
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc33(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc33(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC33 2
 cglobal_mc %1, mc33, %2, 3,6,8
@@ -586,7 +586,7 @@ cglobal_mc %1, mc33, %2, 3,6,8
 MC MC33
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc22(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc22(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro FILT_H2 3
     psubw  %1, %2  ; a-b
@@ -757,7 +757,7 @@ cglobal_mc %1, mc22, %2, 3,7,12
 MC MC22
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc12(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc12(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC12 2
 cglobal_mc %1, mc12, %2, 3,7,12
@@ -802,7 +802,7 @@ cglobal_mc %1, mc12, %2, 3,7,12
 MC MC12
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc32(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc32(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC32 2
 cglobal_mc %1, mc32, %2, 3,7,12
@@ -820,7 +820,7 @@ cglobal_mc %1, mc32, %2, 3,7,12
 MC MC32
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc21(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc21(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro H_NRD 1
 put_h%1_10:
@@ -873,7 +873,7 @@ cglobal_mc %1, mc21, %2, 3,7,12
 MC MC21
 
 ;-----------------------------------------------------------------------------
-; void h264_qpel_mc23(uint8_t *dst, uint8_t *src, int stride)
+; void ff_h264_qpel_mc23(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC23 2
 cglobal_mc %1, mc23, %2, 3,7,12

@@ -33,7 +33,7 @@ cextern pw_20
 
 SECTION_TEXT
 
-; put_no_rnd_pixels8_l2(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+; void ff_put_no_rnd_pixels8_l2(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 %macro PUT_NO_RND_PIXELS8_L2 0
 cglobal put_no_rnd_pixels8_l2, 6,6
     movsxdifnidn r4, r4d
@@ -99,7 +99,7 @@ INIT_MMX mmxext
 PUT_NO_RND_PIXELS8_L2
 
 
-; put_no_rnd_pixels16_l2(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+; void ff_put_no_rnd_pixels16_l2(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 %macro PUT_NO_RND_PIXELS16_l2 0
 cglobal put_no_rnd_pixels16_l2, 6,6
     movsxdifnidn r3, r3d

@@ -31,9 +31,10 @@ SECTION_TEXT
 %endif
 %endmacro
 
-;---------------------------------------------------------------------------------
-; void int32_to_float_fmul_scalar(float *dst, const int32_t *src, float mul, int len);
-;---------------------------------------------------------------------------------
+;------------------------------------------------------------------------------
+; void ff_int32_to_float_fmul_scalar(float *dst, const int32_t *src, float mul,
+;                                    int len);
+;------------------------------------------------------------------------------
 %macro INT32_TO_FLOAT_FMUL_SCALAR 1
 %if UNIX64
 cglobal int32_to_float_fmul_scalar, 3, 3, %1, dst, src, len
@@ -243,8 +244,10 @@ FLOAT_TO_INT16_INTERLEAVE2
 INIT_XMM sse2
 FLOAT_TO_INT16_INTERLEAVE2
 
+;-----------------------------------------------------------------------------
+; void ff_float_to_int16_interleave6(int16_t *dst, const float **src, int len)
+;-----------------------------------------------------------------------------
 %macro FLOAT_TO_INT16_INTERLEAVE6 0
-; void float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len)
 cglobal float_to_int16_interleave6, 2, 8, 0, dst, src, src1, src2, src3, src4, src5, len
 %if ARCH_X86_64
     mov     lend, r2d

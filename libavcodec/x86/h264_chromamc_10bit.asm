@@ -57,11 +57,10 @@ SECTION .text
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void put/avg_h264_chroma_mc8(pixel *dst, pixel *src, int stride, int h, int mx, int my)
+; void ff_put/avg_h264_chroma_mc8(pixel *dst, pixel *src, int stride, int h,
+;                                 int mx, int my)
 ;-----------------------------------------------------------------------------
 %macro CHROMA_MC8 1
-; put/avg_h264_chroma_mc8_*(uint8_t *dst /*align 8*/, uint8_t *src /*align 1*/,
-;                              int stride, int h, int mx, int my)
 cglobal %1_h264_chroma_mc8_10, 6,7,8
     movsxdifnidn  r2, r2d
     mov          r6d, r5d
@@ -150,7 +149,8 @@ cglobal %1_h264_chroma_mc8_10, 6,7,8
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void put/avg_h264_chroma_mc4(pixel *dst, pixel *src, int stride, int h, int mx, int my)
+; void ff_put/avg_h264_chroma_mc4(pixel *dst, pixel *src, int stride, int h,
+;                                 int mx, int my)
 ;-----------------------------------------------------------------------------
 ;TODO: xmm mc4
 %macro MC4_OP 2
@@ -200,7 +200,8 @@ cglobal %1_h264_chroma_mc4_10, 6,6,7
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void put/avg_h264_chroma_mc2(pixel *dst, pixel *src, int stride, int h, int mx, int my)
+; void ff_put/avg_h264_chroma_mc2(pixel *dst, pixel *src, int stride, int h,
+;                                 int mx, int my)
 ;-----------------------------------------------------------------------------
 %macro CHROMA_MC2 1
 cglobal %1_h264_chroma_mc2_10, 6,7

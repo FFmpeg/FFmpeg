@@ -231,8 +231,8 @@ section .text align=16
     SUMSUB_SHPK m2,  m3,  m4,  m5,  m6,  m7,  %2
 %endmacro
 
-; void prores_idct_put_10_<opt>(uint8_t *pixels, int stride,
-;                               int16_t *block, const int16_t *qmat);
+; void ff_prores_idct_put_10_<opt>(uint8_t *pixels, int stride,
+;                                  int16_t *block, const int16_t *qmat);
 %macro idct_put_fn 1
 cglobal prores_idct_put_10, 4, 4, %1
     movsxd      r1,  r1d
