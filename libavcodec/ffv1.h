@@ -35,7 +35,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/timer.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
@@ -115,8 +114,6 @@ typedef struct FFV1Context {
 
     int gob_count;
     int quant_table_count;
-
-    DSPContext dsp;
 
     struct FFV1Context *slice_context[MAX_SLICES];
     int slice_count;
