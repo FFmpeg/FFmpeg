@@ -108,21 +108,18 @@ static const uint8_t idct_sse2_row_perm[8] = { 0, 4, 1, 5, 2, 6, 3, 7 };
 av_cold void ff_init_scantable(uint8_t *permutation, ScanTable *st,
                                const uint8_t *src_scantable)
 {
-    int i;
-    int end;
+    int i, end;
 
     st->scantable = src_scantable;
 
     for (i = 0; i < 64; i++) {
-        int j;
-        j = src_scantable[i];
+        int j = src_scantable[i];
         st->permutated[i] = permutation[j];
     }
 
     end = -1;
     for (i = 0; i < 64; i++) {
-        int j;
-        j = st->permutated[i];
+        int j = st->permutated[i];
         if (j > end)
             end = j;
         st->raster_end[i] = end;
@@ -167,9 +164,8 @@ av_cold void ff_init_scantable_permutation(uint8_t *idct_permutation,
 
 static int pix_sum_c(uint8_t *pix, int line_size)
 {
-    int s, i, j;
+    int s = 0, i, j;
 
-    s = 0;
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j += 8) {
             s   += pix[0];
@@ -189,10 +185,9 @@ static int pix_sum_c(uint8_t *pix, int line_size)
 
 static int pix_norm1_c(uint8_t *pix, int line_size)
 {
-    int s, i, j;
+    int s = 0, i, j;
     uint32_t *sq = ff_squareTbl + 256;
 
-    s = 0;
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j += 8) {
 #if 0
@@ -261,10 +256,9 @@ static void bswap16_buf(uint16_t *dst, const uint16_t *src, int len)
 
 static int sse4_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
     uint32_t *sq = ff_squareTbl + 256;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += sq[pix1[0] - pix2[0]];
         s    += sq[pix1[1] - pix2[1]];
@@ -278,10 +272,9 @@ static int sse4_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 
 static int sse8_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
     uint32_t *sq = ff_squareTbl + 256;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += sq[pix1[0] - pix2[0]];
         s    += sq[pix1[1] - pix2[1]];
@@ -299,10 +292,9 @@ static int sse8_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 
 static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
     uint32_t *sq = ff_squareTbl + 256;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s += sq[pix1[0]  - pix2[0]];
         s += sq[pix1[1]  - pix2[1]];
@@ -562,12 +554,12 @@ void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
         vx = ox;
         vy = oy;
         for (x = 0; x < 8; x++) { // FIXME: optimize
-            int src_x, src_y, frac_x, frac_y, index;
+            int index;
+            int src_x  = vx >> 16;
+            int src_y  = vy >> 16;
+            int frac_x = src_x & (s - 1);
+            int frac_y = src_y & (s - 1);
 
-            src_x   = vx >> 16;
-            src_y   = vy >> 16;
-            frac_x  = src_x & (s - 1);
-            frac_y  = src_y & (s - 1);
             src_x >>= shift;
             src_y >>= shift;
 
@@ -1753,9 +1745,8 @@ static void put_mspel8_mc22_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 static inline int pix_abs16_c(void *v, uint8_t *pix1, uint8_t *pix2,
                               int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0]  - pix2[0]);
         s    += abs(pix1[1]  - pix2[1]);
@@ -1782,9 +1773,8 @@ static inline int pix_abs16_c(void *v, uint8_t *pix1, uint8_t *pix2,
 static int pix_abs16_x2_c(void *v, uint8_t *pix1, uint8_t *pix2,
                           int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0]  - avg2(pix2[0],  pix2[1]));
         s    += abs(pix1[1]  - avg2(pix2[1],  pix2[2]));
@@ -1811,10 +1801,9 @@ static int pix_abs16_x2_c(void *v, uint8_t *pix1, uint8_t *pix2,
 static int pix_abs16_y2_c(void *v, uint8_t *pix1, uint8_t *pix2,
                           int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
     uint8_t *pix3 = pix2 + line_size;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0]  - avg2(pix2[0],  pix3[0]));
         s    += abs(pix1[1]  - avg2(pix2[1],  pix3[1]));
@@ -1842,10 +1831,9 @@ static int pix_abs16_y2_c(void *v, uint8_t *pix1, uint8_t *pix2,
 static int pix_abs16_xy2_c(void *v, uint8_t *pix1, uint8_t *pix2,
                            int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
     uint8_t *pix3 = pix2 + line_size;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0]  - avg4(pix2[0],  pix2[1],  pix3[0],  pix3[1]));
         s    += abs(pix1[1]  - avg4(pix2[1],  pix2[2],  pix3[1],  pix3[2]));
@@ -1873,9 +1861,8 @@ static int pix_abs16_xy2_c(void *v, uint8_t *pix1, uint8_t *pix2,
 static inline int pix_abs8_c(void *v, uint8_t *pix1, uint8_t *pix2,
                              int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0] - pix2[0]);
         s    += abs(pix1[1] - pix2[1]);
@@ -1894,9 +1881,8 @@ static inline int pix_abs8_c(void *v, uint8_t *pix1, uint8_t *pix2,
 static int pix_abs8_x2_c(void *v, uint8_t *pix1, uint8_t *pix2,
                          int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0] - avg2(pix2[0], pix2[1]));
         s    += abs(pix1[1] - avg2(pix2[1], pix2[2]));
@@ -1915,10 +1901,9 @@ static int pix_abs8_x2_c(void *v, uint8_t *pix1, uint8_t *pix2,
 static int pix_abs8_y2_c(void *v, uint8_t *pix1, uint8_t *pix2,
                          int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
     uint8_t *pix3 = pix2 + line_size;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0] - avg2(pix2[0], pix3[0]));
         s    += abs(pix1[1] - avg2(pix2[1], pix3[1]));
@@ -1938,10 +1923,9 @@ static int pix_abs8_y2_c(void *v, uint8_t *pix1, uint8_t *pix2,
 static int pix_abs8_xy2_c(void *v, uint8_t *pix1, uint8_t *pix2,
                           int line_size, int h)
 {
-    int s, i;
+    int s = 0, i;
     uint8_t *pix3 = pix2 + line_size;
 
-    s = 0;
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0] - avg4(pix2[0], pix2[1], pix3[0], pix3[1]));
         s    += abs(pix1[1] - avg4(pix2[1], pix2[2], pix3[1], pix3[2]));
@@ -1961,9 +1945,7 @@ static int pix_abs8_xy2_c(void *v, uint8_t *pix1, uint8_t *pix2,
 static int nsse16_c(void *v, uint8_t *s1, uint8_t *s2, int stride, int h)
 {
     MpegEncContext *c = v;
-    int score1 = 0;
-    int score2 = 0;
-    int x, y;
+    int score1 = 0, score2 = 0, x, y;
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < 16; x++)
@@ -1988,9 +1970,7 @@ static int nsse16_c(void *v, uint8_t *s1, uint8_t *s2, int stride, int h)
 static int nsse8_c(void *v, uint8_t *s1, uint8_t *s2, int stride, int h)
 {
     MpegEncContext *c = v;
-    int score1 = 0;
-    int score2 = 0;
-    int x, y;
+    int score1 = 0, score2 = 0, x, y;
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < 8; x++)
@@ -2226,12 +2206,7 @@ static void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, const uint8_t *src,
                                              int w, int *red, int *green,
                                              int *blue, int *alpha)
 {
-    int i;
-    int r, g, b, a;
-    r = *red;
-    g = *green;
-    b = *blue;
-    a = *alpha;
+    int i, r = *red, g = *green, b = *blue, a = *alpha;
 
     for (i = 0; i < w; i++) {
         b += src[4 * i + B];
@@ -2273,9 +2248,7 @@ static void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, const uint8_t *src,
 static int hadamard8_diff8x8_c(/* MpegEncContext */ void *s, uint8_t *dst,
                                uint8_t *src, int stride, int h)
 {
-    int i;
-    int temp[64];
-    int sum = 0;
+    int i, temp[64], sum = 0;
 
     av_assert2(h == 8);
 
@@ -2327,9 +2300,7 @@ static int hadamard8_diff8x8_c(/* MpegEncContext */ void *s, uint8_t *dst,
 static int hadamard8_intra8x8_c(/* MpegEncContext */ void *s, uint8_t *src,
                                 uint8_t *dummy, int stride, int h)
 {
-    int i;
-    int temp[64];
-    int sum = 0;
+    int i, temp[64], sum = 0;
 
     av_assert2(h == 8);
 
@@ -2425,8 +2396,7 @@ static int dct264_sad8x8_c(/* MpegEncContext */ void *c, uint8_t *src1,
 {
     MpegEncContext *const s = (MpegEncContext *) c;
     int16_t dct[8][8];
-    int i;
-    int sum = 0;
+    int i, sum = 0;
 
     s->dsp.diff_pixels(dct[0], src1, src2, stride);
 
@@ -2501,8 +2471,7 @@ static int rd8x8_c(/* MpegEncContext */ void *c, uint8_t *src1, uint8_t *src2,
     LOCAL_ALIGNED_16(uint8_t, lsrc2, [64]);
     int i, last, run, bits, level, distortion, start_i;
     const int esc_length = s->ac_esc_length;
-    uint8_t *length;
-    uint8_t *last_length;
+    uint8_t *length, *last_length;
 
     av_assert2(h == 8);
 
@@ -2578,8 +2547,7 @@ static int bit8x8_c(/* MpegEncContext */ void *c, uint8_t *src1, uint8_t *src2,
     LOCAL_ALIGNED_16(int16_t, temp, [64]);
     int i, last, run, bits, level, start_i;
     const int esc_length = s->ac_esc_length;
-    uint8_t *length;
-    uint8_t *last_length;
+    uint8_t *length, *last_length;
 
     av_assert2(h == 8);
 
@@ -2638,8 +2606,7 @@ static int vsad_intra ## size ## _c(/* MpegEncContext */ void *c,       \
                                     uint8_t *s, uint8_t *dummy,         \
                                     int stride, int h)                  \
 {                                                                       \
-    int score = 0;                                                      \
-    int x, y;                                                           \
+    int score = 0, x, y;                                                \
                                                                         \
     for (y = 1; y < h; y++) {                                           \
         for (x = 0; x < size; x += 4) {                                 \
@@ -2659,8 +2626,7 @@ VSAD_INTRA(16)
 static int vsad16_c(/* MpegEncContext */ void *c, uint8_t *s1, uint8_t *s2,
                     int stride, int h)
 {
-    int score = 0;
-    int x, y;
+    int score = 0, x, y;
 
     for (y = 1; y < h; y++) {
         for (x = 0; x < 16; x++)
@@ -2678,8 +2644,7 @@ static int vsse_intra ## size ## _c(/* MpegEncContext */ void *c,       \
                                     uint8_t *s, uint8_t *dummy,         \
                                     int stride, int h)                  \
 {                                                                       \
-    int score = 0;                                                      \
-    int x, y;                                                           \
+    int score = 0, x, y;                                                \
                                                                         \
     for (y = 1; y < h; y++) {                                           \
         for (x = 0; x < size; x += 4) {                                 \
@@ -2699,8 +2664,7 @@ VSSE_INTRA(16)
 static int vsse16_c(/* MpegEncContext */ void *c, uint8_t *s1, uint8_t *s2,
                     int stride, int h)
 {
-    int score = 0;
-    int x, y;
+    int score = 0, x, y;
 
     for (y = 1; y < h; y++) {
         for (x = 0; x < 16; x++)
@@ -2715,8 +2679,7 @@ static int vsse16_c(/* MpegEncContext */ void *c, uint8_t *s1, uint8_t *s2,
 static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
                                int size)
 {
-    int score = 0;
-    int i;
+    int score = 0, i;
 
     for (i = 0; i < size; i++)
         score += (pix1[i] - pix2[i]) * (pix1[i] - pix2[i]);

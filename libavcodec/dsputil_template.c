@@ -32,15 +32,14 @@
 #if BIT_DEPTH == 8
 /* draw the edges of width 'w' of an image of size width, height */
 //FIXME check that this is ok for mpeg4 interlaced
-static void FUNCC(draw_edges)(uint8_t *p_buf, int p_wrap, int width, int height, int w, int h, int sides)
+static void FUNCC(draw_edges)(uint8_t *_buf, int _wrap, int width, int height, int w, int h, int sides)
 {
-    pixel *buf = (pixel*)p_buf;
-    int wrap = p_wrap / sizeof(pixel);
-    pixel *ptr, *last_line;
+    pixel *buf = (pixel*)_buf;
+    int wrap = _wrap / sizeof(pixel);
+    pixel *ptr = buf, *last_line;
     int i;
 
     /* left and right */
-    ptr = buf;
     for(i=0;i<height;i++) {
         memset(ptr - w, ptr[0], w);
         memset(ptr + width, ptr[width-1], w);
