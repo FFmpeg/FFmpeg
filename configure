@@ -1900,7 +1900,7 @@ rdft_select="fft"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideo_select="dsputil h264chroma hpeldsp videodsp"
-mpegvideoenc_select="mpegvideo"
+mpegvideoenc_select="dsputil mpegvideo"
 
 # decoders / encoders
 aac_decoder_select="mdct sinewin"
