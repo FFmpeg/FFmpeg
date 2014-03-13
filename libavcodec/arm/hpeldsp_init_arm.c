@@ -1,5 +1,5 @@
 /*
- * ARM optimized DSP utils
+ * ARM-optimized halfpel functions
  * Copyright (c) 2001 Lionel Ulmer
  *
  * This file is part of FFmpeg.

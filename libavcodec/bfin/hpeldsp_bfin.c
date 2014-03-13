@@ -1,5 +1,5 @@
 /*
- * BlackFin DSPUTILS
+ * BlackFin halfpel functions
  *
  * Copyright (C) 2007 Marc Hoffman <marc.hoffman@analog.com>
  * Copyright (c) 2006 Michael Benjamin <michael.benjamin@analog.com>

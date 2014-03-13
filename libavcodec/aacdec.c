@@ -2631,7 +2631,7 @@ static void apply_dependent_coupling(AACContext *ac,
                 const float gain = cce->coup.gain[index][idx];
                 for (group = 0; group < ics->group_len[g]; group++) {
                     for (k = offsets[i]; k < offsets[i + 1]; k++) {
-                        // XXX dsputil-ize
+                        // FIXME: SIMDify
                         dest[group * 128 + k] += gain * src[group * 128 + k];
                     }
                 }

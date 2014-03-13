@@ -1,5 +1,5 @@
 @
-@ ARMv4 optimized DSP utils
+@ ARMv4-optimized halfpel functions
 @ Copyright (c) 2004 AGAWA Koji <i (AT) atty (DOT) jp>
 @
 @ This file is part of FFmpeg.

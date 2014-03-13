@@ -1,5 +1,5 @@
 /*
- * MMX optimized LPC DSP utils
+ * SIMD-optimized LPC functions
  * Copyright (c) 2007 Loren Merritt
  *
  * This file is part of FFmpeg.

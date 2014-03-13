@@ -1,5 +1,5 @@
 /*
- * AC-3 DSP utils
+ * AC-3 DSP functions
  * Copyright (c) 2011 Justin Ruggles
  *
  * This file is part of FFmpeg.

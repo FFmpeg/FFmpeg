@@ -403,7 +403,7 @@ static void mpeg_motion_field(MpegEncContext *s, uint8_t *dest_y,
                              motion_x, motion_y, h, 0, mb_y);
 }
 
-// FIXME move to dsputil, avg variant, 16x16 version
+// FIXME: SIMDify, avg variant, 16x16 version
 static inline void put_obmc(uint8_t *dst, uint8_t *src[5], int stride)
 {
     int x;

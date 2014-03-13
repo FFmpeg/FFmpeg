@@ -6,7 +6,7 @@
 ;* Copyright (c) 2002 Zdenek Kabelac <kabi@informatics.muni.cz>
 ;* Copyright (c) 2013 Daniel Kang
 ;*
-;* MMX optimized hpel functions
+;* SIMD-optimized halfpel functions
 ;*
 ;* This file is part of FFmpeg.
 ;*
