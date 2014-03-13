@@ -11,7 +11,7 @@ version <next>:
 - XBM decoder
 - bmp standalone parser
 - OpenEXR image decoder
-- support decoding 4-channel SGI images
+- support encoding and decoding 4-channel SGI images
 
 
 version 10:
