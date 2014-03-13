@@ -4468,12 +4468,14 @@ int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
                     return 1;
         }
         return 0;
-    } else if (*spec == '#') {
-        int sid;
+    } else if (*spec == '#' ||
+               (*spec == 'i' && *(spec + 1) == ':')) {
+        int stream_id;
         char *endptr;
-        sid = strtol(spec + 1, &endptr, 0);
+        spec += 1 + (*spec == 'i');
+        stream_id = strtol(spec, &endptr, 0);
         if (!*endptr)
-            return st->id == sid;
+            return stream_id == st->id;
     } else if (!*spec) /* empty specifier, matches everything */
         return 1;
 

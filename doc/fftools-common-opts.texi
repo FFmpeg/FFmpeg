@@ -44,8 +44,8 @@ streams of this type.
 If @var{stream_index} is given, then it matches the stream with number @var{stream_index}
 in the program with the id @var{program_id}. Otherwise, it matches all streams in the
 program.
-@item #@var{stream_id}
-Matches the stream by a format-specific ID.
+@item #@var{stream_id} or i:@var{stream_id}
+Match the stream by stream id (e.g. PID in MPEG-TS container).
 @end table
 
 @section Generic options
