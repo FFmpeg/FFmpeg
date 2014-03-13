@@ -391,9 +391,13 @@ typedef struct AVProbeData {
     const char *filename;
     unsigned char *buf; /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
     int buf_size;       /**< Size of buf except extra allocated bytes */
+#ifdef FF_API_PROBE_MIME
+    uint8_t *mime_type; /**< mime_type, when known. */
+#endif
 } AVProbeData;
 
 #define AVPROBE_SCORE_EXTENSION  50 ///< score for file extension
+#define AVPROBE_SCORE_MIME       75 ///< score for file mime type
 #define AVPROBE_SCORE_MAX       100 ///< maximum score
 
 #define AVPROBE_PADDING_SIZE 32             ///< extra allocated bytes at the end of the probe buffer
@@ -534,6 +538,13 @@ typedef struct AVInputFormat {
     const struct AVCodecTag * const *codec_tag;
 
     const AVClass *priv_class; ///< AVClass for the private context
+
+    /**
+     * Comma-separated list of mime types.
+     * It is used check for matching mime types while probing.
+     * @see av_probe_input_format2
+     */
+    const char *mime_type;
 
     /*****************************************************************
      * No fields below this line are part of the public API. They
