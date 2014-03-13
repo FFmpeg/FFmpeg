@@ -12,6 +12,7 @@ version <next>:
 - bmp standalone parser
 - OpenEXR image decoder
 - support encoding and decoding 4-channel SGI images
+- support decoding 16-bit RLE SGI images
 
 
 version 10:
