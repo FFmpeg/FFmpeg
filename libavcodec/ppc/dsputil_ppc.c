@@ -26,6 +26,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/ppc/cpu.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
 
 /* ***** WARNING ***** WARNING ***** WARNING ***** */
