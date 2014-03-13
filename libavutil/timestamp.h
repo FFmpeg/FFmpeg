@@ -26,6 +26,10 @@
 
 #include "common.h"
 
+#if defined(__cplusplus) && !defined(__STDC_FORMAT_MACROS) && !defined(PRId64)
+#error missing -D__STDC_FORMAT_MACROS / #define __STDC_FORMAT_MACROS
+#endif
+
 #define AV_TS_MAX_STRING_SIZE 32
 
 /**
