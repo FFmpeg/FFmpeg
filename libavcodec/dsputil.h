@@ -58,7 +58,8 @@ void ff_put_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 
 void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
-              int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
+              int dxx, int dxy, int dyx, int dyy, int shift, int r,
+              int width, int height);
 
 /* minimum alignment rules ;)
  * If you notice errors in the align stuff, need more alignment for some ASM code
@@ -77,15 +78,22 @@ void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
  * Block sizes for op_pixels_func are 8x4,8x8 16x8 16x16.
  * h for op_pixels_func is limited to { width / 2, width },
  * but never larger than 16 and never smaller than 4. */
-typedef void (*tpel_mc_func)(uint8_t *block/*align width (8 or 16)*/, const uint8_t *pixels/*align 1*/, int line_size, int w, int h);
-typedef void (*qpel_mc_func)(uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, ptrdiff_t stride);
+typedef void (*tpel_mc_func)(uint8_t *block /* align width (8 or 16) */,
+                             const uint8_t *pixels /* align 1 */,
+                             int line_size, int w, int h);
+typedef void (*qpel_mc_func)(uint8_t *dst /* align width (8 or 16) */,
+                             uint8_t *src /* align 1 */, ptrdiff_t stride);
 
-typedef void (*op_fill_func)(uint8_t *block/*align width (8 or 16)*/, uint8_t value, int line_size, int h);
+typedef void (*op_fill_func)(uint8_t *block /* align width (8 or 16) */,
+                             uint8_t value, int line_size, int h);
 
-#define DEF_OLD_QPEL(name)\
-void ff_put_        ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, ptrdiff_t stride);\
-void ff_put_no_rnd_ ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, ptrdiff_t stride);\
-void ff_avg_        ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, ptrdiff_t stride);
+#define DEF_OLD_QPEL(name)                                                     \
+    void ff_put_        ## name(uint8_t *dst /* align width (8 or 16) */,      \
+                                uint8_t *src /* align 1 */, ptrdiff_t stride); \
+    void ff_put_no_rnd_ ## name(uint8_t *dst /* align width (8 or 16) */,      \
+                                uint8_t *src /* align 1 */, ptrdiff_t stride); \
+    void ff_avg_        ## name(uint8_t *dst /* align width (8 or 16) */,      \
+                                uint8_t *src /* align 1 */, ptrdiff_t stride);
 
 DEF_OLD_QPEL(qpel16_mc11_old_c)
 DEF_OLD_QPEL(qpel16_mc31_old_c)
@@ -112,13 +120,14 @@ typedef int (*me_cmp_func)(void /* MpegEncContext */ *s,
 /**
  * Scantable.
  */
-typedef struct ScanTable{
+typedef struct ScanTable {
     const uint8_t *scantable;
     uint8_t permutated[64];
     uint8_t raster_end[64];
 } ScanTable;
 
-void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
+void ff_init_scantable(uint8_t *permutation, ScanTable *st,
+                       const uint8_t *src_scantable);
 void ff_init_scantable_permutation(uint8_t *idct_permutation,
                                    int idct_permutation_type);
 
@@ -127,26 +136,40 @@ void ff_init_scantable_permutation(uint8_t *idct_permutation,
  */
 typedef struct DSPContext {
     /* pixel ops : interface with DCT */
-    void (*get_pixels)(int16_t *block/*align 16*/, const uint8_t *pixels/*align 8*/, int line_size);
-    void (*diff_pixels)(int16_t *block/*align 16*/, const uint8_t *s1/*align 8*/, const uint8_t *s2/*align 8*/, int stride);
-    void (*put_pixels_clamped)(const int16_t *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
-    void (*put_signed_pixels_clamped)(const int16_t *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
-    void (*add_pixels_clamped)(const int16_t *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
+    void (*get_pixels)(int16_t *block /* align 16 */,
+                       const uint8_t *pixels /* align 8 */,
+                       int line_size);
+    void (*diff_pixels)(int16_t *block /* align 16 */,
+                        const uint8_t *s1 /* align 8 */,
+                        const uint8_t *s2 /* align 8 */,
+                        int stride);
+    void (*put_pixels_clamped)(const int16_t *block /* align 16 */,
+                               uint8_t *pixels /* align 8 */,
+                               int line_size);
+    void (*put_signed_pixels_clamped)(const int16_t *block /* align 16 */,
+                                      uint8_t *pixels /* align 8 */,
+                                      int line_size);
+    void (*add_pixels_clamped)(const int16_t *block /* align 16 */,
+                               uint8_t *pixels /* align 8 */,
+                               int line_size);
     void (*add_pixels8)(uint8_t *pixels, int16_t *block, int line_size);
-    int (*sum_abs_dctelem)(int16_t *block/*align 16*/);
+    int (*sum_abs_dctelem)(int16_t *block /* align 16 */);
     /**
      * translational global motion compensation.
      */
-    void (*gmc1)(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int srcStride, int h, int x16, int y16, int rounder);
+    void (*gmc1)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
+                 int srcStride, int h, int x16, int y16, int rounder);
     /**
      * global motion compensation.
      */
-    void (*gmc )(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int ox, int oy,
-                    int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
-    void (*clear_block)(int16_t *block/*align 16*/);
-    void (*clear_blocks)(int16_t *blocks/*align 16*/);
-    int (*pix_sum)(uint8_t * pix, int line_size);
-    int (*pix_norm1)(uint8_t * pix, int line_size);
+    void (*gmc)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
+                int stride, int h, int ox, int oy,
+                int dxx, int dxy, int dyx, int dyy,
+                int shift, int r, int width, int height);
+    void (*clear_block)(int16_t *block /* align 16 */);
+    void (*clear_blocks)(int16_t *blocks /* align 16 */);
+    int (*pix_sum)(uint8_t *pix, int line_size);
+    int (*pix_norm1)(uint8_t *pix, int line_size);
 
     me_cmp_func sad[6]; /* identical to pix_absAxA except additional void * */
     me_cmp_func sse[6];
@@ -167,8 +190,8 @@ typedef struct DSPContext {
     me_cmp_func me_cmp[6];
     me_cmp_func me_sub_cmp[6];
     me_cmp_func mb_cmp[6];
-    me_cmp_func ildct_cmp[6]; //only width 16 used
-    me_cmp_func frame_skip_cmp[6]; //only width 8 used
+    me_cmp_func ildct_cmp[6]; // only width 16 used
+    me_cmp_func frame_skip_cmp[6]; // only width 8 used
 
     int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
                              int size);
@@ -183,8 +206,8 @@ typedef struct DSPContext {
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    tpel_mc_func put_tpel_pixels_tab[11]; //FIXME individual func ptr per width?
-    tpel_mc_func avg_tpel_pixels_tab[11]; //FIXME individual func ptr per width?
+    tpel_mc_func put_tpel_pixels_tab[11]; // FIXME individual func ptr per width?
+    tpel_mc_func avg_tpel_pixels_tab[11]; // FIXME individual func ptr per width?
 
     qpel_mc_func put_qpel_pixels_tab[2][16];
     qpel_mc_func avg_qpel_pixels_tab[2][16];
@@ -194,42 +217,58 @@ typedef struct DSPContext {
     me_cmp_func pix_abs[2][4];
 
     /* HuffYUV specific */
-    void (*add_bytes)(uint8_t *dst/*align 16*/, uint8_t *src/*align 16*/, int w);
-    void (*diff_bytes)(uint8_t *dst/*align 16*/, const uint8_t *src1/*align 16*/, const uint8_t *src2/*align 1*/,int w);
+    void (*add_bytes)(uint8_t *dst /* align 16 */,
+                      uint8_t *src /* align 16 */,
+                      int w);
+    void (*diff_bytes)(uint8_t *dst /* align 16 */,
+                       const uint8_t *src1 /* align 16 */,
+                       const uint8_t *src2 /* align 1 */,
+                       int w);
     /**
      * Subtract HuffYUV's variant of median prediction.
      * Note, this might read from src1[-1], src2[-1].
      */
-    void (*sub_hfyu_median_prediction)(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int w, int *left, int *left_top);
-    void (*add_hfyu_median_prediction)(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top);
-    int  (*add_hfyu_left_prediction)(uint8_t *dst, const uint8_t *src, int w, int left);
-    void (*add_hfyu_left_prediction_bgr32)(uint8_t *dst, const uint8_t *src, int w, int *red, int *green, int *blue, int *alpha);
+    void (*sub_hfyu_median_prediction)(uint8_t *dst, const uint8_t *src1,
+                                       const uint8_t *src2, int w,
+                                       int *left, int *left_top);
+    void (*add_hfyu_median_prediction)(uint8_t *dst, const uint8_t *top,
+                                       const uint8_t *diff, int w,
+                                       int *left, int *left_top);
+    int (*add_hfyu_left_prediction)(uint8_t *dst, const uint8_t *src,
+                                    int w, int left);
+    void (*add_hfyu_left_prediction_bgr32)(uint8_t *dst, const uint8_t *src,
+                                           int w, int *red, int *green,
+                                           int *blue, int *alpha);
     /* this might write to dst[w] */
     void (*bswap_buf)(uint32_t *dst, const uint32_t *src, int w);
     void (*bswap16_buf)(uint16_t *dst, const uint16_t *src, int len);
 
     /* assume len is a multiple of 8, and arrays are 16-byte aligned */
-    void (*vector_clipf)(float *dst /* align 16 */, const float *src /* align 16 */, float min, float max, int len /* align 16 */);
+    void (*vector_clipf)(float *dst /* align 16 */,
+                         const float *src /* align 16 */,
+                         float min, float max, int len /* align 16 */);
 
     /* (I)DCT */
-    void (*fdct)(int16_t *block/* align 16*/);
-    void (*fdct248)(int16_t *block/* align 16*/);
+    void (*fdct)(int16_t *block /* align 16 */);
+    void (*fdct248)(int16_t *block /* align 16 */);
 
-    /* IDCT really*/
-    void (*idct)(int16_t *block/* align 16*/);
+    /* IDCT really */
+    void (*idct)(int16_t *block /* align 16 */);
 
     /**
      * block -> idct -> clip to unsigned 8 bit -> dest.
      * (-1392, 0, 0, ...) -> idct -> (-174, -174, ...) -> put -> (0, 0, ...)
      * @param line_size size in bytes of a horizontal line of dest
      */
-    void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, int16_t *block/*align 16*/);
+    void (*idct_put)(uint8_t *dest /* align 8 */,
+                     int line_size, int16_t *block /* align 16 */);
 
     /**
      * block -> idct -> add dest -> clip to unsigned 8 bit -> dest.
      * @param line_size size in bytes of a horizontal line of dest
      */
-    void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, int16_t *block/*align 16*/);
+    void (*idct_add)(uint8_t *dest /* align 8 */,
+                     int line_size, int16_t *block /* align 16 */);
 
     /**
      * IDCT input permutation.
@@ -254,30 +293,37 @@ typedef struct DSPContext {
 #define FF_PARTTRANS_IDCT_PERM 5
 #define FF_SSE2_IDCT_PERM 6
 
-    int (*try_8x8basis)(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale);
+    int (*try_8x8basis)(int16_t rem[64], int16_t weight[64],
+                        int16_t basis[64], int scale);
     void (*add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale);
 #define BASIS_SHIFT 16
 #define RECON_SHIFT 6
 
-    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w, int h, int sides);
+    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height,
+                       int w, int h, int sides);
 #define EDGE_WIDTH 16
 #define EDGE_TOP    1
 #define EDGE_BOTTOM 2
 
-    void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
+    void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,
+                      int src_wrap, int width, int height);
 
     /**
      * Calculate scalar product of two vectors.
      * @param len length of vectors, should be multiple of 16
      */
-    int32_t (*scalarproduct_int16)(const int16_t *v1, const int16_t *v2/*align 16*/, int len);
+    int32_t (*scalarproduct_int16)(const int16_t *v1,
+                                   const int16_t *v2 /* align 16 */, int len);
     /* ape functions */
     /**
      * Calculate scalar product of v1 and v2,
      * and v1[i] += v3[i] * mul
      * @param len length of vectors, should be multiple of 16
      */
-    int32_t (*scalarproduct_and_madd_int16)(int16_t *v1/*align 16*/, const int16_t *v2, const int16_t *v3, int len, int mul);
+    int32_t (*scalarproduct_and_madd_int16)(int16_t *v1 /* align 16 */,
+                                            const int16_t *v2,
+                                            const int16_t *v3,
+                                            int len, int mul);
 
     /**
      * Clip each element in an array of int32_t to a given minimum and
@@ -300,19 +346,19 @@ typedef struct DSPContext {
 } DSPContext;
 
 void ff_dsputil_static_init(void);
-void ff_dsputil_init(DSPContext* p, AVCodecContext *avctx);
+void ff_dsputil_init(DSPContext *p, AVCodecContext *avctx);
 void avpriv_dsputil_init(DSPContext* p, AVCodecContext *avctx);
 attribute_deprecated void dsputil_init(DSPContext* c, AVCodecContext *avctx);
 
 int ff_check_alignment(void);
 
-void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type);
+void ff_set_cmp(DSPContext *c, me_cmp_func *cmp, int type);
 
 void ff_dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
-void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
-void ff_dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
-void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
-void ff_dsputil_init_x86(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx);
+void ff_dsputil_init_bfin(DSPContext *c, AVCodecContext *avctx);
+void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx);
+void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx);
 
 void ff_dsputil_init_dwt(DSPContext *c);
 
