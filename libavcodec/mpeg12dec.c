@@ -25,6 +25,8 @@
  * MPEG-1/2 decoder
  */
 
+#include <inttypes.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/stereo3d.h"
@@ -1452,7 +1454,8 @@ static void mpeg_decode_picture_display_extension(Mpeg1Context *s1)
     }
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(s->avctx, AV_LOG_DEBUG, "pde (%d,%d) (%d,%d) (%d,%d)\n",
+        av_log(s->avctx, AV_LOG_DEBUG,
+               "pde (%"PRId16",%"PRId16") (%"PRId16",%"PRId16") (%"PRId16",%"PRId16")\n",
                s1->pan_scan.position[0][0], s1->pan_scan.position[0][1],
                s1->pan_scan.position[1][0], s1->pan_scan.position[1][1],
                s1->pan_scan.position[2][0], s1->pan_scan.position[2][1]);
@@ -2343,7 +2346,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
         input_size = buf_end - buf_ptr;
 
         if (avctx->debug & FF_DEBUG_STARTCODE)
-            av_log(avctx, AV_LOG_DEBUG, "%3X at %td left %d\n",
+            av_log(avctx, AV_LOG_DEBUG, "%3"PRIX32" at %td left %d\n",
                    start_code, buf_ptr - buf, input_size);
 
         /* prepare data for next start code */

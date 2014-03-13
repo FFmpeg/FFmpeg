@@ -25,6 +25,8 @@
  * RV10/RV20 decoder
  */
 
+#include <inttypes.h>
+
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
@@ -489,8 +491,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 
     if (avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", rv->sub_id,
-               avctx->extradata_size >= 4 ? ((uint32_t *) avctx->extradata)[0]
-                                          : -1);
+               avctx->extradata_size >= 4 ? ((int *) avctx->extradata)[0] : -1);
     }
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;

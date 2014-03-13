@@ -86,6 +86,8 @@
  * subframe in order to reconstruct the output samples.
  */
 
+#include <inttypes.h>
+
 #include "libavutil/float_dsp.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
@@ -332,13 +334,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->dynamic_range_compression = (s->decode_flags & 0x80);
 
     if (s->max_num_subframes > MAX_SUBFRAMES) {
-        av_log(avctx, AV_LOG_ERROR, "invalid number of subframes %i\n",
+        av_log(avctx, AV_LOG_ERROR, "invalid number of subframes %"PRId8"\n",
                s->max_num_subframes);
         return AVERROR_INVALIDDATA;
     }
 
     if (s->min_samples_per_subframe < WMAPRO_BLOCK_MIN_SIZE) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid minimum block size %i\n",
+        av_log(avctx, AV_LOG_ERROR, "Invalid minimum block size %"PRId8"\n",
                s->max_num_subframes);
         return AVERROR_INVALIDDATA;
     }
@@ -1408,7 +1410,8 @@ static int decode_frame(WMAProDecodeCtx *s, AVFrame *frame, int *got_frame_ptr)
         if (len != (get_bits_count(gb) - s->frame_offset) + 2) {
             /** FIXME: not sure if this is always an error */
             av_log(s->avctx, AV_LOG_ERROR,
-                   "frame[%i] would have to skip %i bits\n", s->frame_num,
+                   "frame[%"PRIu32"] would have to skip %i bits\n",
+                   s->frame_num,
                    len - (get_bits_count(gb) - s->frame_offset) - 1);
             s->packet_loss = 1;
             return 0;
@@ -1546,7 +1549,8 @@ static int decode_packet(AVCodecContext *avctx, void *data,
         if (!s->packet_loss &&
             ((s->packet_sequence_number + 1) & 0xF) != packet_sequence_number) {
             s->packet_loss = 1;
-            av_log(avctx, AV_LOG_ERROR, "Packet loss detected! seq %x vs %x\n",
+            av_log(avctx, AV_LOG_ERROR,
+                   "Packet loss detected! seq %"PRIx8" vs %x\n",
                    s->packet_sequence_number, packet_sequence_number);
         }
         s->packet_sequence_number = packet_sequence_number;

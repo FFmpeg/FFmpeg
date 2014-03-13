@@ -45,6 +45,8 @@
  * 32bit  samplerate
  */
 
+#include <inttypes.h>
+
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -276,7 +278,7 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
     else
         output_samples = alac->max_samples_per_frame;
     if (!output_samples || output_samples > alac->max_samples_per_frame) {
-        av_log(avctx, AV_LOG_ERROR, "invalid samples per frame: %d\n",
+        av_log(avctx, AV_LOG_ERROR, "invalid samples per frame: %"PRIu32"\n",
                output_samples);
         return AVERROR_INVALIDDATA;
     }
@@ -288,7 +290,7 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
             return ret;
         }
     } else if (output_samples != alac->nb_samples) {
-        av_log(avctx, AV_LOG_ERROR, "sample count mismatch: %u != %d\n",
+        av_log(avctx, AV_LOG_ERROR, "sample count mismatch: %"PRIu32" != %d\n",
                output_samples, alac->nb_samples);
         return AVERROR_INVALIDDATA;
     }
@@ -500,7 +502,8 @@ static int alac_set_info(ALACContext *alac)
     alac->max_samples_per_frame = bytestream2_get_be32u(&gb);
     if (!alac->max_samples_per_frame ||
         alac->max_samples_per_frame > INT_MAX / sizeof(int32_t)) {
-        av_log(alac->avctx, AV_LOG_ERROR, "max samples per frame invalid: %u\n",
+        av_log(alac->avctx, AV_LOG_ERROR,
+               "max samples per frame invalid: %"PRIu32"\n",
                alac->max_samples_per_frame);
         return AVERROR_INVALIDDATA;
     }

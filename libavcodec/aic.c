@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "dsputil.h"
@@ -169,7 +171,7 @@ static int aic_decode_header(AICContext *ctx, const uint8_t *src, int size)
     width      = AV_RB16(src + 6);
     height     = AV_RB16(src + 8);
     if (frame_size > size) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "Frame size should be %d got %d\n",
+        av_log(ctx->avctx, AV_LOG_ERROR, "Frame size should be %"PRIu32" got %d\n",
                frame_size, size);
         return AVERROR_INVALIDDATA;
     }
