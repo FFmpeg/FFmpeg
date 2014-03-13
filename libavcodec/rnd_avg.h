@@ -25,14 +25,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define CALL_2X_PIXELS(a, b, n)\
-static void a(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
-    b(block  , pixels  , line_size, h);\
-    b(block+n, pixels+n, line_size, h);\
+#define CALL_2X_PIXELS(a, b, n)                      \
+static void a(uint8_t *block, const uint8_t *pixels, \
+              ptrdiff_t line_size, int h)            \
+{                                                    \
+    b(block, pixels, line_size, h);                  \
+    b(block + n, pixels + n, line_size, h);          \
 }
 
-#define         BYTE_VEC32(c)   ((c)*0x01010101UL)
-#define         BYTE_VEC64(c)   ((c)*0x0001000100010001UL)
+#define BYTE_VEC32(c) ((c) * 0x01010101UL)
+#define BYTE_VEC64(c) ((c) * 0x0001000100010001UL)
 
 static inline uint32_t rnd_avg32(uint32_t a, uint32_t b)
 {
