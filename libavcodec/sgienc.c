@@ -101,14 +101,14 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     memset(buf, 0, SGI_HEADER_SIZE);
     buf += 80;
 
-     /* colormap */
+    /* colormap */
     bytestream_put_be32(&buf, 0L);
 
     /* The rest of the 512 byte header is unused. */
     buf += 404;
     offsettab = buf;
 
-    if (avctx->coder_type  != FF_CODER_TYPE_RAW) {
+    if (avctx->coder_type != FF_CODER_TYPE_RAW) {
         /* Skip RLE offset table. */
         buf += tablesize;
         lengthtab = buf;
@@ -156,7 +156,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     /* total length */
-    pkt->size = buf - pkt->data;
+    pkt->size   = buf - pkt->data;
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
@@ -170,14 +170,14 @@ static av_cold int encode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_sgi_encoder = {
-    .name           = "sgi",
-    .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SGI,
-    .init           = encode_init,
-    .encode2        = encode_frame,
-    .close          = encode_close,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .name      = "sgi",
+    .long_name = NULL_IF_CONFIG_SMALL("SGI image"),
+    .type      = AVMEDIA_TYPE_VIDEO,
+    .id        = AV_CODEC_ID_SGI,
+    .init      = encode_init,
+    .encode2   = encode_frame,
+    .close     = encode_close,
+    .pix_fmts  = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     },
 };
