@@ -28,6 +28,7 @@
 #include "dsputil.h"
 #include "vp8dsp.h"
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 
 #define MK_IDCT_DC_ADD4_C(name) \
 static void name ## _idct_dc_add4uv_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)\
