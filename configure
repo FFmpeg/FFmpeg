@@ -2505,13 +2505,17 @@ windres_default="windres"
 
 nogas=":"
 
-# machine
-arch_default=$(uname -m)
-cpu="generic"
-
 # OS
 target_os_default=$(tolower $(uname -s))
 host_os=$target_os_default
+
+# machine
+if test "$target_os_default" = aix; then
+    arch_default=$(uname -p)
+else
+    arch_default=$(uname -m)
+fi
+cpu="generic"
 
 # configurable options
 enable $PROGRAM_LIST
