@@ -1,0 +1,6 @@
+SH4 optimizations have been removed in
+commit d6096a67422534918405abb46dafbbac4608cbc3
+The last revission with the optimizations is cbfc9046e1c7e295b74f252902ae6f255eef4e78
+
+If you want to maintain these (or other) SH4 optimizations in ffmpeg, then please
+contact ffmpeg-devel@ffmpeg.org
