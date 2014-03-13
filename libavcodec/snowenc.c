@@ -38,12 +38,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     SnowContext *s = avctx->priv_data;
     int plane_index, ret;
 
-    if(avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL){
-        av_log(avctx, AV_LOG_ERROR, "This codec is under development, files encoded with it may not be decodable with future versions!!!\n"
-               "Use vstrict=-2 / -strict -2 to use it anyway.\n");
-        return -1;
-    }
-
     if(avctx->prediction_method == DWT_97
        && (avctx->flags & CODEC_FLAG_QSCALE)
        && avctx->global_quality == 0){
