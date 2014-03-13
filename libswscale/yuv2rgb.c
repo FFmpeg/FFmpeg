@@ -605,8 +605,6 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
         t = ff_yuv2rgb_init_bfin(c);
     if (ARCH_PPC)
         t = ff_yuv2rgb_init_ppc(c);
-    if (HAVE_VIS)
-        t = ff_yuv2rgb_init_vis(c);
     if (ARCH_X86)
         t = ff_yuv2rgb_init_x86(c);
 

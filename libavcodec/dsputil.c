@@ -2830,8 +2830,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
         ff_dsputil_init_bfin(c, avctx);
     if (ARCH_PPC)
         ff_dsputil_init_ppc(c, avctx);
-    if (HAVE_VIS)
-        ff_dsputil_init_vis(c, avctx);
     if (ARCH_X86)
         ff_dsputil_init_x86(c, avctx);
 

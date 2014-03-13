@@ -144,5 +144,8 @@
 #ifndef FF_API_ARCH_SH4
 #define FF_API_ARCH_SH4          (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
+#ifndef FF_API_ARCH_SPARC
+#define FF_API_ARCH_SPARC        (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
 
 #endif /* AVCODEC_VERSION_H */

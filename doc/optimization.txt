@@ -268,17 +268,6 @@ CELL/SPU:
 http://www-01.ibm.com/chips/techlib/techlib.nsf/techdocs/30B3520C93F437AB87257060006FFE5E/$file/Language_Extensions_for_CBEA_2.4.pdf
 http://www-01.ibm.com/chips/techlib/techlib.nsf/techdocs/9F820A5FFA3ECE8C8725716A0062585F/$file/CBE_Handbook_v1.1_24APR2007_pub.pdf
 
-SPARC-specific:
----------------
-SPARC Joint Programming Specification (JPS1): Commonality
-http://www.fujitsu.com/downloads/PRMPWR/JPS1-R1.0.4-Common-pub.pdf
-
-UltraSPARC III Processor User's Manual (contains instruction timings)
-http://www.sun.com/processors/manuals/USIIIv2.pdf
-
-VIS Whitepaper (contains optimization guidelines)
-http://www.sun.com/processors/vis/download/vis/vis_whitepaper.pdf
-
 GCC asm links:
 --------------
 official doc but quite ugly
