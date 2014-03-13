@@ -1,0 +1,6 @@
+SPARC optimizations have been removed in
+commit b4dd424d96f09f9bafb88e47f37df65dc4529143
+The last revission with the optimizations is fb1b70c1ed50951c5fc1a309c3c446b2eaaf564b
+
+If you want to maintain these (or other) SPARC optimizations in ffmpeg, then please
+contact ffmpeg-devel@ffmpeg.org
