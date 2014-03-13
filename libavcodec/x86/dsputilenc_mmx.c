@@ -982,9 +982,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
         c->nsse[1] = nsse8_mmx;
         if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
             c->vsad[0] = vsad16_mmx;
-        }
-
-        if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
             c->try_8x8basis= try_8x8basis_mmx;
         }
         c->add_8x8basis= add_8x8basis_mmx;
