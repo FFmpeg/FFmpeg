@@ -18,6 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
+#include "libavutil/attributes.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
 void ff_simple_idct_armv5te(int16_t *data);
