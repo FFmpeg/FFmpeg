@@ -31,7 +31,7 @@
 #define DVBSUB_DISPLAYDEFINITION_SEGMENT 0x14
 #define DVBSUB_DISPLAY_SEGMENT  0x80
 
-#define cm (ff_cropTbl + MAX_NEG_CROP)
+#define cm (ff_crop_tab + MAX_NEG_CROP)
 
 #ifdef DEBUG
 #if 0

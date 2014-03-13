@@ -30,7 +30,7 @@ typedef struct YuvPixel {
 } YuvPixel;
 
 static int mp_yuv_to_rgb(int y, int v, int u, int clip_rgb) {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     int r, g, b;
 
     r = (1000 * y + 701 * v) / 1000;

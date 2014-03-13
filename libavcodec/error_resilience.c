@@ -238,7 +238,7 @@ static void h_block_filter(ERContext *s, uint8_t *dst, int w,
                            int h, int stride, int is_luma)
 {
     int b_x, b_y, mvx_stride, mvy_stride;
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     set_mv_strides(s, &mvx_stride, &mvy_stride);
     mvx_stride >>= is_luma;
     mvy_stride *= mvx_stride;
@@ -306,7 +306,7 @@ static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
                            int stride, int is_luma)
 {
     int b_x, b_y, mvx_stride, mvy_stride;
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     set_mv_strides(s, &mvx_stride, &mvy_stride);
     mvx_stride >>= is_luma;
     mvy_stride *= mvx_stride;

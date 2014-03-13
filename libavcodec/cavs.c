@@ -275,7 +275,7 @@ static void intra_pred_plane(uint8_t *d, uint8_t *top, uint8_t *left, int stride
     int x, y, ia;
     int ih = 0;
     int iv = 0;
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
 
     for (x = 0; x < 4; x++) {
         ih += (x + 1) *  (top[5 + x] -  top[3 - x]);

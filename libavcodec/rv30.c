@@ -132,7 +132,7 @@ static int rv30_decode_mb_info(RV34DecContext *r)
 static inline void rv30_weak_loop_filter(uint8_t *src, const int step,
                                          const int stride, const int lim)
 {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     int i, diff;
 
     for(i = 0; i < 4; i++){

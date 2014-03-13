@@ -279,7 +279,7 @@ static void pred4x4_horizontal_up_rv40_nodown_c(uint8_t *src,
 static void pred4x4_tm_vp8_c(uint8_t *src, const uint8_t *topright,
                              ptrdiff_t stride)
 {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP - src[-1-stride];
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP - src[-1-stride];
     uint8_t *top = src-stride;
     int y;
 
@@ -305,7 +305,7 @@ static void pred16x16_plane_rv40_c(uint8_t *src, ptrdiff_t stride)
 
 static void pred16x16_tm_vp8_c(uint8_t *src, ptrdiff_t stride)
 {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP - src[-1-stride];
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP - src[-1-stride];
     uint8_t *top = src-stride;
     int y;
 
@@ -387,7 +387,7 @@ static void pred8x8_dc_rv40_c(uint8_t *src, ptrdiff_t stride)
 
 static void pred8x8_tm_vp8_c(uint8_t *src, ptrdiff_t stride)
 {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP - src[-1-stride];
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP - src[-1-stride];
     uint8_t *top = src-stride;
     int y;
 
