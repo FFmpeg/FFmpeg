@@ -478,6 +478,26 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     avio_read(pb, op, sizeof(UID));
     nb_essence_containers = avio_rb32(pb);
 
+    if (partition->this_partition &&
+        partition->previous_partition == partition->this_partition) {
+        av_log(mxf->fc, AV_LOG_ERROR,
+               "PreviousPartition equal to ThisPartition %"PRIx64"\n",
+               partition->previous_partition);
+        /* override with the actual previous partition offset */
+        if (!mxf->parsing_backward && mxf->last_forward_partition > 1) {
+            MXFPartition *prev =
+                mxf->partitions + mxf->last_forward_partition - 2;
+            partition->previous_partition = prev->this_partition;
+        }
+        /* if no previous body partition are found point to the header
+         * partition */
+        if (partition->previous_partition == partition->this_partition);
+            partition->previous_partition = 0;
+        av_log(mxf->fc, AV_LOG_ERROR,
+               "Overriding PreviousPartition with %"PRIx64"\n",
+               partition->previous_partition);
+    }
+
     /* some files don'thave FooterPartition set in every partition */
     if (footer_partition) {
         if (mxf->footer_partition && mxf->footer_partition != footer_partition) {
