@@ -38,28 +38,34 @@ static int adts_aac_probe(AVProbeData *p)
 
     buf = buf0;
 
-    for(; buf < end; buf= buf2+1) {
+    for (; buf < end; buf = buf2 + 1) {
         buf2 = buf;
 
-        for(frames = 0; buf2 < end; frames++) {
+        for (frames = 0; buf2 < end; frames++) {
             uint32_t header = AV_RB16(buf2);
-            if((header&0xFFF6) != 0xFFF0)
+            if ((header & 0xFFF6) != 0xFFF0)
                 break;
             fsize = (AV_RB32(buf2 + 3) >> 13) & 0x1FFF;
-            if(fsize < 7)
+            if (fsize < 7)
                 break;
             fsize = FFMIN(fsize, end - buf2);
             buf2 += fsize;
         }
         max_frames = FFMAX(max_frames, frames);
-        if(buf == buf0)
-            first_frames= frames;
+        if (buf == buf0)
+            first_frames = frames;
     }
-    if   (first_frames>=3) return AVPROBE_SCORE_EXTENSION + 1;
-    else if(max_frames>500)return AVPROBE_SCORE_EXTENSION;
-    else if(max_frames>=3) return AVPROBE_SCORE_EXTENSION / 2;
-    else if(max_frames>=1) return 1;
-    else                   return 0;
+
+    if (first_frames >= 3)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    else if (max_frames > 500)
+        return AVPROBE_SCORE_EXTENSION;
+    else if (max_frames >= 3)
+        return AVPROBE_SCORE_EXTENSION / 2;
+    else if (max_frames >= 1)
+        return 1;
+    else
+        return 0;
 }
 
 static int adts_aac_read_header(AVFormatContext *s)
@@ -71,8 +77,8 @@ static int adts_aac_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = s->iformat->raw_codec_id;
-    st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+    st->codec->codec_id   = s->iformat->raw_codec_id;
+    st->need_parsing      = AVSTREAM_PARSE_FULL_RAW;
 
     ff_id3v1_read(s);
     if (s->pb->seekable &&
@@ -82,19 +88,19 @@ static int adts_aac_read_header(AVFormatContext *s)
         avio_seek(s->pb, cur, SEEK_SET);
     }
 
-    //LCM of all possible ADTS sample rates
+    // LCM of all possible ADTS sample rates
     avpriv_set_pts_info(st, 64, 1, 28224000);
 
     return 0;
 }
 
 AVInputFormat ff_aac_demuxer = {
-    .name           = "aac",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw ADTS AAC (Advanced Audio Coding)"),
-    .read_probe     = adts_aac_probe,
-    .read_header    = adts_aac_read_header,
-    .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "aac",
-    .raw_codec_id   = AV_CODEC_ID_AAC,
+    .name         = "aac",
+    .long_name    = NULL_IF_CONFIG_SMALL("raw ADTS AAC (Advanced Audio Coding)"),
+    .read_probe   = adts_aac_probe,
+    .read_header  = adts_aac_read_header,
+    .read_packet  = ff_raw_read_partial_packet,
+    .flags        = AVFMT_GENERIC_INDEX,
+    .extensions   = "aac",
+    .raw_codec_id = AV_CODEC_ID_AAC,
 };
