@@ -184,7 +184,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     ctx->event_mgr.info_handler    = info_callback;
     ctx->event_mgr.error_handler   = error_callback;
     ctx->event_mgr.warning_handler = warning_callback;
-    opj_set_event_mgr((opj_common_ptr)ctx->compress, &ctx->event_mgr, avctx);
+    opj_set_event_mgr((opj_common_ptr) ctx->compress, &ctx->event_mgr, avctx);
 
     return 0;
 
@@ -202,7 +202,7 @@ static void libopenjpeg_copy_packed8(AVCodecContext *avctx,
     int image_index, frame_index;
     const int numcomps = image->numcomps;
 
-    for (compno = 0; compno < numcomps; ++compno) {
+    for (compno = 0; compno < numcomps; ++compno)
         for (y = 0; y < avctx->height; ++y) {
             image_index = y * avctx->width;
             frame_index = y * frame->linesize[0] + compno;
@@ -212,7 +212,6 @@ static void libopenjpeg_copy_packed8(AVCodecContext *avctx,
                 frame_index += numcomps;
             }
         }
-    }
 }
 
 static void libopenjpeg_copy_packed16(AVCodecContext *avctx,
@@ -221,10 +220,10 @@ static void libopenjpeg_copy_packed16(AVCodecContext *avctx,
     int compno;
     int x, y;
     int image_index, frame_index;
-    const int numcomps = image->numcomps;
-    uint16_t *frame_ptr = (uint16_t*)frame->data[0];
+    const int numcomps  = image->numcomps;
+    uint16_t *frame_ptr = (uint16_t *)frame->data[0];
 
-    for (compno = 0; compno < numcomps; ++compno) {
+    for (compno = 0; compno < numcomps; ++compno)
         for (y = 0; y < avctx->height; ++y) {
             image_index = y * avctx->width;
             frame_index = y * (frame->linesize[0] / 2) + compno;
@@ -234,7 +233,6 @@ static void libopenjpeg_copy_packed16(AVCodecContext *avctx,
                 frame_index += numcomps;
             }
         }
-    }
 }
 
 static void libopenjpeg_copy_unpacked8(AVCodecContext *avctx,
@@ -247,7 +245,7 @@ static void libopenjpeg_copy_unpacked8(AVCodecContext *avctx,
     const int numcomps = image->numcomps;
 
     for (compno = 0; compno < numcomps; ++compno) {
-        width  = avctx->width  / image->comps[compno].dx;
+        width  = avctx->width / image->comps[compno].dx;
         height = avctx->height / image->comps[compno].dy;
         for (y = 0; y < height; ++y) {
             image_index = y * width;
@@ -271,9 +269,9 @@ static void libopenjpeg_copy_unpacked16(AVCodecContext *avctx,
     uint16_t *frame_ptr;
 
     for (compno = 0; compno < numcomps; ++compno) {
-        width  = avctx->width  / image->comps[compno].dx;
-        height = avctx->height / image->comps[compno].dy;
-        frame_ptr = (uint16_t*)frame->data[compno];
+        width     = avctx->width / image->comps[compno].dx;
+        height    = avctx->height / image->comps[compno].dy;
+        frame_ptr = (uint16_t *)frame->data[compno];
         for (y = 0; y < height; ++y) {
             image_index = y * width;
             frame_index = y * (frame->linesize[compno] / 2);
@@ -288,8 +286,8 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                     const AVFrame *frame, int *got_packet)
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
-    opj_cinfo_t *compress = ctx->compress;
-    opj_image_t *image    = ctx->image;
+    opj_cinfo_t *compress   = ctx->compress;
+    opj_image_t *image      = ctx->image;
     opj_cio_t *stream;
     int ret, len;
 
@@ -297,7 +295,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     // x1, y1 is the width, height of the reference grid
     image->x0 = 0;
     image->y0 = 0;
-    image->x1 = (avctx->width  - 1) * ctx->enc_params.subsampling_dx + 1;
+    image->x1 = (avctx->width - 1) * ctx->enc_params.subsampling_dx + 1;
     image->y1 = (avctx->height - 1) * ctx->enc_params.subsampling_dy + 1;
 
     switch (avctx->pix_fmt) {
@@ -340,7 +338,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     opj_setup_encoder(compress, &ctx->enc_params, image);
-    stream = opj_cio_open((opj_common_ptr)compress, NULL, 0);
+    stream = opj_cio_open((opj_common_ptr) compress, NULL, 0);
     if (!stream) {
         av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
         return AVERROR(ENOMEM);
