@@ -1,6 +1,26 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.11:
+
+- configure: Update freetype check to follow upstream
+- drawtext: Drop pointless header
+- configure: Support preprocessor macros as header names
+- arm: hpeldsp: fix put_pixels8_y2_{,no_rnd_}armv6
+- arm: hpeldsp: prevent overreads in armv6 asm
+- lagarith: reallocate rgb_planes when needed
+- lagarith: avoid infinite loop in lag_rac_refill()
+- lagarith: pad RGB buffer by 1 byte.
+- truemotion1: check the header size
+- shorten: pad the internal bitstream buffer
+- samplefmt: avoid integer overflow in av_samples_get_buffer_size()
+- h264: Fix a typo from the previous commit
+- h264: Lower bound check for slice offsets
+- rpza: limit the number of blocks to the total remaining blocks in the frame
+- Prepare for 0.8.11 Release
+- lavf: make av_probe_input_buffer more robust
+
+
 version 0.8.10:
 
 - oggparseogm: check timing variables
