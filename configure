@@ -1350,6 +1350,19 @@ DOCUMENT_LIST="
     txtpages
 "
 
+FEATURE_LIST="
+    ftrapv
+    gray
+    hardcoded_tables
+    runtime_cpudetect
+    safe_bitstream_reader
+    shared
+    small
+    sram
+    static
+    swscale_alpha
+"
+
 HWACCEL_LIST="
     dxva2
     vaapi
@@ -1370,6 +1383,12 @@ LIBRARY_LIST="
     swscale
 "
 
+LICENSE_LIST="
+    gpl
+    nonfree
+    version3
+"
+
 PROGRAM_LIST="
     ffplay
     ffprobe
@@ -1377,46 +1396,39 @@ PROGRAM_LIST="
     ffmpeg
 "
 
-CONFIG_LIST="
-    $COMPONENT_LIST
-    $DOCUMENT_LIST
-    $EXAMPLE_LIST
-    $EXTERNAL_LIBRARY_LIST
-    $HWACCEL_LIST
-    $LIBRARY_LIST
-    $PROGRAM_LIST
+SUBSYSTEM_LIST="
     dct
     dwt
     error_resilience
     fast_unaligned
     fft
-    ftrapv
-    gpl
-    gray
-    hardcoded_tables
-    incompatible_libav_abi
-    incompatible_fork_abi
     lsp
     lzo
     mdct
+    network
+    rdft
+"
+
+CONFIG_LIST="
+    $COMPONENT_LIST
+    $DOCUMENT_LIST
+    $EXAMPLE_LIST
+    $EXTERNAL_LIBRARY_LIST
+    $FEATURE_LIST
+    $HWACCEL_LIST
+    $LICENSE_LIST
+    $LIBRARY_LIST
+    $PROGRAM_LIST
+    $SUBSYSTEM_LIST
+    incompatible_libav_abi
+    incompatible_fork_abi
     memalign_hack
     memory_poisoning
     neon_clobber_test
-    network
-    nonfree
     pic
     pod2man
     raise_major
-    rdft
-    runtime_cpudetect
-    safe_bitstream_reader
-    shared
-    small
-    sram
-    static
-    swscale_alpha
     thumb
-    version3
     xmm_clobber_test
 "
 
