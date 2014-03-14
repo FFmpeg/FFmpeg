@@ -26,7 +26,7 @@
  */
 
 #define CABAC(h) 1
-#define UNCHECKED_BITSTREAM_READER 1
+#define UNCHECKED_BITSTREAM_READER (!ARCH_ARM && !ARCH_AARCH64)
 
 #include "libavutil/attributes.h"
 #include "libavutil/timer.h"
