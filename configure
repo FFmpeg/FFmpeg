@@ -1520,7 +1520,6 @@ ARCH_EXT_LIST="
     mipsdspr1
     mipsdspr2
     loongson
-    vis
 "
 
 ARCH_FEATURES="
