@@ -1498,6 +1498,13 @@ ARCH_EXT_LIST_X86_SIMD="
     xop
 "
 
+ARCH_EXT_LIST_PPC="
+    altivec
+    dcbzl
+    ldbrx
+    ppc4xx
+"
+
 ARCH_EXT_LIST_X86="
     $ARCH_EXT_LIST_X86_SIMD
     cpunop
@@ -1506,15 +1513,34 @@ ARCH_EXT_LIST_X86="
 
 ARCH_EXT_LIST="
     $ARCH_EXT_LIST_ARM
+    $ARCH_EXT_LIST_PPC
     $ARCH_EXT_LIST_X86
-    altivec
-    ppc4xx
     mipsfpu
     mips32r2
     mipsdspr1
     mipsdspr2
+    loongson
+    vis
 "
 
+ARCH_FEATURES="
+    aligned_stack
+    fast_64bit
+    fast_clz
+    fast_cmov
+    local_aligned_8
+    local_aligned_16
+"
+
+BUILTIN_LIST="
+    atomic_cas_ptr
+    machine_rw_barrier
+    MemoryBarrier
+    mm_empty
+    rdtsc
+    sarestart
+    sync_val_compare_and_swap
+"
 HAVE_LIST_CMDLINE="
     inline_asm
     symver
@@ -1526,6 +1552,48 @@ HAVE_LIST_PUB="
     fast_unaligned
     incompatible_libav_abi
     incompatible_fork_abi
+"
+
+HEADERS_LIST="
+    alsa_asoundlib_h
+    altivec_h
+    arpa_inet_h
+    asm_types_h
+    cdio_paranoia_h
+    cdio_paranoia_paranoia_h
+    CL_cl_h
+    dev_bktr_ioctl_bt848_h
+    dev_bktr_ioctl_meteor_h
+    dev_ic_bt8xx_h
+    dev_video_bktr_ioctl_bt848_h
+    dev_video_meteor_ioctl_meteor_h
+    direct_h
+    dlfcn_h
+    dxva_h
+    ES2_gl_h
+    gsm_h
+    io_h
+    mach_mach_time_h
+    machine_ioctl_bt848_h
+    machine_ioctl_meteor_h
+    malloc_h
+    openjpeg_1_5_openjpeg_h
+    OpenGL_gl3_h
+    poll_h
+    sndio_h
+    soundcard_h
+    sys_mman_h
+    sys_param_h
+    sys_resource_h
+    sys_select_h
+    sys_soundcard_h
+    sys_time_h
+    sys_un_h
+    sys_videoio_h
+    termios_h
+    unistd_h
+    windows_h
+    winsock2_h
 "
 
 MATH_FUNCS="
@@ -1556,51 +1624,14 @@ MATH_FUNCS="
     truncf
 "
 
-HAVE_LIST="
-    $ARCH_EXT_LIST
-    $(add_suffix _external $ARCH_EXT_LIST)
-    $(add_suffix _inline   $ARCH_EXT_LIST)
-    $ATOMICS_LIST
-    $HAVE_LIST_CMDLINE
-    $HAVE_LIST_PUB
-    $MATH_FUNCS
-    $THREADS_LIST
+SYSTEM_FUNCS="
     access
     aligned_malloc
-    aligned_stack
-    alsa_asoundlib_h
-    altivec_h
-    arpa_inet_h
-    asm_mod_q
-    asm_types_h
-    atomic_cas_ptr
-    atomics_native
-    attribute_may_alias
-    attribute_packed
-    cdio_paranoia_h
-    cdio_paranoia_paranoia_h
-    CL_cl_h
     clock_gettime
     closesocket
     CommandLineToArgvW
     CryptGenRandom
-    dcbzl
-    dev_bktr_ioctl_bt848_h
-    dev_bktr_ioctl_meteor_h
-    dev_ic_bt8xx_h
-    dev_video_bktr_ioctl_bt848_h
-    dev_video_meteor_ioctl_meteor_h
-    direct_h
-    dlfcn_h
     dlopen
-    dos_paths
-    dxva_h
-    ebp_available
-    ebx_available
-    ES2_gl_h
-    fast_64bit
-    fast_clz
-    fast_cmov
     fcntl
     flt_lim
     fork
@@ -1616,62 +1647,56 @@ HAVE_LIST="
     gettimeofday
     glob
     glXGetProcAddress
-    gnu_as
-    gnu_windres
-    gsm_h
-    ibm_asm
     inet_aton
-    inline_asm_labels
-    io_h
     isatty
     jack_port_get_latency_range
     kbhit
-    ldbrx
-    libc_msvcrt
-    libdc1394_1
-    libdc1394_2
-    local_aligned_16
-    local_aligned_8
     localtime_r
-    loongson
     lzo1x_999_compress
     mach_absolute_time
-    mach_mach_time_h
-    machine_ioctl_bt848_h
-    machine_ioctl_meteor_h
-    machine_rw_barrier
-    makeinfo
-    malloc_h
     MapViewOfFile
     memalign
-    MemoryBarrier
     mkstemp
-    mm_empty
     mmap
     mprotect
     nanosleep
-    openjpeg_1_5_openjpeg_h
-    OpenGL_gl3_h
     PeekNamedPipe
-    perl
-    pod2man
-    poll_h
     posix_memalign
-    pragma_deprecated
     pthread_cancel
-    rdtsc
-    rsync_contimeout
-    sarestart
     sched_getaffinity
-    sdl
     SetConsoleTextAttribute
     setmode
     setrlimit
     Sleep
-    sndio_h
-    socklen_t
-    soundcard_h
     strerror_r
+    sysconf
+    sysctl
+    usleep
+    VirtualAlloc
+    wglGetProcAddress
+"
+
+TOOLCHAIN_FEATURES="
+    asm_mod_q
+    attribute_may_alias
+    attribute_packed
+    ebp_available
+    ebx_available
+    gnu_as
+    gnu_windres
+    ibm_asm
+    inline_asm_labels
+    pragma_deprecated
+    rsync_contimeout
+    symver_asm_label
+    symver_gnu_asm
+    vfp_args
+    xform_asm
+    xmm_clobbers
+"
+
+TYPES_LIST="
+    socklen_t
     struct_addrinfo
     struct_group_source_req
     struct_ip_mreq_source
@@ -1684,33 +1709,36 @@ HAVE_LIST="
     struct_sockaddr_storage
     struct_stat_st_mtim_tv_nsec
     struct_v4l2_frmivalenum_discrete
-    symver_asm_label
-    symver_gnu_asm
-    sync_val_compare_and_swap
-    sys_mman_h
-    sys_param_h
-    sys_resource_h
-    sys_select_h
-    sys_soundcard_h
-    sys_time_h
-    sys_un_h
-    sys_videoio_h
-    sysconf
-    sysctl
-    termios_h
+"
+
+HAVE_LIST="
+    $ARCH_EXT_LIST
+    $(add_suffix _external $ARCH_EXT_LIST)
+    $(add_suffix _inline   $ARCH_EXT_LIST)
+    $ARCH_FEATURES
+    $ATOMICS_LIST
+    $BUILTIN_LIST
+    $HAVE_LIST_CMDLINE
+    $HAVE_LIST_PUB
+    $HEADERS_LIST
+    $MATH_FUNCS
+    $SYSTEM_FUNCS
+    $THREADS_LIST
+    $TOOLCHAIN_FEATURES
+    $TYPES_LIST
+    atomics_native
+    dos_paths
+    libc_msvcrt
+    libdc1394_1
+    libdc1394_2
+    makeinfo
+    perl
+    pod2man
+    sdl
     texi2html
     threads
-    unistd_h
-    usleep
     vdpau_x11
-    vfp_args
-    VirtualAlloc
-    wglGetProcAddress
-    windows_h
-    winsock2_h
-    xform_asm
     xlib
-    xmm_clobbers
 "
 
 # options emitted with CONFIG_ prefix but not available on the command line
