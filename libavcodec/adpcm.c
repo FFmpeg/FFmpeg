@@ -471,9 +471,11 @@ static void adpcm_swf_decode(AVCodecContext *avctx, const uint8_t *buf, int buf_
  * @param[out] coded_samples set to the number of samples as coded in the
  *                           packet, or 0 if the codec does not encode the
  *                           number of samples in each frame.
+ * @param[out] approx_nb_samples set to non-zero if the number of samples
+ *                               returned is an approximation.
  */
 static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
-                          int buf_size, int *coded_samples)
+                          int buf_size, int *coded_samples, int *approx_nb_samples)
 {
     ADPCMDecodeContext *s = avctx->priv_data;
     int nb_samples        = 0;
@@ -482,6 +484,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     int header_size;
 
     *coded_samples = 0;
+    *approx_nb_samples = 0;
 
     if(ch <= 0)
         return 0;
@@ -552,10 +555,12 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         case AV_CODEC_ID_ADPCM_EA_R2:
             header_size    = 4 + 5 * ch;
             *coded_samples = bytestream2_get_le32(gb);
+            *approx_nb_samples = 1;
             break;
         case AV_CODEC_ID_ADPCM_EA_R3:
             header_size    = 4 + 5 * ch;
             *coded_samples = bytestream2_get_be32(gb);
+            *approx_nb_samples = 1;
             break;
         }
         *coded_samples -= *coded_samples % 28;
@@ -663,11 +668,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     int16_t **samples_p;
     int st; /* stereo */
     int count1, count2;
-    int nb_samples, coded_samples, ret;
+    int nb_samples, coded_samples, approx_nb_samples, ret;
     GetByteContext gb;
 
     bytestream2_init(&gb, buf, buf_size);
-    nb_samples = get_nb_samples(avctx, &gb, buf_size, &coded_samples);
+    nb_samples = get_nb_samples(avctx, &gb, buf_size, &coded_samples, &approx_nb_samples);
     if (nb_samples <= 0) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of samples in packet\n");
         return AVERROR_INVALIDDATA;
@@ -683,7 +688,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     /* use coded_samples when applicable */
     /* it is always <= nb_samples, so the output buffer will be large enough */
     if (coded_samples) {
-        if (coded_samples != nb_samples)
+        if (!approx_nb_samples && coded_samples != nb_samples)
             av_log(avctx, AV_LOG_WARNING, "mismatch in coded sample count\n");
         frame->nb_samples = nb_samples = coded_samples;
     }
