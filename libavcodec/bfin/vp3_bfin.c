@@ -18,14 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <string.h>
 
 #include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/vp3dsp.h"
 #include "libavcodec/dsputil.h"
-#include "dsputil_bfin.h"
-#include "vp3_bfin.h"
+
+void ff_bfin_vp3_idct(int16_t *block);
 
 /* Intra iDCT offset 128 */
 static void bfin_vp3_idct_put(uint8_t *dest, int line_size, int16_t *block)

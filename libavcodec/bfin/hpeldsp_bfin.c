@@ -25,8 +25,16 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/bfin/attributes.h"
 #include "libavcodec/hpeldsp.h"
 #include "hpeldsp_bfin.h"
+
+void ff_bfin_put_pixels8uc_nornd(uint8_t *block, const uint8_t *s0,
+                                 const uint8_t *s1, int line_size,
+                                 int h) attribute_l1_text;
+void ff_bfin_put_pixels16uc_nornd(uint8_t *block, const uint8_t *s0,
+                                  const uint8_t *s1, int line_size,
+                                  int h) attribute_l1_text;
 
 static void bfin_put_pixels8(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h)
