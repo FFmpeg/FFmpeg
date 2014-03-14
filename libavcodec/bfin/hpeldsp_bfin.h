@@ -26,15 +26,7 @@
 
 #include <stdint.h>
 
-#include "config.h"
-
-#if defined(__FDPIC__) && CONFIG_SRAM
-#define attribute_l1_text  __attribute__ ((l1_text))
-#define attribute_l1_data_b __attribute__((l1_data_B))
-#else
-#define attribute_l1_text
-#define attribute_l1_data_b
-#endif
+#include "libavutil/bfin/attributes.h"
 
 void ff_bfin_z_put_pixels16_xy2     (uint8_t *block, const uint8_t *s0, int dest_size, int line_size, int h) attribute_l1_text;
 void ff_bfin_z_put_pixels8_xy2      (uint8_t *block, const uint8_t *s0, int dest_size, int line_size, int h) attribute_l1_text;

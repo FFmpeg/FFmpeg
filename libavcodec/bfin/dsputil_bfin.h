@@ -26,14 +26,7 @@
 #include <stdint.h>
 
 #include "config.h"
-
-#if defined(__FDPIC__) && CONFIG_SRAM
-#define attribute_l1_text   __attribute__((l1_text))
-#define attribute_l1_data_b __attribute__((l1_data_B))
-#else
-#define attribute_l1_text
-#define attribute_l1_data_b
-#endif
+#include "libavutil/bfin/attributes.h"
 
 void ff_bfin_idct(int16_t *block) attribute_l1_text;
 void ff_bfin_fdct(int16_t *block) attribute_l1_text;
