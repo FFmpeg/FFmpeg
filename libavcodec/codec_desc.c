@@ -1972,14 +1972,14 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_DTS,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "dts",
-        .long_name  = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
+        .long_name = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
     },
     {
         .id        = AV_CODEC_ID_VORBIS,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "vorbis",
-        .long_name  = NULL_IF_CONFIG_SMALL("Vorbis"),
+        .long_name = NULL_IF_CONFIG_SMALL("Vorbis"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
@@ -2661,9 +2661,8 @@ const AVCodecDescriptor *avcodec_descriptor_get_by_name(const char *name)
 {
     const AVCodecDescriptor *desc = NULL;
 
-    while ((desc = avcodec_descriptor_next(desc))) {
+    while ((desc = avcodec_descriptor_next(desc)))
         if (!strcmp(desc->name, name))
             return desc;
-    }
     return NULL;
 }
