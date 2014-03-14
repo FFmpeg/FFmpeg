@@ -1,5 +1,25 @@
 Releases are sorted from youngest to oldest.
 
+version 9.12:
+- configure: Update freetype check to follow upstream
+- drawtext: Drop pointless header
+- configure: Support preprocessor macros as header names
+- arm: hpeldsp: fix put_pixels8_y2_{,no_rnd_}armv6
+- qt-faststart: Check offset_count before reading from the moov_atom buffer
+- arm: hpeldsp: prevent overreads in armv6 asm
+- configure: enable PIC on s390(x)
+- ituh263: reject b-frame with pp_time = 0
+- lagarith: reallocate rgb_planes when needed
+- truemotion1: check the header size
+- shorten: pad the internal bitstream buffer
+- samplefmt: avoid integer overflow in av_samples_get_buffer_size()
+- h264: Fix a typo from the previous commit
+- h264: Lower bound check for slice offsets
+- Add missing header to fix compilation after d2a0654
+- configure: Add missing dependency of Snow decoder on videodsp
+- rpza: limit the number of blocks to the total remaining blocks in the frame
+
+
 version 9.11:
 - oggparseogm: check timing variables
 - mathematics: remove asserts from av_rescale_rnd()
