@@ -29,12 +29,12 @@
 #include "libavcodec/hpeldsp.h"
 #include "hpeldsp_bfin.h"
 
-void ff_bfin_put_pixels8uc_nornd(uint8_t *block, const uint8_t *s0,
-                                 const uint8_t *s1, int line_size,
-                                 int h) attribute_l1_text;
-void ff_bfin_put_pixels16uc_nornd(uint8_t *block, const uint8_t *s0,
+void ff_bfin_put_pixels8uc_no_rnd(uint8_t *block, const uint8_t *s0,
                                   const uint8_t *s1, int line_size,
                                   int h) attribute_l1_text;
+void ff_bfin_put_pixels16uc_no_rnd(uint8_t *block, const uint8_t *s0,
+                                   const uint8_t *s1, int line_size,
+                                   int h) attribute_l1_text;
 
 static void bfin_put_pixels8(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h)
@@ -86,42 +86,42 @@ static void bfin_put_pixels16_xy2(uint8_t *block, const uint8_t *s0,
     ff_bfin_z_put_pixels16_xy2(block, s0, line_size, line_size, h);
 }
 
-static void bfin_put_pixels8_nornd(uint8_t *block, const uint8_t *pixels,
-                                   ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels8uc_nornd(block, pixels, pixels, line_size, h);
-}
-
-static void bfin_put_pixels8_x2_nornd(uint8_t *block, const uint8_t *pixels,
-                                      ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels8uc_nornd(block, pixels, pixels + 1, line_size, h);
-}
-
-static void bfin_put_pixels8_y2_nornd(uint8_t *block, const uint8_t *pixels,
-                                      ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels8uc_nornd(block, pixels, pixels + line_size,
-                                line_size, h);
-}
-
-static void bfin_put_pixels16_nornd(uint8_t *block, const uint8_t *pixels,
+static void bfin_put_pixels8_no_rnd(uint8_t *block, const uint8_t *pixels,
                                     ptrdiff_t line_size, int h)
 {
-    ff_bfin_put_pixels16uc_nornd(block, pixels, pixels, line_size, h);
+    ff_bfin_put_pixels8uc_no_rnd(block, pixels, pixels, line_size, h);
 }
 
-static void bfin_put_pixels16_x2_nornd(uint8_t *block, const uint8_t *pixels,
+static void bfin_put_pixels8_x2_no_rnd(uint8_t *block, const uint8_t *pixels,
                                        ptrdiff_t line_size, int h)
 {
-    ff_bfin_put_pixels16uc_nornd(block, pixels, pixels + 1, line_size, h);
+    ff_bfin_put_pixels8uc_no_rnd(block, pixels, pixels + 1, line_size, h);
 }
 
-static void bfin_put_pixels16_y2_nornd(uint8_t *block, const uint8_t *pixels,
+static void bfin_put_pixels8_y2_no_rnd(uint8_t *block, const uint8_t *pixels,
                                        ptrdiff_t line_size, int h)
 {
-    ff_bfin_put_pixels16uc_nornd(block, pixels, pixels + line_size,
+    ff_bfin_put_pixels8uc_no_rnd(block, pixels, pixels + line_size,
                                  line_size, h);
+}
+
+static void bfin_put_pixels16_no_rnd(uint8_t *block, const uint8_t *pixels,
+                                     ptrdiff_t line_size, int h)
+{
+    ff_bfin_put_pixels16uc_no_rnd(block, pixels, pixels, line_size, h);
+}
+
+static void bfin_put_pixels16_x2_no_rnd(uint8_t *block, const uint8_t *pixels,
+                                        ptrdiff_t line_size, int h)
+{
+    ff_bfin_put_pixels16uc_no_rnd(block, pixels, pixels + 1, line_size, h);
+}
+
+static void bfin_put_pixels16_y2_no_rnd(uint8_t *block, const uint8_t *pixels,
+                                        ptrdiff_t line_size, int h)
+{
+    ff_bfin_put_pixels16uc_no_rnd(block, pixels, pixels + line_size,
+                                  line_size, h);
 }
 
 av_cold void ff_hpeldsp_init_bfin(HpelDSPContext *c, int flags)
@@ -136,11 +136,11 @@ av_cold void ff_hpeldsp_init_bfin(HpelDSPContext *c, int flags)
     c->put_pixels_tab[1][2] = bfin_put_pixels8_y2;
     c->put_pixels_tab[1][3] = bfin_put_pixels8_xy2;
 
-    c->put_no_rnd_pixels_tab[1][0] = bfin_put_pixels8_nornd;
-    c->put_no_rnd_pixels_tab[1][1] = bfin_put_pixels8_x2_nornd;
-    c->put_no_rnd_pixels_tab[1][2] = bfin_put_pixels8_y2_nornd;
+    c->put_no_rnd_pixels_tab[1][0] = bfin_put_pixels8_no_rnd;
+    c->put_no_rnd_pixels_tab[1][1] = bfin_put_pixels8_x2_no_rnd;
+    c->put_no_rnd_pixels_tab[1][2] = bfin_put_pixels8_y2_no_rnd;
 
-    c->put_no_rnd_pixels_tab[0][0] = bfin_put_pixels16_nornd;
-    c->put_no_rnd_pixels_tab[0][1] = bfin_put_pixels16_x2_nornd;
-    c->put_no_rnd_pixels_tab[0][2] = bfin_put_pixels16_y2_nornd;
+    c->put_no_rnd_pixels_tab[0][0] = bfin_put_pixels16_no_rnd;
+    c->put_no_rnd_pixels_tab[0][1] = bfin_put_pixels16_x2_no_rnd;
+    c->put_no_rnd_pixels_tab[0][2] = bfin_put_pixels16_y2_no_rnd;
 }
