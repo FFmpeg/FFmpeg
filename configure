@@ -3135,6 +3135,8 @@ elif enabled mips; then
 
 elif enabled ppc; then
 
+    disable ldbrx
+
     case $(tolower $cpu) in
         601|ppc601|powerpc601)
             cpuflags="-mcpu=601"
