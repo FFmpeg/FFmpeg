@@ -122,7 +122,7 @@ endfunc
 
 function fft_pass_neon
         push            {r4,lr}
-        movrel          lr,  coefs+24
+        movrel          lr,  coefs + 24
         vld1.16         {d30},    [lr,:64]
         lsl             r12, r2,  #3
         vmov            d31, d30
