@@ -18,7 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "config_bfin.h"
+
+#include "libavutil/bfin/asm.h"
 
 DEFUN(put_pixels_clamped,mL1,
         (int16_t *block, uint8_t *dest, int line_size)):
