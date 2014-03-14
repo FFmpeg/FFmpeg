@@ -925,6 +925,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_V210X,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "v210x",
+        .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
@@ -1986,6 +1987,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_DVAUDIO,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "dvaudio",
+        .long_name = NULL_IF_CONFIG_SMALL("DVAUDIO"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
