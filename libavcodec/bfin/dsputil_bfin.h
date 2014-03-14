@@ -52,44 +52,4 @@ int ff_bfin_sse4  (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) 
 int ff_bfin_sse8  (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) attribute_l1_text;
 int ff_bfin_sse16 (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) attribute_l1_text;
 
-
-#ifdef BFIN_PROFILE
-
-static double Telem[16];
-static char  *TelemNames[16];
-static int    TelemCnt;
-
-#define PROF(lab,e) { int xx_e = e; char*xx_lab = lab; uint64_t xx_t0 = read_time();
-#define EPROF()       xx_t0 = read_time()-xx_t0; Telem[xx_e] = Telem[xx_e] + xx_t0; TelemNames[xx_e] = xx_lab; }
-
-static void prof_report (void)
-{
-    int i;
-    double s = 0;
-    for (i=0;i<16;i++) {
-        double v;
-        if (TelemNames[i]) {
-            v = Telem[i]/TelemCnt;
-            av_log (NULL,AV_LOG_DEBUG,"%-20s: %12.4f\t%12.4f\n", TelemNames[i],v,v/64);
-            s = s + Telem[i];
-        }
-    }
-    av_log (NULL,AV_LOG_DEBUG,"%-20s: %12.4f\t%12.4f\n%20.4f\t%d\n",
-            "total",s/TelemCnt,s/TelemCnt/64,s,TelemCnt);
-}
-
-static void bfprof (void)
-{
-    static int init;
-    if (!init) atexit (prof_report);
-    init=1;
-    TelemCnt++;
-}
-
-#else
-#define PROF(a,b)
-#define EPROF()
-#define bfprof()
-#endif
-
 #endif /* AVCODEC_BFIN_DSPUTIL_BFIN_H */
