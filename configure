@@ -1480,6 +1480,13 @@ ARCH_EXT_LIST_ARM="
     vfpv3
 "
 
+ARCH_EXT_LIST_MIPS="
+    mipsfpu
+    mips32r2
+    mipsdspr1
+    mipsdspr2
+"
+
 ARCH_EXT_LIST_X86_SIMD="
     amd3dnow
     amd3dnowext
@@ -1515,10 +1522,7 @@ ARCH_EXT_LIST="
     $ARCH_EXT_LIST_ARM
     $ARCH_EXT_LIST_PPC
     $ARCH_EXT_LIST_X86
-    mipsfpu
-    mips32r2
-    mipsdspr1
-    mipsdspr2
+    $ARCH_EXT_LIST_MIPS
     loongson
 "
 
