@@ -104,12 +104,15 @@
     "psubb "#regb", "#regr"             \n\t"                    \
     "psubb "#regd", "#regp"             \n\t"
 
-void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx);
-void ff_dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx);
+void ff_dsputil_init_pix_mmx(DSPContext *c, AVCodecContext *avctx);
 
-void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int line_size);
-void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int line_size);
-void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int line_size);
+void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
+                               int line_size);
+void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
+                               int line_size);
+void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
+                                      int line_size);
 
 void ff_clear_block_mmx(int16_t *block);
 void ff_clear_block_sse(int16_t *block);
@@ -190,9 +193,9 @@ STATIC void PFX1 ## _pixels16 ## TYPE ## CPUEXT(uint8_t *block,         \
                                                 ptrdiff_t line_size,    \
                                                 int h)                  \
 {                                                                       \
-    PFX2 ## PFX1 ## _pixels8 ## TYPE ## CPUEXT(block,      pixels,      \
+    PFX2 ## PFX1 ## _pixels8 ## TYPE ## CPUEXT(block, pixels,           \
                                                line_size, h);           \
-    PFX2 ## PFX1 ## _pixels8 ## TYPE ## CPUEXT(block + 8,  pixels + 8,  \
+    PFX2 ## PFX1 ## _pixels8 ## TYPE ## CPUEXT(block + 8, pixels + 8,   \
                                                line_size, h);           \
 }
 
