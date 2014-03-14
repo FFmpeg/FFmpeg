@@ -190,7 +190,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     for (i = 0; i < nnal; i++)
         ctx->header_size += nal[i].sizeBytes;
 
-    ctx->header = av_malloc(ctx->header_size);
+    ctx->header = av_malloc(ctx->header_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!ctx->header) {
         av_log(avctx, AV_LOG_ERROR,
                "Cannot allocate HEVC header of size %d.\n", ctx->header_size);
@@ -202,6 +202,13 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     for (i = 0; i < nnal; i++) {
         memcpy(buf, nal[i].payload, nal[i].sizeBytes);
         buf += nal[i].sizeBytes;
+    }
+
+    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+        avctx->extradata_size = ctx->header_size;
+        avctx->extradata = ctx->header;
+        ctx->header_size = 0;
+        ctx->header = NULL;
     }
 
     return 0;
