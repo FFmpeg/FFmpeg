@@ -274,12 +274,6 @@ int ff_side_data_update_matrix_encoding(AVFrame *frame,
     return 0;
 }
 
-#if HAVE_NEON || ARCH_PPC || HAVE_MMX
-#   define STRIDE_ALIGN 16
-#else
-#   define STRIDE_ALIGN 8
-#endif
-
 void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
                                int linesize_align[AV_NUM_DATA_POINTERS])
 {

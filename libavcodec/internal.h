@@ -35,6 +35,12 @@
 
 #define FF_SANE_NB_CHANNELS 63U
 
+#if HAVE_NEON || ARCH_PPC || HAVE_MMX
+#   define STRIDE_ALIGN 16
+#else
+#   define STRIDE_ALIGN 8
+#endif
+
 typedef struct FramePool {
     /**
      * Pools for each data plane. For audio all the planes have the same size,
