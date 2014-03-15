@@ -266,7 +266,8 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
         "jb                                  1b             \n\t"\
         :: "g" (filter),
            "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset)
-        : "%"REG_d, "%"REG_S, "%"REG_c
+        : XMM_CLOBBERS("%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" , "%xmm4" , "%xmm5" , "%xmm7" ,)
+         "%"REG_d, "%"REG_S, "%"REG_c
     );
 }
 #endif
