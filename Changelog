@@ -33,6 +33,7 @@ version 2.2:
 - libx265 encoder
 - dejudder filter
 - subfile protocol
+- Phantom Cine demuxer
 
 
 version 2.1:

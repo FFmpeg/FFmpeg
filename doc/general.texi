@@ -245,6 +245,7 @@ library:
     @tab Multimedia format used by Delphine Software games.
 @item CD+G                      @tab   @tab X
     @tab Video format used by CD+G karaoke disks
+@item Phantom Cine              @tab   @tab X
 @item Commodore CDXL            @tab   @tab X
     @tab Amiga CD video format
 @item Core Audio Format         @tab X @tab X
