@@ -922,6 +922,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             *samples++ = c->status[0].predictor + c->status[1].predictor;
             *samples++ = c->status[0].predictor - c->status[1].predictor;
         }
+
+        if ((bytestream2_tell(&gb) & 1))
+            bytestream2_skip(&gb, 1);
         break;
     }
     case AV_CODEC_ID_ADPCM_IMA_ISS:
