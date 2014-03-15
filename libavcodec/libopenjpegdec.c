@@ -43,7 +43,7 @@
 // pix_fmts with lower bpp have to be listed before
 // similar pix_fmts with higher bpp.
 #define RGB_PIXEL_FORMATS  AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,                 \
-                           AV_PIX_FMT_RGB48
+                           AV_PIX_FMT_RGB48, AV_PIX_FMT_RGBA64
 
 #define GRAY_PIXEL_FORMATS AV_PIX_FMT_GRAY8, AV_PIX_FMT_Y400A,                \
                            AV_PIX_FMT_GRAY16
