@@ -1620,7 +1620,7 @@ decode_cabac_residual_internal(H264Context *h, int16_t *block,
     cc.range     = h->cabac.range;
     cc.low       = h->cabac.low;
     cc.bytestream= h->cabac.bytestream;
-#if !UNCHECKED_BITSTREAM_READER || ARCH_ARM || ARCH_AARCH64
+#if !UNCHECKED_BITSTREAM_READER || ARCH_AARCH64
     cc.bytestream_end = h->cabac.bytestream_end;
 #endif
 #else

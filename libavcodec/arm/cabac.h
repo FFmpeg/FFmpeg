@@ -59,12 +59,18 @@ static av_always_inline int get_cabac_inline_arm(CABACContext *c,
         "tst        %[r_c]        , %[r_c]                      \n\t"
         "bne        2f                                          \n\t"
         "ldr        %[r_c]        , [%[c], %[byte]]             \n\t"
+#if UNCHECKED_BITSTREAM_READER
+        "ldrh       %[tmp]        , [%[r_c]]                    \n\t"
+        "add        %[r_c]        , %[r_c]      , #2            \n\t"
+        "str        %[r_c]        , [%[c], %[byte]]             \n\t"
+#else
         "ldr        %[r_b]        , [%[c], %[end]]              \n\t"
         "ldrh       %[tmp]        , [%[r_c]]                    \n\t"
         "cmp        %[r_c]        , %[r_b]                      \n\t"
         "itt        lt                                          \n\t"
         "addlt      %[r_c]        , %[r_c]      , #2            \n\t"
         "strlt      %[r_c]        , [%[c], %[byte]]             \n\t"
+#endif
         "sub        %[r_c]        , %[low]      , #1            \n\t"
         "add        %[r_b]        , %[tables]   , %[norm_off]   \n\t"
         "eor        %[r_c]        , %[low]      , %[r_c]        \n\t"
