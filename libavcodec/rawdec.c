@@ -25,6 +25,8 @@
  */
 
 #include "avcodec.h"
+#include "dsputil.h"
+#include "get_bits.h"
 #include "internal.h"
 #include "raw.h"
 #include "libavutil/avassert.h"
@@ -43,6 +45,10 @@ typedef struct RawVideoContext {
     int is_yuv2;
     int is_lt_16bpp; // 16bpp pixfmt and bits_per_coded_sample < 16
     int tff;
+
+    DSPContext dsp;
+    void *bitstream_buf;
+    unsigned int bitstream_buf_size;
 } RawVideoContext;
 
 static const AVOption options[]={
@@ -106,6 +112,8 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     RawVideoContext *context = avctx->priv_data;
     const AVPixFmtDescriptor *desc;
 
+    ff_dsputil_init(&context->dsp, avctx);
+
     if (   avctx->codec_tag == MKTAG('r','a','w',' ')
         || avctx->codec_tag == MKTAG('N','O','1','6'))
         avctx->pix_fmt = avpriv_find_pix_fmt(pix_fmt_bps_mov,
@@ -113,7 +121,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     else if (avctx->codec_tag == MKTAG('W', 'R', 'A', 'W'))
         avctx->pix_fmt = avpriv_find_pix_fmt(pix_fmt_bps_avi,
                                       avctx->bits_per_coded_sample);
-    else if (avctx->codec_tag)
+    else if (avctx->codec_tag && (avctx->codec_tag & 0xFFFFFF) != MKTAG('B','I','T', 0))
         avctx->pix_fmt = avpriv_find_pix_fmt(ff_raw_pix_fmt_tags, avctx->codec_tag);
     else if (avctx->pix_fmt == AV_PIX_FMT_NONE && avctx->bits_per_coded_sample)
         avctx->pix_fmt = avpriv_find_pix_fmt(pix_fmt_bps_avi,
@@ -167,6 +175,34 @@ static void flip(AVCodecContext *avctx, AVPicture *picture)
     picture->data[0]     += picture->linesize[0] * (avctx->height - 1);
     picture->linesize[0] *= -1;
 }
+
+/*
+ * Scale sample to 16-bit resolution
+ */
+#define SCALE16(x, bits) (((x) << (16 - (bits))) | ((x) >> (2 * (bits) - 16)))
+
+/**
+ * Scale buffer to 16 bits per coded sample resolution
+ */
+#define MKSCALE16(name, r16, w16) \
+static void name(AVCodecContext *avctx, uint8_t * dst, const uint8_t *buf, int buf_size, int packed) \
+{ \
+    int i; \
+    if (!packed) { \
+        for (i = 0; i + 1 < buf_size; i += 2) \
+            w16(dst + i, SCALE16(r16(buf + i), avctx->bits_per_coded_sample)); \
+    } else { \
+        GetBitContext gb; \
+        init_get_bits(&gb, buf, buf_size * 8); \
+        for (i = 0; i < avctx->width * avctx->height; i++) { \
+            int sample = get_bits(&gb, avctx->bits_per_coded_sample); \
+            w16(dst + i*2, SCALE16(sample, avctx->bits_per_coded_sample)); \
+        } \
+   } \
+}
+
+MKSCALE16(scale16be, AV_RB16, AV_WB16)
+MKSCALE16(scale16le, AV_RL16, AV_WL16)
 
 static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
                       AVPacket *avpkt)
@@ -227,15 +263,28 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         }
         buf = dst;
     } else if (context->is_lt_16bpp) {
-        int i;
         uint8_t *dst = frame->buf[0]->data;
-        if (desc->flags & AV_PIX_FMT_FLAG_BE) {
-            for (i = 0; i + 1 < buf_size; i += 2)
-                AV_WB16(dst + i, AV_RB16(buf + i) << (16 - avctx->bits_per_coded_sample));
-        } else {
-            for (i = 0; i + 1 < buf_size; i += 2)
-                AV_WL16(dst + i, AV_RL16(buf + i) << (16 - avctx->bits_per_coded_sample));
+        int packed = (avctx->codec_tag & 0xFFFFFF) == MKTAG('B','I','T', 0);
+        int swap   =  avctx->codec_tag >> 24;
+
+        if (packed && swap) {
+            av_fast_padded_malloc(&context->bitstream_buf, &context->bitstream_buf_size, buf_size);
+            if (!context->bitstream_buf)
+                return AVERROR(ENOMEM);
+            if (swap == 16)
+                context->dsp.bswap16_buf(context->bitstream_buf, (const uint16_t*)buf, buf_size / 2);
+            else if (swap == 32)
+                context->dsp.bswap_buf(context->bitstream_buf, (const uint32_t*)buf, buf_size / 4);
+            else
+                return AVERROR_INVALIDDATA;
+            buf = context->bitstream_buf;
         }
+
+        if (desc->flags & AV_PIX_FMT_FLAG_BE)
+            scale16be(avctx, dst, buf, buf_size, packed);
+        else
+            scale16le(avctx, dst, buf, buf_size, packed);
+
         buf = dst;
     } else if (need_copy) {
         memcpy(frame->buf[0]->data, buf, buf_size);
@@ -247,7 +296,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         buf += buf_size - context->frame_size;
 
     len = context->frame_size - (avctx->pix_fmt==AV_PIX_FMT_PAL8 ? AVPALETTE_SIZE : 0);
-    if (buf_size < len) {
+    if (buf_size < len && (avctx->codec_tag & 0xFFFFFF) != MKTAG('B','I','T', 0)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < expected frame_size %d\n", buf_size, len);
         av_buffer_unref(&frame->buf[0]);
         return AVERROR(EINVAL);
