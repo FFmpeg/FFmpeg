@@ -308,6 +308,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'A','R','T'): key = "artist";    break;
     case MKTAG( 'a','A','R','T'): key = "album_artist";    break;
     case MKTAG(0xa9,'w','r','t'): key = "composer";  break;
+    case MKTAG( 'c','p','i','l'): key = "compilation";
+        parse = mov_metadata_int8_no_padding; break;
     case MKTAG( 'c','p','r','t'):
     case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
     case MKTAG(0xa9,'g','r','p'): key = "grouping"; break;
