@@ -59,6 +59,7 @@ const AVMetadataConv ff_id3v2_34_metadata_conv[] = {
 };
 
 const AVMetadataConv ff_id3v2_4_metadata_conv[] = {
+    { "TCMP", "compilation"   },
     { "TDRL", "date"          },
     { "TDRC", "date"          },
     { "TDEN", "creation_time" },
@@ -71,6 +72,7 @@ const AVMetadataConv ff_id3v2_4_metadata_conv[] = {
 static const AVMetadataConv id3v2_2_metadata_conv[] = {
     { "TAL", "album"        },
     { "TCO", "genre"        },
+    { "TCP", "compilation"  },
     { "TT2", "title"        },
     { "TEN", "encoded_by"   },
     { "TP1", "artist"       },
