@@ -2408,6 +2408,7 @@ static void mov_write_psp_udta_tag(AVIOContext *pb,
 
 static int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s)
 {
+    MOVMuxContext *mov = s->priv_data;
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
     int64_t pos, pos2;
 
@@ -2432,7 +2433,8 @@ static int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s)
         avio_wb16(pb, 0x0);                  /* ? */
         avio_wb16(pb, 0x021C);               /* data */
 
-        mov_write_psp_udta_tag(pb, LIBAVCODEC_IDENT,      "eng", 0x04);
+        if (!mov->exact)
+            mov_write_psp_udta_tag(pb, LIBAVCODEC_IDENT,      "eng", 0x04);
         mov_write_psp_udta_tag(pb, title->value,          "eng", 0x01);
         mov_write_psp_udta_tag(pb, "2006/04/01 11:11:11", "und", 0x03);
 
