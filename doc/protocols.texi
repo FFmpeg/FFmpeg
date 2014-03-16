@@ -271,6 +271,12 @@ updates.
 Set the cookies to be sent in future requests. The format of each cookie is the
 same as the value of a Set-Cookie HTTP response field. Multiple cookies can be
 delimited by a newline character.
+
+@item offset
+Set initial byte offset.
+
+@item end_offset
+Try to limit the request to bytes preceding this offset.
 @end table
 
 @subsection HTTP Cookies
