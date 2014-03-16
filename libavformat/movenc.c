@@ -2225,7 +2225,8 @@ static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
     mov_write_string_metadata(s, pb, "\251wrt", "composer" , 1);
     mov_write_string_metadata(s, pb, "\251alb", "album"    , 1);
     mov_write_string_metadata(s, pb, "\251day", "date"     , 1);
-    if (!mov_write_string_metadata(s, pb, "\251too", "encoding_tool", 1))
+    if (!mov->exact &&
+        !mov_write_string_metadata(s, pb, "\251too", "encoding_tool", 1))
         mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 0, 1);
     mov_write_string_metadata(s, pb, "\251cmt", "comment"  , 1);
     mov_write_string_metadata(s, pb, "\251gen", "genre"    , 1);
@@ -2345,13 +2346,8 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
     AVIOContext *pb_buf;
-    int i, ret, size;
+    int ret, size;
     uint8_t *buf;
-
-    for (i = 0; i < s->nb_streams; i++)
-        if (mov->tracks[i].enc->flags & CODEC_FLAG_BITEXACT) {
-            return 0;
-        }
 
     ret = avio_open_dyn_buf(&pb_buf);
     if (ret < 0)
@@ -3766,6 +3762,10 @@ static int mov_write_header(AVFormatContext *s)
         else if (!strcmp("ismv",s->oformat->name)) mov->mode = MODE_ISM;
         else if (!strcmp("f4v", s->oformat->name)) mov->mode = MODE_F4V;
     }
+
+    for (i = 0; i < s->nb_streams; i++)
+        if (s->streams[i]->codec->flags & CODEC_FLAG_BITEXACT)
+            mov->exact = 1;
 
     /* Set the FRAGMENT flag if any of the fragmentation methods are
      * enabled. */

@@ -156,6 +156,7 @@ typedef struct MOVMuxContext {
 
     int flags;
     int rtp_flags;
+    int exact;
 
     int iods_skip;
     int iods_video_profile;
