@@ -145,6 +145,12 @@ static int config_out_props(AVFilterLink *outlink)
                 tinterlace->mode);
         tinterlace->flags &= ~TINTERLACE_FLAG_VLPF;
     }
+    if (tinterlace->mode == MODE_INTERLACEX2) {
+        outlink->time_base.num = inlink->time_base.num;
+        outlink->time_base.den = inlink->time_base.den * 2;
+        outlink->frame_rate = av_mul_q(inlink->frame_rate, (AVRational){2,1});
+    }
+
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d filter:%s h:%d -> h:%d\n",
            tinterlace->mode, (tinterlace->flags & TINTERLACE_FLAG_VLPF) ? "on" : "off",
            inlink->h, outlink->h);
@@ -321,6 +327,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         if (!out)
             return AVERROR(ENOMEM);
         out->interlaced_frame = 1;
+        if (cur->pts != AV_NOPTS_VALUE)
+            out->pts = cur->pts*2;
 
         if ((ret = ff_filter_frame(outlink, out)) < 0)
             return ret;
@@ -333,6 +341,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         av_frame_copy_props(out, next);
         out->interlaced_frame = 1;
 
+        if (next->pts != AV_NOPTS_VALUE && cur->pts != AV_NOPTS_VALUE)
+            out->pts = cur->pts + next->pts;
+        else
+            out->pts = AV_NOPTS_VALUE;
         /* write current frame second field lines into the second field of the new frame */
         copy_picture_field(out->data, out->linesize,
                            (const uint8_t **)cur->data, cur->linesize,
