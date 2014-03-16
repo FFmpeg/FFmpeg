@@ -26,6 +26,7 @@
 #include "isom.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
+#include "libavutil/intreadwrite.h"
 
 /* http://www.mp4ra.org */
 /* ordered by muxing preference */
@@ -437,8 +438,60 @@ static const AVCodecTag mp4_audio_types[] = {
     { AV_CODEC_ID_NONE,   AOT_NULL },
 };
 
+static uint32_t yuv_to_rgba(uint32_t ycbcr)
+{
+    uint8_t r, g, b;
+    int y, cb, cr;
+
+    y  = (ycbcr >> 16) & 0xFF;
+    cr = (ycbcr >> 8)  & 0xFF;
+    cb =  ycbcr        & 0xFF;
+
+    b = av_clip_uint8(1.164 * (y - 16)                      + 2.018 * (cb - 128));
+    g = av_clip_uint8(1.164 * (y - 16) - 0.813 * (cr - 128) - 0.391 * (cb - 128));
+    r = av_clip_uint8(1.164 * (y - 16) + 1.596 * (cr - 128));
+
+    return (r << 16) | (g << 8) | b;
+}
+
+static int mov_rewrite_dvd_sub_extradata(AVStream *st)
+{
+    char pal_s[256];
+    char buf[256];
+    int pal_s_pos = 0;
+    uint8_t *src = st->codec->extradata;
+
+    if (st->codec->extradata_size != 64)
+        return 0;
+
+    for (int i = 0; i < 16; i++) {
+        uint32_t yuv = AV_RB32(src + i * 4);
+        uint32_t rgba = yuv_to_rgba(yuv);
+
+        snprintf(pal_s + pal_s_pos, sizeof(pal_s) - pal_s_pos, "%06x%s", rgba,
+                 i != 15 ? ", " : "");
+        pal_s_pos = strlen(pal_s);
+        if (pal_s_pos >= sizeof(pal_s))
+            return 0;
+    }
+
+    snprintf(buf, sizeof(buf), "size: %dx%d\npalette: %s\n",
+             st->codec->width, st->codec->height, pal_s);
+
+    av_freep(&st->codec->extradata);
+    st->codec->extradata_size = 0;
+    st->codec->extradata = av_mallocz(strlen(buf) + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codec->extradata)
+        return AVERROR(ENOMEM);
+    st->codec->extradata_size = strlen(buf);
+    memcpy(st->codec->extradata, buf, st->codec->extradata_size);
+
+    return 0;
+}
+
 int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext *pb)
 {
+    int err;
     int len, tag;
     int ret;
     int object_type_id = avio_r8(pb);
@@ -480,6 +533,10 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
             if (!(st->codec->codec_id = ff_codec_get_id(mp4_audio_types,
                                                         cfg.object_type)))
                 st->codec->codec_id = AV_CODEC_ID_AAC;
+        }
+        if (st->codec->codec_id == AV_CODEC_ID_DVD_SUBTITLE) {
+            if ((err = mov_rewrite_dvd_sub_extradata(st)) < 0)
+                return err;
         }
     }
     return 0;
