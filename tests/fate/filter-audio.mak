@@ -52,13 +52,23 @@ $(FATE_ATRIM): SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 
 FATE_FILTER-$(call FILTERDEMDECENCMUX, ATRIM, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_ATRIM)
 
-FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHANNELMAP, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-channelmap
-fate-filter-channelmap: tests/data/filtergraphs/channelmap
-fate-filter-channelmap: SRC = $(TARGET_PATH)/tests/data/asynth-44100-6.wav
-fate-filter-channelmap: tests/data/asynth-44100-6.wav
-fate-filter-channelmap: CMD = md5 -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/channelmap -f wav -flags +bitexact
-fate-filter-channelmap: CMP = oneline
-fate-filter-channelmap: REF = 06168d06085e2c0603e4e118ba4cade2
+FATE_FILTER_CHANNELMAP += fate-filter-channelmap-one-int
+fate-filter-channelmap-one-int: tests/data/filtergraphs/channelmap_one_int
+fate-filter-channelmap-one-int: SRC = $(TARGET_PATH)/tests/data/asynth-44100-6.wav
+fate-filter-channelmap-one-int: tests/data/asynth-44100-6.wav
+fate-filter-channelmap-one-int: CMD = md5 -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/channelmap_one_int -f wav -flags +bitexact
+fate-filter-channelmap-one-int: CMP = oneline
+fate-filter-channelmap-one-int: REF = 06168d06085e2c0603e4e118ba4cade2
+
+FATE_FILTER_CHANNELMAP += fate-filter-channelmap-one-str
+fate-filter-channelmap-one-str: tests/data/filtergraphs/channelmap_one_str
+fate-filter-channelmap-one-str: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-channelmap-one-str: tests/data/asynth-44100-2.wav
+fate-filter-channelmap-one-str: CMD = md5 -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/channelmap_one_str -f wav -flags +bitexact
+fate-filter-channelmap-one-str: CMP = oneline
+fate-filter-channelmap-one-str: REF = 9fe9bc452282dfd94fd80e9491607a0c
+
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHANNELMAP, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_FILTER_CHANNELMAP)
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHANNELSPLIT, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-channelsplit
 fate-filter-channelsplit: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
