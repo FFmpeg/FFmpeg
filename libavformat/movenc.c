@@ -2566,7 +2566,8 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
     avio_printf(pb, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     avio_printf(pb, "<smil xmlns=\"http://www.w3.org/2001/SMIL20/Language\">\n");
     avio_printf(pb, "<head>\n");
-    avio_printf(pb, "<meta name=\"creator\" content=\"%s\" />\n",
+    if (!mov->exact)
+        avio_printf(pb, "<meta name=\"creator\" content=\"%s\" />\n",
                     LIBAVFORMAT_IDENT);
     avio_printf(pb, "</head>\n");
     avio_printf(pb, "<body>\n");
