@@ -3,6 +3,8 @@ releases are sorted from youngest to oldest.
 
 version <next>
 - shuffleplanes filter
+- subfile protocol
+- Phantom Cine demuxer
 
 
 version 2.2:
@@ -32,8 +34,6 @@ version 2.2:
 - Support DNx444
 - libx265 encoder
 - dejudder filter
-- subfile protocol
-- Phantom Cine demuxer
 
 
 version 2.1:
