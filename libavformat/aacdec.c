@@ -43,8 +43,16 @@ static int adts_aac_probe(AVProbeData *p)
 
         for (frames = 0; buf2 < end; frames++) {
             uint32_t header = AV_RB16(buf2);
-            if ((header & 0xFFF6) != 0xFFF0)
+            if ((header & 0xFFF6) != 0xFFF0) {
+                if (buf != buf0) {
+                    // Found something that isn't an ADTS header, starting
+                    // from a position other than the start of the buffer.
+                    // Discard the count we've accumulated so far since it
+                    // probably was a false positive.
+                    frames = 0;
+                }
                 break;
+            }
             fsize = (AV_RB32(buf2 + 3) >> 13) & 0x1FFF;
             if (fsize < 7)
                 break;
