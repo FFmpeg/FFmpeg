@@ -54,8 +54,6 @@ typedef struct {
     char *content_type;
     char *user_agent;
     int64_t off, filesize, req_end_offset;
-    int icy_data_read;      ///< how much data was read since last ICY metadata packet
-    int icy_metaint;        ///< after how many bytes of read data a new metadata packet will be found
     char *location;
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
@@ -78,6 +76,10 @@ typedef struct {
     char *mime_type;
     char *cookies;          ///< holds newline (\n) delimited Set-Cookie header field values (without the "Set-Cookie: " field name)
     int icy;
+    /* how much data was read since the last ICY metadata packet */
+    int icy_data_read;
+    /* after how many bytes of read data a new metadata packet will be found */
+    int icy_metaint;
     char *icy_metadata_headers;
     char *icy_metadata_packet;
 #if CONFIG_ZLIB
@@ -104,8 +106,8 @@ static const AVOption options[] = {
 {"mime_type", "set MIME type", OFFSET(mime_type), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
 {"cookies", "set cookies to be sent in applicable future requests, use newline delimited Set-Cookie HTTP field value syntax", OFFSET(cookies), AV_OPT_TYPE_STRING, {0}, 0, 0, D },
 {"icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D },
-{"icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
-{"icy_metadata_packet", "return current ICY metadata packet", OFFSET(icy_metadata_packet), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
+{"icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, {0}, 0, 0, AV_OPT_FLAG_EXPORT },
+{"icy_metadata_packet", "return current ICY metadata packet", OFFSET(icy_metadata_packet), AV_OPT_TYPE_STRING, {0}, 0, 0, AV_OPT_FLAG_EXPORT },
 {"auth_type", "HTTP authentication type", OFFSET(auth_state.auth_type), AV_OPT_TYPE_INT, {.i64 = HTTP_AUTH_NONE}, HTTP_AUTH_NONE, HTTP_AUTH_BASIC, D|E, "auth_type" },
 {"none", "No auth method set, autodetect", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_NONE}, 0, 0, D|E, "auth_type" },
 {"basic", "HTTP basic authentication", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_BASIC}, 0, 0, D|E, "auth_type" },
@@ -403,6 +405,23 @@ static int parse_content_encoding(URLContext *h, char *p)
     return 0;
 }
 
+// Concat all Icy- header lines
+static int parse_icy(HTTPContext *s, const char *tag, const char *p)
+{
+    int len = 4 + strlen(p) + strlen(tag);
+    int ret;
+
+    if (s->icy_metadata_headers)
+        len += strlen(s->icy_metadata_headers);
+
+    if ((ret = av_reallocp(&s->icy_metadata_headers, len)) < 0)
+        return ret;
+
+    av_strlcatf(s->icy_metadata_headers, len, "%s: %s\n", tag, p);
+
+    return 0;
+}
+
 static int process_line(URLContext *h, char *line, int line_count,
                         int *new_location)
 {
@@ -489,13 +508,8 @@ static int process_line(URLContext *h, char *line, int line_count,
         } else if (!av_strcasecmp (tag, "Icy-MetaInt")) {
             s->icy_metaint = strtoll(p, NULL, 10);
         } else if (!av_strncasecmp(tag, "Icy-", 4)) {
-            // Concat all Icy- header lines
-            char *buf = av_asprintf("%s%s: %s\n",
-                s->icy_metadata_headers ? s->icy_metadata_headers : "", tag, p);
-            if (!buf)
-                return AVERROR(ENOMEM);
-            av_freep(&s->icy_metadata_headers);
-            s->icy_metadata_headers = buf;
+            if ((ret = parse_icy(s, tag, p)) < 0)
+                return ret;
         } else if (!av_strcasecmp(tag, "Content-Encoding")) {
             if ((ret = parse_content_encoding(h, p)) < 0)
                 return ret;
@@ -905,37 +919,52 @@ static int http_read_stream_all(URLContext *h, uint8_t *buf, int size)
     return pos;
 }
 
+static int store_icy(URLContext *h, int size)
+{
+    HTTPContext *s = h->priv_data;
+    /* until next metadata packet */
+    int remaining = s->icy_metaint - s->icy_data_read;
+
+    if (remaining < 0)
+        return AVERROR_INVALIDDATA;
+
+    if (!remaining) {
+        // The metadata packet is variable sized. It has a 1 byte header
+        // which sets the length of the packet (divided by 16). If it's 0,
+        // the metadata doesn't change. After the packet, icy_metaint bytes
+        // of normal data follow.
+        uint8_t ch;
+        int len = http_read_stream_all(h, &ch, 1);
+        if (len < 0)
+            return len;
+        if (ch > 0) {
+            char data[255 * 16 + 1];
+            int ret;
+            len = ch * 16;
+            ret = http_read_stream_all(h, data, len);
+            if (ret < 0)
+                return ret;
+            data[len + 1] = 0;
+            if ((ret = av_opt_set(s, "icy_metadata_packet", data, 0)) < 0)
+                return ret;
+        }
+        s->icy_data_read = 0;
+        remaining = s->icy_metaint;
+    }
+
+    return FFMIN(size, remaining);
+}
+
 static int http_read(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
 
     if (s->icy_metaint > 0) {
-        int remaining = s->icy_metaint - s->icy_data_read; /* until next metadata packet */
-        if (!remaining) {
-            // The metadata packet is variable sized. It has a 1 byte header
-            // which sets the length of the packet (divided by 16). If it's 0,
-            // the metadata doesn't change. After the packet, icy_metaint bytes
-            // of normal data follow.
-            uint8_t ch;
-            int len = http_read_stream_all(h, &ch, 1);
-            if (len < 1)
-                return len;
-            if (ch > 0) {
-                char data[255 * 16 + 1];
-                int ret;
-                len = ch * 16;
-                ret = http_read_stream_all(h, data, len);
-                if (ret < len)
-                    return ret;
-                data[len + 1] = 0;
-                if ((ret = av_opt_set(s, "icy_metadata_packet", data, 0)) < 0)
-                    return ret;
-            }
-            s->icy_data_read = 0;
-            remaining = s->icy_metaint;
-        }
-        size = FFMIN(size, remaining);
+        size = store_icy(h, size);
+        if (size < 0)
+            return size;
     }
+
     size = http_read_stream(h, buf, size);
     if (size > 0)
         s->icy_data_read += size;

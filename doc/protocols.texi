@@ -213,7 +213,7 @@ m3u8 files.
 
 HTTP (Hyper Text Transfer Protocol).
 
-This protocol accepts the following options.
+This protocol accepts the following options:
 
 @table @option
 @item seekable
@@ -257,12 +257,14 @@ the @option{icy_metadata_headers} and @option{icy_metadata_packet} options.
 The default is 0.
 
 @item icy_metadata_headers
-If the server supports ICY metadata, this contains the ICY specific HTTP reply
-headers, separated with newline characters.
+If the server supports ICY metadata, this contains the ICY-specific HTTP reply
+headers, separated by newline characters.
 
 @item icy_metadata_packet
 If the server supports ICY metadata, and @option{icy} was set to 1, this
-contains the last non-empty metadata packet sent by the server.
+contains the last non-empty metadata packet sent by the server. It should be
+polled in regular intervals by applications interested in mid-stream metadata
+updates.
 
 @item cookies
 Set the cookies to be sent in future requests. The format of each cookie is the
