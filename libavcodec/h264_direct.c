@@ -67,7 +67,7 @@ void ff_h264_direct_dist_scale_factor(H264Context * const h){
 }
 
 static void fill_colmap(H264Context *h, int map[2][16+32], int list, int field, int colfield, int mbafi){
-    Picture * const ref1 = &h->ref_list[1][0];
+    H264Picture * const ref1 = &h->ref_list[1][0];
     int j, old_ref, rfield;
     int start= mbafi ? 16                      : 0;
     int end  = mbafi ? 16+2*h->ref_count[0]    : h->ref_count[0];
@@ -100,8 +100,8 @@ static void fill_colmap(H264Context *h, int map[2][16+32], int list, int field, 
 }
 
 void ff_h264_direct_ref_list_init(H264Context * const h){
-    Picture * const ref1 = &h->ref_list[1][0];
-    Picture * const cur = h->cur_pic_ptr;
+    H264Picture * const ref1 = &h->ref_list[1][0];
+    H264Picture * const cur = h->cur_pic_ptr;
     int list, j, field;
     int sidx= (h->picture_structure&1)^1;
     int ref1sidx = (ref1->reference&1)^1;
@@ -140,7 +140,7 @@ void ff_h264_direct_ref_list_init(H264Context * const h){
     }
 }
 
-static void await_reference_mb_row(H264Context * const h, Picture *ref, int mb_y)
+static void await_reference_mb_row(H264Context * const h, H264Picture *ref, int mb_y)
 {
     int ref_field = ref->reference - 1;
     int ref_field_picture = ref->field_picture;
