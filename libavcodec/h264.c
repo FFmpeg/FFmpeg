@@ -3094,6 +3094,18 @@ static int h264_slice_header_init(H264Context *h, int reinit)
     return 0;
 }
 
+static enum AVPixelFormat non_j_pixfmt(enum AVPixelFormat a)
+{
+    switch (a) {
+    case AV_PIX_FMT_YUVJ420P: return AV_PIX_FMT_YUV420P;
+    case AV_PIX_FMT_YUVJ422P: return AV_PIX_FMT_YUV422P;
+    case AV_PIX_FMT_YUVJ444P: return AV_PIX_FMT_YUV444P;
+    default:
+        return a;
+    }
+}
+
+
 /**
  * Decode a slice header.
  * This will also call ff_MPV_common_init() and frame_start() as needed.
@@ -3212,7 +3224,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                      || h->mb_width  != h->sps.mb_width
                      || h->mb_height != h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag)
                     ));
-    if (h0->avctx->pix_fmt != get_pixel_format(h0, 0))
+    if (non_j_pixfmt(h0->avctx->pix_fmt) != non_j_pixfmt(get_pixel_format(h0, 0)))
         must_reinit = 1;
 
     h->mb_width  = h->sps.mb_width;
