@@ -107,3 +107,13 @@ FATE_TIFF-$(call DEMDEC, IMAGE2, TIFF) += $(FATE_TIFF)
 
 FATE_SAMPLES_AVCONV += $(FATE_TIFF-yes)
 fate-tiff: $(FATE_TIFF-yes)
+
+FATE_XBM += fate-xbm10
+fate-xbm10: CMD = framecrc -i $(TARGET_SAMPLES)/xbm/xl.xbm
+
+FATE_XBM += fate-xbm11
+fate-xbm11: CMD = framecrc -i $(TARGET_SAMPLES)/xbm/lbw.xbm
+
+FATE_XBM-$(call DEMDEC, IMAGE2, XBM) += $(FATE_XBM)
+FATE_SAMPLES_AVCONV += $(FATE_XBM-yes)
+fate-xbm: $(FATE_XBM-yes)
