@@ -50,7 +50,7 @@ static void vdpau_h264_clear_rf(VdpReferenceFrameH264 *rf)
 static void vdpau_h264_set_rf(VdpReferenceFrameH264 *rf, H264Picture *pic,
                               int pic_structure)
 {
-    VdpVideoSurface surface = ff_vdpau_get_surface_id(pic);
+    VdpVideoSurface surface = ff_vdpau_get_surface_id(&pic->f);
 
     if (pic_structure == 0)
         pic_structure = pic->reference;
@@ -87,7 +87,7 @@ static void vdpau_h264_set_reference_frames(AVCodecContext *avctx)
             if (!pic || !pic->reference)
                 continue;
             pic_frame_idx = pic->long_ref ? pic->pic_id : pic->frame_num;
-            surface_ref = ff_vdpau_get_surface_id(pic);
+            surface_ref = ff_vdpau_get_surface_id(&pic->f);
 
             rf2 = &info->referenceFrames[0];
             while (rf2 != rf) {
@@ -194,7 +194,7 @@ static int vdpau_h264_end_frame(AVCodecContext *avctx)
     H264Context *h = avctx->priv_data;
     H264Picture *pic = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
-    VdpVideoSurface surf = ff_vdpau_get_surface_id(pic);
+    VdpVideoSurface surf = ff_vdpau_get_surface_id(&pic->f);
 
 #if FF_API_BUFS_VDPAU
 FF_DISABLE_DEPRECATION_WARNINGS
