@@ -27,7 +27,6 @@
 
 #include "internal.h"
 #include "avcodec.h"
-#include "mpegvideo.h"
 #include "h264.h"
 #include "mpegutils.h"
 #include "rectangle.h"
