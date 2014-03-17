@@ -1990,7 +1990,7 @@ static int h264_frame_start(H264Context *h)
     h->cur_pic_ptr = pic;
     unref_picture(h, &h->cur_pic);
     if (CONFIG_ERROR_RESILIENCE) {
-        h->er.cur_pic = NULL;
+        memset(&h->er.cur_pic, 0, sizeof(h->er.cur_pic));
     }
 
     if ((ret = ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
@@ -1998,8 +1998,8 @@ static int h264_frame_start(H264Context *h)
 
     if (CONFIG_ERROR_RESILIENCE) {
         ff_er_frame_start(&h->er);
-        h->er.last_pic =
-        h->er.next_pic = NULL;
+        memset(&h->er.last_pic, 0, sizeof(h->er.last_pic));
+        memset(&h->er.next_pic, 0, sizeof(h->er.next_pic));
     }
 
     assert(h->linesize && h->uvlinesize);
@@ -3049,7 +3049,7 @@ static int field_end(H264Context *h, int in_setup)
      * causes problems for the first MB line, too.
      */
     if (CONFIG_ERROR_RESILIENCE && !FIELD_PICTURE(h) && h->current_slice && !h->sps.new) {
-        h->er.cur_pic  = h->cur_pic_ptr;
+        ff_mpeg_set_erpic(&h->er.cur_pic, h->cur_pic_ptr);
         ff_er_frame_end(&h->er);
     }
     if (!in_setup && !h->droppable)
@@ -4137,8 +4137,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                              (h->ref_list[j][i].reference & 3);
     }
 
-    if (h->ref_count[0]) h->er.last_pic = &h->ref_list[0][0];
-    if (h->ref_count[1]) h->er.next_pic = &h->ref_list[1][0];
+    if (h->ref_count[0]) ff_mpeg_set_erpic(&h->er.last_pic, &h->ref_list[0][0]);
+    if (h->ref_count[1]) ff_mpeg_set_erpic(&h->er.next_pic, &h->ref_list[1][0]);
+
     h->er.ref_count = h->ref_count[0];
     h0->au_pps_id = pps_id;
     h->sps.new =
