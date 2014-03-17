@@ -736,6 +736,40 @@ static int poll_filters(void)
     return ret;
 }
 
+static void print_final_stats(int64_t total_size)
+{
+    uint64_t video_size = 0, audio_size = 0, extra_size = 0, other_size = 0;
+    uint64_t data_size = 0;
+    float percent = -1.0;
+    int i;
+
+    for (i = 0; i < nb_output_streams; i++) {
+        OutputStream *ost = output_streams[i];
+        switch (ost->st->codec->codec_type) {
+            case AVMEDIA_TYPE_VIDEO: video_size += ost->data_size; break;
+            case AVMEDIA_TYPE_AUDIO: audio_size += ost->data_size; break;
+            default:                 other_size += ost->data_size; break;
+        }
+        extra_size += ost->st->codec->extradata_size;
+        data_size  += ost->data_size;
+    }
+
+    if (data_size && total_size >= data_size)
+        percent = 100.0 * (total_size - data_size) / data_size;
+
+    av_log(NULL, AV_LOG_INFO, "\n");
+    av_log(NULL, AV_LOG_INFO, "video:%1.0fkB audio:%1.0fkB other streams:%1.0fkB global headers:%1.0fkB muxing overhead: ",
+           video_size / 1024.0,
+           audio_size / 1024.0,
+           other_size / 1024.0,
+           extra_size / 1024.0);
+    if (percent >= 0.0)
+        av_log(NULL, AV_LOG_INFO, "%f%%", percent);
+    else
+        av_log(NULL, AV_LOG_INFO, "unknown");
+    av_log(NULL, AV_LOG_INFO, "\n");
+}
+
 static void print_report(int is_last_report, int64_t timer_start)
 {
     char buf[1024];
@@ -852,37 +886,9 @@ static void print_report(int is_last_report, int64_t timer_start)
 
     fflush(stderr);
 
-    if (is_last_report) {
-        uint64_t video_size = 0, audio_size = 0, extra_size = 0, other_size = 0;
-        uint64_t data_size = 0;
-        float percent = -1.0;
+    if (is_last_report)
+        print_final_stats(total_size);
 
-        for (i = 0; i < nb_output_streams; i++) {
-            OutputStream *ost = output_streams[i];
-            switch (ost->st->codec->codec_type) {
-            case AVMEDIA_TYPE_VIDEO: video_size += ost->data_size; break;
-            case AVMEDIA_TYPE_AUDIO: audio_size += ost->data_size; break;
-            default:                 other_size += ost->data_size; break;
-            }
-            extra_size += ost->st->codec->extradata_size;
-            data_size  += ost->data_size;
-        }
-
-        if (data_size && total_size >= data_size)
-            percent = 100.0 * (total_size - data_size) / data_size;
-
-        av_log(NULL, AV_LOG_INFO, "\n");
-        av_log(NULL, AV_LOG_INFO, "video:%1.0fkB audio:%1.0fkB other streams:%1.0fkB global headers:%1.0fkB muxing overhead: ",
-               video_size / 1024.0,
-               audio_size / 1024.0,
-               other_size / 1024.0,
-               extra_size / 1024.0);
-        if (percent >= 0.0)
-            av_log(NULL, AV_LOG_INFO, "%f%%", percent);
-        else
-            av_log(NULL, AV_LOG_INFO, "unknown");
-        av_log(NULL, AV_LOG_INFO, "\n");
-    }
 }
 
 static void flush_encoders(void)
