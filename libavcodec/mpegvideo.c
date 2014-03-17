@@ -105,11 +105,6 @@ const uint8_t *const ff_mpeg2_dc_scale_table[4] = {
     mpeg2_dc_scale_table3,
 };
 
-const enum AVPixelFormat ff_pixfmt_list_420[] = {
-    AV_PIX_FMT_YUV420P,
-    AV_PIX_FMT_NONE
-};
-
 static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
                                    int16_t *block, int n, int qscale)
 {

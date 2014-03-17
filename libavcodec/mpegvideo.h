@@ -735,8 +735,6 @@ void ff_MPV_motion(MpegEncContext *s,
  */
 int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared);
 
-extern const enum AVPixelFormat ff_pixfmt_list_420[];
-
 /**
  * permute block according to permuatation.
  * @param last last non zero element in scantable order
