@@ -248,11 +248,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     is_progressive = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGBA64BE:
-        bit_depth  = 16;
+        bit_depth = 16;
         color_type = PNG_COLOR_TYPE_RGB_ALPHA;
         break;
     case AV_PIX_FMT_RGB48BE:
-        bit_depth  = 16;
+        bit_depth = 16;
         color_type = PNG_COLOR_TYPE_RGB;
         break;
     case AV_PIX_FMT_RGBA:
