@@ -881,7 +881,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     h->flags           = avctx->flags;
     h->is_complex      = 1;
     h->picture_structure = PICT_FRAME;
-    avctx->pix_fmt     = avctx->codec->pix_fmts[0];
+    avctx->pix_fmt     = AV_PIX_FMT_YUVJ420P;
+    avctx->color_range = AVCOL_RANGE_JPEG;
 
     h->chroma_qp[0] = h->chroma_qp[1] = 4;
     h->chroma_x_shift = h->chroma_y_shift = 1;
