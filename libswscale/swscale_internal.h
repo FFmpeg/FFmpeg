@@ -687,8 +687,6 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
     (           \
      (x) == AV_PIX_FMT_RGB48BE     ||  \
      (x) == AV_PIX_FMT_RGB48LE     ||  \
-     (x) == AV_PIX_FMT_RGBA64BE    ||  \
-     (x) == AV_PIX_FMT_RGBA64LE    ||  \
      (x) == AV_PIX_FMT_RGB32       ||  \
      (x) == AV_PIX_FMT_RGB32_1     ||  \
      (x) == AV_PIX_FMT_RGB24       ||  \
@@ -701,6 +699,8 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
      (x) == AV_PIX_FMT_RGB8        ||  \
      (x) == AV_PIX_FMT_RGB4        ||  \
      (x) == AV_PIX_FMT_RGB4_BYTE   ||  \
+     (x) == AV_PIX_FMT_RGBA64BE    ||  \
+     (x) == AV_PIX_FMT_RGBA64LE    ||  \
      (x) == AV_PIX_FMT_MONOBLACK   ||  \
      (x) == AV_PIX_FMT_MONOWHITE   \
     )
@@ -708,8 +708,6 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
     (           \
      (x) == AV_PIX_FMT_BGR48BE     ||  \
      (x) == AV_PIX_FMT_BGR48LE     ||  \
-     (x) == AV_PIX_FMT_BGRA64BE    ||  \
-     (x) == AV_PIX_FMT_BGRA64LE    ||  \
      (x) == AV_PIX_FMT_BGR32       ||  \
      (x) == AV_PIX_FMT_BGR32_1     ||  \
      (x) == AV_PIX_FMT_BGR24       ||  \
@@ -722,6 +720,8 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
      (x) == AV_PIX_FMT_BGR8        ||  \
      (x) == AV_PIX_FMT_BGR4        ||  \
      (x) == AV_PIX_FMT_BGR4_BYTE   ||  \
+     (x) == AV_PIX_FMT_BGRA64BE    ||  \
+     (x) == AV_PIX_FMT_BGRA64LE    ||  \
      (x) == AV_PIX_FMT_MONOBLACK   ||  \
      (x) == AV_PIX_FMT_MONOWHITE   \
     )
