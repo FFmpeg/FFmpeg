@@ -26,6 +26,7 @@
 #include "isom.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
+#include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 
 /* http://www.mp4ra.org */
@@ -456,28 +457,25 @@ static uint32_t yuv_to_rgba(uint32_t ycbcr)
 
 static int mov_rewrite_dvd_sub_extradata(AVStream *st)
 {
-    char pal_s[256];
-    char buf[256];
-    int pal_s_pos = 0;
+    char buf[256] = {0};
     uint8_t *src = st->codec->extradata;
     int i;
 
     if (st->codec->extradata_size != 64)
         return 0;
 
+    snprintf(buf, sizeof(buf), "size: %dx%d\npalette: ",
+             st->codec->width, st->codec->height);
+
     for (i = 0; i < 16; i++) {
         uint32_t yuv = AV_RB32(src + i * 4);
         uint32_t rgba = yuv_to_rgba(yuv);
 
-        snprintf(pal_s + pal_s_pos, sizeof(pal_s) - pal_s_pos, "%06x%s", rgba,
-                 i != 15 ? ", " : "");
-        pal_s_pos = strlen(pal_s);
-        if (pal_s_pos >= sizeof(pal_s))
-            return 0;
+        av_strlcatf(buf, sizeof(buf), "%06x%s", rgba, i != 15 ? ", " : "");
     }
 
-    snprintf(buf, sizeof(buf), "size: %dx%d\npalette: %s\n",
-             st->codec->width, st->codec->height, pal_s);
+    if (av_strlcat(buf, "\n", sizeof(buf)) >= sizeof(buf))
+        return 0;
 
     av_freep(&st->codec->extradata);
     st->codec->extradata_size = 0;
