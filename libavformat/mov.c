@@ -3425,6 +3425,12 @@ static int mov_read_header(AVFormatContext *s)
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && sc->nb_frames_for_fps > 0 && sc->duration_for_fps > 0)
             av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                       sc->time_scale*(int64_t)sc->nb_frames_for_fps, sc->duration_for_fps, INT_MAX);
+        if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            if (st->codec->width <= 0 && st->codec->width <= 0) {
+                st->codec->width  = sc->width;
+                st->codec->height = sc->height;
+            }
+        }
     }
 
     if (mov->trex_data) {
