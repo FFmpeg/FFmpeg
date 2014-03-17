@@ -66,7 +66,7 @@ int ff_png_pass_row_size(int pass, int bits_per_pixel, int width)
     xmin = ff_png_pass_xmin[pass];
     if (width <= xmin)
         return 0;
-    shift = ff_png_pass_xshift[pass];
+    shift      = ff_png_pass_xshift[pass];
     pass_width = (width - xmin + (1 << shift) - 1) >> shift;
     return (pass_width * bits_per_pixel + 7) >> 3;
 }
