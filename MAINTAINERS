@@ -420,7 +420,8 @@ Muxers/Demuxers:
   mpc.c                                 Kostya Shishkov
   mpeg.c                                Michael Niedermayer
   mpegenc.c                             Michael Niedermayer
-  mpegts*                               Baptiste Coudurier
+  mpegts.c                              Marton Balint
+  mpegtsenc.c                           Baptiste Coudurier
   msnwc_tcp.c                           Ramiro Polla
   mtv.c                                 Reynaldo H. Verdejo Pinochet
   mxf*                                  Baptiste Coudurier
