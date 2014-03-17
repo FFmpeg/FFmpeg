@@ -35,7 +35,7 @@ int ff_vaapi_mpeg_end_frame(AVCodecContext *avctx)
         goto finish;
 
     ret = ff_vaapi_render_picture(vactx,
-                                  ff_vaapi_get_surface_id(s->current_picture_ptr));
+                                  ff_vaapi_get_surface_id(&s->current_picture_ptr->f));
     if (ret < 0)
         goto finish;
 
