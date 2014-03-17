@@ -445,7 +445,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
     sps->ref_frame_count = get_ue_golomb_31(&h->gb);
     if (h->avctx->codec_tag == MKTAG('S', 'M', 'V', '2'))
         sps->ref_frame_count = FFMAX(2, sps->ref_frame_count);
-    if (sps->ref_frame_count > MAX_PICTURE_COUNT - 2 ||
+    if (sps->ref_frame_count > H264_MAX_PICTURE_COUNT - 2 ||
         sps->ref_frame_count > 16U) {
         av_log(h->avctx, AV_LOG_ERROR,
                "too many reference frames %d\n", sps->ref_frame_count);
