@@ -147,7 +147,7 @@ DECLARE_ASM_CONST(16, int32_t, walkenIdctRounders)[] = {
 
 #endif
 
-#define ROUND(x) "paddd   "MANGLE(x)
+#define ROUND(x) "paddd   "x
 
 #define JZ(reg, to)                         \
     "testl     "reg","reg"            \n\t" \
@@ -347,13 +347,13 @@ inline void ff_idct_xvid_sse2(short *block)
 {
     __asm__ volatile(
     "movq     "MANGLE(m127)", %%mm0                              \n\t"
-    iMTX_MULT("(%0)",     MANGLE(iTab1), ROUND(walkenIdctRounders),      PUT_EVEN(ROW0))
-    iMTX_MULT("1*16(%0)", MANGLE(iTab2), ROUND(walkenIdctRounders+1*16), PUT_ODD(ROW1))
-    iMTX_MULT("2*16(%0)", MANGLE(iTab3), ROUND(walkenIdctRounders+2*16), PUT_EVEN(ROW2))
+    iMTX_MULT("(%0)",     MANGLE(iTab1), ROUND(MANGLE(walkenIdctRounders)),      PUT_EVEN(ROW0))
+    iMTX_MULT("1*16(%0)", MANGLE(iTab2), ROUND("1*16+"MANGLE(walkenIdctRounders)), PUT_ODD(ROW1))
+    iMTX_MULT("2*16(%0)", MANGLE(iTab3), ROUND("2*16+"MANGLE(walkenIdctRounders)), PUT_EVEN(ROW2))
 
     TEST_TWO_ROWS("3*16(%0)", "4*16(%0)", "%%eax", "%%ecx", CLEAR_ODD(ROW3), CLEAR_EVEN(ROW4))
     JZ("%%eax", "1f")
-    iMTX_MULT("3*16(%0)", MANGLE(iTab4), ROUND(walkenIdctRounders+3*16), PUT_ODD(ROW3))
+    iMTX_MULT("3*16(%0)", MANGLE(iTab4), ROUND("3*16+"MANGLE(walkenIdctRounders)), PUT_ODD(ROW3))
 
     TEST_TWO_ROWS("5*16(%0)", "6*16(%0)", "%%eax", "%%edx", CLEAR_ODD(ROW5), CLEAR_EVEN(ROW6))
     TEST_ONE_ROW("7*16(%0)", "%%esi", CLEAR_ODD(ROW7))
@@ -368,13 +368,13 @@ inline void ff_idct_xvid_sse2(short *block)
     "2:                                                          \n\t"
     iMTX_MULT("4*16(%0)", MANGLE(iTab1), "#", PUT_EVEN(ROW4))
     "3:                                                          \n\t"
-    iMTX_MULT("5*16(%0)", MANGLE(iTab4), ROUND(walkenIdctRounders+4*16), PUT_ODD(ROW5))
+    iMTX_MULT("5*16(%0)", MANGLE(iTab4), ROUND("4*16+"MANGLE(walkenIdctRounders)), PUT_ODD(ROW5))
     JZ("%%edx", "1f")
     "4:                                                          \n\t"
-    iMTX_MULT("6*16(%0)", MANGLE(iTab3), ROUND(walkenIdctRounders+5*16), PUT_EVEN(ROW6))
+    iMTX_MULT("6*16(%0)", MANGLE(iTab3), ROUND("5*16+"MANGLE(walkenIdctRounders)), PUT_EVEN(ROW6))
     JZ("%%esi", "1f")
     "5:                                                          \n\t"
-    iMTX_MULT("7*16(%0)", MANGLE(iTab2), ROUND(walkenIdctRounders+5*16), PUT_ODD(ROW7))
+    iMTX_MULT("7*16(%0)", MANGLE(iTab2), ROUND("5*16+"MANGLE(walkenIdctRounders)), PUT_ODD(ROW7))
 #if ARCH_X86_32
     iLLM_HEAD
 #endif
