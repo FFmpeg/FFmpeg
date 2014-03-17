@@ -904,8 +904,25 @@ void ff_er_frame_end(ERContext *s)
     }
 
     if (!s->cur_pic.motion_val[0] || !s->cur_pic.ref_index[0]) {
-        av_log(s->avctx, AV_LOG_ERROR, "MVs not available, ER not possible.\n");
-        return;
+        av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
+
+        for (i = 0; i < 2; i++) {
+            s->ref_index_buf[i]  = av_buffer_allocz(s->mb_stride * s->mb_height * 4 * sizeof(uint8_t));
+            s->motion_val_buf[i] = av_buffer_allocz((size + 4) * 2 * sizeof(uint16_t));
+            if (!s->ref_index_buf[i] || !s->motion_val_buf[i])
+                break;
+            s->cur_pic.ref_index[i]  = s->ref_index_buf[i]->data;
+            s->cur_pic.motion_val[i] = (int16_t (*)[2])s->motion_val_buf[i]->data + 4;
+        }
+        if (i < 2) {
+            for (i = 0; i < 2; i++) {
+                av_buffer_unref(&s->ref_index_buf[i]);
+                av_buffer_unref(&s->motion_val_buf[i]);
+                s->cur_pic.ref_index[i]  = NULL;
+                s->cur_pic.motion_val[i] = NULL;
+            }
+            return;
+        }
     }
 
     if (s->avctx->debug & FF_DEBUG_ER) {
@@ -1277,6 +1294,13 @@ ec_clean:
             s->mbskip_table[mb_xy] = 0;
         }
         s->mbintra_table[mb_xy] = 1;
+    }
+
+    for (i = 0; i < 2; i++) {
+        av_buffer_unref(&s->ref_index_buf[i]);
+        av_buffer_unref(&s->motion_val_buf[i]);
+        s->cur_pic.ref_index[i]  = NULL;
+        s->cur_pic.motion_val[i] = NULL;
     }
 
     memset(&s->cur_pic, 0, sizeof(ERPicture));
