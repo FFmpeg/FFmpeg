@@ -464,8 +464,10 @@ static int mov_rewrite_dvd_sub_extradata(AVStream *st)
     if (st->codec->extradata_size != 64)
         return 0;
 
-    snprintf(buf, sizeof(buf), "size: %dx%d\npalette: ",
-             st->codec->width, st->codec->height);
+    if (st->codec->width > 0 &&  st->codec->height > 0)
+        snprintf(buf, sizeof(buf), "size: %dx%d\n",
+                 st->codec->width, st->codec->height);
+    av_strlcat(buf, "palette: ", sizeof(buf));
 
     for (i = 0; i < 16; i++) {
         uint32_t yuv = AV_RB32(src + i * 4);
