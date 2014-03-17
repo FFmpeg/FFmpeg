@@ -87,7 +87,6 @@ static FILE *vstats_file;
 static int64_t video_size = 0;
 static int64_t audio_size = 0;
 static int64_t extra_size = 0;
-static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 
 
@@ -849,9 +848,9 @@ static void print_report(int is_last_report, int64_t timer_start)
             "size=%8.0fkB time=%0.2f bitrate=%6.1fkbits/s",
             (double)total_size / 1024, ti1, bitrate);
 
-    if (nb_frames_dup || nb_frames_drop)
-        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
-                nb_frames_dup, nb_frames_drop);
+    if (nb_frames_drop)
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " drop=%d",
+                 nb_frames_drop);
 
     av_log(NULL, AV_LOG_INFO, "%s    \r", buf);
 
