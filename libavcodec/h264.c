@@ -3010,6 +3010,8 @@ static void h264_set_erpic(ERPicture *dst, H264Picture *src)
 {
     int i;
 
+    memset(dst, 0, sizeof(*dst));
+
     if (!src)
         return;
 
