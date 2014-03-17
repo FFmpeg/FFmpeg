@@ -40,6 +40,7 @@
 #include "rectangle.h"
 
 #define H264_MAX_PICTURE_COUNT 36
+#define H264_MAX_THREADS       32
 
 #define MAX_SPS_COUNT          32
 #define MAX_PPS_COUNT         256
@@ -617,7 +618,7 @@ typedef struct H264Context {
      * @name Members for slice based multithreading
      * @{
      */
-    struct H264Context *thread_context[MAX_THREADS];
+    struct H264Context *thread_context[H264_MAX_THREADS];
 
     /**
      * current slice number, used to initialize slice_num of each thread/context
