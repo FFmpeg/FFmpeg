@@ -368,6 +368,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     ost->last_mux_dts = pkt->dts;
 
     ost->data_size += pkt->size;
+    ost->packets_written++;
 
     pkt->stream_index = ost->index;
     ret = av_interleaved_write_frame(s, pkt);
@@ -404,6 +405,9 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     if (frame->pts == AV_NOPTS_VALUE || audio_sync_method < 0)
         frame->pts = ost->sync_opts;
     ost->sync_opts = frame->pts + frame->nb_samples;
+
+    ost->samples_encoded += frame->nb_samples;
+    ost->frames_encoded++;
 
     if (avcodec_encode_audio2(enc, &pkt, frame, &got_packet) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Audio encoding failed\n");
@@ -465,6 +469,9 @@ static void do_subtitle_out(AVFormatContext *s,
         sub->pts               += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, AV_TIME_BASE_Q);
         sub->end_display_time  -= sub->start_display_time;
         sub->start_display_time = 0;
+
+        ost->frames_encoded++;
+
         subtitle_out_size = avcodec_encode_subtitle(enc, subtitle_out,
                                                     subtitle_out_max_size, sub);
         if (subtitle_out_size < 0) {
@@ -555,6 +562,9 @@ static void do_video_out(AVFormatContext *s,
             in_picture->pict_type = AV_PICTURE_TYPE_I;
             ost->forced_kf_index++;
         }
+
+        ost->frames_encoded++;
+
         ret = avcodec_encode_video2(enc, &pkt, in_picture, &got_packet);
         if (ret < 0) {
             av_log(NULL, AV_LOG_FATAL, "Video encoding failed\n");
@@ -741,7 +751,7 @@ static void print_final_stats(int64_t total_size)
     uint64_t video_size = 0, audio_size = 0, extra_size = 0, other_size = 0;
     uint64_t data_size = 0;
     float percent = -1.0;
-    int i;
+    int i, j;
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
@@ -768,6 +778,75 @@ static void print_final_stats(int64_t total_size)
     else
         av_log(NULL, AV_LOG_INFO, "unknown");
     av_log(NULL, AV_LOG_INFO, "\n");
+
+    /* print verbose per-stream stats */
+    for (i = 0; i < nb_input_files; i++) {
+        InputFile *f = input_files[i];
+        uint64_t total_packets = 0, total_size = 0;
+
+        av_log(NULL, AV_LOG_VERBOSE, "Input file #%d (%s):\n",
+               i, f->ctx->filename);
+
+        for (j = 0; j < f->nb_streams; j++) {
+            InputStream *ist = input_streams[f->ist_index + j];
+            enum AVMediaType type = ist->st->codec->codec_type;
+
+            total_size    += ist->data_size;
+            total_packets += ist->nb_packets;
+
+            av_log(NULL, AV_LOG_VERBOSE, "  Input stream #%d:%d (%s): ",
+                   i, j, media_type_string(type));
+            av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" packets read (%"PRIu64" bytes); ",
+                   ist->nb_packets, ist->data_size);
+
+            if (ist->decoding_needed) {
+                av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" frames decoded",
+                       ist->frames_decoded);
+                if (type == AVMEDIA_TYPE_AUDIO)
+                    av_log(NULL, AV_LOG_VERBOSE, " (%"PRIu64" samples)", ist->samples_decoded);
+                av_log(NULL, AV_LOG_VERBOSE, "; ");
+            }
+
+            av_log(NULL, AV_LOG_VERBOSE, "\n");
+        }
+
+        av_log(NULL, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) demuxed\n",
+               total_packets, total_size);
+    }
+
+    for (i = 0; i < nb_output_files; i++) {
+        OutputFile *of = output_files[i];
+        uint64_t total_packets = 0, total_size = 0;
+
+        av_log(NULL, AV_LOG_VERBOSE, "Output file #%d (%s):\n",
+               i, of->ctx->filename);
+
+        for (j = 0; j < of->ctx->nb_streams; j++) {
+            OutputStream *ost = output_streams[of->ost_index + j];
+            enum AVMediaType type = ost->st->codec->codec_type;
+
+            total_size    += ost->data_size;
+            total_packets += ost->packets_written;
+
+            av_log(NULL, AV_LOG_VERBOSE, "  Output stream #%d:%d (%s): ",
+                   i, j, media_type_string(type));
+            if (ost->encoding_needed) {
+                av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" frames encoded",
+                       ost->frames_encoded);
+                if (type == AVMEDIA_TYPE_AUDIO)
+                    av_log(NULL, AV_LOG_VERBOSE, " (%"PRIu64" samples)", ost->samples_encoded);
+                av_log(NULL, AV_LOG_VERBOSE, "; ");
+            }
+
+            av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" packets muxed (%"PRIu64" bytes); ",
+                   ost->packets_written, ost->data_size);
+
+            av_log(NULL, AV_LOG_VERBOSE, "\n");
+        }
+
+        av_log(NULL, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) muxed\n",
+               total_packets, total_size);
+    }
 }
 
 static void print_report(int is_last_report, int64_t timer_start)
@@ -1087,6 +1166,9 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         return ret;
     }
 
+    ist->samples_decoded += decoded_frame->nb_samples;
+    ist->frames_decoded++;
+
     /* if the decoder provides a pts, use it instead of the last packet pts.
        the decoder could be delaying output by a packet or more. */
     if (decoded_frame->pts != AV_NOPTS_VALUE)
@@ -1181,6 +1263,8 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         return ret;
     }
 
+    ist->frames_decoded++;
+
     if (ist->hwaccel_retrieve_data && decoded_frame->format == ist->hwaccel_pix_fmt) {
         err = ist->hwaccel_retrieve_data(ist->st->codec, decoded_frame);
         if (err < 0)
@@ -1250,6 +1334,8 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
         return ret;
     if (!*got_output)
         return ret;
+
+    ist->frames_decoded++;
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
@@ -2232,7 +2318,10 @@ static int process_input(void)
         goto discard_packet;
 
     ist = input_streams[ifile->ist_index + pkt.stream_index];
+
+    ist->data_size += pkt.size;
     ist->nb_packets++;
+
     if (ist->discard)
         goto discard_packet;
 

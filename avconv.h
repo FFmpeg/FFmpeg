@@ -233,9 +233,6 @@ typedef struct InputStream {
     AVDictionary *opts;
     AVRational framerate;               /* framerate forced with -r */
 
-    /* number of packets successfully read for this stream */
-    uint64_t nb_packets;
-
     int resample_height;
     int resample_width;
     int resample_pix_fmt;
@@ -262,6 +259,15 @@ typedef struct InputStream {
     int  (*hwaccel_retrieve_data)(AVCodecContext *s, AVFrame *frame);
     enum AVPixelFormat hwaccel_pix_fmt;
     enum AVPixelFormat hwaccel_retrieved_pix_fmt;
+
+    /* stats */
+    // combined size of all the packets read
+    uint64_t data_size;
+    /* number of packets successfully read for this stream */
+    uint64_t nb_packets;
+    // number of frames/samples retrieved from the decoder
+    uint64_t frames_decoded;
+    uint64_t samples_decoded;
 } InputStream;
 
 typedef struct InputFile {
@@ -343,6 +349,11 @@ typedef struct OutputStream {
     /* stats */
     // combined size of all the packets written
     uint64_t data_size;
+    // number of packets send to the muxer
+    uint64_t packets_written;
+    // number of frames/samples sent to the encoder
+    uint64_t frames_encoded;
+    uint64_t samples_encoded;
 } OutputStream;
 
 typedef struct OutputFile {
