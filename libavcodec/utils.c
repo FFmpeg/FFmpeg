@@ -807,6 +807,7 @@ int avcodec_default_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 typedef struct CompatReleaseBufPriv {
     AVCodecContext avctx;
     AVFrame frame;
+    uint8_t avframe_padding[1024]; // hack to allow linking to a avutil with larger AVFrame
 } CompatReleaseBufPriv;
 
 static void compat_free_buffer(void *opaque, uint8_t *data)
