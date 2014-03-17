@@ -275,7 +275,8 @@ static av_cold int ljpeg_encode_init(AVCodecContext *avctx)
 
     if ((avctx->pix_fmt == AV_PIX_FMT_YUV420P ||
          avctx->pix_fmt == AV_PIX_FMT_YUV422P ||
-         avctx->pix_fmt == AV_PIX_FMT_YUV444P) &&
+         avctx->pix_fmt == AV_PIX_FMT_YUV444P ||
+         avctx->color_range == AVCOL_RANGE_MPEG) &&
         avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
         av_log(avctx, AV_LOG_ERROR,
                "Limited range YUV is non-standard, set strict_std_compliance to "
