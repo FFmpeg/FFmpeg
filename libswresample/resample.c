@@ -302,10 +302,10 @@ static int set_compensation(ResampleContext *c, int sample_delta, int compensati
 #include "resample_template.c"
 #undef TEMPLATE_RESAMPLE_S16_MMX2
 
-#if HAVE_SSSE3_INLINE
-#define TEMPLATE_RESAMPLE_S16_SSSE3
+#if HAVE_SSE2_INLINE
+#define TEMPLATE_RESAMPLE_S16_SSE2
 #include "resample_template.c"
-#undef TEMPLATE_RESAMPLE_S16_SSSE3
+#undef TEMPLATE_RESAMPLE_S16_SSE2
 #endif
 
 #endif // HAVE_MMXEXT_INLINE
@@ -317,8 +317,8 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
 
     for(i=0; i<dst->ch_count; i++){
 #if HAVE_MMXEXT_INLINE
-#if HAVE_SSSE3_INLINE
-             if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_SSSE3)) ret= swri_resample_int16_ssse3(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+#if HAVE_SSE2_INLINE
+             if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_SSE2)) ret= swri_resample_int16_sse2 (c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
         else
 #endif
              if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_MMX2 )){

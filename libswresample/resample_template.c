@@ -57,7 +57,7 @@
 
 #elif    defined(TEMPLATE_RESAMPLE_S16)      \
       || defined(TEMPLATE_RESAMPLE_S16_MMX2) \
-      || defined(TEMPLATE_RESAMPLE_S16_SSSE3)
+      || defined(TEMPLATE_RESAMPLE_S16_SSE2)
 
 #    define FILTER_SHIFT 15
 #    define DELEM  int16_t
@@ -74,9 +74,9 @@
 #    elif defined(TEMPLATE_RESAMPLE_S16_MMX2)
 #        define COMMON_CORE COMMON_CORE_INT16_MMX2
 #        define RENAME(N) N ## _int16_mmx2
-#    elif defined(TEMPLATE_RESAMPLE_S16_SSSE3)
-#        define COMMON_CORE COMMON_CORE_INT16_SSSE3
-#        define RENAME(N) N ## _int16_ssse3
+#    elif defined(TEMPLATE_RESAMPLE_S16_SSE2)
+#        define COMMON_CORE COMMON_CORE_INT16_SSE2
+#        define RENAME(N) N ## _int16_sse2
 #    endif
 
 #endif

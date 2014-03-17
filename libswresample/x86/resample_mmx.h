@@ -23,7 +23,7 @@
 #include "libswresample/swresample_internal.h"
 
 int swri_resample_int16_mmx2 (struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
-int swri_resample_int16_ssse3(struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
+int swri_resample_int16_sse2 (struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
 
 DECLARE_ALIGNED(16, const uint64_t, ff_resample_int16_rounder)[2]    = { 0x0000000000004000ULL, 0x0000000000000000ULL};
 
@@ -48,7 +48,7 @@ __asm__ volatile(\
       "r" (dst+dst_index)\
 );
 
-#define COMMON_CORE_INT16_SSSE3 \
+#define COMMON_CORE_INT16_SSE2 \
     x86_reg len= -2*c->filter_length;\
 __asm__ volatile(\
     "movdqa "MANGLE(ff_resample_int16_rounder)", %%xmm0 \n\t"\
@@ -58,8 +58,10 @@ __asm__ volatile(\
     "paddd  %%xmm1, %%xmm0        \n\t"\
     "add       $16, %0            \n\t"\
     " js 1b                       \n\t"\
-    "phaddd %%xmm0, %%xmm0        \n\t"\
-    "phaddd %%xmm0, %%xmm0        \n\t"\
+    "pshufd $0x0E, %%xmm0, %%xmm1 \n\t"\
+    "paddd %%xmm1, %%xmm0         \n\t"\
+    "pshufd $0x01, %%xmm0, %%xmm1 \n\t"\
+    "paddd %%xmm1, %%xmm0         \n\t"\
     "psrad    $15, %%xmm0         \n\t"\
     "packssdw %%xmm0, %%xmm0      \n\t"\
     "movd %%xmm0, (%3)            \n\t"\
