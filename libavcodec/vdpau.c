@@ -125,7 +125,7 @@ void ff_vdpau_h264_set_reference_frames(H264Context *h)
 {
     struct vdpau_render_state *render, *render_ref;
     VdpReferenceFrameH264 *rf, *rf2;
-    Picture *pic;
+    H264Picture *pic;
     int i, list, pic_frame_idx;
 
     render = (struct vdpau_render_state *)h->cur_pic_ptr->f.data[0];
@@ -135,7 +135,7 @@ void ff_vdpau_h264_set_reference_frames(H264Context *h)
 #define H264_RF_COUNT FF_ARRAY_ELEMS(render->info.h264.referenceFrames)
 
     for (list = 0; list < 2; ++list) {
-        Picture **lp = list ? h->long_ref : h->short_ref;
+        H264Picture **lp = list ? h->long_ref : h->short_ref;
         int ls = list ? 16 : h->short_ref_count;
 
         for (i = 0; i < ls; ++i) {
