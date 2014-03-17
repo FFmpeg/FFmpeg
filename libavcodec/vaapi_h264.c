@@ -22,6 +22,7 @@
 
 #include "vaapi_internal.h"
 #include "h264.h"
+#include "mpegutils.h"
 
 /**
  * @file

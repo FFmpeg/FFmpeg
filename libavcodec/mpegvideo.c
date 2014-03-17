@@ -37,6 +37,7 @@
 #include "h264chroma.h"
 #include "internal.h"
 #include "mathops.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"

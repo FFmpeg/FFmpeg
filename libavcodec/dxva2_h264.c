@@ -23,6 +23,7 @@
 #include "dxva2_internal.h"
 #include "h264.h"
 #include "h264data.h"
+#include "mpegutils.h"
 
 struct dxva2_picture_context {
     DXVA_PicParams_H264   pp;

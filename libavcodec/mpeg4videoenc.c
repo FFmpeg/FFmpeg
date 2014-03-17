@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "mpeg4video.h"

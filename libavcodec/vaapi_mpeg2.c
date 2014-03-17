@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "mpegutils.h"
 #include "vaapi_internal.h"
 
 /** Reconstruct bitstream f_code */

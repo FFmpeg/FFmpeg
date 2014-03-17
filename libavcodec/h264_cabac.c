@@ -29,6 +29,7 @@
 #define UNCHECKED_BITSTREAM_READER 1
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavutil/timer.h"
 #include "config.h"
 #include "cabac.h"
@@ -39,7 +40,7 @@
 #include "h264data.h"
 #include "h264_mvpred.h"
 #include "golomb.h"
-#include "libavutil/avassert.h"
+#include "mpegutils.h"
 
 #if ARCH_X86
 #include "x86/h264_i386.h"

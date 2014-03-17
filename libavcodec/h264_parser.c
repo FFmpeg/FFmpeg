@@ -32,6 +32,7 @@
 #include "h264data.h"
 #include "golomb.h"
 #include "internal.h"
+#include "mpegutils.h"
 
 
 static int h264_find_frame_end(H264Context *h, const uint8_t *buf,

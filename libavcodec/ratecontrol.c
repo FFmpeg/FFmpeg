@@ -28,6 +28,7 @@
 #include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "ratecontrol.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "libavutil/eval.h"
 

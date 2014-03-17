@@ -43,6 +43,7 @@
 #include "libavutil/attributes.h"
 #include "internal.h"
 #include "avcodec.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h264.h"
 

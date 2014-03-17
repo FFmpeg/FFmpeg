@@ -45,6 +45,7 @@
 #include "h264_mvpred.h"
 #include "golomb.h"
 #include "mathops.h"
+#include "mpegutils.h"
 #include "rectangle.h"
 #include "svq3.h"
 #include "thread.h"

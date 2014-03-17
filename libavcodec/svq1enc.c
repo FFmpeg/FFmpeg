@@ -32,9 +32,10 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "internal.h"
-#include "libavutil/avassert.h"
+#include "mpegutils.h"
 #include "svq1.h"
 #include "svq1enc_cb.h"
+#include "libavutil/avassert.h"
 
 
 typedef struct SVQ1Context {

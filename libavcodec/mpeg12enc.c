@@ -39,6 +39,7 @@
 #include "mathops.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 
 

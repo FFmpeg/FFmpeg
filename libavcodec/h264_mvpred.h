@@ -31,6 +31,7 @@
 #include "internal.h"
 #include "avcodec.h"
 #include "h264.h"
+#include "mpegutils.h"
 #include "libavutil/avassert.h"
 
 

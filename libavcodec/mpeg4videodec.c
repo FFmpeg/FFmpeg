@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "error_resilience.h"
 #include "internal.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpeg4video.h"
 #include "h263.h"
