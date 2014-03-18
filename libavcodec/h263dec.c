@@ -721,10 +721,10 @@ frame_end:
         }
 
         if(startcode_found){
-            av_fast_malloc(
+            av_fast_padded_mallocz(
                 &s->bitstream_buffer,
                 &s->allocated_bitstream_buffer_size,
-                buf_size - current_pos + FF_INPUT_BUFFER_PADDING_SIZE);
+                buf_size - current_pos);
             if (!s->bitstream_buffer)
                 return AVERROR(ENOMEM);
             memcpy(s->bitstream_buffer, buf + current_pos, buf_size - current_pos);
