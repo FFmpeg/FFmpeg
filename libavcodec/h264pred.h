@@ -101,6 +101,8 @@ typedef struct H264PredContext {
                           int16_t *block /*align 16*/, ptrdiff_t stride);
     void(*pred8x8l_add[2])(uint8_t *pix /*align  8*/,
                            int16_t *block /*align 16*/, ptrdiff_t stride);
+    void(*pred8x8l_filter_add[2])(uint8_t *pix /*align  8*/,
+                           int16_t *block /*align 16*/, int topleft, int topright, ptrdiff_t stride);
     void(*pred8x8_add[3])(uint8_t *pix /*align  8*/,
                           const int *block_offset,
                           int16_t *block /*align 16*/, ptrdiff_t stride);

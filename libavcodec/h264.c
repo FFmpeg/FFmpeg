@@ -2486,7 +2486,12 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
                 uint8_t *const ptr = dest_y + block_offset[i];
                 const int dir      = h->intra4x4_pred_mode_cache[scan8[i]];
                 if (transform_bypass && h->sps.profile_idc == 244 && dir <= 1) {
-                    h->hpc.pred8x8l_add[dir](ptr, h->mb + (i * 16 + p * 256 << pixel_shift), linesize);
+                    if (h->x264_build != -1) {
+                        h->hpc.pred8x8l_add[dir](ptr, h->mb + (i * 16 + p * 256 << pixel_shift), linesize);
+                    } else
+                        h->hpc.pred8x8l_filter_add[dir](ptr, h->mb + (i * 16 + p * 256 << pixel_shift),
+                                                        (h-> topleft_samples_available << i) & 0x8000,
+                                                        (h->topright_samples_available << i) & 0x4000, linesize);
                 } else {
                     const int nnz = h->non_zero_count_cache[scan8[i + p * 16]];
                     h->hpc.pred8x8l[dir](ptr, (h->topleft_samples_available << i) & 0x8000,
