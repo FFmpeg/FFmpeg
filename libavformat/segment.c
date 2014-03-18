@@ -37,6 +37,7 @@ typedef struct {
     AVFormatContext *avf;
     char *format;          /**< Set by a private option. */
     char *list;            /**< Set by a private option. */
+    char *entry_prefix;    /**< Set by a private option. */
     int  list_type;        /**< Set by a private option. */
     float time;            /**< Set by a private option. */
     int  size;             /**< Set by a private option. */
@@ -97,6 +98,9 @@ static int segment_hls_window(AVFormatContext *s, int last)
     for (i = FFMAX(0, seg->number - seg->size);
          i < seg->number; i++) {
         avio_printf(seg->pb, "#EXTINF:%d,\n", (int)seg->time);
+        if (seg->entry_prefix != NULL) {
+            avio_printf(seg->pb, "%s", seg->entry_prefix);
+        }
         av_get_frame_filename(buf, sizeof(buf), s->filename, i);
         avio_printf(seg->pb, "%s\n", buf);
     }
@@ -363,6 +367,7 @@ static const AVOption options[] = {
     {   "flat",            "plain list (default)",                    0,               AV_OPT_TYPE_CONST,  {.i64 = LIST_FLAT}, 0, 0, E, "list_type" },
     {   "hls",             "Apple HTTP Live Streaming compatible",    0,               AV_OPT_TYPE_CONST,  {.i64 = LIST_HLS},  0, 0, E, "list_type" },
     { "segment_wrap",      "number after which the index wraps",      OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E },
+    { "segment_list_entry_prefix",  "base url prefix for segments",   OFFSET(entry_prefix), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { NULL },
