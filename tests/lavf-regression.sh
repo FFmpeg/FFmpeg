@@ -16,7 +16,7 @@ ENC_OPTS="$ENC_OPTS -metadata title=lavftest"
 do_lavf_fate()
 {
     file=${outfile}lavf.$1
-    input="${samples}/$2"
+    input="${target_samples}/$2"
     do_avconv $file $DEC_OPTS -i "$input" $ENC_OPTS -vcodec copy -acodec copy
     do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
 }

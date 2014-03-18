@@ -12,7 +12,7 @@ fate-gif-gray: CMD = framecrc -i $(TARGET_SAMPLES)/gif/Newtons_cradle_animation_
 
 fate-gifenc%: fate-gif-color
 fate-gifenc%: PIXFMT = $(word 3, $(subst -, ,$(@)))
-fate-gifenc%: SRC = $(SAMPLES)/gif/tc217.gif
+fate-gifenc%: SRC = $(TARGET_SAMPLES)/gif/tc217.gif
 fate-gifenc%: CMD = framecrc -i $(SRC) -c:v gif -pix_fmt $(PIXFMT)
 
 FATE_GIF_ENC_PIXFMT = rgb8 bgr8 rgb4_byte bgr4_byte gray pal8
