@@ -1126,15 +1126,13 @@ static void FUNCC(pred8x8l_horizontal_up)(uint8_t *_src, int has_topleft,
 }
 
 static void FUNCC(pred8x8l_vertical_filter_add)(uint8_t *_src, int16_t *_block, int has_topleft,
-                                     int has_topright, ptrdiff_t stride)
+                                     int has_topright, ptrdiff_t _stride)
 {
     int i;
     pixel *src = (pixel*)_src;
     const dctcoef *block = (const dctcoef*)_block;
     pixel pix[8];
-
-    stride >>= sizeof(pixel)-1;
-
+    int stride = _stride>>(sizeof(pixel)-1);
     PREDICT_8x8_LOAD_TOP;
 
     pix[0] = t0;
@@ -1164,15 +1162,13 @@ static void FUNCC(pred8x8l_vertical_filter_add)(uint8_t *_src, int16_t *_block, 
 }
 
 static void FUNCC(pred8x8l_horizontal_filter_add)(uint8_t *_src, int16_t *_block, int has_topleft,
-                               int has_topright, ptrdiff_t stride)
+                               int has_topright, ptrdiff_t _stride)
 {
     int i;
     pixel *src = (pixel*)_src;
     const dctcoef *block = (const dctcoef*)_block;
     pixel pix[8];
-
-    stride >>= sizeof(pixel)-1;
-
+    int stride = _stride>>(sizeof(pixel)-1);
     PREDICT_8x8_LOAD_LEFT;
 
     pix[0] = l0;
