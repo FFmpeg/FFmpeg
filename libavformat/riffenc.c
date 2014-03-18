@@ -54,7 +54,8 @@ void ff_end_tag(AVIOContext *pb, int64_t start)
 int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
 {
     int bps, blkalign, bytespersec, frame_size;
-    int hdrsize = 18;
+    int hdrsize;
+    int64_t hdrstart = avio_tell(pb);
     int waveformatextensible;
     uint8_t temp[256];
     uint8_t *riff_extradata       = temp;
@@ -135,14 +136,12 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
     avio_wl16(pb, blkalign);    /* block align */
     avio_wl16(pb, bps);         /* bits per sample */
     if (enc->codec_id == AV_CODEC_ID_MP3) {
-        hdrsize += 12;
         bytestream_put_le16(&riff_extradata, 1);    /* wID */
         bytestream_put_le32(&riff_extradata, 2);    /* fdwFlags */
         bytestream_put_le16(&riff_extradata, 1152); /* nBlockSize */
         bytestream_put_le16(&riff_extradata, 1);    /* nFramesPerBlock */
         bytestream_put_le16(&riff_extradata, 1393); /* nCodecDelay */
     } else if (enc->codec_id == AV_CODEC_ID_MP2) {
-        hdrsize += 22;
         /* fwHeadLayer */
         bytestream_put_le16(&riff_extradata, 2);
         /* dwHeadBitrate */
@@ -160,23 +159,19 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
         /* dwPTSHigh */
         bytestream_put_le32(&riff_extradata, 0);
     } else if (enc->codec_id == AV_CODEC_ID_G723_1) {
-        hdrsize += 20;
         bytestream_put_le32(&riff_extradata, 0x9ace0002); /* extradata needed for msacm g723.1 codec */
         bytestream_put_le32(&riff_extradata, 0xaea2f732);
         bytestream_put_le16(&riff_extradata, 0xacde);
     } else if (enc->codec_id == AV_CODEC_ID_GSM_MS ||
                enc->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
-        hdrsize += 2;
         /* wSamplesPerBlock */
         bytestream_put_le16(&riff_extradata, frame_size);
     } else if (enc->extradata_size) {
         riff_extradata_start = enc->extradata;
         riff_extradata       = enc->extradata + enc->extradata_size;
-        hdrsize             += enc->extradata_size;
     }
     /* write WAVEFORMATEXTENSIBLE extensions */
     if (waveformatextensible) {
-        hdrsize += 22;
         /* 22 is WAVEFORMATEXTENSIBLE size */
         avio_wl16(pb, riff_extradata - riff_extradata_start + 22);
         /* ValidBitsPerSample || SamplesPerBlock || Reserved */
@@ -196,6 +191,7 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
         avio_wl16(pb, riff_extradata - riff_extradata_start); /* cbSize */
     }
     avio_write(pb, riff_extradata_start, riff_extradata - riff_extradata_start);
+    hdrsize = avio_tell(pb) - hdrstart;
     if (hdrsize & 1) {
         hdrsize++;
         avio_w8(pb, 0);
