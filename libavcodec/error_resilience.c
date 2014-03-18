@@ -825,7 +825,6 @@ void ff_er_frame_end(ERContext *s)
     int threshold_part[4] = { 100, 100, 100 };
     int threshold = 50;
     int is_intra_likely;
-    int size = s->b8_stride * 2 * s->mb_height;
 
     /* We do not support ER of field pictures yet,
      * though it should not crash if enabled. */
