@@ -55,6 +55,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
     __asm__ volatile(
         "lea   "MANGLE(ff_h264_cabac_tables)", %0      \n\t"
         : "=&r"(tables)
+        : NAMED_CONSTRAINTS(ff_h264_cabac_tables)
     );
 #endif
 
@@ -130,6 +131,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
     __asm__ volatile(
         "lea    "MANGLE(ff_h264_cabac_tables)", %0      \n\t"
         : "=&r"(tables)
+        : NAMED_CONSTRAINTS(ff_h264_cabac_tables)
     );
 #endif
 

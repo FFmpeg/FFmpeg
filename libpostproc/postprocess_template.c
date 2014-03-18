@@ -490,6 +490,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
 
         :
         : "r" (src), "r" ((x86_reg)stride), "m" (co->pQPb)
+          NAMED_CONSTRAINTS_ADD(b01)
         : "%"REG_a, "%"REG_c
     );
 #else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
@@ -755,6 +756,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
 
         :
         : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb)
+          NAMED_CONSTRAINTS_ADD(b80,b00,b01)
         : "%"REG_a, "%"REG_c
     );
 
@@ -1042,6 +1044,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
 
         : "+r" (src)
         : "r" ((x86_reg)stride), "m" (c->pQPb), "r"(tmp)
+          NAMED_CONSTRAINTS_ADD(w05,w20)
         : "%"REG_a
     );
 #else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
@@ -1313,6 +1316,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
 
         "1:                        \n\t"
         : : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb), "m"(c->pQPb2), "q"(tmp)
+          NAMED_CONSTRAINTS_ADD(deringThreshold,b00,b02,b08)
         : "%"REG_a, "%"REG_d, "%"REG_SP
     );
 #else // HAVE_7REGS && (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW)
@@ -2446,6 +2450,7 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
         "4:                                     \n\t"
 
         :: "r" (src), "r" (tempBlurred), "r"((x86_reg)stride), "m" (tempBlurredPast)
+          NAMED_CONSTRAINTS_ADD(b80)
         : "%"REG_a, "%"REG_d, "%"REG_c, "memory"
     );
 #else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
@@ -2790,6 +2795,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
 
             : "+&r"(src)
             : "r" ((x86_reg)step), "m" (c->pQPb), "r"(sums), "g"(src)
+              NAMED_CONSTRAINTS_ADD(w04)
         );
 
         src+= step; // src points to begin of the 8x8 Block
@@ -3061,6 +3067,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
 
             : "+r" (temp_src)
             : "r" ((x86_reg)step), "m" (c->pQPb), "m"(eq_mask), "r"(tmp)
+              NAMED_CONSTRAINTS_ADD(w05,w20)
             : "%"REG_a
         );
     }

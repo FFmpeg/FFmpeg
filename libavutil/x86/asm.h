@@ -107,6 +107,40 @@ typedef int x86_reg;
 #    define LOCAL_MANGLE(a) #a
 #endif
 
-#define MANGLE(a) EXTERN_PREFIX LOCAL_MANGLE(a)
+#if HAVE_INLINE_ASM_DIRECT_SYMBOL_REFS
+#   define MANGLE(a) EXTERN_PREFIX LOCAL_MANGLE(a)
+#   define NAMED_CONSTRAINTS_ADD(...)
+#   define NAMED_CONSTRAINTS(...)
+#else
+    /* When direct symbol references are used in code passed to a compiler that does not support them
+     *  then these references need to be converted to named asm constraints instead.
+     * Instead of returning a direct symbol MANGLE now returns a named constraint for that specific symbol.
+     * In order for this to work there must also be a corresponding entry in the asm-interface. To add this
+     *  entry use the macro NAMED_CONSTRAINTS() and pass in a list of each symbol reference used in the
+     *  corresponding block of code. (e.g. NAMED_CONSTRAINTS(var1,var2,var3) where var1 is the first symbol etc. ).
+     * If there are already existing constraints then use NAMED_CONSTRAINTS_ADD to add to the existing constraint list.
+     */
+#   define MANGLE(a) "%["#a"]"
+    // Intel/MSVC does not correctly expand va-args so we need a rather ugly hack in order to get it to work
+#   define FE_0(P,X) P(X)
+#   define FE_1(P,X,X1) P(X), FE_0(P,X1)
+#   define FE_2(P,X,X1,X2) P(X), FE_1(P,X1,X2)
+#   define FE_3(P,X,X1,X2,X3) P(X), FE_2(P,X1,X2,X3)
+#   define FE_4(P,X,X1,X2,X3,X4) P(X), FE_3(P,X1,X2,X3,X4)
+#   define FE_5(P,X,X1,X2,X3,X4,X5) P(X), FE_4(P,X1,X2,X3,X4,X5)
+#   define FE_6(P,X,X1,X2,X3,X4,X5,X6) P(X), FE_5(P,X1,X2,X3,X4,X5,X6)
+#   define FE_7(P,X,X1,X2,X3,X4,X5,X6,X7) P(X), FE_6(P,X1,X2,X3,X4,X5,X6,X7)
+#   define FE_8(P,X,X1,X2,X3,X4,X5,X6,X7,X8) P(X), FE_7(P,X1,X2,X3,X4,X5,X6,X7,X8)
+#   define FE_9(P,X,X1,X2,X3,X4,X5,X6,X7,X8,X9) P(X), FE_8(P,X1,X2,X3,X4,X5,X6,X7,X8,X9)
+#   define GET_FE_IMPL(_0,_1,_2,_3,_4,_5,_6,_7,_8,_9,NAME,...) NAME
+#   define GET_FE(A) GET_FE_IMPL A
+#   define GET_FE_GLUE(x, y) x y
+#   define FOR_EACH_VA(P,...) GET_FE_GLUE(GET_FE((__VA_ARGS__,FE_9,FE_8,FE_7,FE_6,FE_5,FE_4,FE_3,FE_2,FE_1,FE_0)), (P,__VA_ARGS__))
+#   define NAME_CONSTRAINT(x) [x] "m"(x)
+    // Parameters are a list of each symbol reference required
+#   define NAMED_CONSTRAINTS_ADD(...) , FOR_EACH_VA(NAME_CONSTRAINT,__VA_ARGS__)
+    // Same but without comma for when there are no previously defined constraints
+#   define NAMED_CONSTRAINTS(...) FOR_EACH_VA(NAME_CONSTRAINT,__VA_ARGS__)
+#endif
 
 #endif /* AVUTIL_X86_ASM_H */

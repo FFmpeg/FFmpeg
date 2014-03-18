@@ -72,6 +72,7 @@ static void lpc_apply_welch_window_sse2(const int32_t *data, int len,
         "3:                                    \n\t"
         :"+&r"(i), "+&r"(j)
         :"r"(w_data+n2), "r"(data+n2), "m"(c), "r"(len)
+         NAMED_CONSTRAINTS_ADD(pd_1,pd_2)
          XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3",
                                     "%xmm5", "%xmm6", "%xmm7")
     );
@@ -116,6 +117,7 @@ static void lpc_compute_autocorr_sse2(const double *data, int len, int lag,
                 "movsd     %%xmm2, 16(%1)           \n\t"
                 :"+&r"(i)
                 :"r"(autoc+j), "r"(data+len), "r"(data+len-j)
+                 NAMED_CONSTRAINTS_ADD(pd_1)
                 :"memory"
             );
         } else {
@@ -139,6 +141,7 @@ static void lpc_compute_autocorr_sse2(const double *data, int len, int lag,
                 "movsd     %%xmm1, %2               \n\t"
                 :"+&r"(i), "=m"(autoc[j]), "=m"(autoc[j+1])
                 :"r"(data+len), "r"(data+len-j)
+                 NAMED_CONSTRAINTS_ADD(pd_1)
             );
         }
     }

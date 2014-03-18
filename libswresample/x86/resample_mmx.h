@@ -46,6 +46,7 @@ __asm__ volatile(\
     : "r" (((uint8_t*)(src+sample_index))-len),\
       "r" (((uint8_t*)filter)-len),\
       "r" (dst+dst_index)\
+      NAMED_CONSTRAINTS_ADD(ff_resample_int16_rounder)\
 );
 
 #define COMMON_CORE_INT16_SSE2 \
@@ -69,4 +70,5 @@ __asm__ volatile(\
     : "r" (((uint8_t*)(src+sample_index))-len),\
       "r" (((uint8_t*)filter)-len),\
       "r" (dst+dst_index)\
+      NAMED_CONSTRAINTS_ADD(ff_resample_int16_rounder)\
 );

@@ -1143,6 +1143,7 @@ Temp
 
 "9: \n\t"
                 :: "r" (block), "r" (temp), "r" (coeffs)
+                   NAMED_CONSTRAINTS_ADD(wm1010,d40000)
                 : "%eax"
         );
 }

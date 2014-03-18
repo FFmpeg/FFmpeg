@@ -309,6 +309,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         \
         : "+a"(src), "+c"(dst)\
         : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD), "m"(MUL1)\
+          NAMED_CONSTRAINTS_ADD(MUL2)\
         : "memory"\
      );\
      if(h==16){\
@@ -324,6 +325,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
             \
            : "+a"(src), "+c"(dst)\
            : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD),  "m"(MUL1)\
+             NAMED_CONSTRAINTS_ADD(MUL2)\
            : "memory"\
         );\
      }\

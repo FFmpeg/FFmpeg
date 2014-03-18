@@ -172,6 +172,7 @@ static void RENAME(yuv2yuvX)(const int16_t *filter, int filterSize,
         :: "r" (&c->redDither),                   \
             "m" (dummy), "m" (dummy), "m" (dummy),\
             "r" (dest), "m" (dstW_reg), "m"(uv_off) \
+            NAMED_CONSTRAINTS_ADD(bF8,bFC) \
         : "%"REG_a, "%"REG_d, "%"REG_S            \
     );
 
@@ -680,6 +681,7 @@ static void RENAME(yuv2bgr24_X_ar)(SwsContext *c, const int16_t *lumFilter,
     :: "r" (&c->redDither),
        "m" (dummy), "m" (dummy), "m" (dummy),
        "r" (dest), "m" (dstW_reg), "m"(uv_off)
+       NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
     : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
     );
 }
@@ -704,6 +706,7 @@ static void RENAME(yuv2bgr24_X)(SwsContext *c, const int16_t *lumFilter,
     :: "r" (&c->redDither),
        "m" (dummy), "m" (dummy), "m" (dummy),
        "r" (dest),  "m" (dstW_reg), "m"(uv_off)
+       NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
     : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
     );
 }
@@ -931,6 +934,7 @@ static void RENAME(yuv2bgr24_2)(SwsContext *c, const int16_t *buf[2],
         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
            "a" (&c->redDither)
+           NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
     );
 }
 
@@ -960,6 +964,7 @@ static void RENAME(yuv2rgb555_2)(SwsContext *c, const int16_t *buf[2],
         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
            "a" (&c->redDither)
+           NAMED_CONSTRAINTS_ADD(bF8)
     );
 }
 
@@ -989,6 +994,7 @@ static void RENAME(yuv2rgb565_2)(SwsContext *c, const int16_t *buf[2],
         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
            "a" (&c->redDither)
+           NAMED_CONSTRAINTS_ADD(bF8,bFC)
     );
 }
 
@@ -1262,6 +1268,7 @@ static void RENAME(yuv2bgr24_1)(SwsContext *c, const int16_t *buf0,
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
+               NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
         );
     } else {
         const int16_t *ubuf1 = ubuf[1];
@@ -1276,6 +1283,7 @@ static void RENAME(yuv2bgr24_1)(SwsContext *c, const int16_t *buf0,
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
+               NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
         );
     }
 }
@@ -1307,6 +1315,7 @@ static void RENAME(yuv2rgb555_1)(SwsContext *c, const int16_t *buf0,
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
+               NAMED_CONSTRAINTS_ADD(bF8)
         );
     } else {
         const int16_t *ubuf1 = ubuf[1];
@@ -1327,6 +1336,7 @@ static void RENAME(yuv2rgb555_1)(SwsContext *c, const int16_t *buf0,
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
+               NAMED_CONSTRAINTS_ADD(bF8)
         );
     }
 }
@@ -1358,6 +1368,7 @@ static void RENAME(yuv2rgb565_1)(SwsContext *c, const int16_t *buf0,
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
+               NAMED_CONSTRAINTS_ADD(bF8,bFC)
         );
     } else {
         const int16_t *ubuf1 = ubuf[1];
@@ -1378,6 +1389,7 @@ static void RENAME(yuv2rgb565_1)(SwsContext *c, const int16_t *buf0,
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
+               NAMED_CONSTRAINTS_ADD(bF8,bFC)
         );
     }
 }

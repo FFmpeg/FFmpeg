@@ -123,6 +123,7 @@ void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
         put_signed_pixels_clamped_mmx_half(64)
         : "+&r" (pixels), "=&r" (line_skip3)
         : "r" (block), "r" (line_skip)
+          NAMED_CONSTRAINTS_ADD(ff_pb_80)
         : "memory");
 }
 

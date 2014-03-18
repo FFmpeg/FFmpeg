@@ -193,7 +193,8 @@ static inline void sad8_4_mmxext(uint8_t *blk1, uint8_t *blk2,
         "sub $2, %0                     \n\t"
         " jg 1b                         \n\t"
         : "+r" (h), "+r" (blk1), "+r" (blk2)
-        : "r" ((x86_reg) stride));
+        : "r" ((x86_reg) stride)
+          NAMED_CONSTRAINTS_ADD(bone));
 }
 
 static inline void sad8_2_mmx(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2,
