@@ -152,6 +152,7 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
             }else if(sample_index < 0){
                 for(i=0; i<c->filter_length; i++)
                     val += src[FFABS(sample_index + i)] * (FELEM2)filter[i];
+                OUT(dst[dst_index], val);
             }else if(c->linear){
                 FELEM2 v2=0;
                 for(i=0; i<c->filter_length; i++){
@@ -159,13 +160,17 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                     v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_alloc];
                 }
                 val+=(v2-val)*(FELEML)frac / c->src_incr;
+                OUT(dst[dst_index], val);
             }else{
+#ifdef COMMON_CORE
+                COMMON_CORE
+#else
                 for(i=0; i<c->filter_length; i++){
                     val += src[sample_index + i] * (FELEM2)filter[i];
                 }
+                OUT(dst[dst_index], val);
+#endif
             }
-
-            OUT(dst[dst_index], val);
 
             frac += dst_incr_frac;
             index += dst_incr;
