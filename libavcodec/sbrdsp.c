@@ -110,6 +110,11 @@ static void sbr_qmf_deint_bfly_c(float *v, const float *src0, const float *src1)
     }
 }
 
+
+#if 0
+    /* This code is slower because it multiplies memory accesses.
+     * It is left for educational purposes and because it may offer
+     * a better reference for writing arch-specific DSP functions. */
 static av_always_inline void autocorrelate(const float x[40][2],
                                            float phi[3][2][2], int lag)
 {
@@ -138,14 +143,13 @@ static av_always_inline void autocorrelate(const float x[40][2],
 
 static void sbr_autocorrelate_c(const float x[40][2], float phi[3][2][2])
 {
-#if 0
-    /* This code is slower because it multiplies memory accesses.
-     * It is left for educational purposes and because it may offer
-     * a better reference for writing arch-specific DSP functions. */
     autocorrelate(x, phi, 0);
     autocorrelate(x, phi, 1);
     autocorrelate(x, phi, 2);
+}
 #else
+static void sbr_autocorrelate_c(const float x[40][2], float phi[3][2][2])
+{
     float real_sum2 = x[0][0] * x[2][0] + x[0][1] * x[2][1];
     float imag_sum2 = x[0][0] * x[2][1] - x[0][1] * x[2][0];
     float real_sum1 = 0.0f, imag_sum1 = 0.0f, real_sum0 = 0.0f;
