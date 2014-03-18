@@ -540,6 +540,16 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     av_dlog(ctx, "movie_push_frame(): file:'%s' %s\n", movie->file_name,
             describe_frame_to_str((char[1024]){0}, 1024, movie->frame, frame_type, outlink));
 
+    if (st->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (movie->frame->format != outlink->format) {
+            av_log(ctx, AV_LOG_ERROR, "Format changed %s -> %s, discarding frame\n",
+                av_get_pix_fmt_name(outlink->format),
+                av_get_pix_fmt_name(movie->frame->format)
+                );
+            av_frame_free(&movie->frame);
+            return 0;
+        }
+    }
     ret = ff_filter_frame(outlink, movie->frame);
     movie->frame = NULL;
 
