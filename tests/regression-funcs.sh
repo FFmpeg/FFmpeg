@@ -11,7 +11,7 @@ target_exec=$4
 target_path=$5
 threads=${6:-1}
 cpuflags=${8:-all}
-samples=$9
+target_samples=$9
 
 datadir="./tests/data"
 target_datadir="${target_path}/${datadir}"

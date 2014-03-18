@@ -8,7 +8,7 @@ base=$(dirname $0)
 base64=tests/base64
 
 test="${1#fate-}"
-samples=$2
+target_samples=$2
 target_exec=$3
 target_path=$4
 command=$5
@@ -153,13 +153,13 @@ enc_dec(){
 lavffatetest(){
     t="${test#lavf-fate-}"
     ref=${base}/ref/lavf-fate/$t
-    ${base}/lavf-regression.sh $t lavf-fate tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$samples"
+    ${base}/lavf-regression.sh $t lavf-fate tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$target_samples"
 }
 
 lavftest(){
     t="${test#lavf-}"
     ref=${base}/ref/lavf/$t
-    ${base}/lavf-regression.sh $t lavf tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$samples"
+    ${base}/lavf-regression.sh $t lavf tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$target_samples"
 }
 
 video_filter(){
