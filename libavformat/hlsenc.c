@@ -55,6 +55,7 @@ typedef struct HLSContext {
     ListEntry *list;
     ListEntry *end_list;
     char *basename;
+    char *baseurl;
     AVIOContext *pb;
 } HLSContext;
 
@@ -148,6 +149,8 @@ static int hls_window(AVFormatContext *s, int last)
 
     for (en = hls->list; en; en = en->next) {
         avio_printf(hls->pb, "#EXTINF:%d,\n", en->duration);
+        if (hls->baseurl)
+            avio_printf(hls->pb, "%s", hls->baseurl);
         avio_printf(hls->pb, "%s\n", en->name);
     }
 
@@ -319,6 +322,7 @@ static const AVOption options[] = {
     {"hls_time",      "segment length in seconds",               OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E},
     {"hls_list_size", "maximum number of playlist entries",      OFFSET(size),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_wrap",      "number after which the index wraps",      OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
+    {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
     { NULL },
 };
 

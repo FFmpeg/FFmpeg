@@ -114,6 +114,9 @@ Set the maximum number of playlist entries.
 Set the number after which index wraps.
 @item -start_number @var{number}
 Start the sequence from @var{number}.
+@item -hls_base_url @var{baseurl}
+Append @var{baseurl} to every entry in the playlist.
+Useful to generate playlists with absolute paths.
 @end table
 
 @anchor{image2}
