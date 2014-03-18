@@ -26,7 +26,7 @@
 #include "libavcodec/mlpdsp.h"
 #include "libavcodec/mlp.h"
 
-#if HAVE_7REGS && HAVE_INLINE_ASM
+#if HAVE_7REGS && HAVE_INLINE_ASM && HAVE_INLINE_ASM_NONLOCAL_LABELS
 
 extern char ff_mlp_firorder_8;
 extern char ff_mlp_firorder_7;
@@ -178,7 +178,7 @@ static void mlp_filter_channel_x86(int32_t *state, const int32_t *coeff,
 
 av_cold void ff_mlpdsp_init_x86(MLPDSPContext *c)
 {
-#if HAVE_7REGS && HAVE_INLINE_ASM
+#if HAVE_7REGS && HAVE_INLINE_ASM && HAVE_INLINE_ASM_NONLOCAL_LABELS
     int cpu_flags = av_get_cpu_flags();
     if (INLINE_MMX(cpu_flags))
         c->mlp_filter_channel = mlp_filter_channel_x86;

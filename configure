@@ -1690,6 +1690,7 @@ TOOLCHAIN_FEATURES="
     gnu_windres
     ibm_asm
     inline_asm_labels
+    inline_asm_nonlocal_labels
     pragma_deprecated
     rsync_contimeout
     symver_asm_label
@@ -4177,6 +4178,8 @@ EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
 check_inline_asm inline_asm_labels '"1:\n"'
+
+check_inline_asm inline_asm_nonlocal_labels '"Label:\n"'
 
 if enabled aarch64; then
     # internal assembler in clang 3.3 does not support this instruction
