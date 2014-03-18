@@ -151,6 +151,7 @@ TESTPROGS = adler32                                                     \
             eval                                                        \
             file                                                        \
             fifo                                                        \
+            float_dsp                                                   \
             hmac                                                        \
             lfg                                                         \
             lls1                                                        \

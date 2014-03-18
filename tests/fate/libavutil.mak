@@ -46,6 +46,12 @@ FATE_LIBAVUTIL += fate-fifo
 fate-fifo: libavutil/fifo-test$(EXESUF)
 fate-fifo: CMD = run libavutil/fifo-test
 
+FATE_LIBAVUTIL += fate-float-dsp
+fate-float-dsp: libavutil/float_dsp-test$(EXESUF)
+fate-float-dsp: CMD = run libavutil/float_dsp-test
+fate-float-dsp: CMP = null
+fate-float-dsp: REF = /dev/null
+
 FATE_LIBAVUTIL += fate-hmac
 fate-hmac: libavutil/hmac-test$(EXESUF)
 fate-hmac: CMD = run libavutil/hmac-test
