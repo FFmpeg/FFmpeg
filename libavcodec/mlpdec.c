@@ -37,9 +37,16 @@
 #include "mlp_parser.h"
 #include "mlpdsp.h"
 #include "mlp.h"
+#include "config.h"
 
 /** number of bits used for VLC lookup - longest Huffman code is 9 */
+#if ARCH_ARM == 1
+#define VLC_BITS            5
+#define VLC_STATIC_SIZE     64
+#else
 #define VLC_BITS            9
+#define VLC_STATIC_SIZE     512
+#endif
 
 typedef struct SubStream {
     /// Set if a valid restart header has been read. Otherwise the substream cannot be decoded.
@@ -193,13 +200,13 @@ static av_cold void init_static(void)
     if (!huff_vlc[0].bits) {
         INIT_VLC_STATIC(&huff_vlc[0], VLC_BITS, 18,
                     &ff_mlp_huffman_tables[0][0][1], 2, 1,
-                    &ff_mlp_huffman_tables[0][0][0], 2, 1, 512);
+                    &ff_mlp_huffman_tables[0][0][0], 2, 1, VLC_STATIC_SIZE);
         INIT_VLC_STATIC(&huff_vlc[1], VLC_BITS, 16,
                     &ff_mlp_huffman_tables[1][0][1], 2, 1,
-                    &ff_mlp_huffman_tables[1][0][0], 2, 1, 512);
+                    &ff_mlp_huffman_tables[1][0][0], 2, 1, VLC_STATIC_SIZE);
         INIT_VLC_STATIC(&huff_vlc[2], VLC_BITS, 15,
                     &ff_mlp_huffman_tables[2][0][1], 2, 1,
-                    &ff_mlp_huffman_tables[2][0][0], 2, 1, 512);
+                    &ff_mlp_huffman_tables[2][0][0], 2, 1, VLC_STATIC_SIZE);
     }
 
     ff_mlp_init_crc();
