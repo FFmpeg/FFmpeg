@@ -132,6 +132,13 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
         s->interlace_polarity = 1;           /* bottom field first */
         av_log(avctx, AV_LOG_DEBUG, "bottom field first\n");
     }
+
+    if (   avctx->extradata_size > 8
+        && AV_RL32(avctx->extradata) == 0x2C
+        && AV_RL32(avctx->extradata+4) == 0x18) {
+        parse_avid(s, avctx->extradata, avctx->extradata_size);
+    }
+
     if (avctx->codec->id == AV_CODEC_ID_AMV)
         s->flipped = 1;
 
