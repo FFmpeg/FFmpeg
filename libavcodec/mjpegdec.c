@@ -83,6 +83,13 @@ static void build_basic_mjpeg_vlc(MJpegDecodeContext *s)
               avpriv_mjpeg_val_ac_chrominance, 251, 0, 0);
 }
 
+static void parse_avid(MJpegDecodeContext *s, uint8_t *buf, int len)
+{
+    s->buggy_avid = 1;
+    if (len > 14 && buf[12] == 1) /* 1 - NTSC */
+        s->interlace_polarity = 1;
+}
+
 av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
@@ -1694,9 +1701,7 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
 
             /* buggy avid, it puts EOI only at every 10th frame */
             if (!strncmp(cbuf, "AVID", 4)) {
-                s->buggy_avid = 1;
-                if (len > 14 && cbuf[12] == 1) /* 1 - NTSC, 2 - PAL */
-                    s->interlace_polarity = 1;
+                parse_avid(s, cbuf, len);
             } else if (!strcmp(cbuf, "CS=ITU601"))
                 s->cs_itu601 = 1;
             else if ((!strncmp(cbuf, "Intel(R) JPEG Library, version 1", 32)) ||
