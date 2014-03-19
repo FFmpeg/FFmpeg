@@ -802,6 +802,8 @@ int ff_h264_decode_mb_cabac(H264Context *h);
 
 void ff_h264_init_cabac_states(H264Context *h);
 
+void h264_init_dequant_tables(H264Context *h);
+
 void ff_h264_direct_dist_scale_factor(H264Context *const h);
 void ff_h264_direct_ref_list_init(H264Context *const h);
 void ff_h264_pred_direct_motion(H264Context *const h, int *mb_type);
@@ -1020,9 +1022,26 @@ static av_always_inline int get_dct8x8_allowed(H264Context *h)
                   0x0001000100010001ULL));
 }
 
+int ff_h264_field_end(H264Context *h, int in_setup);
+
+int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src);
+void ff_h264_unref_picture(H264Context *h, H264Picture *pic);
+
+int ff_h264_context_init(H264Context *h);
+int ff_h264_set_parameter_from_sps(H264Context *h);
+
 void ff_h264_draw_horiz_band(H264Context *h, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
 int ff_pred_weight_table(H264Context *h);
 int ff_set_ref_count(H264Context *h);
+
+int ff_h264_decode_slice_header(H264Context *h, H264Context *h0);
+int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count);
+int ff_h264_update_thread_context(AVCodecContext *dst,
+                                  const AVCodecContext *src);
+
+void ff_h264_flush_change(H264Context *h);
+
+void ff_h264_free_tables(H264Context *h, int free_rbsp);
 
 #endif /* AVCODEC_H264_H */
