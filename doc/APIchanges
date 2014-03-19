@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-03-18 - e9c8a9a - lsws 2.5.102
+  Make gray16 full-scale.
+
 2014-xx-xx - xxxxxxx - lavu 53.05.0 - frame.h
   Add av_frame_copy() for copying the frame data.
 
