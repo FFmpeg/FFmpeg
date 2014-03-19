@@ -90,6 +90,8 @@ static void parse_avid(MJpegDecodeContext *s, uint8_t *buf, int len)
         s->interlace_polarity = 1;
     if (len > 14 && buf[12] == 2) /* 2 - PAL */
         s->interlace_polarity = 0;
+    if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(s->avctx, AV_LOG_INFO, "AVID: len:%d %d\n", len, len > 14 ? buf[12] : -1);
 }
 
 av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
