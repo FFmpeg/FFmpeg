@@ -131,6 +131,9 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     if (avctx->field_order == AV_FIELD_BB) { /* quicktime icefloe 019 */
         s->interlace_polarity = 1;           /* bottom field first */
         av_log(avctx, AV_LOG_DEBUG, "bottom field first\n");
+    } else if (avctx->field_order == AV_FIELD_UNKNOWN) {
+        if (avctx->codec_tag == AV_RL32("MJPG"))
+            s->interlace_polarity = 1;
     }
 
     if (   avctx->extradata_size > 8
