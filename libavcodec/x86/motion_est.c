@@ -286,7 +286,8 @@ static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
         " js 1b                         \n\t"
         : "+a" (len)
         : "r" (blk1 - len), "r" (blk1 - len + stride), "r" (blk2 - len),
-          "r" ((x86_reg) stride));
+          "r" ((x86_reg) stride)
+          NAMED_CONSTRAINTS_ADD(round_tab));
 }
 
 static inline int sum_mmx(void)
