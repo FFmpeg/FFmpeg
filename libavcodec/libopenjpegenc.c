@@ -235,7 +235,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     }
     opj_setup_encoder(ctx->compress, &ctx->enc_params, ctx->image);
 
-    ctx->stream = opj_cio_open((opj_common_ptr)ctx->compress, NULL, 0);
+    ctx->stream = opj_cio_open((opj_common_ptr) ctx->compress, NULL, 0);
     if (!ctx->stream) {
         av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
         err = AVERROR(ENOMEM);
@@ -252,7 +252,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     ctx->event_mgr.info_handler    = info_callback;
     ctx->event_mgr.error_handler = error_callback;
     ctx->event_mgr.warning_handler = warning_callback;
-    opj_set_event_mgr((opj_common_ptr)ctx->compress, &ctx->event_mgr, avctx);
+    opj_set_event_mgr((opj_common_ptr) ctx->compress, &ctx->event_mgr, avctx);
 
     return 0;
 
@@ -310,12 +310,11 @@ static int libopenjpeg_copy_packed8(AVCodecContext *avctx, const AVFrame *frame,
 static int libopenjpeg_copy_packed12(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
 {
     int compno;
-    int x;
-    int y;
+    int x, y;
     int *image_line;
     int frame_index;
-    const int numcomps = image->numcomps;
-    uint16_t *frame_ptr = (uint16_t*)frame->data[0];
+    const int numcomps  = image->numcomps;
+    uint16_t *frame_ptr = (uint16_t *)frame->data[0];
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[0] / numcomps) {
@@ -406,7 +405,7 @@ static int libopenjpeg_copy_unpacked8(AVCodecContext *avctx, const AVFrame *fram
     }
 
     for (compno = 0; compno < numcomps; ++compno) {
-        width = avctx->width / image->comps[compno].dx;
+        width  = avctx->width / image->comps[compno].dx;
         height = avctx->height / image->comps[compno].dy;
         for (y = 0; y < height; ++y) {
             image_line = image->comps[compno].data + y * image->comps[compno].w;
@@ -448,9 +447,9 @@ static int libopenjpeg_copy_unpacked16(AVCodecContext *avctx, const AVFrame *fra
     }
 
     for (compno = 0; compno < numcomps; ++compno) {
-        width = avctx->width / image->comps[compno].dx;
-        height = avctx->height / image->comps[compno].dy;
-        frame_ptr = (uint16_t*)frame->data[compno];
+        width     = avctx->width / image->comps[compno].dx;
+        height    = avctx->height / image->comps[compno].dy;
+        frame_ptr = (uint16_t *)frame->data[compno];
         for (y = 0; y < height; ++y) {
             image_line = image->comps[compno].data + y * image->comps[compno].w;
             frame_index = y * (frame->linesize[compno] / 2);
@@ -475,9 +474,9 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                     const AVFrame *frame, int *got_packet)
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
-    opj_cinfo_t *compress = ctx->compress;
-    opj_image_t *image    = ctx->image;
-    opj_cio_t *stream     = ctx->stream;
+    opj_cinfo_t *compress   = ctx->compress;
+    opj_image_t *image      = ctx->image;
+    opj_cio_t *stream       = ctx->stream;
     int cpyresult = 0;
     int ret, len;
     AVFrame *gbrframe;
