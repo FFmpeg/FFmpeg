@@ -230,6 +230,14 @@ DCA_LFE_FIR 1
     SHUF         m11,  ptr2 + j + (15 - 3) * 4 - mmsize, m12
     mova         m12, [ptr1 + j + mmsize]
 %endif
+%if cpuflag(fma3)
+    fmaddps       m2, m6,  [win + %1 + j + 16 * 4], m2
+    fnmaddps      m1, m5,  [win + %1 + j], m1
+%if ARCH_X86_64
+    fmaddps       m8, m12, [win + %1 + j + mmsize + 16 * 4], m8
+    fnmaddps      m7, m11, [win + %1 + j + mmsize], m7
+%endif
+%else ; non-FMA
     mulps         m6, m6,  [win + %1 + j + 16 * 4]
     mulps         m5, m5,  [win + %1 + j]
 %if ARCH_X86_64
@@ -242,6 +250,7 @@ DCA_LFE_FIR 1
     addps         m8, m8, m12
     subps         m7, m7, m11
 %endif
+%endif ; cpuflag(fma3)
     ;~ c += window[i + j + 32] * (synth_buf[16 + i + j])
     ;~ d += window[i + j + 48] * (synth_buf[31 - i + j])
     SHUF          m6,  ptr2 + j + (31 - 3) * 4, m5
@@ -250,6 +259,14 @@ DCA_LFE_FIR 1
     SHUF         m12,  ptr2 + j + (31 - 3) * 4 - mmsize, m11
     mova         m11, [ptr1 + j + mmsize + 16 * 4]
 %endif
+%if cpuflag(fma3)
+    fmaddps       m3, m5,  [win + %1 + j + 32 * 4], m3
+    fmaddps       m4, m6,  [win + %1 + j + 48 * 4], m4
+%if ARCH_X86_64
+    fmaddps       m9, m11, [win + %1 + j + mmsize + 32 * 4], m9
+    fmaddps      m10, m12, [win + %1 + j + mmsize + 48 * 4], m10
+%endif
+%else ; non-FMA
     mulps         m5, m5,  [win + %1 + j + 32 * 4]
     mulps         m6, m6,  [win + %1 + j + 48 * 4]
 %if ARCH_X86_64
@@ -262,6 +279,7 @@ DCA_LFE_FIR 1
     addps         m9, m9, m11
     addps        m10, m10, m12
 %endif
+%endif ; cpuflag(fma3)
     sub            j, 64 * 4
 %endmacro
 
@@ -400,3 +418,7 @@ INIT_XMM sse2
 SYNTH_FILTER
 INIT_YMM avx
 SYNTH_FILTER
+%if HAVE_FMA3_EXTERNAL
+INIT_YMM fma3
+SYNTH_FILTER
+%endif
