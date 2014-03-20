@@ -431,3 +431,225 @@ endfunc
         .unreq  ST3
         .unreq  I
         .unreq  PSAMP
+
+/********************************************************************/
+
+PSA     .req    a1 // samples
+PCO     .req    a2 // coeffs
+PBL     .req    a3 // bypassed_lsbs
+INDEX   .req    a4
+CO0     .req    v1
+CO1     .req    v2
+CO2     .req    v3
+CO3     .req    v4
+SA0     .req    v5
+SA1     .req    v6
+SA2     .req    sl
+SA3     .req    fp
+AC0     .req    ip
+AC1     .req    lr
+NOISE   .req    SA0
+LSB     .req    SA1
+DCH     .req    SA2 // dest_ch
+MASK    .req    SA3
+
+    // INDEX is used as follows:
+    // bits 0..6   index2 (values up to 17, but wider so that we can
+    //               add to index field without needing to mask)
+    // bits 7..14  i (values up to 160)
+    // bit 15      underflow detect for i
+    // bits 25..31 (if access_unit_size_pow2 == 128)  \ index
+    // bits 26..31 (if access_unit_size_pow2 == 64)   /
+
+.macro implement_rematrix  shift, index_mask, mask_minus1, maxchan
+    .if \maxchan == 1
+        // We can just leave the coefficients in registers in this case
+        ldrd    CO0, CO1, [PCO]
+    .endif
+1:
+    .if \maxchan == 1
+        ldrd    SA0, SA1, [PSA]
+        smull   AC0, AC1, CO0, SA0
+    .elseif \maxchan == 5
+        ldr     CO0, [PCO, #0]
+        ldr     SA0, [PSA, #0]
+        ldr     CO1, [PCO, #4]
+        ldr     SA1, [PSA, #4]
+        ldrd    CO2, CO3, [PCO, #8]
+        smull   AC0, AC1, CO0, SA0
+        ldrd    SA2, SA3, [PSA, #8]
+        smlal   AC0, AC1, CO1, SA1
+        ldrd    CO0, CO1, [PCO, #16]
+        smlal   AC0, AC1, CO2, SA2
+        ldrd    SA0, SA1, [PSA, #16]
+        smlal   AC0, AC1, CO3, SA3
+        smlal   AC0, AC1, CO0, SA0
+    .else // \maxchan == 7
+        ldr     CO2, [PCO, #0]
+        ldr     SA2, [PSA, #0]
+        ldr     CO3, [PCO, #4]
+        ldr     SA3, [PSA, #4]
+        ldrd    CO0, CO1, [PCO, #8]
+        smull   AC0, AC1, CO2, SA2
+        ldrd    SA0, SA1, [PSA, #8]
+        smlal   AC0, AC1, CO3, SA3
+        ldrd    CO2, CO3, [PCO, #16]
+        smlal   AC0, AC1, CO0, SA0
+        ldrd    SA2, SA3, [PSA, #16]
+        smlal   AC0, AC1, CO1, SA1
+        ldrd    CO0, CO1, [PCO, #24]
+        smlal   AC0, AC1, CO2, SA2
+        ldrd    SA0, SA1, [PSA, #24]
+        smlal   AC0, AC1, CO3, SA3
+        smlal   AC0, AC1, CO0, SA0
+    .endif
+        ldm     sp, {NOISE, DCH, MASK}
+        smlal   AC0, AC1, CO1, SA1
+    .if \shift != 0
+      .if \index_mask == 63
+        add     NOISE, NOISE, INDEX, lsr #32-6
+        ldrb    LSB, [PBL], #MAX_CHANNELS
+        ldrsb   NOISE, [NOISE]
+        add     INDEX, INDEX, INDEX, lsl #32-6
+      .else // \index_mask == 127
+        add     NOISE, NOISE, INDEX, lsr #32-7
+        ldrb    LSB, [PBL], #MAX_CHANNELS
+        ldrsb   NOISE, [NOISE]
+        add     INDEX, INDEX, INDEX, lsl #32-7
+      .endif
+        sub     INDEX, INDEX, #1<<7
+        adds    AC0, AC0, NOISE, lsl #\shift + 7
+        adc     AC1, AC1, NOISE, asr #31
+    .else
+        ldrb    LSB, [PBL], #MAX_CHANNELS
+        sub     INDEX, INDEX, #1<<7
+    .endif
+        add     PSA, PSA, #MAX_CHANNELS*4
+        mov     AC0, AC0, lsr #14
+        orr     AC0, AC0, AC1, lsl #18
+    .if !\mask_minus1
+        and     AC0, AC0, MASK
+    .endif
+        add     AC0, AC0, LSB
+        tst     INDEX, #1<<15
+        str     AC0, [PSA, DCH, lsl #2]  // DCH is precompensated for the early increment of PSA
+        beq     1b
+        b       98f
+.endm
+
+.macro switch_on_maxchan  shift, index_mask, mask_minus1
+        cmp     v4, #5
+        blo     51f
+        beq     50f
+        implement_rematrix  \shift, \index_mask, \mask_minus1, 7
+50:     implement_rematrix  \shift, \index_mask, \mask_minus1, 5
+51:     implement_rematrix  \shift, \index_mask, \mask_minus1, 1
+.endm
+
+.macro switch_on_mask  shift, index_mask
+        cmp     sl, #-1
+        bne     40f
+        switch_on_maxchan  \shift, \index_mask, 1
+40:     switch_on_maxchan  \shift, \index_mask, 0
+.endm
+
+.macro switch_on_au_size  shift
+  .if \shift == 0
+        switch_on_mask  \shift, undefined
+  .else
+        teq     v6, #64
+        bne     30f
+        orr     INDEX, INDEX, v1, lsl #32-6
+        switch_on_mask  \shift, 63
+30:     orr     INDEX, INDEX, v1, lsl #32-7
+        switch_on_mask  \shift, 127
+  .endif
+.endm
+
+/* void ff_mlp_rematrix_channel_arm(int32_t *samples,
+ *                                  const int32_t *coeffs,
+ *                                  const uint8_t *bypassed_lsbs,
+ *                                  const int8_t *noise_buffer,
+ *                                  int index,
+ *                                  unsigned int dest_ch,
+ *                                  uint16_t blockpos,
+ *                                  unsigned int maxchan,
+ *                                  int matrix_noise_shift,
+ *                                  int access_unit_size_pow2,
+ *                                  int32_t mask);
+ */
+function ff_mlp_rematrix_channel_arm, export=1
+        push    {v1-fp,lr}
+        add     v1, sp, #9*4 // point at arguments on stack
+        ldm     v1, {v1-sl}
+        teq     v4, #1
+        itt     ne
+        teqne   v4, #5
+        teqne   v4, #7
+        bne     99f
+        teq     v6, #64
+        it      ne
+        teqne   v6, #128
+        bne     99f
+        sub     v2, v2, #MAX_CHANNELS
+        push    {a4,v2,sl}          // initialise NOISE,DCH,MASK; make sp dword-aligned
+        movs    INDEX, v3, lsl #7
+        beq     98f                 // just in case, do nothing if blockpos = 0
+        subs    INDEX, INDEX, #1<<7 // offset by 1 so we borrow at the right time
+        adc     lr, v1, v1          // calculate index2 (C was set by preceding subs)
+        orr     INDEX, INDEX, lr
+        // Switch on matrix_noise_shift: values 0 and 1 are
+        // disproportionately common so do those in a form the branch
+        // predictor can accelerate. Values can only go up to 15.
+        cmp     v5, #1
+        beq     11f
+        blo     10f
+A       ldr     pc, [pc, v5, lsl #2]
+T       tbh     [pc, v5, lsl #1]
+0:
+A       .word   0, 0, 0, 12f, 13f, 14f, 15f, 16f, 17f, 18f, 19f, 20f, 21f, 22f, 23f, 24f, 25f
+T       .hword  0, 0, (12f - 0b) / 2, (13f - 0b) / 2, (14f - 0b) / 2, (15f - 0b) / 2
+T       .hword  (16f - 0b) / 2, (17f - 0b) / 2, (18f - 0b) / 2, (19f - 0b) / 2
+T       .hword  (20f - 0b) / 2, (21f - 0b) / 2, (22f - 0b) / 2, (23f - 0b) / 2, (24f - 0b) / 2, (25f - 0b) / 2
+10:     switch_on_au_size  0
+11:     switch_on_au_size  1
+12:     switch_on_au_size  2
+13:     switch_on_au_size  3
+14:     switch_on_au_size  4
+15:     switch_on_au_size  5
+16:     switch_on_au_size  6
+17:     switch_on_au_size  7
+18:     switch_on_au_size  8
+19:     switch_on_au_size  9
+20:     switch_on_au_size  10
+21:     switch_on_au_size  11
+22:     switch_on_au_size  12
+23:     switch_on_au_size  13
+24:     switch_on_au_size  14
+25:     switch_on_au_size  15
+
+98:     add     sp, sp, #3*4
+        pop     {v1-fp,pc}
+99:     // Can't handle these parameters, drop back to C
+        pop     {v1-fp,lr}
+        b       X(ff_mlp_rematrix_channel)
+endfunc
+
+        .unreq  PSA
+        .unreq  PCO
+        .unreq  PBL
+        .unreq  INDEX
+        .unreq  CO0
+        .unreq  CO1
+        .unreq  CO2
+        .unreq  CO3
+        .unreq  SA0
+        .unreq  SA1
+        .unreq  SA2
+        .unreq  SA3
+        .unreq  AC0
+        .unreq  AC1
+        .unreq  NOISE
+        .unreq  LSB
+        .unreq  DCH
+        .unreq  MASK
