@@ -5,6 +5,7 @@ version <next>:
 - libx265 encoder
 - shuffleplanes filter
 - replaygain data export
+- Alias PIX image encoder and decoder
 
 
 version 10:

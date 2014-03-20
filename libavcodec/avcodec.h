@@ -284,6 +284,7 @@ enum AVCodecID {
     AV_CODEC_ID_HNM4_VIDEO,
     AV_CODEC_ID_HEVC,
     AV_CODEC_ID_FIC,
+    AV_CODEC_ID_ALIAS_PIX,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs

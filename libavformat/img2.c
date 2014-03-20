@@ -43,6 +43,7 @@ static const IdStrMap img_tags[] = {
     { AV_CODEC_ID_PGMYUV,     "pgmyuv"   },
     { AV_CODEC_ID_PBM,        "pbm"      },
     { AV_CODEC_ID_PAM,        "pam"      },
+    { AV_CODEC_ID_ALIAS_PIX,  "pix"      },
     { AV_CODEC_ID_MPEG1VIDEO, "mpg1-img" },
     { AV_CODEC_ID_MPEG2VIDEO, "mpg2-img" },
     { AV_CODEC_ID_MPEG4,      "mpg4-img" },

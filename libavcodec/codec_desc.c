@@ -1095,6 +1095,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
 
     /* image codecs */
     {
+        .id        = AV_CODEC_ID_ALIAS_PIX,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "alias_pix",
+        .long_name = NULL_IF_CONFIG_SMALL("Alias/Wavefront PIX image"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
         .id        = AV_CODEC_ID_ANSI,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "ansi",
