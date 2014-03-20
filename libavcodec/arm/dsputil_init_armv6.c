@@ -52,17 +52,17 @@ int ff_sse16_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
 int ff_pix_norm1_armv6(uint8_t *pix, int line_size);
 int ff_pix_sum_armv6(uint8_t *pix, int line_size);
 
-av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx,
+                                   unsigned high_bit_depth)
 {
-    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-
-    if (!avctx->lowres && avctx->bits_per_raw_sample <= 8 &&
-        (avctx->idct_algo == FF_IDCT_AUTO ||
-         avctx->idct_algo == FF_IDCT_SIMPLEARMV6)) {
-        c->idct_put              = ff_simple_idct_put_armv6;
-        c->idct_add              = ff_simple_idct_add_armv6;
-        c->idct                  = ff_simple_idct_armv6;
-        c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
+    if (!avctx->lowres && !high_bit_depth) {
+        if (avctx->idct_algo == FF_IDCT_AUTO ||
+            avctx->idct_algo == FF_IDCT_SIMPLEARMV6) {
+            c->idct_put              = ff_simple_idct_put_armv6;
+            c->idct_add              = ff_simple_idct_add_armv6;
+            c->idct                  = ff_simple_idct_armv6;
+            c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
+        }
     }
     c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
 

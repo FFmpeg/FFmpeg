@@ -104,7 +104,8 @@
     "psubb "#regb", "#regr"             \n\t"                    \
     "psubb "#regd", "#regp"             \n\t"
 
-void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx);
+void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
+                            unsigned high_bit_depth);
 void ff_dsputil_init_pix_mmx(DSPContext *c, AVCodecContext *avctx);
 
 void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,

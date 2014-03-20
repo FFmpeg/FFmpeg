@@ -2884,6 +2884,8 @@ int ff_check_alignment(void)
 
 av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
 {
+    const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
+
     ff_check_alignment();
 
 #if CONFIG_ENCODERS
@@ -3127,13 +3129,13 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     if (ARCH_ALPHA)
         ff_dsputil_init_alpha(c, avctx);
     if (ARCH_ARM)
-        ff_dsputil_init_arm(c, avctx);
+        ff_dsputil_init_arm(c, avctx, high_bit_depth);
     if (ARCH_BFIN)
-        ff_dsputil_init_bfin(c, avctx);
+        ff_dsputil_init_bfin(c, avctx, high_bit_depth);
     if (ARCH_PPC)
-        ff_dsputil_init_ppc(c, avctx);
+        ff_dsputil_init_ppc(c, avctx, high_bit_depth);
     if (ARCH_X86)
-        ff_dsputil_init_x86(c, avctx);
+        ff_dsputil_init_x86(c, avctx, high_bit_depth);
 
     ff_init_scantable_permutation(c->idct_permutation,
                                   c->idct_permutation_type);
