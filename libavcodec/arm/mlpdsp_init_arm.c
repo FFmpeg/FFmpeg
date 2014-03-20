@@ -29,6 +29,17 @@ void ff_mlp_filter_channel_arm(int32_t *state, const int32_t *coeff,
                                int firorder, int iirorder,
                                unsigned int filter_shift, int32_t mask,
                                int blocksize, int32_t *sample_buffer);
+void ff_mlp_rematrix_channel_arm(int32_t *samples,
+                                 const int32_t *coeffs,
+                                 const uint8_t *bypassed_lsbs,
+                                 const int8_t *noise_buffer,
+                                 int index,
+                                 unsigned int dest_ch,
+                                 uint16_t blockpos,
+                                 unsigned int maxchan,
+                                 int matrix_noise_shift,
+                                 int access_unit_size_pow2,
+                                 int32_t mask);
 
 av_cold void ff_mlpdsp_init_arm(MLPDSPContext *c)
 {
@@ -36,5 +47,6 @@ av_cold void ff_mlpdsp_init_arm(MLPDSPContext *c)
 
     if (have_armv5te(cpu_flags)) {
         c->mlp_filter_channel = ff_mlp_filter_channel_arm;
+        c->mlp_rematrix_channel = ff_mlp_rematrix_channel_arm;
     }
 }
