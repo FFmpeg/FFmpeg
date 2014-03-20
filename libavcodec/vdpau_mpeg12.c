@@ -43,12 +43,12 @@ static int vdpau_mpeg_start_frame(AVCodecContext *avctx,
 
     switch (s->pict_type) {
     case AV_PICTURE_TYPE_B:
-        ref = ff_vdpau_get_surface_id(&s->next_picture);
+        ref = ff_vdpau_get_surface_id(&s->next_picture.f);
         assert(ref != VDP_INVALID_HANDLE);
         info->backward_reference = ref;
         /* fall through to forward prediction */
     case AV_PICTURE_TYPE_P:
-        ref = ff_vdpau_get_surface_id(&s->last_picture);
+        ref = ff_vdpau_get_surface_id(&s->last_picture.f);
         info->forward_reference  = ref;
     }
 

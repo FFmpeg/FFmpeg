@@ -31,10 +31,10 @@
 #include "mpegvideo.h"
 #include "version.h"
 
-/** Extract VdpVideoSurface from a Picture */
-static inline uintptr_t ff_vdpau_get_surface_id(Picture *pic)
+/** Extract VdpVideoSurface from an AVFrame */
+static inline uintptr_t ff_vdpau_get_surface_id(AVFrame *pic)
 {
-    return (uintptr_t)pic->f.data[3];
+    return (uintptr_t)pic->data[3];
 }
 
 #if !FF_API_BUFS_VDPAU
