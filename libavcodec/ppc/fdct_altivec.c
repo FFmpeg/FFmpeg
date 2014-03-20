@@ -127,7 +127,7 @@ static vector float fdctconsts[3] = {
     b7 = vec_add(b7, x2);               /* b7 = b7 + x2; */         \
     b5 = vec_add(b5, x3);               /* b5 = b5 + x3; */         \
     b3 = vec_add(b3, x2);               /* b3 = b3 + x2; */         \
-    b1 = vec_add(b1, x3);               /* b1 = b1 + x3; */         \
+    b1 = vec_add(b1, x3)                /* b1 = b1 + x3; */         \
     /* }}} */
 
 #define FDCTCOL(b0, b1, b2, b3, b4, b5, b6, b7) /* {{{ */           \
@@ -184,7 +184,7 @@ static vector float fdctconsts[3] = {
     b7 = vec_add(b7, x2);               /* b7 += x2; */             \
     b5 = vec_add(b5, x3);               /* b5 += x3; */             \
     b3 = vec_add(b3, x2);               /* b3 += x2; */             \
-    b1 = vec_add(b1, x3);               /* b1 += x3; */             \
+    b1 = vec_add(b1, x3)                /* b1 += x3; */             \
     /* }}} */
 
 /* two dimensional discrete cosine transform */
@@ -277,7 +277,7 @@ void ff_fdct_altivec(int16_t *block)
     b ## n ## 1 = ((vector float) vec_unpackl(vs16(b ## n ## 0))); \
     b ## n ## 0 = ((vector float) vec_unpackh(vs16(b ## n ## 0))); \
     b ## n ## 1 = vec_ctf(vs32(b ## n ## 1), 0);                   \
-    b ## n ## 0 = vec_ctf(vs32(b ## n ## 0), 0);
+    b ## n ## 0 = vec_ctf(vs32(b ## n ## 0), 0)
 
     CTF0(0);
     CTF0(4);
@@ -307,7 +307,7 @@ void ff_fdct_altivec(int16_t *block)
     b ## 0 = ((vector float) vec_unpackh(vs16(x))); \
     b ## 1 = ((vector float) vec_unpackl(vs16(x))); \
     b ## 0 = vec_ctf(vs32(b ## 0), 0);              \
-    b ## 1 = vec_ctf(vs32(b ## 1), 0);              \
+    b ## 1 = vec_ctf(vs32(b ## 1), 0)
 
     CTFX(x4, b7);
     CTFX(x5, b5);
@@ -432,7 +432,7 @@ void ff_fdct_altivec(int16_t *block)
     b ## n ## 1 = ((vector float) vec_cts(b ## n ## 1, 0));     \
     b ## n ## 0 = ((vector float) vec_pack(vs32(b ## n ## 0),   \
                                            vs32(b ## n ## 1))); \
-    vec_st(vs16(b ## n ## 0), 0, bp);
+    vec_st(vs16(b ## n ## 0), 0, bp)
 
     bp = (vector signed short *) block;
     CTS(0);

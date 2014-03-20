@@ -73,7 +73,7 @@
     vy2 = vec_mradds(c4, t4, t0);                       \
     vy5 = vec_mradds(mc4, t4, t0);                      \
     vy3 = vec_adds(t2, t6);                             \
-    vy4 = vec_subs(t2, t6);
+    vy4 = vec_subs(t2, t6)
 
 #define IDCT                                                                \
     vec_s16 vy0, vy1, vy2, vy3, vy4, vy5, vy6, vy7;                         \
@@ -99,7 +99,7 @@
     vec_s16 vx6 = vec_mradds(vec_sl(block[6], shift), constants[3], zero);  \
     vec_s16 vx7 = vec_mradds(vec_sl(block[7], shift), constants[2], zero);  \
                                                                             \
-    IDCT_HALF                                                               \
+    IDCT_HALF;                                                              \
                                                                             \
     vx0 = vec_mergeh(vy0, vy4);                                             \
     vx1 = vec_mergel(vy0, vy4);                                             \
@@ -128,7 +128,7 @@
     vx6 = vec_mergeh(vy3, vy7);                                             \
     vx7 = vec_mergel(vy3, vy7);                                             \
                                                                             \
-    IDCT_HALF                                                               \
+    IDCT_HALF;                                                              \
                                                                             \
     shift = vec_splat_u16(6);                                               \
     vx0 = vec_sra(vy0, shift);                                              \
@@ -138,7 +138,7 @@
     vx4 = vec_sra(vy4, shift);                                              \
     vx5 = vec_sra(vy5, shift);                                              \
     vx6 = vec_sra(vy6, shift);                                              \
-    vx7 = vec_sra(vy7, shift);
+    vx7 = vec_sra(vy7, shift)
 
 static const vec_s16 constants[5] = {
     { 23170, 13573,  6518, 21895, -23170, -21895,    32,    31 },
@@ -153,28 +153,28 @@ void ff_idct_put_altivec(uint8_t *dest, int stride, int16_t *blk)
     vec_s16 *block = (vec_s16 *) blk;
     vec_u8 tmp;
 
-    IDCT
+    IDCT;
 
 #define COPY(dest, src)                                     \
     tmp = vec_packsu(src, src);                             \
     vec_ste((vec_u32) tmp, 0, (unsigned int *) dest);       \
-    vec_ste((vec_u32) tmp, 4, (unsigned int *) dest);
+    vec_ste((vec_u32) tmp, 4, (unsigned int *) dest)
 
-    COPY(dest, vx0)
+    COPY(dest, vx0);
     dest += stride;
-    COPY(dest, vx1)
+    COPY(dest, vx1);
     dest += stride;
-    COPY(dest, vx2)
+    COPY(dest, vx2);
     dest += stride;
-    COPY(dest, vx3)
+    COPY(dest, vx3);
     dest += stride;
-    COPY(dest, vx4)
+    COPY(dest, vx4);
     dest += stride;
-    COPY(dest, vx5)
+    COPY(dest, vx5);
     dest += stride;
-    COPY(dest, vx6)
+    COPY(dest, vx6);
     dest += stride;
-    COPY(dest, vx7)
+    COPY(dest, vx7);
 }
 
 void ff_idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
@@ -186,7 +186,7 @@ void ff_idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
     vec_u8 perm1;
     vec_u8 p0, p1, p;
 
-    IDCT
+    IDCT;
 
     p0    = vec_lvsl(0, dest);
     p1    = vec_lvsl(stride, dest);
@@ -201,21 +201,21 @@ void ff_idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
     tmp3 = vec_adds(tmp2, src);                             \
     tmp  = vec_packsu(tmp3, tmp3);                          \
     vec_ste((vec_u32) tmp, 0, (unsigned int *) dest);       \
-    vec_ste((vec_u32) tmp, 4, (unsigned int *) dest);
+    vec_ste((vec_u32) tmp, 4, (unsigned int *) dest)
 
-    ADD(dest, vx0, perm0)
+    ADD(dest, vx0, perm0);
     dest += stride;
-    ADD(dest, vx1, perm1)
+    ADD(dest, vx1, perm1);
     dest += stride;
-    ADD(dest, vx2, perm0)
+    ADD(dest, vx2, perm0);
     dest += stride;
-    ADD(dest, vx3, perm1)
+    ADD(dest, vx3, perm1);
     dest += stride;
-    ADD(dest, vx4, perm0)
+    ADD(dest, vx4, perm0);
     dest += stride;
-    ADD(dest, vx5, perm1)
+    ADD(dest, vx5, perm1);
     dest += stride;
-    ADD(dest, vx6, perm0)
+    ADD(dest, vx6, perm0);
     dest += stride;
-    ADD(dest, vx7, perm1)
+    ADD(dest, vx7, perm1);
 }
