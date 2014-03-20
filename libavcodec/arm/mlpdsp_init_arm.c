@@ -1,6 +1,6 @@
 /*
- * MLP codec common header file
- * Copyright (c) 2007-2008 Ian Caulfield
+ * Copyright (c) 2014 RISC OS Open Ltd
+ * Author: Ben Avison <bavison@riscosopen.org>
  *
  * This file is part of FFmpeg.
  *
@@ -19,20 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_MLPDSP_H
-#define AVCODEC_MLPDSP_H
-
 #include <stdint.h>
 
-typedef struct MLPDSPContext {
-    void (*mlp_filter_channel)(int32_t *state, const int32_t *coeff,
+#include "libavutil/arm/cpu.h"
+#include "libavutil/attributes.h"
+#include "libavcodec/mlpdsp.h"
+
+void ff_mlp_filter_channel_arm(int32_t *state, const int32_t *coeff,
                                int firorder, int iirorder,
                                unsigned int filter_shift, int32_t mask,
                                int blocksize, int32_t *sample_buffer);
-} MLPDSPContext;
 
-void ff_mlpdsp_init(MLPDSPContext *c);
-void ff_mlpdsp_init_arm(MLPDSPContext *c);
-void ff_mlpdsp_init_x86(MLPDSPContext *c);
-
-#endif /* AVCODEC_MLPDSP_H */
+av_cold void ff_mlpdsp_init_arm(MLPDSPContext *c)
+{
+    c->mlp_filter_channel = ff_mlp_filter_channel_arm;
+}
