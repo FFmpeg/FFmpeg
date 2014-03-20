@@ -95,9 +95,9 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     pic_param->TRD                                      = s->pp_time;
 
     if (s->pict_type == AV_PICTURE_TYPE_B)
-        pic_param->backward_reference_picture = ff_vaapi_get_surface_id(&s->next_picture);
+        pic_param->backward_reference_picture = ff_vaapi_get_surface_id(&s->next_picture.f);
     if (s->pict_type != AV_PICTURE_TYPE_I)
-        pic_param->forward_reference_picture  = ff_vaapi_get_surface_id(&s->last_picture);
+        pic_param->forward_reference_picture  = ff_vaapi_get_surface_id(&s->last_picture.f);
 
     /* Fill in VAIQMatrixBufferMPEG4 */
     /* Only the first inverse quantisation method uses the weighting matrices */
