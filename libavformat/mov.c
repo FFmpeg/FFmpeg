@@ -2857,6 +2857,7 @@ static int mov_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int err;
     MOVAtom atom = { AV_RL32("root") };
+    int i;
 
     mov->fc = s;
     /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
@@ -2881,8 +2882,19 @@ static int mov_read_header(AVFormatContext *s)
     if (pb->seekable && mov->chapter_track > 0)
         mov_read_chapters(s);
 
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        MOVStreamContext *sc = st->priv_data;
+
+        if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            if (st->codec->width <= 0 && st->codec->width <= 0) {
+                st->codec->width  = sc->width;
+                st->codec->height = sc->height;
+            }
+        }
+    }
+
     if (mov->trex_data) {
-        int i;
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             MOVStreamContext *sc = st->priv_data;
