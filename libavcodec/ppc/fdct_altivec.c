@@ -259,11 +259,10 @@ void ff_fdct_altivec(int16_t *block)
 #undef MERGE_S16
     /* }}} */
 
+    /* Some of the initial calculations can be done as vector short
+     * before conversion to vector float.  The following code section
+     * takes advantage of this. */
 
-/* Some of the initial calculations can be done as vector short before
- * conversion to vector float.  The following code section takes advantage
- * of this.
- */
     /* fdct rows {{{ */
     x0 = ((vector float)vec_add(vs16(b00), vs16(b70)));
     x7 = ((vector float)vec_sub(vs16(b00), vs16(b70)));

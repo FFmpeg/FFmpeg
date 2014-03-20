@@ -27,12 +27,12 @@
 #include "libavcodec/fft.h"
 
 /**
- * Do a complex FFT with the parameters defined in ff_fft_init(). The
- * input data must be permuted before with s->revtab table. No
- * 1.0/sqrt(n) normalization is done.
- * AltiVec-enabled
- * This code assumes that the 'z' pointer is 16 bytes-aligned
- * It also assumes all FFTComplex are 8 bytes-aligned pair of float
+ * Do a complex FFT with the parameters defined in ff_fft_init().
+ * The input data must be permuted before with s->revtab table.
+ * No 1.0 / sqrt(n) normalization is done.
+ * AltiVec-enabled:
+ * This code assumes that the 'z' pointer is 16 bytes-aligned.
+ * It also assumes all FFTComplex are 8 bytes-aligned pairs of floats.
  */
 
 void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);

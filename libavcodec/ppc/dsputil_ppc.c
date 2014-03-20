@@ -32,24 +32,23 @@
 
 /* ***** WARNING ***** WARNING ***** WARNING ***** */
 /*
-clear_blocks_dcbz32_ppc will not work properly on PowerPC processors with a
-cache line size not equal to 32 bytes.
-Fortunately all processor used by Apple up to at least the 7450 (aka second
-generation G4) use 32 bytes cache line.
-This is due to the use of the 'dcbz' instruction. It simply clear to zero a
-single cache line, so you need to know the cache line size to use it !
-It's absurd, but it's fast...
-
-update 24/06/2003 : Apple released yesterday the G5, with a PPC970. cache line
-size: 128 bytes. Oups.
-The semantic of dcbz was changed, it always clear 32 bytes. so the function
-below will work, but will be slow. So I fixed check_dcbz_effect to use dcbzl,
-which is defined to clear a cache line (as dcbz before). So we still can
-distinguish, and use dcbz (32 bytes) or dcbzl (one cache line) as required.
-
-see <http://developer.apple.com/technotes/tn/tn2087.html>
-and <http://developer.apple.com/technotes/tn/tn2086.html>
-*/
+ * clear_blocks_dcbz32_ppc will not work properly on PowerPC processors with
+ * a cache line size not equal to 32 bytes. Fortunately all processors used
+ * by Apple up to at least the 7450 (AKA second generation G4) use 32-byte
+ * cache lines. This is due to the use of the 'dcbz' instruction. It simply
+ * clears a single cache line to zero, so you need to know the cache line
+ * size to use it! It's absurd, but it's fast...
+ *
+ * update 24/06/2003: Apple released the G5 yesterday, with a PPC970.
+ * cache line size: 128 bytes. Oups.
+ * The semantics of dcbz was changed, it always clears 32 bytes. So the function
+ * below will work, but will be slow. So I fixed check_dcbz_effect to use dcbzl,
+ * which is defined to clear a cache line (as dcbz before). So we can still
+ * distinguish, and use dcbz (32 bytes) or dcbzl (one cache line) as required.
+ *
+ * see <http://developer.apple.com/technotes/tn/tn2087.html>
+ * and <http://developer.apple.com/technotes/tn/tn2086.html>
+ */
 static void clear_blocks_dcbz32_ppc(int16_t *blocks)
 {
     register int misal = ((unsigned long)blocks & 0x00000010);
@@ -73,17 +72,17 @@ static void clear_blocks_dcbz32_ppc(int16_t *blocks)
     }
 }
 
-/* same as above, when dcbzl clear a whole 128B cache line
-   i.e. the PPC970 aka G5 */
+/* Same as above, when dcbzl clears a whole 128 bytes cache line
+ * i.e. the PPC970 AKA G5. */
 #if HAVE_DCBZL
 static void clear_blocks_dcbz128_ppc(int16_t *blocks)
 {
     register int misal = ((unsigned long)blocks & 0x0000007f);
     register int i = 0;
     if (misal) {
-        // we could probably also optimize this case,
-        // but there's not much point as the machines
-        // aren't available yet (2003-06-26)
+        /* We could probably also optimize this case,
+         * but there's not much point as the machines
+         * aren't available yet (2003-06-26). */
         memset(blocks, 0, sizeof(int16_t)*6*64);
     }
     else
@@ -99,11 +98,10 @@ static void clear_blocks_dcbz128_ppc(int16_t *blocks)
 #endif
 
 #if HAVE_DCBZL
-/* check dcbz report how many bytes are set to 0 by dcbz */
-/* update 24/06/2003 : replace dcbz by dcbzl to get
-   the intended effect (Apple "fixed" dcbz)
-   unfortunately this cannot be used unless the assembler
-   knows about dcbzl ... */
+/* Check dcbz report how many bytes are set to 0 by dcbz. */
+/* update 24/06/2003: Replace dcbz by dcbzl to get the intended effect
+ * (Apple "fixed" dcbz). Unfortunately this cannot be used unless the
+ * assembler knows about dcbzl ... */
 static long check_dcbzl_effect(void)
 {
     register char *fakedata = av_malloc(1024);
@@ -120,8 +118,8 @@ static long check_dcbzl_effect(void)
 
     memset(fakedata, 0xFF, 1024);
 
-    /* below the constraint "b" seems to mean "Address base register"
-       in gcc-3.3 / RS/6000 speaks. seems to avoid using r0, so.... */
+    /* Below the constraint "b" seems to mean "address base register"
+     * in gcc-3.3 / RS/6000 speaks. Seems to avoid using r0, so.... */
     __asm__ volatile("dcbzl %0, %1" : : "b" (fakedata_middle), "r" (zero));
 
     for (i = 0; i < 1024 ; i ++) {
@@ -145,7 +143,7 @@ av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx)
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
     int mm_flags = av_get_cpu_flags();
 
-    // Common optimizations whether AltiVec is available or not
+    // common optimizations whether AltiVec is available or not
     if (!high_bit_depth) {
     switch (check_dcbzl_effect()) {
         case 32:
