@@ -303,13 +303,18 @@ static void sub2video_flush(InputStream *ist)
 
 /* end of sub2video hack */
 
-void term_exit(void)
+static void term_exit_sigsafe(void)
 {
-    av_log(NULL, AV_LOG_QUIET, "%s", "");
 #if HAVE_TERMIOS_H
     if(restore_tty)
         tcsetattr (0, TCSANOW, &oldtty);
 #endif
+}
+
+void term_exit(void)
+{
+    av_log(NULL, AV_LOG_QUIET, "%s", "");
+    term_exit_sigsafe();
 }
 
 static volatile int received_sigterm = 0;
@@ -321,7 +326,7 @@ sigterm_handler(int sig)
 {
     received_sigterm = sig;
     received_nb_signals++;
-    term_exit();
+    term_exit_sigsafe();
     if(received_nb_signals > 3)
         exit_program(123);
 }
