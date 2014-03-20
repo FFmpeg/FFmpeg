@@ -34,14 +34,22 @@
 #    define FELEML double
 #    define OUT(d, v) d = v
 
-#elif defined(TEMPLATE_RESAMPLE_FLT)
-#    define RENAME(N) N ## _float
+#elif    defined(TEMPLATE_RESAMPLE_FLT)     \
+      || defined(TEMPLATE_RESAMPLE_FLT_SSE)
+
 #    define FILTER_SHIFT 0
 #    define DELEM  float
 #    define FELEM  float
 #    define FELEM2 float
 #    define FELEML float
 #    define OUT(d, v) d = v
+
+#    if defined(TEMPLATE_RESAMPLE_FLT)
+#        define RENAME(N) N ## _float
+#    elif defined(TEMPLATE_RESAMPLE_FLT_SSE)
+#        define COMMON_CORE COMMON_CORE_FLT_SSE
+#        define RENAME(N) N ## _float_sse
+#    endif
 
 #elif defined(TEMPLATE_RESAMPLE_S32)
 #    define RENAME(N) N ## _int32
