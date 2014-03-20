@@ -57,9 +57,42 @@ static void mlp_filter_channel(int32_t *state, const int32_t *coeff,
     }
 }
 
+void ff_mlp_rematrix_channel(int32_t *samples,
+                             const int32_t *coeffs,
+                             const uint8_t *bypassed_lsbs,
+                             const int8_t *noise_buffer,
+                             int index,
+                             unsigned int dest_ch,
+                             uint16_t blockpos,
+                             unsigned int maxchan,
+                             int matrix_noise_shift,
+                             int access_unit_size_pow2,
+                             int32_t mask)
+{
+    unsigned int src_ch, i;
+    int index2 = 2 * index + 1;
+    for (i = 0; i < blockpos; i++) {
+        int64_t accum = 0;
+
+        for (src_ch = 0; src_ch <= maxchan; src_ch++)
+            accum += (int64_t) samples[src_ch] * coeffs[src_ch];
+
+        if (matrix_noise_shift) {
+            index &= access_unit_size_pow2 - 1;
+            accum += noise_buffer[index] << (matrix_noise_shift + 7);
+            index += index2;
+        }
+
+        samples[dest_ch] = ((accum >> 14) & mask) + *bypassed_lsbs;
+        bypassed_lsbs += MAX_CHANNELS;
+        samples += MAX_CHANNELS;
+    }
+}
+
 av_cold void ff_mlpdsp_init(MLPDSPContext *c)
 {
     c->mlp_filter_channel = mlp_filter_channel;
+    c->mlp_rematrix_channel = ff_mlp_rematrix_channel;
     if (ARCH_ARM)
         ff_mlpdsp_init_arm(c);
     if (ARCH_X86)
