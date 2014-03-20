@@ -322,6 +322,7 @@ void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
  */
 #define AV_LOG_SKIP_REPEATED 1
 void av_log_set_flags(int arg);
+int av_log_get_flags(void);
 
 /**
  * @}

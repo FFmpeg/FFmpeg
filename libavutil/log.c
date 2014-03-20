@@ -345,6 +345,11 @@ void av_log_set_flags(int arg)
     flags = arg;
 }
 
+int av_log_get_flags(void)
+{
+    return flags;
+}
+
 void av_log_set_callback(void (*callback)(void*, int, const char*, va_list))
 {
     av_log_callback = callback;
