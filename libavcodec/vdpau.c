@@ -45,12 +45,10 @@ AVVDPAUContext *av_alloc_vdpaucontext(void)
 
 MAKE_ACCESSORS(AVVDPAUContext, vdpau_hwaccel, AVVDPAU_Render2, render2)
 
-int ff_vdpau_common_start_frame(Picture *pic,
+int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic_ctx,
                                 av_unused const uint8_t *buffer,
                                 av_unused uint32_t size)
 {
-    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
-
     pic_ctx->bitstream_buffers_allocated = 0;
     pic_ctx->bitstream_buffers_used      = 0;
     pic_ctx->bitstream_buffers           = NULL;
@@ -100,9 +98,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 }
 #endif
 
-int ff_vdpau_add_buffer(Picture *pic, const uint8_t *buf, uint32_t size)
+int ff_vdpau_add_buffer(struct vdpau_picture_context *pic_ctx,
+                        const uint8_t *buf, uint32_t size)
 {
-    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     VdpBitstreamBuffer *buffers = pic_ctx->bitstream_buffers;
 
     buffers = av_fast_realloc(buffers, &pic_ctx->bitstream_buffers_allocated,

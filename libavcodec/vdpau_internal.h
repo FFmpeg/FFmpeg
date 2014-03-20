@@ -77,10 +77,11 @@ struct vdpau_picture_context {
 };
 #endif
 
-int ff_vdpau_common_start_frame(Picture *pic,
+int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic,
                                 const uint8_t *buffer, uint32_t size);
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx);
-int ff_vdpau_add_buffer(Picture *pic, const uint8_t *buf, uint32_t buf_size);
+int ff_vdpau_add_buffer(struct vdpau_picture_context *pic, const uint8_t *buf,
+                        uint32_t buf_size);
 
 
 void ff_vdpau_add_data_chunk(uint8_t *data, const uint8_t *buf,
