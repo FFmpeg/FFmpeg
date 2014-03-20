@@ -27,7 +27,7 @@ static inline void FUNCC(OPNAME ## _pixels2)(uint8_t *block,            \
 {                                                                       \
     int i;                                                              \
     for (i = 0; i < h; i++) {                                           \
-        OP(*((pixel2 *) (block)), AV_RN2P(pixels));                     \
+        OP(*((pixel2 *) block), AV_RN2P(pixels));                       \
         pixels += line_size;                                            \
         block  += line_size;                                            \
     }                                                                   \
@@ -40,7 +40,7 @@ static inline void FUNCC(OPNAME ## _pixels4)(uint8_t *block,            \
 {                                                                       \
     int i;                                                              \
     for (i = 0; i < h; i++) {                                           \
-        OP(*((pixel4 *) (block)), AV_RN4P(pixels));                     \
+        OP(*((pixel4 *) block), AV_RN4P(pixels));                       \
         pixels += line_size;                                            \
         block  += line_size;                                            \
     }                                                                   \
@@ -53,7 +53,7 @@ static inline void FUNCC(OPNAME ## _pixels8)(uint8_t *block,            \
 {                                                                       \
     int i;                                                              \
     for (i = 0; i < h; i++) {                                           \
-        OP(*((pixel4 *) (block)), AV_RN4P(pixels));                     \
+        OP(*((pixel4 *) block), AV_RN4P(pixels));                       \
         OP(*((pixel4 *) (block + 4 * sizeof(pixel))),                   \
            AV_RN4P(pixels + 4 * sizeof(pixel)));                        \
         pixels += line_size;                                            \
