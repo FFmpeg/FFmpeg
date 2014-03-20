@@ -162,7 +162,7 @@ static int vdpau_h264_start_frame(AVCodecContext *avctx,
 
     vdpau_h264_set_reference_frames(avctx);
 
-    return ff_vdpau_common_start_frame(pic, buffer, size);
+    return ff_vdpau_common_start_frame(pic_ctx, buffer, size);
 }
 
 static const uint8_t start_code_prefix[3] = { 0x00, 0x00, 0x01 };
@@ -175,11 +175,11 @@ static int vdpau_h264_decode_slice(AVCodecContext *avctx,
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     int val;
 
-    val = ff_vdpau_add_buffer(pic, start_code_prefix, 3);
+    val = ff_vdpau_add_buffer(pic_ctx, start_code_prefix, 3);
     if (val)
         return val;
 
-    val = ff_vdpau_add_buffer(pic, buffer, size);
+    val = ff_vdpau_add_buffer(pic_ctx, buffer, size);
     if (val)
         return val;
 

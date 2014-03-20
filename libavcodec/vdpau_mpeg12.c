@@ -75,7 +75,7 @@ static int vdpau_mpeg_start_frame(AVCodecContext *avctx,
         info->non_intra_quantizer_matrix[i] = s->inter_matrix[i];
     }
 
-    return ff_vdpau_common_start_frame(pic, buffer, size);
+    return ff_vdpau_common_start_frame(pic_ctx, buffer, size);
 }
 
 static int vdpau_mpeg_decode_slice(AVCodecContext *avctx,
@@ -86,7 +86,7 @@ static int vdpau_mpeg_decode_slice(AVCodecContext *avctx,
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     int val;
 
-    val = ff_vdpau_add_buffer(pic, buffer, size);
+    val = ff_vdpau_add_buffer(pic_ctx, buffer, size);
     if (val < 0)
         return val;
 
