@@ -360,6 +360,10 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
         m->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     else
         m->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    m->dsp.mlp_pack_output = m->dsp.mlp_select_pack_output(m->substream[m->max_decoded_substream].ch_assign,
+                                                           m->substream[m->max_decoded_substream].output_shift,
+                                                           m->substream[m->max_decoded_substream].max_matrix_channel,
+                                                           m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
 
     m->params_valid = 1;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
@@ -588,6 +592,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (substr == m->max_decoded_substream) {
         m->avctx->channels       = s->max_matrix_channel + 1;
         m->avctx->channel_layout = s->ch_layout;
+        m->dsp.mlp_pack_output = m->dsp.mlp_select_pack_output(s->ch_assign,
+                                                               s->output_shift,
+                                                               s->max_matrix_channel,
+                                                               m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
     }
 
     return 0;
@@ -818,9 +826,15 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
                 return ret;
 
     if (s->param_presence_flags & PARAM_OUTSHIFT)
-        if (get_bits1(gbp))
+        if (get_bits1(gbp)) {
             for (ch = 0; ch <= s->max_matrix_channel; ch++)
                 s->output_shift[ch] = get_sbits(gbp, 4);
+            if (substr == m->max_decoded_substream)
+                m->dsp.mlp_pack_output = m->dsp.mlp_select_pack_output(s->ch_assign,
+                                                                       s->output_shift,
+                                                                       s->max_matrix_channel,
+                                                                       m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
+        }
 
     if (s->param_presence_flags & PARAM_QUANTSTEP)
         if (get_bits1(gbp))
@@ -1019,9 +1033,6 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
 {
     AVCodecContext *avctx = m->avctx;
     SubStream *s = &m->substream[substr];
-    unsigned int i, out_ch = 0;
-    int32_t *data_32;
-    int16_t *data_16;
     int ret;
     int is32 = (m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
 
@@ -1041,19 +1052,14 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    data_32 = (int32_t *)frame->data[0];
-    data_16 = (int16_t *)frame->data[0];
-
-    for (i = 0; i < s->blockpos; i++) {
-        for (out_ch = 0; out_ch <= s->max_matrix_channel; out_ch++) {
-            int mat_ch = s->ch_assign[out_ch];
-            int32_t sample = m->sample_buffer[i][mat_ch]
-                          << s->output_shift[mat_ch];
-            s->lossless_check_data ^= (sample & 0xffffff) << mat_ch;
-            if (is32) *data_32++ = sample << 8;
-            else      *data_16++ = sample >> 8;
-        }
-    }
+    s->lossless_check_data = m->dsp.mlp_pack_output(s->lossless_check_data,
+                                                    s->blockpos,
+                                                    m->sample_buffer,
+                                                    frame->data[0],
+                                                    s->ch_assign,
+                                                    s->output_shift,
+                                                    s->max_matrix_channel,
+                                                    is32);
 
     /* Update matrix encoding side data */
     if ((ret = ff_side_data_update_matrix_encoding(frame, s->matrix_encoding)) < 0)
