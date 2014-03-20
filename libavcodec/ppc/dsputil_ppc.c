@@ -74,9 +74,9 @@ static void clear_blocks_dcbz32_ppc(int16_t *blocks)
 
 /* Same as above, when dcbzl clears a whole 128 bytes cache line
  * i.e. the PPC970 AKA G5. */
-#if HAVE_DCBZL
 static void clear_blocks_dcbz128_ppc(int16_t *blocks)
 {
+#if HAVE_DCBZL
     register int misal = (unsigned long) blocks & 0x0000007f;
     register int i = 0;
 
@@ -89,26 +89,23 @@ static void clear_blocks_dcbz128_ppc(int16_t *blocks)
         for (; i < sizeof(int16_t) * 6 * 64; i += 128)
             __asm__ volatile ("dcbzl %0,%1" :: "b" (blocks), "r" (i) : "memory");
     }
-}
 #else
-static void clear_blocks_dcbz128_ppc(int16_t *blocks)
-{
     memset(blocks, 0, sizeof(int16_t) * 6 * 64);
-}
 #endif
+}
 
-#if HAVE_DCBZL
 /* Check dcbz report how many bytes are set to 0 by dcbz. */
 /* update 24/06/2003: Replace dcbz by dcbzl to get the intended effect
  * (Apple "fixed" dcbz). Unfortunately this cannot be used unless the
  * assembler knows about dcbzl ... */
 static long check_dcbzl_effect(void)
 {
+    long count = 0;
+#if HAVE_DCBZL
     register char *fakedata = av_malloc(1024);
     register char *fakedata_middle;
     register long zero = 0;
     register long i = 0;
-    long count = 0;
 
     if (!fakedata)
         return 0L;
@@ -126,15 +123,10 @@ static long check_dcbzl_effect(void)
             count++;
 
     av_free(fakedata);
+#endif
 
     return count;
 }
-#else
-static long check_dcbzl_effect(void)
-{
-    return 0;
-}
-#endif
 
 av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx)
 {
