@@ -191,7 +191,7 @@ static vector float fdctconsts[3] = {
 void ff_fdct_altivec(int16_t *block)
 {
     vector signed short *bp;
-    vector float *cp;
+    vector float *cp = fdctconsts;
     vector float b00, b10, b20, b30, b40, b50, b60, b70;
     vector float b01, b11, b21, b31, b41, b51, b61, b71;
     vector float mzero, cnst, cnsts0, cnsts1, cnsts2;
@@ -201,7 +201,6 @@ void ff_fdct_altivec(int16_t *block)
     /* mzero = -0.0 */
     mzero  = ((vector float) vec_splat_u32(-1));
     mzero  = ((vector float) vec_sl(vu32(mzero), vu32(mzero)));
-    cp     = fdctconsts;
     cnsts0 = vec_ld(0, cp);
     cp++;
     cnsts1 = vec_ld(0, cp);
