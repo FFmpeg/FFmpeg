@@ -1024,7 +1024,7 @@ static void fill_noise_buffer(MLPDecodeContext *m, unsigned int substr)
 static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
 {
     SubStream *s = &m->substream[substr];
-    unsigned int mat, src_ch, i;
+    unsigned int mat;
     unsigned int maxchan;
 
     maxchan = s->max_matrix_channel;
@@ -1036,31 +1036,18 @@ static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
     }
 
     for (mat = 0; mat < s->num_primitive_matrices; mat++) {
-        int matrix_noise_shift = s->matrix_noise_shift[mat];
         unsigned int dest_ch = s->matrix_out_ch[mat];
-        int32_t mask = MSB_MASK(s->quant_step_size[dest_ch]);
-        int32_t *coeffs = s->matrix_coeff[mat];
-        int index  = s->num_primitive_matrices - mat;
-        int index2 = 2 * index + 1;
-
-        /* TODO: DSPContext? */
-
-        for (i = 0; i < s->blockpos; i++) {
-            int32_t bypassed_lsb = m->bypassed_lsbs[i][mat];
-            int32_t *samples = m->sample_buffer[i];
-            int64_t accum = 0;
-
-            for (src_ch = 0; src_ch <= maxchan; src_ch++)
-                accum += (int64_t) samples[src_ch] * coeffs[src_ch];
-
-            if (matrix_noise_shift) {
-                index &= m->access_unit_size_pow2 - 1;
-                accum += m->noise_buffer[index] << (matrix_noise_shift + 7);
-                index += index2;
-            }
-
-            samples[dest_ch] = ((accum >> 14) & mask) + bypassed_lsb;
-        }
+        m->dsp.mlp_rematrix_channel(&m->sample_buffer[0][0],
+                                    s->matrix_coeff[mat],
+                                    &m->bypassed_lsbs[0][mat],
+                                    m->noise_buffer,
+                                    s->num_primitive_matrices - mat,
+                                    dest_ch,
+                                    s->blockpos,
+                                    maxchan,
+                                    s->matrix_noise_shift[mat],
+                                    m->access_unit_size_pow2,
+                                    MSB_MASK(s->quant_step_size[dest_ch]));
     }
 }
 

@@ -24,11 +24,34 @@
 
 #include <stdint.h>
 
+void ff_mlp_rematrix_channel(int32_t *samples,
+                             const int32_t *coeffs,
+                             const uint8_t *bypassed_lsbs,
+                             const int8_t *noise_buffer,
+                             int index,
+                             unsigned int dest_ch,
+                             uint16_t blockpos,
+                             unsigned int maxchan,
+                             int matrix_noise_shift,
+                             int access_unit_size_pow2,
+                             int32_t mask);
+
 typedef struct MLPDSPContext {
     void (*mlp_filter_channel)(int32_t *state, const int32_t *coeff,
                                int firorder, int iirorder,
                                unsigned int filter_shift, int32_t mask,
                                int blocksize, int32_t *sample_buffer);
+    void (*mlp_rematrix_channel)(int32_t *samples,
+                                 const int32_t *coeffs,
+                                 const uint8_t *bypassed_lsbs,
+                                 const int8_t *noise_buffer,
+                                 int index,
+                                 unsigned int dest_ch,
+                                 uint16_t blockpos,
+                                 unsigned int maxchan,
+                                 int matrix_noise_shift,
+                                 int access_unit_size_pow2,
+                                 int32_t mask);
 } MLPDSPContext;
 
 void ff_mlpdsp_init(MLPDSPContext *c);
