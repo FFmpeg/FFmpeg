@@ -209,8 +209,8 @@ hadamard8x8_diff %+ SUFFIX:
 hadamard8_16_wrapper %1, 3
 %elif cpuflag(mmx)
 ALIGN 16
-; int ff_hadamard8_diff_ ## cpu(void *s, uint8_t *src1, uint8_t *src2,
-;                               int stride, int h)
+; int ff_hadamard8_diff_ ## cpu(MpegEncContext *s, uint8_t *src1,
+;                               uint8_t *src2, int stride, int h)
 ; r0 = void *s = unused, int h = unused (always 8)
 ; note how r1, r2 and r3 are not clobbered in this function, so 16x16
 ; can simply call this 2x2x (and that's why we access rsp+gprsize
@@ -275,7 +275,8 @@ INIT_XMM ssse3
 HADAMARD8_DIFF 9
 
 INIT_XMM sse2
-; int ff_sse16_sse2(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+; int ff_sse16_sse2(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+;                   int line_size, int h);
 cglobal sse16, 5, 5, 8
     shr      r4d, 1
     pxor      m0, m0         ; mm0 = 0

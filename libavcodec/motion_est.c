@@ -286,7 +286,9 @@ static int cmp_qpel(MpegEncContext *s, const int x, const int y, const int subx,
 
 #include "motion_est_template.c"
 
-static int zero_cmp(void *s, uint8_t *a, uint8_t *b, int stride, int h){
+static int zero_cmp(MpegEncContext *s, uint8_t *a, uint8_t *b,
+                    int stride, int h)
+{
     return 0;
 }
 
