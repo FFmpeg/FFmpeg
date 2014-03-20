@@ -4309,7 +4309,8 @@ EOF
     # check whether xmm clobbers are supported
     check_inline_asm xmm_clobbers '"":::"%xmm0"'
 
-    check_inline_asm inline_asm_direct_symbol_refs '"movl test, %eax"'
+    check_inline_asm inline_asm_direct_symbol_refs '"movl '$extern_prefix'test, %eax"' ||
+        check_inline_asm inline_asm_direct_symbol_refs '"movl '$extern_prefix'test(%rip), %eax"'
 
     # check whether binutils is new enough to compile SSSE3/MMXEXT
     enabled ssse3  && check_inline_asm ssse3_inline  '"pabsw %xmm0, %xmm0"'
