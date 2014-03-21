@@ -46,7 +46,7 @@ void ff_write_pass1_stats(MpegEncContext *s)
 {
     snprintf(s->avctx->stats_out, 256,
              "in:%d out:%d type:%d q:%d itex:%d ptex:%d mv:%d misc:%d "
-             "fcode:%d bcode:%d mc-var:%d var:%d icount:%d skipcount:%d hbits:%d;\n",
+             "fcode:%d bcode:%d mc-var:%"PRId64" var:%"PRId64" icount:%d skipcount:%d hbits:%d;\n",
              s->current_picture_ptr->f.display_picture_number,
              s->current_picture_ptr->f.coded_picture_number,
              s->pict_type,
@@ -879,7 +879,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     if (s->avctx->debug & FF_DEBUG_RC) {
         av_log(s->avctx, AV_LOG_DEBUG,
                "%c qp:%d<%2.1f<%d %d want:%d total:%d comp:%f st_q:%2.2f "
-               "size:%d var:%d/%d br:%d fps:%d\n",
+               "size:%d var:%"PRId64"/%"PRId64" br:%d fps:%d\n",
                av_get_picture_type_char(pict_type),
                qmin, q, qmax, picture_number,
                (int)wanted_bits / 1000, (int)s->total_bits / 1000,
