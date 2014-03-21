@@ -262,7 +262,7 @@ static void decode_qlogs(SnowContext *s){
     tmp= get_symbol(&s->c, s->header_state, 0);\
     if(!(check)){\
         av_log(s->avctx, AV_LOG_ERROR, "Error " #dst " is %d\n", tmp);\
-        return -1;\
+        return AVERROR_INVALIDDATA;\
     }\
     dst= tmp;
 
@@ -332,7 +332,7 @@ static int decode_header(SnowContext *s){
                 p->diag_mc= get_rac(&s->c, s->header_state);
                 htaps= get_symbol(&s->c, s->header_state, 0)*2 + 2;
                 if((unsigned)htaps > HTAPS_MAX || htaps==0)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 p->htaps= htaps;
                 for(i= htaps/2; i; i--){
                     p->hcoeff[i]= get_symbol(&s->c, s->header_state, 0) * (1-2*(i&1));
@@ -353,12 +353,12 @@ static int decode_header(SnowContext *s){
     s->spatial_decomposition_type+= get_symbol(&s->c, s->header_state, 1);
     if(s->spatial_decomposition_type > 1U){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_type %d not supported\n", s->spatial_decomposition_type);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if(FFMIN(s->avctx-> width>>s->chroma_h_shift,
              s->avctx->height>>s->chroma_v_shift) >> (s->spatial_decomposition_count-1) <= 1){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size\n", s->spatial_decomposition_count);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
 
@@ -369,7 +369,7 @@ static int decode_header(SnowContext *s){
     if(s->block_max_depth > 1 || s->block_max_depth < 0){
         av_log(s->avctx, AV_LOG_ERROR, "block_max_depth= %d is too large\n", s->block_max_depth);
         s->block_max_depth= 0;
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;
