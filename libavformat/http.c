@@ -775,17 +775,14 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
              authstr ? authstr : "",
              proxyauthstr ? "Proxy-" : "", proxyauthstr ? proxyauthstr : "");
 
-    av_freep(&authstr);
-    av_freep(&proxyauthstr);
-
     av_log(h, AV_LOG_DEBUG, "request: %s\n", s->buffer);
 
     if ((err = ffurl_write(s->hd, s->buffer, strlen(s->buffer))) < 0)
-        return err;
+        goto done;
 
     if (s->post_data)
         if ((err = ffurl_write(s->hd, s->post_data, s->post_datalen)) < 0)
-            return err;
+            goto done;
 
     /* init input buffer */
     s->buf_ptr = s->buffer;
@@ -802,15 +799,20 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
          * we've still to send the POST data, but the code calling this
          * function will check http_code after we return. */
         s->http_code = 200;
-        return 0;
+        err = 0;
+        goto done;
     }
 
     /* wait for header */
     err = http_read_header(h, new_location);
     if (err < 0)
-        return err;
+        goto done;
 
-    return (off == s->off) ? 0 : -1;
+    err = (off == s->off) ? 0 : -1;
+done:
+    av_freep(&authstr);
+    av_freep(&proxyauthstr);
+    return err;
 }
 
 
