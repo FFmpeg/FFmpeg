@@ -207,7 +207,7 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             assert(picture_number < rcc->num_entries);
             rce = &rcc->entry[picture_number];
 
-            e += sscanf(p, " in:%*d out:%*d type:%d q:%f itex:%d ptex:%d mv:%d misc:%d fcode:%d bcode:%d mc-var:%d var:%d icount:%d skipcount:%d hbits:%d",
+            e += sscanf(p, " in:%*d out:%*d type:%d q:%f itex:%d ptex:%d mv:%d misc:%d fcode:%d bcode:%d mc-var:%"SCNd64" var:%"SCNd64" icount:%d skipcount:%d hbits:%d",
                         &rce->pict_type, &rce->qscale, &rce->i_tex_bits, &rce->p_tex_bits,
                         &rce->mv_bits, &rce->misc_bits,
                         &rce->f_code, &rce->b_code,
@@ -754,7 +754,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     RateControlEntry local_rce, *rce;
     double bits;
     double rate_factor;
-    int var;
+    int64_t var;
     const int pict_type = s->pict_type;
     Picture * const pic = &s->current_picture;
     emms_c();
@@ -770,8 +770,9 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     fps = get_fps(s->avctx);
     /* update predictors */
     if (picture_number > 2 && !dry_run) {
-        const int last_var = s->last_pict_type == AV_PICTURE_TYPE_I ? rcc->last_mb_var_sum
-                                                                    : rcc->last_mc_mb_var_sum;
+        const int64_t last_var =
+            s->last_pict_type == AV_PICTURE_TYPE_I ? rcc->last_mb_var_sum
+                                                   : rcc->last_mc_mb_var_sum;
         av_assert1(s->frame_bits >= s->stuffing_bits);
         update_predictor(&rcc->pred[s->last_pict_type],
                          rcc->last_qscale,
@@ -818,7 +819,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
             assert(pict_type == rce->new_pict_type);
 
         q = rce->new_qscale / br_compensation;
-        av_dlog(s, "%f %f %f last:%d var:%d type:%d//\n", q, rce->new_qscale,
+        av_dlog(s, "%f %f %f last:%d var:%"PRId64" type:%d//\n", q, rce->new_qscale,
                 br_compensation, s->frame_bits, var, pict_type);
     } else {
         rce->pict_type     =
