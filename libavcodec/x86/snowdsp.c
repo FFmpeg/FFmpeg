@@ -671,6 +671,7 @@ static void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM
              :"+m"(dst8),"+m"(dst_array),"=&r"(tmp)\
              :\
              "rm"((x86_reg)(src_x<<1)),"m"(obmc),"a"(block),"m"(b_h),"m"(src_stride):\
+             XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm4", "%xmm5", "%xmm6", "%xmm7", )\
              "%"REG_c"","%"REG_S"","%"REG_D"","%"REG_d"");
 
 #define snow_inner_add_yblock_sse2_end_8\
