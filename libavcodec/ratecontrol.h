@@ -49,8 +49,8 @@ typedef struct RateControlEntry{
     uint64_t expected_bits;
     int new_pict_type;
     float new_qscale;
-    int mc_mb_var_sum;
-    int mb_var_sum;
+    int64_t mc_mb_var_sum;
+    int64_t mb_var_sum;
     int i_count;
     int skip_count;
     int f_code;
@@ -71,8 +71,8 @@ typedef struct RateControlContext{
     double pass1_wanted_bits;     ///< bits which should have been outputed by the pass1 code (including complexity init)
     double last_qscale;
     double last_qscale_for[5];    ///< last qscale for a specific pict type, used for max_diff & ipb factor stuff
-    int last_mc_mb_var_sum;
-    int last_mb_var_sum;
+    int64_t last_mc_mb_var_sum;
+    int64_t last_mb_var_sum;
     uint64_t i_cplx_sum[5];
     uint64_t p_cplx_sum[5];
     uint64_t mv_bits_sum[5];
