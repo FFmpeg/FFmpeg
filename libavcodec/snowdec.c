@@ -446,8 +446,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     //keyframe flag duplication mess FIXME
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR,
-               "keyframe:%d qlog:%d decomposition_type:%d decomposition_count:%d\n",
-               s->keyframe, s->qlog,
+               "keyframe:%d qlog:%d qbias: %d mvscale: %d "
+               "decomposition_type:%d decomposition_count:%d\n",
+               s->keyframe, s->qlog, s->qbias, s->mv_scale,
                s->spatial_decomposition_type,
                s->spatial_decomposition_count
               );
