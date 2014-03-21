@@ -1100,8 +1100,8 @@ The list of supported options follows.
 
 @table @option
 @item buffer_size=@var{size}
-Set the UDP socket buffer size in bytes. This is used both for the
-receiving and the sending buffer size.
+Set the UDP maximum socket buffer size in bytes. This is used to set either
+the receive or send buffer size, depending on what the socket is used for.
 
 @item localport=@var{port}
 Override the local UDP port to bind with.
