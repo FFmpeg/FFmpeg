@@ -2,7 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
-- compand audio filter
+- libx265 encoder
 - shuffleplanes filter
 
 
@@ -62,7 +62,7 @@ version 10:
 - framepack filter
 - Mirillis FIC video decoder
 - Support DNx444
-- libx265 encoder
+- compand audio filter
 
 
 version 9:
