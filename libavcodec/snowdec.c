@@ -418,8 +418,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
     s->current_picture->pict_type= AV_PICTURE_TYPE_I; //FIXME I vs. P
-    if(decode_header(s)<0)
-        return -1;
+    if ((res = decode_header(s)) < 0)
+        return res;
     if ((res=ff_snow_common_init_after_header(avctx)) < 0)
         return res;
 
@@ -441,8 +441,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     ff_snow_alloc_blocks(s);
 
-    if(ff_snow_frame_start(s) < 0)
-        return -1;
+    if((res = ff_snow_frame_start(s)) < 0)
+        return res;
     //keyframe flag duplication mess FIXME
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR,
