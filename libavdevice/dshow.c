@@ -53,7 +53,7 @@ struct dshow_ctx {
 
     int eof;
 
-    int64_t curbufsize;
+    int64_t curbufsize[2];
     unsigned int video_frame_num;
 
     IMediaControl *control;
@@ -180,16 +180,16 @@ static char *dup_wchar_to_utf8(wchar_t *w)
     return s;
 }
 
-static int shall_we_drop(AVFormatContext *s)
+static int shall_we_drop(AVFormatContext *s, int index)
 {
     struct dshow_ctx *ctx = s->priv_data;
     static const uint8_t dropscore[] = {62, 75, 87, 100};
     const int ndropscores = FF_ARRAY_ELEMS(dropscore);
-    unsigned int buffer_fullness = (ctx->curbufsize*100)/s->max_picture_buffer;
+    unsigned int buffer_fullness = (ctx->curbufsize[index]*100)/s->max_picture_buffer;
 
     if(dropscore[++ctx->video_frame_num%ndropscores] <= buffer_fullness) {
         av_log(s, AV_LOG_ERROR,
-              "real-time buffer %d%% full! frame dropped!\n", buffer_fullness);
+              "real-time buffer[%d] too full (%d%% of size: %d)! frame dropped!\n", index, buffer_fullness, s->max_picture_buffer);
         return 1;
     }
 
@@ -207,7 +207,7 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time)
 
     WaitForSingleObject(ctx->mutex, INFINITE);
 
-    if(shall_we_drop(s))
+    if(shall_we_drop(s, index))
         goto fail;
 
     pktl_next = av_mallocz(sizeof(AVPacketList));
@@ -225,8 +225,7 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time)
 
     for(ppktl = &ctx->pktl ; *ppktl ; ppktl = &(*ppktl)->next);
     *ppktl = pktl_next;
-
-    ctx->curbufsize += buf_size;
+    ctx->curbufsize[index] += buf_size;
 
     SetEvent(ctx->event[1]);
     ReleaseMutex(ctx->mutex);
@@ -944,7 +943,8 @@ static int dshow_read_header(AVFormatContext *avctx)
             goto error;
         }
     }
-
+    ctx->curbufsize[0] = 0;
+    ctx->curbufsize[1] = 0;
     ctx->mutex = CreateMutex(NULL, 0, NULL);
     if (!ctx->mutex) {
         av_log(avctx, AV_LOG_ERROR, "Could not create Mutex\n");
@@ -1038,7 +1038,7 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
             *pkt = pktl->pkt;
             ctx->pktl = ctx->pktl->next;
             av_free(pktl);
-            ctx->curbufsize -= pkt->size;
+            ctx->curbufsize[pkt->stream_index] -= pkt->size;
         }
         ResetEvent(ctx->event[1]);
         ReleaseMutex(ctx->mutex);
