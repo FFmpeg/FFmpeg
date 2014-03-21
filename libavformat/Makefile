@@ -226,6 +226,7 @@ OBJS-$(CONFIG_OGG_MUXER)                 += oggenc.o \
                                             vorbiscomment.o
 OBJS-$(CONFIG_OMA_DEMUXER)               += omadec.o pcm.o oma.o
 OBJS-$(CONFIG_OMA_MUXER)                 += omaenc.o rawenc.o oma.o id3v2enc.o
+OBJS-$(CONFIG_PAF_DEMUXER)               += paf.o
 OBJS-$(CONFIG_PCM_ALAW_DEMUXER)          += pcmdec.o pcm.o
 OBJS-$(CONFIG_PCM_ALAW_MUXER)            += pcmenc.o rawenc.o
 OBJS-$(CONFIG_PCM_F32BE_DEMUXER)         += pcmdec.o pcm.o

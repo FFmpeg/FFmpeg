@@ -1092,6 +1092,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Mirillis FIC"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_PAF_VIDEO,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "paf_video",
+        .long_name = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Video"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* image codecs */
     {
@@ -2219,6 +2226,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "metasound",
         .long_name = NULL_IF_CONFIG_SMALL("Voxware MetaSound"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_PAF_AUDIO,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "paf_audio",
+        .long_name = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Audio"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
 

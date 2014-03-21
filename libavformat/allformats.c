@@ -176,6 +176,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (NUV,              nuv);
     REGISTER_MUXDEMUX(OGG,              ogg);
     REGISTER_MUXDEMUX(OMA,              oma);
+    REGISTER_DEMUXER (PAF,              paf);
     REGISTER_MUXDEMUX(PCM_ALAW,         pcm_alaw);
     REGISTER_MUXDEMUX(PCM_MULAW,        pcm_mulaw);
     REGISTER_MUXDEMUX(PCM_F64BE,        pcm_f64be);
