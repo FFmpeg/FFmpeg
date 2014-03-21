@@ -1502,8 +1502,8 @@ static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
     }
 
     /* ugly, ratecontrol just takes a sqrt again */
-    coef_sum = (uint64_t)coef_sum * coef_sum >> 16;
     av_assert0(coef_sum < INT_MAX);
+    coef_sum = (uint64_t)coef_sum * coef_sum >> 16;
 
     if(pict->pict_type == AV_PICTURE_TYPE_I){
         s->m.current_picture.mb_var_sum= coef_sum;
