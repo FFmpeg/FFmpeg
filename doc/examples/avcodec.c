@@ -375,7 +375,13 @@ static void video_encode_example(const char *filename, int codec_id)
     c->height = 288;
     /* frames per second */
     c->time_base = (AVRational){1,25};
-    c->gop_size = 10; /* emit one intra frame every ten frames */
+    /* emit one intra frame every ten frames
+     * check frame pict_type before passing frame
+     * to encoder, if frame->pict_type is AV_PICTURE_TYPE_I
+     * then gop_size is ignored and the output of encoder
+     * will always be I frame irrespective to gop_size
+     */
+    c->gop_size = 10;
     c->max_b_frames = 1;
     c->pix_fmt = AV_PIX_FMT_YUV420P;
 
