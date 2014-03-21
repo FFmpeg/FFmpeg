@@ -746,7 +746,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
                            "Content-Type: %s\r\n", s->content_type);
     if (!has_header(s->headers, "\r\nCookie: ") && s->cookies) {
         char *cookies = NULL;
-        if (!get_cookies(s, &cookies, path, hoststr)) {
+        if (!get_cookies(s, &cookies, path, hoststr) && cookies) {
             len += av_strlcatf(headers + len, sizeof(headers) - len,
                                "Cookie: %s\r\n", cookies);
             av_free(cookies);
