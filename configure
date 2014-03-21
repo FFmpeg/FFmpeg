@@ -3187,7 +3187,7 @@ probe_cc(){
         _cflags_speed='-fast'
         _cflags_size='-O1'
         _flags_filter=ccc_flags
-    elif $_cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
+    elif $_cc --vsn 2>/dev/null | grep -Eq "ARM C/C[+][+] Compiler|Component: ARM Compiler "; then
         test -d "$sysroot" || die "No valid sysroot specified."
         _type=armcc
         _ident=$($_cc --vsn | head -n1)
