@@ -695,8 +695,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
         }
     } else {
-        /* set udp recv buffer size to the largest possible udp packet size to
-         * avoid losing data on OSes that set this too low by default. */
+        /* set udp recv buffer size to the requested value (default 64K) */
         tmp = s->buffer_size;
         if (setsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, sizeof(tmp)) < 0) {
             log_net_error(h, AV_LOG_WARNING, "setsockopt(SO_RECVBUF)");
@@ -704,8 +703,11 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         len = sizeof(tmp);
         if (getsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, &len) < 0) {
             log_net_error(h, AV_LOG_WARNING, "getsockopt(SO_RCVBUF)");
-        } else
+        } else {
             av_log(h, AV_LOG_DEBUG, "end receive buffer size reported is %d\n", tmp);
+            if(tmp < s->buffer_size)
+                av_log(h, AV_LOG_WARNING, "attempted to set receive buffer to size %d but it only ended up set as %d", s->buffer_size, tmp);
+        }
 
         /* make the socket non-blocking */
         ff_socket_nonblock(udp_fd, 1);
