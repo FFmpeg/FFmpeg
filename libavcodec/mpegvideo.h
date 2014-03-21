@@ -251,8 +251,8 @@ typedef struct MotionEstContext{
     int stride;
     int uvstride;
     /* temp variables for picture complexity calculation */
-    int mc_mb_var_sum_temp;
-    int mb_var_sum_temp;
+    int64_t mc_mb_var_sum_temp;
+    int64_t mb_var_sum_temp;
     int scene_change_score;
 /*    cmp, chroma_cmp;*/
     op_pixels_func (*hpel_put)[4];
