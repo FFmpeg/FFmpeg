@@ -323,7 +323,7 @@ sigterm_handler(int sig)
     received_nb_signals++;
     term_exit();
     if(received_nb_signals > 3)
-        exit_program(123);
+        exit(123);
 }
 
 void term_init(void)
