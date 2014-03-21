@@ -1664,10 +1664,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 redo_frame:
 
-    if (pic->pict_type == AV_PICTURE_TYPE_I)
-        s->spatial_decomposition_count= 5;
-    else
-        s->spatial_decomposition_count= 5;
+    s->spatial_decomposition_count= 5;
 
     while(   !(width >>(s->chroma_h_shift + s->spatial_decomposition_count))
           || !(height>>(s->chroma_v_shift + s->spatial_decomposition_count)))
