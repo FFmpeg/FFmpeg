@@ -25,6 +25,10 @@
  */
 
 #include <string.h>
+
+#include "libavutil/error.h"
+#include "libavutil/mem.h"
+
 #include "avcodec.h"
 #include "mjpeg.h"
 
