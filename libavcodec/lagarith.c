@@ -713,7 +713,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
-               "Unsupported Lagarith frame type: %#"PRIu8"\n", frametype);
+               "Unsupported Lagarith frame type: %#"PRIx8"\n", frametype);
         return AVERROR_PATCHWELCOME;
     }
 
