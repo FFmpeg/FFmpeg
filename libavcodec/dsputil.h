@@ -71,9 +71,6 @@ void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
  * Block sizes for op_pixels_func are 8x4,8x8 16x8 16x16.
  * h for op_pixels_func is limited to { width / 2, width },
  * but never larger than 16 and never smaller than 4. */
-typedef void (*tpel_mc_func)(uint8_t *block /* align width (8 or 16) */,
-                             const uint8_t *pixels /* align 1 */,
-                             int line_size, int w, int h);
 typedef void (*qpel_mc_func)(uint8_t *dst /* align width (8 or 16) */,
                              uint8_t *src /* align 1 */, ptrdiff_t stride);
 
@@ -189,19 +186,6 @@ typedef struct DSPContext {
 
     int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
                              int size);
-
-    /**
-     * Thirdpel motion compensation with rounding (a + b + 1) >> 1.
-     * this is an array[12] of motion compensation functions for the
-     * 9 thirdpel positions<br>
-     * *pixels_tab[xthirdpel + 4 * ythirdpel]
-     * @param block destination where the result is stored
-     * @param pixels source
-     * @param line_size number of bytes in a horizontal line of block
-     * @param h height
-     */
-    tpel_mc_func put_tpel_pixels_tab[11]; // FIXME individual func ptr per width?
-    tpel_mc_func avg_tpel_pixels_tab[11]; // FIXME individual func ptr per width?
 
     qpel_mc_func put_qpel_pixels_tab[2][16];
     qpel_mc_func avg_qpel_pixels_tab[2][16];

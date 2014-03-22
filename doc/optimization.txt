@@ -79,9 +79,6 @@ qpel{8,16}_mc??_old_c / *pixels{8,16}_l4
     Just used to work around a bug in an old libavcodec encoder version.
     Don't optimize them.
 
-tpel_mc_func {put,avg}_tpel_pixels_tab
-    Used only for SVQ3, so only optimize them if you need fast SVQ3 decoding.
-
 add_bytes/diff_bytes
     For huffyuv only, optimize if you want a faster ffhuffyuv codec.
 
