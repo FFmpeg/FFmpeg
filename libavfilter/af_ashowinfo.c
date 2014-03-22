@@ -83,7 +83,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     av_log(ctx, AV_LOG_INFO,
            "n:%"PRId64" pts:%s pts_time:%s pos:%"PRId64" "
            "fmt:%s channels:%d chlayout:%s rate:%d nb_samples:%d "
-           "checksum:%08X ",
+           "checksum:%08"PRIX32" ",
            inlink->frame_count,
            av_ts2str(buf->pts), av_ts2timestr(buf->pts, &inlink->time_base),
            av_frame_get_pkt_pos(buf),
@@ -93,7 +93,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     av_log(ctx, AV_LOG_INFO, "plane_checksums: [ ");
     for (i = 0; i < planes; i++)
-        av_log(ctx, AV_LOG_INFO, "%08X ", s->plane_checksums[i]);
+        av_log(ctx, AV_LOG_INFO, "%08"PRIX32" ", s->plane_checksums[i]);
     av_log(ctx, AV_LOG_INFO, "]\n");
 
     return ff_filter_frame(inlink->dst->outputs[0], buf);
