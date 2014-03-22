@@ -264,7 +264,7 @@ static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
         "punpckhbw %%mm7, %%mm5         \n\t"
         "paddw %%mm4, %%mm2             \n\t"
         "paddw %%mm5, %%mm3             \n\t"
-        "movq 16+"MANGLE(round_tab)", %%mm5 \n\t"
+        "movq %5, %%mm5                 \n\t"
         "paddw %%mm2, %%mm0             \n\t"
         "paddw %%mm3, %%mm1             \n\t"
         "paddw %%mm5, %%mm0             \n\t"
@@ -288,8 +288,7 @@ static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
         " js 1b                         \n\t"
         : "+a" (len)
         : "r" (blk1 - len), "r" (blk1 - len + stride), "r" (blk2 - len),
-          "r" ((x86_reg) stride)
-          NAMED_CONSTRAINTS_ADD(round_tab));
+          "r" ((x86_reg) stride), "m" (round_tab[2]));
 }
 
 static inline int sum_mmx(void)
