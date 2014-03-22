@@ -30,6 +30,7 @@
 #include "libavcodec/cavsdsp.h"
 #include "constants.h"
 #include "dsputil_x86.h"
+#include "fpel.h"
 #include "config.h"
 
 #if HAVE_MMX_INLINE

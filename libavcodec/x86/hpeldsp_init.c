@@ -30,6 +30,7 @@
 #include "libavcodec/hpeldsp.h"
 #include "libavcodec/pixels.h"
 #include "dsputil_x86.h"
+#include "fpel.h"
 
 void ff_put_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);

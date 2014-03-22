@@ -31,6 +31,7 @@
 #include "constants.h"
 #include "diracdsp_mmx.h"
 #include "dsputil_x86.h"
+#include "fpel.h"
 #include "inline_asm.h"
 
 #if HAVE_INLINE_ASM
