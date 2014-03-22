@@ -24,6 +24,8 @@
  * Apple MJPEG-B decoder.
  */
 
+#include <inttypes.h>
+
 #include "avcodec.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
@@ -74,13 +76,14 @@ read_header:
     }
 
     field_size = get_bits_long(&hgb, 32); /* field size */
-    av_log(avctx, AV_LOG_DEBUG, "field size: 0x%x\n", field_size);
+    av_log(avctx, AV_LOG_DEBUG, "field size: 0x%"PRIx32"\n", field_size);
     skip_bits(&hgb, 32); /* padded field size */
     second_field_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "second_field_offs is %d and size is %d\n");
-    av_log(avctx, AV_LOG_DEBUG, "second field offs: 0x%x\n", second_field_offs);
+    av_log(avctx, AV_LOG_DEBUG, "second field offs: 0x%"PRIx32"\n",
+           second_field_offs);
 
     dqt_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "dqt is %d and size is %d\n");
-    av_log(avctx, AV_LOG_DEBUG, "dqt offs: 0x%x\n", dqt_offs);
+    av_log(avctx, AV_LOG_DEBUG, "dqt offs: 0x%"PRIx32"\n", dqt_offs);
     if (dqt_offs)
     {
         init_get_bits(&s->gb, buf_ptr+dqt_offs, (buf_end - (buf_ptr+dqt_offs))*8);
@@ -91,7 +94,7 @@ read_header:
     }
 
     dht_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "dht is %d and size is %d\n");
-    av_log(avctx, AV_LOG_DEBUG, "dht offs: 0x%x\n", dht_offs);
+    av_log(avctx, AV_LOG_DEBUG, "dht offs: 0x%"PRIx32"\n", dht_offs);
     if (dht_offs)
     {
         init_get_bits(&s->gb, buf_ptr+dht_offs, (buf_end - (buf_ptr+dht_offs))*8);
@@ -100,7 +103,7 @@ read_header:
     }
 
     sof_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "sof is %d and size is %d\n");
-    av_log(avctx, AV_LOG_DEBUG, "sof offs: 0x%x\n", sof_offs);
+    av_log(avctx, AV_LOG_DEBUG, "sof offs: 0x%"PRIx32"\n", sof_offs);
     if (sof_offs)
     {
         init_get_bits(&s->gb, buf_ptr+sof_offs, (buf_end - (buf_ptr+sof_offs))*8);
@@ -110,9 +113,9 @@ read_header:
     }
 
     sos_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "sos is %d and size is %d\n");
-    av_log(avctx, AV_LOG_DEBUG, "sos offs: 0x%x\n", sos_offs);
+    av_log(avctx, AV_LOG_DEBUG, "sos offs: 0x%"PRIx32"\n", sos_offs);
     sod_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "sof is %d and size is %d\n");
-    av_log(avctx, AV_LOG_DEBUG, "sod offs: 0x%x\n", sod_offs);
+    av_log(avctx, AV_LOG_DEBUG, "sod offs: 0x%"PRIx32"\n", sod_offs);
     if (sos_offs)
     {
         init_get_bits(&s->gb, buf_ptr + sos_offs,

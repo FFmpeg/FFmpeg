@@ -24,6 +24,8 @@
  * 4XM codec.
  */
 
+#include <inttypes.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
@@ -831,7 +833,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     av_assert0(avctx->width % 16 == 0 && avctx->height % 16 == 0);
 
     if (buf_size < AV_RL32(buf + 4) + 8) {
-        av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n",
+        av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %"PRIu32"\n",
                buf_size, AV_RL32(buf + 4));
         return AVERROR_INVALIDDATA;
     }

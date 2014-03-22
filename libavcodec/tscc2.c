@@ -24,6 +24,8 @@
  * TechSmith Screen Codec 2 decoder
  */
 
+#include <inttypes.h>
+
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
@@ -227,7 +229,8 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
     bytestream2_init(&gb, buf, buf_size);
     frame_type = bytestream2_get_byte(&gb);
     if (frame_type > 1) {
-        av_log(avctx, AV_LOG_ERROR, "Incorrect frame type %d\n", frame_type);
+        av_log(avctx, AV_LOG_ERROR, "Incorrect frame type %"PRIu32"\n",
+               frame_type);
         return AVERROR_INVALIDDATA;
     }
 
@@ -309,7 +312,7 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
         if (bytestream2_get_bytes_left(&gb) < size) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid slice size (%d/%d)\n",
+            av_log(avctx, AV_LOG_ERROR, "Invalid slice size (%"PRIu32"/%u)\n",
                    size, bytestream2_get_bytes_left(&gb));
             return AVERROR_INVALIDDATA;
         }

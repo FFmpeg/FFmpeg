@@ -26,6 +26,8 @@
  * Indeo5 decoders.
  */
 
+#include <inttypes.h>
+
 #define BITSTREAM_READER_LE
 #include "libavutil/attributes.h"
 #include "libavutil/timer.h"
@@ -513,7 +515,7 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
             val = IVI_TOSIGNED((hi << 6) | lo);
         } else {
             if (sym >= 256U) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid sym encountered: %d.\n", sym);
+                av_log(avctx, AV_LOG_ERROR, "Invalid sym encountered: %"PRIu32".\n", sym);
                 return AVERROR_INVALIDDATA;
             }
             run = rvmap->runtab[sym];
@@ -962,7 +964,7 @@ static int decode_band(IVI45DecContext *ctx,
         if (chksum != band->checksum) {
             av_log(avctx, AV_LOG_ERROR,
                    "Band checksum mismatch! Plane %d, band %d, "
-                   "received: %x, calculated: %x\n",
+                   "received: %"PRIx32", calculated: %"PRIx16"\n",
                    band->plane, band->band_num, band->checksum, chksum);
         }
     }

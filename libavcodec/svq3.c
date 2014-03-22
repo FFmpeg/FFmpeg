@@ -40,6 +40,8 @@
  *  http://samples.mplayerhq.hu/V-codecs/SVQ3/Vertical400kbit.sorenson3.mov
  */
 
+#include <inttypes.h>
+
 #include "libavutil/attributes.h"
 #include "internal.h"
 #include "avcodec.h"
@@ -621,7 +623,8 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                 vlc = svq3_get_ue_golomb(&h->gb);
 
                 if (vlc >= 25U) {
-                    av_log(h->avctx, AV_LOG_ERROR, "luma prediction:%d\n", vlc);
+                    av_log(h->avctx, AV_LOG_ERROR,
+                           "luma prediction:%"PRIu32"\n", vlc);
                     return -1;
                 }
 
@@ -690,7 +693,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     if (!IS_INTRA16x16(mb_type) &&
         (!IS_SKIP(mb_type) || h->pict_type == AV_PICTURE_TYPE_B)) {
         if ((vlc = svq3_get_ue_golomb(&h->gb)) >= 48U){
-            av_log(h->avctx, AV_LOG_ERROR, "cbp_vlc=%d\n", vlc);
+            av_log(h->avctx, AV_LOG_ERROR, "cbp_vlc=%"PRIu32"\n", vlc);
             return -1;
         }
 
@@ -812,7 +815,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
     }
 
     if ((slice_id = svq3_get_ue_golomb(&h->gb)) >= 3) {
-        av_log(h->avctx, AV_LOG_ERROR, "illegal slice type %d \n", slice_id);
+        av_log(h->avctx, AV_LOG_ERROR, "illegal slice type %u \n", slice_id);
         return -1;
     }
 
@@ -1001,7 +1004,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             }
 
             buf = av_malloc(buf_len);
-            av_log(avctx, AV_LOG_DEBUG, "watermark size: %dx%d\n",
+            av_log(avctx, AV_LOG_DEBUG, "watermark size: %ux%u\n",
                    watermark_width, watermark_height);
             av_log(avctx, AV_LOG_DEBUG,
                    "u1: %x u2: %x u3: %x compressed data size: %d offset: %d\n",
@@ -1017,7 +1020,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             s->watermark_key = ff_svq1_packet_checksum(buf, buf_len, 0);
             s->watermark_key = s->watermark_key << 16 | s->watermark_key;
             av_log(avctx, AV_LOG_DEBUG,
-                   "watermark key %#x\n", s->watermark_key);
+                   "watermark key %#"PRIx32"\n", s->watermark_key);
             av_free(buf);
 #else
             av_log(avctx, AV_LOG_ERROR,

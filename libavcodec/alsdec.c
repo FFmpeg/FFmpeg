@@ -25,6 +25,8 @@
  * @author Thilo Borgmann <thilo.borgmann _at_ mail.de>
  */
 
+#include <inttypes.h>
+
 #include "avcodec.h"
 #include "get_bits.h"
 #include "unary.h"
@@ -722,7 +724,9 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
                     int offset     = parcor_rice_table[sconf->coef_table][k][0];
                     quant_cof[k] = decode_rice(gb, rice_param) + offset;
                     if (quant_cof[k] < -64 || quant_cof[k] > 63) {
-                        av_log(avctx, AV_LOG_ERROR, "quant_cof %d is out of range.\n", quant_cof[k]);
+                        av_log(avctx, AV_LOG_ERROR,
+                               "quant_cof %"PRIu32" is out of range.\n",
+                               quant_cof[k]);
                         return AVERROR_INVALIDDATA;
                     }
                 }
@@ -1397,7 +1401,8 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
             bd.block_length = div_blocks[b];
             if (bd.block_length <= 0) {
                 av_log(ctx->avctx, AV_LOG_WARNING,
-                       "Invalid block length %d in channel data!\n", bd.block_length);
+                       "Invalid block length %u in channel data!\n",
+                       bd.block_length);
                 continue;
             }
 

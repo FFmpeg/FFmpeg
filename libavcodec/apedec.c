@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
@@ -1469,7 +1471,8 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         if (!nblocks || nblocks > INT_MAX) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
+            av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %"PRIu32".\n",
+                   nblocks);
             return AVERROR_INVALIDDATA;
         }
         s->samples = nblocks;

@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "bmp.h"
@@ -58,7 +60,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
 
     fsize = bytestream_get_le32(&buf);
     if (buf_size < fsize) {
-        av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %d), trying to decode anyway\n",
+        av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %u), trying to decode anyway\n",
                buf_size, fsize);
         fsize = buf_size;
     }
@@ -69,7 +71,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     hsize  = bytestream_get_le32(&buf); /* header size */
     ihsize = bytestream_get_le32(&buf); /* more header size */
     if (ihsize + 14 > hsize) {
-        av_log(avctx, AV_LOG_ERROR, "invalid header size %d\n", hsize);
+        av_log(avctx, AV_LOG_ERROR, "invalid header size %u\n", hsize);
         return AVERROR_INVALIDDATA;
     }
 
@@ -78,7 +80,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         fsize = buf_size - 2;
 
     if (fsize <= hsize) {
-        av_log(avctx, AV_LOG_ERROR, "declared file size is less than header size (%d < %d)\n",
+        av_log(avctx, AV_LOG_ERROR,
+               "Declared file size is less than header size (%u < %u)\n",
                fsize, hsize);
         return AVERROR_INVALIDDATA;
     }
@@ -166,7 +169,9 @@ static int bmp_decode_frame(AVCodecContext *avctx,
             else if (rgb[0] == 0x0F00 && rgb[1] == 0x00F0 && rgb[2] == 0x000F)
                avctx->pix_fmt = AV_PIX_FMT_RGB444;
             else {
-               av_log(avctx, AV_LOG_ERROR, "Unknown bitfields %0X %0X %0X\n", rgb[0], rgb[1], rgb[2]);
+               av_log(avctx, AV_LOG_ERROR,
+                      "Unknown bitfields %0"PRIX32" %0"PRIX32" %0"PRIX32"\n",
+                      rgb[0], rgb[1], rgb[2]);
                return AVERROR(EINVAL);
             }
         }
@@ -182,12 +187,13 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         if (hsize - ihsize - 14 > 0) {
             avctx->pix_fmt = AV_PIX_FMT_PAL8;
         } else {
-            av_log(avctx, AV_LOG_ERROR, "Unknown palette for %d-colour BMP\n", 1<<depth);
+            av_log(avctx, AV_LOG_ERROR, "Unknown palette for %u-colour BMP\n",
+                   1 << depth);
             return AVERROR_INVALIDDATA;
         }
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "depth %d not supported\n", depth);
+        av_log(avctx, AV_LOG_ERROR, "depth %u not supported\n", depth);
         return AVERROR_INVALIDDATA;
     }
 
@@ -235,7 +241,9 @@ static int bmp_decode_frame(AVCodecContext *avctx,
             buf = buf0 + 46;
             t   = bytestream_get_le32(&buf);
             if (t < 0 || t > (1 << depth)) {
-                av_log(avctx, AV_LOG_ERROR, "Incorrect number of colors - %X for bitdepth %d\n", t, depth);
+                av_log(avctx, AV_LOG_ERROR,
+                       "Incorrect number of colors - %X for bitdepth %u\n",
+                       t, depth);
             } else if (t) {
                 colors = t;
             }

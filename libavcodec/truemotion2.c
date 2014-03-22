@@ -24,6 +24,8 @@
  * Duck TrueMotion2 decoder.
  */
 
+#include <inttypes.h>
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "get_bits.h"
@@ -246,7 +248,8 @@ static inline int tm2_read_header(TM2Context *ctx, const uint8_t *buf)
     case TM2_NEW_HEADER_MAGIC:
         return 0;
     default:
-        av_log(ctx->avctx, AV_LOG_ERROR, "Not a TM2 header: 0x%08X\n", magic);
+        av_log(ctx->avctx, AV_LOG_ERROR, "Not a TM2 header: 0x%08"PRIX32"\n",
+               magic);
         return AVERROR_INVALIDDATA;
     }
 }

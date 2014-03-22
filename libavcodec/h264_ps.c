@@ -25,6 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include <inttypes.h>
+
 #include "libavutil/imgutils.h"
 #include "internal.h"
 #include "avcodec.h"
@@ -213,7 +215,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
         sps->time_scale        = get_bits_long(&h->gb, 32);
         if (!sps->num_units_in_tick || !sps->time_scale) {
             av_log(h->avctx, AV_LOG_ERROR,
-                   "time_scale/num_units_in_tick invalid or unsupported (%d/%d)\n",
+                   "time_scale/num_units_in_tick invalid or unsupported (%"PRIu32"/%"PRIu32")\n",
                    sps->time_scale, sps->num_units_in_tick);
             return AVERROR_INVALIDDATA;
         }
@@ -431,7 +433,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
         if ((unsigned)sps->poc_cycle_length >=
             FF_ARRAY_ELEMS(sps->offset_for_ref_frame)) {
             av_log(h->avctx, AV_LOG_ERROR,
-                   "poc_cycle_length overflow %u\n", sps->poc_cycle_length);
+                   "poc_cycle_length overflow %d\n", sps->poc_cycle_length);
             goto fail;
         }
 
@@ -486,7 +488,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
 
         if (h->avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
             av_log(h->avctx, AV_LOG_DEBUG, "discarding sps cropping, original "
-                                           "values are l:%u r:%u t:%u b:%u\n",
+                                           "values are l:%d r:%d t:%d b:%d\n",
                    crop_left, crop_right, crop_top, crop_bottom);
 
             sps->crop_left   =
@@ -546,7 +548,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         static const char csp[4][5] = { "Gray", "420", "422", "444" };
         av_log(h->avctx, AV_LOG_DEBUG,
-               "sps:%u profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s %s %d/%d b%d reo:%d\n",
+               "sps:%u profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%u/%u/%u/%u %s %s %d/%d b%d reo:%d\n",
                sps_id, sps->profile_idc, sps->level_idc,
                sps->poc_type,
                sps->ref_frame_count,
@@ -715,7 +717,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
 
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->avctx, AV_LOG_DEBUG,
-               "pps:%u sps:%u %s slice_groups:%d ref:%d/%d %s qp:%d/%d/%d/%d %s %s %s %s\n",
+               "pps:%u sps:%u %s slice_groups:%d ref:%u/%u %s qp:%d/%d/%d/%d %s %s %s %s\n",
                pps_id, pps->sps_id,
                pps->cabac ? "CABAC" : "CAVLC",
                pps->slice_group_count,

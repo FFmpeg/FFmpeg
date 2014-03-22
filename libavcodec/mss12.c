@@ -23,6 +23,8 @@
  * Common functions for Microsoft Screen 1 and 2
  */
 
+#include <inttypes.h>
+
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
@@ -573,7 +575,7 @@ av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
 
     if (AV_RB32(avctx->extradata) < avctx->extradata_size) {
         av_log(avctx, AV_LOG_ERROR,
-               "Insufficient extradata size: expected %d got %d\n",
+               "Insufficient extradata size: expected %"PRIu32" got %d\n",
                AV_RB32(avctx->extradata),
                avctx->extradata_size);
         return AVERROR_INVALIDDATA;
@@ -592,7 +594,7 @@ av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
         return AVERROR_INVALIDDATA;
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d\n",
+    av_log(avctx, AV_LOG_DEBUG, "Encoder version %"PRIu32".%"PRIu32"\n",
            AV_RB32(avctx->extradata + 4), AV_RB32(avctx->extradata + 8));
     if (version != AV_RB32(avctx->extradata + 4) > 1) {
         av_log(avctx, AV_LOG_ERROR,
@@ -609,13 +611,13 @@ av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
     }
     av_log(avctx, AV_LOG_DEBUG, "%d free colour(s)\n", c->free_colours);
 
-    av_log(avctx, AV_LOG_DEBUG, "Display dimensions %dx%d\n",
+    av_log(avctx, AV_LOG_DEBUG, "Display dimensions %"PRIu32"x%"PRIu32"\n",
            AV_RB32(avctx->extradata + 12), AV_RB32(avctx->extradata + 16));
     av_log(avctx, AV_LOG_DEBUG, "Coded dimensions %dx%d\n",
            avctx->coded_width, avctx->coded_height);
     av_log(avctx, AV_LOG_DEBUG, "%g frames per second\n",
            av_int2float(AV_RB32(avctx->extradata + 28)));
-    av_log(avctx, AV_LOG_DEBUG, "Bitrate %d bps\n",
+    av_log(avctx, AV_LOG_DEBUG, "Bitrate %"PRIu32" bps\n",
            AV_RB32(avctx->extradata + 32));
     av_log(avctx, AV_LOG_DEBUG, "Max. lead time %g ms\n",
            av_int2float(AV_RB32(avctx->extradata + 36)));

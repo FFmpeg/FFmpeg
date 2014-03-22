@@ -25,6 +25,8 @@
  * @author Nathan Caldwell
  */
 
+#include <inttypes.h>
+
 #include "avcodec.h"
 #include "get_bits.h"
 #include "mathops.h"
@@ -460,7 +462,7 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
 
         if (read > length)
             av_log(l->avctx, AV_LOG_WARNING,
-                   "Output more bytes than length (%d of %d)\n", read,
+                   "Output more bytes than length (%d of %"PRIu32")\n", read,
                    length);
     } else if (esc_count < 8) {
         esc_count -= 4;
@@ -711,7 +713,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
-               "Unsupported Lagarith frame type: %#x\n", frametype);
+               "Unsupported Lagarith frame type: %#"PRIu8"\n", frametype);
         return AVERROR_PATCHWELCOME;
     }
 

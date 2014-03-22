@@ -25,6 +25,8 @@
  * JPEG 2000 image decoder
  */
 
+#include <inttypes.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
@@ -446,7 +448,7 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
 
     if (tmp.mct && s->ncomponents < 3) {
         av_log(s->avctx, AV_LOG_ERROR,
-               "MCT %d with too few components (%d)\n",
+               "MCT %"PRIu8" with too few components (%d)\n",
                tmp.mct, s->ncomponents);
         return AVERROR_INVALIDDATA;
     }
@@ -598,12 +600,12 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
     bytestream2_get_byteu(&s->g);               // TNsot
 
     if (Psot > bytestream2_get_bytes_left(&s->g) + n + 2) {
-        av_log(s->avctx, AV_LOG_ERROR, "Psot %d too big\n", Psot);
+        av_log(s->avctx, AV_LOG_ERROR, "Psot %"PRIu32" too big\n", Psot);
         return AVERROR_INVALIDDATA;
     }
 
     if (TPsot >= FF_ARRAY_ELEMS(s->tile[Isot].tile_part)) {
-        avpriv_request_sample(s->avctx, "Support for %d components", TPsot);
+        avpriv_request_sample(s->avctx, "Support for %"PRIu8" components", TPsot);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -808,7 +810,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
                 || sizeof(cblk->data) < cblk->length + cblk->lengthinc + 2
             ) {
                 av_log(s->avctx, AV_LOG_ERROR,
-                       "Block length %d or lengthinc %d is too large\n",
+                       "Block length %"PRIu16" or lengthinc %d is too large\n",
                        cblk->length, cblk->lengthinc);
                 return AVERROR_INVALIDDATA;
             }
@@ -1483,14 +1485,15 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR,
-                   "unsupported marker 0x%.4X at pos 0x%X\n",
+                   "unsupported marker 0x%.4"PRIX16" at pos 0x%X\n",
                    marker, bytestream2_tell(&s->g) - 4);
             bytestream2_skip(&s->g, len - 2);
             break;
         }
         if (bytestream2_tell(&s->g) - oldpos != len || ret) {
             av_log(s->avctx, AV_LOG_ERROR,
-                   "error during processing marker segment %.4x\n", marker);
+                   "error during processing marker segment %.4"PRIx16"\n",
+                   marker);
             return ret ? ret : -1;
         }
     }

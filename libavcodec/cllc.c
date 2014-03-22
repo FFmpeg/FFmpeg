@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "libavutil/intreadwrite.h"
 #include "dsputil.h"
 #include "get_bits.h"
@@ -367,7 +369,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         info_offset = AV_RL32(src + 4);
         if (info_offset > UINT32_MAX - 8 || info_offset + 8 > avpkt->size) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Invalid INFO header offset: 0x%08X is too large.\n",
+                   "Invalid INFO header offset: 0x%08"PRIX32" is too large.\n",
                    info_offset);
             return AVERROR_INVALIDDATA;
         }

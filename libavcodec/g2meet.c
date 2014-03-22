@@ -24,6 +24,7 @@
  * Go2Webinar decoder
  */
 
+#include <inttypes.h>
 #include <zlib.h>
 
 #include "libavutil/intreadwrite.h"
@@ -504,19 +505,19 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
 
     if (cursor_w < 1 || cursor_w > 256 ||
         cursor_h < 1 || cursor_h > 256) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid cursor dimensions %dx%d\n",
+        av_log(avctx, AV_LOG_ERROR, "Invalid cursor dimensions %"PRIu32"x%"PRIu32"\n",
                cursor_w, cursor_h);
         return AVERROR_INVALIDDATA;
     }
     if (cursor_hot_x > cursor_w || cursor_hot_y > cursor_h) {
-        av_log(avctx, AV_LOG_WARNING, "Invalid hotspot position %d,%d\n",
+        av_log(avctx, AV_LOG_WARNING, "Invalid hotspot position %"PRIu32",%"PRIu32"\n",
                cursor_hot_x, cursor_hot_y);
         cursor_hot_x = FFMIN(cursor_hot_x, cursor_w - 1);
         cursor_hot_y = FFMIN(cursor_hot_y, cursor_h - 1);
     }
     if (cur_size - 9 > bytestream2_get_bytes_left(gb) ||
         c->cursor_w * c->cursor_h / 4 > cur_size) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid cursor data size %d/%d\n",
+        av_log(avctx, AV_LOG_ERROR, "Invalid cursor data size %"PRIu32"/%u\n",
                cur_size, bytestream2_get_bytes_left(gb));
         return AVERROR_INVALIDDATA;
     }
@@ -693,7 +694,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
         chunk_type  = bytestream2_get_byte(&bc);
         chunk_start = bytestream2_tell(&bc);
         if (chunk_size > bytestream2_get_bytes_left(&bc)) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid chunk size %d type %02X\n",
+            av_log(avctx, AV_LOG_ERROR, "Invalid chunk size %"PRIu32" type %02X\n",
                    chunk_size, chunk_type);
             break;
         }
@@ -702,7 +703,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             got_header =
             c->got_header = 0;
             if (chunk_size < 21) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid display info size %d\n",
+                av_log(avctx, AV_LOG_ERROR, "Invalid display info size %"PRIu32"\n",
                        chunk_size);
                 break;
             }
@@ -755,7 +756,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 b_mask = bytestream2_get_be32(&bc);
                 if (r_mask != 0xFF0000 || g_mask != 0xFF00 || b_mask != 0xFF) {
                     av_log(avctx, AV_LOG_ERROR,
-                           "Invalid or unsupported bitmasks: R=%X, G=%X, B=%X\n",
+                           "Invalid or unsupported bitmasks: R=%"PRIX32", G=%"PRIX32", B=%"PRIX32"\n",
                            r_mask, g_mask, b_mask);
                     ret = AVERROR_PATCHWELCOME;
                     goto header_fail;
@@ -808,7 +809,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             break;
         case CURSOR_POS:
             if (chunk_size < 5) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid cursor pos size %d\n",
+                av_log(avctx, AV_LOG_ERROR, "Invalid cursor pos size %"PRIu32"\n",
                        chunk_size);
                 break;
             }
@@ -817,7 +818,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             break;
         case CURSOR_SHAPE:
             if (chunk_size < 8) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid cursor data size %d\n",
+                av_log(avctx, AV_LOG_ERROR, "Invalid cursor data size %"PRIu32"\n",
                        chunk_size);
                 break;
             }
@@ -829,7 +830,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
         case CHUNK_CD:
             break;
         default:
-            av_log(avctx, AV_LOG_WARNING, "Skipping chunk type %02X\n",
+            av_log(avctx, AV_LOG_WARNING, "Skipping chunk type %02"PRIX32"\n",
                    chunk_type);
         }
 
