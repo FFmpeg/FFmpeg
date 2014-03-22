@@ -471,7 +471,7 @@ following image formats are supported:
     @tab Targa (.TGA) image format
 @item WebP         @tab E @tab X
     @tab WebP image format, encoding supported through external library libwebp
-@item XBM  @tab X @tab
+@item XBM  @tab X @tab X
     @tab X BitMap image format
 @item XWD  @tab X @tab X
     @tab X Window Dump image format

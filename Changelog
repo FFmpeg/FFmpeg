@@ -8,6 +8,7 @@ version <next>:
 - Alias PIX image encoder and decoder
 - BRender PIX image decoder
 - Amazing Studio PAF playback support
+- XBM decoder
 
 
 version 10:
