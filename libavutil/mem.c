@@ -280,11 +280,11 @@ void *av_memdup(const void *p, size_t size)
 
 void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem)
 {
-    intptr_t *tab = *(intptr_t**)tab_ptr;
+    void **tab = *(void ***)tab_ptr;
 
     AV_DYNARRAY_ADD(INT_MAX, sizeof(*tab), tab, *nb_ptr, {
-        tab[*nb_ptr] = (intptr_t)elem;
-        *(intptr_t **)tab_ptr = tab;
+        tab[*nb_ptr] = elem;
+        *(void ***)tab_ptr = tab;
     }, {
         *nb_ptr = 0;
         av_freep(tab_ptr);
