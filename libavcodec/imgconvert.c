@@ -40,10 +40,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 
-#if HAVE_MMX_EXTERNAL
-#include "x86/dsputil_x86.h"
-#endif
-
 #define FF_COLOR_NA      -1
 #define FF_COLOR_RGB      0 /**< RGB color space */
 #define FF_COLOR_GRAY     1 /**< gray color space */
