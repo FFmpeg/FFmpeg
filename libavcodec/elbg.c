@@ -51,7 +51,7 @@ typedef struct{
     int *codebook;
     cell **cells;
     int *utility;
-    int *utility_inc;
+    int64_t *utility_inc;
     int *nearest_cb;
     int *points;
     AVLFG *rand_state;
@@ -108,9 +108,18 @@ static int get_high_utility_cell(elbg_data *elbg)
 {
     int i=0;
     /* Using linear search, do binary if it ever turns to be speed critical */
-    int r = av_lfg_get(elbg->rand_state)%elbg->utility_inc[elbg->numCB-1] + 1;
-    while (elbg->utility_inc[i] < r)
+    uint64_t r;
+
+    if (elbg->utility_inc[elbg->numCB-1] < INT_MAX) {
+        r = av_lfg_get(elbg->rand_state) % (unsigned int)elbg->utility_inc[elbg->numCB-1] + 1;
+    } else {
+        r = av_lfg_get(elbg->rand_state);
+        r = (av_lfg_get(elbg->rand_state) + (r<<32)) % elbg->utility_inc[elbg->numCB-1] + 1;
+    }
+
+    while (elbg->utility_inc[i] < r) {
         i++;
+    }
 
     av_assert2(elbg->cells[i]);
 
@@ -227,7 +236,8 @@ static void shift_codebook(elbg_data *elbg, int *indexes,
 
 static void evaluate_utility_inc(elbg_data *elbg)
 {
-    int i, inc=0;
+    int i;
+    int64_t inc=0;
 
     for (i=0; i < elbg->numCB; i++) {
         if (elbg->numCB*elbg->utility[i] > elbg->error)
@@ -373,7 +383,7 @@ void avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
     elbg->utility = av_malloc(numCB*sizeof(int));
     elbg->nearest_cb = closest_cb;
     elbg->points = points;
-    elbg->utility_inc = av_malloc(numCB*sizeof(int));
+    elbg->utility_inc = av_malloc(numCB*sizeof(*elbg->utility_inc));
     elbg->scratchbuf = av_malloc(5*dim*sizeof(int));
 
     elbg->rand_state = rand_state;
