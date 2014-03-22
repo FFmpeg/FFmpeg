@@ -417,14 +417,14 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (mp3->pics_to_write) {
             /* buffer audio packets until we get all the pictures */
             AVPacketList *pktl = av_mallocz(sizeof(*pktl));
+            int ret;
             if (!pktl)
                 return AVERROR(ENOMEM);
 
-            pktl->pkt     = *pkt;
-            pktl->pkt.buf = av_buffer_ref(pkt->buf);
-            if (!pktl->pkt.buf) {
+            ret = av_copy_packet(&pktl->pkt, pkt);
+            if (ret < 0) {
                 av_freep(&pktl);
-                return AVERROR(ENOMEM);
+                return ret;
             }
 
             if (mp3->queue_end)
