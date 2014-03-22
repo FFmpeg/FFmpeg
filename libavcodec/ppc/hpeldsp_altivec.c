@@ -31,7 +31,7 @@
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/hpeldsp.h"
-#include "dsputil_altivec.h"
+#include "hpeldsp_altivec.h"
 
 #if HAVE_ALTIVEC
 /* next one assumes that ((line_size % 16) == 0) */
