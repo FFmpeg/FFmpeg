@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "pixels.h"
+
 #define DEF_HPEL(OPNAME, OP)                                            \
 static inline void FUNCC(OPNAME ## _pixels2)(uint8_t *block,            \
                                              const uint8_t *pixels,     \

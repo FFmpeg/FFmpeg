@@ -27,6 +27,8 @@
  * DSP utils
  */
 
+#include "pixels.h"
+
 #include "bit_depth_template.c"
 
 #if BIT_DEPTH == 8

@@ -28,6 +28,8 @@
  * Half-pel DSP functions
  */
 
+#include "pixels.h"
+
 #include "bit_depth_template.c"
 
 #include "hpel_template.c"

@@ -100,16 +100,4 @@ void ff_put_pixels16_xy2_mmx(uint8_t *block, const uint8_t *pixels,
 void ff_mmx_idct(int16_t *block);
 void ff_mmxext_idct(int16_t *block);
 
-#define PIXELS16(STATIC, PFX1, PFX2, TYPE, CPUEXT)                      \
-STATIC void PFX1 ## _pixels16 ## TYPE ## CPUEXT(uint8_t *block,         \
-                                                const uint8_t *pixels,  \
-                                                ptrdiff_t line_size,    \
-                                                int h)                  \
-{                                                                       \
-    PFX2 ## PFX1 ## _pixels8 ## TYPE ## CPUEXT(block, pixels,           \
-                                               line_size, h);           \
-    PFX2 ## PFX1 ## _pixels8 ## TYPE ## CPUEXT(block + 8, pixels + 8,   \
-                                               line_size, h);           \
-}
-
 #endif /* AVCODEC_X86_DSPUTIL_X86_H */

@@ -1,7 +1,4 @@
 /*
- * Copyright (c) 2001-2003 BERO <bero@geocities.co.jp>
- * Copyright (c) 2011 Oskar Arvidsson
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -19,33 +16,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_RND_AVG_H
-#define AVCODEC_RND_AVG_H
+#ifndef AVCODEC_PIXELS_H
+#define AVCODEC_PIXELS_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define BYTE_VEC32(c) ((c) * 0x01010101UL)
-#define BYTE_VEC64(c) ((c) * 0x0001000100010001UL)
-
-static inline uint32_t rnd_avg32(uint32_t a, uint32_t b)
-{
-    return (a | b) - (((a ^ b) & ~BYTE_VEC32(0x01)) >> 1);
+/* pixel operations */
+#define CALL_2X_PIXELS_MACRO(STATIC, a, b, n)        \
+STATIC void a(uint8_t *block, const uint8_t *pixels, \
+              ptrdiff_t line_size, int h)            \
+{                                                    \
+    b(block, pixels, line_size, h);                  \
+    b(block + n, pixels + n, line_size, h);          \
 }
 
-static inline uint32_t no_rnd_avg32(uint32_t a, uint32_t b)
-{
-    return (a & b) + (((a ^ b) & ~BYTE_VEC32(0x01)) >> 1);
-}
+#define CALL_2X_PIXELS(a, b, n) CALL_2X_PIXELS_MACRO(static, a, b, n)
+#define CALL_2X_PIXELS_EXPORT(a, b, n) CALL_2X_PIXELS_MACRO(, a, b, n)
 
-static inline uint64_t rnd_avg64(uint64_t a, uint64_t b)
-{
-    return (a | b) - (((a ^ b) & ~BYTE_VEC64(0x01)) >> 1);
-}
-
-static inline uint64_t no_rnd_avg64(uint64_t a, uint64_t b)
-{
-    return (a & b) + (((a ^ b) & ~BYTE_VEC64(0x01)) >> 1);
-}
-
-#endif /* AVCODEC_RND_AVG_H */
+#endif /* AVCODEC_PIXELS_H */
