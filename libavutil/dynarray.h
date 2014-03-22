@@ -53,8 +53,6 @@
             } else { \
                 void *av_array_new = \
                     av_realloc((av_array), av_size_new * (av_elt_size)); \
-                av_log(NULL, AV_LOG_DEBUG, "Resizing array to %zd\n", \
-                       av_size_new); \
                 if (!av_array_new) \
                     av_size_new = 0; \
                 else \
