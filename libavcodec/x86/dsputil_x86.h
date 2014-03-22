@@ -22,7 +22,6 @@
 #ifndef AVCODEC_X86_DSPUTIL_X86_H
 #define AVCODEC_X86_DSPUTIL_X86_H
 
-#include <stddef.h>
 #include <stdint.h>
 
 #include "libavcodec/avcodec.h"
@@ -65,19 +64,6 @@ void ff_gmc_sse(uint8_t *dst, uint8_t *src,
 
 void ff_vector_clipf_sse(float *dst, const float *src,
                          float min, float max, int len);
-
-void ff_avg_pixels8_x2_mmx(uint8_t *block, const uint8_t *pixels,
-                           ptrdiff_t line_size, int h);
-
-void ff_avg_pixels8_xy2_mmx(uint8_t *block, const uint8_t *pixels,
-                            ptrdiff_t line_size, int h);
-void ff_avg_pixels16_xy2_mmx(uint8_t *block, const uint8_t *pixels,
-                             ptrdiff_t line_size, int h);
-
-void ff_put_pixels8_xy2_mmx(uint8_t *block, const uint8_t *pixels,
-                            ptrdiff_t line_size, int h);
-void ff_put_pixels16_xy2_mmx(uint8_t *block, const uint8_t *pixels,
-                             ptrdiff_t line_size, int h);
 
 
 void ff_mmx_idct(int16_t *block);
