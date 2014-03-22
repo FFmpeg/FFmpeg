@@ -31,9 +31,9 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "imgconvert.h"
 #include "internal.h"
+#include "mathops.h"
 #include "libavutil/avassert.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"

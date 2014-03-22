@@ -26,8 +26,8 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
-#include "dsputil.h"
 #include "internal.h"
+#include "mathops.h"
 #include "mss34dsp.h"
 
 #define HEADER_SIZE 27

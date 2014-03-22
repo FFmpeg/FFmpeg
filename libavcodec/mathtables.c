@@ -20,6 +20,8 @@
 
 #include <stdint.h>
 
+#include "mathops.h"
+
 /* a*inverse[b]>>32 == a/b for all 0<=a<=16909558 && 2<=b<=256
  * for a>16909558, is an overestimate by less than 1 part in 1<<24 */
 const uint32_t ff_inverse[257]={
@@ -91,7 +93,7 @@ const uint8_t ff_reverse[256] = {
 #define times4(x) x, x, x, x
 #define times256(x) times4(times4(times4(times4(times4(x)))))
 
-const uint8_t ff_crop_tab[256 + 2 * 1024] = {
+const uint8_t ff_crop_tab[256 + 2 * MAX_NEG_CROP] = {
 times256(0x00),
 0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F,
 0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D,0x1E,0x1F,

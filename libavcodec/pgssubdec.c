@@ -25,9 +25,9 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "mathops.h"
 
 #include "libavutil/colorspace.h"
 #include "libavutil/imgutils.h"

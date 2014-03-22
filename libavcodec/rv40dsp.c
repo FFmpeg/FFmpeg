@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "h264qpel.h"
+#include "mathops.h"
 #include "rv34dsp.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
