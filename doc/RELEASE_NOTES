@@ -30,9 +30,12 @@ new features and countless bug fixes. We can highlight a native VP9 decoder,
 with encoding provided through libvpx, native decoders for WebP, JPEG 2000, and
 AIC, as well as improved WavPack support with encoding through libwavpack,
 support for more AAC flavors (LD - low delay, ELD - enhanced low delay), slice
-multithreading in libavfilter, or muxing chapters in ASF. Furthermore there is
-more fine-grained detection of host and target libc, which should allow better
-portability to various cross compilation scenarios.
+multithreading in libavfilter, or muxing chapters in ASF. Furthermore a few new
+filters have been introduced, namely compand, to change audio dynamics, framepack,
+to create stereoscopic videos, asetpts, to set audio pts, and interlace, to convert
+progressive video to interlaced. Finally there is more fine-grained detection of
+host and target libc, which should allow better portability to various cross
+compilation scenarios.
 
 See the Changelog file for a fuller list of significant changes.
 
