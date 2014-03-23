@@ -83,17 +83,6 @@ static const PixelFormatTag pix_fmt_bps_mov[] = {
     { AV_PIX_FMT_NONE,      0 },
 };
 
-enum AVPixelFormat avpriv_find_pix_fmt(const PixelFormatTag *tags,
-                                       unsigned int fourcc)
-{
-    while (tags->pix_fmt >= 0) {
-        if (tags->fourcc == fourcc)
-            return tags->pix_fmt;
-        tags++;
-    }
-    return AV_PIX_FMT_NONE;
-}
-
 #if LIBAVCODEC_VERSION_MAJOR < 55
 enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
 {
