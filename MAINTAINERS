@@ -73,6 +73,7 @@ Other:
   bprint                                Nicolas George
   bswap.h
   des                                   Reimar Doeffinger
+  dynarray.h                            Nicolas George
   eval.c, eval.h                        Michael Niedermayer
   float_dsp                             Loren Merritt
   hash                                  Reimar Doeffinger
