@@ -26,7 +26,6 @@ OBJS = allcodecs.o                                                      \
        options.o                                                        \
        parser.o                                                         \
        raw.o                                                            \
-       rawdec.o                                                         \
        resample.o                                                       \
        resample2.o                                                      \
        utils.o                                                          \

@@ -46,6 +46,7 @@
 #include "thread.h"
 #include "frame_thread_encoder.h"
 #include "internal.h"
+#include "raw.h"
 #include "bytestream.h"
 #include "version.h"
 #include <stdlib.h>
@@ -1069,6 +1070,17 @@ int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, 
             ret[i] = r;
     }
     return 0;
+}
+
+enum AVPixelFormat avpriv_find_pix_fmt(const PixelFormatTag *tags,
+                                       unsigned int fourcc)
+{
+    while (tags->pix_fmt >= 0) {
+        if (tags->fourcc == fourcc)
+            return tags->pix_fmt;
+        tags++;
+    }
+    return AV_PIX_FMT_NONE;
 }
 
 static int is_hwaccel_pix_fmt(enum AVPixelFormat pix_fmt)
