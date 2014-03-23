@@ -28,6 +28,7 @@ version 2.2:
 - Support DNx444
 - libx265 encoder
 - dejudder filter
+- Autodetect VDA like all other hardware accelerations
 
 
 version 2.1:
