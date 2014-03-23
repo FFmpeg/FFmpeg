@@ -112,6 +112,14 @@ bayer dither
 
 @item ed
 error diffusion dither
+
+@item a_dither
+arithmetic dither, based using addition
+
+@item x_dither
+arithmetic dither, based using xor (more random/less apparent patterning that
+a_dither).
+
 @end table
 
 @end table

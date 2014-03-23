@@ -66,6 +66,8 @@ typedef enum SwsDither {
     SWS_DITHER_AUTO,
     SWS_DITHER_BAYER,
     SWS_DITHER_ED,
+    SWS_DITHER_A_DITHER,
+    SWS_DITHER_X_DITHER,
     NB_SWS_DITHER,
 } SwsDither;
 

@@ -1508,24 +1508,71 @@ static av_always_inline void yuv2rgb_write_full(SwsContext *c,
     case AV_PIX_FMT_RGB8:
     {
         int r,g,b;
-        R >>= 22;
-        G >>= 22;
-        B >>= 22;
-        R += (7*err[0] + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2])>>4;
-        G += (7*err[1] + 1*c->dither_error[1][i] + 5*c->dither_error[1][i+1] + 3*c->dither_error[1][i+2])>>4;
-        B += (7*err[2] + 1*c->dither_error[2][i] + 5*c->dither_error[2][i+1] + 3*c->dither_error[2][i+2])>>4;
-        c->dither_error[0][i] = err[0];
-        c->dither_error[1][i] = err[1];
-        c->dither_error[2][i] = err[2];
-        r = R >> (isrgb8 ? 5 : 7);
-        g = G >> (isrgb8 ? 5 : 6);
-        b = B >> (isrgb8 ? 6 : 7);
-        r = av_clip(r, 0, isrgb8 ? 7 : 1);
-        g = av_clip(g, 0, isrgb8 ? 7 : 3);
-        b = av_clip(b, 0, isrgb8 ? 3 : 1);
-        err[0] = R - r*(isrgb8 ? 36 : 255);
-        err[1] = G - g*(isrgb8 ? 36 : 85);
-        err[2] = B - b*(isrgb8 ? 85 : 255);
+
+        switch (c->dither) {
+        default:
+        case SWS_DITHER_AUTO:
+        case SWS_DITHER_ED:
+            R >>= 22;
+            G >>= 22;
+            B >>= 22;
+            R += (7*err[0] + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2])>>4;
+            G += (7*err[1] + 1*c->dither_error[1][i] + 5*c->dither_error[1][i+1] + 3*c->dither_error[1][i+2])>>4;
+            B += (7*err[2] + 1*c->dither_error[2][i] + 5*c->dither_error[2][i+1] + 3*c->dither_error[2][i+2])>>4;
+            c->dither_error[0][i] = err[0];
+            c->dither_error[1][i] = err[1];
+            c->dither_error[2][i] = err[2];
+            r = R >> (isrgb8 ? 5 : 7);
+            g = G >> (isrgb8 ? 5 : 6);
+            b = B >> (isrgb8 ? 6 : 7);
+            r = av_clip(r, 0, isrgb8 ? 7 : 1);
+            g = av_clip(g, 0, isrgb8 ? 7 : 3);
+            b = av_clip(b, 0, isrgb8 ? 3 : 1);
+            err[0] = R - r*(isrgb8 ? 36 : 255);
+            err[1] = G - g*(isrgb8 ? 36 : 85);
+            err[2] = B - b*(isrgb8 ? 85 : 255);
+            break;
+        case SWS_DITHER_A_DITHER:
+            if (isrgb8) {
+  /* see http://pippin.gimp.org/a_dither/ for details/origin */
+#define A_DITHER(u,v)   (((((u)+((v)*236))*119)&0xff))
+                r = (((R >> 19) + A_DITHER(i,y)  -96)>>8);
+                g = (((G >> 19) + A_DITHER(i + 17,y) - 96)>>8);
+                b = (((B >> 20) + A_DITHER(i + 17*2,y) -96)>>8);
+                r = av_clip(r, 0, 7);
+                g = av_clip(g, 0, 7);
+                b = av_clip(b, 0, 3);
+            } else {
+                r = (((R >> 21) + A_DITHER(i,y)-256)>>8);
+                g = (((G >> 19) + A_DITHER(i + 17,y)-256)>>8);
+                b = (((B >> 21) + A_DITHER(i + 17*2,y)-256)>>8);
+                r = av_clip(r, 0, 1);
+                g = av_clip(g, 0, 3);
+                b = av_clip(b, 0, 1);
+            }
+            break;
+        case SWS_DITHER_X_DITHER:
+            if (isrgb8) {
+  /* see http://pippin.gimp.org/a_dither/ for details/origin */
+#define X_DITHER(u,v)   (((((u)^((v)*237))*181)&0x1ff)/2)
+                r = (((R >> 19) + X_DITHER(i,y) - 96)>>8);
+                g = (((G >> 19) + X_DITHER(i + 17,y) - 96)>>8);
+                b = (((B >> 20) + X_DITHER(i + 17*2,y) - 96)>>8);
+                r = av_clip(r, 0, 7);
+                g = av_clip(g, 0, 7);
+                b = av_clip(b, 0, 3);
+            } else {
+                r = (((R >> 21) + X_DITHER(i,y)-256)>>8);
+                g = (((G >> 19) + X_DITHER(i + 17,y)-256)>>8);
+                b = (((B >> 21) + X_DITHER(i + 17*2,y)-256)>>8);
+                r = av_clip(r, 0, 1);
+                g = av_clip(g, 0, 3);
+                b = av_clip(b, 0, 1);
+            }
+
+            break;
+        }
+
         if(target == AV_PIX_FMT_BGR4_BYTE) {
             dest[0] = r + 2*g + 8*b;
         } else if(target == AV_PIX_FMT_RGB4_BYTE) {
