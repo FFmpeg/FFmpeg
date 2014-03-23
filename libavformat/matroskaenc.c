@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "avc.h"
+#include "hevc.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "avlanguage.h"
@@ -532,6 +533,8 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
             ret = put_wv_codecpriv(dyn_cp, codec);
         else if (codec->codec_id == AV_CODEC_ID_H264)
             ret = ff_isom_write_avcc(dyn_cp, codec->extradata, codec->extradata_size);
+        else if (codec->codec_id == AV_CODEC_ID_HEVC)
+            ret = ff_isom_write_hvcc(dyn_cp, codec->extradata, codec->extradata_size, 0);
         else if (codec->codec_id == AV_CODEC_ID_ALAC) {
             if (codec->extradata_size < 36) {
                 av_log(s, AV_LOG_ERROR,
