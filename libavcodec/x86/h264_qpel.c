@@ -51,7 +51,7 @@ void ff_avg_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
 #define ff_avg_pixels16_l2_sse2 ff_avg_pixels16_l2_mmxext
 
 CALL_2X_PIXELS(ff_avg_pixels16_mmxext, ff_avg_pixels8_mmxext, 8)
-CALL_2X_PIXELS(ff_put_pixels16_mmxext, ff_avg_pixels8_mmxext, 8)
+CALL_2X_PIXELS(ff_put_pixels16_mmxext, ff_put_pixels8_mmxext, 8)
 
 #define DEF_QPEL(OPNAME)\
 void ff_ ## OPNAME ## _h264_qpel4_h_lowpass_mmxext(uint8_t *dst, uint8_t *src, int dstStride, int srcStride);\
