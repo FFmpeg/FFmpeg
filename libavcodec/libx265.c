@@ -206,9 +206,10 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         avctx->extradata_size = ctx->header_size;
-        avctx->extradata = ctx->header;
+        avctx->extradata      = ctx->header;
+
         ctx->header_size = 0;
-        ctx->header = NULL;
+        ctx->header      = NULL;
     }
 
     return 0;
