@@ -294,7 +294,10 @@ AVCodec ff_rv30_decoder = {
     .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_DELAY |
                              CODEC_CAP_FRAME_THREADS,
     .flush                 = ff_mpeg_flush,
-    .pix_fmts              = ff_pixfmt_list_420,
+    .pix_fmts              = (const enum AVPixelFormat[]) {
+        AV_PIX_FMT_YUV420P,
+        AV_PIX_FMT_NONE
+    },
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(ff_rv34_decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_rv34_decode_update_thread_context),
 };
