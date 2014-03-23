@@ -80,7 +80,6 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
     x265_nal *nal;
-    uint8_t *buf;
     int sar_num, sar_den;
     int nnal;
     int ret;
@@ -198,11 +197,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    buf = ctx->header;
-    for (i = 0; i < nnal; i++) {
-        memcpy(buf, nal[i].payload, nal[i].sizeBytes);
-        buf += nal[i].sizeBytes;
-    }
+    memcpy(ctx->header, nal[0].payload, ctx->header_size);
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         avctx->extradata_size = ctx->header_size;
