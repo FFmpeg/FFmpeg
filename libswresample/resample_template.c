@@ -48,6 +48,7 @@
 #        define RENAME(N) N ## _float
 #    elif defined(TEMPLATE_RESAMPLE_FLT_SSE)
 #        define COMMON_CORE COMMON_CORE_FLT_SSE
+#        define LINEAR_CORE LINEAR_CORE_FLT_SSE
 #        define RENAME(N) N ## _float_sse
 #    endif
 

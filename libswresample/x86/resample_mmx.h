@@ -156,3 +156,38 @@ __asm__ volatile(\
       "r" (((uint8_t*)filter)-len),\
       "r" (dst+dst_index)\
 );
+
+#define LINEAR_CORE_FLT_SSE \
+    x86_reg len= -4*c->filter_length;\
+__asm__ volatile(\
+    "xorps      %%xmm0, %%xmm0    \n\t"\
+    "xorps      %%xmm2, %%xmm2    \n\t"\
+    "1:                           \n\t"\
+    "movups   (%3, %0), %%xmm1    \n\t"\
+    "movaps     %%xmm1, %%xmm3    \n\t"\
+    "mulps    (%4, %0), %%xmm1    \n\t"\
+    "mulps    (%5, %0), %%xmm3    \n\t"\
+    "addps      %%xmm1, %%xmm0    \n\t"\
+    "addps      %%xmm3, %%xmm2    \n\t"\
+    "add           $16, %0        \n\t"\
+    " js 1b                       \n\t"\
+    "movhlps    %%xmm0, %%xmm1    \n\t"\
+    "movhlps    %%xmm2, %%xmm3    \n\t"\
+    "addps      %%xmm1, %%xmm0    \n\t"\
+    "addps      %%xmm3, %%xmm2    \n\t"\
+    "movss      %%xmm0, %%xmm1    \n\t"\
+    "movss      %%xmm2, %%xmm3    \n\t"\
+    "shufps $1, %%xmm0, %%xmm0    \n\t"\
+    "shufps $1, %%xmm2, %%xmm2    \n\t"\
+    "addps      %%xmm1, %%xmm0    \n\t"\
+    "addps      %%xmm3, %%xmm2    \n\t"\
+    "movss      %%xmm0, %1        \n\t"\
+    "movss      %%xmm2, %2        \n\t"\
+    : "+r" (len),\
+      "=m" (val),\
+      "=m" (v2)\
+    : "r" (((uint8_t*)(src+sample_index))-len),\
+      "r" (((uint8_t*)filter)-len),\
+      "r" (((uint8_t*)(filter+c->filter_alloc))-len)\
+    XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3")\
+);
