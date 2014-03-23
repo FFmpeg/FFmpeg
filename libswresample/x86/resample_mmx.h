@@ -50,6 +50,34 @@ __asm__ volatile(\
       NAMED_CONSTRAINTS_ADD(ff_resample_int16_rounder)\
 );
 
+#define LINEAR_CORE_INT16_MMX2 \
+    x86_reg len= -2*c->filter_length;\
+__asm__ volatile(\
+    "pxor          %%mm0, %%mm0 \n\t"\
+    "pxor          %%mm2, %%mm2 \n\t"\
+    "1:                         \n\t"\
+    "movq       (%3, %0), %%mm1 \n\t"\
+    "movq          %%mm1, %%mm3 \n\t"\
+    "pmaddwd    (%4, %0), %%mm1 \n\t"\
+    "pmaddwd    (%5, %0), %%mm3 \n\t"\
+    "paddd         %%mm1, %%mm0 \n\t"\
+    "paddd         %%mm3, %%mm2 \n\t"\
+    "add              $8, %0    \n\t"\
+    " js 1b                     \n\t"\
+    "pshufw $0x0E, %%mm0, %%mm1 \n\t"\
+    "pshufw $0x0E, %%mm2, %%mm3 \n\t"\
+    "paddd         %%mm1, %%mm0 \n\t"\
+    "paddd         %%mm3, %%mm2 \n\t"\
+    "movd          %%mm0, %1    \n\t"\
+    "movd          %%mm2, %2    \n\t"\
+    : "+r" (len),\
+      "=r" (val),\
+      "=r" (v2)\
+    : "r" (((uint8_t*)(src+sample_index))-len),\
+      "r" (((uint8_t*)filter)-len),\
+      "r" (((uint8_t*)(filter+c->filter_alloc))-len)\
+);
+
 #define COMMON_CORE_INT16_SSE2 \
     x86_reg len= -2*c->filter_length;\
 __asm__ volatile(\
@@ -72,6 +100,39 @@ __asm__ volatile(\
       "r" (((uint8_t*)filter)-len),\
       "r" (dst+dst_index)\
       NAMED_CONSTRAINTS_ADD(ff_resample_int16_rounder)\
+);
+
+#define LINEAR_CORE_INT16_SSE2 \
+    x86_reg len= -2*c->filter_length;\
+__asm__ volatile(\
+    "pxor          %%xmm0, %%xmm0 \n\t"\
+    "pxor          %%xmm2, %%xmm2 \n\t"\
+    "1:                           \n\t"\
+    "movdqu      (%3, %0), %%xmm1 \n\t"\
+    "movdqa        %%xmm1, %%xmm3 \n\t"\
+    "pmaddwd     (%4, %0), %%xmm1 \n\t"\
+    "pmaddwd     (%5, %0), %%xmm3 \n\t"\
+    "paddd         %%xmm1, %%xmm0 \n\t"\
+    "paddd         %%xmm3, %%xmm2 \n\t"\
+    "add              $16, %0     \n\t"\
+    " js 1b                       \n\t"\
+    "pshufd $0x0E, %%xmm0, %%xmm1 \n\t"\
+    "pshufd $0x0E, %%xmm2, %%xmm3 \n\t"\
+    "paddd         %%xmm1, %%xmm0 \n\t"\
+    "paddd         %%xmm3, %%xmm2 \n\t"\
+    "pshufd $0x01, %%xmm0, %%xmm1 \n\t"\
+    "pshufd $0x01, %%xmm2, %%xmm3 \n\t"\
+    "paddd         %%xmm1, %%xmm0 \n\t"\
+    "paddd         %%xmm3, %%xmm2 \n\t"\
+    "movd          %%xmm0, %1     \n\t"\
+    "movd          %%xmm2, %2     \n\t"\
+    : "+r" (len),\
+      "=r" (val),\
+      "=r" (v2)\
+    : "r" (((uint8_t*)(src+sample_index))-len),\
+      "r" (((uint8_t*)filter)-len),\
+      "r" (((uint8_t*)(filter+c->filter_alloc))-len)\
+    XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3")\
 );
 
 #define COMMON_CORE_FLT_SSE \

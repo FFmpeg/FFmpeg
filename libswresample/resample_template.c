@@ -81,9 +81,11 @@
 #        define RENAME(N) N ## _int16
 #    elif defined(TEMPLATE_RESAMPLE_S16_MMX2)
 #        define COMMON_CORE COMMON_CORE_INT16_MMX2
+#        define LINEAR_CORE LINEAR_CORE_INT16_MMX2
 #        define RENAME(N) N ## _int16_mmx2
 #    elif defined(TEMPLATE_RESAMPLE_S16_SSE2)
 #        define COMMON_CORE COMMON_CORE_INT16_SSE2
+#        define LINEAR_CORE LINEAR_CORE_INT16_SSE2
 #        define RENAME(N) N ## _int16_sse2
 #    endif
 
@@ -163,10 +165,14 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 OUT(dst[dst_index], val);
             }else if(c->linear){
                 FELEM2 v2=0;
+#ifdef LINEAR_CORE
+                LINEAR_CORE
+#else
                 for(i=0; i<c->filter_length; i++){
                     val += src[sample_index + i] * (FELEM2)filter[i];
                     v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_alloc];
                 }
+#endif
                 val+=(v2-val)*(FELEML)frac / c->src_incr;
                 OUT(dst[dst_index], val);
             }else{
@@ -213,6 +219,7 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
 }
 
 #undef COMMON_CORE
+#undef LINEAR_CORE
 #undef RENAME
 #undef FILTER_SHIFT
 #undef DELEM
