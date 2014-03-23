@@ -3324,6 +3324,9 @@ if test -n "$sysroot"; then
         gcc|llvm_gcc|clang)
             add_cppflags --sysroot="$sysroot"
             add_ldflags --sysroot="$sysroot"
+# On Darwin --sysroot may be ignored, -isysroot always affects headers and linking
+            add_cppflags -isysroot "$sysroot"
+            add_ldflags -isysroot "$sysroot"
         ;;
         tms470)
             add_cppflags -I"$sysinclude"
