@@ -149,7 +149,7 @@ Component options:
 Hardware accelerators:
   --disable-dxva2          disable DXVA2 code [autodetect]
   --disable-vaapi          disable VAAPI code [autodetect]
-  --enable-vda             enable VDA code
+  --disable-vda            disable VDA code [autodetect]
   --disable-vdpau          disable VDPAU code [autodetect]
 
 Individual component options:
@@ -2577,7 +2577,7 @@ enable static
 enable swscale_alpha
 
 # Enable hwaccels by default.
-enable dxva2 vaapi vdpau xvmc
+enable dxva2 vaapi vda vdpau xvmc
 enable xlib
 
 # build settings
