@@ -53,6 +53,7 @@ enum HWAccelID {
     HWACCEL_AUTO,
     HWACCEL_VDPAU,
     HWACCEL_DXVA2,
+    HWACCEL_VDA,
 };
 
 typedef struct HWAccel {
@@ -423,5 +424,6 @@ int avconv_parse_options(int argc, char **argv);
 
 int vdpau_init(AVCodecContext *s);
 int dxva2_init(AVCodecContext *s);
+int vda_init(AVCodecContext *s);
 
 #endif /* AVCONV_H */
