@@ -3509,8 +3509,14 @@ int av_read_pause(AVFormatContext *s)
 }
 
 void ff_free_stream(AVFormatContext *s, AVStream *st) {
+    int j;
     av_assert0(s->nb_streams>0);
     av_assert0(s->streams[ s->nb_streams - 1 ] == st);
+
+    for (j = 0; j < st->nb_side_data; j++)
+        av_freep(&st->side_data[j].data);
+    av_freep(&st->side_data);
+    st->nb_side_data = 0;
 
     if (st->parser) {
         av_parser_close(st->parser);

@@ -824,6 +824,28 @@ typedef struct AVStream {
      */
     AVPacket attached_pic;
 
+    /**
+     * An array of side data that applies to the whole stream (i.e. the
+     * container does not allow it to change between packets).
+     *
+     * There may be no overlap between the side data in this array and side data
+     * in the packets. I.e. a given side data is either exported by the muxer
+     * (demuxing) / set by the caller (muxing) in this array, then it never
+     * appears in the packets, or the side data is exported / sent through
+     * the packets (always in the first packet where the value becomes known or
+     * changes), then it does not appear in this array.
+     *
+     * - demuxing: Set by libavformat when the stream is created.
+     * - muxing: May be set by the caller before avformat_write_header().
+     *
+     * Freed by libavformat in avformat_free_context().
+     */
+    AVPacketSideData *side_data;
+    /**
+     * The number of elements in the AVStream.side_data array.
+     */
+    int            nb_side_data;
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
