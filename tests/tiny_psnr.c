@@ -287,14 +287,14 @@ int main(int argc, char *argv[])
             char *end;
             len = strtol(argv[3], &end, 0);
             if (*end || len < 1 || len > 2) {
-                fprintf(stderr, "Unsupported sample format: %s\n", argv[3]);
+                fprintf(stderr, "Unsupported sample format: %s\nSupported: u8, s16, f32, f64\n", argv[3]);
                 return 1;
             }
         }
     }
 
     if (argc < 3) {
-        printf("tiny_psnr <file1> <file2> [<elem size> [<shift> [<skip bytes> [<shift search range>]]]]\n");
+        printf("tiny_psnr <file1> <file2> [<elem size>|u8|s16|f32|f64 [<shift> [<skip bytes> [<shift search range>]]]]\n");
         printf("WAV headers are skipped automatically.\n");
         return 1;
     }
