@@ -35,7 +35,7 @@ Select nearest neighbor rescaling algorithm.
 @item area
 Select averaging area rescaling algorithm.
 
-@item bicubiclin
+@item bicublin
 Select bicubic scaling algorithm for the luma component, bilinear for
 chroma components.
 
