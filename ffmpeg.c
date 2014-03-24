@@ -123,11 +123,6 @@ static int64_t getutime(void);
 static int64_t getmaxrss(void);
 
 static int run_as_daemon  = 0;
-static int64_t video_size = 0;
-static int64_t audio_size = 0;
-static int64_t data_size = 0;
-static int64_t subtitle_size = 0;
-static int64_t extra_size = 0;
 static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int64_t decode_error_stat[2];
@@ -650,6 +645,8 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
     ost->last_mux_dts = pkt->dts;
 
+    ost->data_size += pkt->size;
+
     pkt->stream_index = ost->index;
 
     if (debug_ts) {
@@ -741,7 +738,6 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                    av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ost->st->time_base));
         }
 
-        audio_size += pkt.size;
         write_frame(s, &pkt, ost);
 
         av_free_packet(&pkt);
@@ -816,7 +812,6 @@ static void do_subtitle_out(AVFormatContext *s,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
-        subtitle_size += pkt.size;
         write_frame(s, &pkt, ost);
     }
 }
@@ -937,7 +932,6 @@ static void do_video_out(AVFormatContext *s,
         pkt.pts    = av_rescale_q(in_picture->pts, enc->time_base, ost->st->time_base);
         pkt.flags |= AV_PKT_FLAG_KEY;
 
-        video_size += pkt.size;
         write_frame(s, &pkt, ost);
     } else {
         int got_packet, forced_keyframe = 0;
@@ -1032,7 +1026,6 @@ static void do_video_out(AVFormatContext *s,
             }
 
             frame_size = pkt.size;
-            video_size += pkt.size;
             write_frame(s, &pkt, ost);
             av_free_packet(&pkt);
 
@@ -1089,9 +1082,9 @@ static void do_video_stats(OutputStream *ost, int frame_size)
             ti1 = 0.01;
 
         bitrate     = (frame_size * 8) / av_q2d(enc->time_base) / 1000.0;
-        avg_bitrate = (double)(video_size * 8) / ti1 / 1000.0;
+        avg_bitrate = (double)(ost->data_size * 8) / ti1 / 1000.0;
         fprintf(vstats_file, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
-               (double)video_size / 1024, ti1, bitrate, avg_bitrate);
+               (double)ost->data_size / 1024, ti1, bitrate, avg_bitrate);
         fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(enc->coded_frame->pict_type));
     }
 }
@@ -1347,18 +1340,32 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     }
 
     if (is_last_report) {
-        int64_t raw   = audio_size + video_size + data_size + subtitle_size + extra_size;
+        uint64_t video_size = 0, audio_size = 0, extra_size = 0, other_size = 0;
+        uint64_t subtitle_size = 0;
+        uint64_t data_size = 0;
         float percent = -1.0;
 
-        if (raw)
-            percent = 100.0 * (total_size - raw) / raw;
+        for (i = 0; i < nb_output_streams; i++) {
+            OutputStream *ost = output_streams[i];
+            switch (ost->st->codec->codec_type) {
+            case AVMEDIA_TYPE_VIDEO: video_size += ost->data_size; break;
+            case AVMEDIA_TYPE_AUDIO: audio_size += ost->data_size; break;
+            case AVMEDIA_TYPE_SUBTITLE: subtitle_size += ost->data_size; break;
+            default:                 other_size += ost->data_size; break;
+            }
+            extra_size += ost->st->codec->extradata_size;
+            data_size  += ost->data_size;
+        }
+
+        if (data_size && total_size >= data_size)
+            percent = 100.0 * (total_size - data_size) / data_size;
 
         av_log(NULL, AV_LOG_INFO, "\n");
-        av_log(NULL, AV_LOG_INFO, "video:%1.0fkB audio:%1.0fkB subtitle:%1.0f data:%1.0f global headers:%1.0fkB muxing overhead: ",
+        av_log(NULL, AV_LOG_INFO, "video:%1.0fkB audio:%1.0fkB subtitle:%1.0fkB other streams:%1.0fkB global headers:%1.0fkB muxing overhead: ",
                video_size / 1024.0,
                audio_size / 1024.0,
                subtitle_size / 1024.0,
-               data_size / 1024.0,
+               other_size / 1024.0,
                extra_size / 1024.0);
         if (percent >= 0.0)
             av_log(NULL, AV_LOG_INFO, "%f%%", percent);
@@ -1392,18 +1399,15 @@ static void flush_encoders(void)
         for (;;) {
             int (*encode)(AVCodecContext*, AVPacket*, const AVFrame*, int*) = NULL;
             const char *desc;
-            int64_t *size;
 
             switch (ost->st->codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
                 encode = avcodec_encode_audio2;
                 desc   = "Audio";
-                size   = &audio_size;
                 break;
             case AVMEDIA_TYPE_VIDEO:
                 encode = avcodec_encode_video2;
                 desc   = "Video";
-                size   = &video_size;
                 break;
             default:
                 stop_encoding = 1;
@@ -1435,7 +1439,6 @@ static void flush_encoders(void)
                     av_free_packet(&pkt);
                     continue;
                 }
-                *size += pkt.size;
                 if (pkt.pts != AV_NOPTS_VALUE)
                     pkt.pts = av_rescale_q(pkt.pts, enc->time_base, ost->st->time_base);
                 if (pkt.dts != AV_NOPTS_VALUE)
@@ -1518,16 +1521,8 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
 
     /* force the input stream PTS */
-    if (ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-        audio_size += pkt->size;
-    else if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-        video_size += pkt->size;
+    if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
         ost->sync_opts++;
-    } else if (ost->st->codec->codec_type == AVMEDIA_TYPE_DATA) {
-        data_size += pkt->size;
-    } else if (ost->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        subtitle_size += pkt->size;
-    }
 
     if (pkt->pts != AV_NOPTS_VALUE)
         opkt.pts = av_rescale_q(pkt->pts, ist->st->time_base, ost->st->time_base) - ost_tb_start_time;
@@ -2681,7 +2676,6 @@ static int transcode_init(void)
             if (ost->st->codec->bit_rate && ost->st->codec->bit_rate < 1000)
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                              " It takes bits/s as argument, not kbits/s\n");
-            extra_size += ost->st->codec->extradata_size;
         } else {
             av_opt_set_dict(ost->st->codec, &ost->opts);
         }
