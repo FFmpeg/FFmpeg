@@ -753,7 +753,7 @@ static int h264_frame_start(H264Context *h)
     h->cur_pic_ptr = pic;
     ff_h264_unref_picture(h, &h->cur_pic);
     if (CONFIG_ERROR_RESILIENCE) {
-        memset(&h->er.cur_pic, 0, sizeof(h->er.cur_pic));
+        ff_h264_set_erpic(&h->er.cur_pic, NULL);
     }
 
     if ((ret = ff_h264_ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
@@ -761,8 +761,8 @@ static int h264_frame_start(H264Context *h)
 
     if (CONFIG_ERROR_RESILIENCE) {
         ff_er_frame_start(&h->er);
-        memset(&h->er.last_pic, 0, sizeof(h->er.last_pic));
-        memset(&h->er.next_pic, 0, sizeof(h->er.next_pic));
+        ff_h264_set_erpic(&h->er.last_pic, NULL);
+        ff_h264_set_erpic(&h->er.next_pic, NULL);
     }
 
     assert(h->linesize && h->uvlinesize);
