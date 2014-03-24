@@ -58,6 +58,13 @@ enum VolumeVarName {
     VAR_VARS_NB
 };
 
+enum ReplayGainType {
+    REPLAYGAIN_DROP,
+    REPLAYGAIN_IGNORE,
+    REPLAYGAIN_TRACK,
+    REPLAYGAIN_ALBUM,
+};
+
 typedef struct VolumeContext {
     const AVClass *class;
     AVFloatDSPContext fdsp;
@@ -67,6 +74,7 @@ typedef struct VolumeContext {
     AVExpr *volume_pexpr;
     double var_values[VAR_VARS_NB];
 
+    enum ReplayGainType replaygain;
     double volume;
     int    volume_i;
     int    channels;

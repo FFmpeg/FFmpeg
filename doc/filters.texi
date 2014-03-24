@@ -1830,6 +1830,23 @@ precision of the volume scaling.
 64-bit floating-point; limits input sample format to DBL.
 @end table
 
+@item replaygain
+Behaviour on encountering ReplayGain side data in input frames.
+
+@table @option
+@item drop
+Remove ReplayGain side data, ignoring its contents (the default).
+
+@item ignore
+Ignore ReplayGain side data, but leave it in the frame.
+
+@item track
+Prefer track gain, if present.
+
+@item album
+Prefer album gain, if present.
+@end table
+
 @item eval
 Set when the volume expression is evaluated.
 
