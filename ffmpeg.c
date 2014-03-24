@@ -3174,6 +3174,7 @@ static int process_input(int file_index)
     }
 
     ist = input_streams[ifile->ist_index + pkt.stream_index];
+    ist->nb_packets++;
     if (ist->discard)
         goto discard_packet;
 
@@ -3223,6 +3224,22 @@ static int process_input(int file_index)
             ist->wrap_correction_done = 0;
         }
     }
+
+    /* add the stream-global side data to the first packet */
+    if (ist->nb_packets == 1)
+        for (i = 0; i < ist->st->nb_side_data; i++) {
+            AVPacketSideData *src_sd = &ist->st->side_data[i];
+            uint8_t *dst_data;
+
+            if (av_packet_get_side_data(&pkt, src_sd->type, NULL))
+                continue;
+
+            dst_data = av_packet_new_side_data(&pkt, src_sd->type, src_sd->size);
+            if (!dst_data)
+                exit_program(1);
+
+            memcpy(dst_data, src_sd->data, src_sd->size);
+        }
 
     if (pkt.dts != AV_NOPTS_VALUE)
         pkt.dts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);

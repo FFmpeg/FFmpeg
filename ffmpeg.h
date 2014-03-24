@@ -262,6 +262,9 @@ typedef struct InputStream {
     int top_field_first;
     int guess_layout_max;
 
+    /* number of packets successfully read for this stream */
+    uint64_t nb_packets;
+
     int resample_height;
     int resample_width;
     int resample_pix_fmt;
