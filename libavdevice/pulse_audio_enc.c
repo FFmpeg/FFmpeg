@@ -141,6 +141,24 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
     return 0;
 }
 
+static int pulse_write_frame(AVFormatContext *h, int stream_index,
+                             AVFrame **frame, unsigned flags)
+{
+    AVPacket pkt;
+
+    /* Planar formats are not supported yet. */
+    if (flags & AV_WRITE_UNCODED_FRAME_QUERY)
+        return av_sample_fmt_is_planar(h->streams[stream_index]->codec->sample_fmt) ?
+               AVERROR(EINVAL) : 0;
+
+    pkt.data     = (*frame)->data[0];
+    pkt.size     = (*frame)->nb_samples * av_get_bytes_per_sample((*frame)->format) * (*frame)->channels;
+    pkt.dts      = (*frame)->pkt_dts;
+    pkt.duration = av_frame_get_pkt_duration(*frame);
+    return pulse_write_packet(h, &pkt);
+}
+
+
 static void pulse_get_output_timestamp(AVFormatContext *h, int stream, int64_t *dts, int64_t *wall)
 {
     PulseData *s = h->priv_data;
@@ -178,6 +196,7 @@ AVOutputFormat ff_pulse_muxer = {
     .video_codec    = AV_CODEC_ID_NONE,
     .write_header   = pulse_write_header,
     .write_packet   = pulse_write_packet,
+    .write_uncoded_frame = pulse_write_frame,
     .write_trailer  = pulse_write_trailer,
     .get_output_timestamp = pulse_get_output_timestamp,
     .flags          = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
