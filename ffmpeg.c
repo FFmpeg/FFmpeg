@@ -666,6 +666,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         main_return_code = 1;
         close_all_output_streams(ost, MUXER_FINISHED | ENCODER_FINISHED, ENCODER_FINISHED);
     }
+    av_free_packet(pkt);
 }
 
 static void close_output_stream(OutputStream *ost)
@@ -743,8 +744,6 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
         }
 
         write_frame(s, &pkt, ost);
-
-        av_free_packet(&pkt);
     }
 }
 
@@ -1037,7 +1036,6 @@ static void do_video_out(AVFormatContext *s,
 
             frame_size = pkt.size;
             write_frame(s, &pkt, ost);
-            av_free_packet(&pkt);
 
             /* if two pass, output log */
             if (ost->logfile && enc->stats_out) {
