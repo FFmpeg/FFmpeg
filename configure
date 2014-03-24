@@ -3636,10 +3636,12 @@ elif enabled ppc; then
         e500v2)
             cpuflags="-mcpu=8548 -mhard-float -mfloat-gprs=double"
             disable altivec
+            disable dcbzl
         ;;
         e500)
             cpuflags="-mcpu=8540 -mhard-float"
             disable altivec
+            disable dcbzl
         ;;
     esac
 
@@ -4260,8 +4262,7 @@ elif enabled ppc; then
 
     enable local_aligned_8 local_aligned_16
 
-    [ $cpu != e500 -a $cpu != e500v2 ] &&
-     check_inline_asm dcbzl    '"dcbzl 0, %0" :: "r"(0)'
+    check_inline_asm dcbzl     '"dcbzl 0, %0" :: "r"(0)'
     check_inline_asm ibm_asm   '"add 0, 0, 0"'
     check_inline_asm ppc4xx    '"maclhw r10, r11, r12"'
     check_inline_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
