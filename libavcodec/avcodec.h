@@ -1003,6 +1003,12 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_H263_MB_INFO,
 
     /**
+     * This side data should be associated with an audio stream and contains
+     * ReplayGain information in form of the AVReplayGain struct.
+     */
+    AV_PKT_DATA_REPLAYGAIN,
+
+    /**
      * Recommmends skipping the specified number of samples
      * @code
      * u32le number of samples to skip from start of this packet

@@ -44,6 +44,7 @@ HEADERS = adler32.h                                                     \
           pixdesc.h                                                     \
           pixfmt.h                                                      \
           random_seed.h                                                 \
+          replaygain.h                                                  \
           rational.h                                                    \
           ripemd.h                                                      \
           samplefmt.h                                                   \

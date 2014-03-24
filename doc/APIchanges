@@ -15,6 +15,13 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-02-xx - xxxxxxx - lavu 53.07.0 - frame.h, replaygain.h
+  Add AV_FRAME_DATA_REPLAYGAIN for exporting replaygain tags.
+  Add a new header replaygain.h with the AVReplayGain struct.
+
+2014-02-xx - xxxxxxx - lavc 55.36.0 - avcodec.h
+  Add AV_PKT_DATA_REPLAYGAIN for exporting replaygain tags.
+
 2014-02-xx - xxxxxxx - lavf 55.13.0 - avformat.h
   Add AVStream.side_data and AVStream.nb_side_data for exporting stream-global
   side data (e.g. replaygain tags, video rotation)
