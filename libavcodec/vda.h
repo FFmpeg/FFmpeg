@@ -29,6 +29,7 @@
  * Public libavcodec VDA header.
  */
 
+#include "libavcodec/avcodec.h"
 #include "libavcodec/version.h"
 
 #include <stdint.h>
@@ -134,6 +135,58 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
 
 /** Destroy the video decoder. */
 int ff_vda_destroy_decoder(struct vda_context *vda_ctx);
+
+/**
+ * This struct holds all the information that needs to be passed
+ * between the caller and libavcodec for initializing VDA decoding.
+ * Its size is not a part of the public ABI, it must be allocated with
+ * av_vda_alloc_context() and freed with av_free().
+ */
+typedef struct AVVDAContext {
+    /**
+     * VDA decoder object. Created and freed by the caller.
+     */
+    VDADecoder decoder;
+
+    /**
+     * The output callback that must be passed to VDADecoderCreate.
+     * Set by av_vda_alloc_context().
+     */
+    VDADecoderOutputCallback output_callback;
+} AVVDAContext;
+
+/**
+ * Allocate and initialize a VDA context.
+ *
+ * This function should be called from the get_format() callback when the caller
+ * selects the AV_PIX_FMT_VDA format. The caller must then create the decoder
+ * object (using the output callback provided by libavcodec) that will be used
+ * for VDA-accelerated decoding.
+ *
+ * When decoding with VDA is finished, the caller must destroy the decoder
+ * object and free the VDA context using av_free().
+ *
+ * @return the newly allocated context or NULL on failure
+ */
+AVVDAContext *av_vda_alloc_context(void);
+
+/**
+ * This is a convenience function that creates and sets up the VDA context using
+ * an internal implementation.
+ *
+ * @param avctx the corresponding codec context
+ *
+ * @return >= 0 on success, a negative AVERROR code on failure
+ */
+int av_vda_default_init(AVCodecContext *avctx);
+
+/**
+ * This function must be called to free the VDA context initialized with
+ * av_vda_default_init().
+ *
+ * @param avctx the corresponding codec context
+ */
+void av_vda_default_free(AVCodecContext *avctx);
 
 /**
  * @}

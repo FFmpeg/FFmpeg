@@ -68,6 +68,7 @@ OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
 OBJS-$(CONFIG_SINEWIN)                 += sinewin.o
 OBJS-$(CONFIG_TPELDSP)                 += tpeldsp.o
 OBJS-$(CONFIG_VAAPI)                   += vaapi.o
+OBJS-$(CONFIG_VDA)                     += vda.o
 OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 OBJS-$(CONFIG_VIDEODSP)                += videodsp.o
 OBJS-$(CONFIG_VP3DSP)                  += vp3dsp.o
