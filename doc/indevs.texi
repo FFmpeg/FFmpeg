@@ -531,6 +531,16 @@ Record a stream from default device:
 ffmpeg -f pulse -i default /tmp/pulse.wav
 @end example
 
+@section qtkit
+
+QTKit input device.
+
+The filename passed as input is unused. The default device will be chosen.
+
+@example
+ffmpeg -f isight -i "" out.mpg
+@end example
+
 @section sndio
 
 sndio input device.
