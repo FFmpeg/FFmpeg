@@ -5,6 +5,7 @@ version <next>:
 - shuffleplanes filter
 - subfile protocol
 - Phantom Cine demuxer
+- replaygain data export
 
 
 version 2.2:

@@ -28,6 +28,8 @@
 #include "internal.h"
 #include "id3v2.h"
 #include "id3v1.h"
+#include "replaygain.h"
+
 #include "libavcodec/mpegaudiodecheader.h"
 
 #define XING_FLAG_FRAMES 0x01
@@ -209,6 +211,7 @@ static int mp3_read_header(AVFormatContext *s)
     MP3DecContext *mp3 = s->priv_data;
     AVStream *st;
     int64_t off;
+    int ret;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -233,6 +236,10 @@ static int mp3_read_header(AVFormatContext *s)
 
     if (mp3_parse_vbr_tags(s, st, off) < 0)
         avio_seek(s->pb, off, SEEK_SET);
+
+    ret = ff_replaygain_export(st, s->metadata);
+    if (ret < 0)
+        return ret;
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;

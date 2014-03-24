@@ -221,7 +221,7 @@ OBJS-$(CONFIG_MOV_DEMUXER)               += mov.o isom.o mov_chan.o
 OBJS-$(CONFIG_MOV_MUXER)                 += movenc.o isom.o avc.o hevc.o \
                                             movenchint.o mov_chan.o rtp.o
 OBJS-$(CONFIG_MP2_MUXER)                 += mp3enc.o rawenc.o id3v2enc.o
-OBJS-$(CONFIG_MP3_DEMUXER)               += mp3dec.o
+OBJS-$(CONFIG_MP3_DEMUXER)               += mp3dec.o replaygain.o
 OBJS-$(CONFIG_MP3_MUXER)                 += mp3enc.o rawenc.o id3v2enc.o
 OBJS-$(CONFIG_MPC_DEMUXER)               += mpc.o apetag.o img2.o
 OBJS-$(CONFIG_MPC8_DEMUXER)              += mpc8.o apetag.o img2.o
