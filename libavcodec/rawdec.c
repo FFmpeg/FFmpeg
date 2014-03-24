@@ -209,8 +209,11 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
 
     frame->pict_type        = AV_PICTURE_TYPE_I;
     frame->key_frame        = 1;
-    frame->reordered_opaque = avctx->reordered_opaque;
-    frame->pkt_pts          = avctx->internal->pkt->pts;
+
+    res = ff_decode_frame_props(avctx, frame);
+    if (res < 0)
+        return res;
+
     av_frame_set_pkt_pos     (frame, avctx->internal->pkt->pos);
     av_frame_set_pkt_duration(frame, avctx->internal->pkt->duration);
 

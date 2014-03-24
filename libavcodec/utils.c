@@ -827,6 +827,35 @@ static void compat_release_buffer(void *opaque, uint8_t *data)
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
+{
+    AVPacket *pkt = avctx->internal->pkt;
+    uint8_t *packet_sd;
+    int size;
+    AVFrameSideData *frame_sd;
+
+
+    frame->reordered_opaque = avctx->reordered_opaque;
+    if (!pkt) {
+        frame->pkt_pts = AV_NOPTS_VALUE;
+        return 0;
+    }
+
+    frame->pkt_pts = pkt->pts;
+
+    /* copy the replaygain data to the output frame */
+    packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_REPLAYGAIN, &size);
+    if (packet_sd) {
+        frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_REPLAYGAIN, size);
+        if (!frame_sd)
+            return AVERROR(ENOMEM);
+
+        memcpy(frame_sd->data, packet_sd, size);
+    }
+
+    return 0;
+}
+
 static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
     int override_dimensions = 1;
@@ -845,6 +874,9 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
             override_dimensions = 0;
         }
     }
+    ret = ff_decode_frame_props(avctx, frame);
+    if (ret < 0)
+        return ret;
     if ((ret = ff_init_buffer_info(avctx, frame)) < 0)
         return ret;
 
@@ -1001,11 +1033,8 @@ static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame)
     if (!frame->data[0])
         return ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);
 
-    if (av_frame_is_writable(frame)) {
-        frame->pkt_pts = avctx->internal->pkt ? avctx->internal->pkt->pts : AV_NOPTS_VALUE;
-        frame->reordered_opaque = avctx->reordered_opaque;
-        return 0;
-    }
+    if (av_frame_is_writable(frame))
+        return ff_decode_frame_props(avctx, frame);
 
     tmp = av_frame_alloc();
     if (!tmp)

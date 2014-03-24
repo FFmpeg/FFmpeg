@@ -129,6 +129,8 @@ struct AVCodecDefault {
     const uint8_t *value;
 };
 
+extern const uint8_t ff_log2_run[41];
+
 /**
  * Return the hardware accelerated codec for codec codec_id and
  * pixel format pix_fmt.
@@ -251,6 +253,9 @@ int ff_set_dimensions(AVCodecContext *s, int width, int height);
 int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
 
-extern const uint8_t ff_log2_run[41];
+/**
+ * Set various frame properties from the codec context / packet data.
+ */
+int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
 
 #endif /* AVCODEC_INTERNAL_H */
