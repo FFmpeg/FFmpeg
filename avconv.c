@@ -515,7 +515,9 @@ static void do_video_out(AVFormatContext *s,
         in_picture->pts != AV_NOPTS_VALUE &&
         in_picture->pts < ost->sync_opts) {
         nb_frames_drop++;
-        av_log(NULL, AV_LOG_VERBOSE, "*** drop!\n");
+        av_log(NULL, AV_LOG_WARNING,
+               "*** dropping frame %d from stream %d at ts %"PRId64"\n",
+               ost->frame_number, ost->st->index, in_picture->pts);
         return;
     }
 
