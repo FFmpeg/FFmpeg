@@ -579,8 +579,9 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
             }
         }
         if (devtype == AudioDevice && ctx->audio_buffer_size) {
-            if (dshow_set_audio_buffer_size(avctx, pin) < 0)
-                goto next;
+            if (dshow_set_audio_buffer_size(avctx, pin) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "unable to set audio buffer size %d to pin, using pin anyway...", ctx->audio_buffer_size);
+            }
         }
 
         if (IPin_EnumMediaTypes(pin, &types) != S_OK)
