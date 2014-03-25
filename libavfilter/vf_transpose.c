@@ -27,11 +27,12 @@
 
 #include <stdio.h>
 
-#include "libavutil/intreadwrite.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -98,12 +99,14 @@ static int config_props_output(AVFilterLink *outlink)
     outlink->w = inlink->h;
     outlink->h = inlink->w;
 
-    if (inlink->sample_aspect_ratio.num){
-        outlink->sample_aspect_ratio = av_div_q((AVRational){1,1}, inlink->sample_aspect_ratio);
-    } else
+    if (inlink->sample_aspect_ratio.num)
+        outlink->sample_aspect_ratio = av_div_q((AVRational) { 1, 1 },
+                                                inlink->sample_aspect_ratio);
+    else
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
-    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d dir:%d -> w:%d h:%d rotation:%s vflip:%d\n",
+    av_log(ctx, AV_LOG_VERBOSE,
+           "w:%d h:%d dir:%d -> w:%d h:%d rotation:%s vflip:%d\n",
            inlink->w, inlink->h, trans->dir, outlink->w, outlink->h,
            trans->dir == 1 || trans->dir == 3 ? "clockwise" : "counterclockwise",
            trans->dir == 0 || trans->dir == 3);
@@ -133,28 +136,28 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     for (plane = 0; out->data[plane]; plane++) {
-        int hsub = plane == 1 || plane == 2 ? trans->hsub : 0;
-        int vsub = plane == 1 || plane == 2 ? trans->vsub : 0;
+        int hsub    = plane == 1 || plane == 2 ? trans->hsub : 0;
+        int vsub    = plane == 1 || plane == 2 ? trans->vsub : 0;
         int pixstep = trans->pixsteps[plane];
-        int inh  = in->height  >> vsub;
-        int outw = out->width  >> hsub;
-        int outh = out->height >> vsub;
+        int inh     = in->height >> vsub;
+        int outw    = out->width >> hsub;
+        int outh    = out->height >> vsub;
         uint8_t *dst, *src;
         int dstlinesize, srclinesize;
         int x, y;
 
-        dst = out->data[plane];
+        dst         = out->data[plane];
         dstlinesize = out->linesize[plane];
-        src = in->data[plane];
+        src         = in->data[plane];
         srclinesize = in->linesize[plane];
 
-        if (trans->dir&1) {
-            src +=  in->linesize[plane] * (inh-1);
+        if (trans->dir & 1) {
+            src         += in->linesize[plane] * (inh - 1);
             srclinesize *= -1;
         }
 
-        if (trans->dir&2) {
-            dst += out->linesize[plane] * (outh-1);
+        if (trans->dir & 2) {
+            dst         += out->linesize[plane] * (outh - 1);
             dstlinesize *= -1;
         }
 
@@ -162,21 +165,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             switch (pixstep) {
             case 1:
                 for (x = 0; x < outw; x++)
-                    dst[x] = src[x*srclinesize + y];
+                    dst[x] = src[x * srclinesize + y];
                 break;
             case 2:
                 for (x = 0; x < outw; x++)
-                    *((uint16_t *)(dst + 2*x)) = *((uint16_t *)(src + x*srclinesize + y*2));
+                    *((uint16_t *)(dst + 2 * x)) =
+                        *((uint16_t *)(src + x * srclinesize + y * 2));
                 break;
             case 3:
                 for (x = 0; x < outw; x++) {
-                    int32_t v = AV_RB24(src + x*srclinesize + y*3);
-                    AV_WB24(dst + 3*x, v);
+                    int32_t v = AV_RB24(src + x * srclinesize + y * 3);
+                    AV_WB24(dst + 3 * x, v);
                 }
                 break;
             case 4:
                 for (x = 0; x < outw; x++)
-                    *((uint32_t *)(dst + 4*x)) = *((uint32_t *)(src + x*srclinesize + y*4));
+                    *((uint32_t *)(dst + 4 * x)) =
+                        *((uint32_t *)(src + x * srclinesize + y * 4));
                 break;
             }
             dst += dstlinesize;
@@ -208,8 +213,8 @@ static const AVClass transpose_class = {
 
 static const AVFilterPad avfilter_vf_transpose_inputs[] = {
     {
-        .name        = "default",
-        .type        = AVMEDIA_TYPE_VIDEO,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
     { NULL }
@@ -225,14 +230,11 @@ static const AVFilterPad avfilter_vf_transpose_outputs[] = {
 };
 
 AVFilter ff_vf_transpose = {
-    .name      = "transpose",
-    .description = NULL_IF_CONFIG_SMALL("Transpose input video."),
-
-    .priv_size = sizeof(TransContext),
-    .priv_class = &transpose_class,
-
+    .name          = "transpose",
+    .description   = NULL_IF_CONFIG_SMALL("Transpose input video."),
+    .priv_size     = sizeof(TransContext),
+    .priv_class    = &transpose_class,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_transpose_inputs,
-    .outputs   = avfilter_vf_transpose_outputs,
+    .inputs        = avfilter_vf_transpose_inputs,
+    .outputs       = avfilter_vf_transpose_outputs,
 };
