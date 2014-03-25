@@ -367,7 +367,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         int sizeFactor = -1;
 
         for (i = 0; i < FF_ARRAY_ELEMS(scale_algorithms); i++) {
-            if (flags & scale_algorithms[i].flag) {
+            if (flags & scale_algorithms[i].flag && scale_algorithms[i].size_factor > 0) {
                 sizeFactor = scale_algorithms[i].size_factor;
                 break;
             }
