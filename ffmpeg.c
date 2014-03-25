@@ -895,7 +895,9 @@ static void do_video_out(AVFormatContext *s,
     nb_frames = FFMIN(nb_frames, ost->max_frames - ost->frame_number);
     if (nb_frames == 0) {
         nb_frames_drop++;
-        av_log(NULL, AV_LOG_VERBOSE, "*** drop!\n");
+        av_log(NULL, AV_LOG_WARNING,
+               "*** dropping frame %d from stream %d at ts %"PRId64"\n",
+               ost->frame_number, ost->st->index, in_picture->pts);
         return;
     } else if (nb_frames > 1) {
         if (nb_frames > dts_error_threshold * 30) {
