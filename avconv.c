@@ -145,46 +145,52 @@ static void avconv_cleanup(int ret)
     int i, j;
 
     for (i = 0; i < nb_filtergraphs; i++) {
-        avfilter_graph_free(&filtergraphs[i]->graph);
-        for (j = 0; j < filtergraphs[i]->nb_inputs; j++) {
-            av_freep(&filtergraphs[i]->inputs[j]->name);
-            av_freep(&filtergraphs[i]->inputs[j]);
+        FilterGraph *fg = filtergraphs[i];
+        avfilter_graph_free(&fg->graph);
+        for (j = 0; j < fg->nb_inputs; j++) {
+            av_freep(&fg->inputs[j]->name);
+            av_freep(&fg->inputs[j]);
         }
-        av_freep(&filtergraphs[i]->inputs);
-        for (j = 0; j < filtergraphs[i]->nb_outputs; j++) {
-            av_freep(&filtergraphs[i]->outputs[j]->name);
-            av_freep(&filtergraphs[i]->outputs[j]);
+        av_freep(&fg->inputs);
+        for (j = 0; j < fg->nb_outputs; j++) {
+            av_freep(&fg->outputs[j]->name);
+            av_freep(&fg->outputs[j]);
         }
-        av_freep(&filtergraphs[i]->outputs);
-        av_freep(&filtergraphs[i]->graph_desc);
+        av_freep(&fg->outputs);
+        av_freep(&fg->graph_desc);
+
         av_freep(&filtergraphs[i]);
     }
     av_freep(&filtergraphs);
 
     /* close files */
     for (i = 0; i < nb_output_files; i++) {
-        AVFormatContext *s = output_files[i]->ctx;
+        OutputFile *of = output_files[i];
+        AVFormatContext *s = of->ctx;
         if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             avio_close(s->pb);
         avformat_free_context(s);
-        av_dict_free(&output_files[i]->opts);
+        av_dict_free(&of->opts);
+
         av_freep(&output_files[i]);
     }
     for (i = 0; i < nb_output_streams; i++) {
-        AVBitStreamFilterContext *bsfc = output_streams[i]->bitstream_filters;
+        OutputStream *ost = output_streams[i];
+        AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
         while (bsfc) {
             AVBitStreamFilterContext *next = bsfc->next;
             av_bitstream_filter_close(bsfc);
             bsfc = next;
         }
-        output_streams[i]->bitstream_filters = NULL;
-        av_frame_free(&output_streams[i]->filtered_frame);
+        ost->bitstream_filters = NULL;
+        av_frame_free(&ost->filtered_frame);
 
-        av_parser_close(output_streams[i]->parser);
+        av_parser_close(ost->parser);
 
-        av_freep(&output_streams[i]->forced_keyframes);
-        av_freep(&output_streams[i]->avfilter);
-        av_freep(&output_streams[i]->logfile_prefix);
+        av_freep(&ost->forced_keyframes);
+        av_freep(&ost->avfilter);
+        av_freep(&ost->logfile_prefix);
+
         av_freep(&output_streams[i]);
     }
     for (i = 0; i < nb_input_files; i++) {
@@ -192,11 +198,14 @@ static void avconv_cleanup(int ret)
         av_freep(&input_files[i]);
     }
     for (i = 0; i < nb_input_streams; i++) {
-        av_frame_free(&input_streams[i]->decoded_frame);
-        av_frame_free(&input_streams[i]->filter_frame);
-        av_dict_free(&input_streams[i]->opts);
-        av_freep(&input_streams[i]->filters);
-        av_freep(&input_streams[i]->hwaccel_device);
+        InputStream *ist = input_streams[i];
+
+        av_frame_free(&ist->decoded_frame);
+        av_frame_free(&ist->filter_frame);
+        av_dict_free(&ist->opts);
+        av_freep(&ist->filters);
+        av_freep(&ist->hwaccel_device);
+
         av_freep(&input_streams[i]);
     }
 
