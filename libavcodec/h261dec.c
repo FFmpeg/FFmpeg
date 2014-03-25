@@ -341,7 +341,8 @@ static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
 static int h261_decode_mb(H261Context *h)
 {
     MpegEncContext *const s = &h->s;
-    int i, cbp, xy;
+    int i, cbp, xy, b_xy;
+    int b_stride = 2*s->mb_width + 1;
 
     cbp = 63;
     // Read mba
@@ -374,6 +375,7 @@ static int h261_decode_mb(H261Context *h)
     s->mb_x = ((h->gob_number - 1) % 2) * 11 + ((h->current_mba - 1) % 11);
     s->mb_y = ((h->gob_number - 1) / 2) * 3 + ((h->current_mba - 1) / 11);
     xy      = s->mb_x + s->mb_y * s->mb_stride;
+    b_xy    = 2 * s->mb_x + (2 * s->mb_y) * b_stride;
     ff_init_block_index(s);
     ff_update_block_index(s);
 
@@ -431,6 +433,11 @@ static int h261_decode_mb(H261Context *h)
     s->current_picture.mb_type[xy] = MB_TYPE_16x16 | MB_TYPE_L0;
     s->mv[0][0][0]                 = h->current_mv_x * 2; // gets divided by 2 in motion compensation
     s->mv[0][0][1]                 = h->current_mv_y * 2;
+
+    if (s->current_picture.motion_val[0]) {
+        s->current_picture.motion_val[0][b_xy][0] = s->mv[0][0][0];
+        s->current_picture.motion_val[0][b_xy][1] = s->mv[0][0][1];
+    }
 
 intra:
     /* decode each block */
