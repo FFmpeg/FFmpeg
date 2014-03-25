@@ -258,6 +258,15 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
     return best_score;
 }
 
+static void init_block_index(MpegEncContext *s){
+    s->block_index[0]= s->b8_stride*(s->mb_y*2    )     + s->mb_x*2;
+    s->block_index[1]= s->b8_stride*(s->mb_y*2    ) + 1 + s->mb_x*2;
+    s->block_index[2]= s->b8_stride*(s->mb_y*2 + 1)     + s->mb_x*2;
+    s->block_index[3]= s->b8_stride*(s->mb_y*2 + 1) + 1 + s->mb_x*2;
+    s->block_index[4]= s->mb_stride*(s->mb_y + 1)                + s->b8_stride*s->mb_height*2 + s->mb_x;
+    s->block_index[5]= s->mb_stride*(s->mb_y + s->mb_height + 2) + s->b8_stride*s->mb_height*2 + s->mb_x;
+}
+
 static int svq1_encode_plane(SVQ1Context *s, int plane,
                              unsigned char *src_plane,
                              unsigned char *ref_plane,
@@ -353,8 +362,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
 
             for (x = 0; x < block_width; x++) {
                 s->m.mb_x = x;
-                ff_init_block_index(&s->m);
-                ff_update_block_index(&s->m);
+                init_block_index(&s->m);
 
                 ff_estimate_p_frame_motion(&s->m, x, y);
             }
@@ -394,8 +402,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
             }
 
             s->m.mb_x = x;
-            ff_init_block_index(&s->m);
-            ff_update_block_index(&s->m);
+            init_block_index(&s->m);
 
             if (f->pict_type == AV_PICTURE_TYPE_I ||
                 (s->m.mb_type[x + y * s->m.mb_stride] &
