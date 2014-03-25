@@ -648,6 +648,30 @@ AVOutputFormat ff_ogg_muxer = {
 };
 #endif
 
+#if CONFIG_OGA_MUXER
+static const AVClass oga_muxer_class = {
+    .class_name = "Ogg audio muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVOutputFormat ff_oga_muxer = {
+    .name              = "oga",
+    .long_name         = NULL_IF_CONFIG_SMALL("Ogg audio"),
+    .mime_type         = "audio/ogg",
+    .extensions        = "oga",
+    .priv_data_size    = sizeof(OGGContext),
+    .audio_codec       = AV_CODEC_ID_VORBIS,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = ogg_write_header,
+    .write_packet      = ogg_write_packet,
+    .write_trailer     = ogg_write_trailer,
+    .flags             = AVFMT_TS_NEGATIVE,
+    .priv_class        = &oga_muxer_class,
+};
+#endif
+
 #if CONFIG_SPEEX_MUXER
 static const AVClass speex_muxer_class = {
     .class_name = "Speex muxer",

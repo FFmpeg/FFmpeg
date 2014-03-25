@@ -204,6 +204,7 @@ void av_register_all(void)
     REGISTER_MUXER   (NULL,             null);
     REGISTER_MUXDEMUX(NUT,              nut);
     REGISTER_DEMUXER (NUV,              nuv);
+    REGISTER_MUXER   (OGA,              oga);
     REGISTER_MUXDEMUX(OGG,              ogg);
     REGISTER_MUXDEMUX(OMA,              oma);
     REGISTER_MUXER   (OPUS,             opus);
