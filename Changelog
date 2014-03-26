@@ -6,6 +6,7 @@ version <next>:
 - shuffleplanes filter
 - replaygain data export
 - Alias PIX image encoder and decoder
+- BRender PIX image decoder
 
 
 version 10:
