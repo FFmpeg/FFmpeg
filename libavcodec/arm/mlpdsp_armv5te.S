@@ -63,7 +63,7 @@ PSAMP   .req    lr
 .endm
 
 .macro loadd_ group, index0, index1, base, offset
-A .if offset >= 256
+A .if \offset >= 256
 A       ldr     \group\index0, [\base, #\offset]
 A       ldr     \group\index1, [\base, #(\offset) + 4]
 A .else

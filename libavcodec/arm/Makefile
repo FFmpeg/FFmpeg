@@ -16,8 +16,7 @@ OBJS-$(CONFIG_H264PRED)                += arm/h264pred_init_arm.o
 OBJS-$(CONFIG_H264QPEL)                += arm/h264qpel_init_arm.o
 OBJS-$(CONFIG_HPELDSP)                 += arm/hpeldsp_init_arm.o        \
                                           arm/hpeldsp_arm.o
-OBJS-$(CONFIG_MLP_DECODER)             += arm/mlpdsp_init_arm.o         \
-                                          arm/mlpdsp_arm.o
+OBJS-$(CONFIG_MLP_DECODER)             += arm/mlpdsp_init_arm.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += arm/mpegaudiodsp_init_arm.o
 OBJS-$(CONFIG_MPEGVIDEO)               += arm/mpegvideo_arm.o
 OBJS-$(CONFIG_NEON_CLOBBER_TEST)       += arm/neontest.o
@@ -40,6 +39,7 @@ OBJS-$(CONFIG_RV40_DECODER)            += arm/rv34dsp_init_arm.o        \
 
 ARMV5TE-OBJS-$(CONFIG_DSPUTIL)         += arm/dsputil_init_armv5te.o    \
                                           arm/simple_idct_armv5te.o
+ARMV5TE-OBJS-$(CONFIG_MLP_DECODER)     += arm/mlpdsp_armv5te.o
 ARMV5TE-OBJS-$(CONFIG_MPEGVIDEO)       += arm/mpegvideo_armv5te.o       \
                                           arm/mpegvideo_armv5te_s.o
 ARMV5TE-OBJS-$(CONFIG_VIDEODSP)        += arm/videodsp_init_armv5te.o   \

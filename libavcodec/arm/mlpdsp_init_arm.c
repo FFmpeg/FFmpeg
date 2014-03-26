@@ -32,5 +32,9 @@ void ff_mlp_filter_channel_arm(int32_t *state, const int32_t *coeff,
 
 av_cold void ff_mlpdsp_init_arm(MLPDSPContext *c)
 {
-    c->mlp_filter_channel = ff_mlp_filter_channel_arm;
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_armv5te(cpu_flags)) {
+        c->mlp_filter_channel = ff_mlp_filter_channel_arm;
+    }
 }
