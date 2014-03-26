@@ -62,7 +62,7 @@ AC-3 audio decoder.
 This decoder implements part of ATSC A/52:2010 and ETSI TS 102 366, as well as
 the undocumented RealAudio 3 (a.k.a. dnet).
 
-@subsubsection AC-3 Decoder Options
+@subsection AC-3 Decoder Options
 
 @table @option
 
