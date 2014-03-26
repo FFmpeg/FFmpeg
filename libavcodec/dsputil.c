@@ -2798,29 +2798,21 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
 
     c->add_pixels8 = add_pixels8_c;
 
-#undef FUNC
-#undef FUNCC
-#define FUNC(f,  depth) f ## _ ## depth
-#define FUNCC(f, depth) f ## _ ## depth ## _c
+    c->draw_edges = draw_edges_8_c;
 
-    c->draw_edges = FUNCC(draw_edges, 8);
-
-    c->clear_block  = FUNCC(clear_block, 8);
-    c->clear_blocks = FUNCC(clear_blocks, 8);
-
-#define BIT_DEPTH_FUNCS(depth)                  \
-    c->get_pixels = FUNCC(get_pixels, depth);
+    c->clear_block  = clear_block_8_c;
+    c->clear_blocks = clear_blocks_8_c;
 
     switch (avctx->bits_per_raw_sample) {
     case 9:
     case 10:
     case 12:
     case 14:
-        BIT_DEPTH_FUNCS(16);
+        c->get_pixels = get_pixels_16_c;
         break;
     default:
         if (avctx->bits_per_raw_sample<=8 || avctx->codec_type != AVMEDIA_TYPE_VIDEO) {
-            BIT_DEPTH_FUNCS(8);
+            c->get_pixels = get_pixels_8_c;
         }
         break;
     }
