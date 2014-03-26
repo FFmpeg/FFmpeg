@@ -38,7 +38,6 @@ void ff_yadif_filter_line_ssse3(void *dst, void *prev, void *cur,
 
 av_cold void ff_yadif_init_x86(YADIFContext *yadif)
 {
-#if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
 #if ARCH_X86_32
@@ -49,5 +48,4 @@ av_cold void ff_yadif_init_x86(YADIFContext *yadif)
         yadif->filter_line = ff_yadif_filter_line_sse2;
     if (EXTERNAL_SSSE3(cpu_flags))
         yadif->filter_line = ff_yadif_filter_line_ssse3;
-#endif /* HAVE_YASM */
 }

@@ -69,7 +69,6 @@ CHROMA_MC(avg, 8, 10, avx)
 
 av_cold void ff_h264chroma_init_x86(H264ChromaContext *c, int bit_depth)
 {
-#if HAVE_YASM
     int high_bit_depth = bit_depth > 8;
     int cpu_flags      = av_get_cpu_flags();
 
@@ -115,5 +114,4 @@ av_cold void ff_h264chroma_init_x86(H264ChromaContext *c, int bit_depth)
         c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_10_avx;
         c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_10_avx;
     }
-#endif
 }
