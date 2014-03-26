@@ -309,9 +309,9 @@ CALL_2X_PIXELS(OPNAME ## _pixels16_y2_8_c,                              \
 CALL_2X_PIXELS(OPNAME ## _pixels16_xy2_8_c,                             \
                OPNAME ## _pixels8_xy2_8_c,                              \
                8)                                                       \
-av_unused CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_8_c,                \
-                         OPNAME ## _pixels8_8_c,                        \
-                         8)                                             \
+CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_8_c,                          \
+               OPNAME ## _pixels8_8_c,                                  \
+               8)                                                       \
 CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_x2_8_c,                       \
                OPNAME ## _no_rnd_pixels8_x2_8_c,                        \
                8)                                                       \
