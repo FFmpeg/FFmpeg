@@ -35,7 +35,6 @@
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
 extern const uint8_t ff_alternate_vertical_scan[64];
-extern const uint8_t ff_zigzag248_direct[64];
 
 extern uint32_t ff_square_tab[512];
 

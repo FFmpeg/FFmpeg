@@ -311,7 +311,7 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
     /* 248DCT setup */
     s->fdct[1]     = dsp.fdct248;
     s->idct_put[1] = ff_simple_idct248_put;  // FIXME: need to add it to DSP
-    memcpy(s->dv_zigzag[1], ff_zigzag248_direct, 64);
+    memcpy(s->dv_zigzag[1], ff_dv_zigzag248_direct, 64);
 
     s->avctx = avctx;
     avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
