@@ -137,6 +137,7 @@ static void free_field_queue(PullupField *head)
         av_free(f->combs);
         av_free(f->vars);
         next = f->next;
+        memset(f, 0, sizeof(*f));
         av_free(f);
         f = next;
     } while (f != head);
