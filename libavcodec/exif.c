@@ -80,7 +80,7 @@ static int exif_decode_tag(AVCodecContext *avctx, GetByteContext *gbytes, int le
     // store metadata or proceed with next IFD
     ret = ff_tis_ifd(id);
     if (ret) {
-        ret = ff_exif_decode_ifd(avctx, gbytes, le, depth + 1, metadata);
+        ret = avpriv_exif_decode_ifd(avctx, gbytes, le, depth + 1, metadata);
     } else {
         const char *name = exif_get_tag_name(id);
         char *use_name   = (char*) name;
@@ -107,7 +107,7 @@ static int exif_decode_tag(AVCodecContext *avctx, GetByteContext *gbytes, int le
 }
 
 
-int ff_exif_decode_ifd(AVCodecContext *avctx, GetByteContext *gbytes, int le,
+int avpriv_exif_decode_ifd(AVCodecContext *avctx, GetByteContext *gbytes, int le,
                        int depth, AVDictionary **metadata)
 {
     int i, ret;

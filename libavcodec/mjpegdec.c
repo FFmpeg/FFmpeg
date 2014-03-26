@@ -1672,7 +1672,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 
         // read 0th IFD and store the metadata
         // (return values > 0 indicate the presence of subimage metadata)
-        ret = ff_exif_decode_ifd(s->avctx, &gbytes, le, 0, &s->exif_metadata);
+        ret = avpriv_exif_decode_ifd(s->avctx, &gbytes, le, 0, &s->exif_metadata);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "mjpeg: error decoding EXIF data\n");
             return ret;
