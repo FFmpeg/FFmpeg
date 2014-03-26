@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/common.h"
+#include "dsputil.h"
 #include "h264chroma.h"
 #include "vc1dsp.h"
 

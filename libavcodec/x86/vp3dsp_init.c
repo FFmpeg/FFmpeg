@@ -22,7 +22,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/vp3dsp.h"
 #include "config.h"
 

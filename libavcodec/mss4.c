@@ -27,7 +27,6 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
-#include "dsputil.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "mss34dsp.h"

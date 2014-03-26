@@ -23,7 +23,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "msmpeg4.h"

@@ -30,7 +30,6 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "ivi_dsp.h"
 #include "ivi_common.h"
 #include "indeo5data.h"

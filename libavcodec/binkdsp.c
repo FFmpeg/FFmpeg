@@ -25,7 +25,6 @@
  */
 
 #include "libavutil/attributes.h"
-#include "dsputil.h"
 #include "binkdsp.h"
 
 #define A1  2896 /* (1/sqrt(2))<<12 */

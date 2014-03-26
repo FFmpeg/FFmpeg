@@ -25,11 +25,11 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "rnd_avg.h"
 #include "vp3dsp.h"
 

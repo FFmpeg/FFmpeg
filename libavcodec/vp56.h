@@ -26,7 +26,6 @@
 #ifndef AVCODEC_VP56_H
 #define AVCODEC_VP56_H
 
-#include "dsputil.h"
 #include "get_bits.h"
 #include "hpeldsp.h"
 #include "bytestream.h"
