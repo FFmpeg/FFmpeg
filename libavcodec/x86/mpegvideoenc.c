@@ -26,7 +26,6 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dct.h"
 #include "libavcodec/mpegvideo.h"
-#include "dsputil_x86.h"
 
 /* not permutated inverse zigzag_direct + 1 for MMX quantizer */
 DECLARE_ALIGNED(16, static uint16_t, inv_zigzag_direct16)[64];
