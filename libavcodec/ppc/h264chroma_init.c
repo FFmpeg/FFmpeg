@@ -25,7 +25,6 @@
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/h264chroma.h"
-#include "dsputil_altivec.h"
 
 #if HAVE_ALTIVEC
 #define PUT_OP_U8_ALTIVEC(d, s, dst) d = s
