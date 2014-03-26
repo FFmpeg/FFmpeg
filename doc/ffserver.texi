@@ -111,7 +111,7 @@ must be configured in the stream configuration. They are sent to
 the @command{ffmpeg} encoders.
 
 The @command{ffmpeg} @option{override_ffserver} commandline option
-allows to override the encoding parameters set by the server.
+allows one to override the encoding parameters set by the server.
 
 Multiple streams can be connected to the same feed.
 
