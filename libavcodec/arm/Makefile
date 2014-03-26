@@ -52,6 +52,7 @@ ARMV6-OBJS-$(CONFIG_DSPUTIL)           += arm/dsputil_init_armv6.o      \
 ARMV6-OBJS-$(CONFIG_H264DSP)           += arm/h264dsp_armv6.o
 ARMV6-OBJS-$(CONFIG_HPELDSP)           += arm/hpeldsp_init_armv6.o      \
                                           arm/hpeldsp_armv6.o
+ARMV6-OBJS-$(CONFIG_MLP_DECODER)       += arm/mlpdsp_armv6.o
 ARMV6-OBJS-$(CONFIG_MPEGAUDIODSP)      += arm/mpegaudiodsp_fixed_armv6.o
 
 ARMV6-OBJS-$(CONFIG_VP8_DECODER)       += arm/vp8_armv6.o               \
