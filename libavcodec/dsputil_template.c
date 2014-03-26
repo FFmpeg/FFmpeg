@@ -31,7 +31,6 @@
 
 #include "bit_depth_template.c"
 
-#if BIT_DEPTH == 8
 /* draw the edges of width 'w' of an image of size width, height */
 // FIXME: Check that this is OK for MPEG-4 interlaced.
 static void FUNCC(draw_edges)(uint8_t *_buf, int _wrap, int width, int height,
@@ -62,30 +61,7 @@ static void FUNCC(draw_edges)(uint8_t *_buf, int _wrap, int width, int height,
             memcpy(last_line + (i + 1) * wrap, last_line,
                    (width + w + w) * sizeof(pixel));
 }
-#endif
 
-static void FUNCC(get_pixels)(int16_t *av_restrict block, const uint8_t *_pixels,
-                              int line_size)
-{
-    const pixel *pixels = (const pixel *) _pixels;
-    int i;
-
-    /* read the pixels */
-    for (i = 0; i < 8; i++) {
-        block[0] = pixels[0];
-        block[1] = pixels[1];
-        block[2] = pixels[2];
-        block[3] = pixels[3];
-        block[4] = pixels[4];
-        block[5] = pixels[5];
-        block[6] = pixels[6];
-        block[7] = pixels[7];
-        pixels  += line_size / sizeof(pixel);
-        block   += 8;
-    }
-}
-
-#if BIT_DEPTH == 8
 static void FUNCC(clear_block)(int16_t *block)
 {
     memset(block, 0, sizeof(int16_t) * 64);
@@ -95,7 +71,6 @@ static void FUNCC(clear_blocks)(int16_t *blocks)
 {
     memset(blocks, 0, sizeof(int16_t) * 6 * 64);
 }
-#endif
 
 #define PIXOP2(OPNAME, OP)                                              \
 static inline void FUNC(OPNAME ## _no_rnd_pixels8_l2)(uint8_t *dst,     \
@@ -338,10 +313,8 @@ CALL_2X_PIXELS(FUNCC(OPNAME ## _pixels16_xy2),                          \
 
 #define op_avg(a, b) a = rnd_avg_pixel4(a, b)
 #define op_put(a, b) a = b
-#if BIT_DEPTH == 8
 #define put_no_rnd_pixels8_8_c put_pixels8_8_c
 PIXOP2(avg, op_avg)
 PIXOP2(put, op_put)
-#endif
 #undef op_avg
 #undef op_put

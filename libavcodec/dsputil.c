@@ -46,13 +46,14 @@
 uint32_t ff_square_tab[512] = { 0, };
 
 #define BIT_DEPTH 16
-#include "dsputil_template.c"
+#include "dsputilenc_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 8
 #include "hpel_template.c"
 #include "tpel_template.c"
 #include "dsputil_template.c"
+#include "dsputilenc_template.c"
 
 // 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
 #define pb_7f (~0UL / 255 * 0x7f)
