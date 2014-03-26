@@ -154,7 +154,7 @@ pps:
             goto fail;
 
         /* prepend only to the first type 5 NAL unit of an IDR picture */
-        if (ctx->first_idr && unit_type == 5) {
+        if (ctx->first_idr && (unit_type == 5 || unit_type == 7 || unit_type == 8)) {
             if ((ret=alloc_and_copy(poutbuf, poutbuf_size,
                                avctx->extradata, avctx->extradata_size,
                                buf, nal_size)) < 0)
