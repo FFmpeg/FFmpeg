@@ -34,6 +34,8 @@
 #include "dv.h"
 #include "internal.h"
 #include "riff.h"
+#include "libavcodec/bytestream.h"
+#include "libavcodec/exif.h"
 
 typedef struct AVIStream {
     int64_t frame_offset;   /* current frame (video) or byte (audio) counter
@@ -377,6 +379,44 @@ static void avi_read_nikon(AVFormatContext *s, uint64_t end)
             break;
         }
     }
+}
+
+static int avi_extract_stream_metadata(AVStream *st)
+{
+    GetByteContext gb;
+    uint8_t *data = st->codec->extradata;
+    int data_size = st->codec->extradata_size;
+    int tag, offset;
+
+    if (!data || data_size < 8) {
+        return AVERROR_INVALIDDATA;
+    }
+
+    bytestream2_init(&gb, data, data_size);
+
+    tag = bytestream2_get_le32(&gb);
+
+    switch (tag) {
+    case MKTAG('A', 'V', 'I', 'F'):
+        // skip 4 byte padding
+        bytestream2_skip(&gb, 4);
+        offset = bytestream2_tell(&gb);
+        bytestream2_init(&gb, data + offset, data_size - offset);
+
+        // decode EXIF tags from IFD, AVI is always little-endian
+        return avpriv_exif_decode_ifd(st->codec, &gb, 1, 0, &st->metadata);
+        break;
+    case MKTAG('C', 'A', 'S', 'I'):
+        avpriv_request_sample(st->codec, "RIFF stream data tag type CASI (%u)", tag);
+        break;
+    case MKTAG('Z', 'o', 'r', 'a'):
+        avpriv_request_sample(st->codec, "RIFF stream data tag type Zora (%u)", tag);
+        break;
+    default:
+        break;
+    }
+
+    return 0;
 }
 
 static int calculate_bitrate(AVFormatContext *s)
@@ -829,6 +869,11 @@ static int avi_read_header(AVFormatContext *s)
 
                 if (st->codec->extradata_size & 1) //FIXME check if the encoder really did this correctly
                     avio_r8(pb);
+
+                ret = avi_extract_stream_metadata(st);
+                if (ret < 0) {
+                    av_log(s, AV_LOG_WARNING, "could not decoding EXIF data in stream header.\n");
+                }
             }
             break;
         case MKTAG('i', 'n', 'd', 'x'):
