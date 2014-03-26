@@ -108,7 +108,7 @@ static int exif_decode_tag(AVCodecContext *avctx, GetByteContext *gbytes, int le
 
 
 int avpriv_exif_decode_ifd(AVCodecContext *avctx, GetByteContext *gbytes, int le,
-                       int depth, AVDictionary **metadata)
+                           int depth, AVDictionary **metadata)
 {
     int i, ret;
     int entries;
