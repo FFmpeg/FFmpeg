@@ -44,12 +44,6 @@ void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 
-/* RV40 functions */
-void ff_put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-void ff_avg_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-void ff_put_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-void ff_avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-
 void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r,
               int width, int height);
