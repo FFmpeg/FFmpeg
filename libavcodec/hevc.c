@@ -2227,6 +2227,7 @@ static int hevc_frame_start(HEVCContext *s)
     int pic_size_in_ctb  = ((s->sps->width  >> s->sps->log2_min_cb_size) + 1) *
                            ((s->sps->height >> s->sps->log2_min_cb_size) + 1);
     int ret;
+    AVFrame *cur_frame;
 
     memset(s->horizontal_bs, 0, 2 * s->bs_width * (s->bs_height + 1));
     memset(s->vertical_bs,   0, 2 * s->bs_width * (s->bs_height + 1));
@@ -2254,6 +2255,9 @@ static int hevc_frame_start(HEVCContext *s)
     ret = set_side_data(s);
     if (ret < 0)
         goto fail;
+
+    cur_frame = s->sps->sao_enabled ? s->sao_frame : s->frame;
+    cur_frame->pict_type = 3 - s->sh.slice_type;
 
     av_frame_unref(s->output_frame);
     ret = ff_hevc_output_frame(s, s->output_frame, 0);
