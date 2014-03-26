@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+
 #include "bit_depth_template.c"
 void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
                                ptrdiff_t buf_linesize,

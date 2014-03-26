@@ -18,6 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
+#include <stdint.h>
+
+#include "libavutil/common.h"
+#include "internal.h"
+
 #if defined(CONFIG_RESAMPLE_DBL)
 #define SET_TYPE(func)  func ## _dbl
 #define FELEM         double

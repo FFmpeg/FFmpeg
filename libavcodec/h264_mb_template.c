@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "svq3.h"
+
 #undef FUNC
 #undef PIXEL_SHIFT
 

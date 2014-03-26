@@ -30,6 +30,8 @@
   written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>)
  */
 
+#include "simple_idct.h"
+
 #include "bit_depth_template.c"
 
 #undef W1

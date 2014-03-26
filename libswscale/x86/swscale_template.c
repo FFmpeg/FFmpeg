@@ -18,6 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
+#include "libavutil/x86/asm.h"
+#include "libswscale/swscale_internal.h"
+
 #undef REAL_MOVNTQ
 #undef MOVNTQ
 #undef MOVNTQ2
