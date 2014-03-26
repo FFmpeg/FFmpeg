@@ -216,7 +216,7 @@ OpenGL output device.
 
 To enable this output device you need to configure FFmpeg with @code{--enable-opengl}.
 
-Device allows to render to OpenGL context.
+This output device allows one to render to OpenGL context.
 Context may be provided by application or default SDL window is created.
 
 When device renders to external context, application must implement handlers for following messages:

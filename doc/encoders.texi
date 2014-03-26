@@ -1271,7 +1271,7 @@ Requires the presence of the libtheora headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libtheora}.
 
-For more informations about the libtheora project see
+For more information about the libtheora project see
 @url{http://www.theora.org/}.
 
 @subsection Options
