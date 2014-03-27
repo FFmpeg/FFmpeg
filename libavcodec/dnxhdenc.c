@@ -52,7 +52,7 @@ static const AVClass dnxhd_class = {
 
 #define LAMBDA_FRAC_BITS 10
 
-static void dnxhd_8bit_get_pixels_8x4_sym(int16_t *av_restrict block, const uint8_t *pixels, int line_size)
+static void dnxhd_8bit_get_pixels_8x4_sym(int16_t *av_restrict block, const uint8_t *pixels, ptrdiff_t line_size)
 {
     int i;
     for (i = 0; i < 4; i++) {
@@ -69,7 +69,7 @@ static void dnxhd_8bit_get_pixels_8x4_sym(int16_t *av_restrict block, const uint
     memcpy(block + 24, block - 32, sizeof(*block) * 8);
 }
 
-static av_always_inline void dnxhd_10bit_get_pixels_8x4_sym(int16_t *av_restrict block, const uint8_t *pixels, int line_size)
+static av_always_inline void dnxhd_10bit_get_pixels_8x4_sym(int16_t *av_restrict block, const uint8_t *pixels, ptrdiff_t line_size)
 {
     int i;
     const uint16_t* pixels16 = (const uint16_t*)pixels;
