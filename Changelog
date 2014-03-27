@@ -7,6 +7,7 @@ version <next>:
 - Phantom Cine demuxer
 - replaygain data export
 - VP7 video decoder
+- Alias PIX image encoder and decoder
 
 
 version 2.2:
