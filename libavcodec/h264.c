@@ -1842,7 +1842,10 @@ not_extra:
                 return ret;
             *got_frame = 1;
             if (CONFIG_MPEGVIDEO) {
-                ff_print_debug_info2(h->avctx, h->next_output_pic, pict, h->er.mbskip_table,
+                ff_print_debug_info2(h->avctx, pict, h->er.mbskip_table,
+                                    h->next_output_pic->mb_type,
+                                    h->next_output_pic->qscale_table,
+                                    h->next_output_pic->motion_val,
                                     &h->low_delay,
                                     h->mb_width, h->mb_height, h->mb_stride, 1);
             }
