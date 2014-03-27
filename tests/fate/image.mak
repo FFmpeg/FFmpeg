@@ -7,6 +7,26 @@ fate-aliaspix-gray: CMD = framecrc -i $(TARGET_SAMPLES)/aliaspix/firstgray.pix -
 FATE_ALIASPIX-$(call DEMDEC, IMAGE2, ALIAS_PIX) += $(FATE_ALIASPIX)
 FATE_IMAGE += $(FATE_ALIASPIX-yes)
 fate-aliaspix: $(FATE_ALIASPIX-yes)
+
+FATE_BRENDERPIX += fate-brenderpix-24
+fate-brenderpix-24: CMD = framecrc -c:v brender_pix -i $(TARGET_SAMPLES)/brenderpix/sbwheel.pix
+
+FATE_BRENDERPIX += fate-brenderpix-565
+fate-brenderpix-565: CMD = framecrc -c:v brender_pix -i $(TARGET_SAMPLES)/brenderpix/maximafront.pix
+
+FATE_BRENDERPIX += fate-brenderpix-defpal
+fate-brenderpix-defpal: CMD = framecrc -c:v brender_pix -i $(TARGET_SAMPLES)/brenderpix/rivrock1.pix
+
+FATE_BRENDERPIX += fate-brenderpix-intpal
+fate-brenderpix-intpal: CMD = framecrc -c:v brender_pix -i $(TARGET_SAMPLES)/brenderpix/testtex.pix
+
+FATE_BRENDERPIX += fate-brenderpix-y400a
+fate-brenderpix-y400a: CMD = framecrc -c:v brender_pix -i $(TARGET_SAMPLES)/brenderpix/gears.pix
+
+FATE_BRENDERPIX-$(call DEMDEC, IMAGE2, BRENDER_PIX) += $(FATE_BRENDERPIX)
+FATE_IMAGE += $(FATE_BRENDERPIX-yes)
+fate-brenderpix: $(FATE_BRENDERPIX-yes)
+
 FATE_IMAGE-$(call DEMDEC, IMAGE2, DPX) += fate-dpx
 fate-dpx: CMD = framecrc -i $(TARGET_SAMPLES)/dpx/lighthouse_rgb48.dpx
 
