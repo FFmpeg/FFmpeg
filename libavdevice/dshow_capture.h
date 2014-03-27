@@ -254,7 +254,7 @@ struct libAVFilter {
     void *priv_data;
     int stream_index;
     int64_t start_time;
-    void (*callback)(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time);
+    void (*callback)(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, enum dshowDeviceType type);
 };
 
 long          WINAPI libAVFilter_QueryInterface (libAVFilter *, const GUID *, void **);

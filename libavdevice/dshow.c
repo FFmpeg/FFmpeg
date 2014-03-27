@@ -180,7 +180,7 @@ static char *dup_wchar_to_utf8(wchar_t *w)
     return s;
 }
 
-static int shall_we_drop(AVFormatContext *s, int index)
+static int shall_we_drop(AVFormatContext *s, int index, enum dshowDeviceType devtype)
 {
     struct dshow_ctx *ctx = s->priv_data;
     static const uint8_t dropscore[] = {62, 75, 87, 100};
@@ -189,7 +189,7 @@ static int shall_we_drop(AVFormatContext *s, int index)
 
     if(dropscore[++ctx->video_frame_num%ndropscores] <= buffer_fullness) {
         av_log(s, AV_LOG_ERROR,
-              "real-time buffer[%d] too full (%d%% of size: %d)! frame dropped!\n", index, buffer_fullness, s->max_picture_buffer);
+              "real-time buffer[%s] too full (%d%% of size: %d)! frame dropped!\n", ctx->device_name[devtype], buffer_fullness, s->max_picture_buffer);
         return 1;
     }
 
@@ -197,7 +197,7 @@ static int shall_we_drop(AVFormatContext *s, int index)
 }
 
 static void
-callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time)
+callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, enum dshowDeviceType devtype)
 {
     AVFormatContext *s = priv_data;
     struct dshow_ctx *ctx = s->priv_data;
@@ -207,7 +207,7 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time)
 
     WaitForSingleObject(ctx->mutex, INFINITE);
 
-    if(shall_we_drop(s, index))
+    if(shall_we_drop(s, index, devtype))
         goto fail;
 
     pktl_next = av_mallocz(sizeof(AVPacketList));
