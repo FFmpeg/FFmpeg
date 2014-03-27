@@ -521,6 +521,13 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
         int alpha = (int8_t)vp8_rac_get_uint(c, 8);
         int beta  = (int8_t)vp8_rac_get_uint(c, 8);
         if (!s->keyframe && (alpha || beta)) {
+
+            if (!s->framep[VP56_FRAME_PREVIOUS] ||
+                !s->framep[VP56_FRAME_GOLDEN]) {
+                av_log(s->avctx, AV_LOG_WARNING, "Discarding interframe without a prior keyframe!\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             /* preserve the golden frame */
             if (s->framep[VP56_FRAME_GOLDEN] == s->framep[VP56_FRAME_PREVIOUS]) {
                 AVFrame *gold = s->framep[VP56_FRAME_GOLDEN]->tf.f;
