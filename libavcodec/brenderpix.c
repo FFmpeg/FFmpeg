@@ -134,7 +134,7 @@ static int pix_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 {
     AVFrame *frame = data;
 
-    int ret, i, j;
+    int ret, i;
     GetByteContext gb;
 
     unsigned int bytes_pp;
