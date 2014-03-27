@@ -1,3 +1,12 @@
+FATE_ALIASPIX += fate-aliaspix-bgr
+fate-aliaspix-bgr: CMD = framecrc -i $(TARGET_SAMPLES)/aliaspix/first.pix -pix_fmt bgr24
+
+FATE_ALIASPIX += fate-aliaspix-gray
+fate-aliaspix-gray: CMD = framecrc -i $(TARGET_SAMPLES)/aliaspix/firstgray.pix -pix_fmt gray
+
+FATE_ALIASPIX-$(call DEMDEC, IMAGE2, ALIAS_PIX) += $(FATE_ALIASPIX)
+FATE_IMAGE += $(FATE_ALIASPIX-yes)
+fate-aliaspix: $(FATE_ALIASPIX-yes)
 FATE_IMAGE-$(call DEMDEC, IMAGE2, DPX) += fate-dpx
 fate-dpx: CMD = framecrc -i $(TARGET_SAMPLES)/dpx/lighthouse_rgb48.dpx
 
