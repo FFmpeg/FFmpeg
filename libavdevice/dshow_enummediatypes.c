@@ -22,7 +22,7 @@
 #include "dshow_capture.h"
 
 DECLARE_QUERYINTERFACE(libAVEnumMediaTypes,
-    { {&IID_IUnknown,0}, {&IID_IEnumPins,0} })
+    { {&IID_IUnknown,0}, {&IID_IEnumMediaTypes,0} })
 DECLARE_ADDREF(libAVEnumMediaTypes)
 DECLARE_RELEASE(libAVEnumMediaTypes)
 
@@ -82,7 +82,7 @@ libAVEnumMediaTypes_Clone(libAVEnumMediaTypes *this, libAVEnumMediaTypes **enums
 static int
 libAVEnumMediaTypes_Setup(libAVEnumMediaTypes *this, const AM_MEDIA_TYPE *type)
 {
-    IEnumPinsVtbl *vtbl = this->vtbl;
+    IEnumMediaTypesVtbl *vtbl = this->vtbl;
     SETVTBL(vtbl, libAVEnumMediaTypes, QueryInterface);
     SETVTBL(vtbl, libAVEnumMediaTypes, AddRef);
     SETVTBL(vtbl, libAVEnumMediaTypes, Release);
