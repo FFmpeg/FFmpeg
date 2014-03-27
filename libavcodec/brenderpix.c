@@ -169,7 +169,7 @@ static int pix_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     ret = pix_decode_header(&hdr, &gb);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid header length.\n");
-        return AVERROR_INVALIDDATA;
+        return ret;
     }
     switch (hdr.format) {
     case 3:
@@ -223,7 +223,7 @@ static int pix_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         ret = pix_decode_header(&palhdr, &gb);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid palette header length.\n");
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
         if (palhdr.format != 7)
             avpriv_request_sample(avctx, "Palette not in RGB format");
