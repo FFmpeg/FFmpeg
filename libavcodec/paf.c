@@ -19,16 +19,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+
 #include "libavcodec/paf.h"
-#include "bytestream.h"
 #include "avcodec.h"
+#include "bytestream.h"
 #include "copy_block.h"
 #include "internal.h"
+#include "mathops.h"
 
-
-static const uint8_t block_sequences[16][8] =
-{
+static const uint8_t block_sequences[16][8] = {
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 2, 0, 0, 0, 0, 0, 0, 0 },
     { 5, 7, 0, 0, 0, 0, 0, 0 },
@@ -44,22 +45,25 @@ static const uint8_t block_sequences[16][8] =
     { 2, 4, 5, 7, 0, 0, 0, 0 },
     { 2, 4, 5, 0, 0, 0, 0, 0 },
     { 2, 4, 6, 0, 0, 0, 0, 0 },
-    { 2, 4, 5, 7, 5, 7, 0, 0 }
+    { 2, 4, 5, 7, 5, 7, 0, 0 },
 };
 
 typedef struct PAFVideoDecContext {
     AVFrame  *pic;
     GetByteContext gb;
 
-    int     current_frame;
+    int width;
+    int height;
+
+    int current_frame;
     uint8_t *frame[4];
-    int     frame_size;
-    int     video_size;
+    int frame_size;
+    int video_size;
 
     uint8_t *opcodes;
 } PAFVideoDecContext;
 
-static av_cold int paf_vid_close(AVCodecContext *avctx)
+static av_cold int paf_video_close(AVCodecContext *avctx)
 {
     PAFVideoDecContext *c = avctx->priv_data;
     int i;
@@ -72,13 +76,18 @@ static av_cold int paf_vid_close(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int paf_vid_init(AVCodecContext *avctx)
+static av_cold int paf_video_init(AVCodecContext *avctx)
 {
     PAFVideoDecContext *c = avctx->priv_data;
     int i;
 
+    c->width  = avctx->width;
+    c->height = avctx->height;
+
     if (avctx->height & 3 || avctx->width & 3) {
-        av_log(avctx, AV_LOG_ERROR, "width and height must be multiplies of 4\n");
+        av_log(avctx, AV_LOG_ERROR,
+               "width %d and height %d must be multiplie of 4.\n",
+               avctx->width, avctx->height);
         return AVERROR_INVALIDDATA;
     }
 
@@ -88,12 +97,12 @@ static av_cold int paf_vid_init(AVCodecContext *avctx)
     if (!c->pic)
         return AVERROR(ENOMEM);
 
-    c->frame_size = FFALIGN(avctx->height, 256) * avctx->width;
-    c->video_size = avctx->height * avctx->width;
+    c->frame_size = avctx->width * FFALIGN(avctx->height, 256);
+    c->video_size = avctx->width * avctx->height;
     for (i = 0; i < 4; i++) {
         c->frame[i] = av_mallocz(c->frame_size);
         if (!c->frame[i]) {
-            paf_vid_close(avctx);
+            paf_video_close(avctx);
             return AVERROR(ENOMEM);
         }
     }
@@ -101,58 +110,59 @@ static av_cold int paf_vid_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int get_video_page_offset(AVCodecContext *avctx, uint8_t a, uint8_t b)
+static void read4x4block(PAFVideoDecContext *c, uint8_t *dst, int width)
 {
-    int x, y;
-
-    x = b & 0x7F;
-    y = ((a & 0x3F) << 1) | (b >> 7 & 1);
-
-    return y * 2 * avctx->width + x * 2;
-}
-
-static void copy4h(AVCodecContext *avctx, uint8_t *dst)
-{
-    PAFVideoDecContext *c = avctx->priv_data;
     int i;
 
     for (i = 0; i < 4; i++) {
         bytestream2_get_buffer(&c->gb, dst, 4);
-        dst += avctx->width;
+        dst += width;
     }
 }
 
-static void copy_color_mask(AVCodecContext *avctx, uint8_t mask, uint8_t *dst, uint8_t color)
+static void copy_color_mask(uint8_t *dst, int width, uint8_t mask, uint8_t color)
 {
     int i;
 
     for (i = 0; i < 4; i++) {
-        if ((mask >> 4) & (1 << (3 - i)))
+        if (mask & (1 << 7 - i))
             dst[i] = color;
-        if ((mask & 15) & (1 << (3 - i)))
-            dst[avctx->width + i] = color;
+        if (mask & (1 << 3 - i))
+            dst[width + i] = color;
     }
 }
 
-static void copy_src_mask(AVCodecContext *avctx, uint8_t mask, uint8_t *dst, const uint8_t *src)
+static void copy_src_mask(uint8_t *dst, int width, uint8_t mask, const uint8_t *src)
 {
     int i;
 
     for (i = 0; i < 4; i++) {
-        if ((mask >> 4) & (1 << (3 - i)))
+        if (mask & (1 << 7 - i))
             dst[i] = src[i];
-        if ((mask & 15) & (1 << (3 - i)))
-            dst[avctx->width + i] = src[avctx->width + i];
+        if (mask & (1 << 3 - i))
+            dst[width + i] = src[width + i];
     }
 }
 
-static int decode_0(AVCodecContext *avctx, uint8_t code, uint8_t *pkt)
+static void set_src_position(PAFVideoDecContext *c,
+                             const uint8_t **p,
+                             const uint8_t **pend)
 {
-    PAFVideoDecContext *c = avctx->priv_data;
+    int val  = bytestream2_get_be16(&c->gb);
+    int page = val >> 14;
+    int x    = (val & 0x7F);
+    int y    = ((val >> 7) & 0x7F);
+
+    *p    = c->frame[page] + x * 2 + y * 2 * c->width;
+    *pend = c->frame[page] + c->frame_size;
+}
+
+static int decode_0(PAFVideoDecContext *c, uint8_t *pkt, uint8_t code)
+{
     uint32_t opcode_size, offset;
-    uint8_t *dst, *dend, mask = 0, color = 0, a, b, p;
+    uint8_t *dst, *dend, mask = 0, color = 0;
     const uint8_t *src, *send, *opcodes;
-    int  i, j, x = 0;
+    int i, j, op = 0;
 
     i = bytestream2_get_byte(&c->gb);
     if (i) {
@@ -164,21 +174,22 @@ static int decode_0(AVCodecContext *avctx, uint8_t code, uint8_t *pkt)
                 bytestream2_skip(&c->gb, 4 - align);
         }
         do {
-            a      = bytestream2_get_byte(&c->gb);
-            b      = bytestream2_get_byte(&c->gb);
-            p      = (a & 0xC0) >> 6;
-            dst    = c->frame[p] + get_video_page_offset(avctx, a, b);
-            dend   = c->frame[p] + c->frame_size;
-            offset = (b & 0x7F) * 2;
+            int page, val, x, y;
+            val    = bytestream2_get_be16(&c->gb);
+            page   = val >> 14;
+            x      = (val & 0x7F) * 2;
+            y      = ((val >> 7) & 0x7F) * 2;
+            dst    = c->frame[page] + x + y * c->width;
+            dend   = c->frame[page] + c->frame_size;
+            offset = (x & 0x7F) * 2;
             j      = bytestream2_get_le16(&c->gb) + offset;
-
             do {
                 offset++;
-                if (dst + 3 * avctx->width + 4 > dend)
+                if (dst + 3 * c->width + 4 > dend)
                     return AVERROR_INVALIDDATA;
-                copy4h(avctx, dst);
+                read4x4block(c, dst, c->width);
                 if ((offset & 0x3F) == 0)
-                    dst += avctx->width * 3;
+                    dst += c->width * 3;
                 dst += 4;
             } while (offset < j);
         } while (--i);
@@ -187,18 +198,14 @@ static int decode_0(AVCodecContext *avctx, uint8_t code, uint8_t *pkt)
     dst  = c->frame[c->current_frame];
     dend = c->frame[c->current_frame] + c->frame_size;
     do {
-        a    = bytestream2_get_byte(&c->gb);
-        b    = bytestream2_get_byte(&c->gb);
-        p    = (a & 0xC0) >> 6;
-        src  = c->frame[p] + get_video_page_offset(avctx, a, b);
-        send = c->frame[p] + c->frame_size;
-        if ((src + 3 * avctx->width + 4 > send) ||
-            (dst + 3 * avctx->width + 4 > dend))
+        set_src_position(c, &src, &send);
+        if ((src + 3 * c->width + 4 > send) ||
+            (dst + 3 * c->width + 4 > dend))
             return AVERROR_INVALIDDATA;
-        copy_block4(dst, src, avctx->width, avctx->width, 4);
+        copy_block4(dst, src, c->width, c->width, 4);
         i++;
         if ((i & 0x3F) == 0)
-            dst += avctx->width * 3;
+            dst += c->width * 3;
         dst += 4;
     } while (i < c->video_size / 16);
 
@@ -213,60 +220,53 @@ static int decode_0(AVCodecContext *avctx, uint8_t code, uint8_t *pkt)
 
     dst = c->frame[c->current_frame];
 
-    for (i = 0; i < avctx->height; i += 4, dst += avctx->width * 3) {
-        for (j = 0; j < avctx->width; j += 4, dst += 4) {
+    for (i = 0; i < c->height; i += 4, dst += c->width * 3)
+        for (j = 0; j < c->width; j += 4, dst += 4) {
             int opcode, k = 0;
-
-            if (x > opcode_size)
+            if (op > opcode_size)
                 return AVERROR_INVALIDDATA;
             if (j & 4) {
-                opcode = opcodes[x] & 15;
-                x++;
+                opcode = opcodes[op] & 15;
+                op++;
             } else {
-                opcode = opcodes[x] >> 4;
+                opcode = opcodes[op] >> 4;
             }
 
             while (block_sequences[opcode][k]) {
-
-                offset = avctx->width * 2;
+                offset = c->width * 2;
                 code   = block_sequences[opcode][k++];
 
                 switch (code) {
                 case 2:
                     offset = 0;
                 case 3:
-                    color  = bytestream2_get_byte(&c->gb);
+                    color = bytestream2_get_byte(&c->gb);
                 case 4:
-                    mask   = bytestream2_get_byte(&c->gb);
-                    copy_color_mask(avctx, mask, dst + offset, color);
+                    mask = bytestream2_get_byte(&c->gb);
+                    copy_color_mask(dst + offset, c->width, mask, color);
                     break;
                 case 5:
                     offset = 0;
                 case 6:
-                    a    = bytestream2_get_byte(&c->gb);
-                    b    = bytestream2_get_byte(&c->gb);
-                    p    = (a & 0xC0) >> 6;
-                    src  = c->frame[p] + get_video_page_offset(avctx, a, b);
-                    send = c->frame[p] + c->frame_size;
+                    set_src_position(c, &src, &send);
                 case 7:
-                    if (src + offset + avctx->width + 4 > send)
+                    if (src + offset + c->width + 4 > send)
                         return AVERROR_INVALIDDATA;
                     mask = bytestream2_get_byte(&c->gb);
-                    copy_src_mask(avctx, mask, dst + offset, src + offset);
+                    copy_src_mask(dst + offset, c->width, mask, src + offset);
                     break;
                 }
             }
         }
-    }
 
     return 0;
 }
 
-static int paf_vid_decode(AVCodecContext *avctx, void *data,
-                          int *got_frame, AVPacket *pkt)
+static int paf_video_decode(AVCodecContext *avctx, void *data,
+                            int *got_frame, AVPacket *pkt)
 {
     PAFVideoDecContext *c = avctx->priv_data;
-    uint8_t code, *dst, *src, *end;
+    uint8_t code, *dst, *end;
     int i, frame, ret;
 
     if ((ret = ff_reget_buffer(avctx, c->pic)) < 0)
@@ -275,12 +275,12 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
     bytestream2_init(&c->gb, pkt->data, pkt->size);
 
     code = bytestream2_get_byte(&c->gb);
-    if (code & 0x20) {
+    if (code & 0x20) {  // frame is keyframe
         for (i = 0; i < 4; i++)
             memset(c->frame[i], 0, c->frame_size);
 
         memset(c->pic->data[1], 0, AVPALETTE_SIZE);
-        c->current_frame = 0;
+        c->current_frame  = 0;
         c->pic->key_frame = 1;
         c->pic->pict_type = AV_PICTURE_TYPE_I;
     } else {
@@ -288,7 +288,7 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
         c->pic->pict_type = AV_PICTURE_TYPE_P;
     }
 
-    if (code & 0x40) {
+    if (code & 0x40) {  // palette update
         uint32_t *out = (uint32_t *)c->pic->data[1];
         int index, count;
 
@@ -297,7 +297,7 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
 
         if (index + count > 256)
             return AVERROR_INVALIDDATA;
-        if (bytestream2_get_bytes_left(&c->gb) < 3*count)
+        if (bytestream2_get_bytes_left(&c->gb) < 3 * count)
             return AVERROR_INVALIDDATA;
 
         out += index;
@@ -310,24 +310,32 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
             g = g << 2 | g >> 4;
             b = bytestream2_get_byteu(&c->gb);
             b = b << 2 | b >> 4;
-            *out++ = 0xFFU << 24 | r << 16 | g << 8 | b;
+            *out++ = (0xFFU << 24) | (r << 16) | (g << 8) | b;
         }
         c->pic->palette_has_changed = 1;
     }
 
     switch (code & 0x0F) {
     case 0:
-        if ((ret = decode_0(avctx, code, pkt->data)) < 0)
+        /* Block-based motion compensation using 4x4 blocks with either
+         * horizontal or vertical vectors; might incorporate VQ as well. */
+        if ((ret = decode_0(c, pkt->data, code)) < 0)
             return ret;
         break;
     case 1:
+        /* Uncompressed data. This mode specifies that (width * height) bytes
+         * should be copied directly from the encoded buffer into the output. */
         dst = c->frame[c->current_frame];
+        // possibly chunk length data
         bytestream2_skip(&c->gb, 2);
         if (bytestream2_get_bytes_left(&c->gb) < c->video_size)
             return AVERROR_INVALIDDATA;
         bytestream2_get_bufferu(&c->gb, dst, c->video_size);
         break;
     case 2:
+        /* Copy reference frame: Consume the next byte in the stream as the
+         * reference frame (which should be 0, 1, 2, or 3, and should not be
+         * the same as the current frame number). */
         frame = bytestream2_get_byte(&c->gb);
         if (frame > 3)
             return AVERROR_INVALIDDATA;
@@ -335,6 +343,7 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
             memcpy(c->frame[c->current_frame], c->frame[frame], c->frame_size);
         break;
     case 4:
+        /* Run length encoding.*/
         dst = c->frame[c->current_frame];
         end = dst + c->video_size;
 
@@ -364,24 +373,20 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    dst = c->pic->data[0];
-    src = c->frame[c->current_frame];
-    for (i = 0; i < avctx->height; i++) {
-        memcpy(dst, src, avctx->width);
-        dst += c->pic->linesize[0];
-        src += avctx->width;
-    }
+    av_image_copy_plane(c->pic->data[0], c->pic->linesize[0],
+                        c->frame[c->current_frame], c->width,
+                        c->width, c->height);
 
     c->current_frame = (c->current_frame + 1) & 3;
     if ((ret = av_frame_ref(data, c->pic)) < 0)
         return ret;
 
-    *got_frame       = 1;
+    *got_frame = 1;
 
     return pkt->size;
 }
 
-static av_cold int paf_aud_init(AVCodecContext *avctx)
+static av_cold int paf_audio_init(AVCodecContext *avctx)
 {
     if (avctx->channels != 2) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
@@ -394,14 +399,14 @@ static av_cold int paf_aud_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int paf_aud_decode(AVCodecContext *avctx, void *data,
-                          int *got_frame_ptr, AVPacket *pkt)
+static int paf_audio_decode(AVCodecContext *avctx, void *data,
+                            int *got_frame, AVPacket *pkt)
 {
     AVFrame *frame = data;
-    uint8_t *buf = pkt->data;
     int16_t *output_samples;
-    const uint8_t *t;
-    int frames, ret, i, j, k;
+    const uint8_t *src = pkt->data;
+    int frames, ret, i, j;
+    int16_t cb[256];
 
     frames = pkt->size / PAF_SOUND_FRAME_SIZE;
     if (frames < 1)
@@ -412,40 +417,42 @@ static int paf_aud_decode(AVCodecContext *avctx, void *data,
         return ret;
 
     output_samples = (int16_t *)frame->data[0];
-    for (i = 0; i < frames; i++) {
-        t = buf + 256 * sizeof(uint16_t);
-        for (j = 0; j < PAF_SOUND_SAMPLES; j++) {
-            for (k = 0; k < 2; k++) {
-                *output_samples++ = AV_RL16(buf + *t * 2);
-                t++;
-            }
-        }
-        buf += PAF_SOUND_FRAME_SIZE;
+    // codebook of 256 16-bit samples and 8-bit indices to it
+    for (j = 0; j < frames; j++) {
+        for (i = 0; i < 256; i++)
+            cb[i] = sign_extend(AV_RL16(src + i * 2), 16);
+        src += 256 * 2;
+        // always 2 channels
+        for (i = 0; i < PAF_SOUND_SAMPLES * 2; i++)
+            *output_samples++ = cb[*src++];
     }
-
-    *got_frame_ptr   = 1;
+    *got_frame = 1;
 
     return pkt->size;
 }
 
+#if CONFIG_PAF_VIDEO_DECODER
 AVCodec ff_paf_video_decoder = {
     .name           = "paf_video",
     .long_name      = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PAF_VIDEO,
     .priv_data_size = sizeof(PAFVideoDecContext),
-    .init           = paf_vid_init,
-    .close          = paf_vid_close,
-    .decode         = paf_vid_decode,
+    .init           = paf_video_init,
+    .close          = paf_video_close,
+    .decode         = paf_video_decode,
     .capabilities   = CODEC_CAP_DR1,
 };
+#endif
 
+#if CONFIG_PAF_AUDIO_DECODER
 AVCodec ff_paf_audio_decoder = {
-    .name           = "paf_audio",
-    .long_name      = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Audio"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_PAF_AUDIO,
-    .init           = paf_aud_init,
-    .decode         = paf_aud_decode,
-    .capabilities   = CODEC_CAP_DR1,
+    .name         = "paf_audio",
+    .long_name    = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Audio"),
+    .type         = AVMEDIA_TYPE_AUDIO,
+    .id           = AV_CODEC_ID_PAF_AUDIO,
+    .init         = paf_audio_init,
+    .decode       = paf_audio_decode,
+    .capabilities = CODEC_CAP_DR1,
 };
+#endif

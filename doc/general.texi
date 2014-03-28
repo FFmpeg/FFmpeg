@@ -205,7 +205,7 @@ library:
 @item American Laser Games MM   @tab   @tab X
     @tab Multimedia format used in games like Mad Dog McCree.
 @item 3GPP AMR                  @tab X @tab X
-@item Amazing Studio Packed Animation File        @tab   @tab X
+@item Amazing Studio Packed Animation File  @tab   @tab X
     @tab Multimedia format used in game Heart Of Darkness.
 @item Apple HTTP Live Streaming @tab   @tab X
 @item Artworx Data Format       @tab   @tab X
