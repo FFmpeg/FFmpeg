@@ -354,11 +354,11 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         if (codec->codec_id == AV_CODEC_ID_NONE) {
             AVProbeData pd;
             AVInputFormat *ifmt;
-            uint8_t header[20 + AVPROBE_PADDING_SIZE];
+            uint8_t header[PROBE_BUF_MIN + AVPROBE_PADDING_SIZE];
             int ret;
             int score = 0;
 
-            ret = avio_read(f[0], header, 20);
+            ret = avio_read(f[0], header, PROBE_BUF_MIN);
             if (ret < 0)
                 return ret;
             avio_skip(f[0], -ret);
