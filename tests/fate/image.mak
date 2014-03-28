@@ -131,6 +131,16 @@ fate-tiff: $(FATE_TIFF-yes)
 FATE_IMAGE-$(call DEMDEC, IMAGE2, XFACE) += fate-xface
 fate-xface: CMD = framecrc -i $(TARGET_SAMPLES)/xface/lena.xface
 
+FATE_XBM += fate-xbm10
+fate-xbm10: CMD = framecrc -i $(TARGET_SAMPLES)/xbm/xl.xbm
+
+FATE_XBM += fate-xbm11
+fate-xbm11: CMD = framecrc -i $(TARGET_SAMPLES)/xbm/lbw.xbm
+
+FATE_XBM-$(call DEMDEC, IMAGE2, XBM) += $(FATE_XBM)
+FATE_IMAGE += $(FATE_XBM-yes)
+fate-xbm: $(FATE_XBM-yes)
+
 FATE_IMAGE += $(FATE_IMAGE-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_IMAGE)
