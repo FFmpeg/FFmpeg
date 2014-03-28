@@ -183,6 +183,7 @@ OBJS-$(CONFIG_IMAGE2_MUXER)              += img2enc.o img2.o
 OBJS-$(CONFIG_IMAGE2PIPE_DEMUXER)        += img2dec.o img2.o
 OBJS-$(CONFIG_IMAGE2PIPE_MUXER)          += img2enc.o img2.o
 OBJS-$(CONFIG_IMAGE2_ALIAS_PIX_DEMUXER)  += img2_alias_pix.o
+OBJS-$(CONFIG_IMAGE2_BRENDER_PIX_DEMUXER) += img2_brender_pix.o
 OBJS-$(CONFIG_INGENIENT_DEMUXER)         += ingenientdec.o rawdec.o
 OBJS-$(CONFIG_IPMOVIE_DEMUXER)           += ipmovie.o
 OBJS-$(CONFIG_IRCAM_DEMUXER)             += ircamdec.o ircam.o pcm.o

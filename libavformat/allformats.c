@@ -147,6 +147,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(IMAGE2,           image2);
     REGISTER_MUXDEMUX(IMAGE2PIPE,       image2pipe);
     REGISTER_DEMUXER (IMAGE2_ALIAS_PIX, image2_alias_pix);
+    REGISTER_DEMUXER (IMAGE2_BRENDER_PIX, image2_brender_pix);
     REGISTER_DEMUXER (INGENIENT,        ingenient);
     REGISTER_DEMUXER (IPMOVIE,          ipmovie);
     REGISTER_MUXER   (IPOD,             ipod);
