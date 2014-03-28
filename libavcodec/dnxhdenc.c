@@ -55,7 +55,7 @@ static const AVClass class = {
 
 static void dnxhd_8bit_get_pixels_8x4_sym(int16_t *restrict block,
                                           const uint8_t *pixels,
-                                          int line_size)
+                                          ptrdiff_t line_size)
 {
     int i;
     for (i = 0; i < 4; i++) {
@@ -79,7 +79,7 @@ static void dnxhd_8bit_get_pixels_8x4_sym(int16_t *restrict block,
 static av_always_inline
 void dnxhd_10bit_get_pixels_8x4_sym(int16_t *restrict block,
                                     const uint8_t *pixels,
-                                    int line_size)
+                                    ptrdiff_t line_size)
 {
     int i;
 
