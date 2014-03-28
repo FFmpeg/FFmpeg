@@ -9,6 +9,7 @@ version <next>:
 - VP7 video decoder
 - Alias PIX image encoder and decoder
 - Improvments to the BRender PIX image decoder
+- Improvments to the XBM decoder
 
 
 version 2.2:

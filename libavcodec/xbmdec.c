@@ -20,17 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avstring.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "mathops.h"
-#include "libavutil/avstring.h"
-
-static av_cold int xbm_decode_init(AVCodecContext *avctx)
-{
-    avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
-
-    return 0;
-}
 
 static int convert(uint8_t x)
 {
@@ -47,32 +41,41 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
     AVFrame *p = data;
+    int ret, linesize, i, j;
+    int width  = 0;
+    int height = 0;
     const uint8_t *end, *ptr = avpkt->data;
     uint8_t *dst;
-    int ret, linesize, i, j;
 
+    avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
     end = avpkt->data + avpkt->size;
-    while (!avctx->width || !avctx->height) {
+    while (!width || !height) {
         char name[256];
         int number, len;
 
         ptr += strcspn(ptr, "#");
+        if (ptr >= avpkt->data + avpkt->size) {
+            av_log(avctx, AV_LOG_ERROR, "End of file reached.\n");
+            return AVERROR_INVALIDDATA;
+        }
         if (sscanf(ptr, "#define %255s %u", name, &number) != 2) {
             av_log(avctx, AV_LOG_ERROR, "Unexpected preprocessor directive\n");
             return AVERROR_INVALIDDATA;
         }
 
         len = strlen(name);
-        if ((len > 6) && !avctx->height && !memcmp(name + len - 7, "_height", 7)) {
-                avctx->height = number;
-        } else if ((len > 5) && !avctx->width && !memcmp(name + len - 6, "_width", 6)) {
-                avctx->width = number;
+        if ((len > 6) && !height && !memcmp(name + len - 7, "_height", 7)) {
+            height = number;
+        } else if ((len > 5) && !width && !memcmp(name + len - 6, "_width", 6)) {
+            width = number;
         } else {
-            av_log(avctx, AV_LOG_ERROR, "Unknown define '%s'\n", name);
-            return AVERROR_INVALIDDATA;
+            av_log(avctx, AV_LOG_WARNING, "Unknown define '%s'\n", name);
         }
         ptr += strcspn(ptr, "\n\r") + 1;
     }
+
+    if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
+        return ret;
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
@@ -94,7 +97,8 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
                     val = (val << 4) + convert(*ptr);
                 *dst++ = ff_reverse[val];
             } else {
-                av_log(avctx, AV_LOG_ERROR, "Unexpected data at '%.8s'\n", ptr);
+                av_log(avctx, AV_LOG_ERROR,
+                       "Unexpected data at %.8s.\n", ptr);
                 return AVERROR_INVALIDDATA;
             }
         }
@@ -113,7 +117,6 @@ AVCodec ff_xbm_decoder = {
     .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XBM,
-    .init         = xbm_decode_init,
     .decode       = xbm_decode_frame,
     .capabilities = CODEC_CAP_DR1,
 };
