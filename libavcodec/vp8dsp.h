@@ -30,8 +30,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef void (*vp8_mc_func)(uint8_t *dst/*align 8*/, ptrdiff_t dstStride,
-                            uint8_t *src/*align 1*/, ptrdiff_t srcStride,
+typedef void (*vp8_mc_func)(uint8_t *dst /* align 8 */, ptrdiff_t dstStride,
+                            uint8_t *src /* align 1 */, ptrdiff_t srcStride,
                             int h, int x, int y);
 
 typedef struct VP8DSPContext {
