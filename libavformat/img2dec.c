@@ -298,6 +298,8 @@ int ff_img_read_header(AVFormatContext *s1)
         st->codec->codec_id   = ff_guess_image2_codec(s->path);
         if (st->codec->codec_id == AV_CODEC_ID_LJPEG)
             st->codec->codec_id = AV_CODEC_ID_MJPEG;
+        if (st->codec->codec_id == AV_CODEC_ID_ALIAS_PIX) // we cannot distingiush this from BRENDER_PIX
+            st->codec->codec_id = AV_CODEC_ID_NONE;
     }
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
         pix_fmt != AV_PIX_FMT_NONE)
@@ -347,6 +349,26 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             if (!s->split_planes)
                 break;
             filename[strlen(filename) - 1] = 'U' + i;
+        }
+
+        if (codec->codec_id == AV_CODEC_ID_NONE) {
+            AVProbeData pd;
+            AVInputFormat *ifmt;
+            uint8_t header[20 + AVPROBE_PADDING_SIZE];
+            int ret;
+            int score = 0;
+
+            ret = avio_read(f[0], header, 20);
+            if (ret < 0)
+                return ret;
+            avio_skip(f[0], -ret);
+            pd.buf = header;
+            pd.buf_size = ret;
+            pd.filename = filename;
+
+            ifmt = av_probe_input_format3(&pd, 1, &score);
+            if (ifmt && ifmt->read_packet == ff_img_read_packet && ifmt->raw_codec_id)
+                codec->codec_id = ifmt->raw_codec_id;
         }
 
         if (codec->codec_id == AV_CODEC_ID_RAWVIDEO && !codec->width)
