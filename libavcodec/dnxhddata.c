@@ -1165,7 +1165,7 @@ int ff_dnxhd_get_cid_table(int cid)
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
 {
     int i, j;
-    int mbs = avctx->bit_rate/1000000;
+    int mbs = avctx->bit_rate / 1000000;
     if (!mbs)
         return 0;
     for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++) {
