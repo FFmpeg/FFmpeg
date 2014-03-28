@@ -25,6 +25,8 @@
  */
 
 #include "libavutil/bswap.h"
+#include "libavutil/common.h"
+
 #include "parser.h"
 
 typedef struct BMPParseContext {
@@ -41,8 +43,6 @@ static int bmp_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     uint64_t state = bpc->pc.state64;
     int next = END_NOT_FOUND;
     int i = 0;
-
-    s->pict_type = AV_PICTURE_TYPE_NONE;
 
     *poutbuf_size = 0;
     if (buf_size == 0)
