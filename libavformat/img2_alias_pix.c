@@ -20,22 +20,36 @@
  */
 
 #include "img2.h"
-#include "libavutil/intreadwrite.h"
+#include "libavcodec/bytestream.h"
 
 static int brender_read_probe(AVProbeData *p)
 {
-    int width  = AV_RB16(p->buf);
-    int height = AV_RB16(p->buf+2);
-    int ox     = AV_RB16(p->buf+4);
-    int oy     = AV_RB16(p->buf+6);
-    int bpp    = AV_RB16(p->buf+8);
-    int count  = p->buf[10];
+    const uint8_t *b = p->buf;
+    const uint8_t *end = b + p->buf_size;
+    int width  = bytestream_get_be16(&b);
+    int height = bytestream_get_be16(&b);
+    int ox     = bytestream_get_be16(&b);
+    int oy     = bytestream_get_be16(&b);
+    int bpp    = bytestream_get_be16(&b);
+    int x, y;
 
-    if (!count || !height || count > width)
+    if (!width || !height)
         return 0;
 
     if (bpp != 24 && bpp != 8)
         return 0;
+
+    for (y=0; y<2 && y<height; y++) {
+        for (x=0; x<width; ) {
+            int count = *b++;
+            if (count == 0 || x + count > width)
+                return 0;
+            if (b > end)
+                return AVPROBE_SCORE_MAX / 8;
+            b += bpp / 8;
+            x += count;
+        }
+    }
 
     return AVPROBE_SCORE_EXTENSION + 1;
 }
