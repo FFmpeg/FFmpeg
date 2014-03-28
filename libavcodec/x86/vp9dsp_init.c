@@ -29,11 +29,11 @@
 
 #if HAVE_YASM
 
-#define fpel_func(avg, sz, opt)                                         \
-void ff_ ## avg ## sz ## _ ## opt(uint8_t *dst, const uint8_t *src,     \
-                                  ptrdiff_t dst_stride,                 \
-                                  ptrdiff_t src_stride,                 \
-                                  int h, int mx, int my)
+#define fpel_func(avg, sz, opt)                                             \
+void ff_vp9_ ## avg ## sz ## _ ## opt(uint8_t *dst, const uint8_t *src,     \
+                                      ptrdiff_t dst_stride,                 \
+                                      ptrdiff_t src_stride,                 \
+                                      int h, int mx, int my)
 
 fpel_func(put,  4, mmx);
 fpel_func(put,  8, mmx);
@@ -47,14 +47,14 @@ fpel_func(avg, 32, sse2);
 fpel_func(avg, 64, sse2);
 #undef fpel_func
 
-#define mc_func(avg, sz, dir, opt)                                          \
-void                                                                        \
-ff_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,         \
-                                                      const uint8_t *src,   \
-                                                      ptrdiff_t dst_stride, \
-                                                      ptrdiff_t src_stride, \
-                                                      int h,                \
-                                                      const int8_t (*filter)[16])
+#define mc_func(avg, sz, dir, opt)                                              \
+void                                                                            \
+ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,         \
+                                                          const uint8_t *src,   \
+                                                          ptrdiff_t dst_stride, \
+                                                          ptrdiff_t src_stride, \
+                                                          int h,                \
+                                                          const int8_t (*filter)[16])
 
 #define mc_funcs(sz)            \
     mc_func(put, sz, h, ssse3); \
@@ -73,19 +73,19 @@ mc_funcs(16);
 
 #define mc_rep_func(avg, sz, hsz, dir, opt)                                 \
 static av_always_inline void                                                \
-ff_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,         \
+ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,     \
                                                       const uint8_t *src,   \
                                                       ptrdiff_t dst_stride, \
                                                       ptrdiff_t src_stride, \
                                                       int h,                \
                                                       const int8_t (*filter)[16]) \
 {                                                                           \
-    ff_ ## avg ## _8tap_1d_ ## dir ## _ ## hsz ## _ ## opt(dst, src,        \
+    ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## hsz ## _ ## opt(dst, src,    \
                                                            dst_stride,      \
                                                            src_stride,      \
                                                            h,               \
                                                            filter);         \
-    ff_ ## avg ## _8tap_1d_ ## dir ## _ ## hsz ## _ ## opt(dst + hsz,       \
+    ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## hsz ## _ ## opt(dst + hsz,   \
                                                            src + hsz,       \
                                                            dst_stride,      \
                                                            src_stride,      \
@@ -109,23 +109,23 @@ mc_rep_funcs(64, 32);
 
 extern const int8_t ff_filters_ssse3[3][15][4][16];
 
-#define filter_8tap_2d_fn(op, sz, f, fname)                             \
-static void                                                             \
-op ## _8tap_ ## fname ## _ ## sz ## hv_ssse3(uint8_t *dst,              \
-                                             const uint8_t *src,        \
-                                             ptrdiff_t dst_stride,      \
-                                             ptrdiff_t src_stride,      \
-                                             int h, int mx, int my)     \
-{                                                                       \
-    LOCAL_ALIGNED_16(uint8_t, temp, [71 * 64]);                         \
-    ff_put_8tap_1d_h_ ## sz ## _ssse3(temp, src - 3 * src_stride,       \
-                                      64, src_stride,                   \
-                                      h + 7,                            \
-                                      ff_filters_ssse3[f][mx - 1]);     \
-    ff_ ## op ## _8tap_1d_v_ ## sz ## _ssse3(dst, temp + 3 * 64,        \
-                                             dst_stride, 64,            \
-                                             h,                         \
-                                             ff_filters_ssse3[f][my - 1]); \
+#define filter_8tap_2d_fn(op, sz, f, fname)                                    \
+static void                                                                    \
+op ## _8tap_ ## fname ## _ ## sz ## hv_ssse3(uint8_t *dst,                     \
+                                             const uint8_t *src,               \
+                                             ptrdiff_t dst_stride,             \
+                                             ptrdiff_t src_stride,             \
+                                             int h, int mx, int my)            \
+{                                                                              \
+    LOCAL_ALIGNED_16(uint8_t, temp, [71 * 64]);                                \
+    ff_vp9_put_8tap_1d_h_ ## sz ## _ssse3(temp, src - 3 * src_stride,          \
+                                          64, src_stride,                      \
+                                          h + 7,                               \
+                                          ff_filters_ssse3[f][mx - 1]);        \
+    ff_vp9_ ## op ## _8tap_1d_v_ ## sz ## _ssse3(dst, temp + 3 * 64,           \
+                                                 dst_stride, 64,               \
+                                                 h,                            \
+                                                 ff_filters_ssse3[f][my - 1]); \
 }
 
 #define filters_8tap_2d_fn(op, sz)                          \
@@ -147,19 +147,19 @@ filters_8tap_2d_fn2(avg)
 #undef filters_8tap_2d_fn
 #undef filter_8tap_2d_fn
 
-#define filter_8tap_1d_fn(op, sz, f, fname, dir, dvar)                  \
-static void                                                             \
-op ## _8tap_ ## fname ## _ ## sz ## dir ## _ssse3(uint8_t *dst,         \
-                                                  const uint8_t *src,   \
-                                                  ptrdiff_t dst_stride, \
-                                                  ptrdiff_t src_stride, \
-                                                  int h, int mx,        \
-                                                  int my)               \
-{                                                                       \
-    ff_ ## op ## _8tap_1d_ ## dir ## _ ## sz ## _ssse3(dst, src,        \
-                                                       dst_stride,      \
-                                                       src_stride, h,   \
-                                                       ff_filters_ssse3[f][dvar - 1]); \
+#define filter_8tap_1d_fn(op, sz, f, fname, dir, dvar)                   \
+static void                                                              \
+op ## _8tap_ ## fname ## _ ## sz ## dir ## _ssse3(uint8_t *dst,          \
+                                                  const uint8_t *src,    \
+                                                  ptrdiff_t dst_stride,  \
+                                                  ptrdiff_t src_stride,  \
+                                                  int h, int mx,         \
+                                                  int my)                \
+{                                                                        \
+    ff_vp9_ ## op ## _8tap_1d_ ## dir ## _ ## sz ## _ssse3(dst, src,     \
+                                                           dst_stride,   \
+                                                           src_stride, h,\
+                                                           ff_filters_ssse3[f][dvar - 1]); \
 }
 
 #define filters_8tap_1d_fn(op, sz, dir, dvar)                          \
@@ -197,7 +197,7 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] =                    \
     dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][0][0] =                    \
     dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][0][0] =                    \
-    dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_ ## type ## sz ## _ ## opt
+    dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_vp9_ ## type ## sz ## _ ## opt
 
 
 #define init_subpel1(idx1, idx2, idxh, idxv, sz, dir, type, opt) \
