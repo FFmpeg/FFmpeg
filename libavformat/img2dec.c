@@ -28,9 +28,9 @@
 #include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "internal.h"
-#if HAVE_GLOB
-#include <glob.h>
+#include "img2.h"
 
+#if HAVE_GLOB
 /* Locally define as 0 (bitwise-OR no-op) any missing glob options that
    are non-posix glibc/bsd extensions. */
 #ifndef GLOB_NOMAGIC
@@ -41,31 +41,6 @@
 #endif
 
 #endif /* HAVE_GLOB */
-
-typedef struct {
-    const AVClass *class;  /**< Class for private options. */
-    int img_first;
-    int img_last;
-    int img_number;
-    int64_t pts;
-    int img_count;
-    int is_pipe;
-    int split_planes;       /**< use independent file for each Y, U, V plane */
-    char path[1024];
-    char *pixel_format;     /**< Set by a private option. */
-    int width, height;      /**< Set by a private option. */
-    AVRational framerate;   /**< Set by a private option. */
-    int loop;
-    enum { PT_GLOB_SEQUENCE, PT_GLOB, PT_SEQUENCE } pattern_type;
-    int use_glob;
-#if HAVE_GLOB
-    glob_t globstate;
-#endif
-    int start_number;
-    int start_number_range;
-    int frame_size;
-    int ts_from_file;
-} VideoDemuxData;
 
 static const int sizes[][2] = {
     { 640, 480 },
@@ -192,7 +167,7 @@ static int img_read_probe(AVProbeData *p)
     return 0;
 }
 
-static int img_read_header(AVFormatContext *s1)
+int ff_img_read_header(AVFormatContext *s1)
 {
     VideoDemuxData *s = s1->priv_data;
     int first_index, last_index;
@@ -313,6 +288,9 @@ static int img_read_header(AVFormatContext *s1)
     } else if (s1->audio_codec_id) {
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id   = s1->audio_codec_id;
+    } else if (s1->iformat->raw_codec_id) {
+        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codec->codec_id   = s1->iformat->raw_codec_id;
     } else {
         const char *str = strrchr(s->path, '.');
         s->split_planes       = str && !av_strcasecmp(str + 1, "y");
@@ -328,7 +306,7 @@ static int img_read_header(AVFormatContext *s1)
     return 0;
 }
 
-static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
+int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     VideoDemuxData *s = s1->priv_data;
     char filename_bytes[1024];
@@ -483,8 +461,8 @@ AVInputFormat ff_image2_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
     .priv_data_size = sizeof(VideoDemuxData),
     .read_probe     = img_read_probe,
-    .read_header    = img_read_header,
-    .read_packet    = img_read_packet,
+    .read_header    = ff_img_read_header,
+    .read_packet    = ff_img_read_packet,
     .read_close     = img_read_close,
     .read_seek      = img_read_seek,
     .flags          = AVFMT_NOFILE,
@@ -502,8 +480,8 @@ AVInputFormat ff_image2pipe_demuxer = {
     .name           = "image2pipe",
     .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     .priv_data_size = sizeof(VideoDemuxData),
-    .read_header    = img_read_header,
-    .read_packet    = img_read_packet,
+    .read_header    = ff_img_read_header,
+    .read_packet    = ff_img_read_packet,
     .priv_class     = &img2pipe_class,
 };
 #endif
