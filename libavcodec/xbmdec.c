@@ -91,10 +91,9 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
 
             ptr += strcspn(ptr, "x") + 1;
             if (ptr < end && av_isxdigit(*ptr)) {
-                val = convert(*ptr);
-                ptr++;
+                val = convert(*ptr++);
                 if (av_isxdigit(*ptr))
-                    val = (val << 4) + convert(*ptr);
+                    val = (val << 4) + convert(*ptr++);
                 *dst++ = ff_reverse[val];
             } else {
                 av_log(avctx, AV_LOG_ERROR,
