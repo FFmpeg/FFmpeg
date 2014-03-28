@@ -95,6 +95,13 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
                 if (av_isxdigit(*ptr))
                     val = (val << 4) + convert(*ptr++);
                 *dst++ = ff_reverse[val];
+                if (av_isxdigit(*ptr) && j+1 < linesize) {
+                    j++;
+                    val = convert(*ptr++);
+                    if (av_isxdigit(*ptr))
+                        val = (val << 4) + convert(*ptr++);
+                    *dst++ = ff_reverse[val];
+                }
             } else {
                 av_log(avctx, AV_LOG_ERROR,
                        "Unexpected data at %.8s.\n", ptr);
