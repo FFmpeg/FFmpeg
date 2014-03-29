@@ -104,7 +104,7 @@ typedef struct VP9DSPContext {
      * dimension 2: filter type (0: smooth, 1: regular, 2: sharp, 3: bilin)
      * dimension 3: averaging type (0: put, 1: avg)
      * dimension 4: x subpel interpolation (0: none, 1: 8tap/bilin)
-     * dimension 5: y subpel interpolation (1: none, 1: 8tap/bilin)
+     * dimension 5: y subpel interpolation (0: none, 1: 8tap/bilin)
      *
      * dst/stride are aligned by hsize
      */
