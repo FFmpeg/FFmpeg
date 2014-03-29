@@ -350,7 +350,9 @@ static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
 
     // the following fields is made of 6 bits to identify the streamtype (4 for video, 5 for audio)
     // plus 1 bit to indicate upstream and 1 bit set to 1 (reserved)
-    if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
+    if (track->enc->codec_id == AV_CODEC_ID_DVD_SUBTITLE)
+        avio_w8(pb, (0x38 << 2) | 1); // flags (= NeroSubpicStream)
+    else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         avio_w8(pb, 0x15); // flags (= Audiostream)
     else
         avio_w8(pb, 0x11); // flags (= Visualstream)
@@ -847,6 +849,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     else if (track->enc->codec_id == AV_CODEC_ID_VC1)       tag = MKTAG('v','c','-','1');
     else if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO)  tag = MKTAG('m','p','4','v');
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)  tag = MKTAG('m','p','4','a');
+    else if (track->enc->codec_id == AV_CODEC_ID_DVD_SUBTITLE)  tag = MKTAG('m','p','4','s');
 
     return tag;
 }
@@ -1143,7 +1146,9 @@ static int mov_write_subtitle_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb16(pb, 0);    /* Reserved */
     avio_wb16(pb, 1);    /* Data-reference index */
 
-    if (track->enc->extradata_size)
+    if (track->enc->codec_id == AV_CODEC_ID_DVD_SUBTITLE)
+        mov_write_esds_tag(pb, track);
+    else if (track->enc->extradata_size)
         avio_write(pb, track->enc->extradata, track->enc->extradata_size);
 
     return update_size(pb, pos);
@@ -1585,6 +1590,7 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
                 descr = "ClosedCaptionHandler";
             } else {
             if (track->tag == MKTAG('t','x','3','g')) hdlr_type = "sbtl";
+            if (track->tag == MKTAG('m','p','4','s')) hdlr_type = "subp";
             else                                      hdlr_type = "text";
             descr = "SubtitleHandler";
             }
@@ -3749,6 +3755,69 @@ static void mov_free(AVFormatContext *s)
     av_freep(&mov->tracks);
 }
 
+static uint32_t rgb_to_yuv(uint32_t rgb)
+{
+    uint8_t r, g, b;
+    int y, cb, cr;
+
+    r = (rgb >> 16) & 0xFF;
+    g = (rgb >>  8) & 0xFF;
+    b = (rgb      ) & 0xFF;
+
+    y  = av_clip_uint8( 16. +  0.257 * r + 0.504 * g + 0.098 * b);
+    cb = av_clip_uint8(128. -  0.148 * r - 0.291 * g + 0.439 * b);
+    cr = av_clip_uint8(128. +  0.439 * r - 0.368 * g - 0.071 * b);
+
+    return (y << 16) | (cr << 8) | cb;
+}
+
+static int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
+                                                    AVStream *st)
+{
+    int i, width = 720, height = 480;
+    int have_palette = 0, have_size = 0;
+    uint32_t palette[16];
+    char *cur = st->codec->extradata;
+
+    while (cur && *cur) {
+        if (strncmp("palette:", cur, 8) == 0) {
+            int i, count;
+            count = sscanf(cur + 8,
+                "%06x, %06x, %06x, %06x, %06x, %06x, %06x, %06x, "
+                "%06x, %06x, %06x, %06x, %06x, %06x, %06x, %06x",
+                &palette[ 0], &palette[ 1], &palette[ 2], &palette[ 3],
+                &palette[ 4], &palette[ 5], &palette[ 6], &palette[ 7],
+                &palette[ 8], &palette[ 9], &palette[10], &palette[11],
+                &palette[12], &palette[13], &palette[14], &palette[15]);
+
+            for (i = 0; i < count; i++) {
+                palette[i] = rgb_to_yuv(palette[i]);
+            }
+            have_palette = 1;
+        } else if (!strncmp("size:", cur, 5)) {
+            sscanf(cur + 5, "%dx%d", &width, &height);
+            have_size = 1;
+        }
+        if (have_palette && have_size)
+            break;
+        cur += strcspn(cur, "\n\r");
+        cur += strspn(cur, "\n\r");
+    }
+    if (have_palette) {
+        track->vos_data = av_malloc(16*4);
+        if (!track->vos_data)
+            return AVERROR(ENOMEM);
+        for (i = 0; i < 16; i++) {
+            AV_WB32(track->vos_data + i * 4, palette[i]);
+        }
+        track->vos_len = 16 * 4;
+    }
+    st->codec->width = width;
+    st->codec->height = track->height = height;
+
+    return 0;
+}
+
 static int mov_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
@@ -3971,9 +4040,13 @@ static int mov_write_header(AVFormatContext *s)
 
         /* copy extradata if it exists */
         if (st->codec->extradata_size) {
-            track->vos_len  = st->codec->extradata_size;
-            track->vos_data = av_malloc(track->vos_len);
-            memcpy(track->vos_data, st->codec->extradata, track->vos_len);
+            if (st->codec->codec_id == AV_CODEC_ID_DVD_SUBTITLE)
+                mov_create_dvd_sub_decoder_specific_info(track, st);
+            else {
+                track->vos_len  = st->codec->extradata_size;
+                track->vos_data = av_malloc(track->vos_len);
+                memcpy(track->vos_data, st->codec->extradata, track->vos_len);
+            }
         }
     }
 
