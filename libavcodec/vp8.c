@@ -434,6 +434,11 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     s->invisible = 0;
     part1_size   = AV_RL24(buf) >> 4;
 
+    if (buf_size < 4 - s->profile + part1_size) {
+        av_log(s->avctx, AV_LOG_ERROR, "Buffer size %d is too small, needed : %d\n", buf_size, 4 - s->profile + part1_size);
+        return AVERROR_INVALIDDATA;
+    }
+
     buf      += 4 - s->profile;
     buf_size -= 4 - s->profile;
 
