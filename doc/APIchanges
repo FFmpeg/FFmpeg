@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-03-xx - xxxxxxx - lavu 52.70.100 - mem.h
+  Add av_dynarray_add_nofree() function.
+
 2014-02-xx - xxxxxxx - lavu 53.08.0 - frame.h
   Add av_frame_remove_side_data() for removing a single side data
   instance from a frame.

@@ -177,12 +177,12 @@ int main(int argc, char **argv)
             st->stream->codec->pix_fmt             = st->link->format;
             break;
         case AVMEDIA_TYPE_AUDIO:
-            st->stream->codec->codec_id =
-                av_get_pcm_codec(st->stream->codec->sample_fmt, -1);
             st->stream->codec->channel_layout = st->link->channel_layout;
             st->stream->codec->channels = avfilter_link_get_channels(st->link);
             st->stream->codec->sample_rate = st->link->sample_rate;
             st->stream->codec->sample_fmt = st->link->format;
+            st->stream->codec->codec_id =
+                av_get_pcm_codec(st->stream->codec->sample_fmt, -1);
             break;
         default:
             av_assert0(!"reached");
