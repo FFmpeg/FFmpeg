@@ -37,6 +37,27 @@ static int convert(uint8_t x)
     return x;
 }
 
+static int parse_str_int(const uint8_t *p, int len, const uint8_t *key)
+{
+    const uint8_t *end = p + len;
+
+    for(; p<end - strlen(key); p++) {
+        if (!memcmp(p, key, strlen(key)))
+            break;
+    }
+    p += strlen(key);
+    if (p >= end)
+        return INT_MIN;
+
+    for(; p<end; p++) {
+        char **eptr;
+        int64_t ret = strtol(p, &eptr, 10);
+        if (eptr != p)
+            return ret;
+    }
+    return INT_MIN;
+}
+
 static int xbm_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
@@ -45,34 +66,14 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     int width  = 0;
     int height = 0;
     const uint8_t *end, *ptr = avpkt->data;
+    const uint8_t *next;
     uint8_t *dst;
 
     avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
     end = avpkt->data + avpkt->size;
-    while (!width || !height) {
-        char name[256];
-        int number, len;
 
-        ptr += strcspn(ptr, "#");
-        if (ptr >= avpkt->data + avpkt->size) {
-            av_log(avctx, AV_LOG_ERROR, "End of file reached.\n");
-            return AVERROR_INVALIDDATA;
-        }
-        if (sscanf(ptr, "#define %255s %u", name, &number) != 2) {
-            av_log(avctx, AV_LOG_ERROR, "Unexpected preprocessor directive\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        len = strlen(name);
-        if ((len > 6) && !height && !memcmp(name + len - 7, "_height", 7)) {
-            height = number;
-        } else if ((len > 5) && !width && !memcmp(name + len - 6, "_width", 6)) {
-            width = number;
-        } else {
-            av_log(avctx, AV_LOG_WARNING, "Unknown define '%s'\n", name);
-        }
-        ptr += strcspn(ptr, "\n\r") + 1;
-    }
+    width  = parse_str_int(avpkt->data, avpkt->size, "_width");
+    height = parse_str_int(avpkt->data, avpkt->size, "_height");
 
     if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
         return ret;
@@ -81,7 +82,12 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
 
     // goto start of image data
-    ptr += strcspn(ptr, "{") + 1;
+    next = ptr + strcspn(ptr, "{");
+    if (!*next)
+        next = ptr + strcspn(ptr, "(");
+    if (!*next)
+        return AVERROR_INVALIDDATA;
+    ptr = next + 1;
 
     linesize = (avctx->width + 7) / 8;
     for (i = 0; i < avctx->height; i++) {
@@ -89,7 +95,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         for (j = 0; j < linesize; j++) {
             uint8_t val;
 
-            ptr += strcspn(ptr, "x") + 1;
+            ptr += strcspn(ptr, "x$") + 1;
             if (ptr < end && av_isxdigit(*ptr)) {
                 val = convert(*ptr++);
                 if (av_isxdigit(*ptr))
