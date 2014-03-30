@@ -130,11 +130,16 @@ the same type. In the above diagram they can be represented by simply inserting
 an additional step between decoding and encoding:
 
 @example
- _________               __________              ______________
-|         |  simple     |          |            |              |
-| decoded |  fltrgrph   | filtered |  encoder   | encoded data |
-| frames  | ----------> | frames   | ---------> | packets      |
-|_________|             |__________|            |______________|
+ _________                        ______________
+|         |                      |              |
+| decoded |                      | encoded data |
+| frames  |\                    /| packets      |
+|_________| \                  / |______________|
+             \   __________   /
+  simple      \ |          | /  encoder
+  filtergraph  \| filtered |/
+                | frames   |
+                |__________|
 
 @end example
 
