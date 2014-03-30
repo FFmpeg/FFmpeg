@@ -105,4 +105,10 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                               Mp4Descr *mp4_descr, int mp4_descr_count, int pid,
                               MpegTSContext *ts);
 
+/**
+ * Check presence of H264 startcode
+ * @return <0 to stop processing
+ */
+int ff_check_h264_startcode(AVFormatContext *s, const AVStream *st, const AVPacket *pkt);
+
 #endif /* AVFORMAT_MPEGTS_H */
