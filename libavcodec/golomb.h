@@ -219,9 +219,9 @@ static inline int get_se_golomb_long(GetBitContext *gb)
     unsigned int buf = get_ue_golomb_long(gb);
 
     if (buf & 1)
-        buf = -(buf >> 1);
+        buf = (buf + 1) >> 1;
     else
-        buf = (buf >> 1);
+        buf = -(buf >> 1);
 
     return buf;
 }
