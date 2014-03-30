@@ -100,7 +100,6 @@ static int replaygain_export(AVStream *st,
 {
     AVPacketSideData *sd, *tmp;
     AVReplayGain *replaygain;
-    uint8_t *data;
     int32_t tg, ag;
     uint32_t tp, ap;
 
