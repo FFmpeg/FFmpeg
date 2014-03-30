@@ -30,6 +30,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "mpegts.h"
 #include "wtv.h"
 
 #define WTV_BIGSECTOR_SIZE (1 << WTV_BIGSECTOR_BITS)
@@ -460,10 +461,15 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
     WtvContext  *wctx = s->priv_data;
+    AVStream    *st   = s->streams[pkt->stream_index];
 
-    if (s->streams[pkt->stream_index]->codec->codec_id == AV_CODEC_ID_MJPEG && !wctx->thumbnail.size) {
+    if (st->codec->codec_id == AV_CODEC_ID_MJPEG && !wctx->thumbnail.size) {
         av_copy_packet(&wctx->thumbnail, pkt);
         return 0;
+    } else if (st->codec->codec_id == AV_CODEC_ID_H264) {
+        int ret = ff_check_h264_startcode(s, st, pkt);
+        if (ret < 0)
+            return ret;
     }
 
     /* emit sync chunk and 'timeline.table.0.entries.Event' record every 50 frames */
