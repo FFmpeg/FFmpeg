@@ -694,6 +694,15 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else if (!ff_guidcmp(formattype, ff_format_mpeg2_video)) {
             int consumed = parse_videoinfoheader2(s, st);
+            int count;
+            avio_skip(pb, 4);
+            count = avio_rl32(pb);
+            avio_skip(pb, 12);
+            if (count && ff_get_extradata(st->codec, pb, count) < 0) {
+               ff_free_stream(s, st);
+               return NULL;
+            }
+            consumed += 20 + count;
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else {
             if (ff_guidcmp(formattype, ff_format_none))
