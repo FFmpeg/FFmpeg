@@ -38,28 +38,25 @@ static const uint8_t vp7_pred4x4_mode[] =
     [PLANE_PRED8x8] = TM_VP8_PRED,
 };
 
-static const uint8_t vp8_pred4x4_mode[] =
-{
+static const uint8_t vp8_pred4x4_mode[] = {
     [DC_PRED8x8]    = DC_PRED,
     [VERT_PRED8x8]  = VERT_PRED,
     [HOR_PRED8x8]   = HOR_PRED,
     [PLANE_PRED8x8] = TM_VP8_PRED,
 };
 
-static const int8_t vp8_pred16x16_tree_intra[4][2] =
-{
-    { -MODE_I4x4, 1 },                      // '0'
-     { 2, 3 },
-      {  -DC_PRED8x8,  -VERT_PRED8x8 },     // '100', '101'
-      { -HOR_PRED8x8, -PLANE_PRED8x8 },     // '110', '111'
+static const int8_t vp8_pred16x16_tree_intra[4][2] = {
+    {   -MODE_I4x4,              1 }, // '0'
+    {            2,              3 },
+    {  -DC_PRED8x8,  -VERT_PRED8x8 }, // '100', '101'
+    { -HOR_PRED8x8, -PLANE_PRED8x8 }, // '110', '111'
 };
 
-static const int8_t vp8_pred16x16_tree_inter[4][2] =
-{
-    { -DC_PRED8x8, 1 },                     // '0'
-     { 2, 3 },
-      {  -VERT_PRED8x8, -HOR_PRED8x8 },     // '100', '101'
-      { -PLANE_PRED8x8, -MODE_I4x4 },       // '110', '111'
+static const int8_t vp8_pred16x16_tree_inter[4][2] = {
+    {    -DC_PRED8x8,            1 }, // '0'
+    {              2,            3 },
+    {  -VERT_PRED8x8, -HOR_PRED8x8 }, // '100', '101'
+    { -PLANE_PRED8x8,   -MODE_I4x4 }, // '110', '111'
 };
 
 typedef struct {
@@ -129,26 +126,26 @@ static const int vp8_mode_contexts[6][4] = {
 };
 
 static const uint8_t vp8_mbsplits[5][16] = {
-    {  0,  0,  0,  0,  0,  0,  0,  0,
-       1,  1,  1,  1,  1,  1,  1,  1  },
-    {  0,  0,  1,  1,  0,  0,  1,  1,
-       0,  0,  1,  1,  0,  0,  1,  1  },
-    {  0,  0,  1,  1,  0,  0,  1,  1,
-       2,  2,  3,  3,  2,  2,  3,  3  },
-    {  0,  1,  2,  3,  4,  5,  6,  7,
-       8,  9, 10, 11, 12, 13, 14, 15  },
-    {  0,  0,  0,  0,  0,  0,  0,  0,
-       0,  0,  0,  0,  0,  0,  0,  0  }
+    { 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  1,  1,  1,  1,  1,  1 },
+    { 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,  1,  1,  0,  0,  1,  1 },
+    { 0, 0, 1, 1, 0, 0, 1, 1, 2, 2,  3,  3,  2,  2,  3,  3 },
+    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0 }
 };
 
 static const uint8_t vp8_mbfirstidx[4][16] = {
-    {  0,  8 }, {  0,  2 }, {  0,  2,  8,  10 },
-    {  0,  1,  2,  3,  4,  5,  6,  7,
-       8,  9, 10, 11, 12, 13, 14, 15 }
+    { 0, 8 },
+    { 0, 2 },
+    { 0, 2, 8, 10 },
+    { 0, 1, 2,  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
 };
 
-static const uint8_t vp8_mbsplit_count[4] = {   2,   2,   4,  16 };
-static const uint8_t vp8_mbsplit_prob[3]  = { 110, 111, 150 };
+static const uint8_t vp8_mbsplit_count[4] = {
+    2, 2, 4, 16
+};
+static const uint8_t vp8_mbsplit_prob[3] = {
+    110, 111, 150
+};
 
 static const uint8_t vp7_submv_prob[3] = { 180, 162, 25 };
 
@@ -160,39 +157,42 @@ static const uint8_t vp8_submv_prob[5][3] = {
     { 208,   1,   1 }
 };
 
-static const uint8_t vp8_pred16x16_prob_intra[4] = { 145, 156, 163, 128 };
-static const uint8_t vp8_pred16x16_prob_inter[4] = { 112,  86, 140,  37 };
-
-static const int8_t vp8_pred4x4_tree[9][2] =
-{
-    { -DC_PRED, 1 },                                    // '0'
-     { -TM_VP8_PRED, 2 },                               // '10'
-      { -VERT_PRED, 3 },                                // '110'
-       { 4, 6 },
-        { -HOR_PRED, 5 },                               // '11100'
-         { -DIAG_DOWN_RIGHT_PRED, -VERT_RIGHT_PRED },   // '111010', '111011'
-        { -DIAG_DOWN_LEFT_PRED, 7 },                    // '11110'
-         { -VERT_LEFT_PRED, 8 },                        // '111110'
-          { -HOR_DOWN_PRED, -HOR_UP_PRED },             // '1111110', '1111111'
+static const uint8_t vp8_pred16x16_prob_intra[4] = {
+    145, 156, 163, 128
+};
+static const uint8_t vp8_pred16x16_prob_inter[4] = {
+    112, 86, 140, 37
 };
 
-static const int8_t vp8_pred8x8c_tree[3][2] =
-{
-    { -DC_PRED8x8, 1 },                 // '0'
-     { -VERT_PRED8x8, 2 },              // '10
-      { -HOR_PRED8x8, -PLANE_PRED8x8 }, // '110', '111'
+static const int8_t vp8_pred4x4_tree[9][2] = {
+    {              -DC_PRED,                1 }, // '0'
+    {          -TM_VP8_PRED,                2 }, // '10'
+    {            -VERT_PRED,                3 }, // '110'
+    {                     4,                6 },
+    {             -HOR_PRED,                5 }, // '11100'
+    { -DIAG_DOWN_RIGHT_PRED, -VERT_RIGHT_PRED }, // '111010', '111011'
+    {  -DIAG_DOWN_LEFT_PRED,                7 }, // '11110'
+    {       -VERT_LEFT_PRED,                8 }, // '111110'
+    {        -HOR_DOWN_PRED,     -HOR_UP_PRED }, // '1111110', '1111111'
 };
 
-static const uint8_t vp8_pred8x8c_prob_intra[3] = { 142, 114, 183 };
-static const uint8_t vp8_pred8x8c_prob_inter[3] = { 162, 101, 204 };
+static const int8_t vp8_pred8x8c_tree[3][2] = {
+    {   -DC_PRED8x8,              1 },  // '0'
+    { -VERT_PRED8x8,              2 },  // '10
+    {  -HOR_PRED8x8, -PLANE_PRED8x8 },  // '110', '111'
+};
 
-static const uint8_t vp8_pred4x4_prob_inter[9] =
-{
+static const uint8_t vp8_pred8x8c_prob_intra[3] = {
+    142, 114, 183
+};
+static const uint8_t vp8_pred8x8c_prob_inter[3] = {
+    162, 101, 204
+};
+static const uint8_t vp8_pred4x4_prob_inter[9] = {
     120, 90, 79, 133, 87, 85, 80, 111, 151
 };
 
-static const uint8_t vp8_pred4x4_prob_intra[10][10][9] =
-{
+static const uint8_t vp8_pred4x4_prob_intra[10][10][9] = {
     {
         {  39,  53, 200,  87,  26,  21,  43, 232, 171 },
         {  56,  34,  51, 104, 114, 102,  29,  93,  77 },
@@ -315,50 +315,57 @@ static const uint8_t vp8_pred4x4_prob_intra[10][10][9] =
     },
 };
 
-static const int8_t vp8_segmentid_tree[][2] =
-{
-    { 1, 2 },
-     { -0, -1 },    // '00', '01'
-     { -2, -3 },    // '10', '11'
+static const int8_t vp8_segmentid_tree[][2] = {
+    {  1,  2 },
+    { -0, -1 }, // '00', '01'
+    { -2, -3 }, // '10', '11'
 };
 
-static const uint8_t vp8_coeff_band[16] =
-{
+static const uint8_t vp8_coeff_band[16] = {
     0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7
 };
 
 /* Inverse of vp8_coeff_band: mappings of bands to coefficient indexes.
  * Each list is -1-terminated. */
-static const int8_t vp8_coeff_band_indexes[8][10] =
-{
-    {0, -1},
-    {1, -1},
-    {2, -1},
-    {3, -1},
-    {5, -1},
-    {6, -1},
-    {4, 7, 8, 9, 10, 11, 12, 13, 14, -1},
-    {15, -1}
+static const int8_t vp8_coeff_band_indexes[8][10] = {
+    {  0, -1 },
+    {  1, -1 },
+    {  2, -1 },
+    {  3, -1 },
+    {  5, -1 },
+    {  6, -1 },
+    {  4,  7, 8, 9, 10, 11, 12, 13, 14, -1 },
+    { 15, -1 }
 };
 
-static const uint8_t vp8_dct_cat1_prob[] = { 159, 0 };
-static const uint8_t vp8_dct_cat2_prob[] = { 165, 145, 0 };
-static const uint8_t vp8_dct_cat3_prob[] = { 173, 148, 140, 0 };
-static const uint8_t vp8_dct_cat4_prob[] = { 176, 155, 140, 135, 0 };
-static const uint8_t vp8_dct_cat5_prob[] = { 180, 157, 141, 134, 130, 0 };
-static const uint8_t vp8_dct_cat6_prob[] = { 254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0 };
+static const uint8_t vp8_dct_cat1_prob[] = {
+    159, 0
+};
+static const uint8_t vp8_dct_cat2_prob[] = {
+    165, 145, 0
+};
+static const uint8_t vp8_dct_cat3_prob[] = {
+    173, 148, 140, 0
+};
+static const uint8_t vp8_dct_cat4_prob[] = {
+    176, 155, 140, 135, 0
+};
+static const uint8_t vp8_dct_cat5_prob[] = {
+    180, 157, 141, 134, 130, 0
+};
+static const uint8_t vp8_dct_cat6_prob[] = {
+    254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0
+};
 
 // only used for cat3 and above; cat 1 and 2 are referenced directly
-const uint8_t * const ff_vp8_dct_cat_prob[] =
-{
+const uint8_t *const ff_vp8_dct_cat_prob[] = {
     vp8_dct_cat3_prob,
     vp8_dct_cat4_prob,
     vp8_dct_cat5_prob,
     vp8_dct_cat6_prob,
 };
 
-static const uint8_t vp8_token_default_probs[4][8][3][NUM_DCT_TOKENS-1] =
-{
+static const uint8_t vp8_token_default_probs[4][8][3][NUM_DCT_TOKENS - 1] = {
     {
         {
             { 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128 },
@@ -529,8 +536,7 @@ static const uint8_t vp8_token_default_probs[4][8][3][NUM_DCT_TOKENS-1] =
     },
 };
 
-static const uint8_t vp8_token_update_probs[4][8][3][NUM_DCT_TOKENS-1] =
-{
+static const uint8_t vp8_token_update_probs[4][8][3][NUM_DCT_TOKENS - 1] = {
     {
         {
             { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 },
@@ -702,15 +708,14 @@ static const uint8_t vp8_token_update_probs[4][8][3][NUM_DCT_TOKENS-1] =
 };
 
 // fixme: copied from h264data.h
-static const uint8_t zigzag_scan[16]={
-    0+0*4, 1+0*4, 0+1*4, 0+2*4,
-    1+1*4, 2+0*4, 3+0*4, 2+1*4,
-    1+2*4, 0+3*4, 1+3*4, 2+2*4,
-    3+1*4, 3+2*4, 2+3*4, 3+3*4,
+static const uint8_t zigzag_scan[16] = {
+    0 + 0 * 4, 1 + 0 * 4, 0 + 1 * 4, 0 + 2 * 4,
+    1 + 1 * 4, 2 + 0 * 4, 3 + 0 * 4, 2 + 1 * 4,
+    1 + 2 * 4, 0 + 3 * 4, 1 + 3 * 4, 2 + 2 * 4,
+    3 + 1 * 4, 3 + 2 * 4, 2 + 3 * 4, 3 + 3 * 4,
 };
 
-static const uint8_t vp8_dc_qlookup[VP8_MAX_QUANT+1] =
-{
+static const uint8_t vp8_dc_qlookup[VP8_MAX_QUANT + 1] = {
       4,   5,   6,   7,   8,   9,  10,  10,  11,  12,  13,  14,  15,  16,  17,  17,
      18,  19,  20,  20,  21,  21,  22,  22,  23,  23,  24,  25,  25,  26,  27,  28,
      29,  30,  31,  32,  33,  34,  35,  36,  37,  37,  38,  39,  40,  41,  42,  43,
@@ -721,8 +726,7 @@ static const uint8_t vp8_dc_qlookup[VP8_MAX_QUANT+1] =
     122, 124, 126, 128, 130, 132, 134, 136, 138, 140, 143, 145, 148, 151, 154, 157,
 };
 
-static const uint16_t vp8_ac_qlookup[VP8_MAX_QUANT+1] =
-{
+static const uint16_t vp8_ac_qlookup[VP8_MAX_QUANT + 1] = {
       4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
      20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,
      36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,
