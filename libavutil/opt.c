@@ -1421,6 +1421,9 @@ int av_opt_set_dict(void *obj, AVDictionary **options)
     AVDictionary    *tmp = NULL;
     int ret = 0;
 
+    if (!options)
+        return 0;
+
     while ((t = av_dict_get(*options, "", t, AV_DICT_IGNORE_SUFFIX))) {
         ret = av_opt_set(obj, t->key, t->value, 0);
         if (ret == AVERROR_OPTION_NOT_FOUND)
