@@ -275,6 +275,8 @@ int ffurl_open(URLContext **puc, const char *filename, int flags,
     if (options && (*puc)->prot->priv_data_class &&
         (ret = av_opt_set_dict((*puc)->priv_data, options)) < 0)
         goto fail;
+    if ((ret = av_opt_set_dict(*puc, options)) < 0)
+        goto fail;
     ret = ffurl_connect(*puc, options);
     if (!ret)
         return 0;
