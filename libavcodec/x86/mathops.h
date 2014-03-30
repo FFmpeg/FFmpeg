@@ -100,7 +100,7 @@ __asm__ volatile(\
 #endif /* HAVE_I686 */
 
 #define MASK_ABS(mask, level)                   \
-    __asm__ ("cltd                   \n\t"      \
+    __asm__ ("cdq                    \n\t"      \
              "xorl %1, %0            \n\t"      \
              "subl %1, %0            \n\t"      \
              : "+a"(level), "=&d"(mask))
