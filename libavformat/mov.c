@@ -3414,8 +3414,9 @@ static int mov_read_header(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;
-    int i, j, err;
+    int j, err;
     MOVAtom atom = { AV_RL32("root") };
+    int i;
 
     mov->fc = s;
     /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
