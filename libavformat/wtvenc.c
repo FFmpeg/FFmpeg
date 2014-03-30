@@ -243,14 +243,15 @@ static void put_videoinfoheader2(AVIOContext *pb, AVStream *st)
     ff_put_bmp_header(pb, st->codec, ff_codec_bmp_tags, 0, 1);
 
     if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+        int padding = (st->codec->extradata_size & 3) ? 4 - (st->codec->extradata_size & 3) : 0;
         /* MPEG2VIDEOINFO */
         avio_wl32(pb, 0);
-        avio_wl32(pb, st->codec->extradata_size);
+        avio_wl32(pb, st->codec->extradata_size + padding);
         avio_wl32(pb, -1);
         avio_wl32(pb, -1);
         avio_wl32(pb, 0);
         avio_write(pb, st->codec->extradata, st->codec->extradata_size);
-        avio_wl64(pb, 0);
+        ffio_fill(pb, 0, padding);
     }
 }
 
