@@ -90,7 +90,8 @@ the following diagram:
                                       |         |
                                       | decoded |
                                       | frames  |
- ________             ______________  |_________|
+                                      |_________|
+ ________             ______________       |
 |        |           |              |      |
 | output | <-------- | encoded data | <----+
 | file   |   muxer   | packets      |   encoder
