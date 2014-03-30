@@ -538,7 +538,7 @@ QTKit input device.
 The filename passed as input is unused. The default device will be chosen.
 
 @example
-ffmpeg -f isight -i "" out.mpg
+ffmpeg -f qtkit -i "0" out.mpg
 @end example
 
 @section sndio
