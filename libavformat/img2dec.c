@@ -361,6 +361,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             ret = avio_read(f[0], header, PROBE_BUF_MIN);
             if (ret < 0)
                 return ret;
+            memset(header + ret, 0, sizeof(header) - ret);
             avio_skip(f[0], -ret);
             pd.buf = header;
             pd.buf_size = ret;
