@@ -35,11 +35,11 @@
 #include "libavutil/time.h"
 #include "avdevice.h"
 
-static const int kQTKitTimeBase = 100;
+#define QTKIT_TIMEBASE 100
 
 static const AVRational kQTKitTimeBase_q = {
     .num = 1,
-    .den = kQTKitTimeBase
+    .den = QTKIT_TIMEBASE
 };
 
 typedef struct
@@ -213,7 +213,7 @@ static int qtkit_read_header(AVFormatContext *s)
         goto fail;
     }
 
-    avpriv_set_pts_info(stream, 64, 1, kQTKitTimeBase);
+    avpriv_set_pts_info(stream, 64, 1, QTKIT_TIMEBASE);
 
     stream->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
     stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
