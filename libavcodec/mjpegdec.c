@@ -415,7 +415,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         s->upscale_v = 2;
-        s->upscale_h = (pix_fmt_id == 0x22122100);
+        s->upscale_h = 2*(pix_fmt_id == 0x22122100);
         s->chroma_height = s->height;
         break;
     case 0x21211100:
@@ -425,7 +425,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         s->upscale_v = (pix_fmt_id == 0x22211200);
-        s->upscale_h = 2;
+        s->upscale_h = 4;
         s->chroma_height = s->height;
         break;
     case 0x22221100:
@@ -434,7 +434,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         s->upscale_v = 2;
-        s->upscale_h = 2;
+        s->upscale_h = 4;
         s->chroma_height = s->height / 2;
         break;
     case 0x11000000:
@@ -458,7 +458,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->upscale_h = (pix_fmt_id == 0x22211100) * 2 + (pix_fmt_id == 0x22112100);
+        s->upscale_h = 4 * (pix_fmt_id == 0x22211100) + 2 * (pix_fmt_id == 0x22112100);
         s->chroma_height = s->height / 2;
         break;
     case 0x21111100:
@@ -2035,15 +2035,20 @@ fail:
     return ret;
 the_end:
     if (s->upscale_h) {
-        uint8_t *line = s->picture_ptr->data[s->upscale_h];
+        int p;
         av_assert0(avctx->pix_fmt == AV_PIX_FMT_YUVJ444P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUV444P  ||
                    avctx->pix_fmt == AV_PIX_FMT_YUVJ440P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUV440P);
-        for (i = 0; i < s->chroma_height; i++) {
-            for (index = s->width - 1; index; index--)
-                line[index] = (line[index / 2] + line[(index + 1) / 2]) >> 1;
-            line += s->linesize[s->upscale_h];
+        for (p = 1; p<4; p++) {
+            uint8_t *line = s->picture_ptr->data[p];
+            if (!(s->upscale_h & (1<<p)))
+                continue;
+            for (i = 0; i < s->chroma_height; i++) {
+                for (index = s->width - 1; index; index--)
+                    line[index] = (line[index / 2] + line[(index + 1) / 2]) >> 1;
+                line += s->linesize[p];
+            }
         }
     }
     if (s->upscale_v) {
