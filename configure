@@ -255,7 +255,6 @@ External library support:
   --enable-opencl          enable OpenCL code
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl [no]
-  --disable-qtkit          disable QTKit input device support [autodetect]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
