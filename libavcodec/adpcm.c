@@ -555,17 +555,16 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         case AV_CODEC_ID_ADPCM_EA_R2:
             header_size    = 4 + 5 * ch;
             *coded_samples = bytestream2_get_le32(gb);
-            *approx_nb_samples = 1;
             break;
         case AV_CODEC_ID_ADPCM_EA_R3:
             header_size    = 4 + 5 * ch;
             *coded_samples = bytestream2_get_be32(gb);
-            *approx_nb_samples = 1;
             break;
         }
         *coded_samples -= *coded_samples % 28;
         nb_samples      = (buf_size - header_size) * 2 / ch;
         nb_samples     -= nb_samples % 28;
+        *approx_nb_samples = 1;
         break;
     case AV_CODEC_ID_ADPCM_IMA_DK3:
         if (avctx->block_align > 0)
