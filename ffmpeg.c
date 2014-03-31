@@ -514,6 +514,8 @@ static void ffmpeg_cleanup(int ret)
     if (received_sigterm) {
         av_log(NULL, AV_LOG_INFO, "Received signal %d: terminating.\n",
                (int) received_sigterm);
+    } else if (ret) {
+        av_log(NULL, AV_LOG_INFO, "Conversion failed!\n");
     }
     term_exit();
 }
