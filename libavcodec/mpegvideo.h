@@ -91,7 +91,7 @@ struct MpegEncContext;
  * Picture.
  */
 typedef struct Picture{
-    struct AVFrame f;
+    struct AVFrame *f;
     ThreadFrame tf;
 
     AVBufferRef *qscale_table_buf;

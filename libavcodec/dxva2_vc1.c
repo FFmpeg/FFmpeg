@@ -42,13 +42,13 @@ static void fill_picture_parameters(AVCodecContext *avctx,
 
     memset(pp, 0, sizeof(*pp));
     pp->wDecodedPictureIndex    =
-    pp->wDeblockedPictureIndex  = ff_dxva2_get_surface_index(ctx, &current_picture->f);
+    pp->wDeblockedPictureIndex  = ff_dxva2_get_surface_index(ctx, current_picture->f);
     if (s->pict_type != AV_PICTURE_TYPE_I && !v->bi_type)
-        pp->wForwardRefPictureIndex = ff_dxva2_get_surface_index(ctx, &s->last_picture.f);
+        pp->wForwardRefPictureIndex = ff_dxva2_get_surface_index(ctx, s->last_picture.f);
     else
         pp->wForwardRefPictureIndex = 0xffff;
     if (s->pict_type == AV_PICTURE_TYPE_B && !v->bi_type)
-        pp->wBackwardRefPictureIndex = ff_dxva2_get_surface_index(ctx, &s->next_picture.f);
+        pp->wBackwardRefPictureIndex = ff_dxva2_get_surface_index(ctx, s->next_picture.f);
     else
         pp->wBackwardRefPictureIndex = 0xffff;
     if (v->profile == PROFILE_ADVANCED) {
@@ -261,7 +261,7 @@ static int dxva2_vc1_end_frame(AVCodecContext *avctx)
     if (ctx_pic->bitstream_size <= 0)
         return -1;
 
-    ret = ff_dxva2_common_end_frame(avctx, &v->s.current_picture_ptr->f,
+    ret = ff_dxva2_common_end_frame(avctx, v->s.current_picture_ptr->f,
                                     &ctx_pic->pp, sizeof(ctx_pic->pp),
                                     NULL, 0,
                                     commit_bitstream_and_slice_buffer);

@@ -708,9 +708,9 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     }
 
     dxy = ly*4 + lx;
-    srcY = dir ? s->next_picture_ptr->f.data[0] : s->last_picture_ptr->f.data[0];
-    srcU = dir ? s->next_picture_ptr->f.data[1] : s->last_picture_ptr->f.data[1];
-    srcV = dir ? s->next_picture_ptr->f.data[2] : s->last_picture_ptr->f.data[2];
+    srcY = dir ? s->next_picture_ptr->f->data[0] : s->last_picture_ptr->f->data[0];
+    srcU = dir ? s->next_picture_ptr->f->data[1] : s->last_picture_ptr->f->data[1];
+    srcV = dir ? s->next_picture_ptr->f->data[2] : s->last_picture_ptr->f->data[2];
     src_x = s->mb_x * 16 + xoff + mx;
     src_y = s->mb_y * 16 + yoff + my;
     uvsrc_x = s->mb_x * 8 + (xoff >> 1) + umx;
@@ -1583,12 +1583,12 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
         ff_thread_report_progress(&s->current_picture_ptr->tf, INT_MAX, 0);
 
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-        if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
+        if ((ret = av_frame_ref(pict, s->current_picture_ptr->f)) < 0)
             return ret;
         ff_print_debug_info(s, s->current_picture_ptr);
         got_picture = 1;
     } else if (s->last_picture_ptr != NULL) {
-        if ((ret = av_frame_ref(pict, &s->last_picture_ptr->f)) < 0)
+        if ((ret = av_frame_ref(pict, s->last_picture_ptr->f)) < 0)
             return ret;
         ff_print_debug_info(s, s->last_picture_ptr);
         got_picture = 1;
@@ -1616,7 +1616,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     if (buf_size == 0) {
         /* special case for last picture */
         if (s->low_delay==0 && s->next_picture_ptr) {
-            if ((ret = av_frame_ref(pict, &s->next_picture_ptr->f)) < 0)
+            if ((ret = av_frame_ref(pict, s->next_picture_ptr->f)) < 0)
                 return ret;
             s->next_picture_ptr = NULL;
 
@@ -1644,7 +1644,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
         return AVERROR_INVALIDDATA;
     }
-    if ((!s->last_picture_ptr || !s->last_picture_ptr->f.data[0]) &&
+    if ((!s->last_picture_ptr || !s->last_picture_ptr->f->data[0]) &&
         si.type == AV_PICTURE_TYPE_B) {
         av_log(avctx, AV_LOG_ERROR, "Invalid decoder state: B-frame without "
                "reference data.\n");

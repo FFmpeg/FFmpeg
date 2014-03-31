@@ -1354,8 +1354,8 @@ static int mpeg1_decode_picture(AVCodecContext *avctx, const uint8_t *buf,
         s->mpeg_f_code[1][0] = f_code;
         s->mpeg_f_code[1][1] = f_code;
     }
-    s->current_picture.f.pict_type = s->pict_type;
-    s->current_picture.f.key_frame = s->pict_type == AV_PICTURE_TYPE_I;
+    s->current_picture.f->pict_type = s->pict_type;
+    s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_DEBUG,
@@ -1517,8 +1517,8 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
                 s->pict_type = AV_PICTURE_TYPE_P;
         } else
             s->pict_type = AV_PICTURE_TYPE_B;
-        s->current_picture.f.pict_type = s->pict_type;
-        s->current_picture.f.key_frame = s->pict_type == AV_PICTURE_TYPE_I;
+        s->current_picture.f->pict_type = s->pict_type;
+        s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
     }
     s->intra_dc_precision         = get_bits(&s->gb, 2);
     s->picture_structure          = get_bits(&s->gb, 2);
@@ -1593,19 +1593,19 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         ff_mpeg_er_frame_start(s);
 
         /* first check if we must repeat the frame */
-        s->current_picture_ptr->f.repeat_pict = 0;
+        s->current_picture_ptr->f->repeat_pict = 0;
         if (s->repeat_first_field) {
             if (s->progressive_sequence) {
                 if (s->top_field_first)
-                    s->current_picture_ptr->f.repeat_pict = 4;
+                    s->current_picture_ptr->f->repeat_pict = 4;
                 else
-                    s->current_picture_ptr->f.repeat_pict = 2;
+                    s->current_picture_ptr->f->repeat_pict = 2;
             } else if (s->progressive_frame) {
-                s->current_picture_ptr->f.repeat_pict = 1;
+                s->current_picture_ptr->f->repeat_pict = 1;
             }
         }
 
-        pan_scan = av_frame_new_side_data(&s->current_picture_ptr->f,
+        pan_scan = av_frame_new_side_data(s->current_picture_ptr->f,
                                           AV_FRAME_DATA_PANSCAN,
                                           sizeof(s1->pan_scan));
         if (!pan_scan)
@@ -1614,7 +1614,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         if (s1->a53_caption) {
             AVFrameSideData *sd = av_frame_new_side_data(
-                &s->current_picture_ptr->f, AV_FRAME_DATA_A53_CC,
+                s->current_picture_ptr->f, AV_FRAME_DATA_A53_CC,
                 s1->a53_caption_size);
             if (sd)
                 memcpy(sd->data, s1->a53_caption, s1->a53_caption_size);
@@ -1622,7 +1622,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         }
 
         if (s1->has_stereo3d) {
-            AVStereo3D *stereo = av_stereo3d_create_side_data(&s->current_picture_ptr->f);
+            AVStereo3D *stereo = av_stereo3d_create_side_data(s->current_picture_ptr->f);
             if (!stereo)
                 return AVERROR(ENOMEM);
 
@@ -1647,10 +1647,10 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         }
 
         for (i = 0; i < 4; i++) {
-            s->current_picture.f.data[i] = s->current_picture_ptr->f.data[i];
+            s->current_picture.f->data[i] = s->current_picture_ptr->f->data[i];
             if (s->picture_structure == PICT_BOTTOM_FIELD)
-                s->current_picture.f.data[i] +=
-                    s->current_picture_ptr->f.linesize[i];
+                s->current_picture.f->data[i] +=
+                    s->current_picture_ptr->f->linesize[i];
         }
     }
 
@@ -2004,7 +2004,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         ff_MPV_frame_end(s);
 
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-            int ret = av_frame_ref(pict, &s->current_picture_ptr->f);
+            int ret = av_frame_ref(pict, s->current_picture_ptr->f);
             if (ret < 0)
                 return ret;
             ff_print_debug_info(s, s->current_picture_ptr);
@@ -2014,7 +2014,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             /* latency of 1 frame for I- and P-frames */
             /* XXX: use another variable than picture_number */
             if (s->last_picture_ptr != NULL) {
-                int ret = av_frame_ref(pict, &s->last_picture_ptr->f);
+                int ret = av_frame_ref(pict, s->last_picture_ptr->f);
                 if (ret < 0)
                     return ret;
                 ff_print_debug_info(s, s->last_picture_ptr);
@@ -2581,7 +2581,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx, void *data,
     if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == SEQ_END_CODE)) {
         /* special case for last picture */
         if (s2->low_delay == 0 && s2->next_picture_ptr) {
-            int ret = av_frame_ref(picture, &s2->next_picture_ptr->f);
+            int ret = av_frame_ref(picture, s2->next_picture_ptr->f);
             if (ret < 0)
                 return ret;
 

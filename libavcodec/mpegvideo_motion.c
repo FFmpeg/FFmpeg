@@ -254,8 +254,8 @@ void mpeg_motion_internal(MpegEncContext *s,
 #endif
 
     v_edge_pos = s->v_edge_pos >> field_based;
-    linesize   = s->current_picture.f.linesize[0] << field_based;
-    uvlinesize = s->current_picture.f.linesize[1] << field_based;
+    linesize   = s->current_picture.f->linesize[0] << field_based;
+    uvlinesize = s->current_picture.f->linesize[1] << field_based;
 
     dxy   = ((motion_y & 1) << 1) | (motion_x & 1);
     src_x = s->mb_x * 16 + (motion_x >> 1);
@@ -900,7 +900,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
         } else {
             if (s->picture_structure != s->field_select[dir][0] + 1 &&
                 s->pict_type != AV_PICTURE_TYPE_B && !s->first_field) {
-                ref_picture = s->current_picture_ptr->f.data;
+                ref_picture = s->current_picture_ptr->f->data;
             }
 
             mpeg_motion(s, dest_y, dest_cb, dest_cr,
@@ -917,7 +917,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                 || s->pict_type == AV_PICTURE_TYPE_B || s->first_field) {
                 ref2picture = ref_picture;
             } else {
-                ref2picture = s->current_picture_ptr->f.data;
+                ref2picture = s->current_picture_ptr->f->data;
             }
 
             mpeg_motion(s, dest_y, dest_cb, dest_cr,
@@ -956,7 +956,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                 /* opposite parity is always in the same frame if this is
                  * second field */
                 if (!s->first_field) {
-                    ref_picture = s->current_picture_ptr->f.data;
+                    ref_picture = s->current_picture_ptr->f->data;
                 }
             }
         }
