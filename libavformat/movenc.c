@@ -1589,9 +1589,13 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
                 hdlr_type = "clcp";
                 descr = "ClosedCaptionHandler";
             } else {
-            if (track->tag == MKTAG('t','x','3','g')) hdlr_type = "sbtl";
-            else if (track->tag == MKTAG('m','p','4','s')) hdlr_type = "subp";
-            else                                      hdlr_type = "text";
+                if (track->tag == MKTAG('t','x','3','g')) {
+                    hdlr_type = "sbtl";
+                } else if (track->tag == MKTAG('m','p','4','s')) {
+                    hdlr_type = "subp";
+                } else {
+                    hdlr_type = "text";
+                }
             descr = "SubtitleHandler";
             }
         } else if (track->enc->codec_tag == MKTAG('r','t','p',' ')) {
