@@ -25,6 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include <inttypes.h>
+
 #include "internal.h"
 #include "avcodec.h"
 #include "h264.h"
@@ -497,7 +499,7 @@ static void print_short_term(H264Context *h)
         av_log(h->avctx, AV_LOG_DEBUG, "short term list:\n");
         for (i = 0; i < h->short_ref_count; i++) {
             H264Picture *pic = h->short_ref[i];
-            av_log(h->avctx, AV_LOG_DEBUG, "%d fn:%d poc:%d %p\n",
+            av_log(h->avctx, AV_LOG_DEBUG, "%"PRIu32" fn:%d poc:%d %p\n",
                    i, pic->frame_num, pic->poc, pic->f.data[0]);
         }
     }
@@ -514,7 +516,7 @@ static void print_long_term(H264Context *h)
         for (i = 0; i < 16; i++) {
             H264Picture *pic = h->long_ref[i];
             if (pic) {
-                av_log(h->avctx, AV_LOG_DEBUG, "%d fn:%d poc:%d %p\n",
+                av_log(h->avctx, AV_LOG_DEBUG, "%"PRIu32" fn:%d poc:%d %p\n",
                        i, pic->frame_num, pic->poc, pic->f.data[0]);
             }
         }

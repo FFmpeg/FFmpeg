@@ -83,7 +83,9 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     av_log(avctx, AV_LOG_DEBUG,
            "vclass %"PRIu32", ncolors %"PRIu32", bpp %"PRIu32", be %"PRIu32", lsize %"PRIu32", xoffset %"PRIu32"\n",
            vclass, ncolors, bpp, be, lsize, xoffset);
-    av_log(avctx, AV_LOG_DEBUG, "red %0x, green %0x, blue %0x\n", rgb[0], rgb[1], rgb[2]);
+    av_log(avctx, AV_LOG_DEBUG,
+           "red %0"PRIx32", green %0"PRIx32", blue %0"PRIx32"\n",
+           rgb[0], rgb[1], rgb[2]);
 
     if (pixformat > XWD_Z_PIXMAP) {
         av_log(avctx, AV_LOG_ERROR, "invalid pixmap format\n");

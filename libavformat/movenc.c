@@ -22,6 +22,7 @@
  */
 
 #include <stdint.h>
+#include <inttypes.h>
 
 #include "movenc.h"
 #include "avformat.h"
@@ -3216,8 +3217,10 @@ static int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
         if (strncmp("palette:", cur, 8) == 0) {
             int i, count;
             count = sscanf(cur + 8,
-                "%06x, %06x, %06x, %06x, %06x, %06x, %06x, %06x, "
-                "%06x, %06x, %06x, %06x, %06x, %06x, %06x, %06x",
+                "%06"PRIx32", %06"PRIx32", %06"PRIx32", %06"PRIx32", "
+                "%06"PRIx32", %06"PRIx32", %06"PRIx32", %06"PRIx32", "
+                "%06"PRIx32", %06"PRIx32", %06"PRIx32", %06"PRIx32", "
+                "%06"PRIx32", %06"PRIx32", %06"PRIx32", %06"PRIx32"",
                 &palette[ 0], &palette[ 1], &palette[ 2], &palette[ 3],
                 &palette[ 4], &palette[ 5], &palette[ 6], &palette[ 7],
                 &palette[ 8], &palette[ 9], &palette[10], &palette[11],
