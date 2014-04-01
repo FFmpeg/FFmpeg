@@ -31,9 +31,12 @@
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     if (avctx->width > 65535 || avctx->height > 65535) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Unsupported resolution %dx%d.\n", avctx->width, avctx->height);
         av_log(avctx, AV_LOG_ERROR, "SGI does not support resolutions above 65535x65535\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
+
     avctx->coded_frame = av_frame_alloc();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
