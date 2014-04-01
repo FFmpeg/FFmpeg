@@ -48,7 +48,7 @@
  */
 
 #define FFT_FLOAT 0
-#define CONFIG_AC3_FIXED 1
+#define USE_FIXED 1
 #define FFT_FIXED_32 1
 #include "ac3dec.h"
 

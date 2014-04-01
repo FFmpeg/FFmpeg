@@ -208,7 +208,7 @@ typedef struct AC3DecodeContext {
 
 ///@name Optimization
     DSPContext dsp;                         ///< for optimization
-#if CONFIG_AC3_FIXED
+#if USE_FIXED
     AVFixedDSPContext *fdsp;
 #else
     AVFloatDSPContext fdsp;

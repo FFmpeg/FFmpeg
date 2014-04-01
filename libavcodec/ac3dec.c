@@ -182,7 +182,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     AC3_RENAME(ff_kbd_window_init)(s->window, 5.0, 256);
     ff_dsputil_init(&s->dsp, avctx);
 
-#if (CONFIG_AC3_FIXED)
+#if (USE_FIXED)
     s->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & CODEC_FLAG_BITEXACT);
 #else
     avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
@@ -192,7 +192,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     ff_fmt_convert_init(&s->fmt_conv, avctx);
     av_lfg_init(&s->dith_state, 0);
 
-    if (CONFIG_AC3_FIXED)
+    if (USE_FIXED)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
     else
         avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
@@ -664,7 +664,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             for (i = 0; i < 128; i++)
                 x[i] = s->transform_coeffs[ch][2 * i];
             s->imdct_256.imdct_half(&s->imdct_256, s->tmp_output, x);
-#if CONFIG_AC3_FIXED
+#if USE_FIXED
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128, 8);
 #else
@@ -676,7 +676,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             s->imdct_256.imdct_half(&s->imdct_256, s->delay[ch - 1], x);
         } else {
             s->imdct_512.imdct_half(&s->imdct_512, s->tmp_output, s->transform_coeffs[ch]);
-#if CONFIG_AC3_FIXED
+#if USE_FIXED
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128, 8);
 #else
@@ -850,7 +850,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             if (start_subband > 7)
                 start_subband += start_subband - 7;
             end_subband    = get_bits(gbc, 3) + 5;
-#if CONFIG_AC3_FIXED
+#if USE_FIXED
             s->spx_dst_end_freq = end_freq_inv_tab[end_subband];
 #endif
             if (end_subband   > 7)
@@ -873,7 +873,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
             s->spx_dst_start_freq = dst_start_freq;
             s->spx_src_start_freq = src_start_freq;
-#if !CONFIG_AC3_FIXED
+#if !USE_FIXED
             s->spx_dst_end_freq   = dst_end_freq;
 #endif
 
@@ -907,7 +907,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                         int bandsize;
                         int spx_coord_exp, spx_coord_mant;
                         INTFLOAT nratio, sblend, nblend;
-#if CONFIG_AC3_FIXED
+#if USE_FIXED
                         int64_t accu;
                         /* calculate blending factors */
                         bandsize = s->spx_band_sizes[bnd];
@@ -948,7 +948,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                         spx_coord_mant <<= (25 - spx_coord_exp - master_spx_coord);
 
                         /* multiply noise and signal blending factors by spx coordinate */
-#if CONFIG_AC3_FIXED
+#if USE_FIXED
                         accu = (int64_t)nblend * spx_coord_mant;
                         s->spx_noise_blend[ch][bnd]  = (int)((accu + (1<<22)) >> 23);
                         accu = (int64_t)sblend * spx_coord_mant;
@@ -1320,7 +1320,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         } else {
             gain = s->dynamic_range[0];
         }
-#if CONFIG_AC3_FIXED
+#if USE_FIXED
         scale_coefs(s->transform_coeffs[ch], s->fixed_coeffs[ch], gain, 256);
 #else
         gain *= 1.0 / 4194304.0f;
@@ -1351,7 +1351,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         do_imdct(s, s->channels);
 
         if (downmix_output) {
-#if CONFIG_AC3_FIXED
+#if USE_FIXED
             ac3_downmix_c_fixed16(s->outptr, s->downmix_coeffs,
                               s->out_channels, s->fbw_channels, 256);
 #else
@@ -1609,7 +1609,7 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     AC3DecodeContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct_512);
     ff_mdct_end(&s->imdct_256);
-#if (CONFIG_AC3_FIXED)
+#if (USE_FIXED)
     av_free(s->fdsp);
 #endif
 

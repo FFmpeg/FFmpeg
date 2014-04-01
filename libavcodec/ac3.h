@@ -51,11 +51,11 @@
 #define EXP_D25   2
 #define EXP_D45   3
 
-#ifndef CONFIG_AC3_FIXED
-#define CONFIG_AC3_FIXED 0
+#ifndef USE_FIXED
+#define USE_FIXED 0
 #endif
 
-#if CONFIG_AC3_FIXED
+#if USE_FIXED
 
 #define FFT_FLOAT 0
 
@@ -75,7 +75,7 @@
 #define INTFLOAT                int
 #define SHORTFLOAT              int16_t
 
-#else /* CONFIG_AC3_FIXED */
+#else /* USE_FIXED */
 
 #define FIXR(x)                 ((float)(x))
 #define FIXR12(x)               ((float)(x))
@@ -93,7 +93,7 @@
 #define INTFLOAT                float
 #define SHORTFLOAT              float
 
-#endif /* CONFIG_AC3_FIXED */
+#endif /* USE_FIXED */
 
 #define AC3_LEVEL(x)            ROUND15((x) * FIXR15(0.7071067811865476))
 
