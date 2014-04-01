@@ -24,7 +24,6 @@
 #include "libavutil/common.h"
 #include "avcodec.h"
 #include "internal.h"
-#include "dsputil.h"
 #include "get_bits.h"
 #include "golomb.h"
 
@@ -39,9 +38,6 @@ typedef struct FICThreadContext {
 typedef struct FICContext {
     AVCodecContext *avctx;
     AVFrame *frame;
-
-    DSPContext dsp;
-    ScanTable scantable;
 
     FICThreadContext *slice_data;
     int slice_data_size;
@@ -80,6 +76,55 @@ static const uint8_t fic_header[7] = { 0, 0, 1, 'F', 'I', 'C', 'V' };
 
 #define FIC_HEADER_SIZE 27
 
+static av_always_inline void fic_idct(int16_t *blk, int step, int shift)
+{
+    const int t0 =  27246 * blk[3 * step] + 18405 * blk[5 * step];
+    const int t1 =  27246 * blk[5 * step] - 18405 * blk[3 * step];
+    const int t2 =   6393 * blk[7 * step] + 32139 * blk[1 * step];
+    const int t3 =   6393 * blk[1 * step] - 32139 * blk[7 * step];
+    const int t4 = 5793 * (t2 + t0 + 0x800 >> 12);
+    const int t5 = 5793 * (t3 + t1 + 0x800 >> 12);
+    const int t6 = t2 - t0;
+    const int t7 = t3 - t1;
+    const int t8 =  17734 * blk[2 * step] - 42813 * blk[6 * step];
+    const int t9 =  17734 * blk[6 * step] + 42814 * blk[2 * step];
+    const int tA = (blk[0 * step] - blk[4 * step] << 15) + (1 << shift - 1);
+    const int tB = (blk[0 * step] + blk[4 * step] << 15) + (1 << shift - 1);
+    blk[0 * step] = (  t4       + t9 + tB) >> shift;
+    blk[1 * step] = (  t6 + t7  + t8 + tA) >> shift;
+    blk[2 * step] = (  t6 - t7  - t8 + tA) >> shift;
+    blk[3 * step] = (  t5       - t9 + tB) >> shift;
+    blk[4 * step] = ( -t5       - t9 + tB) >> shift;
+    blk[5 * step] = (-(t6 - t7) - t8 + tA) >> shift;
+    blk[6 * step] = (-(t6 + t7) + t8 + tA) >> shift;
+    blk[7 * step] = ( -t4       + t9 + tB) >> shift;
+}
+
+static void fic_idct_put(uint8_t *dst, int stride, int16_t *block)
+{
+    int i, j;
+    int16_t *ptr;
+
+    ptr = block;
+    for (i = 0; i < 8; i++) {
+        fic_idct(ptr, 8, 13);
+        ptr++;
+    }
+
+    ptr = block;
+    for (i = 0; i < 8; i++) {
+        fic_idct(ptr, 1, 20);
+        ptr += 8;
+    }
+
+    ptr = block;
+    for (j = 0; j < 8; j++) {
+        for (i = 0; i < 8; i++)
+            dst[i] = av_clip_uint8(ptr[i]);
+        dst += stride;
+        ptr += 8;
+    }
+}
 static int fic_decode_block(FICContext *ctx, GetBitContext *gb,
                             uint8_t *dst, int stride, int16_t *block)
 {
@@ -94,16 +139,16 @@ static int fic_decode_block(FICContext *ctx, GetBitContext *gb,
         return 0;
     }
 
-    ctx->dsp.clear_block(block);
+    memset(block, 0, sizeof(*block) * 64);
 
     num_coeff = get_bits(gb, 7);
     if (num_coeff > 64)
         return AVERROR_INVALIDDATA;
 
     for (i = 0; i < num_coeff; i++)
-        block[ctx->scantable.permutated[i]] = get_se_golomb(gb) * ctx->qmat[i];
+        block[ff_zigzag_direct[i]] = get_se_golomb(gb) * ctx->qmat[i];
 
-    ctx->dsp.idct_put(dst, stride, block);
+    fic_idct_put(dst, stride, block);
 
     return 0;
 }
@@ -282,10 +327,6 @@ static av_cold int fic_decode_init(AVCodecContext *avctx)
     ctx->frame = av_frame_alloc();
     if (!ctx->frame)
         return AVERROR(ENOMEM);
-
-    ff_dsputil_init(&ctx->dsp, avctx);
-
-    ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, ff_zigzag_direct);
 
     return 0;
 }
