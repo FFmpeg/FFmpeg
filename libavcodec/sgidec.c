@@ -97,7 +97,7 @@ static int read_rle_sgi(uint8_t *out_buf, SgiState *s)
     unsigned int start_offset;
 
     /* size of  RLE offset and length tables */
-    if (len * 2  > bytestream2_get_bytes_left(&s->g)) {
+    if (len * 2 > bytestream2_get_bytes_left(&s->g)) {
         return AVERROR_INVALIDDATA;
     }
 
@@ -122,7 +122,8 @@ static int read_rle_sgi(uint8_t *out_buf, SgiState *s)
  * @param s the current image state
  * @return 0 if read success, else return error code.
  */
-static int read_uncompressed_sgi(unsigned char* out_buf, SgiState *s)
+static int read_uncompressed_sgi(unsigned char *out_buf,
+                                 SgiState *s)
 {
     int x, y, z;
     unsigned int offset = s->height * s->width * s->bytes_per_channel;
