@@ -11,6 +11,7 @@ version <next>:
 - Improvments to the BRender PIX image decoder
 - Improvments to the XBM decoder
 - QTKit input device
+- improvments to OpenEXR image decoder
 
 
 version 2.2:
