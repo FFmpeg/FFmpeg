@@ -102,6 +102,7 @@ typedef struct MJpegDecodeContext {
     int16_t (*blocks[MAX_COMPONENTS])[64]; ///< intermediate sums (progressive mode)
     uint8_t *last_nnz[MAX_COMPONENTS];
     uint64_t coefs_finished[MAX_COMPONENTS]; ///< bitmask of which coefs have been completely decoded (progressive mode)
+    int palette_index;
     ScanTable scantable;
     DSPContext dsp;
     HpelDSPContext hdsp;
