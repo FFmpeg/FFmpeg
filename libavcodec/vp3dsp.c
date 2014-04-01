@@ -27,6 +27,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
 #include "dsputil.h"
 #include "rnd_avg.h"
@@ -41,9 +42,10 @@
 #define xC6S2 25080
 #define xC7S1 12785
 
-#define M(a,b) (((a) * (b))>>16)
+#define M(a, b) (((a) * (b)) >> 16)
 
-static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int type)
+static av_always_inline void idct(uint8_t *dst, int stride,
+                                  int16_t *input, int type)
 {
     int16_t *ip = input;
 
@@ -55,8 +57,8 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
     /* Inverse DCT on the rows now */
     for (i = 0; i < 8; i++) {
         /* Check for non-zero values */
-        if ( ip[0 * 8] | ip[1 * 8] | ip[2 * 8] | ip[3 * 8] |
-             ip[4 * 8] | ip[5 * 8] | ip[6 * 8] | ip[7 * 8] ) {
+        if (ip[0 * 8] | ip[1 * 8] | ip[2 * 8] | ip[3 * 8] |
+            ip[4 * 8] | ip[5 * 8] | ip[6 * 8] | ip[7 * 8]) {
             A = M(xC1S7, ip[1 * 8]) + M(xC7S1, ip[7 * 8]);
             B = M(xC7S1, ip[1 * 8]) - M(xC1S7, ip[7 * 8]);
             C = M(xC3S5, ip[3 * 8]) + M(xC5S3, ip[5 * 8]);
@@ -84,14 +86,14 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
             Hd = Bd + H;
 
             /*  Final sequence of operations over-write original inputs. */
-            ip[0 * 8] = Gd + Cd ;
-            ip[7 * 8] = Gd - Cd ;
+            ip[0 * 8] = Gd + Cd;
+            ip[7 * 8] = Gd - Cd;
 
             ip[1 * 8] = Add + Hd;
             ip[2 * 8] = Add - Hd;
 
-            ip[3 * 8] = Ed + Dd ;
-            ip[4 * 8] = Ed - Dd ;
+            ip[3 * 8] = Ed + Dd;
+            ip[4 * 8] = Ed - Dd;
 
             ip[5 * 8] = Fd + Bdd;
             ip[6 * 8] = Fd - Bdd;
@@ -102,11 +104,10 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
 
     ip = input;
 
-    for ( i = 0; i < 8; i++) {
+    for (i = 0; i < 8; i++) {
         /* Check for non-zero values (bitwise or faster than ||) */
-        if ( ip[1] | ip[2] | ip[3] |
-             ip[4] | ip[5] | ip[6] | ip[7] ) {
-
+        if (ip[1] | ip[2] | ip[3] |
+            ip[4] | ip[5] | ip[6] | ip[7]) {
             A = M(xC1S7, ip[1]) + M(xC7S1, ip[7]);
             B = M(xC7S1, ip[1]) - M(xC1S7, ip[7]);
             C = M(xC3S5, ip[3]) + M(xC5S3, ip[5]);
@@ -121,9 +122,9 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
             E = M(xC4S4, (ip[0] + ip[4])) + 8;
             F = M(xC4S4, (ip[0] - ip[4])) + 8;
 
-            if(type==1){  //HACK
-                E += 16*128;
-                F += 16*128;
+            if (type == 1) { // HACK
+                E += 16 * 128;
+                F += 16 * 128;
             }
 
             G = M(xC2S6, ip[2]) + M(xC6S2, ip[6]);
@@ -140,52 +141,51 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
 
             /* Final sequence of operations over-write original inputs. */
             if (type == 1) {
-                dst[0*stride] = av_clip_uint8((Gd + Cd )  >> 4);
-                dst[7*stride] = av_clip_uint8((Gd - Cd )  >> 4);
+                dst[0 * stride] = av_clip_uint8((Gd + Cd) >> 4);
+                dst[7 * stride] = av_clip_uint8((Gd - Cd) >> 4);
 
-                dst[1*stride] = av_clip_uint8((Add + Hd ) >> 4);
-                dst[2*stride] = av_clip_uint8((Add - Hd ) >> 4);
+                dst[1 * stride] = av_clip_uint8((Add + Hd) >> 4);
+                dst[2 * stride] = av_clip_uint8((Add - Hd) >> 4);
 
-                dst[3*stride] = av_clip_uint8((Ed + Dd )  >> 4);
-                dst[4*stride] = av_clip_uint8((Ed - Dd )  >> 4);
+                dst[3 * stride] = av_clip_uint8((Ed + Dd) >> 4);
+                dst[4 * stride] = av_clip_uint8((Ed - Dd) >> 4);
 
-                dst[5*stride] = av_clip_uint8((Fd + Bdd ) >> 4);
-                dst[6*stride] = av_clip_uint8((Fd - Bdd ) >> 4);
-            }else{
-                dst[0*stride] = av_clip_uint8(dst[0*stride] + ((Gd + Cd )  >> 4));
-                dst[7*stride] = av_clip_uint8(dst[7*stride] + ((Gd - Cd )  >> 4));
+                dst[5 * stride] = av_clip_uint8((Fd + Bdd) >> 4);
+                dst[6 * stride] = av_clip_uint8((Fd - Bdd) >> 4);
+            } else {
+                dst[0 * stride] = av_clip_uint8(dst[0 * stride] + ((Gd + Cd) >> 4));
+                dst[7 * stride] = av_clip_uint8(dst[7 * stride] + ((Gd - Cd) >> 4));
 
-                dst[1*stride] = av_clip_uint8(dst[1*stride] + ((Add + Hd ) >> 4));
-                dst[2*stride] = av_clip_uint8(dst[2*stride] + ((Add - Hd ) >> 4));
+                dst[1 * stride] = av_clip_uint8(dst[1 * stride] + ((Add + Hd) >> 4));
+                dst[2 * stride] = av_clip_uint8(dst[2 * stride] + ((Add - Hd) >> 4));
 
-                dst[3*stride] = av_clip_uint8(dst[3*stride] + ((Ed + Dd )  >> 4));
-                dst[4*stride] = av_clip_uint8(dst[4*stride] + ((Ed - Dd )  >> 4));
+                dst[3 * stride] = av_clip_uint8(dst[3 * stride] + ((Ed + Dd) >> 4));
+                dst[4 * stride] = av_clip_uint8(dst[4 * stride] + ((Ed - Dd) >> 4));
 
-                dst[5*stride] = av_clip_uint8(dst[5*stride] + ((Fd + Bdd ) >> 4));
-                dst[6*stride] = av_clip_uint8(dst[6*stride] + ((Fd - Bdd ) >> 4));
+                dst[5 * stride] = av_clip_uint8(dst[5 * stride] + ((Fd + Bdd) >> 4));
+                dst[6 * stride] = av_clip_uint8(dst[6 * stride] + ((Fd - Bdd) >> 4));
             }
-
         } else {
             if (type == 1) {
-                dst[0*stride]=
-                dst[1*stride]=
-                dst[2*stride]=
-                dst[3*stride]=
-                dst[4*stride]=
-                dst[5*stride]=
-                dst[6*stride]=
-                dst[7*stride]= av_clip_uint8(128 + ((xC4S4 * ip[0] + (IdctAdjustBeforeShift<<16))>>20));
-            }else{
-                if(ip[0]){
-                    int v= ((xC4S4 * ip[0] + (IdctAdjustBeforeShift<<16))>>20);
-                    dst[0*stride] = av_clip_uint8(dst[0*stride] + v);
-                    dst[1*stride] = av_clip_uint8(dst[1*stride] + v);
-                    dst[2*stride] = av_clip_uint8(dst[2*stride] + v);
-                    dst[3*stride] = av_clip_uint8(dst[3*stride] + v);
-                    dst[4*stride] = av_clip_uint8(dst[4*stride] + v);
-                    dst[5*stride] = av_clip_uint8(dst[5*stride] + v);
-                    dst[6*stride] = av_clip_uint8(dst[6*stride] + v);
-                    dst[7*stride] = av_clip_uint8(dst[7*stride] + v);
+                dst[0*stride] =
+                dst[1*stride] =
+                dst[2*stride] =
+                dst[3*stride] =
+                dst[4*stride] =
+                dst[5*stride] =
+                dst[6*stride] =
+                dst[7*stride] = av_clip_uint8(128 + ((xC4S4 * ip[0] + (IdctAdjustBeforeShift << 16)) >> 20));
+            } else {
+                if (ip[0]) {
+                    int v = (xC4S4 * ip[0] + (IdctAdjustBeforeShift << 16)) >> 20;
+                    dst[0 * stride] = av_clip_uint8(dst[0 * stride] + v);
+                    dst[1 * stride] = av_clip_uint8(dst[1 * stride] + v);
+                    dst[2 * stride] = av_clip_uint8(dst[2 * stride] + v);
+                    dst[3 * stride] = av_clip_uint8(dst[3 * stride] + v);
+                    dst[4 * stride] = av_clip_uint8(dst[4 * stride] + v);
+                    dst[5 * stride] = av_clip_uint8(dst[5 * stride] + v);
+                    dst[6 * stride] = av_clip_uint8(dst[6 * stride] + v);
+                    dst[7 * stride] = av_clip_uint8(dst[7 * stride] + v);
                 }
             }
         }
@@ -195,26 +195,26 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
     }
 }
 
-static void vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size,
-                           int16_t *block/*align 16*/)
+static void vp3_idct_put_c(uint8_t *dest /* align 8 */, int line_size,
+                           int16_t *block /* align 16 */)
 {
     idct(dest, line_size, block, 1);
     memset(block, 0, sizeof(*block) * 64);
 }
 
-static void vp3_idct_add_c(uint8_t *dest/*align 8*/, int line_size,
-                           int16_t *block/*align 16*/)
+static void vp3_idct_add_c(uint8_t *dest /* align 8 */, int line_size,
+                           int16_t *block /* align 16 */)
 {
     idct(dest, line_size, block, 2);
     memset(block, 0, sizeof(*block) * 64);
 }
 
-static void vp3_idct_dc_add_c(uint8_t *dest/*align 8*/, int line_size,
-                              int16_t *block/*align 16*/)
+static void vp3_idct_dc_add_c(uint8_t *dest /* align 8 */, int line_size,
+                              int16_t *block /* align 16 */)
 {
     int i, dc = (block[0] + 15) >> 5;
 
-    for(i = 0; i < 8; i++){
+    for (i = 0; i < 8; i++) {
         dest[0] = av_clip_uint8(dest[0] + dc);
         dest[1] = av_clip_uint8(dest[1] + dc);
         dest[2] = av_clip_uint8(dest[2] + dc);
@@ -223,7 +223,7 @@ static void vp3_idct_dc_add_c(uint8_t *dest/*align 8*/, int line_size,
         dest[5] = av_clip_uint8(dest[5] + dc);
         dest[6] = av_clip_uint8(dest[6] + dc);
         dest[7] = av_clip_uint8(dest[7] + dc);
-        dest += line_size;
+        dest   += line_size;
     }
     block[0] = 0;
 }
@@ -233,15 +233,15 @@ static void vp3_v_loop_filter_c(uint8_t *first_pixel, int stride,
 {
     unsigned char *end;
     int filter_value;
-    const int nstride= -stride;
+    const int nstride = -stride;
 
-    for (end= first_pixel + 8; first_pixel < end; first_pixel++) {
-        filter_value =
-            (first_pixel[2 * nstride] - first_pixel[ stride])
-         +3*(first_pixel[0          ] - first_pixel[nstride]);
+    for (end = first_pixel + 8; first_pixel < end; first_pixel++) {
+        filter_value = (first_pixel[2 * nstride] - first_pixel[stride]) +
+                       (first_pixel[0] - first_pixel[nstride]) * 3;
         filter_value = bounding_values[(filter_value + 4) >> 3];
+
         first_pixel[nstride] = av_clip_uint8(first_pixel[nstride] + filter_value);
-        first_pixel[0] = av_clip_uint8(first_pixel[0] - filter_value);
+        first_pixel[0]       = av_clip_uint8(first_pixel[0] - filter_value);
     }
 }
 
@@ -251,11 +251,11 @@ static void vp3_h_loop_filter_c(uint8_t *first_pixel, int stride,
     unsigned char *end;
     int filter_value;
 
-    for (end= first_pixel + 8*stride; first_pixel != end; first_pixel += stride) {
-        filter_value =
-            (first_pixel[-2] - first_pixel[ 1])
-         +3*(first_pixel[ 0] - first_pixel[-1]);
+    for (end = first_pixel + 8 * stride; first_pixel != end; first_pixel += stride) {
+        filter_value = (first_pixel[-2] - first_pixel[1]) +
+                       (first_pixel[ 0] - first_pixel[-1]) * 3;
         filter_value = bounding_values[(filter_value + 4) >> 3];
+
         first_pixel[-1] = av_clip_uint8(first_pixel[-1] + filter_value);
         first_pixel[ 0] = av_clip_uint8(first_pixel[ 0] - filter_value);
     }
