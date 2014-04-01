@@ -1651,6 +1651,9 @@ enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
     PIX_FMT_SWAP_ENDIANNESS(YUVA444P16);
 
     PIX_FMT_SWAP_ENDIANNESS(XYZ12);
+    PIX_FMT_SWAP_ENDIANNESS(NV20);
+    PIX_FMT_SWAP_ENDIANNESS(RGBA64);
+    PIX_FMT_SWAP_ENDIANNESS(BGRA64);
     default:
         return AV_PIX_FMT_NONE;
     }
