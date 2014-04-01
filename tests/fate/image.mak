@@ -66,7 +66,7 @@ FATE_SGI += fate-sgi-gray
 fate-sgi-gray: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_gray.sgi -pix_fmt gray
 
 FATE_SGI += fate-sgi-gray16
-fate-sgi-gray16: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_gray16.sgi -pix_fmt gray16
+fate-sgi-gray16: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_gray16.sgi -pix_fmt gray16le
 
 FATE_SGI += fate-sgi-rgb24
 fate-sgi-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_rgb24.sgi -pix_fmt rgb24
