@@ -873,9 +873,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
             s->spx_dst_start_freq = dst_start_freq;
             s->spx_src_start_freq = src_start_freq;
-#if !USE_FIXED
-            s->spx_dst_end_freq   = dst_end_freq;
-#endif
+            if (!USE_FIXED)
+                s->spx_dst_end_freq   = dst_end_freq;
 
             decode_band_structure(gbc, blk, s->eac3, 0,
                                   start_subband, end_subband,
