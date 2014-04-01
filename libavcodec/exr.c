@@ -652,8 +652,8 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
     if (!td->lut)
         td->lut = av_malloc(1 << 17);
     if (!td->bitmap || !td->lut) {
-        av_free(td->bitmap);
-        av_free(td->lut);
+        av_freep(&td->bitmap);
+        av_freep(&td->lut);
         return AVERROR(ENOMEM);
     }
 
