@@ -24,7 +24,7 @@
  * @file
  * libavcodec API use example.
  *
- * @example avcodec.c
+ * @example decoding_encoding.c
  * Note that libavcodec only handles codecs (mpeg, mpeg4, etc...),
  * not file formats (avi, vob, mp4, mov, mkv, mxf, flv, mpegts, mpegps, etc...). See library 'libavformat' for the
  * format handling
