@@ -288,6 +288,7 @@ enum AVCodecID {
     AV_CODEC_ID_BRENDER_PIX,
     AV_CODEC_ID_PAF_VIDEO,
     AV_CODEC_ID_EXR,
+    AV_CODEC_ID_VP7,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs

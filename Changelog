@@ -13,6 +13,7 @@ version <next>:
 - OpenEXR image decoder
 - support encoding and decoding 4-channel SGI images
 - support decoding 16-bit RLE SGI images
+- VP7 video decoder
 
 
 version 10:
