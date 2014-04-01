@@ -50,7 +50,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const AVFrame * const p = frame;
     uint8_t *offsettab, *lengthtab, *in_buf, *encode_buf, *buf;
     int x, y, z, length, tablesize, ret;
-    unsigned int width, height, depth, dimension, bytes_per_channel, pixmax, put_be;
+    unsigned int width, height, depth, dimension;
+    unsigned int bytes_per_channel, pixmax, put_be;
     unsigned char *end_buf;
 
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
@@ -183,7 +184,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width * depth; x += depth)
                     if (bytes_per_channel == 1) {
-                    bytestream_put_byte(&buf, in_buf[x]);
+                        bytestream_put_byte(&buf, in_buf[x]);
                     } else {
                         if (put_be) {
                             bytestream_put_be16(&buf, ((uint16_t *)in_buf)[x]);
@@ -223,7 +224,7 @@ AVCodec ff_sgi_encoder = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48LE, AV_PIX_FMT_RGB48BE,
         AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_RGBA64BE,
-        AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_GRAY16BE,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
+        AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_NONE
     },
 };

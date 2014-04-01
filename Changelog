@@ -397,7 +397,7 @@ version 0.10:
 - ffwavesynth decoder
 - aviocat tool
 - ffeval tool
-- support decoding 4-channel SGI images
+- support encoding and decoding 4-channel SGI images
 
 
 version 0.9:
