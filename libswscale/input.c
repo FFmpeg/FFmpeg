@@ -37,8 +37,8 @@
 
 #define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
 
-#define r ((origin == AV_PIX_FMT_BGR48BE || origin == AV_PIX_FMT_BGR48LE) ? b_r : r_b)
-#define b ((origin == AV_PIX_FMT_BGR48BE || origin == AV_PIX_FMT_BGR48LE) ? r_b : b_r)
+#define r ((origin == AV_PIX_FMT_BGR48BE || origin == AV_PIX_FMT_BGR48LE || origin == AV_PIX_FMT_BGRA64BE || origin == AV_PIX_FMT_BGRA64LE) ? b_r : r_b)
+#define b ((origin == AV_PIX_FMT_BGR48BE || origin == AV_PIX_FMT_BGR48LE || origin == AV_PIX_FMT_BGRA64BE || origin == AV_PIX_FMT_BGRA64LE) ? r_b : b_r)
 
 static av_always_inline void
 rgb64ToY_c_template(uint16_t *dst, const uint16_t *src, int width,
@@ -124,6 +124,8 @@ static void pattern ## 64 ## BE_LE ## ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV
 
 rgb64funcs(rgb, LE, AV_PIX_FMT_RGBA64LE)
 rgb64funcs(rgb, BE, AV_PIX_FMT_RGBA64BE)
+rgb64funcs(bgr, LE, AV_PIX_FMT_BGRA64LE)
+rgb64funcs(bgr, BE, AV_PIX_FMT_BGRA64BE)
 
 static av_always_inline void rgb48ToY_c_template(uint16_t *dst,
                                                  const uint16_t *src, int width,
@@ -934,6 +936,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         case AV_PIX_FMT_RGBA64LE:
             c->chrToYV12 = rgb64LEToUV_half_c;
             break;
+        case AV_PIX_FMT_BGRA64BE:
+            c->chrToYV12 = bgr64BEToUV_half_c;
+            break;
+        case AV_PIX_FMT_BGRA64LE:
+            c->chrToYV12 = bgr64LEToUV_half_c;
+            break;
         case AV_PIX_FMT_RGB48BE:
             c->chrToYV12 = rgb48BEToUV_half_c;
             break;
@@ -1012,6 +1020,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
             break;
         case AV_PIX_FMT_RGBA64LE:
             c->chrToYV12 = rgb64LEToUV_c;
+            break;
+        case AV_PIX_FMT_BGRA64BE:
+            c->chrToYV12 = bgr64BEToUV_c;
+            break;
+        case AV_PIX_FMT_BGRA64LE:
+            c->chrToYV12 = bgr64LEToUV_c;
             break;
         case AV_PIX_FMT_RGB48BE:
             c->chrToYV12 = rgb48BEToUV_c;
@@ -1279,6 +1293,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_RGBA64LE:
         c->lumToYV12 = rgb64LEToY_c;
         break;
+    case AV_PIX_FMT_BGRA64BE:
+        c->lumToYV12 = bgr64BEToY_c;
+        break;
+    case AV_PIX_FMT_BGRA64LE:
+        c->lumToYV12 = bgr64LEToY_c;
     }
     if (c->alpPixBuf) {
         if (is16BPS(srcFormat) || isNBPS(srcFormat)) {
@@ -1286,6 +1305,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
                 c->alpToYV12 = bswap16Y_c;
         }
         switch (srcFormat) {
+        case AV_PIX_FMT_BGRA64LE:
+        case AV_PIX_FMT_BGRA64BE:
         case AV_PIX_FMT_RGBA64LE:
         case AV_PIX_FMT_RGBA64BE:  c->alpToYV12 = rgba64ToA_c; break;
         case AV_PIX_FMT_BGRA:

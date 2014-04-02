@@ -663,8 +663,8 @@ yuv2422_1_c_template(SwsContext *c, const int16_t *buf0,
 YUV2PACKEDWRAPPER(yuv2, 422, yuyv422, AV_PIX_FMT_YUYV422)
 YUV2PACKEDWRAPPER(yuv2, 422, uyvy422, AV_PIX_FMT_UYVY422)
 
-#define R_B ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE) ? R : B)
-#define B_R ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE) ? B : R)
+#define R_B ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE) ? R : B)
+#define B_R ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE) ? B : R)
 #define output_pixel(pos, val) \
     if (isBE(target)) { \
         AV_WB16(pos, val); \
@@ -735,13 +735,13 @@ yuv2rgba64_X_c_template(SwsContext *c, const int16_t *lumFilter,
         B =                            U * c->yuv2rgb_u2b_coeff;
 
         // 8bit: 30 - 22 = 8bit, 16bit: 30bit - 14 = 16bit
-        output_pixel(&dest[0], av_clip_uintp2(B_R + Y1, 30) >> 14);
+        output_pixel(&dest[0], av_clip_uintp2(R_B + Y1, 30) >> 14);
         output_pixel(&dest[1], av_clip_uintp2(  G + Y1, 30) >> 14);
-        output_pixel(&dest[2], av_clip_uintp2(R_B + Y1, 30) >> 14);
+        output_pixel(&dest[2], av_clip_uintp2(B_R + Y1, 30) >> 14);
         output_pixel(&dest[3], av_clip_uintp2(A1      , 30) >> 14);
-        output_pixel(&dest[4], av_clip_uintp2(B_R + Y2, 30) >> 14);
+        output_pixel(&dest[4], av_clip_uintp2(R_B + Y2, 30) >> 14);
         output_pixel(&dest[5], av_clip_uintp2(  G + Y2, 30) >> 14);
-        output_pixel(&dest[6], av_clip_uintp2(R_B + Y2, 30) >> 14);
+        output_pixel(&dest[6], av_clip_uintp2(B_R + Y2, 30) >> 14);
         output_pixel(&dest[7], av_clip_uintp2(A2      , 30) >> 14);
         dest += 8;
     }
@@ -790,13 +790,13 @@ yuv2rgba64_2_c_template(SwsContext *c, const int32_t *buf[2],
             A2 += 1 << 13;
         }
 
-        output_pixel(&dest[0], av_clip_uintp2(B_R + Y1, 30) >> 14);
+        output_pixel(&dest[0], av_clip_uintp2(R_B + Y1, 30) >> 14);
         output_pixel(&dest[1], av_clip_uintp2(  G + Y1, 30) >> 14);
-        output_pixel(&dest[2], av_clip_uintp2(R_B + Y1, 30) >> 14);
+        output_pixel(&dest[2], av_clip_uintp2(B_R + Y1, 30) >> 14);
         output_pixel(&dest[3], av_clip_uintp2(A1      , 30) >> 14);
-        output_pixel(&dest[4], av_clip_uintp2(B_R + Y2, 30) >> 14);
+        output_pixel(&dest[4], av_clip_uintp2(R_B + Y2, 30) >> 14);
         output_pixel(&dest[5], av_clip_uintp2(  G + Y2, 30) >> 14);
-        output_pixel(&dest[6], av_clip_uintp2(R_B + Y2, 30) >> 14);
+        output_pixel(&dest[6], av_clip_uintp2(B_R + Y2, 30) >> 14);
         output_pixel(&dest[7], av_clip_uintp2(A2      , 30) >> 14);
         dest += 8;
     }
@@ -839,13 +839,13 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
             G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
             B =                            U * c->yuv2rgb_u2b_coeff;
 
-            output_pixel(&dest[0], av_clip_uintp2(B_R + Y1, 30) >> 14);
+            output_pixel(&dest[0], av_clip_uintp2(R_B + Y1, 30) >> 14);
             output_pixel(&dest[1], av_clip_uintp2(  G + Y1, 30) >> 14);
-            output_pixel(&dest[2], av_clip_uintp2(R_B + Y1, 30) >> 14);
+            output_pixel(&dest[2], av_clip_uintp2(B_R + Y1, 30) >> 14);
             output_pixel(&dest[3], av_clip_uintp2(A1      , 30) >> 14);
-            output_pixel(&dest[4], av_clip_uintp2(B_R + Y2, 30) >> 14);
+            output_pixel(&dest[4], av_clip_uintp2(R_B + Y2, 30) >> 14);
             output_pixel(&dest[5], av_clip_uintp2(  G + Y2, 30) >> 14);
-            output_pixel(&dest[6], av_clip_uintp2(R_B + Y2, 30) >> 14);
+            output_pixel(&dest[6], av_clip_uintp2(B_R + Y2, 30) >> 14);
             output_pixel(&dest[7], av_clip_uintp2(A2      , 30) >> 14);
             dest += 8;
         }
@@ -878,13 +878,13 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
             G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
             B =                            U * c->yuv2rgb_u2b_coeff;
 
-            output_pixel(&dest[0], av_clip_uintp2(B_R + Y1, 30) >> 14);
+            output_pixel(&dest[0], av_clip_uintp2(R_B + Y1, 30) >> 14);
             output_pixel(&dest[1], av_clip_uintp2(  G + Y1, 30) >> 14);
-            output_pixel(&dest[2], av_clip_uintp2(R_B + Y1, 30) >> 14);
+            output_pixel(&dest[2], av_clip_uintp2(B_R + Y1, 30) >> 14);
             output_pixel(&dest[3], av_clip_uintp2(A1      , 30) >> 14);
-            output_pixel(&dest[4], av_clip_uintp2(B_R + Y2, 30) >> 14);
+            output_pixel(&dest[4], av_clip_uintp2(R_B + Y2, 30) >> 14);
             output_pixel(&dest[5], av_clip_uintp2(  G + Y2, 30) >> 14);
-            output_pixel(&dest[6], av_clip_uintp2(R_B + Y2, 30) >> 14);
+            output_pixel(&dest[6], av_clip_uintp2(B_R + Y2, 30) >> 14);
             output_pixel(&dest[7], av_clip_uintp2(A2      , 30) >> 14);
             dest += 8;
         }
@@ -1117,6 +1117,10 @@ YUV2PACKED16WRAPPER(yuv2, rgba64, rgba64be, AV_PIX_FMT_RGBA64BE, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64, rgba64le, AV_PIX_FMT_RGBA64LE, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64, rgbx64be, AV_PIX_FMT_RGBA64BE, 0)
 YUV2PACKED16WRAPPER(yuv2, rgba64, rgbx64le, AV_PIX_FMT_RGBA64LE, 0)
+YUV2PACKED16WRAPPER(yuv2, rgba64, bgra64be, AV_PIX_FMT_BGRA64BE, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64, bgra64le, AV_PIX_FMT_BGRA64LE, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64, bgrx64be, AV_PIX_FMT_BGRA64BE, 0)
+YUV2PACKED16WRAPPER(yuv2, rgba64, bgrx64le, AV_PIX_FMT_BGRA64LE, 0)
 
 /*
  * Write out 2 RGB pixels in the target pixel format. This function takes a
@@ -2039,6 +2043,34 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
                 *yuv2packed1 = yuv2rgbx64be_1_c;
                 *yuv2packed2 = yuv2rgbx64be_2_c;
                 *yuv2packedX = yuv2rgbx64be_X_c;
+            }
+            break;
+        case AV_PIX_FMT_BGRA64LE:
+#if CONFIG_SWSCALE_ALPHA
+            if (c->alpPixBuf) {
+                *yuv2packed1 = yuv2bgra64le_1_c;
+                *yuv2packed2 = yuv2bgra64le_2_c;
+                *yuv2packedX = yuv2bgra64le_X_c;
+            } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+            {
+                *yuv2packed1 = yuv2bgrx64le_1_c;
+                *yuv2packed2 = yuv2bgrx64le_2_c;
+                *yuv2packedX = yuv2bgrx64le_X_c;
+            }
+            break;
+        case AV_PIX_FMT_BGRA64BE:
+#if CONFIG_SWSCALE_ALPHA
+            if (c->alpPixBuf) {
+                *yuv2packed1 = yuv2bgra64be_1_c;
+                *yuv2packed2 = yuv2bgra64be_2_c;
+                *yuv2packedX = yuv2bgra64be_X_c;
+            } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+            {
+                *yuv2packed1 = yuv2bgrx64be_1_c;
+                *yuv2packed2 = yuv2bgrx64be_2_c;
+                *yuv2packedX = yuv2bgrx64be_X_c;
             }
             break;
         case AV_PIX_FMT_RGB48LE:
