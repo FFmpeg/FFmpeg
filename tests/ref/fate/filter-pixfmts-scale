@@ -15,6 +15,8 @@ bgr565be            fca6f07daf23d9dd84381dd4c9afd959
 bgr565le            f524e9f16bdd68b247dbcb621e543fc0
 bgr8                2a6509639c181fb7829721bdbf78187c
 bgra                fec5335edde2f1ee1f40d2fe4305855c
+bgra64be            d41d8cd98f00b204e9800998ecf8427e
+bgra64le            d41d8cd98f00b204e9800998ecf8427e
 gbrap               76ddf2bedea40c8743f4117b786d4773
 gbrp                e2704defddf1cb8d75f0c80fec6491d3
 gbrp10be            7dce0805f7ead7d480bd83323d76bf9c
