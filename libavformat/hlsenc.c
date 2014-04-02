@@ -33,7 +33,7 @@
 
 typedef struct ListEntry {
     char  name[1024];
-    int   duration;
+    double   duration;
     struct ListEntry *next;
 } ListEntry;
 
@@ -50,7 +50,7 @@ typedef struct HLSContext {
     int has_video;
     int64_t start_pts;
     int64_t end_pts;
-    int64_t duration;      // last segment duration computed so far, in seconds
+    double duration;      // last segment duration computed so far, in seconds
     int nb_entries;
     ListEntry *list;
     ListEntry *end_list;
@@ -83,7 +83,7 @@ static int hls_mux_init(AVFormatContext *s)
     return 0;
 }
 
-static int append_entry(HLSContext *hls, uint64_t duration)
+static int append_entry(HLSContext *hls, double duration)
 {
     ListEntry *en = av_malloc(sizeof(*en));
 
@@ -138,7 +138,7 @@ static int hls_window(AVFormatContext *s, int last)
 
     for (en = hls->list; en; en = en->next) {
         if (target_duration < en->duration)
-            target_duration = en->duration;
+            target_duration = (int) floor(en->duration + 0.5);
     }
 
     avio_printf(hls->pb, "#EXTM3U\n");
@@ -148,7 +148,7 @@ static int hls_window(AVFormatContext *s, int last)
                 FFMAX(0, hls->sequence - hls->nb_entries));
 
     for (en = hls->list; en; en = en->next) {
-        avio_printf(hls->pb, "#EXTINF:%d,\n", en->duration);
+        avio_printf(hls->pb, "#EXTINF:%lf,\n", en->duration);
         avio_printf(hls->pb, "%s\n", en->name);
     }
 
@@ -270,8 +270,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         is_ref_pkt = can_split = 0;
 
     if (is_ref_pkt)
-        hls->duration = av_rescale(pkt->pts - hls->end_pts,
-                                   st->time_base.num, st->time_base.den);
+        hls->duration = (double)(pkt->pts - hls->end_pts)
+                                   * st->time_base.num / st->time_base.den;
 
     if (can_split && av_compare_ts(pkt->pts - hls->start_pts, st->time_base,
                                    end_pts, AV_TIME_BASE_Q) >= 0) {
