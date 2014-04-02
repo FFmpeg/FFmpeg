@@ -303,7 +303,7 @@ libavdevice
     libavdevice/avdevice.h
 
 
-  dshow.c                               Roger Pack
+  dshow.c                               Roger Pack (CC rogerdpack@gmail.com)
   fbdev_enc.c                           Lukasz Marek
   gdigrab.c                             Roger Pack (CC rogerdpack@gmail.com)
   iec61883.c                            Georg Lippitsch
