@@ -1609,7 +1609,7 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     ff_mdct_end(&s->imdct_512);
     ff_mdct_end(&s->imdct_256);
 #if (USE_FIXED)
-    av_free(s->fdsp);
+    av_freep(&s->fdsp);
 #endif
 
     return 0;
