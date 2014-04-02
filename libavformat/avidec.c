@@ -1522,7 +1522,6 @@ static int guess_ni_flag(AVFormatContext *s)
     int64_t last_start = 0;
     int64_t first_end  = INT64_MAX;
     int64_t oldpos     = avio_tell(s->pb);
-    int64_t min_pos, pos;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
