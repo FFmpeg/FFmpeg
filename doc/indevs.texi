@@ -535,10 +535,27 @@ ffmpeg -f pulse -i default /tmp/pulse.wav
 
 QTKit input device.
 
-The filename passed as input is unused. The default device will be chosen.
+The filename passed as input is parsed to contain either a device name or index.
+The device index can also be given by using -video_device_index.
+A given device index will override any given device name.
+If the desired device consists of numbers only, use -video_device_index to identify it.
+The default device will be chosen if an empty string  or the device name "default" is given.
+The available devices can be enumerated by using -list_devices.
 
 @example
 ffmpeg -f qtkit -i "0" out.mpg
+@end example
+
+@example
+ffmpeg -f qtkit -video_device_index 0 -i "" out.mpg
+@end example
+
+@example
+ffmpeg -f qtkit -i "default" out.mpg
+@end example
+
+@example
+ffmpeg -f qtkit -list_devices true -i ""
 @end example
 
 @section sndio

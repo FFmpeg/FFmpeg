@@ -53,6 +53,9 @@ typedef struct
     pthread_cond_t  frame_wait_cond;
     id              qt_delegate;
 
+    int             list_devices;
+    int             video_device_index;
+
     QTCaptureSession*                 capture_session;
     QTCaptureDecompressedVideoOutput* video_output;
     CVImageBufferRef                  current_frame;
@@ -145,8 +148,52 @@ static int qtkit_read_header(AVFormatContext *s)
     pthread_mutex_init(&ctx->frame_lock, NULL);
     pthread_cond_init(&ctx->frame_wait_cond, NULL);
 
-    // Find default capture device
-    QTCaptureDevice *video_device = [QTCaptureDevice defaultInputDeviceWithMediaType:QTMediaTypeMuxed];
+    // List devices if requested
+    if (ctx->list_devices) {
+        av_log(ctx, AV_LOG_INFO, "QTKit video devices:\n");
+        NSArray *devices = [QTCaptureDevice inputDevicesWithMediaType:QTMediaTypeVideo];
+        for (QTCaptureDevice *device in devices) {
+            const char *name = [[device localizedDisplayName] UTF8String];
+            int index  = [devices indexOfObject:device];
+            av_log(ctx, AV_LOG_INFO, "[%d] %s\n", index, name);
+        }
+        goto fail;
+    }
+
+    // Find capture device
+    QTCaptureDevice *video_device = nil;
+
+    // check for device index given in filename
+    if (ctx->video_device_index == -1) {
+        sscanf(s->filename, "%d", &ctx->video_device_index);
+    }
+
+    if (ctx->video_device_index >= 0) {
+        NSArray *devices = [QTCaptureDevice inputDevicesWithMediaType:QTMediaTypeVideo];
+
+        if (ctx->video_device_index >= [devices count]) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid device index\n");
+            goto fail;
+        }
+
+        video_device = [devices objectAtIndex:ctx->video_device_index];
+    } else if (strncmp(s->filename, "",        1) &&
+               strncmp(s->filename, "default", 7)) {
+        NSArray *devices = [QTCaptureDevice inputDevicesWithMediaType:QTMediaTypeVideo];
+
+        for (QTCaptureDevice *device in devices) {
+            if (!strncmp(s->filename, [[device localizedDisplayName] UTF8String], strlen(s->filename))) {
+                video_device = device;
+                break;
+            }
+        }
+        if (!video_device) {
+            av_log(ctx, AV_LOG_ERROR, "Video device not found\n");
+            goto fail;
+        }
+    } else {
+        video_device = [QTCaptureDevice defaultInputDeviceWithMediaType:QTMediaTypeMuxed];
+    }
 
     BOOL success = [video_device open:nil];
 
@@ -284,6 +331,10 @@ static int qtkit_close(AVFormatContext *s)
 
 static const AVOption options[] = {
     { "frame_rate", "set frame rate", offsetof(CaptureContext, frame_rate), AV_OPT_TYPE_FLOAT, { .dbl = 30.0 }, 0.1, 30.0, AV_OPT_TYPE_VIDEO_RATE, NULL },
+    { "list_devices", "list available devices", offsetof(CaptureContext, list_devices), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
+    { "video_device_index", "select video device by index for devices with same name (starts at 0)", offsetof(CaptureContext, video_device_index), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
