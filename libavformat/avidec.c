@@ -1793,6 +1793,7 @@ AVInputFormat ff_avi_demuxer = {
     .name           = "avi",
     .long_name      = NULL_IF_CONFIG_SMALL("AVI (Audio Video Interleaved)"),
     .priv_data_size = sizeof(AVIContext),
+    .extensions     = "avi",
     .read_probe     = avi_probe,
     .read_header    = avi_read_header,
     .read_packet    = avi_read_packet,
