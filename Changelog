@@ -14,6 +14,7 @@ version <next>:
 - QTKit input device
 - improvments to OpenEXR image decoder
 - support decoding 16-bit RLE SGI images
+- GDI screen grabbing for Windows
 
 
 version 2.2:

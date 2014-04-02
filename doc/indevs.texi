@@ -192,6 +192,81 @@ ffmpeg -f fbdev -frames:v 1 -r 1 -i /dev/fb0 screenshot.jpeg
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
 
+@section gdigrab
+
+Win32 GDI-based screen capture device.
+
+This device allows you to capture a region of the display on Windows.
+
+There are two options for the input filename:
+@example
+desktop
+@end example
+or
+@example
+title=@var{window_title}
+@end example
+
+The first option will capture the entire desktop, or a fixed region of the
+desktop. The second option will instead capture the contents of a single
+window, regardless of its position on the screen.
+
+For example, to grab the entire desktop using @command{ffmpeg}:
+@example
+ffmpeg -f gdigrab -framerate 6 -i desktop out.mpg
+@end example
+
+Grab a 640x480 region at position @code{10,20}:
+@example
+ffmpeg -f gdigrab -framerate 6 -offset_x 10 -offset_y 20 -video_size vga -i desktop out.mpg
+@end example
+
+Grab the contents of the window named "Calculator"
+@example
+ffmpeg -f gdigrab -framerate 6 -i title=Calculator out.mpg
+@end example
+
+@subsection Options
+
+@table @option
+@item draw_mouse
+Specify whether to draw the mouse pointer. Use the value @code{0} to
+not draw the pointer. Default value is @code{1}.
+
+@item framerate
+Set the grabbing frame rate. Default value is @code{ntsc},
+corresponding to a frame rate of @code{30000/1001}.
+
+@item show_region
+Show grabbed region on screen.
+
+If @var{show_region} is specified with @code{1}, then the grabbing
+region will be indicated on screen. With this option, it is easy to
+know what is being grabbed if only a portion of the screen is grabbed.
+
+Note that @var{show_region} is incompatible with grabbing the contents
+of a single window.
+
+For example:
+@example
+ffmpeg -f gdigrab -show_region 1 -framerate 6 -video_size cif -offset_x 10 -offset_y 20 -i desktop out.mpg
+@end example
+
+@item video_size
+Set the video frame size. The default is to capture the full screen if @file{desktop} is selected, or the full window size if @file{title=@var{window_title}} is selected.
+
+@item offset_x
+When capturing a region with @var{video_size}, set the distance from the left edge of the screen or desktop.
+
+Note that the offset calculation is from the top left corner of the primary monitor on Windows. If you have a monitor positioned to the left of your primary monitor, you will need to use a negative @var{offset_x} value to move the region to that monitor.
+
+@item offset_y
+When capturing a region with @var{video_size}, set the distance from the top edge of the screen or desktop.
+
+Note that the offset calculation is from the top left corner of the primary monitor on Windows. If you have a monitor positioned above your primary monitor, you will need to use a negative @var{offset_y} value to move the region to that monitor.
+
+@end table
+
 @section iec61883
 
 FireWire DV/HDV input device using libiec61883.

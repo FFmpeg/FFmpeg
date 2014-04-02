@@ -2349,6 +2349,9 @@ dv1394_indev_deps="dv1394"
 dv1394_indev_select="dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
 fbdev_outdev_deps="linux_fb_h"
+gdigrab_indev_deps="CreateDIBSection"
+gdigrab_indev_extralibs="-lgdi32"
+gdigrab_indev_select="bmp_decoder"
 iec61883_indev_deps="libiec61883"
 jack_indev_deps="jack_jack_h sem_timedwait"
 lavfi_indev_deps="avfilter"
@@ -4740,6 +4743,8 @@ enabled x11grab                                           &&
 require Xext X11/extensions/XShm.h XShmCreateImage -lXext &&
 require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes &&
 { enabled xlib || die "ERROR: Xlib not found"; }
+
+check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
 
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
