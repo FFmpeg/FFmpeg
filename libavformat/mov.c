@@ -1523,7 +1523,7 @@ static int mov_rewrite_dvd_sub_extradata(AVStream *st)
         uint32_t yuv = AV_RB32(src + i * 4);
         uint32_t rgba = yuv_to_rgba(yuv);
 
-        av_strlcatf(buf, sizeof(buf), "%06x%s", rgba, i != 15 ? ", " : "");
+        av_strlcatf(buf, sizeof(buf), "%06"PRIx32"%s", rgba, i != 15 ? ", " : "");
     }
 
     if (av_strlcat(buf, "\n", sizeof(buf)) >= sizeof(buf))

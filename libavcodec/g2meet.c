@@ -779,7 +779,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 break;
             }
             if (chunk_size < 2) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid tile data size %d\n",
+                av_log(avctx, AV_LOG_ERROR, "Invalid tile data size %"PRIu32"\n",
                        chunk_size);
                 break;
             }
@@ -830,7 +830,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
         case CHUNK_CD:
             break;
         default:
-            av_log(avctx, AV_LOG_WARNING, "Skipping chunk type %02"PRIX32"\n",
+            av_log(avctx, AV_LOG_WARNING, "Skipping chunk type %02d\n",
                    chunk_type);
         }
 

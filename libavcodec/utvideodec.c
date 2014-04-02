@@ -483,7 +483,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
            avctx->extradata[3], avctx->extradata[2],
            avctx->extradata[1], avctx->extradata[0]);
-    av_log(avctx, AV_LOG_DEBUG, "Original format %X\n",
+    av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
            AV_RB32(avctx->extradata + 4));
     c->frame_info_size = AV_RL32(avctx->extradata + 8);
     c->flags           = AV_RL32(avctx->extradata + 12);
