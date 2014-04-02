@@ -2,7 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
-- added AC3 fixed-point decoding
+- AC3 fixed-point decoding
 - shuffleplanes filter
 - subfile protocol
 - Phantom Cine demuxer
