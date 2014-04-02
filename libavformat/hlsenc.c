@@ -148,7 +148,7 @@ static int hls_window(AVFormatContext *s, int last)
                 FFMAX(0, hls->sequence - hls->nb_entries));
 
     for (en = hls->list; en; en = en->next) {
-        avio_printf(hls->pb, "#EXTINF:%lf,\n", en->duration);
+        avio_printf(hls->pb, "#EXTINF:%f,\n", en->duration);
         avio_printf(hls->pb, "%s\n", en->name);
     }
 
