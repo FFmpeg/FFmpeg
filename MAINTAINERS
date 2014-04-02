@@ -305,6 +305,7 @@ libavdevice
 
   dshow.c                               Roger Pack
   fbdev_enc.c                           Lukasz Marek
+  gdigrab.c                             Roger Pack (CC rogerdpack@gmail.com)
   iec61883.c                            Georg Lippitsch
   lavfi                                 Stefano Sabatini
   libdc1394.c                           Roman Shaposhnik
