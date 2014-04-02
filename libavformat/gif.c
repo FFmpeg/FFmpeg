@@ -28,10 +28,18 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
-static int gif_image_write_header(AVIOContext *pb, int width, int height,
+static int gif_image_write_header(AVFormatContext *s, int width, int height,
                                   int loop_count, uint32_t *palette)
 {
-    int i;
+    AVIOContext *pb = s->pb;
+    AVRational sar = s->streams[0]->codec->sample_aspect_ratio;
+    int i, aspect = 0;
+
+    if (sar.num > 0 && sar.den > 0) {
+        aspect = sar.num * 64 / sar.den - 15;
+        if (aspect < 0 || aspect > 255)
+            aspect = 0;
+    }
 
     avio_write(pb, "GIF", 3);
     avio_write(pb, "89a", 3);
@@ -41,7 +49,7 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
     if (palette) {
         avio_w8(pb, 0xf7); /* flags: global clut, 256 entries */
         avio_w8(pb, 0x1f); /* background color index */
-        avio_w8(pb, 0);    /* aspect ratio */
+        avio_w8(pb, aspect);
         for (i = 0; i < 256; i++) {
             const uint32_t v = palette[i] & 0xffffff;
             avio_wb24(pb, v);
@@ -49,7 +57,7 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
     } else {
         avio_w8(pb, 0); /* flags */
         avio_w8(pb, 0); /* background color index */
-        avio_w8(pb, 0); /* aspect ratio */
+        avio_w8(pb, aspect);
     }
 
 
@@ -79,7 +87,6 @@ typedef struct {
 static int gif_write_header(AVFormatContext *s)
 {
     GIFContext *gif = s->priv_data;
-    AVIOContext *pb = s->pb;
     AVCodecContext *video_enc;
     int width, height;
     uint32_t palette[AVPALETTE_COUNT];
@@ -99,9 +106,9 @@ static int gif_write_header(AVFormatContext *s)
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
     if (avpriv_set_systematic_pal2(palette, video_enc->pix_fmt) < 0) {
         av_assert0(video_enc->pix_fmt == AV_PIX_FMT_PAL8);
-        gif_image_write_header(pb, width, height, gif->loop, NULL);
+        gif_image_write_header(s, width, height, gif->loop, NULL);
     } else {
-        gif_image_write_header(pb, width, height, gif->loop, palette);
+        gif_image_write_header(s, width, height, gif->loop, palette);
     }
 
     avio_flush(s->pb);
