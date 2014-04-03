@@ -402,6 +402,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_PCM_MULAW,       0x6c75 },
     { AV_CODEC_ID_AAC,             0x706d },
     { AV_CODEC_ID_AAC,             0x4143 },
+    { AV_CODEC_ID_XAN_DPCM,        0x594a },
     { AV_CODEC_ID_SPEEX,           0xA109 },
     { AV_CODEC_ID_FLAC,            0xF1AC },
     { AV_CODEC_ID_ADPCM_SWF,       ('S' << 8) + 'F' },
