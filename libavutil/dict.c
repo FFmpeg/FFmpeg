@@ -35,7 +35,7 @@ int av_dict_count(const AVDictionary *m)
     return m ? m->count : 0;
 }
 
-AVDictionaryEntry *av_dict_get(AVDictionary *m, const char *key,
+AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,
                                const AVDictionaryEntry *prev, int flags)
 {
     unsigned int i, j;
@@ -181,7 +181,7 @@ void av_dict_free(AVDictionary **pm)
     av_freep(pm);
 }
 
-void av_dict_copy(AVDictionary **dst, AVDictionary *src, int flags)
+void av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags)
 {
     AVDictionaryEntry *t = NULL;
 
