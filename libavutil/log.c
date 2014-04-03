@@ -258,7 +258,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     char line[LINE_SZ];
     static int is_atty;
     int type[2];
-    int tint = av_clip(level >> 8, 0, 256);
+    unsigned tint = level & 0xff00;
 
     level &= 0xff;
 
@@ -294,7 +294,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     sanitize(part[1].str);
     colored_fputs(type[1], 0, part[1].str);
     sanitize(part[2].str);
-    colored_fputs(av_clip(level >> 3, 0, 6), tint, part[2].str);
+    colored_fputs(av_clip(level >> 3, 0, 6), tint >> 8, part[2].str);
 end:
     av_bprint_finalize(part+2, NULL);
 #if HAVE_PTHREADS
