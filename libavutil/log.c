@@ -117,7 +117,7 @@ void av_log_default_callback(void *avcl, int level, const char *fmt, va_list vl)
     char line[1024];
     static int is_atty;
     AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
-    int tint = av_clip(level >> 8, 0, 256);
+    unsigned tint = level & 0xff00;
 
     level &= 0xff;
 
@@ -157,7 +157,7 @@ void av_log_default_callback(void *avcl, int level, const char *fmt, va_list vl)
         fprintf(stderr, "    Last message repeated %d times\n", count);
         count = 0;
     }
-    colored_fputs(av_clip(level >> 3, 0, 6), tint, line);
+    colored_fputs(av_clip(level >> 3, 0, 6), tint >> 8, line);
     av_strlcpy(prev, line, sizeof line);
 }
 
