@@ -258,10 +258,12 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     char line[LINE_SZ];
     static int is_atty;
     int type[2];
-    unsigned tint = level & 0xff00;
+    unsigned tint = 0;
 
-    level &= 0xff;
-
+    if (level >= 0) {
+        tint = level & 0xff00;
+        level &= 0xff;
+    }
 
     if (level > av_log_level)
         return;
