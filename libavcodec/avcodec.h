@@ -3602,14 +3602,14 @@ int av_dup_packet(AVPacket *pkt);
  *
  * @return 0 on success, negative AVERROR on fail
  */
-int av_copy_packet(AVPacket *dst, AVPacket *src);
+int av_copy_packet(AVPacket *dst, const AVPacket *src);
 
 /**
  * Copy packet side data
  *
  * @return 0 on success, negative AVERROR on fail
  */
-int av_copy_packet_side_data(AVPacket *dst, AVPacket *src);
+int av_copy_packet_side_data(AVPacket *dst, const AVPacket *src);
 
 /**
  * Free a packet.
@@ -3698,7 +3698,7 @@ void av_packet_free_side_data(AVPacket *pkt);
  *
  * @return 0 on success, a negative AVERROR on error.
  */
-int av_packet_ref(AVPacket *dst, AVPacket *src);
+int av_packet_ref(AVPacket *dst, const AVPacket *src);
 
 /**
  * Wipe the packet.

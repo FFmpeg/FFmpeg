@@ -190,7 +190,7 @@ do {                                         \
     } while (0)
 
 /* Makes duplicates of data, side_data, but does not copy any other fields */
-static int copy_packet_data(AVPacket *pkt, AVPacket *src, int dup)
+static int copy_packet_data(AVPacket *pkt, const AVPacket *src, int dup)
 {
     pkt->data      = NULL;
     pkt->side_data = NULL;
@@ -220,7 +220,7 @@ failed_alloc:
     return AVERROR(ENOMEM);
 }
 
-int av_copy_packet_side_data(AVPacket *pkt, AVPacket *src)
+int av_copy_packet_side_data(AVPacket *pkt, const AVPacket *src)
 {
     if (src->side_data_elems) {
         int i;
@@ -262,7 +262,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
-int av_copy_packet(AVPacket *dst, AVPacket *src)
+int av_copy_packet(AVPacket *dst, const AVPacket *src)
 {
     *dst = *src;
     return copy_packet_data(dst, src, 0);
@@ -534,7 +534,7 @@ void av_packet_unref(AVPacket *pkt)
     pkt->size = 0;
 }
 
-int av_packet_ref(AVPacket *dst, AVPacket *src)
+int av_packet_ref(AVPacket *dst, const AVPacket *src)
 {
     int ret;
 
