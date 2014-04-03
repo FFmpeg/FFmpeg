@@ -17,8 +17,45 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/samplefmt.h"
+#include "libavutil/pixfmt.h"
+#include "libavcodec/avcodec.h"
 #include "avdevice.h"
 #include "config.h"
+
+#define E AV_OPT_FLAG_ENCODING_PARAM
+#define D AV_OPT_FLAG_DECODING_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM
+#define V AV_OPT_FLAG_VIDEO_PARAM
+#define OFFSET(x) offsetof(AVDeviceCapabilitiesQuery, x)
+
+const AVOption av_device_capabilities[] = {
+    { "codec", "codec", OFFSET(codec), AV_OPT_TYPE_INT,
+        {.i64 = AV_CODEC_ID_NONE}, AV_CODEC_ID_NONE, INT_MAX, E|D|A|V },
+    { "sample_format", "sample format", OFFSET(sample_format), AV_OPT_TYPE_INT,
+        {.i64 = AV_SAMPLE_FMT_NONE}, -1, INT_MAX, E|D|A },
+    { "sample_rate", "sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT,
+        {.i64 = -1}, -1, INT_MAX, E|D|A },
+    { "channels", "channels", OFFSET(channels), AV_OPT_TYPE_INT,
+        {.i64 = -1}, -1, INT_MAX, E|D|A },
+    { "channel_layout", "channel layout", OFFSET(channel_layout), AV_OPT_TYPE_INT64,
+        {.i64 = -1}, -1, INT_MAX, E|D|A },
+    { "pixel_format", "pixel format", OFFSET(pixel_format), AV_OPT_TYPE_INT,
+        {.i64 = AV_PIX_FMT_NONE}, -1, INT_MAX, E|D|V },
+    { "window_size", "window size", OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE,
+        {.str = NULL}, -1, INT_MAX, E|D|V },
+    { "frame_size", "frame size", OFFSET(frame_width), AV_OPT_TYPE_IMAGE_SIZE,
+        {.str = NULL}, -1, INT_MAX, E|D|V },
+    { "fps", "fps", OFFSET(fps), AV_OPT_TYPE_RATIONAL,
+        {.dbl = -1}, -1, INT_MAX, E|D|V },
+    { NULL }
+};
+
+#undef E
+#undef D
+#undef A
+#undef V
+#undef OFFSET
 
 unsigned avdevice_version(void)
 {
@@ -97,6 +134,50 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s, enum AVDevToA
     if (!s->control_message_cb)
         return AVERROR(ENOSYS);
     return s->control_message_cb(s, type, data, data_size);
+}
+
+int avdevice_capabilities_create(AVDeviceCapabilitiesQuery **caps, AVFormatContext *s,
+                                 AVDictionary **device_options)
+{
+    int ret;
+    av_assert0(s && caps);
+    av_assert0(s->iformat || s->oformat);
+    if ((s->oformat && !s->oformat->create_device_capabilities) ||
+        (s->iformat && !s->iformat->create_device_capabilities))
+        return AVERROR(ENOSYS);
+    *caps = av_mallocz(sizeof(**caps));
+    if (!(*caps))
+        return AVERROR(ENOMEM);
+    (*caps)->device_context = s;
+    if (((ret = av_opt_set_dict(s->priv_data, device_options)) < 0))
+        goto fail;
+    if (s->iformat) {
+        if ((ret = s->iformat->create_device_capabilities(s, *caps)) < 0)
+            goto fail;
+    } else {
+        if ((ret = s->oformat->create_device_capabilities(s, *caps)) < 0)
+            goto fail;
+    }
+    av_opt_set_defaults(*caps);
+    return 0;
+  fail:
+    av_freep(caps);
+    return ret;
+}
+
+void avdevice_capabilities_free(AVDeviceCapabilitiesQuery **caps, AVFormatContext *s)
+{
+    if (!s || !caps || !(*caps))
+        return;
+    av_assert0(s->iformat || s->oformat);
+    if (s->iformat) {
+        if (s->iformat->free_device_capabilities)
+            s->iformat->free_device_capabilities(s, *caps);
+    } else {
+        if (s->oformat->free_device_capabilities)
+            s->oformat->free_device_capabilities(s, *caps);
+    }
+    av_freep(caps);
 }
 
 int avdevice_list_devices(AVFormatContext *s, AVDeviceInfoList **device_list)

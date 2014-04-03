@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-04-xx - xxxxxxx - lavd 55.12.100 - avdevice.h
+  Add avdevice_capabilities_create() function.
+  Add avdevice_capabilities_free() function.
+
 2014-04-xx - xxxxxxx - lavu 53.11.0 - pixfmt.h
   Add AV_PIX_FMT_YVYU422 pixel format.
 

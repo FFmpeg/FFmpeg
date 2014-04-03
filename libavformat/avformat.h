@@ -262,6 +262,7 @@
 struct AVFormatContext;
 
 struct AVDeviceInfoList;
+struct AVDeviceCapabilitiesQuery;
 
 /**
  * @defgroup metadata_api Public Metadata API
@@ -531,6 +532,16 @@ typedef struct AVOutputFormat {
      * @see avdevice_list_devices() for more details.
      */
     int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
+    /**
+     * Initialize device capabilities submodule.
+     * @see avdevice_capabilities_create() for more details.
+     */
+    int (*create_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
+    /**
+     * Free device capabilities submodule.
+     * @see avdevice_capabilities_free() for more details.
+     */
+    int (*free_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
 } AVOutputFormat;
 /**
  * @}
@@ -665,6 +676,18 @@ typedef struct AVInputFormat {
      * @see avdevice_list_devices() for more details.
      */
     int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
+
+    /**
+     * Initialize device capabilities submodule.
+     * @see avdevice_capabilities_create() for more details.
+     */
+    int (*create_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
+
+    /**
+     * Free device capabilities submodule.
+     * @see avdevice_capabilities_free() for more details.
+     */
+    int (*free_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
 } AVInputFormat;
 /**
  * @}
