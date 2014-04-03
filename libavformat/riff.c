@@ -291,6 +291,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_VC1IMAGE,     MKTAG('W', 'V', 'P', '2') },
     { AV_CODEC_ID_LOCO,         MKTAG('L', 'O', 'C', 'O') },
     { AV_CODEC_ID_WNV1,         MKTAG('W', 'N', 'V', '1') },
+    { AV_CODEC_ID_WNV1,         MKTAG('Y', 'U', 'V', '8') },
     { AV_CODEC_ID_AASC,         MKTAG('A', 'A', 'S', 'C') },
     { AV_CODEC_ID_INDEO2,       MKTAG('R', 'T', '2', '1') },
     { AV_CODEC_ID_FRAPS,        MKTAG('F', 'P', 'S', '1') },
