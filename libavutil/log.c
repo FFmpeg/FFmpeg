@@ -50,7 +50,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int av_log_level = AV_LOG_INFO;
 static int flags;
 
-#if HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
 #include <windows.h>
 static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_PANIC  /8] = 12,
@@ -115,7 +115,7 @@ static int use_color = -1;
 
 static void check_color_terminal(void)
 {
-#if HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
     CONSOLE_SCREEN_BUFFER_INFO con_info;
     con = GetStdHandle(STD_ERROR_HANDLE);
     use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
@@ -146,7 +146,7 @@ static void colored_fputs(int level, int tint, const char *str)
     if (use_color < 0)
         check_color_terminal();
 
-#if HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
     if (use_color && level != AV_LOG_INFO/8)
         SetConsoleTextAttribute(con, background | color[level]);
     fputs(str, stderr);
