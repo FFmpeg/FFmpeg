@@ -80,7 +80,9 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
             return AVERROR_PATCHWELCOME;
         }
 
-        if ((5 + wt*(s->maxval+1)) < 65535)
+        if (!s->maxval)
+            maxtab = 255;
+        else if ((5 + wt*(s->maxval+1)) < 65535)
             maxtab = s->maxval;
         else
             maxtab = 65530/wt - 1;
@@ -102,10 +104,10 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
             uint32_t *pal = s->picture_ptr->data[1];
             s->picture_ptr->format =
             s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
-            for (i=s->palette_index; i<maxtab; i++) {
+            for (i=s->palette_index; i<=maxtab; i++) {
                 pal[i] = 0;
                 for (j=0; j<wt; j++) {
-                    pal[i] |= get_bits(&s->gb, 8) << (8*wt);
+                    pal[i] |= get_bits(&s->gb, 8) << (8*(wt-j-1));
                 }
             }
             s->palette_index = i;
