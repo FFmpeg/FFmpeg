@@ -127,11 +127,11 @@ an additional step between decoding and encoding:
  _________                        ______________
 |         |                      |              |
 | decoded |                      | encoded data |
-| frames  |\                    /| packets      |
-|_________| \                  / |______________|
+| frames  |\                   _ | packets      |
+|_________| \                  /||______________|
              \   __________   /
-  simple      \ |          | /  encoder
-  filtergraph  \| filtered |/
+  simple     _\||          | /  encoder
+  filtergraph   | filtered |/
                 | frames   |
                 |__________|
 
