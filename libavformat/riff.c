@@ -139,6 +139,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'c', ' ') },
     { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'c', 's') },
     { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'h', '1') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'i', 's') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('p', 'd', 'v', 'c') },
     { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('m', 'p', 'g', '1') },
     { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('m', 'p', 'g', '2') },
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('m', 'p', 'g', '2') },
