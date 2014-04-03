@@ -1514,6 +1514,7 @@ void *av_opt_ptr(const AVClass *class, void *obj, const char *name)
 
 int av_opt_query_ranges(AVOptionRanges **ranges_arg, void *obj, const char *key, int flags)
 {
+    int ret;
     const AVClass *c = *(AVClass**)obj;
     int (*callback)(AVOptionRanges **, void *obj, const char *key, int flags) = NULL;
 
@@ -1523,7 +1524,13 @@ int av_opt_query_ranges(AVOptionRanges **ranges_arg, void *obj, const char *key,
     if (!callback)
         callback = av_opt_query_ranges_default;
 
-    return callback(ranges_arg, obj, key, flags);
+    ret = callback(ranges_arg, obj, key, flags);
+    if (ret >= 0) {
+        if (!(flags & AV_OPT_MULTI_COMPONENT_RANGE))
+            ret = 1;
+        (*ranges_arg)->nb_components = ret;
+    }
+    return ret;
 }
 
 int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const char *key, int flags)
@@ -1544,6 +1551,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
     ranges->range = range_array;
     ranges->range[0] = range;
     ranges->nb_ranges = 1;
+    ranges->nb_components = 1;
     range->is_range = 1;
     range->value_min = field->min;
     range->value_max = field->max;
@@ -1587,7 +1595,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
     }
 
     *ranges_arg = ranges;
-    return 0;
+    return 1;
 fail:
     av_free(ranges);
     av_free(range);
@@ -1600,7 +1608,7 @@ void av_opt_freep_ranges(AVOptionRanges **rangesp)
     int i;
     AVOptionRanges *ranges = *rangesp;
 
-    for (i = 0; i < ranges->nb_ranges; i++) {
+    for (i = 0; i < ranges->nb_ranges * ranges->nb_components; i++) {
         AVOptionRange *range = ranges->range[i];
         av_freep(&range->str);
         av_freep(&ranges->range[i]);
