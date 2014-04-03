@@ -260,6 +260,47 @@ asetpts=expr=N/SR/TB
 asetpts='(RTCTIME - RTCSTART) / (TB * 1000000)"
 @end example
 
+@section asettb
+
+Set the timebase to use for the output frames timestamps.
+It is mainly useful for testing timebase configuration.
+
+This filter accepts the following parameters:
+
+@table @option
+
+@item expr
+The expression which is evaluated into the output timebase.
+
+@end table
+
+The expression can contain the constants @var{PI}, @var{E}, @var{PHI}, @var{AVTB} (the
+default timebase), @var{intb} (the input timebase), and @var{sr} (the sample rate,
+audio only).
+
+The default value for the input is @var{intb}.
+
+Some examples:
+
+@example
+# Set the timebase to 1/25:
+settb=1/25
+
+# Set the timebase to 1/10:
+settb=0.1
+
+# Set the timebase to 1001/1000:
+settb=1+0.001
+
+# Set the timebase to 2*intb:
+settb=2*intb
+
+# Set the default timebase value:
+settb=AVTB
+
+# Set the timebase to twice the sample rate:
+asettb=sr*2
+@end example
 
 @section ashowinfo
 

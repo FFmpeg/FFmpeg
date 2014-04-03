@@ -18,6 +18,7 @@ version <next>:
 - LucasArts SMUSH VIMA audio decoder (ADPCM)
 - LucasArts SMUSH demuxer
 - MP2 encoding via TwoLAME
+- asettb filter
 
 
 version 10:
