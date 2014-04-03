@@ -161,6 +161,7 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_H264, MKTAG('A', 'V', 'i', 'n') }, /* AVC-Intra with implicit SPS/PPS */
     { AV_CODEC_ID_H264, MKTAG('a', 'i', 'v', 'x') }, /* XAVC 4:2:2 10bit */
 
+    { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', '1', 'v', ' ') },
     { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', '1', 'v', '1') }, /* Apple MPEG-1 Camcorder */
     { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'e', 'g') }, /* MPEG */
     { AV_CODEC_ID_MPEG2VIDEO, MKTAG('m', '2', 'v', '1') }, /* Apple MPEG-2 Camcorder */
