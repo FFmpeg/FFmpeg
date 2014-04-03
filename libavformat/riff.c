@@ -102,6 +102,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MPEG4,        MKTAG('G', 'E', 'O', 'V') },
     /* Samsung SHR-6040 */
     { AV_CODEC_ID_MPEG4,        MKTAG('S', 'I', 'P', 'P') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('S', 'M', '4', 'V') },
     { AV_CODEC_ID_MPEG4,        MKTAG('X', 'V', 'I', 'X') },
     { AV_CODEC_ID_MPEG4,        MKTAG('D', 'r', 'e', 'X') },
     { AV_CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
