@@ -163,6 +163,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '1') },
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('m', 'p', 'g', 'v') },
     { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('B', 'W', '1', '0') },
+    { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('X', 'M', 'P', 'G') }, /* Xing MPEG intra only */
     { AV_CODEC_ID_MJPEG,        MKTAG('M', 'J', 'P', 'G') },
     { AV_CODEC_ID_MJPEG,        MKTAG('L', 'J', 'P', 'G') },
     { AV_CODEC_ID_MJPEG,        MKTAG('d', 'm', 'b', '1') },
