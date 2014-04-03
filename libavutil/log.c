@@ -126,9 +126,11 @@ static void check_color_terminal(void)
         background = attr_orig & 0xF0;
     }
 #elif HAVE_ISATTY
+    char *term = getenv("TERM");
     use_color = !getenv("NO_COLOR") && !getenv("AV_LOG_FORCE_NOCOLOR") &&
                 (getenv("TERM") && isatty(2) || getenv("AV_LOG_FORCE_COLOR"));
-    if (getenv("AV_LOG_FORCE_256COLOR"))
+    if (   getenv("AV_LOG_FORCE_256COLOR")
+        || strstr(term, "256color"));
         use_color *= 256;
 #else
     use_color = getenv("AV_LOG_FORCE_COLOR") && !getenv("NO_COLOR") &&
@@ -136,7 +138,7 @@ static void check_color_terminal(void)
 #endif
 }
 
-static void colored_fputs(int level, const char *str)
+static void colored_fputs(int level, int tint, const char *str)
 {
     if (!*str)
         return;
@@ -156,6 +158,12 @@ static void colored_fputs(int level, const char *str)
                 "\033[%d;3%dm%s\033[0m",
                 (color[level] >> 4) & 15,
                 color[level] & 15,
+                str);
+    } else if (tint && use_color == 256) {
+        fprintf(stderr,
+                "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
+                (color[level] >> 16) & 0xff,
+                tint,
                 str);
     } else if (use_color == 256 && level != AV_LOG_INFO/8) {
         fprintf(stderr,
@@ -250,6 +258,10 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     char line[LINE_SZ];
     static int is_atty;
     int type[2];
+    int tint = av_clip(level >> 8, 0, 256);
+
+    level &= 0xff;
+
 
     if (level > av_log_level)
         return;
@@ -278,11 +290,11 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     }
     strcpy(prev, line);
     sanitize(part[0].str);
-    colored_fputs(type[0], part[0].str);
+    colored_fputs(type[0], 0, part[0].str);
     sanitize(part[1].str);
-    colored_fputs(type[1], part[1].str);
+    colored_fputs(type[1], 0, part[1].str);
     sanitize(part[2].str);
-    colored_fputs(av_clip(level >> 3, 0, 6), part[2].str);
+    colored_fputs(av_clip(level >> 3, 0, 6), tint, part[2].str);
 end:
     av_bprint_finalize(part+2, NULL);
 #if HAVE_PTHREADS
