@@ -158,6 +158,7 @@ TESTPROGS = adler32                                                     \
             lfg                                                         \
             lls1                                                        \
             lls2                                                        \
+            log                                                         \
             md5                                                         \
             murmur3                                                     \
             opt                                                         \

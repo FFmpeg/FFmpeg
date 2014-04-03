@@ -375,3 +375,26 @@ void avpriv_report_missing_feature(void *avc, const char *msg, ...)
     missing_feature_sample(0, avc, msg, argument_list);
     va_end(argument_list);
 }
+
+#ifdef TEST
+// LCOV_EXCL_START
+#include <string.h>
+
+int main(int argc, char **argv)
+{
+    int i;
+    av_log_set_level(AV_LOG_DEBUG);
+    for (use_color=0; use_color<=256; use_color = 255*use_color+1) {
+        av_log(NULL, AV_LOG_FATAL, "use_color: %d\n", use_color);
+        for (i = AV_LOG_DEBUG; i>=AV_LOG_QUIET; i-=8) {
+            av_log(NULL, i, " %d", i);
+            av_log(NULL, AV_LOG_INFO, "e ");
+            av_log(NULL, i + 256*123, "C%d", i);
+            av_log(NULL, AV_LOG_INFO, "e");
+        }
+        av_log(NULL, AV_LOG_PANIC, "\n");
+    }
+    return 0;
+}
+// LCOV_EXCL_STOP
+#endif
