@@ -576,6 +576,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         memset(&h->mb, 0, sizeof(h->mb));
         memset(&h->mb_luma_dc, 0, sizeof(h->mb_luma_dc));
         memset(&h->mb_padding, 0, sizeof(h->mb_padding));
+        memset(&h->cur_pic, 0, sizeof(h->cur_pic));
 
         h->avctx             = dst;
         h->DPB               = NULL;
