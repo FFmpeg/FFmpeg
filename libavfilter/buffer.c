@@ -150,7 +150,7 @@ int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
     return 0;
 }
 
-void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *src)
+void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, const AVFilterBufferRef *src)
 {
     // copy common properties
     dst->pts             = src->pts;

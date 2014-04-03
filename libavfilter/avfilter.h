@@ -199,7 +199,7 @@ typedef struct AVFilterBufferRef {
  * Copy properties of src to dst, without copying the actual data
  */
 attribute_deprecated
-void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *src);
+void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, const AVFilterBufferRef *src);
 
 /**
  * Add a new reference to a buffer.
