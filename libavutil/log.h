@@ -144,16 +144,18 @@ typedef struct AVClass {
 #define AV_LOG_DEBUG    48
 
 /**
- * Sets additional colors for extended debugging sessions.
- * Requires 256color terminal support. Use outside debugging is not
- * recommended.
- */
-
-#define AV_LOG_C(x) (x << 8)
-
-/**
  * @}
  */
+
+/**
+ * Sets additional colors for extended debugging sessions.
+ * @code
+   av_log(ctx, AV_LOG_DEBUG|AV_LOG_C(134), "Message in purple\n");
+   @endcode
+ * Requires 256color terminal support. Uses outside debugging is not
+ * recommended.
+ */
+#define AV_LOG_C(x) (x << 8)
 
 /**
  * Send the specified message to the log if the level is less than or equal
