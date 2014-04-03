@@ -4039,7 +4039,7 @@ void av_hex_dump_log(void *avcl, int level, const uint8_t *buf, int size)
     hex_dump_internal(avcl, NULL, level, buf, size);
 }
 
-static void pkt_dump_internal(void *avcl, FILE *f, int level, AVPacket *pkt,
+static void pkt_dump_internal(void *avcl, FILE *f, int level, const AVPacket *pkt,
                               int dump_payload, AVRational time_base)
 {
     HEXDUMP_PRINT("stream #%d:\n", pkt->stream_index);
@@ -4063,13 +4063,13 @@ static void pkt_dump_internal(void *avcl, FILE *f, int level, AVPacket *pkt,
         av_hex_dump(f, pkt->data, pkt->size);
 }
 
-void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st)
+void av_pkt_dump2(FILE *f, const AVPacket *pkt, int dump_payload, const AVStream *st)
 {
     pkt_dump_internal(NULL, f, 0, pkt, dump_payload, st->time_base);
 }
 
-void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
-                      AVStream *st)
+void av_pkt_dump_log2(void *avcl, int level, const AVPacket *pkt, int dump_payload,
+                      const AVStream *st)
 {
     pkt_dump_internal(avcl, NULL, level, pkt, dump_payload, st->time_base);
 }
