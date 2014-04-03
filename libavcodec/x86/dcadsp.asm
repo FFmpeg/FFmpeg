@@ -132,10 +132,15 @@ DECODE_HF
     mulps       va, %2
     mulps       vb, %2
 %if %0 == 3
+%if cpuflag(fma3)
+    fmaddps     va, m4, %3, va
+    fmaddps     vb, m0, %3, vb
+%else
     mulps       m4, %3
     mulps       m0, %3
     addps       va, m4
     addps       vb, m0
+%endif
 %endif
     ; va = va1 va2 va3 va4
     ; vb = vb1 vb2 vb3 vb4
@@ -198,6 +203,10 @@ cglobal dca_lfe_fir%1, 3,3,6-%1, out, in, cf0
 INIT_XMM sse
 DCA_LFE_FIR 0
 DCA_LFE_FIR 1
+%if HAVE_FMA3_EXTERNAL
+INIT_XMM fma3
+DCA_LFE_FIR 0
+%endif
 
 %macro SETZERO 1
 %if cpuflag(sse2) && notcpuflag(avx)

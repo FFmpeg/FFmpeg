@@ -34,6 +34,7 @@ void ff_decode_hf_sse4(float dst[DCA_SUBBANDS][8], const int vq_num[DCA_SUBBANDS
                        int scale[DCA_SUBBANDS][2], intptr_t start, intptr_t end);
 void ff_dca_lfe_fir0_sse(float *out, const float *in, const float *coefs);
 void ff_dca_lfe_fir1_sse(float *out, const float *in, const float *coefs);
+void ff_dca_lfe_fir0_fma3(float *out, const float *in, const float *coefs);
 
 av_cold void ff_dcadsp_init_x86(DCADSPContext *s)
 {
@@ -53,6 +54,10 @@ av_cold void ff_dcadsp_init_x86(DCADSPContext *s)
 
     if (EXTERNAL_SSE4(cpu_flags)) {
         s->decode_hf = ff_decode_hf_sse4;
+    }
+
+    if (EXTERNAL_FMA3(cpu_flags)) {
+        s->lfe_fir[0]        = ff_dca_lfe_fir0_fma3;
     }
 }
 
