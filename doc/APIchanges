@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-04-xx - xxxxxxx - lavu 53.10.0 - replaygain.h
+  Full scale for peak values is now 100000 (instead of UINT32_MAX) and values
+  may overflow.
+
 2014-04-xx - xxxxxxx - lavu 53.09.0 - log.h
   Add AV_LOG(c) macro to have 256 color debug messages.
 
