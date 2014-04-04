@@ -336,7 +336,7 @@ typedef struct OutputStream {
     char *avfilter;
 
     int64_t sws_flags;
-    AVDictionary *opts;
+    AVDictionary *encoder_opts;
     AVDictionary *resample_opts;
     int finished;        /* no more packets should be written for this stream */
     int stream_copy;
