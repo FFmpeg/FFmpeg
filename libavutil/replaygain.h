@@ -34,8 +34,8 @@ typedef struct AVReplayGain {
      */
     int32_t track_gain;
     /**
-     * Peak track amplitude, with UINT32_MAX representing full scale. 0 when
-     * unknown.
+     * Peak track amplitude, with 100000 representing full scale (but values
+     * may overflow). 0 when unknown.
      */
     uint32_t track_peak;
     /**
