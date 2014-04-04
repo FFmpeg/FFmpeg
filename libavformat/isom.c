@@ -83,7 +83,7 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_RAWVIDEO, MKTAG('A', 'B', 'G', 'R') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', '1', '6', 'g') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', '4', '8', 'r') },
-    { AV_CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'b', 'g') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'b', 'g') }, /* BOXX */
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'r', 'g') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'y', 'v') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('N', 'O', '1', '6') },
@@ -173,9 +173,9 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_H264, MKTAG('A', 'V', 'i', 'n') }, /* AVC-Intra with implicit SPS/PPS */
     { AV_CODEC_ID_H264, MKTAG('a', 'i', 'v', 'x') }, /* XAVC 4:2:2 10bit */
 
+    { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', '1', 'v', ' ') },
     { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', '1', 'v', '1') }, /* Apple MPEG-1 Camcorder */
     { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'e', 'g') }, /* MPEG */
-    { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', '1', 'v', ' ') },
     { AV_CODEC_ID_MPEG2VIDEO, MKTAG('m', '2', 'v', '1') }, /* Apple MPEG-2 Camcorder */
     { AV_CODEC_ID_MPEG2VIDEO, MKTAG('h', 'd', 'v', '1') }, /* MPEG2 HDV 720p30 */
     { AV_CODEC_ID_MPEG2VIDEO, MKTAG('h', 'd', 'v', '2') }, /* MPEG2 HDV 1080i60 */
