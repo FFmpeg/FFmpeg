@@ -31,6 +31,9 @@ fate-vp8-alpha: CMD = framecrc -i $(TARGET_SAMPLES)/vp8_alpha/vp8_video_with_alp
 FATE_SAMPLES_AVCONV += $(FATE_VP6-yes)
 fate-vp6: $(FATE_VP6-yes)
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, VP7) += fate-vp7
+fate-vp7: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp7/potter-40.vp7 -frames 30 -an
+
 VP8_SUITE = 001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017
 
 define FATE_VP8_SUITE
