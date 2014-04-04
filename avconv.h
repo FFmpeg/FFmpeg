@@ -231,7 +231,7 @@ typedef struct InputStream {
     PtsCorrectionContext pts_ctx;
     double ts_scale;
     int showed_multi_packet_warning;
-    AVDictionary *opts;
+    AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
 
     int resample_height;

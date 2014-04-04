@@ -202,7 +202,7 @@ static void avconv_cleanup(int ret)
 
         av_frame_free(&ist->decoded_frame);
         av_frame_free(&ist->filter_frame);
-        av_dict_free(&ist->opts);
+        av_dict_free(&ist->decoder_opts);
         av_freep(&ist->filters);
         av_freep(&ist->hwaccel_device);
 
@@ -1566,9 +1566,9 @@ static int init_input_stream(int ist_index, char *error, int error_len)
 
         av_opt_set_int(ist->st->codec, "refcounted_frames", 1, 0);
 
-        if (!av_dict_get(ist->opts, "threads", NULL, 0))
-            av_dict_set(&ist->opts, "threads", "auto", 0);
-        if ((ret = avcodec_open2(ist->st->codec, codec, &ist->opts)) < 0) {
+        if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
+            av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
+        if ((ret = avcodec_open2(ist->st->codec, codec, &ist->decoder_opts)) < 0) {
             char errbuf[128];
             if (ret == AVERROR_EXPERIMENTAL)
                 abort_codec_experimental(codec, 0);
@@ -1581,7 +1581,7 @@ static int init_input_stream(int ist_index, char *error, int error_len)
                      ist->file_index, ist->st->index, errbuf);
             return ret;
         }
-        assert_avoptions(ist->opts);
+        assert_avoptions(ist->decoder_opts);
     }
 
     ist->last_dts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
