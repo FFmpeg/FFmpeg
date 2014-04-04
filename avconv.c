@@ -1643,7 +1643,6 @@ static int transcode_init(void)
 {
     int ret = 0, i, j, k;
     AVFormatContext *oc;
-    AVCodecContext *codec;
     OutputStream *ost;
     InputStream *ist;
     char error[1024];
@@ -1674,6 +1673,7 @@ static int transcode_init(void)
 
     /* for each output stream, we compute the right encoding parameters */
     for (i = 0; i < nb_output_streams; i++) {
+        AVCodecContext *enc_ctx;
         AVCodecContext *dec_ctx = NULL;
         ost = output_streams[i];
         oc  = output_files[ost->file_index]->ctx;
@@ -1682,14 +1682,14 @@ static int transcode_init(void)
         if (ost->attachment_filename)
             continue;
 
-        codec  = ost->st->codec;
+        enc_ctx = ost->st->codec;
 
         if (ist) {
             dec_ctx = ist->st->codec;
 
             ost->st->disposition          = ist->st->disposition;
-            codec->bits_per_raw_sample    = dec_ctx->bits_per_raw_sample;
-            codec->chroma_sample_location = dec_ctx->chroma_sample_location;
+            enc_ctx->bits_per_raw_sample    = dec_ctx->bits_per_raw_sample;
+            enc_ctx->chroma_sample_location = dec_ctx->chroma_sample_location;
         }
 
         if (ost->stream_copy) {
@@ -1705,65 +1705,65 @@ static int transcode_init(void)
             }
 
             /* if stream_copy is selected, no need to decode or encode */
-            codec->codec_id   = dec_ctx->codec_id;
-            codec->codec_type = dec_ctx->codec_type;
+            enc_ctx->codec_id   = dec_ctx->codec_id;
+            enc_ctx->codec_type = dec_ctx->codec_type;
 
-            if (!codec->codec_tag) {
+            if (!enc_ctx->codec_tag) {
                 if (!oc->oformat->codec_tag ||
-                     av_codec_get_id (oc->oformat->codec_tag, dec_ctx->codec_tag) == codec->codec_id ||
+                     av_codec_get_id (oc->oformat->codec_tag, dec_ctx->codec_tag) == enc_ctx->codec_id ||
                      av_codec_get_tag(oc->oformat->codec_tag, dec_ctx->codec_id) <= 0)
-                    codec->codec_tag = dec_ctx->codec_tag;
+                    enc_ctx->codec_tag = dec_ctx->codec_tag;
             }
 
-            codec->bit_rate       = dec_ctx->bit_rate;
-            codec->rc_max_rate    = dec_ctx->rc_max_rate;
-            codec->rc_buffer_size = dec_ctx->rc_buffer_size;
-            codec->field_order    = dec_ctx->field_order;
-            codec->extradata      = av_mallocz(extra_size);
-            if (!codec->extradata) {
+            enc_ctx->bit_rate       = dec_ctx->bit_rate;
+            enc_ctx->rc_max_rate    = dec_ctx->rc_max_rate;
+            enc_ctx->rc_buffer_size = dec_ctx->rc_buffer_size;
+            enc_ctx->field_order    = dec_ctx->field_order;
+            enc_ctx->extradata      = av_mallocz(extra_size);
+            if (!enc_ctx->extradata) {
                 return AVERROR(ENOMEM);
             }
-            memcpy(codec->extradata, dec_ctx->extradata, dec_ctx->extradata_size);
-            codec->extradata_size = dec_ctx->extradata_size;
+            memcpy(enc_ctx->extradata, dec_ctx->extradata, dec_ctx->extradata_size);
+            enc_ctx->extradata_size = dec_ctx->extradata_size;
             if (!copy_tb) {
-                codec->time_base      = dec_ctx->time_base;
-                codec->time_base.num *= dec_ctx->ticks_per_frame;
-                av_reduce(&codec->time_base.num, &codec->time_base.den,
-                          codec->time_base.num, codec->time_base.den, INT_MAX);
+                enc_ctx->time_base      = dec_ctx->time_base;
+                enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
+                av_reduce(&enc_ctx->time_base.num, &enc_ctx->time_base.den,
+                          enc_ctx->time_base.num, enc_ctx->time_base.den, INT_MAX);
             } else
-                codec->time_base = ist->st->time_base;
+                enc_ctx->time_base = ist->st->time_base;
 
-            ost->parser = av_parser_init(codec->codec_id);
+            ost->parser = av_parser_init(enc_ctx->codec_id);
 
-            switch (codec->codec_type) {
+            switch (enc_ctx->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
                 if (audio_volume != 256) {
                     av_log(NULL, AV_LOG_FATAL, "-acodec copy and -vol are incompatible (frames are not decoded)\n");
                     exit_program(1);
                 }
-                codec->channel_layout     = dec_ctx->channel_layout;
-                codec->sample_rate        = dec_ctx->sample_rate;
-                codec->channels           = dec_ctx->channels;
-                codec->frame_size         = dec_ctx->frame_size;
-                codec->audio_service_type = dec_ctx->audio_service_type;
-                codec->block_align        = dec_ctx->block_align;
+                enc_ctx->channel_layout     = dec_ctx->channel_layout;
+                enc_ctx->sample_rate        = dec_ctx->sample_rate;
+                enc_ctx->channels           = dec_ctx->channels;
+                enc_ctx->frame_size         = dec_ctx->frame_size;
+                enc_ctx->audio_service_type = dec_ctx->audio_service_type;
+                enc_ctx->block_align        = dec_ctx->block_align;
                 break;
             case AVMEDIA_TYPE_VIDEO:
-                codec->pix_fmt            = dec_ctx->pix_fmt;
-                codec->width              = dec_ctx->width;
-                codec->height             = dec_ctx->height;
-                codec->has_b_frames       = dec_ctx->has_b_frames;
+                enc_ctx->pix_fmt            = dec_ctx->pix_fmt;
+                enc_ctx->width              = dec_ctx->width;
+                enc_ctx->height             = dec_ctx->height;
+                enc_ctx->has_b_frames       = dec_ctx->has_b_frames;
                 if (ost->frame_aspect_ratio)
-                    sar = av_d2q(ost->frame_aspect_ratio * codec->height / codec->width, 255);
+                    sar = av_d2q(ost->frame_aspect_ratio * enc_ctx->height / enc_ctx->width, 255);
                 else if (ist->st->sample_aspect_ratio.num)
                     sar = ist->st->sample_aspect_ratio;
                 else
                     sar = dec_ctx->sample_aspect_ratio;
-                ost->st->sample_aspect_ratio = codec->sample_aspect_ratio = sar;
+                ost->st->sample_aspect_ratio = enc_ctx->sample_aspect_ratio = sar;
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
-                codec->width  = dec_ctx->width;
-                codec->height = dec_ctx->height;
+                enc_ctx->width  = dec_ctx->width;
+                enc_ctx->height = dec_ctx->height;
                 break;
             case AVMEDIA_TYPE_DATA:
             case AVMEDIA_TYPE_ATTACHMENT:
@@ -1796,7 +1796,7 @@ static int transcode_init(void)
              *
              * in such a case, set ost->frame_rate
              */
-            if (codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+            if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO &&
                 !ost->frame_rate.num && ist &&
                 (video_sync_method ==  VSYNC_CFR ||
                  (video_sync_method ==  VSYNC_AUTO &&
@@ -1822,8 +1822,8 @@ static int transcode_init(void)
             }
 
             if (!ost->filter &&
-                (codec->codec_type == AVMEDIA_TYPE_VIDEO ||
-                 codec->codec_type == AVMEDIA_TYPE_AUDIO)) {
+                (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+                 enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO)) {
                     FilterGraph *fg;
                     fg = init_simple_filtergraph(ist, ost);
                     if (configure_filtergraph(fg)) {
@@ -1832,30 +1832,30 @@ static int transcode_init(void)
                     }
             }
 
-            switch (codec->codec_type) {
+            switch (enc_ctx->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
-                codec->sample_fmt     = ost->filter->filter->inputs[0]->format;
-                codec->sample_rate    = ost->filter->filter->inputs[0]->sample_rate;
-                codec->channel_layout = ost->filter->filter->inputs[0]->channel_layout;
-                codec->channels       = av_get_channel_layout_nb_channels(codec->channel_layout);
-                codec->time_base      = (AVRational){ 1, codec->sample_rate };
+                enc_ctx->sample_fmt     = ost->filter->filter->inputs[0]->format;
+                enc_ctx->sample_rate    = ost->filter->filter->inputs[0]->sample_rate;
+                enc_ctx->channel_layout = ost->filter->filter->inputs[0]->channel_layout;
+                enc_ctx->channels       = av_get_channel_layout_nb_channels(enc_ctx->channel_layout);
+                enc_ctx->time_base      = (AVRational){ 1, enc_ctx->sample_rate };
                 break;
             case AVMEDIA_TYPE_VIDEO:
-                codec->time_base = ost->filter->filter->inputs[0]->time_base;
+                enc_ctx->time_base = ost->filter->filter->inputs[0]->time_base;
 
-                codec->width  = ost->filter->filter->inputs[0]->w;
-                codec->height = ost->filter->filter->inputs[0]->h;
-                codec->sample_aspect_ratio = ost->st->sample_aspect_ratio =
+                enc_ctx->width  = ost->filter->filter->inputs[0]->w;
+                enc_ctx->height = ost->filter->filter->inputs[0]->h;
+                enc_ctx->sample_aspect_ratio = ost->st->sample_aspect_ratio =
                     ost->frame_aspect_ratio ? // overridden by the -aspect cli option
-                    av_d2q(ost->frame_aspect_ratio * codec->height/codec->width, 255) :
+                    av_d2q(ost->frame_aspect_ratio * enc_ctx->height/enc_ctx->width, 255) :
                     ost->filter->filter->inputs[0]->sample_aspect_ratio;
-                codec->pix_fmt = ost->filter->filter->inputs[0]->format;
+                enc_ctx->pix_fmt = ost->filter->filter->inputs[0]->format;
 
                 if (dec_ctx &&
-                    (codec->width   != dec_ctx->width  ||
-                     codec->height  != dec_ctx->height ||
-                     codec->pix_fmt != dec_ctx->pix_fmt)) {
-                    codec->bits_per_raw_sample = 0;
+                    (enc_ctx->width   != dec_ctx->width  ||
+                     enc_ctx->height  != dec_ctx->height ||
+                     enc_ctx->pix_fmt != dec_ctx->pix_fmt)) {
+                    enc_ctx->bits_per_raw_sample = 0;
                 }
 
                 if (ost->forced_keyframes)
@@ -1863,14 +1863,14 @@ static int transcode_init(void)
                                             ost->st->codec);
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
-                codec->time_base = (AVRational){1, 1000};
+                enc_ctx->time_base = (AVRational){1, 1000};
                 break;
             default:
                 abort();
                 break;
             }
             /* two pass mode */
-            if ((codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
+            if ((enc_ctx->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
                 char logfilename[1024];
                 FILE *f;
 
@@ -1881,7 +1881,7 @@ static int transcode_init(void)
                 if (!strcmp(ost->enc->name, "libx264")) {
                     av_dict_set(&ost->opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
                 } else {
-                    if (codec->flags & CODEC_FLAG_PASS1) {
+                    if (enc_ctx->flags & CODEC_FLAG_PASS1) {
                         f = fopen(logfilename, "wb");
                         if (!f) {
                             av_log(NULL, AV_LOG_FATAL, "Cannot write log file '%s' for pass-1 encoding: %s\n",
@@ -1897,7 +1897,7 @@ static int transcode_init(void)
                                    logfilename);
                             exit_program(1);
                         }
-                        codec->stats_in = logbuffer;
+                        enc_ctx->stats_in = logbuffer;
                     }
                 }
             }
