@@ -79,6 +79,8 @@ static const AVOption volume_options[] = {
         { "ignore", "replaygain side data is ignored", 0, AV_OPT_TYPE_CONST, { .i64 = REPLAYGAIN_IGNORE }, 0, 0, A, "replaygain" },
         { "track",  "track gain is preferred",         0, AV_OPT_TYPE_CONST, { .i64 = REPLAYGAIN_TRACK  }, 0, 0, A, "replaygain" },
         { "album",  "album gain is preferred",         0, AV_OPT_TYPE_CONST, { .i64 = REPLAYGAIN_ALBUM  }, 0, 0, A, "replaygain" },
+    { "replaygain_preamp", "Apply replaygain pre-amplification",
+            OFFSET(replaygain_preamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, -15.0, 15.0, A },
     { NULL },
 };
 
@@ -358,7 +360,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             av_log(inlink->dst, AV_LOG_VERBOSE,
                    "Using gain %f dB from replaygain side data.\n", g);
 
-            vol->volume   = pow(10, g / 20);
+            vol->volume   = pow(10, (g + vol->replaygain_preamp) / 20);
             vol->volume_i = (int)(vol->volume * 256 + 0.5);
 
             volume_init(vol);

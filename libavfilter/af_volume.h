@@ -75,6 +75,7 @@ typedef struct VolumeContext {
     double var_values[VAR_VARS_NB];
 
     enum ReplayGainType replaygain;
+    double replaygain_preamp;
     double volume;
     int    volume_i;
     int    channels;
