@@ -1401,10 +1401,10 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
             else if (ist->st->avg_frame_rate.num)
                 ist->next_dts += av_rescale_q(1, av_inv_q(ist->st->avg_frame_rate),
                                               AV_TIME_BASE_Q);
-            else if (ist->dec_ctx->time_base.num != 0) {
+            else if (ist->dec_ctx->framerate.num != 0) {
                 int ticks      = ist->st->parser ? ist->st->parser->repeat_pict + 1 :
                                                    ist->dec_ctx->ticks_per_frame;
-                ist->next_dts += av_rescale_q(ticks, ist->dec_ctx->time_base, AV_TIME_BASE_Q);
+                ist->next_dts += av_rescale_q(ticks, ist->dec_ctx->framerate, AV_TIME_BASE_Q);
             }
             break;
         case AVMEDIA_TYPE_SUBTITLE:
@@ -1435,11 +1435,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
                              ist->dec_ctx->sample_rate;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            if (ist->dec_ctx->time_base.num != 0) {
+            if (ist->dec_ctx->framerate.num != 0) {
                 int ticks = ist->st->parser ? ist->st->parser->repeat_pict + 1 : ist->dec_ctx->ticks_per_frame;
                 ist->next_dts += ((int64_t)AV_TIME_BASE *
-                                  ist->dec_ctx->time_base.num * ticks) /
-                                  ist->dec_ctx->time_base.den;
+                                  ist->dec_ctx->framerate.den * ticks) /
+                                  ist->dec_ctx->framerate.num;
             }
             break;
         }
