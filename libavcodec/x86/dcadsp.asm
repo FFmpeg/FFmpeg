@@ -311,9 +311,14 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
     sub          r5q, offmp
     and          r5q, -64
     shl          r5q, 2
+%if ARCH_X86_32 || mmsize < 32
     mov         OFFQ, r5q
 %define i        r5q
     mov            i, 16 * 4 - (ARCH_X86_64 + 1) * mmsize  ; main loop counter
+%else
+%define i 0
+%define OFFQ  r5q
+%endif
 
 %define buf2     synth_buf2q
 %if ARCH_X86_32
@@ -332,8 +337,10 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
 %define j        r3q
     mov          win, windowm
     mov         ptr1, synth_bufm
+%if ARCH_X86_32 || mmsize < 32
     add          win, i
     add         ptr1, i
+%endif
 %else ; ARCH_X86_64
 %define ptr1     r6q
 %define ptr2     r7q ; must be loaded
@@ -349,7 +356,9 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
     mov         ptr2, synth_bufmp
     ; prepare the inner loop counter
     mov            j, OFFQ
+%if ARCH_X86_32 || mmsize < 32
     sub         ptr2, i
+%endif
 .loop1:
     INNER_LOOP  0
     jge       .loop1
@@ -394,8 +403,10 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
     mova   [outq + i +  0 * 4 + mmsize], m7
     mova   [outq + i + 16 * 4 + mmsize], m8
 %endif
+%if ARCH_X86_32 || mmsize < 32
     sub            i, (ARCH_X86_64 + 1) * mmsize
     jge    .mainloop
+%endif
     RET
 %endmacro
 
