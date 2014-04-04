@@ -36,6 +36,7 @@
 #include "internal.h"
 #include "oggdec.h"
 #include "vorbiscomment.h"
+#include "replaygain.h"
 
 static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
 {
@@ -348,8 +349,14 @@ static int vorbis_header(AVFormatContext *s, int idx)
         }
     } else if (os->buf[os->pstart] == 3) {
         if (vorbis_update_metadata(s, idx) >= 0 && priv->len[1] > 10) {
+            unsigned new_len;
+
+            int ret = ff_replaygain_export(st, st->metadata);
+            if (ret < 0)
+                return ret;
+
             // drop all metadata we parsed and which is not required by libvorbis
-            unsigned new_len = 7 + 4 + AV_RL32(priv->packet[1] + 7) + 4 + 1;
+            new_len = 7 + 4 + AV_RL32(priv->packet[1] + 7) + 4 + 1;
             if (new_len >= 16 && new_len < os->psize) {
                 AV_WL32(priv->packet[1] + new_len - 5, 0);
                 priv->packet[1][new_len - 1] = 1;
