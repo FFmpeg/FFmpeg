@@ -26,6 +26,7 @@
 #include "rawdec.h"
 #include "oggdec.h"
 #include "vorbiscomment.h"
+#include "replaygain.h"
 #include "libavcodec/bytestream.h"
 
 static int flac_read_header(AVFormatContext *s)
@@ -142,6 +143,10 @@ static int flac_read_header(AVFormatContext *s)
             av_freep(&buffer);
         }
     }
+
+    ret = ff_replaygain_export(st, s->metadata);
+    if (ret < 0)
+        return ret;
 
     return 0;
 

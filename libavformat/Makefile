@@ -139,6 +139,7 @@ OBJS-$(CONFIG_FILMSTRIP_MUXER)           += filmstripenc.o
 OBJS-$(CONFIG_FLAC_DEMUXER)              += flacdec.o rawdec.o \
                                             flac_picture.o   \
                                             oggparsevorbis.o \
+                                            replaygain.o     \
                                             vorbiscomment.o
 OBJS-$(CONFIG_FLAC_MUXER)                += flacenc.o flacenc_header.o \
                                             vorbiscomment.o
