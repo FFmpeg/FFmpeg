@@ -106,7 +106,6 @@ Configuration options:
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
   --enable-incompatible-libav-abi enable incompatible Libav fork ABI [no]
-  --enable-incompatible-fork-abi  enable incompatible Libav fork ABI (deprecated) [no]
   --enable-raise-major     increase major version numbers in sonames [no]
 
 Program options:
@@ -1447,7 +1446,6 @@ CONFIG_LIST="
     $SUBSYSTEM_LIST
     fontconfig
     incompatible_libav_abi
-    incompatible_fork_abi
     memalign_hack
     memory_poisoning
     neon_clobber_test
@@ -1581,7 +1579,6 @@ HAVE_LIST_PUB="
     bigendian
     fast_unaligned
     incompatible_libav_abi
-    incompatible_fork_abi
 "
 
 HEADERS_LIST="
@@ -4138,10 +4135,6 @@ build the shared libraries as well. To only build the shared libraries specify
 EOF
     exit 1;
 fi
-
-# backward compatibility layer for incompatible_libav/fork_abi
-enabled incompatible_fork_abi  && enable incompatible_libav_abi
-enabled incompatible_libav_abi && enable incompatible_fork_abi
 
 die_license_disabled() {
     enabled $1 || { enabled $2 && die "$2 is $1 and --enable-$1 is not specified."; }
