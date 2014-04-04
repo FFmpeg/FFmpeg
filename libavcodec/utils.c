@@ -1262,6 +1262,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             ret = AVERROR(EINVAL);
             goto free_and_end;
         }
+
+#if FF_API_AVCTX_TIMEBASE
+        if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+            avctx->time_base = av_inv_q(avctx->framerate);
+#endif
     }
 end:
     entangled_thread_counter--;
@@ -1673,6 +1678,11 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             av_frame_unref(picture);
     } else
         ret = 0;
+
+#if FF_API_AVCTX_TIMEBASE
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+        avctx->time_base = av_inv_q(avctx->framerate);
+#endif
 
     return ret;
 }

@@ -61,7 +61,7 @@ static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
     info->trb[0]                            = s->pb_time;
     info->trd[1]                            = s->pp_field_time >> 1;
     info->trb[1]                            = s->pb_field_time >> 1;
-    info->vop_time_increment_resolution     = s->avctx->time_base.den;
+    info->vop_time_increment_resolution     = s->avctx->framerate.num;
     info->vop_fcode_forward                 = s->f_code;
     info->vop_fcode_backward                = s->b_code;
     info->resync_marker_disable             = !ctx->resync_marker;

@@ -66,8 +66,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                     did_set_size=1;
                 }
                 frame_rate_index = buf[3] & 0xf;
-                pc->frame_rate.den = avctx->time_base.den = ff_mpeg12_frame_rate_tab[frame_rate_index].num;
-                pc->frame_rate.num = avctx->time_base.num = ff_mpeg12_frame_rate_tab[frame_rate_index].den;
+                pc->frame_rate = avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_index];
                 avctx->bit_rate = ((buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6))*400;
                 avctx->codec_id = AV_CODEC_ID_MPEG1VIDEO;
             }
@@ -91,8 +90,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         avctx->bit_rate += (bit_rate_ext << 18) * 400;
                         if(did_set_size)
                             ff_set_dimensions(avctx, pc->width, pc->height);
-                        avctx->time_base.den = pc->frame_rate.den * (frame_rate_ext_n + 1) * 2;
-                        avctx->time_base.num = pc->frame_rate.num * (frame_rate_ext_d + 1);
+                        avctx->framerate.num = pc->frame_rate.num * (frame_rate_ext_n + 1) * 2;
+                        avctx->framerate.den = pc->frame_rate.den * (frame_rate_ext_d + 1);
                         avctx->codec_id = AV_CODEC_ID_MPEG2VIDEO;
                     }
                     break;
@@ -139,6 +138,10 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         }
     }
  the_end: ;
+#if FF_API_AVCTX_TIMEBASE
+    if (avctx->framerate.num)
+        avctx->time_base = av_inv_q(avctx->framerate);
+#endif
 }
 
 static int mpegvideo_parse(AVCodecParserContext *s,

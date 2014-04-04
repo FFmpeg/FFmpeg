@@ -656,7 +656,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     h->frame_recovered = 0;
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         if (avctx->ticks_per_frame == 1)
-            h->avctx->time_base.den *= 2;
+            h->avctx->framerate.num *= 2;
         avctx->ticks_per_frame = 2;
     }
 
