@@ -2687,6 +2687,7 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
         case AV_CODEC_ID_PAF_VIDEO_DEPRECATED : return AV_CODEC_ID_PAF_VIDEO;
         case AV_CODEC_ID_WEBP_DEPRECATED: return AV_CODEC_ID_WEBP;
         case AV_CODEC_ID_HEVC_DEPRECATED: return AV_CODEC_ID_HEVC;
+        case AV_CODEC_ID_VP7_DEPRECATED : return AV_CODEC_ID_VP7;
         default                         : return id;
     }
 }

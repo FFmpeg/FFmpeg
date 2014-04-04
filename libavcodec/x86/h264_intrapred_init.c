@@ -231,7 +231,8 @@ av_cold void ff_h264_pred_init_x86(H264PredContext *h, int codec_id,
             h->pred4x4  [VERT_RIGHT_PRED        ] = ff_pred4x4_vertical_right_8_mmxext;
             h->pred4x4  [HOR_DOWN_PRED          ] = ff_pred4x4_horizontal_down_8_mmxext;
             h->pred4x4  [DC_PRED                ] = ff_pred4x4_dc_8_mmxext;
-            if (codec_id == AV_CODEC_ID_VP7 || codec_id == AV_CODEC_ID_VP8 || codec_id == AV_CODEC_ID_H264) {
+            if (codec_id == AV_CODEC_ID_VP7 || codec_id == AV_CODEC_ID_VP8 ||
+                codec_id == AV_CODEC_ID_H264) {
                 h->pred4x4  [DIAG_DOWN_LEFT_PRED] = ff_pred4x4_down_left_8_mmxext;
             }
             if (codec_id == AV_CODEC_ID_SVQ3 || codec_id == AV_CODEC_ID_H264) {

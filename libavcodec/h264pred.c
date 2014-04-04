@@ -420,7 +420,7 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
 
 #define H264_PRED(depth) \
     if(codec_id != AV_CODEC_ID_RV40){\
-        if(codec_id == AV_CODEC_ID_VP7 || codec_id == AV_CODEC_ID_VP8) {\
+        if (codec_id == AV_CODEC_ID_VP7 || codec_id == AV_CODEC_ID_VP8) {\
             h->pred4x4[VERT_PRED       ]= FUNCD(pred4x4_vertical_vp8);\
             h->pred4x4[HOR_PRED        ]= FUNCD(pred4x4_horizontal_vp8);\
         } else {\
@@ -440,7 +440,7 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
         } else\
             h->pred4x4[VERT_LEFT_PRED  ]= FUNCC(pred4x4_vertical_left     , depth);\
         h->pred4x4[HOR_UP_PRED         ]= FUNCC(pred4x4_horizontal_up     , depth);\
-        if(codec_id != AV_CODEC_ID_VP7 && codec_id != AV_CODEC_ID_VP8) {\
+        if (codec_id != AV_CODEC_ID_VP7 && codec_id != AV_CODEC_ID_VP8) {\
             h->pred4x4[LEFT_DC_PRED    ]= FUNCC(pred4x4_left_dc           , depth);\
             h->pred4x4[TOP_DC_PRED     ]= FUNCC(pred4x4_top_dc            , depth);\
         } else {\
@@ -498,7 +498,8 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
         }\
     } else\
         h->pred8x8[PLANE_PRED8x8]= FUNCD(pred8x8_tm_vp8);\
-    if(codec_id != AV_CODEC_ID_RV40 && codec_id != AV_CODEC_ID_VP7 && codec_id != AV_CODEC_ID_VP8){\
+    if (codec_id != AV_CODEC_ID_RV40 && codec_id != AV_CODEC_ID_VP7 && \
+        codec_id != AV_CODEC_ID_VP8) {\
         if (chroma_format_idc <= 1) {\
             h->pred8x8[DC_PRED8x8     ]= FUNCC(pred8x8_dc                     , depth);\
             h->pred8x8[LEFT_DC_PRED8x8]= FUNCC(pred8x8_left_dc                , depth);\
