@@ -508,7 +508,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
         }
         /* if no previous body partition are found point to the header
          * partition */
-        if (partition->previous_partition == partition->this_partition);
+        if (partition->previous_partition == partition->this_partition)
             partition->previous_partition = 0;
         av_log(mxf->fc, AV_LOG_ERROR,
                "Overriding PreviousPartition with %"PRIx64"\n",
