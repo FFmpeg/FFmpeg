@@ -292,7 +292,7 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
 %define scale m0
 %if ARCH_X86_32 || WIN64
 %if cpuflag(sse2) && notcpuflag(avx)
-    movd          m0, scalem
+    movd       scale, scalem
     SPLATD        m0
 %else
     VBROADCASTSS  m0, scalem
@@ -311,7 +311,7 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
     sub          r5q, offmp
     and          r5q, -64
     shl          r5q, 2
-%if ARCH_X86_32 || mmsize < 32
+%if ARCH_X86_32 || notcpuflag(avx)
     mov         OFFQ, r5q
 %define i        r5q
     mov            i, 16 * 4 - (ARCH_X86_64 + 1) * mmsize  ; main loop counter
@@ -337,7 +337,7 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
 %define j        r3q
     mov          win, windowm
     mov         ptr1, synth_bufm
-%if ARCH_X86_32 || mmsize < 32
+%if ARCH_X86_32 || notcpuflag(avx)
     add          win, i
     add         ptr1, i
 %endif
@@ -356,7 +356,7 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
     mov         ptr2, synth_bufmp
     ; prepare the inner loop counter
     mov            j, OFFQ
-%if ARCH_X86_32 || mmsize < 32
+%if ARCH_X86_32 || notcpuflag(avx)
     sub         ptr2, i
 %endif
 .loop1:
@@ -403,7 +403,7 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
     mova   [outq + i +  0 * 4 + mmsize], m7
     mova   [outq + i + 16 * 4 + mmsize], m8
 %endif
-%if ARCH_X86_32 || mmsize < 32
+%if ARCH_X86_32 || notcpuflag(avx)
     sub            i, (ARCH_X86_64 + 1) * mmsize
     jge    .mainloop
 %endif
