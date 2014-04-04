@@ -1507,8 +1507,10 @@ void av_opt_freep_ranges(AVOptionRanges **rangesp)
 
     for (i = 0; i < ranges->nb_ranges; i++) {
         AVOptionRange *range = ranges->range[i];
-        av_freep(&range->str);
-        av_freep(&ranges->range[i]);
+        if (range) {
+            av_freep(&range->str);
+            av_freep(&ranges->range[i]);
+        }
     }
     av_freep(&ranges->range);
     av_freep(rangesp);
