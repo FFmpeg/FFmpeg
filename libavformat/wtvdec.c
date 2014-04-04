@@ -635,7 +635,7 @@ static AVStream * new_stream(AVFormatContext *s, AVStream *st, int sid, int code
  */
 static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
                                    ff_asf_guid mediatype, ff_asf_guid subtype,
-                                   ff_asf_guid formattype, int size)
+                                   ff_asf_guid formattype, uint64_t size)
 {
     WtvContext *wtv = s->priv_data;
     AVIOContext *pb = wtv->pb;
@@ -693,16 +693,20 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
             int consumed = parse_videoinfoheader2(s, st);
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else if (!ff_guidcmp(formattype, ff_format_mpeg2_video)) {
-            int consumed = parse_videoinfoheader2(s, st);
-            int count;
-            avio_skip(pb, 4);
-            count = avio_rl32(pb);
-            avio_skip(pb, 12);
-            if (count && ff_get_extradata(st->codec, pb, count) < 0) {
-               ff_free_stream(s, st);
-               return NULL;
+            uint64_t consumed = parse_videoinfoheader2(s, st);
+            if (size - consumed >= 20) {
+                uint32_t count;
+                consumed += 20;
+                avio_skip(pb, 4);
+                count = avio_rl32(pb);
+                count = FFMIN(count, size - consumed);
+                avio_skip(pb, 12);
+                if (count && ff_get_extradata(st->codec, pb, count) < 0) {
+                   ff_free_stream(s, st);
+                   return NULL;
+                }
+                consumed += count;
             }
-            consumed += 20 + count;
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else {
             if (ff_guidcmp(formattype, ff_format_none))
