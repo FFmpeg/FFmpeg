@@ -633,6 +633,12 @@ Prefer track gain, if present.
 @item album
 Prefer album gain, if present.
 @end table
+
+@item replaygain_preamp
+Pre-amplification gain in dB to apply to the selected replaygain gain.
+
+Default value for @var{replaygain_preamp} is 0.0.
+
 @end table
 
 @subsection Examples

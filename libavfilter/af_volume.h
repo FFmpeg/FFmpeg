@@ -47,6 +47,7 @@ typedef struct VolumeContext {
     AVFloatDSPContext fdsp;
     enum PrecisionType precision;
     enum ReplayGainType replaygain;
+    double replaygain_preamp;
     double volume;
     int    volume_i;
     int    channels;
