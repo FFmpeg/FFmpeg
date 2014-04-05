@@ -1281,6 +1281,116 @@ int ff_set_ref_count(H264Context *h)
     return 0;
 }
 
+static int find_start_code(const uint8_t *buf, int buf_size,
+                           int buf_index, int next_avc)
+{
+    // start code prefix search
+    for (; buf_index + 3 < next_avc; buf_index++)
+        // This should always succeed in the first iteration.
+        if (buf[buf_index]     == 0 &&
+            buf[buf_index + 1] == 0 &&
+            buf[buf_index + 2] == 1)
+            break;
+
+    if (buf_index + 3 >= buf_size)
+        return buf_size;
+
+    return buf_index + 3;
+}
+
+static int get_avc_nalsize(H264Context *h, const uint8_t *buf,
+                           int buf_size, int *buf_index)
+{
+    int i, nalsize = 0;
+
+    if (*buf_index >= buf_size - h->nal_length_size)
+        return -1;
+
+    for (i = 0; i < h->nal_length_size; i++)
+        nalsize = (nalsize << 8) | buf[(*buf_index)++];
+    if (nalsize <= 0 || nalsize > buf_size - *buf_index) {
+        av_log(h->avctx, AV_LOG_ERROR,
+               "AVC: nal size %d\n", nalsize);
+        return -1;
+    }
+    return nalsize;
+}
+
+static int get_bit_length(H264Context *h, const uint8_t *buf,
+                          const uint8_t *ptr, int dst_length,
+                          int i, int next_avc)
+{
+    if ((h->workaround_bugs & FF_BUG_AUTODETECT) && i + 3 < next_avc &&
+        buf[i]     == 0x00 && buf[i + 1] == 0x00 &&
+        buf[i + 2] == 0x01 && buf[i + 3] == 0xE0)
+        h->workaround_bugs |= FF_BUG_TRUNCATED;
+
+    if (!(h->workaround_bugs & FF_BUG_TRUNCATED))
+        while (dst_length > 0 && ptr[dst_length - 1] == 0)
+            dst_length--;
+
+    if (!dst_length)
+        return 0;
+
+    return 8 * dst_length - decode_rbsp_trailing(h, ptr + dst_length - 1);
+}
+
+static int get_last_needed_nal(H264Context *h, const uint8_t *buf, int buf_size)
+{
+    int next_avc    = h->is_avc ? 0 : buf_size;
+    int nal_index   = 0;
+    int buf_index   = 0;
+    int nals_needed = 0;
+
+    while(1) {
+        int nalsize = 0;
+        int dst_length, bit_length, consumed;
+        const uint8_t *ptr;
+
+        if (buf_index >= next_avc) {
+            nalsize = get_avc_nalsize(h, buf, buf_size, &buf_index);
+            if (nalsize < 0)
+                break;
+            next_avc = buf_index + nalsize;
+        } else {
+            buf_index = find_start_code(buf, buf_size, buf_index, next_avc);
+            if (buf_index >= buf_size)
+                break;
+        }
+
+        ptr = ff_h264_decode_nal(h, buf + buf_index, &dst_length, &consumed,
+                                 next_avc - buf_index);
+
+        if (ptr == NULL || dst_length < 0)
+            return AVERROR_INVALIDDATA;
+
+        buf_index += consumed;
+
+        bit_length = get_bit_length(h, buf, ptr, dst_length,
+                                    buf_index, next_avc);
+        nal_index++;
+
+        /* packets can sometimes contain multiple PPS/SPS,
+         * e.g. two PAFF field pictures in one packet, or a demuxer
+         * which splits NALs strangely if so, when frame threading we
+         * can't start the next thread until we've read all of them */
+        switch (h->nal_unit_type) {
+        case NAL_SPS:
+        case NAL_PPS:
+            nals_needed = nal_index;
+            break;
+        case NAL_DPA:
+        case NAL_IDR_SLICE:
+        case NAL_SLICE:
+            init_get_bits(&h->gb, ptr, bit_length);
+            if (!get_ue_golomb(&h->gb))
+                nals_needed = nal_index;
+        }
+    }
+
+    return nals_needed;
+}
+
 static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                             int parse_extradata)
 {
@@ -1289,7 +1399,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
     int buf_index;
     unsigned context_count;
     int next_avc;
-    int pass = !(avctx->active_thread_type & FF_THREAD_FRAME);
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
     int nal_index;
     int ret = 0;
@@ -1302,7 +1411,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
         ff_h264_reset_sei(h);
     }
 
-    for (; pass <= 1; pass++) {
+    if (avctx->active_thread_type & FF_THREAD_FRAME)
+        nals_needed = get_last_needed_nal(h, buf, buf_size);
+
+    {
         buf_index     = 0;
         context_count = 0;
         next_avc      = h->is_avc ? 0 : buf_size;
@@ -1312,38 +1424,18 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
             int dst_length;
             int bit_length;
             const uint8_t *ptr;
-            int i, nalsize = 0;
+            int nalsize = 0;
             int err;
 
             if (buf_index >= next_avc) {
-                if (buf_index >= buf_size - h->nal_length_size)
+                nalsize = get_avc_nalsize(h, buf, buf_size, &buf_index);
+                if (nalsize < 0)
                     break;
-                nalsize = 0;
-                for (i = 0; i < h->nal_length_size; i++)
-                    nalsize = (nalsize << 8) | buf[buf_index++];
-                if (nalsize <= 0 || nalsize > buf_size - buf_index) {
-                    av_log(h->avctx, AV_LOG_ERROR,
-                           "AVC: nal size %d\n", nalsize);
-                    break;
-                }
                 next_avc = buf_index + nalsize;
             } else {
-                // start code prefix search
-                for (; buf_index + 3 < next_avc; buf_index++)
-                    // This should always succeed in the first iteration.
-                    if (buf[buf_index]     == 0 &&
-                        buf[buf_index + 1] == 0 &&
-                        buf[buf_index + 2] == 1)
-                        break;
-
-                if (buf_index + 3 >= buf_size) {
-                    buf_index = buf_size;
+                buf_index = find_start_code(buf, buf_size, buf_index, next_avc);
+                if (buf_index >= buf_size)
                     break;
-                }
-
-                buf_index += 3;
-                if (buf_index >= next_avc)
-                    continue;
             }
 
             hx = h->thread_context[context_count];
@@ -1354,18 +1446,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                 ret = -1;
                 goto end;
             }
-            i = buf_index + consumed;
-            if ((h->workaround_bugs & FF_BUG_AUTODETECT) && i + 3 < next_avc &&
-                buf[i]     == 0x00 && buf[i + 1] == 0x00 &&
-                buf[i + 2] == 0x01 && buf[i + 3] == 0xE0)
-                h->workaround_bugs |= FF_BUG_TRUNCATED;
 
-            if (!(h->workaround_bugs & FF_BUG_TRUNCATED))
-                while (dst_length > 0 && ptr[dst_length - 1] == 0)
-                    dst_length--;
-            bit_length = !dst_length ? 0
-                                     : (8 * dst_length -
-                                        decode_rbsp_trailing(h, ptr + dst_length - 1));
+            bit_length = get_bit_length(h, buf, ptr, dst_length,
+                                        buf_index + consumed, next_avc);
 
             if (h->avctx->debug & FF_DEBUG_STARTCODE)
                 av_log(h->avctx, AV_LOG_DEBUG,
@@ -1379,26 +1462,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
 
             buf_index += consumed;
             nal_index++;
-
-            if (pass == 0) {
-                /* packets can sometimes contain multiple PPS/SPS,
-                 * e.g. two PAFF field pictures in one packet, or a demuxer
-                 * which splits NALs strangely if so, when frame threading we
-                 * can't start the next thread until we've read all of them */
-                switch (hx->nal_unit_type) {
-                case NAL_SPS:
-                case NAL_PPS:
-                    nals_needed = nal_index;
-                    break;
-                case NAL_DPA:
-                case NAL_IDR_SLICE:
-                case NAL_SLICE:
-                    init_get_bits(&hx->gb, ptr, bit_length);
-                    if (!get_ue_golomb(&hx->gb))
-                        nals_needed = nal_index;
-                }
-                continue;
-            }
 
             if (avctx->skip_frame >= AVDISCARD_NONREF &&
                 h->nal_ref_idc == 0 &&
