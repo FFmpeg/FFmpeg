@@ -1230,13 +1230,13 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
 #if HAVE_BIGENDIAN
             case AV_PIX_FMT_BGR24:
 #endif
-                c->pal_rgb[i] = (r + (g << 8) + (b << 16)) << 8;
+                c->pal_rgb[i] = (r << 8) + (g << 16) + ((unsigned)b << 24);
                 break;
             case AV_PIX_FMT_RGB32_1:
 #if HAVE_BIGENDIAN
             case AV_PIX_FMT_RGB24:
 #endif
-                c->pal_rgb[i] = (b + (g << 8) + (r << 16)) << 8;
+                c->pal_rgb[i] = (b << 8) + (g << 16) + ((unsigned)r << 24);
                 break;
             case AV_PIX_FMT_RGB32:
 #if !HAVE_BIGENDIAN
