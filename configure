@@ -1271,6 +1271,7 @@ ARCH_EXT_LIST_ARM="
     armv5te
     armv6
     armv6t2
+    armv8
     neon
     vfp
     vfpv3
@@ -1615,6 +1616,7 @@ CMDLINE_APPEND="
 armv5te_deps="arm"
 armv6_deps="arm"
 armv6t2_deps="arm"
+armv8_deps="aarch64"
 neon_deps_any="aarch64 arm"
 vfp_deps_any="aarch64 arm"
 vfpv3_deps="vfp"
@@ -3697,6 +3699,7 @@ od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 check_inline_asm inline_asm_labels '"1:\n"'
 
 if enabled aarch64; then
+    enabled armv8 && check_insn armv8 'prfm   pldl1strm, [x0]'
     # internal assembler in clang 3.3 does not support this instruction
     enabled neon && check_insn neon 'ext   v0.8B, v0.8B, v1.8B, #1'
     enabled vfp  && check_insn vfp  'fmadd d0,    d0,    d1,    d2'
