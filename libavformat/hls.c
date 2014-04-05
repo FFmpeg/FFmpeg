@@ -27,6 +27,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -36,11 +37,15 @@
 #include "internal.h"
 #include "avio_internal.h"
 #include "url.h"
+#include "id3v2.h"
 
 #define INITIAL_BUFFER_SIZE 32768
 
 #define MAX_FIELD_LEN 64
 #define MAX_CHARACTERISTICS_LEN 512
+
+#define MPEG_TIME_BASE 90000
+#define MPEG_TIME_BASE_Q (AVRational){1, MPEG_TIME_BASE}
 
 /*
  * An apple http stream consists of a playlist with media segment files,
@@ -99,6 +104,18 @@ struct playlist {
 
     char key_url[MAX_URL_SIZE];
     uint8_t key[16];
+
+    /* ID3 timestamp handling (elementary audio streams have ID3 timestamps
+     * (and possibly other ID3 tags) in the beginning of each segment) */
+    int is_id3_timestamped; /* -1: not yet known */
+    int64_t id3_mpegts_timestamp; /* in mpegts tb */
+    int64_t id3_offset; /* in stream original tb */
+    uint8_t* id3_buf; /* temp buffer for id3 parsing */
+    unsigned int id3_buf_size;
+    AVDictionary *id3_initial; /* data from first id3 tag */
+    int id3_found; /* ID3 tag found at some point */
+    int id3_changed; /* ID3 tag data has changed at some point */
+    ID3v2ExtraMeta *id3_deferred_extra; /* stored here until subdemuxer is opened */
 
     /* Renditions associated with this playlist, if any.
      * Alternative rendition playlists have a single rendition associated
@@ -179,6 +196,9 @@ static void free_playlist_list(HLSContext *c)
         struct playlist *pls = c->playlists[i];
         free_segment_list(pls);
         av_freep(&pls->renditions);
+        av_freep(&pls->id3_buf);
+        av_dict_free(&pls->id3_initial);
+        ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
         av_free_packet(&pls->pkt);
         av_free(pls->pb.buffer);
         if (pls->input)
@@ -234,6 +254,10 @@ static struct playlist *new_playlist(HLSContext *c, const char *url,
         return NULL;
     reset_packet(&pls->pkt);
     ff_make_absolute_url(pls->url, sizeof(pls->url), base, url);
+
+    pls->is_id3_timestamped = -1;
+    pls->id3_mpegts_timestamp = AV_NOPTS_VALUE;
+
     dynarray_add(&c->playlists, &c->n_playlists, pls);
     return pls;
 }
@@ -600,8 +624,14 @@ fail:
     return ret;
 }
 
+enum ReadFromURLMode {
+    READ_NORMAL,
+    READ_COMPLETE,
+};
+
 /* read from URLContext, limiting read to current segment */
-static int read_from_url(struct playlist *pls, uint8_t *buf, int buf_size)
+static int read_from_url(struct playlist *pls, uint8_t *buf, int buf_size,
+                         enum ReadFromURLMode mode)
 {
     int ret;
     struct segment *seg = pls->segments[pls->cur_seq_no - pls->start_seq_no];
@@ -610,12 +640,213 @@ static int read_from_url(struct playlist *pls, uint8_t *buf, int buf_size)
     if (seg->size >= 0)
         buf_size = FFMIN(buf_size, seg->size - pls->cur_seg_offset);
 
-    ret = ffurl_read(pls->input, buf, buf_size);
+    if (mode == READ_COMPLETE)
+        ret = ffurl_read_complete(pls->input, buf, buf_size);
+    else
+        ret = ffurl_read(pls->input, buf, buf_size);
 
     if (ret > 0)
         pls->cur_seg_offset += ret;
 
     return ret;
+}
+
+/* Parse the raw ID3 data and pass contents to caller */
+static void parse_id3(AVFormatContext *s, AVIOContext *pb,
+                      AVDictionary **metadata, int64_t *dts,
+                      ID3v2ExtraMetaAPIC **apic, ID3v2ExtraMeta **extra_meta)
+{
+    static const char id3_priv_owner_ts[] = "com.apple.streaming.transportStreamTimestamp";
+    ID3v2ExtraMeta *meta;
+
+    ff_id3v2_read_dict(pb, metadata, ID3v2_DEFAULT_MAGIC, extra_meta);
+    for (meta = *extra_meta; meta; meta = meta->next) {
+        if (!strcmp(meta->tag, "PRIV")) {
+            ID3v2ExtraMetaPRIV *priv = meta->data;
+            if (priv->datasize == 8 && !strcmp(priv->owner, id3_priv_owner_ts)) {
+                /* 33-bit MPEG timestamp */
+                int64_t ts = AV_RB64(priv->data);
+                av_log(s, AV_LOG_DEBUG, "HLS ID3 audio timestamp %"PRId64"\n", ts);
+                if ((ts & ~((1ULL << 33) - 1)) == 0)
+                    *dts = ts;
+                else
+                    av_log(s, AV_LOG_ERROR, "Invalid HLS ID3 audio timestamp %"PRId64"\n", ts);
+            }
+        } else if (!strcmp(meta->tag, "APIC") && apic)
+            *apic = meta->data;
+    }
+}
+
+/* Check if the ID3 metadata contents have changed */
+static int id3_has_changed_values(struct playlist *pls, AVDictionary *metadata,
+                                  ID3v2ExtraMetaAPIC *apic)
+{
+    AVDictionaryEntry *entry = NULL;
+    AVDictionaryEntry *oldentry;
+    /* check that no keys have changed values */
+    while ((entry = av_dict_get(metadata, "", entry, AV_DICT_IGNORE_SUFFIX))) {
+        oldentry = av_dict_get(pls->id3_initial, entry->key, NULL, AV_DICT_MATCH_CASE);
+        if (!oldentry || strcmp(oldentry->value, entry->value) != 0)
+            return 1;
+    }
+
+    /* check if apic appeared */
+    if (apic && (pls->ctx->nb_streams != 2 || !pls->ctx->streams[1]->attached_pic.data))
+        return 1;
+
+    if (apic) {
+        int size = pls->ctx->streams[1]->attached_pic.size;
+        if (size != apic->buf->size - FF_INPUT_BUFFER_PADDING_SIZE)
+            return 1;
+
+        if (memcmp(apic->buf->data, pls->ctx->streams[1]->attached_pic.data, size) != 0)
+            return 1;
+    }
+
+    return 0;
+}
+
+/* Parse ID3 data and handle the found data */
+static void handle_id3(AVIOContext *pb, struct playlist *pls)
+{
+    AVDictionary *metadata = NULL;
+    ID3v2ExtraMetaAPIC *apic = NULL;
+    ID3v2ExtraMeta *extra_meta = NULL;
+    int64_t timestamp = AV_NOPTS_VALUE;
+
+    parse_id3(pls->ctx, pb, &metadata, &timestamp, &apic, &extra_meta);
+
+    if (timestamp != AV_NOPTS_VALUE) {
+        pls->id3_mpegts_timestamp = timestamp;
+        pls->id3_offset = 0;
+    }
+
+    if (!pls->id3_found) {
+        /* initial ID3 tags */
+        av_assert0(!pls->id3_deferred_extra);
+        pls->id3_found = 1;
+
+        /* get picture attachment and set text metadata */
+        if (pls->ctx->nb_streams)
+            ff_id3v2_parse_apic(pls->ctx, &extra_meta);
+        else
+            /* demuxer not yet opened, defer picture attachment */
+            pls->id3_deferred_extra = extra_meta;
+
+        av_dict_copy(&pls->ctx->metadata, metadata, 0);
+        pls->id3_initial = metadata;
+
+    } else {
+        if (!pls->id3_changed && id3_has_changed_values(pls, metadata, apic)) {
+            avpriv_report_missing_feature(pls->ctx, "Changing ID3 metadata in HLS audio elementary stream");
+            pls->id3_changed = 1;
+        }
+        av_dict_free(&metadata);
+    }
+
+    if (!pls->id3_deferred_extra)
+        ff_id3v2_free_extra_meta(&extra_meta);
+}
+
+/* Intercept and handle ID3 tags between URLContext and AVIOContext */
+static void intercept_id3(struct playlist *pls, uint8_t *buf,
+                         int buf_size, int *len)
+{
+    /* intercept id3 tags, we do not want to pass them to the raw
+     * demuxer on all segment switches */
+    int bytes;
+    int id3_buf_pos = 0;
+    int fill_buf = 0;
+
+    /* gather all the id3 tags */
+    while (1) {
+        /* see if we can retrieve enough data for ID3 header */
+        if (*len < ID3v2_HEADER_SIZE && buf_size >= ID3v2_HEADER_SIZE) {
+            bytes = read_from_url(pls, buf + *len, ID3v2_HEADER_SIZE - *len, READ_COMPLETE);
+            if (bytes > 0) {
+
+                if (bytes == ID3v2_HEADER_SIZE - *len)
+                    /* no EOF yet, so fill the caller buffer again after
+                     * we have stripped the ID3 tags */
+                    fill_buf = 1;
+
+                *len += bytes;
+
+            } else if (*len <= 0) {
+                /* error/EOF */
+                *len = bytes;
+                fill_buf = 0;
+            }
+        }
+
+        if (*len < ID3v2_HEADER_SIZE)
+            break;
+
+        if (ff_id3v2_match(buf, ID3v2_DEFAULT_MAGIC)) {
+            struct segment *seg = pls->segments[pls->cur_seq_no - pls->start_seq_no];
+            int64_t segsize = seg->size >= 0 ? seg->size : ffurl_size(pls->input);
+            int taglen = ff_id3v2_tag_len(buf);
+            int tag_got_bytes = FFMIN(taglen, *len);
+            int remaining = taglen - tag_got_bytes;
+
+            if (taglen > segsize) {
+                av_log(pls->ctx, AV_LOG_ERROR, "Too large HLS ID3 tag (%d vs %"PRId64")\n",
+                       taglen, segsize);
+                break;
+            }
+
+            /*
+             * Copy the id3 tag to our temporary id3 buffer.
+             * We could read a small id3 tag directly without memcpy, but
+             * we would still need to copy the large tags, and handling
+             * both of those cases together with the possibility for multiple
+             * tags would make the handling a bit complex.
+             */
+            pls->id3_buf = av_fast_realloc(pls->id3_buf, &pls->id3_buf_size, id3_buf_pos + taglen);
+            if (!pls->id3_buf)
+                break;
+            memcpy(pls->id3_buf + id3_buf_pos, buf, tag_got_bytes);
+            id3_buf_pos += tag_got_bytes;
+
+            /* strip the intercepted bytes */
+            *len -= tag_got_bytes;
+            memmove(buf, buf + tag_got_bytes, *len);
+            av_log(pls->ctx, AV_LOG_DEBUG, "Stripped %d HLS ID3 bytes\n", tag_got_bytes);
+
+            if (remaining > 0) {
+                /* read the rest of the tag in */
+                if (read_from_url(pls, pls->id3_buf + id3_buf_pos, remaining, READ_COMPLETE) != remaining)
+                    break;
+                id3_buf_pos += remaining;
+                av_log(pls->ctx, AV_LOG_DEBUG, "Stripped additional %d HLS ID3 bytes\n", remaining);
+            }
+
+        } else {
+            /* no more ID3 tags */
+            break;
+        }
+    }
+
+    /* re-fill buffer for the caller unless EOF */
+    if (*len >= 0 && (fill_buf || *len == 0)) {
+        bytes = read_from_url(pls, buf + *len, buf_size - *len, READ_NORMAL);
+
+        /* ignore error if we already had some data */
+        if (bytes >= 0)
+            *len += bytes;
+        else if (*len == 0)
+            *len = bytes;
+    }
+
+    if (pls->id3_buf) {
+        /* Now parse all the ID3 tags */
+        AVIOContext id3ioctx;
+        ffio_init_context(&id3ioctx, pls->id3_buf, id3_buf_pos, 0, NULL, NULL, NULL, NULL);
+        handle_id3(&id3ioctx, pls);
+    }
+
+    if (pls->is_id3_timestamped == -1)
+        pls->is_id3_timestamped = (pls->id3_mpegts_timestamp != AV_NOPTS_VALUE);
 }
 
 static int open_input(HLSContext *c, struct playlist *pls)
@@ -720,6 +951,7 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
     struct playlist *v = opaque;
     HLSContext *c = v->parent->priv_data;
     int ret, i;
+    int just_opened = 0;
 
     if (!v->needed)
         return AVERROR_EOF;
@@ -769,10 +1001,17 @@ reload:
                    v->index);
             return ret;
         }
+        just_opened = 1;
     }
 
-    ret = read_from_url(v, buf, buf_size);
+    ret = read_from_url(v, buf, buf_size, READ_NORMAL);
     if (ret > 0) {
+        if (just_opened && v->is_id3_timestamped != 0) {
+            /* Intercept ID3 tags here, elementary audio streams are required
+             * to convey timestamps using them in the beginning of each segment. */
+            intercept_id3(v, buf, buf_size, &ret);
+        }
+
         return ret;
     }
     ffurl_close(v->input);
@@ -991,10 +1230,20 @@ static int hls_read_header(AVFormatContext *s)
         if (ret < 0)
             goto fail;
 
+        if (pls->id3_deferred_extra && pls->ctx->nb_streams == 1) {
+            ff_id3v2_parse_apic(pls->ctx, &pls->id3_deferred_extra);
+            avformat_queue_attached_pictures(pls->ctx);
+            ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
+            pls->id3_deferred_extra = NULL;
+        }
+
         pls->ctx->ctx_flags &= ~AVFMTCTX_NOHEADER;
         ret = avformat_find_stream_info(pls->ctx, NULL);
         if (ret < 0)
             goto fail;
+
+        if (pls->is_id3_timestamped == -1)
+            av_log(s, AV_LOG_WARNING, "No expected HTTP requests have been made\n");
 
         /* Create new AVStreams for each stream in this playlist */
         for (j = 0; j < pls->ctx->nb_streams; j++) {
@@ -1005,8 +1254,13 @@ static int hls_read_header(AVFormatContext *s)
                 goto fail;
             }
             st->id = i;
-            avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
+
             avcodec_copy_context(st->codec, pls->ctx->streams[j]->codec);
+
+            if (pls->is_id3_timestamped) /* custom timestamps via id3 */
+                avpriv_set_pts_info(st, 33, 1, MPEG_TIME_BASE);
+            else
+                avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
         }
 
         add_metadata_from_renditions(s, pls, AVMEDIA_TYPE_AUDIO);
@@ -1093,6 +1347,39 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
     return changed;
 }
 
+static void fill_timing_for_id3_timestamped_stream(struct playlist *pls)
+{
+    if (pls->id3_offset >= 0) {
+        pls->pkt.dts = pls->id3_mpegts_timestamp +
+                                 av_rescale_q(pls->id3_offset,
+                                              pls->ctx->streams[pls->pkt.stream_index]->time_base,
+                                              MPEG_TIME_BASE_Q);
+        if (pls->pkt.duration)
+            pls->id3_offset += pls->pkt.duration;
+        else
+            pls->id3_offset = -1;
+    } else {
+        /* there have been packets with unknown duration
+         * since the last id3 tag, should not normally happen */
+        pls->pkt.dts = AV_NOPTS_VALUE;
+    }
+
+    if (pls->pkt.duration)
+        pls->pkt.duration = av_rescale_q(pls->pkt.duration,
+                                         pls->ctx->streams[pls->pkt.stream_index]->time_base,
+                                         MPEG_TIME_BASE_Q);
+
+    pls->pkt.pts = AV_NOPTS_VALUE;
+}
+
+static AVRational get_timebase(struct playlist *pls)
+{
+    if (pls->is_id3_timestamped)
+        return MPEG_TIME_BASE_Q;
+
+    return pls->ctx->streams[pls->pkt.stream_index]->time_base;
+}
+
 static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     HLSContext *c = s->priv_data;
@@ -1112,7 +1399,7 @@ start:
         if (pls->needed && !pls->pkt.data) {
             while (1) {
                 int64_t ts_diff;
-                AVStream *st;
+                AVRational tb;
                 ret = av_read_frame(pls->ctx, &pls->pkt);
                 if (ret < 0) {
                     if (!url_feof(&pls->pb) && ret != AVERROR_EOF)
@@ -1120,11 +1407,16 @@ start:
                     reset_packet(&pls->pkt);
                     break;
                 } else {
+                    /* stream_index check prevents matching picture attachments etc. */
+                    if (pls->is_id3_timestamped && pls->pkt.stream_index == 0) {
+                        /* audio elementary streams are id3 timestamped */
+                        fill_timing_for_id3_timestamped_stream(pls);
+                    }
+
                     if (c->first_timestamp == AV_NOPTS_VALUE &&
                         pls->pkt.dts       != AV_NOPTS_VALUE)
                         c->first_timestamp = av_rescale_q(pls->pkt.dts,
-                            pls->ctx->streams[pls->pkt.stream_index]->time_base,
-                            AV_TIME_BASE_Q);
+                            get_timebase(pls), AV_TIME_BASE_Q);
                 }
 
                 if (c->seek_timestamp == AV_NOPTS_VALUE)
@@ -1135,9 +1427,9 @@ start:
                     break;
                 }
 
-                st = pls->ctx->streams[pls->pkt.stream_index];
+                tb = get_timebase(pls);
                 ts_diff = av_rescale_rnd(pls->pkt.dts, AV_TIME_BASE,
-                                         st->time_base.den, AV_ROUND_DOWN) -
+                                         tb.den, AV_ROUND_DOWN) -
                           c->seek_timestamp;
                 if (ts_diff >= 0 && (c->seek_flags  & AVSEEK_FLAG_ANY ||
                                      pls->pkt.flags & AV_PKT_FLAG_KEY)) {
@@ -1160,6 +1452,8 @@ start:
                 int64_t mindts  = minpls->pkt.dts;
                 AVStream *st    =    pls->ctx->streams[pls->pkt.stream_index];
                 AVStream *minst = minpls->ctx->streams[minpls->pkt.stream_index];
+                AVRational tb    = get_timebase(   pls);
+                AVRational mintb = get_timebase(minpls);
 
                 if (dts == AV_NOPTS_VALUE) {
                     minplaylist = i;
@@ -1169,8 +1463,8 @@ start:
                     if (minst->start_time != AV_NOPTS_VALUE)
                         mindts -= minst->start_time;
 
-                    if (av_compare_ts(dts, st->time_base,
-                                      mindts, minst->time_base) < 0)
+                    if (av_compare_ts(dts, tb,
+                                      mindts, mintb) < 0)
                         minplaylist = i;
                 }
             }
