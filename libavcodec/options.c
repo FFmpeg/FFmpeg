@@ -162,6 +162,7 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->intra_matrix    = NULL;
     dest->inter_matrix    = NULL;
     dest->rc_override     = NULL;
+    dest->subtitle_header = NULL;
     if (src->rc_eq) {
         dest->rc_eq = av_strdup(src->rc_eq);
         if (!dest->rc_eq)
@@ -182,6 +183,8 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     alloc_and_copy_or_fail(intra_matrix, 64 * sizeof(int16_t), 0);
     alloc_and_copy_or_fail(inter_matrix, 64 * sizeof(int16_t), 0);
     alloc_and_copy_or_fail(rc_override,  src->rc_override_count * sizeof(*src->rc_override), 0);
+    alloc_and_copy_or_fail(subtitle_header, src->subtitle_header_size, 0);
+    dest->subtitle_header_size = src->subtitle_header_size;
 #undef alloc_and_copy_or_fail
 
     return 0;
