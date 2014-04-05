@@ -60,7 +60,6 @@ void ff_yadif_filter_line_10bit_ssse3(void *dst, void *prev, void *cur,
 
 av_cold void ff_yadif_init_x86(YADIFContext *yadif)
 {
-#if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
     int bit_depth = (!yadif->csp) ? 8
                                   : yadif->csp->comp[0].depth_minus1 + 1;
@@ -95,5 +94,4 @@ av_cold void ff_yadif_init_x86(YADIFContext *yadif)
         if (EXTERNAL_SSSE3(cpu_flags))
             yadif->filter_line = ff_yadif_filter_line_ssse3;
     }
-#endif /* HAVE_YASM */
 }

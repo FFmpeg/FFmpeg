@@ -993,7 +993,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
     int cpu_flags = av_get_cpu_flags();
     const int dct_algo = avctx->dct_algo;
 
-#if HAVE_YASM
     if (EXTERNAL_MMX(cpu_flags)) {
         if (!high_bit_depth)
             c->get_pixels = ff_get_pixels_mmx;
@@ -1005,7 +1004,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
     if (EXTERNAL_SSE2(cpu_flags))
         if (!high_bit_depth)
             c->get_pixels = ff_get_pixels_sse2;
-#endif /* HAVE_YASM */
 
 #if HAVE_INLINE_ASM
     if (INLINE_MMX(cpu_flags)) {
