@@ -25,7 +25,6 @@
 #include "libavutil/internal.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/mpegaudiodsp.h"
-#include "dsputil_altivec.h"
 
 #if HAVE_ALTIVEC
 
