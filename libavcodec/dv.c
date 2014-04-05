@@ -314,11 +314,11 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
     s->idct_put[1] = ff_simple_idct248_put;  // FIXME: need to add it to DSP
     if (avctx->lowres){
         for (i = 0; i < 64; i++){
-            int j = ff_zigzag248_direct[i];
+            int j = ff_dv_zigzag248_direct[i];
             s->dv_zigzag[1][i] = dsp.idct_permutation[(j & 7) + (j & 8) * 4 + (j & 48) / 2];
         }
     }else
-        memcpy(s->dv_zigzag[1], ff_zigzag248_direct, 64);
+        memcpy(s->dv_zigzag[1], ff_dv_zigzag248_direct, 64);
 
     s->avctx = avctx;
     avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;

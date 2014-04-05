@@ -249,7 +249,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
     }
     bi->mb[0] = blk[0];
 
-    zigzag_scan = bi->dct_mode ? ff_zigzag248_direct : ff_zigzag_direct;
+    zigzag_scan = bi->dct_mode ? ff_dv_zigzag248_direct : ff_zigzag_direct;
     weight = bi->dct_mode ? dv_weight_248 : dv_weight_88;
 
     for (area = 0; area < 4; area++) {

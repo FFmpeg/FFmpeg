@@ -28,6 +28,19 @@
 
 #include "dvdata.h"
 
+/* Specific zigzag scan for 248 idct. NOTE that unlike the
+ * specification, we interleave the fields */
+const uint8_t ff_dv_zigzag248_direct[64] = {
+     0,  8,  1,  9, 16, 24,  2, 10,
+    17, 25, 32, 40, 48, 56, 33, 41,
+    18, 26,  3, 11,  4, 12, 19, 27,
+    34, 42, 49, 57, 50, 58, 35, 43,
+    20, 28,  5, 13,  6, 14, 21, 29,
+    36, 44, 51, 59, 52, 60, 37, 45,
+    22, 30,  7, 15, 23, 31, 38, 46,
+    53, 61, 54, 62, 39, 47, 55, 63,
+};
+
 /* unquant tables (not used directly) */
 const uint8_t ff_dv_quant_shifts[22][4] = {
   { 3,3,4,4 },

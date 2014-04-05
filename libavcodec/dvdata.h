@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+extern const uint8_t ff_dv_zigzag248_direct[64];
+
 extern const uint8_t ff_dv_quant_shifts[22][4];
 extern const uint8_t ff_dv_quant_offset[4];
 
