@@ -947,6 +947,7 @@ check_header_oc(){
     log check_header_oc "$@"
     header=$1
     shift
+    disable_safe $header
     {
        echo "#include <$header>"
        echo "int main(void) { return 0; }"
