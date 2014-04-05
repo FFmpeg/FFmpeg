@@ -82,13 +82,7 @@ SYNTH_FILTER_FUNC(sse)
 #endif
 SYNTH_FILTER_FUNC(sse2)
 SYNTH_FILTER_FUNC(avx)
-static void synth_filter_fma3(FFTContext *imdct,
-                             float *synth_buf_ptr, int *synth_buf_offset,
-                             float synth_buf2[32], const float window[512],
-                             float out[32], const float in[32], float scale);
-#if HAVE_FMA3_EXTERNAL
 SYNTH_FILTER_FUNC(fma3)
-#endif
 #endif /* HAVE_YASM */
 
 av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
