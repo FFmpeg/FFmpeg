@@ -27,9 +27,9 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
-#include "dsputil.h"
+#include "libavutil/intreadwrite.h"
+#include "avcodec.h"
 #include "h264pred.h"
-#include "avcodec.h" // for AV_CODEC_ID_*
 
 #define BIT_DEPTH 8
 #include "h264pred_template.c"

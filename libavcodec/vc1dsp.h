@@ -28,7 +28,6 @@
 #ifndef AVCODEC_VC1DSP_H
 #define AVCODEC_VC1DSP_H
 
-#include "dsputil.h"
 #include "hpeldsp.h"
 #include "h264chroma.h"
 

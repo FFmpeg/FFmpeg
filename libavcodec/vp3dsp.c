@@ -29,7 +29,6 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "rnd_avg.h"
 #include "vp3dsp.h"
 

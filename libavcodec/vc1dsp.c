@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
+#include "dsputil.h"
 #include "h264chroma.h"
 #include "rnd_avg.h"
 #include "vc1dsp.h"
