@@ -450,7 +450,7 @@ static int oma_read_probe(AVProbeData *p)
     /* This check cannot overflow as tag_len has at most 28 bits */
     if (p->buf_size < tag_len + 5)
         /* EA3 header comes late, might be outside of the probe buffer */
-        return tag_len ? AVPROBE_SCORE_EXTENSION : 0;
+        return tag_len ? AVPROBE_SCORE_EXTENSION/2 : 0;
 
     buf += tag_len;
 
