@@ -2451,7 +2451,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
             st->first_dts == AV_NOPTS_VALUE &&
             st->codec->codec_type != AVMEDIA_TYPE_UNKNOWN)
             av_log(st->codec, AV_LOG_WARNING,
-                   "start time is not set in estimate_timings_from_pts\n");
+                   "start time for stream %d is not set in estimate_timings_from_pts\n", i);
 
         if (st->parser) {
             av_parser_close(st->parser);

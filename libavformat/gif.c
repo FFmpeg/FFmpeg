@@ -33,10 +33,11 @@ static int gif_image_write_header(AVFormatContext *s, int width, int height,
 {
     AVIOContext *pb = s->pb;
     AVRational sar = s->streams[0]->codec->sample_aspect_ratio;
-    int i, aspect = 0;
+    int i;
+    int64_t aspect = 0;
 
     if (sar.num > 0 && sar.den > 0) {
-        aspect = sar.num * 64 / sar.den - 15;
+        aspect = sar.num * 64LL / sar.den - 15;
         if (aspect < 0 || aspect > 255)
             aspect = 0;
     }
