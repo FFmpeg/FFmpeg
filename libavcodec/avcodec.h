@@ -3146,9 +3146,8 @@ void avcodec_register(AVCodec *codec);
 void avcodec_register_all(void);
 
 /**
- * Allocate an AVCodecContext and set its fields to default values.  The
- * resulting struct can be deallocated by calling avcodec_close() on it followed
- * by av_free().
+ * Allocate an AVCodecContext and set its fields to default values. The
+ * resulting struct should be freed with avcodec_free_context().
  *
  * @param codec if non-NULL, allocate private data and initialize defaults
  *              for the given codec. It is illegal to then call avcodec_open2()
@@ -3161,6 +3160,12 @@ void avcodec_register_all(void);
  * @see avcodec_get_context_defaults
  */
 AVCodecContext *avcodec_alloc_context3(const AVCodec *codec);
+
+/**
+ * Free the codec context and everything associated with it and write NULL to
+ * the provided pointer.
+ */
+void avcodec_free_context(AVCodecContext **avctx);
 
 /**
  * Set the fields of the given AVCodecContext to default values corresponding
