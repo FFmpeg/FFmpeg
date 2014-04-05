@@ -798,6 +798,13 @@ check_cxx(){
     check_cmd $cxx $CPPFLAGS $CFLAGS $CXXFLAGS "$@" $CXX_C -o $TMPO $TMPCPP
 }
 
+check_oc(){
+    log check_oc "$@"
+    cat > $TMPM
+    log_file $TMPM
+    check_cmd $cc $CPPFLAGS $CFLAGS "$@" $CC_C $(cc_o $TMPO) $TMPM
+}
+
 check_cpp(){
     log check_cpp "$@"
     cat > $TMPC
@@ -951,7 +958,7 @@ check_header_oc(){
     {
        echo "#include <$header>"
        echo "int main(void) { return 0; }"
-    } | check_cc "-x" "objective-c" "$@" && enable_safe $headers
+    } | check_oc "$@" && enable_safe $headers
 }
 
 check_func(){
@@ -2977,6 +2984,7 @@ tmpfile TMPC   .c
 tmpfile TMPCPP .cpp
 tmpfile TMPE   $EXESUF
 tmpfile TMPH   .h
+tmpfile TMPM   .m
 tmpfile TMPO   .o
 tmpfile TMPS   .S
 tmpfile TMPSH  .sh
