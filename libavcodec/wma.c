@@ -386,9 +386,9 @@ int ff_wma_end(AVCodecContext *avctx)
     }
     for (i = 0; i < 2; i++) {
         ff_free_vlc(&s->coef_vlc[i]);
-        av_free(s->run_table[i]);
-        av_free(s->level_table[i]);
-        av_free(s->int_table[i]);
+        av_freep(&s->run_table[i]);
+        av_freep(&s->level_table[i]);
+        av_freep(&s->int_table[i]);
     }
 
     return 0;
