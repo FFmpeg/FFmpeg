@@ -1217,33 +1217,33 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
             y = av_clip_uint8((RY * r + GY * g + BY * b + ( 33 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
             u = av_clip_uint8((RU * r + GU * g + BU * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
             v = av_clip_uint8((RV * r + GV * g + BV * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
-            c->pal_yuv[i] = y + (u << 8) + (v << 16);
+            c->pal_yuv[i] = y + (u << 8) + (v << 16) + (0xFFU << 24);
 
             switch (c->dstFormat) {
             case AV_PIX_FMT_BGR32:
 #if !HAVE_BIGENDIAN
             case AV_PIX_FMT_RGB24:
 #endif
-                c->pal_rgb[i] =  r + (g << 8) + (b << 16);
+                c->pal_rgb[i] =  r + (g << 8) + (b << 16) + (0xFFU << 24);
                 break;
             case AV_PIX_FMT_BGR32_1:
 #if HAVE_BIGENDIAN
             case AV_PIX_FMT_BGR24:
 #endif
-                c->pal_rgb[i] = (r << 8) + (g << 16) + ((unsigned)b << 24);
+                c->pal_rgb[i] = 0xFF + (r << 8) + (g << 16) + ((unsigned)b << 24);
                 break;
             case AV_PIX_FMT_RGB32_1:
 #if HAVE_BIGENDIAN
             case AV_PIX_FMT_RGB24:
 #endif
-                c->pal_rgb[i] = (b << 8) + (g << 16) + ((unsigned)r << 24);
+                c->pal_rgb[i] = 0xFF + (b << 8) + (g << 16) + ((unsigned)r << 24);
                 break;
             case AV_PIX_FMT_RGB32:
 #if !HAVE_BIGENDIAN
             case AV_PIX_FMT_BGR24:
 #endif
             default:
-                c->pal_rgb[i] =  b + (g << 8) + (r << 16);
+                c->pal_rgb[i] =  b + (g << 8) + (r << 16) + (0xFFU << 24);
             }
         }
     }
