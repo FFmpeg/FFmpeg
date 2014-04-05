@@ -157,7 +157,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                     continue;
                 }
             } else if (!ogm_chapter(as, tt, ct)) {
-                if (m && av_dict_get(*m, tt, NULL, 0)) {
+                if (av_dict_get(*m, tt, NULL, 0)) {
                     av_dict_set(m, tt, ";", AV_DICT_APPEND);
                 }
                 av_dict_set(m, tt, ct,
