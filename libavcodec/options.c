@@ -137,6 +137,9 @@ AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
 
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
 {
+    const AVCodec *orig_codec = dest->codec;
+    uint8_t *orig_priv_data = dest->priv_data;
+
     if (avcodec_is_open(dest)) { // check that the dest context is uninitialized
         av_log(dest, AV_LOG_ERROR,
                "Tried to copy AVCodecContext %p into already-initialized %p\n",
@@ -145,9 +148,10 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     }
     memcpy(dest, src, sizeof(*dest));
 
+    dest->priv_data       = orig_priv_data;
+    dest->codec           = orig_codec;
+
     /* set values specific to opened codecs back to their default state */
-    dest->priv_data       = NULL;
-    dest->codec           = NULL;
     dest->slice_offset    = NULL;
     dest->hwaccel         = NULL;
     dest->internal        = NULL;
