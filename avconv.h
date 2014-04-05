@@ -314,6 +314,7 @@ typedef struct OutputStream {
     /* dts of the last packet sent to the muxer */
     int64_t last_mux_dts;
     AVBitStreamFilterContext *bitstream_filters;
+    AVCodecContext *enc_ctx;
     AVCodec *enc;
     int64_t max_frames;
     AVFrame *filtered_frame;
