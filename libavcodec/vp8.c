@@ -424,7 +424,7 @@ static void update_refs(VP8Context *s)
 }
 #endif
 
-static void copy_luma(AVFrame *dst, AVFrame *src, int width, int height)
+static void copy_chroma(AVFrame *dst, AVFrame *src, int width, int height)
 {
     int i, j;
 
@@ -477,7 +477,7 @@ static int vp7_fade_frame(VP8Context *s, VP56RangeCoder *c)
 
             dst = s->framep[VP56_FRAME_PREVIOUS]->tf.f;
 
-            copy_luma(dst, src, width, height);
+            copy_chroma(dst, src, width, height);
         }
 
         fade(dst->data[0], dst->linesize[0],
