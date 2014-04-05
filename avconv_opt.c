@@ -462,7 +462,7 @@ static AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVStream *
  * list of input streams. */
 static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 {
-    int i;
+    int i, ret;
 
     for (i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
@@ -497,11 +497,23 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->dec = choose_decoder(o, ic, st);
         ist->decoder_opts = filter_codec_opts(o->g->codec_opts, ist->st->codec->codec_id, ic, st, ist->dec);
 
+        ist->dec_ctx = avcodec_alloc_context3(ist->dec);
+        if (!ist->dec_ctx) {
+            av_log(NULL, AV_LOG_ERROR, "Error allocating the decoder context.\n");
+            exit_program(1);
+        }
+
+        ret = avcodec_copy_context(ist->dec_ctx, dec);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error initializing the decoder context.\n");
+            exit_program(1);
+        }
+
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            ist->resample_height  = dec->height;
-            ist->resample_width   = dec->width;
-            ist->resample_pix_fmt = dec->pix_fmt;
+            ist->resample_height  = ist->dec_ctx->height;
+            ist->resample_width   = ist->dec_ctx->width;
+            ist->resample_pix_fmt = ist->dec_ctx->pix_fmt;
 
             MATCH_PER_STREAM_OPT(frame_rates, str, framerate, ic, st);
             if (framerate && av_parse_video_rate(&ist->framerate,
@@ -550,10 +562,10 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         case AVMEDIA_TYPE_AUDIO:
             guess_input_channel_layout(ist);
 
-            ist->resample_sample_fmt     = dec->sample_fmt;
-            ist->resample_sample_rate    = dec->sample_rate;
-            ist->resample_channels       = dec->channels;
-            ist->resample_channel_layout = dec->channel_layout;
+            ist->resample_sample_fmt     = ist->dec_ctx->sample_fmt;
+            ist->resample_sample_rate    = ist->dec_ctx->sample_rate;
+            ist->resample_channels       = ist->dec_ctx->channels;
+            ist->resample_channel_layout = ist->dec_ctx->channel_layout;
 
             break;
         case AVMEDIA_TYPE_DATA:

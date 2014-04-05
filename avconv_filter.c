@@ -149,7 +149,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         /* find the first unused stream of corresponding type */
         for (i = 0; i < nb_input_streams; i++) {
             ist = input_streams[i];
-            if (ist->st->codec->codec_type == type && ist->discard)
+            if (ist->dec_ctx->codec_type == type && ist->discard)
                 break;
         }
         if (i == nb_input_streams) {
@@ -433,10 +433,10 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 
     sar = ist->st->sample_aspect_ratio.num ?
           ist->st->sample_aspect_ratio :
-          ist->st->codec->sample_aspect_ratio;
-    snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
-             ist->st->codec->height,
-             ist->hwaccel_retrieve_data ? ist->hwaccel_retrieved_pix_fmt : ist->st->codec->pix_fmt,
+          ist->dec_ctx->sample_aspect_ratio;
+    snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d", ist->dec_ctx->width,
+             ist->dec_ctx->height,
+             ist->hwaccel_retrieve_data ? ist->hwaccel_retrieved_pix_fmt : ist->dec_ctx->pix_fmt,
              tb.num, tb.den, sar.num, sar.den);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
@@ -487,10 +487,10 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
 
     snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:sample_fmt=%s"
              ":channel_layout=0x%"PRIx64,
-             1, ist->st->codec->sample_rate,
-             ist->st->codec->sample_rate,
-             av_get_sample_fmt_name(ist->st->codec->sample_fmt),
-             ist->st->codec->channel_layout);
+             1, ist->dec_ctx->sample_rate,
+             ist->dec_ctx->sample_rate,
+             av_get_sample_fmt_name(ist->dec_ctx->sample_fmt),
+             ist->dec_ctx->channel_layout);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
 
