@@ -600,6 +600,24 @@ fail:
     return ret;
 }
 
+/* read from URLContext, limiting read to current segment */
+static int read_from_url(struct playlist *pls, uint8_t *buf, int buf_size)
+{
+    int ret;
+    struct segment *seg = pls->segments[pls->cur_seq_no - pls->start_seq_no];
+
+     /* limit read if the segment was only a part of a file */
+    if (seg->size >= 0)
+        buf_size = FFMIN(buf_size, seg->size - pls->cur_seg_offset);
+
+    ret = ffurl_read(pls->input, buf, buf_size);
+
+    if (ret > 0)
+        pls->cur_seg_offset += ret;
+
+    return ret;
+}
+
 static int open_input(HLSContext *c, struct playlist *pls)
 {
     AVDictionary *opts = NULL;
@@ -702,8 +720,6 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
     struct playlist *v = opaque;
     HLSContext *c = v->parent->priv_data;
     int ret, i;
-    int actual_read_size;
-    struct segment *seg;
 
     if (!v->needed)
         return AVERROR_EOF;
@@ -754,16 +770,9 @@ reload:
             return ret;
         }
     }
-    /* limit read if the segment was only a part of a file */
-    seg = v->segments[v->cur_seq_no - v->start_seq_no];
-    if (seg->size >= 0)
-        actual_read_size = FFMIN(buf_size, seg->size - v->cur_seg_offset);
-    else
-        actual_read_size = buf_size;
 
-    ret = ffurl_read(v->input, buf, actual_read_size);
+    ret = read_from_url(v, buf, buf_size);
     if (ret > 0) {
-        v->cur_seg_offset += ret;
         return ret;
     }
     ffurl_close(v->input);
