@@ -555,7 +555,7 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
                  s->feature_index_prob[i][j] =
                      vp8_rac_get(c) ? vp8_rac_get_uint(c, 8) : 255;
 
-             if (vp7_feature_value_size[i])
+             if (vp7_feature_value_size[s->profile][i])
                  for (j = 0; j < 4; j++)
                      s->feature_value[i][j] =
                         vp8_rac_get(c) ? vp8_rac_get_uint(c, vp7_feature_value_size[s->profile][i]) : 0;
