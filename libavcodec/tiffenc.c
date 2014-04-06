@@ -436,6 +436,13 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     add_entry1(s, TIFF_ROWSPERSTRIP, TIFF_LONG,     s->rps);
     add_entry(s,  TIFF_STRIP_SIZE,   TIFF_LONG,     strips, s->strip_sizes);
     add_entry(s,  TIFF_XRES,         TIFF_RATIONAL, 1,      res);
+    if (avctx->sample_aspect_ratio.num > 0 &&
+        avctx->sample_aspect_ratio.den > 0) {
+        AVRational y = av_mul_q(av_make_q(s->dpi, 1),
+                                avctx->sample_aspect_ratio);
+        res[0] = y.num;
+        res[1] = y.den;
+    }
     add_entry(s,  TIFF_YRES,         TIFF_RATIONAL, 1,      res);
     add_entry1(s, TIFF_RES_UNIT,     TIFF_SHORT,    2);
 
