@@ -793,11 +793,8 @@ retry:
         uint8_t *side_data = av_packet_new_side_data(pkt,
                                                      AV_PKT_DATA_SKIP_SAMPLES,
                                                      10);
-        if(side_data == NULL) {
-            av_free_packet(pkt);
-            av_free(pkt);
-            return AVERROR(ENOMEM);
-        }
+        if(side_data == NULL)
+            goto fail;
         AV_WL32(side_data + 4, os->end_trimming);
         os->end_trimming = 0;
     }
@@ -806,17 +803,19 @@ retry:
         uint8_t *side_data = av_packet_new_side_data(pkt,
                                                      AV_PKT_DATA_METADATA_UPDATE,
                                                      os->new_metadata_size);
-        if(side_data == NULL) {
-            av_free_packet(pkt);
-            av_free(pkt);
-            return AVERROR(ENOMEM);
-        }
+        if(side_data == NULL)
+            goto fail;
+
         memcpy(side_data, os->new_metadata, os->new_metadata_size);
         av_freep(&os->new_metadata);
         os->new_metadata_size = 0;
     }
 
     return psize;
+fail:
+    av_free_packet(pkt);
+    av_free(pkt);
+    return AVERROR(ENOMEM);
 }
 
 static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
