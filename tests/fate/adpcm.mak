@@ -82,6 +82,9 @@ fate-adpcm_ms-stereo: CMD = md5 -i $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-L
 FATE_ADPCM-$(call DEMDEC, THP, ADPCM_THP) += fate-adpcm-thp
 fate-adpcm-thp: CMD = framecrc -i $(TARGET_SAMPLES)/thp/pikmin2-opening1-partial.thp -vn
 
+FATE_ADPCM-$(call DEMDEC, SMUSH, ADPCM_VIMA) += fate-adpcm-vima
+fate-adpcm-vima: CMD = framecrc -i $(TARGET_SAMPLES)/smush/ronin_part.znm -vn
+
 FATE_ADPCM-$(call DEMDEC, STR, ADPCM_XA) += fate-adpcm-xa
 fate-adpcm-xa: CMD = framecrc -i $(TARGET_SAMPLES)/psx-str/abc000_cut.str -vn
 
