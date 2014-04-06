@@ -806,6 +806,11 @@ retry:
         uint8_t *side_data = av_packet_new_side_data(pkt,
                                                      AV_PKT_DATA_METADATA_UPDATE,
                                                      os->new_metadata_size);
+        if(side_data == NULL) {
+            av_free_packet(pkt);
+            av_free(pkt);
+            return AVERROR(ENOMEM);
+        }
         memcpy(side_data, os->new_metadata, os->new_metadata_size);
         av_freep(&os->new_metadata);
         os->new_metadata_size = 0;
