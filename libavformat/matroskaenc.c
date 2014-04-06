@@ -544,6 +544,9 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
             } else
                 avio_write(dyn_cp, codec->extradata + 12,
                                    codec->extradata_size - 12);
+        } else if (codec->codec_id == AV_CODEC_ID_PRORES &&
+                   ff_codec_get_id(ff_codec_movvideo_tags, codec->codec_tag) == AV_CODEC_ID_PRORES) {
+            avio_wl32(dyn_cp, codec->codec_tag);
         }
         else if (codec->extradata_size && codec->codec_id != AV_CODEC_ID_TTA)
             avio_write(dyn_cp, codec->extradata, codec->extradata_size);

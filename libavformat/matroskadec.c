@@ -1914,6 +1914,8 @@ static int matroska_read_header(AVFormatContext *s)
                 st->codec->block_align = track->audio.sub_packet_size;
                 extradata_offset       = 78;
             }
+        } else if (codec_id == AV_CODEC_ID_PRORES && track->codec_priv.size == 4) {
+            fourcc = AV_RL32(track->codec_priv.data);
         }
         track->codec_priv.size -= extradata_offset;
 
