@@ -148,10 +148,10 @@ int ff_pulse_audio_get_devices(AVDeviceInfoList *devices, const char *server, in
 
     dev_list.output = output;
     dev_list.devices = devices;
-    devices->nb_devices = 0;
-    devices->devices = NULL;
     if (!devices)
         return AVERROR(EINVAL);
+    devices->nb_devices = 0;
+    devices->devices = NULL;
     if (!(pa_ml = pa_mainloop_new()))
         return AVERROR(ENOMEM);
     if (!(pa_mlapi = pa_mainloop_get_api(pa_ml))) {
