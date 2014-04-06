@@ -278,6 +278,7 @@ version 1.0:
 - RTMPTE protocol support
 - showwaves and showspectrum filter
 - LucasArts SMUSH SANM playback support
+- LucasArts SMUSH VIMA audio decoder (ADPCM)
 - SAMI, RealText and SubViewer demuxers and decoders
 - Heart Of Darkness PAF playback support
 - iec61883 device
