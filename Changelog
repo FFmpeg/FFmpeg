@@ -279,6 +279,7 @@ version 1.0:
 - showwaves and showspectrum filter
 - LucasArts SMUSH SANM playback support
 - LucasArts SMUSH VIMA audio decoder (ADPCM)
+- LucasArts SMUSH demuxer
 - SAMI, RealText and SubViewer demuxers and decoders
 - Heart Of Darkness PAF playback support
 - iec61883 device
