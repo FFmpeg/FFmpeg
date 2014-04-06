@@ -41,6 +41,7 @@ typedef struct PulseData {
     pa_threaded_mainloop *mainloop;
     pa_context *ctx;
     pa_stream *stream;
+    int nonblocking;
 } PulseData;
 
 static void pulse_stream_writable(pa_stream *stream, size_t nbytes, void *userdata)
@@ -257,6 +258,7 @@ static av_cold int pulse_write_header(AVFormatContext *h)
         else
             stream_name = "Playback";
     }
+    s->nonblocking = (h->flags & AVFMT_FLAG_NONBLOCK);
 
     if (s->buffer_duration) {
         int64_t bytes = s->buffer_duration;
@@ -401,8 +403,13 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR, "PulseAudio stream is in invalid state.\n");
         goto fail;
     }
-    while (!pa_stream_writable_size(s->stream))
-        pa_threaded_mainloop_wait(s->mainloop);
+    while (!pa_stream_writable_size(s->stream)) {
+        if (s->nonblocking) {
+            pa_threaded_mainloop_unlock(s->mainloop);
+            return AVERROR(EAGAIN);
+        } else
+            pa_threaded_mainloop_wait(s->mainloop);
+    }
 
     if ((ret = pa_stream_write(s->stream, pkt->data, pkt->size, NULL, 0, PA_SEEK_RELATIVE)) < 0) {
         av_log(s, AV_LOG_ERROR, "pa_stream_write failed: %s\n", pa_strerror(ret));
