@@ -277,7 +277,7 @@ version 1.0:
 - RTMPE protocol support
 - RTMPTE protocol support
 - showwaves and showspectrum filter
-- LucasArts SMUSH playback support
+- LucasArts SMUSH SANM playback support
 - SAMI, RealText and SubViewer demuxers and decoders
 - Heart Of Darkness PAF playback support
 - iec61883 device

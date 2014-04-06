@@ -1159,13 +1159,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY,
     },
     {
-        .id        = AV_CODEC_ID_SANM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "sanm",
-        .long_name = NULL_IF_CONFIG_SMALL("LucasArts SMUSH video"),
-        .props     = AV_CODEC_PROP_LOSSY,
-    },
-    {
         .id        = AV_CODEC_ID_AVRN,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "avrn",
@@ -1231,6 +1224,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "vp7",
         .long_name = NULL_IF_CONFIG_SMALL("On2 VP7"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_SANM,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "sanm",
+        .long_name = NULL_IF_CONFIG_SMALL("LucasArts SANM/SMUSH video"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
 
