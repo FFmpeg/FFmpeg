@@ -676,6 +676,11 @@ Pre-amplification gain in dB to apply to the selected replaygain gain.
 
 Default value for @var{replaygain_preamp} is 0.0.
 
+@item replaygain_noclip
+Prevent clipping by limiting the gain applied.
+
+Default value for @var{replaygain_noclip} is 1.
+
 @end table
 
 @subsection Examples

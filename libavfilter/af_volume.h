@@ -48,6 +48,7 @@ typedef struct VolumeContext {
     enum PrecisionType precision;
     enum ReplayGainType replaygain;
     double replaygain_preamp;
+    int    replaygain_noclip;
     double volume;
     int    volume_i;
     int    channels;
