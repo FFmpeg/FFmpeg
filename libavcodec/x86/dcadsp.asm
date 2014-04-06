@@ -153,7 +153,7 @@ DECODE_HF
     addps       m4, va ; va1+3 vb1+3 va2+4 vb2+4
     movhlps     vb, m4 ; va1+3  vb1+3
     addps       vb, m4 ; va0..4 vb0..4
-    movh    [outq + count], vb
+    movlps  [outq + count], vb
 %if %1
     sub       cf0q, 8*NUM_COEF
 %endif
