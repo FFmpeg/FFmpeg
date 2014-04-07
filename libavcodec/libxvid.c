@@ -531,25 +531,26 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         xvid_enc_create.num_plugins++;
     }
 
-    if ( avctx->lumi_masking != 0.0)
+    if (avctx->lumi_masking != 0.0)
         x->lumi_aq = 1;
 
     /* Luminance Masking */
-    if( x->lumi_aq ) {
+    if (x->lumi_aq) {
         masking_l.method = 0;
         plugins[xvid_enc_create.num_plugins].func = xvid_plugin_lumimasking;
 
         /* The old behavior is that when avctx->lumi_masking is specified,
          * plugins[...].param = NULL. Trying to keep the old behavior here. */
-        plugins[xvid_enc_create.num_plugins].param = avctx->lumi_masking ? NULL : &masking_l ;
-        xvid_enc_create.num_plugins++;
+        plugins[xvid_enc_create.num_plugins].param = avctx->lumi_masking ? NULL
+                                                                         : &masking_l;
+                xvid_enc_create.num_plugins++;
     }
 
     /* Variance AQ */
-    if( x->variance_aq ) {
+    if (x->variance_aq) {
         masking_v.method = 1;
         plugins[xvid_enc_create.num_plugins].func  = xvid_plugin_lumimasking;
-        plugins[xvid_enc_create.num_plugins].param = &masking_v ;
+        plugins[xvid_enc_create.num_plugins].param = &masking_v;
         xvid_enc_create.num_plugins++;
     }
 
