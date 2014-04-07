@@ -58,6 +58,7 @@ typedef struct TiffContext {
     int fax_opts;
     int predictor;
     int fill_order;
+    uint32_t res[4];
 
     int strips, rps, sstype;
     int sot;
@@ -566,9 +567,19 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
     return 0;
 }
 
+static void set_sar(TiffContext *s, unsigned tag, unsigned num, unsigned den)
+{
+    int offset = tag == TIFF_YRES ? 2 : 0;
+    s->res[offset++] = num;
+    s->res[offset]   = den;
+    if (s->res[0] && s->res[1] && s->res[2] && s->res[3])
+        av_reduce(&s->avctx->sample_aspect_ratio.num, &s->avctx->sample_aspect_ratio.den,
+                  s->res[2] * (uint64_t)s->res[1], s->res[0] * (uint64_t)s->res[3], INT32_MAX);
+}
+
 static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
 {
-    unsigned tag, type, count, off, value = 0;
+    unsigned tag, type, count, off, value = 0, value2 = 0;
     int i, j, k, pos, start;
     int ret;
     uint32_t *pal;
@@ -586,6 +597,10 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         case TIFF_SHORT:
         case TIFF_LONG:
             value = ff_tget(&s->gb, type, s->le);
+            break;
+        case TIFF_RATIONAL:
+            value  = ff_tget(&s->gb, TIFF_LONG, s->le);
+            value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
             break;
         case TIFF_STRING:
             if (count <= 4) {
@@ -716,6 +731,10 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
                    "Tag referencing position outside the image\n");
             return AVERROR_INVALIDDATA;
         }
+        break;
+    case TIFF_XRES:
+    case TIFF_YRES:
+        set_sar(s, tag, value, value2);
         break;
     case TIFF_TILE_BYTE_COUNTS:
     case TIFF_TILE_LENGTH:
