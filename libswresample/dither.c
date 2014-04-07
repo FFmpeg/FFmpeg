@@ -24,7 +24,7 @@
 void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt) {
     double scale = 0;
 #define TMP_EXTRA 2
-    double *tmp = av_malloc((len + TMP_EXTRA) * sizeof(double));
+    double *tmp = av_malloc_array(len + TMP_EXTRA, sizeof(double));
     int i;
 
     out_fmt = av_get_packed_sample_fmt(out_fmt);
