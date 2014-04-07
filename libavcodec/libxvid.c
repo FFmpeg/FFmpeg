@@ -530,7 +530,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         x->lumi_aq = 1;
 
     if (x->lumi_aq && x->variance_aq) {
-        x->variance_aq = 0
+        x->variance_aq = 0;
         av_log(avctx, AV_LOG_WARNING,
                "variance_aq is ignored when lumi_aq is set.\n");
     }
