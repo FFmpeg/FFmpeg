@@ -38,6 +38,7 @@
 #include "libavformat/rtpdec.h"
 #include "libavformat/rtpproto.h"
 #include "libavformat/rtsp.h"
+#include "libavformat/rtspcodes.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"
 #include "libavformat/url.h"
@@ -2836,44 +2837,9 @@ static void rtsp_reply_header(HTTPContext *c, enum RTSPStatusCode error_number)
     struct tm *tm;
     char buf2[32];
 
-    switch(error_number) {
-    case RTSP_STATUS_OK:
-        str = "OK";
-        break;
-    case RTSP_STATUS_METHOD:
-        str = "Method Not Allowed";
-        break;
-    case RTSP_STATUS_BANDWIDTH:
-        str = "Not Enough Bandwidth";
-        break;
-    case RTSP_STATUS_SESSION:
-        str = "Session Not Found";
-        break;
-    case RTSP_STATUS_STATE:
-        str = "Method Not Valid in This State";
-        break;
-    case RTSP_STATUS_AGGREGATE:
-        str = "Aggregate operation not allowed";
-        break;
-    case RTSP_STATUS_ONLY_AGGREGATE:
-        str = "Only aggregate operation allowed";
-        break;
-    case RTSP_STATUS_TRANSPORT:
-        str = "Unsupported transport";
-        break;
-    case RTSP_STATUS_INTERNAL:
-        str = "Internal Server Error";
-        break;
-    case RTSP_STATUS_SERVICE:
-        str = "Service Unavailable";
-        break;
-    case RTSP_STATUS_VERSION:
-        str = "RTSP Version not supported";
-        break;
-    default:
+    str = RTSP_STATUS_CODE2STRING(error_number);
+    if (!str)
         str = "Unknown Error";
-        break;
-    }
 
     avio_printf(c->pb, "RTSP/1.0 %d %s\r\n", error_number, str);
     avio_printf(c->pb, "CSeq: %d\r\n", c->seq);
