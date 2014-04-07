@@ -44,6 +44,8 @@ av_cold void ff_videodsp_init(VideoDSPContext *ctx, int bpc)
         ctx->emulated_edge_mc = ff_emulated_edge_mc_16;
     }
 
+    if (ARCH_AARCH64)
+        ff_videodsp_init_aarch64(ctx, bpc);
     if (ARCH_ARM)
         ff_videodsp_init_arm(ctx, bpc);
     if (ARCH_PPC)
