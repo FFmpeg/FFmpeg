@@ -205,7 +205,6 @@ static int vp8_update_dimensions(VP8Context *s, int width, int height)
 }
 
 
-#if CONFIG_VP8_DECODER
 static void parse_segment_info(VP8Context *s)
 {
     VP56RangeCoder *c = &s->c;
@@ -276,9 +275,7 @@ static int setup_partitions(VP8Context *s, const uint8_t *buf, int buf_size)
 
     return 0;
 }
-#endif
 
-#if CONFIG_VP7_DECODER
 static void vp7_get_quants(VP8Context *s)
 {
     VP56RangeCoder *c = &s->c;
@@ -297,9 +294,7 @@ static void vp7_get_quants(VP8Context *s)
     s->qmat[0].chroma_qmul[0]  = FFMIN(vp7_ydc_qlookup[uvdc_qi], 132);
     s->qmat[0].chroma_qmul[1]  =       vp7_yac_qlookup[uvac_qi];
 }
-#endif
 
-#if CONFIG_VP8_DECODER
 static void vp8_get_quants(VP8Context *s)
 {
     VP56RangeCoder *c = &s->c;
@@ -361,7 +356,6 @@ static VP56Frame ref_to_update(VP8Context *s, int update, VP56Frame ref)
     }
     return VP56_FRAME_NONE;
 }
-#endif
 
 static void vp78_reset_probability_tables(VP8Context *s)
 {
@@ -411,7 +405,6 @@ static void vp78_update_pred16x16_pred8x8_mvc_probabilities(VP8Context *s,
                 s->prob->mvc[i][j] = vp8_rac_get_nn(c);
 }
 
-#if CONFIG_VP8_DECODER
 static void update_refs(VP8Context *s)
 {
     VP56RangeCoder *c = &s->c;
@@ -422,7 +415,6 @@ static void update_refs(VP8Context *s)
     s->update_golden = ref_to_update(s, update_golden, VP56_FRAME_GOLDEN);
     s->update_altref = ref_to_update(s, update_altref, VP56_FRAME_GOLDEN2);
 }
-#endif
 
 static void copy_chroma(AVFrame *dst, AVFrame *src, int width, int height)
 {
@@ -2385,21 +2377,17 @@ static av_always_inline void decode_mb_row_no_filter(AVCodecContext *avctx, void
     }
 }
 
-#if CONFIG_VP7_DECODER
 static void vp7_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
                                         int jobnr, int threadnr)
 {
     decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 1);
 }
-#endif
 
-#if CONFIG_VP8_DECODER
 static void vp8_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
                                         int jobnr, int threadnr)
 {
     decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 0);
 }
-#endif
 
 static av_always_inline void filter_mb_row(AVCodecContext *avctx, void *tdata,
                               int jobnr, int threadnr, int is_vp7)
@@ -2460,21 +2448,17 @@ static av_always_inline void filter_mb_row(AVCodecContext *avctx, void *tdata,
     }
 }
 
-#if CONFIG_VP7_DECODER
 static void vp7_filter_mb_row(AVCodecContext *avctx, void *tdata,
                               int jobnr, int threadnr)
 {
     filter_mb_row(avctx, tdata, jobnr, threadnr, 1);
 }
-#endif
 
-#if CONFIG_VP8_DECODER
 static void vp8_filter_mb_row(AVCodecContext *avctx, void *tdata,
                               int jobnr, int threadnr)
 {
     filter_mb_row(avctx, tdata, jobnr, threadnr, 0);
 }
-#endif
 
 static av_always_inline
 int vp78_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata, int jobnr,
