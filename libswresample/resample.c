@@ -227,6 +227,11 @@ ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rat
             return NULL;
         }
 
+        if (filter_size/factor > INT32_MAX/256) {
+            av_log(NULL, AV_LOG_ERROR, "Filter length too large\n");
+            goto error;
+        }
+
         c->phase_shift   = phase_shift;
         c->phase_mask    = phase_count - 1;
         c->linear        = linear;
