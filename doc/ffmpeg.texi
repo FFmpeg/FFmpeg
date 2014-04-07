@@ -272,8 +272,13 @@ ffmpeg -i INPUT -map 0 -c copy -c:v:1 libx264 -c:a:137 libvorbis OUTPUT
 will copy all the streams except the second video, which will be encoded with
 libx264, and the 138th audio, which will be encoded with libvorbis.
 
-@item -t @var{duration} (@emph{output})
-Stop writing the output after its duration reaches @var{duration}.
+@item -t @var{duration} (@emph{input/output})
+When used as an input option (before @code{-i}), limit the @var{duration} of
+data read from the input file.
+
+When used as an output option (before an output filename), stop writing the
+output after its duration reaches @var{duration}.
+
 @var{duration} may be a number in seconds, or in @code{hh:mm:ss[.xxx]} form.
 
 -to and -t are mutually exclusive and -t has priority.
