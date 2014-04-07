@@ -647,6 +647,9 @@ static int ogg_read_close(AVFormatContext *s)
         av_freep(&ogg->streams[i].private);
         av_freep(&ogg->streams[i].new_metadata);
     }
+
+    ogg->nstreams = 0;
+
     av_freep(&ogg->streams);
     return 0;
 }
