@@ -560,9 +560,9 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
                "will be the worse one of the two effects made by the AQ.\n");
 
     /* SSIM */
-    if( x->ssim ) {
+    if (x->ssim) {
         plugins[xvid_enc_create.num_plugins].func = xvid_plugin_ssim;
-        ssim.b_printstat = ( x->ssim == 2 );
+        ssim.b_printstat = x->ssim == 2;
         ssim.acc         = x->ssim_acc;
         ssim.cpu_flags   = xvid_gbl_init.cpu_flags;
         ssim.b_visualize = 0;
