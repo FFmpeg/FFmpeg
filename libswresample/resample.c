@@ -95,7 +95,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
                         int filter_type, int kaiser_beta){
     int ph, i;
     double x, y, w;
-    double *tab = av_malloc(tap_count * sizeof(*tab));
+    double *tab = av_malloc_array(tap_count,  sizeof(*tab));
     const int center= (tap_count-1)/2;
 
     if (!tab)
