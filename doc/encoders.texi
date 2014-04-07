@@ -584,25 +584,39 @@ options follow the Libav ones.
 @item g                 @tab keyint
 @tab Maximum GOP size.
 @item qmin              @tab qpmin
+@tab Minimum quantizer scale.
 @item qmax              @tab qpmax
+@tab Maximum quantizer scale.
 @item qdiff             @tab qpstep
+@tab Maximum difference between quantizer scales.
 @item qblur             @tab qblur
+@tab Quantizer curve blur
 @item qcomp             @tab qcomp
+@tab Quantizer curve compression factor
 @item refs              @tab ref
+@tab Number of reference frames each P-frame can use. The range is from @var{0-16}.
 @item sc_threshold      @tab scenecut
+@tab Sets the threshold for the scene change detection.
 @item trellis           @tab trellis
+@tab Performs Trellis quantization to increase efficiency. Enabled by default.
 @item nr                @tab nr
 @tab Noise reduction.
 @item me_range          @tab merange
+@tab Maximum range of the motion search in pixels.
 @item me_method         @tab me
+@tab Full-pixel motion estimation method.
 @item subq              @tab subme
+@tab Sub-pixel motion estimation method.
 @item b_strategy        @tab b-adapt
-@item keyint_min        @tab keyint-min
+@tab Adaptive B-frame placement decision algorithm. Use only on first-pass.
+@item keyint_min        @tab min-keyint
+@tab Minimum GOP size.
 @item coder             @tab cabac
 @tab Set coder to @code{ac} to use CABAC.
 @item cmp               @tab chroma-me
 @tab Set to @code{chroma} to use chroma motion estimation.
 @item threads           @tab threads
+@tab Number of encoding threads.
 @item thread_type       @tab sliced_threads
 @tab Set to @code{slice} to use sliced threading instead of frame threading.
 @item flags -cgop       @tab open-gop
