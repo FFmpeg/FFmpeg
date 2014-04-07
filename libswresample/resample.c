@@ -229,6 +229,11 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
             av_assert0(0);
         }
 
+        if (filter_size/factor > INT32_MAX/256) {
+            av_log(NULL, AV_LOG_ERROR, "Filter length too large\n");
+            goto error;
+        }
+
         c->phase_shift   = phase_shift;
         c->phase_mask    = phase_count - 1;
         c->linear        = linear;
