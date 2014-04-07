@@ -1326,10 +1326,12 @@ static int find_start_code(const uint8_t *buf, int buf_size,
             buf[buf_index + 2] == 1)
             break;
 
-    if (buf_index + 3 >= buf_size)
+    buf_index += 3;
+
+    if (buf_index >= buf_size)
         return buf_size;
 
-    return buf_index + 3;
+    return buf_index;
 }
 
 static int get_avc_nalsize(H264Context *h, const uint8_t *buf,
