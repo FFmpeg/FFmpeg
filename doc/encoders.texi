@@ -576,13 +576,13 @@ a list of key=value tuples as accepted by x264_param_parse.
 The following options are supported by the x264 wrapper, the x264-equivalent
 options follow the Libav ones.
 
-@multitable @columnfractions .2 .2
+@multitable {                  } {              } {                           }
 @item b                 @tab bitrate
-Libav @code{b} option is expressed in bits/s, x264 @code{bitrate} in kilobits/s.
+@tab Libav @code{b} option is expressed in bits/s, x264 @code{bitrate} in kilobits/s.
 @item bf                @tab bframes
-Maximum number of B-frames.
+@tab Maximum number of B-frames.
 @item g                 @tab keyint
-Maximum GOP size.
+@tab Maximum GOP size.
 @item qmin              @tab qpmin
 @item qmax              @tab qpmax
 @item qdiff             @tab qpstep
@@ -592,23 +592,23 @@ Maximum GOP size.
 @item sc_threshold      @tab scenecut
 @item trellis           @tab trellis
 @item nr                @tab nr
-Noise reduction.
+@tab Noise reduction.
 @item me_range          @tab merange
 @item me_method         @tab me
 @item subq              @tab subme
 @item b_strategy        @tab b-adapt
 @item keyint_min        @tab keyint-min
 @item coder             @tab cabac
-Set coder to @code{ac} to use CABAC.
+@tab Set coder to @code{ac} to use CABAC.
 @item cmp               @tab chroma-me
-Set to @code{chroma} to use chroma motion estimation.
+@tab Set to @code{chroma} to use chroma motion estimation.
 @item threads           @tab threads
 @item thread_type       @tab sliced_threads
-Set to @code{slice} to use sliced threading instead of frame threading.
+@tab Set to @code{slice} to use sliced threading instead of frame threading.
 @item flags -cgop       @tab open-gop
-Set @code{-cgop} to use recovery points to close GOPs.
+@tab Set @code{-cgop} to use recovery points to close GOPs.
 @item rc_init_occupancy @tab vbv-init
-Initial buffer occupancy.
+@tab Initial buffer occupancy.
 @end multitable
 
 @subsection Private Options
