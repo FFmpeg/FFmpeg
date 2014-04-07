@@ -92,6 +92,7 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_YUVJ420P]    = { 1, 1 },
     [AV_PIX_FMT_YUVJ422P]    = { 1, 1 },
     [AV_PIX_FMT_YUVJ444P]    = { 1, 1 },
+    [AV_PIX_FMT_YVYU422]     = { 1, 1 },
     [AV_PIX_FMT_UYVY422]     = { 1, 1 },
     [AV_PIX_FMT_UYYVYY411]   = { 0, 0 },
     [AV_PIX_FMT_BGR8]        = { 1, 1 },
