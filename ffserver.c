@@ -222,7 +222,7 @@ typedef struct FFStream {
     IPAddressACL *acl;
     char dynamic_acl[1024];
     int nb_streams;
-    int prebuffer;      /* Number of millseconds early to start */
+    int prebuffer;      /* Number of milliseconds early to start */
     int64_t max_time;      /* Number of milliseconds to run */
     int send_on_key;
     AVStream *streams[MAX_STREAMS];
@@ -1324,7 +1324,7 @@ static void parse_acl_row(FFStream *stream, FFStream* feed, IPAddressACL *ext_ac
     get_arg(arg, sizeof(arg), &p);
 
     if (resolve_host(&acl.first, arg) != 0) {
-        fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
+        fprintf(stderr, "%s:%d: ACL refers to invalid host or IP address '%s'\n",
                 filename, line_num, arg);
         errors++;
     } else
@@ -1334,7 +1334,7 @@ static void parse_acl_row(FFStream *stream, FFStream* feed, IPAddressACL *ext_ac
 
     if (arg[0]) {
         if (resolve_host(&acl.last, arg) != 0) {
-            fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
+            fprintf(stderr, "%s:%d: ACL refers to invalid host or IP address '%s'\n",
                     filename, line_num, arg);
             errors++;
         }
@@ -1725,7 +1725,7 @@ static int http_parse_request(HTTPContext *c)
                                 *p = '\0';
                             snprintf(q, c->buffer_size,
                                           "HTTP/1.0 200 RTSP Redirect follows\r\n"
-                                          /* XXX: incorrect mime type ? */
+                                          /* XXX: incorrect MIME type ? */
                                           "Content-type: application/x-rtsp\r\n"
                                           "\r\n"
                                           "rtsp://%s:%d/%s\r\n", hostname, ntohs(my_rtsp_addr.sin_port), filename);
@@ -1786,7 +1786,7 @@ static int http_parse_request(HTTPContext *c)
         /* if post, it means a feed is being sent */
         if (!stream->is_feed) {
             /* However it might be a status report from WMP! Let us log the
-             * data as it might come in handy one day. */
+             * data as it might come handy one day. */
             const char *logline = 0;
             int client_id = 0;
 
@@ -2308,7 +2308,7 @@ static int http_prepare_data(HTTPContext *c)
         c->fmt_ctx.pb->seekable = 0;
 
         /*
-         * HACK to avoid mpeg ps muxer to spit many underflow errors
+         * HACK to avoid MPEG-PS muxer to spit many underflow errors
          * Default value from FFmpeg
          * Try to set it using configuration option
          */
@@ -3047,7 +3047,7 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     socklen_t len;
     struct sockaddr_in my_addr;
 
-    /* find which url is asked */
+    /* find which URL is asked */
     av_url_split(NULL, 0, NULL, 0, NULL, 0, NULL, path1, sizeof(path1), url);
     path = path1;
     if (*path == '/')
@@ -3065,7 +3065,7 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     return;
 
  found:
-    /* prepare the media description in sdp format */
+    /* prepare the media description in SDP format */
 
     /* get the host IP */
     len = sizeof(my_addr);
@@ -3124,7 +3124,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
     struct sockaddr_in dest_addr;
     RTSPActionServerSetup setup;
 
-    /* find which url is asked */
+    /* find which URL is asked */
     av_url_split(NULL, 0, NULL, 0, NULL, 0, NULL, path1, sizeof(path1), url);
     path = path1;
     if (*path == '/')
@@ -3166,7 +3166,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
                  random0, random1);
     }
 
-    /* find rtp session, and create it if none found */
+    /* find RTP session, and create it if none found */
     rtp_c = find_rtp_session(h->session_id);
     if (!rtp_c) {
         /* always prefer UDP */
@@ -3255,7 +3255,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
 }
 
 
-/* find an rtp connection by using the session ID. Check consistency
+/* find an RTP connection by using the session ID. Check consistency
    with filename */
 static HTTPContext *find_rtp_session_with_url(const char *url,
                                               const char *session_id)
@@ -3270,7 +3270,7 @@ static HTTPContext *find_rtp_session_with_url(const char *url,
     if (!rtp_c)
         return NULL;
 
-    /* find which url is asked */
+    /* find which URL is asked */
     av_url_split(NULL, 0, NULL, 0, NULL, 0, NULL, path1, sizeof(path1), url);
     path = path1;
     if (*path == '/')
@@ -3599,7 +3599,7 @@ static void remove_stream(FFStream *stream)
     }
 }
 
-/* specific mpeg4 handling : we extract the raw parameters */
+/* specific MPEG4 handling : we extract the raw parameters */
 static void extract_mpeg4_header(AVFormatContext *infile)
 {
     int mpeg4_count, i, size;
@@ -3824,7 +3824,7 @@ static void build_feed_streams(void)
                 http_log("Container doesn't support the required parameters\n");
                 exit(1);
             }
-            /* XXX: need better api */
+            /* XXX: need better API */
             av_freep(&s->priv_data);
             avio_close(s->pb);
             s->streams = NULL;
@@ -4321,7 +4321,7 @@ static int parse_ffconfig(const char *filename)
                     stream->fmt = NULL;
                 } else {
                     stream->stream_type = STREAM_TYPE_LIVE;
-                    /* jpeg cannot be used here, so use single frame jpeg */
+                    /* JPEG cannot be used here, so use single frame MJPEG */
                     if (!strcmp(arg, "jpeg"))
                         strcpy(arg, "mjpeg");
                     stream->fmt = ffserver_guess_format(arg, NULL, NULL);
