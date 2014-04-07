@@ -3348,6 +3348,9 @@ static int mov_read_close(AVFormatContext *s)
             av_freep(&sc->drefs[j].dir);
         }
         av_freep(&sc->drefs);
+
+        sc->drefs_count = 0;
+
         if (!sc->pb_is_copied)
             avio_close(sc->pb);
 
