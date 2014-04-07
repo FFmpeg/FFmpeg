@@ -1153,7 +1153,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
         *segment = 0;
         for (i = 0; i < 4; i++) {
             if (s->feature_enabled[i]) {
-                if (vp56_rac_get_prob(c, s->feature_present_prob[i])) {
+                if (vp56_rac_get_prob_branchy(c, s->feature_present_prob[i])) {
                       int index = vp8_rac_get_tree(c, vp7_feature_index_tree,
                                                    s->feature_index_prob[i]);
                       av_log(s->avctx, AV_LOG_WARNING,
