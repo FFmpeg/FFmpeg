@@ -577,8 +577,10 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
     filterSize = (minFilterSize + (filterAlign - 1)) & (~(filterAlign - 1));
     av_assert0(filterSize > 0);
     filter = av_malloc(filterSize * dstW * sizeof(*filter));
+    if (!filter)
+        goto fail;
     if (filterSize >= MAX_FILTER_SIZE * 16 /
-                      ((flags & SWS_ACCURATE_RND) ? APCK_SIZE : 16) || !filter) {
+                      ((flags & SWS_ACCURATE_RND) ? APCK_SIZE : 16)) {
         av_log(NULL, AV_LOG_ERROR, "sws: filterSize %d is too large, try less extreme scaling or increase MAX_FILTER_SIZE and recompile\n", filterSize);
         goto fail;
     }
