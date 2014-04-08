@@ -293,7 +293,7 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
         vlc->table_allocated = 0;
         vlc->table_size      = 0;
 
-        buf = av_malloc((nb_codes + 1) * sizeof(VLCcode));
+        buf = av_malloc_array((nb_codes + 1), sizeof(VLCcode));
         if (!buf)
             return AVERROR(ENOMEM);
     }
