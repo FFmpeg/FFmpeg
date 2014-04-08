@@ -220,9 +220,9 @@ static av_cold int a64multi_encode_init(AVCodecContext *avctx)
                            a64_palette[mc_colors[a]][2] * 0.11;
     }
 
-    if (!(c->mc_meta_charset = av_malloc(32000 * c->mc_lifetime * sizeof(int))) ||
+    if (!(c->mc_meta_charset = av_malloc_array(c->mc_lifetime, 32000 * sizeof(int))) ||
        !(c->mc_best_cb       = av_malloc(CHARSET_CHARS * 32 * sizeof(int)))     ||
-       !(c->mc_charmap       = av_mallocz(1000 * c->mc_lifetime * sizeof(int))) ||
+       !(c->mc_charmap       = av_mallocz_array(c->mc_lifetime, 1000 * sizeof(int))) ||
        !(c->mc_colram        = av_mallocz(CHARSET_CHARS * sizeof(uint8_t)))     ||
        !(c->mc_charset       = av_malloc(0x800 * (INTERLACED+1) * sizeof(uint8_t)))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to allocate buffer memory.\n");
