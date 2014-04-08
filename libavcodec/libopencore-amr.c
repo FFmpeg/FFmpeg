@@ -241,7 +241,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     if (frame) {
         if (frame->nb_samples < avctx->frame_size) {
-            flush_buf = av_mallocz(avctx->frame_size * sizeof(*flush_buf));
+            flush_buf = av_mallocz_array(avctx->frame_size, sizeof(*flush_buf));
             if (!flush_buf)
                 return AVERROR(ENOMEM);
             memcpy(flush_buf, samples, frame->nb_samples * sizeof(*flush_buf));
@@ -256,7 +256,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     } else {
         if (s->enc_last_frame < 0)
             return 0;
-        flush_buf = av_mallocz(avctx->frame_size * sizeof(*flush_buf));
+        flush_buf = av_mallocz_array(avctx->frame_size, sizeof(*flush_buf));
         if (!flush_buf)
             return AVERROR(ENOMEM);
         samples = flush_buf;
