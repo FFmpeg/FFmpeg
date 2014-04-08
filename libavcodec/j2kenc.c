@@ -343,14 +343,14 @@ static int init_tiles(Jpeg2000EncoderContext *s)
     s->numXtiles = ff_jpeg2000_ceildiv(s->width, s->tile_width);
     s->numYtiles = ff_jpeg2000_ceildiv(s->height, s->tile_height);
 
-    s->tile = av_malloc(s->numXtiles * s->numYtiles * sizeof(Jpeg2000Tile));
+    s->tile = av_malloc_array(s->numXtiles, s->numYtiles * sizeof(Jpeg2000Tile));
     if (!s->tile)
         return AVERROR(ENOMEM);
     for (tileno = 0, tiley = 0; tiley < s->numYtiles; tiley++)
         for (tilex = 0; tilex < s->numXtiles; tilex++, tileno++){
             Jpeg2000Tile *tile = s->tile + tileno;
 
-            tile->comp = av_mallocz(s->ncomponents * sizeof(Jpeg2000Component));
+            tile->comp = av_mallocz_array(s->ncomponents, sizeof(Jpeg2000Component));
             if (!tile->comp)
                 return AVERROR(ENOMEM);
             for (compno = 0; compno < s->ncomponents; compno++){
