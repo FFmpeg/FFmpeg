@@ -120,7 +120,7 @@ static const av_unused char *rtsp_status_strings[] = {
 };
 
 #define RTSP_STATUS_CODE2STRING(x) (\
-x >= 0 && x < FF_ARRAY_ELEMS(rtsp_status_strings) && rtsp_status_strings[x] \
+x >= 100 && x < FF_ARRAY_ELEMS(rtsp_status_strings) && rtsp_status_strings[x] \
 )? rtsp_status_strings[x] : NULL
 
 enum RTSPMethod {
