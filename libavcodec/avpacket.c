@@ -394,7 +394,7 @@ int av_packet_split_side_data(AVPacket *pkt){
             p-= size+5;
         }
 
-        pkt->side_data = av_malloc(i * sizeof(*pkt->side_data));
+        pkt->side_data = av_malloc_array(i, sizeof(*pkt->side_data));
         if (!pkt->side_data)
             return AVERROR(ENOMEM);
 
