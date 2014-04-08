@@ -334,7 +334,7 @@ static int init_filters(void)
     const char *filter_spec;
     unsigned int i;
     int ret;
-    filter_ctx = av_malloc(sizeof(FilteringContext) * ifmt_ctx->nb_streams);
+    filter_ctx = av_malloc_array(ifmt_ctx->nb_streams, sizeof(*filter_ctx));
     if (!filter_ctx)
         return AVERROR(ENOMEM);
 
