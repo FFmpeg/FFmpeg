@@ -77,6 +77,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
     x265_nal *nal;
+    char sar[10];
     int sar_num, sar_den;
     int nnal;
 
@@ -115,11 +116,11 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     av_reduce(&sar_num, &sar_den,
               avctx->sample_aspect_ratio.num,
               avctx->sample_aspect_ratio.den, 4096);
-    ctx->params->vui.bEnableVuiParametersPresentFlag = 1;
-    ctx->params->vui.bEnableAspectRatioIdc           = 1;
-    ctx->params->vui.aspectRatioIdc                  = 255;
-    ctx->params->vui.sarWidth                        = sar_num;
-    ctx->params->vui.sarHeight                       = sar_den;
+    snprintf(sar, sizeof(sar), "%d:%d", sar_num, sar_den);
+    if (x265_param_parse(ctx->params, "sar", sar) == X265_PARAM_BAD_VALUE) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid SAR: %d:%d.\n", sar_num, sar_den);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (x265_max_bit_depth == 8)
         ctx->params->internalBitDepth = 8;
