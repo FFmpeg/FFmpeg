@@ -457,7 +457,7 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
         sub->pts = ctx->pages->pts;
 
         if (ctx->pages->sub_rect->type != SUBTITLE_NONE) {
-            sub->rects = av_malloc(sizeof(*sub->rects) * 1);
+            sub->rects = av_malloc(sizeof(*sub->rects));
             if (sub->rects) {
                 sub->num_rects = 1;
                 sub->rects[0] = ctx->pages->sub_rect;
