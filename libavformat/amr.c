@@ -26,7 +26,6 @@ Only mono files are supported.
 
 */
 
-#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "internal.h"
@@ -116,7 +115,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EIO);
     }
 
-    // FIXME this is wrong, this should rather be in a AVParset
+    // FIXME this is wrong, this should rather be in a AVParser
     toc  = avio_r8(s->pb);
     mode = (toc >> 3) & 0x0F;
 
