@@ -119,8 +119,11 @@ static void mp3_write_xing(AVFormatContext *s)
     MPADecodeHeader  mpah;
     int srate_idx, i, channels;
     int bitrate_idx;
+    int best_bitrate_idx;
+    int best_bitrate_error = INT_MAX;
     int xing_offset;
     int ver = 0;
+    int lsf, bytes_needed;
 
     if (!s->pb->seekable || !mp3->write_xing)
         return;
@@ -150,21 +153,51 @@ static void mp3_write_xing(AVFormatContext *s)
              return;
     }
 
-    /* 64 kbps frame, should be large enough */
-    bitrate_idx = (ver == 3) ? 5 : 8;
-
     /* dummy MPEG audio header */
     header  =  0xff                                  << 24; // sync
     header |= (0x7 << 5 | ver << 3 | 0x1 << 1 | 0x1) << 16; // sync/audio-version/layer 3/no crc*/
-    header |= (bitrate_idx << 4 | srate_idx << 2)    <<  8;
+    header |= (srate_idx << 2) << 8;
     header |= channels << 6;
+
+    lsf = !((header & (1 << 20) && header & (1 << 19)));
+
+    xing_offset  = xing_offtbl[ver != 3][channels == 1];
+    bytes_needed = 4              // header
+                 + xing_offset
+                 + 4              // xing tag
+                 + 4              // frames/size/toc flags
+                 + 4              // frames
+                 + 4              // size
+                 + XING_TOC_SIZE; // toc
+
+    for (bitrate_idx = 1; bitrate_idx < 15; bitrate_idx++) {
+        int bit_rate = 1000 * avpriv_mpa_bitrate_tab[lsf][3 - 1][bitrate_idx];
+        int error    = FFABS(bit_rate - codec->bit_rate);
+
+        if (error < best_bitrate_error){
+            best_bitrate_error = error;
+            best_bitrate_idx   = bitrate_idx;
+        }
+    }
+
+    for (bitrate_idx = best_bitrate_idx; bitrate_idx < 15; bitrate_idx++) {
+        int32_t mask = bitrate_idx << (4 + 8);
+        header |= mask;
+
+        avpriv_mpegaudio_decode_header(&mpah, header);
+
+        if (bytes_needed <= mpah.frame_size)
+            break;
+
+        header &= ~mask;
+    }
+
     avio_wb32(s->pb, header);
 
     avpriv_mpegaudio_decode_header(&mpah, header);
 
     av_assert0(mpah.frame_size >= XING_MAX_SIZE);
 
-    xing_offset = xing_offtbl[ver != 3][codec->channels == 1];
     ffio_fill(s->pb, 0, xing_offset);
     mp3->xing_offset = avio_tell(s->pb);
     ffio_wfourcc(s->pb, "Xing");
@@ -180,8 +213,7 @@ static void mp3_write_xing(AVFormatContext *s)
     for (i = 0; i < XING_TOC_SIZE; i++)
         avio_w8(s->pb, 255 * i / XING_TOC_SIZE);
 
-    mpah.frame_size -= 4 + xing_offset + 4 + 4 + 4 + 4 + XING_TOC_SIZE;
-    ffio_fill(s->pb, 0, mpah.frame_size);
+    ffio_fill(s->pb, 0, mpah.frame_size - bytes_needed);
 }
 
 /*
