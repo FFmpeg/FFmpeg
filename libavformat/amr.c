@@ -26,7 +26,6 @@ Only mono files are supported.
 
 */
 
-#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "internal.h"
