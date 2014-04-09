@@ -246,7 +246,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     if (aspect_ratio == 0.0)
         aspect_ratio = 1.0;             // pixel aspect 1.1 (VGA)
 
-    if (s->current_picture.f.key_frame) {
+    if (s->current_picture.f->key_frame) {
         AVRational framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
 
         /* mpeg1 header repeated every gop */
@@ -336,10 +336,10 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         /* time code: we must convert from the real frame rate to a
          * fake MPEG frame rate in case of low frame rate */
         fps       = (framerate.num + framerate.den / 2) / framerate.den;
-        time_code = s->current_picture_ptr->f.coded_picture_number +
+        time_code = s->current_picture_ptr->f->coded_picture_number +
                     s->avctx->timecode_frame_start;
 
-        s->gop_picture_number = s->current_picture_ptr->f.coded_picture_number;
+        s->gop_picture_number = s->current_picture_ptr->f->coded_picture_number;
 
         av_assert0(s->drop_frame_timecode == !!(s->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
         if (s->drop_frame_timecode)
@@ -451,7 +451,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         if (s->progressive_sequence)
             put_bits(&s->pb, 1, 0);             /* no repeat */
         else
-            put_bits(&s->pb, 1, s->current_picture_ptr->f.top_field_first);
+            put_bits(&s->pb, 1, s->current_picture_ptr->f->top_field_first);
         /* XXX: optimize the generation of this flag with entropy measures */
         s->frame_pred_frame_dct = s->progressive_sequence;
 
@@ -475,7 +475,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         for (i = 0; i < sizeof(svcd_scan_offset_placeholder); i++)
             put_bits(&s->pb, 8, svcd_scan_offset_placeholder[i]);
     }
-    side_data = av_frame_get_side_data(&s->current_picture_ptr->f,
+    side_data = av_frame_get_side_data(s->current_picture_ptr->f,
                                        AV_FRAME_DATA_STEREO3D);
     if (side_data) {
         AVStereo3D *stereo = (AVStereo3D *)side_data->data;

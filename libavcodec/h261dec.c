@@ -617,8 +617,8 @@ retry:
     }
 
     // for skipping the frame
-    s->current_picture.f.pict_type = s->pict_type;
-    s->current_picture.f.key_frame = s->pict_type == AV_PICTURE_TYPE_I;
+    s->current_picture.f->pict_type = s->pict_type;
+    s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
     if ((avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type == AV_PICTURE_TYPE_B) ||
         (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I) ||
@@ -641,10 +641,10 @@ retry:
     }
     ff_MPV_frame_end(s);
 
-    av_assert0(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
-    av_assert0(s->current_picture.f.pict_type == s->pict_type);
+    av_assert0(s->current_picture.f->pict_type == s->current_picture_ptr->f->pict_type);
+    av_assert0(s->current_picture.f->pict_type == s->pict_type);
 
-    if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
+    if ((ret = av_frame_ref(pict, s->current_picture_ptr->f)) < 0)
         return ret;
     ff_print_debug_info(s, s->current_picture_ptr, pict);
 

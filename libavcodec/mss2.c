@@ -417,7 +417,7 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
 
     ff_MPV_frame_end(s);
 
-    f = &s->current_picture.f;
+    f = s->current_picture.f;
 
     if (v->respic == 3) {
         ctx->dsp.upsample_plane(f->data[0], f->linesize[0], w,      h);

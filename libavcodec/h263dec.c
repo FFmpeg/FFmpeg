@@ -394,7 +394,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (buf_size == 0) {
         /* special case for last picture */
         if (s->low_delay == 0 && s->next_picture_ptr) {
-            if ((ret = av_frame_ref(pict, &s->next_picture_ptr->f)) < 0)
+            if ((ret = av_frame_ref(pict, s->next_picture_ptr->f)) < 0)
                 return ret;
             s->next_picture_ptr = NULL;
 
@@ -455,7 +455,7 @@ retry:
 
     /* We need to set current_picture_ptr before reading the header,
      * otherwise we cannot store anyting in there */
-    if (s->current_picture_ptr == NULL || s->current_picture_ptr->f.data[0]) {
+    if (s->current_picture_ptr == NULL || s->current_picture_ptr->f->data[0]) {
         int i = ff_find_unused_picture(s, 0);
         if (i < 0)
             return i;
@@ -531,8 +531,8 @@ retry:
         s->gob_index = ff_h263_get_gob_height(s);
 
     // for skipping the frame
-    s->current_picture.f.pict_type = s->pict_type;
-    s->current_picture.f.key_frame = s->pict_type == AV_PICTURE_TYPE_I;
+    s->current_picture.f->pict_type = s->pict_type;
+    s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
     /* skip B-frames if we don't have reference frames */
     if (s->last_picture_ptr == NULL &&
@@ -640,15 +640,15 @@ frame_end:
     if (!s->divx_packed && avctx->hwaccel)
         ff_thread_finish_setup(avctx);
 
-    av_assert1(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
-    av_assert1(s->current_picture.f.pict_type == s->pict_type);
+    av_assert1(s->current_picture.f->pict_type == s->current_picture_ptr->f->pict_type);
+    av_assert1(s->current_picture.f->pict_type == s->pict_type);
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-        if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
+        if ((ret = av_frame_ref(pict, s->current_picture_ptr->f)) < 0)
             return ret;
         ff_print_debug_info(s, s->current_picture_ptr, pict);
         ff_mpv_export_qp_table(s, pict, s->current_picture_ptr, FF_QSCALE_TYPE_MPEG1);
     } else if (s->last_picture_ptr != NULL) {
-        if ((ret = av_frame_ref(pict, &s->last_picture_ptr->f)) < 0)
+        if ((ret = av_frame_ref(pict, s->last_picture_ptr->f)) < 0)
             return ret;
         ff_print_debug_info(s, s->last_picture_ptr, pict);
         ff_mpv_export_qp_table(s, pict, s->last_picture_ptr, FF_QSCALE_TYPE_MPEG1);

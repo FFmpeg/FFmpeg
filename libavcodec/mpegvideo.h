@@ -92,7 +92,7 @@ struct MpegEncContext;
  * Picture.
  */
 typedef struct Picture{
-    struct AVFrame f;
+    struct AVFrame *f;
     uint8_t avframe_padding[1024]; // hack to allow linking to a avutil with larger AVFrame
     ThreadFrame tf;
 

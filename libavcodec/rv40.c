@@ -456,7 +456,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
         }
 
         for(j = 0; j < 16; j += 4){
-            Y = s->current_picture_ptr->f.data[0] + mb_x*16 + (row*16 + j) * s->linesize;
+            Y = s->current_picture_ptr->f->data[0] + mb_x*16 + (row*16 + j) * s->linesize;
             for(i = 0; i < 4; i++, Y += 4){
                 int ij = i + j;
                 int clip_cur = y_to_deblock & (MASK_CUR << ij) ? clip[POS_CUR] : 0;
@@ -501,7 +501,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
         }
         for(k = 0; k < 2; k++){
             for(j = 0; j < 2; j++){
-                C = s->current_picture_ptr->f.data[k + 1] + mb_x*8 + (row*8 + j*4) * s->uvlinesize;
+                C = s->current_picture_ptr->f->data[k + 1] + mb_x*8 + (row*8 + j*4) * s->uvlinesize;
                 for(i = 0; i < 2; i++, C += 4){
                     int ij = i + j*2;
                     int clip_cur = c_to_deblock[k] & (MASK_CUR << ij) ? clip[POS_CUR] : 0;

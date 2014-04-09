@@ -1605,8 +1605,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     avctx->coded_frame= s->current_picture;
 
     s->m.current_picture_ptr= &s->m.current_picture;
-    s->m.last_picture.f.pts = s->m.current_picture.f.pts;
-    s->m.current_picture.f.pts = pict->pts;
+    s->m.current_picture.f = s->current_picture;
+    s->m.current_picture.f->pts = pict->pts;
     if(pic->pict_type == AV_PICTURE_TYPE_P){
         int block_width = (width +15)>>4;
         int block_height= (height+15)>>4;
@@ -1616,14 +1616,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         av_assert0(s->last_picture[0]->data[0]);
 
         s->m.avctx= s->avctx;
-        s->m.current_picture.f.data[0] = s->current_picture->data[0];
-        s->m.   last_picture.f.data[0] = s->last_picture[0]->data[0];
-        s->m.    new_picture.f.data[0] = s->  input_picture->data[0];
+        s->m.   last_picture.f = s->last_picture[0];
+        s->m.    new_picture.f = s->input_picture;
+        s->m.current_picture.f->data[0] = s->current_picture->data[0];
+        s->m.   last_picture.f->data[0] = s->last_picture[0]->data[0];
+        s->m.    new_picture.f->data[0] = s->  input_picture->data[0];
         s->m.   last_picture_ptr= &s->m.   last_picture;
         s->m.linesize=
-        s->m.   last_picture.f.linesize[0] =
-        s->m.    new_picture.f.linesize[0] =
-        s->m.current_picture.f.linesize[0] = stride;
+        s->m.   last_picture.f->linesize[0] =
+        s->m.    new_picture.f->linesize[0] =
+        s->m.current_picture.f->linesize[0] = stride;
         s->m.uvlinesize= s->current_picture->linesize[1];
         s->m.width = width;
         s->m.height= height;
@@ -1815,9 +1817,9 @@ redo_frame:
     s->current_picture->quality = pict->quality;
     s->m.frame_bits = 8*(s->c.bytestream - s->c.bytestream_start);
     s->m.p_tex_bits = s->m.frame_bits - s->m.misc_bits - s->m.mv_bits;
-    s->m.current_picture.f.display_picture_number =
-    s->m.current_picture.f.coded_picture_number   = avctx->frame_number;
-    s->m.current_picture.f.quality                = pic->quality;
+    s->m.current_picture.f->display_picture_number =
+    s->m.current_picture.f->coded_picture_number   = avctx->frame_number;
+    s->m.current_picture.f->quality                = pic->quality;
     s->m.total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
     if(s->pass1_rc)
         if (ff_rate_estimate_qscale(&s->m, 0) < 0)

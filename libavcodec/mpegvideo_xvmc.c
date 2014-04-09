@@ -42,7 +42,7 @@
  */
 void ff_xvmc_init_block(MpegEncContext *s)
 {
-    struct xvmc_pix_fmt *render = (struct xvmc_pix_fmt*)s->current_picture.f.data[2];
+    struct xvmc_pix_fmt *render = (struct xvmc_pix_fmt*)s->current_picture.f->data[2];
     assert(render && render->xvmc_id == AV_XVMC_ID);
 
     s->block = (int16_t (*)[64])(render->data_blocks + render->next_free_data_block_num * 64);
@@ -87,7 +87,7 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
 static int ff_xvmc_field_start(AVCodecContext *avctx, const uint8_t *buf, uint32_t buf_size)
 {
     struct MpegEncContext *s = avctx->priv_data;
-    struct xvmc_pix_fmt *last, *next, *render = (struct xvmc_pix_fmt*)s->current_picture.f.data[2];
+    struct xvmc_pix_fmt *last, *next, *render = (struct xvmc_pix_fmt*)s->current_picture.f->data[2];
     const int mb_block_count = 4 + (1 << s->chroma_format);
 
     assert(avctx);
@@ -127,7 +127,7 @@ static int ff_xvmc_field_start(AVCodecContext *avctx, const uint8_t *buf, uint32
         case  AV_PICTURE_TYPE_I:
             return 0; // no prediction from other frames
         case  AV_PICTURE_TYPE_B:
-            next = (struct xvmc_pix_fmt*)s->next_picture.f.data[2];
+            next = (struct xvmc_pix_fmt*)s->next_picture.f->data[2];
             if (!next)
                 return -1;
             if (next->xvmc_id != AV_XVMC_ID)
@@ -135,7 +135,7 @@ static int ff_xvmc_field_start(AVCodecContext *avctx, const uint8_t *buf, uint32
             render->p_future_surface = next->p_surface;
             // no return here, going to set forward prediction
         case  AV_PICTURE_TYPE_P:
-            last = (struct xvmc_pix_fmt*)s->last_picture.f.data[2];
+            last = (struct xvmc_pix_fmt*)s->last_picture.f->data[2];
             if (!last)
                 last = render; // predict second field from the first
             if (last->xvmc_id != AV_XVMC_ID)
@@ -156,7 +156,7 @@ return -1;
 static int ff_xvmc_field_end(AVCodecContext *avctx)
 {
     struct MpegEncContext *s = avctx->priv_data;
-    struct xvmc_pix_fmt *render = (struct xvmc_pix_fmt*)s->current_picture.f.data[2];
+    struct xvmc_pix_fmt *render = (struct xvmc_pix_fmt*)s->current_picture.f->data[2];
     assert(render);
 
     if (render->filled_mv_blocks_num > 0)
@@ -198,7 +198,7 @@ static void ff_xvmc_decode_mb(struct MpegEncContext *s)
     s->current_picture.qscale_table[mb_xy] = s->qscale;
 
     // start of XVMC-specific code
-    render = (struct xvmc_pix_fmt*)s->current_picture.f.data[2];
+    render = (struct xvmc_pix_fmt*)s->current_picture.f->data[2];
     assert(render);
     assert(render->xvmc_id == AV_XVMC_ID);
     assert(render->mv_blocks);

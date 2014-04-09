@@ -276,10 +276,10 @@ int ff_msmpeg4_pred_dc(MpegEncContext *s, int n,
                 int bs = 8 >> s->avctx->lowres;
                 if(n<4){
                     wrap= s->linesize;
-                    dest= s->current_picture.f.data[0] + (((n >> 1) + 2*s->mb_y) * bs*  wrap ) + ((n & 1) + 2*s->mb_x) * bs;
+                    dest= s->current_picture.f->data[0] + (((n >> 1) + 2*s->mb_y) * bs*  wrap ) + ((n & 1) + 2*s->mb_x) * bs;
                 }else{
                     wrap= s->uvlinesize;
-                    dest= s->current_picture.f.data[n - 3] + (s->mb_y * bs * wrap) + s->mb_x * bs;
+                    dest= s->current_picture.f->data[n - 3] + (s->mb_y * bs * wrap) + s->mb_x * bs;
                 }
                 if(s->mb_x==0) a= (1024 + (scale>>1))/scale;
                 else           a= get_dc(dest-bs, wrap, scale*8>>(2*s->avctx->lowres), bs);

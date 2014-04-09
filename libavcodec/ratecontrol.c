@@ -48,10 +48,10 @@ void ff_write_pass1_stats(MpegEncContext *s)
     snprintf(s->avctx->stats_out, 256,
              "in:%d out:%d type:%d q:%d itex:%d ptex:%d mv:%d misc:%d "
              "fcode:%d bcode:%d mc-var:%"PRId64" var:%"PRId64" icount:%d skipcount:%d hbits:%d;\n",
-             s->current_picture_ptr->f.display_picture_number,
-             s->current_picture_ptr->f.coded_picture_number,
+             s->current_picture_ptr->f->display_picture_number,
+             s->current_picture_ptr->f->coded_picture_number,
              s->pict_type,
-             s->current_picture.f.quality,
+             s->current_picture.f->quality,
              s->i_tex_bits,
              s->p_tex_bits,
              s->mv_bits,
@@ -800,10 +800,10 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         else
             dts_pic = s->last_picture_ptr;
 
-        if (!dts_pic || dts_pic->f.pts == AV_NOPTS_VALUE)
+        if (!dts_pic || dts_pic->f->pts == AV_NOPTS_VALUE)
             wanted_bits = (uint64_t)(s->bit_rate * (double)picture_number / fps);
         else
-            wanted_bits = (uint64_t)(s->bit_rate * (double)dts_pic->f.pts / fps);
+            wanted_bits = (uint64_t)(s->bit_rate * (double)dts_pic->f->pts / fps);
     }
 
     diff = s->total_bits - wanted_bits;

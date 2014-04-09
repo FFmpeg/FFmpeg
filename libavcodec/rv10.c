@@ -585,7 +585,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
             return ret;
         ff_mpeg_er_frame_start(s);
     } else {
-        if (s->current_picture_ptr->f.pict_type != s->pict_type) {
+        if (s->current_picture_ptr->f->pict_type != s->pict_type) {
             av_log(s->avctx, AV_LOG_ERROR, "Slice type mismatch\n");
             return AVERROR_INVALIDDATA;
         }
@@ -762,12 +762,12 @@ static int rv10_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         ff_MPV_frame_end(s);
 
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-            if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
+            if ((ret = av_frame_ref(pict, s->current_picture_ptr->f)) < 0)
                 return ret;
             ff_print_debug_info(s, s->current_picture_ptr, pict);
             ff_mpv_export_qp_table(s, pict, s->current_picture_ptr, FF_QSCALE_TYPE_MPEG1);
         } else if (s->last_picture_ptr != NULL) {
-            if ((ret = av_frame_ref(pict, &s->last_picture_ptr->f)) < 0)
+            if ((ret = av_frame_ref(pict, s->last_picture_ptr->f)) < 0)
                 return ret;
             ff_print_debug_info(s, s->last_picture_ptr, pict);
             ff_mpv_export_qp_table(s, pict,s->last_picture_ptr, FF_QSCALE_TYPE_MPEG1);
