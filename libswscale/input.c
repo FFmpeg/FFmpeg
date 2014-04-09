@@ -539,7 +539,7 @@ static void yvy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, con
         dstV[i] = src1[4 * i + 1];
         dstU[i] = src1[4 * i + 3];
     }
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
 }
 
 static void bswap16Y_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1, const uint8_t *unused2, int width,
