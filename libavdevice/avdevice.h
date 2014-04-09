@@ -140,7 +140,20 @@ enum AVAppToDevMessageType {
      * data: AVDeviceRect: area required to be repainted.
      *       NULL: whole area is required to be repainted.
      */
-    AV_APP_TO_DEV_WINDOW_REPAINT = MKBETAG('R','E','P','A')
+    AV_APP_TO_DEV_WINDOW_REPAINT = MKBETAG('R','E','P','A'),
+
+    /**
+     * Request pause/play.
+     *
+     * Application requests pause/unpause playback.
+     * Mostly usable with devices that have internal buffer.
+     * By default devices are not paused.
+     *
+     * data: NULL
+     */
+    AV_APP_TO_DEV_PAUSE        = MKBETAG('P', 'A', 'U', ' '),
+    AV_APP_TO_DEV_PLAY         = MKBETAG('P', 'L', 'A', 'Y'),
+    AV_APP_TO_DEV_TOGGLE_PAUSE = MKBETAG('P', 'A', 'U', 'T'),
 };
 
 /**
@@ -199,7 +212,31 @@ enum AVDevToAppMessageType {
      *
      * data: NULL.
      */
-    AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER = MKBETAG('B','D','E','S')
+    AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER = MKBETAG('B','D','E','S'),
+
+    /**
+     * Buffer fullness status messages.
+     *
+     * Device signals buffer overflow/underflow.
+     *
+     * data: NULL.
+     */
+    AV_DEV_TO_APP_BUFFER_OVERFLOW = MKBETAG('B','O','F','L'),
+    AV_DEV_TO_APP_BUFFER_UNDERFLOW = MKBETAG('B','U','F','L'),
+
+    /**
+     * Buffer readable/writable.
+     *
+     * Device informs that buffer is readable/writable.
+     * When possible, device informs how many bytes can be read/write.
+     *
+     * @warning Device may not inform when number of bytes than can be read/write changes.
+     *
+     * data: int64_t: amount of bytes available to read/write.
+     *       NULL: amount of bytes available to read/write is not known.
+     */
+    AV_DEV_TO_APP_BUFFER_READABLE = MKBETAG('B','R','D',' '),
+    AV_DEV_TO_APP_BUFFER_WRITABLE = MKBETAG('B','W','R',' '),
 };
 
 /**
