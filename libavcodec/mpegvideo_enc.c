@@ -1703,7 +1703,7 @@ vbv_retry:
                 goto vbv_retry;
             }
 
-            assert(s->avctx->rc_max_rate);
+            av_assert0(s->avctx->rc_max_rate);
         }
 
         if (s->flags & CODEC_FLAG_PASS1)
@@ -1812,7 +1812,7 @@ vbv_retry:
             ff_mpeg_unref_picture(s, &s->picture[i]);
     }
 
-    assert((s->frame_bits & 7) == 0);
+    av_assert1((s->frame_bits & 7) == 0);
 
     pkt->size = s->frame_bits / 8;
     *got_packet = !!pkt->size;
@@ -2417,7 +2417,7 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
         s->dest[0] = s->rd_scratchpad;
         s->dest[1] = s->rd_scratchpad + 16*s->linesize;
         s->dest[2] = s->rd_scratchpad + 16*s->linesize + 8;
-        assert(s->linesize >= 32); //FIXME
+        av_assert0(s->linesize >= 32); //FIXME
     }
 
     encode_mb(s, motion_x, motion_y);
@@ -3337,7 +3337,7 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
 
 /* must be called before writing the header */
 static void set_frame_distances(MpegEncContext * s){
-    assert(s->current_picture_ptr->f->pts != AV_NOPTS_VALUE);
+    av_assert1(s->current_picture_ptr->f->pts != AV_NOPTS_VALUE);
     s->time = s->current_picture_ptr->f->pts * s->avctx->time_base.num;
 
     if(s->pict_type==AV_PICTURE_TYPE_B){
