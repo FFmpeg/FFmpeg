@@ -112,6 +112,11 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
         if (avpriv_mpa_bitrate_tab[s->lsf][1][i] == bitrate)
             break;
     }
+    if (i == 15 && !avctx->bit_rate) {
+        i = 14;
+        bitrate = avpriv_mpa_bitrate_tab[s->lsf][1][i];
+        avctx->bit_rate = bitrate * 1000;
+    }
     if (i == 15){
         av_log(avctx, AV_LOG_ERROR, "bitrate %d is not allowed in mp2\n", bitrate);
         return AVERROR(EINVAL);
@@ -774,7 +779,7 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 static const AVCodecDefault mp2_defaults[] = {
-    { "b", "128k" },
+    { "b", "0" },
     { NULL },
 };
 
