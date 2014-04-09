@@ -373,16 +373,6 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
             line += picture->linesize[0];
         }
     }
-    if (avctx->codec_tag == AV_RL32("YVYU") &&
-        avctx->pix_fmt   == AV_PIX_FMT_YUYV422) {
-        int x, y;
-        uint8_t *line = picture->data[0];
-        for(y = 0; y < avctx->height; y++) {
-            for(x = 0; x < avctx->width - 1; x += 2)
-                FFSWAP(uint8_t, line[2*x + 1], line[2*x + 3]);
-            line += picture->linesize[0];
-        }
-    }
 
     if (avctx->field_order > AV_FIELD_PROGRESSIVE) { /* we have interlaced material flagged in container */
         frame->interlaced_frame = 1;
