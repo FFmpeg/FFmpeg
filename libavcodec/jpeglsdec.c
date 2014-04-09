@@ -114,7 +114,7 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
         }
         break;
     case 4:
-        av_log(s->avctx, AV_LOG_ERROR, "oversize image not supported\n");
+        avpriv_request_sample(s->avctx, "oversize image");
         return AVERROR(ENOSYS);
     default:
         av_log(s->avctx, AV_LOG_ERROR, "invalid id %d\n", id);
