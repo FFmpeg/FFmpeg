@@ -1618,14 +1618,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->m.avctx= s->avctx;
         s->m.   last_picture.f = s->last_picture[0];
         s->m.    new_picture.f = s->input_picture;
-        s->m.current_picture.f->data[0] = s->current_picture->data[0];
-        s->m.   last_picture.f->data[0] = s->last_picture[0]->data[0];
-        s->m.    new_picture.f->data[0] = s->  input_picture->data[0];
         s->m.   last_picture_ptr= &s->m.   last_picture;
-        s->m.linesize=
-        s->m.   last_picture.f->linesize[0] =
-        s->m.    new_picture.f->linesize[0] =
-        s->m.current_picture.f->linesize[0] = stride;
+        s->m.linesize = stride;
         s->m.uvlinesize= s->current_picture->linesize[1];
         s->m.width = width;
         s->m.height= height;
