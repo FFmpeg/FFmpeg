@@ -390,6 +390,7 @@ static int decode_stream_header(NUTContext *nut)
         st->codec->codec_id   = av_codec_get_id((const AVCodecTag * const []) {
                                                     ff_nut_audio_tags,
                                                     ff_codec_wav_tags,
+                                                    ff_nut_audio_extra_tags,
                                                     0
                                                 },
                                                 tmp);
