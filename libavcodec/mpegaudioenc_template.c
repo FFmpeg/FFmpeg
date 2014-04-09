@@ -108,7 +108,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     s->freq_index = i;
 
     /* encoding bitrate & frequency */
-    for(i=0;i<15;i++) {
+    for(i=1;i<15;i++) {
         if (avpriv_mpa_bitrate_tab[s->lsf][1][i] == bitrate)
             break;
     }
