@@ -28,6 +28,7 @@
 #ifndef AVCODEC_DIRAC_ARITH_H
 #define AVCODEC_DIRAC_ARITH_H
 
+#include "libavutil/x86/asm.h"
 #include "bytestream.h"
 #include "get_bits.h"
 
@@ -134,7 +135,7 @@ static inline int dirac_get_arith_bit(DiracArith *c, int ctx)
 
     range_times_prob = (c->range * prob_zero) >> 16;
 
-#if HAVE_FAST_CMOV && HAVE_INLINE_ASM
+#if HAVE_FAST_CMOV && HAVE_INLINE_ASM && HAVE_6REGS
     low   -= range_times_prob << 16;
     range -= range_times_prob;
     bit = 0;
