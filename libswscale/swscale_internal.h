@@ -783,6 +783,7 @@ static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
 #define isPacked(x)         (       \
            (x)==AV_PIX_FMT_PAL8        \
         || (x)==AV_PIX_FMT_YUYV422     \
+        || (x)==AV_PIX_FMT_YVYU422     \
         || (x)==AV_PIX_FMT_UYVY422     \
         || (x)==AV_PIX_FMT_Y400A       \
         ||  isRGBinInt(x)           \

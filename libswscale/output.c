@@ -526,7 +526,12 @@ YUV2PACKEDWRAPPER(yuv2mono,, black, AV_PIX_FMT_MONOBLACK)
         dest[pos + 1] = U;  \
         dest[pos + 2] = Y2; \
         dest[pos + 3] = V;  \
-    } else { \
+    } else if (target == AV_PIX_FMT_YVYU422) { \
+        dest[pos + 0] = Y1; \
+        dest[pos + 1] = V;  \
+        dest[pos + 2] = Y2; \
+        dest[pos + 3] = U;  \
+    } else { /* AV_PIX_FMT_UYVY422 */ \
         dest[pos + 0] = U;  \
         dest[pos + 1] = Y1; \
         dest[pos + 2] = V;  \
@@ -661,6 +666,7 @@ yuv2422_1_c_template(SwsContext *c, const int16_t *buf0,
 #undef output_pixels
 
 YUV2PACKEDWRAPPER(yuv2, 422, yuyv422, AV_PIX_FMT_YUYV422)
+YUV2PACKEDWRAPPER(yuv2, 422, yvyu422, AV_PIX_FMT_YVYU422)
 YUV2PACKEDWRAPPER(yuv2, 422, uyvy422, AV_PIX_FMT_UYVY422)
 
 #define R_B ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE) ? R : B)
@@ -2204,6 +2210,11 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         *yuv2packed1 = yuv2yuyv422_1_c;
         *yuv2packed2 = yuv2yuyv422_2_c;
         *yuv2packedX = yuv2yuyv422_X_c;
+        break;
+    case AV_PIX_FMT_YVYU422:
+        *yuv2packed1 = yuv2yvyu422_1_c;
+        *yuv2packed2 = yuv2yvyu422_2_c;
+        *yuv2packedX = yuv2yvyu422_X_c;
         break;
     case AV_PIX_FMT_UYVY422:
         *yuv2packed1 = yuv2uyvy422_1_c;
