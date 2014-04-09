@@ -24,6 +24,8 @@
 #ifndef AVFORMAT_RTSPCODES_H
 #define AVFORMAT_RTSPCODES_H
 
+#include "libavutil/common.h"
+
 /** RTSP handling */
 enum RTSPStatusCode {
 RTSP_STATUS_CONTINUE             =100,
