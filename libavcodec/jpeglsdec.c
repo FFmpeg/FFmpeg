@@ -52,11 +52,14 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
     int id;
     int tid, wt, maxtab, i, j;
 
-    int len = get_bits(&s->gb, 16);  /* length: FIXME: verify field validity */
+    int len = get_bits(&s->gb, 16);
     id = get_bits(&s->gb, 8);
 
     switch (id) {
     case 1:
+        if (len < 13)
+            return AVERROR_INVALIDDATA;
+
         s->maxval = get_bits(&s->gb, 16);
         s->t1     = get_bits(&s->gb, 16);
         s->t2     = get_bits(&s->gb, 16);
