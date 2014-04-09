@@ -807,7 +807,7 @@ check_oc(){
     log check_oc "$@"
     cat > $TMPM
     log_file $TMPM
-    check_cmd $cc $CPPFLAGS $CFLAGS "$@" $CC_C $(cc_o $TMPO) $TMPM
+    check_cmd $cc -Werror=missing-prototypes $CPPFLAGS $CFLAGS "$@" $CC_C $(cc_o $TMPO) $TMPM
 }
 
 check_cpp(){
