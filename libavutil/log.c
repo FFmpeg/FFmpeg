@@ -140,20 +140,24 @@ static void check_color_terminal(void)
 
 static void colored_fputs(int level, int tint, const char *str)
 {
+    int local_use_color;
     if (!*str)
         return;
 
     if (use_color < 0)
         check_color_terminal();
 
+    if (level == AV_LOG_INFO/8) local_use_color = 0;
+    else                        local_use_color = use_color;
+
 #if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
-    if (use_color && level != AV_LOG_INFO/8)
+    if (local_use_color)
         SetConsoleTextAttribute(con, background | color[level]);
     fputs(str, stderr);
-    if (use_color && level != AV_LOG_INFO/8)
+    if (local_use_color)
         SetConsoleTextAttribute(con, attr_orig);
 #else
-    if (use_color == 1 && level != AV_LOG_INFO/8) {
+    if (local_use_color == 1) {
         fprintf(stderr,
                 "\033[%d;3%dm%s\033[0m",
                 (color[level] >> 4) & 15,
@@ -165,7 +169,7 @@ static void colored_fputs(int level, int tint, const char *str)
                 (color[level] >> 16) & 0xff,
                 tint,
                 str);
-    } else if (use_color == 256 && level != AV_LOG_INFO/8) {
+    } else if (local_use_color == 256) {
         fprintf(stderr,
                 "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
                 (color[level] >> 16) & 0xff,
