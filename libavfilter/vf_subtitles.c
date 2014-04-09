@@ -107,7 +107,6 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    ass_set_fonts(ass->renderer, NULL, NULL, 1, NULL, 1);
     return 0;
 }
 
@@ -218,6 +217,9 @@ static av_cold int init_ass(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
+    /* Initialize fonts */
+    ass_set_fonts(ass->renderer, NULL, NULL, 1, NULL, 1);
+
     ass->track = ass_read_file(ass->library, ass->filename, NULL);
     if (!ass->track) {
         av_log(ctx, AV_LOG_ERROR,
@@ -249,11 +251,34 @@ static const AVOption subtitles_options[] = {
     {NULL},
 };
 
+static const char *font_mimetypes[] = {
+    "application/x-truetype-font",
+    "application/vnd.ms-opentype",
+    "application/x-font-ttf",
+    NULL
+};
+
+static int attachment_is_font(AVStream * st)
+{
+    const AVDictionaryEntry *tag = NULL;
+    int n;
+
+    tag = av_dict_get(st->metadata, "mimetype", NULL, AV_DICT_MATCH_CASE);
+
+    if (tag) {
+        for (n = 0; font_mimetypes[n]; n++) {
+            if (av_strcasecmp(font_mimetypes[n], tag->value) == 0)
+                return 1;
+        }
+    }
+    return 0;
+}
+
 AVFILTER_DEFINE_CLASS(subtitles);
 
 static av_cold int init_subtitles(AVFilterContext *ctx)
 {
-    int ret, sid;
+    int j, ret, sid;
     AVDictionary *codec_opts = NULL;
     AVFormatContext *fmt = NULL;
     AVCodecContext *dec_ctx = NULL;
@@ -292,6 +317,31 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     }
     sid = ret;
     st = fmt->streams[sid];
+
+    /* Load attached fonts */
+    for (j = 0; j < fmt->nb_streams; j++) {
+        AVStream *st = fmt->streams[j];
+        if (st->codec->codec_type == AVMEDIA_TYPE_ATTACHMENT &&
+            attachment_is_font(st)) {
+            const AVDictionaryEntry *tag = NULL;
+            tag = av_dict_get(st->metadata, "filename", NULL,
+                              AV_DICT_MATCH_CASE);
+
+            if (tag) {
+                av_log(ctx, AV_LOG_DEBUG, "Loading attached font: %s\n",
+                       tag->value);
+                ass_add_font(ass->library, tag->value,
+                             st->codec->extradata,
+                             st->codec->extradata_size);
+            } else {
+                av_log(ctx, AV_LOG_WARNING,
+                       "Font attachment has no filename, ignored.\n");
+            }
+        }
+    }
+
+    /* Initialize fonts */
+    ass_set_fonts(ass->renderer, NULL, NULL, 1, NULL, 1);
 
     /* Open decoder */
     dec_ctx = st->codec;
