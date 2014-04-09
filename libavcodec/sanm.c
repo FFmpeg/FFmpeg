@@ -511,7 +511,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
 
         ctx->subversion = AV_RL16(avctx->extradata);
-        for (i = 0; i < 256; i++)
+        for (i = 0; i < PALETTE_SIZE; i++)
             ctx->pal[i] = 0xFFU << 24 | AV_RL32(avctx->extradata + 2 + i * 4);
     }
 
