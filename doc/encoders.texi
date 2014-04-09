@@ -1566,25 +1566,34 @@ kilobits/s.
 
 @item g (@emph{keyint})
 
-@item qmax (@emph{qpmax})
-
 @item qmin (@emph{qpmin})
+Minimum quantizer scale.
+
+@item qmax (@emph{qpmax})
+Maximum quantizer scale.
 
 @item qdiff (@emph{qpstep})
+Maximum difference between quantizer scales.
 
 @item qblur (@emph{qblur})
+Quantizer curve blur
 
 @item qcomp (@emph{qcomp})
+Quantizer curve compression factor
 
 @item refs (@emph{ref})
+Number of reference frames each P-frame can use. The range is from @var{0-16}.
 
 @item sc_threshold (@emph{scenecut})
+Sets the threshold for the scene change detection.
 
 @item trellis (@emph{trellis})
+Performs Trellis quantization to increase efficiency. Enabled by default.
 
 @item nr  (@emph{nr})
 
 @item me_range (@emph{merange})
+Maximum range of the motion search in pixels.
 
 @item me_method (@emph{me})
 Set motion estimation method. Possible values in the decreasing order
@@ -1606,10 +1615,13 @@ Hadamard exhaustive search (slowest).
 @end table
 
 @item subq (@emph{subme})
+Sub-pixel motion estimation method.
 
 @item b_strategy (@emph{b-adapt})
+Adaptive B-frame placement decision algorithm. Use only on first-pass.
 
 @item keyint_min (@emph{min-keyint})
+Minimum GOP size.
 
 @item coder
 Set entropy encoder. Possible values:
@@ -1636,6 +1648,7 @@ Ignore chroma in motion estimation. It generates the same effect as
 @end table
 
 @item threads (@emph{threads})
+Number of encoding threads.
 
 @item thread_type
 Set multithreading technique. Possible values:
