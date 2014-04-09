@@ -172,12 +172,14 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
     }
     /* write WAVEFORMATEXTENSIBLE extensions */
     if (waveformatextensible) {
+        int write_channel_mask = enc->strict_std_compliance < FF_COMPLIANCE_NORMAL ||
+                                 enc->channel_layout < 0x40000;
         /* 22 is WAVEFORMATEXTENSIBLE size */
         avio_wl16(pb, riff_extradata - riff_extradata_start + 22);
         /* ValidBitsPerSample || SamplesPerBlock || Reserved */
         avio_wl16(pb, bps);
         /* dwChannelMask */
-        avio_wl32(pb, enc->channel_layout);
+        avio_wl32(pb, write_channel_mask ? enc->channel_layout : 0);
         /* GUID + next 3 */
         if (enc->codec_id == AV_CODEC_ID_EAC3) {
             ff_put_guid(pb, get_codec_guid(enc->codec_id, ff_codec_wav_guids));
