@@ -3546,6 +3546,8 @@ void avformat_free_context(AVFormatContext *s)
     av_opt_free(s);
     if (s->iformat && s->iformat->priv_class && s->priv_data)
         av_opt_free(s->priv_data);
+    if (s->oformat && s->oformat->priv_class && s->priv_data)
+        av_opt_free(s->priv_data);
 
     for (i = s->nb_streams - 1; i >= 0; i--) {
         ff_free_stream(s, s->streams[i]);
