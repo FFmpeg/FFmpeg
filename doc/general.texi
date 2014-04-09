@@ -920,7 +920,7 @@ following image formats are supported:
 @item Monkey's Audio         @tab     @tab  X
 @item MP1 (MPEG audio layer 1)  @tab     @tab IX
 @item MP2 (MPEG audio layer 2)  @tab IX  @tab IX
-    @tab libtwolame can be used alternatively for encoding.
+    @tab encoding supported also through external library TwoLAME
 @item MP3 (MPEG audio layer 3)  @tab  E  @tab IX
     @tab encoding supported through external library LAME, ADU MP3 and MP3onMP4 also supported
 @item MPEG-4 Audio Lossless Coding (ALS)  @tab     @tab  X
