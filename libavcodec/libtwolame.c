@@ -191,7 +191,6 @@ static const AVClass twolame_class = {
 
 static const AVCodecDefault twolame_defaults[] = {
     { "b", "384000" },
-    { "ar", "48000" },
     { NULL },
 };
 
