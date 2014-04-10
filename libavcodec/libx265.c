@@ -77,7 +77,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
     x265_nal *nal;
-    char sar[10];
+    char sar[12];
     int sar_num, sar_den;
     int nnal;
 
@@ -115,7 +115,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 
     av_reduce(&sar_num, &sar_den,
               avctx->sample_aspect_ratio.num,
-              avctx->sample_aspect_ratio.den, 4096);
+              avctx->sample_aspect_ratio.den, 65535);
     snprintf(sar, sizeof(sar), "%d:%d", sar_num, sar_den);
     if (x265_param_parse(ctx->params, "sar", sar) == X265_PARAM_BAD_VALUE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid SAR: %d:%d.\n", sar_num, sar_den);
