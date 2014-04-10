@@ -32,6 +32,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/rational.h"
+#include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "audio.h"
@@ -151,7 +152,7 @@ AVFilter ff_vf_settb = {
     .inputs      = avfilter_vf_settb_inputs,
     .outputs     = avfilter_vf_settb_outputs,
 };
-#endif
+#endif /* CONFIG_SETTB_FILTER */
 
 #if CONFIG_ASETTB_FILTER
 
@@ -184,4 +185,4 @@ AVFilter ff_af_asettb = {
     .outputs     = avfilter_af_asettb_outputs,
     .priv_class  = &asettb_class,
 };
-#endif
+#endif /* CONFIG_ASETTB_FILTER */
