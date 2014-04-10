@@ -113,13 +113,15 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->sourceWidth     = avctx->width;
     ctx->params->sourceHeight    = avctx->height;
 
-    av_reduce(&sar_num, &sar_den,
-              avctx->sample_aspect_ratio.num,
-              avctx->sample_aspect_ratio.den, 65535);
-    snprintf(sar, sizeof(sar), "%d:%d", sar_num, sar_den);
-    if (x265_param_parse(ctx->params, "sar", sar) == X265_PARAM_BAD_VALUE) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid SAR: %d:%d.\n", sar_num, sar_den);
-        return AVERROR_INVALIDDATA;
+    if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
+        av_reduce(&sar_num, &sar_den,
+                  avctx->sample_aspect_ratio.num,
+                  avctx->sample_aspect_ratio.den, 65535);
+        snprintf(sar, sizeof(sar), "%d:%d", sar_num, sar_den);
+        if (x265_param_parse(ctx->params, "sar", sar) == X265_PARAM_BAD_VALUE) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid SAR: %d:%d.\n", sar_num, sar_den);
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     if (x265_max_bit_depth == 8)
