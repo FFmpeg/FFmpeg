@@ -316,6 +316,7 @@ void term_exit(void)
 
 static volatile int received_sigterm = 0;
 static volatile int received_nb_signals = 0;
+static volatile int transcode_init_done = 0;
 static int main_return_code = 0;
 
 static void
@@ -422,7 +423,7 @@ static int read_key(void)
 
 static int decode_interrupt_cb(void *ctx)
 {
-    return received_nb_signals > 1;
+    return received_nb_signals > transcode_init_done;
 }
 
 const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
@@ -2888,6 +2889,8 @@ static int transcode_init(void)
     if (want_sdp) {
         print_sdp();
     }
+
+    transcode_init_done = 1;
 
     return 0;
 }
