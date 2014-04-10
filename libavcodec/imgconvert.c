@@ -130,13 +130,18 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
 
     src_color = get_color_type(src_desc);
     dst_color = get_color_type(dst_desc);
-    nb_components = FFMIN(src_desc->nb_components, dst_desc->nb_components);
+    if (dst_pix_fmt == AV_PIX_FMT_PAL8)
+        nb_components = FFMIN(src_desc->nb_components, 4);
+    else
+        nb_components = FFMIN(src_desc->nb_components, dst_desc->nb_components);
 
-    for (i = 0; i < nb_components; i++)
-        if (src_desc->comp[i].depth_minus1 > dst_desc->comp[i].depth_minus1 && (consider & FF_LOSS_DEPTH)) {
+    for (i = 0; i < nb_components; i++) {
+        int depth_minus1 = (dst_pix_fmt == AV_PIX_FMT_PAL8) ? 7/nb_components : dst_desc->comp[i].depth_minus1;
+        if (src_desc->comp[i].depth_minus1 > depth_minus1 && (consider & FF_LOSS_DEPTH)) {
             loss |= FF_LOSS_DEPTH;
-            score -= 65536 >> dst_desc->comp[i].depth_minus1;
+            score -= 65536 >> depth_minus1;
         }
+    }
 
     if (consider & FF_LOSS_RESOLUTION) {
         if (dst_desc->log2_chroma_w > src_desc->log2_chroma_w) {
