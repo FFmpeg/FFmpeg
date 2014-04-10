@@ -811,14 +811,14 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
 
         if (ff_id3v2_match(buf, ID3v2_DEFAULT_MAGIC)) {
             struct segment *seg = pls->segments[pls->cur_seq_no - pls->start_seq_no];
-            int64_t segsize = seg->size >= 0 ? seg->size : ffurl_size(pls->input);
+            int64_t maxsize = seg->size >= 0 ? seg->size : 1024*1024;
             int taglen = ff_id3v2_tag_len(buf);
             int tag_got_bytes = FFMIN(taglen, *len);
             int remaining = taglen - tag_got_bytes;
 
-            if (taglen > segsize) {
-                av_log(pls->ctx, AV_LOG_ERROR, "Too large HLS ID3 tag (%d vs %"PRId64")\n",
-                       taglen, segsize);
+            if (taglen > maxsize) {
+                av_log(pls->ctx, AV_LOG_ERROR, "Too large HLS ID3 tag (%d > %"PRId64" bytes)\n",
+                       taglen, maxsize);
                 break;
             }
 
@@ -956,7 +956,7 @@ static int open_input(HLSContext *c, struct playlist *pls)
     /* Seek to the requested position. If this was a HTTP request, the offset
      * should already be where want it to, but this allows e.g. local testing
      * without a HTTP server. */
-    if (ret == 0) {
+    if (ret == 0 && seg->key_type == KEY_NONE) {
         int seekret = ffurl_seek(pls->input, seg->url_offset, SEEK_SET);
         if (seekret < 0) {
             av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
