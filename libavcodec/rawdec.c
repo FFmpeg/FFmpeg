@@ -80,8 +80,6 @@ static const PixelFormatTag pix_fmt_bps_mov[] = {
     { AV_PIX_FMT_PAL8,      2 },
     { AV_PIX_FMT_PAL8,      4 },
     { AV_PIX_FMT_PAL8,      8 },
-    // FIXME swscale does not support 16 bit in .mov, sample 16bit.mov
-    // http://developer.apple.com/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html
     { AV_PIX_FMT_RGB555BE, 16 },
     { AV_PIX_FMT_RGB24,    24 },
     { AV_PIX_FMT_ARGB,     32 },
