@@ -35,7 +35,6 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "audio.h"
 #include "video.h"
 
 static const char *const var_names[] = {
