@@ -30,6 +30,11 @@ Only mono files are supported.
 #include "avformat.h"
 #include "internal.h"
 
+typedef struct {
+    uint64_t cumulated_size;
+    uint64_t block_count;
+} AMRContext;
+
 static const char AMR_header[]   = "#!AMR\n";
 static const char AMRWB_header[] = "#!AMR-WB\n";
 
@@ -110,6 +115,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *enc = s->streams[0]->codec;
     int read, size = 0, toc, mode;
     int64_t pos = avio_tell(s->pb);
+    AMRContext *amr = s->priv_data;
 
     if (url_feof(s->pb)) {
         return AVERROR(EIO);
@@ -136,8 +142,11 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (!size || av_new_packet(pkt, size))
         return AVERROR(EIO);
 
-    /* Both AMR formats have 50 frames per second */
-    s->streams[0]->codec->bit_rate = size*8*50;
+    if (amr->cumulated_size < UINT64_MAX - size) {
+        amr->cumulated_size += size;
+        /* Both AMR formats have 50 frames per second */
+        s->streams[0]->codec->bit_rate = amr->cumulated_size / ++amr->block_count * 8 * 50;
+    }
 
     pkt->stream_index = 0;
     pkt->pos          = pos;
@@ -157,6 +166,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
 AVInputFormat ff_amr_demuxer = {
     .name           = "amr",
     .long_name      = NULL_IF_CONFIG_SMALL("3GPP AMR"),
+    .priv_data_size = sizeof(AMRContext),
     .read_probe     = amr_probe,
     .read_header    = amr_read_header,
     .read_packet    = amr_read_packet,
