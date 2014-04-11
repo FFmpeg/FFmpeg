@@ -36,7 +36,7 @@
 
 enum { Y, U, V, A };
 
-typedef struct {
+typedef struct DrawBoxContext {
     const AVClass *class;
     int x, y, w_opt, h_opt, w, h;
     char *color_str;

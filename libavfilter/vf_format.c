@@ -35,7 +35,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct FormatContext {
     const AVClass *class;
     char *pix_fmts;
     /**

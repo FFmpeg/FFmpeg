@@ -35,7 +35,7 @@
 #include "buffersink.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct BufferSinkContext {
     AVFrame *cur_frame;          ///< last frame delivered on the sink
     AVAudioFifo *audio_fifo;     ///< FIFO for audio samples
     int64_t next_pts;            ///< interpolating audio pts

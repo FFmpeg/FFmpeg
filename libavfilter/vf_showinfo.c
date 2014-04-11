@@ -34,7 +34,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct ShowInfoContext {
     unsigned int frame;
 } ShowInfoContext;
 

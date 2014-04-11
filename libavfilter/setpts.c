@@ -73,7 +73,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct SetPTSContext {
     const AVClass *class;
     char *expr_str;
     AVExpr *expr;

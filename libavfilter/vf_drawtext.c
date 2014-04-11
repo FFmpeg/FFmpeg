@@ -105,7 +105,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct DrawTextContext {
     const AVClass *class;
 #if CONFIG_LIBFONTCONFIG
     uint8_t *font;              ///< font to be used
@@ -223,7 +223,7 @@ struct ft_error
 
 #define FT_ERRMSG(e) ft_errors[e].err_msg
 
-typedef struct {
+typedef struct Glyph {
     FT_Glyph *glyph;
     uint32_t code;
     FT_Bitmap bitmap; ///< array holding bitmaps of font

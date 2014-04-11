@@ -40,7 +40,7 @@
 #include "libavutil/parseutils.h"
 #include "drawutils.h"
 
-typedef struct {
+typedef struct ColorContext {
     const AVClass *class;
     int w, h;
     uint8_t color[4];

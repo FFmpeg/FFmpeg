@@ -41,7 +41,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct MovieContext {
     const AVClass *class;
     int64_t seek_point;   ///< seekpoint in microseconds
     double seek_point_d;

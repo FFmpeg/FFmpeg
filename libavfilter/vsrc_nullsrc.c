@@ -49,7 +49,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct NullContext {
     const AVClass *class;
     int w, h;
     char *tb_expr;

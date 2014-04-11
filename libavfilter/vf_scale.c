@@ -68,7 +68,7 @@ enum var_name {
     VARS_NB
 };
 
-typedef struct {
+typedef struct ScaleContext {
     const AVClass *class;
     struct SwsContext *sws;     ///< software scaler context
 

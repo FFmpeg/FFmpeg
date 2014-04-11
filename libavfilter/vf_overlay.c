@@ -73,7 +73,7 @@ static const char *eof_action_str[] = {
 #define MAIN    0
 #define OVERLAY 1
 
-typedef struct {
+typedef struct OverlayContext {
     const AVClass *class;
     int x, y;                   ///< position of overlayed picture
 

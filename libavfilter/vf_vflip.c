@@ -29,7 +29,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct FlipContext {
     int vsub;   ///< vertical chroma subsampling
 } FlipContext;
 

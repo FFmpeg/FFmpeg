@@ -115,7 +115,7 @@ enum var_name {
 
 #define FIFO_SIZE 8
 
-typedef struct {
+typedef struct SelectContext {
     const AVClass *class;
     char *expr_str;
     AVExpr *expr;

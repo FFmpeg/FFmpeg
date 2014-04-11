@@ -55,12 +55,12 @@ enum var_name {
     VARS_NB
 };
 
-typedef struct {
+typedef struct FilterParam {
     int radius;
     int power;
 } FilterParam;
 
-typedef struct {
+typedef struct BoxBlurContext {
     const AVClass *class;
     FilterParam luma_param;
     FilterParam chroma_param;
