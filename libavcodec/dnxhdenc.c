@@ -879,7 +879,7 @@ static void radix_sort_pass(RCCMPEntry *dst, const RCCMPEntry *data, int size, i
 static void radix_sort(RCCMPEntry *data, int size)
 {
     int buckets[RADIX_PASSES][NBUCKETS];
-    RCCMPEntry *tmp = av_malloc(sizeof(*tmp) * size);
+    RCCMPEntry *tmp = av_malloc_array(size, sizeof(*tmp));
     radix_count(data, size, buckets);
     radix_sort_pass(tmp, data, size, buckets[0], 0);
     radix_sort_pass(data, tmp, size, buckets[1], 1);
