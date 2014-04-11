@@ -46,7 +46,7 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
 
     if (!pic_found) {
         for (i = 0; i < buf_size; i++) {
-            state = (state<<8) | buf[i];
+            state = (state << 8) | buf[i];
             if ((state & 0xffffffffff00LL) == DNXHD_HEADER_PREFIX) {
                 i++;
                 pic_found = 1;
@@ -61,14 +61,14 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
         if (!buf_size) /* EOF considered as end of frame */
             return 0;
         for (; i < buf_size; i++) {
-            state = (state<<8) | buf[i];
+            state = (state << 8) | buf[i];
             if ((state & 0xffffffffff00LL) == DNXHD_HEADER_PREFIX) {
                 if (!interlaced || dctx->cur_field) {
                     pc->frame_start_found = 0;
                     pc->state64 = -1;
                     dctx->interlaced = interlaced;
                     dctx->cur_field = 0;
-                    return i-5;
+                    return i - 5;
                 } else {
                     /* continue, to get the second field */
                     dctx->interlaced = interlaced = (state&2)>>1;
@@ -98,12 +98,12 @@ static int dnxhd_parse(AVCodecParserContext *s,
     } else {
         next = dnxhd_find_frame_end(dctx, buf, buf_size);
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
-            *poutbuf = NULL;
+            *poutbuf      = NULL;
             *poutbuf_size = 0;
             return buf_size;
         }
     }
-    *poutbuf = buf;
+    *poutbuf      = buf;
     *poutbuf_size = buf_size;
     return next;
 }
