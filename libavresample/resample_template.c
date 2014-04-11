@@ -80,8 +80,8 @@ static void SET_TYPE(resample_one)(ResampleContext *c,
     } else if (c->linear) {
         FELEM2 v2 = 0;
         for (i = 0; i < c->filter_length; i++) {
-            val += src[abs(sample_index + i)] * (FELEM2)filter[i];
-            v2  += src[abs(sample_index + i)] * (FELEM2)filter[i + c->filter_length];
+            val += src[sample_index + i] * (FELEM2)filter[i];
+            v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_length];
         }
         val += (v2 - val) * (FELEML)frac / c->src_incr;
     } else {
