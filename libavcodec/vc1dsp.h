@@ -57,8 +57,8 @@ typedef struct VC1DSPContext {
     /* put 8x8 block with bicubic interpolation and quarterpel precision
      * last argument is actually round value instead of height
      */
-    vc1op_pixels_func put_vc1_mspel_pixels_tab[16];
-    vc1op_pixels_func avg_vc1_mspel_pixels_tab[16];
+    vc1op_pixels_func put_vc1_mspel_pixels_tab[2][16];
+    vc1op_pixels_func avg_vc1_mspel_pixels_tab[2][16];
 
     /* This is really one func used in VC-1 decoding */
     h264_chroma_mc_func put_no_rnd_vc1_chroma_pixels_tab[3];
