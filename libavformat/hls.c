@@ -68,8 +68,8 @@ struct segment {
     int64_t duration;
     int64_t url_offset;
     int64_t size;
-    char url[MAX_URL_SIZE];
-    char key[MAX_URL_SIZE];
+    char *url;
+    char *key;
     enum KeyType key_type;
     uint8_t iv[16];
 };
@@ -192,8 +192,11 @@ static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
 static void free_segment_list(struct playlist *pls)
 {
     int i;
-    for (i = 0; i < pls->n_segments; i++)
+    for (i = 0; i < pls->n_segments; i++) {
+        av_free(pls->segments[i]->key);
+        av_free(pls->segments[i]->url);
         av_free(pls->segments[i]);
+    }
     av_freep(&pls->segments);
     pls->n_segments = 0;
 }
@@ -504,6 +507,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     int64_t seg_size = -1;
     uint8_t *new_url = NULL;
     struct variant_info variant_info;
+    char tmp_str[MAX_URL_SIZE];
 
     if (!in) {
         AVDictionary *opts = NULL;
@@ -624,8 +628,28 @@ static int parse_playlist(HLSContext *c, const char *url,
                     memset(seg->iv, 0, sizeof(seg->iv));
                     AV_WB32(seg->iv + 12, seq);
                 }
-                ff_make_absolute_url(seg->key, sizeof(seg->key), url, key);
-                ff_make_absolute_url(seg->url, sizeof(seg->url), url, line);
+
+                if (key_type != KEY_NONE) {
+                    ff_make_absolute_url(tmp_str, sizeof(tmp_str), url, key);
+                    seg->key = av_strdup(tmp_str);
+                    if (!seg->key) {
+                        av_free(seg);
+                        ret = AVERROR(ENOMEM);
+                        goto fail;
+                    }
+                } else {
+                    seg->key = NULL;
+                }
+
+                ff_make_absolute_url(tmp_str, sizeof(tmp_str), url, line);
+                seg->url = av_strdup(tmp_str);
+                if (!seg->url) {
+                    av_free(seg->key);
+                    av_free(seg);
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+
                 dynarray_add(&pls->segments, &pls->n_segments, seg);
                 is_segment = 0;
 
