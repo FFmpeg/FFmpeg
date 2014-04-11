@@ -41,4 +41,7 @@ enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int four
 #endif
 enum AVPixelFormat avpriv_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc);
 
+extern av_export const PixelFormatTag avpriv_pix_fmt_bps_avi[];
+extern av_export const PixelFormatTag avpriv_pix_fmt_bps_mov[];
+
 #endif /* AVCODEC_RAW_H */

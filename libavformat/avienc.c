@@ -32,6 +32,8 @@
 #include "libavutil/dict.h"
 #include "libavutil/avassert.h"
 #include "libavutil/timestamp.h"
+#include "libavutil/pixdesc.h"
+#include "libavcodec/raw.h"
 
 /*
  * TODO:
@@ -296,6 +298,7 @@ static int avi_write_header(AVFormatContext *s)
 
         if (stream->codec_type != AVMEDIA_TYPE_DATA) {
             int ret;
+            enum AVPixelFormat pix_fmt;
 
             strf = ff_start_tag(pb, "strf");
             switch (stream->codec_type) {
@@ -306,6 +309,14 @@ static int avi_write_header(AVFormatContext *s)
                     break;
             case AVMEDIA_TYPE_VIDEO:
                 ff_put_bmp_header(pb, stream, ff_codec_bmp_tags, 0, 0);
+                pix_fmt = avpriv_find_pix_fmt(avpriv_pix_fmt_bps_avi,
+                                              stream->bits_per_coded_sample);
+                if (   !stream->codec_tag
+                    && stream->codec_id == AV_CODEC_ID_RAWVIDEO
+                    && stream->pix_fmt != pix_fmt
+                    && stream->pix_fmt != AV_PIX_FMT_NONE)
+                    av_log(s, AV_LOG_ERROR, "%s rawvideo cannot be written to avi, output file will be unreadable\n",
+                          av_get_pix_fmt_name(stream->pix_fmt));
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 if ((ret = ff_put_wav_header(pb, stream)) < 0)
