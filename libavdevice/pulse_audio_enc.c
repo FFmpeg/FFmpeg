@@ -48,11 +48,25 @@ static void pulse_stream_writable(pa_stream *stream, size_t nbytes, void *userda
 {
     AVFormatContext *h = userdata;
     PulseData *s = h->priv_data;
+    int64_t val = nbytes;
 
     if (stream != s->stream)
         return;
 
+    avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_BUFFER_WRITABLE, &val, sizeof(val));
     pa_threaded_mainloop_signal(s->mainloop, 0);
+}
+
+static void pulse_overflow(pa_stream *stream, void *userdata)
+{
+    AVFormatContext *h = userdata;
+    avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_BUFFER_OVERFLOW, NULL, 0);
+}
+
+static void pulse_underflow(pa_stream *stream, void *userdata)
+{
+    AVFormatContext *h = userdata;
+    avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_BUFFER_UNDERFLOW, NULL, 0);
 }
 
 static void pulse_stream_state(pa_stream *stream, void *userdata)
@@ -214,6 +228,8 @@ static av_cold int pulse_write_trailer(AVFormatContext *h)
             pa_stream_disconnect(s->stream);
             pa_stream_set_state_callback(s->stream, NULL, NULL);
             pa_stream_set_write_callback(s->stream, NULL, NULL);
+            pa_stream_set_overflow_callback(s->stream, NULL, NULL);
+            pa_stream_set_underflow_callback(s->stream, NULL, NULL);
             pa_stream_unref(s->stream);
             s->stream = NULL;
         }
@@ -353,6 +369,8 @@ static av_cold int pulse_write_header(AVFormatContext *h)
     }
     pa_stream_set_state_callback(s->stream, pulse_stream_state, s);
     pa_stream_set_write_callback(s->stream, pulse_stream_writable, h);
+    pa_stream_set_overflow_callback(s->stream, pulse_overflow, h);
+    pa_stream_set_underflow_callback(s->stream, pulse_underflow, h);
 
     if ((ret = pa_stream_connect_playback(s->stream, s->device, &buffer_attributes,
                                           stream_flags, NULL, NULL)) < 0) {
