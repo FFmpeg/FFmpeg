@@ -303,6 +303,7 @@ libavdevice
     libavdevice/avdevice.h
 
 
+  avfoundation.m                        Thilo Borgmann
   dshow.c                               Roger Pack (CC rogerdpack@gmail.com)
   fbdev_enc.c                           Lukasz Marek
   gdigrab.c                             Roger Pack (CC rogerdpack@gmail.com)

@@ -51,6 +51,36 @@ ffmpeg -f alsa -i hw:0 alsaout.wav
 For more information see:
 @url{http://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html}
 
+@section avfoundation
+
+AVFoundation input device.
+
+AVFoundation is the currently recommended framework by Apple for streamgrabbing on OSX >= 10.7 as well as on iOS.
+The older QTKit framework has been marked deprecated since OSX version 10.7.
+
+The filename passed as input is parsed to contain either a device name or index.
+The device index can also be given by using -video_device_index.
+A given device index will override any given device name.
+If the desired device consists of numbers only, use -video_device_index to identify it.
+The default device will be chosen if an empty string  or the device name "default" is given.
+The available devices can be enumerated by using -list_devices.
+
+@example
+ffmpeg -f avfoundation -i "0" out.mpg
+@end example
+
+@example
+ffmpeg -f avfoundation -video_device_index 0 -i "" out.mpg
+@end example
+
+@example
+ffmpeg -f avfoundation -i "default" out.mpg
+@end example
+
+@example
+ffmpeg -f avfoundation -list_devices true -i ""
+@end example
+
 @section bktr
 
 BSD video input device.

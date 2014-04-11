@@ -16,6 +16,7 @@ version <next>:
 - support decoding 16-bit RLE SGI images
 - GDI screen grabbing for Windows
 - alternative rendition support for HTTP Live Streaming
+- AVFoundation input device
 
 
 version 2.2:
