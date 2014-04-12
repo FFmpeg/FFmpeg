@@ -1850,6 +1850,16 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     if (s->amode < 16) {
         avctx->channel_layout = dca_core_channel_layout[s->amode];
 
+        if (s->prim_channels + !!s->lfe > 2 &&
+            avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
+            /*
+             * Neither the core's auxiliary data nor our default tables contain
+             * downmix coefficients for the additional channel coded in the XCh
+             * extension, so when we're doing a Stereo downmix, don't decode it.
+             */
+            s->xch_disable = 1;
+        }
+
 #if FF_API_REQUEST_CHANNELS
 FF_DISABLE_DEPRECATION_WARNINGS
         if (s->xch_present && !s->xch_disable &&
