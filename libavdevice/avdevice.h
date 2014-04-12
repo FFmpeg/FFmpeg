@@ -344,7 +344,7 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s,
  * to implement capabilities probing API based on AVOption API. Should not be used directly.
  */
 typedef struct AVDeviceCapabilitiesQuery {
-    const AVClass *class;
+    const AVClass *av_class;
     AVFormatContext *device_context;
     enum AVCodecID codec;
     enum AVSampleFormat sample_format;
