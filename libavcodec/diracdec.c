@@ -336,8 +336,8 @@ static int alloc_sequence_buffers(DiracContext *s)
         w = FFALIGN(CALC_PADDING(w, MAX_DWT_LEVELS), 8); /* FIXME: Should this be 16 for SSE??? */
         h = top_padding + CALC_PADDING(h, MAX_DWT_LEVELS) + max_yblen/2;
 
-        s->plane[i].idwt_buf_base = av_mallocz((w+max_xblen)*h * sizeof(IDWTELEM));
-        s->plane[i].idwt_tmp      = av_malloc((w+16) * sizeof(IDWTELEM));
+        s->plane[i].idwt_buf_base = av_mallocz_array((w+max_xblen), h * sizeof(IDWTELEM));
+        s->plane[i].idwt_tmp      = av_malloc_array((w+16), sizeof(IDWTELEM));
         s->plane[i].idwt_buf      = s->plane[i].idwt_buf_base + top_padding*w;
         if (!s->plane[i].idwt_buf_base || !s->plane[i].idwt_tmp)
             return AVERROR(ENOMEM);
@@ -347,12 +347,12 @@ static int alloc_sequence_buffers(DiracContext *s)
     h = s->source.height;
 
     /* fixme: allocate using real stride here */
-    s->sbsplit  = av_malloc(sbwidth * sbheight);
-    s->blmotion = av_malloc(sbwidth * sbheight * 16 * sizeof(*s->blmotion));
-    s->edge_emu_buffer_base = av_malloc((w+64)*MAX_BLOCKSIZE);
+    s->sbsplit  = av_malloc_array(sbwidth, sbheight);
+    s->blmotion = av_malloc_array(sbwidth, sbheight * 16 * sizeof(*s->blmotion));
+    s->edge_emu_buffer_base = av_malloc_array((w+64), MAX_BLOCKSIZE);
 
-    s->mctmp     = av_malloc((w+64+MAX_BLOCKSIZE) * (h+MAX_BLOCKSIZE) * sizeof(*s->mctmp));
-    s->mcscratch = av_malloc((w+64)*MAX_BLOCKSIZE);
+    s->mctmp     = av_malloc_array((w+64+MAX_BLOCKSIZE), (h+MAX_BLOCKSIZE) * sizeof(*s->mctmp));
+    s->mcscratch = av_malloc_array((w+64), MAX_BLOCKSIZE);
 
     if (!s->sbsplit || !s->blmotion || !s->mctmp || !s->mcscratch)
         return AVERROR(ENOMEM);
@@ -754,7 +754,7 @@ static void decode_lowdelay(DiracContext *s)
     struct lowdelay_slice *slices;
     int slice_num = 0;
 
-    slices = av_mallocz(s->lowdelay.num_x * s->lowdelay.num_y * sizeof(struct lowdelay_slice));
+    slices = av_mallocz_array(s->lowdelay.num_x, s->lowdelay.num_y * sizeof(struct lowdelay_slice));
 
     align_get_bits(&s->gb);
     /*[DIRAC_STD] 13.5.2 Slices. slice(sx,sy) */
