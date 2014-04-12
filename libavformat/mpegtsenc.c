@@ -1066,6 +1066,9 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             }
             if (len > 0xffff)
                 len = 0;
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                len = 0;
+            }
             *q++ = len >> 8;
             *q++ = len;
             val = 0x80;
