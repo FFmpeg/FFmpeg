@@ -136,8 +136,8 @@ static void guess_dc(ERContext *s, int16_t *dc, int w,
                      int h, int stride, int is_luma)
 {
     int b_x, b_y;
-    int16_t  (*col )[4] = av_malloc(stride*h*sizeof( int16_t)*4);
-    uint32_t (*dist)[4] = av_malloc(stride*h*sizeof(uint32_t)*4);
+    int16_t  (*col )[4] = av_malloc_array(stride, h*sizeof( int16_t)*4);
+    uint32_t (*dist)[4] = av_malloc_array(stride, h*sizeof(uint32_t)*4);
 
     if(!col || !dist) {
         av_log(s->avctx, AV_LOG_ERROR, "guess_dc() is out of memory\n");
