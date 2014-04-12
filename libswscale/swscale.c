@@ -952,9 +952,9 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
 
     if (usePal(c->srcFormat)) {
         for (i = 0; i < 256; i++) {
-            int p, r, g, b, y, u, v, a = 0xff;
+            int r, g, b, y, u, v, a = 0xff;
             if (c->srcFormat == AV_PIX_FMT_PAL8) {
-                p = ((const uint32_t *)(srcSlice[1]))[i];
+                uint32_t p = ((const uint32_t *)(srcSlice[1]))[i];
                 a = (p >> 24) & 0xFF;
                 r = (p >> 16) & 0xFF;
                 g = (p >>  8) & 0xFF;
