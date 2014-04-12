@@ -194,6 +194,8 @@ int avdevice_list_devices(AVFormatContext *s, AVDeviceInfoList **device_list)
     *device_list = av_mallocz(sizeof(AVDeviceInfoList));
     if (!(*device_list))
         return AVERROR(ENOMEM);
+    /* no default device by default */
+    (*device_list)->default_device = -1;
     if (s->oformat)
         ret = s->oformat->get_device_list(s, *device_list);
     else
