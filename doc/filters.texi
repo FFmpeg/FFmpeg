@@ -1115,6 +1115,8 @@ libfreetype library.
 
 To enable compilation of this filter, you need to configure Libav with
 @code{--enable-libfreetype}.
+To enable default font fallback and the @var{font} option you need to
+configure Libav with @code{--enable-libfontconfig}.
 
 The filter also recognizes strftime() sequences in the provided text
 and expands them accordingly. Check the documentation of strftime().
@@ -1123,9 +1125,12 @@ It accepts the following parameters:
 
 @table @option
 
+@item font
+The font family to be used for drawing text. By default Sans.
+
 @item fontfile
 The font file to be used for drawing text. The path must be included.
-This parameter is mandatory.
+This parameter is mandatory if the fontconfig support is disabled.
 
 @item text
 The text string to be drawn. The text must be a sequence of UTF-8

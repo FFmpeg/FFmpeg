@@ -26,8 +26,17 @@
  * filter by Gustavo Sverzut Barbieri
  */
 
+#include "config.h"
+
+#include <sys/types.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
+
+#if CONFIG_LIBFONTCONFIG
+#include <fontconfig/fontconfig.h>
+#endif
 
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
@@ -98,6 +107,9 @@ enum var_name {
 
 typedef struct {
     const AVClass *class;
+#if CONFIG_LIBFONTCONFIG
+    uint8_t *font;              ///< font to be used
+#endif
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
     uint8_t *expanded_text;         ///< used to contain the strftime()-expanded text
@@ -146,6 +158,9 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption drawtext_options[]= {
+#if CONFIG_LIBFONTCONFIG
+    { "font",        "Font name",            OFFSET(font),               AV_OPT_TYPE_STRING, { .str = "Sans" },           .flags = FLAGS },
+#endif
     { "fontfile",    NULL,                   OFFSET(fontfile),           AV_OPT_TYPE_STRING,                              .flags = FLAGS },
     { "text",        NULL,                   OFFSET(text),               AV_OPT_TYPE_STRING,                              .flags = FLAGS },
     { "textfile",    NULL,                   OFFSET(textfile),           AV_OPT_TYPE_STRING,                              .flags = FLAGS },
@@ -279,16 +294,93 @@ error:
     return ret;
 }
 
+static int parse_font(AVFilterContext *ctx)
+{
+    DrawTextContext *s = ctx->priv;
+#if !CONFIG_LIBFONTCONFIG
+    if (!s->fontfile) {
+        av_log(ctx, AV_LOG_ERROR, "No font filename provided\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+#else
+    FcPattern *pat, *best;
+    FcResult result = FcResultMatch;
+
+    FcBool fc_bool;
+    FcChar8* fc_string;
+    int err = AVERROR(ENOENT);
+
+    if (s->fontfile)
+        return 0;
+
+    if (!FcInit())
+        return AVERROR_UNKNOWN;
+
+    if (!(pat = FcPatternCreate()))
+        return AVERROR(ENOMEM);
+
+    FcPatternAddString(pat, FC_FAMILY, s->font);
+    FcPatternAddBool(pat, FC_OUTLINE, FcTrue);
+    FcPatternAddDouble(pat, FC_SIZE, (double)s->fontsize);
+
+    FcDefaultSubstitute(pat);
+
+    if (!FcConfigSubstitute(NULL, pat, FcMatchPattern)) {
+        FcPatternDestroy(pat);
+        return AVERROR(ENOMEM);
+    }
+
+    best = FcFontMatch(NULL, pat, &result);
+    FcPatternDestroy(pat);
+
+    if (!best || result == FcResultNoMatch) {
+         av_log(ctx, AV_LOG_ERROR,
+                "Cannot find a valid font for the family %s\n",
+                s->font);
+        goto fail;
+    }
+
+    if (FcPatternGetBool(best, FC_OUTLINE, 0, &fc_bool) != FcResultMatch ||
+        !fc_bool) {
+        av_log(ctx, AV_LOG_ERROR, "Outline not available for %s\n",
+               s->font);
+        goto fail;
+    }
+
+    if (FcPatternGetString(best, FC_FAMILY, 0, &fc_string) != FcResultMatch) {
+        av_log(ctx, AV_LOG_ERROR, "No matches for %s\n",
+               s->font);
+        goto fail;
+    }
+
+    if (FcPatternGetString(best, FC_FILE, 0, &fc_string) != FcResultMatch) {
+        av_log(ctx, AV_LOG_ERROR, "No file path for %s\n",
+               s->font);
+        goto fail;
+    }
+
+    s->fontfile = av_strdup(fc_string);
+    if (!s->fontfile)
+        err = AVERROR(ENOMEM);
+    else
+        err = 0;
+
+fail:
+    FcPatternDestroy(best);
+    return err;
+#endif
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     int err;
     DrawTextContext *s = ctx->priv;
     Glyph *glyph;
 
-    if (!s->fontfile) {
-        av_log(ctx, AV_LOG_ERROR, "No font filename provided\n");
-        return AVERROR(EINVAL);
-    }
+    if ((err = parse_font(ctx)) < 0)
+        return err;
 
     if (s->textfile) {
         uint8_t *textbuf;
