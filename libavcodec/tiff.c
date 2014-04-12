@@ -1097,7 +1097,7 @@ static int decode_frame(AVCodecContext *avctx,
         for (i = 0; i < s->height; i++) {
             for (j = 0; j < p->linesize[plane]; j++)
                 dst[j] = (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255) - dst[j];
-            dst += p->linesize[plane];
+            dst += stride;
         }
     }
     }
