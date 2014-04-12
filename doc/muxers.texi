@@ -370,7 +370,8 @@ to provide the pictures as soon as possible to avoid excessive buffering.
 A Xing/LAME frame right after the ID3v2 header (if present). It is enabled by
 default, but will be written only if the output is seekable. The
 @code{write_xing} private option can be used to disable it.  The frame contains
-various information that may be useful to the decoder, like the audio duration.
+various information that may be useful to the decoder, like the audio duration
+or encoder delay.
 
 @item
 A legacy ID3v1 tag at the end of the file (disabled by default). It may be
