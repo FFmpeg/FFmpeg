@@ -1175,10 +1175,9 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
        the decoder could be delaying output by a packet or more. */
     if (decoded_frame->pts != AV_NOPTS_VALUE)
         ist->next_dts = decoded_frame->pts;
-    else if (pkt->pts != AV_NOPTS_VALUE) {
+    else if (pkt->pts != AV_NOPTS_VALUE)
         decoded_frame->pts = pkt->pts;
-        pkt->pts           = AV_NOPTS_VALUE;
-    }
+    pkt->pts           = AV_NOPTS_VALUE;
 
     resample_changed = ist->resample_sample_fmt     != decoded_frame->format         ||
                        ist->resample_channels       != avctx->channels               ||
