@@ -150,6 +150,8 @@ static const uint8_t rtmp_server_key[] = {
     0xE6, 0x36, 0xCF, 0xEB, 0x31, 0xAE
 };
 
+static int handle_chunk_size(URLContext *s, RTMPPacket *pkt);
+
 static int add_tracked_method(RTMPContext *rt, const char *name, int id)
 {
     int err;
@@ -411,6 +413,16 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     if ((ret = ff_rtmp_packet_read(rt->stream, &pkt, rt->in_chunk_size,
                                    &rt->prev_pkt[0], &rt->nb_prev_pkt[0])) < 0)
         return ret;
+
+    if (pkt.type == RTMP_PT_CHUNK_SIZE) {
+        if ((ret = handle_chunk_size(s, &pkt)) < 0)
+            return ret;
+        ff_rtmp_packet_destroy(&pkt);
+        if ((ret = ff_rtmp_packet_read(rt->stream, &pkt, rt->in_chunk_size,
+                                       &rt->prev_pkt[0], &rt->nb_prev_pkt[0])) < 0)
+            return ret;
+    }
+
     cp = pkt.data;
     bytestream2_init(&gbc, cp, pkt.size);
     if (ff_amf_read_string(&gbc, command, sizeof(command), &stringlen)) {
