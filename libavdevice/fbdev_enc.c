@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "libavformat/avformat.h"
 #include "fbdev_common.h"
+#include "avdevice.h"
 
 typedef struct {
     AVClass *class;                   ///< class for private options
@@ -183,6 +184,67 @@ static av_cold int fbdev_write_trailer(AVFormatContext *h)
     return 0;
 }
 
+static int fbdev_get_device_list(AVFormatContext *s, AVDeviceInfoList *device_list)
+{
+    struct fb_var_screeninfo varinfo;
+    struct fb_fix_screeninfo fixinfo;
+    char device_file[12];
+    AVDeviceInfo *device = NULL;
+    int i, fd = -1, ret = 0;
+    const char *default_device = ff_fbdev_default_device();
+
+    if (!device_list)
+        return AVERROR(EINVAL);
+
+    for (i = 0; i <= 31; i++) {
+        snprintf(device_file, sizeof(device_file), "/dev/fb%d", i);
+
+        if ((fd = avpriv_open(device_file, O_RDWR)) < 0)
+            continue;
+        if (ioctl(fd, FBIOGET_VSCREENINFO, &varinfo) == -1)
+            goto fail_device;
+        if (ioctl(fd, FBIOGET_FSCREENINFO, &fixinfo) == -1)
+            goto fail_device;
+
+        device = av_mallocz(sizeof(AVDeviceInfo));
+        if (!device) {
+            ret = AVERROR(ENOMEM);
+            goto fail_device;
+        }
+        device->device_name = av_strdup(device_file);
+        device->device_description = av_strdup(fixinfo.id);
+        if (!device->device_name || !device->device_description) {
+            ret = AVERROR(ENOMEM);
+            goto fail_device;
+        }
+
+        if ((ret = av_dynarray_add_nofree(&device_list->devices,
+                                          &device_list->nb_devices, device)) < 0)
+            goto fail_device;
+
+        if (default_device && !strcmp(device->device_name, default_device)) {
+            device_list->default_device = device_list->nb_devices - 1;
+            default_device = NULL;
+        }
+
+        continue;
+
+      fail_device:
+        if (device) {
+            av_free(device->device_name);
+            av_free(device->device_description);
+            av_freep(&device);
+        }
+        if (fd >= 0) {
+            close(fd);
+            fd = -1;
+        }
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
 #define OFFSET(x) offsetof(FBDevContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -208,6 +270,7 @@ AVOutputFormat ff_fbdev_muxer = {
     .write_header   = fbdev_write_header,
     .write_packet   = fbdev_write_packet,
     .write_trailer  = fbdev_write_trailer,
+    .get_device_list = fbdev_get_device_list,
     .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
     .priv_class     = &fbdev_class,
 };
