@@ -343,7 +343,7 @@ void avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
     if (numpoints > 24*numCB) {
         /* ELBG is very costly for a big number of points. So if we have a lot
            of them, get a good initial codebook to save on iterations       */
-        int *temp_points = av_malloc(dim*(numpoints/8)*sizeof(int));
+        int *temp_points = av_malloc_array(dim, (numpoints/8)*sizeof(int));
         for (i=0; i<numpoints/8; i++) {
             k = (i*BIG_PRIME) % numpoints;
             memcpy(temp_points + i*dim, points + k*dim, dim*sizeof(int));
@@ -369,9 +369,9 @@ void avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
     elbg_data elbg_d;
     elbg_data *elbg = &elbg_d;
     int i, j, k, last_error, steps=0;
-    int *dist_cb = av_malloc(numpoints*sizeof(int));
-    int *size_part = av_malloc(numCB*sizeof(int));
-    cell *list_buffer = av_malloc(numpoints*sizeof(cell));
+    int *dist_cb = av_malloc_array(numpoints, sizeof(int));
+    int *size_part = av_malloc_array(numCB, sizeof(int));
+    cell *list_buffer = av_malloc_array(numpoints, sizeof(cell));
     cell *free_cells;
     int best_dist, best_idx = 0;
 
@@ -379,12 +379,12 @@ void avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
     elbg->dim = dim;
     elbg->numCB = numCB;
     elbg->codebook = codebook;
-    elbg->cells = av_malloc(numCB*sizeof(cell *));
-    elbg->utility = av_malloc(numCB*sizeof(int));
+    elbg->cells = av_malloc_array(numCB, sizeof(cell *));
+    elbg->utility = av_malloc_array(numCB, sizeof(int));
     elbg->nearest_cb = closest_cb;
     elbg->points = points;
-    elbg->utility_inc = av_malloc(numCB*sizeof(*elbg->utility_inc));
-    elbg->scratchbuf = av_malloc(5*dim*sizeof(int));
+    elbg->utility_inc = av_malloc_array(numCB, sizeof(*elbg->utility_inc));
+    elbg->scratchbuf = av_malloc_array(5*dim, sizeof(int));
 
     elbg->rand_state = rand_state;
 
