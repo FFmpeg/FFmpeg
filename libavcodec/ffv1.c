@@ -75,13 +75,13 @@ av_cold int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
 
         if (fs->ac) {
             if (!p->state)
-                p->state = av_malloc(CONTEXT_SIZE * p->context_count *
+                p->state = av_malloc_array(p->context_count, CONTEXT_SIZE *
                                      sizeof(uint8_t));
             if (!p->state)
                 return AVERROR(ENOMEM);
         } else {
             if (!p->vlc_state)
-                p->vlc_state = av_malloc(p->context_count * sizeof(VlcState));
+                p->vlc_state = av_malloc_array(p->context_count, sizeof(VlcState));
             if (!p->vlc_state)
                 return AVERROR(ENOMEM);
         }
@@ -137,7 +137,7 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
         fs->slice_x      = sxs;
         fs->slice_y      = sys;
 
-        fs->sample_buffer = av_malloc(3 * MAX_PLANES * (fs->width + 6) *
+        fs->sample_buffer = av_malloc_array((fs->width + 6), 3 * MAX_PLANES *
                                       sizeof(*fs->sample_buffer));
         if (!fs->sample_buffer)
             return AVERROR(ENOMEM);
@@ -150,7 +150,7 @@ int ffv1_allocate_initial_states(FFV1Context *f)
     int i;
 
     for (i = 0; i < f->quant_table_count; i++) {
-        f->initial_states[i] = av_malloc(f->context_count[i] *
+        f->initial_states[i] = av_malloc_array(f->context_count[i],
                                          sizeof(*f->initial_states[i]));
         if (!f->initial_states[i])
             return AVERROR(ENOMEM);
