@@ -1040,6 +1040,11 @@ typedef struct AVStream {
     uint8_t dts_ordered;
     uint8_t dts_misordered;
 
+    /**
+     * Internal data to inject global side data
+     */
+    int global_side_data_injected;
+
 } AVStream;
 
 AVRational av_stream_get_r_frame_rate(const AVStream *s);

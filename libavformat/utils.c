@@ -1526,6 +1526,25 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
             st->skip_samples = 0;
         }
+
+        if (!st->global_side_data_injected) {
+            for (i = 0; i < st->nb_side_data; i++) {
+                AVPacketSideData *src_sd = &st->side_data[i];
+                uint8_t *dst_data;
+
+                if (av_packet_get_side_data(pkt, src_sd->type, NULL))
+                    continue;
+
+                dst_data = av_packet_new_side_data(pkt, src_sd->type, src_sd->size);
+                if (!dst_data) {
+                    av_log(s, AV_LOG_WARNING, "Couldnt inject global side data\n");
+                    continue;
+                }
+
+                memcpy(dst_data, src_sd->data, src_sd->size);
+            }
+            st->global_side_data_injected = 1;
+        }
     }
 
     if (ret >= 0 && !(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
