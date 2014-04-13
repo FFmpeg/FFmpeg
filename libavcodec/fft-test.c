@@ -75,7 +75,7 @@ static void fft_ref_init(int nbits, int inverse)
     double c1, s1, alpha;
 
     n = 1 << nbits;
-    exptab = av_malloc((n / 2) * sizeof(*exptab));
+    exptab = av_malloc_array((n / 2), sizeof(*exptab));
 
     for (i = 0; i < (n/2); i++) {
         alpha = 2 * M_PI * (float)i / (float)n;
@@ -304,10 +304,10 @@ int main(int argc, char **argv)
     }
 
     fft_size = 1 << fft_nbits;
-    tab = av_malloc(fft_size * sizeof(FFTComplex));
-    tab1 = av_malloc(fft_size * sizeof(FFTComplex));
-    tab_ref = av_malloc(fft_size * sizeof(FFTComplex));
-    tab2 = av_malloc(fft_size * sizeof(FFTSample));
+    tab = av_malloc_array(fft_size, sizeof(FFTComplex));
+    tab1 = av_malloc_array(fft_size, sizeof(FFTComplex));
+    tab_ref = av_malloc_array(fft_size, sizeof(FFTComplex));
+    tab2 = av_malloc_array(fft_size, sizeof(FFTSample));
 
     switch (transform) {
     case TRANSFORM_MDCT:
