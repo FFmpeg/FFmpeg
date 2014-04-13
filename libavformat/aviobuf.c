@@ -414,6 +414,12 @@ unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
     return av_crc(av_crc_get_table(AV_CRC_32_IEEE), checksum, buf, len);
 }
 
+unsigned long ff_crcA001_update(unsigned long checksum, const uint8_t *buf,
+                                unsigned int len)
+{
+    return av_crc(av_crc_get_table(AV_CRC_16_ANSI_LE), checksum, buf, len);
+}
+
 unsigned long ffio_get_checksum(AVIOContext *s)
 {
     s->checksum = s->update_checksum(s->checksum, s->checksum_ptr,
