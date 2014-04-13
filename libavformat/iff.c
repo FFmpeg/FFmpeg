@@ -373,21 +373,21 @@ static int iff_read_header(AVFormatContext *s)
                 return AVERROR_PATCHWELCOME;
             }
         } else {
-        switch (iff->svx8_compression) {
-        case COMP_NONE:
-            st->codec->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
-            break;
-        case COMP_FIB:
-            st->codec->codec_id = AV_CODEC_ID_8SVX_FIB;
-            break;
-        case COMP_EXP:
-            st->codec->codec_id = AV_CODEC_ID_8SVX_EXP;
-            break;
-        default:
-            av_log(s, AV_LOG_ERROR,
-                   "Unknown SVX8 compression method '%d'\n", iff->svx8_compression);
-            return -1;
-        }
+            switch (iff->svx8_compression) {
+            case COMP_NONE:
+                st->codec->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
+                break;
+            case COMP_FIB:
+                st->codec->codec_id = AV_CODEC_ID_8SVX_FIB;
+                break;
+            case COMP_EXP:
+                st->codec->codec_id = AV_CODEC_ID_8SVX_EXP;
+                break;
+            default:
+                av_log(s, AV_LOG_ERROR,
+                       "Unknown SVX8 compression method '%d'\n", iff->svx8_compression);
+                return -1;
+            }
         }
 
         st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
