@@ -81,6 +81,8 @@ static const AVOption volume_options[] = {
         { "album",  "album gain is preferred",         0, AV_OPT_TYPE_CONST, { .i64 = REPLAYGAIN_ALBUM  }, 0, 0, A, "replaygain" },
     { "replaygain_preamp", "Apply replaygain pre-amplification",
             OFFSET(replaygain_preamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, -15.0, 15.0, A },
+    { "replaygain_noclip", "Apply replaygain clipping prevention",
+            OFFSET(replaygain_noclip), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, A },
     { NULL },
 };
 
@@ -342,25 +344,34 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     if (sd && vol->replaygain != REPLAYGAIN_IGNORE) {
         if (vol->replaygain != REPLAYGAIN_DROP) {
             AVReplayGain *replaygain = (AVReplayGain*)sd->data;
-            int32_t gain;
-            float g;
+            int32_t gain  = 100000;
+            uint32_t peak = 100000;
+            float g, p;
 
             if (vol->replaygain == REPLAYGAIN_TRACK &&
-                replaygain->track_gain != INT32_MIN)
+                replaygain->track_gain != INT32_MIN) {
                 gain = replaygain->track_gain;
-            else if (replaygain->album_gain != INT32_MIN)
+
+                if (replaygain->track_peak != 0)
+                    peak = replaygain->track_peak;
+            } else if (replaygain->album_gain != INT32_MIN) {
                 gain = replaygain->album_gain;
-            else {
+
+                if (replaygain->album_peak != 0)
+                    peak = replaygain->album_peak;
+            } else {
                 av_log(inlink->dst, AV_LOG_WARNING, "Both ReplayGain gain "
                        "values are unknown.\n");
-                gain = 100000;
             }
             g = gain / 100000.0f;
+            p = peak / 100000.0f;
 
             av_log(inlink->dst, AV_LOG_VERBOSE,
                    "Using gain %f dB from replaygain side data.\n", g);
 
             vol->volume   = pow(10, (g + vol->replaygain_preamp) / 20);
+            if (vol->replaygain_noclip)
+                vol->volume = FFMIN(vol->volume, 1.0 / p);
             vol->volume_i = (int)(vol->volume * 256 + 0.5);
 
             volume_init(vol);
