@@ -124,7 +124,7 @@ static int mp3_write_xing(AVFormatContext *s)
     int best_bitrate_error = INT_MAX;
     int xing_offset;
     int ver = 0;
-    int bytes_needed, lsf;
+    int bytes_needed;
     const char *vendor = (codec->flags & CODEC_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT;
 
     if (!s->pb->seekable || !mp3->write_xing)
@@ -161,7 +161,7 @@ static int mp3_write_xing(AVFormatContext *s)
     header |= channels << 6;
 
     for (bitrate_idx = 1; bitrate_idx < 15; bitrate_idx++) {
-        int bit_rate = 1000 * avpriv_mpa_bitrate_tab[lsf][3 - 1][bitrate_idx];
+        int bit_rate = 1000 * avpriv_mpa_bitrate_tab[ver != 3][3 - 1][bitrate_idx];
         int error    = FFABS(bit_rate - codec->bit_rate);
 
         if (error < best_bitrate_error) {
