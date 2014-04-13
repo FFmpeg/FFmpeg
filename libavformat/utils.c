@@ -1716,6 +1716,8 @@ void ff_read_frame_flush(AVFormatContext *s)
 
         for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
             st->pts_buffer[j] = AV_NOPTS_VALUE;
+
+        st->global_side_data_injected = 0;
     }
 }
 
