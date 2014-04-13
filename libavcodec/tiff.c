@@ -593,7 +593,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
 {
     unsigned tag, type, count, off, value = 0, value2 = 0;
     int i, start;
-    int j, k, pos;
+    int pos;
     int ret;
     double *dp;
 
