@@ -2443,7 +2443,7 @@ reconnect:
         if ((ret = gen_connect(s, rt)) < 0)
             goto fail;
     } else {
-        if (read_connect(s, s->priv_data) < 0)
+        if ((ret = read_connect(s, s->priv_data)) < 0)
             goto fail;
         rt->is_input = 1;
     }
