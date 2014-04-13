@@ -42,15 +42,13 @@ int ff_tis_ifd(unsigned tag)
 
 unsigned ff_tget_short(GetByteContext *gb, int le)
 {
-    unsigned v = le ? bytestream2_get_le16(gb) : bytestream2_get_be16(gb);
-    return v;
+    return le ? bytestream2_get_le16(gb) : bytestream2_get_be16(gb);
 }
 
 
 unsigned ff_tget_long(GetByteContext *gb, int le)
 {
-    unsigned v = le ? bytestream2_get_le32(gb) : bytestream2_get_be32(gb);
-    return v;
+    return le ? bytestream2_get_le32(gb) : bytestream2_get_be32(gb);
 }
 
 
@@ -64,14 +62,10 @@ double ff_tget_double(GetByteContext *gb, int le)
 unsigned ff_tget(GetByteContext *gb, int type, int le)
 {
     switch (type) {
-    case TIFF_BYTE:
-        return bytestream2_get_byte(gb);
-    case TIFF_SHORT:
-        return ff_tget_short(gb, le);
-    case TIFF_LONG:
-        return ff_tget_long(gb, le);
-    default:
-        return UINT_MAX;
+    case TIFF_BYTE:  return bytestream2_get_byte(gb);
+    case TIFF_SHORT: return ff_tget_short(gb, le);
+    case TIFF_LONG:  return ff_tget_long(gb, le);
+    default:         return UINT_MAX;
     }
 }
 
