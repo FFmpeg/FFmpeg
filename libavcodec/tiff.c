@@ -704,14 +704,9 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         }
         break;
     case TIFF_ROWSPERSTRIP:
-        if (type == TIFF_LONG && value == UINT_MAX)
+        if (!value || (type == TIFF_LONG && value == UINT_MAX))
             value = s->height;
-        if (value < 1) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "Incorrect value of rows per strip\n");
-            return AVERROR_INVALIDDATA;
-        }
-        s->rps = value;
+        s->rps = FFMIN(value, s->height);
         break;
     case TIFF_STRIP_OFFS:
         if (count == 1) {
