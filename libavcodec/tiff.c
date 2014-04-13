@@ -595,7 +595,6 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     int i, start;
     int j, k, pos;
     int ret;
-    uint32_t *pal;
     double *dp;
 
     ret = ff_tread_tag(&s->gb, s->le, &tag, &type, &count, &start);
@@ -781,20 +780,23 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         s->fill_order = value - 1;
         break;
     case TIFF_PAL: {
-        pal = (uint32_t *) s->palette;
+        GetByteContext pal_gb[3];
         off = type_sizes[type];
         if (count / 3 > 256 ||
             bytestream2_get_bytes_left(&s->gb) < count / 3 * off * 3)
             return AVERROR_INVALIDDATA;
 
+        pal_gb[0] = pal_gb[1] = pal_gb[2] = s->gb;
+        bytestream2_skip(&pal_gb[1], count / 3 * off);
+        bytestream2_skip(&pal_gb[2], count / 3 * off * 2);
+
         off = (type_sizes[type] - 1) << 3;
-        for (k = 2; k >= 0; k--) {
-            for (i = 0; i < count / 3; i++) {
-                if (k == 2)
-                    pal[i] = 0xFFU << 24;
-                j =  (ff_tget(&s->gb, type, s->le) >> off) << (k * 8);
-                pal[i] |= j;
-            }
+        for (i = 0; i < count / 3; i++) {
+            uint32_t p = 0xFF000000;
+            p |= (ff_tget(&pal_gb[0], type, s->le) >> off) << 16;
+            p |= (ff_tget(&pal_gb[1], type, s->le) >> off) << 8;
+            p |=  ff_tget(&pal_gb[2], type, s->le) >> off;
+            s->palette[i] = p;
         }
         s->palette_is_set = 1;
         break;
