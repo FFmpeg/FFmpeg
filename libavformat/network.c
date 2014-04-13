@@ -76,7 +76,7 @@ void ff_tls_init(void)
 #if HAVE_THREADS
         if (!CRYPTO_get_locking_callback()) {
             int i;
-            openssl_mutexes = av_malloc(sizeof(pthread_mutex_t) * CRYPTO_num_locks());
+            openssl_mutexes = av_malloc_array(sizeof(pthread_mutex_t), CRYPTO_num_locks());
             for (i = 0; i < CRYPTO_num_locks(); i++)
                 pthread_mutex_init(&openssl_mutexes[i], NULL);
             CRYPTO_set_locking_callback(openssl_lock);
