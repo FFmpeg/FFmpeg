@@ -956,12 +956,6 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
                                      st->time_base,
                                      AV_ROUND_DOWN);
             }
-        } else if (st->codec->time_base.num != 0 &&
-                   st->codec->time_base.den != 0) {
-            out_pkt.duration = av_rescale_q_rnd(st->parser->duration,
-                                                st->codec->time_base,
-                                                st->time_base,
-                                                AV_ROUND_DOWN);
         }
 
         out_pkt.stream_index = st->index;
