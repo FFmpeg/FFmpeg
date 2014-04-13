@@ -1545,10 +1545,10 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
             st->global_side_data_injected = 1;
         }
-    }
 
-    if (ret >= 0 && !(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
-        av_packet_merge_side_data(pkt);
+        if (!(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
+            av_packet_merge_side_data(pkt);
+    }
 
     if (s->debug & FF_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG,
