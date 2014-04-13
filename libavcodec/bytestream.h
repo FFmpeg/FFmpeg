@@ -328,6 +328,32 @@ static av_always_inline unsigned int bytestream2_get_eof(PutByteContext *p)
     return p->eof;
 }
 
+static av_always_inline unsigned int bytestream2_copy_bufferu(PutByteContext *p,
+                                                              GetByteContext *g,
+                                                              unsigned int size)
+{
+    memcpy(p->buffer, g->buffer, size);
+    p->buffer += size;
+    g->buffer += size;
+    return size;
+}
+
+static av_always_inline unsigned int bytestream2_copy_buffer(PutByteContext *p,
+                                                             GetByteContext *g,
+                                                             unsigned int size)
+{
+    int size2;
+
+    if (p->eof)
+        return 0;
+    size  = FFMIN(g->buffer_end - g->buffer, size);
+    size2 = FFMIN(p->buffer_end - p->buffer, size);
+    if (size2 != size)
+        p->eof = 1;
+
+    return bytestream2_copy_bufferu(p, g, size2);
+}
+
 static av_always_inline unsigned int bytestream_get_buffer(const uint8_t **b,
                                                            uint8_t *dst,
                                                            unsigned int size)
