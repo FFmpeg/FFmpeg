@@ -372,12 +372,6 @@ static int iff_read_header(AVFormatContext *s)
                 avpriv_request_sample(s, "compression %d and bit depth %d", iff->maud_compression, iff->maud_bits);
                 return AVERROR_PATCHWELCOME;
             }
-
-            st->codec->bits_per_coded_sample =
-                av_get_bits_per_sample(st->codec->codec_id);
-
-            st->codec->block_align =
-                st->codec->bits_per_coded_sample * st->codec->channels / 8;
         } else {
         switch (iff->svx8_compression) {
         case COMP_NONE:
