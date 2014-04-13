@@ -53,7 +53,7 @@ typedef struct TiffContext {
     int palette_is_set;
     int le;
     enum TiffCompr compr;
-    int invert;
+    enum TiffPhotometric photometric;
     int planar;
     int fax_opts;
     int predictor;
@@ -744,20 +744,31 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case TIFF_PREDICTOR:
         s->predictor = value;
         break;
-    case TIFF_INVERT:
+    case TIFF_PHOTOMETRIC:
         switch (value) {
-        case 0:
-            s->invert = 1;
+        case TIFF_PHOTOMETRIC_WHITE_IS_ZERO:
+        case TIFF_PHOTOMETRIC_BLACK_IS_ZERO:
+        case TIFF_PHOTOMETRIC_RGB:
+        case TIFF_PHOTOMETRIC_PALETTE:
+            s->photometric = value;
             break;
-        case 1:
-            s->invert = 0;
-            break;
-        case 2:
-        case 3:
-            break;
+        case TIFF_PHOTOMETRIC_ALPHA_MASK:
+        case TIFF_PHOTOMETRIC_SEPARATED:
+        case TIFF_PHOTOMETRIC_YCBCR:
+        case TIFF_PHOTOMETRIC_CIE_LAB:
+        case TIFF_PHOTOMETRIC_ICC_LAB:
+        case TIFF_PHOTOMETRIC_ITU_LAB:
+        case TIFF_PHOTOMETRIC_CFA:
+        case TIFF_PHOTOMETRIC_LOG_L:
+        case TIFF_PHOTOMETRIC_LOG_LUV:
+        case TIFF_PHOTOMETRIC_LINEAR_RAW:
+            avpriv_report_missing_feature(s->avctx,
+                                          "PhotometricInterpretation 0x%04X",
+                                          value);
+            return AVERROR_PATCHWELCOME;
         default:
-            av_log(s->avctx, AV_LOG_ERROR, "Color mode %d is not supported\n",
-                   value);
+            av_log(s->avctx, AV_LOG_ERROR, "PhotometricInterpretation %u is "
+                   "unknown\n", value);
             return AVERROR_INVALIDDATA;
         }
         break;
@@ -967,12 +978,12 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "IFD offset is greater than image size\n");
         return AVERROR_INVALIDDATA;
     }
-    s->le         = le;
+    s->le          = le;
     // TIFF_BPP is not a required tag and defaults to 1
-    s->bppcount   = s->bpp = 1;
-    s->invert     = 0;
-    s->compr      = TIFF_RAW;
-    s->fill_order = 0;
+    s->bppcount    = s->bpp = 1;
+    s->photometric = TIFF_PHOTOMETRIC_NONE;
+    s->compr       = TIFF_RAW;
+    s->fill_order  = 0;
     free_geotags(s);
 
     // Reset these offsets so we can tell if they were set this frame
@@ -1095,7 +1106,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if (s->invert) {
+    if (s->photometric == TIFF_PHOTOMETRIC_WHITE_IS_ZERO) {
         dst = p->data[plane];
         for (i = 0; i < s->height; i++) {
             for (j = 0; j < p->linesize[plane]; j++)
