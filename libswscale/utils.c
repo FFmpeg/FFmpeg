@@ -983,6 +983,7 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
 {
     const AVPixFmtDescriptor *desc_dst;
     const AVPixFmtDescriptor *desc_src;
+    int need_reinit = 0;
     memmove(c->srcColorspaceTable, inv_table, sizeof(int) * 4);
     memmove(c->dstColorspaceTable, table, sizeof(int) * 4);
 
@@ -998,8 +999,13 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     c->brightness = brightness;
     c->contrast   = contrast;
     c->saturation = saturation;
+    if (c->srcRange != srcRange || c->dstRange != dstRange)
+        need_reinit = 1;
     c->srcRange   = srcRange;
     c->dstRange   = dstRange;
+
+    if (need_reinit && c->srcBpc == 8)
+        ff_sws_init_range_convert(c);
 
     if ((isYUV(c->dstFormat) || isGray(c->dstFormat)) && (isYUV(c->srcFormat) || isGray(c->srcFormat)))
         return -1;
