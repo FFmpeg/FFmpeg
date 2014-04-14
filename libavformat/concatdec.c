@@ -18,7 +18,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avformat.h"
@@ -31,6 +33,7 @@ typedef enum ConcatMatchMode {
 } ConcatMatchMode;
 
 typedef struct ConcatStream {
+    AVBitStreamFilterContext *bsf;
     int out_stream_index;
 } ConcatStream;
 
@@ -51,6 +54,7 @@ typedef struct {
     int safe;
     int seekable;
     ConcatMatchMode stream_match_mode;
+    unsigned auto_convert;
 } ConcatContext;
 
 static int concat_probe(AVProbeData *probe)
@@ -150,14 +154,44 @@ static int copy_stream_props(AVStream *st, AVStream *source_st)
 {
     int ret;
 
-    if (st->codec->codec_id || !source_st->codec->codec_id)
+    if (st->codec->codec_id || !source_st->codec->codec_id) {
+        if (st->codec->extradata_size < source_st->codec->extradata_size) {
+            ret = ff_alloc_extradata(st->codec,
+                                     source_st->codec->extradata_size);
+            if (ret < 0)
+                return ret;
+        }
+        memcpy(st->codec->extradata, source_st->codec->extradata,
+               source_st->codec->extradata_size);
         return 0;
+    }
     if ((ret = avcodec_copy_context(st->codec, source_st->codec)) < 0)
         return ret;
     st->r_frame_rate        = source_st->r_frame_rate;
     st->avg_frame_rate      = source_st->avg_frame_rate;
     st->time_base           = source_st->time_base;
     st->sample_aspect_ratio = source_st->sample_aspect_ratio;
+    return 0;
+}
+
+static int detect_stream_specific(AVFormatContext *avf, int idx)
+{
+    ConcatContext *cat = avf->priv_data;
+    AVStream *st = cat->avf->streams[idx];
+    ConcatStream *cs = &cat->cur_file->streams[idx];
+    AVBitStreamFilterContext *bsf;
+
+    if (cat->auto_convert && st->codec->codec_id == AV_CODEC_ID_H264 &&
+        (st->codec->extradata_size < 4 || AV_RB32(st->codec->extradata) != 1)) {
+        av_log(cat->avf, AV_LOG_INFO,
+               "Auto-inserting h264_mp4toannexb bitstream filter\n");
+        if (!(bsf = av_bitstream_filter_init("h264_mp4toannexb"))) {
+            av_log(avf, AV_LOG_ERROR, "h264_mp4toannexb bitstream filter "
+                   "required for H.264 streams\n");
+            return AVERROR_BSF_NOT_FOUND;
+        }
+        cs->bsf = bsf;
+    }
     return 0;
 }
 
@@ -216,6 +250,8 @@ static int match_streams(AVFormatContext *avf)
     if (!map)
         return AVERROR(ENOMEM);
     cat->cur_file->streams = map;
+    memset(map + cat->cur_file->nb_streams, 0,
+           (cat->avf->nb_streams - cat->cur_file->nb_streams) * sizeof(*map));
 
     for (i = cat->cur_file->nb_streams; i < cat->avf->nb_streams; i++)
         map[i].out_stream_index = -1;
@@ -231,6 +267,9 @@ static int match_streams(AVFormatContext *avf)
     }
     if (ret < 0)
         return ret;
+    for (i = cat->cur_file->nb_streams; i < cat->avf->nb_streams; i++)
+        if ((ret = detect_stream_specific(avf, i)) < 0)
+            return ret;
     cat->cur_file->nb_streams = cat->avf->nb_streams;
     return 0;
 }
@@ -390,6 +429,46 @@ static int open_next_file(AVFormatContext *avf)
     return open_file(avf, fileno);
 }
 
+static int filter_packet(AVFormatContext *avf, ConcatStream *cs, AVPacket *pkt)
+{
+    AVStream *st = avf->streams[cs->out_stream_index];
+    AVBitStreamFilterContext *bsf;
+    AVPacket pkt2;
+    int ret;
+
+    av_assert0(cs->out_stream_index >= 0);
+    for (bsf = cs->bsf; bsf; bsf = bsf->next) {
+        pkt2 = *pkt;
+        ret = av_bitstream_filter_filter(bsf, st->codec, NULL,
+                                         &pkt2.data, &pkt2.size,
+                                         pkt->data, pkt->size,
+                                         !!(pkt->flags & AV_PKT_FLAG_KEY));
+        if (ret < 0) {
+            av_packet_unref(pkt);
+            return ret;
+        }
+        av_assert0(pkt2.buf);
+        if (ret == 0 && pkt2.data != pkt->data) {
+            if ((ret = av_copy_packet(&pkt2, pkt)) < 0) {
+                av_free(pkt2.data);
+                return ret;
+            }
+            ret = 1;
+        }
+        if (ret > 0) {
+            av_free_packet(pkt);
+            pkt2.buf = av_buffer_create(pkt2.data, pkt2.size,
+                                        av_buffer_default_free, NULL, 0);
+            if (!pkt2.buf) {
+                av_free(pkt2.data);
+                return AVERROR(ENOMEM);
+            }
+        }
+        *pkt = pkt2;
+    }
+    return 0;
+}
+
 static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
 {
     ConcatContext *cat = avf->priv_data;
@@ -418,6 +497,8 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
         pkt->stream_index = cs->out_stream_index;
         break;
     }
+    if ((ret = filter_packet(avf, cs, pkt)))
+        return ret;
 
     delta = av_rescale_q(cat->cur_file->start_time - cat->avf->start_time,
                          AV_TIME_BASE_Q,
@@ -524,6 +605,8 @@ static int concat_seek(AVFormatContext *avf, int stream,
 static const AVOption options[] = {
     { "safe", "enable safe mode",
       OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DEC },
+    { "auto_convert", "automatically convert bitstream format",
+      OFFSET(auto_convert), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
     { NULL }
 };
 
