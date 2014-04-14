@@ -731,6 +731,8 @@ static av_cold void sws_init_swscale(SwsContext *c)
                                                  : hScale16To15_c;
     }
 
+    c->lumConvertRange = NULL;
+    c->chrConvertRange = NULL;
     if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
         if (c->dstBpc <= 14) {
             if (c->srcRange) {
