@@ -56,7 +56,7 @@
 
 #include "libavcodec/fft.h"
 
-#define MAX_LOG2_NFFT 16 //!< Specifies maxiumum allowed fft size
+#define MAX_LOG2_NFFT 16 //!< Specifies maximum allowed fft size
 #define MAX_FFT_SIZE (1 << MAX_LOG2_NFFT)
 
 extern int32_t w_tab_sr[];

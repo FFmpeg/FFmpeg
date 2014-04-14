@@ -102,7 +102,7 @@ static void frac_add(AVFrac *f, int64_t incr)
     f->num = num;
 }
 
-AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precission)
+AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precision)
 {
     AVRational q;
     int j;
@@ -113,9 +113,9 @@ AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precissi
         q = st->codec->time_base;
     }
     for (j=2; j<14; j+= 1+(j>2))
-        while (q.den / q.num < min_precission && q.num % j == 0)
+        while (q.den / q.num < min_precision && q.num % j == 0)
             q.num /= j;
-    while (q.den / q.num < min_precission && q.den < (1<<24))
+    while (q.den / q.num < min_precision && q.den < (1<<24))
         q.den <<= 1;
 
     return q;

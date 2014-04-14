@@ -82,7 +82,7 @@ int ff_spatial_idwt_init2(DWTContext *d, IDWTELEM *buffer, int width, int height
 
 void ff_spatial_idwt_slice2(DWTContext *d, int y);
 
-// shared stuff for simd optimiztions
+// shared stuff for simd optimizations
 #define COMPOSE_53iL0(b0, b1, b2)\
     (b1 - ((b0 + b2 + 2) >> 2))
 

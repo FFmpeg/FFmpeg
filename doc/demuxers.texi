@@ -266,7 +266,7 @@ If set to 1, will set frame timestamp to modification time of image file. Note
 that monotonity of timestamps is not provided: images go in the same order as
 without this option. Default value is 0.
 If set to 2, will set frame timestamp to the modification time of the image file in
-nanosecond precission.
+nanosecond precision.
 @item video_size
 Set the video size of the images to read. If not specified the video
 size is guessed from the first image file in the sequence.

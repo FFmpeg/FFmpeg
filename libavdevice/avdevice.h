@@ -135,7 +135,7 @@ enum AVAppToDevMessageType {
     /**
      * Repaint request message.
      *
-     * Message is sent to the device when window have to be rapainted.
+     * Message is sent to the device when window has to be repainted.
      *
      * data: AVDeviceRect: area required to be repainted.
      *       NULL: whole area is required to be repainted.
@@ -231,7 +231,7 @@ enum AVDevToAppMessageType {
      * Display window buffer message.
      *
      * Device requests to display a window buffer.
-     * Message is sent when new frame is ready to be displyed.
+     * Message is sent when new frame is ready to be displayed.
      * Usually buffers need to be swapped in handler of this message.
      *
      * data: NULL.
@@ -327,7 +327,7 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s,
  * Queried capabilities allows to set up converters of video or audio
  * parameters that fit to the device.
  *
- * List of capablities that can be queried:
+ * List of capabilities that can be queried:
  *  - Capabilities valid for both audio and video devices:
  *    - codec:          supported audio/video codecs.
  *                      type: AV_OPT_TYPE_INT (AVCodecID value)
@@ -391,9 +391,9 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s,
  */
 
 /**
- * Structure describes device capabilites.
+ * Structure describes device capabilities.
  *
- * It is used by devices in conjuntion with av_device_capabilities AVOption table
+ * It is used by devices in conjunction with av_device_capabilities AVOption table
  * to implement capabilities probing API based on AVOption API. Should not be used directly.
  */
 typedef struct AVDeviceCapabilitiesQuery {
@@ -413,7 +413,7 @@ typedef struct AVDeviceCapabilitiesQuery {
 } AVDeviceCapabilitiesQuery;
 
 /**
- * AVOption table used by devices to implement device capabilites API. Should not be used by a user.
+ * AVOption table used by devices to implement device capabilities API. Should not be used by a user.
  */
 extern const AVOption av_device_capabilities[];
 
@@ -478,7 +478,7 @@ typedef struct AVDeviceInfoList {
 int avdevice_list_devices(struct AVFormatContext *s, AVDeviceInfoList **device_list);
 
 /**
- * Convinient function to free result of avdevice_list_devices().
+ * Convenient function to free result of avdevice_list_devices().
  *
  * @param devices device list to be freed.
  */

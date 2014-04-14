@@ -219,7 +219,7 @@ static inline void skip_bits_long(GetBitContext *s, int n)
 }
 
 /**
- * read mpeg1 dc style vlc (sign bit + mantisse with no MSB).
+ * read mpeg1 dc style vlc (sign bit + mantissa with no MSB).
  * if MSB not set it is negative
  * @param n length in bits
  */
