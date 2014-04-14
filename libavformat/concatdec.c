@@ -369,7 +369,10 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
         if (ret < 0)
             return ret;
         if (cat->match_streams) {
-            match_streams(avf);
+            if ((ret = match_streams(avf)) < 0) {
+                av_packet_unref(pkt);
+                return ret;
+            }
             cs = &cat->cur_file->streams[pkt->stream_index];
             if (cs->out_stream_index < 0) {
                 av_packet_unref(pkt);
