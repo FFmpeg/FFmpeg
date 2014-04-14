@@ -25,6 +25,11 @@
 #include "internal.h"
 #include "url.h"
 
+typedef enum ConcatMatchMode {
+    MATCH_ONE_TO_ONE,
+    MATCH_EXACT_ID,
+} ConcatMatchMode;
+
 typedef struct ConcatStream {
     int out_stream_index;
 } ConcatStream;
@@ -45,7 +50,7 @@ typedef struct {
     AVFormatContext *avf;
     int safe;
     int seekable;
-    int match_streams;
+    ConcatMatchMode stream_match_mode;
 } ConcatContext;
 
 static int concat_probe(AVProbeData *probe)
@@ -145,6 +150,8 @@ static int copy_stream_props(AVStream *st, AVStream *source_st)
 {
     int ret;
 
+    if (st->codec->codec_id || !source_st->codec->codec_id)
+        return 0;
     if ((ret = avcodec_copy_context(st->codec, source_st->codec)) < 0)
         return ret;
     st->r_frame_rate        = source_st->r_frame_rate;
@@ -154,15 +161,55 @@ static int copy_stream_props(AVStream *st, AVStream *source_st)
     return 0;
 }
 
-static int match_streams(AVFormatContext *avf)
+static int match_streams_one_to_one(AVFormatContext *avf)
 {
     ConcatContext *cat = avf->priv_data;
     AVStream *st;
-    ConcatStream *map;
+    int i, ret;
+
+    for (i = cat->cur_file->nb_streams; i < cat->avf->nb_streams; i++) {
+        if (i < avf->nb_streams) {
+            st = avf->streams[i];
+        } else {
+            if (!(st = avformat_new_stream(avf, NULL)))
+                return AVERROR(ENOMEM);
+        }
+        if ((ret = copy_stream_props(st, cat->avf->streams[i])) < 0)
+            return ret;
+        cat->cur_file->streams[i].out_stream_index = i;
+    }
+    return 0;
+}
+
+static int match_streams_exact_id(AVFormatContext *avf)
+{
+    ConcatContext *cat = avf->priv_data;
+    AVStream *st;
     int i, j, ret;
 
-    if (!cat->match_streams ||
-        cat->cur_file->nb_streams >= cat->avf->nb_streams)
+    for (i = cat->cur_file->nb_streams; i < cat->avf->nb_streams; i++) {
+        st = cat->avf->streams[i];
+        for (j = 0; j < avf->nb_streams; j++) {
+            if (avf->streams[j]->id == st->id) {
+                av_log(avf, AV_LOG_VERBOSE,
+                       "Match slave stream #%d with stream #%d id 0x%x\n",
+                       i, j, st->id);
+                if ((ret = copy_stream_props(avf->streams[j], st)) < 0)
+                    return ret;
+                cat->cur_file->streams[i].out_stream_index = j;
+            }
+        }
+    }
+    return 0;
+}
+
+static int match_streams(AVFormatContext *avf)
+{
+    ConcatContext *cat = avf->priv_data;
+    ConcatStream *map;
+    int i, ret;
+
+    if (cat->cur_file->nb_streams >= cat->avf->nb_streams)
         return 0;
     map = av_realloc(cat->cur_file->streams,
                      cat->avf->nb_streams * sizeof(*map));
@@ -170,22 +217,20 @@ static int match_streams(AVFormatContext *avf)
         return AVERROR(ENOMEM);
     cat->cur_file->streams = map;
 
-    for (i = cat->cur_file->nb_streams; i < cat->avf->nb_streams; i++) {
-        st = cat->avf->streams[i];
+    for (i = cat->cur_file->nb_streams; i < cat->avf->nb_streams; i++)
         map[i].out_stream_index = -1;
-        for (j = 0; j < avf->nb_streams; j++) {
-            if (avf->streams[j]->id == st->id) {
-                av_log(avf, AV_LOG_VERBOSE,
-                       "Match slave stream #%d with stream #%d id 0x%x\n",
-                       i, j, st->id);
-                map[i].out_stream_index = j;
-                if (!avf->streams[j]->codec->codec_id && st->codec->codec_id)
-                    if ((ret = copy_stream_props(avf->streams[j], st)) < 0)
-                        return ret;
-            }
-        }
+    switch (cat->stream_match_mode) {
+    case MATCH_ONE_TO_ONE:
+        ret = match_streams_one_to_one(avf);
+        break;
+    case MATCH_EXACT_ID:
+        ret = match_streams_exact_id(avf);
+        break;
+    default:
+        ret = AVERROR_BUG;
     }
-
+    if (ret < 0)
+        return ret;
     cat->cur_file->nb_streams = cat->avf->nb_streams;
     return 0;
 }
@@ -227,8 +272,10 @@ static int concat_read_close(AVFormatContext *avf)
 
     if (cat->avf)
         avformat_close_input(&cat->avf);
-    for (i = 0; i < cat->nb_files; i++)
+    for (i = 0; i < cat->nb_files; i++) {
         av_freep(&cat->files[i].url);
+        av_freep(&cat->files[i].streams);
+    }
     av_freep(&cat->files);
     return 0;
 }
@@ -241,7 +288,6 @@ static int concat_read_header(AVFormatContext *avf)
     int ret, line = 0, i;
     unsigned nb_files_alloc = 0;
     ConcatFile *file = NULL;
-    AVStream *st;
     int64_t time = 0;
 
     while (1) {
@@ -320,18 +366,10 @@ static int concat_read_header(AVFormatContext *avf)
         cat->seekable = 1;
     }
 
-    cat->match_streams = !!avf->nb_streams;
+    cat->stream_match_mode = avf->nb_streams ? MATCH_EXACT_ID :
+                                               MATCH_ONE_TO_ONE;
     if ((ret = open_file(avf, 0)) < 0)
         FAIL(ret);
-    if (!cat->match_streams) {
-        for (i = 0; i < cat->avf->nb_streams; i++) {
-            if (!(st = avformat_new_stream(avf, NULL)))
-                FAIL(AVERROR(ENOMEM));
-            if ((ret = copy_stream_props(st, cat->avf->streams[i])) < 0)
-                FAIL(ret);
-        }
-    }
-
     return 0;
 
 fail:
@@ -368,7 +406,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
         }
         if (ret < 0)
             return ret;
-        if (cat->match_streams) {
+        /* TODO reindent */
             if ((ret = match_streams(avf)) < 0) {
                 av_packet_unref(pkt);
                 return ret;
@@ -379,7 +417,6 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
                 continue;
             }
             pkt->stream_index = cs->out_stream_index;
-        }
         break;
     }
 
