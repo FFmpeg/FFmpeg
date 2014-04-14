@@ -1,0 +1,1787 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="DebugDLL|Win32">
+      <Configuration>DebugDLL</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugDLL|x64">
+      <Configuration>DebugDLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDLL|Win32">
+      <Configuration>ReleaseDLL</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDLL|x64">
+      <Configuration>ReleaseDLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libavformat\allformats.c">
+      <ObjectFileName>$(IntDir)\libavformat_allformats.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\avio.c">
+      <ObjectFileName>$(IntDir)\libavformat_avio.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\aviobuf.c">
+      <ObjectFileName>$(IntDir)\libavformat_aviobuf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\cutils.c">
+      <ObjectFileName>$(IntDir)\libavformat_cutils.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\format.c">
+      <ObjectFileName>$(IntDir)\libavformat_format.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\id3v1.c">
+      <ObjectFileName>$(IntDir)\libavformat_id3v1.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\id3v2.c">
+      <ObjectFileName>$(IntDir)\libavformat_id3v2.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\metadata.c">
+      <ObjectFileName>$(IntDir)\libavformat_metadata.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mux.c">
+      <ObjectFileName>$(IntDir)\libavformat_mux.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\options.c">
+      <ObjectFileName>$(IntDir)\libavformat_options.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\os_support.c">
+      <ObjectFileName>$(IntDir)\libavformat_os_support.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\riff.c">
+      <ObjectFileName>$(IntDir)\libavformat_riff.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\sdp.c">
+      <ObjectFileName>$(IntDir)\libavformat_sdp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\seek.c">
+      <ObjectFileName>$(IntDir)\libavformat_seek.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\url.c">
+      <ObjectFileName>$(IntDir)\libavformat_url.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\utils.c">
+      <ObjectFileName>$(IntDir)\libavformat_utils.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\network.c">
+      <ObjectFileName>$(IntDir)\libavformat_network.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\riffdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_riffdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\riffenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_riffenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rdt.c">
+      <ObjectFileName>$(IntDir)\libavformat_rdt.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtp.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_amr.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_amr.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_asf.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_asf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_g726.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_g726.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_h263.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_h263.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_h263_rfc2190.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_h263_rfc2190.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_h264.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_h264.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_ilbc.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_ilbc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_jpeg.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_jpeg.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_latm.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_latm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_mpeg12.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_mpeg12.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_mpeg4.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_mpeg4.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_mpegts.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_mpegts.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_qcelp.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_qcelp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_qdm2.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_qdm2.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_qt.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_qt.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_svq3.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_svq3.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_vp8.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_vp8.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_xiph.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_xiph.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\srtp.c">
+      <ObjectFileName>$(IntDir)\libavformat_srtp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_chain.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_chain.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\log2_tab.c">
+      <ObjectFileName>$(IntDir)\libavformat_log2_tab.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\golomb_tab.c">
+      <ObjectFileName>$(IntDir)\libavformat_golomb_tab.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\a64.c">
+      <ObjectFileName>$(IntDir)\libavformat_a64.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rawenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_rawenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\aacdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_aacdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\apetag.c">
+      <ObjectFileName>$(IntDir)\libavformat_apetag.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\img2.c">
+      <ObjectFileName>$(IntDir)\libavformat_img2.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rawdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_rawdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ac3dec.c">
+      <ObjectFileName>$(IntDir)\libavformat_ac3dec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\act.c">
+      <ObjectFileName>$(IntDir)\libavformat_act.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\bintext.c">
+      <ObjectFileName>$(IntDir)\libavformat_bintext.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\sauce.c">
+      <ObjectFileName>$(IntDir)\libavformat_sauce.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\adp.c">
+      <ObjectFileName>$(IntDir)\libavformat_adp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\adxdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_adxdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\adtsenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_adtsenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\aea.c">
+      <ObjectFileName>$(IntDir)\libavformat_aea.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\pcm.c">
+      <ObjectFileName>$(IntDir)\libavformat_pcm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\afc.c">
+      <ObjectFileName>$(IntDir)\libavformat_afc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\aiffdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_aiffdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\isom.c">
+      <ObjectFileName>$(IntDir)\libavformat_isom.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mov_chan.c">
+      <ObjectFileName>$(IntDir)\libavformat_mov_chan.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\aiffenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_aiffenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\id3v2enc.c">
+      <ObjectFileName>$(IntDir)\libavformat_id3v2enc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\amr.c">
+      <ObjectFileName>$(IntDir)\libavformat_amr.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\anm.c">
+      <ObjectFileName>$(IntDir)\libavformat_anm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\apc.c">
+      <ObjectFileName>$(IntDir)\libavformat_apc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ape.c">
+      <ObjectFileName>$(IntDir)\libavformat_ape.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\aqtitledec.c">
+      <ObjectFileName>$(IntDir)\libavformat_aqtitledec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\subtitles.c">
+      <ObjectFileName>$(IntDir)\libavformat_subtitles.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\asfdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_asfdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\asf.c">
+      <ObjectFileName>$(IntDir)\libavformat_asf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\asfcrypt.c">
+      <ObjectFileName>$(IntDir)\libavformat_asfcrypt.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\avlanguage.c">
+      <ObjectFileName>$(IntDir)\libavformat_avlanguage.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\asfenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_asfenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\assdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_assdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\assenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_assenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ast.c">
+      <ObjectFileName>$(IntDir)\libavformat_ast.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\astdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_astdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\astenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_astenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\au.c">
+      <ObjectFileName>$(IntDir)\libavformat_au.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\avidec.c">
+      <ObjectFileName>$(IntDir)\libavformat_avidec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\avienc.c">
+      <ObjectFileName>$(IntDir)\libavformat_avienc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\avisynth.c">
+      <ObjectFileName>$(IntDir)\libavformat_avisynth.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\swfenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_swfenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\swf.c">
+      <ObjectFileName>$(IntDir)\libavformat_swf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\avr.c">
+      <ObjectFileName>$(IntDir)\libavformat_avr.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\avs.c">
+      <ObjectFileName>$(IntDir)\libavformat_avs.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\vocdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_vocdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\voc.c">
+      <ObjectFileName>$(IntDir)\libavformat_voc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\bethsoftvid.c">
+      <ObjectFileName>$(IntDir)\libavformat_bethsoftvid.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\bfi.c">
+      <ObjectFileName>$(IntDir)\libavformat_bfi.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\bink.c">
+      <ObjectFileName>$(IntDir)\libavformat_bink.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\bit.c">
+      <ObjectFileName>$(IntDir)\libavformat_bit.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\bmv.c">
+      <ObjectFileName>$(IntDir)\libavformat_bmv.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\boadec.c">
+      <ObjectFileName>$(IntDir)\libavformat_boadec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\brstm.c">
+      <ObjectFileName>$(IntDir)\libavformat_brstm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\c93.c">
+      <ObjectFileName>$(IntDir)\libavformat_c93.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\cafdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_cafdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\caf.c">
+      <ObjectFileName>$(IntDir)\libavformat_caf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mov.c">
+      <ObjectFileName>$(IntDir)\libavformat_mov.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\cafenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_cafenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\cavsvideodec.c">
+      <ObjectFileName>$(IntDir)\libavformat_cavsvideodec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\cdg.c">
+      <ObjectFileName>$(IntDir)\libavformat_cdg.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\cdxl.c">
+      <ObjectFileName>$(IntDir)\libavformat_cdxl.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\cinedec.c">
+      <ObjectFileName>$(IntDir)\libavformat_cinedec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\concatdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_concatdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\crcenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_crcenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\daud.c">
+      <ObjectFileName>$(IntDir)\libavformat_daud.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\dfa.c">
+      <ObjectFileName>$(IntDir)\libavformat_dfa.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\diracdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_diracdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\dnxhddec.c">
+      <ObjectFileName>$(IntDir)\libavformat_dnxhddec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\dsicin.c">
+      <ObjectFileName>$(IntDir)\libavformat_dsicin.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\dtshddec.c">
+      <ObjectFileName>$(IntDir)\libavformat_dtshddec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\dtsdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_dtsdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\dv.c">
+      <ObjectFileName>$(IntDir)\libavformat_dv.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\dvenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_dvenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\dxa.c">
+      <ObjectFileName>$(IntDir)\libavformat_dxa.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\eacdata.c">
+      <ObjectFileName>$(IntDir)\libavformat_eacdata.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\electronicarts.c">
+      <ObjectFileName>$(IntDir)\libavformat_electronicarts.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\epafdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_epafdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ffmdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_ffmdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ffmenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_ffmenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ffmetadec.c">
+      <ObjectFileName>$(IntDir)\libavformat_ffmetadec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ffmetaenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_ffmetaenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\filmstripdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_filmstripdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\filmstripenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_filmstripenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\flacdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_flacdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\flac_picture.c">
+      <ObjectFileName>$(IntDir)\libavformat_flac_picture.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparsevorbis.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparsevorbis.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\replaygain.c">
+      <ObjectFileName>$(IntDir)\libavformat_replaygain.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\vorbiscomment.c">
+      <ObjectFileName>$(IntDir)\libavformat_vorbiscomment.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\flacenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_flacenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\flacenc_header.c">
+      <ObjectFileName>$(IntDir)\libavformat_flacenc_header.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\flic.c">
+      <ObjectFileName>$(IntDir)\libavformat_flic.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\flvdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_flvdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\flvenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_flvenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\avc.c">
+      <ObjectFileName>$(IntDir)\libavformat_avc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\4xm.c">
+      <ObjectFileName>$(IntDir)\libavformat_4xm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\framecrcenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_framecrcenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\framehash.c">
+      <ObjectFileName>$(IntDir)\libavformat_framehash.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\md5enc.c">
+      <ObjectFileName>$(IntDir)\libavformat_md5enc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\frmdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_frmdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\gif.c">
+      <ObjectFileName>$(IntDir)\libavformat_gif.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\gifdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_gifdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\gsmdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_gsmdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\gxf.c">
+      <ObjectFileName>$(IntDir)\libavformat_gxf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\gxfenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_gxfenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\audiointerleave.c">
+      <ObjectFileName>$(IntDir)\libavformat_audiointerleave.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\g722.c">
+      <ObjectFileName>$(IntDir)\libavformat_g722.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\g723_1.c">
+      <ObjectFileName>$(IntDir)\libavformat_g723_1.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\g729dec.c">
+      <ObjectFileName>$(IntDir)\libavformat_g729dec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\h261dec.c">
+      <ObjectFileName>$(IntDir)\libavformat_h261dec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\h263dec.c">
+      <ObjectFileName>$(IntDir)\libavformat_h263dec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\h264dec.c">
+      <ObjectFileName>$(IntDir)\libavformat_h264dec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\hdsenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_hdsenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\hevcdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_hevcdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\hls.c">
+      <ObjectFileName>$(IntDir)\libavformat_hls.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\hlsenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_hlsenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\hnm.c">
+      <ObjectFileName>$(IntDir)\libavformat_hnm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\icodec.c">
+      <ObjectFileName>$(IntDir)\libavformat_icodec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\icoenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_icoenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\idcin.c">
+      <ObjectFileName>$(IntDir)\libavformat_idcin.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\iff.c">
+      <ObjectFileName>$(IntDir)\libavformat_iff.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ilbc.c">
+      <ObjectFileName>$(IntDir)\libavformat_ilbc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\img2dec.c">
+      <ObjectFileName>$(IntDir)\libavformat_img2dec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\img2enc.c">
+      <ObjectFileName>$(IntDir)\libavformat_img2enc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\img2_alias_pix.c">
+      <ObjectFileName>$(IntDir)\libavformat_img2_alias_pix.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\img2_brender_pix.c">
+      <ObjectFileName>$(IntDir)\libavformat_img2_brender_pix.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ingenientdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_ingenientdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ipmovie.c">
+      <ObjectFileName>$(IntDir)\libavformat_ipmovie.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ircamdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_ircamdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ircam.c">
+      <ObjectFileName>$(IntDir)\libavformat_ircam.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ircamenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_ircamenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\iss.c">
+      <ObjectFileName>$(IntDir)\libavformat_iss.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\iv8.c">
+      <ObjectFileName>$(IntDir)\libavformat_iv8.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ivfdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_ivfdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ivfenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_ivfenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\jacosubdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_jacosubdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\jacosubenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_jacosubenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\jvdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_jvdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\latmenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_latmenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\lmlm4.c">
+      <ObjectFileName>$(IntDir)\libavformat_lmlm4.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\loasdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_loasdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\lvfdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_lvfdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\lxfdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_lxfdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\m4vdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_m4vdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\matroskadec.c">
+      <ObjectFileName>$(IntDir)\libavformat_matroskadec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\matroska.c">
+      <ObjectFileName>$(IntDir)\libavformat_matroska.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rmsipr.c">
+      <ObjectFileName>$(IntDir)\libavformat_rmsipr.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\matroskaenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_matroskaenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\hevc.c">
+      <ObjectFileName>$(IntDir)\libavformat_hevc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wv.c">
+      <ObjectFileName>$(IntDir)\libavformat_wv.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mgsts.c">
+      <ObjectFileName>$(IntDir)\libavformat_mgsts.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\microdvddec.c">
+      <ObjectFileName>$(IntDir)\libavformat_microdvddec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\microdvdenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_microdvdenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mm.c">
+      <ObjectFileName>$(IntDir)\libavformat_mm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mmf.c">
+      <ObjectFileName>$(IntDir)\libavformat_mmf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\movenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_movenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\movenchint.c">
+      <ObjectFileName>$(IntDir)\libavformat_movenchint.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mp3enc.c">
+      <ObjectFileName>$(IntDir)\libavformat_mp3enc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mp3dec.c">
+      <ObjectFileName>$(IntDir)\libavformat_mp3dec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpc.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpc8.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpc8.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpegenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpegenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpeg.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpeg.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpegts.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpegts.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpegtsenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpegtsenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpegvideodec.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpegvideodec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpjpeg.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpjpeg.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpl2dec.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpl2dec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mpsubdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpsubdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\msnwc_tcp.c">
+      <ObjectFileName>$(IntDir)\libavformat_msnwc_tcp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mtv.c">
+      <ObjectFileName>$(IntDir)\libavformat_mtv.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mvi.c">
+      <ObjectFileName>$(IntDir)\libavformat_mvi.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mvdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_mvdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mxfdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_mxfdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mxf.c">
+      <ObjectFileName>$(IntDir)\libavformat_mxf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mxfenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_mxfenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mxg.c">
+      <ObjectFileName>$(IntDir)\libavformat_mxg.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ncdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_ncdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\nistspheredec.c">
+      <ObjectFileName>$(IntDir)\libavformat_nistspheredec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\nsvdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_nsvdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\nullenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_nullenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\nutdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_nutdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\nut.c">
+      <ObjectFileName>$(IntDir)\libavformat_nut.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\nutenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_nutenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\nuv.c">
+      <ObjectFileName>$(IntDir)\libavformat_nuv.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparsecelt.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparsecelt.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparsedirac.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparsedirac.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparseflac.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparseflac.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparseogm.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparseogm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparseopus.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparseopus.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparseskeleton.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparseskeleton.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparsespeex.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparsespeex.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparsetheora.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparsetheora.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggparsevp8.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggparsevp8.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oggenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_oggenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\omadec.c">
+      <ObjectFileName>$(IntDir)\libavformat_omadec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\oma.c">
+      <ObjectFileName>$(IntDir)\libavformat_oma.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\omaenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_omaenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\paf.c">
+      <ObjectFileName>$(IntDir)\libavformat_paf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\pcmdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_pcmdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\pcmenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_pcmenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\pjsdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_pjsdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\pmpdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_pmpdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\pva.c">
+      <ObjectFileName>$(IntDir)\libavformat_pva.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\pvfdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_pvfdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\qcp.c">
+      <ObjectFileName>$(IntDir)\libavformat_qcp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\r3d.c">
+      <ObjectFileName>$(IntDir)\libavformat_r3d.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rawvideodec.c">
+      <ObjectFileName>$(IntDir)\libavformat_rawvideodec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\realtextdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_realtextdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\redspark.c">
+      <ObjectFileName>$(IntDir)\libavformat_redspark.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rl2.c">
+      <ObjectFileName>$(IntDir)\libavformat_rl2.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rmdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_rmdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rm.c">
+      <ObjectFileName>$(IntDir)\libavformat_rm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rmenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_rmenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\idroqdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_idroqdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\idroqenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_idroqenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rsd.c">
+      <ObjectFileName>$(IntDir)\libavformat_rsd.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rsodec.c">
+      <ObjectFileName>$(IntDir)\libavformat_rsodec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rso.c">
+      <ObjectFileName>$(IntDir)\libavformat_rso.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rsoenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_rsoenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rpl.c">
+      <ObjectFileName>$(IntDir)\libavformat_rpl.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_aac.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_aac.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_latm.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_latm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_amr.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_amr.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_h263.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_h263.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_h263_rfc2190.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_h263_rfc2190.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_jpeg.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_jpeg.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_mpv.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_mpv.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_h264.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_h264.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_vp8.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_vp8.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_xiph.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_xiph.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtsp.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtspdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtspdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\httpauth.c">
+      <ObjectFileName>$(IntDir)\libavformat_httpauth.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\urldecode.c">
+      <ObjectFileName>$(IntDir)\libavformat_urldecode.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtspenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtspenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\samidec.c">
+      <ObjectFileName>$(IntDir)\libavformat_samidec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\sapdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_sapdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\sapenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_sapenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\sbgdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_sbgdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\sdr2.c">
+      <ObjectFileName>$(IntDir)\libavformat_sdr2.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\segafilm.c">
+      <ObjectFileName>$(IntDir)\libavformat_segafilm.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\segment.c">
+      <ObjectFileName>$(IntDir)\libavformat_segment.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\siff.c">
+      <ObjectFileName>$(IntDir)\libavformat_siff.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\smacker.c">
+      <ObjectFileName>$(IntDir)\libavformat_smacker.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\smjpegdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_smjpegdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\smjpeg.c">
+      <ObjectFileName>$(IntDir)\libavformat_smjpeg.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\smjpegenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_smjpegenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\smoothstreamingenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_smoothstreamingenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\smush.c">
+      <ObjectFileName>$(IntDir)\libavformat_smush.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\sol.c">
+      <ObjectFileName>$(IntDir)\libavformat_sol.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\soxdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_soxdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\soxenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_soxenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\spdif.c">
+      <ObjectFileName>$(IntDir)\libavformat_spdif.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\spdifdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_spdifdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\spdifenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_spdifenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\srtdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_srtdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\srtenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_srtenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\psxstr.c">
+      <ObjectFileName>$(IntDir)\libavformat_psxstr.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\subviewer1dec.c">
+      <ObjectFileName>$(IntDir)\libavformat_subviewer1dec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\subviewerdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_subviewerdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\swfdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_swfdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\takdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_takdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\tedcaptionsdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_tedcaptionsdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\tee.c">
+      <ObjectFileName>$(IntDir)\libavformat_tee.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\thp.c">
+      <ObjectFileName>$(IntDir)\libavformat_thp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\tiertexseq.c">
+      <ObjectFileName>$(IntDir)\libavformat_tiertexseq.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mkvtimestamp_v2.c">
+      <ObjectFileName>$(IntDir)\libavformat_mkvtimestamp_v2.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\tmv.c">
+      <ObjectFileName>$(IntDir)\libavformat_tmv.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\tta.c">
+      <ObjectFileName>$(IntDir)\libavformat_tta.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\tty.c">
+      <ObjectFileName>$(IntDir)\libavformat_tty.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\txd.c">
+      <ObjectFileName>$(IntDir)\libavformat_txd.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\uncodedframecrcenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_uncodedframecrcenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\vc1test.c">
+      <ObjectFileName>$(IntDir)\libavformat_vc1test.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\vc1testenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_vc1testenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\vivo.c">
+      <ObjectFileName>$(IntDir)\libavformat_vivo.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\sierravmd.c">
+      <ObjectFileName>$(IntDir)\libavformat_sierravmd.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\vocenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_vocenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\vplayerdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_vplayerdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\vqf.c">
+      <ObjectFileName>$(IntDir)\libavformat_vqf.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wavdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_wavdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\w64.c">
+      <ObjectFileName>$(IntDir)\libavformat_w64.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wavenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_wavenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wc3movie.c">
+      <ObjectFileName>$(IntDir)\libavformat_wc3movie.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\webvttdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_webvttdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\webvttenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_webvttenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\westwood_aud.c">
+      <ObjectFileName>$(IntDir)\libavformat_westwood_aud.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\westwood_vqa.c">
+      <ObjectFileName>$(IntDir)\libavformat_westwood_vqa.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wtvdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_wtvdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wtv_common.c">
+      <ObjectFileName>$(IntDir)\libavformat_wtv_common.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wtvenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_wtvenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wvdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_wvdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\wvenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_wvenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\xa.c">
+      <ObjectFileName>$(IntDir)\libavformat_xa.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\xmv.c">
+      <ObjectFileName>$(IntDir)\libavformat_xmv.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\xwma.c">
+      <ObjectFileName>$(IntDir)\libavformat_xwma.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\yop.c">
+      <ObjectFileName>$(IntDir)\libavformat_yop.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\yuv4mpeg.c">
+      <ObjectFileName>$(IntDir)\libavformat_yuv4mpeg.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\libmodplug.c">
+      <ObjectFileName>$(IntDir)\libavformat_libmodplug.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\librtmp.c">
+      <ObjectFileName>$(IntDir)\libavformat_librtmp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\libssh.c">
+      <ObjectFileName>$(IntDir)\libavformat_libssh.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\cache.c">
+      <ObjectFileName>$(IntDir)\libavformat_cache.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\concat.c">
+      <ObjectFileName>$(IntDir)\libavformat_concat.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\crypto.c">
+      <ObjectFileName>$(IntDir)\libavformat_crypto.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\data_uri.c">
+      <ObjectFileName>$(IntDir)\libavformat_data_uri.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\file.c">
+      <ObjectFileName>$(IntDir)\libavformat_file.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\ftp.c">
+      <ObjectFileName>$(IntDir)\libavformat_ftp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\gopher.c">
+      <ObjectFileName>$(IntDir)\libavformat_gopher.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\hlsproto.c">
+      <ObjectFileName>$(IntDir)\libavformat_hlsproto.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\http.c">
+      <ObjectFileName>$(IntDir)\libavformat_http.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mmsh.c">
+      <ObjectFileName>$(IntDir)\libavformat_mmsh.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mms.c">
+      <ObjectFileName>$(IntDir)\libavformat_mms.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mmst.c">
+      <ObjectFileName>$(IntDir)\libavformat_mmst.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\md5proto.c">
+      <ObjectFileName>$(IntDir)\libavformat_md5proto.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpproto.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpproto.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\srtpproto.c">
+      <ObjectFileName>$(IntDir)\libavformat_srtpproto.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\subfile.c">
+      <ObjectFileName>$(IntDir)\libavformat_subfile.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\tcp.c">
+      <ObjectFileName>$(IntDir)\libavformat_tcp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\tls.c">
+      <ObjectFileName>$(IntDir)\libavformat_tls.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\udp.c">
+      <ObjectFileName>$(IntDir)\libavformat_udp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\file_open.c">
+      <ObjectFileName>$(IntDir)\libavformat_file_open.obj</ObjectFileName>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libavformat\avformat.h" />
+    <ClInclude Include="..\libavformat\avio.h" />
+    <ClInclude Include="..\libavformat\version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".\project_generate\templates\libavformat.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libavformat\avformatres.rc" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B4824EFF-C340-425D-A4A8-E2E02A71A7AE}</ProjectGuid>
+    <RootNamespace>libavformat</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
+    <TargetName>libavformatd</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
+    <TargetName>libavformatd</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'">
+    <TargetName>libavformat</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'">
+    <TargetName>libavformat</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>libavformatd</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>libavformatd</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>libavformat</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>libavformat</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\libavformat;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libbz2.lib;libmodplug.lib;librtmp.lib;libssh.lib;libopenssl.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavformat
+copy ..\libavformat\avformat.h $(OutDir)\include\libavformat
+copy ..\libavformat\avio.h $(OutDir)\include\libavformat
+copy ..\libavformat\version.h $(OutDir)\include\libavformat
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\avconfig.h (
+del ..\avconfig.h
+)
+if exist $(OutDir)\include\libavformat (
+rd /s /q $(OutDir)\include\libavformat
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\libavformat;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX64</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libbz2.lib;libmodplug.lib;librtmp.lib;libssh.lib;libopenssl.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavformat
+copy ..\libavformat\avformat.h $(OutDir)\include\libavformat
+copy ..\libavformat\avio.h $(OutDir)\include\libavformat
+copy ..\libavformat\version.h $(OutDir)\include\libavformat
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\avconfig.h (
+del ..\avconfig.h
+)
+if exist $(OutDir)\include\libavformat (
+rd /s /q $(OutDir)\include\libavformat
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\libavformat;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\lib\$(TargetName).dll.lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\project_generate\templates\libavformat.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavcodec.dll.lib;libavutil.dll.lib;libbz2.dll.lib;libmodplug.dll.lib;librtmp.dll.lib;libssh.dll.lib;libopenssl.dll.lib;libz.dll.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavformat
+copy ..\libavformat\avformat.h $(OutDir)\include\libavformat
+copy ..\libavformat\avio.h $(OutDir)\include\libavformat
+copy ..\libavformat\version.h $(OutDir)\include\libavformat
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\avconfig.h (
+del ..\avconfig.h
+)
+if exist $(OutDir)\include\libavformat (
+rd /s /q $(OutDir)\include\libavformat
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\libavformat;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\lib\$(TargetName).dll.lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\project_generate\templates\libavformat.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavcodec.dll.lib;libavutil.dll.lib;libbz2.dll.lib;libmodplug.dll.lib;librtmp.dll.lib;libssh.dll.lib;libopenssl.dll.lib;libz.dll.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavformat
+copy ..\libavformat\avformat.h $(OutDir)\include\libavformat
+copy ..\libavformat\avio.h $(OutDir)\include\libavformat
+copy ..\libavformat\version.h $(OutDir)\include\libavformat
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\avconfig.h (
+del ..\avconfig.h
+)
+if exist $(OutDir)\include\libavformat (
+rd /s /q $(OutDir)\include\libavformat
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\libavformat;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libbz2.lib;libmodplug.lib;librtmp.lib;libssh.lib;libopenssl.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavformat
+copy ..\libavformat\avformat.h $(OutDir)\include\libavformat
+copy ..\libavformat\avio.h $(OutDir)\include\libavformat
+copy ..\libavformat\version.h $(OutDir)\include\libavformat
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\avconfig.h (
+del ..\avconfig.h
+)
+if exist $(OutDir)\include\libavformat (
+rd /s /q $(OutDir)\include\libavformat
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\libavformat;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX64</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libbz2.lib;libmodplug.lib;librtmp.lib;libssh.lib;libopenssl.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavformat
+copy ..\libavformat\avformat.h $(OutDir)\include\libavformat
+copy ..\libavformat\avio.h $(OutDir)\include\libavformat
+copy ..\libavformat\version.h $(OutDir)\include\libavformat
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\avconfig.h (
+del ..\avconfig.h
+)
+if exist $(OutDir)\include\libavformat (
+rd /s /q $(OutDir)\include\libavformat
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\libavformat;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\lib\$(TargetName).dll.lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\project_generate\templates\libavformat.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavcodec.dll.lib;libavutil.dll.lib;libbz2.dll.lib;libmodplug.dll.lib;librtmp.dll.lib;libssh.dll.lib;libopenssl.dll.lib;libz.dll.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavformat
+copy ..\libavformat\avformat.h $(OutDir)\include\libavformat
+copy ..\libavformat\avio.h $(OutDir)\include\libavformat
+copy ..\libavformat\version.h $(OutDir)\include\libavformat
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\avconfig.h (
+del ..\avconfig.h
+)
+if exist $(OutDir)\include\libavformat (
+rd /s /q $(OutDir)\include\libavformat
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\libavformat;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\lib\$(TargetName).dll.lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\project_generate\templates\libavformat.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavcodec.dll.lib;libavutil.dll.lib;libbz2.dll.lib;libmodplug.dll.lib;librtmp.dll.lib;libssh.dll.lib;libopenssl.dll.lib;libz.dll.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavformat
+copy ..\libavformat\avformat.h $(OutDir)\include\libavformat
+copy ..\libavformat\avio.h $(OutDir)\include\libavformat
+copy ..\libavformat\version.h $(OutDir)\include\libavformat
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\avconfig.h (
+del ..\avconfig.h
+)
+if exist $(OutDir)\include\libavformat (
+rd /s /q $(OutDir)\include\libavformat
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
