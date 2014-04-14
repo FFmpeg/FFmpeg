@@ -116,8 +116,8 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         index += (frac + dst_index * (int64_t)dst_incr_frac) / c->src_incr;
         frac   = (frac + dst_index * (int64_t)dst_incr_frac) % c->src_incr;
         av_assert2(index >= 0);
-        *consumed= index >> c->phase_shift;
-        index &= c->phase_mask;
+        *consumed= index;
+        index = 0;
     }else if(compensation_distance == 0 && !c->linear && index >= 0){
         int sample_index = 0;
         for(dst_index=0; dst_index < dst_size; dst_index++){
