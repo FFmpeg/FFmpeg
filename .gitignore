@@ -81,3 +81,14 @@
 /tools/trasher
 /tools/seek_print
 /tools/zmqsend
+*.suo
+*.user
+*.sdf
+*.opensdf
+*.obj
+*.pdb
+*.idb
+*.log
+*.tlog
+*.res
+*.manifest
