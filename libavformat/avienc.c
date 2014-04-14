@@ -308,6 +308,12 @@ static int avi_write_header(AVFormatContext *s)
                 if (stream->codec_id != AV_CODEC_ID_XSUB)
                     break;
             case AVMEDIA_TYPE_VIDEO:
+                /* WMP expects RGB 5:5:5 rawvideo in avi to have bpp set to 16. */
+                if (  !stream->codec_tag
+                    && stream->codec_id == AV_CODEC_ID_RAWVIDEO
+                    && stream->pix_fmt == AV_PIX_FMT_RGB555LE
+                    && stream->bits_per_coded_sample == 15)
+                    stream->bits_per_coded_sample = 16;
                 ff_put_bmp_header(pb, stream, ff_codec_bmp_tags, 0, 0);
                 pix_fmt = avpriv_find_pix_fmt(avpriv_pix_fmt_bps_avi,
                                               stream->bits_per_coded_sample);
