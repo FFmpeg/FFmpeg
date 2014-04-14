@@ -1724,7 +1724,6 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    init_get_bits(&s->gb, s->dca_buffer, s->dca_buffer_size * 8);
     if ((ret = dca_parse_frame_header(s)) < 0) {
         //seems like the frame is corrupt, try with the next one
         return ret;
