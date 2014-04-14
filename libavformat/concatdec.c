@@ -25,12 +25,16 @@
 #include "internal.h"
 #include "url.h"
 
+typedef struct ConcatStream {
+    int out_stream_index;
+} ConcatStream;
+
 typedef struct {
     char *url;
     int64_t start_time;
     int64_t duration;
-    int *stream_map;
-    int stream_map_size;
+    ConcatStream *streams;
+    int nb_streams;
 } ConcatFile;
 
 typedef struct {
@@ -154,26 +158,27 @@ static int match_streams(AVFormatContext *avf)
 {
     ConcatContext *cat = avf->priv_data;
     AVStream *st;
-    int *map, i, j, ret;
+    ConcatStream *map;
+    int i, j, ret;
 
     if (!cat->match_streams ||
-        cat->cur_file->stream_map_size >= cat->avf->nb_streams)
+        cat->cur_file->nb_streams >= cat->avf->nb_streams)
         return 0;
-    map = av_realloc(cat->cur_file->stream_map,
+    map = av_realloc(cat->cur_file->streams,
                      cat->avf->nb_streams * sizeof(*map));
     if (!map)
         return AVERROR(ENOMEM);
-    cat->cur_file->stream_map = map;
+    cat->cur_file->streams = map;
 
-    for (i = cat->cur_file->stream_map_size; i < cat->avf->nb_streams; i++) {
+    for (i = cat->cur_file->nb_streams; i < cat->avf->nb_streams; i++) {
         st = cat->avf->streams[i];
-        map[i] = -1;
+        map[i].out_stream_index = -1;
         for (j = 0; j < avf->nb_streams; j++) {
             if (avf->streams[j]->id == st->id) {
                 av_log(avf, AV_LOG_VERBOSE,
                        "Match slave stream #%d with stream #%d id 0x%x\n",
                        i, j, st->id);
-                map[i] = j;
+                map[i].out_stream_index = j;
                 if (!avf->streams[j]->codec->codec_id && st->codec->codec_id)
                     if ((ret = copy_stream_props(avf->streams[j], st)) < 0)
                         return ret;
@@ -181,7 +186,7 @@ static int match_streams(AVFormatContext *avf)
         }
     }
 
-    cat->cur_file->stream_map_size = cat->avf->nb_streams;
+    cat->cur_file->nb_streams = cat->avf->nb_streams;
     return 0;
 }
 
@@ -352,6 +357,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     ConcatContext *cat = avf->priv_data;
     int ret;
     int64_t delta;
+    ConcatStream *cs;
 
     while (1) {
         ret = av_read_frame(cat->avf, pkt);
@@ -364,11 +370,12 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
             return ret;
         if (cat->match_streams) {
             match_streams(avf);
-            pkt->stream_index = cat->cur_file->stream_map[pkt->stream_index];
-            if (pkt->stream_index < 0) {
+            cs = &cat->cur_file->streams[pkt->stream_index];
+            if (cs->out_stream_index < 0) {
                 av_packet_unref(pkt);
                 continue;
             }
+            pkt->stream_index = cs->out_stream_index;
         }
         break;
     }
