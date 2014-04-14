@@ -162,12 +162,57 @@ static int flac_probe(AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION;
 }
 
+static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_index,
+                                             int64_t *ppos, int64_t pos_limit)
+{
+    AVPacket pkt, out_pkt;
+    AVStream *st = s->streams[stream_index];
+    int ret;
+
+    if (avio_seek(s->pb, *ppos, SEEK_SET) < 0)
+        return AV_NOPTS_VALUE;
+
+    av_init_packet(&pkt);
+    st->parser = av_parser_init(st->codec->codec_id);
+    if (!st->parser){
+        return AV_NOPTS_VALUE;
+    }
+    st->parser->flags |= PARSER_FLAG_USE_CODEC_TS;
+
+    for (;;){
+        ret = ff_raw_read_partial_packet(s, &pkt);
+        if (ret < 0){
+            if (ret == AVERROR(EAGAIN))
+                continue;
+            else
+                return AV_NOPTS_VALUE;
+        }
+        av_init_packet(&out_pkt);
+        ret = av_parser_parse2(st->parser, st->codec,
+                               &out_pkt.data, &out_pkt.size, pkt.data, pkt.size,
+                               pkt.pts, pkt.dts, *ppos);
+
+        if (out_pkt.size){
+            int size = out_pkt.size;
+            av_free_packet(&out_pkt);
+            if (st->parser->pts != AV_NOPTS_VALUE){
+                // seeking may not have started from beginning of a frame
+                // calculate frame start position from next frame backwards
+                *ppos = st->parser->next_frame_offset - size;
+                return st->parser->pts;
+            }
+        }
+    }
+    return AV_NOPTS_VALUE;
+}
+
 AVInputFormat ff_flac_demuxer = {
     .name           = "flac",
     .long_name      = NULL_IF_CONFIG_SMALL("raw FLAC"),
     .read_probe     = flac_probe,
     .read_header    = flac_read_header,
     .read_packet    = ff_raw_read_partial_packet,
+    .read_timestamp = flac_read_timestamp,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "flac",
     .raw_codec_id   = AV_CODEC_ID_FLAC,
