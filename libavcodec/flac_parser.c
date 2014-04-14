@@ -489,6 +489,14 @@ static int get_best_header(FLACParseContext* fpc, const uint8_t **poutbuf,
                                         &fpc->wrap_buf,
                                         &fpc->wrap_buf_allocated_size);
 
+
+    if (fpc->pc->flags & PARSER_FLAG_USE_CODEC_TS){
+        if (header->fi.is_var_size)
+          fpc->pc->pts = header->fi.frame_or_sample_num;
+        else if (header->best_child)
+          fpc->pc->pts = header->fi.frame_or_sample_num * header->fi.blocksize;
+    }
+
     fpc->best_header_valid = 0;
     fpc->last_fi_valid = 1;
     fpc->last_fi = header->fi;
@@ -516,6 +524,11 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             s->duration = fi.blocksize;
             if (!avctx->sample_rate)
                 avctx->sample_rate = fi.samplerate;
+            if (fpc->pc->flags & PARSER_FLAG_USE_CODEC_TS){
+                fpc->pc->pts = fi.frame_or_sample_num;
+                if (!fi.is_var_size)
+                  fpc->pc->pts *= fi.blocksize;
+            }
         }
         *poutbuf      = buf;
         *poutbuf_size = buf_size;
