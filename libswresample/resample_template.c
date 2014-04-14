@@ -104,7 +104,7 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
     av_assert1(c->felem_size == sizeof(FELEM));
 
     if(compensation_distance == 0 && c->filter_length == 1 && c->phase_shift==0){
-        int64_t index2= ((int64_t)index)<<32;
+        int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*index;
         int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
         dst_size= FFMIN(dst_size, (src_size-1-index) * (int64_t)c->src_incr / c->dst_incr);
 

@@ -326,13 +326,13 @@ fate-swr-resample_nn-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
 fate-swr-resample_nn-fltp-44100-8000: CMP_TARGET = 590.98
 fate-swr-resample_nn-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_nn-fltp-8000-44100: CMP_TARGET = 6330.39
+fate-swr-resample_nn-fltp-8000-44100: CMP_TARGET = 3163.03
 fate-swr-resample_nn-fltp-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 
 fate-swr-resample_nn-s16p-44100-8000: CMP_TARGET = 590.97
 fate-swr-resample_nn-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_nn-s16p-8000-44100: CMP_TARGET = 6330.47
+fate-swr-resample_nn-s16p-8000-44100: CMP_TARGET = 3163.10
 fate-swr-resample_nn-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 endef
 
