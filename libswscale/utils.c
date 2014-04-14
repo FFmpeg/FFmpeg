@@ -1334,20 +1334,6 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
 
-    /* unscaled special cases */
-    if (unscaled && !usesHFilter && !usesVFilter &&
-        (c->srcRange == c->dstRange || isAnyRGB(dstFormat))) {
-        ff_get_unscaled_swscale(c);
-
-        if (c->swscale) {
-            if (flags & SWS_PRINT_INFO)
-                av_log(c, AV_LOG_INFO,
-                       "using unscaled %s -> %s special converter\n",
-                       av_get_pix_fmt_name(srcFormat), av_get_pix_fmt_name(dstFormat));
-            return 0;
-        }
-    }
-
     c->srcBpc = 1 + desc_src->comp[0].depth_minus1;
     if (c->srcBpc < 8)
         c->srcBpc = 8;
@@ -1641,6 +1627,20 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                "chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
                c->chrSrcW, c->chrSrcH, c->chrDstW, c->chrDstH,
                c->chrXInc, c->chrYInc);
+    }
+
+    /* unscaled special cases */
+    if (unscaled && !usesHFilter && !usesVFilter &&
+        (c->srcRange == c->dstRange || isAnyRGB(dstFormat))) {
+        ff_get_unscaled_swscale(c);
+
+        if (c->swscale) {
+            if (flags & SWS_PRINT_INFO)
+                av_log(c, AV_LOG_INFO,
+                       "using unscaled %s -> %s special converter\n",
+                       av_get_pix_fmt_name(srcFormat), av_get_pix_fmt_name(dstFormat));
+            return 0;
+        }
     }
 
     c->swscale = ff_getSwsFunc(c);
