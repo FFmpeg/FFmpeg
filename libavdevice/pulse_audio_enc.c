@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
 #include <pulse/pulseaudio.h>
 #include <pulse/error.h>
 #include "libavformat/avformat.h"
@@ -42,7 +43,122 @@ typedef struct PulseData {
     pa_context *ctx;
     pa_stream *stream;
     int nonblocking;
+    int mute;
+    pa_volume_t base_volume;
+    pa_volume_t last_volume;
 } PulseData;
+
+static void pulse_audio_sink_device_cb(pa_context *ctx, const pa_sink_info *dev,
+                                       int eol, void *userdata)
+{
+    PulseData *s = userdata;
+
+    if (s->ctx != ctx)
+        return;
+
+    if (eol) {
+        pa_threaded_mainloop_signal(s->mainloop, 0);
+    } else {
+        if (dev->flags & PA_SINK_FLAT_VOLUME)
+            s->base_volume = dev->base_volume;
+        else
+            s->base_volume = PA_VOLUME_NORM;
+        av_log(s, AV_LOG_DEBUG, "base volume: %u\n", s->base_volume);
+    }
+}
+
+/* Mainloop must be locked before calling this function as it uses pa_threaded_mainloop_wait. */
+static int pulse_update_sink_info(AVFormatContext *h)
+{
+    PulseData *s = h->priv_data;
+    pa_operation *op;
+    if (!(op = pa_context_get_sink_info_by_name(s->ctx, s->device,
+                                                pulse_audio_sink_device_cb, s))) {
+        av_log(s, AV_LOG_ERROR, "pa_context_get_sink_info_by_name failed.\n");
+        return AVERROR_EXTERNAL;
+    }
+    while (pa_operation_get_state(op) == PA_OPERATION_RUNNING)
+        pa_threaded_mainloop_wait(s->mainloop);
+    pa_operation_unref(op);
+    return 0;
+}
+
+static void pulse_audio_sink_input_cb(pa_context *ctx, const pa_sink_input_info *i,
+                                      int eol, void *userdata)
+{
+    AVFormatContext *h = userdata;
+    PulseData *s = h->priv_data;
+
+    if (s->ctx != ctx)
+        return;
+
+    if (!eol) {
+        double val;
+        pa_volume_t vol = pa_cvolume_avg(&i->volume);
+        if (s->mute < 0 || (s->mute && !i->mute) || (!s->mute && i->mute)) {
+            s->mute = i->mute;
+            avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_MUTE_STATE_CHANGED, &s->mute, sizeof(s->mute));
+        }
+
+        vol = pa_sw_volume_divide(vol, s->base_volume);
+        if (s->last_volume != vol) {
+            val = (double)vol / PA_VOLUME_NORM;
+            avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_VOLUME_LEVEL_CHANGED, &val, sizeof(val));
+            s->last_volume = vol;
+        }
+    }
+}
+
+/* This function creates new loop so may be called from PA callbacks.
+   Mainloop must be locked before calling this function as it operates on streams. */
+static int pulse_update_sink_input_info(AVFormatContext *h)
+{
+    PulseData *s = h->priv_data;
+    pa_operation *op;
+    enum pa_operation_state op_state;
+    pa_mainloop *ml = NULL;
+    pa_context *ctx = NULL;
+    int ret = 0;
+
+    if ((ret = ff_pulse_audio_connect_context(&ml, &ctx, s->server, "Update sink input information")) < 0)
+        return ret;
+
+    if (!(op = pa_context_get_sink_input_info(ctx, pa_stream_get_index(s->stream),
+                                              pulse_audio_sink_input_cb, h))) {
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    while ((op_state = pa_operation_get_state(op)) == PA_OPERATION_RUNNING)
+        pa_mainloop_iterate(ml, 1, NULL);
+    pa_operation_unref(op);
+    if (op_state != PA_OPERATION_DONE) {
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+  fail:
+    ff_pulse_audio_disconnect_context(&ml, &ctx);
+    if (ret)
+        av_log(s, AV_LOG_ERROR, "pa_context_get_sink_input_info failed.\n");
+    return ret;
+}
+
+static void pulse_event(pa_context *ctx, pa_subscription_event_type_t t,
+                        uint32_t idx, void *userdata)
+{
+    AVFormatContext *h = userdata;
+    PulseData *s = h->priv_data;
+
+    if (s->ctx != ctx)
+        return;
+
+    if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK_INPUT) {
+        if ((t & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_CHANGE)
+            // Calling from mainloop callback. No need to lock mainloop.
+            pulse_update_sink_input_info(h);
+    }
+}
 
 static void pulse_stream_writable(pa_stream *stream, size_t nbytes, void *userdata)
 {
@@ -163,6 +279,68 @@ static int pulse_flash_stream(PulseData *s)
     return pulse_finish_stream_operation(s, op, "pa_stream_flush");
 }
 
+static void pulse_context_result(pa_context *ctx, int success, void *userdata)
+{
+    PulseData *s = userdata;
+
+    if (s->ctx != ctx)
+        return;
+
+    s->last_result = success ? 0 : AVERROR_EXTERNAL;
+    pa_threaded_mainloop_signal(s->mainloop, 0);
+}
+
+static int pulse_finish_context_operation(PulseData *s, pa_operation *op, const char *name)
+{
+    if (!op) {
+        pa_threaded_mainloop_unlock(s->mainloop);
+        av_log(s, AV_LOG_ERROR, "%s failed.\n", name);
+        return AVERROR_EXTERNAL;
+    }
+    s->last_result = 2;
+    while (s->last_result == 2)
+        pa_threaded_mainloop_wait(s->mainloop);
+    pa_operation_unref(op);
+    pa_threaded_mainloop_unlock(s->mainloop);
+    if (s->last_result != 0)
+        av_log(s, AV_LOG_ERROR, "%s failed.\n", name);
+    return s->last_result;
+}
+
+static int pulse_set_mute(PulseData *s)
+{
+    pa_operation *op;
+    pa_threaded_mainloop_lock(s->mainloop);
+    op = pa_context_set_sink_input_mute(s->ctx, pa_stream_get_index(s->stream),
+                                        s->mute, pulse_context_result, s);
+    return pulse_finish_context_operation(s, op, "pa_context_set_sink_input_mute");
+}
+
+static int pulse_set_volume(PulseData *s, double volume)
+{
+    pa_operation *op;
+    pa_cvolume cvol;
+    pa_volume_t vol;
+    const pa_sample_spec *ss = pa_stream_get_sample_spec(s->stream);
+
+    vol = pa_sw_volume_multiply(lround(volume * PA_VOLUME_NORM), s->base_volume);
+    pa_cvolume_set(&cvol, ss->channels, PA_VOLUME_NORM);
+    pa_sw_cvolume_multiply_scalar(&cvol, &cvol, vol);
+    pa_threaded_mainloop_lock(s->mainloop);
+    op = pa_context_set_sink_input_volume(s->ctx, pa_stream_get_index(s->stream),
+                                          &cvol, pulse_context_result, s);
+    return pulse_finish_context_operation(s, op, "pa_context_set_sink_input_volume");
+}
+
+static int pulse_subscribe_events(PulseData *s)
+{
+    pa_operation *op;
+
+    pa_threaded_mainloop_lock(s->mainloop);
+    op = pa_context_subscribe(s->ctx, PA_SUBSCRIPTION_MASK_SINK_INPUT, pulse_context_result, s);
+    return pulse_finish_context_operation(s, op, "pa_context_subscribe");
+}
+
 static void pulse_map_channels_to_pulse(int64_t channel_layout, pa_channel_map *channel_map)
 {
     channel_map->channels = 0;
@@ -236,6 +414,7 @@ static av_cold int pulse_write_trailer(AVFormatContext *h)
         if (s->ctx) {
             pa_context_disconnect(s->ctx);
             pa_context_set_state_callback(s->ctx, NULL, NULL);
+            pa_context_set_subscribe_callback(s->ctx, NULL, NULL);
             pa_context_unref(s->ctx);
             s->ctx = NULL;
         }
@@ -348,6 +527,7 @@ static av_cold int pulse_write_header(AVFormatContext *h)
         goto fail;
     }
     pa_context_set_state_callback(s->ctx, pulse_context_state, s);
+    pa_context_set_subscribe_callback(s->ctx, pulse_event, h);
 
     if ((ret = pa_context_connect(s->ctx, s->server, 0, NULL)) < 0) {
         av_log(s, AV_LOG_ERROR, "Cannot connect context: %s.\n", pa_strerror(ret));
@@ -362,6 +542,12 @@ static av_cold int pulse_write_header(AVFormatContext *h)
 
     s->stream = pa_stream_new(s->ctx, stream_name, &sample_spec,
                               channel_map.channels ? &channel_map : NULL);
+
+    if ((ret = pulse_update_sink_info(h)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Updating sink info failed.\n");
+        goto fail;
+    }
+
     if (!s->stream) {
         av_log(s, AV_LOG_ERROR, "Cannot create stream.\n");
         ret = AVERROR(ENOMEM);
@@ -384,6 +570,23 @@ static av_cold int pulse_write_header(AVFormatContext *h)
         goto fail;
     }
 
+    pa_threaded_mainloop_unlock(s->mainloop);
+
+    if ((ret = pulse_subscribe_events(s)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Event subscription failed.\n");
+        /* a bit ugly but the simplest to lock here*/
+        pa_threaded_mainloop_lock(s->mainloop);
+        goto fail;
+    }
+
+    /* force control messages */
+    s->mute = -1;
+    s->last_volume = PA_VOLUME_INVALID;
+    pa_threaded_mainloop_lock(s->mainloop);
+    if ((ret = pulse_update_sink_input_info(h)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Updating sink input info failed.\n");
+        goto fail;
+    }
     pa_threaded_mainloop_unlock(s->mainloop);
 
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
@@ -477,6 +680,48 @@ static int pulse_get_device_list(AVFormatContext *h, AVDeviceInfoList *device_li
     return ff_pulse_audio_get_devices(device_list, s->server, 1);
 }
 
+static int pulse_control_message(AVFormatContext *h, int type,
+                                 void *data, size_t data_size)
+{
+    PulseData *s = h->priv_data;
+    int ret;
+
+    switch(type) {
+    case AV_APP_TO_DEV_MUTE:
+        if (!s->mute) {
+            s->mute = 1;
+            return pulse_set_mute(s);
+        }
+        return 0;
+    case AV_APP_TO_DEV_UNMUTE:
+        if (s->mute) {
+            s->mute = 0;
+            return pulse_set_mute(s);
+        }
+        return 0;
+    case AV_APP_TO_DEV_TOGGLE_MUTE:
+        s->mute = !s->mute;
+        return pulse_set_mute(s);
+    case AV_APP_TO_DEV_SET_VOLUME:
+        return pulse_set_volume(s, *(double *)data);
+    case AV_APP_TO_DEV_GET_VOLUME:
+        s->last_volume = PA_VOLUME_INVALID;
+        pa_threaded_mainloop_lock(s->mainloop);
+        ret = pulse_update_sink_input_info(h);
+        pa_threaded_mainloop_unlock(s->mainloop);
+        return ret;
+    case AV_APP_TO_DEV_GET_MUTE:        
+        s->mute = -1;
+        pa_threaded_mainloop_lock(s->mainloop);
+        ret = pulse_update_sink_input_info(h);
+        pa_threaded_mainloop_unlock(s->mainloop);
+        return ret;
+    default:
+        break;
+    }
+    return AVERROR(ENOSYS);
+}
+
 #define OFFSET(a) offsetof(PulseData, a)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -509,6 +754,7 @@ AVOutputFormat ff_pulse_muxer = {
     .write_trailer        = pulse_write_trailer,
     .get_output_timestamp = pulse_get_output_timestamp,
     .get_device_list      = pulse_get_device_list,
+    .control_message      = pulse_control_message,
     .flags                = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
     .priv_class           = &pulse_muxer_class,
 };
