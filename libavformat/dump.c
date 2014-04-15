@@ -21,8 +21,12 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/display.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/replaygain.h"
 
 #include "avformat.h"
 
@@ -131,6 +135,143 @@ static void dump_metadata(void *ctx, AVDictionary *m, const char *indent)
     }
 }
 
+/* param change side data*/
+static void dump_paramchange(void *ctx, AVPacketSideData *sd)
+{
+    int size = sd->size;
+    const uint8_t *data = sd->data;
+    uint32_t flags, channels, sample_rate, width, height;
+    uint64_t layout;
+
+    if (!data || sd->size < 4)
+        goto fail;
+
+    flags = AV_RL32(data);
+    data += 4;
+    size -= 4;
+
+    if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT) {
+        if (size < 4)
+            goto fail;
+        channels = AV_RL32(data);
+        data += 4;
+        size -= 4;
+        av_log(ctx, AV_LOG_INFO, "channel count %d, ", channels);
+    }
+    if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT) {
+        if (size < 8)
+            goto fail;
+        layout = AV_RL64(data);
+        data += 8;
+        size -= 8;
+        av_log(ctx, AV_LOG_INFO,
+               "channel layout: %s, ", av_get_channel_name(layout));
+    }
+    if (flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE) {
+        if (size < 4)
+            goto fail;
+        sample_rate = AV_RL32(data);
+        data += 4;
+        size -= 4;
+        av_log(ctx, AV_LOG_INFO, "sample_rate %d, ", sample_rate);
+    }
+    if (flags & AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS) {
+        if (size < 8)
+            goto fail;
+        width = AV_RL32(data);
+        data += 4;
+        size -= 4;
+        height = AV_RL32(data);
+        data += 4;
+        size -= 4;
+        av_log(ctx, AV_LOG_INFO, "width %d height %d", width, height);
+    }
+
+    return;
+fail:
+    av_log(ctx, AV_LOG_INFO, "unknown param");
+}
+
+/* replaygain side data*/
+static void print_gain(void *ctx, const char *str, int32_t gain)
+{
+    av_log(ctx, AV_LOG_INFO, "%s - ", str);
+    if (gain == INT32_MIN)
+        av_log(ctx, AV_LOG_INFO, "unknown");
+    else
+        av_log(ctx, AV_LOG_INFO, "%f", gain / 100000.0f);
+    av_log(ctx, AV_LOG_INFO, ", ");
+}
+
+static void print_peak(void *ctx, const char *str, uint32_t peak)
+{
+    av_log(ctx, AV_LOG_INFO, "%s - ", str);
+    if (!peak)
+        av_log(ctx, AV_LOG_INFO, "unknown");
+    else
+        av_log(ctx, AV_LOG_INFO, "%f", (float) peak / UINT32_MAX);
+    av_log(ctx, AV_LOG_INFO, ", ");
+}
+
+static void dump_replaygain(void *ctx, AVPacketSideData *sd)
+{
+    AVReplayGain *rg;
+
+    if (sd->size < sizeof(*rg)) {
+        av_log(ctx, AV_LOG_INFO, "invalid data");
+        return;
+    }
+    rg = (AVReplayGain*)sd->data;
+
+    print_gain(ctx, "track gain", rg->track_gain);
+    print_peak(ctx, "track peak", rg->track_peak);
+    print_gain(ctx, "album gain", rg->album_gain);
+    print_peak(ctx, "album peak", rg->album_peak);
+}
+
+static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
+{
+    int i;
+
+    if (st->nb_side_data)
+        av_log(ctx, AV_LOG_INFO, "%sSide data:\n", indent);
+
+    for (i = 0; i < st->nb_side_data; i++) {
+        AVPacketSideData sd = st->side_data[i];
+        av_log(ctx, AV_LOG_INFO, "%s  ", indent);
+
+        switch (sd.type) {
+        case AV_PKT_DATA_PALETTE:
+            av_log(ctx, AV_LOG_INFO, "palette");
+            break;
+        case AV_PKT_DATA_NEW_EXTRADATA:
+            av_log(ctx, AV_LOG_INFO, "new extradata");
+            break;
+        case AV_PKT_DATA_PARAM_CHANGE:
+            av_log(ctx, AV_LOG_INFO, "paramchange: ");
+            dump_paramchange(ctx, &sd);
+            break;
+        case AV_PKT_DATA_H263_MB_INFO:
+            av_log(ctx, AV_LOG_INFO, "h263 macroblock info");
+            break;
+        case AV_PKT_DATA_REPLAYGAIN:
+            av_log(ctx, AV_LOG_INFO, "replaygain: ");
+            dump_replaygain(ctx, &sd);
+            break;
+        case AV_PKT_DATA_DISPLAYMATRIX:
+            av_log(ctx, AV_LOG_INFO, "displaymatrix: rotation of %.2f degrees",
+                   av_display_rotation_get((int32_t *)sd.data));
+            break;
+        default:
+            av_log(ctx, AV_LOG_WARNING,
+                   "unknown side data type %d (%d bytes)", sd.type, sd.size);
+            break;
+        }
+
+        av_log(ctx, AV_LOG_INFO, "\n");
+    }
+}
+
 /* "user interface" functions */
 static void dump_stream_format(AVFormatContext *ic, int i,
                                int index, int is_output)
@@ -198,6 +339,8 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     av_log(NULL, AV_LOG_INFO, "\n");
 
     dump_metadata(NULL, st->metadata, "    ");
+
+    dump_sidedata(NULL, st, "    ");
 }
 
 void av_dump_format(AVFormatContext *ic, int index,
