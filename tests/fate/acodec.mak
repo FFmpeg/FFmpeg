@@ -67,6 +67,7 @@ fate-acodec-adpcm-yamaha:  FMT = wav
 FATE_ACODEC-$(call ENCDEC, MP2, MP2 MP3) += fate-acodec-mp2
 fate-acodec-mp2: FMT = mp2
 fate-acodec-mp2: CMP_SHIFT = -1924
+fate-acodec-mp2: ENCOPTS = -b:a 128k
 
 FATE_ACODEC-$(call ENCDEC, MP2FIXED MP2 , MP2 MP3) += fate-acodec-mp2fixed
 fate-acodec-mp2fixed: FMT = mp2
