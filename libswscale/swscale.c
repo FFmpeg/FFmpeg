@@ -922,7 +922,7 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     uint8_t *dst2[4];
     uint8_t *rgb0_tmp = NULL;
 
-    if (!srcSlice || !dstStride || !dst || !srcSlice) {
+    if (!srcStride || !dstStride || !dst || !srcSlice) {
         av_log(c, AV_LOG_ERROR, "One of the input parameters to sws_scale() is NULL, please check the calling code\n");
         return 0;
     }
