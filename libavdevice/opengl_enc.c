@@ -30,6 +30,9 @@
 
 #include "config.h"
 
+#if HAVE_WINDOWS_H
+#include <windows.h>
+#endif
 #if HAVE_OPENGL_GL3_H
 #include <OpenGL/gl3.h>
 #elif HAVE_ES2_GL_H
@@ -40,9 +43,6 @@
 #endif
 #if HAVE_GLXGETPROCADDRESS
 #include <GL/glx.h>
-#endif
-#if HAVE_WINDOWS_H
-#include <windows.h>
 #endif
 
 #if HAVE_SDL
