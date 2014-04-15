@@ -1,7 +1,7 @@
 
 #include "projectGenerator.h"
 
-void projectGenerator::buildDependencies( const string & sProjectName, StaticList & vLibs, StaticList & vAddLibs, StaticList & vIncludes )
+void projectGenerator::buildDependencies( const string & sProjectName, StaticList & vLibs, StaticList & vAddLibs, StaticList & vIncludeDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs )
 {
     //Add any forced dependencies
     if( sProjectName.compare( "libavformat" ) == 0 )
@@ -77,6 +77,18 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             {
                 vAddLibs.push_back( "SDL" ); //Add the additional required libs
             }
+            else if( vitLib->compare( "opengl" ) == 0 )
+            {
+                vAddLibs.push_back( "Opengl32" ); //Add the additional required libs
+            }
+            else if( vitLib->compare( "opencl" ) == 0 )
+            {
+                vAddLibs.push_back( "OpenCL" ); //Add the additional required libs
+            }
+            else if( vitLib->compare( "openal" ) == 0 )
+            {
+                vAddLibs.push_back( "OpenAL32" ); //Add the additional required libs
+            }
             else
             {
                 //By default just use the lib name and prefix with lib if not already
@@ -109,15 +121,59 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             //Add in the additional include directories
             if( vitLib->compare("libopus") == 0 )
             {
-                vIncludes.push_back("$(OutDir)\\include\\opus");
+                vIncludeDirs.push_back("$(OutDir)\\include\\opus");
             }
             else if( vitLib->compare("libfreetype") == 0 )
             {
-                vIncludes.push_back("$(OutDir)\\include\\freetype2");
+                vIncludeDirs.push_back("$(OutDir)\\include\\freetype2");
             }
             else if( vitLib->compare("sdl") == 0 )
             {
-                vIncludes.push_back("$(OutDir)\\include\\SDL");
+                vIncludeDirs.push_back("$(OutDir)\\include\\SDL");
+            }
+            else if( vitLib->compare( "opengl" ) == 0 )
+            {
+                //Requires glext headers to be installed in include dir (does not require the libs)
+            }
+            else if( vitLib->compare( "opencl" ) == 0 )
+            {
+                //Need to check for the existence of environment variables
+                if( GetEnvironmentVariable( "AMDAPPSDKROOT", NULL, 0 ) )
+                {
+                    vIncludeDirs.push_back( "$(AMDAPPSDKROOT)\\include\\" );
+                    vLib32Dirs.push_back( "$(AMDAPPSDKROOT)\\lib\\Win32" );
+                    vLib64Dirs.push_back( "$(AMDAPPSDKROOT)\\lib\\x64" );
+                }
+                else if( GetEnvironmentVariable( "INTELOCLSDKROOT", NULL, 0 ) )
+                {
+                    vIncludeDirs.push_back( "$(INTELOCLSDKROOT)\\include\\" );
+                    vLib32Dirs.push_back( "$(INTELOCLSDKROOT)\\lib\\x86" );
+                    vLib64Dirs.push_back( "$(INTELOCLSDKROOT)\\lib\\x64" );
+                }
+                else if( GetEnvironmentVariable( "CUDA_PATH", NULL, 0 ) )
+                {
+                    cout << "  Warning: NVIDIA OpenCl currently is only 1.1. OpenCl 1.2 is needed for FFMpeg support" << endl;
+                    vIncludeDirs.push_back( "$(CUDA_PATH)\\include\\" );
+                    vLib32Dirs.push_back( "$(CUDA_PATH)\\lib\\Win32" );
+                    vLib64Dirs.push_back( "$(CUDA_PATH)\\lib\\x64" );
+                }
+                else
+                {
+                    cout << "  Warning: Could not find an OpenCl SDK environment variable." << endl;
+                    cout << "    Either an OpenCL SDK is not installed or the environment variables are missing." << endl;
+                }
+            }
+            else if( vitLib->compare( "openal" ) == 0 )
+            {
+                if( !GetEnvironmentVariable( "OPENAL_SDK", NULL, 0 ) )
+                {
+                    cout << "  Warning: Could not find the OpenAl SDK environment variable." << endl;
+                    cout << "    Either the OpenAL SDK is not installed or the environment variable is missing." << endl;
+                    cout << "    Using the default environment variable of 'OPENAL_SDK'." << endl;
+                }
+                vIncludeDirs.push_back( "$(OPENAL_SDK)\\include\\" );
+                vLib32Dirs.push_back( "$(OPENAL_SDK)\\libs\\Win32" );
+                vLib64Dirs.push_back( "$(CUDA_PATH)\\lib\\Win64" );
             }
         }
     }
@@ -176,15 +232,17 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["libvpx"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libwavpack"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libwebp"] = ( sProjectName.compare("libavcodec") == 0 );
-    mProjectDeps["libx264"] = ( sProjectName.compare("libavcodec") == 0 );
+    mProjectDeps["libx264"] = ( sProjectName.compare( "libavcodec" ) == 0 );
+    mProjectDeps["libx265"] = ( sProjectName.compare( "libavcodec" ) == 0 );
     mProjectDeps["libxavs"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libxvid"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libzmq"] = ( sProjectName.compare("libavfilter") == 0 );//??
     mProjectDeps["libzvbi"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["openal"] = ( sProjectName.compare("libavdevice") == 0 );//?
-    mProjectDeps["opencl"] = ( sProjectName.compare("libavutil") == 0 );
+    mProjectDeps["opencl"] = ( sProjectName.compare( "libavutil" ) == 0 ) || ( sProjectName.compare( "libavfilter" ) == 0 );
+    mProjectDeps["opengl"] = ( sProjectName.compare( "libavdevice" ) == 0 );
     mProjectDeps["openssl"] = ( sProjectName.compare("libavformat") == 0 );
-    mProjectDeps["x11grab"] = ( sProjectName.compare("libavdevice") == 0 );//?
+    //mProjectDeps["x11grab"] = ( sProjectName.compare("libavdevice") == 0 );//Always disabled on Win32
     mProjectDeps["zlib"] = ( sProjectName.compare("libavformat") == 0 ) || ( sProjectName.compare("libavcodec") == 0 );
 
     //extras
@@ -200,24 +258,41 @@ void projectGenerator::buildProgramIncludes( const string & sProject, vector<str
     vLibs.clear( );
     vIncDirs.clear( );
 
+    //All projects include cmdutils
+    vCIncludes.push_back( "..\\cmdutils.c" );
+    if( m_ConfigHelper.getConfigOption( "opencl" )->m_sValue.compare( "1" ) == 0 )
+    {
+        vCIncludes.push_back( "..\\cmdutils_opencl.c" );
+        //Need to check for the existence of environment variables
+        if( GetEnvironmentVariable( "AMDAPPSDKROOT", NULL, 0 ) )
+        {
+            vIncDirs.push_back( "$(AMDAPPSDKROOT)\\include\\" );
+        }
+        else if( GetEnvironmentVariable( "INTELOCLSDKROOT", NULL, 0 ) )
+        {
+            vIncDirs.push_back( "$(INTELOCLSDKROOT)\\include\\" );
+        }
+        else if( GetEnvironmentVariable( "CUDA_PATH", NULL, 0 ) )
+        {
+            cout << "  Warning: NVIDIA OpenCl currently is only 1.1. OpenCl 1.2 is needed for FFMpeg support" << endl;
+            vIncDirs.push_back( "$(CUDA_PATH)\\include\\" );
+        }
+    }
+    vHIncludes.push_back( "..\\cmdutils.h" );
+    vHIncludes.push_back( "..\\cmdutils_common_opts.h" );
+
     if( sProject.compare( "ffmpeg" ) == 0 )
     {
-        vCIncludes.push_back( "..\\cmdutils.c" );
         vCIncludes.push_back( "..\\ffmpeg.c" );
         vCIncludes.push_back( "..\\ffmpeg_filter.c" );
         vCIncludes.push_back( "..\\ffmpeg_opt.c" );
 
-        vHIncludes.push_back( "..\\cmdutils.h" );
-        vHIncludes.push_back( "..\\cmdutils_common_opts.h" );
         vHIncludes.push_back( "..\\ffmpeg.h" );
     }
     else if( sProject.compare( "ffplay" ) == 0 )
     {
-        vCIncludes.push_back( "..\\cmdutils.c" );
         vCIncludes.push_back( "..\\ffplay.c" );
 
-        vHIncludes.push_back( "..\\cmdutils.h" );
-        vHIncludes.push_back( "..\\cmdutils_common_opts.h" );
         vHIncludes.push_back( "..\\ffmpeg.h" );
 
         vLibs.push_back( "SDL.lib" );
@@ -227,31 +302,22 @@ void projectGenerator::buildProgramIncludes( const string & sProject, vector<str
     }
     else if( sProject.compare( "ffprobe" ) == 0 )
     {
-        vCIncludes.push_back( "..\\cmdutils.c" );
         vCIncludes.push_back( "..\\ffprobe.c" );
 
-        vHIncludes.push_back( "..\\cmdutils.h" );
-        vHIncludes.push_back( "..\\cmdutils_common_opts.h" );
         vHIncludes.push_back( "..\\ffmpeg.h" );
     }
     else if( sProject.compare( "avconv" ) == 0 )
     {
-        vCIncludes.push_back( "..\\cmdutils.c" );
         vCIncludes.push_back( "..\\avconv.c" );
         vCIncludes.push_back( "..\\avconv_filter.c" );
         vCIncludes.push_back( "..\\avconv_opt.c" );
 
-        vHIncludes.push_back( "..\\cmdutils.h" );
-        vHIncludes.push_back( "..\\cmdutils_common_opts.h" );
         vHIncludes.push_back( "..\\avconv.h" );
     }
     else if( sProject.compare( "avplay" ) == 0 )
     {
-        vCIncludes.push_back( "..\\cmdutils.c" );
         vCIncludes.push_back( "..\\avplay.c" );
 
-        vHIncludes.push_back( "..\\cmdutils.h" );
-        vHIncludes.push_back( "..\\cmdutils_common_opts.h" );
         vHIncludes.push_back( "..\\avconv.h" );
 
         vLibs.push_back( "SDL.lib" );
@@ -261,11 +327,8 @@ void projectGenerator::buildProgramIncludes( const string & sProject, vector<str
     }
     else if( sProject.compare( "avprobe" ) == 0 )
     {
-        vCIncludes.push_back( "..\\cmdutils.c" );
         vCIncludes.push_back( "..\\avprobe.c" );
 
-        vHIncludes.push_back( "..\\cmdutils.h" );
-        vHIncludes.push_back( "..\\cmdutils_common_opts.h" );
         vHIncludes.push_back( "..\\avconv.h" );
     }
 }

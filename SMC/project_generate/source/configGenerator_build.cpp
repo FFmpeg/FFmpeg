@@ -3,6 +3,188 @@
 
 #include <algorithm>
 
+bool configGenerator::buildDefaultValues( )
+{
+    // configurable options
+    vector<string> vList;
+    if( !getConfigList( "PROGRAM_LIST", vList ) )
+    {
+        return false;
+    }
+    //Enable all programs
+    vector<string>::iterator vitValues = vList.begin( );
+    for( vitValues; vitValues < vList.end( ); vitValues++ )
+    {
+        toggleConfigValue( *vitValues, true );
+    }
+    //Enable all libraries
+    vList.resize( 0 );
+    if( !getConfigList( "LIBRARY_LIST", vList ) )
+    {
+        return false;
+    }
+    vitValues = vList.begin( );
+    for( vitValues; vitValues < vList.end( ); vitValues++ )
+    {
+        if( !m_bLibav && vitValues->compare( "avresample" ) != 0 )
+        {
+            toggleConfigValue( *vitValues, true );
+        }
+    }
+    //Enable all components
+    vList.resize( 0 );
+    vector<string> vList2;
+    if( !getConfigList( "COMPONENT_LIST", vList ) )
+    {
+        return false;
+    }
+    vitValues = vList.begin( );
+    for( vitValues; vitValues < vList.end( ); vitValues++ )
+    {
+        toggleConfigValue( *vitValues, true );
+        //Get the corresponding list and enable all member elements as well
+        vitValues->resize( vitValues->length( ) - 1 ); //Need to remove the s from end
+        transform( vitValues->begin( ), vitValues->end( ), vitValues->begin( ), ::toupper );
+        //Get the specific list
+        vList2.resize( 0 );
+        getConfigList( *vitValues + "_LIST", vList2 );
+        for( vector<string>::iterator vitComponent = vList2.begin( ); vitComponent < vList2.end( ); vitComponent++ )
+        {
+            toggleConfigValue( *vitComponent, true );
+        }
+    }
+
+
+    fastToggleConfigValue( "runtime_cpudetect", true );
+    fastToggleConfigValue( "safe_bitstream_reader", true );
+    fastToggleConfigValue( "static", true );
+    fastToggleConfigValue( "shared", true );
+    fastToggleConfigValue( "swscale_alpha", true );
+
+    // Enable hwaccels by default.
+    fastToggleConfigValue( "dxva2", true );
+
+    //Enable x86 hardware architectures
+    fastToggleConfigValue( "x86", true );
+    fastToggleConfigValue( "i686", true );
+    fastToggleConfigValue( "fast_cmov", true );
+    fastToggleConfigValue( "x86_32", true );
+    fastToggleConfigValue( "x86_64", true );
+    //Enable x86 extensions
+    vList.resize( 0 );
+    if( !getConfigList( "ARCH_EXT_LIST_X86", vList ) )
+    {
+        return false;
+    }
+    vitValues = vList.begin( );
+    for( vitValues; vitValues < vList.end( ); vitValues++ )
+    {
+        fastToggleConfigValue( *vitValues, true );
+        //Also enable _EXTERNAL and _INLINE
+        fastToggleConfigValue( *vitValues + "_EXTERNAL", true );
+        fastToggleConfigValue( *vitValues + "_INLINE", true );
+    }
+
+    //Default we enable yasm
+    fastToggleConfigValue( "yasm", true );
+
+    //msvc specific options
+    fastToggleConfigValue( "w32threads", true );
+    fastToggleConfigValue( "atomics_win32", true );
+
+    //math functions
+    vList.resize( 0 );
+    if( !getConfigList( "MATH_FUNCS", vList ) )
+    {
+        return false;
+    }
+    vitValues = vList.begin( );
+    for( vitValues; vitValues < vList.end( ); vitValues++ )
+    {
+        fastToggleConfigValue( *vitValues, true );
+    }
+
+    fastToggleConfigValue( "access", true );
+    fastToggleConfigValue( "aligned_malloc", true );
+
+    fastToggleConfigValue( "CL_cl_h", true );
+    fastToggleConfigValue( "closesocket", true );
+    fastToggleConfigValue( "CommandLineToArgvW", true );
+    fastToggleConfigValue( "cpunop", true );
+    fastToggleConfigValue( "CryptGenRandom", true );
+    fastToggleConfigValue( "direct_h", true );
+    fastToggleConfigValue( "dxva_h", true );
+    fastToggleConfigValue( "ebp_available", true );
+    fastToggleConfigValue( "ebx_available", true );
+    fastToggleConfigValue( "fast_clz", true );
+    fastToggleConfigValue( "getaddrinfo", true );
+    fastToggleConfigValue( "getopt", true );
+    fastToggleConfigValue( "GetProcessAffinityMask", true );
+    fastToggleConfigValue( "GetProcessMemoryInfo", true );
+    fastToggleConfigValue( "GetProcessTimes", true );
+    fastToggleConfigValue( "GetSystemTimeAsFileTime", true );
+    fastToggleConfigValue( "io_h", true );
+    fastToggleConfigValue( "inline_asm_labels", true );
+    //Additional options set for Intel compiler specific inline asm
+    fastToggleConfigValue( "inline_asm_nonlocal_labels", false );
+    fastToggleConfigValue( "inline_asm_direct_symbol_refs", false );
+    fastToggleConfigValue( "inline_asm_non_intel_mnemonic", false );
+    fastToggleConfigValue( "isatty", true );
+    fastToggleConfigValue( "kbhit", true );
+    fastToggleConfigValue( "libc_msvcrt", true );
+    fastToggleConfigValue( "local_aligned_16", true );
+    fastToggleConfigValue( "local_aligned_8", true );
+    fastToggleConfigValue( "malloc_h", true );
+    fastToggleConfigValue( "MapViewOfFile", true );
+    fastToggleConfigValue( "MemoryBarrier", true );
+    fastToggleConfigValue( "PeekNamedPipe", true );
+    fastToggleConfigValue( "pragma_deprecated", true );
+    fastToggleConfigValue( "rdtsc", true );
+    fastToggleConfigValue( "rsync_contimeout", true );
+    //fastToggleConfigValue( "sdl", true );   //Needed for ffplay
+    fastToggleConfigValue( "SetConsoleTextAttribute", true );
+    fastToggleConfigValue( "setmode", true );
+    fastToggleConfigValue( "Sleep", true );
+    fastToggleConfigValue( "socklen_t", true );
+    fastToggleConfigValue( "struct_addrinfo", true );
+    fastToggleConfigValue( "struct_group_source_req", true );
+    fastToggleConfigValue( "struct_ip_mreq_source", true );
+    fastToggleConfigValue( "struct_ipv6_mreq", true );
+    fastToggleConfigValue( "struct_pollfd", true );
+    fastToggleConfigValue( "struct_sockaddr_in6", true );
+    fastToggleConfigValue( "struct_sockaddr_storage", true );
+    fastToggleConfigValue( "unistd_h", true );
+    fastToggleConfigValue( "VirtualAlloc", true );
+    fastToggleConfigValue( "windows_h", true );
+    fastToggleConfigValue( "winsock2_h", true );
+    fastToggleConfigValue( "wglgetprocaddress", true );
+
+    fastToggleConfigValue( "dos_paths", true );
+
+    fastToggleConfigValue( "aligned_stack", true );
+    fastToggleConfigValue( "pragma_deprecated", true );
+    fastToggleConfigValue( "inline_asm", true );
+    fastToggleConfigValue( "frame_thread_encoder", true );
+    fastToggleConfigValue( "xmm_clobbers", true );
+
+    toggleConfigValue( "xlib", false ); //enabled by default but is linux only so we force disable
+    toggleConfigValue( "qtkit", false );
+    toggleConfigValue( "avfoundation", false );
+
+    //Additional (must be explicitly disabled)
+    fastToggleConfigValue( "dct", true );
+    fastToggleConfigValue( "dwt", true );
+    fastToggleConfigValue( "error-resilience", true );
+    fastToggleConfigValue( "lsp", true );
+    fastToggleConfigValue( "lzo", true );
+    fastToggleConfigValue( "mdct", true );
+    fastToggleConfigValue( "network", true );
+    fastToggleConfigValue( "rdft", true );
+    fastToggleConfigValue( "fft", true );
+
+    return true;
+}
+
 void configGenerator::buildFixedValues( DefaultValuesList & mFixedValues )
 {
     mFixedValues.clear( );

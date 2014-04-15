@@ -79,7 +79,7 @@ private:
 
     bool passConfigList( const string & sPrefix, const string & sSuffix, const string & sList );
 
-    bool passDefaultValues( );
+    bool buildDefaultValues( );
 
     bool fastToggleConfigValue( const string & sOption, bool bEnable );
 

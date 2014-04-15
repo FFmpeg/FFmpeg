@@ -617,12 +617,14 @@ cd $(ProjectDir)\n\
 
     //Add additional dependencies based on current config to Libs list
     m_mProjectLibs[sProjectName] = m_vLibs; //Backup up current libs for solution
-    StaticList vIncludes;
     StaticList vAddLibs;
-    buildDependencies( sProjectName, m_vLibs, vAddLibs, vIncludes );
+    StaticList vIncludeDirs;
+    StaticList vLib32Dirs;
+    StaticList vLib64Dirs;
+    buildDependencies( sProjectName, m_vLibs, vAddLibs, vIncludeDirs, vLib32Dirs, vLib64Dirs );
     vector<string> vLibraries;
     m_ConfigHelper.getConfigList( "LIBRARY_LIST", vLibraries );
-    if( m_vLibs.size() > 0 )
+    if( ( m_vLibs.size( ) > 0 ) || ( vAddLibs.size( ) > 0 ) )
     {
         //Add to Additional Dependencies
         string asLibLink2[2] = { "<Lib>", "<Link>" };
@@ -674,22 +676,52 @@ cd $(ProjectDir)\n\
             }
         }
     }
-    //Add additional includes to include list based on current config
-    string sAddInclude;
-    for (StaticList::iterator vitIt=vIncludes.begin(); vitIt<vIncludes.end(); vitIt++ )
+    if( vIncludeDirs.size( ) > 0 )
     {
-        sAddInclude += *vitIt + ";";
+        //Add additional includes to include list based on current config
+        string sAddInclude;
+        for( StaticList::iterator vitIt = vIncludeDirs.begin( ); vitIt < vIncludeDirs.end( ); vitIt++ )
+        {
+            sAddInclude += *vitIt + ";";
+        }
+        string sAddIncludeDir = "<AdditionalIncludeDirectories>";
+        uiFindPos = sProjectFile.find( sAddIncludeDir );
+        while( uiFindPos != string::npos )
+        {
+            //Add to output
+            uiFindPos += sAddIncludeDir.length( ); //Must be added first so that it is before $(IncludePath) as otherwise there are errors
+            sProjectFile.insert( uiFindPos, sAddInclude );
+            uiFindPos += sAddInclude.length( );
+            //Get next
+            uiFindPos = sProjectFile.find( sAddIncludeDir, uiFindPos + 1 );
+        }
     }
-    string sAddIncludeDir = "<AdditionalIncludeDirectories>";
-    uiFindPos = sProjectFile.find( sAddIncludeDir );
-    while( uiFindPos != string::npos )
+
+    if( ( vLib32Dirs.size( ) > 0 ) || ( vLib64Dirs.size( ) > 0 ) )
     {
-        //Add to output
-        uiFindPos += sAddIncludeDir.length(); //Must be added first so that it is before $(IncludePath) as otherwise there are errors
-        sProjectFile.insert( uiFindPos, sAddInclude );
-        uiFindPos += sAddInclude.length( );
-        //Get next
-        uiFindPos = sProjectFile.find( sAddIncludeDir, uiFindPos+1 );
+        //Add additional lib includes to include list based on current config
+        string sAddLibs[2];
+        for( StaticList::iterator vitIt = vLib32Dirs.begin( ); vitIt < vLib32Dirs.end( ); vitIt++ )
+        {
+            sAddLibs[0] += *vitIt + ";";
+        }
+        for( StaticList::iterator vitIt = vLib64Dirs.begin( ); vitIt < vLib64Dirs.end( ); vitIt++ )
+        {
+            sAddLibs[1] += *vitIt + ";";
+        }
+        string sAddLibDir = "<AdditionalLibraryDirectories>";
+        uint ui32Or64 = 0; //start with 32 (assumes projects are ordered 32 then 64 recursive)
+        uiFindPos = sProjectFile.find( sAddLibDir );
+        while( uiFindPos != string::npos )
+        {
+            //Add to output
+            uiFindPos += sAddLibDir.length( );
+            sProjectFile.insert( uiFindPos, sAddLibs[ui32Or64] );
+            uiFindPos += sAddLibs[ui32Or64].length( );
+            //Get next
+            uiFindPos = sProjectFile.find( sAddLibDir, uiFindPos + 1 );
+            ui32Or64 = !ui32Or64;
+        }
     }
 
     //Add any additional Filters to filters file

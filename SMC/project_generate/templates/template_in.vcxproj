@@ -169,7 +169,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\template_in;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
@@ -195,7 +195,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\template_in;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
@@ -221,7 +221,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\template_in;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
@@ -250,7 +250,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\template_in;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
@@ -288,7 +288,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\template_in;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -323,7 +323,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\template_in;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -358,7 +358,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\template_in;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -397,7 +397,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(IncludePath);.\;..\;..\template_in;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
