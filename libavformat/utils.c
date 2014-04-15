@@ -1547,7 +1547,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
                 dst_data = av_packet_new_side_data(pkt, src_sd->type, src_sd->size);
                 if (!dst_data) {
-                    av_log(s, AV_LOG_WARNING, "Couldnt inject global side data\n");
+                    av_log(s, AV_LOG_WARNING, "Could not inject global side data\n");
                     continue;
                 }
 
