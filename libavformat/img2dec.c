@@ -481,8 +481,8 @@ static const AVOption options[] = {
     { "frame_size",   "force frame size in bytes",           OFFSET(frame_size),   AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, INT_MAX, DEC },
     { "ts_from_file", "set frame timestamp from file's one", OFFSET(ts_from_file), AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, 2,       DEC, "ts_type" },
     { "none", "none",                   0, AV_OPT_TYPE_CONST,    {.i64 = 0   }, 0, 2,       DEC, "ts_type" },
-    { "sec",  "second precission",      0, AV_OPT_TYPE_CONST,    {.i64 = 1   }, 0, 2,       DEC, "ts_type" },
-    { "ns",   "nano second precission", 0, AV_OPT_TYPE_CONST,    {.i64 = 2   }, 0, 2,       DEC, "ts_type" },
+    { "sec",  "second precision",       0, AV_OPT_TYPE_CONST,    {.i64 = 1   }, 0, 2,       DEC, "ts_type" },
+    { "ns",   "nano second precision",  0, AV_OPT_TYPE_CONST,    {.i64 = 2   }, 0, 2,       DEC, "ts_type" },
     { NULL },
 };
 

@@ -43,7 +43,7 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
     SpeexHeader *header = NULL;
     int spx_mode;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_NONE;
     if (avctx->extradata && avctx->extradata_size >= 80) {
         header = speex_packet_to_header(avctx->extradata,
                                         avctx->extradata_size);
@@ -125,6 +125,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *frame     = data;
     int16_t *output;
     int ret, consumed = 0;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     /* get output buffer */
     frame->nb_samples = s->frame_size;
@@ -159,6 +160,8 @@ static int libspeex_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame_ptr = 1;
 
+    if (!avctx->bit_rate)
+        speex_decoder_ctl(s->dec_state, SPEEX_GET_BITRATE, &avctx->bit_rate);
     return consumed;
 }
 
