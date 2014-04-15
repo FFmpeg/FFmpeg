@@ -106,7 +106,9 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
     if(compensation_distance == 0 && c->filter_length == 1 && c->phase_shift==0){
         int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*index;
         int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
-        dst_size= FFMIN(dst_size, (src_size-1-index) * (int64_t)c->src_incr / c->dst_incr);
+        int new_size = (src_size * (int64_t)c->src_incr - frac + c->dst_incr - 1) / c->dst_incr;
+
+        dst_size= FFMIN(dst_size, new_size);
 
         for(dst_index=0; dst_index < dst_size; dst_index++){
             dst[dst_index] = src[index2>>32];
