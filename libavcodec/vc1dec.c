@@ -5625,7 +5625,6 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     ff_vc1_decode_end(avctx);
 
     ff_h264chroma_init(&v->h264chroma, 8);
-    ff_vc1dsp_init(&v->vc1dsp);
 
     if (avctx->codec_id == AV_CODEC_ID_WMV3 || avctx->codec_id == AV_CODEC_ID_WMV3IMAGE) {
         int count = 0;
