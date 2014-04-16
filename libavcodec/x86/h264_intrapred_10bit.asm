@@ -171,22 +171,6 @@ PRED4x4_HD
 ;-----------------------------------------------------------------------------
 ; void ff_pred4x4_dc(pixel *src, const pixel *topright, int stride)
 ;-----------------------------------------------------------------------------
-%macro HADDD 2 ; sum junk
-%if mmsize == 16
-    movhlps %2, %1
-    paddd   %1, %2
-    pshuflw %2, %1, 0xE
-    paddd   %1, %2
-%else
-    pshufw  %2, %1, 0xE
-    paddd   %1, %2
-%endif
-%endmacro
-
-%macro HADDW 2
-    pmaddwd %1, [pw_1]
-    HADDD   %1, %2
-%endmacro
 
 INIT_MMX mmxext
 cglobal pred4x4_dc_10, 3, 3

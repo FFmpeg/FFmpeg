@@ -273,6 +273,39 @@
 %endif
 %endmacro
 
+%macro HADDD 2 ; sum junk
+%if sizeof%1 == 32
+%define %2 xmm%2
+    vextracti128 %2, %1, 1
+%define %1 xmm%1
+    paddd   %1, %2
+%endif
+%if mmsize >= 16
+%if cpuflag(xop) && sizeof%1 == 16
+    vphadddq %1, %1
+%endif
+    movhlps %2, %1
+    paddd   %1, %2
+%endif
+%if notcpuflag(xop) || sizeof%1 != 16
+    PSHUFLW %2, %1, q0032
+    paddd   %1, %2
+%endif
+%undef %1
+%undef %2
+%endmacro
+
+%macro HADDW 2 ; reg, tmp
+%if cpuflag(xop) && sizeof%1 == 16
+    vphaddwq  %1, %1
+    movhlps   %2, %1
+    paddd     %1, %2
+%else
+    pmaddwd %1, [pw_1]
+    HADDD   %1, %2
+%endif
+%endmacro
+
 %macro PALIGNR 4-5
 %if cpuflag(ssse3)
 %if %0==5
