@@ -454,7 +454,7 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
         put_bits(&s->pb, huff_size_ac[0], huff_code_ac[0]);
 }
 
-void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[6][64])
+void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
 {
     int i;
     if (s->chroma_format == CHROMA_444) {
