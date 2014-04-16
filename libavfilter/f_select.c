@@ -279,7 +279,7 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *frame)
             p2 += 8 * linesize;
         }
         emms_c();
-        mafd = nb_sad ? sad / nb_sad : 0;
+        mafd = nb_sad ? (double)sad / nb_sad : 0;
         diff = fabs(mafd - select->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff) / 100., 0, 1);
         select->prev_mafd = mafd;
