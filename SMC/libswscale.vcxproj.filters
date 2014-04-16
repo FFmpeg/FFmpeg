@@ -75,7 +75,7 @@
     </YASM>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".\project_generate\templates\libswscale.def">
+    <None Include=".\libswscale.def">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

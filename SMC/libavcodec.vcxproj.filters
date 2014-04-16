@@ -2226,7 +2226,7 @@
     </YASM>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".\project_generate\templates\libavcodec.def">
+    <None Include=".\libavcodec.def">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

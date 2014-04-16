@@ -63,7 +63,7 @@
     </YASM>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".\project_generate\templates\libswresample.def">
+    <None Include=".\libswresample.def">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

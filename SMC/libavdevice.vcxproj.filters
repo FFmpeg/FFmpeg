@@ -64,7 +64,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".\project_generate\templates\libavdevice.def">
+    <None Include=".\libavdevice.def">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

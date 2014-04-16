@@ -31,7 +31,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".\project_generate\templates\libpostproc.def">
+    <None Include=".\libpostproc.def">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

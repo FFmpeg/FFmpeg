@@ -393,7 +393,7 @@
     </YASM>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".\project_generate\templates\libavutil.def">
+    <None Include=".\libavutil.def">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

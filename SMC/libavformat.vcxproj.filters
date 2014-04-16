@@ -1132,7 +1132,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".\project_generate\templates\libavformat.def">
+    <None Include=".\libavformat.def">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

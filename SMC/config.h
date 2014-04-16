@@ -11,7 +11,7 @@
 #else
 #   define CC_IDENT "msvc"
 #endif
-#define av_restrict restrict
+#define av_restrict __restrict
 #if defined( __x86_64 ) || defined( _M_X64 )
 #   define EXTERN_PREFIX ""
 #else
@@ -248,7 +248,7 @@
 #define HAVE_ATOMIC_CAS_PTR 0
 #define HAVE_MACHINE_RW_BARRIER 0
 #define HAVE_MEMORYBARRIER 1
-#define HAVE_MM_EMPTY 0
+#define HAVE_MM_EMPTY 1
 #define HAVE_RDTSC 1
 #define HAVE_SARESTART 0
 #define HAVE_SYNC_VAL_COMPARE_AND_SWAP 0
@@ -335,7 +335,7 @@
 #define HAVE_CRYPTGENRANDOM 1
 #define HAVE_DLOPEN 0
 #define HAVE_FCNTL 0
-#define HAVE_FLT_LIM 0
+#define HAVE_FLT_LIM 1
 #define HAVE_FORK 0
 #define HAVE_GETADDRINFO 1
 #define HAVE_GETHRTIME 0
@@ -375,15 +375,15 @@
 #define HAVE_SYSCTL 0
 #define HAVE_USLEEP 0
 #define HAVE_VIRTUALALLOC 1
-#define HAVE_WGLGETPROCADDRESS 0
+#define HAVE_WGLGETPROCADDRESS 1
 #define HAVE_PTHREADS 0
 #define HAVE_OS2THREADS 0
 #define HAVE_W32THREADS 1
 #define HAVE_ASM_MOD_Q 0
 #define HAVE_ATTRIBUTE_MAY_ALIAS 0
 #define HAVE_ATTRIBUTE_PACKED 0
-#define HAVE_EBP_AVAILABLE 1
-#define HAVE_EBX_AVAILABLE 1
+#   define HAVE_EBP_AVAILABLE HAVE_INLINE_ASM
+#   define HAVE_EBX_AVAILABLE HAVE_INLINE_ASM
 #define HAVE_GNU_AS 0
 #define HAVE_GNU_WINDRES 0
 #define HAVE_IBM_ASM 0
