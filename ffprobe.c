@@ -1976,6 +1976,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     const char *s;
     AVRational sar, dar;
     AVBPrint pbuf;
+    const AVCodecDescriptor *cd;
     int ret = 0;
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
@@ -1992,6 +1993,12 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
             if (!do_bitexact) {
                 if (dec->long_name) print_str    ("codec_long_name", dec->long_name);
                 else                print_str_opt("codec_long_name", "unknown");
+            }
+        } else if ((cd = avcodec_descriptor_get(stream->codec->codec_id))) {
+            print_str_opt("codec_name", cd->name);
+            if (!do_bitexact) {
+                print_str_opt("codec_long_name",
+                              cd->long_name ? cd->long_name : "unknown");
             }
         } else {
             print_str_opt("codec_name", "unknown");
