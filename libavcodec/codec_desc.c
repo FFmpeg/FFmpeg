@@ -2702,6 +2702,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "timed_id3",
         .long_name = NULL_IF_CONFIG_SMALL("timed ID3 metadata"),
     },
+    {
+        .id        = AV_CODEC_ID_BIN_DATA,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "bin_data",
+        .long_name = NULL_IF_CONFIG_SMALL("binary data"),
+    },
 
     /* deprecated codec ids */
     {
