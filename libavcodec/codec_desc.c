@@ -2652,6 +2652,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
 
     /* other kind of codecs and pseudo-codecs */
     {
+        .id        = AV_CODEC_ID_TTF,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "ttf",
+        .long_name = NULL_IF_CONFIG_SMALL("TrueType font"),
+    },
+    {
         .id        = AV_CODEC_ID_BINTEXT,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "bintext",
@@ -2671,6 +2677,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "idf",
         .long_name = NULL_IF_CONFIG_SMALL("iCEDraw text"),
         .props     = AV_CODEC_PROP_INTRA_ONLY,
+    },
+    {
+        .id        = AV_CODEC_ID_OTF,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "otf",
+        .long_name = NULL_IF_CONFIG_SMALL("OpenType font"),
     },
     {
         .id        = AV_CODEC_ID_SMPTE_KLV,
