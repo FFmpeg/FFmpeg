@@ -56,6 +56,6 @@ void ff_mjpeg_encode_picture_trailer(MpegEncContext *s);
 void ff_mjpeg_encode_stuffing(MpegEncContext *s);
 void ff_mjpeg_encode_dc(MpegEncContext *s, int val,
                         uint8_t *huff_size, uint16_t *huff_code);
-void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[6][64]);
+void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64]);
 
 #endif /* AVCODEC_MJPEGENC_H */
