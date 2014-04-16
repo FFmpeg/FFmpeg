@@ -271,6 +271,14 @@ static int pulse_finish_stream_operation(PulseData *s, pa_operation *op, const c
     return s->last_result;
 }
 
+static int pulse_set_pause(PulseData *s, int pause)
+{
+    pa_operation *op;
+    pa_threaded_mainloop_lock(s->mainloop);
+    op = pa_stream_cork(s->stream, pause, pulse_stream_result, s);
+    return pulse_finish_stream_operation(s, op, "pa_stream_cork");
+}
+
 static int pulse_flash_stream(PulseData *s)
 {
     pa_operation *op;
@@ -687,6 +695,12 @@ static int pulse_control_message(AVFormatContext *h, int type,
     int ret;
 
     switch(type) {
+    case AV_APP_TO_DEV_PAUSE:
+        return pulse_set_pause(s, 1);
+    case AV_APP_TO_DEV_PLAY:
+        return pulse_set_pause(s, 0);
+    case AV_APP_TO_DEV_TOGGLE_PAUSE:
+        return pulse_set_pause(s, !pa_stream_is_corked(s->stream));
     case AV_APP_TO_DEV_MUTE:
         if (!s->mute) {
             s->mute = 1;
