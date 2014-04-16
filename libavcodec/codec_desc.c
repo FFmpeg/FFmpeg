@@ -2649,6 +2649,8 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
         .props     = AV_CODEC_PROP_TEXT_SUB,
     },
+
+    /* other kind of codecs and pseudo-codecs */
     {
         .id        = AV_CODEC_ID_BINTEXT,
         .type      = AVMEDIA_TYPE_VIDEO,
