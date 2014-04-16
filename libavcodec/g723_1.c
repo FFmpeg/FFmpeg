@@ -2288,7 +2288,8 @@ static int pack_bitstream(G723_1_Context *p, unsigned char *frame, int size)
     if (p->cur_rate == RATE_6300) {
         info_bits = 0;
         put_bits(&pb, 2, info_bits);
-    }
+    }else
+        av_assert0(0);
 
     put_bits(&pb, 8, p->lsp_index[2]);
     put_bits(&pb, 8, p->lsp_index[1]);
