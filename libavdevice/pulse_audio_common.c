@@ -43,10 +43,10 @@ pa_sample_format_t av_cold ff_codec_id_to_pulse_format(enum AVCodecID codec_id)
     }
 }
 
-enum PulseAudioLoopState {
-    PA_LOOP_INITIALIZING,
-    PA_LOOP_READY,
-    PA_LOOP_FINISHED
+enum PulseAudioContextState {
+    PULSE_CONTEXT_INITIALIZING,
+    PULSE_CONTEXT_READY,
+    PULSE_CONTEXT_FINISHED
 };
 
 typedef struct PulseAudioDeviceList {
@@ -58,15 +58,15 @@ typedef struct PulseAudioDeviceList {
 
 static void pa_state_cb(pa_context *c, void *userdata)
 {
-    enum PulseAudioLoopState *loop_status = userdata;
+    enum PulseAudioContextState *context_state = userdata;
 
     switch  (pa_context_get_state(c)) {
     case PA_CONTEXT_FAILED:
     case PA_CONTEXT_TERMINATED:
-        *loop_status = PA_LOOP_FINISHED;
+        *context_state = PULSE_CONTEXT_FINISHED;
         break;
     case PA_CONTEXT_READY:
-        *loop_status = PA_LOOP_READY;
+        *context_state = PULSE_CONTEXT_READY;
         break;
     default:
         break;
@@ -142,7 +142,7 @@ int ff_pulse_audio_get_devices(AVDeviceInfoList *devices, const char *server, in
     pa_operation *pa_op = NULL;
     pa_context *pa_ctx = NULL;
     enum pa_operation_state op_state;
-    enum PulseAudioLoopState loop_state = PA_LOOP_INITIALIZING;
+    enum PulseAudioContextState loop_state = PULSE_CONTEXT_INITIALIZING;
     PulseAudioDeviceList dev_list = { 0 };
     int i;
 
@@ -168,9 +168,9 @@ int ff_pulse_audio_get_devices(AVDeviceInfoList *devices, const char *server, in
         goto fail;
     }
 
-    while (loop_state == PA_LOOP_INITIALIZING)
+    while (loop_state == PULSE_CONTEXT_INITIALIZING)
         pa_mainloop_iterate(pa_ml, 1, NULL);
-    if (loop_state == PA_LOOP_FINISHED) {
+    if (loop_state == PULSE_CONTEXT_FINISHED) {
         dev_list.error_code = AVERROR_EXTERNAL;
         goto fail;
     }
