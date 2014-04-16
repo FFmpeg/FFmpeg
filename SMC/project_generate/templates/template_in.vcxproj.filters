@@ -12,7 +12,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".\project_generate\templates\template_in.def">
+    <None Include=".\template_in.def">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

@@ -812,7 +812,7 @@ cd $(ProjectDir)\n\
         uint uiFindPosE = uiFindPos+sModuleSearch.length();
         uint uiFindPos2 = sModuleFile.find( '\n', uiFindPosE );
         string sConfigOpt = sModuleFile.substr( uiFindPosE, uiFindPos2-uiFindPosE );
-        configGenerator::ValuesList::iterator vitCO = m_ConfigHelper.getConfigOptionPrefixed( sConfigOpt );
+        configGenerator::ValuesList::iterator vitCO = m_ConfigHelper.getConfigOption( sConfigOpt );
         if( vitCO == m_ConfigHelper.m_vConfigValues.end() )
         {
             cout << "  Error: Unknown config option found in module file (" << sConfigOpt << ")" << endl;

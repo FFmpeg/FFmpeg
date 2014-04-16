@@ -35,7 +35,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".\project_generate\templates\template_in.def" />
+    <None Include=".\template_in.def" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\template_in\template_shinres.rc" />
@@ -84,14 +84,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>template_platform</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>template_platform</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -166,7 +164,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;inline=__inline;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -192,7 +190,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;inline=__inline;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -218,7 +216,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;inline=__inline;_USRDLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -232,7 +230,7 @@
       <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
       <ImportLibrary>$(OutDir)\lib\$(TargetName).dll.lib</ImportLibrary>
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
-      <ModuleDefinitionFile>.\project_generate\templates\template_in.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\template_in.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -247,7 +245,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;inline=__inline;_USRDLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -261,7 +259,7 @@
       <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
       <ImportLibrary>$(OutDir)\lib\$(TargetName).dll.lib</ImportLibrary>
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
-      <ModuleDefinitionFile>.\project_generate\templates\template_in.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\template_in.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -277,7 +275,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;inline=__inline;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -312,7 +310,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;inline=__inline;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -347,7 +345,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;inline=__inline;_USRDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -362,6 +360,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -370,7 +369,7 @@
       <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
       <ImportLibrary>$(OutDir)\lib\$(TargetName).dll.lib</ImportLibrary>
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
-      <ModuleDefinitionFile>.\project_generate\templates\template_in.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\template_in.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -386,7 +385,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;_USRDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;strtoll=_strtoi64;inline=__inline;_USRDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -401,6 +400,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat/msvcrt/snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -409,7 +409,7 @@
       <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
       <ImportLibrary>$(OutDir)\lib\$(TargetName).dll.lib</ImportLibrary>
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
-      <ModuleDefinitionFile>.\project_generate\templates\template_in.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\template_in.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

@@ -117,6 +117,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "ebp_available", true );
     fastToggleConfigValue( "ebx_available", true );
     fastToggleConfigValue( "fast_clz", true );
+    fastToggleConfigValue( "flt_lim", true );
     fastToggleConfigValue( "getaddrinfo", true );
     fastToggleConfigValue( "getopt", true );
     fastToggleConfigValue( "GetProcessAffinityMask", true );
@@ -137,6 +138,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "malloc_h", true );
     fastToggleConfigValue( "MapViewOfFile", true );
     fastToggleConfigValue( "MemoryBarrier", true );
+    fastToggleConfigValue( "mm_empty", true );
     fastToggleConfigValue( "PeekNamedPipe", true );
     fastToggleConfigValue( "pragma_deprecated", true );
     fastToggleConfigValue( "rdtsc", true );
@@ -193,7 +195,7 @@ void configGenerator::buildFixedValues( DefaultValuesList & mFixedValues )
     mFixedValues["$(c_escape $license)"] = "lgpl";
     mFixedValues["$(eval c_escape $datadir)"] = ".";
     mFixedValues["$(c_escape ${cc_ident:-Unknown compiler})"] = "msvc";
-    mFixedValues["$_restrict"] = "restrict";
+    mFixedValues["$_restrict"] = "__restrict";
     mFixedValues["${extern_prefix}"] = "";
     mFixedValues["$build_suffix"] = "";
     mFixedValues["$SLIBSUF"] = "";
@@ -277,7 +279,10 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #   define " + sName + " 0\n\
 #endif";
     }
-     
+
+    //Sanity checks for inline asm
+    mReplaceValues["HAVE_EBP_AVAILABLE"] = "#   define HAVE_EBP_AVAILABLE HAVE_INLINE_ASM"; //Needed as some code only checks availability and not inline_asm
+    mReplaceValues["HAVE_EBX_AVAILABLE"] = "#   define HAVE_EBX_AVAILABLE HAVE_INLINE_ASM";
 
     //Add to config.asm only list
     mASMReplaceValues["ARCH_X86_32"] = "%ifidn __OUTPUT_FORMAT__,x64\n\
