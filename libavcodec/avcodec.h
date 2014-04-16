@@ -571,6 +571,13 @@ typedef struct AVCodecDescriptor {
      * Codec properties, a combination of AV_CODEC_PROP_* flags.
      */
     int             props;
+
+    /**
+     * MIME type(s) associated with the codec.
+     * May be NULL; if not, a NULL-terminated array of MIME types.
+     * The first item is always non-NULL and is the prefered MIME type.
+     */
+    const char *const *mime_types;
 } AVCodecDescriptor;
 
 /**

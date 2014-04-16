@@ -26,6 +26,8 @@
 #include "avcodec.h"
 #include "version.h"
 
+#define MT(...) (const char *const[]){ __VA_ARGS__, NULL }
+
 static const AVCodecDescriptor codec_descriptors[] = {
     /* video codecs */
     {
@@ -85,6 +87,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "mjpeg",
         .long_name = NULL_IF_CONFIG_SMALL("Motion JPEG"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .mime_types= MT("image/jpeg"),
     },
     {
         .id        = AV_CODEC_ID_MJPEGB,
@@ -526,6 +529,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "bmp",
         .long_name = NULL_IF_CONFIG_SMALL("BMP (Windows and OS/2 bitmap)"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-ms-bmp"),
     },
     {
         .id        = AV_CODEC_ID_CSCD,
@@ -597,6 +601,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("JPEG 2000"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
                      AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/jp2"),
     },
     {
         .id        = AV_CODEC_ID_VMNC,
@@ -1277,6 +1282,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "gif",
         .long_name = NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
         .props     = AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/gif"),
     },
     {
         .id        = AV_CODEC_ID_JPEGLS,
@@ -1299,6 +1305,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "pam",
         .long_name = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-portable-pixmap"),
     },
     {
         .id        = AV_CODEC_ID_PBM,
@@ -1313,6 +1320,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "pcx",
         .long_name = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-pcx"),
     },
     {
         .id        = AV_CODEC_ID_PGM,
@@ -1334,6 +1342,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "png",
         .long_name = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
         .props     = AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/png"),
     },
     {
         .id        = AV_CODEC_ID_PPM,
@@ -1376,6 +1385,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "targa",
         .long_name = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-targa", "image/x-tga"),
     },
     {
         .id        = AV_CODEC_ID_TIFF,
@@ -1383,6 +1393,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "tiff",
         .long_name = NULL_IF_CONFIG_SMALL("TIFF image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/tiff"),
     },
     {
         .id        = AV_CODEC_ID_TXD,
@@ -1405,6 +1416,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("WebP"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
                      AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/webp"),
     },
     {
         .id        = AV_CODEC_ID_WMV3IMAGE,
@@ -1426,6 +1438,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "xwd",
         .long_name = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-xwindowdump"),
     },
 
     /* various PCM "codecs" */
@@ -2656,6 +2669,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_DATA,
         .name      = "ttf",
         .long_name = NULL_IF_CONFIG_SMALL("TrueType font"),
+        .mime_types= MT("application/x-truetype-font", "application/x-font"),
     },
     {
         .id        = AV_CODEC_ID_BINTEXT,
@@ -2683,6 +2697,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_DATA,
         .name      = "otf",
         .long_name = NULL_IF_CONFIG_SMALL("OpenType font"),
+        .mime_types= MT("application/vnd.ms-opentype"),
     },
     {
         .id        = AV_CODEC_ID_SMPTE_KLV,
@@ -2707,6 +2722,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_DATA,
         .name      = "bin_data",
         .long_name = NULL_IF_CONFIG_SMALL("binary data"),
+        .mime_types= MT("application/octet-stream"),
     },
 
     /* deprecated codec ids */
