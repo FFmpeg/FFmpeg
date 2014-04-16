@@ -69,11 +69,11 @@ cglobal vector_fmac_scalar, 4,4,3, dst, src, mul, len
     VBROADCASTSS m0, mulm
 %else
 %if WIN64
-    mova       xmm0, xmm2
+    SWAP 0, 2
 %endif
-    shufps     xmm0, xmm0, 0
+    shufps      xm0, xm0, 0
 %if cpuflag(avx)
-    vinsertf128  m0, m0, xmm0, 1
+    vinsertf128  m0, m0, xm0, 1
 %endif
 %endif
     lea    lenq, [lend*4-64]
