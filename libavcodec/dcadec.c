@@ -1370,7 +1370,7 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
          * Decode VQ encoded high frequencies
          */
         if (s->subband_activity[k] > s->vq_start_subband[k]) {
-            if (!s->debug_flag & 0x01) {
+            if (!(s->debug_flag & 0x01)) {
                 av_log(s->avctx, AV_LOG_DEBUG,
                        "Stream with high frequencies VQ coding\n");
                 s->debug_flag |= 0x01;
