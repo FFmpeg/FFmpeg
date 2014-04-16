@@ -1332,8 +1332,8 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
         motion_y >>= s->chroma_y_shift;
     }
 
-    mx         = motion_x & ~(-1 << s->mv_precision);
-    my         = motion_y & ~(-1 << s->mv_precision);
+    mx         = motion_x & ~(-1U << s->mv_precision);
+    my         = motion_y & ~(-1U << s->mv_precision);
     motion_x >>= s->mv_precision;
     motion_y >>= s->mv_precision;
     /* normalize subpel coordinates to epel */
