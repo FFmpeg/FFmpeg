@@ -1822,6 +1822,7 @@ nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="audio_frame_queue mdct sinewin"
 nuv_decoder_select="dsputil lzo"
 on2avc_decoder_select="mdct"
+opus_decoder_deps="avresample"
 png_decoder_deps="zlib"
 png_encoder_deps="zlib"
 png_encoder_select="dsputil"
@@ -4386,6 +4387,8 @@ done
 enabled movie_filter    && prepend avfilter_deps "avformat avcodec"
 enabled resample_filter && prepend avfilter_deps "avresample"
 enabled scale_filter    && prepend avfilter_deps "swscale"
+
+enabled opus_decoder    && prepend avcodec_deps "avresample"
 
 expand_deps(){
     lib_deps=${1}_deps
