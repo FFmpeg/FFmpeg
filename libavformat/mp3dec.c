@@ -41,11 +41,12 @@
 typedef struct {
     AVClass *class;
     int64_t filesize;
-    int64_t header_filesize;
     int xing_toc;
     int start_pad;
     int end_pad;
     int usetoc;
+    unsigned frames; /* Total number of frames in file */
+    unsigned header_filesize;   /* Total number of bytes in the stream */
     int is_cbr;
 } MP3DecContext;
 
@@ -119,44 +120,29 @@ static void read_xing_toc(AVFormatContext *s, int64_t filesize, int64_t duration
         mp3->xing_toc = 1;
 }
 
-/**
- * Try to find Xing/Info/VBRI tags and compute duration from info therein
- */
-static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
+
+static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
+                               MPADecodeHeader *c, uint32_t spf)
 {
+    uint32_t v;
     MP3DecContext *mp3 = s->priv_data;
-    uint32_t v, spf;
-    unsigned frames = 0; /* Total number of frames in file */
-    unsigned size = 0; /* Total number of bytes in the stream */
     static const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
-    MPADecodeHeader c;
-    int vbrtag_size = 0;
-    int is_cbr;
-
-    v = avio_rb32(s->pb);
-    if(ff_mpa_check_header(v) < 0)
-      return -1;
-
-    if (avpriv_mpegaudio_decode_header(&c, v) == 0)
-        vbrtag_size = c.frame_size;
-    if(c.layer != 3)
-        return -1;
-
-    spf = c.lsf ? 576 : 1152; /* Samples per frame, layer 3 */
 
     /* Check for Xing / Info tag */
-    avio_skip(s->pb, xing_offtbl[c.lsf == 1][c.nb_channels == 1]);
+    avio_skip(s->pb, xing_offtbl[c->lsf == 1][c->nb_channels == 1]);
     v = avio_rb32(s->pb);
-    is_cbr = v == MKBETAG('I', 'n', 'f', 'o');
-    if (v == MKBETAG('X', 'i', 'n', 'g') || is_cbr) {
+    mp3->is_cbr = v == MKBETAG('I', 'n', 'f', 'o');
+    if (v == MKBETAG('X', 'i', 'n', 'g') || mp3->is_cbr) {
         v = avio_rb32(s->pb);
-        if(v & XING_FLAG_FRAMES)
-            frames = avio_rb32(s->pb);
-        if(v & XING_FLAG_SIZE)
-            size = avio_rb32(s->pb);
+        if (v & XING_FLAG_FRAMES)
+            mp3->frames = avio_rb32(s->pb);
+        if (v & XING_FLAG_SIZE)
+            mp3->header_filesize = avio_rb32(s->pb);
         if (v & XING_FLAG_TOC)
-            read_xing_toc(s, size, av_rescale_q(frames, (AVRational){spf, c.sample_rate},
-                                    st->time_base));
+            read_xing_toc(s, mp3->header_filesize,
+                          av_rescale_q(mp3->frames,
+                                       (AVRational){spf, c->sample_rate},
+                                       st->time_base));
         if(v & 8)
             avio_skip(s->pb, 4);
 
@@ -169,39 +155,70 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
             st->skip_samples = mp3->start_pad + 528 + 1;
             if (!st->start_time)
                 st->start_time = av_rescale_q(st->skip_samples,
-                                              (AVRational){1, c.sample_rate},
+                                              (AVRational){1, c->sample_rate},
                                               st->time_base);
             av_log(s, AV_LOG_DEBUG, "pad %d %d\n", mp3->start_pad, mp3->  end_pad);
         }
     }
+}
+
+static void mp3_parse_vbri_tag(AVFormatContext *s, AVStream *st, int64_t base)
+{
+    uint32_t v;
+    MP3DecContext *mp3 = s->priv_data;
 
     /* Check for VBRI tag (always 32 bytes after end of mpegaudio header) */
     avio_seek(s->pb, base + 4 + 32, SEEK_SET);
     v = avio_rb32(s->pb);
-    if(v == MKBETAG('V', 'B', 'R', 'I')) {
+    if (v == MKBETAG('V', 'B', 'R', 'I')) {
         /* Check tag version */
-        if(avio_rb16(s->pb) == 1) {
+        if (avio_rb16(s->pb) == 1) {
             /* skip delay and quality */
             avio_skip(s->pb, 4);
-            size = avio_rb32(s->pb);
-            frames = avio_rb32(s->pb);
+            mp3->header_filesize = avio_rb32(s->pb);
+            mp3->frames = avio_rb32(s->pb);
         }
     }
+}
 
-    if(!frames && !size)
+/**
+ * Try to find Xing/Info/VBRI tags and compute duration from info therein
+ */
+static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
+{
+    uint32_t v, spf;
+    MPADecodeHeader c;
+    int vbrtag_size = 0;
+    MP3DecContext *mp3 = s->priv_data;
+
+    v = avio_rb32(s->pb);
+    if(ff_mpa_check_header(v) < 0)
+      return -1;
+
+    if (avpriv_mpegaudio_decode_header(&c, v) == 0)
+        vbrtag_size = c.frame_size;
+    if(c.layer != 3)
+        return -1;
+
+    spf = c.lsf ? 576 : 1152; /* Samples per frame, layer 3 */
+
+    mp3->frames = 0;
+    mp3->header_filesize   = 0;
+
+    mp3_parse_info_tag(s, st, &c, spf);
+    mp3_parse_vbri_tag(s, st, base);
+
+    if (!mp3->frames && !mp3->header_filesize)
         return -1;
 
     /* Skip the vbr tag frame */
     avio_seek(s->pb, base + vbrtag_size, SEEK_SET);
 
-    if(frames)
-        st->duration = av_rescale_q(frames, (AVRational){spf, c.sample_rate},
+    if (mp3->frames)
+        st->duration = av_rescale_q(mp3->frames, (AVRational){spf, c.sample_rate},
                                     st->time_base);
-    if (size && frames && !is_cbr)
-        st->codec->bit_rate = av_rescale(size, 8 * c.sample_rate, frames * (int64_t)spf);
-
-    mp3->is_cbr          = is_cbr;
-    mp3->header_filesize = size;
+    if (mp3->header_filesize && mp3->frames && !mp3->is_cbr)
+        st->codec->bit_rate = av_rescale(mp3->header_filesize, 8 * c.sample_rate, mp3->frames * (int64_t)spf);
 
     return 0;
 }
