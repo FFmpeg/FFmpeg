@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-04-xx - xxxxxxx - lavu 53.12.0 / 52.77.100 - crc.h
+  Add AV_CRC_16_ANSI_LE crc variant.
+
 2014-04-XX - xxxxxxx - lavf xx.xx.1xx - avformat.h
   Add av_format_inject_global_side_data()
 
