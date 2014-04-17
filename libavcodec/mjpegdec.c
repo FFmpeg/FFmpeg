@@ -1665,9 +1665,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         ret = ff_tdecode_header(&gbytes, &le, &ifd_offset);
         if (ret) {
             av_log(s->avctx, AV_LOG_ERROR, "mjpeg: invalid TIFF header in EXIF data\n");
-            return ret;
-        }
-
+        } else {
         bytestream2_seek(&gbytes, ifd_offset, SEEK_SET);
 
         // read 0th IFD and store the metadata
@@ -1675,7 +1673,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         ret = avpriv_exif_decode_ifd(s->avctx, &gbytes, le, 0, &s->exif_metadata);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "mjpeg: error decoding EXIF data\n");
-            return ret;
+        }
         }
 
         bytes_read = bytestream2_tell(&gbytes);
