@@ -35,8 +35,8 @@ typedef struct PulseData {
     const char *device;
     pa_simple *pa;
     int64_t timestamp;
-    int buffer_size;
-    int buffer_duration;
+    int buffer_size;               /**< Buffer size in bytes */
+    int buffer_duration;           /**< Buffer size in ms, recalculated to buffer_size */
 } PulseData;
 
 static av_cold int pulse_write_header(AVFormatContext *h)
@@ -44,8 +44,8 @@ static av_cold int pulse_write_header(AVFormatContext *h)
     PulseData *s = h->priv_data;
     AVStream *st = NULL;
     int ret;
-    pa_sample_spec ss;
-    pa_buffer_attr attr = { -1, -1, -1, -1, -1 };
+    pa_sample_spec sample_spec;
+    pa_buffer_attr buffer_attributes = { -1, -1, -1, -1, -1 };
     const char *stream_name = s->stream_name;
 
     if (h->nb_streams != 1 || h->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO) {
@@ -66,26 +66,30 @@ static av_cold int pulse_write_header(AVFormatContext *h)
         bytes *= st->codec->channels * st->codec->sample_rate *
                  av_get_bytes_per_sample(st->codec->sample_fmt);
         bytes /= 1000;
-        attr.tlength = FFMAX(s->buffer_size, av_clip64(bytes, 0, UINT32_MAX - 1));
+        buffer_attributes.tlength = FFMAX(s->buffer_size, av_clip64(bytes, 0, UINT32_MAX - 1));
         av_log(s, AV_LOG_DEBUG,
                "Buffer duration: %ums recalculated into %"PRId64" bytes buffer.\n",
                s->buffer_duration, bytes);
-        av_log(s, AV_LOG_DEBUG, "Real buffer length is %u bytes\n", attr.tlength);
+        av_log(s, AV_LOG_DEBUG, "Real buffer length is %u bytes\n", buffer_attributes.tlength);
     } else if (s->buffer_size)
-        attr.tlength = s->buffer_size;
+        buffer_attributes.tlength = s->buffer_size;
 
-    ss.format = ff_codec_id_to_pulse_format(st->codec->codec_id);
-    ss.rate = st->codec->sample_rate;
-    ss.channels = st->codec->channels;
+    sample_spec.format = ff_codec_id_to_pulse_format(st->codec->codec_id);
+    sample_spec.rate = st->codec->sample_rate;
+    sample_spec.channels = st->codec->channels;
+    if (!pa_sample_spec_valid(&sample_spec)) {
+        av_log(s, AV_LOG_ERROR, "Invalid sample spec.\n");
+        return AVERROR(EINVAL);
+    }
 
     s->pa = pa_simple_new(s->server,                 // Server
                           s->name,                   // Application name
                           PA_STREAM_PLAYBACK,
                           s->device,                 // Device
                           stream_name,               // Description of a stream
-                          &ss,                       // Sample format
+                          &sample_spec,              // Sample format
                           NULL,                      // Use default channel map
-                          &attr,                     // Buffering attributes
+                          &buffer_attributes,        // Buffering attributes
                           &ret);                     // Result
 
     if (!s->pa) {
@@ -175,19 +179,18 @@ static int pulse_get_device_list(AVFormatContext *h, AVDeviceInfoList *device_li
 
 #define OFFSET(a) offsetof(PulseData, a)
 #define E AV_OPT_FLAG_ENCODING_PARAM
-
 static const AVOption options[] = {
-    { "server",        "set PulseAudio server",  OFFSET(server),      AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
-    { "name",          "set application name",   OFFSET(name),        AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT},  0, 0, E },
-    { "stream_name",   "set stream description", OFFSET(stream_name), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
-    { "device",        "set device name",        OFFSET(device),      AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
-    { "buffer_size",   "set buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT,  {.i64 = 0}, 0, INT_MAX, E },
-    { "buffer_duration", "set buffer duration in millisecs", OFFSET(buffer_duration), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
+    { "server",          "set PulseAudio server",            OFFSET(server),          AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
+    { "name",            "set application name",             OFFSET(name),            AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT},  0, 0, E },
+    { "stream_name",     "set stream description",           OFFSET(stream_name),     AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
+    { "device",          "set device name",                  OFFSET(device),          AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
+    { "buffer_size",     "set buffer size in bytes",         OFFSET(buffer_size),     AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, E },
+    { "buffer_duration", "set buffer duration in millisecs", OFFSET(buffer_duration), AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, E },
     { NULL }
 };
 
 static const AVClass pulse_muxer_class = {
-    .class_name     = "Pulse muxer",
+    .class_name     = "PulseAudio muxer",
     .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
@@ -195,17 +198,17 @@ static const AVClass pulse_muxer_class = {
 };
 
 AVOutputFormat ff_pulse_muxer = {
-    .name           = "pulse",
-    .long_name      = NULL_IF_CONFIG_SMALL("Pulse audio output"),
-    .priv_data_size = sizeof(PulseData),
-    .audio_codec    = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
-    .video_codec    = AV_CODEC_ID_NONE,
-    .write_header   = pulse_write_header,
-    .write_packet   = pulse_write_packet,
-    .write_uncoded_frame = pulse_write_frame,
-    .write_trailer  = pulse_write_trailer,
+    .name                 = "pulse",
+    .long_name            = NULL_IF_CONFIG_SMALL("Pulse audio output"),
+    .priv_data_size       = sizeof(PulseData),
+    .audio_codec          = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
+    .video_codec          = AV_CODEC_ID_NONE,
+    .write_header         = pulse_write_header,
+    .write_packet         = pulse_write_packet,
+    .write_uncoded_frame  = pulse_write_frame,
+    .write_trailer        = pulse_write_trailer,
     .get_output_timestamp = pulse_get_output_timestamp,
-    .get_device_list = pulse_get_device_list,
-    .flags          = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
-    .priv_class     = &pulse_muxer_class,
+    .get_device_list      = pulse_get_device_list,
+    .flags                = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
+    .priv_class           = &pulse_muxer_class,
 };
