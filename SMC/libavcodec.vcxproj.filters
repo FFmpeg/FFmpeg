@@ -603,6 +603,9 @@
     <ClCompile Include="..\libavcodec\dpxenc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dsddec.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dsicinav.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

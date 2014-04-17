@@ -617,6 +617,9 @@
     <ClCompile Include="..\libavcodec\dpxenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_dpxenc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dsddec.c">
+      <ObjectFileName>$(IntDir)\libavcodec_dsddec.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dsicinav.c">
       <ObjectFileName>$(IntDir)\libavcodec_dsicinav.obj</ObjectFileName>
     </ClCompile>

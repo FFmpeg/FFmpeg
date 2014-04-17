@@ -50,7 +50,7 @@
     <ResourceCompile Include="..\libpostproc\postprocres.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4D9C457D-9ADA-4A12-9D06-42D80124C5AB}</ProjectGuid>
+    <ProjectGuid>{B4824EFF-C340-425D-A4A8-E2E02A71A7AE}</ProjectGuid>
     <RootNamespace>libpostproc</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

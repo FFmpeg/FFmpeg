@@ -45,6 +45,9 @@
     <ClCompile Include="..\libavdevice\lavfi.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavdevice\opengl_enc.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavdevice\sdl.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
