@@ -71,11 +71,12 @@ int ff_replaygain_export_raw(AVStream *st, int32_t tg, uint32_t tp,
 {
     AVPacketSideData *sd, *tmp;
     AVReplayGain *replaygain;
+    int i;
 
     if (tg == INT32_MIN && ag == INT32_MIN)
         return 0;
 
-    for (int i = 0; i < st->nb_side_data; i++) {
+    for (i = 0; i < st->nb_side_data; i++) {
         AVPacketSideData *src_sd = &st->side_data[i];
 
         if (src_sd->type == AV_PKT_DATA_REPLAYGAIN)
