@@ -3323,6 +3323,8 @@ static int process_input(int file_index)
 
     /* add the stream-global side data to the first packet */
     if (ist->nb_packets == 1)
+        if (ist->st->nb_side_data)
+            av_packet_split_side_data(&pkt);
         for (i = 0; i < ist->st->nb_side_data; i++) {
             AVPacketSideData *src_sd = &ist->st->side_data[i];
             uint8_t *dst_data;
