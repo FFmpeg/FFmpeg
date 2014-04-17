@@ -218,6 +218,7 @@ OBJS-$(CONFIG_MJPEG_DEMUXER)             += rawdec.o
 OBJS-$(CONFIG_MJPEG_MUXER)               += rawenc.o
 OBJS-$(CONFIG_MLP_DEMUXER)               += rawdec.o
 OBJS-$(CONFIG_MLP_MUXER)                 += rawenc.o
+OBJS-$(CONFIG_MLV_DEMUXER)               += mlvdec.o riffdec.o
 OBJS-$(CONFIG_MM_DEMUXER)                += mm.o
 OBJS-$(CONFIG_MMF_DEMUXER)               += mmf.o
 OBJS-$(CONFIG_MMF_MUXER)                 += mmf.o rawenc.o

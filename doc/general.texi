@@ -313,6 +313,7 @@ library:
 @item LVF                       @tab   @tab X
 @item LXF                       @tab   @tab X
     @tab VR native stream format, used by Leitch/Harris' video servers.
+@item Magic Lantern Video (MLV) @tab   @tab X
 @item Matroska                  @tab X @tab X
 @item Matroska audio            @tab X @tab
 @item FFmpeg metadata           @tab X @tab X

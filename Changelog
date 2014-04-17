@@ -18,6 +18,7 @@ version <next>:
 - alternative rendition support for HTTP Live Streaming
 - AVFoundation input device
 - Direct Stream Digital (DSD) decoder
+- Magic Lantern Video (MLV) demuxer
 
 
 version 2.2:
