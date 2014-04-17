@@ -27,10 +27,18 @@
  */
 
 #include "config.h"
+
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
+
+#if CONFIG_LIBFONTCONFIG
+#include <fontconfig/fontconfig.h>
+#endif
 
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -53,9 +61,6 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 #include FT_STROKER_H
-#if CONFIG_FONTCONFIG
-#include <fontconfig/fontconfig.h>
-#endif
 
 static const char *const var_names[] = {
     "dar",
@@ -125,6 +130,9 @@ typedef struct {
     const AVClass *class;
     enum expansion_mode exp_mode;   ///< expansion mode to use for the text
     int reinit;                     ///< tells if the filter is being reinited
+#if CONFIG_LIBFONTCONFIG
+    uint8_t *font;              ///< font to be used
+#endif
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
     AVBPrint expanded_text;         ///< used to contain the expanded text
@@ -197,6 +205,9 @@ static const AVOption drawtext_options[]= {
     {"basetime",    "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.i64=AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX , FLAGS},
 #if FF_API_DRAWTEXT_OLD_TIMELINE
     {"draw",        "if false do not draw (deprecated)", OFFSET(draw_expr), AV_OPT_TYPE_STRING, {.str=NULL},   CHAR_MIN, CHAR_MAX, FLAGS},
+#endif
+#if CONFIG_LIBFONTCONFIG
+    { "font",        "Font name",            OFFSET(font),               AV_OPT_TYPE_STRING, { .str = "Sans" },           .flags = FLAGS },
 #endif
 
     {"expansion", "set the expansion mode", OFFSET(exp_mode), AV_OPT_TYPE_INT, {.i64=EXP_NORMAL}, 0, 2, FLAGS, "expansion"},
@@ -337,68 +348,90 @@ error:
     return ret;
 }
 
-static int load_font_file(AVFilterContext *ctx, const char *path, int index,
-                          const char **error)
+static int load_font_file(AVFilterContext *ctx, const char *path, int index)
 {
     DrawTextContext *s = ctx->priv;
     int err;
 
     err = FT_New_Face(s->library, path, index, &s->face);
     if (err) {
-        *error = FT_ERRMSG(err);
+        av_log(ctx, AV_LOG_ERROR, "Could not load font \"%s\": %s\n",
+               s->fontfile, FT_ERRMSG(err));
         return AVERROR(EINVAL);
     }
     return 0;
 }
 
-#if CONFIG_FONTCONFIG
-static int load_font_fontconfig(AVFilterContext *ctx, const char **error)
+#if CONFIG_LIBFONTCONFIG
+static int load_font_fontconfig(AVFilterContext *ctx)
 {
     DrawTextContext *s = ctx->priv;
     FcConfig *fontconfig;
-    FcPattern *pattern, *fpat;
+    FcPattern *pat, *best;
     FcResult result = FcResultMatch;
     FcChar8 *filename;
-    int err, index;
+    int index;
     double size;
+    int err = AVERROR(ENOENT);
 
     fontconfig = FcInitLoadConfigAndFonts();
     if (!fontconfig) {
-        *error = "impossible to init fontconfig\n";
-        return AVERROR(EINVAL);
+        av_log(ctx, AV_LOG_ERROR, "impossible to init fontconfig\n");
+        return AVERROR_UNKNOWN;
     }
-    pattern = FcNameParse(s->fontfile ? s->fontfile :
+    pat = FcNameParse(s->fontfile ? s->fontfile :
                           (uint8_t *)(intptr_t)"default");
-    if (!pattern) {
-        *error = "could not parse fontconfig pattern";
+    if (!pat) {
+        av_log(ctx, AV_LOG_ERROR, "could not parse fontconfig pat");
         return AVERROR(EINVAL);
     }
-    if (!FcConfigSubstitute(fontconfig, pattern, FcMatchPattern)) {
-        *error = "could not substitue fontconfig options"; /* very unlikely */
+
+    FcPatternAddString(pat, FC_FAMILY, s->font);
+    if (s->fontsize)
+        FcPatternAddDouble(pat, FC_SIZE, (double)s->fontsize);
+
+    FcDefaultSubstitute(pat);
+
+    if (!FcConfigSubstitute(fontconfig, pat, FcMatchPattern)) {
+        av_log(ctx, AV_LOG_ERROR, "could not substitue fontconfig options"); /* very unlikely */
+        FcPatternDestroy(pat);
+        return AVERROR(ENOMEM);
+    }
+
+    best = FcFontMatch(fontconfig, pat, &result);
+    FcPatternDestroy(pat);
+
+    if (!best || result != FcResultMatch) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Cannot find a valid font for the family %s\n",
+               s->font);
+        goto fail;
+    }
+
+    if (
+        FcPatternGetInteger(best, FC_INDEX, 0, &index   ) != FcResultMatch ||
+        FcPatternGetDouble (best, FC_SIZE,  0, &size    ) != FcResultMatch) {
+        av_log(ctx, AV_LOG_ERROR, "impossible to find font information");
         return AVERROR(EINVAL);
     }
-    FcDefaultSubstitute(pattern);
-    fpat = FcFontMatch(fontconfig, pattern, &result);
-    if (!fpat || result != FcResultMatch) {
-        *error = "impossible to find a matching font";
-        return AVERROR(EINVAL);
+
+    if (FcPatternGetString(best, FC_FILE, 0, &filename) != FcResultMatch) {
+        av_log(ctx, AV_LOG_ERROR, "No file path for %s\n",
+               s->font);
+        goto fail;
     }
-    if (FcPatternGetString (fpat, FC_FILE,  0, &filename) != FcResultMatch ||
-        FcPatternGetInteger(fpat, FC_INDEX, 0, &index   ) != FcResultMatch ||
-        FcPatternGetDouble (fpat, FC_SIZE,  0, &size    ) != FcResultMatch) {
-        *error = "impossible to find font information";
-        return AVERROR(EINVAL);
-    }
+
     av_log(ctx, AV_LOG_INFO, "Using \"%s\"\n", filename);
     if (!s->fontsize)
         s->fontsize = size + 0.5;
-    err = load_font_file(ctx, filename, index, error);
+
+    err = load_font_file(ctx, filename, index);
     if (err)
         return err;
-    FcPatternDestroy(fpat);
-    FcPatternDestroy(pattern);
     FcConfigDestroy(fontconfig);
-    return 0;
+fail:
+    FcPatternDestroy(best);
+    return err;
 }
 #endif
 
@@ -406,19 +439,16 @@ static int load_font(AVFilterContext *ctx)
 {
     DrawTextContext *s = ctx->priv;
     int err;
-    const char *error = "unknown error\n";
 
     /* load the face, and set up the encoding, which is by default UTF-8 */
-    err = load_font_file(ctx, s->fontfile, 0, &error);
+    err = load_font_file(ctx, s->fontfile, 0);
     if (!err)
         return 0;
-#if CONFIG_FONTCONFIG
-    err = load_font_fontconfig(ctx, &error);
+#if CONFIG_LIBFONTCONFIG
+    err = load_font_fontconfig(ctx);
     if (!err)
         return 0;
 #endif
-    av_log(ctx, AV_LOG_ERROR, "Could not load font \"%s\": %s\n",
-           s->fontfile, error);
     return err;
 }
 
@@ -457,7 +487,7 @@ static av_cold int init(AVFilterContext *ctx)
                "you are encouraged to use the generic timeline support through the 'enable' option\n");
 #endif
 
-    if (!s->fontfile && !CONFIG_FONTCONFIG) {
+    if (!s->fontfile && !CONFIG_LIBFONTCONFIG) {
         av_log(ctx, AV_LOG_ERROR, "No font filename provided\n");
         return AVERROR(EINVAL);
     }

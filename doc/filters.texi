@@ -3580,6 +3580,8 @@ libfreetype library.
 
 To enable compilation of this filter, you need to configure FFmpeg with
 @code{--enable-libfreetype}.
+To enable default font fallback and the @var{font} option you need to
+configure FFmpeg with @code{--enable-libfontconfig}.
 
 @subsection Syntax
 
@@ -3623,9 +3625,12 @@ the "Color" section in the ffmpeg-utils manual.
 
 The default value of @var{fontcolor} is "black".
 
+@item font
+The font family to be used for drawing text. By default Sans.
+
 @item fontfile
 The font file to be used for drawing text. The path must be included.
-This parameter is mandatory.
+This parameter is mandatory if the fontconfig support is disabled.
 
 @item fontsize
 The font size to be used for drawing text.
@@ -3785,9 +3790,6 @@ the x and y offset coordinates where the text is drawn.
 These parameters allow the @var{x} and @var{y} expressions to refer
 each other, so you can for example specify @code{y=x/dar}.
 @end table
-
-If libavfilter was built with @code{--enable-fontconfig}, then
-@option{fontfile} can be a fontconfig pattern or omitted.
 
 @anchor{drawtext_expansion}
 @subsection Text expansion
