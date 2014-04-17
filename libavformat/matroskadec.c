@@ -2545,7 +2545,8 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         pkt_data = wv_data;
     }
 
-    if (st->codec->codec_id == AV_CODEC_ID_PRORES)
+    if (st->codec->codec_id == AV_CODEC_ID_PRORES &&
+        AV_RB32(&data[4]) != MKBETAG('i', 'c', 'p', 'f'))
         offset = 8;
 
     pkt = av_mallocz(sizeof(AVPacket));
@@ -2556,7 +2557,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         goto fail;
     }
 
-    if (st->codec->codec_id == AV_CODEC_ID_PRORES) {
+    if (st->codec->codec_id == AV_CODEC_ID_PRORES && offset == 8) {
         uint8_t *buf = pkt->data;
         bytestream_put_be32(&buf, pkt_size);
         bytestream_put_be32(&buf, MKBETAG('i', 'c', 'p', 'f'));
