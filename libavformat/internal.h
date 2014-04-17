@@ -52,6 +52,8 @@ struct AVFormatInternal {
      * Muxing only.
      */
     int nb_interleaved_streams;
+
+    int inject_global_side_data;
 };
 
 #ifdef __GNUC__

@@ -2460,6 +2460,34 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("SMV (Selectable Mode Vocoder)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_DSD_LSBF,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "dsd_lsbf",
+        .long_name = NULL_IF_CONFIG_SMALL("DSD (Direct Stream Digital), least significant bit first"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_DSD_MSBF,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "dsd_msbf",
+        .long_name = NULL_IF_CONFIG_SMALL("DSD (Direct Stream Digital), most significant bit first"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_DSD_LSBF_PLANAR,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "dsd_lsbf_planar",
+        .long_name = NULL_IF_CONFIG_SMALL("DSD (Direct Stream Digital), least significant bit first, planar"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_DSD_MSBF_PLANAR,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "dsd_msbf_planar",
+        .long_name = NULL_IF_CONFIG_SMALL("DSD (Direct Stream Digital), most significant bit first, planar"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* subtitle codecs */
     {

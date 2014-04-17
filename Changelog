@@ -17,6 +17,7 @@ version <next>:
 - GDI screen grabbing for Windows
 - alternative rendition support for HTTP Live Streaming
 - AVFoundation input device
+- Direct Stream Digital (DSD) decoder
 
 
 version 2.2:

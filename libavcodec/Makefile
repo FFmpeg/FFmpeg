@@ -179,6 +179,8 @@ OBJS-$(CONFIG_DNXHD_DECODER)           += dnxhddec.o dnxhddata.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += dnxhdenc.o dnxhddata.o
 OBJS-$(CONFIG_DPX_DECODER)             += dpx.o
 OBJS-$(CONFIG_DPX_ENCODER)             += dpxenc.o
+OBJS-$(CONFIG_DSD_LSBF_DECODER)        += dsddec.o
+OBJS-$(CONFIG_DSD_MSBF_DECODER)        += dsddec.o
 OBJS-$(CONFIG_DSICINAUDIO_DECODER)     += dsicinav.o
 OBJS-$(CONFIG_DSICINVIDEO_DECODER)     += dsicinav.o
 OBJS-$(CONFIG_DVBSUB_DECODER)          += dvbsubdec.o
@@ -847,6 +849,7 @@ HOSTPROGS = aac_tablegen                                                \
             aacps_tablegen                                              \
             cbrt_tablegen                                               \
             cos_tablegen                                                \
+            dsd_tablegen                                                \
             dv_tablegen                                                 \
             motionpixels_tablegen                                       \
             mpegaudio_tablegen                                          \
@@ -871,7 +874,7 @@ else
 $(SUBDIR)%_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DCONFIG_SMALL=0
 endif
 
-GEN_HEADERS = cbrt_tables.h aacps_tables.h aac_tables.h dv_tables.h     \
+GEN_HEADERS = cbrt_tables.h aacps_tables.h aac_tables.h dsd_tables.h dv_tables.h     \
               sinewin_tables.h mpegaudio_tables.h motionpixels_tables.h \
               pcm_tables.h qdm2_tables.h
 GEN_HEADERS := $(addprefix $(SUBDIR), $(GEN_HEADERS))
@@ -883,6 +886,7 @@ ifdef CONFIG_HARDCODED_TABLES
 $(SUBDIR)aacdec.o: $(SUBDIR)cbrt_tables.h
 $(SUBDIR)aacps.o: $(SUBDIR)aacps_tables.h
 $(SUBDIR)aactab.o: $(SUBDIR)aac_tables.h
+$(SUBDIR)dsddec.o: $(SUBDIR)dsd_tables.h
 $(SUBDIR)dvenc.o: $(SUBDIR)dv_tables.h
 $(SUBDIR)sinewin.o: $(SUBDIR)sinewin_tables.h
 $(SUBDIR)mpegaudiodec_fixed.o: $(SUBDIR)mpegaudio_tables.h

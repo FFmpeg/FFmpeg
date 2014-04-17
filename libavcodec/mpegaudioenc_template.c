@@ -708,7 +708,7 @@ static void encode_frame(MpegAudioContext *s,
                                 q1 += 1 << P;
                                 if (q1 < 0)
                                     q1 = 0;
-                                q[m] = (unsigned)(q1 * steps) >> (P + 1);
+                                q[m] = (q1 * (unsigned)steps) >> (P + 1);
                             }
 #endif
                             if (q[m] >= steps)

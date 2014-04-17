@@ -58,7 +58,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(pb, 4);
     ico->nb_images = avio_rl16(pb);
 
-    ico->images = av_malloc(ico->nb_images * sizeof(IcoImage));
+    ico->images = av_malloc_array(ico->nb_images, sizeof(IcoImage));
     if (!ico->images)
         return AVERROR(ENOMEM);
 

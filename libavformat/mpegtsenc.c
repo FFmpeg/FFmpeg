@@ -628,7 +628,7 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->sdt.write_packet = section_write_packet;
     ts->sdt.opaque = s;
 
-    pids = av_malloc(s->nb_streams * sizeof(*pids));
+    pids = av_malloc_array(s->nb_streams, sizeof(*pids));
     if (!pids)
         return AVERROR(ENOMEM);
 

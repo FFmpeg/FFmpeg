@@ -862,6 +862,8 @@ typedef struct AVStream {
      * - muxing: May be set by the caller before avformat_write_header().
      *
      * Freed by libavformat in avformat_free_context().
+     *
+     * @see av_format_inject_global_side_data()
      */
     AVPacketSideData *side_data;
     /**
@@ -1043,7 +1045,7 @@ typedef struct AVStream {
     /**
      * Internal data to inject global side data
      */
-    int global_side_data_injected;
+    int inject_global_side_data;
 
 } AVStream;
 
@@ -1611,6 +1613,12 @@ void *    av_format_get_opaque(const AVFormatContext *s);
 void      av_format_set_opaque(AVFormatContext *s, void *opaque);
 av_format_control_message av_format_get_control_message_cb(const AVFormatContext *s);
 void      av_format_set_control_message_cb(AVFormatContext *s, av_format_control_message callback);
+
+/**
+ * This function will cause global side data to be injected in the next packet
+ * of each stream as well as after any subsequent seek.
+ */
+void av_format_inject_global_side_data(AVFormatContext *s);
 
 /**
  * Returns the method used to set ctx->duration.

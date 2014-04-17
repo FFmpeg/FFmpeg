@@ -110,6 +110,16 @@ MAKE_ACCESSORS(AVFormatContext, format, int, metadata_header_padding)
 MAKE_ACCESSORS(AVFormatContext, format, void *, opaque)
 MAKE_ACCESSORS(AVFormatContext, format, av_format_control_message, control_message_cb)
 
+void av_format_inject_global_side_data(AVFormatContext *s)
+{
+    int i;
+    s->internal->inject_global_side_data = 1;
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        st->inject_global_side_data = 1;
+    }
+}
+
 static AVCodec *find_decoder(AVFormatContext *s, AVStream *st, enum AVCodecID codec_id)
 {
     if (st->codec->codec)
@@ -1527,7 +1537,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             st->skip_samples = 0;
         }
 
-        if (!st->global_side_data_injected) {
+        if (st->inject_global_side_data) {
             for (i = 0; i < st->nb_side_data; i++) {
                 AVPacketSideData *src_sd = &st->side_data[i];
                 uint8_t *dst_data;
@@ -1537,13 +1547,13 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
                 dst_data = av_packet_new_side_data(pkt, src_sd->type, src_sd->size);
                 if (!dst_data) {
-                    av_log(s, AV_LOG_WARNING, "Couldnt inject global side data\n");
+                    av_log(s, AV_LOG_WARNING, "Could not inject global side data\n");
                     continue;
                 }
 
                 memcpy(dst_data, src_sd->data, src_sd->size);
             }
-            st->global_side_data_injected = 1;
+            st->inject_global_side_data = 0;
         }
 
         if (!(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
@@ -1717,7 +1727,8 @@ void ff_read_frame_flush(AVFormatContext *s)
         for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
             st->pts_buffer[j] = AV_NOPTS_VALUE;
 
-        st->global_side_data_injected = 0;
+        if (s->internal->inject_global_side_data)
+            st->inject_global_side_data = 1;
     }
 }
 
@@ -3689,6 +3700,8 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 #endif
     st->info->fps_first_dts = AV_NOPTS_VALUE;
     st->info->fps_last_dts  = AV_NOPTS_VALUE;
+
+    st->inject_global_side_data = s->internal->inject_global_side_data;
 
     s->streams[s->nb_streams++] = st;
     return st;

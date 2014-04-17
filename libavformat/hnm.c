@@ -92,7 +92,7 @@ static int hnm_read_header(AVFormatContext *s)
 
     hnm->currentframe = 0;
 
-    if (hnm->width  < 320 || hnm->width  > 640 ||
+    if (hnm->width  < 256 || hnm->width  > 640 ||
         hnm->height < 150 || hnm->height > 480) {
         av_log(s, AV_LOG_ERROR,
                "invalid resolution: %ux%u\n", hnm->width, hnm->height);

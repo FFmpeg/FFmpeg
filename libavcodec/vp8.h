@@ -93,7 +93,7 @@ typedef struct VP8Macroblock {
     uint8_t chroma_pred_mode;
     uint8_t segment;
     uint8_t intra4x4_pred_mode_mb[16];
-    uint8_t intra4x4_pred_mode_top[4];
+    DECLARE_ALIGNED(4, uint8_t, intra4x4_pred_mode_top)[4];
     VP56mv mv;
     VP56mv bmv[16];
 } VP8Macroblock;

@@ -246,8 +246,8 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         ctx->slice_data[slice].y_off    = y_off;
     }
 
-    if (ret = avctx->execute(avctx, fic_decode_slice, ctx->slice_data,
-                             NULL, nslices, sizeof(ctx->slice_data[0])) < 0)
+    if ((ret = avctx->execute(avctx, fic_decode_slice, ctx->slice_data,
+                              NULL, nslices, sizeof(ctx->slice_data[0]))) < 0)
         return ret;
 
 skip:

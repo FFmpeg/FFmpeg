@@ -189,7 +189,7 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
     ctx->size = avpicture_get_size(avctx->pix_fmt,
                                    avctx->width, avctx->height);
 
-    ctx->val = av_malloc(ctx->size * sizeof(*ctx->val));
+    ctx->val = av_malloc_array(ctx->size, sizeof(*ctx->val));
 
     if (!ctx->val) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate values buffer.\n");

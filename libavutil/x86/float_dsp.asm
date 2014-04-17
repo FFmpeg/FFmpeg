@@ -61,40 +61,48 @@ VECTOR_FMUL
 
 %macro VECTOR_FMAC_SCALAR 0
 %if UNIX64
-cglobal vector_fmac_scalar, 3,3,3, dst, src, len
+cglobal vector_fmac_scalar, 3,3,5, dst, src, len
 %else
-cglobal vector_fmac_scalar, 4,4,3, dst, src, mul, len
+cglobal vector_fmac_scalar, 4,4,5, dst, src, mul, len
 %endif
 %if ARCH_X86_32
     VBROADCASTSS m0, mulm
 %else
 %if WIN64
-    mova       xmm0, xmm2
+    SWAP 0, 2
 %endif
-    shufps     xmm0, xmm0, 0
+    shufps      xm0, xm0, 0
 %if cpuflag(avx)
-    vinsertf128  m0, m0, xmm0, 1
+    vinsertf128  m0, m0, xm0, 1
 %endif
 %endif
     lea    lenq, [lend*4-64]
 .loop:
-%assign a 0
-%rep 32/mmsize
 %if cpuflag(fma3)
-    mova     m1, [dstq+lenq+(a+0)*mmsize]
-    mova     m2, [dstq+lenq+(a+1)*mmsize]
-    fmaddps  m1, m0, [srcq+lenq+(a+0)*mmsize], m1
-    fmaddps  m2, m0, [srcq+lenq+(a+1)*mmsize], m2
-%else
-    mulps    m1, m0, [srcq+lenq+(a+0)*mmsize]
-    mulps    m2, m0, [srcq+lenq+(a+1)*mmsize]
-    addps    m1, m1, [dstq+lenq+(a+0)*mmsize]
-    addps    m2, m2, [dstq+lenq+(a+1)*mmsize]
-%endif
-    mova  [dstq+lenq+(a+0)*mmsize], m1
-    mova  [dstq+lenq+(a+1)*mmsize], m2
-%assign a a+2
-%endrep
+    mova     m1,     [dstq+lenq]
+    mova     m2,     [dstq+lenq+1*mmsize]
+    fmaddps  m1, m0, [srcq+lenq], m1
+    fmaddps  m2, m0, [srcq+lenq+1*mmsize], m2
+%else ; cpuflag
+    mulps    m1, m0, [srcq+lenq]
+    mulps    m2, m0, [srcq+lenq+1*mmsize]
+%if mmsize < 32
+    mulps    m3, m0, [srcq+lenq+2*mmsize]
+    mulps    m4, m0, [srcq+lenq+3*mmsize]
+%endif ; mmsize
+    addps    m1, m1, [dstq+lenq]
+    addps    m2, m2, [dstq+lenq+1*mmsize]
+%if mmsize < 32
+    addps    m3, m3, [dstq+lenq+2*mmsize]
+    addps    m4, m4, [dstq+lenq+3*mmsize]
+%endif ; mmsize
+%endif ; cpuflag
+    mova  [dstq+lenq], m1
+    mova  [dstq+lenq+1*mmsize], m2
+%if mmsize < 32
+    mova  [dstq+lenq+2*mmsize], m3
+    mova  [dstq+lenq+3*mmsize], m4
+%endif ; mmsize
     sub    lenq, 64
     jge .loop
     REP_RET

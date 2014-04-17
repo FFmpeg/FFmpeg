@@ -204,9 +204,9 @@ static int get_audio_buffer(AVFrame *frame, int align)
     }
 
     if (planes > AV_NUM_DATA_POINTERS) {
-        frame->extended_data = av_mallocz(planes *
+        frame->extended_data = av_mallocz_array(planes,
                                           sizeof(*frame->extended_data));
-        frame->extended_buf  = av_mallocz((planes - AV_NUM_DATA_POINTERS) *
+        frame->extended_buf  = av_mallocz_array((planes - AV_NUM_DATA_POINTERS),
                                           sizeof(*frame->extended_buf));
         if (!frame->extended_data || !frame->extended_buf) {
             av_freep(&frame->extended_data);
@@ -290,7 +290,7 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
     }
 
     if (src->extended_buf) {
-        dst->extended_buf = av_mallocz(sizeof(*dst->extended_buf) *
+        dst->extended_buf = av_mallocz_array(sizeof(*dst->extended_buf),
                                        src->nb_extended_buf);
         if (!dst->extended_buf) {
             ret = AVERROR(ENOMEM);
@@ -317,7 +317,7 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
         }
         CHECK_CHANNELS_CONSISTENCY(src);
 
-        dst->extended_data = av_malloc(sizeof(*dst->extended_data) * ch);
+        dst->extended_data = av_malloc_array(sizeof(*dst->extended_data), ch);
         if (!dst->extended_data) {
             ret = AVERROR(ENOMEM);
             goto fail;
