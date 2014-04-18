@@ -70,6 +70,11 @@ static int dsf_read_header(AVFormatContext *s)
     if (avio_rl64(pb) != 28)
         return AVERROR_INVALIDDATA;
 
+    /* create primary stream before any id3 coverart streams */
+    st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+
     avio_skip(pb, 8);
     id3pos = avio_rl64(pb);
     if (pb->seekable) {
@@ -91,10 +96,6 @@ static int dsf_read_header(AVFormatContext *s)
         avpriv_request_sample(s, "unknown format id");
         return AVERROR_INVALIDDATA;
     }
-
-    st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
 
     channel_type = avio_rl32(pb);
     if (channel_type < FF_ARRAY_ELEMS(dsf_channel_layout))
