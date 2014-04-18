@@ -88,7 +88,7 @@ int ff_snow_alloc_blocks(SnowContext *s){
     s->b_height= h;
 
     av_free(s->block);
-    s->block= av_mallocz(w * h * sizeof(BlockNode) << (s->block_max_depth*2));
+    s->block= av_mallocz_array(w * h,  sizeof(BlockNode) << (s->block_max_depth*2));
     if (!s->block)
         return AVERROR(ENOMEM);
 
@@ -537,7 +537,7 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
                     b->parent= &s->plane[plane_index].band[level-1][orientation];
                 //FIXME avoid this realloc
                 av_freep(&b->x_coeff);
-                b->x_coeff=av_mallocz(((b->width+1) * b->height+1)*sizeof(x_and_coeff));
+                b->x_coeff=av_mallocz_array(((b->width+1) * b->height+1), sizeof(x_and_coeff));
                 if (!b->x_coeff)
                     goto fail;
             }
