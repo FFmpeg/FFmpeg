@@ -47,6 +47,8 @@ typedef struct {
     char *window_title;
     int window_width, window_height;
     int window_x, window_y;
+    int dest_x, dest_y;          /**< display area position */
+    unsigned int dest_w, dest_h; /**< display area dimensions */
 
     Display* display;
     char *display_name;
@@ -103,6 +105,8 @@ static int xv_write_header(AVFormatContext *s)
     unsigned int num_adaptors;
     XvAdaptorInfo *ai;
     XvImageFormatValues *fv;
+    XColor fgcolor;
+    XWindowAttributes window_attrs;
     int num_formats = 0, j, tag, ret;
     AVCodecContext *encctx = s->streams[0]->codec;
 
@@ -199,10 +203,48 @@ static int xv_write_header(AVFormatContext *s)
     XSync(xv->display, False);
     shmctl(xv->yuv_shminfo.shmid, IPC_RMID, 0);
 
+    XGetWindowAttributes(xv->display, xv->window, &window_attrs);
+    fgcolor.red = fgcolor.green = fgcolor.blue = 0;
+    fgcolor.flags = DoRed | DoGreen | DoBlue;
+    XAllocColor(xv->display, window_attrs.colormap, &fgcolor);
+    XSetForeground(xv->display, xv->gc, fgcolor.pixel);
+    //force display area recalculation at first frame
+    xv->window_width = xv->window_height = 0;
+
     return 0;
   fail:
     xv_write_trailer(s);
     return ret;
+}
+
+static void compute_display_area(AVFormatContext *s)
+{
+    XVContext *xv = s->priv_data;
+    AVRational sar, dar; /* sample and display aspect ratios */
+    AVStream *st = s->streams[0];
+    AVCodecContext *encctx = st->codec;
+
+    /* compute overlay width and height from the codec context information */
+    sar = st->sample_aspect_ratio.num ? st->sample_aspect_ratio : (AVRational){ 1, 1 };
+    dar = av_mul_q(sar, (AVRational){ encctx->width, encctx->height });
+
+    /* we suppose the screen has a 1/1 sample aspect ratio */
+    /* fit in the window */
+    if (av_cmp_q(dar, (AVRational){ xv->dest_w, xv->dest_h }) > 0) {
+        /* fit in width */
+        xv->dest_y = xv->dest_h;
+        xv->dest_x = 0;
+        xv->dest_h = av_rescale(xv->dest_w, dar.den, dar.num);
+        xv->dest_y -= xv->dest_h;
+        xv->dest_y /= 2;
+    } else {
+        /* fit in height */
+        xv->dest_x = xv->dest_w;
+        xv->dest_y = 0;
+        xv->dest_w = av_rescale(xv->dest_h, dar.num, dar.den);
+        xv->dest_x -= xv->dest_w;
+        xv->dest_x /= 2;
+    }
 }
 
 static int write_picture(AVFormatContext *s, AVPicture *pict)
@@ -219,9 +261,33 @@ static int write_picture(AVFormatContext *s, AVPicture *pict)
     av_image_copy(data, img->pitches, (const uint8_t **)pict->data, pict->linesize,
                   xv->image_format, img->width, img->height);
     XGetWindowAttributes(xv->display, xv->window, &window_attrs);
+
+    if (window_attrs.width != xv->window_width || window_attrs.height != xv->window_height) {
+        XRectangle rect[2];
+        xv->dest_w = window_attrs.width;
+        xv->dest_h = window_attrs.height;
+        compute_display_area(s);
+        if (xv->dest_x) {
+            rect[0].width  = rect[1].width  = xv->dest_x;
+            rect[0].height = rect[1].height = window_attrs.height;
+            rect[0].y      = rect[1].y      = 0;
+            rect[0].x = 0;
+            rect[1].x = xv->dest_w + xv->dest_x;
+            XFillRectangles(xv->display, xv->window, xv->gc, rect, 2);
+        }
+        if (xv->dest_y) {
+            rect[0].width  = rect[1].width  = window_attrs.width;
+            rect[0].height = rect[1].height = xv->dest_y;
+            rect[0].x      = rect[1].x      = 0;
+            rect[0].y = 0;
+            rect[1].y = xv->dest_h + xv->dest_y;
+            XFillRectangles(xv->display, xv->window, xv->gc, rect, 2);
+        }
+    }
+
     if (XvShmPutImage(xv->display, xv->xv_port, xv->window, xv->gc,
-                      xv->yuv_image, 0, 0, xv->image_width, xv->image_height, 0, 0,
-                      window_attrs.width, window_attrs.height, True) != Success) {
+                      xv->yuv_image, 0, 0, xv->image_width, xv->image_height,
+                      xv->dest_x, xv->dest_y, xv->dest_w, xv->dest_h, True) != Success) {
         av_log(s, AV_LOG_ERROR, "Could not copy image to XV shared memory buffer\n");
         return AVERROR_EXTERNAL;
     }
