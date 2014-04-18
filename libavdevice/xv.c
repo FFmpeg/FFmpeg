@@ -251,21 +251,12 @@ static void compute_display_area(AVFormatContext *s)
     }
 }
 
-static int write_picture(AVFormatContext *s, AVPicture *pict)
+static int xv_repaint(AVFormatContext *s)
 {
     XVContext *xv = s->priv_data;
-    XvImage *img = xv->yuv_image;
     XWindowAttributes window_attrs;
-    uint8_t *data[3] = {
-        img->data + img->offsets[0],
-        img->data + img->offsets[1],
-        img->data + img->offsets[2]
-    };
 
-    av_image_copy(data, img->pitches, (const uint8_t **)pict->data, pict->linesize,
-                  xv->image_format, img->width, img->height);
     XGetWindowAttributes(xv->display, xv->window, &window_attrs);
-
     if (window_attrs.width != xv->window_width || window_attrs.height != xv->window_height) {
         XRectangle rect[2];
         xv->dest_w = window_attrs.width;
@@ -298,6 +289,20 @@ static int write_picture(AVFormatContext *s, AVPicture *pict)
     return 0;
 }
 
+static int write_picture(AVFormatContext *s, AVPicture *pict)
+{
+    XVContext *xv = s->priv_data;
+    XvImage *img = xv->yuv_image;
+    uint8_t *data[3] = {
+        img->data + img->offsets[0],
+        img->data + img->offsets[1],
+        img->data + img->offsets[2]
+    };
+    av_image_copy(data, img->pitches, (const uint8_t **)pict->data, pict->linesize,
+                  xv->image_format, img->width, img->height);
+    return xv_repaint(s);
+}
+
 static int xv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVPicture pict;
@@ -314,6 +319,17 @@ static int xv_write_frame(AVFormatContext *s, int stream_index, AVFrame **frame,
     if ((flags & AV_WRITE_UNCODED_FRAME_QUERY))
         return 0;
     return write_picture(s, (AVPicture *)*frame);
+}
+
+static int xv_control_message(AVFormatContext *s, int type, void *data, size_t data_size)
+{
+    switch(type) {
+    case AV_APP_TO_DEV_WINDOW_REPAINT:
+        return xv_repaint(s);
+    default:
+        break;
+    }
+    return AVERROR(ENOSYS);
 }
 
 #define OFFSET(x) offsetof(XVContext, x)
@@ -346,6 +362,7 @@ AVOutputFormat ff_xv_muxer = {
     .write_packet   = xv_write_packet,
     .write_uncoded_frame = xv_write_frame,
     .write_trailer  = xv_write_trailer,
+    .control_message = xv_control_message,
     .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
     .priv_class     = &xv_class,
 };
