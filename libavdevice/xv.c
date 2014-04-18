@@ -24,7 +24,6 @@
  *
  * TODO:
  * - add support to more formats
- * - add support to window id specification
  */
 
 #include <X11/Xlib.h>
@@ -44,6 +43,7 @@ typedef struct {
     GC gc;
 
     Window window;
+    int64_t window_id;
     char *window_title;
     int window_width, window_height;
     int window_x, window_y;
@@ -144,6 +144,8 @@ static int xv_write_header(AVFormatContext *s)
                 xv->window_height = av_rescale(xv->window_height, sar.den, sar.num);
         }
     }
+    if (!xv->window_id) {
+    //TODO: reident
     xv->window = XCreateSimpleWindow(xv->display, DefaultRootWindow(xv->display),
                                      xv->window_x, xv->window_y,
                                      xv->window_width, xv->window_height,
@@ -156,6 +158,8 @@ static int xv_write_header(AVFormatContext *s)
     }
     XStoreName(xv->display, xv->window, xv->window_title);
     XMapWindow(xv->display, xv->window);
+    } else
+        xv->window = xv->window_id;
 
     if (XvQueryAdaptors(xv->display, DefaultRootWindow(xv->display), &num_adaptors, &ai) != Success) {
         ret = AVERROR_EXTERNAL;
@@ -315,6 +319,7 @@ static int xv_write_frame(AVFormatContext *s, int stream_index, AVFrame **frame,
 #define OFFSET(x) offsetof(XVContext, x)
 static const AVOption options[] = {
     { "display_name", "set display name",       OFFSET(display_name), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_id",    "set existing window id", OFFSET(window_id),    AV_OPT_TYPE_INT64,  {.i64 = 0 }, 0, INT64_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_size",  "set window forced size", OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_title", "set window title",       OFFSET(window_title), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_x",     "set window x offset",    OFFSET(window_x),     AV_OPT_TYPE_INT,    {.i64 = 0 }, -INT_MAX, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
