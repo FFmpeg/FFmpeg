@@ -162,6 +162,10 @@ Force a specific video decoder.
 
 @item -scodec @var{codec_name}
 Force a specific subtitle decoder.
+
+@item -autorotate
+Automatically rotate the video according to presentation metadata. Set by
+default, use -noautorotate to disable.
 @end table
 
 @section While playing
