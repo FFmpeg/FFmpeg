@@ -335,8 +335,6 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
             int32_t v;
             int x1, y1;
             uint8_t *pin, *pout;
-            x += c;
-            y -= s;
             x1 = x>>16;
             y1 = y>>16;
 
@@ -372,6 +370,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
                     break;
                 }
             }
+            x += c;
+            y -= s;
         }
         xprime += s;
         yprime += c;
