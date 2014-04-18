@@ -328,8 +328,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     int i, j, x, y;
 
     for (j = start; j < end; j++) {
-        x = xprime + xi + FIXP*inw/2;
-        y = yprime + yi + FIXP*inh/2;
+        x = xprime + xi + FIXP*(inw-1)/2;
+        y = yprime + yi + FIXP*(inh-1)/2;
 
         for (i = 0; i < outw; i++) {
             int32_t v;
@@ -421,9 +421,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                           .inw  = FF_CEIL_RSHIFT(inlink->w, hsub),
                           .inh  = FF_CEIL_RSHIFT(inlink->h, vsub),
                           .outh = outh, .outw = outw,
-                          .xi = -outw/2 * c, .yi =  outw/2 * s,
-                          .xprime = -outh/2 * s,
-                          .yprime = -outh/2 * c,
+                          .xi = -(outw-1) * c / 2, .yi =  (outw-1) * s / 2,
+                          .xprime = -(outh-1) * s / 2,
+                          .yprime = -(outh-1) * c / 2,
                           .plane = plane, .c = c, .s = s };
 
 
