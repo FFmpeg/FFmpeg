@@ -154,6 +154,41 @@ enum AVAppToDevMessageType {
     AV_APP_TO_DEV_PAUSE        = MKBETAG('P', 'A', 'U', ' '),
     AV_APP_TO_DEV_PLAY         = MKBETAG('P', 'L', 'A', 'Y'),
     AV_APP_TO_DEV_TOGGLE_PAUSE = MKBETAG('P', 'A', 'U', 'T'),
+
+    /**
+     * Volume control message.
+     *
+     * Set volume level. It may be device-dependent if volume
+     * is changed per stream or system wide. Per stream volume
+     * change is expected when possible.
+     *
+     * data: double: new volume with range of 0.0 - 1.0.
+     */
+    AV_APP_TO_DEV_SET_VOLUME = MKBETAG('S', 'V', 'O', 'L'),
+
+    /**
+     * Mute control messages.
+     *
+     * Change mute state. It may be device-dependent if mute status
+     * is changed per stream or system wide. Per stream mute status
+     * change is expected when possible.
+     *
+     * data: NULL.
+     */
+    AV_APP_TO_DEV_MUTE        = MKBETAG(' ', 'M', 'U', 'T'),
+    AV_APP_TO_DEV_UNMUTE      = MKBETAG('U', 'M', 'U', 'T'),
+    AV_APP_TO_DEV_TOGGLE_MUTE = MKBETAG('T', 'M', 'U', 'T'),
+
+    /**
+     * Get volume/mute messages.
+     *
+     * Force the device to send AV_DEV_TO_APP_VOLUME_LEVEL_CHANGED or
+     * AV_DEV_TO_APP_MUTE_STATE_CHANGED command respectively.
+     *
+     * data: NULL.
+     */
+    AV_APP_TO_DEV_GET_VOLUME = MKBETAG('G', 'V', 'O', 'L'),
+    AV_APP_TO_DEV_GET_MUTE   = MKBETAG('G', 'M', 'U', 'T'),
 };
 
 /**
@@ -237,6 +272,24 @@ enum AVDevToAppMessageType {
      */
     AV_DEV_TO_APP_BUFFER_READABLE = MKBETAG('B','R','D',' '),
     AV_DEV_TO_APP_BUFFER_WRITABLE = MKBETAG('B','W','R',' '),
+
+    /**
+     * Mute state change message.
+     *
+     * Device informs that mute state has changed.
+     *
+     * data: int: 0 for not muted state, non-zero for muted state.
+     */
+    AV_DEV_TO_APP_MUTE_STATE_CHANGED = MKBETAG('C','M','U','T'),
+
+    /**
+     * Volume level change message.
+     *
+     * Device informs that volume level has changed.
+     *
+     * data: double: new volume with range of 0.0 - 1.0.
+     */
+    AV_DEV_TO_APP_VOLUME_LEVEL_CHANGED = MKBETAG('C','V','O','L'),
 };
 
 /**

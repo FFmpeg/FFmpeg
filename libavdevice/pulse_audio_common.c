@@ -24,6 +24,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
+#include "libavutil/avassert.h"
 
 pa_sample_format_t av_cold ff_codec_id_to_pulse_format(enum AVCodecID codec_id)
 {
@@ -43,10 +44,10 @@ pa_sample_format_t av_cold ff_codec_id_to_pulse_format(enum AVCodecID codec_id)
     }
 }
 
-enum PulseAudioLoopState {
-    PA_LOOP_INITIALIZING,
-    PA_LOOP_READY,
-    PA_LOOP_FINISHED
+enum PulseAudioContextState {
+    PULSE_CONTEXT_INITIALIZING,
+    PULSE_CONTEXT_READY,
+    PULSE_CONTEXT_FINISHED
 };
 
 typedef struct PulseAudioDeviceList {
@@ -58,19 +59,77 @@ typedef struct PulseAudioDeviceList {
 
 static void pa_state_cb(pa_context *c, void *userdata)
 {
-    enum PulseAudioLoopState *loop_status = userdata;
+    enum PulseAudioContextState *context_state = userdata;
 
     switch  (pa_context_get_state(c)) {
     case PA_CONTEXT_FAILED:
     case PA_CONTEXT_TERMINATED:
-        *loop_status = PA_LOOP_FINISHED;
+        *context_state = PULSE_CONTEXT_FINISHED;
         break;
     case PA_CONTEXT_READY:
-        *loop_status = PA_LOOP_READY;
+        *context_state = PULSE_CONTEXT_READY;
         break;
     default:
         break;
     }
+}
+
+void ff_pulse_audio_disconnect_context(pa_mainloop **pa_ml, pa_context **pa_ctx)
+{
+    av_assert0(pa_ml);
+    av_assert0(pa_ctx);
+
+    if (*pa_ctx) {
+        pa_context_set_state_callback(*pa_ctx, NULL, NULL);
+        pa_context_disconnect(*pa_ctx);
+        pa_context_unref(*pa_ctx);
+    }
+    if (*pa_ml)
+        pa_mainloop_free(*pa_ml);
+    *pa_ml = NULL;
+    *pa_ctx = NULL;
+}
+
+int ff_pulse_audio_connect_context(pa_mainloop **pa_ml, pa_context **pa_ctx,
+                                   const char *server, const char *description)
+{
+    int ret;
+    pa_mainloop_api *pa_mlapi = NULL;
+    enum PulseAudioContextState context_state = PULSE_CONTEXT_INITIALIZING;
+
+    av_assert0(pa_ml);
+    av_assert0(pa_ctx);
+
+    *pa_ml = NULL;
+    *pa_ctx = NULL;
+
+    if (!(*pa_ml = pa_mainloop_new()))
+        return AVERROR(ENOMEM);
+    if (!(pa_mlapi = pa_mainloop_get_api(*pa_ml))) {
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+    if (!(*pa_ctx = pa_context_new(pa_mlapi, description))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    pa_context_set_state_callback(*pa_ctx, pa_state_cb, &context_state);
+    if (pa_context_connect(*pa_ctx, server, 0, NULL) < 0) {
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    while (context_state == PULSE_CONTEXT_INITIALIZING)
+        pa_mainloop_iterate(*pa_ml, 1, NULL);
+    if (context_state == PULSE_CONTEXT_FINISHED) {
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+    return 0;
+
+  fail:
+    ff_pulse_audio_disconnect_context(pa_ml, pa_ctx);
+    return ret;
 }
 
 static void pulse_add_detected_device(PulseAudioDeviceList *info,
@@ -138,11 +197,9 @@ static void pulse_server_info_cb(pa_context *c, const pa_server_info *i, void *u
 int ff_pulse_audio_get_devices(AVDeviceInfoList *devices, const char *server, int output)
 {
     pa_mainloop *pa_ml = NULL;
-    pa_mainloop_api *pa_mlapi = NULL;
     pa_operation *pa_op = NULL;
     pa_context *pa_ctx = NULL;
     enum pa_operation_state op_state;
-    enum PulseAudioLoopState loop_state = PA_LOOP_INITIALIZING;
     PulseAudioDeviceList dev_list = { 0 };
     int i;
 
@@ -152,28 +209,9 @@ int ff_pulse_audio_get_devices(AVDeviceInfoList *devices, const char *server, in
         return AVERROR(EINVAL);
     devices->nb_devices = 0;
     devices->devices = NULL;
-    if (!(pa_ml = pa_mainloop_new()))
-        return AVERROR(ENOMEM);
-    if (!(pa_mlapi = pa_mainloop_get_api(pa_ml))) {
-        dev_list.error_code = AVERROR_EXTERNAL;
-        goto fail;
-    }
-    if (!(pa_ctx = pa_context_new(pa_mlapi, "Query devices"))) {
-        dev_list.error_code = AVERROR(ENOMEM);
-        goto fail;
-    }
-    pa_context_set_state_callback(pa_ctx, pa_state_cb, &loop_state);
-    if (pa_context_connect(pa_ctx, server, 0, NULL) < 0) {
-        dev_list.error_code = AVERROR_EXTERNAL;
-        goto fail;
-    }
 
-    while (loop_state == PA_LOOP_INITIALIZING)
-        pa_mainloop_iterate(pa_ml, 1, NULL);
-    if (loop_state == PA_LOOP_FINISHED) {
-        dev_list.error_code = AVERROR_EXTERNAL;
+    if ((dev_list.error_code = ff_pulse_audio_connect_context(&pa_ml, &pa_ctx, server, "Query devices")) < 0)
         goto fail;
-    }
 
     if (output)
         pa_op = pa_context_get_sink_info_list(pa_ctx, pulse_audio_sink_device_cb, &dev_list);
@@ -206,11 +244,6 @@ int ff_pulse_audio_get_devices(AVDeviceInfoList *devices, const char *server, in
 
   fail:
     av_free(dev_list.default_device);
-    if(pa_ctx)
-        pa_context_disconnect(pa_ctx);
-    if (pa_ctx)
-        pa_context_unref(pa_ctx);
-    if (pa_ml)
-        pa_mainloop_free(pa_ml);
+    ff_pulse_audio_disconnect_context(&pa_ml, &pa_ctx);
     return dev_list.error_code;
 }
