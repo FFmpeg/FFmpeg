@@ -275,7 +275,7 @@ static int oma_read_header(AVFormatContext *s)
     ID3v2ExtraMeta *extra_meta = NULL;
     OMAContext *oc = s->priv_data;
 
-    ff_id3v2_read(s, ID3v2_EA3_MAGIC, &extra_meta);
+    ff_id3v2_read(s, ID3v2_EA3_MAGIC, &extra_meta, 0);
     ret = avio_read(s->pb, buf, EA3_HEADER_SIZE);
     if (ret < EA3_HEADER_SIZE)
         return -1;
