@@ -880,16 +880,25 @@ error:
 
 static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
                                 AVFormatContext *s, const char *magic,
-                                ID3v2ExtraMeta **extra_meta)
+                                ID3v2ExtraMeta **extra_meta, int64_t max_search_size)
 {
     int len, ret;
     uint8_t buf[ID3v2_HEADER_SIZE];
     int found_header;
-    int64_t off;
+    int64_t start, off;
 
+    if (max_search_size && max_search_size < ID3v2_HEADER_SIZE)
+        return;
+
+    start = avio_tell(pb);
     do {
         /* save the current offset in case there's nothing to read/skip */
         off = avio_tell(pb);
+        if (max_search_size && off - start >= max_search_size - ID3v2_HEADER_SIZE) {
+            avio_seek(pb, off, SEEK_SET);
+            break;
+        }
+
         ret = avio_read(pb, buf, ID3v2_HEADER_SIZE);
         if (ret != ID3v2_HEADER_SIZE) {
             avio_seek(pb, off, SEEK_SET);
@@ -916,13 +925,13 @@ static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
 void ff_id3v2_read_dict(AVIOContext *pb, AVDictionary **metadata,
                         const char *magic, ID3v2ExtraMeta **extra_meta)
 {
-    id3v2_read_internal(pb, metadata, NULL, magic, extra_meta);
+    id3v2_read_internal(pb, metadata, NULL, magic, extra_meta, 0);
 }
 
 void ff_id3v2_read(AVFormatContext *s, const char *magic,
-                   ID3v2ExtraMeta **extra_meta)
+                   ID3v2ExtraMeta **extra_meta, unsigned int max_search_size)
 {
-    id3v2_read_internal(s->pb, &s->metadata, s, magic, extra_meta);
+    id3v2_read_internal(s->pb, &s->metadata, s, magic, extra_meta, max_search_size);
 }
 
 void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta)
