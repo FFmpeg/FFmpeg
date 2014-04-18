@@ -2766,10 +2766,10 @@ probe_cc(){
         _cflags_speed='-fast'
         _cflags_size='-O1'
         _flags_filter=ccc_flags
-    elif $_cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
+    elif $_cc --vsn 2>/dev/null | grep -Eq "ARM (C/C\+\+ )?Compiler"; then
         test -d "$sysroot" || die "No valid sysroot specified."
         _type=armcc
-        _ident=$($_cc --vsn | head -n1)
+        _ident=$($_cc --vsn | head -n1 | sed 's/.*: //')
         armcc_conf="$PWD/armcc.conf"
         $_cc --arm_linux_configure                 \
              --arm_linux_config_file="$armcc_conf" \
@@ -4290,6 +4290,8 @@ elif enabled cparser; then
     add_cflags -Wno-missing-variable-declarations
     add_cflags -Wno-empty-statement
 elif enabled armcc; then
+    add_cflags -W${armcc_opt},--diag_suppress=4343 # hardfp compat
+    add_cflags -W${armcc_opt},--diag_suppress=3036 # using . as system include dir
     # 2523: use of inline assembler is deprecated
     add_cflags -W${armcc_opt},--diag_suppress=2523
     add_cflags -W${armcc_opt},--diag_suppress=1207
