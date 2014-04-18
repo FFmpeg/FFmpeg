@@ -252,11 +252,12 @@ static int config_props(AVFilterLink *outlink)
 }
 
 #define FIXP (1<<16)
-#define INT_PI 205887 //(M_PI * FIXP)
+#define FIXP2 (1<<20)
+#define INT_PI 3294199 //(M_PI * FIXP2)
 
 /**
  * Compute the sin of a using integer values.
- * Input and output values are scaled by FIXP.
+ * Input is scaled by FIXP2 and output values are scaled by FIXP.
  */
 static int64_t int_sin(int64_t a)
 {
@@ -268,13 +269,13 @@ static int64_t int_sin(int64_t a)
     if (a >= INT_PI*3/2) a -= 2*INT_PI;  // -PI/2 .. 3PI/2
     if (a >= INT_PI/2  ) a = INT_PI - a; // -PI/2 ..  PI/2
 
-    /* compute sin using Taylor series approximated to the third term */
-    a2 = (a*a)/FIXP;
-    for (i = 2; i < 7; i += 2) {
+    /* compute sin using Taylor series approximated to the fifth term */
+    a2 = (a*a)/(FIXP2);
+    for (i = 2; i < 11; i += 2) {
         res += a;
-        a = -a*a2 / (FIXP*i*(i+1));
+        a = -a*a2 / (FIXP2*i*(i+1));
     }
-    return res;
+    return (res + 8)>>4;
 }
 
 /**
@@ -402,7 +403,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_log(ctx, AV_LOG_DEBUG, "n:%f time:%f angle:%f/PI\n",
            rot->var_values[VAR_N], rot->var_values[VAR_T], rot->angle/M_PI);
 
-    angle_int = res * FIXP;
+    angle_int = res * FIXP * 16;
     s = int_sin(angle_int);
     c = int_sin(angle_int + INT_PI/2);
 
