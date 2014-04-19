@@ -1420,10 +1420,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     }
 
     if (h->context_initialized &&
-        (h->width  != h->avctx->coded_width   ||
-         h->height != h->avctx->coded_height  ||
-         must_reinit ||
-         needs_reinit)) {
+        (must_reinit || needs_reinit)) {
         if (h != h0) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "changing width %d -> %d / height %d -> %d on "
