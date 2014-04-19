@@ -822,6 +822,8 @@ void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta)
         av_freep(&current);
         current = next;
     }
+
+    *extra_meta = NULL;
 }
 
 int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
