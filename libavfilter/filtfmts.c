@@ -20,7 +20,6 @@
 
 #include <stdio.h>
 
-#include "libavformat/avformat.h"
 #include "libavutil/pixdesc.h"
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
