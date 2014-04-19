@@ -305,7 +305,8 @@ SECTION .text
 %define Q7 dst2q +  strideq    + %1
 %endmacro
 
-%macro SPLATB_MASK 2
+; ..............AB -> AAAAAAAABBBBBBBB
+%macro SPLATB_MIX 1-2 [mask_mix]
 %if cpuflag(ssse3)
     pshufb     %1, %2
 %else
@@ -411,8 +412,8 @@ SECTION .text
 %endif
     movd                m2, Id
     movd                m3, Ed
-    SPLATB_MASK         m2, m0
-    SPLATB_MASK         m3, m0
+    SPLATB_MIX          m2, m0
+    SPLATB_MIX          m3, m0
 %endif
     mova                m0, [pb_80]
     pxor                m2, m0
@@ -471,7 +472,7 @@ SECTION .text
     SPLATB_REG          m7, H, m0                       ; H H H H ...
 %else
     movd                m7, Hd
-    SPLATB_MASK         m7, [mask_mix]
+    SPLATB_MIX          m7
 %endif
     pxor                m7, m8
     pxor                m4, m8
@@ -494,7 +495,7 @@ SECTION .text
 %else
     mova                m6, [pb_80]
     movd                m7, Hd
-    SPLATB_MASK         m7, [mask_mix]
+    SPLATB_MIX          m7
     pxor                m7, m6
     ABSSUB              m4, m10, m11, m1                ; abs(p1 - p0)
     pxor                m4, m6
