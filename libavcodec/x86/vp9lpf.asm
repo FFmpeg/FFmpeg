@@ -93,19 +93,15 @@ SECTION .text
     psraw               %1, %8
 %endmacro
 
-%macro FILTER_INIT 7-8 ; tmp1, tmp2, cacheL, cacheH, dstp, filterid, [source]
+%macro FILTER_INIT 8 ; tmp1, tmp2, cacheL, cacheH, dstp, filterid, mask, source
     FILTER%6_INIT       %1, l, %3
     FILTER%6_INIT       %2, h, %4
     packuswb            %1, %2
-%if %0 == 8
     MASK_APPLY          %1, %8, %7, %2
-%else
-    MASK_APPLY          %1, %5, %7, %2
-%endif
     mova                %5, %1
 %endmacro
 
-%macro FILTER_UPDATE 11-14 ; tmp1, tmp2, cacheL, cacheH, dstp, -, -, +, +, rshift, [source], [preload reg + value]
+%macro FILTER_UPDATE 11-14 ; tmp1, tmp2, cacheL, cacheH, dstp, -, -, +, +, rshift, mask, [source], [preload reg + value]
 %if %0 == 13 ; no source + preload
     mova                %12, %13
 %elif %0 == 14 ; source + preload
