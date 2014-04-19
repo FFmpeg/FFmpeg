@@ -289,7 +289,7 @@ static inline void line_noise_avg_c(uint8_t *dst, const uint8_t *src,
 static inline void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
                                       int len, int8_t **shift)
 {
-#if HAVE_MMX_INLINE
+#if HAVE_MMX_INLINE && HAVE_6REGS
     x86_reg mmx_len= len&(~7);
 
     __asm__ volatile(
@@ -438,7 +438,9 @@ static av_cold int init(AVFilterContext *ctx)
     if (HAVE_MMX_INLINE &&
         cpu_flags & AV_CPU_FLAG_MMX) {
         n->line_noise = line_noise_mmx;
+#if HAVE_6REGS
         n->line_noise_avg = line_noise_avg_mmx;
+#endif
     }
     if (HAVE_MMXEXT_INLINE &&
         cpu_flags & AV_CPU_FLAG_MMXEXT)

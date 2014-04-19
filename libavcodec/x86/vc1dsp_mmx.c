@@ -33,7 +33,7 @@
 #include "dsputil_x86.h"
 #include "vc1dsp.h"
 
-#if HAVE_INLINE_ASM
+#if HAVE_6REGS && HAVE_INLINE_ASM
 
 #define OP_PUT(S,D)
 #define OP_AVG(S,D) "pavgb " #S ", " #D " \n\t"
@@ -754,4 +754,4 @@ av_cold void ff_vc1dsp_init_mmxext(VC1DSPContext *dsp)
     dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmxext;
     dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmxext;
 }
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_6REGS && HAVE_INLINE_ASM */
