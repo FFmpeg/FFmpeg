@@ -606,6 +606,7 @@ static void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM
 }
 #endif //HAVE_7REGS
 
+#if HAVE_6REGS
 #define snow_inner_add_yblock_sse2_header \
     IDWTELEM * * dst_array = sb->line + src_y;\
     x86_reg tmp;\
@@ -873,6 +874,7 @@ static void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_str
     else
         ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
 }
+#endif /* HAVE_6REGS */
 
 #endif /* HAVE_INLINE_ASM */
 
@@ -887,7 +889,9 @@ void ff_dwt_init_x86(SnowDWTContext *c)
 #if HAVE_7REGS
             c->vertical_compose97i = ff_snow_vertical_compose97i_sse2;
 #endif
+#if HAVE_6REGS
             c->inner_add_yblock = ff_snow_inner_add_yblock_sse2;
+#endif
         }
         else{
             if (mm_flags & AV_CPU_FLAG_MMXEXT) {
@@ -896,7 +900,9 @@ void ff_dwt_init_x86(SnowDWTContext *c)
             c->vertical_compose97i = ff_snow_vertical_compose97i_mmx;
 #endif
             }
+#if HAVE_6REGS
             c->inner_add_yblock = ff_snow_inner_add_yblock_mmx;
+#endif
         }
     }
 #endif /* HAVE_INLINE_ASM */

@@ -211,10 +211,10 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
  ****************************************************************************/
 
 /* vertical filter [-1 -2 96 42 -7  0]  */
-#define QPEL_CAVSV1(A,B,C,D,E,F,OP,MUL2) \
+#define QPEL_CAVSV1(A,B,C,D,E,F,OP,ADD, MUL1, MUL2) \
         "movd (%0), "#F"            \n\t"\
         "movq "#C", %%mm6           \n\t"\
-        "pmullw %5, %%mm6           \n\t"\
+        "pmullw "MANGLE(MUL1)", %%mm6\n\t"\
         "movq "#D", %%mm7           \n\t"\
         "pmullw "MANGLE(MUL2)", %%mm7\n\t"\
         "psllw $3, "#E"             \n\t"\
@@ -229,35 +229,35 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         "psubw "#B", %%mm6          \n\t"\
         "psraw $1, "#B"             \n\t"\
         "psubw "#A", %%mm6          \n\t"\
-        "paddw %4, %%mm6            \n\t"\
+        "paddw "MANGLE(ADD)", %%mm6 \n\t"\
         "psraw $7, %%mm6            \n\t"\
         "packuswb %%mm6, %%mm6      \n\t"\
         OP(%%mm6, (%1), A, d)            \
         "add %3, %1                 \n\t"
 
 /* vertical filter [ 0 -1  5  5 -1  0]  */
-#define QPEL_CAVSV2(A,B,C,D,E,F,OP,MUL2) \
+#define QPEL_CAVSV2(A,B,C,D,E,F,OP,ADD, MUL1, MUL2) \
         "movd (%0), "#F"            \n\t"\
         "movq "#C", %%mm6           \n\t"\
         "paddw "#D", %%mm6          \n\t"\
-        "pmullw %5, %%mm6           \n\t"\
+        "pmullw "MANGLE(MUL1)", %%mm6\n\t"\
         "add %2, %0                 \n\t"\
         "punpcklbw %%mm7, "#F"      \n\t"\
         "psubw "#B", %%mm6          \n\t"\
         "psubw "#E", %%mm6          \n\t"\
-        "paddw %4, %%mm6            \n\t"\
+        "paddw "MANGLE(ADD)", %%mm6 \n\t"\
         "psraw $3, %%mm6            \n\t"\
         "packuswb %%mm6, %%mm6      \n\t"\
         OP(%%mm6, (%1), A, d)            \
         "add %3, %1                 \n\t"
 
 /* vertical filter [ 0 -7 42 96 -2 -1]  */
-#define QPEL_CAVSV3(A,B,C,D,E,F,OP,MUL2) \
+#define QPEL_CAVSV3(A,B,C,D,E,F,OP,ADD, MUL1, MUL2) \
         "movd (%0), "#F"            \n\t"\
         "movq "#C", %%mm6           \n\t"\
         "pmullw "MANGLE(MUL2)", %%mm6\n\t"\
         "movq "#D", %%mm7           \n\t"\
-        "pmullw %5, %%mm7           \n\t"\
+        "pmullw "MANGLE(MUL1)", %%mm7\n\t"\
         "psllw $3, "#B"             \n\t"\
         "psubw "#B", %%mm6          \n\t"\
         "psraw $3, "#B"             \n\t"\
@@ -270,7 +270,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         "psubw "#E", %%mm6          \n\t"\
         "psraw $1, "#E"             \n\t"\
         "psubw "#F", %%mm6          \n\t"\
-        "paddw %4, %%mm6            \n\t"\
+        "paddw "MANGLE(ADD)", %%mm6 \n\t"\
         "psraw $7, %%mm6            \n\t"\
         "packuswb %%mm6, %%mm6      \n\t"\
         OP(%%mm6, (%1), A, d)            \
@@ -299,34 +299,34 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         "punpcklbw %%mm7, %%mm2     \n\t"\
         "punpcklbw %%mm7, %%mm3     \n\t"\
         "punpcklbw %%mm7, %%mm4     \n\t"\
-        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, MUL2)\
-        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, MUL2)\
-        VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, MUL2)\
-        VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, MUL2)\
-        VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, MUL2)\
-        VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, MUL2)\
-        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, MUL2)\
-        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, MUL2)\
+        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, ADD, MUL1, MUL2)\
+        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, ADD, MUL1, MUL2)\
+        VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, ADD, MUL1, MUL2)\
+        VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, ADD, MUL1, MUL2)\
+        VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, ADD, MUL1, MUL2)\
+        VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, ADD, MUL1, MUL2)\
+        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, ADD, MUL1, MUL2)\
+        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, ADD, MUL1, MUL2)\
         \
         : "+a"(src), "+c"(dst)\
-        : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD), "m"(MUL1)\
-          NAMED_CONSTRAINTS_ADD(MUL2)\
+        : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride)\
+          NAMED_CONSTRAINTS_ADD(ADD,MUL1,MUL2)\
         : "memory"\
      );\
      if(h==16){\
         __asm__ volatile(\
-            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, MUL2)\
-            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, MUL2)\
-            VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, MUL2)\
-            VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, MUL2)\
-            VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, MUL2)\
-            VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, MUL2)\
-            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, MUL2)\
-            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, MUL2)\
+            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, ADD, MUL1, MUL2)\
+            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, ADD, MUL1, MUL2)\
+            VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, ADD, MUL1, MUL2)\
+            VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, ADD, MUL1, MUL2)\
+            VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, ADD, MUL1, MUL2)\
+            VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, ADD, MUL1, MUL2)\
+            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, ADD, MUL1, MUL2)\
+            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, ADD, MUL1, MUL2)\
             \
            : "+a"(src), "+c"(dst)\
-           : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD),  "m"(MUL1)\
-             NAMED_CONSTRAINTS_ADD(MUL2)\
+           : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride)\
+             NAMED_CONSTRAINTS_ADD(ADD,MUL1,MUL2)\
            : "memory"\
         );\
      }\
@@ -339,7 +339,7 @@ static void OPNAME ## cavs_qpel8_h_ ## MMX(uint8_t *dst, uint8_t *src, int dstSt
     int h=8;\
     __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
-        "movq %5, %%mm6             \n\t"\
+        "movq "MANGLE(ff_pw_5)", %%mm6\n\t"\
         "1:                         \n\t"\
         "movq    (%0), %%mm0        \n\t"\
         "movq   1(%0), %%mm2        \n\t"\
@@ -365,7 +365,7 @@ static void OPNAME ## cavs_qpel8_h_ ## MMX(uint8_t *dst, uint8_t *src, int dstSt
         "paddw %%mm3, %%mm5         \n\t"\
         "psubw %%mm2, %%mm0         \n\t"\
         "psubw %%mm5, %%mm1         \n\t"\
-        "movq %6, %%mm5             \n\t"\
+        "movq "MANGLE(ff_pw_4)", %%mm5\n\t"\
         "paddw %%mm5, %%mm0         \n\t"\
         "paddw %%mm5, %%mm1         \n\t"\
         "psraw $3, %%mm0            \n\t"\
@@ -377,7 +377,8 @@ static void OPNAME ## cavs_qpel8_h_ ## MMX(uint8_t *dst, uint8_t *src, int dstSt
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
         : "+a"(src), "+c"(dst), "+m"(h)\
-        : "d"((x86_reg)srcStride), "S"((x86_reg)dstStride), "m"(ff_pw_5), "m"(ff_pw_4)\
+        : "d"((x86_reg)srcStride), "S"((x86_reg)dstStride)\
+          NAMED_CONSTRAINTS_ADD(ff_pw_4,ff_pw_5)\
         : "memory"\
     );\
 }\
