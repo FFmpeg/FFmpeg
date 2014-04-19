@@ -236,7 +236,7 @@ version 1.1:
 - JSON captions for TED talks decoding support
 - SOX Resampler support in libswresample
 - aselect filter
-- SGI RLE 8-bit decoder
+- SGI RLE 8-bit / Silicon Graphics RLE 8-bit video decoder
 - Silicon Graphics Motion Video Compressor 1 & 2 decoder
 - Silicon Graphics Movie demuxer
 - apad filter
