@@ -47,7 +47,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct TestSourceContext {
     const AVClass *class;
     int w, h;
     unsigned int nb_frame;
@@ -488,7 +488,7 @@ static void draw_digit(int digit, uint8_t *dst, int dst_linesize,
 #define LEFT_BOT_VBAR  16
 #define RIGHT_TOP_VBAR 32
 #define RIGHT_BOT_VBAR 64
-    struct {
+    struct segments {
         int x, y, w, h;
     } segments[] = {
         { 1,  0, 5, 1 }, /* TOP_HBAR */

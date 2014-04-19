@@ -41,7 +41,7 @@
 #include "video.h"
 #include "avcodec.h"
 
-typedef struct {
+typedef struct BufferSourceContext {
     const AVClass    *class;
     AVFifoBuffer     *fifo;
     AVRational        time_base;     ///< time_base to set in the output link

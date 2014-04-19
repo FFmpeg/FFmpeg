@@ -39,7 +39,7 @@ typedef struct Buf {
     struct Buf        *next;
 } Buf;
 
-typedef struct {
+typedef struct FifoContext {
     Buf  root;
     Buf *last;   ///< last buffered frame
 

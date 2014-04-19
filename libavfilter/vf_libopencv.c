@@ -68,7 +68,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-typedef struct {
+typedef struct OCVContext {
     const AVClass *class;
     char *name;
     char *params;
@@ -78,7 +78,7 @@ typedef struct {
     void *priv;
 } OCVContext;
 
-typedef struct {
+typedef struct SmoothContext {
     int type;
     int    param1, param2;
     double param3, param4;
@@ -245,7 +245,7 @@ static int parse_iplconvkernel(IplConvKernel **kernel, char *buf, void *log_ctx)
     return 0;
 }
 
-typedef struct {
+typedef struct DilateContext {
     int nb_iterations;
     IplConvKernel *kernel;
 } DilateContext;
@@ -302,7 +302,7 @@ static void erode_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplIma
     cvErode(inimg, outimg, dilate->kernel, dilate->nb_iterations);
 }
 
-typedef struct {
+typedef struct OCVFilterEntry {
     const char *name;
     size_t priv_size;
     int  (*init)(AVFilterContext *ctx, const char *args);

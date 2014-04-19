@@ -66,7 +66,7 @@ enum var_name {
     VARS_NB
 };
 
-typedef struct {
+typedef struct DrawBoxContext {
     const AVClass *class;
     int x, y, w, h;
     int thickness;

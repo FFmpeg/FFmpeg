@@ -57,7 +57,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct LutContext {
     const AVClass *class;
     uint8_t lut[4][256];  ///< lookup table for each component
     char   *comp_expr_str[4];

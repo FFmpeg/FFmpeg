@@ -126,7 +126,7 @@ enum expansion_mode {
     EXP_STRFTIME,
 };
 
-typedef struct {
+typedef struct DrawTextContext {
     const AVClass *class;
     enum expansion_mode exp_mode;   ///< expansion mode to use for the text
     int reinit;                     ///< tells if the filter is being reinited
@@ -260,7 +260,7 @@ struct ft_error
 
 #define FT_ERRMSG(e) ft_errors[e].err_msg
 
-typedef struct {
+typedef struct Glyph {
     FT_Glyph *glyph;
     uint32_t code;
     FT_Bitmap bitmap; ///< array holding bitmaps of font
