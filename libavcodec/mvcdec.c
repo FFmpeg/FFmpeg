@@ -52,7 +52,7 @@ static av_cold int mvc_decode_init(AVCodecContext *avctx)
         return ret;
 
     avctx->pix_fmt = (avctx->codec_id == AV_CODEC_ID_MVC1) ? AV_PIX_FMT_RGB555
-                                                           : AV_PIX_FMT_BGRA;
+                                                           : AV_PIX_FMT_RGB32;
     s->frame       = av_frame_alloc();
     if (!s->frame)
         return AVERROR(ENOMEM);
