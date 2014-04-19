@@ -146,7 +146,8 @@ static int fic_decode_block(FICContext *ctx, GetBitContext *gb,
         return AVERROR_INVALIDDATA;
 
     for (i = 0; i < num_coeff; i++)
-        block[ff_zigzag_direct[i]] = get_se_golomb(gb) * ctx->qmat[i];
+        block[ff_zigzag_direct[i]] = get_se_golomb(gb) *
+                                     ctx->qmat[ff_zigzag_direct[i]];
 
     fic_idct_put(dst, stride, block);
 
