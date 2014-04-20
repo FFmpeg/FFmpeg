@@ -160,10 +160,6 @@ static int pmp_packet(AVFormatContext *s, AVPacket *pkt)
     ret = av_get_packet(pb, pkt, pmp->packet_sizes[pmp->current_packet]);
     if (ret >= 0) {
         ret = 0;
-        // FIXME: this is a hack that should be removed once
-        // compute_pkt_fields() can handle timestamps properly
-        if (pmp->cur_stream == 0)
-            pkt->dts = s->streams[0]->cur_dts++;
         pkt->stream_index = pmp->cur_stream;
     }
     if (pmp->current_packet % pmp->audio_packets == 0)
