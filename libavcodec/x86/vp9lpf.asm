@@ -88,9 +88,8 @@ SECTION .text
     punpck%2bw          %3, %6, m0
     paddw               %1, %3
     punpck%2bw          %3, %7, m0
-    paddw               %1, %3
-    mova                %3, %1
-    psraw               %1, %8
+    paddw               %3, %1
+    psraw               %1, %3, %8
 %endmacro
 
 %macro FILTER_INIT 8 ; tmp1, tmp2, cacheL, cacheH, dstp, filterid, mask, source
@@ -154,49 +153,45 @@ SECTION .text
 %endmacro
 
 %macro FILTER6_INIT 3 ; %1=dst %2=h/l %3=cache
-    punpck%2bw          %3, m14, m0                     ; p3: B->W
-    mova                %1, %3                          ; p3
-    paddw               %1, %3                          ; p3*2
-    paddw               %1, %3                          ; p3*3
-    punpck%2bw          %3, m15, m0                     ; p2: B->W
-    paddw               %1, %3                          ; p3*3 + p2
-    paddw               %1, %3                          ; p3*3 + p2*2
-    punpck%2bw          %3, m10, m0                     ; p1: B->W
-    paddw               %1, %3                          ; p3*3 + p2*2 + p1
-    punpck%2bw          %3, m11, m0                     ; p0: B->W
-    paddw               %1, %3                          ; p3*3 + p2*2 + p1 + p0
-    punpck%2bw          %3, m12, m0                     ; q0: B->W
-    paddw               %1, %3                          ; p3*3 + p2*2 + p1 + p0 + q0
-    paddw               %1, [pw_4]                      ; p3*3 + p2*2 + p1 + p0 + q0 + 4
-    mova                %3, %1                          ; base for next line (cache)
-    psraw               %1, 3                           ; (p3*3 + p2*2 + p1 + p0 + q0 + 4) >> 3
+    punpck%2bw          %1, m14, m0                     ; p3: B->W
+    paddw               %3, %1, %1                      ; p3*2
+    paddw               %3, %1                          ; p3*3
+    punpck%2bw          %1, m15, m0                     ; p2: B->W
+    paddw               %3, %1                          ; p3*3 + p2
+    paddw               %3, %1                          ; p3*3 + p2*2
+    punpck%2bw          %1, m10, m0                     ; p1: B->W
+    paddw               %3, %1                          ; p3*3 + p2*2 + p1
+    punpck%2bw          %1, m11, m0                     ; p0: B->W
+    paddw               %3, %1                          ; p3*3 + p2*2 + p1 + p0
+    punpck%2bw          %1, m12, m0                     ; q0: B->W
+    paddw               %3, %1                          ; p3*3 + p2*2 + p1 + p0 + q0
+    paddw               %3, [pw_4]                      ; p3*3 + p2*2 + p1 + p0 + q0 + 4
+    psraw               %1, %3, 3                       ; (p3*3 + p2*2 + p1 + p0 + q0 + 4) >> 3
 %endmacro
 
 %macro FILTER14_INIT 3 ; %1=dst %2=h/l %3=cache
     punpck%2bw          %1, m2, m0                      ; p7: B->W
-    mova                %3, %1
-    psllw               %1, 3                           ; p7*8
-    psubw               %1, %3                          ; p7*7
-    punpck%2bw          %3, m3, m0                      ; p6: B->W
-    paddw               %1, %3                          ; p7*7 + p6
-    paddw               %1, %3                          ; p7*7 + p6*2
-    punpck%2bw          %3, m8, m0                      ; p5: B->W
-    paddw               %1, %3                          ; p7*7 + p6*2 + p5
-    punpck%2bw          %3, m9, m0                      ; p4: B->W
-    paddw               %1, %3                          ; p7*7 + p6*2 + p5 + p4
-    punpck%2bw          %3, m14, m0                     ; p3: B->W
-    paddw               %1, %3                          ; p7*7 + p6*2 + p5 + p4 + p3
-    punpck%2bw          %3, m15, m0                     ; p2: B->W
-    paddw               %1, %3                          ; p7*7 + p6*2 + p5 + .. + p2
-    punpck%2bw          %3, m10, m0                     ; p1: B->W
-    paddw               %1, %3                          ; p7*7 + p6*2 + p5 + .. + p1
-    punpck%2bw          %3, m11, m0                     ; p0: B->W
-    paddw               %1, %3                          ; p7*7 + p6*2 + p5 + .. + p0
-    punpck%2bw          %3, m12, m0                     ; q0: B->W
-    paddw               %1, %3                          ; p7*7 + p6*2 + p5 + .. + p0 + q0
-    paddw               %1, [pw_8]                      ; p7*7 + p6*2 + p5 + .. + p0 + q0 + 8
-    mova                %3, %1                          ; base for next line (cache)
-    psraw               %1, 4                           ; (p7*7 + p6*2 + p5 + .. + p0 + q0 + 8) >> 4
+    psllw               %3, %1, 3                       ; p7*8
+    psubw               %3, %1                          ; p7*7
+    punpck%2bw          %1, m3, m0                      ; p6: B->W
+    paddw               %3, %1                          ; p7*7 + p6
+    paddw               %3, %1                          ; p7*7 + p6*2
+    punpck%2bw          %1, m8, m0                      ; p5: B->W
+    paddw               %3, %1                          ; p7*7 + p6*2 + p5
+    punpck%2bw          %1, m9, m0                      ; p4: B->W
+    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + p4
+    punpck%2bw          %1, m14, m0                     ; p3: B->W
+    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + p4 + p3
+    punpck%2bw          %1, m15, m0                     ; p2: B->W
+    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + .. + p2
+    punpck%2bw          %1, m10, m0                     ; p1: B->W
+    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + .. + p1
+    punpck%2bw          %1, m11, m0                     ; p0: B->W
+    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + .. + p0
+    punpck%2bw          %1, m12, m0                     ; q0: B->W
+    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + .. + p0 + q0
+    paddw               %3, [pw_8]                      ; p7*7 + p6*2 + p5 + .. + p0 + q0 + 8
+    psraw               %1, %3, 4                       ; (p7*7 + p6*2 + p5 + .. + p0 + q0 + 8) >> 4
 %endmacro
 
 %macro TRANSPOSE16x16B 17
