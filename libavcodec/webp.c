@@ -309,7 +309,7 @@ static int huff_reader_build_canonical(HuffReader *r, int *code_lengths,
     if (max_code_length == 0 || max_code_length > MAX_HUFFMAN_CODE_LENGTH)
         return AVERROR(EINVAL);
 
-    codes = av_malloc(alphabet_size * sizeof(*codes));
+    codes = av_malloc_array(alphabet_size, sizeof(*codes));
     if (!codes)
         return AVERROR(ENOMEM);
 
