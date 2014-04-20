@@ -54,9 +54,9 @@ static void heap_sift(HeapElem *h, int root, int size)
 
 int ff_huff_gen_len_table(uint8_t *dst, const uint64_t *stats, int size)
 {
-    HeapElem *h  = av_malloc(sizeof(*h) * size);
-    int *up      = av_malloc(sizeof(*up) * 2 * size);
-    uint8_t *len = av_malloc(sizeof(*len) * 2 * size);
+    HeapElem *h  = av_malloc_array(sizeof(*h), size);
+    int *up      = av_malloc_array(sizeof(*up) * 2, size);
+    uint8_t *len = av_malloc_array(sizeof(*len) * 2, size);
     int offset, i, next;
     int ret = 0;
 
