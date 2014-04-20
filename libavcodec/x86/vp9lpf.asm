@@ -419,6 +419,8 @@ SECTION .text
     mova               m14, [Q2]
     mova               m15, [Q3]
 %else
+    ; In case of horizontal, P3..Q3 are already present in some registers due
+    ; to the previous transpose, so we just swap registers.
     SWAP                 8,  4, 12
     SWAP                 9,  5, 13
     SWAP                10,  6, 14
