@@ -121,13 +121,13 @@ int ff_tadd_doubles_metadata(int count, const char *name, const char *sep,
  *  into the metadata dictionary.
  */
 int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
-                            GetByteContext *gb, int le, AVDictionary **metadata);
+                            GetByteContext *gb, int le, int is_signed, AVDictionary **metadata);
 
 /** Adds count bytes converted to a string
  *  into the metadata dictionary.
  */
 int ff_tadd_bytes_metadata(int count, const char *name, const char *sep,
-                           GetByteContext *gb, int le, AVDictionary **metadata);
+                           GetByteContext *gb, int le, int is_signed, AVDictionary **metadata);
 
 /** Adds a string of count characters
  *  into the metadata dictionary.
