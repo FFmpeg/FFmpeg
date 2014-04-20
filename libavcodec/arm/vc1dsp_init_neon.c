@@ -38,7 +38,7 @@ void ff_put_pixels8x8_neon(uint8_t *block, const uint8_t *pixels,
 #define DECL_PUT(X, Y) \
 void ff_put_vc1_mspel_mc##X##Y##_neon(uint8_t *dst, const uint8_t *src, \
                                       ptrdiff_t stride, int rnd); \
-void ff_put_vc1_mspel_mc##X##Y##_16_neon(uint8_t *dst, const uint8_t *src, \
+static void ff_put_vc1_mspel_mc##X##Y##_16_neon(uint8_t *dst, const uint8_t *src, \
                                          ptrdiff_t stride, int rnd) \
 { \
   ff_put_vc1_mspel_mc##X##Y##_neon(dst+0, src+0, stride, rnd); \
@@ -78,7 +78,7 @@ void ff_avg_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, int stride, int h,
                                 int x, int y);
 
 #define FN_ASSIGN(X, Y) \
-    dsp->put_vc1_mspel_pixels_tab[0][X+4*Y] = ff_put_vc1_mspel_mc##X##Y##_16_neon;
+    dsp->put_vc1_mspel_pixels_tab[0][X+4*Y] = ff_put_vc1_mspel_mc##X##Y##_16_neon; \
     dsp->put_vc1_mspel_pixels_tab[1][X+4*Y] = ff_put_vc1_mspel_mc##X##Y##_neon
 
 av_cold void ff_vc1dsp_init_neon(VC1DSPContext *dsp)
@@ -92,8 +92,8 @@ av_cold void ff_vc1dsp_init_neon(VC1DSPContext *dsp)
     dsp->vc1_inv_trans_8x4_dc = ff_vc1_inv_trans_8x4_dc_neon;
     dsp->vc1_inv_trans_4x4_dc = ff_vc1_inv_trans_4x4_dc_neon;
 
-    dsp->put_vc1_mspel_pixels_tab[0][ 0] = ff_put_pixels16x16_neon;
     dsp->put_vc1_mspel_pixels_tab[1][ 0] = ff_put_pixels8x8_neon;
+    FN_ASSIGN(1, 0);
     FN_ASSIGN(2, 0);
     FN_ASSIGN(3, 0);
 
