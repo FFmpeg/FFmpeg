@@ -4042,7 +4042,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                 s->workaround_bugs |= FF_BUG_TRUNCATED;
 
             if (!(s->workaround_bugs & FF_BUG_TRUNCATED))
-                while(dst_length > 0 && ptr[dst_length - 1] == 0)
+                while (dst_length > 0 && ptr[dst_length - 1] == 0)
                     dst_length--;
             bit_length = !dst_length ? 0
                                      : (8 * dst_length -
