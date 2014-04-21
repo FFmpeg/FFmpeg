@@ -2990,8 +2990,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             if (!h->sps.gaps_in_frame_num_allowed_flag)
                 for(i=0; i<FF_ARRAY_ELEMS(h->last_pocs); i++)
                     h->last_pocs[i] = INT_MIN;
-            if (ff_h264_frame_start(h) < 0)
+            if (ff_h264_frame_start(h) < 0) {
+                s0->first_field = 0;
                 return -1;
+            }
             h->prev_frame_num++;
             h->prev_frame_num %= 1 << h->sps.log2_max_frame_num;
             s->current_picture_ptr->frame_num = h->prev_frame_num;
