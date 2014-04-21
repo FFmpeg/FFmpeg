@@ -170,6 +170,9 @@ ResampleContext *ff_audio_resample_init(AVAudioResampleContext *avr)
         break;
     }
 
+    if (ARCH_AARCH64)
+        ff_audio_resample_init_aarch64(c, avr->internal_sample_fmt);
+
     felem_size = av_get_bytes_per_sample(avr->internal_sample_fmt);
     c->filter_bank = av_mallocz(c->filter_length * (phase_count + 1) * felem_size);
     if (!c->filter_bank)
