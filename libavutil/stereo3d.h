@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVUTIL_STEREO3D_H
+#define AVUTIL_STEREO3D_H
+
 #include <stdint.h>
 
 #include "frame.h"
@@ -145,3 +148,5 @@ AVStereo3D *av_stereo3d_alloc(void);
  * @return The AVStereo3D structure to be filled by caller.
  */
 AVStereo3D *av_stereo3d_create_side_data(AVFrame *frame);
+
+#endif /* AVUTIL_STEREO3D_H */
