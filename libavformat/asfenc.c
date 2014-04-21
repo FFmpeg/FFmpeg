@@ -611,6 +611,7 @@ static int asf_write_header(AVFormatContext *s)
     ASFContext *asf = s->priv_data;
 
     s->packet_size  = PACKET_SIZE;
+    s->max_interleave_delta = 0;
     asf->nb_packets = 0;
 
     asf->index_ptr             = av_malloc(sizeof(ASFIndex) * ASF_INDEX_BLOCK);
