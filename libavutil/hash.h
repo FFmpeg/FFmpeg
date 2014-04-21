@@ -83,6 +83,28 @@ void av_hash_update(struct AVHashContext *ctx, const uint8_t *src, int len);
 void av_hash_final(struct AVHashContext *ctx, uint8_t *dst);
 
 /**
+ * Finalize a hash context and compute the actual hash value.
+ * If size is smaller than the hash size, the hash is truncated;
+ * if size is larger, the buffer is padded with 0.
+ */
+void av_hash_final_bin(struct AVHashContext *ctx, uint8_t *dst, int size);
+
+/**
+ * Finalize a hash context and compute the actual hash value as a hex string.
+ * The string is always 0-terminated.
+ * If size is smaller than 2 * hash_size + 1, the hex string is truncated.
+ */
+void av_hash_final_hex(struct AVHashContext *ctx, uint8_t *dst, int size);
+
+/**
+ * Finalize a hash context and compute the actual hash value as a base64 string.
+ * The string is always 0-terminated.
+ * If size is smaller than AV_BASE64_SIZE(hash_size), the base64 string is
+ * truncated.
+ */
+void av_hash_final_b64(struct AVHashContext *ctx, uint8_t *dst, int size);
+
+/**
  * Free hash context.
  */
 void av_hash_freep(struct AVHashContext **ctx);
