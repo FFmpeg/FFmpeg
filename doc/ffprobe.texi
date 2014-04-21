@@ -119,6 +119,10 @@ Show payload data, as a hexadecimal and ASCII dump. Coupled with
 
 The dump is printed as the "data" field. It may contain newlines.
 
+@item -show_data_hash @var{algorithm}
+Show a hash of payload data, for packets with @option{-show_packets} and for
+codec extradata with @option{-show_streams}.
+
 @item -show_error
 Show information about the error found when trying to probe the input.
 
