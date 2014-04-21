@@ -40,7 +40,6 @@
 #define SIZE 65536
 
 static struct AVHashContext *hash;
-static uint8_t *res;
 
 static void usage(void)
 {
@@ -60,12 +59,10 @@ static void usage(void)
 
 static void finish(void)
 {
-    int i, len = av_hash_get_size(hash);
+    char res[2 * AV_HASH_MAX_SIZE + 1];
 
-    printf("%s=0x", av_hash_get_name(hash));
-    av_hash_final(hash, res);
-    for (i = 0; i < len; i++)
-        printf("%02x", res[i]);
+    av_hash_final_hex(hash, res, sizeof(res));
+    printf("%s=0x%s", av_hash_get_name(hash), res);
 }
 
 static int check(char *file)
@@ -130,11 +127,6 @@ int main(int argc, char **argv)
         }
         return 1;
     }
-    res = av_malloc(av_hash_get_size(hash));
-    if (!res) {
-        printf("%s\n", strerror(errno));
-        return 1;
-    }
 
     for (i = 2; i < argc; i++)
         ret |= check(argv[i]);
@@ -143,7 +135,6 @@ int main(int argc, char **argv)
         ret |= check(NULL);
 
     av_hash_freep(&hash);
-    av_freep(&res);
 
     return ret;
 }
