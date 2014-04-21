@@ -6005,7 +6005,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 
     /* skip B-frames if we don't have reference frames */
     if (s->last_picture_ptr == NULL && (s->pict_type == AV_PICTURE_TYPE_B || s->droppable)) {
-        goto err;
+        goto end;
     }
     if ((avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type == AV_PICTURE_TYPE_B) ||
         (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I) ||
