@@ -51,8 +51,9 @@ The toolchain provided with Xcode is sufficient to build the basic
 unacelerated code.
 
 Mac OS X on PowerPC or ARM (iPhone) requires a preprocessor from
+@url{https://github.com/FFmpeg/gas-preprocessor} or
 @url{http://github.com/yuvi/gas-preprocessor} to build the optimized
-assembler functions. Just download the Perl script and put it somewhere
+assembler functions. Put the Perl script somewhere
 in your PATH, FFmpeg's configure will pick it up automatically.
 
 Mac OS X on amd64 and x86 requires @command{yasm} to build most of the
