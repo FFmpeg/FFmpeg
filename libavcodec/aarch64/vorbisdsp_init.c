@@ -16,21 +16,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
 #include "libavutil/attributes.h"
-#include "vorbisdsp.h"
-#include "vorbis.h"
+#include "libavutil/cpu.h"
+#include "libavutil/aarch64/cpu.h"
+#include "libavcodec/vorbisdsp.h"
 
-av_cold void ff_vorbisdsp_init(VorbisDSPContext *dsp)
+void ff_vorbis_inverse_coupling_neon(float *mag, float *ang,
+                                     intptr_t blocksize);
+
+av_cold void ff_vorbisdsp_init_aarch64(VorbisDSPContext *c)
 {
-    dsp->vorbis_inverse_coupling = ff_vorbis_inverse_coupling;
+    int cpu_flags = av_get_cpu_flags();
 
-    if (ARCH_AARCH64)
-        ff_vorbisdsp_init_aarch64(dsp);
-    if (ARCH_ARM)
-        ff_vorbisdsp_init_arm(dsp);
-    if (ARCH_PPC)
-        ff_vorbisdsp_init_ppc(dsp);
-    if (ARCH_X86)
-        ff_vorbisdsp_init_x86(dsp);
+    if (have_neon(cpu_flags)) {
+        c->vorbis_inverse_coupling = ff_vorbis_inverse_coupling_neon;
+    }
 }
