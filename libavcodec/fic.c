@@ -195,7 +195,7 @@ static av_always_inline void fic_alpha_blend(uint8_t *dst, uint8_t *src,
     int i;
 
     for (i = 0; i < size; i++)
-        dst[i] = (dst[i] * (256 - alpha[i]) + src[i] * alpha[i]) >> 8;
+        dst[i] += ((src[i] - dst[i]) * alpha[i]) >> 8;
 }
 
 static void fic_draw_cursor(AVCodecContext *avctx, int cur_x, int cur_y)
