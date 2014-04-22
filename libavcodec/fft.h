@@ -148,6 +148,7 @@ void ff_init_ff_cos_tabs(int index);
  */
 int ff_fft_init(FFTContext *s, int nbits, int inverse);
 
+void ff_fft_init_aarch64(FFTContext *s);
 void ff_fft_init_x86(FFTContext *s);
 void ff_fft_init_arm(FFTContext *s);
 void ff_fft_init_mips(FFTContext *s);
