@@ -63,22 +63,10 @@ static void vc1_h_loop_filter16_sse4(uint8_t *src, int stride, int pq)
     ff_vc1_h_loop_filter8_sse4(src,          stride, pq);
     ff_vc1_h_loop_filter8_sse4(src+8*stride, stride, pq);
 }
-
-static void avg_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
-                                   ptrdiff_t stride, int rnd)
-{
-    ff_avg_pixels8_mmx(dst, src, stride, 8);
-}
 static void avg_vc1_mspel_mc00_mmxext(uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int rnd)
 {
     ff_avg_pixels8_mmxext(dst, src, stride, 8);
-}
-
-static void avg_vc1_mspel_mc00_16_mmx(uint8_t *dst, const uint8_t *src,
-                                      ptrdiff_t stride, int rnd)
-{
-    ff_avg_pixels16_mmx(dst, src, stride, 16);
 }
 static void avg_vc1_mspel_mc00_16_sse2(uint8_t *dst, const uint8_t *src,
                                        ptrdiff_t stride, int rnd)
@@ -121,8 +109,6 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
 #if HAVE_YASM
     if (EXTERNAL_MMX(cpu_flags)) {
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_nornd_mmx;
-        dsp->avg_vc1_mspel_pixels_tab[0][0]      = avg_vc1_mspel_mc00_16_mmx;
-        dsp->avg_vc1_mspel_pixels_tab[1][0]      = avg_vc1_mspel_mc00_mmx;
     }
     if (EXTERNAL_AMD3DNOW(cpu_flags)) {
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_3dnow;

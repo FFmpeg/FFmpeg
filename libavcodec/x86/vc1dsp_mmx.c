@@ -738,6 +738,16 @@ static void put_vc1_mspel_mc00_16_mmx(uint8_t *dst, const uint8_t *src,
 {
     ff_put_pixels16_mmx(dst, src, stride, 16);
 }
+static void avg_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
+                                   ptrdiff_t stride, int rnd)
+{
+    ff_avg_pixels8_mmx(dst, src, stride, 8);
+}
+static void avg_vc1_mspel_mc00_16_mmx(uint8_t *dst, const uint8_t *src,
+                                      ptrdiff_t stride, int rnd)
+{
+    ff_avg_pixels16_mmx(dst, src, stride, 16);
+}
 
 #define FN_ASSIGN(OP, X, Y, INSN) \
     dsp->OP##vc1_mspel_pixels_tab[1][X+4*Y] = OP##vc1_mspel_mc##X##Y##INSN; \
@@ -764,6 +774,8 @@ av_cold void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
     FN_ASSIGN(put_, 3, 1, _mmx);
     FN_ASSIGN(put_, 3, 2, _mmx);
     FN_ASSIGN(put_, 3, 3, _mmx);
+
+    FN_ASSIGN(avg_, 0, 0, _mmx);
 }
 
 av_cold void ff_vc1dsp_init_mmxext(VC1DSPContext *dsp)
