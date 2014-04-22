@@ -45,10 +45,10 @@ static av_cold void init_coef_vlc(VLC *vlc, uint16_t **prun_table,
 
     init_vlc(vlc, VLCBITS, n, table_bits, 1, 1, table_codes, 4, 4, 0);
 
-    run_table   = av_malloc(n * sizeof(uint16_t));
-    level_table = av_malloc(n * sizeof(uint16_t));
-    flevel_table= av_malloc(n * sizeof(*flevel_table));
-    int_table   = av_malloc(n * sizeof(uint16_t));
+    run_table   = av_malloc_array(n, sizeof(uint16_t));
+    level_table = av_malloc_array(n, sizeof(uint16_t));
+    flevel_table= av_malloc_array(n, sizeof(*flevel_table));
+    int_table   = av_malloc_array(n, sizeof(uint16_t));
     i = 2;
     level = 1;
     k = 0;
