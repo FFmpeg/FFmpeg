@@ -247,11 +247,6 @@ const char *av_get_media_type_string(enum AVMediaType media_type);
 #define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
 
 /**
- * Return the fractional representation of the internal time base.
- */
-AVRational av_get_time_base_q(void);
-
-/**
  * @}
  * @}
  * @defgroup lavu_picture Image related
@@ -294,6 +289,12 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
 #include "rational.h"
 #include "log.h"
 #include "pixfmt.h"
+
+/**
+ * Return the fractional representation of the internal time base.
+ */
+AVRational av_get_time_base_q(void);
+
 
 /**
  * Return x default pointer in case p is NULL.
