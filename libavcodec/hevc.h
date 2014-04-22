@@ -843,7 +843,7 @@ typedef struct HEVCContext {
     int **skipped_bytes_pos_nal;
     int *skipped_bytes_pos_size_nal;
 
-    uint8_t *data;
+    const uint8_t *data;
 
     HEVCNAL *nals;
     int nb_nals;
