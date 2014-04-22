@@ -87,7 +87,7 @@ typedef struct MpegTSWrite {
     int copyts;
     int tables_version;
 
-    int omit_video_pes_length
+    int omit_video_pes_length;
 } MpegTSWrite;
 
 /* a PES packet header is generated every DEFAULT_PES_HEADER_FREQ packets */
