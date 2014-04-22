@@ -1791,16 +1791,15 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         decoded_frame_tb   = avctx->time_base;
     } else if (decoded_frame->pkt_pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = decoded_frame->pkt_pts;
-        pkt->pts           = AV_NOPTS_VALUE;
         decoded_frame_tb   = ist->st->time_base;
     } else if (pkt->pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = pkt->pts;
-        pkt->pts           = AV_NOPTS_VALUE;
         decoded_frame_tb   = ist->st->time_base;
     }else {
         decoded_frame->pts = ist->dts;
         decoded_frame_tb   = AV_TIME_BASE_Q;
     }
+    pkt->pts           = AV_NOPTS_VALUE;
     if (decoded_frame->pts != AV_NOPTS_VALUE)
         decoded_frame->pts = av_rescale_delta(decoded_frame_tb, decoded_frame->pts,
                                               (AVRational){1, ist->st->codec->sample_rate}, decoded_frame->nb_samples, &ist->filter_in_rescale_delta_last,
