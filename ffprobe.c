@@ -203,6 +203,7 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
                 vald /= pow(10, index * 3);
                 prefix_string = decimal_unit_prefixes[index];
             }
+            vali = vald;
         }
 
         if (show_float || (use_value_prefix && vald != (long long int)vald))
