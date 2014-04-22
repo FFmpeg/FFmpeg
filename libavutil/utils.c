@@ -53,3 +53,8 @@ char av_get_picture_type_char(enum AVPictureType pict_type)
     default:                 return '?';
     }
 }
+
+AVRational av_get_time_base_q(void)
+{
+    return (AVRational){1, AV_TIME_BASE};
+}
