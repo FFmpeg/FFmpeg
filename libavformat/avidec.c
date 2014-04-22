@@ -1198,7 +1198,7 @@ resync:
                 int index;
                 av_assert0(st->index_entries);
 
-                index= av_index_search_timestamp(st, ast->frame_offset, 0);
+                index= av_index_search_timestamp(st, ast->frame_offset, AVSEEK_FLAG_ANY);
                 e= &st->index_entries[index];
 
                 if(index >= 0 && e->timestamp == ast->frame_offset){
