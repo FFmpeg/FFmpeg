@@ -52,6 +52,7 @@ enum HWAccelID {
     HWACCEL_NONE = 0,
     HWACCEL_AUTO,
     HWACCEL_VDPAU,
+    HWACCEL_DXVA2,
 };
 
 typedef struct HWAccel {
@@ -421,5 +422,6 @@ FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost);
 int avconv_parse_options(int argc, char **argv);
 
 int vdpau_init(AVCodecContext *s);
+int dxva2_init(AVCodecContext *s);
 
 #endif /* AVCONV_H */

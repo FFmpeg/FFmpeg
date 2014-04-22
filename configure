@@ -4146,6 +4146,9 @@ enabled vdpau && enabled xlib &&
     prepend avconv_libs $($ldflags_filter "-lvdpau") &&
     enable vdpau_x11
 
+enabled dxva2 &&
+    prepend avconv_libs $($ldflags_filter "-lole32")
+
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
 # add some useful compiler flags if supported
