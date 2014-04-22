@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define TXD_FILE            0x16
 #define TXD_INFO            0x01
@@ -45,8 +46,8 @@ static int txd_read_header(AVFormatContext *s) {
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = AV_CODEC_ID_TXD;
-    st->codec->time_base.den = 5;
-    st->codec->time_base.num = 1;
+    avpriv_set_pts_info(st, 64, 1, 5);
+    st->avg_frame_rate = av_inv_q(st->time_base);
     /* the parameters will be extracted from the compressed bitstream */
 
     return 0;
