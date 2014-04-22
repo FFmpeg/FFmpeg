@@ -291,12 +291,6 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
 #include "pixfmt.h"
 
 /**
- * Return the fractional representation of the internal time base.
- */
-AVRational av_get_time_base_q(void);
-
-
-/**
  * Return x default pointer in case p is NULL.
  */
 static inline void *av_x_if_null(const void *p, const void *x)
@@ -331,6 +325,11 @@ unsigned av_int_list_length_for_size(unsigned elsize,
  * errno.
  */
 FILE *av_fopen_utf8(const char *path, const char *mode);
+
+/**
+ * Return the fractional representation of the internal time base.
+ */
+AVRational av_get_time_base_q(void);
 
 /**
  * @}
