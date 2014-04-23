@@ -116,7 +116,7 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
         planes      = av_sample_fmt_is_planar(src->format) ? nb_channels : 1;
 
         if (planes > FF_ARRAY_ELEMS(dst->data)) {
-            dst->extended_data = av_mallocz(planes * sizeof(*dst->extended_data));
+            dst->extended_data = av_mallocz_array(planes, sizeof(*dst->extended_data));
             if (!dst->extended_data)
                 return AVERROR(ENOMEM);
             memcpy(dst->extended_data, src->extended_data,
