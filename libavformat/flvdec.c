@@ -901,8 +901,6 @@ skip:
                 av_log(s, AV_LOG_WARNING,
                        "Negative cts, previous timestamps might be wrong.\n");
             }
-            if (flv->wrong_dts)
-                dts = AV_NOPTS_VALUE;
         }
         if (type == 0) {
             if (st->codec->extradata) {
