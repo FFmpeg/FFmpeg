@@ -79,7 +79,7 @@ static const uint8_t fic_header[7] = { 0, 0, 1, 'F', 'I', 'C', 'V' };
 
 #define FIC_HEADER_SIZE 27
 
-static av_always_inline void fic_idct(int16_t *blk, int step, int shift)
+static av_always_inline void fic_idct(int16_t *blk, int step, int shift, int rnd)
 {
     const int t0 =  27246 * blk[3 * step] + 18405 * blk[5 * step];
     const int t1 =  27246 * blk[5 * step] - 18405 * blk[3 * step];
@@ -91,8 +91,8 @@ static av_always_inline void fic_idct(int16_t *blk, int step, int shift)
     const int t7 = t3 - t1;
     const int t8 =  17734 * blk[2 * step] - 42813 * blk[6 * step];
     const int t9 =  17734 * blk[6 * step] + 42814 * blk[2 * step];
-    const int tA = (blk[0 * step] - blk[4 * step] << 15) + (1 << shift - 1);
-    const int tB = (blk[0 * step] + blk[4 * step] << 15) + (1 << shift - 1);
+    const int tA = (blk[0 * step] - blk[4 * step] << 15) + rnd;
+    const int tB = (blk[0 * step] + blk[4 * step] << 15) + rnd;
     blk[0 * step] = (  t4       + t9 + tB) >> shift;
     blk[1 * step] = (  t6 + t7  + t8 + tA) >> shift;
     blk[2 * step] = (  t6 - t7  - t8 + tA) >> shift;
@@ -109,14 +109,15 @@ static void fic_idct_put(uint8_t *dst, int stride, int16_t *block)
     int16_t *ptr;
 
     ptr = block;
-    for (i = 0; i < 8; i++) {
-        fic_idct(ptr, 8, 13);
+    fic_idct(ptr++, 8, 13, (1 << 12) + (1 << 17));
+    for (i = 1; i < 8; i++) {
+        fic_idct(ptr, 8, 13, 1 << 12);
         ptr++;
     }
 
     ptr = block;
     for (i = 0; i < 8; i++) {
-        fic_idct(ptr, 1, 20);
+        fic_idct(ptr, 1, 20, 0);
         ptr += 8;
     }
 
