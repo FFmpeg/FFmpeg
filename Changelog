@@ -19,6 +19,7 @@ version <next>:
 - AVFoundation input device
 - Direct Stream Digital (DSD) decoder
 - Magic Lantern Video (MLV) demuxer
+- On2 AVC (Audio for Video) decoder
 
 
 version 2.2:
