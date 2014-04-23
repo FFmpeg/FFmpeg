@@ -79,4 +79,4 @@ extern const float ff_on2avc_ctab_2[2048];
 extern const float ff_on2avc_ctab_3[2048];
 extern const float ff_on2avc_ctab_4[2048];
 
-#endif /* AVCODEC_ff_on2avc_DATA_H */
+#endif /* AVCODEC_ON2AVC_DATA_H */
