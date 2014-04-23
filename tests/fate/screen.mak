@@ -5,6 +5,9 @@ fate-cscd: CMD = framecrc -i $(TARGET_SAMPLES)/CSCD/sample_video.avi -an -pix_fm
 FATE_SCREEN-$(call DEMDEC, AVI, DXTORY) += fate-dxtory
 fate-dxtory: CMD = framecrc -i $(TARGET_SAMPLES)/dxtory/dxtory_mic.avi
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, FIC) += fate-fic-avi
+fate-fic-avi: CMD = framecrc -i $(TARGET_SAMPLES)/fic/fic-partial-2MB.avi -an
+
 FATE_FRAPS += fate-fraps-v0
 fate-fraps-v0: CMD = framecrc -i $(TARGET_SAMPLES)/fraps/Griffin_Ragdoll01-partial.avi
 
