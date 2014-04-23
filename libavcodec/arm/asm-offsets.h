@@ -21,13 +21,6 @@
 #ifndef AVCODEC_ARM_ASM_OFFSETS_H
 #define AVCODEC_ARM_ASM_OFFSETS_H
 
-#ifndef __ASSEMBLER__
-#include <stddef.h>
-#define CHK_OFFS(s, m, o) struct check_##o {    \
-        int x_##o[offsetof(s, m) == o? 1: -1];  \
-    }
-#endif
-
 /* MpegEncContext */
 #define Y_DC_SCALE               0xa8
 #define C_DC_SCALE               0xac
