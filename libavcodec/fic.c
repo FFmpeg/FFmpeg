@@ -209,9 +209,9 @@ static void fic_draw_cursor(AVCodecContext *avctx, int cur_x, int cur_y)
 
     /* Convert to YUVA444. */
     for (i = 0; i < 1024; i++) {
-        planes[0][i] = av_clip_uint8((( 25 * ptr[0] + 129 * ptr[1] +  66 * ptr[2]) / 255) + 16);
-        planes[1][i] = av_clip_uint8(((-38 * ptr[0] + 112 * ptr[1] + -74 * ptr[2]) / 255) + 128);
-        planes[2][i] = av_clip_uint8(((-18 * ptr[0] + 112 * ptr[1] + -94 * ptr[2]) / 255) + 128);
+        planes[0][i] = (( 25 * ptr[0] + 129 * ptr[1] +  66 * ptr[2]) / 255) + 16;
+        planes[1][i] = ((-38 * ptr[0] + 112 * ptr[1] + -74 * ptr[2]) / 255) + 128;
+        planes[2][i] = ((-18 * ptr[0] + 112 * ptr[1] + -94 * ptr[2]) / 255) + 128;
         planes[3][i] = ptr[3];
 
         ptr += 4;
