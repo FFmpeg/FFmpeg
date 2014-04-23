@@ -772,7 +772,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         size = avio_rb24(s->pb);
         dts  = avio_rb24(s->pb);
         dts |= avio_r8(s->pb) << 24;
-        av_dlog(s, "type:%d, size:%d, dts:%"PRId64"\n", type, size, dts);
+        av_dlog(s, "type:%d, size:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, dts, avio_tell(s->pb));
         if (url_feof(s->pb))
             return AVERROR_EOF;
         avio_skip(s->pb, 3); /* stream id, always 0 */
