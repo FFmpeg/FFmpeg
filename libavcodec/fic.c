@@ -296,7 +296,9 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
     /* Skip cursor data. */
     tsize = AV_RB24(src + 24);
     if (tsize > avpkt->size - FIC_HEADER_SIZE) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid cursor data size.\n");
+        av_log(avctx, AV_LOG_ERROR,
+               "Packet is too small to contain cursor (%d vs %d bytes).\n",
+               tsize, avpkt->size - FIC_HEADER_SIZE);
         return AVERROR_INVALIDDATA;
     }
 
