@@ -896,7 +896,7 @@ skip:
             // sign extension
             int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;
             pts = dts + cts;
-            if (cts < 0) { // dts are wrong
+            if (cts < 0 && !flv->wrong_dts) { // dts might be wrong
                 flv->wrong_dts = 1;
                 av_log(s, AV_LOG_WARNING,
                        "Negative cts, previous timestamps might be wrong.\n");
