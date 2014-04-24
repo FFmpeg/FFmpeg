@@ -115,7 +115,6 @@ static int caf_write_header(AVFormatContext *s)
 
     switch (enc->codec_id) {
     case AV_CODEC_ID_AAC:
-    case AV_CODEC_ID_AC3:
         av_log(s, AV_LOG_ERROR, "muxing codec currently unsupported\n");
         return AVERROR_PATCHWELCOME;
     }

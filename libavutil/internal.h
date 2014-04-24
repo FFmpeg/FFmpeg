@@ -238,6 +238,11 @@ void avpriv_request_sample(void *avc,
 
 #if HAVE_LIBC_MSVCRT
 #define avpriv_open ff_open
+#define PTRDIFF_SPECIFIER "Id"
+#define SIZE_SPECIFIER "Iu"
+#else
+#define PTRDIFF_SPECIFIER "td"
+#define SIZE_SPECIFIER "zu"
 #endif
 
 /**
