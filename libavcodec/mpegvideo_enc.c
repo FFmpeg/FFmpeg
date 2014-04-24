@@ -1045,7 +1045,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
         if (s->linesize & (STRIDE_ALIGN-1))
             direct = 0;
 
-        av_dlog(s->avctx, "%d %d %td %td\n", pic_arg->linesize[0],
+        av_dlog(s->avctx, "%d %d %"PTRDIFF_SPECIFIER" %"PTRDIFF_SPECIFIER"\n", pic_arg->linesize[0],
                 pic_arg->linesize[1], s->linesize, s->uvlinesize);
 
         if (direct) {

@@ -2391,7 +2391,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
         input_size = buf_end - buf_ptr;
 
         if (avctx->debug & FF_DEBUG_STARTCODE)
-            av_log(avctx, AV_LOG_DEBUG, "%3"PRIX32" at %td left %d\n",
+            av_log(avctx, AV_LOG_DEBUG, "%3"PRIX32" at %"PTRDIFF_SPECIFIER" left %d\n",
                    start_code, buf_ptr - buf, input_size);
 
         /* prepare data for next start code */
