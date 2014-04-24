@@ -25,7 +25,7 @@
  * @author Vadim Kalinsky <vadim@kalinsky.ru>
  */
 
-#import <QTKit/QTkit.h>
+#import <QTKit/QTKit.h>
 #include <pthread.h>
 
 #include "libavutil/pixdesc.h"
