@@ -1468,6 +1468,7 @@ ARCH_FEATURES="
     fast_cmov
     local_aligned_8
     local_aligned_16
+    local_aligned_32
     simd_align_16
 "
 
@@ -4296,7 +4297,7 @@ elif enabled parisc; then
 
 elif enabled ppc; then
 
-    enable local_aligned_8 local_aligned_16
+    enable local_aligned_8 local_aligned_16 local_aligned_32
 
     check_inline_asm dcbzl     '"dcbzl 0, %0" :: "r"(0)'
     check_inline_asm ibm_asm   '"add 0, 0, 0"'
@@ -4337,7 +4338,7 @@ elif enabled x86; then
     check_builtin rdtsc    intrin.h   "__rdtsc()"
     check_builtin mm_empty mmintrin.h "_mm_empty()"
 
-    enable local_aligned_8 local_aligned_16
+    enable local_aligned_8 local_aligned_16 local_aligned_32
 
     # check whether EBP is available on x86
     # As 'i' is stored on the stack, this program will crash
