@@ -580,7 +580,7 @@ static int flv_read_header(AVFormatContext *s)
         flags = FLV_HEADER_FLAG_HASVIDEO | FLV_HEADER_FLAG_HASAUDIO;
         av_log(s, AV_LOG_WARNING,
                "Broken FLV file, which says no streams present, "
-               "this might fail\n");
+               "this might fail.\n");
     }
 
     s->ctx_flags |= AVFMTCTX_NOHEADER;
@@ -820,7 +820,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         } else {
             av_log(s, AV_LOG_DEBUG,
-                   "skipping flv packet: type %d, size %d, flags %d\n",
+                   "Skipping flv packet: type %d, size %d, flags %d.\n",
                    type, size, flags);
 skip:
             avio_seek(s->pb, next, SEEK_SET);
@@ -937,7 +937,7 @@ retry_duration:
             if (cts < 0) { // dts are wrong
                 flv->wrong_dts = 1;
                 av_log(s, AV_LOG_WARNING,
-                       "negative cts, previous timestamps might be wrong\n");
+                       "Negative cts, previous timestamps might be wrong.\n");
             } else if (FFABS(dts - pts) > 1000*60*15) {
                 av_log(s, AV_LOG_WARNING,
                        "invalid timestamps %"PRId64" %"PRId64"\n", dts, pts);
