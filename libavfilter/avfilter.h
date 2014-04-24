@@ -1267,8 +1267,10 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
                                              const char *name);
 
 /**
- * Get a filter instance with name name from graph.
+ * Get a filter instance identified by instance name from graph.
  *
+ * @param graph filter graph to search through.
+ * @param name filter instance name (should be unique in the graph).
  * @return the pointer to the found filter instance or NULL if it
  * cannot be found.
  */
