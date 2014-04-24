@@ -934,10 +934,11 @@ retry_duration:
             // sign extension
             int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;
             pts = dts + cts;
-            if (cts < 0) { // dts are wrong
+            if (cts < 0) { // dts might be wrong
+                if (!flv->wrong_dts)
+                    av_log(s, AV_LOG_WARNING,
+                        "Negative cts, previous timestamps might be wrong.\n");
                 flv->wrong_dts = 1;
-                av_log(s, AV_LOG_WARNING,
-                       "Negative cts, previous timestamps might be wrong.\n");
             } else if (FFABS(dts - pts) > 1000*60*15) {
                 av_log(s, AV_LOG_WARNING,
                        "invalid timestamps %"PRId64" %"PRId64"\n", dts, pts);
