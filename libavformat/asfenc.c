@@ -408,7 +408,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     avio_wl32(pb, (asf->is_streamed || !pb->seekable) ? 3 : 2);  /* ??? */
     avio_wl32(pb, s->packet_size); /* packet size */
     avio_wl32(pb, s->packet_size); /* packet size */
-    avio_wl32(pb, bit_rate); /* Nominal data rate in bps */
+    avio_wl32(pb, bit_rate ? bit_rate : -1); /* Maximum data rate in bps */
     end_header(pb, hpos);
 
     /* unknown headers */
