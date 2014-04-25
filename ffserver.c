@@ -648,18 +648,24 @@ static int http_server(void)
 
     if (my_http_addr.sin_port) {
         server_fd = socket_open_listen(&my_http_addr);
-        if (server_fd < 0)
+        if (server_fd < 0) {
+            av_free(poll_table);
             return -1;
+        }
     }
 
     if (my_rtsp_addr.sin_port) {
         rtsp_server_fd = socket_open_listen(&my_rtsp_addr);
-        if (rtsp_server_fd < 0)
+        if (rtsp_server_fd < 0) {
+            av_free(poll_table);
+            closesocket(server_fd);
             return -1;
+        }
     }
 
     if (!rtsp_server_fd && !server_fd) {
         http_log("HTTP and RTSP disabled.\n");
+        av_free(poll_table);
         return -1;
     }
 
