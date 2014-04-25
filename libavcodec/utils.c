@@ -474,7 +474,7 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
 
     planar = av_sample_fmt_is_planar(sample_fmt);
     if (planar && nb_channels > AV_NUM_DATA_POINTERS) {
-        if (!(frame->extended_data = av_mallocz(nb_channels *
+        if (!(frame->extended_data = av_mallocz_array(nb_channels,
                                                 sizeof(*frame->extended_data))))
             return AVERROR(ENOMEM);
     } else {
@@ -609,9 +609,9 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
     frame->linesize[0] = pool->linesize[0];
 
     if (planes > AV_NUM_DATA_POINTERS) {
-        frame->extended_data = av_mallocz(planes * sizeof(*frame->extended_data));
+        frame->extended_data = av_mallocz_array(planes, sizeof(*frame->extended_data));
         frame->nb_extended_buf = planes - AV_NUM_DATA_POINTERS;
-        frame->extended_buf  = av_mallocz(frame->nb_extended_buf *
+        frame->extended_buf  = av_mallocz_array(frame->nb_extended_buf,
                                           sizeof(*frame->extended_buf));
         if (!frame->extended_data || !frame->extended_buf) {
             av_freep(&frame->extended_data);
@@ -964,7 +964,7 @@ do {                                                                    \
 
             if (planes > FF_ARRAY_ELEMS(frame->buf)) {
                 frame->nb_extended_buf = planes - FF_ARRAY_ELEMS(frame->buf);
-                frame->extended_buf = av_malloc(sizeof(*frame->extended_buf) *
+                frame->extended_buf = av_malloc_array(sizeof(*frame->extended_buf),
                                                 frame->nb_extended_buf);
                 if (!frame->extended_buf) {
                     ret = AVERROR(ENOMEM);
