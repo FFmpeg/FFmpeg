@@ -318,6 +318,12 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case AV_CODEC_ID_AC3:
             stream_type = STREAM_TYPE_AUDIO_AC3;
             break;
+        case AV_CODEC_ID_DTS:
+            stream_type = STREAM_TYPE_AUDIO_DTS;
+            break;
+        case AV_CODEC_ID_TRUEHD:
+            stream_type = STREAM_TYPE_AUDIO_TRUEHD;
+            break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;
             break;
