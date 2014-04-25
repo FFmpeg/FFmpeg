@@ -1986,7 +1986,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
                 mov_write_tapt_tag(pb, track);
             }
         }
-        if (is_clcp_track(track)) {
+        if (is_clcp_track(track) && st->sample_aspect_ratio.num) {
             mov_write_tapt_tag(pb, track);
         }
     }
