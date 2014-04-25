@@ -2174,24 +2174,6 @@ static int get_std_framerate(int i)
         return ((const int[]) { 24, 30, 60, 12, 15 })[i - 60 * 12] * 1000 * 12;
 }
 
-/* Is the time base unreliable?
- * This is a heuristic to balance between quick acceptance of the values in
- * the headers vs. some extra checks.
- * Old DivX and Xvid often have nonsense timebases like 1fps or 2fps.
- * MPEG-2 commonly misuses field repeat flags to store different framerates.
- * And there are "variable" fps files this needs to detect as well. */
-static int tb_unreliable(AVCodecContext *c)
-{
-    if (c->time_base.den >= 101L * c->time_base.num ||
-        c->time_base.den <    5L * c->time_base.num ||
-        // c->codec_tag == AV_RL32("DIVX") ||
-        // c->codec_tag == AV_RL32("XVID") ||
-        c->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
-        c->codec_id == AV_CODEC_ID_H264)
-        return 1;
-    return 0;
-}
-
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
     int i, count, ret, read_size, j;
@@ -2264,7 +2246,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             if (ic->fps_probe_size >= 0)
                 fps_analyze_framecount = ic->fps_probe_size;
             /* variable fps and no guess at the real fps */
-            if (tb_unreliable(st->codec) && !st->avg_frame_rate.num &&
+            if (!st->avg_frame_rate.num &&
                 st->codec_info_nb_frames < fps_analyze_framecount &&
                 st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
                 break;
