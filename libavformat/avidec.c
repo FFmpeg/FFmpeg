@@ -224,7 +224,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num)
 
             if (last_pos == pos || pos == base - 8)
                 avi->non_interleaved = 1;
-            if (last_pos != pos && (len || !ast->sample_size))
+            if (last_pos != pos && len)
                 av_add_index_entry(st, pos, ast->cum_len, len, 0,
                                    key ? AVINDEX_KEYFRAME : 0);
 
@@ -1226,7 +1226,7 @@ start_sync:
                 ast->packet_size  = size + 8;
                 ast->remaining    = size;
 
-                if (size || !ast->sample_size) {
+                if (size) {
                     uint64_t pos = avio_tell(pb) - 8;
                     if (!st->index_entries || !st->nb_index_entries ||
                         st->index_entries[st->nb_index_entries - 1].pos < pos) {
