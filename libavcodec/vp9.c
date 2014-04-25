@@ -2258,7 +2258,11 @@ static void decode_coeffs(AVCodecContext *ctx)
                                   16 * step * step, c, e, p, a[x] + l[y], \
                                   uvscan, uvnb, uv_band_counts, qmul[1]); \
             a[x] = l[y] = !!res; \
-            s->uveob[pl][n] = res; \
+            if (step >= 4) { \
+                AV_WN16A(&s->uveob[pl][n], res); \
+            } else { \
+                s->uveob[pl][n] = res; \
+            } \
         } \
     }
 
