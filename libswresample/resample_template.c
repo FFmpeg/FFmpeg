@@ -25,14 +25,23 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#if defined(TEMPLATE_RESAMPLE_DBL)
-#    define RENAME(N) N ## _double
+#if    defined(TEMPLATE_RESAMPLE_DBL)     \
+    || defined(TEMPLATE_RESAMPLE_DBL_SSE2)
+
 #    define FILTER_SHIFT 0
 #    define DELEM  double
 #    define FELEM  double
 #    define FELEM2 double
 #    define FELEML double
 #    define OUT(d, v) d = v
+
+#    if defined(TEMPLATE_RESAMPLE_DBL)
+#        define RENAME(N) N ## _double
+#    elif defined(TEMPLATE_RESAMPLE_DBL_SSE2)
+#        define COMMON_CORE COMMON_CORE_DBL_SSE2
+#        define LINEAR_CORE LINEAR_CORE_DBL_SSE2
+#        define RENAME(N) N ## _double_sse2
+#    endif
 
 #elif    defined(TEMPLATE_RESAMPLE_FLT)     \
       || defined(TEMPLATE_RESAMPLE_FLT_SSE)
