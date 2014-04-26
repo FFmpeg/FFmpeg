@@ -164,6 +164,7 @@ TESTPROGS = adler32                                                     \
             opt                                                         \
             pca                                                         \
             parseutils                                                  \
+            pixdesc                                                     \
             random_seed                                                 \
             rational                                                    \
             ripemd                                                      \

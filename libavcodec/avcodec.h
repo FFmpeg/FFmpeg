@@ -4690,30 +4690,8 @@ void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int
  */
 unsigned int avcodec_pix_fmt_to_codec_tag(enum AVPixelFormat pix_fmt);
 
-#define FF_LOSS_RESOLUTION  0x0001 /**< loss due to resolution change */
-#define FF_LOSS_DEPTH       0x0002 /**< loss due to color depth change */
-#define FF_LOSS_COLORSPACE  0x0004 /**< loss due to color space conversion */
-#define FF_LOSS_ALPHA       0x0008 /**< loss of alpha bits */
-#define FF_LOSS_COLORQUANT  0x0010 /**< loss due to color quantization */
-#define FF_LOSS_CHROMA      0x0020 /**< loss of chroma (e.g. RGB to gray conversion) */
-
 /**
- * Compute what kind of losses will occur when converting from one specific
- * pixel format to another.
- * When converting from one pixel format to another, information loss may occur.
- * For example, when converting from RGB24 to GRAY, the color information will
- * be lost. Similarly, other losses occur when converting from some formats to
- * other formats. These losses can involve loss of chroma, but also loss of
- * resolution, loss of color depth, loss due to the color space conversion, loss
- * of the alpha bits or loss due to color quantization.
- * avcodec_get_fix_fmt_loss() informs you about the various types of losses
- * which will occur when converting from one pixel format to another.
- *
- * @param[in] dst_pix_fmt destination pixel format
- * @param[in] src_pix_fmt source pixel format
- * @param[in] has_alpha Whether the source pixel format alpha channel is used.
- * @return Combination of flags informing you what kind of losses will occur
- * (maximum loss for an invalid dst_pix_fmt).
+ * @deprecated see av_get_pix_fmt_loss()
  */
 int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt, enum AVPixelFormat src_pix_fmt,
                              int has_alpha);
@@ -4740,34 +4718,7 @@ enum AVPixelFormat avcodec_find_best_pix_fmt_of_list(const enum AVPixelFormat *p
                                             int has_alpha, int *loss_ptr);
 
 /**
- * Find the best pixel format to convert to given a certain source pixel
- * format and a selection of two destination pixel formats. When converting from
- * one pixel format to another, information loss may occur.  For example, when converting
- * from RGB24 to GRAY, the color information will be lost. Similarly, other losses occur when
- * converting from some formats to other formats. avcodec_find_best_pix_fmt_of_2() selects which of
- * the given pixel formats should be used to suffer the least amount of loss.
- *
- * If one of the destination formats is AV_PIX_FMT_NONE the other pixel format (if valid) will be
- * returned.
- *
- * @code
- * src_pix_fmt = AV_PIX_FMT_YUV420P;
- * dst_pix_fmt1= AV_PIX_FMT_RGB24;
- * dst_pix_fmt2= AV_PIX_FMT_GRAY8;
- * dst_pix_fmt3= AV_PIX_FMT_RGB8;
- * loss= FF_LOSS_CHROMA; // don't care about chroma loss, so chroma loss will be ignored.
- * dst_pix_fmt = avcodec_find_best_pix_fmt_of_2(dst_pix_fmt1, dst_pix_fmt2, src_pix_fmt, alpha, &loss);
- * dst_pix_fmt = avcodec_find_best_pix_fmt_of_2(dst_pix_fmt, dst_pix_fmt3, src_pix_fmt, alpha, &loss);
- * @endcode
- *
- * @param[in] dst_pix_fmt1 One of the two destination pixel formats to choose from
- * @param[in] dst_pix_fmt2 The other of the two destination pixel formats to choose from
- * @param[in] src_pix_fmt Source pixel format
- * @param[in] has_alpha Whether the source pixel format alpha channel is used.
- * @param[in, out] loss_ptr Combination of loss flags. In: selects which of the losses to ignore, i.e.
- *                               NULL or value of zero means we care about all losses. Out: the loss
- *                               that occurs when converting from src to selected dst pixel format.
- * @return The best pixel format to convert to or -1 if none was found.
+ * @deprecated see av_find_best_pix_fmt_of_2()
  */
 enum AVPixelFormat avcodec_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt1, enum AVPixelFormat dst_pix_fmt2,
                                             enum AVPixelFormat src_pix_fmt, int has_alpha, int *loss_ptr);
