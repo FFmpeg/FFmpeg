@@ -700,6 +700,10 @@ static int mpegts_write_header(AVFormatContext *s)
                 goto fail;
             }
             ast = avformat_new_stream(ts_st->amux, NULL);
+            if (!ast) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             ret = avcodec_copy_context(ast->codec, st->codec);
             if (ret != 0)
                 goto fail;
