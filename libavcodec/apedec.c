@@ -529,7 +529,7 @@ static inline int ape_decode_value_3900(APEContext *ctx, APERice *rice)
             return AVERROR_INVALIDDATA;
         }
         x = range_decode_bits(ctx, tmpk);
-    } else if (tmpk <= 32) {
+    } else if (tmpk <= 31) {
         x = range_decode_bits(ctx, 16);
         x |= (range_decode_bits(ctx, tmpk - 16) << 16);
     } else {
