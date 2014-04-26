@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/intreadwrite.h"
 
 #define RAW_PACKET_SIZE 1024
 
@@ -109,9 +110,61 @@ const AVOption ff_rawvideo_options[] = {
 };
 
 #if CONFIG_LATM_DEMUXER
+
+#define LOAS_SYNC_WORD 0x2b7
+
+static int latm_read_probe(AVProbeData *p)
+{
+    int max_frames = 0, first_frames = 0;
+    int fsize, frames;
+    uint8_t *buf0 = p->buf;
+    uint8_t *buf2;
+    uint8_t *buf;
+    uint8_t *end = buf0 + p->buf_size - 3;
+
+    buf = buf0;
+
+    for (; buf < end; buf = buf2 + 1) {
+        buf2 = buf;
+
+        for (frames = 0; buf2 < end; frames++) {
+            uint32_t header = AV_RB24(buf2);
+            if ((header >> 13) != LOAS_SYNC_WORD) {
+                if (buf != buf0) {
+                    // Found something that isn't a LOAS header, starting
+                    // from a position other than the start of the buffer.
+                    // Discard the count we've accumulated so far since it
+                    // probably was a false positive.
+                    frames = 0;
+                }
+                break;
+            }
+            fsize = (header & 0x1FFF) + 3;
+            if (fsize < 7)
+                break;
+            buf2 += fsize;
+        }
+        max_frames = FFMAX(max_frames, frames);
+        if (buf == buf0)
+            first_frames = frames;
+    }
+
+    if (first_frames >= 3)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    else if (max_frames > 100)
+        return AVPROBE_SCORE_EXTENSION;
+    else if (max_frames >= 3)
+        return AVPROBE_SCORE_EXTENSION / 2;
+    else if (max_frames >= 1)
+        return 1;
+    else
+        return 0;
+}
+
 AVInputFormat ff_latm_demuxer = {
     .name           = "latm",
     .long_name      = NULL_IF_CONFIG_SMALL("raw LOAS/LATM"),
+    .read_probe     = latm_read_probe,
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
