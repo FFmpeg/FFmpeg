@@ -277,18 +277,40 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.ExtParam = q->extparam;
     q->param.NumExtParam++;
 
-/*
-    q->extcospspps.Header.BufferId = MFX_EXTBUFF_CODING_OPTION_SPSPPS;
-    q->extcospspps.Header.BufferSz = sizeof(q->extcospspps);
-    q->extcospspps.SPSBuffer       = q->spspps[0];
-    q->extcospspps.SPSBufSize      = sizeof(q->spspps[0]);
-    q->extcospspps.PPSBuffer       = q->spspps[1];
-    q->extcospspps.PPSBufSize      = sizeof(q->spspps[1]);
+    return 0;
+}
 
-    q->extparam[q->param.NumExtParam] = (mfxExtBuffer *)&q->extcospspps;
-    q->param.ExtParam = q->extparam;
-    q->param.NumExtParam++;
-*/
+static int get_video_param(AVCodecContext *avctx, QSVEncContext *q)
+{
+    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+        int size = sizeof(q->spspps);
+        uint8_t *tmp = av_malloc(size);
+        if (!tmp) {
+            av_log(avctx, AV_LOG_ERROR, "av_malloc() failed\n");
+            return AVERROR(ENOMEM);
+        }
+
+        q->extcospspps.Header.BufferId = MFX_EXTBUFF_CODING_OPTION_SPSPPS;
+        q->extcospspps.Header.BufferSz = sizeof(q->extcospspps);
+        q->extcospspps.SPSBuffer       = q->spspps[0];
+        q->extcospspps.SPSBufSize      = sizeof(q->spspps[0]);
+        q->extcospspps.PPSBuffer       = q->spspps[1];
+        q->extcospspps.PPSBufSize      = sizeof(q->spspps[1]);
+
+        q->extparam[q->param.NumExtParam] = (mfxExtBuffer *)&q->extcospspps;
+        q->param.ExtParam = q->extparam;
+        q->param.NumExtParam++;
+
+        MFXVideoENCODE_GetVideoParam(q->session, &q->param);
+
+        q->param.NumExtParam--;
+
+        memcpy(tmp, q->spspps, size);
+        avctx->extradata = tmp;
+        avctx->extradata_size = size;
+    } else {
+        MFXVideoENCODE_GetVideoParam(q->session, &q->param);
+    }
 
     return 0;
 }
@@ -332,7 +354,8 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
         return ff_qsv_error(ret);
     }
 
-    MFXVideoENCODE_GetVideoParam(q->session, &q->param);
+    if ((ret = get_video_param(avctx, q)) < 0)
+        return ret;
 
     if (ret = realloc_surface_pool(q, 0, q->req.NumFrameSuggested))
         return ret;
