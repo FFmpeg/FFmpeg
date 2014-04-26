@@ -48,8 +48,10 @@ static int celt_header(AVFormatContext *s, int idx)
         priv = av_malloc(sizeof(struct oggcelt_private));
         if (!priv)
             return AVERROR(ENOMEM);
-        if (ff_alloc_extradata(st->codec, 2 * sizeof(uint32_t)) < 0)
+        if (ff_alloc_extradata(st->codec, 2 * sizeof(uint32_t)) < 0) {
+            av_free(priv);
             return AVERROR(ENOMEM);
+        }
         version          = AV_RL32(p + 28);
         /* unused header size field skipped */
         sample_rate      = AV_RL32(p + 36);
