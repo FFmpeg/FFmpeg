@@ -32,9 +32,8 @@
 
 typedef struct QSVEncSurfaceList {
     mfxFrameSurface1 surface;
-    struct QSVEncSurfaceList *prev;
+    int pending;
     struct QSVEncSurfaceList *next;
-    struct QSVEncSurfaceList *pool;
 } QSVEncSurfaceList;
 
 typedef struct QSVEncBuffer {
@@ -44,7 +43,6 @@ typedef struct QSVEncBuffer {
     int64_t dts;
     struct QSVEncBuffer *prev;
     struct QSVEncBuffer *next;
-    struct QSVEncBuffer *pool;
 } QSVEncBuffer;
 
 typedef struct QSVEncContext {
@@ -60,6 +58,7 @@ typedef struct QSVEncContext {
     int64_t first_pts;
     int64_t pts_delay;
     int async_depth;
+    int timeout;
     int qpi;
     int qpp;
     int qpb;
@@ -68,9 +67,11 @@ typedef struct QSVEncContext {
     int level;
     int preset;
     int open_gop;
-    QSVEncSurfaceList *surf_pool;
+    QSVEncSurfaceList **surf;
+    int nb_surf;
     QSVEncSurfaceList *pending_enc, *pending_enc_end;
-    QSVEncBuffer *buf_pool;
+    QSVEncBuffer **buf;
+    int nb_buf;
     QSVEncBuffer *pending_sync, *pending_sync_end;
     int nb_sync;
     QSVEncBuffer *pending_dts, *pending_dts_end;

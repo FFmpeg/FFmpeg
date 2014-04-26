@@ -24,10 +24,11 @@
 #define AVCODEC_QSV_H
 
 #define QSV_VERSION_MAJOR 1
-#define QSV_VERSION_MINOR 6
+#define QSV_VERSION_MINOR 1
 
 #define ASYNC_DEPTH_DEFAULT 4       // internal parallelism
-#define SYNC_TIME_DEFAULT   60000
+#define SYNC_TIME_DEFAULT   5000    // 5s
+#define TIMEOUT_DEFAULT     5000    // 5s
 
 int ff_qsv_error(int mfx_err);
 

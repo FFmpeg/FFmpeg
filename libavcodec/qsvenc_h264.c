@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
 
 #include <stdint.h>
 #include <sys/types.h>
@@ -62,6 +63,7 @@ static av_cold int qsv_enc_close(AVCodecContext *avctx)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "async_depth", "Maximum processing parallelism", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VE },
+    { "timeout", "Maximum timeout in milliseconds when the device has been busy", OFFSET(qsv.timeout), AV_OPT_TYPE_INT, { .i64 = TIMEOUT_DEFAULT }, 0, INT_MAX, VE },
     { "qpi", NULL, OFFSET(qsv.qpi), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 51, VE },
     { "qpp", NULL, OFFSET(qsv.qpp), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 51, VE },
     { "qpb", NULL, OFFSET(qsv.qpb), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 51, VE },
@@ -88,12 +90,12 @@ static const AVOption options[] = {
     { "41"     , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LEVEL_AVC_41  }, INT_MIN, INT_MAX, VE, "level" },
     { "42"     , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LEVEL_AVC_42  }, INT_MIN, INT_MAX, VE, "level" },
     { "5"      , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LEVEL_AVC_5   }, INT_MIN, INT_MAX, VE, "level" },
-    { "51",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LEVEL_AVC_51  }, INT_MIN, INT_MAX, VE, "level" },
-    { "52",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LEVEL_AVC_52  }, INT_MIN, INT_MAX, VE, "level" },
-    { "preset", NULL, OFFSET(qsv.preset), AV_OPT_TYPE_INT, { .i64 = MFX_TARGETUSAGE_BALANCED }, 0, 7, VE },
-    { "fast",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_SPEED  },   INT_MIN, INT_MAX, VE, "preset" },
-    { "medium", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BALANCED  },     INT_MIN, INT_MAX, VE, "preset" },
-    { "slow",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_QUALITY  }, INT_MIN, INT_MAX, VE, "preset" },
+    { "51"     , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LEVEL_AVC_51  }, INT_MIN, INT_MAX, VE, "level" },
+    { "52"     , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LEVEL_AVC_52  }, INT_MIN, INT_MAX, VE, "level" },
+    { "preset", NULL, OFFSET(qsv.preset), AV_OPT_TYPE_INT, { .i64 = MFX_TARGETUSAGE_BALANCED }, 0, 7, VE, "preset" },
+    { "speed"   , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_SPEED    }, INT_MIN, INT_MAX, VE, "preset" },
+    { "balanced", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BALANCED      }, INT_MIN, INT_MAX, VE, "preset" },
+    { "quality" , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_QUALITY  }, INT_MIN, INT_MAX, VE, "preset" },
     { NULL },
 };
 
