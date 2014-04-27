@@ -20,11 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/opt.h"
-
 #include <stdint.h>
 #include <sys/types.h>
 #include <mfx/mfxvideo.h>
+
+#include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "internal.h"
