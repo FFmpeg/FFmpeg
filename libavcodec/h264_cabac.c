@@ -2194,7 +2194,7 @@ decode_intra_mb:
                         }
                     }else
                         ref=0;
-                        fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, ref, 1);
+                    fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, ref, 1);
                 }
             }
             for(list=0; list<h->list_count; list++){
