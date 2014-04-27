@@ -123,10 +123,11 @@ static void read_uint64(AVFormatContext *avctx, AVIOContext *pb, const char *tag
     av_dict_set(&avctx->metadata, tag, value, 0);
 }
 
-static void scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int file)
+static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int file)
 {
     MlvContext *mlv = avctx->priv_data;
     AVIOContext *pb = mlv->pb[file];
+    int ret;
     while (!url_feof(pb)) {
         int type;
         unsigned int size;
@@ -151,7 +152,9 @@ static void scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int 
             vst->codec->codec_tag = MKTAG('B', 'I', 'T', 16);
             size -= 164;
         } else if (ast && type == MKTAG('W', 'A', 'V', 'I') && size >= 16) {
-            ff_get_wav_header(pb, ast->codec, 16);
+            ret = ff_get_wav_header(pb, ast->codec, 16);
+            if (ret < 0)
+                return ret;
             size -= 16;
         } else if (type == MKTAG('I','N','F','O')) {
             if (size > 0)
@@ -240,6 +243,7 @@ static void scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int 
         }
         avio_skip(pb, size);
     }
+    return 0;
 }
 
 static int read_header(AVFormatContext *avctx)
@@ -247,7 +251,7 @@ static int read_header(AVFormatContext *avctx)
     MlvContext *mlv = avctx->priv_data;
     AVIOContext *pb = avctx->pb;
     AVStream *vst = NULL, *ast = NULL;
-    int size;
+    int size, ret;
     uint64_t guid;
     char guidstr[32];
 
@@ -332,7 +336,9 @@ static int read_header(AVFormatContext *avctx)
 
     /* scan primary file */
     mlv->pb[100] = avctx->pb;
-    scan_file(avctx, vst, ast, 100);
+    ret = scan_file(avctx, vst, ast, 100);
+    if (ret < 0)
+        return ret;
 
     /* scan secondary files */
     if (strlen(avctx->filename) > 2) {
@@ -351,7 +357,13 @@ static int read_header(AVFormatContext *avctx)
                 continue;
             }
             av_log(avctx, AV_LOG_INFO, "scanning %s\n", filename);
-            scan_file(avctx, vst, ast, i);
+            ret = scan_file(avctx, vst, ast, i);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_WARNING, "ignoring %s; %s\n", filename, av_err2str(ret));
+                avio_close(mlv->pb[i]);
+                mlv->pb[i] = NULL;
+                continue;
+            }
         }
         av_free(filename);
     }
