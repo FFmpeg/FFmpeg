@@ -43,12 +43,15 @@ enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodec *codec, enum AVPixelFo
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(target);
         int has_alpha = desc ? desc->nb_components % 2 == 0 : 0;
         enum AVPixelFormat best= AV_PIX_FMT_NONE;
+        const enum AVPixelFormat mjpeg_formats[] = { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_NONE };
+        const enum AVPixelFormat ljpeg_formats[] = { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUV420P,
+                                                     AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_BGRA, AV_PIX_FMT_NONE };
+
         if (st->codec->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
             if (st->codec->codec_id == AV_CODEC_ID_MJPEG) {
-                p = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_NONE };
+                p = mjpeg_formats;
             } else if (st->codec->codec_id == AV_CODEC_ID_LJPEG) {
-                p = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUV420P,
-                                                 AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_BGRA, AV_PIX_FMT_NONE };
+                p =ljpeg_formats;
             }
         }
         for (; *p != AV_PIX_FMT_NONE; p++) {
