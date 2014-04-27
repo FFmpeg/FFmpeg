@@ -262,7 +262,8 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id)
     d  = get_bits(&ctx->gb, 9);
     mb = get_bits(&ctx->gb, 5);
 
-    if ((d < 1) || (d > TM2_DELTAS) || (mb < 1) || (mb > 32)) {
+    av_assert2(mb < 32);
+    if ((d < 1) || (d > TM2_DELTAS) || (mb < 1)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect delta table: %i deltas x %i bits\n", d, mb);
         return AVERROR_INVALIDDATA;
     }
