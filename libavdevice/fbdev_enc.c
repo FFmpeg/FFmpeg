@@ -190,7 +190,7 @@ static int fbdev_get_device_list(AVFormatContext *s, AVDeviceInfoList *device_li
     struct fb_fix_screeninfo fixinfo;
     char device_file[12];
     AVDeviceInfo *device = NULL;
-    int i, fd = -1, ret = 0;
+    int i, fd, ret = 0;
     const char *default_device = ff_fbdev_default_device();
 
     if (!device_list)
@@ -227,7 +227,6 @@ static int fbdev_get_device_list(AVFormatContext *s, AVDeviceInfoList *device_li
             default_device = NULL;
         }
         close(fd);
-        fd = -1;
         continue;
 
       fail_device:
@@ -236,10 +235,8 @@ static int fbdev_get_device_list(AVFormatContext *s, AVDeviceInfoList *device_li
             av_free(device->device_description);
             av_freep(&device);
         }
-        if (fd >= 0) {
+        if (fd >= 0)
             close(fd);
-            fd = -1;
-        }
         if (ret < 0)
             return ret;
     }
