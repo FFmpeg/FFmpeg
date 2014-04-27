@@ -296,7 +296,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc,
     int64_t initial_pos    = avio_tell(ioc);
 
     if (vstream->nb_index_entries>0) {
-        av_log(s, AV_LOG_WARNING, "Skiping duplicate index\n");
+        av_log(s, AV_LOG_WARNING, "Skipping duplicate index\n");
         return 0;
     }
 

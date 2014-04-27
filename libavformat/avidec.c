@@ -1160,7 +1160,7 @@ start_sync:
             ast = st->priv_data;
 
             if (!ast) {
-                av_log(s, AV_LOG_WARNING, "Skiping foreign stream %d packet\n", n);
+                av_log(s, AV_LOG_WARNING, "Skipping foreign stream %d packet\n", n);
                 continue;
             }
 
