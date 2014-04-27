@@ -265,7 +265,7 @@ API changes, most recent first:
 
 2013-08-05 - 9547e3e / f824535 - lavc 55.22.100 / 55.13.0 - avcodec.h
   Deprecate the bitstream-related members from struct AVVDPAUContext.
-  The bistream buffers no longer need to be explicitly freed.
+  The bitsream buffers no longer need to be explicitly freed.
 
 2013-08-05 - 3b805dc / 549294f - lavc 55.21.100 / 55.12.0 - avcodec.h
   Deprecate the CODEC_CAP_HWACCEL_VDPAU codec capability. Use CODEC_CAP_HWACCEL
