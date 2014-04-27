@@ -452,6 +452,10 @@ static int read_seek(AVFormatContext *avctx, int stream_index, int64_t timestamp
 static int read_close(AVFormatContext *s)
 {
     MlvContext *mlv = s->priv_data;
+    int i;
+    for (i = 0; i < 100; i++)
+        if (mlv->pb[i])
+            avio_close(mlv->pb[i]);
     return 0;
 }
 
