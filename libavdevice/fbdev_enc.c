@@ -226,7 +226,8 @@ static int fbdev_get_device_list(AVFormatContext *s, AVDeviceInfoList *device_li
             device_list->default_device = device_list->nb_devices - 1;
             default_device = NULL;
         }
-
+        close(fd);
+        fd = -1;
         continue;
 
       fail_device:
