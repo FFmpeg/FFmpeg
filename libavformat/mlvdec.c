@@ -48,8 +48,6 @@ typedef struct {
     int class[2];
     int stream_index;
     uint64_t pts;
-    uint8_t * buffer;
-    unsigned int buffer_size;
 } MlvContext;
 
 static int probe(AVProbeData *p)
@@ -454,7 +452,6 @@ static int read_seek(AVFormatContext *avctx, int stream_index, int64_t timestamp
 static int read_close(AVFormatContext *s)
 {
     MlvContext *mlv = s->priv_data;
-    av_freep(&mlv->buffer);
     return 0;
 }
 
