@@ -389,7 +389,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
         lt_filt_factor_a = (gain_den << 15) / (gain_den + gain_num);
     }
 #else
-    L64_temp0 = ((int64_t)gain_num) << (sh_gain_num - 1);
+    L64_temp0 = (((int64_t)gain_num) << sh_gain_num) >> 1;
     L64_temp1 = ((int64_t)gain_den) << sh_gain_den;
     lt_filt_factor_a = FFMAX((L64_temp1 << 15) / (L64_temp1 + L64_temp0), MIN_LT_FILT_FACTOR_A);
 #endif
