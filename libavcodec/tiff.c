@@ -55,6 +55,7 @@ typedef struct TiffContext {
     enum TiffCompr compr;
     enum TiffPhotometric photometric;
     int planar;
+    int subsampling[2];
     int fax_opts;
     int predictor;
     int fill_order;
@@ -804,6 +805,14 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case TIFF_PLANAR:
         s->planar = value == 2;
         break;
+    case TIFF_YCBCR_SUBSAMPLING:
+        if (count != 2) {
+            av_log(s->avctx, AV_LOG_ERROR, "subsample count invalid\n");
+            return AVERROR_INVALIDDATA;
+        }
+        for (i = 0; i < count; i++)
+            s->subsampling[i] = ff_tget(&s->gb, type, s->le);
+        break;
     case TIFF_T4OPTIONS:
         if (s->compr == TIFF_G3)
             s->fax_opts = value;
@@ -1136,6 +1145,8 @@ static av_cold int tiff_init(AVCodecContext *avctx)
 
     s->width  = 0;
     s->height = 0;
+    s->subsampling[0] =
+    s->subsampling[1] = 1;
     s->avctx  = avctx;
     ff_lzw_decode_open(&s->lzw);
     ff_ccitt_unpack_init();
