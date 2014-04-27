@@ -279,15 +279,22 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 
     MFXQueryIMPL(q->session, &impl);
 
-    if (impl & MFX_IMPL_SOFTWARE)
+    switch (MFX_IMPL_BASETYPE(impl)) {
+    case MFX_IMPL_SOFTWARE:
         av_log(avctx, AV_LOG_VERBOSE,
                "Using Intel QuickSync encoder software implementation.\n");
-    else if (impl & MFX_IMPL_HARDWARE)
+        break;
+    case MFX_IMPL_HARDWARE:
+    case MFX_IMPL_HARDWARE2:
+    case MFX_IMPL_HARDWARE3:
+    case MFX_IMPL_HARDWARE4:
         av_log(avctx, AV_LOG_VERBOSE,
                "Using Intel QuickSync encoder hardware accelerated implementation.\n");
-    else
+        break;
+    default:
         av_log(avctx, AV_LOG_VERBOSE,
                "Unknown Intel QuickSync encoder implementation %d.\n", impl);
+    }
 
     q->param.IOPattern  = MFX_IOPATTERN_IN_SYSTEM_MEMORY;
     q->param.AsyncDepth = q->async_depth;
