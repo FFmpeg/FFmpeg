@@ -1089,7 +1089,7 @@ static int init_context_frame(MpegEncContext *s)
     mb_array_size = s->mb_height * s->mb_stride;
     mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
 
-    /* set default edge pos, will be overriden
+    /* set default edge pos, will be overridden
      * in decode_header if needed */
     s->h_edge_pos = s->mb_width * 16;
     s->v_edge_pos = s->mb_height * 16;

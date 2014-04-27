@@ -1740,7 +1740,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         }
     } else {
         /* is setting low delay flag only once the smartest thing to do?
-         * low delay detection won't be overriden. */
+         * low delay detection won't be overridden. */
         if (s->picture_number == 0)
             s->low_delay = 0;
     }
