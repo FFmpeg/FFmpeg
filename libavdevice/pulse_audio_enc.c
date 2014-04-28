@@ -38,6 +38,8 @@ typedef struct PulseData {
     int64_t timestamp;
     int buffer_size;               /**< Buffer size in bytes */
     int buffer_duration;           /**< Buffer size in ms, recalculated to buffer_size */
+    int prebuf;
+    int minreq;
     int last_result;
     pa_threaded_mainloop *mainloop;
     pa_context *ctx;
@@ -475,6 +477,10 @@ static av_cold int pulse_write_header(AVFormatContext *h)
         av_log(s, AV_LOG_DEBUG, "Real buffer length is %u bytes\n", buffer_attributes.tlength);
     } else if (s->buffer_size)
         buffer_attributes.tlength = s->buffer_size;
+    if (s->prebuf)
+        buffer_attributes.prebuf = s->prebuf;
+    if (s->minreq)
+        buffer_attributes.minreq = s->minreq;
 
     sample_spec.format = ff_codec_id_to_pulse_format(st->codec->codec_id);
     sample_spec.rate = st->codec->sample_rate;
@@ -577,6 +583,14 @@ static av_cold int pulse_write_header(AVFormatContext *h)
         av_log(s, AV_LOG_ERROR, "Stream failed.\n");
         goto fail;
     }
+
+    /* read back buffer attributes for future use */
+    buffer_attributes = *pa_stream_get_buffer_attr(s->stream);
+    s->buffer_size = buffer_attributes.tlength;
+    s->prebuf = buffer_attributes.prebuf;
+    s->minreq = buffer_attributes.minreq;
+    av_log(s, AV_LOG_DEBUG, "Real buffer attributes: size: %d, prebuf: %d, minreq: %d\n",
+           s->buffer_size, s->prebuf, s->minreq);
 
     pa_threaded_mainloop_unlock(s->mainloop);
 
@@ -745,6 +759,8 @@ static const AVOption options[] = {
     { "device",          "set device name",                  OFFSET(device),          AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
     { "buffer_size",     "set buffer size in bytes",         OFFSET(buffer_size),     AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, E },
     { "buffer_duration", "set buffer duration in millisecs", OFFSET(buffer_duration), AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, E },
+    { "prebuf",          "set pre-buffering size",           OFFSET(prebuf),          AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, E },
+    { "minreq",          "set minimum request size",         OFFSET(minreq),          AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, E },
     { NULL }
 };
 
