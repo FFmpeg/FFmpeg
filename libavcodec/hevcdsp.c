@@ -2,6 +2,8 @@
  * HEVC video decoder
  *
  * Copyright (C) 2012 - 2013 Guillaume Martres
+ * Copyright (C) 2013 - 2014 Pierre-Edouard Lepere
+ *
  *
  * This file is part of FFmpeg.
  *
@@ -224,7 +226,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->hevc_h_loop_filter_luma_c   = FUNC(hevc_h_loop_filter_luma, depth);   \
     hevcdsp->hevc_v_loop_filter_luma_c   = FUNC(hevc_v_loop_filter_luma, depth);   \
     hevcdsp->hevc_h_loop_filter_chroma_c = FUNC(hevc_h_loop_filter_chroma, depth); \
-    hevcdsp->hevc_v_loop_filter_chroma_c = FUNC(hevc_v_loop_filter_chroma, depth);
+    hevcdsp->hevc_v_loop_filter_chroma_c = FUNC(hevc_v_loop_filter_chroma, depth)
 int i = 0;
 
     switch (bit_depth) {
@@ -238,4 +240,5 @@ int i = 0;
         HEVC_DSP(8);
         break;
     }
+    if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
 }
