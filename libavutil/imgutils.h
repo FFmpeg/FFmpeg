@@ -29,6 +29,7 @@
 
 #include "avutil.h"
 #include "pixdesc.h"
+#include "rational.h"
 
 /**
  * Compute the max pixel step for each plane of an image with a
@@ -127,6 +128,20 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
  * @return >= 0 if valid, a negative error code otherwise
  */
 int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx);
+
+/**
+ * Check if the given sample aspect ratio of an image is valid.
+ *
+ * It is considered invalid if the denominator is 0 or if applying the ratio
+ * to the image size would make the smaller dimension less than 1. If the
+ * sar numerator is 0, it is considered unknown and will return as valid.
+ *
+ * @param w width of the image
+ * @param h height of the image
+ * @param sar sample aspect ratio of the image
+ * @return 0 if valid, a negative AVERROR code otherwise
+ */
+int av_image_check_sar(unsigned int w, unsigned int h, AVRational sar);
 
 int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
 

@@ -150,6 +150,8 @@ static int decode_frame(AVCodecContext *avctx,
     if ((ret = ff_set_dimensions(avctx, w, h)) < 0)
         return ret;
 
+    ff_set_sar(avctx, avctx->sample_aspect_ratio);
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
