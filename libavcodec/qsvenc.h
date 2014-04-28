@@ -40,8 +40,6 @@ typedef struct QSVEncBuffer {
     uint8_t *data;
     mfxBitstream bs;
     mfxSyncPoint sync;
-    int64_t dts;
-    struct QSVEncBuffer *prev;
     struct QSVEncBuffer *next;
 } QSVEncBuffer;
 
@@ -55,8 +53,6 @@ typedef struct QSVEncContext {
     mfxExtCodingOptionSPSPPS extcospspps;
     mfxExtBuffer *extparam[3];
     uint8_t spspps[2][256];
-    int64_t first_pts;
-    int64_t pts_delay;
     int async_depth;
     int timeout;
     int qpi;
@@ -74,7 +70,6 @@ typedef struct QSVEncContext {
     int nb_buf;
     QSVEncBuffer *pending_sync, *pending_sync_end;
     int nb_sync;
-    QSVEncBuffer *pending_dts, *pending_dts_end;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);

@@ -322,9 +322,6 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     if (ret = realloc_buffer_pool(q, 0, q->req.NumFrameSuggested))
         return ret;
 
-    q->first_pts = AV_NOPTS_VALUE;
-    q->pts_delay = AV_NOPTS_VALUE;
-
     return ret;
 }
 
@@ -462,7 +459,6 @@ static QSVEncBuffer *get_buffer(QSVEncContext *q)
 
     q->buf[i]->bs.DataOffset = 0;
     q->buf[i]->bs.DataLength = 0;
-    q->buf[i]->prev          = NULL;
     q->buf[i]->next          = NULL;
 
     return q->buf[i];
@@ -476,7 +472,6 @@ static void release_buffer(QSVEncBuffer *buf)
 static void enqueue_buffer(QSVEncBuffer **head, QSVEncBuffer **tail, int *nb,
                            QSVEncBuffer *list)
 {
-    list->prev = *tail;
     list->next = NULL;
 
     if (*tail)
@@ -497,30 +492,15 @@ static QSVEncBuffer *dequeue_buffer(QSVEncBuffer **head, QSVEncBuffer **tail,
 
     *head = (*head)->next;
 
-    if (*head)
-        (*head)->prev = NULL;
-    else
+    if (!(*head))
         *tail = NULL;
 
     if (nb)
         (*nb)--;
 
-    list->prev = list->next = NULL;
+    list->next = NULL;
 
     return list;
-}
-
-static void fill_buffer_dts(QSVEncContext *q, QSVEncBuffer *list,
-                            int64_t base_dts)
-{
-    QSVEncBuffer *prev = list;
-    int64_t dts        = base_dts - q->pts_delay;
-
-    while (prev && prev->dts == AV_NOPTS_VALUE) {
-        prev->dts = dts;
-        prev = prev->prev;
-        dts -= q->pts_delay;
-    }
 }
 
 static void print_interlace_msg(AVCodecContext *avctx, QSVEncContext *q)
@@ -541,22 +521,15 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
     mfxFrameSurface1 *insurf = NULL;
     QSVEncBuffer *outbuf     = NULL;
     int busymsec             = 0;
-    int ret;
+    int ret                  = MFX_ERR_NONE;
 
     *got_packet = 0;
 
     if (frame) {
-        if (q->first_pts == AV_NOPTS_VALUE)
-            q->first_pts = frame->pts;
-        else if (q->pts_delay == AV_NOPTS_VALUE)
-            q->pts_delay = frame->pts - q->first_pts;
-
         if ((ret = add_surface_list(avctx, q, frame)) < 0)
             return ret;
 
         ret = MFX_ERR_MORE_DATA;
-    } else {
-        ret = MFX_ERR_NONE;
     }
 
     do {
@@ -610,27 +583,12 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
             return ret;
         }
 
-        if (outbuf->bs.FrameType & MFX_FRAMETYPE_REF ||
-            outbuf->bs.FrameType & MFX_FRAMETYPE_xREF) {
-            outbuf->dts = AV_NOPTS_VALUE;
-        } else {
-            outbuf->dts = outbuf->bs.TimeStamp;
-            fill_buffer_dts(q, q->pending_dts_end, outbuf->dts);
-        }
-
-        enqueue_buffer(&q->pending_dts, &q->pending_dts_end, NULL, outbuf);
-    }
-
-    if (q->pending_dts && q->pending_dts->dts != AV_NOPTS_VALUE) {
-        outbuf = dequeue_buffer(&q->pending_dts, &q->pending_dts_end, NULL);
-
         if ((ret = ff_alloc_packet(pkt, outbuf->bs.DataLength)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "ff_alloc_packet() failed\n");
             release_buffer(outbuf);
             return ret;
         }
 
-//        pkt->dts  = outbuf->dts;
         pkt->pts  = outbuf->bs.TimeStamp;
         pkt->size = outbuf->bs.DataLength;
 
