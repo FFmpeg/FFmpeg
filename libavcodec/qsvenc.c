@@ -200,7 +200,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.FrameInfo.FrameRateExtD = avctx->time_base.num;
     q->param.mfx.FrameInfo.AspectRatioW  = avctx->sample_aspect_ratio.num;
     q->param.mfx.FrameInfo.AspectRatioH  = avctx->sample_aspect_ratio.den;
-    q->param.mfx.FrameInfo.PicStruct     = MFX_PICSTRUCT_PROGRESSIVE;
+    q->param.mfx.FrameInfo.PicStruct     = MFX_PICSTRUCT_UNKNOWN;
     q->param.mfx.FrameInfo.ChromaFormat  = MFX_CHROMAFORMAT_YUV420;
 
     av_log(avctx, AV_LOG_VERBOSE, "FrameRate:%d/%d\n",
