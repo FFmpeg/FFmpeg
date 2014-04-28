@@ -3023,6 +3023,15 @@ void ff_rfps_calculate(AVFormatContext *ic)
             if (num && (!ref_rate.num || (double)num/(12*1001) < 1.01 * av_q2d(ref_rate)))
                 av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, num, 12*1001, INT_MAX);
         }
+        if (   !st->avg_frame_rate.num
+            && st->r_frame_rate.num && st->info->rfps_duration_sum
+            && st->info->codec_info_duration <= 0
+            && st->info->duration_count > 2
+            && fabs(1.0 / (av_q2d(st->r_frame_rate) * av_q2d(st->time_base)) - st->info->rfps_duration_sum / (double)st->info->duration_count) <= 1.0
+            ) {
+            av_log(ic, AV_LOG_DEBUG, "Setting avg frame rate based on r frame rate\n");
+            st->avg_frame_rate = st->r_frame_rate;
+        }
 
         av_freep(&st->info->duration_error);
         st->info->last_dts = AV_NOPTS_VALUE;
