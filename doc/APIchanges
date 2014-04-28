@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-03-07 - 8b2a130 - lavc 55.50.0 / 55.53.100 - dxva2.h
+  Add FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO for old Intel GPUs.
+
 2014-04-xx - xxxxxxx - lavu 53.13.0 / 52.78.100 - avutil.h
   Add av_get_time_base_q().
 
