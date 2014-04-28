@@ -645,6 +645,9 @@ Automatically select the hardware acceleration method.
 
 @item vdpau
 Use VDPAU (Video Decode and Presentation API for Unix) hardware acceleration.
+
+@item dxva2
+Use DXVA2 (DirectX Video Acceleration) hardware acceleration.
 @end table
 
 This option has no effect if the selected hwaccel is not available or not
@@ -667,6 +670,10 @@ method chosen.
 @item vdpau
 For VDPAU, this option specifies the X11 display/screen to use. If this option
 is not specified, the value of the @var{DISPLAY} environment variable is used
+
+@item dxva2
+For DXVA2, this option should contain the number of the display adapter to use.
+If this option is not specified, the default adapter is used.
 @end table
 @end table
 

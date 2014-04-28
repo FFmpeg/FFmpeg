@@ -4800,6 +4800,10 @@ enabled vdpau && enabled xlib &&
     prepend ffmpeg_libs $($ldflags_filter "-lvdpau") &&
     enable vdpau_x11
 
+enabled dxva2 &&
+    check_header dxva2api.h -D_WIN32_WINNT=0x0600 &&
+    prepend ffmpeg_libs $($ldflags_filter "-lole32")
+
 # Funny iconv installations are not unusual, so check it after all flags have been set
 disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || disable iconv
 
