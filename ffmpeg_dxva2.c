@@ -120,9 +120,10 @@ static void dxva2_destroy_decoder(AVCodecContext *s)
 {
     InputStream  *ist = s->opaque;
     DXVA2Context *ctx = ist->hwaccel_ctx;
+    int i;
 
     if (ctx->surfaces) {
-        for (int i = 0; i < ctx->num_surfaces; i++) {
+        for (i = 0; i < ctx->num_surfaces; i++) {
             if (ctx->surfaces[i])
                 IDirect3DSurface9_Release(ctx->surfaces[i]);
         }
