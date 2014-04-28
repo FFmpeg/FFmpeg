@@ -3127,13 +3127,14 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
              * the correct fps. */
             if (av_q2d(st->time_base) > 0.0005)
                 fps_analyze_framecount *= 2;
+            if (!tb_unreliable(st->codec))
+                fps_analyze_framecount = 0;
             if (ic->fps_probe_size >= 0)
                 fps_analyze_framecount = ic->fps_probe_size;
             if (st->disposition & AV_DISPOSITION_ATTACHED_PIC)
                 fps_analyze_framecount = 0;
             /* variable fps and no guess at the real fps */
-            if (tb_unreliable(st->codec) &&
-                !(st->r_frame_rate.num && st->avg_frame_rate.num) &&
+            if (!(st->r_frame_rate.num && st->avg_frame_rate.num) &&
                 st->info->duration_count < fps_analyze_framecount &&
                 st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
                 break;
