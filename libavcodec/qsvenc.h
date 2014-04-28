@@ -43,16 +43,7 @@ typedef struct QSVEncBuffer {
     struct QSVEncBuffer *next;
 } QSVEncBuffer;
 
-typedef struct QSVEncContext {
-    AVClass *class;
-    mfxSession session;
-    mfxVideoParam param;
-    mfxFrameAllocRequest req;
-    mfxExtCodingOption extco;
-    mfxExtCodingOption2 extco2;
-    mfxExtCodingOptionSPSPPS extcospspps;
-    mfxExtBuffer *extparam[3];
-    uint8_t spspps[2][256];
+typedef struct QSVEncOptions {
     int async_depth;
     int timeout;
     int qpi;
@@ -63,6 +54,18 @@ typedef struct QSVEncContext {
     int level;
     int preset;
     int open_gop;
+} QSVEncOptions;
+
+typedef struct QSVEncContext {
+    AVClass *class;
+    mfxSession session;
+    mfxVideoParam param;
+    mfxFrameAllocRequest req;
+    mfxExtCodingOption extco;
+    mfxExtCodingOption2 extco2;
+    mfxExtCodingOptionSPSPPS extcospspps;
+    mfxExtBuffer *extparam[3];
+    uint8_t spspps[2][256];
     QSVEncSurfaceList **surf;
     int nb_surf;
     QSVEncSurfaceList *pending_enc, *pending_enc_end;
@@ -70,6 +73,7 @@ typedef struct QSVEncContext {
     int nb_buf;
     QSVEncBuffer *pending_sync, *pending_sync_end;
     int nb_sync;
+    QSVEncOptions options;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);

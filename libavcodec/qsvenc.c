@@ -115,21 +115,21 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     if ((ret = ff_qsv_codec_id_to_mfx(avctx->codec_id)) < 0)
         return ret;
     q->param.mfx.CodecId            = ret;
-    q->param.mfx.CodecProfile       = q->profile;
-    q->param.mfx.CodecLevel         = q->level;
-    q->param.mfx.TargetUsage        = q->preset;
+    q->param.mfx.CodecProfile       = q->options.profile;
+    q->param.mfx.CodecLevel         = q->options.level;
+    q->param.mfx.TargetUsage        = q->options.preset;
     q->param.mfx.GopPicSize         = avctx->gop_size < 0 ? 0 : avctx->gop_size;
     q->param.mfx.GopRefDist         = av_clip(avctx->max_b_frames, -1, 16) + 1;
     q->param.mfx.GopOptFlag         = avctx->flags & CODEC_FLAG_CLOSED_GOP ?
                                       MFX_GOP_CLOSED :
                                       0;
-    q->param.mfx.IdrInterval        = q->idr_interval;
+    q->param.mfx.IdrInterval        = q->options.idr_interval;
     q->param.mfx.NumSlice           = avctx->slices;
     q->param.mfx.NumRefFrame        = avctx->refs < 0 ? 0 : avctx->refs;
     q->param.mfx.EncodedOrder       = 0;
     q->param.mfx.BufferSizeInKB     = 0;
     q->param.mfx.RateControlMethod =
-        (q->qpi >= 0 && q->qpp >= 0 && q->qpb >= 0) ||
+        (q->options.qpi >= 0 && q->options.qpp >= 0 && q->options.qpb >= 0) ||
         avctx->flags & CODEC_FLAG_QSCALE      ? MFX_RATECONTROL_CQP :
         avctx->rc_max_rate &&
         avctx->rc_max_rate == avctx->bit_rate ? MFX_RATECONTROL_CBR :
@@ -152,8 +152,8 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         break;
     case MFX_RATECONTROL_CQP: // API 1.1
         av_log(avctx, AV_LOG_VERBOSE, "RateControlMethod:CQP\n");
-        if (q->qpi >= 0) {
-            q->param.mfx.QPI = q->qpi;
+        if (q->options.qpi >= 0) {
+            q->param.mfx.QPI = q->options.qpi;
         } else {
             quant = avctx->global_quality / FF_QP2LAMBDA;
             if (avctx->i_quant_factor)
@@ -162,15 +162,15 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
             q->param.mfx.QPI = av_clip(quant, 0, 51);
         }
 
-        if (q->qpp >= 0) {
-            q->param.mfx.QPP = q->qpp;
+        if (q->options.qpp >= 0) {
+            q->param.mfx.QPP = q->options.qpp;
         } else {
             quant = avctx->global_quality / FF_QP2LAMBDA;
             q->param.mfx.QPP = av_clip(quant, 0, 51);
         }
 
-        if (q->qpb >= 0) {
-            q->param.mfx.QPB = q->qpb;
+        if (q->options.qpb >= 0) {
+            q->param.mfx.QPB = q->options.qpb;
         } else {
             quant = avctx->global_quality / FF_QP2LAMBDA;
             if (avctx->b_quant_factor)
@@ -297,7 +297,7 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     }
 
     q->param.IOPattern  = MFX_IOPATTERN_IN_SYSTEM_MEMORY;
-    q->param.AsyncDepth = q->async_depth;
+    q->param.AsyncDepth = q->options.async_depth;
 
     if ((ret = init_video_param(avctx, q)) < 0)
         return ret;
@@ -544,7 +544,7 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
                 // try to encode this surface next time
                 av_log(avctx, AV_LOG_VERBOSE, "MFXVideoENCODE_EncodeFrameAsync():MFX_WRN_DEVICE_BUSY\n");
                 return 0;
-            } else if (busymsec > q->timeout) {
+            } else if (busymsec > q->options.timeout) {
                 av_log(avctx, AV_LOG_WARNING, "Timeout, device is so busy\n");
                 return AVERROR(EIO);
             }
