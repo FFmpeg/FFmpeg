@@ -1659,6 +1659,7 @@ SYSTEM_FUNCS="
     clock_gettime
     closesocket
     CommandLineToArgvW
+    CoTaskMemFree
     CryptGenRandom
     dlopen
     fcntl
@@ -1759,6 +1760,7 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
+    dxva2_lib
     libc_msvcrt
     libdc1394_1
     libdc1394_2
@@ -4501,6 +4503,7 @@ check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_func_headers stdlib.h getenv
 
+check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
@@ -4800,10 +4803,6 @@ enabled vdpau && enabled xlib &&
     prepend ffmpeg_libs $($ldflags_filter "-lvdpau") &&
     enable vdpau_x11
 
-enabled dxva2 &&
-    check_header dxva2api.h -D_WIN32_WINNT=0x0600 &&
-    prepend ffmpeg_libs $($ldflags_filter "-lole32")
-
 # Funny iconv installations are not unusual, so check it after all flags have been set
 disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || disable iconv
 
@@ -5032,6 +5031,10 @@ if test $target_os = "haiku"; then
     disable memalign
     disable posix_memalign
 fi
+
+enabled_all dxva2 CoTaskMemFree &&
+    prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
+    enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
     enabled_any $need_memalign && enable memalign_hack
