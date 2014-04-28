@@ -3132,10 +3132,16 @@ suncc_flags(){
                     prescott|nocona)    echo -xarch=sse3 -xchip=pentium4 ;;
                     *-sse3)             echo -xarch=sse3                 ;;
                     core2)              echo -xarch=ssse3 -xchip=core2   ;;
-                    corei7)           echo -xarch=sse4_2 -xchip=nehalem  ;;
-                    corei7-avx)       echo -xarch=avx -xchip=sandybridge ;;
+                    bonnell)                   echo -xarch=ssse3         ;;
+                    corei7|nehalem)            echo -xtarget=nehalem     ;;
+                    westmere)                  echo -xtarget=westmere    ;;
+                    silvermont)                echo -xarch=sse4_2        ;;
+                    corei7-avx|sandybridge)    echo -xtarget=sandybridge ;;
+                    core-avx*|ivybridge|haswell|broadwell)
+                                               echo -xarch=avx           ;;
                     amdfam10|barcelona)        echo -xtarget=barcelona   ;;
-                    bdver*)                    echo -xarch=avx           ;;
+                    btver1)                    echo -xarch=amdsse4a      ;;
+                    btver2|bdver*)             echo -xarch=avx           ;;
                     athlon-4|athlon-[mx]p)     echo -xarch=ssea          ;;
                     k8|opteron|athlon64|athlon-fx)
                                                echo -xarch=sse2a         ;;
@@ -3712,7 +3718,8 @@ elif enabled x86; then
             disable i686
         ;;
         # targets that do support nopl and conditional mov (cmov)
-        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64*|k8*|opteron*|athlon-fx|core2|corei7*|amdfam10|barcelona|atom|bdver*)
+        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64*|k8*|opteron*|athlon-fx\
+        |core*|atom|bonnell|nehalem|westmere|silvermont|sandybridge|ivybridge|haswell|broadwell|amdfam10|barcelona|b[dt]ver*)
             cpuflags="-march=$cpu"
             enable i686
             enable fast_cmov
