@@ -469,38 +469,32 @@ static void release_buffer(QSVEncBuffer *buf)
     buf->sync = 0;
 }
 
-static void enqueue_buffer(QSVEncBuffer **head, QSVEncBuffer **tail, int *nb,
-                           QSVEncBuffer *list)
+static void add_sync_list(QSVEncContext *q, QSVEncBuffer *list)
 {
     list->next = NULL;
 
-    if (*tail)
-        (*tail)->next = list;
+    if (q->pending_sync_end)
+        q->pending_sync_end->next = list;
     else
-        *head = list;
+        q->pending_sync = list;
 
-    *tail = list;
+    q->pending_sync_end = list;
 
-    if (nb)
-        (*nb)++;
+    q->nb_sync++;
 }
 
-static QSVEncBuffer *dequeue_buffer(QSVEncBuffer **head, QSVEncBuffer **tail,
-                                    int *nb)
+static void remove_sync_list(QSVEncContext *q)
 {
-    QSVEncBuffer *list = *head;
+    QSVEncBuffer *list = q->pending_sync;
 
-    *head = (*head)->next;
+    q->pending_sync = q->pending_sync->next;
 
-    if (!(*head))
-        *tail = NULL;
+    if (!q->pending_sync)
+        q->pending_sync_end = NULL;
 
-    if (nb)
-        (*nb)--;
+    q->nb_sync--;
 
     list->next = NULL;
-
-    return list;
 }
 
 static void print_interlace_msg(AVCodecContext *avctx, QSVEncContext *q)
@@ -568,13 +562,11 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
     ret = ret == MFX_ERR_MORE_DATA ? 0 : ff_qsv_error(ret);
 
     if (outbuf->sync)
-        enqueue_buffer(&q->pending_sync, &q->pending_sync_end, &q->nb_sync,
-                       outbuf);
+        add_sync_list(q, outbuf);
 
     if (q->pending_sync &&
         (q->nb_sync >= q->req.NumFrameMin || !frame)) {
-        outbuf = dequeue_buffer(&q->pending_sync, &q->pending_sync_end,
-                                &q->nb_sync);
+        outbuf = q->pending_sync;
 
         ret = MFXVideoCORE_SyncOperation(q->session, outbuf->sync,
                                          SYNC_TIME_DEFAULT);
@@ -582,6 +574,8 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
             av_log(avctx, AV_LOG_ERROR, "MFXVideoCORE_SyncOperation() failed\n");
             return ret;
         }
+
+        remove_sync_list(q);
 
         if ((ret = ff_alloc_packet(pkt, outbuf->bs.DataLength)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "ff_alloc_packet() failed\n");
