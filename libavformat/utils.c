@@ -2993,6 +2993,7 @@ void ff_rfps_calculate(AVFormatContext *ic)
             && tb_unreliable(st->codec)) {
             int num = 0;
             double best_error= 0.01;
+            AVRational ref_rate = st->r_frame_rate.num ? st->r_frame_rate : av_inv_q(st->time_base);
 
             for (j= 0; j<MAX_STD_TIMEBASES; j++) {
                 int k;
@@ -3019,7 +3020,7 @@ void ff_rfps_calculate(AVFormatContext *ic)
                 }
             }
             // do not increase frame rate by more than 1 % in order to match a standard rate.
-            if (num && (!st->r_frame_rate.num || (double)num/(12*1001) < 1.01 * av_q2d(st->r_frame_rate)))
+            if (num && (!ref_rate.num || (double)num/(12*1001) < 1.01 * av_q2d(ref_rate)))
                 av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, num, 12*1001, INT_MAX);
         }
 
