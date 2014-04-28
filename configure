@@ -1414,6 +1414,7 @@ SYSTEM_FUNCS="
     aligned_malloc
     closesocket
     CommandLineToArgvW
+    CoTaskMemFree
     CryptGenRandom
     dlopen
     fcntl
@@ -1502,6 +1503,7 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
+    dxva2_lib
     libc_msvcrt
     libdc1394_1
     libdc1394_2
@@ -3945,6 +3947,7 @@ check_func  usleep
 check_func_headers io.h setmode
 check_func_headers stdlib.h getenv
 
+check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
@@ -4145,9 +4148,6 @@ enabled vdpau && enabled xlib &&
     check_func_headers "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
     prepend avconv_libs $($ldflags_filter "-lvdpau") &&
     enable vdpau_x11
-
-enabled dxva2 &&
-    prepend avconv_libs $($ldflags_filter "-lole32")
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
@@ -4351,6 +4351,10 @@ check_deps $CONFIG_LIST       \
            $CONFIG_EXTRA      \
            $HAVE_LIST         \
            $ALL_COMPONENTS    \
+
+enabled_all dxva2 CoTaskMemFree &&
+    prepend avconv_libs $($ldflags_filter "-lole32") &&
+    enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
     enabled_any $need_memalign && enable memalign_hack

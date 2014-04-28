@@ -57,7 +57,7 @@ const HWAccel hwaccels[] = {
 #if HAVE_VDPAU_X11
     { "vdpau", vdpau_init, HWACCEL_VDPAU, AV_PIX_FMT_VDPAU },
 #endif
-#if CONFIG_DXVA2
+#if HAVE_DXVA2_LIB
     { "dxva2", dxva2_init, HWACCEL_DXVA2, AV_PIX_FMT_DXVA2_VLD },
 #endif
     { 0 },
