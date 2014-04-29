@@ -95,6 +95,9 @@ static int segment_hls_window(AVFormatContext *s, int last)
     avio_printf(seg->pb, "#EXT-X-MEDIA-SEQUENCE:%d\n",
                 FFMAX(0, seg->number - seg->size));
 
+    av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%d\n",
+           FFMAX(0, seg->number - seg->size));
+
     for (i = FFMAX(0, seg->number - seg->size);
          i < seg->number; i++) {
         avio_printf(seg->pb, "#EXTINF:%d,\n", (int)seg->time);
