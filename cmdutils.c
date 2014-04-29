@@ -1385,6 +1385,9 @@ int show_codecs(void *optctx, const char *opt, const char *arg)
         const AVCodecDescriptor *desc = codecs[i];
         const AVCodec *codec = NULL;
 
+        if (strstr(desc->name, "_deprecated"))
+            continue;
+
         printf(" ");
         printf(avcodec_find_decoder(desc->id) ? "D" : ".");
         printf(avcodec_find_encoder(desc->id) ? "E" : ".");
