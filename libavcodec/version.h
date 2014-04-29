@@ -30,7 +30,7 @@
 
 #define LIBAVCODEC_VERSION_MAJOR 55
 #define LIBAVCODEC_VERSION_MINOR 50
-#define LIBAVCODEC_VERSION_MICRO  2
+#define LIBAVCODEC_VERSION_MICRO  3
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -137,6 +137,9 @@
 #endif
 #ifndef FF_API_GMC
 #define FF_API_GMC               (LIBAVCODEC_VERSION_MAJOR < 57)
+#endif
+#ifndef FF_API_MV0
+#define FF_API_MV0               (LIBAVCODEC_VERSION_MAJOR < 57)
 #endif
 
 #endif /* AVCODEC_VERSION_H */

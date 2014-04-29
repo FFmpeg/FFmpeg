@@ -675,7 +675,13 @@ typedef struct RcOverride{
  */
 #define CODEC_FLAG_GMC    0x0020  ///< Use GMC.
 #endif
-#define CODEC_FLAG_MV0    0x0040  ///< Always try a MB with MV=<0,0>.
+#if FF_API_MV0
+/**
+ * @deprecated use the flag "mv0" in the "mpv_flags" private option of the
+ * mpegvideo encoders
+ */
+#define CODEC_FLAG_MV0    0x0040
+#endif
 #if FF_API_INPUT_PRESERVED
 /**
  * @deprecated passing reference-counted frames to the encoders replaces this
