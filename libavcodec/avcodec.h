@@ -2730,6 +2730,21 @@ typedef struct AVCodecContext {
      * - decoding: unused.
      */
     uint64_t vbv_delay;
+
+    /**
+     * Encoding only. Allow encoders to output packets that do not contain any
+     * encoded data, only side data.
+     *
+     * Some encoders need to output such packets, e.g. to update some stream
+     * parameters at the end of encoding.
+     *
+     * All callers are strongly recommended to set this option to 1 and update
+     * their code to deal with such packets, since this behaviour may become
+     * always enabled in the future (then this option will be deprecated and
+     * later removed). To avoid ABI issues when this happens, the callers should
+     * use AVOptions to set this field.
+     */
+    int side_data_only_packets;
 } AVCodecContext;
 
 /**
