@@ -147,6 +147,9 @@ static int hls_window(AVFormatContext *s, int last)
     avio_printf(hls->pb, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
                 FFMAX(0, hls->sequence - hls->size));
 
+    av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
+           FFMAX(0, hls->sequence - hls->size));
+
     for (en = hls->list; en; en = en->next) {
         avio_printf(hls->pb, "#EXTINF:%d,\n", en->duration);
         if (hls->baseurl)
