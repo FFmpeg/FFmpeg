@@ -730,9 +730,6 @@ static int h264_frame_start(H264Context *h)
     memset(h->slice_table, -1,
            (h->mb_height * h->mb_stride - 1) * sizeof(*h->slice_table));
 
-    // s->decode = (s->flags & CODEC_FLAG_PSNR) || !s->encoding ||
-    //             s->current_picture.f.reference /* || h->contains_intra */ || 1;
-
     /* We mark the current picture as non-reference after allocating it, so
      * that if we break out due to an error it can be released automatically
      * in the next ff_MPV_frame_start().
