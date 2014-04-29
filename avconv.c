@@ -1638,6 +1638,34 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
     }
 }
 
+static void set_encoder_id(OutputFile *of, OutputStream *ost)
+{
+    AVDictionaryEntry *e;
+
+    uint8_t *encoder_string;
+    int encoder_string_len;
+    int format_flags = 0;
+
+    e = av_dict_get(of->opts, "fflags", NULL, 0);
+    if (e) {
+        const AVOption *o = av_opt_find(of->ctx, "fflags", NULL, 0, 0);
+        if (!o)
+            return;
+        av_opt_eval_flags(of->ctx, o, e->value, &format_flags);
+    }
+
+    encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(ost->enc->name) + 2;
+    encoder_string     = av_mallocz(encoder_string_len);
+    if (!encoder_string)
+        exit_program(1);
+
+    if (!(format_flags & AVFMT_FLAG_BITEXACT))
+        av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
+    av_strlcat(encoder_string, ost->enc->name, encoder_string_len);
+    av_dict_set(&ost->st->metadata, "encoder",  encoder_string,
+                AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
+}
+
 static int transcode_init(void)
 {
     int ret = 0, i, j, k;
@@ -1785,6 +1813,8 @@ static int transcode_init(void)
             if (ist)
                 ist->decoding_needed = 1;
             ost->encoding_needed = 1;
+
+            set_encoder_id(output_files[ost->file_index], ost);
 
             /*
              * We want CFR output if and only if one of those is true:
