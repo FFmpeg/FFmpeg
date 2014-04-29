@@ -561,7 +561,7 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
 
     ret = ret == MFX_ERR_MORE_DATA ? 0 : ff_qsv_error(ret);
 
-    if (outbuf->sync)
+    if (outbuf && outbuf->sync)
         add_sync_list(q, outbuf);
 
     if (q->pending_sync &&
