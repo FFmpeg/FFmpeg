@@ -582,10 +582,9 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
         pkt->pts  = outbuf->bs.TimeStamp;
         pkt->size = outbuf->bs.DataLength;
 
-        if (outbuf->bs.FrameType & MFX_FRAMETYPE_I ||
-            outbuf->bs.FrameType & MFX_FRAMETYPE_xI ||
-            outbuf->bs.FrameType & MFX_FRAMETYPE_IDR ||
-            outbuf->bs.FrameType & MFX_FRAMETYPE_xIDR)
+        if (outbuf->bs.FrameType &
+            (MFX_FRAMETYPE_I  | MFX_FRAMETYPE_IDR |
+             MFX_FRAMETYPE_xI | MFX_FRAMETYPE_xIDR))
             pkt->flags |= AV_PKT_FLAG_KEY;
 
         memcpy(pkt->data, outbuf->bs.Data + outbuf->bs.DataOffset,
