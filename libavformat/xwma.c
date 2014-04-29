@@ -130,8 +130,10 @@ static int xwma_read_header(AVFormatContext *s)
 
     /* parse the remaining RIFF chunks */
     for (;;) {
-        if (pb->eof_reached)
-            return AVERROR_EOF;
+        if (pb->eof_reached) {
+            ret = AVERROR_EOF;
+            goto end;
+        }
         /* read next chunk tag */
         tag = avio_rl32(pb);
         size = avio_rl32(pb);
@@ -152,7 +154,8 @@ static int xwma_read_header(AVFormatContext *s)
             /* Error out if there is more than one dpds chunk. */
             if (dpds_table) {
                 av_log(s, AV_LOG_ERROR, "two dpds chunks present\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
 
             /* Compute the number of entries in the dpds chunk. */
@@ -184,8 +187,10 @@ static int xwma_read_header(AVFormatContext *s)
     }
 
     /* Determine overall data length */
-    if (size < 0)
-        return AVERROR_INVALIDDATA;
+    if (size < 0) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
     if (!size) {
         xwma->data_end = INT64_MAX;
     } else
@@ -204,7 +209,8 @@ static int xwma_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR,
                    "Invalid bits_per_coded_sample %d for %d channels\n",
                    st->codec->bits_per_coded_sample, st->codec->channels);
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto end;
         }
 
         st->duration = total_decoded_bytes / bytes_per_sample;
@@ -239,9 +245,10 @@ static int xwma_read_header(AVFormatContext *s)
         st->duration = (size<<3) * st->codec->sample_rate / st->codec->bit_rate;
     }
 
+end:
     av_free(dpds_table);
 
-    return 0;
+    return ret;
 }
 
 static int xwma_read_packet(AVFormatContext *s, AVPacket *pkt)
