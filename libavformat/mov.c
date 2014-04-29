@@ -1107,6 +1107,7 @@ static int mov_codec_id(AVStream *st, uint32_t format)
 static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
                                  AVStream *st, MOVStreamContext *sc)
 {
+    uint8_t codec_name[32];
     unsigned int color_depth, len, j;
     int color_greyscale;
     int color_table_id;
@@ -1128,15 +1129,19 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
     len = avio_r8(pb); /* codec name, pascal string */
     if (len > 31)
         len = 31;
-    mov_read_mac_string(c, pb, len, st->codec->codec_name, 32);
+    mov_read_mac_string(c, pb, len, codec_name, sizeof(codec_name));
     if (len < 31)
         avio_skip(pb, 31 - len);
+
+    if (codec_name[0])
+        av_dict_set(&st->metadata, "encoder", codec_name, 0);
+
     /* codec_tag YV12 triggers an UV swap in rawdec.c */
-    if (!memcmp(st->codec->codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25))
+    if (!memcmp(codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25))
         st->codec->codec_tag = MKTAG('I', '4', '2', '0');
     /* Flash Media Server uses tag H263 with Sorenson Spark */
     if (st->codec->codec_tag == MKTAG('H','2','6','3') &&
-        !memcmp(st->codec->codec_name, "Sorenson H263", 13))
+        !memcmp(codec_name, "Sorenson H263", 13))
         st->codec->codec_id = AV_CODEC_ID_FLV1;
 
     st->codec->bits_per_coded_sample = avio_rb16(pb); /* depth */
