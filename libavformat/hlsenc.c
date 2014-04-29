@@ -41,6 +41,7 @@ typedef struct HLSContext {
     const AVClass *class;  // Class for private options.
     unsigned number;
     int64_t sequence;
+    int64_t start_sequence;
     AVOutputFormat *oformat;
     AVFormatContext *avf;
     float time;            // Set by a private option.
@@ -145,10 +146,10 @@ static int hls_window(AVFormatContext *s, int last)
     avio_printf(hls->pb, "#EXT-X-VERSION:3\n");
     avio_printf(hls->pb, "#EXT-X-TARGETDURATION:%d\n", target_duration);
     avio_printf(hls->pb, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
-                FFMAX(0, hls->sequence - hls->size));
+                FFMAX(hls->start_sequence, hls->sequence - hls->size));
 
     av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
-           FFMAX(0, hls->sequence - hls->size));
+           FFMAX(hls->start_sequence, hls->sequence - hls->size));
 
     for (en = hls->list; en; en = en->next) {
         avio_printf(hls->pb, "#EXTINF:%d,\n", en->duration);
@@ -196,6 +197,8 @@ static int hls_write_header(AVFormatContext *s)
 
     hls->number      = 0;
 
+
+    hls->sequence       = hls->start_sequence;
     hls->recording_time = hls->time * AV_TIME_BASE;
     hls->start_pts      = AV_NOPTS_VALUE;
 
@@ -321,7 +324,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
 #define OFFSET(x) offsetof(HLSContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    {"start_number",  "first number in the sequence",            OFFSET(sequence),AV_OPT_TYPE_INT64,  {.i64 = 0},     0, INT64_MAX, E},
+    {"start_number",  "first number in the sequence",            OFFSET(start_sequence),AV_OPT_TYPE_INT64,  {.i64 = 0},     0, INT64_MAX, E},
     {"hls_time",      "segment length in seconds",               OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E},
     {"hls_list_size", "maximum number of playlist entries",      OFFSET(size),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_wrap",      "number after which the index wraps",      OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
