@@ -532,14 +532,11 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     put_guid(pb, &ff_asf_codec_comment1_header);
     avio_wl32(pb, s->nb_streams);
     for (n = 0; n < s->nb_streams; n++) {
-        AVCodec *p;
+        const AVCodecDescriptor *codec_desc;
         const char *desc;
-        int len;
-        uint8_t *buf;
-        AVIOContext *dyn_buf;
 
-        enc = s->streams[n]->codec;
-        p   = avcodec_find_encoder(enc->codec_id);
+        enc  = s->streams[n]->codec;
+        codec_desc = avcodec_descriptor_get(enc->codec_id);
 
         if (enc->codec_type == AVMEDIA_TYPE_AUDIO)
             avio_wl16(pb, 2);
@@ -551,17 +548,24 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
         if (enc->codec_id == AV_CODEC_ID_WMAV2)
             desc = "Windows Media Audio V8";
         else
-            desc = p ? p->name : enc->codec_name;
+            desc = codec_desc ? codec_desc->name : NULL;
 
-        if (avio_open_dyn_buf(&dyn_buf) < 0)
-            return AVERROR(ENOMEM);
+        if (desc) {
+            AVIOContext *dyn_buf;
+            uint8_t *buf;
+            int len;
 
-        avio_put_str16le(dyn_buf, desc);
-        len = avio_close_dyn_buf(dyn_buf, &buf);
-        avio_wl16(pb, len / 2); // "number of characters" = length in bytes / 2
+            if (avio_open_dyn_buf(&dyn_buf) < 0)
+                return AVERROR(ENOMEM);
 
-        avio_write(pb, buf, len);
-        av_freep(&buf);
+            avio_put_str16le(dyn_buf, desc);
+            len = avio_close_dyn_buf(dyn_buf, &buf);
+            avio_wl16(pb, len / 2); // "number of characters" = length in bytes / 2
+
+            avio_write(pb, buf, len);
+            av_freep(&buf);
+        } else
+            avio_wl16(pb, 0);
 
         avio_wl16(pb, 0); /* no parameters */
 
