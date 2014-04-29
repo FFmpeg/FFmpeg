@@ -4,7 +4,7 @@
 
 ## Build
    * https://github.com/lu-zero/mfx_dispatch/wiki/Libav-integration
-   * `./configure --enable-qsv --enable-memalign-hack --extra-libs="-lsupc++ -lstdc++"`
+   * `./configure --enable-libmfx --enable-memalign-hack --extra-libs="-lsupc++ -lstdc++"`
 
 ## Support
    * Intel Media SDK API : v1.1
