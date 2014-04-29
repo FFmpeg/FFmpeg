@@ -345,8 +345,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
                    "using huffyuv 2.2.0 or newer interlacing flag\n");
     }
 
-    if (s->version > 2 && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-        av_log(avctx, AV_LOG_ERROR, "Ver > 2 is under development, files encoded with it may not be decodable with future versions!!!\n"
+    if (s->version > 3 && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        av_log(avctx, AV_LOG_ERROR, "Ver > 3 is under development, files encoded with it may not be decodable with future versions!!!\n"
                "Use vstrict=-2 / -strict -2 to use it anyway.\n");
         return AVERROR(EINVAL);
     }
