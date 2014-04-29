@@ -540,11 +540,7 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
                                               &outbuf->bs, &outbuf->sync);
 
         if (ret == MFX_WRN_DEVICE_BUSY) {
-            if (frame) {
-                // try to encode this surface next time
-                av_log(avctx, AV_LOG_VERBOSE, "MFXVideoENCODE_EncodeFrameAsync():MFX_WRN_DEVICE_BUSY\n");
-                return 0;
-            } else if (busymsec > q->options.timeout) {
+            if (busymsec > q->options.timeout) {
                 av_log(avctx, AV_LOG_WARNING, "Timeout, device is so busy\n");
                 return AVERROR(EIO);
             }
