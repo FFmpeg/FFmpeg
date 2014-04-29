@@ -445,6 +445,36 @@ avconv -i INPUT -af atrim=end_sample=1000
 
 @end itemize
 
+@section bs2b
+Bauer stereo to binaural transformation, which improves headphone listening of
+stereo audio records.
+
+It accepts the following parameters:
+@table @option
+
+@item profile
+Pre-defined crossfeed level.
+@table @option
+
+@item default
+Default level (fcut=700, feed=50).
+
+@item cmoy
+Chu Moy circuit (fcut=700, feed=60).
+
+@item jmeier
+Jan Meier circuit (fcut=650, feed=95).
+
+@end table
+
+@item fcut
+Cut frequency (in Hz).
+
+@item feed
+Feed level (in Hz).
+
+@end table
+
 @section channelsplit
 Split each channel from an input audio stream into a separate output stream.
 

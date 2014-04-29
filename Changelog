@@ -24,6 +24,7 @@ version <next>:
 - Silicon Graphics Movie demuxer
 - On2 AVC (Audio for Video) decoder
 - support for decoding through DXVA2 in avconv
+- libbs2b-based stereo-to-binaural audio filter
 
 
 version 10:

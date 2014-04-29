@@ -53,6 +53,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ASPLIT,         asplit,         af);
     REGISTER_FILTER(ASYNCTS,        asyncts,        af);
     REGISTER_FILTER(ATRIM,          atrim,          af);
+    REGISTER_FILTER(BS2B,           bs2b,           af);
     REGISTER_FILTER(CHANNELMAP,     channelmap,     af);
     REGISTER_FILTER(CHANNELSPLIT,   channelsplit,   af);
     REGISTER_FILTER(COMPAND,        compand,        af);
