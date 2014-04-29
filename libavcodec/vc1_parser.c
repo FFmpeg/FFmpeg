@@ -238,7 +238,7 @@ static int vc1_parse(AVCodecParserContext *s,
      * the start code we've already seen, or cause extra bytes to be
      * inserted at the start of the unescaped buffer. */
     vpc->bytes_to_skip = 4;
-    if (next < 0)
+    if (next < 0 && next != END_NOT_FOUND)
         vpc->bytes_to_skip += next;
 
     *poutbuf = buf;
