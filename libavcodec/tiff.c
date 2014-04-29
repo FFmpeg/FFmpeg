@@ -590,6 +590,10 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
         if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
             if (s->subsampling[0] == 1 && s->subsampling[1] == 1) {
                 s->avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+            } else if (s->subsampling[0] == 2 && s->subsampling[1] == 1) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+            } else if (s->subsampling[0] == 4 && s->subsampling[1] == 1) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV411P;
             } else if (s->subsampling[0] == 2 && s->subsampling[1] == 2) {
                 s->avctx->pix_fmt = AV_PIX_FMT_YUV420P;
             } else {
