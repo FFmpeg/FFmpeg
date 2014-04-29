@@ -3850,7 +3850,14 @@ The frame number, starting from 0.
 A 1 character description of the current picture type.
 
 @item pts
-The timestamp of the current frame, in seconds, with microsecond accuracy.
+The timestamp of the current frame.
+It can take up to two arguments.
+
+The first argument is the format of the timestamp; it defaults to @code{flt}
+for seconds as a decimal number with microsecond accuracy; @code{hms} stands
+for a formatted @var{[-]HH:MM:SS.mmm} timestamp with millisecond accuracy.
+
+The second argument is an offset added to the timestamp.
 
 @end table
 

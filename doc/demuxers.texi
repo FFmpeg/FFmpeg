@@ -128,6 +128,14 @@ If set to 0, any file name is accepted.
 The default is -1, it is equivalent to 1 if the format was automatically
 probed and 0 otherwise.
 
+@item auto_convert
+If set to 1, try to perform automatic conversions on packet data to make the
+streams concatenable.
+
+Currently, the only conversion is adding the h264_mp4toannexb bitstream
+filter to H.264 streams in MP4 format. This is necessary in particular if
+there are resolution changes.
+
 @end table
 
 @section flv

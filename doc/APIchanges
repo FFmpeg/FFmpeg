@@ -15,6 +15,12 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-04-29 - 1bf6396 - lavc 55.60.100 - avcodec.h
+  Add AVCodecDescriptor.mime_types field.
+
+2014-04-29 - xxxxxxx - lavu 52.80.0 - hash.h
+  Add av_hash_final_bin(), av_hash_final_hex() and av_hash_final_b64().
+
 2014-03-07 - 8b2a130 - lavc 55.50.0 / 55.53.100 - dxva2.h
   Add FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO for old Intel GPUs.
 

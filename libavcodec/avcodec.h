@@ -533,6 +533,7 @@ enum AVCodecID {
     AV_CODEC_ID_SMPTE_KLV  = MKBETAG('K','L','V','A'),
     AV_CODEC_ID_DVD_NAV    = MKBETAG('D','N','A','V'),
     AV_CODEC_ID_TIMED_ID3  = MKBETAG('T','I','D','3'),
+    AV_CODEC_ID_BIN_DATA   = MKBETAG('D','A','T','A'),
 
 
     AV_CODEC_ID_PROBE = 0x19000, ///< codec_id is not known (like AV_CODEC_ID_NONE) but lavf should attempt to identify it
@@ -570,6 +571,13 @@ typedef struct AVCodecDescriptor {
      * Codec properties, a combination of AV_CODEC_PROP_* flags.
      */
     int             props;
+
+    /**
+     * MIME type(s) associated with the codec.
+     * May be NULL; if not, a NULL-terminated array of MIME types.
+     * The first item is always non-NULL and is the prefered MIME type.
+     */
+    const char *const *mime_types;
 } AVCodecDescriptor;
 
 /**
