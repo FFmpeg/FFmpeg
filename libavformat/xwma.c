@@ -46,7 +46,7 @@ static int xwma_read_header(AVFormatContext *s)
     int64_t size;
     int ret;
     uint32_t dpds_table_size = 0;
-    uint32_t *dpds_table = 0;
+    uint32_t *dpds_table = NULL;
     unsigned int tag;
     AVIOContext *pb = s->pb;
     AVStream *st;
