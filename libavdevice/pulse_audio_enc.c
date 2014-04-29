@@ -624,6 +624,7 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
 {
     PulseData *s = h->priv_data;
     int ret;
+    int64_t writable_size;
 
     if (!pkt)
         return pulse_flash_stream(s);
@@ -658,6 +659,9 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR, "pa_stream_write failed: %s\n", pa_strerror(ret));
         goto fail;
     }
+    if ((writable_size = pa_stream_writable_size(s->stream)) >= s->minreq)
+        avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_BUFFER_WRITABLE, &writable_size, sizeof(writable_size));
+
     pa_threaded_mainloop_unlock(s->mainloop);
 
     return 0;
