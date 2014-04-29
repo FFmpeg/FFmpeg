@@ -1785,8 +1785,6 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         /* fake mpeg2 transport stream codec (currently not
          * registered) */
         codec_name = "mpeg2ts";
-    } else if (enc->codec_name[0] != '\0') {
-        codec_name = enc->codec_name;
     } else {
         /* output avi tags */
         char tag_buf[32];
