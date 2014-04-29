@@ -173,7 +173,7 @@ static int hls_start(AVFormatContext *s)
     int err = 0;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              c->basename, c->wrap ? c->number % c->wrap : c->number) < 0)
+                              c->basename, c->wrap ? c->sequence % c->wrap : c->sequence) < 0)
         return AVERROR(EINVAL);
     c->number++;
 
@@ -194,9 +194,6 @@ static int hls_write_header(AVFormatContext *s)
     char *p;
     const char *pattern = "%d.ts";
     int basename_size = strlen(s->filename) + strlen(pattern) + 1;
-
-    hls->number      = 0;
-
 
     hls->sequence       = hls->start_sequence;
     hls->recording_time = hls->time * AV_TIME_BASE;
