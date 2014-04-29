@@ -332,7 +332,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     sanitize(part[3].str);
     colored_fputs(av_clip(level >> 3, 0, 6), tint >> 8, part[3].str);
 end:
-    av_bprint_finalize(part+2, NULL);
+    av_bprint_finalize(part+3, NULL);
 #if HAVE_PTHREADS
     pthread_mutex_unlock(&mutex);
 #endif
