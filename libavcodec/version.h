@@ -141,5 +141,8 @@
 #ifndef FF_API_MV0
 #define FF_API_MV0               (LIBAVCODEC_VERSION_MAJOR < 57)
 #endif
+#ifndef FF_API_CODEC_NAME
+#define FF_API_CODEC_NAME        (LIBAVCODEC_VERSION_MAJOR < 57)
+#endif
 
 #endif /* AVCODEC_VERSION_H */
