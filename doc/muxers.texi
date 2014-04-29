@@ -789,8 +789,8 @@ segments. If 0 the list file will contain all the segments. Default
 value is 0.
 
 @item segment_list_entry_prefix @var{prefix}
-Set @var{prefix} to prepend to the name of each entry filename. By
-default no prefix is applied.
+Prepend @var{prefix} to each entry. Useful to generate absolute paths.
+By default no prefix is applied.
 
 @item segment_list_type @var{type}
 Specify the format for the segment list file.
