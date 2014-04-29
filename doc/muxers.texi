@@ -233,6 +233,10 @@ to @var{wrap}.
 Start the playlist sequence number from @var{number}. Default value is
 0.
 
+@item hls_base_url @var{baseurl}
+Append @var{baseurl} to every entry in the playlist.
+Useful to generate playlists with absolute paths.
+
 Note that the playlist sequence number must be unique for each segment
 and it is not to be confused with the segment filename sequence number
 which can be cyclic, for example if the @option{wrap} option is
