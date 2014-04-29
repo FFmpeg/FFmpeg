@@ -647,7 +647,7 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR, "PulseAudio stream is in invalid state.\n");
         goto fail;
     }
-    while (!pa_stream_writable_size(s->stream)) {
+    while (pa_stream_writable_size(s->stream) < s->minreq) {
         if (s->nonblocking) {
             pa_threaded_mainloop_unlock(s->mainloop);
             return AVERROR(EAGAIN);
