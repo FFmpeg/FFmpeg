@@ -64,6 +64,7 @@ struct xvid_context {
     int variance_aq;               /**< Variance adaptive quantization */
     int ssim;                      /**< SSIM information display mode */
     int ssim_acc;                  /**< SSIM accuracy. 0: accurate. 4: fast. */
+    int gmc;
 };
 
 /**
@@ -416,8 +417,13 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     }
 
     /* Bring in VOL flags from avconv command-line */
+#if FF_API_GMC
+    if (avctx->flags & CODEC_FLAG_GMC)
+        x->gmc = 1;
+#endif
+
     x->vol_flags = 0;
-    if( xvid_flags & CODEC_FLAG_GMC ) {
+    if (x->gmc) {
         x->vol_flags |= XVID_VOL_GMC;
         x->me_flags |= XVID_ME_GME_REFINE;
     }
@@ -799,6 +805,7 @@ static const AVOption options[] = {
         { "avg",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, VE, "ssim" },
         { "frame",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 2 }, INT_MIN, INT_MAX, VE, "ssim" },
     { "ssim_acc",    "SSIM accuracy",                         OFFSET(ssim_acc),          AV_OPT_TYPE_INT, { .i64 = 2 }, 0, 4, VE },
+    { "gmc",         "use GMC",              OFFSET(gmc),         AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { NULL },
 };
 

@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-04-xx - xxxxxxx - lavc 55.50.2 - avcodec.h
+  Deprecate CODEC_FLAG_GMC. It is replaced by the "gmc" private option of the
+  libxvid encoder.
+
 2014-04-xx - xxxxxxx - lavc 55.50.1 - avcodec.h
   Deprecate CODEC_FLAG_NORMALIZE_AQP. It is replaced by the flag "naq" in the
   "mpv_flags" private option of the mpegvideo encoders.
