@@ -264,6 +264,9 @@ static int get_video_param(AVCodecContext *avctx, QSVEncContext *q)
         MFXVideoENCODE_GetVideoParam(q->session, &q->param);
     }
 
+    if (avctx->max_b_frames < 0)
+        avctx->max_b_frames = q->param.mfx.GopRefDist - 1;
+
     return 0;
 }
 
