@@ -131,7 +131,7 @@ static int xwma_read_header(AVFormatContext *s)
     /* parse the remaining RIFF chunks */
     for (;;) {
         if (pb->eof_reached)
-            return -1;
+            return AVERROR_EOF;
         /* read next chunk tag */
         tag = avio_rl32(pb);
         size = avio_rl32(pb);
@@ -152,7 +152,7 @@ static int xwma_read_header(AVFormatContext *s)
             /* Error out if there is more than one dpds chunk. */
             if (dpds_table) {
                 av_log(s, AV_LOG_ERROR, "two dpds chunks present\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             /* Compute the number of entries in the dpds chunk. */
@@ -164,7 +164,7 @@ static int xwma_read_header(AVFormatContext *s)
             if (dpds_table_size == 0 || dpds_table_size >= INT_MAX / 4) {
                 av_log(s, AV_LOG_ERROR,
                        "dpds chunk size %"PRId64" invalid\n", size);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             /* Allocate some temporary storage to keep the dpds data around.
@@ -185,7 +185,7 @@ static int xwma_read_header(AVFormatContext *s)
 
     /* Determine overall data length */
     if (size < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
     if (!size) {
         xwma->data_end = INT64_MAX;
     } else
