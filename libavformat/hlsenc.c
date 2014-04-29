@@ -132,6 +132,7 @@ static int hls_window(AVFormatContext *s, int last)
     ListEntry *en;
     int target_duration = 0;
     int ret = 0;
+    int64_t sequence = FFMAX(hls->start_sequence, hls->sequence - hls->size);
 
     if ((ret = avio_open2(&hls->pb, s->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
@@ -145,11 +146,10 @@ static int hls_window(AVFormatContext *s, int last)
     avio_printf(hls->pb, "#EXTM3U\n");
     avio_printf(hls->pb, "#EXT-X-VERSION:3\n");
     avio_printf(hls->pb, "#EXT-X-TARGETDURATION:%d\n", target_duration);
-    avio_printf(hls->pb, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
-                FFMAX(hls->start_sequence, hls->sequence - hls->size));
+    avio_printf(hls->pb, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
 
     av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
-           FFMAX(hls->start_sequence, hls->sequence - hls->size));
+           sequence);
 
     for (en = hls->list; en; en = en->next) {
         avio_printf(hls->pb, "#EXTINF:%d,\n", en->duration);
