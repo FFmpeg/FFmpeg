@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-04-xx - xxxxxxx - avcodec.h
+  Deprecate CODEC_FLAG_INPUT_PRESERVED. Its functionality is replaced by passing
+  reference-counted frames to encoders.
+
 2014-04-xx - xxxxxxx - lavc 55.50.0 - dxva2.h
   Add FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO for old Intel GPUs.
 
