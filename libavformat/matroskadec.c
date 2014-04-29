@@ -44,6 +44,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lzo.h"
+#include "libavutil/mathematics.h"
 
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
@@ -154,6 +155,7 @@ typedef struct {
     MatroskaTrackVideo video;
     MatroskaTrackAudio audio;
     EbmlList encodings;
+    uint64_t codec_delay;
 
     AVStream *stream;
     int64_t end_timecode;
@@ -354,6 +356,7 @@ static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKTYPE,             EBML_UINT,  0, offsetof(MatroskaTrack, type) },
     { MATROSKA_ID_CODECID,               EBML_STR,   0, offsetof(MatroskaTrack, codec_id) },
     { MATROSKA_ID_CODECPRIVATE,          EBML_BIN,   0, offsetof(MatroskaTrack, codec_priv) },
+    { MATROSKA_ID_CODECDELAY,            EBML_UINT,  0, offsetof(MatroskaTrack, codec_delay) },
     { MATROSKA_ID_TRACKLANGUAGE,         EBML_UTF8,  0, offsetof(MatroskaTrack, language),     { .s = "eng"  } },
     { MATROSKA_ID_TRACKDEFAULTDURATION,  EBML_UINT,  0, offsetof(MatroskaTrack, default_duration) },
     { MATROSKA_ID_TRACKTIMECODESCALE,    EBML_FLOAT, 0, offsetof(MatroskaTrack, time_scale),   { .f = 1.0  } },
@@ -1730,6 +1733,11 @@ static int matroska_read_header(AVFormatContext *s)
         avpriv_set_pts_info(st, 64, matroska->time_scale * track->time_scale,
                             1000 * 1000 * 1000);    /* 64 bit pts in ns */
 
+        /* convert the delay from ns to the track timebase */
+        track->codec_delay = av_rescale_q(track->codec_delay,
+                                          (AVRational){ 1, 1000000000 },
+                                          st->time_base);
+
         st->codec->codec_id = codec_id;
         st->start_time      = 0;
         if (strcmp(track->language, "und"))
@@ -2269,7 +2277,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
     if (cluster_time != (uint64_t) -1 &&
         (block_time >= 0 || cluster_time >= -block_time)) {
-        timecode = cluster_time + block_time;
+        timecode = cluster_time + block_time - track->codec_delay;
         if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE &&
             timecode < track->end_timecode)
             is_keyframe = 0;  /* overlapping subtitles are not key frame */
