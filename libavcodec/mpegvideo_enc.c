@@ -780,6 +780,13 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     FF_ENABLE_DEPRECATION_WARNINGS;
 #endif
 
+#if FF_API_NORMALIZE_AQP
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->flags & CODEC_FLAG_NORMALIZE_AQP)
+        s->mpv_flags |= FF_MPV_FLAG_NAQ;
+    FF_ENABLE_DEPRECATION_WARNINGS;
+#endif
+
     if (avctx->b_frame_strategy == 2) {
         for (i = 0; i < s->max_b_frames + 2; i++) {
             s->tmp_frames[i] = av_frame_alloc();
