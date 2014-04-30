@@ -246,6 +246,9 @@ static int segment_list_open(AVFormatContext *s)
         avio_printf(seg->list_pb, "#EXT-X-ALLOW-CACHE:%s\n",
                     seg->list_flags & SEGMENT_LIST_FLAG_CACHE ? "YES" : "NO");
 
+        av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%d\n",
+               seg->segment_list_entries->index);
+
         for (entry = seg->segment_list_entries; entry; entry = entry->next)
             max_duration = FFMAX(max_duration, entry->end_time - entry->start_time);
         avio_printf(seg->list_pb, "#EXT-X-TARGETDURATION:%"PRId64"\n", (int64_t)ceil(max_duration));
