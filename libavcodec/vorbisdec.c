@@ -378,7 +378,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
             }
 
 // Weed out unused vlcs and build codevector vector
-            codebook_setup->codevectors = used_entries ? av_mallocz(used_entries *
+            codebook_setup->codevectors = used_entries ? av_mallocz_array(used_entries,
                                                                     codebook_setup->dimensions *
                                                                     sizeof(*codebook_setup->codevectors))
                                                        : NULL;
@@ -561,7 +561,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             for (j = 0; j < floor_setup->data.t1.partitions; ++j)
                 floor_setup->data.t1.x_list_dim+=floor_setup->data.t1.class_dimensions[floor_setup->data.t1.partition_class[j]];
 
-            floor_setup->data.t1.list = av_mallocz(floor_setup->data.t1.x_list_dim *
+            floor_setup->data.t1.list = av_mallocz_array(floor_setup->data.t1.x_list_dim,
                                                    sizeof(*floor_setup->data.t1.list));
             if (!floor_setup->data.t1.list)
                 return AVERROR(ENOMEM);
@@ -640,8 +640,8 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             /* codebook dim is for padding if codebook dim doesn't *
              * divide order+1 then we need to read more data       */
             floor_setup->data.t0.lsp =
-                av_malloc((floor_setup->data.t0.order + 1 + max_codebook_dim)
-                          * sizeof(*floor_setup->data.t0.lsp));
+                av_malloc_array((floor_setup->data.t0.order + 1 + max_codebook_dim),
+                                sizeof(*floor_setup->data.t0.lsp));
             if (!floor_setup->data.t0.lsp)
                 return AVERROR(ENOMEM);
 
@@ -714,7 +714,7 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc)
 
         res_setup->ptns_to_read =
             (res_setup->end - res_setup->begin) / res_setup->partition_size;
-        res_setup->classifs = av_malloc(res_setup->ptns_to_read *
+        res_setup->classifs = av_malloc_array(res_setup->ptns_to_read,
                                         vc->audio_channels *
                                         sizeof(*res_setup->classifs));
         if (!res_setup->classifs)
@@ -807,7 +807,7 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc)
         }
 
         if (mapping_setup->submaps>1) {
-            mapping_setup->mux = av_mallocz(vc->audio_channels *
+            mapping_setup->mux = av_mallocz_array(vc->audio_channels,
                                             sizeof(*mapping_setup->mux));
             if (!mapping_setup->mux)
                 return AVERROR(ENOMEM);
@@ -842,7 +842,7 @@ static int create_map(vorbis_context *vc, unsigned floor_number)
     for (blockflag = 0; blockflag < 2; ++blockflag) {
         n = vc->blocksize[blockflag] / 2;
         floors[floor_number].data.t0.map[blockflag] =
-            av_malloc((n + 1) * sizeof(int32_t)); // n + sentinel
+            av_malloc_array(n + 1, sizeof(int32_t)); // n + sentinel
         if (!floors[floor_number].data.t0.map[blockflag])
             return AVERROR(ENOMEM);
 
@@ -983,8 +983,8 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
         return AVERROR_INVALIDDATA;
     }
 
-    vc->channel_residues =  av_malloc((vc->blocksize[1]  / 2) * vc->audio_channels * sizeof(*vc->channel_residues));
-    vc->saved            =  av_mallocz((vc->blocksize[1] / 4) * vc->audio_channels * sizeof(*vc->saved));
+    vc->channel_residues =  av_malloc_array(vc->blocksize[1]  / 2, vc->audio_channels * sizeof(*vc->channel_residues));
+    vc->saved            =  av_mallocz_array(vc->blocksize[1] / 4, vc->audio_channels * sizeof(*vc->saved));
     if (!vc->channel_residues || !vc->saved)
         return AVERROR(ENOMEM);
 
