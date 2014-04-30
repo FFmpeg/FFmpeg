@@ -701,8 +701,7 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc)
         res_setup->partition_size = get_bits(gb, 24) + 1;
         /* Validations to prevent a buffer overflow later. */
         if (res_setup->begin>res_setup->end ||
-            res_setup->end > (res_setup->type == 2 ? vc->audio_channels : 1) * vc->blocksize[1] / 2 ||
-            (res_setup->end-res_setup->begin) / res_setup->partition_size > V_MAX_PARTITIONS) {
+            (res_setup->end-res_setup->begin) / res_setup->partition_size > FFMIN(V_MAX_PARTITIONS, 65535)) {
             av_log(vc->avctx, AV_LOG_ERROR,
                    "partition out of bounds: type, begin, end, size, blocksize: %"PRIu16", %"PRIu32", %"PRIu32", %u, %"PRIu32"\n",
                    res_setup->type, res_setup->begin, res_setup->end,
@@ -1372,6 +1371,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
     unsigned pass, ch_used, i, j, k, l;
     unsigned max_output = (ch - 1) * vlen;
     int ptns_to_read = vr->ptns_to_read;
+    int libvorbis_bug = 0;
 
     if (vr_type == 2) {
         for (j = 1; j < ch; ++j)
@@ -1386,8 +1386,13 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
     }
 
     if (max_output > ch_left * vlen) {
-        av_log(vc->avctx, AV_LOG_ERROR, "Insufficient output buffer\n");
-        return AVERROR_INVALIDDATA;
+        if (max_output <= ch_left * vlen + vr->partition_size*ch_used/ch) {
+            ptns_to_read--;
+            libvorbis_bug = 1;
+        } else {
+            av_log(vc->avctx, AV_LOG_ERROR, "Insufficient output buffer\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     av_dlog(NULL, " residue type 0/1/2 decode begin, ch: %d  cpc %d  \n", ch, c_p_c);
@@ -1494,6 +1499,14 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                 }
                 ++partition_count;
                 voffset += vr->partition_size;
+            }
+        }
+        if (libvorbis_bug && !pass) {
+            for (j = 0; j < ch_used; ++j) {
+                if (!do_not_decode[j]) {
+                    get_vlc2(&vc->gb, vc->codebooks[vr->classbook].vlc.table,
+                                vc->codebooks[vr->classbook].nb_bits, 3);
+                }
             }
         }
     }
