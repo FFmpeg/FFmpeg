@@ -290,6 +290,20 @@ When both options are provided then the highest value is used
 are set to 0 (which is default), the device will use the default
 PulseAudio duration value. By default PulseAudio set buffer duration
 to around 2 seconds.
+
+@item prebuf
+Specify pre-buffering size in bytes. The server does not start with
+playback before at least @option{prebuf} bytes are available in the
+buffer. By default this option is initialized to the same value as
+@option{buffer_size} or @option{buffer_duration} (whichever is bigger).
+
+@item minreq
+Specify minimum request size in bytes. The server does not request less
+than @option{minreq} bytes from the client, instead waits until the buffer
+is free enough to request more bytes at once. It is recommended to not set
+this option, which will initialize this to a value that is deemed sensible
+by the server.
+
 @end table
 
 @subsection Examples

@@ -205,6 +205,11 @@ static av_cold int fbdev_read_close(AVFormatContext *avctx)
     return 0;
 }
 
+static int fbdev_get_device_list(AVFormatContext *s, AVDeviceInfoList *device_list)
+{
+    return ff_fbdev_get_device_list(device_list);
+}
+
 #define OFFSET(x) offsetof(FBDevContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
@@ -227,6 +232,7 @@ AVInputFormat ff_fbdev_demuxer = {
     .read_header    = fbdev_read_header,
     .read_packet    = fbdev_read_packet,
     .read_close     = fbdev_read_close,
+    .get_device_list = fbdev_get_device_list,
     .flags          = AVFMT_NOFILE,
     .priv_class     = &fbdev_class,
 };
