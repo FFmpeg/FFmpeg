@@ -545,7 +545,7 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
         if (ret == MFX_WRN_DEVICE_BUSY) {
             if (busymsec > q->options.timeout) {
                 av_log(avctx, AV_LOG_WARNING, "Timeout, device is so busy\n");
-                return AVERROR(EIO);
+                return 0;
             }
             av_usleep(1000);
             busymsec++;
