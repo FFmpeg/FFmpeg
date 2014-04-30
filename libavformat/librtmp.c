@@ -37,7 +37,16 @@ typedef struct LibRTMPContext {
     const AVClass *class;
     RTMP rtmp;
     char *app;
+    char *conn;
+    char *subscribe;
     char *playpath;
+    char *tcurl;
+    char *flashver;
+    char *swfurl;
+    char *swfverify;
+    char *pageurl;
+    char *client_buffer_time;
+    int live;
 } LibRTMPContext;
 
 static void rtmp_log(int level, const char *fmt, va_list args)
@@ -83,6 +92,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     RTMP *r = &ctx->rtmp;
     int rc = 0, level;
     char *filename = s->filename;
+    int len = strlen(s->filename) + 1;
 
     switch (av_log_get_level()) {
     default:
@@ -96,22 +106,111 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     RTMP_LogSetLevel(level);
     RTMP_LogSetCallback(rtmp_log);
 
-    if (ctx->app || ctx->playpath) {
-        int len = strlen(s->filename) + 1;
-        if (ctx->app)      len += strlen(ctx->app)      + sizeof(" app=");
-        if (ctx->playpath) len += strlen(ctx->playpath) + sizeof(" playpath=");
+    if (ctx->app)      len += strlen(ctx->app)      + sizeof(" app=");
+    if (ctx->tcurl)    len += strlen(ctx->tcurl)    + sizeof(" tcUrl=");
+    if (ctx->pageurl)  len += strlen(ctx->pageurl)  + sizeof(" pageUrl=");
+    if (ctx->flashver) len += strlen(ctx->flashver) + sizeof(" flashver=");
 
-        if (!(filename = av_malloc(len)))
-            return AVERROR(ENOMEM);
+    if (ctx->conn) {
+        char *sep, *p = ctx->conn;
+        int options = 0;
 
-        av_strlcpy(filename, s->filename, len);
-        if (ctx->app) {
-            av_strlcat(filename, " app=", len);
-            av_strlcat(filename, ctx->app, len);
+        while (p) {
+            options++;
+            p += strspn(p, " ");
+            if (!*p)
+                break;
+            sep = strchr(p, ' ');
+            if (sep)
+                p = sep + 1;
+            else
+                break;
         }
-        if (ctx->playpath) {
-            av_strlcat(filename, " playpath=", len);
-            av_strlcat(filename, ctx->playpath, len);
+        len += options * sizeof(" conn=");
+        len += strlen(ctx->conn);
+    }
+
+    if (ctx->playpath)
+        len += strlen(ctx->playpath) + sizeof(" playpath=");
+    if (ctx->live)
+        len += sizeof(" live=1");
+    if (ctx->subscribe)
+        len += strlen(ctx->subscribe) + sizeof(" subscribe=");
+
+    if (ctx->client_buffer_time)
+        len += strlen(ctx->client_buffer_time) + sizeof(" buffer=");
+
+    if (ctx->swfurl || ctx->swfverify) {
+        len += sizeof(" swfUrl=");
+
+        if (ctx->swfverify)
+            len += strlen(ctx->swfverify) + sizeof(" swfVfy=1");
+        else
+            len += strlen(ctx->swfurl);
+    }
+
+    if (!(filename = av_malloc(len)))
+        return AVERROR(ENOMEM);
+
+    av_strlcpy(filename, s->filename, len);
+    if (ctx->app) {
+        av_strlcat(filename, " app=", len);
+        av_strlcat(filename, ctx->app, len);
+    }
+    if (ctx->tcurl) {
+        av_strlcat(filename, " tcUrl=", len);
+        av_strlcat(filename, ctx->tcurl, len);
+    }
+    if (ctx->pageurl) {
+        av_strlcat(filename, " pageUrl=", len);
+        av_strlcat(filename, ctx->pageurl, len);
+    }
+    if (ctx->swfurl) {
+        av_strlcat(filename, " swfUrl=", len);
+        av_strlcat(filename, ctx->pageurl, len);
+    }
+    if (ctx->flashver) {
+        av_strlcat(filename, " flashVer=", len);
+        av_strlcat(filename, ctx->flashver, len);
+    }
+    if (ctx->conn) {
+        char *sep, *p = ctx->conn;
+        while (p) {
+            av_strlcat(filename, " conn=", len);
+            p += strspn(p, " ");
+            if (!*p)
+                break;
+            sep = strchr(p, ' ');
+            if (sep)
+                *sep = '\0';
+            av_strlcat(filename, p, len);
+
+            if (sep)
+                p = sep + 1;
+        }
+    }
+    if (ctx->playpath) {
+        av_strlcat(filename, " playpath=", len);
+        av_strlcat(filename, ctx->playpath, len);
+    }
+    if (ctx->live)
+        av_strlcat(filename, " live=1", len);
+    if (ctx->subscribe) {
+        av_strlcat(filename, " subscribe=", len);
+        av_strlcat(filename, ctx->subscribe, len);
+    }
+    if (ctx->client_buffer_time) {
+        av_strlcat(filename, " buffer=", len);
+        av_strlcat(filename, ctx->client_buffer_time, len);
+    }
+    if (ctx->swfurl || ctx->swfverify) {
+        av_strlcat(filename, " swfUrl=", len);
+
+        if (ctx->swfverify) {
+            av_strlcat(filename, ctx->swfverify, len);
+            av_strlcat(filename, " swfVfy=1", len);
+        } else {
+            av_strlcat(filename, ctx->swfurl, len);
         }
     }
 
@@ -197,8 +296,20 @@ static int rtmp_get_file_handle(URLContext *s)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    {"rtmp_app",      "Name of application to connect to on the RTMP server", OFFSET(app),      AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
-    {"rtmp_playpath", "Stream identifier to play or to publish",              OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_buffer", "Set buffer time in milliseconds. The default is 3000.", OFFSET(client_buffer_time), AV_OPT_TYPE_STRING, {.str = "3000"}, 0, 0, DEC|ENC},
+    {"rtmp_conn", "Append arbitrary AMF data to the Connect message", OFFSET(conn), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_flashver", "Version of the Flash plugin used to run the SWF player.", OFFSET(flashver), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_live", "Specify that the media is a live stream.", OFFSET(live), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, DEC, "rtmp_live"},
+    {"any", "both", 0, AV_OPT_TYPE_CONST, {.i64 = -2}, 0, 0, DEC, "rtmp_live"},
+    {"live", "live stream", 0, AV_OPT_TYPE_CONST, {.i64 = -1}, 0, 0, DEC, "rtmp_live"},
+    {"recorded", "recorded stream", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 0, DEC, "rtmp_live"},
+    {"rtmp_pageurl", "URL of the web page in which the media was embedded. By default no value will be sent.", OFFSET(pageurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
+    {"rtmp_playpath", "Stream identifier to play or to publish", OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_subscribe", "Name of live stream to subscribe to. Defaults to rtmp_playpath.", OFFSET(subscribe), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
+    {"rtmp_swfurl", "URL of the SWF player. By default no value will be sent", OFFSET(swfurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_swfverify", "URL to player swf file, compute hash/size automatically. (unimplemented)", OFFSET(swfverify), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
+    {"rtmp_tcurl", "URL of the target stream. Defaults to proto://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };
 
