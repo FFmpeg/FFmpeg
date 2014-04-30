@@ -594,8 +594,12 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
                 s->avctx->pix_fmt = AV_PIX_FMT_YUV422P;
             } else if (s->subsampling[0] == 4 && s->subsampling[1] == 1) {
                 s->avctx->pix_fmt = AV_PIX_FMT_YUV411P;
+            } else if (s->subsampling[0] == 1 && s->subsampling[1] == 2) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV440P;
             } else if (s->subsampling[0] == 2 && s->subsampling[1] == 2) {
                 s->avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+            } else if (s->subsampling[0] == 4 && s->subsampling[1] == 4) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV410P;
             } else {
                 av_log(s->avctx, AV_LOG_ERROR, "Unsupported YCbCr subsampling\n");
                 return AVERROR_PATCHWELCOME;
