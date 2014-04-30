@@ -593,7 +593,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         if (!codec->codec_tag)
             codec->codec_tag = tag;
 
-        ff_put_wav_header(dyn_cp, codec);
+        ff_put_wav_header(dyn_cp, codec, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
     }
 
     codecpriv_size = avio_close_dyn_buf(dyn_cp, &codecpriv);
