@@ -1,0 +1,10 @@
+EXPORTS
+    postproc_configuration
+    postproc_license
+    postproc_version
+    pp_free_context
+    pp_free_mode
+    pp_get_context
+    pp_get_mode_by_name_and_quality
+    pp_help DATA
+    pp_postprocess

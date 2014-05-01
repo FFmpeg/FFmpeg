@@ -1,0 +1,277 @@
+EXPORTS
+    audio_resample
+    audio_resample_close
+    av_audio_convert
+    av_audio_convert_alloc
+    av_audio_convert_free
+    av_audio_resample_init
+    av_bitstream_filter_close
+    av_bitstream_filter_filter
+    av_bitstream_filter_init
+    av_bitstream_filter_next
+    av_codec_get_codec_descriptor
+    av_codec_get_lowres
+    av_codec_get_max_lowres
+    av_codec_get_pkt_timebase
+    av_codec_get_seek_preroll
+    av_codec_is_decoder
+    av_codec_is_encoder
+    av_codec_next
+    av_codec_set_chroma_intra_matrix
+    av_codec_set_codec_descriptor
+    av_codec_set_lowres
+    av_codec_set_pkt_timebase
+    av_codec_set_seek_preroll
+    av_copy_packet
+    av_copy_packet_side_data
+;if dct
+    av_dct_calc
+    av_dct_end
+    av_dct_init
+;endif
+    av_destruct_packet
+    av_dup_packet
+    av_fast_padded_malloc
+    av_fast_padded_mallocz
+;if fft
+    av_fft_calc
+    av_fft_end
+    av_fft_init
+    av_fft_permute
+;endif
+    av_free_packet
+    av_get_audio_frame_duration
+    av_get_bits_per_sample
+    av_get_codec_tag_string
+    av_get_exact_bits_per_sample
+    av_get_pcm_codec
+    av_get_profile_name
+    av_grow_packet
+    av_hwaccel_next
+;if mdct
+    av_imdct_calc
+    av_imdct_half
+;endif
+    av_init_packet
+    av_lockmgr_register
+    av_log_ask_for_sample
+    av_log_missing_feature
+;if mdct
+    av_mdct_calc
+    av_mdct_end
+    av_mdct_init
+;endif
+    av_new_packet
+    av_packet_copy_props
+    av_packet_free_side_data
+    av_packet_from_data
+    av_packet_get_side_data
+    av_packet_merge_side_data
+    av_packet_move_ref
+    av_packet_new_side_data
+    av_packet_pack_dictionary
+    av_packet_ref
+    av_packet_shrink_side_data
+    av_packet_split_side_data
+    av_packet_unref
+    av_parser_change
+    av_parser_close
+    av_parser_init
+    av_parser_next
+    av_parser_parse2
+    av_picture_copy
+    av_picture_crop
+    av_picture_pad
+;if rdft
+    av_rdft_calc
+    av_rdft_end
+    av_rdft_init
+;endif
+    av_register_bitstream_filter
+    av_register_codec_parser
+    av_register_hwaccel
+    av_resample
+    av_resample_close
+    av_resample_compensate
+    av_resample_init
+    av_shrink_packet
+    av_xiphlacing
+    avcodec_align_dimensions
+    avcodec_align_dimensions2
+    avcodec_alloc_context3
+    avcodec_alloc_frame
+    avcodec_chroma_pos_to_enum
+    avcodec_close
+    avcodec_configuration
+    avcodec_copy_context
+    avcodec_decode_audio3
+    avcodec_decode_audio4
+    avcodec_decode_subtitle2
+    avcodec_decode_video2
+    avcodec_default_execute
+    avcodec_default_execute2
+    avcodec_default_get_buffer
+    avcodec_default_get_buffer2
+    avcodec_default_get_format
+    avcodec_default_reget_buffer
+    avcodec_default_release_buffer
+    avcodec_descriptor_get
+    avcodec_descriptor_get_by_name
+    avcodec_descriptor_next
+    avcodec_encode_audio
+    avcodec_encode_audio2
+    avcodec_encode_subtitle
+    avcodec_encode_video
+    avcodec_encode_video2
+    avcodec_enum_to_chroma_pos
+    avcodec_fill_audio_frame
+    avcodec_find_best_pix_fmt2
+    avcodec_find_best_pix_fmt_of_2
+    avcodec_find_best_pix_fmt_of_list
+    avcodec_find_decoder
+    avcodec_find_decoder_by_name
+    avcodec_find_encoder
+    avcodec_find_encoder_by_name
+    avcodec_flush_buffers
+    avcodec_free_frame
+    avcodec_get_chroma_sub_sample
+    avcodec_get_class
+    avcodec_get_context_defaults3
+    avcodec_get_edge_width
+    avcodec_get_frame_class
+    avcodec_get_frame_defaults
+    avcodec_get_name
+    avcodec_get_pix_fmt_loss
+    avcodec_get_subtitle_rect_class
+    avcodec_get_type
+    avcodec_is_open
+    avcodec_license
+    avcodec_open2
+    avcodec_pix_fmt_to_codec_tag
+    avcodec_register
+    avcodec_register_all
+    avcodec_set_dimensions
+    avcodec_string
+    avcodec_version
+    avpicture_alloc
+    avpicture_deinterlace
+    avpicture_fill
+    avpicture_free
+    avpicture_get_size
+    avpicture_layout
+    avpriv_aac_parse_header
+    avpriv_ac3_channel_layout_tab DATA
+    avpriv_ac3_parse_header
+    avpriv_ac3_parse_header2
+    avpriv_adx_decode_header
+    avpriv_align_put_bits
+    avpriv_bprint_to_extradata
+    avpriv_color_frame
+    avpriv_copy_bits
+    avpriv_copy_pce_data
+    avpriv_dca_sample_rates DATA
+    avpriv_dirac_parse_sequence_header
+    avpriv_dnxhd_get_frame_size
+    avpriv_do_elbg
+    avpriv_dsputil_init
+    avpriv_dv_codec_profile
+    avpriv_dv_frame_profile
+    avpriv_dv_frame_profile2
+    avpriv_exif_decode_ifd
+    avpriv_find_pix_fmt
+    avpriv_find_start_code
+    avpriv_flac_is_extradata_valid
+    avpriv_flac_parse_block_header
+    avpriv_flac_parse_streaminfo
+    avpriv_h264_has_num_reorder_frames
+    avpriv_init_elbg
+    avpriv_lock_avformat
+    avpriv_mjpeg_bits_ac_chrominance DATA
+    avpriv_mjpeg_bits_ac_luminance DATA
+    avpriv_mjpeg_bits_dc_chrominance DATA
+    avpriv_mjpeg_bits_dc_luminance DATA
+    avpriv_mjpeg_val_ac_chrominance DATA
+    avpriv_mjpeg_val_ac_luminance DATA
+    avpriv_mjpeg_val_dc DATA
+    avpriv_mpa_bitrate_tab DATA
+    avpriv_mpa_decode_header
+    avpriv_mpa_freq_tab DATA
+    avpriv_mpeg4audio_get_config
+    avpriv_mpeg4audio_sample_rates DATA
+    avpriv_mpegaudio_decode_header
+    avpriv_put_string
+    avpriv_split_xiph_headers
+    avpriv_tak_parse_streaminfo
+    avpriv_toupper4
+    avpriv_unlock_avformat
+    avpriv_vorbis_parse_extradata
+    avpriv_vorbis_parse_frame
+    avpriv_vorbis_parse_frame_flags
+    avpriv_vorbis_parse_reset
+    avsubtitle_free
+    dsputil_init
+    ff_aanscales DATA
+;if dct
+    ff_dct32_fixed
+    ff_dct32_float
+    ff_dct_common_init
+    ff_dct_encode_init
+    ff_dct_end
+    ff_dct_init
+    ff_dct_quantize_c
+;endif
+    ff_dnxhd_cid_table DATA
+    ff_dnxhd_get_cid_table
+    ff_dsputil_init
+    ff_faandct
+    ff_faandct248
+    ff_faanidct
+    ff_faanidct_add
+    ff_faanidct_put
+    ff_fdct248_islow_10
+    ff_fdct248_islow_8
+    ff_fdct_ifast
+    ff_fdct_ifast248
+;if fft
+    ff_fft_end
+    ff_fft_end_fixed
+    ff_fft_end_fixed_32
+    ff_fft_init
+    ff_fft_init_fixed
+    ff_fft_init_fixed_32
+    ff_fft_lut_init
+;endif
+    ff_jpeg_fdct_islow_10
+    ff_jpeg_fdct_islow_8
+;if mdct
+    ff_mdct_calc_c
+    ff_mdct_calc_c_fixed
+    ff_mdct_calc_c_fixed_32
+    ff_mdct_calcw_c
+    ff_mdct_end
+    ff_mdct_end_fixed
+    ff_mdct_end_fixed_32
+    ff_mdct_init
+    ff_mdct_init_fixed
+    ff_mdct_init_fixed_32
+    ff_mdct_win_fixed DATA
+    ff_mdct_win_float DATA
+;endif
+    ff_raw_pix_fmt_tags DATA
+;if rdft
+    ff_rdft_end
+    ff_rdft_init
+;endif
+    ff_simple_idct248_put
+    ff_simple_idct44_add
+    ff_simple_idct48_add
+    ff_simple_idct84_add
+    ff_simple_idct_10
+    ff_simple_idct_12
+    ff_simple_idct_8
+    ff_simple_idct_add_10
+    ff_simple_idct_add_12
+    ff_simple_idct_add_8
+    ff_simple_idct_put_10
+    ff_simple_idct_put_12
+    ff_simple_idct_put_8
