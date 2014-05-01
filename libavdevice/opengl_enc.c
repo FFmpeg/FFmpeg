@@ -872,8 +872,8 @@ static av_cold int opengl_prepare_vertex(AVFormatContext *s)
     int tex_w, tex_h;
 
     if (opengl->window_width > opengl->max_viewport_width || opengl->window_height > opengl->max_viewport_height) {
-        opengl->window_width = FFMAX(opengl->window_width, opengl->max_viewport_width);
-        opengl->window_height = FFMAX(opengl->window_height, opengl->max_viewport_height);
+        opengl->window_width = FFMIN(opengl->window_width, opengl->max_viewport_width);
+        opengl->window_height = FFMIN(opengl->window_height, opengl->max_viewport_height);
         av_log(opengl, AV_LOG_WARNING, "Too big viewport requested, limited to %dx%d", opengl->window_width, opengl->window_height);
     }
     glViewport(0, 0, opengl->window_width, opengl->window_height);
