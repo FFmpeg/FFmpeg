@@ -902,19 +902,99 @@ bool configGenerator::passConfigList( const string & sPrefix, const string & sSu
 bool configGenerator::fastToggleConfigValue( const string & sOption, bool bEnable )
 {
     //Simply find the element in the list and change its setting
-    ValuesList::iterator vitOption = getConfigOption( sOption );
-    if( vitOption == m_vConfigValues.end( ) )
+    string sOptionUpper = sOption; //Ensure it is in upper case
+    transform( sOptionUpper.begin( ), sOptionUpper.end( ), sOptionUpper.begin( ), ::toupper );
+    //Find in internal list
+    bool bRet = false;
+    ValuesList::iterator vitOption = m_vConfigValues.begin( );
+    for( vitOption; vitOption<m_vConfigValues.end( ); vitOption++ ) //Some options appear more than once with different prefixes
     {
-        return false;
+        if( vitOption->m_sOption.compare( sOptionUpper ) == 0 )
+        {
+            vitOption->m_sValue = ( bEnable ) ? "1" : "0";
+            bRet = true;
+        }
     }
-    vitOption->m_sValue = (bEnable)? "1" : "0";
-    return true;
+    return bRet;
 }
 
 bool configGenerator::toggleConfigValue( const string & sOption, bool bEnable, bool bRecursive )
 {
-    ValuesList::iterator vitOption = getConfigOption( sOption );
-    if( vitOption == m_vConfigValues.end( ) )
+    string sOptionUpper = sOption; //Ensure it is in upper case
+    transform( sOptionUpper.begin( ), sOptionUpper.end( ), sOptionUpper.begin( ), ::toupper );
+    //Find in internal list
+    bool bRet = false;
+    ValuesList::iterator vitOption = m_vConfigValues.begin( );
+    for( vitOption; vitOption<m_vConfigValues.end( ); vitOption++ ) //Some options appear more than once with different prefixes
+    {
+        if( vitOption->m_sOption.compare( sOptionUpper ) == 0 )
+        {
+            bRet = true;
+            if( !vitOption->m_bLock )
+            {
+                if( bEnable && ( vitOption->m_sValue.compare( "1" ) != 0 ) )
+                {
+                    //Lock the item to prevent cyclic conditions
+                    vitOption->m_bLock = true;
+
+                    //Need to convert the name to lower case
+                    string sOptionLower = sOption;
+                    transform( sOptionLower.begin( ), sOptionLower.end( ), sOptionLower.begin( ), ::tolower );
+                    string sCheckFunc = sOptionLower + "_select";
+                    vector<string> vCheckList;
+                    if( getConfigList( sCheckFunc, vCheckList, false ) )
+                    {
+                        vector<string>::iterator vitCheckItem = vCheckList.begin( );
+                        for( vitCheckItem; vitCheckItem<vCheckList.end( ); vitCheckItem++ )
+                        {
+                            toggleConfigValue( *vitCheckItem, true, true );
+                        }
+                    }
+
+                    //If enabled then all of these should then be enabled
+                    sCheckFunc = sOptionLower + "_suggest";
+                    vCheckList.resize( 0 );
+                    if( getConfigList( sCheckFunc, vCheckList, false ) )
+                    {
+                        vector<string>::iterator vitCheckItem = vCheckList.begin( );
+                        for( vitCheckItem; vitCheckItem<vCheckList.end( ); vitCheckItem++ )
+                        {
+                            toggleConfigValue( *vitCheckItem, true, true ); //Weak check
+                        }
+                    }
+
+                    //Check for any hard dependencies that must be enabled
+                    vector<string> vForceEnable;
+                    buildForcedEnables( sOptionLower, vForceEnable );
+                    vector<string>::iterator vitForcedItem = vForceEnable.begin( );
+                    for( vitForcedItem; vitForcedItem<vForceEnable.end( ); vitForcedItem++ )
+                    {
+                        toggleConfigValue( *vitForcedItem, true, true );
+                    }
+
+                    //Unlock item
+                    vitOption->m_bLock = false;
+                }
+                else if( !bEnable && ( vitOption->m_sValue.compare( "0" ) != 0 ) )
+                {
+                    //Need to convert the name to lower case
+                    string sOptionLower = sOption;
+                    transform( sOptionLower.begin( ), sOptionLower.end( ), sOptionLower.begin( ), ::tolower );
+                    //Check for any hard dependencies that must be disabled
+                    vector<string> vForceDisable;
+                    buildForcedDisables( sOptionLower, vForceDisable );
+                    vector<string>::iterator vitForcedItem = vForceDisable.begin( );
+                    for( vitForcedItem; vitForcedItem<vForceDisable.end( ); vitForcedItem++ )
+                    {
+                        toggleConfigValue( *vitForcedItem, false, true );
+                    }
+                }
+                //Change the items value
+                vitOption->m_sValue = ( bEnable ) ? "1" : "0";
+            }
+        }
+    }
+    if( !bRet )
     {
         if( bRecursive )
         {
@@ -932,45 +1012,7 @@ bool configGenerator::toggleConfigValue( const string & sOption, bool bEnable, b
             cout << "  Error: Unknown config option (" << sOption << ")" << endl;
             return false;
         }
-    }
-    if( bEnable && !vitOption->m_bLock )
-    {
-        if( vitOption->m_sValue.compare("1") != 0 )
-        {
-            //Lock the item to prevent cyclic conditions
-            vitOption->m_bLock = true;
-            
-            //Need to convert the name to lower case
-            string sOptionLower = sOption;
-            transform( sOptionLower.begin(), sOptionLower.end(), sOptionLower.begin(), ::tolower);
-            string sCheckFunc = sOptionLower + "_select";
-            vector<string> vCheckList;
-            if( getConfigList( sCheckFunc, vCheckList, false ) )
-            {
-                vector<string>::iterator vitCheckItem = vCheckList.begin( );
-                for( vitCheckItem; vitCheckItem<vCheckList.end( ); vitCheckItem++ )
-                {
-                    toggleConfigValue( *vitCheckItem, true, true );
-                }
-            }
-
-            //If enabled then all of these should then be enabled
-            sCheckFunc = sOptionLower + "_suggest";
-            vCheckList.resize(0);
-            if( getConfigList( sCheckFunc, vCheckList, false ) )
-            {
-                vector<string>::iterator vitCheckItem = vCheckList.begin( );
-                for( vitCheckItem; vitCheckItem<vCheckList.end( ); vitCheckItem++ )
-                {
-                    toggleConfigValue( *vitCheckItem, true, true ); //Weak check
-                }
-            }
-            //Unlock item
-            vitOption->m_bLock = false;
-        }
-    }
-    //Change the items value
-    vitOption->m_sValue = (bEnable)? "1" : "0";
+    }    
     return true;
 }
 
@@ -1063,7 +1105,7 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
                 if( bEnabled )
                 {
                     //If any deps are enabled then enable
-                    vitOption->m_sValue = "1";
+                    toggleConfigValue( sOptionLower, true );
                     break;
                 }
             }
@@ -1116,7 +1158,7 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
             if( bAllEnabled )
             {
                 //If all deps are enabled then enable
-                vitOption->m_sValue = "1";
+                toggleConfigValue( sOptionLower, true );
             }
         }
     }
@@ -1165,7 +1207,7 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
                 //If not all deps are enabled then disable
                 if( !bEnabled )
                 {
-                    vitOption->m_sValue = "0";
+                    toggleConfigValue( sOptionLower, false );
                     break;
                 }
             }
@@ -1218,7 +1260,7 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
             if( !bAnyEnabled )
             {
                 //If not a single dep is enabled then disable
-                vitOption->m_sValue = "0";
+                toggleConfigValue( sOptionLower, false );
             }
         }
     }
@@ -1250,7 +1292,7 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
                 if( vitTemp->m_sValue.compare("0") == 0 )
                 {
                     //If any deps are disabled then disable
-                    vitOption->m_sValue = "0";
+                    toggleConfigValue( sOptionLower, false );
                     break;
                 }
             }
@@ -1286,7 +1328,7 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
     else
     {
         //Ensure the option is not in an uninitialised state
-        vitOption->m_sValue = "0";
+        toggleConfigValue( sOptionLower, false );
     }
     return true;
 }

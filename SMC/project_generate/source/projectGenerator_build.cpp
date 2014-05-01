@@ -184,7 +184,8 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["avisynth"] = false; //no dependencies ever needed
     mProjectDeps["bzlib"] = ( sProjectName.compare("libavformat") == 0 ) || ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["crystalhd"] = ( sProjectName.compare("libavcodec") == 0 );
-    mProjectDeps["fontconfig"] = ( sProjectName.compare("libavfilter") == 0 );
+    mProjectDeps["fontconfig"] = ( sProjectName.compare( "libavfilter" ) == 0 );
+    mProjectDeps["libfontconfig"] = ( sProjectName.compare( "libavfilter" ) == 0 );
     mProjectDeps["frei0r"] = ( sProjectName.compare("libpostproc") == 0 );//??
     mProjectDeps["gnutls"] = ( sProjectName.compare("libavformat") == 0 );
     mProjectDeps["iconv"] = ( sProjectName.compare("libavcodec") == 0 );

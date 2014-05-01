@@ -69,6 +69,10 @@ private:
 
     void buildOptimisedDisables( OptimisedConfigList & mOptimisedDisables );
 
+    void buildForcedEnables( string sOptionLower, vector<string> & vForceEnable );
+
+    void buildForcedDisables( string sOptionLower, vector<string> & vForceDisable );
+
 
 
     bool getConfigList( const string & sList, vector<string> & vReturn, bool bForce=true, uint uiCurrentFilePos=string::npos );

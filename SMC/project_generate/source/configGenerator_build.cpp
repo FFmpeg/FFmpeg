@@ -110,6 +110,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "CL_cl_h", true );
     fastToggleConfigValue( "closesocket", true );
     fastToggleConfigValue( "CommandLineToArgvW", true );
+    fastToggleConfigValue( "CoTaskMemFree", true );
     fastToggleConfigValue( "cpunop", true );
     fastToggleConfigValue( "CryptGenRandom", true );
     fastToggleConfigValue( "direct_h", true );
@@ -133,6 +134,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "isatty", true );
     fastToggleConfigValue( "kbhit", true );
     fastToggleConfigValue( "libc_msvcrt", true );
+    fastToggleConfigValue( "local_aligned_32", true );
     fastToggleConfigValue( "local_aligned_16", true );
     fastToggleConfigValue( "local_aligned_8", true );
     fastToggleConfigValue( "malloc_h", true );
@@ -162,6 +164,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "wglgetprocaddress", true );
 
     fastToggleConfigValue( "dos_paths", true );
+    fastToggleConfigValue( "dxva2_lib", true );
 
     fastToggleConfigValue( "aligned_stack", true );
     fastToggleConfigValue( "pragma_deprecated", true );
@@ -169,14 +172,15 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "frame_thread_encoder", true );
     fastToggleConfigValue( "xmm_clobbers", true );
 
-    toggleConfigValue( "xlib", false ); //enabled by default but is linux only so we force disable
-    toggleConfigValue( "qtkit", false );
-    toggleConfigValue( "avfoundation", false );
+    fastToggleConfigValue( "xlib", false ); //enabled by default but is linux only so we force disable
+    fastToggleConfigValue( "qtkit", false );
+    fastToggleConfigValue( "avfoundation", false );
 
     //Additional (must be explicitly disabled)
     fastToggleConfigValue( "dct", true );
     fastToggleConfigValue( "dwt", true );
     fastToggleConfigValue( "error-resilience", true );
+    fastToggleConfigValue( "fast_unaligned", true );
     fastToggleConfigValue( "lsp", true );
     fastToggleConfigValue( "lzo", true );
     fastToggleConfigValue( "mdct", true );
@@ -408,4 +412,28 @@ void configGenerator::buildOptimisedDisables( OptimisedConfigList & mOptimisedDi
     mOptimisedDisables["VP9_DECODER"].push_back( "LIBVPX_VP9_DECODER" );
 
     //mOptimisedDisables["LIBWAVPACK_ENCODER"].push_back( "WAVPACK_ENCODER" );//???
+}
+
+void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & vForceEnable )
+{
+    if( sOptionLower.compare( "fontconfig" ) == 0 )
+    {
+        vForceEnable.push_back( "libfontconfig" );
+    }
+    else if( sOptionLower.compare( "dxva2" ) == 0 )
+    {
+        vForceEnable.push_back( "dxva2_lib" );
+    }
+}
+
+void configGenerator::buildForcedDisables( string sOptionLower, vector<string> & vForceDisable )
+{
+    if( sOptionLower.compare( "fontconfig" ) == 0 )
+    {
+        vForceDisable.push_back( "libfontconfig" );
+    }
+    else if( sOptionLower.compare( "dxva2" ) == 0 )
+    {
+        vForceDisable.push_back( "dxva2_lib" );
+    }
 }
