@@ -835,14 +835,15 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
     int size;
     AVFrameSideData *frame_sd;
 
-
     frame->reordered_opaque = avctx->reordered_opaque;
     if (!pkt) {
         frame->pkt_pts = AV_NOPTS_VALUE;
+        av_frame_set_pkt_pos     (frame, -1);
         return 0;
     }
 
     frame->pkt_pts = pkt->pts;
+    av_frame_set_pkt_size        (frame, avctx->internal->pkt->size);
 
     /* copy the replaygain data to the output frame */
     packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_REPLAYGAIN, &size);
