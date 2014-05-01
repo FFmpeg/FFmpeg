@@ -1,5 +1,4 @@
 NAME = swscale
-FFLIBS = avutil
 
 HEADERS = swscale.h                                                     \
           version.h                                                     \

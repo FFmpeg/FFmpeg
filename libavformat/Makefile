@@ -1,5 +1,4 @@
 NAME = avformat
-FFLIBS = avcodec avutil
 
 HEADERS = avformat.h                                                    \
           avio.h                                                        \

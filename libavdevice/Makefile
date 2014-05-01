@@ -1,5 +1,4 @@
 NAME    = avdevice
-FFLIBS  = avformat avcodec avutil
 
 HEADERS = avdevice.h                                                    \
           version.h                                                     \

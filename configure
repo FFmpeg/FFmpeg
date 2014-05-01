@@ -655,6 +655,15 @@ prepend(){
     eval "$var=\"$* \$$var\""
 }
 
+unique(){
+    var=$1
+    uniq_list=""
+    for tok in $(eval echo \$$var); do
+        uniq_list="$(filter_out $tok $uniq_list) $tok"
+    done
+    eval "$var=\"${uniq_list}\""
+}
+
 add_cppflags(){
     append CPPFLAGS "$@"
 }
@@ -2110,11 +2119,11 @@ metadata_example_deps="avformat avutil"
 output_example_deps="avcodec avformat avutil swscale"
 transcode_aac_example_deps="avcodec avformat avresample"
 
-# libraries
+# libraries, in linking order
 avcodec_deps="avutil"
-avdevice_deps="avutil avcodec avformat"
+avdevice_deps="avformat avcodec avutil"
 avfilter_deps="avutil"
-avformat_deps="avutil avcodec"
+avformat_deps="avcodec avutil"
 avresample_deps="avutil"
 swscale_deps="avutil"
 
@@ -4373,6 +4382,20 @@ for thread in $THREADS_LIST; do
     fi
 done
 
+# conditional library dependencies, in linking order
+enabled movie_filter    && prepend avfilter_deps "avformat avcodec"
+enabled resample_filter && prepend avfilter_deps "avresample"
+enabled scale_filter    && prepend avfilter_deps "swscale"
+
+expand_deps(){
+    lib_deps=${1}_deps
+    eval "deps=\$$lib_deps"
+    append $lib_deps $(map 'eval echo \$${v}_deps' $deps)
+    unique $lib_deps
+}
+
+map 'expand_deps $v' $LIBRARY_LIST
+
 echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
@@ -4578,6 +4601,8 @@ get_version(){
 
 map 'get_version $v' $LIBRARY_LIST
 
+map 'eval echo "FFLIBS-${v}=\$${v}_deps" >> config.mak' $LIBRARY_LIST
+
 print_program_libs(){
     eval "program_libs=\$${1}_libs"
     eval echo "LIBS-${1}=${program_libs}" >> config.mak
@@ -4639,13 +4664,18 @@ test -n "$WARNINGS" && printf "\n$WARNINGS"
 
 # build pkg-config files
 
+lib_version(){
+    eval printf "\"lib${1} >= \$LIB$(toupper ${1})_VERSION, \""
+}
+
 pkgconfig_generate(){
     name=$1
     shortname=${name#lib}${build_suffix}
     comment=$2
     version=$3
     libs=$4
-    requires=$5
+    requires=$(map 'lib_version $v' $(eval echo \$${name#lib}_deps))
+    requires=${requires%, }
     enabled ${name#lib} || return 0
     mkdir -p $name
     cat <<EOF > $name/$name.pc
@@ -4680,15 +4710,10 @@ Cflags: -I\${includedir}
 EOF
 }
 
-lavfi_libs="libavutil = $LIBAVUTIL_VERSION"
-enabled movie_filter    && prepend lavfi_libs "libavformat >= $LIBAVFORMAT_VERSION, libavcodec >= $LIBAVCODEC_VERSION,"
-enabled resample_filter && prepend lavfi_libs "libavresample >= $LIBAVRESAMPLE_VERSION,"
-enabled scale_filter    && prepend lavfi_libs "libswscale >= $LIBSWSCALE_VERSION,"
-
 pkgconfig_generate libavutil     "Libav utility library"          "$LIBAVUTIL_VERSION"     "$LIBM"
-pkgconfig_generate libavcodec    "Libav codec library"            "$LIBAVCODEC_VERSION"    "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
-pkgconfig_generate libavformat   "Libav container format library" "$LIBAVFORMAT_VERSION"   "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
-pkgconfig_generate libavdevice   "Libav device handling library"  "$LIBAVDEVICE_VERSION"   "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"
-pkgconfig_generate libavfilter   "Libav video filtering library"  "$LIBAVFILTER_VERSION"   "$extralibs" "$lavfi_libs"
-pkgconfig_generate libavresample "Libav audio resampling library" "$LIBAVRESAMPLE_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
-pkgconfig_generate libswscale    "Libav image rescaling library"  "$LIBSWSCALE_VERSION"    "$LIBM"      "libavutil = $LIBAVUTIL_VERSION"
+pkgconfig_generate libavcodec    "Libav codec library"            "$LIBAVCODEC_VERSION"    "$extralibs"
+pkgconfig_generate libavformat   "Libav container format library" "$LIBAVFORMAT_VERSION"   "$extralibs"
+pkgconfig_generate libavdevice   "Libav device handling library"  "$LIBAVDEVICE_VERSION"   "$extralibs"
+pkgconfig_generate libavfilter   "Libav video filtering library"  "$LIBAVFILTER_VERSION"   "$extralibs"
+pkgconfig_generate libavresample "Libav audio resampling library" "$LIBAVRESAMPLE_VERSION" "$extralibs"
+pkgconfig_generate libswscale    "Libav image rescaling library"  "$LIBSWSCALE_VERSION"    "$LIBM"

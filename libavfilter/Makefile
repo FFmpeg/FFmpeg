@@ -1,9 +1,4 @@
 NAME = avfilter
-FFLIBS = avutil
-FFLIBS-$(CONFIG_ASYNCTS_FILTER) += avresample
-FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
-FFLIBS-$(CONFIG_RESAMPLE_FILTER) += avresample
-FFLIBS-$(CONFIG_SCALE_FILTER)   += swscale
 
 HEADERS = avfilter.h                                                    \
           avfiltergraph.h                                               \
