@@ -85,6 +85,7 @@ typedef struct {
 typedef struct {
     int             write_dts;
     int             has_cue;
+    int64_t         ts_offset;
 } mkv_track;
 
 #define MODE_MATROSKAv2 0x01
@@ -694,13 +695,17 @@ static int mkv_write_tracks(AVFormatContext *s)
             }
         }
 
-        if (codec->codec_id == AV_CODEC_ID_OPUS) {
-            uint64_t codec_delay =av_rescale_q(codec->delay,
-                                               (AVRational){1, codec->sample_rate},
-                                               (AVRational){1, 1000000000});
-            put_ebml_uint(pb, MATROSKA_ID_CODECDELAY, codec_delay);
-            put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);
+        if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->delay && codec->codec_id == AV_CODEC_ID_OPUS) {
+//             mkv->tracks[i].ts_offset = av_rescale_q(codec->delay,
+//                                                     (AVRational){ 1, codec->sample_rate },
+//                                                     st->time_base);
 
+            put_ebml_uint(pb, MATROSKA_ID_CODECDELAY,
+                          av_rescale_q(codec->delay, (AVRational){ 1, codec->sample_rate },
+                                       (AVRational){ 1, 1000000000 }));
+        }
+        if (codec->codec_id == AV_CODEC_ID_OPUS) {
+            put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);
         }
 
         if (mkv->mode == MODE_WEBM && !(codec->codec_id == AV_CODEC_ID_VP8 ||
@@ -1549,6 +1554,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR, "Can't write packet with unknown timestamp\n");
         return AVERROR(EINVAL);
     }
+    ts += mkv->tracks[pkt->stream_index].ts_offset;
 
     if (!s->pb->seekable) {
         if (!mkv->dyn_bc) {
@@ -1614,6 +1620,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         cluster_time = pkt->dts - mkv->cluster_pts;
     else
         cluster_time = pkt->pts - mkv->cluster_pts;
+    cluster_time += mkv->tracks[pkt->stream_index].ts_offset;
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
