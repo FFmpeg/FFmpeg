@@ -1125,16 +1125,16 @@ skip:
                 }
                 memcpy(pes->buffer->data + pes->data_index, p, buf_size);
                 pes->data_index += buf_size;
-            /* emit complete packets with known packet size
-             * decreases demuxer delay for infrequent packets like subtitles from
-             * a couple of seconds to milliseconds for properly muxed files.
-             * total_size is the number of bytes following pes_packet_length
-             * in the pes header, i.e. not counting the first PES_START_SIZE bytes */
-            if (!ts->stop_parse && pes->total_size < MAX_PES_PAYLOAD &&
-                pes->pes_header_size + pes->data_index == pes->total_size + PES_START_SIZE) {
-                ts->stop_parse = 1;
-                new_pes_packet(pes, ts->pkt);
-            }
+                /* emit complete packets with known packet size
+                 * decreases demuxer delay for infrequent packets like subtitles from
+                 * a couple of seconds to milliseconds for properly muxed files.
+                 * total_size is the number of bytes following pes_packet_length
+                 * in the pes header, i.e. not counting the first PES_START_SIZE bytes */
+                if (!ts->stop_parse && pes->total_size < MAX_PES_PAYLOAD &&
+                    pes->pes_header_size + pes->data_index == pes->total_size + PES_START_SIZE) {
+                    ts->stop_parse = 1;
+                    new_pes_packet(pes, ts->pkt);
+                }
             }
             buf_size = 0;
             break;
