@@ -47,6 +47,9 @@
     <ClCompile Include="..\ffmpeg_opt.c">
       <ObjectFileName>$(IntDir)\ffmpeg_opt.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\ffmpeg_dxva2.c">
+      <ObjectFileName>$(IntDir)\ffmpeg_dxva2.obj</ObjectFileName>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cmdutils.h" />

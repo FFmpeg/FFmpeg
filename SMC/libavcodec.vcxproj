@@ -167,6 +167,9 @@
     <ClCompile Include="..\libavcodec\h264idct.c">
       <ObjectFileName>$(IntDir)\libavcodec_h264idct.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\startcode.c">
+      <ObjectFileName>$(IntDir)\libavcodec_startcode.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\h264pred.c">
       <ObjectFileName>$(IntDir)\libavcodec_h264pred.obj</ObjectFileName>
     </ClCompile>
@@ -1129,6 +1132,12 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\rtjpeg.c">
       <ObjectFileName>$(IntDir)\libavcodec_rtjpeg.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\on2avc.c">
+      <ObjectFileName>$(IntDir)\libavcodec_on2avc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\on2avcdata.c">
+      <ObjectFileName>$(IntDir)\libavcodec_on2avcdata.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\paf.c">
       <ObjectFileName>$(IntDir)\libavcodec_paf.obj</ObjectFileName>

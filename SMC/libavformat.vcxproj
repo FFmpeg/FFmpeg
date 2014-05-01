@@ -374,6 +374,9 @@
     <ClCompile Include="..\libavformat\dnxhddec.c">
       <ObjectFileName>$(IntDir)\libavformat_dnxhddec.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\dsfdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_dsfdec.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\dsicin.c">
       <ObjectFileName>$(IntDir)\libavformat_dsicin.obj</ObjectFileName>
     </ClCompile>
@@ -626,6 +629,9 @@
     <ClCompile Include="..\libavformat\microdvdenc.c">
       <ObjectFileName>$(IntDir)\libavformat_microdvdenc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\mlvdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_mlvdec.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mm.c">
       <ObjectFileName>$(IntDir)\libavformat_mm.obj</ObjectFileName>
     </ClCompile>
@@ -680,11 +686,11 @@
     <ClCompile Include="..\libavformat\mtv.c">
       <ObjectFileName>$(IntDir)\libavformat_mtv.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavformat\mvi.c">
-      <ObjectFileName>$(IntDir)\libavformat_mvi.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavformat\mvdec.c">
       <ObjectFileName>$(IntDir)\libavformat_mvdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\mvi.c">
+      <ObjectFileName>$(IntDir)\libavformat_mvi.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavformat\mxfdec.c">
       <ObjectFileName>$(IntDir)\libavformat_mxfdec.obj</ObjectFileName>

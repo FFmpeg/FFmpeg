@@ -357,6 +357,9 @@
     <ClCompile Include="..\libavformat\dnxhddec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\dsfdec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\dsicin.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -609,6 +612,9 @@
     <ClCompile Include="..\libavformat\microdvdenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\mlvdec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mm.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -663,10 +669,10 @@
     <ClCompile Include="..\libavformat\mtv.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\mvi.c">
+    <ClCompile Include="..\libavformat\mvdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\mvdec.c">
+    <ClCompile Include="..\libavformat\mvi.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\mxfdec.c">

@@ -27,6 +27,9 @@
     <ClCompile Include="..\ffmpeg_opt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\ffmpeg_dxva2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cmdutils.h">

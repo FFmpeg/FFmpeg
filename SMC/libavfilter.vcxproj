@@ -719,7 +719,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libfontconfig.lib;libass.lib;libfreetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -781,7 +781,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libfontconfig.lib;libass.lib;libfreetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -846,7 +846,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libavformat.dll.lib;libavcodec.dll.lib;libpostproc.dll.lib;libswscale.dll.lib;libfontconfig.dll.lib;libass.dll.lib;libfreetype.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libavformat.dll.lib;libavcodec.dll.lib;libpostproc.dll.lib;libswscale.dll.lib;libass.dll.lib;libfontconfig.dll.lib;libfreetype.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -911,7 +911,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libavformat.dll.lib;libavcodec.dll.lib;libpostproc.dll.lib;libswscale.dll.lib;libfontconfig.dll.lib;libass.dll.lib;libfreetype.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libavformat.dll.lib;libavcodec.dll.lib;libpostproc.dll.lib;libswscale.dll.lib;libass.dll.lib;libfontconfig.dll.lib;libfreetype.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -982,7 +982,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libfontconfig.lib;libass.lib;libfreetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -1053,7 +1053,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libfontconfig.lib;libass.lib;libfreetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -1129,7 +1129,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libavformat.dll.lib;libavcodec.dll.lib;libpostproc.dll.lib;libswscale.dll.lib;libfontconfig.dll.lib;libass.dll.lib;libfreetype.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libavformat.dll.lib;libavcodec.dll.lib;libpostproc.dll.lib;libswscale.dll.lib;libass.dll.lib;libfontconfig.dll.lib;libfreetype.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1205,7 +1205,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libavformat.dll.lib;libavcodec.dll.lib;libpostproc.dll.lib;libswscale.dll.lib;libfontconfig.dll.lib;libass.dll.lib;libfreetype.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libavformat.dll.lib;libavcodec.dll.lib;libpostproc.dll.lib;libswscale.dll.lib;libass.dll.lib;libfontconfig.dll.lib;libfreetype.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
