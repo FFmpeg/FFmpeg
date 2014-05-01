@@ -1107,7 +1107,7 @@ skip:
             }
             break;
         case MPEGTS_PAYLOAD:
-            if (buf_size > 0 && pes->buffer) {
+            if (pes->buffer) {
                 if (pes->data_index > 0 &&
                     pes->data_index + buf_size > pes->total_size) {
                     new_pes_packet(pes, ts->pkt);
