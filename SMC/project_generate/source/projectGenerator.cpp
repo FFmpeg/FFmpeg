@@ -263,6 +263,18 @@ bool projectGenerator::outputProject( )
         uiFindPos = sProjectFile.find( sPlatformSearch, uiFindPos + 1 );
     }
 
+    //Set the project key
+    string sGUID = "<ProjectGuid>{";
+    uiFindPos = sProjectFile.find( sGUID );
+    if( uiFindPos != string::npos )
+    {
+        map<string, string> mLibKeys;
+        map<string, string> mProgramKeys;
+        buildProjectGUIDs( mLibKeys, mProgramKeys );
+        uiFindPos += sGUID.length( );
+        sProjectFile.replace( uiFindPos, mLibKeys[sProjectName].length( ), mLibKeys[sProjectName] );
+    }
+
     //After </ItemGroup> add the item groups for each of the include types
     string sItemGroup = "\n  <ItemGroup>";
     string sItemGroupEnd = "\n  </ItemGroup>";
@@ -874,31 +886,9 @@ bool projectGenerator::outputSolution()
     }
     m_ifInputFile.close( );
 
-    map<string,string> mLibKeys;
-    mLibKeys["libavcodec"] = "B4824EFF-C340-425D-A4A8-E2E02A71A7AE";
-    mLibKeys["libavdevice"] = "6E165FA4-44EB-4330-8394-9F0D76D8E03E";
-    mLibKeys["libavfilter"] = "BC2E1028-66CD-41A0-AF90-EEBD8CC52787";
-    mLibKeys["libavformat"] = "30A96E9B-8061-4F19-BD71-FDE7EA8F7929";
-    mLibKeys["libavresample"] = "0096CB8C-3B04-462B-BF4F-0A9970A57C91";
-    mLibKeys["libavutil"] = "CE6C44DD-6E38-4293-8AB3-04EE28CCA972";
-    mLibKeys["libswresample"] = "3CE4A9EF-98B6-4454-B76E-3AD9C03A2114";
-    mLibKeys["libswscale"] = "6D8A6330-8EBE-49FD-9281-0A396F9F28F2";
-    mLibKeys["libpostproc"] = "4D9C457D-9ADA-4A12-9D06-42D80124C5AB";
-
-    map<string,string> mProgramKeys;
-    if( !m_ConfigHelper.m_bLibav )
-    {
-        mProgramKeys["ffmpeg"] = "4081C77E-F1F7-49FA-9BD8-A4D267C83716";
-        mProgramKeys["ffplay"] = "E2A6865D-BD68-45B4-8130-EFD620F2C7EB";
-        mProgramKeys["ffprobe"] = "147A422A-FA63-4724-A5D9-08B1CAFDAB59";
-    }
-    else
-    {
-        mProgramKeys["avconv"] = "4081C77E-F1F7-49FA-9BD8-A4D267C83716";
-        mProgramKeys["avplay"] = "E2A6865D-BD68-45B4-8130-EFD620F2C7EB";
-        mProgramKeys["avprobe"] = "147A422A-FA63-4724-A5D9-08B1CAFDAB59";
-    }
-
+    map<string, string> mLibKeys;
+    map<string, string> mProgramKeys;
+    buildProjectGUIDs( mLibKeys, mProgramKeys );
     string sSolutionKey = "8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942";
 
     vector<string> vAddedKeys;
@@ -1078,11 +1068,13 @@ bool projectGenerator::outputSolution()
                 //Get next
                 uiFindPos = sProgramFile.find( sPlatformSearch, uiFindPos + 1 );
             }
-            ofstream ofProgramFile( sDestinationFile );
-            if( !ofProgramFile.is_open( ) )
+            //Set the project key
+            string sGUID = "<ProjectGuid>{";
+            uiFindPos = sProgramFile.find( sGUID );
+            if( uiFindPos != string::npos )
             {
-                cout << "  Error: failed opening output program file (" << sDestinationFile << ")" << endl;
-                return false;
+                uiFindPos += sGUID.length( );
+                sProgramFile.replace( uiFindPos, mProgramKeys[mitPrograms->first].length( ), mProgramKeys[mitPrograms->first] );
             }
             //Add the required source files
             string sItemGroup = "\n  <ItemGroup>";
@@ -1265,7 +1257,8 @@ bool projectGenerator::outputSolution()
                     uiFindPos = sProgramFile.find( sAddLibDir, uiFindPos + 1 );
                     ui32Or64 = !ui32Or64;
                 }
-            }
+            }         
+
             //Output program file and close
             ofstream ofProjectFile( sDestinationFile );
             if( !ofProjectFile.is_open( ) )

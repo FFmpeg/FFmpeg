@@ -92,6 +92,8 @@ private:
 
     void buildProgramIncludes( const string & sProject, StaticList & vCIncludes, StaticList & vHIncludes, StaticList & vLibs, StaticList & vIncDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs );
 
+    void buildProjectGUIDs( map<string, string> & mLibKeys, map<string, string> & mProgramKeys );
+
     bool copyFile( const string & sSourceFile, const string & sDestinationFile );
 
     void deleteFile( const string & sDestinationFile );

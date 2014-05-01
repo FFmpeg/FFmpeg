@@ -343,3 +343,29 @@ void projectGenerator::buildProgramIncludes( const string & sProject, StaticList
         vHIncludes.push_back( "..\\avconv.h" );
     }
 }
+
+void projectGenerator::buildProjectGUIDs( map<string, string> & mLibKeys, map<string, string> & mProgramKeys )
+{
+    mLibKeys["libavcodec"] = "B4824EFF-C340-425D-A4A8-E2E02A71A7AE";
+    mLibKeys["libavdevice"] = "6E165FA4-44EB-4330-8394-9F0D76D8E03E";
+    mLibKeys["libavfilter"] = "BC2E1028-66CD-41A0-AF90-EEBD8CC52787";
+    mLibKeys["libavformat"] = "30A96E9B-8061-4F19-BD71-FDE7EA8F7929";
+    mLibKeys["libavresample"] = "0096CB8C-3B04-462B-BF4F-0A9970A57C91";
+    mLibKeys["libavutil"] = "CE6C44DD-6E38-4293-8AB3-04EE28CCA972";
+    mLibKeys["libswresample"] = "3CE4A9EF-98B6-4454-B76E-3AD9C03A2114";
+    mLibKeys["libswscale"] = "6D8A6330-8EBE-49FD-9281-0A396F9F28F2";
+    mLibKeys["libpostproc"] = "4D9C457D-9ADA-4A12-9D06-42D80124C5AB";
+
+    if( !m_ConfigHelper.m_bLibav )
+    {
+        mProgramKeys["ffmpeg"] = "4081C77E-F1F7-49FA-9BD8-A4D267C83716";
+        mProgramKeys["ffplay"] = "E2A6865D-BD68-45B4-8130-EFD620F2C7EB";
+        mProgramKeys["ffprobe"] = "147A422A-FA63-4724-A5D9-08B1CAFDAB59";
+    }
+    else
+    {
+        mProgramKeys["avconv"] = "4081C77E-F1F7-49FA-9BD8-A4D267C83716";
+        mProgramKeys["avplay"] = "E2A6865D-BD68-45B4-8130-EFD620F2C7EB";
+        mProgramKeys["avprobe"] = "147A422A-FA63-4724-A5D9-08B1CAFDAB59";
+    }
+}
