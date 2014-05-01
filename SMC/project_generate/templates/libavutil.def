@@ -220,6 +220,7 @@ EXPORTS
     av_log2_16bit
     av_log_default_callback
     av_log_format_line
+    av_log_get_flags
     av_log_get_level
     av_log_set_callback
     av_log_set_flags
@@ -245,6 +246,7 @@ EXPORTS
     av_nearer_q
     av_next_option
 ;if opencl
+    av_opencl_benchmark
     av_opencl_buffer_create
     av_opencl_buffer_read_image
     av_opencl_buffer_release
@@ -252,9 +254,12 @@ EXPORTS
     av_opencl_buffer_write_image
     av_opencl_compile
     av_opencl_errstr
+    av_opencl_free_device_list
     av_opencl_get_command_queue
+    av_opencl_get_device_list
     av_opencl_init
     av_opencl_register_kernel_code
+    av_opencl_set_option
     av_opencl_uninit
 ;endif
     av_opt_child_class_next

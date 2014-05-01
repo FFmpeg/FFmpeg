@@ -1103,7 +1103,9 @@ bool projectGenerator::outputSolution()
             vector<string> vHIncludes;
             vector<string> vLibs;
             vector<string> vIncDirs;
-            buildProgramIncludes( mitPrograms->first, vCIncludes, vHIncludes, vLibs, vIncDirs );
+            vector<string> vLib32Dirs;
+            vector<string> vLib64Dirs;
+            buildProgramIncludes( mitPrograms->first, vCIncludes, vHIncludes, vLibs, vIncDirs, vLib32Dirs, vLib64Dirs );
             string sCFiles = sItemGroup;
             string sCFilesFilt = sItemGroup;
             for( StaticList::iterator vitInclude = vCIncludes.begin( ); vitInclude < vCIncludes.end( ); vitInclude++ )
@@ -1235,6 +1237,33 @@ bool projectGenerator::outputSolution()
                     uiFindPos += sAddIncDirs.length( );
                     //Get next
                     uiFindPos = sProgramFile.find( sAddIncs, uiFindPos + 1 );
+                }
+            }
+            //Add lib includes
+            if( ( vLib32Dirs.size( ) > 0 ) || ( vLib64Dirs.size( ) > 0 ) )
+            {
+                //Add additional lib includes to include list based on current config
+                string sAddLibs[2];
+                for( StaticList::iterator vitIt = vLib32Dirs.begin( ); vitIt < vLib32Dirs.end( ); vitIt++ )
+                {
+                    sAddLibs[0] += *vitIt + ";";
+                }
+                for( StaticList::iterator vitIt = vLib64Dirs.begin( ); vitIt < vLib64Dirs.end( ); vitIt++ )
+                {
+                    sAddLibs[1] += *vitIt + ";";
+                }
+                string sAddLibDir = "<AdditionalLibraryDirectories>";
+                uint ui32Or64 = 0; //start with 32 (assumes projects are ordered 32 then 64 recursive)
+                uiFindPos = sProgramFile.find( sAddLibDir );
+                while( uiFindPos != string::npos )
+                {
+                    //Add to output
+                    uiFindPos += sAddLibDir.length( );
+                    sProgramFile.insert( uiFindPos, sAddLibs[ui32Or64] );
+                    uiFindPos += sAddLibs[ui32Or64].length( );
+                    //Get next
+                    uiFindPos = sProgramFile.find( sAddLibDir, uiFindPos + 1 );
+                    ui32Or64 = !ui32Or64;
                 }
             }
             //Output program file and close

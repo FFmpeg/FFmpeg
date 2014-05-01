@@ -90,7 +90,7 @@ private:
 
     void buildProjectDependencies( const string & sProjectName, map<string,bool> & mProjectDeps );
 
-    void buildProgramIncludes( const string & sProject, vector<string> & vCIncludes, vector<string> & vHIncludes, vector<string> & vLibs, vector<string> & vIncDirs );
+    void buildProgramIncludes( const string & sProject, StaticList & vCIncludes, StaticList & vHIncludes, StaticList & vLibs, StaticList & vIncDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs );
 
     bool copyFile( const string & sSourceFile, const string & sDestinationFile );
 

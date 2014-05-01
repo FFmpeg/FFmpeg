@@ -184,7 +184,6 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["avisynth"] = false; //no dependencies ever needed
     mProjectDeps["bzlib"] = ( sProjectName.compare("libavformat") == 0 ) || ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["crystalhd"] = ( sProjectName.compare("libavcodec") == 0 );
-    mProjectDeps["fontconfig"] = ( sProjectName.compare( "libavfilter" ) == 0 );
     mProjectDeps["libfontconfig"] = ( sProjectName.compare( "libavfilter" ) == 0 );
     mProjectDeps["frei0r"] = ( sProjectName.compare("libpostproc") == 0 );//??
     mProjectDeps["gnutls"] = ( sProjectName.compare("libavformat") == 0 );
@@ -252,7 +251,7 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["sdl"] = ( sProjectName.compare("libavdevice") == 0 );
 }
 
-void projectGenerator::buildProgramIncludes( const string & sProject, vector<string> & vCIncludes, vector<string> & vHIncludes, vector<string> & vLibs, vector<string> & vIncDirs )
+void projectGenerator::buildProgramIncludes( const string & sProject, StaticList & vCIncludes, StaticList & vHIncludes, StaticList & vLibs, StaticList & vIncDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs )
 {
     vCIncludes.clear( );
     vHIncludes.clear( );
@@ -268,16 +267,23 @@ void projectGenerator::buildProgramIncludes( const string & sProject, vector<str
         if( GetEnvironmentVariable( "AMDAPPSDKROOT", NULL, 0 ) )
         {
             vIncDirs.push_back( "$(AMDAPPSDKROOT)\\include\\" );
+            vLib32Dirs.push_back( "$(AMDAPPSDKROOT)\\lib\\Win32" );
+            vLib64Dirs.push_back( "$(AMDAPPSDKROOT)\\lib\\x64" );
         }
         else if( GetEnvironmentVariable( "INTELOCLSDKROOT", NULL, 0 ) )
         {
             vIncDirs.push_back( "$(INTELOCLSDKROOT)\\include\\" );
+            vLib32Dirs.push_back( "$(INTELOCLSDKROOT)\\lib\\x86" );
+            vLib64Dirs.push_back( "$(INTELOCLSDKROOT)\\lib\\x64" );
         }
         else if( GetEnvironmentVariable( "CUDA_PATH", NULL, 0 ) )
         {
             cout << "  Warning: NVIDIA OpenCl currently is only 1.1. OpenCl 1.2 is needed for FFMpeg support" << endl;
             vIncDirs.push_back( "$(CUDA_PATH)\\include\\" );
+            vLib32Dirs.push_back( "$(CUDA_PATH)\\lib\\Win32" );
+            vLib64Dirs.push_back( "$(CUDA_PATH)\\lib\\x64" );
         }
+        vLibs.push_back( "OpenCL.lib" );
     }
     vHIncludes.push_back( "..\\cmdutils.h" );
     vHIncludes.push_back( "..\\cmdutils_common_opts.h" );
@@ -287,6 +293,10 @@ void projectGenerator::buildProgramIncludes( const string & sProject, vector<str
         vCIncludes.push_back( "..\\ffmpeg.c" );
         vCIncludes.push_back( "..\\ffmpeg_filter.c" );
         vCIncludes.push_back( "..\\ffmpeg_opt.c" );
+        if( m_ConfigHelper.getConfigOption( "dxva2_lib" )->m_sValue.compare( "1" ) == 0 )
+        {
+            vCIncludes.push_back( "..\\ffmpeg_dxva2.c" );
+        }
 
         vHIncludes.push_back( "..\\ffmpeg.h" );
     }
