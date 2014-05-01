@@ -2024,7 +2024,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
     uint8_t *buf;
 
     for (i = 0; i < s->nb_streams; i++)
-        if (mov->tracks[i].enc->flags & CODEC_FLAG_BITEXACT) {
+        if (s->flags & AVFMT_FLAG_BITEXACT) {
             return 0;
         }
 
