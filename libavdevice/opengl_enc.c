@@ -178,6 +178,7 @@ typedef struct OpenGLContext {
 #endif
     FFOpenGLFunctions glprocs;
 
+    int inited;                        ///< Set to 1 when write_header was successfully called.
     uint8_t background[4];             ///< Background color
     int no_window;                     ///< 0 for create default window
     char *window_title;                ///< Title of the window
@@ -309,8 +310,7 @@ static int opengl_resize(AVFormatContext *h, int width, int height)
     OpenGLContext *opengl = h->priv_data;
     opengl->window_width = width;
     opengl->window_height = height;
-    /* max_viewport_width == 0 means write_header was not called yet. */
-    if (opengl->max_viewport_width) {
+    if (opengl->inited) {
         if (opengl->no_window &&
             (ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER, NULL , 0)) < 0) {
             av_log(opengl, AV_LOG_ERROR, "Application failed to prepare window buffer.\n");
@@ -1110,6 +1110,8 @@ static av_cold int opengl_write_header(AVFormatContext *h)
 
     ret = AVERROR_EXTERNAL;
     OPENGL_ERROR_CHECK(opengl);
+
+    opengl->inited = 1;
     return 0;
 
   fail:
