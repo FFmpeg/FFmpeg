@@ -92,3 +92,5 @@
 *.tlog
 *.res
 *.manifest
+!/SMC/*.def
+!/SMC/project_generate/templates/*.*
