@@ -407,7 +407,8 @@ static int av_cold opengl_sdl_create_window(AVFormatContext *h)
         av_log(opengl, AV_LOG_ERROR, "Unable to initialize SDL: %s\n", SDL_GetError());
         return AVERROR_EXTERNAL;
     }
-    if ((ret = opengl_sdl_recreate_window(opengl, opengl->width, opengl->height)) < 0)
+    if ((ret = opengl_sdl_recreate_window(opengl, opengl->window_width,
+                                          opengl->window_height)) < 0)
         return ret;
     av_log(opengl, AV_LOG_INFO, "SDL driver: '%s'.\n", SDL_VideoDriverName(buffer, sizeof(buffer)));
     message.width = opengl->surface->w;
@@ -951,7 +952,12 @@ static int opengl_create_window(AVFormatContext *h)
         return AVERROR(ENOSYS);
 #endif
     } else {
-        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_CREATE_WINDOW_BUFFER, NULL , 0)) < 0) {
+        AVDeviceRect message;
+        message.x = message.y = 0;
+        message.width = opengl->window_width;
+        message.height = opengl->window_height;
+        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_CREATE_WINDOW_BUFFER,
+                                                       &message , sizeof(message))) < 0) {
             av_log(opengl, AV_LOG_ERROR, "Application failed to create window buffer.\n");
             return ret;
         }
@@ -1067,6 +1073,10 @@ static av_cold int opengl_write_header(AVFormatContext *h)
     opengl->width = st->codec->width;
     opengl->height = st->codec->height;
     opengl->pix_fmt = st->codec->pix_fmt;
+    if (!opengl->window_width)
+        opengl->window_width = opengl->width;
+    if (!opengl->window_height)
+        opengl->window_height = opengl->height;
 
     if (!opengl->window_title && !opengl->no_window)
         opengl->window_title = av_strdup(h->filename);
@@ -1268,6 +1278,7 @@ static const AVOption options[] = {
     { "background",   "set background color",   OFFSET(background),   AV_OPT_TYPE_COLOR,  {.str = "black"}, CHAR_MIN, CHAR_MAX, ENC },
     { "no_window",    "disable default window", OFFSET(no_window),    AV_OPT_TYPE_INT,    {.i64 = 0}, INT_MIN, INT_MAX, ENC },
     { "window_title", "set window title",       OFFSET(window_title), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, ENC },
+    { "window_size",  "set window size",        OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, ENC },
     { NULL }
 };
 
