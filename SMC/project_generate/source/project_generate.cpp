@@ -12,9 +12,7 @@ int main( int argc, char** argv )
     {
         if( !ProjectHelper.m_ConfigHelper.passConfigFile( string(argv[0]) ) )
         {
-#if _DEBUG
             system("pause");
-#endif
             exit( 1 );
         }
     }
@@ -22,9 +20,7 @@ int main( int argc, char** argv )
     {
         if( !ProjectHelper.m_ConfigHelper.passConfig( ) )
         {
-#if _DEBUG
             system("pause");
-#endif
             exit( 1 );
         }
     }
@@ -33,9 +29,7 @@ int main( int argc, char** argv )
     {
         if( !ProjectHelper.m_ConfigHelper.changeConfig( argv[i] ) )
         {
-#if _DEBUG
             system("pause");
-#endif
             exit( 1 );
         }
     }
@@ -43,18 +37,14 @@ int main( int argc, char** argv )
     //Output config.h and avutil.h
     if( !ProjectHelper.m_ConfigHelper.outputConfig( ) )
     {
-#if _DEBUG
         system("pause");
-#endif
         exit( 1 );
     }
 
     //Generate desired configuration files
     if( !ProjectHelper.passAllMake( ) )
     {
-#if _DEBUG
         system("pause");
-#endif
         exit( 1 );
     }
     cout << "Completed Successfully" << endl;
