@@ -1198,7 +1198,7 @@ static int vp9_decode_packet(AVCodecContext *avctx, void *frame,
             const uint8_t *idx = data + size + 1 - idx_sz;
 
             while (n_frames--) {
-                int sz = AV_RL32(idx);
+                unsigned sz = AV_RL32(idx);
 
                 if (nbytes < 4)
                     sz &= (1 << (8 * nbytes)) - 1;
@@ -1206,7 +1206,7 @@ static int vp9_decode_packet(AVCodecContext *avctx, void *frame,
 
                 if (sz > size) {
                     av_log(avctx, AV_LOG_ERROR,
-                           "Superframe packet size too big: %d > %d\n",
+                           "Superframe packet size too big: %u > %d\n",
                            sz, size);
                     return AVERROR_INVALIDDATA;
                 }
