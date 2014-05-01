@@ -48,7 +48,7 @@
     <ClInclude Include="..\ffmpeg.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4081C77E-F1F7-49FA-9BD8-A4D267C83716}</ProjectGuid>
+    <ProjectGuid>{147A422A-FA63-4724-A5D9-08B1CAFDAB59}</ProjectGuid>
     <RootNamespace>ffprobe</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

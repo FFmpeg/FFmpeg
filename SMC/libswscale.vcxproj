@@ -85,7 +85,7 @@
     <ResourceCompile Include="..\libswscale\swscaleres.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B4824EFF-C340-425D-A4A8-E2E02A71A7AE}</ProjectGuid>
+    <ProjectGuid>{6D8A6330-8EBE-49FD-9281-0A396F9F28F2}</ProjectGuid>
     <RootNamespace>libswscale</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

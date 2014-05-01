@@ -75,7 +75,7 @@
     <ResourceCompile Include="..\libswresample\swresampleres.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B4824EFF-C340-425D-A4A8-E2E02A71A7AE}</ProjectGuid>
+    <ProjectGuid>{3CE4A9EF-98B6-4454-B76E-3AD9C03A2114}</ProjectGuid>
     <RootNamespace>libswresample</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
