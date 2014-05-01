@@ -748,10 +748,23 @@ FF_ENABLE_DEPRECATION_WARNINGS
 int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
     if (avctx->internal->pkt) {
+        uint8_t *packet_sd;
+        AVFrameSideData *frame_sd;
+        int size;
         frame->pkt_pts = avctx->internal->pkt->pts;
         av_frame_set_pkt_pos     (frame, avctx->internal->pkt->pos);
         av_frame_set_pkt_duration(frame, avctx->internal->pkt->duration);
         av_frame_set_pkt_size    (frame, avctx->internal->pkt->size);
+
+        /* copy the replaygain data to the output frame */
+        packet_sd = av_packet_get_side_data(avctx->internal->pkt, AV_PKT_DATA_REPLAYGAIN, &size);
+        if (packet_sd) {
+            frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_REPLAYGAIN, size);
+            if (!frame_sd)
+                return AVERROR(ENOMEM);
+
+            memcpy(frame_sd->data, packet_sd, size);
+        }
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
         av_frame_set_pkt_pos     (frame, -1);
@@ -830,32 +843,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
-    AVPacket *pkt = avctx->internal->pkt;
-    uint8_t *packet_sd;
-    int size;
-    AVFrameSideData *frame_sd;
-
-    frame->reordered_opaque = avctx->reordered_opaque;
-    if (!pkt) {
-        frame->pkt_pts = AV_NOPTS_VALUE;
-        av_frame_set_pkt_pos     (frame, -1);
-        return 0;
-    }
-
-    frame->pkt_pts = pkt->pts;
-    av_frame_set_pkt_size        (frame, avctx->internal->pkt->size);
-
-    /* copy the replaygain data to the output frame */
-    packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_REPLAYGAIN, &size);
-    if (packet_sd) {
-        frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_REPLAYGAIN, size);
-        if (!frame_sd)
-            return AVERROR(ENOMEM);
-
-        memcpy(frame_sd->data, packet_sd, size);
-    }
-
-    return 0;
+    return ff_init_buffer_info(avctx, frame);
 }
 
 static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
