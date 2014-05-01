@@ -1217,8 +1217,7 @@ static int estimate_best_b_count(MpegEncContext *s)
 
     c->width        = s->width  >> scale;
     c->height       = s->height >> scale;
-    c->flags        = CODEC_FLAG_QSCALE | CODEC_FLAG_PSNR |
-                      CODEC_FLAG_INPUT_PRESERVED;
+    c->flags        = CODEC_FLAG_QSCALE | CODEC_FLAG_PSNR;
     c->flags       |= s->avctx->flags & CODEC_FLAG_QPEL;
     c->mb_decision  = s->avctx->mb_decision;
     c->me_cmp       = s->avctx->me_cmp;
