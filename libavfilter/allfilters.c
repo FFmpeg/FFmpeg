@@ -80,6 +80,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(BANDREJECT,     bandreject,     af);
     REGISTER_FILTER(BASS,           bass,           af);
     REGISTER_FILTER(BIQUAD,         biquad,         af);
+    REGISTER_FILTER(BS2B,           bs2b,           af);
     REGISTER_FILTER(CHANNELMAP,     channelmap,     af);
     REGISTER_FILTER(CHANNELSPLIT,   channelsplit,   af);
     REGISTER_FILTER(COMPAND,        compand,        af);
