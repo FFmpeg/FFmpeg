@@ -671,6 +671,7 @@ static int avi_read_header(AVFormatContext *s)
                 codec_type = AVMEDIA_TYPE_VIDEO;
 
                 ast->sample_size = 0;
+                st->avg_frame_rate = av_inv_q(st->time_base);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
                 codec_type = AVMEDIA_TYPE_AUDIO;
