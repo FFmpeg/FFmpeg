@@ -292,6 +292,9 @@ enum AVCodecID {
     AV_CODEC_ID_EXR_DEPRECATED,
     AV_CODEC_ID_VP7_DEPRECATED,
     AV_CODEC_ID_SANM_DEPRECATED,
+    AV_CODEC_ID_SGIRLE_DEPRECATED,
+    AV_CODEC_ID_MVC1_DEPRECATED,
+    AV_CODEC_ID_MVC2_DEPRECATED,
 
     AV_CODEC_ID_BRENDER_PIX= MKBETAG('B','P','I','X'),
     AV_CODEC_ID_Y41P       = MKBETAG('Y','4','1','P'),
@@ -481,6 +484,7 @@ enum AVCodecID {
     AV_CODEC_ID_TAK_DEPRECATED,
     AV_CODEC_ID_METASOUND,
     AV_CODEC_ID_PAF_AUDIO_DEPRECATED,
+    AV_CODEC_ID_ON2AVC,
     AV_CODEC_ID_FFWAVESYNTH = MKBETAG('F','F','W','S'),
     AV_CODEC_ID_SONIC       = MKBETAG('S','O','N','C'),
     AV_CODEC_ID_SONIC_LS    = MKBETAG('S','O','N','L'),
@@ -529,6 +533,7 @@ enum AVCodecID {
     AV_CODEC_ID_SMPTE_KLV  = MKBETAG('K','L','V','A'),
     AV_CODEC_ID_DVD_NAV    = MKBETAG('D','N','A','V'),
     AV_CODEC_ID_TIMED_ID3  = MKBETAG('T','I','D','3'),
+    AV_CODEC_ID_BIN_DATA   = MKBETAG('D','A','T','A'),
 
 
     AV_CODEC_ID_PROBE = 0x19000, ///< codec_id is not known (like AV_CODEC_ID_NONE) but lavf should attempt to identify it
@@ -566,6 +571,13 @@ typedef struct AVCodecDescriptor {
      * Codec properties, a combination of AV_CODEC_PROP_* flags.
      */
     int             props;
+
+    /**
+     * MIME type(s) associated with the codec.
+     * May be NULL; if not, a NULL-terminated array of MIME types.
+     * The first item is always non-NULL and is the prefered MIME type.
+     */
+    const char *const *mime_types;
 } AVCodecDescriptor;
 
 /**
@@ -1360,12 +1372,17 @@ typedef struct AVCodecContext {
      *   encoded input.
      *
      * Audio:
-     *   For encoding, this is the number of "priming" samples added to the
-     *   beginning of the stream. The decoded output will be delayed by this
-     *   many samples relative to the input to the encoder. Note that this
-     *   field is purely informational and does not directly affect the pts
-     *   output by the encoder, which should always be based on the actual
-     *   presentation time, including any delay.
+     *   For encoding, this is the number of "priming" samples added by the
+     *   encoder to the beginning of the stream. The decoded output will be
+     *   delayed by this many samples relative to the input to the encoder (or
+     *   more, if the decoder adds its own padding).
+     *   The timestamps on the output packets are adjusted by the encoder so
+     *   that they always refer to the first sample of the data actually
+     *   contained in the packet, including any added padding.
+     *   E.g. if the timebase is 1/samplerate and the timestamp of the first
+     *   input sample is 0, the timestamp of the first output packet will be
+     *   -delay.
+     *
      *   For decoding, this is the number of samples the decoder needs to
      *   output before the decoder's output is valid. When seeking, you should
      *   start decoding this many samples prior to your desired seek point.
@@ -2252,7 +2269,7 @@ typedef struct AVCodecContext {
 
     /**
      * ratecontrol qmin qmax limiting method
-     * 0-> clipping, 1-> use a nice continuous function to limit qscale wthin qmin/qmax.
+     * 0-> clipping, 1-> use a nice continuous function to limit qscale within qmin/qmax.
      * - encoding: Set by user.
      * - decoding: unused
      */
@@ -2347,14 +2364,14 @@ typedef struct AVCodecContext {
     int context_model;
 
     /**
-     * minimum Lagrange multipler
+     * minimum Lagrange multiplier
      * - encoding: Set by user.
      * - decoding: unused
      */
     int lmin;
 
     /**
-     * maximum Lagrange multipler
+     * maximum Lagrange multiplier
      * - encoding: Set by user.
      * - decoding: unused
      */
@@ -2579,7 +2596,7 @@ typedef struct AVCodecContext {
 #define AV_EF_EXPLODE   (1<<3)          ///< abort decoding on minor error detection
 
 #define AV_EF_CAREFUL    (1<<16)        ///< consider things that violate the spec, are fast to calculate and have not been seen in the wild as errors
-#define AV_EF_COMPLIANT  (1<<17)        ///< consider all spec non compliancies as errors
+#define AV_EF_COMPLIANT  (1<<17)        ///< consider all spec non compliances as errors
 #define AV_EF_AGGRESSIVE (1<<18)        ///< consider things that a sane encoder should not do as an error
 
 
@@ -2769,7 +2786,7 @@ typedef struct AVCodecContext {
 #endif
 
     /**
-     * noise vs. sse weight for the nsse comparsion function
+     * noise vs. sse weight for the nsse comparison function
      * - encoding: Set by user.
      * - decoding: unused
      */
@@ -4673,30 +4690,8 @@ void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int
  */
 unsigned int avcodec_pix_fmt_to_codec_tag(enum AVPixelFormat pix_fmt);
 
-#define FF_LOSS_RESOLUTION  0x0001 /**< loss due to resolution change */
-#define FF_LOSS_DEPTH       0x0002 /**< loss due to color depth change */
-#define FF_LOSS_COLORSPACE  0x0004 /**< loss due to color space conversion */
-#define FF_LOSS_ALPHA       0x0008 /**< loss of alpha bits */
-#define FF_LOSS_COLORQUANT  0x0010 /**< loss due to color quantization */
-#define FF_LOSS_CHROMA      0x0020 /**< loss of chroma (e.g. RGB to gray conversion) */
-
 /**
- * Compute what kind of losses will occur when converting from one specific
- * pixel format to another.
- * When converting from one pixel format to another, information loss may occur.
- * For example, when converting from RGB24 to GRAY, the color information will
- * be lost. Similarly, other losses occur when converting from some formats to
- * other formats. These losses can involve loss of chroma, but also loss of
- * resolution, loss of color depth, loss due to the color space conversion, loss
- * of the alpha bits or loss due to color quantization.
- * avcodec_get_fix_fmt_loss() informs you about the various types of losses
- * which will occur when converting from one pixel format to another.
- *
- * @param[in] dst_pix_fmt destination pixel format
- * @param[in] src_pix_fmt source pixel format
- * @param[in] has_alpha Whether the source pixel format alpha channel is used.
- * @return Combination of flags informing you what kind of losses will occur
- * (maximum loss for an invalid dst_pix_fmt).
+ * @deprecated see av_get_pix_fmt_loss()
  */
 int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt, enum AVPixelFormat src_pix_fmt,
                              int has_alpha);
@@ -4723,34 +4718,7 @@ enum AVPixelFormat avcodec_find_best_pix_fmt_of_list(const enum AVPixelFormat *p
                                             int has_alpha, int *loss_ptr);
 
 /**
- * Find the best pixel format to convert to given a certain source pixel
- * format and a selection of two destination pixel formats. When converting from
- * one pixel format to another, information loss may occur.  For example, when converting
- * from RGB24 to GRAY, the color information will be lost. Similarly, other losses occur when
- * converting from some formats to other formats. avcodec_find_best_pix_fmt_of_2() selects which of
- * the given pixel formats should be used to suffer the least amount of loss.
- *
- * If one of the destination formats is AV_PIX_FMT_NONE the other pixel format (if valid) will be
- * returned.
- *
- * @code
- * src_pix_fmt = AV_PIX_FMT_YUV420P;
- * dst_pix_fmt1= AV_PIX_FMT_RGB24;
- * dst_pix_fmt2= AV_PIX_FMT_GRAY8;
- * dst_pix_fmt3= AV_PIX_FMT_RGB8;
- * loss= FF_LOSS_CHROMA; // don't care about chroma loss, so chroma loss will be ignored.
- * dst_pix_fmt = avcodec_find_best_pix_fmt_of_2(dst_pix_fmt1, dst_pix_fmt2, src_pix_fmt, alpha, &loss);
- * dst_pix_fmt = avcodec_find_best_pix_fmt_of_2(dst_pix_fmt, dst_pix_fmt3, src_pix_fmt, alpha, &loss);
- * @endcode
- *
- * @param[in] dst_pix_fmt1 One of the two destination pixel formats to choose from
- * @param[in] dst_pix_fmt2 The other of the two destination pixel formats to choose from
- * @param[in] src_pix_fmt Source pixel format
- * @param[in] has_alpha Whether the source pixel format alpha channel is used.
- * @param[in, out] loss_ptr Combination of loss flags. In: selects which of the losses to ignore, i.e.
- *                               NULL or value of zero means we care about all losses. Out: the loss
- *                               that occurs when converting from src to selected dst pixel format.
- * @return The best pixel format to convert to or -1 if none was found.
+ * @deprecated see av_find_best_pix_fmt_of_2()
  */
 enum AVPixelFormat avcodec_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt1, enum AVPixelFormat dst_pix_fmt2,
                                             enum AVPixelFormat src_pix_fmt, int has_alpha, int *loss_ptr);

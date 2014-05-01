@@ -49,7 +49,7 @@
 #define FADE_IN  0
 #define FADE_OUT 1
 
-typedef struct {
+typedef struct FadeContext {
     const AVClass *class;
     int type;
     int factor, fade_per_frame;

@@ -289,7 +289,7 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         put_videoinfoheader2(pb, st);
     } else {
-        if (ff_put_wav_header(pb, st->codec) < 0)
+        if (ff_put_wav_header(pb, st->codec, 0) < 0)
             format_type = &ff_format_none;
     }
     hdr_size = avio_tell(pb) - hdr_pos_start;

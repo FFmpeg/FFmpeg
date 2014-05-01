@@ -106,7 +106,6 @@ Configuration options:
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
   --enable-incompatible-libav-abi enable incompatible Libav fork ABI [no]
-  --enable-incompatible-fork-abi  enable incompatible Libav fork ABI (deprecated) [no]
   --enable-raise-major     increase major version numbers in sonames [no]
 
 Program options:
@@ -286,6 +285,7 @@ Toolchain options:
   --ld=LD                  use linker LD [$ld_default]
   --pkg-config=PKGCONF     use pkg-config PKGCONF [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
+  --ranlib=RANLIB          use ranlib RANLIB [$ranlib_default]
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
   --host-cppflags=HCPPFLAGS use HCPPFLAGS when compiling for host
@@ -1285,7 +1285,7 @@ COMPONENT_LIST="
 
 EXAMPLE_LIST="
     avio_reading_example
-    avcodec_example
+    decoding_encoding_example
     demuxing_decoding_example
     filter_audio_example
     filtering_audio_example
@@ -1304,7 +1304,6 @@ EXTERNAL_LIBRARY_LIST="
     bzlib
     crystalhd
     decklink
-    fontconfig
     frei0r
     gnutls
     iconv
@@ -1319,6 +1318,7 @@ EXTERNAL_LIBRARY_LIST="
     libfaac
     libfdk_aac
     libflite
+    libfontconfig
     libfreetype
     libgme
     libgsm
@@ -1445,8 +1445,8 @@ CONFIG_LIST="
     $LIBRARY_LIST
     $PROGRAM_LIST
     $SUBSYSTEM_LIST
+    fontconfig
     incompatible_libav_abi
-    incompatible_fork_abi
     memalign_hack
     memory_poisoning
     neon_clobber_test
@@ -1559,6 +1559,7 @@ ARCH_FEATURES="
     fast_cmov
     local_aligned_8
     local_aligned_16
+    local_aligned_32
 "
 
 BUILTIN_LIST="
@@ -1580,7 +1581,6 @@ HAVE_LIST_PUB="
     bigendian
     fast_unaligned
     incompatible_libav_abi
-    incompatible_fork_abi
 "
 
 HEADERS_LIST="
@@ -1659,6 +1659,7 @@ SYSTEM_FUNCS="
     clock_gettime
     closesocket
     CommandLineToArgvW
+    CoTaskMemFree
     CryptGenRandom
     dlopen
     fcntl
@@ -1759,6 +1760,7 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
+    dxva2_lib
     libc_msvcrt
     libdc1394_1
     libdc1394_2
@@ -1868,6 +1870,7 @@ CMDLINE_SET="
     pkg_config_flags
     progs_suffix
     random_seed
+    ranlib
     samples
     strip
     sysinclude
@@ -2023,7 +2026,7 @@ ffv1_decoder_select="golomb rangecoder"
 ffv1_encoder_select="rangecoder"
 ffvhuff_decoder_select="huffyuv_decoder"
 ffvhuff_encoder_select="huffyuv_encoder"
-fic_decoder_select="dsputil golomb"
+fic_decoder_select="golomb"
 flac_decoder_select="golomb"
 flac_encoder_select="dsputil golomb lpc"
 flashsv_decoder_select="zlib"
@@ -2095,6 +2098,7 @@ mxpeg_decoder_select="mjpeg_decoder"
 nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="audio_frame_queue mdct sinewin"
 nuv_decoder_select="dsputil lzo"
+on2avc_decoder_select="mdct"
 png_decoder_select="zlib"
 png_encoder_select="dsputil zlib"
 prores_decoder_select="dsputil"
@@ -2320,6 +2324,8 @@ f4v_muxer_select="mov_muxer"
 flac_demuxer_select="flac_parser"
 hds_muxer_select="flv_muxer"
 hls_muxer_select="mpegts_muxer"
+image2_alias_pix_demuxer_select="image2_demuxer"
+image2_brender_pix_demuxer_select="image2_demuxer"
 ipod_muxer_select="mov_muxer"
 ismv_muxer_select="mov_muxer"
 libnut_demuxer_deps="libnut"
@@ -2579,7 +2585,7 @@ ln_s="ln -s -f"
 nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
-ranlib="ranlib"
+ranlib_default="ranlib"
 strip_default="strip"
 yasmexe_default="yasm"
 windres_default="windres"
@@ -2855,7 +2861,7 @@ cc_default="${cross_prefix}${cc_default}"
 cxx_default="${cross_prefix}${cxx_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
-ranlib="${cross_prefix}${ranlib}"
+ranlib_default="${cross_prefix}${ranlib_default}"
 strip_default="${cross_prefix}${strip_default}"
 windres_default="${cross_prefix}${windres_default}"
 
@@ -2946,7 +2952,7 @@ case "$toolchain" in
     ;;
 esac
 
-set_default arch cc cxx pkg_config strip sysinclude target_exec target_os yasmexe
+set_default arch cc cxx pkg_config ranlib strip sysinclude target_exec target_os yasmexe
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -3128,10 +3134,16 @@ suncc_flags(){
                     prescott|nocona)    echo -xarch=sse3 -xchip=pentium4 ;;
                     *-sse3)             echo -xarch=sse3                 ;;
                     core2)              echo -xarch=ssse3 -xchip=core2   ;;
-                    corei7)           echo -xarch=sse4_2 -xchip=nehalem  ;;
-                    corei7-avx)       echo -xarch=avx -xchip=sandybridge ;;
+                    bonnell)                   echo -xarch=ssse3         ;;
+                    corei7|nehalem)            echo -xtarget=nehalem     ;;
+                    westmere)                  echo -xtarget=westmere    ;;
+                    silvermont)                echo -xarch=sse4_2        ;;
+                    corei7-avx|sandybridge)    echo -xtarget=sandybridge ;;
+                    core-avx*|ivybridge|haswell|broadwell)
+                                               echo -xarch=avx           ;;
                     amdfam10|barcelona)        echo -xtarget=barcelona   ;;
-                    bdver*)                    echo -xarch=avx           ;;
+                    btver1)                    echo -xarch=amdsse4a      ;;
+                    btver2|bdver*)             echo -xarch=avx           ;;
                     athlon-4|athlon-[mx]p)     echo -xarch=ssea          ;;
                     k8|opteron|athlon64|athlon-fx)
                                                echo -xarch=sse2a         ;;
@@ -3227,10 +3239,10 @@ probe_cc(){
         _cflags_speed='-fast'
         _cflags_size='-O1'
         _flags_filter=ccc_flags
-    elif $_cc --vsn 2>/dev/null | grep -Eq "ARM C/C[+][+] Compiler|Component: ARM Compiler "; then
+    elif $_cc --vsn 2>/dev/null | grep -Eq "ARM (C/C\+\+ )?Compiler"; then
         test -d "$sysroot" || die "No valid sysroot specified."
         _type=armcc
-        _ident=$($_cc --vsn | head -n1)
+        _ident=$($_cc --vsn | head -n1 | sed 's/.*: //')
         armcc_conf="$PWD/armcc.conf"
         $_cc --arm_linux_configure                 \
              --arm_linux_config_file="$armcc_conf" \
@@ -3708,7 +3720,8 @@ elif enabled x86; then
             disable i686
         ;;
         # targets that do support nopl and conditional mov (cmov)
-        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64*|k8*|opteron*|athlon-fx|core2|corei7*|amdfam10|barcelona|atom|bdver*)
+        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64*|k8*|opteron*|athlon-fx\
+        |core*|atom|bonnell|nehalem|westmere|silvermont|sandybridge|ivybridge|haswell|broadwell|amdfam10|barcelona|b[dt]ver*)
             cpuflags="-march=$cpu"
             enable i686
             enable fast_cmov
@@ -4138,10 +4151,6 @@ EOF
     exit 1;
 fi
 
-# backward compatibility layer for incompatible_libav/fork_abi
-enabled incompatible_fork_abi  && enable incompatible_libav_abi
-enabled incompatible_libav_abi && enable incompatible_fork_abi
-
 die_license_disabled() {
     enabled $1 || { enabled $2 && die "$2 is $1 and --enable-$1 is not specified."; }
 }
@@ -4300,7 +4309,7 @@ elif enabled parisc; then
 
 elif enabled ppc; then
 
-    enable local_aligned_8 local_aligned_16
+    enable local_aligned_8 local_aligned_16 local_aligned_32
 
     check_inline_asm dcbzl     '"dcbzl 0, %0" :: "r"(0)'
     check_inline_asm ibm_asm   '"add 0, 0, 0"'
@@ -4335,7 +4344,7 @@ elif enabled x86; then
     check_builtin rdtsc    intrin.h   "__rdtsc()"
     check_builtin mm_empty mmintrin.h "_mm_empty()"
 
-    enable local_aligned_8 local_aligned_16
+    enable local_aligned_8 local_aligned_16 local_aligned_32
 
     # check whether EBP is available on x86
     # As 'i' is stored on the stack, this program will crash
@@ -4494,6 +4503,7 @@ check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_func_headers stdlib.h getenv
 
+check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
@@ -4587,7 +4597,6 @@ enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
                                { check_lib2 "dlfcn.h" dlopen -ldl; } ||
                                die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
 enabled decklink          && { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; }
-enabled fontconfig        && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
@@ -4603,6 +4612,8 @@ enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersio
 enabled libfdk_aac        && require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
 flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
 enabled libflite          && require2 libflite "flite/flite.h" flite_init $flite_libs
+enabled fontconfig        && enable libfontconfig
+enabled libfontconfig     && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
 enabled libfreetype       && require_libfreetype
 enabled libgme            && require  libgme gme/gme.h gme_new_emu -lgme -lstdc++
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
@@ -4825,7 +4836,7 @@ check_disable_warning -Wno-pointer-sign
 # add some linker flags
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
-enabled rpath && add_ldflags -Wl,-rpath=$libdir
+enabled rpath && add_ldflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 # add some strip flags
@@ -4952,6 +4963,8 @@ elif enabled cparser; then
     add_cflags -Wno-missing-variable-declarations
     add_cflags -Wno-empty-statement
 elif enabled armcc; then
+    add_cflags -W${armcc_opt},--diag_suppress=4343 # hardfp compat
+    add_cflags -W${armcc_opt},--diag_suppress=3036 # using . as system include dir
     # 2523: use of inline assembler is deprecated
     add_cflags -W${armcc_opt},--diag_suppress=2523
     add_cflags -W${armcc_opt},--diag_suppress=1207
@@ -5018,6 +5031,10 @@ if test $target_os = "haiku"; then
     disable memalign
     disable posix_memalign
 fi
+
+enabled_all dxva2 CoTaskMemFree &&
+    prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
+    enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
     enabled_any $need_memalign && enable memalign_hack

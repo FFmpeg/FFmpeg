@@ -66,22 +66,22 @@ static int32_t parse_value(const char *value, int32_t min)
     return db * 100000 + sign * mb;
 }
 
-static int replaygain_export(AVStream *st,
-                             const uint8_t *track_gain, const uint8_t *track_peak,
-                             const uint8_t *album_gain, const uint8_t *album_peak)
+int ff_replaygain_export_raw(AVStream *st, int32_t tg, uint32_t tp,
+                             int32_t ag, uint32_t ap)
 {
     AVPacketSideData *sd, *tmp;
     AVReplayGain *replaygain;
-    int32_t tg, ag;
-    uint32_t tp, ap;
-
-    tg = parse_value(track_gain, INT32_MIN);
-    ag = parse_value(album_gain, INT32_MIN);
-    tp = parse_value(track_peak, 0);
-    ap = parse_value(album_peak, 0);
+    int i;
 
     if (tg == INT32_MIN && ag == INT32_MIN)
         return 0;
+
+    for (i = 0; i < st->nb_side_data; i++) {
+        AVPacketSideData *src_sd = &st->side_data[i];
+
+        if (src_sd->type == AV_PKT_DATA_REPLAYGAIN)
+            return 0;
+    }
 
     replaygain = av_mallocz(sizeof(*replaygain));
     if (!replaygain)
@@ -117,9 +117,9 @@ int ff_replaygain_export(AVStream *st, AVDictionary *metadata)
     ag = av_dict_get(metadata, "REPLAYGAIN_ALBUM_GAIN", NULL, 0);
     ap = av_dict_get(metadata, "REPLAYGAIN_ALBUM_PEAK", NULL, 0);
 
-    return replaygain_export(st,
-                             tg ? tg->value : NULL,
-                             tp ? tp->value : NULL,
-                             ag ? ag->value : NULL,
-                             ap ? ap->value : NULL);
+    return ff_replaygain_export_raw(st,
+                             parse_value(tg ? tg->value : NULL, INT32_MIN),
+                             parse_value(tp ? tp->value : NULL, 0),
+                             parse_value(ag ? ag->value : NULL, INT32_MIN),
+                             parse_value(ap ? ap->value : NULL, 0));
 }

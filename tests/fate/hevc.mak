@@ -1,12 +1,12 @@
 HEVC_SAMPLES =                  \
     AMP_A_Samsung_4             \
     AMP_B_Samsung_4             \
-    AMVP_C_Samsung_4            \
     AMP_D_Hisilicon             \
     AMP_E_Hisilicon             \
     AMP_F_Hisilicon_3           \
     AMVP_A_MTK_4                \
     AMVP_B_MTK_4                \
+    AMVP_C_Samsung_4            \
     CAINIT_A_SHARP_4            \
     CAINIT_B_SHARP_4            \
     CAINIT_C_SHARP_3            \
@@ -21,23 +21,24 @@ HEVC_SAMPLES =                  \
     DBLK_A_SONY_3               \
     DBLK_B_SONY_3               \
     DBLK_C_SONY_3               \
-    DBLK_D_VIXS_1               \
     DBLK_D_VIXS_2               \
-    DBLK_E_VIXS_1               \
     DBLK_E_VIXS_2               \
-    DBLK_F_VIXS_1               \
     DBLK_F_VIXS_2               \
-    DBLK_G_VIXS_1               \
     DBLK_G_VIXS_2               \
+    DELTAQP_A_BRCM_4            \
     DELTAQP_B_SONY_3            \
     DELTAQP_C_SONY_3            \
     DSLICE_A_HHI_5              \
     DSLICE_B_HHI_5              \
     DSLICE_C_HHI_5              \
-    ENTP_A_LG_2                 \
-    ENTP_B_LG_2                 \
-    ENTP_C_LG_3                 \
+    ENTP_A_Qualcomm_1           \
+    ENTP_B_Qualcomm_1           \
+    ENTP_C_Qualcomm_1           \
     EXT_A_ericsson_4            \
+    FILLER_A_Sony_1             \
+    HRD_A_Fujitsu_2             \
+    INITQP_A_Sony_1             \
+    INITQP_B_Sony_1             \
     ipcm_A_NEC_3                \
     ipcm_B_NEC_3                \
     ipcm_C_NEC_3                \
@@ -45,7 +46,7 @@ HEVC_SAMPLES =                  \
     ipcm_E_NEC_2                \
     IPRED_A_docomo_2            \
     IPRED_B_Nokia_3             \
-    IPRED_C_Mitsubishi_2        \
+    IPRED_C_Mitsubishi_3        \
     LS_A_Orange_2               \
     LS_B_ORANGE_4               \
     LTRPSPS_A_Qualcomm_1        \
@@ -62,7 +63,12 @@ HEVC_SAMPLES =                  \
     MVCLIP_A_qualcomm_3         \
     MVDL1ZERO_A_docomo_3        \
     MVEDGE_A_qualcomm_3         \
+    NoOutPrior_A_Qualcomm_1     \
+    NoOutPrior_B_Qualcomm_1     \
     NUT_A_ericsson_5            \
+    OPFLAG_A_Qualcomm_1         \
+    OPFLAG_B_Qualcomm_1         \
+    OPFLAG_C_Qualcomm_1         \
     PICSIZE_A_Bossen_1          \
     PICSIZE_B_Bossen_1          \
     PICSIZE_C_Bossen_1          \
@@ -74,9 +80,9 @@ HEVC_SAMPLES =                  \
     PMERGE_E_TI_3               \
     POC_A_Bossen_3              \
     PPS_A_qualcomm_7            \
-    RAP_A_docomo_4              \
     PS_A_VIDYO_3                \
     PS_B_VIDYO_3                \
+    RAP_A_docomo_4              \
     RAP_B_Bossen_1              \
     RPLM_A_qualcomm_4           \
     RPLM_B_qualcomm_4           \
@@ -127,7 +133,7 @@ HEVC_SAMPLES =                  \
     WPP_F_ericsson_MAIN_2       \
 
 HEVC_SAMPLES_10BIT =            \
-    DBLK_A_MAIN10_VIXS_2        \
+    DBLK_A_MAIN10_VIXS_3        \
     WP_A_MAIN10_Toshiba_3       \
     WP_MAIN10_B_Toshiba_3       \
     WPP_A_ericsson_MAIN10_2     \
@@ -137,10 +143,16 @@ HEVC_SAMPLES_10BIT =            \
     WPP_E_ericsson_MAIN10_2     \
     WPP_F_ericsson_MAIN10_2     \
 
+# equivalent bitstreams
+# AMP_D_Hisilicon_3 -- AMP_D_Hisilicon
+# AMP_E_Hisilicon_3 -- AMP_E_Hisilicon
+# MVDL1ZERO_A_docomo_4 -- MVDL1ZERO_A_docomo_3
+# RAP_A_docomo_5 -- RAP_A_docomo_4
+# RPS_A_docomo_5 -- RPS_A_docomo_4
+# RPS_F_docomo_2 -- RPS_F_docomo_1
+
 # do not pass:
-# DELTAQP_A_BRCM_4.bit -- TODO uses CRC instead of MD5
-# HRD_A_Fujitsu_2.bin -- TODO uses hash 2 ("checksum")
-# TSUNEQBD_A_MAIN10_Technicolor_2.bit (segfault)
+# TSUNEQBD_A_MAIN10_Technicolor_2.bit (segfault mix 9-10bits)
 
 define FATE_HEVC_TEST
 FATE_HEVC += fate-hevc-conformance-$(1)

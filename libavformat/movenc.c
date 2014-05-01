@@ -401,7 +401,7 @@ static int mov_write_ms_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 0);
     avio_wl32(pb, track->tag); // store it byteswapped
     track->enc->codec_tag = av_bswap16(track->tag >> 16);
-    ff_put_wav_header(pb, track->enc);
+    ff_put_wav_header(pb, track->enc, 0);
     return update_size(pb, pos);
 }
 
@@ -410,7 +410,7 @@ static int mov_write_wfex_tag(AVIOContext *pb, MOVTrack *track)
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "wfex");
-    ff_put_wav_header(pb, track->enc);
+    ff_put_wav_header(pb, track->enc, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
     return update_size(pb, pos);
 }
 
@@ -1578,6 +1578,12 @@ static int mov_write_vmhd_tag(AVIOContext *pb)
     return 0x14;
 }
 
+static int is_clcp_track(MOVTrack *track)
+{
+    return track->tag == MKTAG('c','7','0','8') ||
+           track->tag == MKTAG('c','6','0','8');
+}
+
 static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
 {
     const char *hdlr, *descr = NULL, *hdlr_type = NULL;
@@ -1596,7 +1602,7 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
             hdlr_type = "soun";
             descr     = "SoundHandler";
         } else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-            if (track->tag == MKTAG('c','6','0','8')) {
+            if (is_clcp_track(track)) {
                 hdlr_type = "clcp";
                 descr = "ClosedCaptionHandler";
             } else {
@@ -1667,7 +1673,7 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
     else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        if (track->tag == MKTAG('t','e','x','t') || track->tag == MKTAG('c','6','0','8')) {
+        if (track->tag == MKTAG('t','e','x','t') || is_clcp_track(track)) {
             mov_write_gmhd_tag(pb, track);
         } else {
             mov_write_nmhd_tag(pb);
@@ -1973,10 +1979,16 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_uuid_tag_psp(pb, track); // PSP Movies require this uuid box
     if (track->tag == MKTAG('r','t','p',' '))
         mov_write_udta_sdp(pb, track);
-    if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO && track->mode == MODE_MOV) {
-        double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
-        if (st->sample_aspect_ratio.num && 1.0 != sample_aspect_ratio)
+    if (track->mode == MODE_MOV) {
+        if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+            double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
+            if (st->sample_aspect_ratio.num && 1.0 != sample_aspect_ratio) {
+                mov_write_tapt_tag(pb, track);
+            }
+        }
+        if (is_clcp_track(track) && st->sample_aspect_ratio.num) {
             mov_write_tapt_tag(pb, track);
+        }
     }
     return update_size(pb, pos);
 }

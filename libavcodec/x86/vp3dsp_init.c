@@ -63,6 +63,7 @@ void ff_vp3_h_loop_filter_mmxext(uint8_t *src, int stride,
     "paddb "#regb", "#regr"             \n\t"                    \
     "paddb "#regd", "#regp"             \n\t"
 
+#if HAVE_6REGS
 static void put_vp_no_rnd_pixels8_l2_mmx(uint8_t *dst, const uint8_t *a, const uint8_t *b, ptrdiff_t stride, int h)
 {
 //    START_TIMER
@@ -94,15 +95,16 @@ static void put_vp_no_rnd_pixels8_l2_mmx(uint8_t *dst, const uint8_t *a, const u
         :"memory");
 //    STOP_TIMER("put_vp_no_rnd_pixels8_l2_mmx")
 }
+#endif /*HAVE_6REGS */
 #endif /* HAVE_MMX_INLINE */
 
 av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
 {
     int cpu_flags = av_get_cpu_flags();
 
-#if HAVE_MMX_INLINE
+#if HAVE_6REGS && HAVE_MMX_INLINE
     c->put_no_rnd_pixels_l2 = put_vp_no_rnd_pixels8_l2_mmx;
-#endif /* HAVE_MMX_INLINE */
+#endif /* HAVE_6REGS && HAVE_MMX_INLINE */
 
 #if ARCH_X86_32
     if (EXTERNAL_MMX(cpu_flags)) {

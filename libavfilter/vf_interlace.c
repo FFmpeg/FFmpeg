@@ -47,7 +47,7 @@ enum FieldType {
     FIELD_LOWER = 1,
 };
 
-typedef struct {
+typedef struct InterlaceContext {
     const AVClass *class;
     enum ScanMode scan;    // top or bottom field first scanning
 #if FF_API_INTERLACE_LOWPASS_SET

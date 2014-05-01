@@ -50,7 +50,7 @@ OBJS-$(CONFIG_FFT)                     += avfft.o fft_fixed.o fft_float.o \
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_H263DSP)                 += h263dsp.o
 OBJS-$(CONFIG_H264CHROMA)              += h264chroma.o
-OBJS-$(CONFIG_H264DSP)                 += h264dsp.o h264idct.o
+OBJS-$(CONFIG_H264DSP)                 += h264dsp.o h264idct.o startcode.o
 OBJS-$(CONFIG_H264PRED)                += h264pred.o
 OBJS-$(CONFIG_H264QPEL)                += h264qpel.o
 OBJS-$(CONFIG_HPELDSP)                 += hpeldsp.o
@@ -329,6 +329,7 @@ OBJS-$(CONFIG_MXPEG_DECODER)           += mxpegdec.o
 OBJS-$(CONFIG_NELLYMOSER_DECODER)      += nellymoserdec.o nellymoser.o
 OBJS-$(CONFIG_NELLYMOSER_ENCODER)      += nellymoserenc.o nellymoser.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
+OBJS-$(CONFIG_ON2AVC_DECODER)          += on2avc.o on2avcdata.o
 OBJS-$(CONFIG_PAF_VIDEO_DECODER)       += paf.o
 OBJS-$(CONFIG_PAF_AUDIO_DECODER)       += paf.o
 OBJS-$(CONFIG_PAM_DECODER)             += pnmdec.o pnm.o
@@ -457,7 +458,7 @@ OBJS-$(CONFIG_VB_DECODER)              += vb.o
 OBJS-$(CONFIG_VBLE_DECODER)            += vble.o
 OBJS-$(CONFIG_VC1_DECODER)             += vc1dec.o vc1.o vc1data.o vc1dsp.o \
                                           msmpeg4dec.o msmpeg4.o msmpeg4data.o \
-                                          wmv2dsp.o
+                                          wmv2dsp.o startcode.o
 OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdav.o
 OBJS-$(CONFIG_VMDVIDEO_DECODER)        += vmdav.o
@@ -780,9 +781,9 @@ OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_RV30_PARSER)             += rv34_parser.o
 OBJS-$(CONFIG_RV40_PARSER)             += rv34_parser.o
 OBJS-$(CONFIG_TAK_PARSER)              += tak_parser.o tak.o
-OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o \
+OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o vc1dsp.o \
                                           msmpeg4.o msmpeg4data.o mpeg4video.o \
-                                          h263.o
+                                          h263.o startcode.o
 OBJS-$(CONFIG_VORBIS_PARSER)           += vorbis_parser.o xiph.o
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 OBJS-$(CONFIG_VP8_PARSER)              += vp8_parser.o

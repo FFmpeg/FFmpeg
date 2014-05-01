@@ -273,6 +273,7 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
        prev->data = p->data;
        prev->read = p->read;
        prev->offset = p->offset;
+       p->data      = NULL;
        return AVERROR(EAGAIN);
     }
 

@@ -24,6 +24,11 @@ fate-dts: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
 fate-dts: CMP = oneoff
 fate-dts: REF = $(SAMPLES)/dts/dts.pcm
 
+FATE_SAMPLES_AUDIO-$(call DEMDEC, DTS, DCA) += fate-dts_es
+fate-dts_es: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts_es.dts
+fate-dts_es: CMP = oneoff
+fate-dts_es: REF = $(SAMPLES)/dts/dts_es.pcm
+
 FATE_SAMPLES_AUDIO-$(call DEMDEC, AVI, IMC) += fate-imc
 fate-imc: CMD = pcm -i $(TARGET_SAMPLES)/imc/imc.avi
 fate-imc: CMP = oneoff

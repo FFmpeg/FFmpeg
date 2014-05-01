@@ -837,7 +837,7 @@ static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
            && !ogg_packet(s, &i, &pstart, &psize, pos_arg)) {
         if (i == stream_index) {
             struct ogg_stream *os = ogg->streams + stream_index;
-            // Dont trust the last timestamps of a ogm video
+            // Do not trust the last timestamps of a ogm video
             if (    (os->flags & OGG_FLAG_EOS)
                 && !(os->flags & OGG_FLAG_BOS)
                 && os->codec == &ff_ogm_video_codec)

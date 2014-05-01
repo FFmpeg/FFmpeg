@@ -29,7 +29,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct PixdescTestContext {
     const AVPixFmtDescriptor *pix_desc;
     uint16_t *line;
 } PixdescTestContext;

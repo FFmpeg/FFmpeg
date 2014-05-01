@@ -562,8 +562,8 @@ unk_pixfmt:
             int size = bw * bh * s->h_count[i] * s->v_count[i];
             av_freep(&s->blocks[i]);
             av_freep(&s->last_nnz[i]);
-            s->blocks[i]       = av_mallocz(size * sizeof(**s->blocks));
-            s->last_nnz[i]     = av_mallocz(size * sizeof(**s->last_nnz));
+            s->blocks[i]       = av_mallocz_array(size, sizeof(**s->blocks));
+            s->last_nnz[i]     = av_mallocz_array(size, sizeof(**s->last_nnz));
             if (!s->blocks[i] || !s->last_nnz[i])
                 return AVERROR(ENOMEM);
             s->block_stride[i] = bw * s->h_count[i];
@@ -1272,7 +1272,7 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
     }
 
     if (!Al) {
-        s->coefs_finished[c] |= (1LL << (se + 1)) - (1LL << ss);
+        s->coefs_finished[c] |= (2ULL << se) - (1ULL << ss);
         last_scan = !~s->coefs_finished[c];
     }
 
@@ -1665,17 +1665,15 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         ret = ff_tdecode_header(&gbytes, &le, &ifd_offset);
         if (ret) {
             av_log(s->avctx, AV_LOG_ERROR, "mjpeg: invalid TIFF header in EXIF data\n");
-            return ret;
-        }
+        } else {
+            bytestream2_seek(&gbytes, ifd_offset, SEEK_SET);
 
-        bytestream2_seek(&gbytes, ifd_offset, SEEK_SET);
-
-        // read 0th IFD and store the metadata
-        // (return values > 0 indicate the presence of subimage metadata)
-        ret = avpriv_exif_decode_ifd(s->avctx, &gbytes, le, 0, &s->exif_metadata);
-        if (ret < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "mjpeg: error decoding EXIF data\n");
-            return ret;
+            // read 0th IFD and store the metadata
+            // (return values > 0 indicate the presence of subimage metadata)
+            ret = avpriv_exif_decode_ifd(s->avctx, &gbytes, le, 0, &s->exif_metadata);
+            if (ret < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "mjpeg: error decoding EXIF data\n");
+            }
         }
 
         bytes_read = bytestream2_tell(&gbytes);
@@ -1815,7 +1813,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
         memset(s->buffer + *unescaped_buf_size, 0,
                FF_INPUT_BUFFER_PADDING_SIZE);
 
-        av_log(s->avctx, AV_LOG_DEBUG, "escaping removed %td bytes\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "escaping removed %"PTRDIFF_SPECIFIER" bytes\n",
                (buf_end - *buf_ptr) - (dst - s->buffer));
     } else if (start_code == SOS && s->ls) {
         const uint8_t *src = *buf_ptr;
@@ -1898,7 +1896,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                    start_code, unescaped_buf_size, buf_size);
             return AVERROR_INVALIDDATA;
         }
-        av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%td\n",
+        av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%"PTRDIFF_SPECIFIER"\n",
                start_code, buf_end - buf_ptr);
 
         ret = init_get_bits8(&s->gb, unescaped_buf_ptr, unescaped_buf_size);
@@ -2183,7 +2181,7 @@ the_end:
     av_dict_copy(avpriv_frame_get_metadatap(data), s->exif_metadata, 0);
     av_dict_free(&s->exif_metadata);
 
-    av_log(avctx, AV_LOG_DEBUG, "decode frame unused %td bytes\n",
+    av_log(avctx, AV_LOG_DEBUG, "decode frame unused %"PTRDIFF_SPECIFIER" bytes\n",
            buf_end - buf_ptr);
 //  return buf_end - buf_ptr;
     return buf_ptr - buf;

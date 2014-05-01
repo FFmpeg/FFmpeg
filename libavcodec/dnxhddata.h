@@ -42,7 +42,7 @@ typedef struct CIDEntry {
     const uint8_t *ac_flags;
     const uint16_t *run_codes;
     const uint8_t *run_bits, *run;
-    int bit_rates[5]; ///< Helpher to choose variants, rounded to nearest 5Mb/s
+    int bit_rates[5]; ///< Helper to choose variants, rounded to nearest 5Mb/s
     AVRational frame_rates[5];
 } CIDEntry;
 

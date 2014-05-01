@@ -32,7 +32,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct CropDetectContext {
     const AVClass *class;
     int x1, y1, x2, y2;
     int limit;

@@ -26,6 +26,8 @@
 #include "avcodec.h"
 #include "version.h"
 
+#define MT(...) (const char *const[]){ __VA_ARGS__, NULL }
+
 static const AVCodecDescriptor codec_descriptors[] = {
     /* video codecs */
     {
@@ -85,6 +87,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "mjpeg",
         .long_name = NULL_IF_CONFIG_SMALL("Motion JPEG"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .mime_types= MT("image/jpeg"),
     },
     {
         .id        = AV_CODEC_ID_MJPEGB,
@@ -526,6 +529,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "bmp",
         .long_name = NULL_IF_CONFIG_SMALL("BMP (Windows and OS/2 bitmap)"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-ms-bmp"),
     },
     {
         .id        = AV_CODEC_ID_CSCD,
@@ -597,6 +601,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("JPEG 2000"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
                      AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/jp2"),
     },
     {
         .id        = AV_CODEC_ID_VMNC,
@@ -660,13 +665,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "thp",
         .long_name = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
-    },
-    {
-        .id        = AV_CODEC_ID_SGIRLE,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "sgirle",
-        .long_name = NULL_IF_CONFIG_SMALL("SGI RLE 8-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
         .id        = AV_CODEC_ID_C93,
@@ -1233,6 +1231,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("LucasArts SANM/SMUSH video"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_SGIRLE,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "sgirle",
+        .long_name = NULL_IF_CONFIG_SMALL("SGI RLE 8-bit"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* image codecs */
     {
@@ -1277,6 +1282,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "gif",
         .long_name = NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
         .props     = AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/gif"),
     },
     {
         .id        = AV_CODEC_ID_JPEGLS,
@@ -1299,6 +1305,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "pam",
         .long_name = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-portable-pixmap"),
     },
     {
         .id        = AV_CODEC_ID_PBM,
@@ -1313,6 +1320,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "pcx",
         .long_name = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-pcx"),
     },
     {
         .id        = AV_CODEC_ID_PGM,
@@ -1334,6 +1342,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "png",
         .long_name = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
         .props     = AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/png"),
     },
     {
         .id        = AV_CODEC_ID_PPM,
@@ -1376,6 +1385,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "targa",
         .long_name = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-targa", "image/x-tga"),
     },
     {
         .id        = AV_CODEC_ID_TIFF,
@@ -1383,6 +1393,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "tiff",
         .long_name = NULL_IF_CONFIG_SMALL("TIFF image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/tiff"),
     },
     {
         .id        = AV_CODEC_ID_TXD,
@@ -1405,6 +1416,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("WebP"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
                      AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/webp"),
     },
     {
         .id        = AV_CODEC_ID_WMV3IMAGE,
@@ -1426,6 +1438,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "xwd",
         .long_name = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/x-xwindowdump"),
     },
 
     /* various PCM "codecs" */
@@ -2447,6 +2460,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
+        .id        = AV_CODEC_ID_ON2AVC,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "avc",
+        .long_name = NULL_IF_CONFIG_SMALL("On2 Audio for Video Codec"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
         .id        = AV_CODEC_ID_EVRC,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "evrc",
@@ -2642,6 +2662,15 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
         .props     = AV_CODEC_PROP_TEXT_SUB,
     },
+
+    /* other kind of codecs and pseudo-codecs */
+    {
+        .id        = AV_CODEC_ID_TTF,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "ttf",
+        .long_name = NULL_IF_CONFIG_SMALL("TrueType font"),
+        .mime_types= MT("application/x-truetype-font", "application/x-font"),
+    },
     {
         .id        = AV_CODEC_ID_BINTEXT,
         .type      = AVMEDIA_TYPE_VIDEO,
@@ -2664,6 +2693,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY,
     },
     {
+        .id        = AV_CODEC_ID_OTF,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "otf",
+        .long_name = NULL_IF_CONFIG_SMALL("OpenType font"),
+        .mime_types= MT("application/vnd.ms-opentype"),
+    },
+    {
         .id        = AV_CODEC_ID_SMPTE_KLV,
         .type      = AVMEDIA_TYPE_DATA,
         .name      = "klv",
@@ -2681,7 +2717,130 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "timed_id3",
         .long_name = NULL_IF_CONFIG_SMALL("timed ID3 metadata"),
     },
+    {
+        .id        = AV_CODEC_ID_BIN_DATA,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "bin_data",
+        .long_name = NULL_IF_CONFIG_SMALL("binary data"),
+        .mime_types= MT("application/octet-stream"),
+    },
 
+    /* deprecated codec ids */
+    {
+        .id        = AV_CODEC_ID_BRENDER_PIX_DEPRECATED,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "brender_pix_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("BRender PIX image (deprecated id)"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_ESCAPE130_DEPRECATED,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "escape130_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("Escape 130 (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_EXR_DEPRECATED,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "exr_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("OpenEXR image (deprecated id)"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
+                     AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_G2M_DEPRECATED,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "g2m_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("Go2Meeting (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_HEVC_DEPRECATED,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "hevc_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("H.265 / HEVC (High Efficiency Video Coding) (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_PAF_VIDEO_DEPRECATED,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "paf_video_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Video (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_SANM_DEPRECATED,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "sanm_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("LucasArts SANM/SMUSH video (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_VP7_DEPRECATED,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "vp7_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("On2 VP7 (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_WEBP_DEPRECATED,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "webp_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("WebP (deprecated id)"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
+                     AV_CODEC_PROP_LOSSLESS,
+    },
+
+    {
+        .id        = AV_CODEC_ID_VIMA,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "vima",
+        .long_name = NULL_IF_CONFIG_SMALL("LucasArts VIMA audio (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_ADPCM_VIMA_DEPRECATED,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "adpcm_vima_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("LucasArts VIMA audio (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_OPUS_DEPRECATED,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "opus_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("Opus (Opus Interactive Audio Codec) (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_PAF_AUDIO_DEPRECATED,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "paf_audio_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Audio (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_PCM_S24LE_PLANAR_DEPRECATED,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "pcm_s24le_planar_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("PCM signed 24-bit little-endian planar (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_PCM_S32LE_PLANAR_DEPRECATED,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "pcm_s32le_planar_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("PCM signed 32-bit little-endian planar (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_TAK_DEPRECATED,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "tak_deprecated",
+        .long_name = NULL_IF_CONFIG_SMALL("TAK (Tom's lossless Audio Kompressor) (deprecated id)"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
 };
 
 const AVCodecDescriptor *avcodec_descriptor_get(enum AVCodecID id)

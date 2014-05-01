@@ -793,6 +793,7 @@ typedef struct HEVCContext {
     int pocTid0;
     int slice_idx; ///< number of the slice being currently decoded
     int eos;       ///< current packet contains an EOS/EOB NAL
+    int last_eos;  ///< last packet contains an EOS/EOB NAL
     int max_ra;
     int bs_width;
     int bs_height;
@@ -843,7 +844,7 @@ typedef struct HEVCContext {
     int **skipped_bytes_pos_nal;
     int *skipped_bytes_pos_size_nal;
 
-    uint8_t *data;
+    const uint8_t *data;
 
     HEVCNAL *nals;
     int nb_nals;

@@ -296,7 +296,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc,
     int64_t initial_pos    = avio_tell(ioc);
 
     if (vstream->nb_index_entries>0) {
-        av_log(s, AV_LOG_WARNING, "Skiping duplicate index\n");
+        av_log(s, AV_LOG_WARNING, "Skipping duplicate index\n");
         return 0;
     }
 
@@ -580,7 +580,7 @@ static int flv_read_header(AVFormatContext *s)
         flags = FLV_HEADER_FLAG_HASVIDEO | FLV_HEADER_FLAG_HASAUDIO;
         av_log(s, AV_LOG_WARNING,
                "Broken FLV file, which says no streams present, "
-               "this might fail\n");
+               "this might fail.\n");
     }
 
     s->ctx_flags |= AVFMTCTX_NOHEADER;
@@ -772,7 +772,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         size = avio_rb24(s->pb);
         dts  = avio_rb24(s->pb);
         dts |= avio_r8(s->pb) << 24;
-        av_dlog(s, "type:%d, size:%d, dts:%"PRId64"\n", type, size, dts);
+        av_dlog(s, "type:%d, size:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, dts, avio_tell(s->pb));
         if (url_feof(s->pb))
             return AVERROR_EOF;
         avio_skip(s->pb, 3); /* stream id, always 0 */
@@ -820,7 +820,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         } else {
             av_log(s, AV_LOG_DEBUG,
-                   "skipping flv packet: type %d, size %d, flags %d\n",
+                   "Skipping flv packet: type %d, size %d, flags %d.\n",
                    type, size, flags);
 skip:
             avio_seek(s->pb, next, SEEK_SET);
@@ -934,17 +934,16 @@ retry_duration:
             // sign extension
             int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;
             pts = dts + cts;
-            if (cts < 0) { // dts are wrong
+            if (cts < 0) { // dts might be wrong
+                if (!flv->wrong_dts)
+                    av_log(s, AV_LOG_WARNING,
+                        "Negative cts, previous timestamps might be wrong.\n");
                 flv->wrong_dts = 1;
-                av_log(s, AV_LOG_WARNING,
-                       "negative cts, previous timestamps might be wrong\n");
             } else if (FFABS(dts - pts) > 1000*60*15) {
                 av_log(s, AV_LOG_WARNING,
                        "invalid timestamps %"PRId64" %"PRId64"\n", dts, pts);
                 dts = pts = AV_NOPTS_VALUE;
             }
-            if (flv->wrong_dts)
-                dts = AV_NOPTS_VALUE;
         }
         if (type == 0 && (!st->codec->extradata || st->codec->codec_id == AV_CODEC_ID_AAC)) {
             AVDictionaryEntry *t;

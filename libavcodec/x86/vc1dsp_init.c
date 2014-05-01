@@ -27,6 +27,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavcodec/vc1dsp.h"
 #include "fpel.h"
 #include "vc1dsp.h"
@@ -62,12 +63,17 @@ static void vc1_h_loop_filter16_sse4(uint8_t *src, int stride, int pq)
     ff_vc1_h_loop_filter8_sse4(src,          stride, pq);
     ff_vc1_h_loop_filter8_sse4(src+8*stride, stride, pq);
 }
-
 static void avg_vc1_mspel_mc00_mmxext(uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int rnd)
 {
     ff_avg_pixels8_mmxext(dst, src, stride, 8);
 }
+static void avg_vc1_mspel_mc00_16_sse2(uint8_t *dst, const uint8_t *src,
+                                       ptrdiff_t stride, int rnd)
+{
+    ff_avg_pixels16_sse2(dst, src, stride, 16);
+}
+
 #endif /* HAVE_YASM */
 
 void ff_put_vc1_chroma_mc8_nornd_mmx  (uint8_t *dst, uint8_t *src,
@@ -86,10 +92,10 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (INLINE_MMX(cpu_flags))
+    if (HAVE_6REGS && INLINE_MMX(cpu_flags))
         ff_vc1dsp_init_mmx(dsp);
 
-    if (INLINE_MMXEXT(cpu_flags))
+    if (HAVE_6REGS && INLINE_MMXEXT(cpu_flags))
         ff_vc1dsp_init_mmxext(dsp);
 
 #define ASSIGN_LF(EXT) \
@@ -111,13 +117,14 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         ASSIGN_LF(mmxext);
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_mmxext;
 
-        dsp->avg_vc1_mspel_pixels_tab[0]         = avg_vc1_mspel_mc00_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[1][0]      = avg_vc1_mspel_mc00_mmxext;
     }
     if (EXTERNAL_SSE2(cpu_flags)) {
         dsp->vc1_v_loop_filter8  = ff_vc1_v_loop_filter8_sse2;
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse2;
         dsp->vc1_v_loop_filter16 = vc1_v_loop_filter16_sse2;
         dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_sse2;
+        dsp->avg_vc1_mspel_pixels_tab[0][0]      = avg_vc1_mspel_mc00_16_sse2;
     }
     if (EXTERNAL_SSSE3(cpu_flags)) {
         ASSIGN_LF(ssse3);

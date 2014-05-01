@@ -224,7 +224,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num)
 
             if (last_pos == pos || pos == base - 8)
                 avi->non_interleaved = 1;
-            if (last_pos != pos && (len || !ast->sample_size))
+            if (last_pos != pos && len)
                 av_add_index_entry(st, pos, ast->cum_len, len, 0,
                                    key ? AVINDEX_KEYFRAME : 0);
 
@@ -438,7 +438,7 @@ static int calculate_bitrate(AVFormatContext *s)
         maxpos = FFMAX(maxpos, st->index_entries[j-1].pos);
         lensum += len;
     }
-    if (maxpos < avi->io_fsize*9/10) // index doesnt cover the whole file
+    if (maxpos < avi->io_fsize*9/10) // index does not cover the whole file
         return 0;
     if (lensum*9/10 > maxpos || lensum < maxpos*9/10) // frame sum and filesize mismatch
         return 0;
@@ -671,6 +671,7 @@ static int avi_read_header(AVFormatContext *s)
                 codec_type = AVMEDIA_TYPE_VIDEO;
 
                 ast->sample_size = 0;
+                st->avg_frame_rate = av_inv_q(st->time_base);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
                 codec_type = AVMEDIA_TYPE_AUDIO;
@@ -1160,7 +1161,7 @@ start_sync:
             ast = st->priv_data;
 
             if (!ast) {
-                av_log(s, AV_LOG_WARNING, "Skiping foreign stream %d packet\n", n);
+                av_log(s, AV_LOG_WARNING, "Skipping foreign stream %d packet\n", n);
                 continue;
             }
 
@@ -1226,7 +1227,7 @@ start_sync:
                 ast->packet_size  = size + 8;
                 ast->remaining    = size;
 
-                if (size || !ast->sample_size) {
+                if (size) {
                     uint64_t pos = avio_tell(pb) - 8;
                     if (!st->index_entries || !st->nb_index_entries ||
                         st->index_entries[st->nb_index_entries - 1].pos < pos) {
@@ -1413,7 +1414,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 AVIndexEntry *e;
                 int index;
 
-                index = av_index_search_timestamp(st, ast->frame_offset, 0);
+                index = av_index_search_timestamp(st, ast->frame_offset, AVSEEK_FLAG_ANY);
                 e     = &st->index_entries[index];
 
                 if (index >= 0 && e->timestamp == ast->frame_offset) {

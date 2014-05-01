@@ -32,7 +32,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct FieldOrderContext {
     const AVClass *class;
     int dst_tff;               ///< output bff/tff
     int          line_size[4]; ///< bytes of pixel data per line for each plane

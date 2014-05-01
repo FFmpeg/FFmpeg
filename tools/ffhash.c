@@ -21,6 +21,7 @@
  */
 
 #include "config.h"
+#include "libavutil/avstring.h"
 #include "libavutil/error.h"
 #include "libavutil/hash.h"
 #include "libavutil/mem.h"
@@ -40,14 +41,14 @@
 #define SIZE 65536
 
 static struct AVHashContext *hash;
-static uint8_t *res;
+static int out_b64;
 
 static void usage(void)
 {
     int i = 0;
     const char *name;
 
-    printf("usage: ffhash [algorithm] [input]...\n");
+    printf("usage: ffhash [b64:]algorithm [input]...\n");
     printf("Supported hash algorithms:");
     do {
         name = av_hash_names(i);
@@ -60,12 +61,16 @@ static void usage(void)
 
 static void finish(void)
 {
-    int i, len = av_hash_get_size(hash);
+    char res[2 * AV_HASH_MAX_SIZE + 4];
 
-    printf("%s=0x", av_hash_get_name(hash));
-    av_hash_final(hash, res);
-    for (i = 0; i < len; i++)
-        printf("%02x", res[i]);
+    printf("%s=", av_hash_get_name(hash));
+    if (out_b64) {
+        av_hash_final_b64(hash, res, sizeof(res));
+        printf("b64:%s", res);
+    } else {
+        av_hash_final_hex(hash, res, sizeof(res));
+        printf("0x%s", res);
+    }
 }
 
 static int check(char *file)
@@ -113,26 +118,24 @@ int main(int argc, char **argv)
 {
     int i;
     int ret = 0;
+    const char *hash_name;
 
     if (argc == 1) {
         usage();
         return 0;
     }
 
-    if ((ret = av_hash_alloc(&hash, argv[1])) < 0) {
+    hash_name = argv[1];
+    out_b64 = av_strstart(hash_name, "b64:", &hash_name);
+    if ((ret = av_hash_alloc(&hash, hash_name)) < 0) {
         switch(ret) {
         case AVERROR(EINVAL):
-            printf("Invalid hash type: %s\n", argv[1]);
+            printf("Invalid hash type: %s\n", hash_name);
             break;
         case AVERROR(ENOMEM):
             printf("%s\n", strerror(errno));
             break;
         }
-        return 1;
-    }
-    res = av_malloc(av_hash_get_size(hash));
-    if (!res) {
-        printf("%s\n", strerror(errno));
         return 1;
     }
 
@@ -143,7 +146,6 @@ int main(int argc, char **argv)
         ret |= check(NULL);
 
     av_hash_freep(&hash);
-    av_freep(&res);
 
     return ret;
 }

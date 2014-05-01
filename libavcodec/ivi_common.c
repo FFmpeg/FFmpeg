@@ -300,7 +300,7 @@ av_cold int ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
     planes[1].num_bands = planes[2].num_bands = cfg->chroma_bands;
 
     for (p = 0; p < 3; p++) {
-        planes[p].bands = av_mallocz(planes[p].num_bands * sizeof(IVIBandDesc));
+        planes[p].bands = av_mallocz_array(planes[p].num_bands, sizeof(IVIBandDesc));
         if (!planes[p].bands)
             return AVERROR(ENOMEM);
 
@@ -366,7 +366,7 @@ static int ivi_init_tiles(IVIBandDesc *band, IVITile *ref_tile,
                                               band->mb_size);
 
             av_freep(&tile->mbs);
-            tile->mbs = av_mallocz(tile->num_MBs * sizeof(IVIMbInfo));
+            tile->mbs = av_mallocz_array(tile->num_MBs, sizeof(IVIMbInfo));
             if (!tile->mbs)
                 return AVERROR(ENOMEM);
 
@@ -410,7 +410,7 @@ av_cold int ff_ivi_init_tiles(IVIPlaneDesc *planes,
             band->num_tiles = x_tiles * y_tiles;
 
             av_freep(&band->tiles);
-            band->tiles = av_mallocz(band->num_tiles * sizeof(IVITile));
+            band->tiles = av_mallocz_array(band->num_tiles, sizeof(IVITile));
             if (!band->tiles)
                 return AVERROR(ENOMEM);
 

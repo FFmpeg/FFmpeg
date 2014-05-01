@@ -102,7 +102,7 @@ static void frac_add(AVFrac *f, int64_t incr)
     f->num = num;
 }
 
-AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precission)
+AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precision)
 {
     AVRational q;
     int j;
@@ -113,9 +113,9 @@ AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precissi
         q = st->codec->time_base;
     }
     for (j=2; j<14; j+= 1+(j>2))
-        while (q.den / q.num < min_precission && q.num % j == 0)
+        while (q.den / q.num < min_precision && q.num % j == 0)
             q.num /= j;
-    while (q.den / q.num < min_precission && q.den < (1<<24))
+    while (q.den / q.num < min_precision && q.den < (1<<24))
         q.den <<= 1;
 
     return q;
@@ -434,6 +434,12 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
     av_dlog(s, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), delay, pkt->size, pkt->stream_index);
+
+    if (pkt->duration < 0 && st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+        av_log(s, AV_LOG_WARNING, "Packet with invalid duration %d in stream %d\n",
+               pkt->duration, pkt->stream_index);
+        pkt->duration = 0;
+    }
 
     /* duration field */
     if (pkt->duration == 0) {

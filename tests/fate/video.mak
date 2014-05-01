@@ -189,6 +189,15 @@ fate-motionpixels: CMD = framecrc -i $(TARGET_SAMPLES)/motion-pixels/INTRO-parti
 FATE_VIDEO-$(call DEMDEC, MPEGTS, MPEG2VIDEO) += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an -vframes 30
 
+FATE_VIDEO-$(call DEMDEC, MV, MVC1) += fate-mv-mvc1
+fate-mv-mvc1: CMD = framecrc -i $(TARGET_SAMPLES)/mv/posture.mv -an -frames 25 -pix_fmt rgb555le
+
+FATE_VIDEO-$(call DEMDEC, MV, MVC2) += fate-mv-mvc2
+fate-mv-mvc2: CMD = framecrc -i $(TARGET_SAMPLES)/mv/12345.mv -an -frames 30 -pix_fmt bgra
+
+FATE_VIDEO-$(call DEMDEC, MV, SGIRLE) += fate-mv-sgirle
+fate-mv-sgirle: CMD = framecrc -i $(TARGET_SAMPLES)/mv/pet-rle.movie -an
+
 FATE_VIDEO-$(call DEMDEC, MXG, MXPEG) += fate-mxpeg
 fate-mxpeg: CMD = framecrc -idct simple -flags +bitexact -i $(TARGET_SAMPLES)/mxpeg/m1.mxg -an
 

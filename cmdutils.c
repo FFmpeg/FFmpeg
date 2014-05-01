@@ -834,10 +834,17 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
     };
     char *tail;
     int level;
+    int flags;
     int i;
 
+    flags = av_log_get_flags();
     tail = strstr(arg, "repeat");
-    av_log_set_flags(tail ? 0 : AV_LOG_SKIP_REPEATED);
+    if (tail)
+        flags &= ~AV_LOG_SKIP_REPEATED;
+    else
+        flags |= AV_LOG_SKIP_REPEATED;
+
+    av_log_set_flags(flags);
     if (tail == arg)
         arg += 6 + (arg[6]=='+');
     if(tail && !*arg)
@@ -1377,6 +1384,9 @@ int show_codecs(void *optctx, const char *opt, const char *arg)
     for (i = 0; i < nb_codecs; i++) {
         const AVCodecDescriptor *desc = codecs[i];
         const AVCodec *codec = NULL;
+
+        if (strstr(desc->name, "_deprecated"))
+            continue;
 
         printf(" ");
         printf(avcodec_find_decoder(desc->id) ? "D" : ".");

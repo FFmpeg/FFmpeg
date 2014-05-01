@@ -574,7 +574,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
 
     /* e.g. AVFMT_NOFILE formats will not have a AVIOContext */
     if (s->pb)
-        ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
+        ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta, 0);
 
     if (!(s->flags&AVFMT_FLAG_PRIV_OPT) && s->iformat->read_header)
         if ((ret = s->iformat->read_header(s)) < 0)
@@ -1360,12 +1360,6 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
                                      st->time_base,
                                      AV_ROUND_DOWN);
             }
-        } else if (st->codec->time_base.num != 0 &&
-                   st->codec->time_base.den != 0) {
-            out_pkt.duration = av_rescale_q_rnd(st->parser->duration,
-                                                st->codec->time_base,
-                                                st->time_base,
-                                                AV_ROUND_DOWN);
         }
 
         out_pkt.stream_index = st->index;
@@ -2655,13 +2649,15 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
     if (!frame)
         return AVERROR(ENOMEM);
 
-    if (!avcodec_is_open(st->codec) && !st->info->found_decoder) {
+    if (!avcodec_is_open(st->codec) &&
+        st->info->found_decoder <= 0 &&
+        (st->codec->codec_id != -st->info->found_decoder || !st->codec->codec_id)) {
         AVDictionary *thread_opt = NULL;
 
         codec = find_decoder(s, st, st->codec->codec_id);
 
         if (!codec) {
-            st->info->found_decoder = -1;
+            st->info->found_decoder = -st->codec->codec_id;
             ret                     = -1;
             goto fail;
         }
@@ -2673,7 +2669,7 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
         if (!options)
             av_dict_free(&thread_opt);
         if (ret < 0) {
-            st->info->found_decoder = -1;
+            st->info->found_decoder = -st->codec->codec_id;
             goto fail;
         }
         st->info->found_decoder = 1;
@@ -2872,6 +2868,7 @@ static int tb_unreliable(AVCodecContext *c)
         // c->codec_tag == AV_RL32("XVID") ||
         c->codec_tag == AV_RL32("mp4v") ||
         c->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
+        c->codec_id == AV_CODEC_ID_GIF ||
         c->codec_id == AV_CODEC_ID_H264)
         return 1;
     return 0;
@@ -2996,6 +2993,7 @@ void ff_rfps_calculate(AVFormatContext *ic)
             && tb_unreliable(st->codec)) {
             int num = 0;
             double best_error= 0.01;
+            AVRational ref_rate = st->r_frame_rate.num ? st->r_frame_rate : av_inv_q(st->time_base);
 
             for (j= 0; j<MAX_STD_TIMEBASES; j++) {
                 int k;
@@ -3022,8 +3020,17 @@ void ff_rfps_calculate(AVFormatContext *ic)
                 }
             }
             // do not increase frame rate by more than 1 % in order to match a standard rate.
-            if (num && (!st->r_frame_rate.num || (double)num/(12*1001) < 1.01 * av_q2d(st->r_frame_rate)))
+            if (num && (!ref_rate.num || (double)num/(12*1001) < 1.01 * av_q2d(ref_rate)))
                 av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, num, 12*1001, INT_MAX);
+        }
+        if (   !st->avg_frame_rate.num
+            && st->r_frame_rate.num && st->info->rfps_duration_sum
+            && st->info->codec_info_duration <= 0
+            && st->info->duration_count > 2
+            && fabs(1.0 / (av_q2d(st->r_frame_rate) * av_q2d(st->time_base)) - st->info->rfps_duration_sum / (double)st->info->duration_count) <= 1.0
+            ) {
+            av_log(ic, AV_LOG_DEBUG, "Setting avg frame rate based on r frame rate\n");
+            st->avg_frame_rate = st->r_frame_rate;
         }
 
         av_freep(&st->info->duration_error);
@@ -3129,13 +3136,14 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
              * the correct fps. */
             if (av_q2d(st->time_base) > 0.0005)
                 fps_analyze_framecount *= 2;
+            if (!tb_unreliable(st->codec))
+                fps_analyze_framecount = 0;
             if (ic->fps_probe_size >= 0)
                 fps_analyze_framecount = ic->fps_probe_size;
             if (st->disposition & AV_DISPOSITION_ATTACHED_PIC)
                 fps_analyze_framecount = 0;
             /* variable fps and no guess at the real fps */
-            if (tb_unreliable(st->codec) &&
-                !(st->r_frame_rate.num && st->avg_frame_rate.num) &&
+            if (!(st->r_frame_rate.num && st->avg_frame_rate.num) &&
                 st->info->duration_count < fps_analyze_framecount &&
                 st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
                 break;

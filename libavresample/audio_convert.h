@@ -96,6 +96,7 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in);
 
 /* arch-specific initialization functions */
 
+void ff_audio_convert_init_aarch64(AudioConvert *ac);
 void ff_audio_convert_init_arm(AudioConvert *ac);
 void ff_audio_convert_init_x86(AudioConvert *ac);
 

@@ -37,8 +37,6 @@ int ff_pcm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     pkt->stream_index = 0;
-    if (ret < 0)
-        return ret;
 
     return ret;
 }

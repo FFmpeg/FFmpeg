@@ -25,6 +25,7 @@
 int swri_resample_int16_mmx2 (struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_int16_sse2 (struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_float_sse  (struct ResampleContext *c,   float *dst, const   float *src, int *consumed, int src_size, int dst_size, int update_ctx);
+int swri_resample_double_sse2(struct ResampleContext *c,  double *dst, const  double *src, int *consumed, int src_size, int dst_size, int update_ctx);
 
 DECLARE_ALIGNED(16, const uint64_t, ff_resample_int16_rounder)[2]    = { 0x0000000000004000ULL, 0x0000000000000000ULL};
 
@@ -183,6 +184,54 @@ __asm__ volatile(\
     "addps      %%xmm3, %%xmm2    \n\t"\
     "movss      %%xmm0, %1        \n\t"\
     "movss      %%xmm2, %2        \n\t"\
+    : "+r" (len),\
+      "=m" (val),\
+      "=m" (v2)\
+    : "r" (((uint8_t*)(src+sample_index))-len),\
+      "r" (((uint8_t*)filter)-len),\
+      "r" (((uint8_t*)(filter+c->filter_alloc))-len)\
+    XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3")\
+);
+
+#define COMMON_CORE_DBL_SSE2 \
+    x86_reg len= -8*c->filter_length;\
+__asm__ volatile(\
+    "xorpd     %%xmm0, %%xmm0     \n\t"\
+    "1:                           \n\t"\
+    "movupd  (%1, %0), %%xmm1     \n\t"\
+    "mulpd   (%2, %0), %%xmm1     \n\t"\
+    "addpd     %%xmm1, %%xmm0     \n\t"\
+    "add       $16, %0            \n\t"\
+    " js 1b                       \n\t"\
+    "movhlps   %%xmm0, %%xmm1     \n\t"\
+    "addpd     %%xmm1, %%xmm0     \n\t"\
+    "movsd     %%xmm0, (%3)       \n\t"\
+    : "+r" (len)\
+    : "r" (((uint8_t*)(src+sample_index))-len),\
+      "r" (((uint8_t*)filter)-len),\
+      "r" (dst+dst_index)\
+);
+
+#define LINEAR_CORE_DBL_SSE2 \
+    x86_reg len= -8*c->filter_length;\
+__asm__ volatile(\
+    "xorpd      %%xmm0, %%xmm0    \n\t"\
+    "xorpd      %%xmm2, %%xmm2    \n\t"\
+    "1:                           \n\t"\
+    "movupd   (%3, %0), %%xmm1    \n\t"\
+    "movapd     %%xmm1, %%xmm3    \n\t"\
+    "mulpd    (%4, %0), %%xmm1    \n\t"\
+    "mulpd    (%5, %0), %%xmm3    \n\t"\
+    "addpd      %%xmm1, %%xmm0    \n\t"\
+    "addpd      %%xmm3, %%xmm2    \n\t"\
+    "add           $16, %0        \n\t"\
+    " js 1b                       \n\t"\
+    "movhlps    %%xmm0, %%xmm1    \n\t"\
+    "movhlps    %%xmm2, %%xmm3    \n\t"\
+    "addpd      %%xmm1, %%xmm0    \n\t"\
+    "addpd      %%xmm3, %%xmm2    \n\t"\
+    "movsd      %%xmm0, %1        \n\t"\
+    "movsd      %%xmm2, %2        \n\t"\
     : "+r" (len),\
       "=m" (val),\
       "=m" (v2)\

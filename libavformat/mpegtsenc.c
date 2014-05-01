@@ -86,6 +86,8 @@ typedef struct MpegTSWrite {
     int flags;
     int copyts;
     int tables_version;
+
+    int omit_video_pes_length;
 } MpegTSWrite;
 
 /* a PES packet header is generated every DEFAULT_PES_HEADER_FREQ packets */
@@ -124,6 +126,8 @@ static const AVOption options[] = {
       offsetof(MpegTSWrite, copyts), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "tables_version", "set PAT, PMT and SDT version",
       offsetof(MpegTSWrite, tables_version), AV_OPT_TYPE_INT, {.i64=0}, 0, 31, AV_OPT_FLAG_ENCODING_PARAM},
+    { "omit_video_pes_length", "Ommit the PES packet length for video packets",
+      offsetof(MpegTSWrite, omit_video_pes_length), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -313,6 +317,12 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             break;
         case AV_CODEC_ID_AC3:
             stream_type = STREAM_TYPE_AUDIO_AC3;
+            break;
+        case AV_CODEC_ID_DTS:
+            stream_type = STREAM_TYPE_AUDIO_DTS;
+            break;
+        case AV_CODEC_ID_TRUEHD:
+            stream_type = STREAM_TYPE_AUDIO_TRUEHD;
             break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;
@@ -696,6 +706,10 @@ static int mpegts_write_header(AVFormatContext *s)
                 goto fail;
             }
             ast = avformat_new_stream(ts_st->amux, NULL);
+            if (!ast) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             ret = avcodec_copy_context(ast->codec, st->codec);
             if (ret != 0)
                 goto fail;
@@ -1066,6 +1080,9 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             }
             if (len > 0xffff)
                 len = 0;
+            if (ts->omit_video_pes_length && st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                len = 0;
+            }
             *q++ = len >> 8;
             *q++ = len;
             val = 0x80;

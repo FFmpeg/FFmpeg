@@ -57,8 +57,8 @@ typedef struct VC1DSPContext {
     /* put 8x8 block with bicubic interpolation and quarterpel precision
      * last argument is actually round value instead of height
      */
-    vc1op_pixels_func put_vc1_mspel_pixels_tab[16];
-    vc1op_pixels_func avg_vc1_mspel_pixels_tab[16];
+    vc1op_pixels_func put_vc1_mspel_pixels_tab[2][16];
+    vc1op_pixels_func avg_vc1_mspel_pixels_tab[2][16];
 
     /* This is really one func used in VC-1 decoding */
     h264_chroma_mc_func put_no_rnd_vc1_chroma_pixels_tab[3];
@@ -73,6 +73,14 @@ typedef struct VC1DSPContext {
     void (*sprite_v_double_twoscale)(uint8_t *dst, const uint8_t *src1a, const uint8_t *src1b, int offset1,
                                                    const uint8_t *src2a, const uint8_t *src2b, int offset2,
                                      int alpha, int width);
+
+    /**
+     * Search buf from the start for up to size bytes. Return the index
+     * of a zero byte, or >= size if not found. Ideally, use lookahead
+     * to filter out any zero bytes that are known to not be followed by
+     * one or more further zero bytes and a one byte.
+     */
+    int (*vc1_find_start_code_candidate)(const uint8_t *buf, int size);
 } VC1DSPContext;
 
 void ff_vc1dsp_init(VC1DSPContext* c);

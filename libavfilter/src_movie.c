@@ -44,12 +44,12 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct MovieStream {
     AVStream *st;
     int done;
 } MovieStream;
 
-typedef struct {
+typedef struct MovieContext {
     /* common A/V fields */
     const AVClass *class;
     int64_t seek_point;   ///< seekpoint in microseconds

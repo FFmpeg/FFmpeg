@@ -51,7 +51,7 @@ enum TransposeDir {
     TRANSPOSE_CLOCK_FLIP,
 };
 
-typedef struct {
+typedef struct TransContext {
     const AVClass *class;
     int hsub, vsub;
     int pixsteps[4];

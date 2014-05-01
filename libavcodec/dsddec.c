@@ -95,7 +95,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     init_static_data();
 
-    s = av_malloc(sizeof(DSDContext) * avctx->channels);
+    s = av_malloc_array(sizeof(DSDContext), avctx->channels);
     if (!s)
         return AVERROR(ENOMEM);
 

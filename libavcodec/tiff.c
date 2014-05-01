@@ -55,6 +55,7 @@ typedef struct TiffContext {
     enum TiffCompr compr;
     enum TiffPhotometric photometric;
     int planar;
+    int subsampling[2];
     int fax_opts;
     int predictor;
     int fill_order;
@@ -67,6 +68,8 @@ typedef struct TiffContext {
 
     uint8_t *deinvert_buf;
     int deinvert_buf_size;
+    uint8_t *yuv_line;
+    unsigned int yuv_line_size;
 
     int geotag_count;
     TiffGeoTag *geotags;
@@ -221,7 +224,7 @@ static int add_metadata(int count, int type,
 {
     switch(type) {
     case TIFF_DOUBLE: return ff_tadd_doubles_metadata(count, name, sep, &s->gb, s->le, avpriv_frame_get_metadatap(frame));
-    case TIFF_SHORT : return ff_tadd_shorts_metadata(count, name, sep, &s->gb, s->le, avpriv_frame_get_metadatap(frame));
+    case TIFF_SHORT : return ff_tadd_shorts_metadata(count, name, sep, &s->gb, s->le, 0, avpriv_frame_get_metadatap(frame));
     case TIFF_STRING: return ff_tadd_string_metadata(count, name, &s->gb, s->le, avpriv_frame_get_metadatap(frame));
     default         : return AVERROR_INVALIDDATA;
     };
@@ -380,13 +383,43 @@ static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
     return ret;
 }
 
-static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
-                             const uint8_t *src, int size, int lines)
+static void unpack_yuv(TiffContext *s, AVFrame *p,
+                       const uint8_t *src, int lnum)
+{
+    int i, j, k;
+    int w       = (s->width - 1) / s->subsampling[0] + 1;
+    uint8_t *pu = &p->data[1][lnum / s->subsampling[1] * p->linesize[1]];
+    uint8_t *pv = &p->data[2][lnum / s->subsampling[1] * p->linesize[2]];
+    if (s->width % s->subsampling[0] || s->height % s->subsampling[1]) {
+        for (i = 0; i < w; i++) {
+            for (j = 0; j < s->subsampling[1]; j++)
+                for (k = 0; k < s->subsampling[0]; k++)
+                    p->data[0][FFMIN(lnum + j, s->height-1) * p->linesize[0] +
+                               FFMIN(i * s->subsampling[0] + k, s->width-1)] = *src++;
+            *pu++ = *src++;
+            *pv++ = *src++;
+        }
+    }else{
+        for (i = 0; i < w; i++) {
+            for (j = 0; j < s->subsampling[1]; j++)
+                for (k = 0; k < s->subsampling[0]; k++)
+                    p->data[0][(lnum + j) * p->linesize[0] +
+                               i * s->subsampling[0] + k] = *src++;
+            *pu++ = *src++;
+            *pv++ = *src++;
+        }
+    }
+}
+
+
+static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int stride,
+                             const uint8_t *src, int size, int strip_start, int lines)
 {
     PutByteContext pb;
     int c, line, pixels, code, ret;
     const uint8_t *ssrc = src;
     int width = ((s->width * s->bpp) + 7) >> 3;
+    int is_yuv = s->photometric == TIFF_PHOTOMETRIC_YCBCR;
 
     if (s->planar)
         width /= s->bppcount;
@@ -394,7 +427,26 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     if (size <= 0)
         return AVERROR_INVALIDDATA;
 
+    if (is_yuv) {
+        int bytes_per_row = (((s->width - 1) / s->subsampling[0] + 1) * s->bpp *
+                            s->subsampling[0] * s->subsampling[1] + 7) >> 3;
+        av_fast_padded_malloc(&s->yuv_line, &s->yuv_line_size, bytes_per_row);
+        if (s->yuv_line == NULL) {
+            av_log(s->avctx, AV_LOG_ERROR, "Not enough memory\n");
+            return AVERROR(ENOMEM);
+        }
+        dst = s->yuv_line;
+        stride = 0;
+        width = s->width * s->subsampling[1] + 2*(s->width / s->subsampling[0]);
+        av_assert0(width <= bytes_per_row);
+        av_assert0(s->bpp == 24);
+    }
+
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE) {
+        if (is_yuv) {
+            av_log(s->avctx, AV_LOG_ERROR, "YUV deflate is unsupported");
+            return AVERROR_PATCHWELCOME;
+        }
 #if CONFIG_ZLIB
         return tiff_unpack_zlib(s, dst, stride, src, size, width, lines);
 #else
@@ -426,6 +478,10 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
             }
             if (s->bpp < 8 && s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
                 horizontal_fill(s->bpp, dst, 1, dst, 0, width, 0);
+            if (is_yuv) {
+                unpack_yuv(s, p, dst, strip_start + line);
+                line += s->subsampling[1] - 1;
+            }
             dst += stride;
         }
         return 0;
@@ -433,11 +489,14 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     if (s->compr == TIFF_CCITT_RLE ||
         s->compr == TIFF_G3        ||
         s->compr == TIFF_G4) {
+        if (is_yuv)
+            return AVERROR_INVALIDDATA;
+
         return tiff_unpack_fax(s, dst, stride, src, size, width, lines);
     }
 
     bytestream2_init(&s->gb, src, size);
-    bytestream2_init_writer(&pb, dst, stride * lines);
+    bytestream2_init_writer(&pb, dst, is_yuv ? s->yuv_line_size : (stride * lines));
 
     for (line = 0; line < lines; line++) {
         if (src - ssrc > size) {
@@ -502,6 +561,10 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
             }
             break;
         }
+        if (is_yuv) {
+            unpack_yuv(s, p, dst, strip_start + line);
+            line += s->subsampling[1] - 1;
+        }
         dst += stride;
     }
     return 0;
@@ -524,7 +587,25 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
         s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
         break;
     case 243:
-        s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
+        if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
+            if (s->subsampling[0] == 1 && s->subsampling[1] == 1) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+            } else if (s->subsampling[0] == 2 && s->subsampling[1] == 1) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+            } else if (s->subsampling[0] == 4 && s->subsampling[1] == 1) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV411P;
+            } else if (s->subsampling[0] == 1 && s->subsampling[1] == 2) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV440P;
+            } else if (s->subsampling[0] == 2 && s->subsampling[1] == 2) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+            } else if (s->subsampling[0] == 4 && s->subsampling[1] == 4) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV410P;
+            } else {
+                av_log(s->avctx, AV_LOG_ERROR, "Unsupported YCbCr subsampling\n");
+                return AVERROR_PATCHWELCOME;
+            }
+        } else
+            s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
         break;
     case 161:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GRAY16LE : AV_PIX_FMT_GRAY16BE;
@@ -749,11 +830,11 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         case TIFF_PHOTOMETRIC_BLACK_IS_ZERO:
         case TIFF_PHOTOMETRIC_RGB:
         case TIFF_PHOTOMETRIC_PALETTE:
+        case TIFF_PHOTOMETRIC_YCBCR:
             s->photometric = value;
             break;
         case TIFF_PHOTOMETRIC_ALPHA_MASK:
         case TIFF_PHOTOMETRIC_SEPARATED:
-        case TIFF_PHOTOMETRIC_YCBCR:
         case TIFF_PHOTOMETRIC_CIE_LAB:
         case TIFF_PHOTOMETRIC_ICC_LAB:
         case TIFF_PHOTOMETRIC_ITU_LAB:
@@ -804,6 +885,14 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case TIFF_PLANAR:
         s->planar = value == 2;
         break;
+    case TIFF_YCBCR_SUBSAMPLING:
+        if (count != 2) {
+            av_log(s->avctx, AV_LOG_ERROR, "subsample count invalid\n");
+            return AVERROR_INVALIDDATA;
+        }
+        for (i = 0; i < count; i++)
+            s->subsampling[i] = ff_tget(&s->gb, type, s->le);
+        break;
     case TIFF_T4OPTIONS:
         if (s->compr == TIFF_G3)
             s->fax_opts = value;
@@ -838,7 +927,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             s->geotag_count = 0;
             return -1;
         }
-        s->geotags = av_mallocz(sizeof(TiffGeoTag) * s->geotag_count);
+        s->geotags = av_mallocz_array(s->geotag_count, sizeof(TiffGeoTag));
         if (!s->geotags) {
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
             s->geotag_count = 0;
@@ -860,7 +949,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             return AVERROR_INVALIDDATA;
         if (bytestream2_get_bytes_left(&s->gb) < count * sizeof(int64_t))
             return AVERROR_INVALIDDATA;
-        dp = av_malloc(count * sizeof(double));
+        dp = av_malloc_array(count, sizeof(double));
         if (!dp) {
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
             goto end;
@@ -1067,7 +1156,7 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Invalid strip size/offset\n");
             return AVERROR_INVALIDDATA;
         }
-        if ((ret = tiff_unpack_strip(s, dst, stride, avpkt->data + soff, ssize,
+        if ((ret = tiff_unpack_strip(s, p, dst, stride, avpkt->data + soff, ssize, i,
                                      FFMIN(s->rps, s->height - i))) < 0) {
             if (avctx->err_recognition & AV_EF_EXPLODE)
                 return ret;
@@ -1076,6 +1165,10 @@ static int decode_frame(AVCodecContext *avctx,
         dst += s->rps * stride;
     }
     if (s->predictor == 2) {
+        if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
+            av_log(s->avctx, AV_LOG_ERROR, "predictor == 2 with YUV is unsupported");
+            return AVERROR_PATCHWELCOME;
+        }
         dst   = p->data[plane];
         soff  = s->bpp >> 3;
         if (s->planar)
@@ -1136,6 +1229,8 @@ static av_cold int tiff_init(AVCodecContext *avctx)
 
     s->width  = 0;
     s->height = 0;
+    s->subsampling[0] =
+    s->subsampling[1] = 1;
     s->avctx  = avctx;
     ff_lzw_decode_open(&s->lzw);
     ff_ccitt_unpack_init();

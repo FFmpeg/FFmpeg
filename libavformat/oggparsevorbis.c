@@ -170,7 +170,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
 
     if (p != end)
         av_log(as, AV_LOG_INFO,
-               "%ti bytes of comment header remain\n", end - p);
+               "%"PTRDIFF_SPECIFIER" bytes of comment header remain\n", end - p);
     if (n > 0)
         av_log(as, AV_LOG_INFO,
                "truncated comment header, %i comments not found\n", n);

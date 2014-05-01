@@ -141,7 +141,7 @@ static int wav_write_header(AVFormatContext *s)
 
     /* format header */
     fmt = ff_start_tag(pb, "fmt ");
-    if (ff_put_wav_header(pb, s->streams[0]->codec) < 0) {
+    if (ff_put_wav_header(pb, s->streams[0]->codec, 0) < 0) {
         av_log(s, AV_LOG_ERROR, "%s codec not supported in WAVE format\n",
                s->streams[0]->codec->codec ? s->streams[0]->codec->codec->name : "NONE");
         return -1;
@@ -323,7 +323,7 @@ static int w64_write_header(AVFormatContext *s)
     avio_wl64(pb, -1);
     avio_write(pb, ff_w64_guid_wave, sizeof(ff_w64_guid_wave));
     start_guid(pb, ff_w64_guid_fmt, &start);
-    if ((ret = ff_put_wav_header(pb, s->streams[0]->codec)) < 0) {
+    if ((ret = ff_put_wav_header(pb, s->streams[0]->codec, 0)) < 0) {
         av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
                s->streams[0]->codec->codec ? s->streams[0]->codec->codec->name : "NONE");
         return ret;

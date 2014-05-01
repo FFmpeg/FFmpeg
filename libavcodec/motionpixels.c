@@ -77,10 +77,10 @@ static av_cold int mp_decode_init(AVCodecContext *avctx)
     motionpixels_tableinit();
     mp->avctx = avctx;
     ff_dsputil_init(&mp->dsp, avctx);
-    mp->changes_map = av_mallocz(avctx->width * h4);
+    mp->changes_map = av_mallocz_array(avctx->width, h4);
     mp->offset_bits_len = av_log2(avctx->width * avctx->height) + 1;
-    mp->vpt = av_mallocz(avctx->height * sizeof(YuvPixel));
-    mp->hpt = av_mallocz(h4 * w4 / 16 * sizeof(YuvPixel));
+    mp->vpt = av_mallocz_array(avctx->height, sizeof(YuvPixel));
+    mp->hpt = av_mallocz_array(h4 / 4, w4 / 4 * sizeof(YuvPixel));
     if (!mp->changes_map || !mp->vpt || !mp->hpt) {
         av_freep(&mp->changes_map);
         av_freep(&mp->vpt);

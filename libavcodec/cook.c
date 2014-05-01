@@ -219,7 +219,7 @@ static av_cold int init_cook_mlt(COOKContext *q)
     int j, ret;
     int mlt_size = q->samples_per_channel;
 
-    if ((q->mlt_window = av_malloc(mlt_size * sizeof(*q->mlt_window))) == 0)
+    if ((q->mlt_window = av_malloc_array(mlt_size, sizeof(*q->mlt_window))) == 0)
         return AVERROR(ENOMEM);
 
     /* Initialize the MLT window: simple sine window. */

@@ -1204,6 +1204,8 @@ static int opengl_draw(AVFormatContext *h, void *input, int repaint, int is_pkt)
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (!repaint) {
+        if (is_pkt)
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         LOAD_TEXTURE_DATA(0, 0)
         if (desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
             LOAD_TEXTURE_DATA(1, 1)

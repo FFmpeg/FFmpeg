@@ -285,6 +285,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     switch (s->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUYV422:
+    case AV_PIX_FMT_YVYU422:
     case AV_PIX_FMT_UYVY422:
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV440P:
@@ -473,7 +474,7 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
 
     planar = av_sample_fmt_is_planar(sample_fmt);
     if (planar && nb_channels > AV_NUM_DATA_POINTERS) {
-        if (!(frame->extended_data = av_mallocz(nb_channels *
+        if (!(frame->extended_data = av_mallocz_array(nb_channels,
                                                 sizeof(*frame->extended_data))))
             return AVERROR(ENOMEM);
     } else {
@@ -608,9 +609,9 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
     frame->linesize[0] = pool->linesize[0];
 
     if (planes > AV_NUM_DATA_POINTERS) {
-        frame->extended_data = av_mallocz(planes * sizeof(*frame->extended_data));
+        frame->extended_data = av_mallocz_array(planes, sizeof(*frame->extended_data));
         frame->nb_extended_buf = planes - AV_NUM_DATA_POINTERS;
-        frame->extended_buf  = av_mallocz(frame->nb_extended_buf *
+        frame->extended_buf  = av_mallocz_array(frame->nb_extended_buf,
                                           sizeof(*frame->extended_buf));
         if (!frame->extended_data || !frame->extended_buf) {
             av_freep(&frame->extended_data);
@@ -963,7 +964,7 @@ do {                                                                    \
 
             if (planes > FF_ARRAY_ELEMS(frame->buf)) {
                 frame->nb_extended_buf = planes - FF_ARRAY_ELEMS(frame->buf);
-                frame->extended_buf = av_malloc(sizeof(*frame->extended_buf) *
+                frame->extended_buf = av_malloc_array(sizeof(*frame->extended_buf),
                                                 frame->nb_extended_buf);
                 if (!frame->extended_buf) {
                     ret = AVERROR(ENOMEM);
@@ -2688,7 +2689,10 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
         case AV_CODEC_ID_PAF_VIDEO_DEPRECATED           : return AV_CODEC_ID_PAF_VIDEO;
         case AV_CODEC_ID_WEBP_DEPRECATED                : return AV_CODEC_ID_WEBP;
         case AV_CODEC_ID_HEVC_DEPRECATED                : return AV_CODEC_ID_HEVC;
+        case AV_CODEC_ID_MVC1_DEPRECATED                : return AV_CODEC_ID_MVC1;
+        case AV_CODEC_ID_MVC2_DEPRECATED                : return AV_CODEC_ID_MVC2;
         case AV_CODEC_ID_SANM_DEPRECATED                : return AV_CODEC_ID_SANM;
+        case AV_CODEC_ID_SGIRLE_DEPRECATED              : return AV_CODEC_ID_SGIRLE;
         case AV_CODEC_ID_VP7_DEPRECATED                 : return AV_CODEC_ID_VP7;
         default                                         : return id;
     }

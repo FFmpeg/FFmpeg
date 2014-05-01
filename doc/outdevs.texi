@@ -290,6 +290,20 @@ When both options are provided then the highest value is used
 are set to 0 (which is default), the device will use the default
 PulseAudio duration value. By default PulseAudio set buffer duration
 to around 2 seconds.
+
+@item prebuf
+Specify pre-buffering size in bytes. The server does not start with
+playback before at least @option{prebuf} bytes are available in the
+buffer. By default this option is initialized to the same value as
+@option{buffer_size} or @option{buffer_duration} (whichever is bigger).
+
+@item minreq
+Specify minimum request size in bytes. The server does not request less
+than @option{minreq} bytes from the client, instead waits until the buffer
+is free enough to request more bytes at once. It is recommended to not set
+this option, which will initialize this to a value that is deemed sensible
+by the server.
+
 @end table
 
 @subsection Examples
@@ -388,19 +402,26 @@ For example, @code{dual-headed:0.1} would specify screen 1 of display
 Check the X11 specification for more detailed information about the
 display name format.
 
+@item window_id
+When set to non-zero value then device doesn't create new window,
+but uses existing one with provided @var{window_id}. By default
+this options is set to zero and device creates its own window.
+
 @item window_size
 Set the created window size, can be a string of the form
 @var{width}x@var{height} or a video size abbreviation. If not
 specified it defaults to the size of the input video.
+Ignored when @var{window_id} is set.
 
 @item window_x
 @item window_y
 Set the X and Y window offsets for the created window. They are both
 set to 0 by default. The values may be ignored by the window manager.
+Ignored when @var{window_id} is set.
 
 @item window_title
 Set the window title, if not specified default to the filename
-specified for the output device.
+specified for the output device. Ignored when @var{window_id} is set.
 @end table
 
 For more information about XVideo see @url{http://www.x.org/}.

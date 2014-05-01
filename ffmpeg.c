@@ -517,6 +517,8 @@ static void ffmpeg_cleanup(int ret)
     if (received_sigterm) {
         av_log(NULL, AV_LOG_INFO, "Received signal %d: terminating.\n",
                (int) received_sigterm);
+    } else if (ret && transcode_init_done) {
+        av_log(NULL, AV_LOG_INFO, "Conversion failed!\n");
     }
     term_exit();
 }
@@ -1791,16 +1793,15 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         decoded_frame_tb   = avctx->time_base;
     } else if (decoded_frame->pkt_pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = decoded_frame->pkt_pts;
-        pkt->pts           = AV_NOPTS_VALUE;
         decoded_frame_tb   = ist->st->time_base;
     } else if (pkt->pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = pkt->pts;
-        pkt->pts           = AV_NOPTS_VALUE;
         decoded_frame_tb   = ist->st->time_base;
     }else {
         decoded_frame->pts = ist->dts;
         decoded_frame_tb   = AV_TIME_BASE_Q;
     }
+    pkt->pts           = AV_NOPTS_VALUE;
     if (decoded_frame->pts != AV_NOPTS_VALUE)
         decoded_frame->pts = av_rescale_delta(decoded_frame_tb, decoded_frame->pts,
                                               (AVRational){1, ist->st->codec->sample_rate}, decoded_frame->nb_samples, &ist->filter_in_rescale_delta_last,
@@ -2149,7 +2150,7 @@ static void print_sdp(void)
 {
     char sdp[16384];
     int i;
-    AVFormatContext **avc = av_malloc(sizeof(*avc) * nb_output_files);
+    AVFormatContext **avc = av_malloc_array(sizeof(*avc), nb_output_files);
 
     if (!avc)
         exit_program(1);
@@ -2284,7 +2285,7 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
         if (*p == ',')
             n++;
     size = n;
-    pts = av_malloc(sizeof(*pts) * size);
+    pts = av_malloc_array(sizeof(*pts), size);
     if (!pts) {
         av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
         exit_program(1);
@@ -3323,6 +3324,8 @@ static int process_input(int file_index)
 
     /* add the stream-global side data to the first packet */
     if (ist->nb_packets == 1)
+        if (ist->st->nb_side_data)
+            av_packet_split_side_data(&pkt);
         for (i = 0; i < ist->st->nb_side_data; i++) {
             AVPacketSideData *src_sd = &ist->st->side_data[i];
             uint8_t *dst_data;

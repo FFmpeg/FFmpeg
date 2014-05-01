@@ -556,7 +556,8 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
     }
 
     tmp = 1;
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp));
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp)))
+        av_log(NULL, AV_LOG_WARNING, "setsockopt SO_REUSEADDR failed\n");
 
     my_addr->sin_family = AF_INET;
     if (bind (server_fd, (struct sockaddr *) my_addr, sizeof (*my_addr)) < 0) {
@@ -572,7 +573,9 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
         closesocket(server_fd);
         return -1;
     }
-    ff_socket_nonblock(server_fd, 1);
+
+    if (ff_socket_nonblock(server_fd, 1) < 0)
+        av_log(NULL, AV_LOG_WARNING, "ff_socket_nonblock failed\n");
 
     return server_fd;
 }
@@ -648,18 +651,24 @@ static int http_server(void)
 
     if (my_http_addr.sin_port) {
         server_fd = socket_open_listen(&my_http_addr);
-        if (server_fd < 0)
+        if (server_fd < 0) {
+            av_free(poll_table);
             return -1;
+        }
     }
 
     if (my_rtsp_addr.sin_port) {
         rtsp_server_fd = socket_open_listen(&my_rtsp_addr);
-        if (rtsp_server_fd < 0)
+        if (rtsp_server_fd < 0) {
+            av_free(poll_table);
+            closesocket(server_fd);
             return -1;
+        }
     }
 
     if (!rtsp_server_fd && !server_fd) {
         http_log("HTTP and RTSP disabled.\n");
+        av_free(poll_table);
         return -1;
     }
 
@@ -802,7 +811,8 @@ static void http_send_too_busy_reply(int fd)
                        "</body></html>\r\n",
                        nb_connections, nb_max_connections);
     av_assert0(len < sizeof(buffer));
-    send(fd, buffer, len, 0);
+    if (send(fd, buffer, len, 0) < len)
+        av_log(NULL, AV_LOG_WARNING, "Could not send too-busy reply, send() failed\n");
 }
 
 
@@ -820,7 +830,8 @@ static void new_connection(int server_fd, int is_rtsp)
         http_log("error during accept %s\n", strerror(errno));
         return;
     }
-    ff_socket_nonblock(fd, 1);
+    if (ff_socket_nonblock(fd, 1) < 0)
+        av_log(NULL, AV_LOG_WARNING, "ff_socket_nonblock failed\n");
 
     if (nb_connections >= nb_max_connections) {
         http_send_too_busy_reply(fd);
@@ -1365,7 +1376,8 @@ static void parse_acl_row(FFStream *stream, FFStream* feed, IPAddressACL *ext_ac
                 naclp = &(*naclp)->next;
 
             *naclp = nacl;
-        }
+        } else
+            av_free(nacl);
     }
 }
 
@@ -1747,7 +1759,10 @@ static int http_parse_request(HTTPContext *c)
                             q += strlen(q);
 
                             len = sizeof(my_addr);
-                            getsockname(c->fd, (struct sockaddr *)&my_addr, &len);
+
+                            /* XXX: Should probably fail? */
+                            if (getsockname(c->fd, (struct sockaddr *)&my_addr, &len))
+                                http_log("getsockname() failed\n");
 
                             /* XXX: should use a dynamic buffer */
                             sdp_data_size = prepare_sdp_description(stream,
@@ -2740,8 +2755,11 @@ static int http_receive_data(HTTPContext *c)
         /* a packet has been received : write it in the store, except
            if header */
         if (c->data_count > FFM_PACKET_SIZE) {
-            /* XXX: use llseek or url_seek */
-            lseek(c->feed_fd, feed->feed_write_index, SEEK_SET);
+            /* XXX: use llseek or url_seek
+             * XXX: Should probably fail? */
+            if (lseek(c->feed_fd, feed->feed_write_index, SEEK_SET) == -1)
+                http_log("Seek to %"PRId64" failed\n", feed->feed_write_index);
+
             if (write(c->feed_fd, c->buffer, FFM_PACKET_SIZE) < 0) {
                 http_log("Error writing to feed file: %s\n", strerror(errno));
                 goto fail;
@@ -3467,6 +3485,7 @@ static int rtp_new_av_stream(HTTPContext *c,
     fail:
         if (h)
             ffurl_close(h);
+        av_free(st);
         av_free(ctx);
         return -1;
     }

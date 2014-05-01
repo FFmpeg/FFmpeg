@@ -37,7 +37,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct BlackFrameContext {
     const AVClass *class;
     int bamount;          ///< black amount
     int bthresh;          ///< black threshold

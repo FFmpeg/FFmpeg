@@ -60,7 +60,7 @@ av_cold int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale)
     if (ff_fft_init(s, s->mdct_bits - 2, inverse) < 0)
         goto fail;
 
-    s->tcos = av_malloc(n/2 * sizeof(FFTSample));
+    s->tcos = av_malloc_array(n/2, sizeof(FFTSample));
     if (!s->tcos)
         goto fail;
 

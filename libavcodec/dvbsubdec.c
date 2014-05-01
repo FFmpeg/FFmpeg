@@ -1394,7 +1394,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
     }
 
     if (sub->num_rects > 0){
-        sub->rects = av_mallocz(sizeof(*sub->rects) * sub->num_rects);
+        sub->rects = av_mallocz_array(sizeof(*sub->rects), sub->num_rects);
         for(i=0; i<sub->num_rects; i++)
             sub->rects[i] = av_mallocz(sizeof(*sub->rects[i]));
 

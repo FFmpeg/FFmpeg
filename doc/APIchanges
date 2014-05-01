@@ -15,6 +15,21 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-04-29 - 1bf6396 - lavc 55.60.100 - avcodec.h
+  Add AVCodecDescriptor.mime_types field.
+
+2014-04-29 - xxxxxxx - lavu 52.80.0 - hash.h
+  Add av_hash_final_bin(), av_hash_final_hex() and av_hash_final_b64().
+
+2014-03-07 - 8b2a130 - lavc 55.50.0 / 55.53.100 - dxva2.h
+  Add FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO for old Intel GPUs.
+
+2014-04-xx - xxxxxxx - lavu 53.13.0 / 52.78.100 - avutil.h
+  Add av_get_time_base_q().
+
+2014-04-xx - xxxxxxx - lavu 53.12.0 / 52.77.100 - crc.h
+  Add AV_CRC_16_ANSI_LE crc variant.
+
 2014-04-XX - xxxxxxx - lavf xx.xx.1xx - avformat.h
   Add av_format_inject_global_side_data()
 
@@ -259,7 +274,7 @@ API changes, most recent first:
 
 2013-08-05 - 9547e3e / f824535 - lavc 55.22.100 / 55.13.0 - avcodec.h
   Deprecate the bitstream-related members from struct AVVDPAUContext.
-  The bistream buffers no longer need to be explicitly freed.
+  The bitstream buffers no longer need to be explicitly freed.
 
 2013-08-05 - 3b805dc / 549294f - lavc 55.21.100 / 55.12.0 - avcodec.h
   Deprecate the CODEC_CAP_HWACCEL_VDPAU codec capability. Use CODEC_CAP_HWACCEL

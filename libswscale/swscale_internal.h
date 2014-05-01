@@ -370,7 +370,7 @@ typedef struct SwsContext {
     uint8_t *table_rV[256 + 2*YUVRGB_TABLE_HEADROOM];
     uint8_t *table_gU[256 + 2*YUVRGB_TABLE_HEADROOM];
     uint8_t *table_bU[256 + 2*YUVRGB_TABLE_HEADROOM];
-    DECLARE_ALIGNED(16, int32_t, input_rgb2yuv_table)[16+40*4]; // This table can contain both C and SIMD formatted values, teh C vales are always at the XY_IDX points
+    DECLARE_ALIGNED(16, int32_t, input_rgb2yuv_table)[16+40*4]; // This table can contain both C and SIMD formatted values, the C vales are always at the XY_IDX points
 #define RY_IDX 0
 #define GY_IDX 1
 #define BY_IDX 2

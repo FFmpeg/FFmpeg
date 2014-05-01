@@ -138,7 +138,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct SelectContext {
     const AVClass *class;
     char *expr_str;
     AVExpr *expr;

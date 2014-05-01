@@ -163,7 +163,7 @@ static int start_jack(AVFormatContext *context)
     sem_init(&self->packet_count, 0, 0);
 
     self->sample_rate = jack_get_sample_rate(self->client);
-    self->ports       = av_malloc(self->nports * sizeof(*self->ports));
+    self->ports       = av_malloc_array(self->nports, sizeof(*self->ports));
     self->buffer_size = jack_get_buffer_size(self->client);
 
     /* Register JACK ports */

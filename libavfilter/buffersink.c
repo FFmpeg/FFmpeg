@@ -36,7 +36,7 @@
 #include "buffersink.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct BufferSinkContext {
     const AVClass *class;
     AVFifoBuffer *fifo;                      ///< FIFO buffer of video frame references
     unsigned warning_limit;

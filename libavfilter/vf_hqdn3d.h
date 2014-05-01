@@ -28,7 +28,7 @@
 
 #include "libavutil/opt.h"
 
-typedef struct {
+typedef struct HQDN3DContext {
     const AVClass *class;
     int16_t *coefs[4];
     uint16_t *line;

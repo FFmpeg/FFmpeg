@@ -269,7 +269,7 @@ endef
 define ARESAMPLE_LIN
 FATE_SWR_RESAMPLE += fate-swr-resample_lin-$(3)-$(1)-$(2)
 fate-swr-resample_lin-$(3)-$(1)-$(2): tests/data/asynth-$(1)-1.wav
-fate-swr-resample_lin-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -af atrim=end_sample=10240,aresample=$(2):linear_interp=1:internal_sample_fmt=$(3),aformat=$(3),aresample=$(1):internal_sample_fmt=$(3) -f wav -acodec pcm_s16le -
+fate-swr-resample_lin-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -af atrim=end_sample=10240,aresample=$(2):linear_interp=1:internal_sample_fmt=$(3),aformat=$(3),aresample=$(1):linear_interp=1:internal_sample_fmt=$(3) -f wav -acodec pcm_s16le -
 
 fate-swr-resample_lin-$(3)-$(1)-$(2): CMP = stddev
 fate-swr-resample_lin-$(3)-$(1)-$(2): CMP_UNIT = $(5)
@@ -291,7 +291,7 @@ fate-swr-resample_lin-s16p-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 fate-swr-resample_lin-s16p-48000-8000: CMP_TARGET = 62.41
 fate-swr-resample_lin-s16p-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 
-fate-swr-resample_lin-s16p-48000-44100: CMP_TARGET = 0.86
+fate-swr-resample_lin-s16p-48000-44100: CMP_TARGET = 0.68
 fate-swr-resample_lin-s16p-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_lin-fltp-8000-44100: CMP_TARGET = 14.61
@@ -309,8 +309,26 @@ fate-swr-resample_lin-fltp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 fate-swr-resample_lin-fltp-48000-8000: CMP_TARGET = 62.41
 fate-swr-resample_lin-fltp-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 
-fate-swr-resample_lin-fltp-48000-44100: CMP_TARGET = 0.79
+fate-swr-resample_lin-fltp-48000-44100: CMP_TARGET = 0.63
 fate-swr-resample_lin-fltp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
+
+fate-swr-resample_lin-dblp-8000-44100: CMP_TARGET = 14.61
+fate-swr-resample_lin-dblp-8000-44100: SIZE_TOLERANCE = 96000 - 20480
+
+fate-swr-resample_lin-dblp-8000-48000: CMP_TARGET = 14.50
+fate-swr-resample_lin-dblp-8000-48000: SIZE_TOLERANCE = 96000 - 20480
+
+fate-swr-resample_lin-dblp-44100-8000: CMP_TARGET = 75.45
+fate-swr-resample_lin-dblp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
+
+fate-swr-resample_lin-dblp-44100-48000: CMP_TARGET = 9.67
+fate-swr-resample_lin-dblp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
+
+fate-swr-resample_lin-dblp-48000-8000: CMP_TARGET = 62.41
+fate-swr-resample_lin-dblp-48000-8000: SIZE_TOLERANCE = 576000 - 20484
+
+fate-swr-resample_lin-dblp-48000-44100: CMP_TARGET = 0.63
+fate-swr-resample_lin-dblp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 endef
 
 define ARESAMPLE_NN
@@ -343,6 +361,7 @@ $(call CROSS_TEST,$(SAMPLERATES),ARESAMPLE,dblp,f64le,s16)
 
 $(call CROSS_TEST,$(SAMPLERATES_LITE),ARESAMPLE_LIN,s16p,s16le,s16)
 $(call CROSS_TEST,$(SAMPLERATES_LITE),ARESAMPLE_LIN,fltp,f32le,s16)
+$(call CROSS_TEST,$(SAMPLERATES_LITE),ARESAMPLE_LIN,dblp,f64le,s16)
 
 $(call CROSS_TEST,$(SAMPLERATES_NN),ARESAMPLE_NN,s16p,s16le,s16)
 $(call CROSS_TEST,$(SAMPLERATES_NN),ARESAMPLE_NN,fltp,f32le,s16)

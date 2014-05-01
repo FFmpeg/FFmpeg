@@ -93,6 +93,13 @@
 // to be forced to tokenize __VA_ARGS__
 #define E1(x) x
 
+/* Check if the hard coded offset of a struct member still matches reality.
+ * Induce a compilation failure if not.
+ */
+#define AV_CHECK_OFFSET(s, m, o) struct check_##o {    \
+        int x_##o[offsetof(s, m) == o? 1: -1];         \
+    }
+
 #define LOCAL_ALIGNED_A(a, t, v, s, o, ...)             \
     uint8_t la_##v[sizeof(t s o) + (a)];                \
     t (*v) o = (void *)FFALIGN((uintptr_t)la_##v, a)
@@ -115,6 +122,12 @@
 #   define LOCAL_ALIGNED_16(t, v, ...) LOCAL_ALIGNED(16, t, v, __VA_ARGS__)
 #endif
 
+#if HAVE_LOCAL_ALIGNED_32
+#   define LOCAL_ALIGNED_32(t, v, ...) E1(LOCAL_ALIGNED_D(32, t, v, __VA_ARGS__,,))
+#else
+#   define LOCAL_ALIGNED_32(t, v, ...) LOCAL_ALIGNED(32, t, v, __VA_ARGS__)
+#endif
+
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_malloc(size);\
@@ -128,6 +141,24 @@
 {\
     p = av_mallocz(size);\
     if (p == NULL && (size) != 0) {\
+        av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+        goto label;\
+    }\
+}
+
+#define FF_ALLOC_ARRAY_OR_GOTO(ctx, p, nelem, elsize, label)\
+{\
+    p = av_malloc_array(nelem, elsize);\
+    if (p == NULL) {\
+        av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+        goto label;\
+    }\
+}
+
+#define FF_ALLOCZ_ARRAY_OR_GOTO(ctx, p, nelem, elsize, label)\
+{\
+    p = av_mallocz_array(nelem, elsize);\
+    if (p == NULL) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -213,6 +244,11 @@ void avpriv_request_sample(void *avc,
 
 #if HAVE_LIBC_MSVCRT
 #define avpriv_open ff_open
+#define PTRDIFF_SPECIFIER "Id"
+#define SIZE_SPECIFIER "Iu"
+#else
+#define PTRDIFF_SPECIFIER "td"
+#define SIZE_SPECIFIER "zu"
 #endif
 
 /**

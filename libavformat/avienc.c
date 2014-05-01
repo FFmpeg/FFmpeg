@@ -325,7 +325,7 @@ static int avi_write_header(AVFormatContext *s)
                           av_get_pix_fmt_name(stream->pix_fmt));
                 break;
             case AVMEDIA_TYPE_AUDIO:
-                if ((ret = ff_put_wav_header(pb, stream)) < 0)
+                if ((ret = ff_put_wav_header(pb, stream, 0)) < 0)
                     return ret;
                 break;
             default:

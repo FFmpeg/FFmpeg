@@ -2258,7 +2258,11 @@ static void decode_coeffs(AVCodecContext *ctx)
                                   16 * step * step, c, e, p, a[x] + l[y], \
                                   uvscan, uvnb, uv_band_counts, qmul[1]); \
             a[x] = l[y] = !!res; \
-            s->uveob[pl][n] = res; \
+            if (step >= 4) { \
+                AV_WN16A(&s->uveob[pl][n], res); \
+            } else { \
+                s->uveob[pl][n] = res; \
+            } \
         } \
     }
 
@@ -2448,8 +2452,8 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
     int tx = 4 * s->lossless + b->tx, uvtx = b->uvtx + 4 * s->lossless;
     int uvstep1d = 1 << b->uvtx, p;
     uint8_t *dst = s->dst[0], *dst_r = s->frames[CUR_FRAME].tf.f->data[0] + y_off;
-    LOCAL_ALIGNED_16(uint8_t, a_buf, [48]);
-    LOCAL_ALIGNED_16(uint8_t, l, [32]);
+    LOCAL_ALIGNED_32(uint8_t, a_buf, [64]);
+    LOCAL_ALIGNED_32(uint8_t, l, [32]);
 
     for (n = 0, y = 0; y < end_y; y += step1d) {
         uint8_t *ptr = dst, *ptr_r = dst_r;
@@ -2457,7 +2461,7 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
                                ptr_r += 4 * step1d, n += step) {
             int mode = b->mode[b->bs > BS_8x8 && b->tx == TX_4X4 ?
                                y * 2 + x : 0];
-            uint8_t *a = &a_buf[16];
+            uint8_t *a = &a_buf[32];
             enum TxfmType txtp = vp9_intra_txfm_type[mode];
             int eob = b->skip ? 0 : b->tx > TX_8X8 ? AV_RN16A(&s->eob[n]) : s->eob[n];
 

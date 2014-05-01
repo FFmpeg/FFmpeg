@@ -349,6 +349,17 @@ fail:
     return ret;
 }
 
+static int is_sps_exist(HEVCContext *s, const HEVCSPS* last_sps)
+{
+    int i;
+
+    for( i = 0; i < MAX_SPS_COUNT; i++)
+        if(s->sps_list[i])
+            if (last_sps == (HEVCSPS*)s->sps_list[i]->data)
+                return 1;
+    return 0;
+}
+
 static int hls_slice_header(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -363,8 +374,11 @@ static int hls_slice_header(HEVCContext *s)
         if (IS_IDR(s))
             ff_hevc_clear_refs(s);
     }
+    sh->no_output_of_prior_pics_flag = 0;
     if (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
+    if (s->nal_unit_type == NAL_CRA_NUT && s->last_eos == 1)
+        sh->no_output_of_prior_pics_flag = 1;
 
     sh->pps_id = get_ue_golomb_long(gb);
     if (sh->pps_id >= MAX_PPS_COUNT || !s->pps_list[sh->pps_id]) {
@@ -379,7 +393,16 @@ static int hls_slice_header(HEVCContext *s)
     s->pps = (HEVCPPS*)s->pps_list[sh->pps_id]->data;
 
     if (s->sps != (HEVCSPS*)s->sps_list[s->pps->sps_id]->data) {
+        const HEVCSPS* last_sps = s->sps;
         s->sps = (HEVCSPS*)s->sps_list[s->pps->sps_id]->data;
+        if (last_sps) {
+            if (is_sps_exist(s, last_sps)) {
+                if (s->sps->width !=  last_sps->width || s->sps->height != last_sps->height ||
+                        s->sps->temporal_layer[s->sps->max_sub_layers - 1].max_dec_pic_buffering != last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
+                    sh->no_output_of_prior_pics_flag = 0;
+            } else
+                sh->no_output_of_prior_pics_flag = 0;
+        }
         ff_hevc_clear_refs(s);
         ret = set_sps(s, s->sps);
         if (ret < 0)
@@ -438,6 +461,7 @@ static int hls_slice_header(HEVCContext *s)
             return AVERROR_INVALIDDATA;
         }
 
+        sh->pic_output_flag = 1;
         if (s->pps->output_flag_present_flag)
             sh->pic_output_flag = get_bits1(gb);
 
@@ -2530,6 +2554,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     int i, consumed, ret = 0;
 
     s->ref = NULL;
+    s->last_eos = s->eos;
     s->eos = 0;
 
     /* split the input packet into NAL units, so we know the upper bound on the
@@ -2886,6 +2911,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     ff_dsputil_init(&s->dsp, avctx);
 
     s->context_initialized = 1;
+    s->eos = 0;
 
     return 0;
 
@@ -2950,6 +2976,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->seq_output = s0->seq_output;
     s->pocTid0    = s0->pocTid0;
     s->max_ra     = s0->max_ra;
+    s->eos        = s0->eos;
 
     s->is_nalff        = s0->is_nalff;
     s->nal_length_size = s0->nal_length_size;

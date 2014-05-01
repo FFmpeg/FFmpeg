@@ -168,6 +168,7 @@ Codecs:
   exif.c, exif.h                        Thilo Borgmann
   ffv1.c                                Michael Niedermayer
   ffwavesynth.c                         Nicolas George
+  fic.c                                 Derek Buitenhuis
   flac*                                 Justin Ruggles
   flashsv*                              Benjamin Larsson
   flicvideo.c                           Mike Melanson

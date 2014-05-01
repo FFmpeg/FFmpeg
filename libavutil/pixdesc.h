@@ -255,7 +255,7 @@ enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc);
  * Utility function to access log2_chroma_w log2_chroma_h from
  * the pixel format AVPixFmtDescriptor.
  *
- * See avcodec_get_chroma_sub_sample() for a function that asserts a
+ * See av_get_chroma_sub_sample() for a function that asserts a
  * valid pixel format instead of returning an error code.
  * Its recommanded that you use avcodec_get_chroma_sub_sample unless
  * you do check the return code!
@@ -287,5 +287,53 @@ void ff_check_pixfmt_descriptors(void);
  */
 enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt);
 
+#define FF_LOSS_RESOLUTION  0x0001 /**< loss due to resolution change */
+#define FF_LOSS_DEPTH       0x0002 /**< loss due to color depth change */
+#define FF_LOSS_COLORSPACE  0x0004 /**< loss due to color space conversion */
+#define FF_LOSS_ALPHA       0x0008 /**< loss of alpha bits */
+#define FF_LOSS_COLORQUANT  0x0010 /**< loss due to color quantization */
+#define FF_LOSS_CHROMA      0x0020 /**< loss of chroma (e.g. RGB to gray conversion) */
 
+/**
+ * Compute what kind of losses will occur when converting from one specific
+ * pixel format to another.
+ * When converting from one pixel format to another, information loss may occur.
+ * For example, when converting from RGB24 to GRAY, the color information will
+ * be lost. Similarly, other losses occur when converting from some formats to
+ * other formats. These losses can involve loss of chroma, but also loss of
+ * resolution, loss of color depth, loss due to the color space conversion, loss
+ * of the alpha bits or loss due to color quantization.
+ * av_get_fix_fmt_loss() informs you about the various types of losses
+ * which will occur when converting from one pixel format to another.
+ *
+ * @param[in] dst_pix_fmt destination pixel format
+ * @param[in] src_pix_fmt source pixel format
+ * @param[in] has_alpha Whether the source pixel format alpha channel is used.
+ * @return Combination of flags informing you what kind of losses will occur
+ * (maximum loss for an invalid dst_pix_fmt).
+ */
+int av_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
+                        enum AVPixelFormat src_pix_fmt,
+                        int has_alpha);
+
+/**
+ * Compute what kind of losses will occur when converting from one specific
+ * pixel format to another.
+ * When converting from one pixel format to another, information loss may occur.
+ * For example, when converting from RGB24 to GRAY, the color information will
+ * be lost. Similarly, other losses occur when converting from some formats to
+ * other formats. These losses can involve loss of chroma, but also loss of
+ * resolution, loss of color depth, loss due to the color space conversion, loss
+ * of the alpha bits or loss due to color quantization.
+ * av_get_fix_fmt_loss() informs you about the various types of losses
+ * which will occur when converting from one pixel format to another.
+ *
+ * @param[in] dst_pix_fmt destination pixel format
+ * @param[in] src_pix_fmt source pixel format
+ * @param[in] has_alpha Whether the source pixel format alpha channel is used.
+ * @return Combination of flags informing you what kind of losses will occur
+ * (maximum loss for an invalid dst_pix_fmt).
+ */
+enum AVPixelFormat av_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt1, enum AVPixelFormat dst_pix_fmt2,
+                                             enum AVPixelFormat src_pix_fmt, int has_alpha, int *loss_ptr);
 #endif /* AVUTIL_PIXDESC_H */

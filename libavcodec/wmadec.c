@@ -927,7 +927,7 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
         samples_offset += s->frame_len;
     }
 
-    av_dlog(s->avctx, "%d %d %d %d outbytes:%td eaten:%d\n",
+    av_dlog(s->avctx, "%d %d %d %d outbytes:%"PTRDIFF_SPECIFIER" eaten:%d\n",
             s->frame_len_bits, s->block_len_bits, s->frame_len, s->block_len,
             (int8_t *)samples - (int8_t *)data, avctx->block_align);
 

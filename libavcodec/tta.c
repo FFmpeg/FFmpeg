@@ -104,12 +104,12 @@ static int allocate_buffers(AVCodecContext *avctx)
     TTAContext *s = avctx->priv_data;
 
     if (s->bps < 3) {
-        s->decode_buffer = av_mallocz(sizeof(int32_t)*s->frame_length*s->channels);
+        s->decode_buffer = av_mallocz_array(sizeof(int32_t)*s->frame_length, s->channels);
         if (!s->decode_buffer)
             return AVERROR(ENOMEM);
     } else
         s->decode_buffer = NULL;
-    s->ch_ctx = av_malloc(avctx->channels * sizeof(*s->ch_ctx));
+    s->ch_ctx = av_malloc_array(avctx->channels, sizeof(*s->ch_ctx));
     if (!s->ch_ctx) {
         av_freep(&s->decode_buffer);
         return AVERROR(ENOMEM);

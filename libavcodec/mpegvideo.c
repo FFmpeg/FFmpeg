@@ -931,7 +931,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 #define UPDATE_PICTURE(pic)\
 do {\
     ff_mpeg_unref_picture(s, &s->pic);\
-    if (s1->pic.f->buf[0])\
+    if (s1->pic.f && s1->pic.f->buf[0])\
         ret = ff_mpeg_ref_picture(s, &s->pic, &s1->pic);\
     else\
         ret = update_picture_tables(&s->pic, &s1->pic);\
@@ -1085,11 +1085,10 @@ static int init_context_frame(MpegEncContext *s)
     s->mb_width   = (s->width + 15) / 16;
     s->mb_stride  = s->mb_width + 1;
     s->b8_stride  = s->mb_width * 2 + 1;
-    s->b4_stride  = s->mb_width * 4 + 1;
     mb_array_size = s->mb_height * s->mb_stride;
     mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
 
-    /* set default edge pos, will be overriden
+    /* set default edge pos, will be overridden
      * in decode_header if needed */
     s->h_edge_pos = s->mb_width * 16;
     s->v_edge_pos = s->mb_height * 16;
@@ -1789,7 +1788,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             return -1;
         }
 
-        if (!avctx->hwaccel) {
+        if (!avctx->hwaccel && !(avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)) {
             for(i=0; i<avctx->height; i++)
                 memset(s->last_picture_ptr->f->data[0] + s->last_picture_ptr->f->linesize[0]*i,
                        0x80, avctx->width);

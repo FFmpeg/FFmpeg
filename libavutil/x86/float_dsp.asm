@@ -166,16 +166,11 @@ cglobal vector_dmul_scalar, 4,4,3, dst, src, mul, len
     VBROADCASTSD   m0, mulm
 %else
 %if WIN64
-    movlhps      xmm2, xmm2
-%if cpuflag(avx)
-    vinsertf128  ymm2, ymm2, xmm2, 1
-%endif
     SWAP 0, 2
-%else
-    movlhps      xmm0, xmm0
-%if cpuflag(avx)
-    vinsertf128  ymm0, ymm0, xmm0, 1
 %endif
+    movlhps       xm0, xm0
+%if cpuflag(avx)
+    vinsertf128   ym0, ym0, xm0, 1
 %endif
 %endif
     lea          lenq, [lend*8-2*mmsize]

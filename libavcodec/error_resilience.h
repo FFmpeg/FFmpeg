@@ -42,7 +42,7 @@ typedef struct ERPicture {
     AVFrame *f;
     ThreadFrame *tf;
 
-    // it's the caller responsability to allocate these buffers
+    // it's the caller's responsibility to allocate these buffers
     int16_t (*motion_val[2])[2];
     int8_t *ref_index[2];
 

@@ -50,14 +50,7 @@ cglobal scalarproduct_int16, 3,3,3, v1, v2, order
     paddd   m2, m1
     add     orderq, mmsize*2
     jl .loop
-%if mmsize == 16
-    movhlps m0, m2
-    paddd   m2, m0
-    pshuflw m0, m2, 0x4e
-%else
-    pshufw  m0, m2, 0x4e
-%endif
-    paddd   m2, m0
+    HADDD   m2, m0
     movd   eax, m2
 %if mmsize == 8
     emms
@@ -99,14 +92,7 @@ cglobal scalarproduct_and_madd_int16, 4,4,8, v1, v2, v3, order, mul
     mova    [v1q + orderq + mmsize], m3
     add     orderq, mmsize*2
     jl .loop
-%if mmsize == 16
-    movhlps m0, m6
-    paddd   m6, m0
-    pshuflw m0, m6, 0x4e
-%else
-    pshufw  m0, m6, 0x4e
-%endif
-    paddd   m6, m0
+    HADDD   m6, m0
     movd   eax, m6
     RET
 %endmacro
@@ -200,10 +186,7 @@ SCALARPRODUCT_LOOP 4
 SCALARPRODUCT_LOOP 2
 SCALARPRODUCT_LOOP 0
 .end:
-    movhlps m0, m6
-    paddd   m6, m0
-    pshuflw m0, m6, 0x4e
-    paddd   m6, m0
+    HADDD   m6, m0
     movd   eax, m6
     RET
 

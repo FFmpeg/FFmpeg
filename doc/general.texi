@@ -259,6 +259,7 @@ library:
 @item Deluxe Paint Animation    @tab   @tab X
 @item DFA                       @tab   @tab X
     @tab This format is used in Chronomaster game
+@item DSD Stream File (DSF)     @tab   @tab X
 @item DV video                  @tab X @tab X
 @item DXA                       @tab   @tab X
     @tab This format is used in the non-Windows version of the Feeble Files
@@ -312,6 +313,7 @@ library:
 @item LVF                       @tab   @tab X
 @item LXF                       @tab   @tab X
     @tab VR native stream format, used by Leitch/Harris' video servers.
+@item Magic Lantern Video (MLV) @tab   @tab X
 @item Matroska                  @tab X @tab X
 @item Matroska audio            @tab X @tab
 @item FFmpeg metadata           @tab X @tab X
@@ -750,11 +752,11 @@ following image formats are supported:
     @tab Texture dictionaries used by the Renderware Engine.
 @item RL2 video              @tab     @tab  X
     @tab used in some games by Entertainment Software Partners
-@item SGI RLE 8-bit          @tab     @tab  X
 @item Sierra VMD video       @tab     @tab  X
     @tab Used in Sierra VMD files.
 @item Silicon Graphics Motion Video Compressor 1 (MVC1)  @tab     @tab  X
 @item Silicon Graphics Motion Video Compressor 2 (MVC2)  @tab     @tab  X
+@item Silicon Graphics RLE 8-bit video  @tab     @tab  X
 @item Smacker video          @tab     @tab  X
     @tab Video encoding used in Smacker.
 @item SMPTE VC-1             @tab     @tab  X
@@ -931,6 +933,7 @@ following image formats are supported:
 @item Musepack SV7           @tab     @tab  X
 @item Musepack SV8           @tab     @tab  X
 @item Nellymoser Asao        @tab  X  @tab  X
+@item On2 AVC (Audio for Video Codec) @tab     @tab  X
 @item Opus                   @tab  E  @tab  E
     @tab supported through external library libopus
 @item PCM A-law              @tab  X  @tab  X

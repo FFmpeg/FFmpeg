@@ -282,10 +282,10 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
 
 #include "common.h"
 #include "error.h"
+#include "rational.h"
 #include "version.h"
 #include "macros.h"
 #include "mathematics.h"
-#include "rational.h"
 #include "log.h"
 #include "pixfmt.h"
 
@@ -324,6 +324,11 @@ unsigned av_int_list_length_for_size(unsigned elsize,
  * errno.
  */
 FILE *av_fopen_utf8(const char *path, const char *mode);
+
+/**
+ * Return the fractional representation of the internal time base.
+ */
+AVRational av_get_time_base_q(void);
 
 /**
  * @}

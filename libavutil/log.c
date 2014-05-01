@@ -212,13 +212,38 @@ static int get_category(void *ptr){
     return avc->category + 16;
 }
 
+static const char *get_level_str(int level)
+{
+    switch (level) {
+    case AV_LOG_QUIET:
+        return "quiet";
+    case AV_LOG_DEBUG:
+        return "debug";
+    case AV_LOG_VERBOSE:
+        return "verbose";
+    case AV_LOG_INFO:
+        return "info";
+    case AV_LOG_WARNING:
+        return "warning";
+    case AV_LOG_ERROR:
+        return "error";
+    case AV_LOG_FATAL:
+        return "fatal";
+    case AV_LOG_PANIC:
+        return "panic";
+    default:
+        return "";
+    }
+}
+
 static void format_line(void *avcl, int level, const char *fmt, va_list vl,
-                        AVBPrint part[3], int *print_prefix, int type[2])
+                        AVBPrint part[4], int *print_prefix, int type[2])
 {
     AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
     av_bprint_init(part+0, 0, 1);
     av_bprint_init(part+1, 0, 1);
-    av_bprint_init(part+2, 0, 65536);
+    av_bprint_init(part+2, 0, 1);
+    av_bprint_init(part+3, 0, 65536);
 
     if(type) type[0] = type[1] = AV_CLASS_CATEGORY_NA + 16;
     if (*print_prefix && avc) {
@@ -234,12 +259,15 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
         av_bprintf(part+1, "[%s @ %p] ",
                  avc->item_name(avcl), avcl);
         if(type) type[1] = get_category(avcl);
+
+        if (flags & AV_LOG_PRINT_LEVEL)
+            av_bprintf(part+2, "[%s] ", get_level_str(level));
     }
 
-    av_vbprintf(part+2, fmt, vl);
+    av_vbprintf(part+3, fmt, vl);
 
-    if(*part[0].str || *part[1].str || *part[2].str) {
-        char lastc = part[2].len && part[2].len <= part[2].size ? part[2].str[part[2].len - 1] : 0;
+    if(*part[0].str || *part[1].str || *part[2].str || *part[3].str) {
+        char lastc = part[3].len && part[3].len <= part[3].size ? part[3].str[part[3].len - 1] : 0;
         *print_prefix = lastc == '\n' || lastc == '\r';
     }
 }
@@ -247,10 +275,10 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
                         char *line, int line_size, int *print_prefix)
 {
-    AVBPrint part[3];
+    AVBPrint part[4];
     format_line(ptr, level, fmt, vl, part, print_prefix, NULL);
-    snprintf(line, line_size, "%s%s%s", part[0].str, part[1].str, part[2].str);
-    av_bprint_finalize(part+2, NULL);
+    snprintf(line, line_size, "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
+    av_bprint_finalize(part+3, NULL);
 }
 
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
@@ -258,7 +286,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     static int print_prefix = 1;
     static int count;
     static char prev[LINE_SZ];
-    AVBPrint part[3];
+    AVBPrint part[4];
     char line[LINE_SZ];
     static int is_atty;
     int type[2];
@@ -276,7 +304,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 #endif
 
     format_line(ptr, level, fmt, vl, part, &print_prefix, type);
-    snprintf(line, sizeof(line), "%s%s%s", part[0].str, part[1].str, part[2].str);
+    snprintf(line, sizeof(line), "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
 
 #if HAVE_ISATTY
     if (!is_atty)
@@ -301,8 +329,10 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     colored_fputs(type[1], 0, part[1].str);
     sanitize(part[2].str);
     colored_fputs(av_clip(level >> 3, 0, 6), tint >> 8, part[2].str);
+    sanitize(part[3].str);
+    colored_fputs(av_clip(level >> 3, 0, 6), tint >> 8, part[3].str);
 end:
-    av_bprint_finalize(part+2, NULL);
+    av_bprint_finalize(part+3, NULL);
 #if HAVE_PTHREADS
     pthread_mutex_unlock(&mutex);
 #endif

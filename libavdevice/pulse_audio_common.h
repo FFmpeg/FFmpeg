@@ -30,4 +30,9 @@ pa_sample_format_t ff_codec_id_to_pulse_format(enum AVCodecID codec_id);
 
 int ff_pulse_audio_get_devices(AVDeviceInfoList *devices, const char *server, int output);
 
+int ff_pulse_audio_connect_context(pa_mainloop **pa_ml, pa_context **pa_ctx,
+                                   const char *server, const char *description);
+
+void ff_pulse_audio_disconnect_context(pa_mainloop **pa_ml, pa_context **pa_ctx);
+
 #endif /* AVDEVICE_PULSE_AUDIO_COMMON_H */

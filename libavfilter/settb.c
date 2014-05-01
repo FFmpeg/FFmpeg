@@ -51,7 +51,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct SetTBContext {
     const AVClass *class;
     char *tb_expr;
     double var_values[VAR_VARS_NB];

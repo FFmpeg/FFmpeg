@@ -113,3 +113,8 @@ unsigned av_int_list_length_for_size(unsigned elsize,
     }
     return i;
 }
+
+AVRational av_get_time_base_q(void)
+{
+    return (AVRational){1, AV_TIME_BASE};
+}

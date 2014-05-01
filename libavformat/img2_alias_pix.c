@@ -28,8 +28,8 @@ static int brender_read_probe(AVProbeData *p)
     const uint8_t *end = b + p->buf_size;
     int width  = bytestream_get_be16(&b);
     int height = bytestream_get_be16(&b);
-    int ox     = bytestream_get_be16(&b);
-    int oy     = bytestream_get_be16(&b);
+    av_unused int ox = bytestream_get_be16(&b);
+    av_unused int oy = bytestream_get_be16(&b);
     int bpp    = bytestream_get_be16(&b);
     int x, y;
 

@@ -64,7 +64,7 @@ typedef struct UnsharpFilterParam {
     uint32_t *sc[MAX_MATRIX_SIZE - 1];       ///< finite state machine storage
 } UnsharpFilterParam;
 
-typedef struct {
+typedef struct UnsharpContext {
     const AVClass *class;
     int lmsize_x, lmsize_y, cmsize_x, cmsize_y;
     float lamount, camount;

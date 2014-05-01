@@ -177,6 +177,7 @@ const AVCodecTag ff_nut_video_tags[] = {
 };
 
 const AVCodecTag ff_nut_audio_extra_tags[] = {
+    { AV_CODEC_ID_COMFORT_NOISE,    MKTAG('3', '3', '8', '9') },
     { AV_CODEC_ID_PCM_ALAW,         MKTAG('A', 'L', 'A', 'W') },
     { AV_CODEC_ID_PCM_MULAW,        MKTAG('U', 'L', 'A', 'W') },
     { AV_CODEC_ID_MP3,              MKTAG('M', 'P', '3', ' ') },

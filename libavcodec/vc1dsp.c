@@ -32,6 +32,7 @@
 #include "h264chroma.h"
 #include "rnd_avg.h"
 #include "vc1dsp.h"
+#include "startcode.h"
 
 /* Apply overlap transform to horizontal edge */
 static void vc1_v_overlap_c(uint8_t *src, int stride)
@@ -643,11 +644,80 @@ static av_always_inline void OPNAME ## vc1_mspel_mc(uint8_t *dst,             \
         src += stride;                                                        \
     }                                                                         \
 }\
+static av_always_inline void OPNAME ## vc1_mspel_mc_16(uint8_t *dst,          \
+                                                       const uint8_t *src,    \
+                                                       ptrdiff_t stride,      \
+                                                       int hmode,             \
+                                                       int vmode,             \
+                                                       int rnd)               \
+{                                                                             \
+    int i, j;                                                                 \
+                                                                              \
+    if (vmode) { /* Horizontal filter to apply */                             \
+        int r;                                                                \
+                                                                              \
+        if (hmode) { /* Vertical filter to apply, output to tmp */            \
+            static const int shift_value[] = { 0, 5, 1, 5 };                  \
+            int shift = (shift_value[hmode] + shift_value[vmode]) >> 1;       \
+            int16_t tmp[19 * 16], *tptr = tmp;                                \
+                                                                              \
+            r = (1 << (shift - 1)) + rnd - 1;                                 \
+                                                                              \
+            src -= 1;                                                         \
+            for (j = 0; j < 16; j++) {                                        \
+                for (i = 0; i < 19; i++)                                      \
+                    tptr[i] = (vc1_mspel_ver_filter_16bits(src + i, stride, vmode) + r) >> shift; \
+                src  += stride;                                               \
+                tptr += 19;                                                   \
+            }                                                                 \
+                                                                              \
+            r    = 64 - rnd;                                                  \
+            tptr = tmp + 1;                                                   \
+            for (j = 0; j < 16; j++) {                                        \
+                for (i = 0; i < 16; i++)                                      \
+                    OP(dst[i], (vc1_mspel_hor_filter_16bits(tptr + i, 1, hmode) + r) >> 7); \
+                dst  += stride;                                               \
+                tptr += 19;                                                   \
+            }                                                                 \
+                                                                              \
+            return;                                                           \
+        } else { /* No horizontal filter, output 8 lines to dst */            \
+            r = 1 - rnd;                                                      \
+                                                                              \
+            for (j = 0; j < 16; j++) {                                        \
+                for (i = 0; i < 16; i++)                                      \
+                    OP(dst[i], vc1_mspel_filter(src + i, stride, vmode, r));  \
+                src += stride;                                                \
+                dst += stride;                                                \
+            }                                                                 \
+            return;                                                           \
+        }                                                                     \
+    }                                                                         \
+                                                                              \
+    /* Horizontal mode with no vertical mode */                               \
+    for (j = 0; j < 16; j++) {                                                \
+        for (i = 0; i < 16; i++)                                              \
+            OP(dst[i], vc1_mspel_filter(src + i, 1, hmode, rnd));             \
+        dst += stride;                                                        \
+        src += stride;                                                        \
+    }                                                                         \
+}\
 static void OPNAME ## pixels8x8_c(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int rnd){\
     int i;\
     for(i=0; i<8; i++){\
         OP4(*(uint32_t*)(block  ), AV_RN32(pixels  ));\
         OP4(*(uint32_t*)(block+4), AV_RN32(pixels+4));\
+        pixels+=line_size;\
+        block +=line_size;\
+    }\
+}\
+static void OPNAME ## pixels16x16_c(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int rnd){\
+    int i;\
+    for(i=0; i<16; i++){\
+        OP4(*(uint32_t*)(block   ), AV_RN32(pixels   ));\
+        OP4(*(uint32_t*)(block+ 4), AV_RN32(pixels+ 4));\
+        OP4(*(uint32_t*)(block+ 8), AV_RN32(pixels+ 8));\
+        OP4(*(uint32_t*)(block+12), AV_RN32(pixels+12));\
         pixels+=line_size;\
         block +=line_size;\
     }\
@@ -675,6 +745,18 @@ static void avg_vc1_mspel_mc ## a ## b ## _c(uint8_t *dst,                    \
                                              ptrdiff_t stride, int rnd)       \
 {                                                                             \
     avg_vc1_mspel_mc(dst, src, stride, a, b, rnd);                            \
+}                                                                             \
+static void put_vc1_mspel_mc ## a ## b ## _16_c(uint8_t *dst,                 \
+                                                const uint8_t *src,           \
+                                                ptrdiff_t stride, int rnd)    \
+{                                                                             \
+    put_vc1_mspel_mc_16(dst, src, stride, a, b, rnd);                         \
+}                                                                             \
+static void avg_vc1_mspel_mc ## a ## b ## _16_c(uint8_t *dst,                 \
+                                                const uint8_t *src,           \
+                                                ptrdiff_t stride, int rnd)    \
+{                                                                             \
+    avg_vc1_mspel_mc_16(dst, src, stride, a, b, rnd);                         \
 }
 
 PUT_VC1_MSPEL(1, 0)
@@ -878,6 +960,11 @@ static void sprite_v_double_twoscale_c(uint8_t *dst,
 }
 
 #endif /* CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER */
+#define FN_ASSIGN(X, Y) \
+    dsp->put_vc1_mspel_pixels_tab[1][X+4*Y] = put_vc1_mspel_mc##X##Y##_c; \
+    dsp->put_vc1_mspel_pixels_tab[0][X+4*Y] = put_vc1_mspel_mc##X##Y##_16_c; \
+    dsp->avg_vc1_mspel_pixels_tab[1][X+4*Y] = avg_vc1_mspel_mc##X##Y##_c; \
+    dsp->avg_vc1_mspel_pixels_tab[0][X+4*Y] = avg_vc1_mspel_mc##X##Y##_16_c
 
 av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
 {
@@ -902,39 +989,28 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
     dsp->vc1_v_loop_filter16  = vc1_v_loop_filter16_c;
     dsp->vc1_h_loop_filter16  = vc1_h_loop_filter16_c;
 
-    dsp->put_vc1_mspel_pixels_tab[0]  = put_pixels8x8_c;
-    dsp->put_vc1_mspel_pixels_tab[1]  = put_vc1_mspel_mc10_c;
-    dsp->put_vc1_mspel_pixels_tab[2]  = put_vc1_mspel_mc20_c;
-    dsp->put_vc1_mspel_pixels_tab[3]  = put_vc1_mspel_mc30_c;
-    dsp->put_vc1_mspel_pixels_tab[4]  = put_vc1_mspel_mc01_c;
-    dsp->put_vc1_mspel_pixels_tab[5]  = put_vc1_mspel_mc11_c;
-    dsp->put_vc1_mspel_pixels_tab[6]  = put_vc1_mspel_mc21_c;
-    dsp->put_vc1_mspel_pixels_tab[7]  = put_vc1_mspel_mc31_c;
-    dsp->put_vc1_mspel_pixels_tab[8]  = put_vc1_mspel_mc02_c;
-    dsp->put_vc1_mspel_pixels_tab[9]  = put_vc1_mspel_mc12_c;
-    dsp->put_vc1_mspel_pixels_tab[10] = put_vc1_mspel_mc22_c;
-    dsp->put_vc1_mspel_pixels_tab[11] = put_vc1_mspel_mc32_c;
-    dsp->put_vc1_mspel_pixels_tab[12] = put_vc1_mspel_mc03_c;
-    dsp->put_vc1_mspel_pixels_tab[13] = put_vc1_mspel_mc13_c;
-    dsp->put_vc1_mspel_pixels_tab[14] = put_vc1_mspel_mc23_c;
-    dsp->put_vc1_mspel_pixels_tab[15] = put_vc1_mspel_mc33_c;
+    dsp->put_vc1_mspel_pixels_tab[0][0] = put_pixels16x16_c;
+    dsp->avg_vc1_mspel_pixels_tab[0][0] = avg_pixels16x16_c;
+    dsp->put_vc1_mspel_pixels_tab[1][0] = put_pixels8x8_c;
+    dsp->avg_vc1_mspel_pixels_tab[1][0] = avg_pixels8x8_c;
+    FN_ASSIGN(0, 1);
+    FN_ASSIGN(0, 2);
+    FN_ASSIGN(0, 3);
 
-    dsp->avg_vc1_mspel_pixels_tab[0]  = avg_pixels8x8_c;
-    dsp->avg_vc1_mspel_pixels_tab[1]  = avg_vc1_mspel_mc10_c;
-    dsp->avg_vc1_mspel_pixels_tab[2]  = avg_vc1_mspel_mc20_c;
-    dsp->avg_vc1_mspel_pixels_tab[3]  = avg_vc1_mspel_mc30_c;
-    dsp->avg_vc1_mspel_pixels_tab[4]  = avg_vc1_mspel_mc01_c;
-    dsp->avg_vc1_mspel_pixels_tab[5]  = avg_vc1_mspel_mc11_c;
-    dsp->avg_vc1_mspel_pixels_tab[6]  = avg_vc1_mspel_mc21_c;
-    dsp->avg_vc1_mspel_pixels_tab[7]  = avg_vc1_mspel_mc31_c;
-    dsp->avg_vc1_mspel_pixels_tab[8]  = avg_vc1_mspel_mc02_c;
-    dsp->avg_vc1_mspel_pixels_tab[9]  = avg_vc1_mspel_mc12_c;
-    dsp->avg_vc1_mspel_pixels_tab[10] = avg_vc1_mspel_mc22_c;
-    dsp->avg_vc1_mspel_pixels_tab[11] = avg_vc1_mspel_mc32_c;
-    dsp->avg_vc1_mspel_pixels_tab[12] = avg_vc1_mspel_mc03_c;
-    dsp->avg_vc1_mspel_pixels_tab[13] = avg_vc1_mspel_mc13_c;
-    dsp->avg_vc1_mspel_pixels_tab[14] = avg_vc1_mspel_mc23_c;
-    dsp->avg_vc1_mspel_pixels_tab[15] = avg_vc1_mspel_mc33_c;
+    FN_ASSIGN(1, 0);
+    FN_ASSIGN(1, 1);
+    FN_ASSIGN(1, 2);
+    FN_ASSIGN(1, 3);
+
+    FN_ASSIGN(2, 0);
+    FN_ASSIGN(2, 1);
+    FN_ASSIGN(2, 2);
+    FN_ASSIGN(2, 3);
+
+    FN_ASSIGN(3, 0);
+    FN_ASSIGN(3, 1);
+    FN_ASSIGN(3, 2);
+    FN_ASSIGN(3, 3);
 
     dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_c;
     dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = avg_no_rnd_vc1_chroma_mc8_c;
@@ -948,6 +1024,8 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
     dsp->sprite_v_double_onescale = sprite_v_double_onescale_c;
     dsp->sprite_v_double_twoscale = sprite_v_double_twoscale_c;
 #endif /* CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER */
+
+    dsp->vc1_find_start_code_candidate = ff_startcode_find_candidate_c;
 
     if (ARCH_AARCH64)
         ff_vc1dsp_init_aarch64(dsp);

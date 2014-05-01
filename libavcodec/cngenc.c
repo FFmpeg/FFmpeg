@@ -56,8 +56,8 @@ static av_cold int cng_encode_init(AVCodecContext *avctx)
     p->order = 10;
     if ((ret = ff_lpc_init(&p->lpc, avctx->frame_size, p->order, FF_LPC_TYPE_LEVINSON)) < 0)
         return ret;
-    p->samples32 = av_malloc(avctx->frame_size * sizeof(*p->samples32));
-    p->ref_coef = av_malloc(p->order * sizeof(*p->ref_coef));
+    p->samples32 = av_malloc_array(avctx->frame_size, sizeof(*p->samples32));
+    p->ref_coef = av_malloc_array(p->order, sizeof(*p->ref_coef));
     if (!p->samples32 || !p->ref_coef) {
         cng_encode_close(avctx);
         return AVERROR(ENOMEM);

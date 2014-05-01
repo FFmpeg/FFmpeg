@@ -73,7 +73,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct CropContext {
     const AVClass *class;
     int  x;             ///< x offset of the non-cropped area with respect to the input area
     int  y;             ///< y offset of the non-cropped area with respect to the input area

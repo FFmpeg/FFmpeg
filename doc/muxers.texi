@@ -233,6 +233,10 @@ to @var{wrap}.
 Start the playlist sequence number from @var{number}. Default value is
 0.
 
+@item hls_base_url @var{baseurl}
+Append @var{baseurl} to every entry in the playlist.
+Useful to generate playlists with absolute paths.
+
 Note that the playlist sequence number must be unique for each segment
 and it is not to be confused with the segment filename sequence number
 which can be cyclic, for example if the @option{wrap} option is
@@ -789,8 +793,8 @@ segments. If 0 the list file will contain all the segments. Default
 value is 0.
 
 @item segment_list_entry_prefix @var{prefix}
-Set @var{prefix} to prepend to the name of each entry filename. By
-default no prefix is applied.
+Prepend @var{prefix} to each entry. Useful to generate absolute paths.
+By default no prefix is applied.
 
 @item segment_list_type @var{type}
 Specify the format for the segment list file.
@@ -986,7 +990,7 @@ It is possible to specify to which streams a given bitstream filter
 applies, by appending a stream specifier to the option separated by
 @code{/}. @var{spec} must be a stream specifier (see @ref{Format
 stream specifiers}).  If the stream specifier is not specified, the
-bistream filters will be applied to all streams in the output.
+bitstream filters will be applied to all streams in the output.
 
 Several bitstream filters can be specified, separated by ",".
 

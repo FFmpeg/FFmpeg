@@ -170,7 +170,7 @@ static int thread_init_internal(ThreadContext *c, int nb_threads)
         return 1;
 
     c->nb_threads = nb_threads;
-    c->workers = av_mallocz(sizeof(*c->workers) * nb_threads);
+    c->workers = av_mallocz_array(sizeof(*c->workers), nb_threads);
     if (!c->workers)
         return AVERROR(ENOMEM);
 

@@ -779,9 +779,6 @@ static int h264_frame_start(H264Context *h)
         h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * h->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
     }
 
-    // s->decode = (h->flags & CODEC_FLAG_PSNR) || !s->encoding ||
-    //             h->cur_pic.reference /* || h->contains_intra */ || 1;
-
     /* We mark the current picture as non-reference after allocating it, so
      * that if we break out due to an error it can be released automatically
      * in the next ff_MPV_frame_start().
@@ -1420,10 +1417,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     }
 
     if (h->context_initialized &&
-        (h->width  != h->avctx->coded_width   ||
-         h->height != h->avctx->coded_height  ||
-         must_reinit ||
-         needs_reinit)) {
+        (must_reinit || needs_reinit)) {
         if (h != h0) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "changing width %d -> %d / height %d -> %d on "
@@ -2408,10 +2402,10 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 return 0;
             }
             if (h->cabac.bytestream > h->cabac.bytestream_end + 2 )
-                av_log(h->avctx, AV_LOG_DEBUG, "bytestream overread %td\n", h->cabac.bytestream_end - h->cabac.bytestream);
+                av_log(h->avctx, AV_LOG_DEBUG, "bytestream overread %"PTRDIFF_SPECIFIER"\n", h->cabac.bytestream_end - h->cabac.bytestream);
             if (ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 4) {
                 av_log(h->avctx, AV_LOG_ERROR,
-                       "error while decoding MB %d %d, bytestream %td\n",
+                       "error while decoding MB %d %d, bytestream %"PTRDIFF_SPECIFIER"\n",
                        h->mb_x, h->mb_y,
                        h->cabac.bytestream_end - h->cabac.bytestream);
                 er_add_slice(h, h->resync_mb_x, h->resync_mb_y, h->mb_x,

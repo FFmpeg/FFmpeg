@@ -30,6 +30,8 @@ $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog)-$(CONFIG_OPENCL) += cmdutils_o
 
 OBJS-ffmpeg                   += ffmpeg_opt.o ffmpeg_filter.o
 OBJS-ffmpeg-$(HAVE_VDPAU_X11) += ffmpeg_vdpau.o
+OBJS-ffmpeg-$(HAVE_DXVA2_LIB) += ffmpeg_dxva2.o
+
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 TOOLS       = qt-faststart trasher uncoded_frame

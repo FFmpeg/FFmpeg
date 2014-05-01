@@ -593,7 +593,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         if (!codec->codec_tag)
             codec->codec_tag = tag;
 
-        ff_put_wav_header(dyn_cp, codec);
+        ff_put_wav_header(dyn_cp, codec, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
     }
 
     codecpriv_size = avio_close_dyn_buf(dyn_cp, &codecpriv);
@@ -1659,9 +1659,9 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
             ret = mkv->cur_audio_pkt.buf ? 0 : AVERROR(ENOMEM);
         } else
             ret = av_dup_packet(&mkv->cur_audio_pkt);
-            if (mkv->cur_audio_pkt.side_data_elems > 0) {
-                ret = av_copy_packet_side_data(&mkv->cur_audio_pkt, &mkv->cur_audio_pkt);
-            }
+        if (mkv->cur_audio_pkt.side_data_elems > 0) {
+            ret = av_copy_packet_side_data(&mkv->cur_audio_pkt, &mkv->cur_audio_pkt);
+        }
     } else
         ret = mkv_write_packet_internal(s, pkt);
     return ret;

@@ -113,6 +113,7 @@ const CodecMime ff_mkv_mime_tags[] = {
     {"application/x-truetype-font", AV_CODEC_ID_TTF},
     {"application/x-font"         , AV_CODEC_ID_TTF},
     {"application/vnd.ms-opentype", AV_CODEC_ID_OTF},
+    {"binary"                     , AV_CODEC_ID_BIN_DATA},
 
     {""                           , AV_CODEC_ID_NONE}
 };
