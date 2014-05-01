@@ -38,6 +38,7 @@
 #else
 #include <OpenCL/cl.h>
 #endif
+#include <stdint.h>
 #include "dict.h"
 
 #include "libavutil/version.h"
