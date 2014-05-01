@@ -326,7 +326,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
 
         xDstInSrc = xInc - 0x10000;
         for (i = 0; i < dstW; i++) {
-            int xx = (xDstInSrc - ((filterSize - 2) << 16)) / (1 << 17);
+            int xx = (xDstInSrc - ((int64_t)(filterSize - 2) << 16)) / (1 << 17);
             int j;
             (*filterPos)[i] = xx;
             for (j = 0; j < filterSize; j++) {
