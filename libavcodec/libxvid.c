@@ -695,7 +695,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* Initialize input image fields */
     if( avctx->pix_fmt != AV_PIX_FMT_YUV420P ) {
         av_log(avctx, AV_LOG_ERROR, "Xvid: Color spaces other than 420p not supported\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     xvid_enc_frame.input.csp = XVID_CSP_PLANAR; /* YUV420P */
@@ -782,7 +782,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if (!xerr)
             return 0;
         av_log(avctx, AV_LOG_ERROR, "Xvid: Encoding Error Occurred: %i\n", xerr);
-        return -1;
+        return AVERROR_EXTERNAL;
     }
 }
 
