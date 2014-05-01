@@ -745,7 +745,12 @@ typedef struct RcOverride{
 #define CODEC_FLAG_4MV    0x0004  ///< 4 MV per MB allowed / advanced prediction for H.263.
 #define CODEC_FLAG_OUTPUT_CORRUPT 0x0008 ///< Output even those frames that might be corrupted
 #define CODEC_FLAG_QPEL   0x0010  ///< Use qpel MC.
+#if FF_API_GMC
+/**
+ * @deprecated use the "gmc" private option of the libxvid encoder
+ */
 #define CODEC_FLAG_GMC    0x0020  ///< Use GMC.
+#endif
 #define CODEC_FLAG_MV0    0x0040  ///< Always try a MB with MV=<0,0>.
 #if FF_API_INPUT_PRESERVED
 /**
