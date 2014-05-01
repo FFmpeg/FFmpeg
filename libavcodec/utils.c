@@ -747,17 +747,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
-    if (avctx->internal->pkt) {
+    AVPacket *pkt = avctx->internal->pkt;
+
+    if (pkt) {
         uint8_t *packet_sd;
         AVFrameSideData *frame_sd;
         int size;
-        frame->pkt_pts = avctx->internal->pkt->pts;
-        av_frame_set_pkt_pos     (frame, avctx->internal->pkt->pos);
-        av_frame_set_pkt_duration(frame, avctx->internal->pkt->duration);
-        av_frame_set_pkt_size    (frame, avctx->internal->pkt->size);
+        frame->pkt_pts = pkt->pts;
+        av_frame_set_pkt_pos     (frame, pkt->pos);
+        av_frame_set_pkt_duration(frame, pkt->duration);
+        av_frame_set_pkt_size    (frame, pkt->size);
 
         /* copy the replaygain data to the output frame */
-        packet_sd = av_packet_get_side_data(avctx->internal->pkt, AV_PKT_DATA_REPLAYGAIN, &size);
+        packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_REPLAYGAIN, &size);
         if (packet_sd) {
             frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_REPLAYGAIN, size);
             if (!frame_sd)
