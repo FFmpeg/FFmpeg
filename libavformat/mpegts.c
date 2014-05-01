@@ -1125,8 +1125,6 @@ skip:
                 }
                 memcpy(pes->buffer->data + pes->data_index, p, buf_size);
                 pes->data_index += buf_size;
-            }
-            buf_size = 0;
             /* emit complete packets with known packet size
              * decreases demuxer delay for infrequent packets like subtitles from
              * a couple of seconds to milliseconds for properly muxed files.
@@ -1137,6 +1135,8 @@ skip:
                 ts->stop_parse = 1;
                 new_pes_packet(pes, ts->pkt);
             }
+            }
+            buf_size = 0;
             break;
         case MPEGTS_SKIP:
             buf_size = 0;
