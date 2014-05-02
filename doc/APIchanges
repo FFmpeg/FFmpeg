@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-05-xx - xxxxxxx - lavu 52.81.0 - opt.h
+  Add av_opt_set_dict2() function.
+
 2014-04-xx - xxxxxxx - lavc 55.50.3 - avcodec.h
   Deprecate CODEC_FLAG_MV0. It is replaced by the flag "mv0" in the
   "mpv_flags" private option of the mpegvideo encoders.

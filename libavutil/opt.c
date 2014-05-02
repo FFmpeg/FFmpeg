@@ -1415,7 +1415,7 @@ void av_opt_free(void *obj)
             av_freep((uint8_t *)obj + o->offset);
 }
 
-int av_opt_set_dict(void *obj, AVDictionary **options)
+int av_opt_set_dict2(void *obj, AVDictionary **options, int search_flags)
 {
     AVDictionaryEntry *t = NULL;
     AVDictionary    *tmp = NULL;
@@ -1425,7 +1425,7 @@ int av_opt_set_dict(void *obj, AVDictionary **options)
         return 0;
 
     while ((t = av_dict_get(*options, "", t, AV_DICT_IGNORE_SUFFIX))) {
-        ret = av_opt_set(obj, t->key, t->value, 0);
+        ret = av_opt_set(obj, t->key, t->value, search_flags);
         if (ret == AVERROR_OPTION_NOT_FOUND)
             av_dict_set(&tmp, t->key, t->value, 0);
         else if (ret < 0) {
@@ -1437,6 +1437,11 @@ int av_opt_set_dict(void *obj, AVDictionary **options)
     av_dict_free(options);
     *options = tmp;
     return ret;
+}
+
+int av_opt_set_dict(void *obj, AVDictionary **options)
+{
+    return av_opt_set_dict2(obj, options, 0);
 }
 
 const AVOption *av_opt_find(void *obj, const char *name, const char *unit,
