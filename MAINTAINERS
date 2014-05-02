@@ -317,6 +317,7 @@ libavdevice
   sdl                                   Stefano Sabatini
   v4l2.c                                Luca Abeni
   vfwcap.c                              Ramiro Polla
+  xv.c                                  Lukasz Marek
 
 libavfilter
 ===========
