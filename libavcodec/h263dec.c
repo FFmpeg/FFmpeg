@@ -273,6 +273,8 @@ static int decode_slice(MpegEncContext *s)
                 ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                                 s->mb_x, s->mb_y, ER_MB_ERROR & part_mask);
 
+                if (s->err_recognition & AV_EF_IGNORE_ERR)
+                    continue;
                 return AVERROR_INVALIDDATA;
             }
 

@@ -1084,7 +1084,8 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                                 if (SHOW_UBITS(re, &s->gb, 1) == 0) {
                                     av_log(s->avctx, AV_LOG_ERROR,
                                            "1. marker bit missing in 3. esc\n");
-                                    return -1;
+                                    if (!(s->err_recognition & AV_EF_IGNORE_ERR))
+                                        return -1;
                                 }
                                 SKIP_CACHE(re, &s->gb, 1);
 
@@ -1094,7 +1095,8 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                                 if (SHOW_UBITS(re, &s->gb, 1) == 0) {
                                     av_log(s->avctx, AV_LOG_ERROR,
                                            "2. marker bit missing in 3. esc\n");
-                                    return -1;
+                                    if (!(s->err_recognition & AV_EF_IGNORE_ERR))
+                                        return -1;
                                 }
 
                                 SKIP_COUNTER(re, &s->gb, 1 + 12 + 1);
