@@ -787,6 +787,15 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     return 0;
 }
 
+static void reset_pes_packet_state(PESContext *pes)
+{
+    pes->pts        = AV_NOPTS_VALUE;
+    pes->dts        = AV_NOPTS_VALUE;
+    pes->buffer     = NULL;
+    pes->data_index = 0;
+    pes->flags      = 0;
+}
+
 static void new_pes_packet(PESContext *pes, AVPacket *pkt)
 {
     av_init_packet(pkt);
@@ -814,12 +823,7 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     pkt->pos   = pes->ts_packet_pos;
     pkt->flags = pes->flags;
 
-    /* reset pts values */
-    pes->pts        = AV_NOPTS_VALUE;
-    pes->dts        = AV_NOPTS_VALUE;
-    pes->buffer     = NULL;
-    pes->data_index = 0;
-    pes->flags      = 0;
+    reset_pes_packet_state(pes);
 }
 
 static uint64_t get_ts64(GetBitContext *gb, int bits)
