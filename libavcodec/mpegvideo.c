@@ -340,13 +340,13 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     ff_MPV_decode_mb(s, s->block);
 }
 
-static void gray16(uint8_t *dst, uint8_t *src, int linesize, int h)
+static void gray16(uint8_t *dst, const uint8_t *src, ptrdiff_t linesize, int h)
 {
     while(h--)
         memset(dst + h*linesize, 128, 16);
 }
 
-static void gray8(uint8_t *dst, uint8_t *src, int linesize, int h)
+static void gray8(uint8_t *dst, const uint8_t *src, ptrdiff_t linesize, int h)
 {
     while(h--)
         memset(dst + h*linesize, 128, 8);
