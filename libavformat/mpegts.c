@@ -918,9 +918,10 @@ static int mpegts_push_data(MpegTSFilter *filter,
         if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
             new_pes_packet(pes, ts->pkt);
             ts->stop_parse = 1;
+        } else {
+            reset_pes_packet_state(pes);
         }
         pes->state         = MPEGTS_HEADER;
-        pes->data_index    = 0;
         pes->ts_packet_pos = pos;
     }
     p = buf;
