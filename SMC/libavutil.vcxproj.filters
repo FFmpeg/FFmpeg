@@ -201,6 +201,12 @@
     <ClCompile Include="..\libavutil\lzo.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavutil\opencl.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\opencl_internal.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\x86\cpu.c">
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
@@ -375,6 +381,9 @@
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\lzo.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavutil\opencl.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
   </ItemGroup>
