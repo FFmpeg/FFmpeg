@@ -757,7 +757,7 @@ static int vobsub_read_header(AVFormatContext *s)
                 break;
             }
             timestamp = (hh*3600LL + mm*60LL + ss) * 1000LL + ms + delay;
-            timestamp = av_rescale_q(timestamp, (AVRational){1,1000}, st->time_base);
+            timestamp = av_rescale_q(timestamp, av_make_q(1, 1000), st->time_base);
 
             sub = ff_subtitles_queue_insert(&vobsub->q[s->nb_streams - 1], "", 0, 0);
             if (!sub) {
@@ -828,8 +828,6 @@ end:
     return ret;
 }
 
-#define FAIL(r) do { ret = r; goto fail; } while (0)
-
 static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MpegDemuxContext *vobsub = s->priv_data;
@@ -878,7 +876,7 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0) {
             if (pkt->size) // raise packet even if incomplete
                 break;
-            FAIL(ret);
+            goto fail;
         }
         to_read = ret & 0xffff;
         new_pos = avio_tell(pb);
@@ -895,7 +893,7 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         ret = av_grow_packet(pkt, to_read);
         if (ret < 0)
-            FAIL(ret);
+            goto fail;
 
         n = avio_read(pb, pkt->data + (pkt->size - to_read), to_read);
         if (n < to_read)

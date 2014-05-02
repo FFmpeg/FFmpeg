@@ -1206,6 +1206,36 @@ Apply a biquad IIR filter with the given coefficients.
 Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
 are the numerator and denominator coefficients respectively.
 
+@section bs2b
+Bauer stereo to binaural transformation, which improves headphone listening of
+stereo audio records.
+
+It accepts the following parameters:
+@table @option
+
+@item profile
+Pre-defined crossfeed level.
+@table @option
+
+@item default
+Default level (fcut=700, feed=50).
+
+@item cmoy
+Chu Moy circuit (fcut=700, feed=60).
+
+@item jmeier
+Jan Meier circuit (fcut=650, feed=95).
+
+@end table
+
+@item fcut
+Cut frequency (in Hz).
+
+@item feed
+Feed level (in Hz).
+
+@end table
+
 @section channelmap
 
 Remap input channels to new locations.
@@ -7725,6 +7755,9 @@ changed.
 @item charenc
 Set subtitles input character encoding. @code{subtitles} filter only. Only
 useful if not UTF-8.
+
+@item stream_index, si
+Set subtitles stream index. @code{subtitles} filter only.
 @end table
 
 If the first key is not specified, it is assumed that the first value
@@ -7739,6 +7772,16 @@ subtitles=sub.srt
 which is equivalent to:
 @example
 subtitles=filename=sub.srt
+@end example
+
+To render the default subtitles stream from file @file{video.mkv}, use:
+@example
+subtitles=video.mkv
+@end example
+
+To render the second subtitles stream from that file, use:
+@example
+subtitles=video.mkv:si=1
 @end example
 
 @section super2xsai

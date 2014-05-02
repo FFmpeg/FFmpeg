@@ -890,6 +890,20 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     FF_ENABLE_DEPRECATION_WARNINGS;
 #endif
 
+#if FF_API_NORMALIZE_AQP
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->flags & CODEC_FLAG_NORMALIZE_AQP)
+        s->mpv_flags |= FF_MPV_FLAG_NAQ;
+    FF_ENABLE_DEPRECATION_WARNINGS;
+#endif
+
+#if FF_API_MV0
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->flags & CODEC_FLAG_MV0)
+        s->mpv_flags |= FF_MPV_FLAG_MV0;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     if (avctx->b_frame_strategy == 2) {
         for (i = 0; i < s->max_b_frames + 2; i++) {
             s->tmp_frames[i] = av_frame_alloc();
@@ -1217,8 +1231,7 @@ static int estimate_best_b_count(MpegEncContext *s)
 
     c->width        = s->width  >> scale;
     c->height       = s->height >> scale;
-    c->flags        = CODEC_FLAG_QSCALE | CODEC_FLAG_PSNR |
-                      CODEC_FLAG_INPUT_PRESERVED;
+    c->flags        = CODEC_FLAG_QSCALE | CODEC_FLAG_PSNR;
     c->flags       |= s->avctx->flags & CODEC_FLAG_QPEL;
     c->mb_decision  = s->avctx->mb_decision;
     c->me_cmp       = s->avctx->me_cmp;

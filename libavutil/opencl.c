@@ -27,15 +27,20 @@
 #include "avassert.h"
 #include "opt.h"
 
+#if HAVE_THREADS
 #if HAVE_PTHREADS
-
 #include <pthread.h>
-static pthread_mutex_t atomic_opencl_lock = PTHREAD_MUTEX_INITIALIZER;
+#elif HAVE_W32THREADS
+#include "compat/w32pthreads.h"
+#elif HAVE_OS2THREADS
+#include "compat/os2threads.h"
+#endif
+#include "atomic.h"
 
-#define LOCK_OPENCL pthread_mutex_lock(&atomic_opencl_lock)
-#define UNLOCK_OPENCL pthread_mutex_unlock(&atomic_opencl_lock)
-
-#elif !HAVE_THREADS
+static pthread_mutex_t *atomic_opencl_lock = NULL;
+#define LOCK_OPENCL pthread_mutex_lock(atomic_opencl_lock)
+#define UNLOCK_OPENCL pthread_mutex_unlock(atomic_opencl_lock)
+#else
 #define LOCK_OPENCL
 #define UNLOCK_OPENCL
 #endif
@@ -321,9 +326,32 @@ void av_opencl_free_device_list(AVOpenCLDeviceList **device_list)
     av_freep(device_list);
 }
 
+inline int init_opencl_mtx(void)
+{
+#if HAVE_THREADS
+    if (!atomic_opencl_lock) {
+        int err;
+        pthread_mutex_t *tmp = av_malloc(sizeof(pthread_mutex_t));
+        if (!tmp)
+            return AVERROR(ENOMEM);
+        if ((err = pthread_mutex_init(tmp, NULL))) {
+            av_free(tmp);
+            return AVERROR(err);
+        }
+        if (avpriv_atomic_ptr_cas(&atomic_opencl_lock, NULL, tmp)) {
+            pthread_mutex_destroy(tmp);
+            av_free(tmp);
+        }
+    }
+#endif
+    return 0;
+}
+
 int av_opencl_set_option(const char *key, const char *val)
 {
-    int ret = 0;
+    int ret = init_opencl_mtx( );
+    if (ret < 0)
+        return ret;
     LOCK_OPENCL;
     if (!opencl_ctx.opt_init_flag) {
         av_opt_set_defaults(&opencl_ctx);
@@ -368,7 +396,9 @@ void av_opencl_free_external_env(AVOpenCLExternalEnv **ext_opencl_env)
 
 int av_opencl_register_kernel_code(const char *kernel_code)
 {
-    int i, ret = 0;
+    int i, ret = init_opencl_mtx( );
+    if (ret < 0)
+        return ret;
     LOCK_OPENCL;
     if (opencl_ctx.kernel_code_count >= MAX_KERNEL_CODE_NUM) {
         av_log(&opencl_ctx, AV_LOG_ERROR,
@@ -553,7 +583,9 @@ static int init_opencl_env(OpenclContext *opencl_ctx, AVOpenCLExternalEnv *ext_o
 
 int av_opencl_init(AVOpenCLExternalEnv *ext_opencl_env)
 {
-    int ret = 0;
+    int ret = init_opencl_mtx( );
+    if (ret < 0)
+        return ret;
     LOCK_OPENCL;
     if (!opencl_ctx.init_count) {
         if (!opencl_ctx.opt_init_flag) {

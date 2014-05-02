@@ -199,6 +199,7 @@ External library support:
   --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-libass          enable libass subtitles rendering [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
+  --enable-libbs2b         enable bs2b DSP library [no]
   --enable-libcaca         enable textual display using libcaca
   --enable-libcelt         enable CELT decoding via libcelt [no]
   --enable-libcdio         enable audio CD grabbing with libcdio
@@ -1311,6 +1312,7 @@ EXTERNAL_LIBRARY_LIST="
     libaacplus
     libass
     libbluray
+    libbs2b
     libcaca
     libcdio
     libcelt
@@ -2464,6 +2466,7 @@ atempo_filter_select="rdft"
 azmq_filter_deps="libzmq"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
+bs2b_filter_deps="libbs2b"
 colormatrix_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
 dctdnoiz_filter_deps="avcodec"
@@ -4604,6 +4607,7 @@ enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883
 enabled libaacplus        && require "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
 enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
 enabled libbluray         && require_pkg_config libbluray libbluray/bluray.h bd_open
+enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open
 enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                              { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }

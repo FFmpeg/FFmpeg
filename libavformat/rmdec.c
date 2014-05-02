@@ -254,8 +254,6 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
                     return ret;
             }
             break;
-        default:
-            av_strlcpy(st->codec->codec_name, buf, sizeof(st->codec->codec_name));
         }
         switch (ast->deint_id) {
         case DEINT_ID_INT4:

@@ -15,6 +15,22 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-04-xx - xxxxxxx - lavc 55.50.3 - avcodec.h
+  Deprecate CODEC_FLAG_MV0. It is replaced by the flag "mv0" in the
+  "mpv_flags" private option of the mpegvideo encoders.
+
+2014-04-xx - xxxxxxx - lavc 55.50.2 - avcodec.h
+  Deprecate CODEC_FLAG_GMC. It is replaced by the "gmc" private option of the
+  libxvid encoder.
+
+2014-04-xx - xxxxxxx - lavc 55.50.1 - avcodec.h
+  Deprecate CODEC_FLAG_NORMALIZE_AQP. It is replaced by the flag "naq" in the
+  "mpv_flags" private option of the mpegvideo encoders.
+
+2014-04-xx - xxxxxxx - avcodec.h
+  Deprecate CODEC_FLAG_INPUT_PRESERVED. Its functionality is replaced by passing
+  reference-counted frames to encoders.
+
 2014-04-29 - 1bf6396 - lavc 55.60.100 - avcodec.h
   Add AVCodecDescriptor.mime_types field.
 

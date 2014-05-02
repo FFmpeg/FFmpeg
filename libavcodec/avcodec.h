@@ -745,14 +745,26 @@ typedef struct RcOverride{
 #define CODEC_FLAG_4MV    0x0004  ///< 4 MV per MB allowed / advanced prediction for H.263.
 #define CODEC_FLAG_OUTPUT_CORRUPT 0x0008 ///< Output even those frames that might be corrupted
 #define CODEC_FLAG_QPEL   0x0010  ///< Use qpel MC.
-#define CODEC_FLAG_GMC    0x0020  ///< Use GMC.
-#define CODEC_FLAG_MV0    0x0040  ///< Always try a MB with MV=<0,0>.
+#if FF_API_GMC
 /**
- * The parent program guarantees that the input for B-frames containing
- * streams is not written to for at least s->max_b_frames+1 frames, if
- * this is not set the input will be copied.
+ * @deprecated use the "gmc" private option of the libxvid encoder
+ */
+#define CODEC_FLAG_GMC    0x0020  ///< Use GMC.
+#endif
+#if FF_API_MV0
+/**
+ * @deprecated use the flag "mv0" in the "mpv_flags" private option of the
+ * mpegvideo encoders
+ */
+#define CODEC_FLAG_MV0    0x0040
+#endif
+#if FF_API_INPUT_PRESERVED
+/**
+ * @deprecated passing reference-counted frames to the encoders replaces this
+ * flag
  */
 #define CODEC_FLAG_INPUT_PRESERVED 0x0100
+#endif
 #define CODEC_FLAG_PASS1           0x0200   ///< Use internal 2pass ratecontrol in first pass mode.
 #define CODEC_FLAG_PASS2           0x0400   ///< Use internal 2pass ratecontrol in second pass mode.
 #define CODEC_FLAG_GRAY            0x2000   ///< Only decode/encode grayscale.
@@ -766,7 +778,13 @@ typedef struct RcOverride{
 #define CODEC_FLAG_PSNR            0x8000   ///< error[?] variables will be set during encoding.
 #define CODEC_FLAG_TRUNCATED       0x00010000 /** Input bitstream might be truncated at a random
                                                   location instead of only at frame boundaries. */
-#define CODEC_FLAG_NORMALIZE_AQP  0x00020000 ///< Normalize adaptive quantization.
+#if FF_API_NORMALIZE_AQP
+/**
+ * @deprecated use the flag "naq" in the "mpv_flags" private option of the
+ * mpegvideo encoders
+ */
+#define CODEC_FLAG_NORMALIZE_AQP  0x00020000
+#endif
 #define CODEC_FLAG_INTERLACED_DCT 0x00040000 ///< Use interlaced DCT.
 #define CODEC_FLAG_LOW_DELAY      0x00080000 ///< Force low delay.
 #define CODEC_FLAG_GLOBAL_HEADER  0x00400000 ///< Place global headers in extradata instead of every keyframe.
@@ -1239,7 +1257,13 @@ typedef struct AVCodecContext {
 
     enum AVMediaType codec_type; /* see AVMEDIA_TYPE_xxx */
     const struct AVCodec  *codec;
+#if FF_API_CODEC_NAME
+    /**
+     * @deprecated this field is not used for anything in libavcodec
+     */
+    attribute_deprecated
     char             codec_name[32];
+#endif
     enum AVCodecID     codec_id; /* see AV_CODEC_ID_xxx */
 
     /**

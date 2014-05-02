@@ -34,7 +34,6 @@ static int skeleton_header(AVFormatContext *s, int idx)
     uint64_t start_granule;
     int target_idx, start_time;
 
-    strcpy(st->codec->codec_name, "skeleton");
     st->codec->codec_type = AVMEDIA_TYPE_DATA;
 
     if ((os->flags & OGG_FLAG_EOS) && os->psize == 0)

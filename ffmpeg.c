@@ -2150,7 +2150,7 @@ static void print_sdp(void)
 {
     char sdp[16384];
     int i;
-    AVFormatContext **avc = av_malloc_array(sizeof(*avc), nb_output_files);
+    AVFormatContext **avc = av_malloc_array(nb_output_files, sizeof(*avc));
 
     if (!avc)
         exit_program(1);
@@ -2285,7 +2285,7 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
         if (*p == ',')
             n++;
     size = n;
-    pts = av_malloc_array(sizeof(*pts), size);
+    pts = av_malloc_array(size, sizeof(*pts));
     if (!pts) {
         av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
         exit_program(1);

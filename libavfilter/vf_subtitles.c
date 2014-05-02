@@ -51,6 +51,7 @@ typedef struct {
     ASS_Track    *track;
     char *filename;
     char *charenc;
+    int stream_index;
     uint8_t rgba_map[4];
     int     pix_step[4];       ///< steps per pixel for each plane of the main output
     int original_w, original_h;
@@ -247,7 +248,9 @@ AVFilter ff_vf_ass = {
 
 static const AVOption subtitles_options[] = {
     COMMON_OPTIONS
-    {"charenc", "set input character encoding", OFFSET(charenc), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS},
+    {"charenc",      "set input character encoding", OFFSET(charenc),      AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS},
+    {"stream_index", "set stream index",             OFFSET(stream_index), AV_OPT_TYPE_INT,    { .i64 = -1 }, -1,       INT_MAX,  FLAGS},
+    {"si",           "set stream index",             OFFSET(stream_index), AV_OPT_TYPE_INT,    { .i64 = -1 }, -1,       INT_MAX,  FLAGS},
     {NULL},
 };
 
@@ -279,6 +282,7 @@ AVFILTER_DEFINE_CLASS(subtitles);
 static av_cold int init_subtitles(AVFilterContext *ctx)
 {
     int j, ret, sid;
+    int k = 0;
     AVDictionary *codec_opts = NULL;
     AVFormatContext *fmt = NULL;
     AVCodecContext *dec_ctx = NULL;
@@ -309,7 +313,23 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
         goto end;
 
     /* Locate subtitles stream */
-    ret = av_find_best_stream(fmt, AVMEDIA_TYPE_SUBTITLE, -1, -1, NULL, 0);
+    if (ass->stream_index < 0)
+        ret = av_find_best_stream(fmt, AVMEDIA_TYPE_SUBTITLE, -1, -1, NULL, 0);
+    else {
+        ret = -1;
+        if (ass->stream_index < fmt->nb_streams) {
+            for (j = 0; j < fmt->nb_streams; j++) {
+                if (fmt->streams[j]->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+                    if (ass->stream_index == k) {
+                        ret = j;
+                        break;
+                    }
+                    k++;
+                }
+            }
+        }
+    }
+
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Unable to locate subtitle stream in %s\n",
                ass->filename);

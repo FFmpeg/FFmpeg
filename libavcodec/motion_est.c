@@ -991,7 +991,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 //        if (varc*2 + 200*256 + 50*(s->lambda2>>FF_LAMBDA_SHIFT) > vard){
             mb_type|= CANDIDATE_MB_TYPE_INTER;
             c->sub_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
-            if(s->flags&CODEC_FLAG_MV0)
+            if (s->mpv_flags & FF_MPV_FLAG_MV0)
                 if(mx || my)
                     mb_type |= CANDIDATE_MB_TYPE_SKIPPED; //FIXME check difference
         }else{
@@ -1610,7 +1610,8 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         }
          //FIXME something smarter
         if(dmin>256*256*16) type&= ~CANDIDATE_MB_TYPE_DIRECT; //do not try direct mode if it is invalid for this MB
-        if(s->codec_id == AV_CODEC_ID_MPEG4 && type&CANDIDATE_MB_TYPE_DIRECT && s->flags&CODEC_FLAG_MV0 && *(uint32_t*)s->b_direct_mv_table[xy])
+        if (s->codec_id == AV_CODEC_ID_MPEG4 && type&CANDIDATE_MB_TYPE_DIRECT &&
+            s->mpv_flags & FF_MPV_FLAG_MV0 && *(uint32_t*)s->b_direct_mv_table[xy])
             type |= CANDIDATE_MB_TYPE_DIRECT0;
     }
 

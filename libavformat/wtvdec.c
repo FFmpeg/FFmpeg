@@ -694,19 +694,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else if (!ff_guidcmp(formattype, ff_format_mpeg2_video)) {
             uint64_t consumed = parse_videoinfoheader2(s, st);
-            if (size - consumed >= 20) {
-                uint32_t count;
-                consumed += 20;
-                avio_skip(pb, 4);
-                count = avio_rl32(pb);
-                count = FFMIN(count, size - consumed);
-                avio_skip(pb, 12);
-                if (count && ff_get_extradata(st->codec, pb, count) < 0) {
-                   ff_free_stream(s, st);
-                   return NULL;
-                }
-                consumed += count;
-            }
+            /* ignore extradata; files produced by windows media center contain meaningless mpeg1 sequence header */
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else {
             if (ff_guidcmp(formattype, ff_format_none))
