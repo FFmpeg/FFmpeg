@@ -791,9 +791,9 @@ static void reset_pes_packet_state(PESContext *pes)
 {
     pes->pts        = AV_NOPTS_VALUE;
     pes->dts        = AV_NOPTS_VALUE;
-    pes->buffer     = NULL;
     pes->data_index = 0;
     pes->flags      = 0;
+    av_buffer_unref(&pes->buffer);
 }
 
 static void new_pes_packet(PESContext *pes, AVPacket *pkt)
@@ -823,6 +823,7 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     pkt->pos   = pes->ts_packet_pos;
     pkt->flags = pes->flags;
 
+    pes->buffer = NULL;
     reset_pes_packet_state(pes);
 }
 
