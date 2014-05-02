@@ -145,19 +145,18 @@ static int xv_write_header(AVFormatContext *s)
         }
     }
     if (!xv->window_id) {
-    //TODO: reident
-    xv->window = XCreateSimpleWindow(xv->display, DefaultRootWindow(xv->display),
-                                     xv->window_x, xv->window_y,
-                                     xv->window_width, xv->window_height,
-                                     0, 0, 0);
-    if (!xv->window_title) {
-        if (!(xv->window_title = av_strdup(s->filename))) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
+        xv->window = XCreateSimpleWindow(xv->display, DefaultRootWindow(xv->display),
+                                         xv->window_x, xv->window_y,
+                                         xv->window_width, xv->window_height,
+                                         0, 0, 0);
+        if (!xv->window_title) {
+            if (!(xv->window_title = av_strdup(s->filename))) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         }
-    }
-    XStoreName(xv->display, xv->window, xv->window_title);
-    XMapWindow(xv->display, xv->window);
+        XStoreName(xv->display, xv->window, xv->window_title);
+        XMapWindow(xv->display, xv->window);
     } else
         xv->window = xv->window_id;
 
