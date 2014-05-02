@@ -2556,6 +2556,7 @@ typedef struct AVCodecContext {
     int error_concealment;
 #define FF_EC_GUESS_MVS   1
 #define FF_EC_DEBLOCK     2
+#define FF_EC_FAVOR_INTER 256
 
     /**
      * debug
