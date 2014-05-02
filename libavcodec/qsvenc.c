@@ -49,7 +49,7 @@ static int realloc_surface_pool(QSVEncContext *q, int old_nmemb, int new_nmemb)
     for (int i = old_nmemb; i < q->nb_surf; i++) {
         if (!(q->surf[i] = av_mallocz(sizeof(QSVEncSurfaceList)))) {
             q->nb_surf = i;
-            av_log(q, AV_LOG_ERROR, "av_mallocz() failed in realloc_surface_pool()\n");
+            av_log(q, AV_LOG_ERROR, "av_mallocz() failed\n");
             return AVERROR(ENOMEM);
         }
     }
@@ -72,7 +72,7 @@ static int realloc_buffer_pool(QSVEncContext *q, int old_nmemb, int new_nmemb)
     int size = q->param.mfx.BufferSizeInKB * 1000;
     QSVEncBuffer **pp = av_realloc_array(q->buf, new_nmemb, sizeof(QSVEncBuffer *));
     if (!pp) {
-        av_log(q, AV_LOG_ERROR, "av_realloc_array() failed in realloc_buffer_pool()\n");
+        av_log(q, AV_LOG_ERROR, "av_realloc_array() failed\n");
         return AVERROR(ENOMEM);
     }
 
@@ -82,13 +82,13 @@ static int realloc_buffer_pool(QSVEncContext *q, int old_nmemb, int new_nmemb)
     for (int i = old_nmemb; i < q->nb_buf; i++) {
         if (!(q->buf[i] = av_mallocz(sizeof(QSVEncBuffer)))) {
             q->nb_buf = i;
-            av_log(q, AV_LOG_ERROR, "av_mallocz() failed in realloc_buffer_pool()\n");
+            av_log(q, AV_LOG_ERROR, "av_mallocz() failed\n");
             return AVERROR(ENOMEM);
         }
         if (!(q->buf[i]->data = av_mallocz(size))) {
             q->nb_buf = i;
             av_freep(&q->buf[i]);
-            av_log(q, AV_LOG_ERROR, "av_mallocz() failed in realloc_buffer_pool()\n");
+            av_log(q, AV_LOG_ERROR, "av_mallocz() failed\n");
             return AVERROR(ENOMEM);
         }
         q->buf[i]->bs.Data      = q->buf[i]->data;
@@ -112,7 +112,8 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     float quant;
     int ret;
 
-    if ((ret = ff_qsv_codec_id_to_mfx(avctx->codec_id)) < 0)
+    ret = ff_qsv_codec_id_to_mfx(avctx->codec_id);
+    if (ret < 0)
         return ret;
     q->param.mfx.CodecId            = ret;
     q->param.mfx.CodecProfile       = q->options.profile;
@@ -137,21 +138,21 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
     switch (q->param.mfx.RateControlMethod) {
     case MFX_RATECONTROL_CBR: // API 1.0
-        av_log(avctx, AV_LOG_VERBOSE, "RateControlMethod:CBR\n");
+        av_log(avctx, AV_LOG_VERBOSE, "RateControlMethod: CBR\n");
         q->param.mfx.TargetKbps = avctx->bit_rate / 1000;
         q->param.mfx.MaxKbps    = avctx->bit_rate / 1000;
-        av_log(avctx, AV_LOG_VERBOSE, "TargetKbps:%d\n", q->param.mfx.TargetKbps);
+        av_log(avctx, AV_LOG_VERBOSE, "TargetKbps: %d\n", q->param.mfx.TargetKbps);
         break;
     case MFX_RATECONTROL_VBR: // API 1.0
-        av_log(avctx, AV_LOG_VERBOSE, "RateControlMethod:VBR\n");
+        av_log(avctx, AV_LOG_VERBOSE, "RateControlMethod: VBR\n");
         q->param.mfx.TargetKbps = avctx->bit_rate / 1000; // >1072
         q->param.mfx.MaxKbps    = avctx->rc_max_rate / 1000;
-        av_log(avctx, AV_LOG_VERBOSE, "TargetKbps:%d\n", q->param.mfx.TargetKbps);
+        av_log(avctx, AV_LOG_VERBOSE, "TargetKbps: %d\n", q->param.mfx.TargetKbps);
         if (q->param.mfx.MaxKbps)
-            av_log(avctx, AV_LOG_VERBOSE, "MaxKbps:%d\n", q->param.mfx.MaxKbps);
+            av_log(avctx, AV_LOG_VERBOSE, "MaxKbps: %d\n", q->param.mfx.MaxKbps);
         break;
     case MFX_RATECONTROL_CQP: // API 1.1
-        av_log(avctx, AV_LOG_VERBOSE, "RateControlMethod:CQP\n");
+        av_log(avctx, AV_LOG_VERBOSE, "RateControlMethod: CQP\n");
         if (q->options.qpi >= 0) {
             q->param.mfx.QPI = q->options.qpi;
         } else {
@@ -179,12 +180,12 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
             q->param.mfx.QPB = av_clip(quant, 0, 51);
         }
 
-        av_log(avctx, AV_LOG_VERBOSE, "QPI:%d, QPP:%d, QPB:%d\n",
+        av_log(avctx, AV_LOG_VERBOSE, "QPI: %d, QPP: %d, QPB: %d\n",
                q->param.mfx.QPI, q->param.mfx.QPP, q->param.mfx.QPB);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
-               "RateControlMethod:%d is undefined.\n",
+               "RateControlMethod: %d is undefined.\n",
                q->param.mfx.RateControlMethod);
         return AVERROR(EINVAL);
     }
@@ -203,7 +204,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.FrameInfo.PicStruct     = MFX_PICSTRUCT_UNKNOWN;
     q->param.mfx.FrameInfo.ChromaFormat  = MFX_CHROMAFORMAT_YUV420;
 
-    av_log(avctx, AV_LOG_VERBOSE, "FrameRate:%d/%d\n",
+    av_log(avctx, AV_LOG_VERBOSE, "FrameRate: %d/%d\n",
            q->param.mfx.FrameInfo.FrameRateExtN,
            q->param.mfx.FrameInfo.FrameRateExtD);
 
@@ -223,7 +224,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->extco.FramePicture         = MFX_CODINGOPTION_ON;
 
     if (q->extco.CAVLC == MFX_CODINGOPTION_ON)
-        av_log(avctx, AV_LOG_VERBOSE, "CAVLC:ON\n");
+        av_log(avctx, AV_LOG_VERBOSE, "CAVLC: ON\n");
 
     q->extparam[q->param.NumExtParam] = (mfxExtBuffer *)&q->extco;
     q->param.ExtParam = q->extparam;
@@ -276,9 +277,9 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     mfxVersion ver = { { QSV_VERSION_MINOR, QSV_VERSION_MAJOR } };
     int ret;
 
-    if ((ret = MFXInit(impl, &ver, &q->session)) < 0) {
+    ret = MFXInit(impl, &ver, &q->session);
+    if (ret < 0)
         return ff_qsv_error(ret);
-    }
 
     MFXQueryIMPL(q->session, &impl);
 
@@ -302,21 +303,22 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     q->param.IOPattern  = MFX_IOPATTERN_IN_SYSTEM_MEMORY;
     q->param.AsyncDepth = q->options.async_depth;
 
-    if ((ret = init_video_param(avctx, q)) < 0)
+    ret = init_video_param(avctx, q);
+    if (ret < 0)
         return ret;
 
     ret = MFXVideoENCODE_QueryIOSurf(q->session, &q->param, &q->req);
     if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "MFXVideoENCODE_QueryIOSurf():%d\n", ret);
+        av_log(avctx, AV_LOG_ERROR, "MFXVideoENCODE_QueryIOSurf(): %d\n", ret);
         return ff_qsv_error(ret);
     }
 
     if (ret = MFXVideoENCODE_Init(q->session, &q->param)) {
-        av_log(avctx, AV_LOG_ERROR, "MFXVideoENCODE_Init():%d\n", ret);
+        av_log(avctx, AV_LOG_ERROR, "MFXVideoENCODE_Init(): %d\n", ret);
         return ff_qsv_error(ret);
     }
 
-    if ((ret = get_video_param(avctx, q)) < 0)
+    if (ret = get_video_param(avctx, q))
         return ret;
 
     if (ret = realloc_surface_pool(q, 0, q->req.NumFrameSuggested))
@@ -523,7 +525,7 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
     *got_packet = 0;
 
     if (frame) {
-        if ((ret = add_surface_list(avctx, q, frame)) < 0)
+        if (ret = add_surface_list(avctx, q, frame))
             return ret;
 
         ret = MFX_ERR_MORE_DATA;
@@ -569,9 +571,9 @@ int ff_qsv_enc_frame(AVCodecContext *avctx, QSVEncContext *q,
 
         ret = MFXVideoCORE_SyncOperation(q->session, outbuf->sync,
                                          SYNC_TIME_DEFAULT);
-        if ((ret = ff_qsv_error(ret)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "MFXVideoCORE_SyncOperation() failed\n");
-            return ret;
+        if (ret) {
+            av_log(avctx, AV_LOG_ERROR, "MFXVideoCORE_SyncOperation(): %d\n", ret);
+            return ff_qsv_error(ret);
         }
 
         remove_sync_list(q);
