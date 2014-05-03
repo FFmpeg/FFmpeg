@@ -72,7 +72,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->m.bit_rate= avctx->bit_rate;
 
     s->m.me.temp      =
-    s->m.me.scratchpad= av_mallocz((avctx->width+64)*2*16*2*sizeof(uint8_t));
+    s->m.me.scratchpad= av_mallocz_array((avctx->width+64), 2*16*2*sizeof(uint8_t));
     s->m.me.map       = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.me.score_map = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.obmc_scratchpad= av_mallocz(MB_SIZE*MB_SIZE*12*sizeof(uint32_t));
@@ -131,8 +131,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         int i;
         int size= s->b_width * s->b_height << 2*s->block_max_depth;
         for(i=0; i<s->max_ref_frames; i++){
-            s->ref_mvs[i]= av_mallocz(size*sizeof(int16_t[2]));
-            s->ref_scores[i]= av_mallocz(size*sizeof(uint32_t));
+            s->ref_mvs[i]= av_mallocz_array(size, sizeof(int16_t[2]));
+            s->ref_scores[i]= av_mallocz_array(size, sizeof(uint32_t));
             if (!s->ref_mvs[i] || !s->ref_scores[i])
                 return AVERROR(ENOMEM);
         }
