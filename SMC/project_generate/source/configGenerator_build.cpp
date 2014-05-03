@@ -265,7 +265,7 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #else\n\
 #   define HAVE_FAST_64BIT 0\n\
 #endif";
-    mReplaceValues["HAVE_INLINE_ASM"] = "#if defined(__INTEL_COMPILER) && !defined(_DEBUG)\n\
+    mReplaceValues["HAVE_INLINE_ASM"] = "#if defined(__INTEL_COMPILER)\n\
 #   define HAVE_INLINE_ASM 1\n\
 #else\n\
 #   define HAVE_INLINE_ASM 0\n\
@@ -277,7 +277,7 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
     {
         transform( vitIt->begin(), vitIt->end(), vitIt->begin(), ::toupper);
         string sName = "HAVE_" + *vitIt + "_INLINE";
-        mReplaceValues[sName] = "#if defined(__INTEL_COMPILER) && !defined(_DEBUG)\n\
+        mReplaceValues[sName] = "#if defined(__INTEL_COMPILER)\n\
 #   define " + sName + " 1\n\
 #else\n\
 #   define " + sName + " 0\n\
@@ -285,12 +285,12 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
     }
 
     //Sanity checks for inline asm (Needed as some code only checks availability and not inline_asm)
-    mReplaceValues["HAVE_EBP_AVAILABLE"] = "#if HAVE_INLINE_ASM\n\
+    mReplaceValues["HAVE_EBP_AVAILABLE"] = "#if HAVE_INLINE_ASM && !defined(_DEBUG)\n\
 #   define HAVE_EBP_AVAILABLE 1\n\
 #else\n\
 #   define HAVE_EBP_AVAILABLE 0\n\
 #endif";
-    mReplaceValues["HAVE_EBX_AVAILABLE"] = "#if HAVE_INLINE_ASM\n\
+    mReplaceValues["HAVE_EBX_AVAILABLE"] = "#if HAVE_INLINE_ASM && !defined(_DEBUG)\n\
 #   define HAVE_EBX_AVAILABLE 1\n\
 #else\n\
 #   define HAVE_EBX_AVAILABLE 0\n\
