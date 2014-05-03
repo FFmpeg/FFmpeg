@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Clément Bœsch
+ * Copyright (c) 2012-2014 Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
