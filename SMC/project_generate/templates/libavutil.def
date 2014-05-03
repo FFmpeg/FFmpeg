@@ -295,6 +295,7 @@ EXPORTS
     av_opt_set_defaults
     av_opt_set_defaults2
     av_opt_set_dict
+    av_opt_set_dict2
     av_opt_set_double
     av_opt_set_from_string
     av_opt_set_image_size

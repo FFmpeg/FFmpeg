@@ -284,9 +284,17 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #endif";
     }
 
-    //Sanity checks for inline asm
-    mReplaceValues["HAVE_EBP_AVAILABLE"] = "#   define HAVE_EBP_AVAILABLE HAVE_INLINE_ASM"; //Needed as some code only checks availability and not inline_asm
-    mReplaceValues["HAVE_EBX_AVAILABLE"] = "#   define HAVE_EBX_AVAILABLE HAVE_INLINE_ASM";
+    //Sanity checks for inline asm (Needed as some code only checks availability and not inline_asm)
+    mReplaceValues["HAVE_EBP_AVAILABLE"] = "#if HAVE_INLINE_ASM\n\
+#   define HAVE_EBP_AVAILABLE 1\n\
+#else\n\
+#   define HAVE_EBP_AVAILABLE 0\n\
+#endif";
+    mReplaceValues["HAVE_EBX_AVAILABLE"] = "#if HAVE_INLINE_ASM\n\
+#   define HAVE_EBX_AVAILABLE 1\n\
+#else\n\
+#   define HAVE_EBX_AVAILABLE 0\n\
+#endif";
 
     //Add to config.asm only list
     mASMReplaceValues["ARCH_X86_32"] = "%ifidn __OUTPUT_FORMAT__,x64\n\
