@@ -243,6 +243,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int plane, top, y;
     AVFrame *out;
 
+    if (ctx->is_disabled) {
+        av_frame_free(&s->frame);
+        /* we keep a reference to the previous frame so the filter can start
+         * being useful as soon as it's not disabled, avoiding the 1-frame
+         * delay. */
+        s->frame = av_frame_clone(in);
+        return ff_filter_frame(outlink, in);
+    }
+
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_frame_free(&in);
@@ -311,4 +320,5 @@ AVFilter ff_vf_phase = {
     .query_formats = query_formats,
     .inputs        = phase_inputs,
     .outputs       = phase_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
