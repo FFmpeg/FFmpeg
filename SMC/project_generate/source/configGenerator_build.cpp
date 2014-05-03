@@ -214,12 +214,12 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #else\n\
 #   define CC_IDENT \"msvc\"\n\
 #endif";
-    mReplaceValues["EXTERN_PREFIX"] = "#if defined( __x86_64 ) || defined( _M_X64 )\n\
+    mReplaceValues["EXTERN_PREFIX"] = "#if defined(__x86_64) || defined(_M_X64)\n\
 #   define EXTERN_PREFIX \"\"\n\
 #else\n\
 #   define EXTERN_PREFIX \"_\"\n\
 #endif";
-    mReplaceValues["EXTERN_ASM"] = "#if defined( __x86_64 ) || defined( _M_X64 )\n\
+    mReplaceValues["EXTERN_ASM"] = "#if defined(__x86_64) || defined(_M_X64)\n\
 #   define EXTERN_ASM\n\
 #else\n\
 #   define EXTERN_ASM _\n\
@@ -230,17 +230,17 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #   define SLIBSUF \".lib\"\n\
 #endif";
 
-    mReplaceValues["ARCH_X86_32"] = "#if defined( __x86_64 ) || defined( _M_X64 )\n\
+    mReplaceValues["ARCH_X86_32"] = "#if defined(__x86_64) || defined(_M_X64)\n\
 #   define ARCH_X86_32 0\n\
 #else\n\
 #   define ARCH_X86_32 1\n\
 #endif";
-    mReplaceValues["ARCH_X86_64"] = "#if defined( __x86_64 ) || defined( _M_X64 )\n\
+    mReplaceValues["ARCH_X86_64"] = "#if defined(__x86_64) || defined(_M_X64)\n\
 #   define ARCH_X86_64 1\n\
 #else\n\
 #   define ARCH_X86_64 0\n\
 #endif";
-    mReplaceValues["HAVE_XMM_CLOBBERS"] = "#if defined( __x86_64 ) || defined( _M_X64 )\n\
+    mReplaceValues["HAVE_XMM_CLOBBERS"] = "#if defined(__x86_64) || defined(_M_X64)\n\
 #   define HAVE_XMM_CLOBBERS 1\n\
 #else\n\
 #   define HAVE_XMM_CLOBBERS 0\n\
@@ -255,12 +255,12 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #else\n\
 #   define CONFIG_STATIC 1\n\
 #endif";
-    mReplaceValues["HAVE_ALIGNED_STACK"] = "#if defined( __x86_64 ) || defined( _M_X64 )\n\
+    mReplaceValues["HAVE_ALIGNED_STACK"] = "#if defined(__x86_64) || defined(_M_X64)\n\
 #   define HAVE_ALIGNED_STACK 1\n\
 #else\n\
 #   define HAVE_ALIGNED_STACK 0\n\
 #endif";
-    mReplaceValues["HAVE_FAST_64BIT"] = "#if defined( __x86_64 ) || defined( _M_X64 )\n\
+    mReplaceValues["HAVE_FAST_64BIT"] = "#if defined(__x86_64) || defined(_M_X64)\n\
 #   define HAVE_FAST_64BIT 1\n\
 #else\n\
 #   define HAVE_FAST_64BIT 0\n\
