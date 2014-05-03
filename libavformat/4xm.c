@@ -110,8 +110,11 @@ static int parse_vtrk(AVFormatContext *s,
 
     st->codec->codec_type     = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id       = AV_CODEC_ID_4XM;
+
+    st->codec->extradata      = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codec->extradata)
+        return AVERROR(ENOMEM);
     st->codec->extradata_size = 4;
-    st->codec->extradata      = av_malloc(4);
     AV_WL32(st->codec->extradata, AV_RL32(buf + 16));
     st->codec->width  = AV_RL32(buf + 36);
     st->codec->height = AV_RL32(buf + 40);
