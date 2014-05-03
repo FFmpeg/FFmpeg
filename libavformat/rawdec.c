@@ -28,6 +28,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
+#include "libavutil/intreadwrite.h"
 
 #define RAW_PACKET_SIZE 1024
 
@@ -121,6 +122,7 @@ AVInputFormat ff_data_demuxer = {
 #endif
 
 #if CONFIG_LATM_DEMUXER
+
 AVInputFormat ff_latm_demuxer = {
     .name           = "latm",
     .long_name      = NULL_IF_CONFIG_SMALL("raw LOAS/LATM"),

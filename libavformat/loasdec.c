@@ -25,6 +25,8 @@
 #include "internal.h"
 #include "rawdec.h"
 
+#define LOAS_SYNC_WORD 0x2b7
+
 static int loas_probe(AVProbeData *p)
 {
     int max_frames = 0, first_frames = 0;
@@ -35,27 +37,32 @@ static int loas_probe(AVProbeData *p)
     const uint8_t *end = buf0 + p->buf_size - 3;
     buf = buf0;
 
-    for(; buf < end; buf= buf2+1) {
+    for (; buf < end; buf = buf2 + 1) {
         buf2 = buf;
 
-        for(frames = 0; buf2 < end; frames++) {
+        for (frames = 0; buf2 < end; frames++) {
             uint32_t header = AV_RB24(buf2);
-            if((header >> 13) != 0x2B7)
+            if ((header >> 13) != LOAS_SYNC_WORD)
                 break;
             fsize = (header & 0x1FFF) + 3;
-            if(fsize < 7)
+            if (fsize < 7)
                 break;
             fsize = FFMIN(fsize, end - buf2);
             buf2 += fsize;
         }
         max_frames = FFMAX(max_frames, frames);
-        if(buf == buf0)
-            first_frames= frames;
+        if (buf == buf0)
+            first_frames = frames;
     }
-    if   (first_frames>=3) return AVPROBE_SCORE_EXTENSION+1;
-    else if(max_frames>100)return AVPROBE_SCORE_EXTENSION;
-    else if(max_frames>=3) return AVPROBE_SCORE_EXTENSION / 2;
-    else                   return 0;
+
+    if (first_frames >= 3)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    else if (max_frames > 100)
+        return AVPROBE_SCORE_EXTENSION;
+    else if (max_frames >= 3)
+        return AVPROBE_SCORE_EXTENSION / 2;
+    else
+        return 0;
 }
 
 static int loas_read_header(AVFormatContext *s)
