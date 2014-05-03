@@ -117,12 +117,12 @@ static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old
     double bdiff, tdiff, pdiff, scale;
     const int ns = new->linesize[0];
     const int os = old->linesize[0];
-    uint8_t *nptr = new->data[0];
-    uint8_t *optr = old->data[0];
+    const uint8_t *nptr = new->data[0];
+    const uint8_t *optr = old->data[0];
     const int h = new->height;
     const int w = new->width;
     int bdif, tdif, pdif;
-    uint8_t *end, *rend;
+    const uint8_t *end, *rend;
     int top, t;
 
     if (mode == AUTO) {
@@ -267,8 +267,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     for (plane = 0; plane < s->nb_planes; plane++) {
-        uint8_t *buf = s->frame->data[plane];
-        uint8_t *from = in->data[plane];
+        const uint8_t *buf = s->frame->data[plane];
+        const uint8_t *from = in->data[plane];
         uint8_t *to = out->data[plane];
 
         for (y = 0, top = 1; y < s->planeheight[plane]; y++, top ^= 1) {
