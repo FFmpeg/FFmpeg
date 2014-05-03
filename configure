@@ -4989,10 +4989,11 @@ elif enabled_any msvc icl; then
         # (correctly) on icl 13.x.
         check_cpp_condition "windows.h" "__ICL < 1300 || __ICL >= 1400" &&
             add_cflags -Qansi-alias
-        # icl will pass the inline asm tests but inline asm is currently
-        # not supported (build will fail)
-        disabled inline_asm || warn "inline asm disabled due to issues with it in ICL"
-        disable inline_asm
+        # Some inline asm is not compilable in debug
+        if enabled debug; then
+            disable ebp_available
+            disable ebx_available
+        fi
     fi
 fi
 
