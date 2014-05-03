@@ -32,7 +32,7 @@
 #include "version.h"
 
 #if FF_API_AV_REVERSE
-const uint8_t av_reverse[256]={
+const uint8_t av_reverse[256] = {
 0x00,0x80,0x40,0xC0,0x20,0xA0,0x60,0xE0,0x10,0x90,0x50,0xD0,0x30,0xB0,0x70,0xF0,
 0x08,0x88,0x48,0xC8,0x28,0xA8,0x68,0xE8,0x18,0x98,0x58,0xD8,0x38,0xB8,0x78,0xF8,
 0x04,0x84,0x44,0xC4,0x24,0xA4,0x64,0xE4,0x14,0x94,0x54,0xD4,0x34,0xB4,0x74,0xF4,
@@ -52,13 +52,17 @@ const uint8_t av_reverse[256]={
 };
 #endif
 
-int64_t av_gcd(int64_t a, int64_t b){
-    if(b) return av_gcd(b, a%b);
-    else  return a;
+int64_t av_gcd(int64_t a, int64_t b)
+{
+    if (b)
+        return av_gcd(b, a % b);
+    else
+        return a;
 }
 
-int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
-    int64_t r=0;
+int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
+{
+    int64_t r = 0;
     av_assert2(c > 0);
     av_assert2(b >=0);
     av_assert2((unsigned)(rnd&~AV_ROUND_PASS_MINMAX)<=5 && (rnd&~AV_ROUND_PASS_MINMAX)!=4);
@@ -72,36 +76,38 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
         rnd -= AV_ROUND_PASS_MINMAX;
     }
 
-    if(a<0 && a != INT64_MIN) return -av_rescale_rnd(-a, b, c, rnd ^ ((rnd>>1)&1));
+    if (a < 0 && a != INT64_MIN)
+        return -av_rescale_rnd(-a, b, c, rnd ^ ((rnd >> 1) & 1));
 
-    if(rnd==AV_ROUND_NEAR_INF) r= c/2;
-    else if(rnd&1)             r= c-1;
+    if (rnd == AV_ROUND_NEAR_INF)
+        r = c / 2;
+    else if (rnd & 1)
+        r = c - 1;
 
-    if(b<=INT_MAX && c<=INT_MAX){
-        if(a<=INT_MAX)
-            return (a * b + r)/c;
+    if (b <= INT_MAX && c <= INT_MAX) {
+        if (a <= INT_MAX)
+            return (a * b + r) / c;
         else
-            return a/c*b + (a%c*b + r)/c;
-    }else{
+            return a / c * b + (a % c * b + r) / c;
+    } else {
 #if 1
-        uint64_t a0= a&0xFFFFFFFF;
-        uint64_t a1= a>>32;
-        uint64_t b0= b&0xFFFFFFFF;
-        uint64_t b1= b>>32;
-        uint64_t t1= a0*b1 + a1*b0;
-        uint64_t t1a= t1<<32;
+        uint64_t a0  = a & 0xFFFFFFFF;
+        uint64_t a1  = a >> 32;
+        uint64_t b0  = b & 0xFFFFFFFF;
+        uint64_t b1  = b >> 32;
+        uint64_t t1  = a0 * b1 + a1 * b0;
+        uint64_t t1a = t1 << 32;
         int i;
 
-        a0 = a0*b0 + t1a;
-        a1 = a1*b1 + (t1>>32) + (a0<t1a);
+        a0  = a0 * b0 + t1a;
+        a1  = a1 * b1 + (t1 >> 32) + (a0 < t1a);
         a0 += r;
-        a1 += a0<r;
+        a1 += a0 < r;
 
-        for(i=63; i>=0; i--){
-//            int o= a1 & 0x8000000000000000ULL;
-            a1+= a1 + ((a0>>i)&1);
-            t1+=t1;
-            if(/*o || */c <= a1){
+        for (i = 63; i >= 0; i--) {
+            a1 += a1 + ((a0 >> i) & 1);
+            t1 += t1;
+            if (c <= a1) {
                 a1 -= c;
                 t1++;
             }
@@ -110,23 +116,24 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
     }
 #else
         AVInteger ai;
-        ai= av_mul_i(av_int2i(a), av_int2i(b));
-        ai= av_add_i(ai, av_int2i(r));
+        ai = av_mul_i(av_int2i(a), av_int2i(b));
+        ai = av_add_i(ai, av_int2i(r));
 
         return av_i2int(av_div_i(ai, av_int2i(c)));
     }
 #endif
 }
 
-int64_t av_rescale(int64_t a, int64_t b, int64_t c){
+int64_t av_rescale(int64_t a, int64_t b, int64_t c)
+{
     return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
 }
 
 int64_t av_rescale_q_rnd(int64_t a, AVRational bq, AVRational cq,
                          enum AVRounding rnd)
 {
-    int64_t b= bq.num * (int64_t)cq.den;
-    int64_t c= cq.num * (int64_t)bq.den;
+    int64_t b = bq.num * (int64_t)cq.den;
+    int64_t c = cq.num * (int64_t)bq.den;
     return av_rescale_rnd(a, b, c, rnd);
 }
 
@@ -135,20 +142,24 @@ int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq)
     return av_rescale_q_rnd(a, bq, cq, AV_ROUND_NEAR_INF);
 }
 
-int av_compare_ts(int64_t ts_a, AVRational tb_a, int64_t ts_b, AVRational tb_b){
-    int64_t a= tb_a.num * (int64_t)tb_b.den;
-    int64_t b= tb_b.num * (int64_t)tb_a.den;
-    if((FFABS(ts_a)|a|FFABS(ts_b)|b)<=INT_MAX)
+int av_compare_ts(int64_t ts_a, AVRational tb_a, int64_t ts_b, AVRational tb_b)
+{
+    int64_t a = tb_a.num * (int64_t)tb_b.den;
+    int64_t b = tb_b.num * (int64_t)tb_a.den;
+    if ((FFABS(ts_a)|a|FFABS(ts_b)|b) <= INT_MAX)
         return (ts_a*a > ts_b*b) - (ts_a*a < ts_b*b);
-    if (av_rescale_rnd(ts_a, a, b, AV_ROUND_DOWN) < ts_b) return -1;
-    if (av_rescale_rnd(ts_b, b, a, AV_ROUND_DOWN) < ts_a) return  1;
+    if (av_rescale_rnd(ts_a, a, b, AV_ROUND_DOWN) < ts_b)
+        return -1;
+    if (av_rescale_rnd(ts_b, b, a, AV_ROUND_DOWN) < ts_a)
+        return 1;
     return 0;
 }
 
-int64_t av_compare_mod(uint64_t a, uint64_t b, uint64_t mod){
-    int64_t c= (a-b) & (mod-1);
-    if(c > (mod>>1))
-        c-= mod;
+int64_t av_compare_mod(uint64_t a, uint64_t b, uint64_t mod)
+{
+    int64_t c = (a - b) & (mod - 1);
+    if (c > (mod >> 1))
+        c -= mod;
     return c;
 }
 
