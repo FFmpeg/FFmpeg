@@ -126,7 +126,7 @@ static int wav_write_header(AVFormatContext *s)
         avio_wl32(pb, -1); /* RF64 chunk size: use size in ds64 */
     } else {
         ffio_wfourcc(pb, "RIFF");
-        avio_wl32(pb, 0); /* file length */
+        avio_wl32(pb, -1); /* file length */
     }
 
     ffio_wfourcc(pb, "WAVE");
