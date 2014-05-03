@@ -400,7 +400,7 @@ static int request_frame(AVFilterLink *link)
         } else if (ret < 0) {
             return ret;
         }
-    } while (!yadif->cur);
+    } while (!yadif->prev);
 
     return 0;
 }
