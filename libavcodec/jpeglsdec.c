@@ -109,7 +109,7 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
 
         if ((s->avctx->pix_fmt == AV_PIX_FMT_GRAY8 || s->avctx->pix_fmt == AV_PIX_FMT_PAL8) &&
             (s->picture_ptr->format == AV_PIX_FMT_GRAY8 || s->picture_ptr->format == AV_PIX_FMT_PAL8)) {
-            uint32_t *pal = s->picture_ptr->data[1];
+            uint32_t *pal = (uint32_t *)s->picture_ptr->data[1];
             s->picture_ptr->format =
             s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
             for (i=s->palette_index; i<=maxtab; i++) {
