@@ -62,13 +62,12 @@ static int yop_read_header(AVFormatContext *s)
     video_stream = avformat_new_stream(s, NULL);
 
     // Extra data that will be passed to the decoder
-    video_stream->codec->extradata_size = 8;
 
-    video_stream->codec->extradata = av_mallocz(video_stream->codec->extradata_size +
-                                                FF_INPUT_BUFFER_PADDING_SIZE);
+    video_stream->codec->extradata = av_mallocz(8 + FF_INPUT_BUFFER_PADDING_SIZE);
 
     if (!video_stream->codec->extradata)
         return AVERROR(ENOMEM);
+    video_stream->codec->extradata_size = 8;
 
     // Audio
     audio_dec               = audio_stream->codec;
