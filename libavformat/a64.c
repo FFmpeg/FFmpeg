@@ -25,7 +25,7 @@
 #include "avformat.h"
 #include "rawenc.h"
 
-static int a64_write_header(struct AVFormatContext *s)
+static int a64_write_header(AVFormatContext *s)
 {
     AVCodecContext *avctx = s->streams[0]->codec;
     uint8_t header[5] = {
