@@ -12,12 +12,12 @@
 #   define CC_IDENT "msvc"
 #endif
 #define av_restrict __restrict
-#if defined( __x86_64 ) || defined( _M_X64 )
+#if defined(__x86_64) || defined(_M_X64)
 #   define EXTERN_PREFIX ""
 #else
 #   define EXTERN_PREFIX "_"
 #endif
-#if defined( __x86_64 ) || defined( _M_X64 )
+#if defined(__x86_64) || defined(_M_X64)
 #   define EXTERN_ASM
 #else
 #   define EXTERN_ASM _
@@ -51,12 +51,12 @@
 #define ARCH_TILEPRO 0
 #define ARCH_TOMI 0
 #define ARCH_X86 1
-#if defined( __x86_64 ) || defined( _M_X64 )
+#if defined(__x86_64) || defined(_M_X64)
 #   define ARCH_X86_32 0
 #else
 #   define ARCH_X86_32 1
 #endif
-#if defined( __x86_64 ) || defined( _M_X64 )
+#if defined(__x86_64) || defined(_M_X64)
 #   define ARCH_X86_64 1
 #else
 #   define ARCH_X86_64 0
@@ -228,12 +228,12 @@
 #define HAVE_MIPSDSPR1_INLINE 0
 #define HAVE_MIPSDSPR2_INLINE 0
 #define HAVE_LOONGSON_INLINE 0
-#if defined( __x86_64 ) || defined( _M_X64 )
+#if defined(__x86_64) || defined(_M_X64)
 #   define HAVE_ALIGNED_STACK 1
 #else
 #   define HAVE_ALIGNED_STACK 0
 #endif
-#if defined( __x86_64 ) || defined( _M_X64 )
+#if defined(__x86_64) || defined(_M_X64)
 #   define HAVE_FAST_64BIT 1
 #else
 #   define HAVE_FAST_64BIT 0
@@ -383,8 +383,16 @@
 #define HAVE_ASM_MOD_Q 0
 #define HAVE_ATTRIBUTE_MAY_ALIAS 0
 #define HAVE_ATTRIBUTE_PACKED 0
-#   define HAVE_EBP_AVAILABLE HAVE_INLINE_ASM
-#   define HAVE_EBX_AVAILABLE HAVE_INLINE_ASM
+#if HAVE_INLINE_ASM
+#   define HAVE_EBP_AVAILABLE 1
+#else
+#   define HAVE_EBP_AVAILABLE 0
+#endif
+#if HAVE_INLINE_ASM
+#   define HAVE_EBX_AVAILABLE 1
+#else
+#   define HAVE_EBX_AVAILABLE 0
+#endif
 #define HAVE_GNU_AS 0
 #define HAVE_GNU_WINDRES 0
 #define HAVE_IBM_ASM 0
@@ -397,7 +405,7 @@
 #define HAVE_SYMVER_GNU_ASM 0
 #define HAVE_VFP_ARGS 0
 #define HAVE_XFORM_ASM 0
-#if defined( __x86_64 ) || defined( _M_X64 )
+#if defined(__x86_64) || defined(_M_X64)
 #   define HAVE_XMM_CLOBBERS 1
 #else
 #   define HAVE_XMM_CLOBBERS 0
