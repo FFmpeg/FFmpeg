@@ -15,7 +15,7 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
-2014-05-xx - xxxxxxx - lavu 52.81.0 - opt.h
+2014-05-02 - ba52fb11 - lavu 52.81.0 - opt.h
   Add av_opt_set_dict2() function.
 
 2014-04-xx - xxxxxxx - lavc 55.50.3 - avcodec.h
@@ -55,7 +55,7 @@ API changes, most recent first:
 2014-04-12 - xxxxxxx - lavu 52.76.100 - log.h
   Add av_log_get_flags()
 
-2014-04-xx - xxxxxxx - lavd 55.12.100 - avdevice.h
+2014-04-11 - 6db42a2b - lavd 55.12.100 - avdevice.h
   Add avdevice_capabilities_create() function.
   Add avdevice_capabilities_free() function.
 
@@ -69,11 +69,11 @@ API changes, most recent first:
 2014-04-xx - xxxxxxx - lavu 53.09.0 - log.h
   Add AV_LOG(c) macro to have 256 color debug messages.
 
-2014-04-xx - xxxxxxx - lavu 52.72.100 - opt.h
+2014-04-03 - eaed4da9 - lavu 52.72.100 - opt.h
   Add AV_OPT_MULTI_COMPONENT_RANGE define to allow return
   multi-component option ranges.
 
-2014-03-xx - xxxxxxx - lavu 52.70.100 - mem.h
+2014-03-29 - cd50a44b - lavu 52.70.100 - mem.h
   Add av_dynarray_add_nofree() function.
 
 2014-02-xx - xxxxxxx - lavu 53.08.0 - frame.h
@@ -104,7 +104,7 @@ API changes, most recent first:
 2014-03-11 - 3f3229c - lavf 55.34.101 - avformat.h
   Set AVFormatContext.start_time_realtime when demuxing.
 
-2014-xx-xx - xxxxxx - lavd 55.11.100 - avdevice.h
+2014-03-03 - 06fed440 - lavd 55.11.100 - avdevice.h
   Add av_input_audio_device_next().
   Add av_input_video_device_next().
   Add av_output_audio_device_next().
