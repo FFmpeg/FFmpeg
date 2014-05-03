@@ -380,10 +380,10 @@ static int decode_slice(AVCodecContext *c, void *arg)
             pdst->vlc_state = NULL;
 
             if (fssrc->ac) {
-                pdst->state = av_malloc(CONTEXT_SIZE * psrc->context_count);
+                pdst->state = av_malloc_array(CONTEXT_SIZE,  psrc->context_count);
                 memcpy(pdst->state, psrc->state, CONTEXT_SIZE * psrc->context_count);
             } else {
-                pdst->vlc_state = av_malloc(sizeof(*pdst->vlc_state) * psrc->context_count);
+                pdst->vlc_state = av_malloc_array(sizeof(*pdst->vlc_state), psrc->context_count);
                 memcpy(pdst->vlc_state, psrc->vlc_state, sizeof(*pdst->vlc_state) * psrc->context_count);
             }
         }
