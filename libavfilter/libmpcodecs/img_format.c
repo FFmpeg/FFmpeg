@@ -52,6 +52,8 @@ const char *ff_vo_format_name(int format)
     case IMGFMT_BGRA:    return "BGRA";
     case IMGFMT_ARGB:    return "ARGB";
     case IMGFMT_RGBA:    return "RGBA";
+    case IMGFMT_XYZ12LE: return "XYZ 36-bit LE";
+    case IMGFMT_XYZ12BE: return "XYZ 36-bit BE";
     case IMGFMT_GBR24P:  return "Planar GBR 24-bit";
     case IMGFMT_GBR12P:  return "Planar GBR 36-bit";
     case IMGFMT_GBR14P:  return "Planar GBR 42-bit";
@@ -102,6 +104,7 @@ const char *ff_vo_format_name(int format)
     case IMGFMT_422P: return "Planar 422P";
     case IMGFMT_422A: return "Planar 422P with alpha";
     case IMGFMT_411P: return "Planar 411P";
+    case IMGFMT_440P: return "Planar 440P";
     case IMGFMT_NV12: return "Planar NV12";
     case IMGFMT_NV21: return "Planar NV21";
     case IMGFMT_HM12: return "Planar NV12 Macroblock";
@@ -217,6 +220,14 @@ int ff_mp_get_chroma_shift(int format, int *x_shift, int *y_shift, int *componen
     case IMGFMT_Y800:
         xs = 31;
         ys = 31;
+        break;
+    case IMGFMT_NV12:
+    case IMGFMT_NV21:
+        xs = 1;
+        ys = 1;
+        // TODO: allowing this though currently breaks
+        // things all over the place.
+        err = 1;
         break;
     default:
         err = 1;

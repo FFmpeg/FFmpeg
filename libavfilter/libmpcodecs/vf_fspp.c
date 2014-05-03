@@ -75,7 +75,7 @@ static const short custom_threshold[64]=
   20,  27,  26,  23,  20,  15,  11,   5
 };
 
-static const uint8_t  __attribute__((aligned(32))) dither[8][8]={
+DECLARE_ASM_CONST(32, uint8_t, dither)[8][8]={
     {  0,  48,  12,  60,   3,  51,  15,  63, },
     { 32,  16,  44,  28,  35,  19,  47,  31, },
     {  8,  56,   4,  52,  11,  59,   7,  55, },
@@ -215,11 +215,11 @@ static void store_slice_mmx(uint8_t *dst, int16_t *src, long dst_stride, long sr
         "psraw %%mm5, %%mm3            \n\t"
         "psraw %%mm5, %%mm4            \n\t"
         "1:                        \n\t"
-        "movq %%mm7, (%%"REG_S",%%"REG_a",)     \n\t"
+        "movq %%mm7, (%%"REG_S",%%"REG_a")     \n\t"
         "movq (%%"REG_S"), %%mm0           \n\t"
         "movq 8(%%"REG_S"), %%mm1          \n\t"
 
-        "movq %%mm7, 8(%%"REG_S",%%"REG_a",)    \n\t"
+        "movq %%mm7, 8(%%"REG_S",%%"REG_a")    \n\t"
         "paddw %%mm3, %%mm0            \n\t"
         "paddw %%mm4, %%mm1            \n\t"
 
@@ -286,15 +286,15 @@ static void store_slice2_mmx(uint8_t *dst, int16_t *src, long dst_stride, long s
         "movq 8(%%"REG_S"), %%mm1          \n\t"
         "paddw %%mm3, %%mm0            \n\t"
 
-        "paddw (%%"REG_S",%%"REG_a",), %%mm0    \n\t"
+        "paddw (%%"REG_S",%%"REG_a"), %%mm0    \n\t"
         "paddw %%mm4, %%mm1            \n\t"
-        "movq 8(%%"REG_S",%%"REG_a",), %%mm6    \n\t"
+        "movq 8(%%"REG_S",%%"REG_a"), %%mm6    \n\t"
 
-        "movq %%mm7, (%%"REG_S",%%"REG_a",)     \n\t"
+        "movq %%mm7, (%%"REG_S",%%"REG_a")     \n\t"
         "psraw %%mm2, %%mm0            \n\t"
         "paddw %%mm6, %%mm1            \n\t"
 
-        "movq %%mm7, 8(%%"REG_S",%%"REG_a",)    \n\t"
+        "movq %%mm7, 8(%%"REG_S",%%"REG_a")    \n\t"
         "psraw %%mm2, %%mm1            \n\t"
         "packuswb %%mm1, %%mm0         \n\t"
 
@@ -416,7 +416,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src,
     const int stride= is_luma ? p->temp_stride : (width+16);//((width+16+15)&(~15))
     const int step=6-p->log2_count;
     const int qps= 3 + is_luma;
-    int32_t __attribute__((aligned(32))) block_align[4*8*BLOCKSZ+ 4*8*BLOCKSZ];
+    DECLARE_ALIGNED(32, int32_t, block_align)[4*8*BLOCKSZ+ 4*8*BLOCKSZ];
     int16_t *block= (int16_t *)block_align;
     int16_t *block3=(int16_t *)(block_align+4*8*BLOCKSZ);
 
@@ -873,7 +873,7 @@ static void column_fidct_c(int16_t* thr_adr, int16_t *data, int16_t *output, int
 
 static void column_fidct_mmx(int16_t* thr_adr,  int16_t *data,  int16_t *output,  int cnt)
 {
-    uint64_t __attribute__((aligned(8))) temps[4];
+    DECLARE_ALIGNED(8, uint64_t, temps)[4];
     __asm__ volatile(
         ASMALIGN(4)
         "1:                   \n\t"
@@ -1598,6 +1598,10 @@ static void column_fidct_mmx(int16_t* thr_adr,  int16_t *data,  int16_t *output,
 
         : "+S"(data), "+D"(output), "+c"(cnt), "=o"(temps)
         : "d"(thr_adr)
+          NAMED_CONSTRAINTS_ADD(ff_MM_FIX_0_707106781,MM_2,MM_FIX_1_414213562_A,MM_FIX_1_414213562,MM_FIX_0_382683433,
+          ff_MM_FIX_0_541196100,MM_FIX_1_306562965,MM_FIX_0_847759065)
+          NAMED_CONSTRAINTS_ADD(MM_FIX_0_566454497,MM_FIX_0_198912367,MM_FIX_2_613125930,MM_FIX_1_847759065,
+          MM_FIX_1_082392200,ff_MM_FIX_0_541196100,MM_FIX_1_306562965)
         : "%"REG_a
         );
 }
@@ -1674,7 +1678,7 @@ static void row_idct_c(int16_t* workspace,
 static void row_idct_mmx (int16_t* workspace,
                           int16_t* output_adr,  int output_stride,  int cnt)
 {
-    uint64_t __attribute__((aligned(8))) temps[4];
+    DECLARE_ALIGNED(8, uint64_t, temps)[4];
     __asm__ volatile(
         "lea (%%"REG_a",%%"REG_a",2), %%"REG_d"    \n\t"
         "1:                     \n\t"
@@ -1816,7 +1820,7 @@ static void row_idct_mmx (int16_t* workspace,
         "paddw (%%"REG_D"), %%mm5          \n\t"
         "psraw $3, %%mm7              \n\t"
 
-        "paddw (%%"REG_D",%%"REG_a",), %%mm1    \n\t"
+        "paddw (%%"REG_D",%%"REG_a"), %%mm1    \n\t"
         "paddw %%mm2, %%mm0            \n\t"
 
         "paddw (%%"REG_D",%%"REG_a",2), %%mm7   \n\t"
@@ -1825,7 +1829,7 @@ static void row_idct_mmx (int16_t* workspace,
         "movq %%mm5, (%%"REG_D")           \n\t"
         "paddw %%mm2, %%mm6            \n\t"
 
-        "movq %%mm1, (%%"REG_D",%%"REG_a",)     \n\t"
+        "movq %%mm1, (%%"REG_D",%%"REG_a")     \n\t"
         "psraw $3, %%mm0              \n\t"
 
         "movq %%mm7, (%%"REG_D",%%"REG_a",2)    \n\t"
@@ -1837,7 +1841,7 @@ static void row_idct_mmx (int16_t* workspace,
         "paddw (%%"REG_D",%%"REG_a",2), %%mm0   \n\t"
         "psubw %%mm4, %%mm5            \n\t" //d3
 
-        "paddw (%%"REG_D",%%"REG_d",), %%mm3    \n\t"
+        "paddw (%%"REG_D",%%"REG_d"), %%mm3    \n\t"
         "psraw $3, %%mm6              \n\t"
 
         "paddw 1*8+%3, %%mm4           \n\t" //d4
@@ -1852,13 +1856,13 @@ static void row_idct_mmx (int16_t* workspace,
         "paddw (%%"REG_D"), %%mm5          \n\t"
         "psraw $3, %%mm4              \n\t"
 
-        "paddw (%%"REG_D",%%"REG_a",), %%mm4    \n\t"
+        "paddw (%%"REG_D",%%"REG_a"), %%mm4    \n\t"
         "add $"DCTSIZE_S"*2*4, %%"REG_S"      \n\t" //4 rows
 
-        "movq %%mm3, (%%"REG_D",%%"REG_d",)     \n\t"
+        "movq %%mm3, (%%"REG_D",%%"REG_d")     \n\t"
         "movq %%mm6, (%%"REG_D",%%"REG_a",4)    \n\t"
         "movq %%mm5, (%%"REG_D")           \n\t"
-        "movq %%mm4, (%%"REG_D",%%"REG_a",)     \n\t"
+        "movq %%mm4, (%%"REG_D",%%"REG_a")     \n\t"
 
         "sub %%"REG_d", %%"REG_D"             \n\t"
         "add $8, %%"REG_D"               \n\t"
@@ -1867,6 +1871,8 @@ static void row_idct_mmx (int16_t* workspace,
 
         : "+S"(workspace), "+D"(output_adr), "+c"(cnt), "=o"(temps)
         : "a"(output_stride*sizeof(short))
+        NAMED_CONSTRAINTS_ADD(MM_FIX_1_414213562_A,MM_FIX_2_613125930,MM_FIX_1_847759065,MM_FIX_1_082392200,
+        MM_FIX_1_414213562,MM_DESCALE_RND)
         : "%"REG_d
         );
 }
@@ -1940,14 +1946,14 @@ static void row_fdct_c(int16_t *data, const uint8_t *pixels, int line_size, int 
 
 static void row_fdct_mmx(int16_t *data,  const uint8_t *pixels,  int line_size,  int cnt)
 {
-    uint64_t __attribute__((aligned(8))) temps[4];
+    DECLARE_ALIGNED(8, uint64_t, temps)[4];
     __asm__ volatile(
         "lea (%%"REG_a",%%"REG_a",2), %%"REG_d"    \n\t"
         "6:                     \n\t"
         "movd (%%"REG_S"), %%mm0           \n\t"
         "pxor %%mm7, %%mm7             \n\t"
 
-        "movd (%%"REG_S",%%"REG_a",), %%mm1     \n\t"
+        "movd (%%"REG_S",%%"REG_a"), %%mm1     \n\t"
         "punpcklbw %%mm7, %%mm0        \n\t"
 
         "movd (%%"REG_S",%%"REG_a",2), %%mm2    \n\t"
@@ -1962,7 +1968,7 @@ static void row_fdct_mmx(int16_t *data,  const uint8_t *pixels,  int line_size, 
         "movd (%%"REG_S",%%"REG_a",4), %%mm3    \n\t" //7  ;prefetch!
         "movq %%mm1, %%mm6             \n\t"
 
-        "movd (%%"REG_S",%%"REG_d",), %%mm4     \n\t" //6
+        "movd (%%"REG_S",%%"REG_d"), %%mm4     \n\t" //6
         "punpcklbw %%mm7, %%mm3        \n\t"
 
         "psubw %%mm3, %%mm5            \n\t"
@@ -1974,16 +1980,16 @@ static void row_fdct_mmx(int16_t *data,  const uint8_t *pixels,  int line_size, 
         "movd (%%"REG_S",%%"REG_a",2), %%mm3    \n\t" //5
         "paddw %%mm4, %%mm1            \n\t"
 
-        "movq %%mm5, 0*8+%3            \n\t" //t7
+        "movq %%mm5, %3                \n\t" //t7
         "punpcklbw %%mm7, %%mm3        \n\t"
 
-        "movq %%mm6, 1*8+%3            \n\t" //t6
+        "movq %%mm6, %4                \n\t" //t6
         "movq %%mm2, %%mm4             \n\t"
 
         "movd (%%"REG_S"), %%mm5           \n\t" //3
         "paddw %%mm3, %%mm2            \n\t"
 
-        "movd (%%"REG_S",%%"REG_a",), %%mm6     \n\t" //4
+        "movd (%%"REG_S",%%"REG_a"), %%mm6     \n\t" //4
         "punpcklbw %%mm7, %%mm5        \n\t"
 
         "psubw %%mm3, %%mm4            \n\t"
@@ -2023,7 +2029,7 @@ static void row_fdct_mmx(int16_t *data,  const uint8_t *pixels,  int line_size, 
         "psubw %%mm1, %%mm5            \n\t" //d1
         "movq %%mm0, %%mm6             \n\t"
 
-        "movq 1*8+%3, %%mm1            \n\t"
+        "movq %4, %%mm1                \n\t"
         "punpcklwd %%mm5, %%mm0        \n\t"
 
         "punpckhwd %%mm5, %%mm6        \n\t"
@@ -2047,7 +2053,7 @@ static void row_fdct_mmx(int16_t *data,  const uint8_t *pixels,  int line_size, 
         "movq %%mm7, "DCTSIZE_S"*3*2(%%"REG_D") \n\t"
         "psllw $2, %%mm3              \n\t" //t10
 
-        "movq 0*8+%3, %%mm2           \n\t"
+        "movq %3, %%mm2               \n\t"
         "psllw $2, %%mm4              \n\t" //t11
 
         "pmulhw "MANGLE(ff_MM_FIX_0_707106781)", %%mm4 \n\t" //z3
@@ -2110,8 +2116,9 @@ static void row_fdct_mmx(int16_t *data,  const uint8_t *pixels,  int line_size, 
         "dec %%"REG_c"                   \n\t"
         "jnz 6b                  \n\t"
 
-        : "+S"(pixels), "+D"(data), "+c"(cnt), "=o"(temps)
+        : "+S"(pixels), "+D"(data), "+c"(cnt), "=o"(temps), "=o"(temps[1])
         : "a"(line_size)
+        NAMED_CONSTRAINTS_ADD(ff_MM_FIX_0_707106781,ff_MM_FIX_0_541196100,MM_FIX_0_382683433,MM_FIX_1_306562965)
         : "%"REG_d);
 }
 

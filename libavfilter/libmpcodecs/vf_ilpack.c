@@ -125,7 +125,7 @@ static void pack_li_0_MMX(unsigned char *dst, unsigned char *y,
         "pxor %%mm0, %%mm0 \n\t"
 
         ASMALIGN(4)
-        ".Lli0: \n\t"
+        "2: \n\t"
         "movq (%%"REG_S"), %%mm1 \n\t"
         "movq (%%"REG_S"), %%mm2 \n\t"
 
@@ -204,7 +204,7 @@ static void pack_li_0_MMX(unsigned char *dst, unsigned char *y,
         "add $32, %%"REG_D" \n\t"
 
         "decl %%ecx \n\t"
-        "jnz .Lli0 \n\t"
+        "jnz 2b \n\t"
         "emms \n\t"
         "pop %%"REG_BP" \n\t"
         :
@@ -233,7 +233,7 @@ static void pack_li_1_MMX(unsigned char *dst, unsigned char *y,
         "pxor %%mm0, %%mm0 \n\t"
 
         ASMALIGN(4)
-        ".Lli1: \n\t"
+        "3: \n\t"
         "movq (%%"REG_S"), %%mm1 \n\t"
         "movq (%%"REG_S"), %%mm2 \n\t"
 
@@ -316,7 +316,7 @@ static void pack_li_1_MMX(unsigned char *dst, unsigned char *y,
         "add $32, %%"REG_D" \n\t"
 
         "decl %%ecx \n\t"
-        "jnz .Lli1 \n\t"
+        "jnz 3b \n\t"
         "emms \n\t"
         "pop %%"REG_BP" \n\t"
         :

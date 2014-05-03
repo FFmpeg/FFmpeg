@@ -178,6 +178,7 @@ typedef struct OpenGLContext {
 #endif
     FFOpenGLFunctions glprocs;
 
+    int inited;                        ///< Set to 1 when write_header was successfully called.
     uint8_t background[4];             ///< Background color
     int no_window;                     ///< 0 for create default window
     char *window_title;                ///< Title of the window
@@ -309,8 +310,7 @@ static int opengl_resize(AVFormatContext *h, int width, int height)
     OpenGLContext *opengl = h->priv_data;
     opengl->window_width = width;
     opengl->window_height = height;
-    /* max_viewport_width == 0 means write_header was not called yet. */
-    if (opengl->max_viewport_width) {
+    if (opengl->inited) {
         if (opengl->no_window &&
             (ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER, NULL , 0)) < 0) {
             av_log(opengl, AV_LOG_ERROR, "Application failed to prepare window buffer.\n");
@@ -407,7 +407,8 @@ static int av_cold opengl_sdl_create_window(AVFormatContext *h)
         av_log(opengl, AV_LOG_ERROR, "Unable to initialize SDL: %s\n", SDL_GetError());
         return AVERROR_EXTERNAL;
     }
-    if ((ret = opengl_sdl_recreate_window(opengl, opengl->width, opengl->height)) < 0)
+    if ((ret = opengl_sdl_recreate_window(opengl, opengl->window_width,
+                                          opengl->window_height)) < 0)
         return ret;
     av_log(opengl, AV_LOG_INFO, "SDL driver: '%s'.\n", SDL_VideoDriverName(buffer, sizeof(buffer)));
     message.width = opengl->surface->w;
@@ -871,8 +872,8 @@ static av_cold int opengl_prepare_vertex(AVFormatContext *s)
     int tex_w, tex_h;
 
     if (opengl->window_width > opengl->max_viewport_width || opengl->window_height > opengl->max_viewport_height) {
-        opengl->window_width = FFMAX(opengl->window_width, opengl->max_viewport_width);
-        opengl->window_height = FFMAX(opengl->window_height, opengl->max_viewport_height);
+        opengl->window_width = FFMIN(opengl->window_width, opengl->max_viewport_width);
+        opengl->window_height = FFMIN(opengl->window_height, opengl->max_viewport_height);
         av_log(opengl, AV_LOG_WARNING, "Too big viewport requested, limited to %dx%d", opengl->window_width, opengl->window_height);
     }
     glViewport(0, 0, opengl->window_width, opengl->window_height);
@@ -951,7 +952,12 @@ static int opengl_create_window(AVFormatContext *h)
         return AVERROR(ENOSYS);
 #endif
     } else {
-        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_CREATE_WINDOW_BUFFER, NULL , 0)) < 0) {
+        AVDeviceRect message;
+        message.x = message.y = 0;
+        message.width = opengl->window_width;
+        message.height = opengl->window_height;
+        if ((ret = avdevice_dev_to_app_control_message(h, AV_DEV_TO_APP_CREATE_WINDOW_BUFFER,
+                                                       &message , sizeof(message))) < 0) {
             av_log(opengl, AV_LOG_ERROR, "Application failed to create window buffer.\n");
             return ret;
         }
@@ -1067,6 +1073,10 @@ static av_cold int opengl_write_header(AVFormatContext *h)
     opengl->width = st->codec->width;
     opengl->height = st->codec->height;
     opengl->pix_fmt = st->codec->pix_fmt;
+    if (!opengl->window_width)
+        opengl->window_width = opengl->width;
+    if (!opengl->window_height)
+        opengl->window_height = opengl->height;
 
     if (!opengl->window_title && !opengl->no_window)
         opengl->window_title = av_strdup(h->filename);
@@ -1110,6 +1120,8 @@ static av_cold int opengl_write_header(AVFormatContext *h)
 
     ret = AVERROR_EXTERNAL;
     OPENGL_ERROR_CHECK(opengl);
+
+    opengl->inited = 1;
     return 0;
 
   fail:
@@ -1266,6 +1278,7 @@ static const AVOption options[] = {
     { "background",   "set background color",   OFFSET(background),   AV_OPT_TYPE_COLOR,  {.str = "black"}, CHAR_MIN, CHAR_MAX, ENC },
     { "no_window",    "disable default window", OFFSET(no_window),    AV_OPT_TYPE_INT,    {.i64 = 0}, INT_MIN, INT_MAX, ENC },
     { "window_title", "set window title",       OFFSET(window_title), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, ENC },
+    { "window_size",  "set window size",        OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, ENC },
     { NULL }
 };
 

@@ -65,11 +65,23 @@ static void dump_stereo3d(AVFilterContext *ctx, AVFrameSideData *sd)
         av_log(ctx, AV_LOG_INFO, " (inverted)");
 }
 
+static void update_sample_stats(const uint8_t *src, int len, int64_t *sum, int64_t *sum2)
+{
+    int i;
+
+    for (i = 0; i < len; i++) {
+        *sum += src[i];
+        *sum2 += src[i] * src[i];
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     uint32_t plane_checksum[4] = {0}, checksum = 0;
+    int64_t sum[4] = {0}, sum2[4] = {0};
+    int32_t pixelcount[4] = {0};
     int i, plane, vsub = desc->log2_chroma_h;
 
     for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++) {
@@ -83,6 +95,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         for (i = 0; i < h; i++) {
             plane_checksum[plane] = av_adler32_update(plane_checksum[plane], data, linesize);
             checksum = av_adler32_update(checksum, data, linesize);
+
+            update_sample_stats(data, linesize, sum+plane, sum2+plane);
+            pixelcount[plane] += linesize;
             data += frame->linesize[plane];
         }
     }
@@ -104,7 +119,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     for (plane = 1; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
         av_log(ctx, AV_LOG_INFO, " %08"PRIX32, plane_checksum[plane]);
-    av_log(ctx, AV_LOG_INFO, "]\n");
+    av_log(ctx, AV_LOG_INFO, "] mean:[");
+    for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
+        av_log(ctx, AV_LOG_INFO, "%"PRId64" ", (sum[plane] + pixelcount[plane]/2) / pixelcount[plane]);
+    av_log(ctx, AV_LOG_INFO, "\b] stdev:[");
+    for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
+        av_log(ctx, AV_LOG_INFO, "%3.1f ",
+               sqrt((sum2[plane] - sum[plane]*(double)sum[plane]/pixelcount[plane])/pixelcount[plane]));
+    av_log(ctx, AV_LOG_INFO, "\b]\n");
 
     for (i = 0; i < frame->nb_side_data; i++) {
         AVFrameSideData *sd = frame->side_data[i];

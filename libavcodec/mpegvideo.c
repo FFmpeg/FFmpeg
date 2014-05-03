@@ -340,6 +340,18 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     ff_MPV_decode_mb(s, s->block);
 }
 
+static void gray16(uint8_t *dst, const uint8_t *src, ptrdiff_t linesize, int h)
+{
+    while(h--)
+        memset(dst + h*linesize, 128, 16);
+}
+
+static void gray8(uint8_t *dst, const uint8_t *src, ptrdiff_t linesize, int h)
+{
+    while(h--)
+        memset(dst + h*linesize, 128, 8);
+}
+
 /* init common dct for both encoder and decoder */
 av_cold int ff_dct_common_init(MpegEncContext *s)
 {
@@ -347,6 +359,19 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
+
+    if (s->avctx->debug & FF_DEBUG_NOMC) {
+        int i;
+        for (i=0; i<4; i++) {
+            s->hdsp.avg_pixels_tab[0][i] = gray16;
+            s->hdsp.put_pixels_tab[0][i] = gray16;
+            s->hdsp.put_no_rnd_pixels_tab[0][i] = gray16;
+
+            s->hdsp.avg_pixels_tab[1][i] = gray8;
+            s->hdsp.put_pixels_tab[1][i] = gray8;
+            s->hdsp.put_no_rnd_pixels_tab[1][i] = gray8;
+        }
+    }
 
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
@@ -1656,6 +1681,22 @@ int ff_find_unused_picture(MpegEncContext *s, int shared)
     return ret;
 }
 
+static void gray_frame(AVFrame *frame)
+{
+    int i, h_chroma_shift, v_chroma_shift;
+
+    av_pix_fmt_get_chroma_sub_sample(frame->format, &h_chroma_shift, &v_chroma_shift);
+
+    for(i=0; i<frame->height; i++)
+        memset(frame->data[0] + frame->linesize[0]*i, 0x80, frame->width);
+    for(i=0; i<FF_CEIL_RSHIFT(frame->height, v_chroma_shift); i++) {
+        memset(frame->data[1] + frame->linesize[1]*i,
+               0x80, FF_CEIL_RSHIFT(frame->width, h_chroma_shift));
+        memset(frame->data[2] + frame->linesize[2]*i,
+               0x80, FF_CEIL_RSHIFT(frame->width, h_chroma_shift));
+    }
+}
+
 /**
  * generic function called after decoding
  * the header and before a frame is decoded.
@@ -1880,6 +1921,10 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     } else {
         s->dct_unquantize_intra = s->dct_unquantize_mpeg1_intra;
         s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
+    }
+
+    if (s->avctx->debug & FF_DEBUG_NOMC) {
+        gray_frame(s->current_picture_ptr->f);
     }
 
     return 0;
