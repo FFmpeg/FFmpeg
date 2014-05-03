@@ -673,6 +673,7 @@ OBJS-$(CONFIG_MPEGTS_MUXER)            += mpeg4audio.o
 OBJS-$(CONFIG_MPEGTS_DEMUXER)          += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MXF_MUXER)               += dnxhddata.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
+OBJS-$(CONFIG_OGA_MUXER)               += xiph.o flac.o flacdata.o
 OBJS-$(CONFIG_OGG_DEMUXER)             += xiph.o flac.o flacdata.o     \
                                           mpeg12data.o vorbis_parser.o \
                                           dirac.o vorbis_data.o
