@@ -82,8 +82,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
         return res;
-    out  = c->frame_buffer;
-    prev = c->last_frame_buffer;
+    out  = (uint8_t*)c->frame_buffer;
+    prev = (uint8_t*)c->last_frame_buffer;
 
     for (i = 0; i < 8; i++)
         offsets[i] = -1;
