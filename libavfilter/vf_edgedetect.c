@@ -80,9 +80,8 @@ static int query_formats(AVFilterContext *ctx)
     const EdgeDetectContext *edgedetect = ctx->priv;
 
     if (edgedetect->mode == MODE_WIRES) {
-    /* TODO: reindent */
-    static const enum AVPixelFormat pix_fmts[] = {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE};
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+        static const enum AVPixelFormat pix_fmts[] = {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE};
+        ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     } else if (edgedetect->mode == MODE_COLORMIX) {
         static const enum AVPixelFormat pix_fmts[] = {AV_PIX_FMT_GBRP, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE};
         ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -313,31 +312,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         uint16_t *gradients  = plane->gradients;
         int8_t   *directions = plane->directions;
 
-        /* TODO: reindent */
-    /* gaussian filter to reduce noise  */
-    gaussian_blur(ctx, inlink->w, inlink->h,
-                  tmpbuf,      inlink->w,
-                  in->data[p], in->linesize[p]);
+        /* gaussian filter to reduce noise  */
+        gaussian_blur(ctx, inlink->w, inlink->h,
+                      tmpbuf,      inlink->w,
+                      in->data[p], in->linesize[p]);
 
-    /* compute the 16-bits gradients and directions for the next step */
-    sobel(inlink->w, inlink->h,
-          gradients, inlink->w,
-          directions,inlink->w,
-          tmpbuf,    inlink->w);
+        /* compute the 16-bits gradients and directions for the next step */
+        sobel(inlink->w, inlink->h,
+              gradients, inlink->w,
+              directions,inlink->w,
+              tmpbuf,    inlink->w);
 
-    /* non_maximum_suppression() will actually keep & clip what's necessary and
-     * ignore the rest, so we need a clean output buffer */
-    memset(tmpbuf, 0, inlink->w * inlink->h);
-    non_maximum_suppression(inlink->w, inlink->h,
-                            tmpbuf,    inlink->w,
-                            directions,inlink->w,
-                            gradients, inlink->w);
+        /* non_maximum_suppression() will actually keep & clip what's necessary and
+         * ignore the rest, so we need a clean output buffer */
+        memset(tmpbuf, 0, inlink->w * inlink->h);
+        non_maximum_suppression(inlink->w, inlink->h,
+                                tmpbuf,    inlink->w,
+                                directions,inlink->w,
+                                gradients, inlink->w);
 
-    /* keep high values, or low values surrounded by high values */
-    double_threshold(edgedetect->low_u8, edgedetect->high_u8,
-                     inlink->w, inlink->h,
-                     out->data[p], out->linesize[p],
-                     tmpbuf,       inlink->w);
+        /* keep high values, or low values surrounded by high values */
+        double_threshold(edgedetect->low_u8, edgedetect->high_u8,
+                         inlink->w, inlink->h,
+                         out->data[p], out->linesize[p],
+                         tmpbuf,       inlink->w);
 
         if (edgedetect->mode == MODE_COLORMIX) {
             color_mix(inlink->w, inlink->h,
