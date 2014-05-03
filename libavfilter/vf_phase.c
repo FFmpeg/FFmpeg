@@ -112,8 +112,7 @@ static int config_input(AVFilterLink *inlink)
  * Find which field combination has the smallest average squared difference
  * between the fields.
  */
-static enum PhaseMode analyze_plane(AVFilterContext *ctx, PhaseContext *s,
-                                    AVFrame *old, AVFrame *new)
+static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old, AVFrame *new)
 {
     double bdiff, tdiff, pdiff, scale;
     const int ns = new->linesize[0];
@@ -123,7 +122,6 @@ static enum PhaseMode analyze_plane(AVFilterContext *ctx, PhaseContext *s,
     const int h = new->height;
     const int w = new->width;
     int bdif, tdif, pdif;
-    enum PhaseMode mode = s->mode;
     uint8_t *end, *rend;
     int top, t;
 
@@ -261,7 +259,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             return AVERROR(ENOMEM);
         }
     } else {
-        mode = analyze_plane(ctx, s, s->frame, in);
+        mode = analyze_plane(ctx, s->mode, s->frame, in);
     }
 
     for (plane = 0; plane < s->nb_planes; plane++) {
