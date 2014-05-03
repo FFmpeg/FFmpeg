@@ -251,13 +251,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     if (!s->frame) {
+        s->frame = in;
         mode = PROGRESSIVE;
-        s->frame = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!s->frame) {
-            av_frame_free(&in);
-            av_frame_free(&out);
-            return AVERROR(ENOMEM);
-        }
     } else {
         mode = analyze_plane(ctx, s->mode, s->frame, in);
     }
@@ -269,7 +264,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         for (y = 0, top = 1; y < s->planeheight[plane]; y++, top ^= 1) {
             memcpy(to, mode == (top ? BOTTOM_FIRST : TOP_FIRST) ? buf : from, s->linesize[plane]);
-            memcpy(buf, from, s->linesize[plane]);
 
             buf += s->frame->linesize[plane];
             from += in->linesize[plane];
@@ -277,7 +271,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    av_frame_free(&in);
+    if (in != s->frame)
+        av_frame_free(&s->frame);
+    s->frame = in;
     return ff_filter_frame(outlink, out);
 }
 
