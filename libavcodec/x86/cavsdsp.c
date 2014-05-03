@@ -388,7 +388,7 @@ static inline void OPNAME ## cavs_qpel8or16_v1_ ## MMX(uint8_t *dst, uint8_t *sr
 }\
 \
 static inline void OPNAME ## cavs_qpel8or16_v2_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
-  QPEL_CAVSVNUM(QPEL_CAVSV2,OP,ff_pw_4,ff_pw_5,ff_pw_5)         \
+  QPEL_CAVSVNUM(QPEL_CAVSV2,OP,ff_pw_4,ff_pw_5,ff_pw_42)        \
 }\
 \
 static inline void OPNAME ## cavs_qpel8or16_v3_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
