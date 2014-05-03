@@ -42,7 +42,7 @@ enum PhaseMode {
 typedef struct PhaseContext {
     const AVClass *class;
     enum PhaseMode mode;
-    AVFrame *frame;
+    AVFrame *frame; /* previous frame */
     int nb_planes;
     int planeheight[4];
     int linesize[4];
