@@ -36,11 +36,11 @@ struct oggopus_private {
 
 static int opus_header(AVFormatContext *avf, int idx)
 {
-    struct ogg *ogg = avf->priv_data;
-    struct ogg_stream *os = &ogg->streams[idx];
-    AVStream *st = avf->streams[idx];
+    struct ogg *ogg              = avf->priv_data;
+    struct ogg_stream *os        = &ogg->streams[idx];
+    AVStream *st                 = avf->streams[idx];
     struct oggopus_private *priv = os->private;
-    uint8_t *packet = os->buf + os->pstart;
+    uint8_t *packet              = os->buf + os->pstart;
     uint8_t *extradata;
 
     if (!priv) {
@@ -48,22 +48,24 @@ static int opus_header(AVFormatContext *avf, int idx)
         if (!priv)
             return AVERROR(ENOMEM);
     }
+
     if (os->flags & OGG_FLAG_BOS) {
         if (os->psize < OPUS_HEAD_SIZE || (AV_RL8(packet + 8) & 0xF0) != 0)
             return AVERROR_INVALIDDATA;
-        st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id    = AV_CODEC_ID_OPUS;
-        st->codec->channels    = AV_RL8 (packet + 9);
-        priv->pre_skip         = AV_RL16(packet + 10);
-        /*orig_sample_rate     = AV_RL32(packet + 12);*/
-        /*gain                 = AV_RL16(packet + 16);*/
-        /*channel_map          = AV_RL8 (packet + 18);*/
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codec->codec_id   = AV_CODEC_ID_OPUS;
+        st->codec->channels   = AV_RL8 (packet + 9);
+        priv->pre_skip        = AV_RL16(packet + 10);
+        /*orig_sample_rate    = AV_RL32(packet + 12);*/
+        /*gain                = AV_RL16(packet + 16);*/
+        /*channel_map         = AV_RL8 (packet + 18);*/
 
         extradata = av_malloc(os->psize + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!extradata)
             return AVERROR(ENOMEM);
+
         memcpy(extradata, packet, os->psize);
-        st->codec->extradata = extradata;
+        st->codec->extradata      = extradata;
         st->codec->extradata_size = os->psize;
 
         st->codec->sample_rate = 48000;
@@ -79,21 +81,23 @@ static int opus_header(AVFormatContext *avf, int idx)
         priv->need_comments--;
         return 1;
     }
+
     return 0;
 }
 
 static int opus_packet(AVFormatContext *avf, int idx)
 {
-    struct ogg *ogg = avf->priv_data;
-    struct ogg_stream *os = &ogg->streams[idx];
-    AVStream *st = avf->streams[idx];
+    struct ogg *ogg              = avf->priv_data;
+    struct ogg_stream *os        = &ogg->streams[idx];
+    AVStream *st                 = avf->streams[idx];
     struct oggopus_private *priv = os->private;
-    uint8_t *packet = os->buf + os->pstart;
+    uint8_t *packet              = os->buf + os->pstart;
     unsigned toc, toc_config, toc_count, frame_size, nb_frames = 1;
 
     if (!os->psize)
         return AVERROR_INVALIDDATA;
-    toc = *packet;
+
+    toc        = *packet;
     toc_config = toc >> 3;
     toc_count  = toc & 3;
     frame_size = toc_config < 12 ? FFMAX(480, 960 * (toc_config & 3)) :
@@ -106,12 +110,14 @@ static int opus_packet(AVFormatContext *avf, int idx)
     } else if (toc_count) {
         nb_frames = 2;
     }
+
     os->pduration = frame_size * nb_frames;
     if (os->lastpts != AV_NOPTS_VALUE) {
         if (st->start_time == AV_NOPTS_VALUE)
             st->start_time = os->lastpts;
         priv->cur_dts = os->lastdts = os->lastpts -= priv->pre_skip;
     }
+
     priv->cur_dts += os->pduration;
     if ((os->flags & OGG_FLAG_EOS)) {
         int64_t skip = priv->cur_dts - os->granule + priv->pre_skip;
@@ -123,13 +129,14 @@ static int opus_packet(AVFormatContext *avf, int idx)
                    os->pduration);
         }
     }
+
     return 0;
 }
 
 const struct ogg_codec ff_opus_codec = {
-    .name      = "Opus",
-    .magic     = "OpusHead",
-    .magicsize = 8,
-    .header    = opus_header,
-    .packet    = opus_packet,
+    .name             = "Opus",
+    .magic            = "OpusHead",
+    .magicsize        = 8,
+    .header           = opus_header,
+    .packet           = opus_packet,
 };
