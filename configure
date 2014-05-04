@@ -4904,6 +4904,7 @@ if enabled lto; then
     test "$cc_type" != "$ld_type" && die "LTO requires same compiler and linker"
     check_cflags  -flto
     check_ldflags -flto $cpuflags
+    disable inline_asm_direct_symbol_refs
 fi
 
 check_optflags $optflags
