@@ -191,6 +191,9 @@ fate-filter-vflip_vflip: CMD = video_filter "vflip,vflip"
 FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER PERMS_FILTER EDGEDETECT_FILTER) += fate-filter-edgedetect
 fate-filter-edgedetect: CMD = video_filter "format=gray,perms=random,edgedetect"
 
+FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER PERMS_FILTER EDGEDETECT_FILTER) += fate-filter-edgedetect-colormix
+fate-filter-edgedetect-colormix: CMD = video_filter "format=gbrp,perms=random,edgedetect=mode=colormix"
+
 FATE_FILTER_VSYNTH-$(call ALLYES, PERMS_FILTER HUE_FILTER) += fate-filter-hue
 fate-filter-hue: CMD = video_filter "perms=random,hue=s=sin(2*PI*t)+1"
 

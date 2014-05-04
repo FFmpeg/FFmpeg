@@ -324,6 +324,7 @@ typedef struct H264Picture {
     int reference;
     int recovered;          ///< picture at IDR or recovery point + recovery count
     int invalid_gap;
+    int sei_recovery_frame_cnt;
 
     int crop;
     int crop_left;

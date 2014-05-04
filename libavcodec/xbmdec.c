@@ -50,9 +50,9 @@ static int parse_str_int(const uint8_t *p, int len, const uint8_t *key)
         return INT_MIN;
 
     for(; p<end; p++) {
-        char **eptr;
+        char *eptr;
         int64_t ret = strtol(p, &eptr, 10);
-        if (eptr != p)
+        if ((const uint8_t *)eptr != p)
             return ret;
     }
     return INT_MIN;

@@ -3990,12 +3990,36 @@ by the low threshold.
 
 Default value for @var{low} is @code{20/255}, and default value for @var{high}
 is @code{50/255}.
+
+@item mode
+Define the drawing mode.
+
+@table @samp
+@item wires
+Draw white/gray wires on black background.
+
+@item colormix
+Mix the colors to create a paint/cartoon effect.
 @end table
 
-Example:
+Default value is @var{wires}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Standard edge detection with custom values for the hysteresis thresholding:
 @example
 edgedetect=low=0.1:high=0.4
 @end example
+
+@item
+Painting effect without thresholding:
+@example
+edgedetect=mode=colormix:high=0
+@end example
+@end itemize
 
 @section extractplanes
 

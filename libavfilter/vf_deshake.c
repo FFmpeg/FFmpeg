@@ -132,7 +132,7 @@ static void find_block_motion(DeshakeContext *deshake, uint8_t *src1,
     int smallest = INT_MAX;
     int tmp, tmp2;
 
-    #define CMP(i, j) deshake->c.sad[0](deshake, src1 + cy * stride + cx, \
+    #define CMP(i, j) deshake->c.sad[0](NULL, src1 + cy * stride + cx, \
                                         src2 + (j) * stride + (i), stride, \
                                         deshake->blocksize)
 

@@ -1781,6 +1781,8 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
 
     av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(h), 0);
 
+    if (srcp->sei_recovery_frame_cnt == 0)
+        dst->key_frame = 1;
     if (!srcp->crop)
         return 0;
 

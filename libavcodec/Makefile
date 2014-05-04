@@ -181,6 +181,8 @@ OBJS-$(CONFIG_DPX_DECODER)             += dpx.o
 OBJS-$(CONFIG_DPX_ENCODER)             += dpxenc.o
 OBJS-$(CONFIG_DSD_LSBF_DECODER)        += dsddec.o
 OBJS-$(CONFIG_DSD_MSBF_DECODER)        += dsddec.o
+OBJS-$(CONFIG_DSD_LSBF_PLANAR_DECODER) += dsddec.o
+OBJS-$(CONFIG_DSD_MSBF_PLANAR_DECODER) += dsddec.o
 OBJS-$(CONFIG_DSICINAUDIO_DECODER)     += dsicinav.o
 OBJS-$(CONFIG_DSICINVIDEO_DECODER)     += dsicinav.o
 OBJS-$(CONFIG_DVBSUB_DECODER)          += dvbsubdec.o
@@ -673,6 +675,7 @@ OBJS-$(CONFIG_MPEGTS_MUXER)            += mpeg4audio.o
 OBJS-$(CONFIG_MPEGTS_DEMUXER)          += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MXF_MUXER)               += dnxhddata.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
+OBJS-$(CONFIG_OGA_MUXER)               += xiph.o flac.o flacdata.o
 OBJS-$(CONFIG_OGG_DEMUXER)             += xiph.o flac.o flacdata.o     \
                                           mpeg12data.o vorbis_parser.o \
                                           dirac.o vorbis_data.o

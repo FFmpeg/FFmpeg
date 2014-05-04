@@ -744,6 +744,7 @@ static int h264_frame_start(H264Context *h)
     pic->mmco_reset  = 0;
     pic->recovered   = 0;
     pic->invalid_gap = 0;
+    pic->sei_recovery_frame_cnt = h->sei_recovery_frame_cnt;
 
     if ((ret = alloc_picture(h, pic)) < 0)
         return ret;
