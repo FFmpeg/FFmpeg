@@ -312,13 +312,13 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
     emms_c(); // FIXME should not be required but IS (even for non-MMX versions)
 
     // NOTE: the +3 is for the MMX(+1) / SSE(+3) scaler which reads over the end
-    FF_ALLOC_OR_GOTO(NULL, *filterPos, (dstW + 3) * sizeof(**filterPos), fail);
+    FF_ALLOC_ARRAY_OR_GOTO(NULL, *filterPos, (dstW + 3), sizeof(**filterPos), fail);
 
     if (FFABS(xInc - 0x10000) < 10 && srcPos == dstPos) { // unscaled
         int i;
         filterSize = 1;
-        FF_ALLOCZ_OR_GOTO(NULL, filter,
-                          dstW * sizeof(*filter) * filterSize, fail);
+        FF_ALLOCZ_ARRAY_OR_GOTO(NULL, filter,
+                                dstW, sizeof(*filter) * filterSize, fail);
 
         for (i = 0; i < dstW; i++) {
             filter[i * filterSize] = fone;
@@ -328,8 +328,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         int i;
         int64_t xDstInSrc;
         filterSize = 1;
-        FF_ALLOC_OR_GOTO(NULL, filter,
-                         dstW * sizeof(*filter) * filterSize, fail);
+        FF_ALLOC_ARRAY_OR_GOTO(NULL, filter,
+                               dstW, sizeof(*filter) * filterSize, fail);
 
         xDstInSrc = ((dstPos*(int64_t)xInc)>>8) - ((srcPos*0x8000LL)>>7);
         for (i = 0; i < dstW; i++) {
@@ -344,8 +344,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         int i;
         int64_t xDstInSrc;
         filterSize = 2;
-        FF_ALLOC_OR_GOTO(NULL, filter,
-                         dstW * sizeof(*filter) * filterSize, fail);
+        FF_ALLOC_ARRAY_OR_GOTO(NULL, filter,
+                               dstW, sizeof(*filter) * filterSize, fail);
 
         xDstInSrc = ((dstPos*(int64_t)xInc)>>8) - ((srcPos*0x8000LL)>>7);
         for (i = 0; i < dstW; i++) {
@@ -385,8 +385,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         filterSize = FFMIN(filterSize, srcW - 2);
         filterSize = FFMAX(filterSize, 1);
 
-        FF_ALLOC_OR_GOTO(NULL, filter,
-                         dstW * sizeof(*filter) * filterSize, fail);
+        FF_ALLOC_ARRAY_OR_GOTO(NULL, filter,
+                               dstW, sizeof(*filter) * filterSize, fail);
 
         xDstInSrc = ((dstPos*(int64_t)xInc)>>7) - ((srcPos*0x10000LL)>>7);
         for (i = 0; i < dstW; i++) {
@@ -493,7 +493,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
     if (dstFilter)
         filter2Size += dstFilter->length - 1;
     av_assert0(filter2Size > 0);
-    FF_ALLOCZ_OR_GOTO(NULL, filter2, filter2Size * dstW * sizeof(*filter2), fail);
+    FF_ALLOCZ_ARRAY_OR_GOTO(NULL, filter2, dstW, filter2Size * sizeof(*filter2), fail);
 
     for (i = 0; i < dstW; i++) {
         int j, k;
@@ -577,7 +577,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
     av_assert0(minFilterSize > 0);
     filterSize = (minFilterSize + (filterAlign - 1)) & (~(filterAlign - 1));
     av_assert0(filterSize > 0);
-    filter = av_malloc(filterSize * dstW * sizeof(*filter));
+    filter = av_malloc_array(dstW, filterSize * sizeof(*filter));
     if (!filter)
         goto fail;
     if (filterSize >= MAX_FILTER_SIZE * 16 /
@@ -635,8 +635,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
 
     // Note the +1 is for the MMX scaler which reads over the end
     /* align at 16 for AltiVec (needed by hScale_altivec_real) */
-    FF_ALLOCZ_OR_GOTO(NULL, *outFilter,
-                      *outFilterSize * (dstW + 3) * sizeof(int16_t), fail);
+    FF_ALLOCZ_ARRAY_OR_GOTO(NULL, *outFilter,
+                            (dstW + 3), *outFilterSize * sizeof(int16_t), fail);
 
     /* normalize & store in outFilter */
     for (i = 0; i < dstW; i++) {

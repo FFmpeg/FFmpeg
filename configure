@@ -3109,6 +3109,15 @@ icl_flags(){
     done
 }
 
+icc_flags(){
+    for flag; do
+        case $flag in
+            -flto)                echo -ipo ;;
+            *)                    echo $flag ;;
+        esac
+    done
+}
+
 pgi_flags(){
     for flag; do
         case $flag in
@@ -3230,6 +3239,7 @@ probe_cc(){
         _cflags_speed='-O3'
         _cflags_size='-Os'
         _cflags_noopt='-O1'
+        _flags_filter=icc_flags
     elif $_cc -v 2>&1 | grep -q xlc; then
         _type=xlc
         _ident=$($_cc -qversion 2>/dev/null | head -n1)
@@ -4904,6 +4914,7 @@ if enabled lto; then
     test "$cc_type" != "$ld_type" && die "LTO requires same compiler and linker"
     check_cflags  -flto
     check_ldflags -flto $cpuflags
+    disable inline_asm_direct_symbol_refs
 fi
 
 check_optflags $optflags

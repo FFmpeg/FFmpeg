@@ -285,6 +285,11 @@ detect bitstream specification deviations
 detect improper bitstream length
 @item explode
 abort decoding on minor error detection
+@item ignore_err
+ignore decoding errors, and continue decoding.
+This is useful if you want to analyze the content of a video and thus want
+everything to be decoded no matter what. This option will not result in a video
+that is pleasing to watch in case of errors.
 @item careful
 consider things that violate the spec and have not been seen in the wild as errors
 @item compliant
