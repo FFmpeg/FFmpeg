@@ -1337,6 +1337,8 @@ int ff_h264_frame_start(H264Context *h)
     int i;
     const int pixel_shift = h->pixel_shift;
 
+    h->next_output_pic = NULL;
+
     if (ff_MPV_frame_start(s, s->avctx) < 0)
         return -1;
     ff_er_frame_start(s);
@@ -1388,8 +1390,6 @@ int ff_h264_frame_start(H264Context *h)
 
     s->current_picture_ptr->field_poc[0]     =
         s->current_picture_ptr->field_poc[1] = INT_MAX;
-
-    h->next_output_pic = NULL;
 
     assert(s->current_picture_ptr->long_ref == 0);
 
