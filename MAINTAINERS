@@ -166,7 +166,7 @@ Codecs:
   dxa.c                                 Kostya Shishkov
   eacmv*, eaidct*, eat*                 Peter Ross
   exif.c, exif.h                        Thilo Borgmann
-  ffv1.c                                Michael Niedermayer
+  ffv1*                                 Michael Niedermayer
   ffwavesynth.c                         Nicolas George
   fic.c                                 Derek Buitenhuis
   flac*                                 Justin Ruggles
@@ -243,7 +243,7 @@ Codecs:
   smacker.c                             Kostya Shishkov
   smc.c                                 Mike Melanson
   smvjpegdec.c                          Ash Hughes
-  snow.c                                Michael Niedermayer, Loren Merritt
+  snow*                                 Michael Niedermayer, Loren Merritt
   sonic.c                               Alex Beregszaszi
   srt*                                  Aurelien Jacobs
   sunrast.c                             Ivo van Poorten
@@ -434,7 +434,7 @@ Muxers/Demuxers:
   mxfdec.c                              Tomas Härdin
   nistspheredec.c                       Paul B Mahol
   nsvdec.c                              Francois Revol
-  nut.c                                 Michael Niedermayer
+  nut*                                  Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
   oggdec.c, oggdec.h                    David Conrad
   oggenc.c                              Baptiste Coudurier
