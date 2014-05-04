@@ -1,5 +1,35 @@
 Releases are sorted from youngest to oldest.
 
+Version 9.13:
+- swscale: Fix an undefined behaviour
+- matroska: add the Opus mapping
+- mp3enc: Properly write bitrate value in XING header (Fixes: debian/736088)
+- origin/pu/9 oggdec: add support for Opus in Ogg demuxing (Fixes: libav/603, debian/720563)
+- apedec: do not buffer decoded samples over AVPackets
+- isom: lpcm in mov default to big endian
+- movdec: handle 0x7fff langcode as macintosh per the specs
+- h264: reset next_output_pic earlier in start_frame() (Fixes: libav/672, debian/741240, ubuntu/1288206)
+- Revert "pthread: flush all threads on flush, not just the first one"
+- rtmpproto: Make sure to pass on the error code if read_connect failed
+- lavr: allocate the resampling buffer with a positive size
+- tiffdec: use bytestream2 to simplify overread/overwrite protection
+- bytestream: add bytestream2_copy_buffer() functions
+- bytestream: add functions for accessing size of buffer
+- resample: fix avresample_get_delay() return value
+- avi: Improve non-interleaved detection (Fixes: libav/666)
+- af_channelmap: fix ONE_STR mapping mode
+- movenc: allow override of "writing application" tag
+- matroskaenc: allow override of "writing application" tag
+- avfilter: Add missing emms_c when needed
+- build: Use pkg-config for openjpeg (Fixes: libav/387)
+- pthread: flush all threads on flush, not just the first one (Fixes: vlc/9665)
+- mpeg12: check scantable indices in all decode_block functions
+- sgidec: fix buffer size check in expand_rle_row()
+- adx: check that the offset is not negative
+- mpegvideo: set reference/pict_type on generated reference frames
+- h264: Fix various crashes found in samples pointed by Mateusz "j00ru" Jurczyk and Gynvael Coldwind - Thanks!
+
+
 version 9.12:
 - configure: Update freetype check to follow upstream
 - drawtext: Drop pointless header
