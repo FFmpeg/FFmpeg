@@ -2716,7 +2716,7 @@ static int transcode_init(void)
                                                DEFAULT_PASS_LOGFILENAME_PREFIX,
                          i);
                 if (!strcmp(ost->enc->name, "libx264")) {
-                    av_dict_set(&ost->opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
+                    av_dict_set(&ost->encoder_opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
                 } else {
                     if (enc_ctx->flags & CODEC_FLAG_PASS2) {
                         char  *logbuffer;
@@ -2761,9 +2761,9 @@ static int transcode_init(void)
                 memcpy(ost->st->codec->subtitle_header, dec->subtitle_header, dec->subtitle_header_size);
                 ost->st->codec->subtitle_header_size = dec->subtitle_header_size;
             }
-            if (!av_dict_get(ost->opts, "threads", NULL, 0))
-                av_dict_set(&ost->opts, "threads", "auto", 0);
-            if ((ret = avcodec_open2(ost->st->codec, codec, &ost->opts)) < 0) {
+            if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
+                av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
+            if ((ret = avcodec_open2(ost->st->codec, codec, &ost->encoder_opts)) < 0) {
                 if (ret == AVERROR_EXPERIMENTAL)
                     abort_codec_experimental(codec, 1);
                 snprintf(error, sizeof(error), "Error while opening encoder for output stream #%d:%d - maybe incorrect parameters such as bit_rate, rate, width or height",
@@ -2774,12 +2774,12 @@ static int transcode_init(void)
                 !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
                 av_buffersink_set_frame_size(ost->filter->filter,
                                              ost->st->codec->frame_size);
-            assert_avoptions(ost->opts);
+            assert_avoptions(ost->encoder_opts);
             if (ost->st->codec->bit_rate && ost->st->codec->bit_rate < 1000)
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                              " It takes bits/s as argument, not kbits/s\n");
         } else {
-            av_opt_set_dict(ost->st->codec, &ost->opts);
+            av_opt_set_dict(ost->st->codec, &ost->encoder_opts);
         }
     }
 
@@ -3646,7 +3646,7 @@ static int transcode(void)
                 av_freep(&ost->st->codec->subtitle_header);
                 av_freep(&ost->forced_kf_pts);
                 av_freep(&ost->apad);
-                av_dict_free(&ost->opts);
+                av_dict_free(&ost->encoder_opts);
                 av_dict_free(&ost->swr_opts);
                 av_dict_free(&ost->resample_opts);
             }

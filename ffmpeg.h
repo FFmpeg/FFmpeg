@@ -410,7 +410,7 @@ typedef struct OutputStream {
     char *filters_script;  ///< filtergraph script associated to the -filter_script option
 
     int64_t sws_flags;
-    AVDictionary *opts;
+    AVDictionary *encoder_opts;
     AVDictionary *swr_opts;
     AVDictionary *resample_opts;
     char *apad;
