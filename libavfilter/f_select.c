@@ -271,7 +271,7 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *frame)
 
         for (y = 0; y < frame->height - 8; y += 8) {
             for (x = 0; x < frame->width*3 - 8; x += 8) {
-                sad += select->c.sad[1](select, p1 + x, p2 + x,
+                sad += select->c.sad[1](NULL, p1 + x, p2 + x,
                                         linesize, 8);
                 nb_sad += 8 * 8;
             }
