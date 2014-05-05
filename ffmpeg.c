@@ -1672,7 +1672,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
 
     write_frame(of->ctx, &opkt, ost);
-    ost->st->codec->frame_number++;
 }
 
 int guess_input_channel_layout(InputStream *ist)
