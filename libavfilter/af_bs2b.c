@@ -168,16 +168,16 @@ static int config_output(AVFilterLink *outlink)
         bs2b->filter = bs2b_cross_feed_u8;
         break;
     case AV_SAMPLE_FMT_S16:
-        bs2b->filter = bs2b_cross_feed_s16;
+        bs2b->filter = (void*)bs2b_cross_feed_s16;
         break;
     case AV_SAMPLE_FMT_S32:
-        bs2b->filter = bs2b_cross_feed_s32;
+        bs2b->filter = (void*)bs2b_cross_feed_s32;
         break;
     case AV_SAMPLE_FMT_FLT:
-        bs2b->filter = bs2b_cross_feed_f;
+        bs2b->filter = (void*)bs2b_cross_feed_f;
         break;
     case AV_SAMPLE_FMT_DBL:
-        bs2b->filter = bs2b_cross_feed_d;
+        bs2b->filter = (void*)bs2b_cross_feed_d;
         break;
     default:
         return AVERROR_BUG;
