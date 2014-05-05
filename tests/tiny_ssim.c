@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
     sscanf(argv[3], "%dx%d", &w, &h);
 
     if (w<=0 || h<=0 || w*(int64_t)h >= INT_MAX/3 || 2LL*w+12 >= INT_MAX / sizeof(*temp)) {
-        fprintf(stderr, "Dimensions are too large\n");
+        fprintf(stderr, "Dimensions are too large, or invalid\n");
         return -2;
     }
 
