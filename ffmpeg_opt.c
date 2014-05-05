@@ -594,7 +594,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         }
 
         ist->dec = choose_decoder(o, ic, st);
-        ist->opts = filter_codec_opts(o->g->codec_opts, ist->st->codec->codec_id, ic, st, ist->dec);
+        ist->decoder_opts = filter_codec_opts(o->g->codec_opts, ist->st->codec->codec_id, ic, st, ist->dec);
 
         ist->reinit_filters = -1;
         MATCH_PER_STREAM_OPT(reinit_filters, i, ist->reinit_filters, ic, st);
@@ -908,7 +908,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     unused_opts = strip_specifiers(o->g->codec_opts);
     for (i = f->ist_index; i < nb_input_streams; i++) {
         e = NULL;
-        while ((e = av_dict_get(input_streams[i]->opts, "", e,
+        while ((e = av_dict_get(input_streams[i]->decoder_opts, "", e,
                                 AV_DICT_IGNORE_SUFFIX)))
             av_dict_set(&unused_opts, e->key, NULL, 0);
     }

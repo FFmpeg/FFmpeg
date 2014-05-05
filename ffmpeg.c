@@ -501,7 +501,7 @@ static void ffmpeg_cleanup(int ret)
 
         av_frame_free(&ist->decoded_frame);
         av_frame_free(&ist->filter_frame);
-        av_dict_free(&ist->opts);
+        av_dict_free(&ist->decoder_opts);
         avsubtitle_free(&ist->prev_sub.subtitle);
         av_frame_free(&ist->sub2video.frame);
         av_freep(&ist->filters);
@@ -2249,9 +2249,9 @@ static int init_input_stream(int ist_index, char *error, int error_len)
 
         av_opt_set_int(ist->st->codec, "refcounted_frames", 1, 0);
 
-        if (!av_dict_get(ist->opts, "threads", NULL, 0))
-            av_dict_set(&ist->opts, "threads", "auto", 0);
-        if ((ret = avcodec_open2(ist->st->codec, codec, &ist->opts)) < 0) {
+        if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
+            av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
+        if ((ret = avcodec_open2(ist->st->codec, codec, &ist->decoder_opts)) < 0) {
             if (ret == AVERROR_EXPERIMENTAL)
                 abort_codec_experimental(codec, 0);
 
@@ -2261,7 +2261,7 @@ static int init_input_stream(int ist_index, char *error, int error_len)
                      ist->file_index, ist->st->index, av_err2str(ret));
             return ret;
         }
-        assert_avoptions(ist->opts);
+        assert_avoptions(ist->decoder_opts);
     }
 
     ist->next_pts = AV_NOPTS_VALUE;
