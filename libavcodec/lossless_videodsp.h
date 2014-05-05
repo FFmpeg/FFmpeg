@@ -31,7 +31,7 @@ typedef struct LLVidDSPContext {
 
     void (*sub_hfyu_median_prediction_int16)(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top);
     void (*add_hfyu_median_prediction_int16)(uint16_t *dst, const uint16_t *top, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top);
-    int  (*add_hfyu_left_prediction_int16)(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int left);
+    int  (*add_hfyu_left_prediction_int16)(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned left);
 } LLVidDSPContext;
 
 void ff_llviddsp_init(LLVidDSPContext *llviddsp, AVCodecContext *avctx);
