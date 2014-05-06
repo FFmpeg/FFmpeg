@@ -163,8 +163,8 @@ int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterrupt
             return ret;
         if (timeout > 0) {
             if (!wait_start)
-                wait_start = av_gettime();
-            else if (av_gettime() - wait_start > timeout)
+                wait_start = av_gettime_relative();
+            else if (av_gettime_relative() - wait_start > timeout)
                 return AVERROR(ETIMEDOUT);
         }
     }
