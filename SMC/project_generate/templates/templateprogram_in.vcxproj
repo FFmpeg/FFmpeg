@@ -163,6 +163,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalOptions>/Oy- %(AdditionalOptions)</AdditionalOptions>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <Link />
     <Link>
@@ -198,6 +199,7 @@ del ..\config.asm
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalOptions>/Oy- %(AdditionalOptions)</AdditionalOptions>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <Link />
     <Link>
@@ -233,6 +235,7 @@ del ..\config.asm
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalOptions>/Oy- %(AdditionalOptions)</AdditionalOptions>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <Link />
     <Link>
@@ -268,6 +271,7 @@ del ..\config.asm
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalOptions>/Oy- %(AdditionalOptions)</AdditionalOptions>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <Link />
     <Link>
@@ -312,6 +316,7 @@ del ..\config.asm
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -356,6 +361,7 @@ del ..\config.asm
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -400,6 +406,7 @@ del ..\config.asm
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -444,6 +451,7 @@ del ..\config.asm
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
