@@ -183,7 +183,7 @@ static av_cold int libvorbis_encode_close(AVCodecContext *avctx)
     vorbis_dsp_clear(&s->vd);
     vorbis_info_clear(&s->vi);
 
-    av_fifo_free(s->pkt_fifo);
+    av_fifo_freep(&s->pkt_fifo);
     ff_af_queue_close(&s->afq);
     av_freep(&avctx->extradata);
 
