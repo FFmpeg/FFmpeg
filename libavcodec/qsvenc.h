@@ -59,6 +59,8 @@ typedef struct QSVEncOptions {
 typedef struct QSVEncContext {
     AVClass *class;
     mfxSession session;
+    mfxIMPL impl;
+    mfxVersion ver;
     mfxVideoParam param;
     mfxFrameAllocRequest req;
     mfxExtCodingOption extco;

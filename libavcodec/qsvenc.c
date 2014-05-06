@@ -273,17 +273,31 @@ static int get_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 {
-    mfxIMPL impl   = MFX_IMPL_AUTO_ANY;
-    mfxVersion ver = { { QSV_VERSION_MINOR, QSV_VERSION_MAJOR } };
     int ret;
 
-    ret = MFXInit(impl, &ver, &q->session);
-    if (ret < 0)
+    q->ver.Major = QSV_VERSION_MAJOR;
+    q->ver.Minor = QSV_VERSION_MINOR;
+
+    ret = MFXInit(MFX_IMPL_AUTO_ANY, &q->ver, &q->session);
+    if (ret) {
+        mfxVersion ver = { { 0, 1 } };
+        av_log(avctx, AV_LOG_ERROR, "MFXInit(): %d\n", ret);
+        if (!MFXInit(MFX_IMPL_AUTO_ANY, &ver, &q->session)) {
+            MFXQueryVersion(q->session, &ver);
+            if (ver.Major < QSV_VERSION_MAJOR || ver.Minor < QSV_VERSION_MINOR)
+                av_log(avctx, AV_LOG_ERROR,
+                       "Detected Intel Media SDK API version %d.%d, "
+                       "require version %d.%d or above.\n",
+                       ver.Major, ver.Minor,
+                       QSV_VERSION_MAJOR, QSV_VERSION_MINOR);
+            MFXClose(q->session);
+        }
         return ff_qsv_error(ret);
+    }
 
-    MFXQueryIMPL(q->session, &impl);
+    MFXQueryIMPL(q->session, &q->impl);
 
-    switch (MFX_IMPL_BASETYPE(impl)) {
+    switch (MFX_IMPL_BASETYPE(q->impl)) {
     case MFX_IMPL_SOFTWARE:
         av_log(avctx, AV_LOG_VERBOSE,
                "Using Intel QuickSync encoder software implementation.\n");
@@ -297,8 +311,12 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
         break;
     default:
         av_log(avctx, AV_LOG_VERBOSE,
-               "Unknown Intel QuickSync encoder implementation %d.\n", impl);
+               "Unknown Intel QuickSync encoder implementation %d.\n", q->impl);
     }
+
+    MFXQueryVersion(q->session, &q->ver);
+    av_log(avctx, AV_LOG_VERBOSE,
+           "Intel Media SDK API version %d.%d\n", q->ver.Major, q->ver.Minor);
 
     q->param.IOPattern  = MFX_IOPATTERN_IN_SYSTEM_MEMORY;
     q->param.AsyncDepth = q->options.async_depth;
