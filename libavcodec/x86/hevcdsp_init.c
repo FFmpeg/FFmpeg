@@ -28,6 +28,7 @@
 #include "libavcodec/hevcdsp.h"
 #include "libavcodec/x86/hevcdsp.h"
 
+#if ARCH_X86_64
 
 #define mc_rep_func(name, bitd, step, W) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_sse4(int16_t *_dst, ptrdiff_t dststride,                             \
@@ -315,6 +316,8 @@ mc_bi_w_func(epel_hv, 10, 6);
 mc_bi_w_funcs(qpel_h, 10);
 mc_bi_w_funcs(qpel_v, 10);
 mc_bi_w_funcs(qpel_hv, 10);
+
+#endif //ARCH_X86_64
 
 
 #define EPEL_LINKS(pointer, my, mx, fname, bitd)           \
