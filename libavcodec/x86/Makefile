@@ -15,7 +15,6 @@ OBJS-$(CONFIG_H263DSP)                 += x86/h263dsp_init.o
 OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
 OBJS-$(CONFIG_H264DSP)                 += x86/h264dsp_init.o
 OBJS-$(CONFIG_H264PRED)                += x86/h264_intrapred_init.o
-OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
 OBJS-$(CONFIG_H264QPEL)                += x86/h264_qpel.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
 OBJS-$(CONFIG_HPELDSP)                 += x86/hpeldsp_init.o
