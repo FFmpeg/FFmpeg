@@ -2430,7 +2430,7 @@ static int transcode_init(void)
         InputFile *ifile = input_files[i];
         if (ifile->rate_emu)
             for (j = 0; j < ifile->nb_streams; j++)
-                input_streams[j + ifile->ist_index]->start = av_gettime();
+                input_streams[j + ifile->ist_index]->start = av_gettime_relative();
     }
 
     /* output stream init */
@@ -3228,7 +3228,7 @@ static int get_input_packet(InputFile *f, AVPacket *pkt)
         for (i = 0; i < f->nb_streams; i++) {
             InputStream *ist = input_streams[f->ist_index + i];
             int64_t pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
-            int64_t now = av_gettime() - ist->start;
+            int64_t now = av_gettime_relative() - ist->start;
             if (pts > now)
                 return AVERROR(EAGAIN);
         }
@@ -3594,7 +3594,7 @@ static int transcode(void)
         av_log(NULL, AV_LOG_INFO, "Press [q] to stop, [?] for help\n");
     }
 
-    timer_start = av_gettime();
+    timer_start = av_gettime_relative();
 
 #if HAVE_PTHREADS
     if ((ret = init_input_threads()) < 0)
@@ -3602,7 +3602,7 @@ static int transcode(void)
 #endif
 
     while (!received_sigterm) {
-        int64_t cur_time= av_gettime();
+        int64_t cur_time= av_gettime_relative();
 
         /* if 'q' pressed, exits */
         if (stdin_interaction)
@@ -3649,7 +3649,7 @@ static int transcode(void)
     }
 
     /* dump report by using the first video and audio streams */
-    print_report(1, timer_start, av_gettime());
+    print_report(1, timer_start, av_gettime_relative());
 
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {
