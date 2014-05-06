@@ -787,6 +787,15 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     return 0;
 }
 
+static void reset_pes_packet_state(PESContext *pes)
+{
+    pes->pts        = AV_NOPTS_VALUE;
+    pes->dts        = AV_NOPTS_VALUE;
+    pes->data_index = 0;
+    pes->flags      = 0;
+    av_buffer_unref(&pes->buffer);
+}
+
 static void new_pes_packet(PESContext *pes, AVPacket *pkt)
 {
     av_init_packet(pkt);
@@ -814,12 +823,8 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     pkt->pos   = pes->ts_packet_pos;
     pkt->flags = pes->flags;
 
-    /* reset pts values */
-    pes->pts        = AV_NOPTS_VALUE;
-    pes->dts        = AV_NOPTS_VALUE;
-    pes->buffer     = NULL;
-    pes->data_index = 0;
-    pes->flags      = 0;
+    pes->buffer = NULL;
+    reset_pes_packet_state(pes);
 }
 
 static uint64_t get_ts64(GetBitContext *gb, int bits)
@@ -913,9 +918,10 @@ static int mpegts_push_data(MpegTSFilter *filter,
         if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
             new_pes_packet(pes, ts->pkt);
             ts->stop_parse = 1;
+        } else {
+            reset_pes_packet_state(pes);
         }
         pes->state         = MPEGTS_HEADER;
-        pes->data_index    = 0;
         pes->ts_packet_pos = pos;
     }
     p = buf;
@@ -1107,7 +1113,7 @@ skip:
             }
             break;
         case MPEGTS_PAYLOAD:
-            if (buf_size > 0 && pes->buffer) {
+            if (pes->buffer) {
                 if (pes->data_index > 0 &&
                     pes->data_index + buf_size > pes->total_size) {
                     new_pes_packet(pes, ts->pkt);
@@ -1125,18 +1131,18 @@ skip:
                 }
                 memcpy(pes->buffer->data + pes->data_index, p, buf_size);
                 pes->data_index += buf_size;
+                /* emit complete packets with known packet size
+                 * decreases demuxer delay for infrequent packets like subtitles from
+                 * a couple of seconds to milliseconds for properly muxed files.
+                 * total_size is the number of bytes following pes_packet_length
+                 * in the pes header, i.e. not counting the first PES_START_SIZE bytes */
+                if (!ts->stop_parse && pes->total_size < MAX_PES_PAYLOAD &&
+                    pes->pes_header_size + pes->data_index == pes->total_size + PES_START_SIZE) {
+                    ts->stop_parse = 1;
+                    new_pes_packet(pes, ts->pkt);
+                }
             }
             buf_size = 0;
-            /* emit complete packets with known packet size
-             * decreases demuxer delay for infrequent packets like subtitles from
-             * a couple of seconds to milliseconds for properly muxed files.
-             * total_size is the number of bytes following pes_packet_length
-             * in the pes header, i.e. not counting the first PES_START_SIZE bytes */
-            if (!ts->stop_parse && pes->total_size < MAX_PES_PAYLOAD &&
-                pes->pes_header_size + pes->data_index == pes->total_size + PES_START_SIZE) {
-                ts->stop_parse = 1;
-                new_pes_packet(pes, ts->pkt);
-            }
             break;
         case MPEGTS_SKIP:
             buf_size = 0;
