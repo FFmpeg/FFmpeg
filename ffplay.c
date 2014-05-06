@@ -910,7 +910,7 @@ static void video_audio_display(VideoState *s)
         /* to be more precise, we take into account the time spent since
            the last buffer computation */
         if (audio_callback_time) {
-            time_diff = av_gettime() - audio_callback_time;
+            time_diff = av_gettime_relative() - audio_callback_time;
             delay -= (time_diff * s->audio_tgt.freq) / 1000000;
         }
 
@@ -1143,7 +1143,7 @@ static double get_clock(Clock *c)
     if (c->paused) {
         return c->pts;
     } else {
-        double time = av_gettime() / 1000000.0;
+        double time = av_gettime_relative() / 1000000.0;
         return c->pts_drift + time - (time - c->last_updated) * (1.0 - c->speed);
     }
 }
@@ -1158,7 +1158,7 @@ static void set_clock_at(Clock *c, double pts, int serial, double time)
 
 static void set_clock(Clock *c, double pts, int serial)
 {
-    double time = av_gettime() / 1000000.0;
+    double time = av_gettime_relative() / 1000000.0;
     set_clock_at(c, pts, serial, time);
 }
 
@@ -1251,7 +1251,7 @@ static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_by
 static void stream_toggle_pause(VideoState *is)
 {
     if (is->paused) {
-        is->frame_timer += av_gettime() / 1000000.0 + is->vidclk.pts_drift - is->vidclk.pts;
+        is->frame_timer += av_gettime_relative() / 1000000.0 + is->vidclk.pts_drift - is->vidclk.pts;
         if (is->read_pause_return != AVERROR(ENOSYS)) {
             is->vidclk.paused = 0;
         }
@@ -1366,7 +1366,7 @@ static void video_refresh(void *opaque, double *remaining_time)
         check_external_clock_speed(is);
 
     if (!display_disable && is->show_mode != SHOW_MODE_VIDEO && is->audio_st) {
-        time = av_gettime() / 1000000.0;
+        time = av_gettime_relative() / 1000000.0;
         if (is->force_refresh || is->last_vis_time + rdftspeed < time) {
             video_display(is);
             is->last_vis_time = time;
@@ -1397,7 +1397,7 @@ retry:
             }
 
             if (lastvp->serial != vp->serial && !redisplay)
-                is->frame_timer = av_gettime() / 1000000.0;
+                is->frame_timer = av_gettime_relative() / 1000000.0;
 
             if (is->paused)
                 goto display;
@@ -1409,7 +1409,7 @@ retry:
             else
                 delay = compute_target_delay(last_duration, is);
 
-            time= av_gettime()/1000000.0;
+            time= av_gettime_relative()/1000000.0;
             if (time < is->frame_timer + delay && !redisplay) {
                 *remaining_time = FFMIN(is->frame_timer + delay - time, *remaining_time);
                 return;
@@ -1483,7 +1483,7 @@ display:
         int aqsize, vqsize, sqsize;
         double av_diff;
 
-        cur_time = av_gettime();
+        cur_time = av_gettime_relative();
         if (!last_time || (cur_time - last_time) >= 30000) {
             aqsize = 0;
             vqsize = 0;
@@ -1981,7 +1981,7 @@ static int video_thread(void *arg)
             goto the_end;
 
         while (ret >= 0) {
-            is->frame_last_returned_time = av_gettime() / 1000000.0;
+            is->frame_last_returned_time = av_gettime_relative() / 1000000.0;
 
             ret = av_buffersink_get_frame_flags(filt_out, frame, 0);
             if (ret < 0) {
@@ -1991,7 +1991,7 @@ static int video_thread(void *arg)
                 break;
             }
 
-            is->frame_last_filter_delay = av_gettime() / 1000000.0 - is->frame_last_returned_time;
+            is->frame_last_filter_delay = av_gettime_relative() / 1000000.0 - is->frame_last_returned_time;
             if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
                 is->frame_last_filter_delay = 0;
             tb = filt_out->inputs[0]->time_base;
@@ -2392,7 +2392,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     VideoState *is = opaque;
     int audio_size, len1;
 
-    audio_callback_time = av_gettime();
+    audio_callback_time = av_gettime_relative();
 
     while (len > 0) {
         if (is->audio_buf_index >= is->audio_buf_size) {
@@ -3191,7 +3191,7 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
     double remaining_time = 0.0;
     SDL_PumpEvents();
     while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_ALLEVENTS)) {
-        if (!cursor_hidden && av_gettime() - cursor_last_shown > CURSOR_HIDE_DELAY) {
+        if (!cursor_hidden && av_gettime_relative() - cursor_last_shown > CURSOR_HIDE_DELAY) {
             SDL_ShowCursor(0);
             cursor_hidden = 1;
         }
@@ -3355,7 +3355,7 @@ static void event_loop(VideoState *cur_stream)
                 SDL_ShowCursor(1);
                 cursor_hidden = 0;
             }
-            cursor_last_shown = av_gettime();
+            cursor_last_shown = av_gettime_relative();
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 x = event.button.x;
             } else {
