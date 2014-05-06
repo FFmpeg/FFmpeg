@@ -120,7 +120,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "fast_clz", true );
     fastToggleConfigValue( "flt_lim", true );
     fastToggleConfigValue( "getaddrinfo", true );
-    fastToggleConfigValue( "getopt", true );
+    fastToggleConfigValue( "getopt", false );
     fastToggleConfigValue( "GetProcessAffinityMask", true );
     fastToggleConfigValue( "GetProcessMemoryInfo", true );
     fastToggleConfigValue( "GetProcessTimes", true );
