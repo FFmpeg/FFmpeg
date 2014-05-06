@@ -91,7 +91,7 @@ static void test_motion(const char *name,
     emms_c();
 
     /* speed test */
-    ti = av_gettime();
+    ti = av_gettime_relative();
     d1 = 0;
     for(it=0;it<NB_ITS;it++) {
         for(y=0;y<HEIGHT-17;y++) {
@@ -103,7 +103,7 @@ static void test_motion(const char *name,
     }
     emms_c();
     dummy = d1; /* avoid optimization */
-    ti = av_gettime() - ti;
+    ti = av_gettime_relative() - ti;
 
     printf("  %0.0f kop/s\n",
            (double)NB_ITS * (WIDTH - 16) * (HEIGHT - 16) /

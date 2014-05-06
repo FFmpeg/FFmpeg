@@ -348,7 +348,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
     init_block(block, test, is_idct, &prng, vals);
     permute(block1, block, dct->format);
 
-    ti = av_gettime();
+    ti = av_gettime_relative();
     it1 = 0;
     do {
         for (it = 0; it < NB_ITS_SPEED; it++) {
@@ -357,7 +357,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
         }
         emms_c();
         it1 += NB_ITS_SPEED;
-        ti1 = av_gettime() - ti;
+        ti1 = av_gettime_relative() - ti;
     } while (ti1 < 1000000);
 
     printf("%s %s: %0.1f kdct/s\n", is_idct ? "IDCT" : "DCT", dct->name,
@@ -508,7 +508,7 @@ static void idct248_error(const char *name,
     if (!speed)
         return;
 
-    ti = av_gettime();
+    ti = av_gettime_relative();
     it1 = 0;
     do {
         for (it = 0; it < NB_ITS_SPEED; it++) {
@@ -518,7 +518,7 @@ static void idct248_error(const char *name,
         }
         emms_c();
         it1 += NB_ITS_SPEED;
-        ti1 = av_gettime() - ti;
+        ti1 = av_gettime_relative() - ti;
     } while (ti1 < 1000000);
 
     printf("%s %s: %0.1f kdct/s\n", 1 ? "IDCT248" : "DCT248", name,
