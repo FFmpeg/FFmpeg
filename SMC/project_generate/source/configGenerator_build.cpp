@@ -240,11 +240,6 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #else\n\
 #   define ARCH_X86_64 0\n\
 #endif";
-    mReplaceValues["HAVE_XMM_CLOBBERS"] = "#if defined(__x86_64) || defined(_M_X64)\n\
-#   define HAVE_XMM_CLOBBERS 1\n\
-#else\n\
-#   define HAVE_XMM_CLOBBERS 0\n\
-#endif";
     mReplaceValues["CONFIG_SHARED"] = "#if defined(_USRDLL)\n\
 #   define CONFIG_SHARED 1\n\
 #else\n\
