@@ -231,7 +231,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
     init_block(block, test, is_idct, &prng);
     permute(block1, block, dct->perm_type);
 
-    ti = av_gettime();
+    ti = av_gettime_relative();
     it1 = 0;
     do {
         for (it = 0; it < NB_ITS_SPEED; it++) {
@@ -239,7 +239,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
             dct->func(block);
         }
         it1 += NB_ITS_SPEED;
-        ti1 = av_gettime() - ti;
+        ti1 = av_gettime_relative() - ti;
     } while (ti1 < 1000000);
     emms_c();
 
@@ -372,7 +372,7 @@ static void idct248_error(const char *name,
     if (!speed)
         return;
 
-    ti = av_gettime();
+    ti = av_gettime_relative();
     it1 = 0;
     do {
         for (it = 0; it < NB_ITS_SPEED; it++) {
@@ -381,7 +381,7 @@ static void idct248_error(const char *name,
             idct248_put(img_dest, 8, block);
         }
         it1 += NB_ITS_SPEED;
-        ti1 = av_gettime() - ti;
+        ti1 = av_gettime_relative() - ti;
     } while (ti1 < 1000000);
     emms_c();
 
