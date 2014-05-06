@@ -490,8 +490,7 @@ static int swf_write_trailer(AVFormatContext *s)
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
             video_enc = enc;
         else {
-            av_fifo_free(swf->audio_fifo);
-            swf->audio_fifo = NULL;
+            av_fifo_freep(&swf->audio_fifo);
         }
     }
 

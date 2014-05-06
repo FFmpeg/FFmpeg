@@ -761,7 +761,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
  fail:
     if (udp_fd >= 0)
         closesocket(udp_fd);
-    av_fifo_free(s->fifo);
+    av_fifo_freep(&s->fifo);
     for (i = 0; i < num_include_sources; i++)
         av_freep(&include_sources[i]);
     for (i = 0; i < num_exclude_sources; i++)
@@ -867,7 +867,7 @@ static int udp_close(URLContext *h)
         pthread_cond_destroy(&s->cond);
     }
 #endif
-    av_fifo_free(s->fifo);
+    av_fifo_freep(&s->fifo);
     return 0;
 }
 

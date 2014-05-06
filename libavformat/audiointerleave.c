@@ -34,7 +34,7 @@ void ff_audio_interleave_close(AVFormatContext *s)
         AudioInterleaveContext *aic = st->priv_data;
 
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-            av_fifo_free(aic->fifo);
+            av_fifo_freep(&aic->fifo);
     }
 }
 
