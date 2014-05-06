@@ -614,7 +614,7 @@ static int mpeg4_decode_partition_a(Mpeg4DecContext *ctx)
                     cbpc = get_vlc2(&s->gb, ff_h263_intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
                     if (cbpc < 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
-                               "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
+                               "mcbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
                         return -1;
                     }
                 } while (cbpc == 8);
@@ -686,7 +686,7 @@ try_again:
                 cbpc = get_vlc2(&s->gb, ff_h263_inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
                 if (cbpc < 0) {
                     av_log(s->avctx, AV_LOG_ERROR,
-                           "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
+                           "mcbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
                     return -1;
                 }
                 if (cbpc == 20)
@@ -1333,7 +1333,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             cbpc = get_vlc2(&s->gb, ff_h263_inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
             if (cbpc < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
-                       "cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
+                       "mcbpc damaged at %d %d\n", s->mb_x, s->mb_y);
                 return -1;
             }
         } while (cbpc == 20);
