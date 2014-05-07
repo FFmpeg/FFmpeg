@@ -278,19 +278,19 @@ static inline void mpeg4_encode_dc(PutBitContext *s, int level, int n)
 
     if (n < 4) {
         /* luminance */
-        put_bits(&s->pb, ff_mpeg4_DCtab_lum[size][1], ff_mpeg4_DCtab_lum[size][0]);
+        put_bits(s, ff_mpeg4_DCtab_lum[size][1], ff_mpeg4_DCtab_lum[size][0]);
     } else {
         /* chrominance */
-        put_bits(&s->pb, ff_mpeg4_DCtab_chrom[size][1], ff_mpeg4_DCtab_chrom[size][0]);
+        put_bits(s, ff_mpeg4_DCtab_chrom[size][1], ff_mpeg4_DCtab_chrom[size][0]);
     }
 
     /* encode remaining bits */
     if (size > 0) {
         if (level < 0)
             level = (-level) ^ ((1 << size) - 1);
-        put_bits(&s->pb, size, level);
+        put_bits(s, size, level);
         if (size > 8)
-            put_bits(&s->pb, 1, 1);
+            put_bits(s, 1, 1);
     }
 #endif
 }

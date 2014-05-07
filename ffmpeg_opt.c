@@ -594,7 +594,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         }
 
         ist->dec = choose_decoder(o, ic, st);
-        ist->opts = filter_codec_opts(o->g->codec_opts, ist->st->codec->codec_id, ic, st, ist->dec);
+        ist->decoder_opts = filter_codec_opts(o->g->codec_opts, ist->st->codec->codec_id, ic, st, ist->dec);
 
         ist->reinit_filters = -1;
         MATCH_PER_STREAM_OPT(reinit_filters, i, ist->reinit_filters, ic, st);
@@ -908,7 +908,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     unused_opts = strip_specifiers(o->g->codec_opts);
     for (i = f->ist_index; i < nb_input_streams; i++) {
         e = NULL;
-        while ((e = av_dict_get(input_streams[i]->opts, "", e,
+        while ((e = av_dict_get(input_streams[i]->decoder_opts, "", e,
                                 AV_DICT_IGNORE_SUFFIX)))
             av_dict_set(&unused_opts, e->key, NULL, 0);
     }
@@ -1054,7 +1054,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         AVIOContext *s = NULL;
         char *buf = NULL, *arg = NULL, *preset = NULL;
 
-        ost->opts  = filter_codec_opts(o->g->codec_opts, ost->enc->id, oc, st, ost->enc);
+        ost->encoder_opts  = filter_codec_opts(o->g->codec_opts, ost->enc->id, oc, st, ost->enc);
 
         MATCH_PER_STREAM_OPT(presets, str, preset, oc, st);
         if (preset && (!(ret = get_preset_file_2(preset, ost->enc->name, &s)))) {
@@ -1069,7 +1069,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
                     exit_program(1);
                 }
                 *arg++ = 0;
-                av_dict_set(&ost->opts, buf, arg, AV_DICT_DONT_OVERWRITE);
+                av_dict_set(&ost->encoder_opts, buf, arg, AV_DICT_DONT_OVERWRITE);
                 av_free(buf);
             } while (!s->eof_reached);
             avio_close(s);
@@ -1081,7 +1081,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
             exit_program(1);
         }
     } else {
-        ost->opts = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st, NULL);
+        ost->encoder_opts = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st, NULL);
     }
 
     avcodec_get_context_defaults3(st->codec, ost->enc);
@@ -1357,11 +1357,11 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         if (do_pass) {
             if (do_pass & 1) {
                 video_enc->flags |= CODEC_FLAG_PASS1;
-                av_dict_set(&ost->opts, "flags", "+pass1", AV_DICT_APPEND);
+                av_dict_set(&ost->encoder_opts, "flags", "+pass1", AV_DICT_APPEND);
             }
             if (do_pass & 2) {
                 video_enc->flags |= CODEC_FLAG_PASS2;
-                av_dict_set(&ost->opts, "flags", "+pass2", AV_DICT_APPEND);
+                av_dict_set(&ost->encoder_opts, "flags", "+pass2", AV_DICT_APPEND);
             }
         }
 
@@ -1952,7 +1952,7 @@ loop_end:
     unused_opts = strip_specifiers(o->g->codec_opts);
     for (i = of->ost_index; i < nb_output_streams; i++) {
         e = NULL;
-        while ((e = av_dict_get(output_streams[i]->opts, "", e,
+        while ((e = av_dict_get(output_streams[i]->encoder_opts, "", e,
                                 AV_DICT_IGNORE_SUFFIX)))
             av_dict_set(&unused_opts, e->key, NULL, 0);
     }

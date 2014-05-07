@@ -258,7 +258,7 @@ typedef struct InputStream {
     double ts_scale;
     int saw_first_ts;
     int showed_multi_packet_warning;
-    AVDictionary *opts;
+    AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
     int top_field_first;
     int guess_layout_max;
@@ -410,7 +410,7 @@ typedef struct OutputStream {
     char *filters_script;  ///< filtergraph script associated to the -filter_script option
 
     int64_t sws_flags;
-    AVDictionary *opts;
+    AVDictionary *encoder_opts;
     AVDictionary *swr_opts;
     AVDictionary *resample_opts;
     char *apad;

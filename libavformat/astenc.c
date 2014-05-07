@@ -113,7 +113,7 @@ static int ast_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *enc = s->streams[0]->codec;
     int size = pkt->size / enc->channels;
 
-    if (enc->frame_number == 1)
+    if (s->streams[0]->nb_frames == 0)
         ast->fbs = size;
 
     ffio_wfourcc(pb, "BLCK");
@@ -135,7 +135,7 @@ static int ast_write_trailer(AVFormatContext *s)
     ASTMuxContext *ast = s->priv_data;
     AVCodecContext *enc = s->streams[0]->codec;
     int64_t file_size = avio_tell(pb);
-    int64_t samples = (file_size - 64 - (32 * enc->frame_number)) / enc->block_align; /* PCM_S16BE_PLANAR */
+    int64_t samples = (file_size - 64 - (32 * s->streams[0]->nb_frames)) / enc->block_align; /* PCM_S16BE_PLANAR */
 
     av_log(s, AV_LOG_DEBUG, "total samples: %"PRId64"\n", samples);
 

@@ -373,7 +373,7 @@ static int parse_times(void *log_ctx, int64_t **times, int *nb_times,
         if (*p == ',')
             (*nb_times)++;
 
-    *times = av_malloc(sizeof(**times) * *nb_times);
+    *times = av_malloc_array(*nb_times, sizeof(**times));
     if (!*times) {
         av_log(log_ctx, AV_LOG_ERROR, "Could not allocate forced times array\n");
         FAIL(AVERROR(ENOMEM));
@@ -431,7 +431,7 @@ static int parse_frames(void *log_ctx, int **frames, int *nb_frames,
         if (*p == ',')
             (*nb_frames)++;
 
-    *frames = av_malloc(sizeof(**frames) * *nb_frames);
+    *frames = av_malloc_array(*nb_frames, sizeof(**frames));
     if (!*frames) {
         av_log(log_ctx, AV_LOG_ERROR, "Could not allocate forced frames array\n");
         FAIL(AVERROR(ENOMEM));

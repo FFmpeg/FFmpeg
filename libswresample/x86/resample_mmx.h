@@ -101,6 +101,7 @@ __asm__ volatile(\
       "r" (((uint8_t*)filter)-len),\
       "r" (dst+dst_index)\
       NAMED_CONSTRAINTS_ADD(ff_resample_int16_rounder)\
+      XMM_CLOBBERS_ONLY("%xmm0", "%xmm1")\
 );
 
 #define LINEAR_CORE_INT16_SSE2 \
@@ -156,6 +157,7 @@ __asm__ volatile(\
     : "r" (((uint8_t*)(src+sample_index))-len),\
       "r" (((uint8_t*)filter)-len),\
       "r" (dst+dst_index)\
+    XMM_CLOBBERS_ONLY("%xmm0", "%xmm1")\
 );
 
 #define LINEAR_CORE_FLT_SSE \
@@ -210,6 +212,7 @@ __asm__ volatile(\
     : "r" (((uint8_t*)(src+sample_index))-len),\
       "r" (((uint8_t*)filter)-len),\
       "r" (dst+dst_index)\
+    XMM_CLOBBERS_ONLY("%xmm0", "%xmm1")\
 );
 
 #define LINEAR_CORE_DBL_SSE2 \

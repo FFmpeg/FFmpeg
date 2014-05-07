@@ -262,6 +262,7 @@ av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
 #endif /* HAVE_SSE_INLINE */
 
 #if HAVE_YASM
+#if HAVE_SSE
 #if ARCH_X86_32
     if (EXTERNAL_SSE(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_sse;
@@ -276,8 +277,11 @@ av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
     if (EXTERNAL_SSSE3(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_ssse3;
     }
+#endif
+#if HAVE_AVX_EXTERNAL
     if (EXTERNAL_AVX(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_avx;
     }
+#endif
 #endif /* HAVE_YASM */
 }

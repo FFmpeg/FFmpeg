@@ -48,7 +48,7 @@ static int win32_open(const char *filename_utf8, int oflag, int pmode)
     num_chars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename_utf8, -1, NULL, 0);
     if (num_chars <= 0)
         goto fallback;
-    filename_w = av_mallocz(sizeof(wchar_t) * num_chars);
+    filename_w = av_mallocz_array(num_chars, sizeof(wchar_t));
     if (!filename_w) {
         errno = ENOMEM;
         return -1;

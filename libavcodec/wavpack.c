@@ -622,7 +622,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     ThreadFrame tframe = { .f = frame };
     WavpackFrameContext *s;
     GetByteContext gb;
-    void *samples_l, *samples_r;
+    void *samples_l = NULL, *samples_r = NULL;
     int ret;
     int got_terms   = 0, got_weights = 0, got_samples = 0,
         got_entropy = 0, got_bs      = 0, got_float   = 0, got_hybrid = 0;

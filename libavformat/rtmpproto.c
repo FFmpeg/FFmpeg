@@ -2380,7 +2380,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 {
     RTMPContext *rt = s->priv_data;
     char proto[8], hostname[256], path[1024], auth[100], *fname;
-    char *old_app;
+    char *old_app, *qmark, fname_buffer[1024];
     uint8_t buf[2048];
     int port;
     AVDictionary *opts = NULL;
@@ -2478,7 +2478,19 @@ reconnect:
     }
 
     //extract "app" part from path
-    if (!strncmp(path, "/ondemand/", 10)) {
+    qmark = strchr(path, '?');
+    if (qmark && strstr(qmark, "slist=")) {
+        char* amp;
+        // After slist we have the playpath, before the params, the app
+        av_strlcpy(rt->app, path + 1, qmark - path);
+        fname = strstr(path, "slist=") + 6;
+        // Strip any further query parameters from fname
+        amp = strchr(fname, '&');
+        if (amp) {
+            av_strlcpy(fname_buffer, fname, amp - fname + 1);
+            fname = fname_buffer;
+        }
+    } else if (!strncmp(path, "/ondemand/", 10)) {
         fname = path + 10;
         memcpy(rt->app, "ondemand", 9);
     } else {

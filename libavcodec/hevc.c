@@ -38,9 +38,7 @@
 #include "golomb.h"
 #include "hevc.h"
 
-const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 2 };
-const uint8_t ff_hevc_qpel_extra_after[4]  = { 0, 3, 4, 4 };
-const uint8_t ff_hevc_qpel_extra[4]        = { 0, 6, 7, 6 };
+const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
@@ -126,7 +124,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         goto fail;
 
     s->tab_mvf_pool = av_buffer_pool_init(min_pu_size * sizeof(MvField),
-                                          av_buffer_alloc);
+                                          av_buffer_allocz);
     s->rpl_tab_pool = av_buffer_pool_init(ctb_count * sizeof(RefPicListTab),
                                           av_buffer_allocz);
     if (!s->tab_mvf_pool || !s->rpl_tab_pool)
@@ -151,7 +149,7 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb)
     s->sh.luma_log2_weight_denom = get_ue_golomb_long(gb);
     if (s->sps->chroma_format_idc != 0) {
         int delta = get_se_golomb(gb);
-        s->sh.chroma_log2_weight_denom = av_clip_c(s->sh.luma_log2_weight_denom + delta, 0, 7);
+        s->sh.chroma_log2_weight_denom = av_clip(s->sh.luma_log2_weight_denom + delta, 0, 7);
     }
 
     for (i = 0; i < s->sh.nb_refs[L0]; i++) {
@@ -179,7 +177,7 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb)
                 int delta_chroma_weight_l0 = get_se_golomb(gb);
                 int delta_chroma_offset_l0 = get_se_golomb(gb);
                 s->sh.chroma_weight_l0[i][j] = (1 << s->sh.chroma_log2_weight_denom) + delta_chroma_weight_l0;
-                s->sh.chroma_offset_l0[i][j] = av_clip_c((delta_chroma_offset_l0 - ((128 * s->sh.chroma_weight_l0[i][j])
+                s->sh.chroma_offset_l0[i][j] = av_clip((delta_chroma_offset_l0 - ((128 * s->sh.chroma_weight_l0[i][j])
                                                                                     >> s->sh.chroma_log2_weight_denom) + 128), -128, 127);
             }
         } else {
@@ -215,7 +213,7 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb)
                     int delta_chroma_weight_l1 = get_se_golomb(gb);
                     int delta_chroma_offset_l1 = get_se_golomb(gb);
                     s->sh.chroma_weight_l1[i][j] = (1 << s->sh.chroma_log2_weight_denom) + delta_chroma_weight_l1;
-                    s->sh.chroma_offset_l1[i][j] = av_clip_c((delta_chroma_offset_l1 - ((128 * s->sh.chroma_weight_l1[i][j])
+                    s->sh.chroma_offset_l1[i][j] = av_clip((delta_chroma_offset_l1 - ((128 * s->sh.chroma_weight_l1[i][j])
                                                                                         >> s->sh.chroma_log2_weight_denom) + 128), -128, 127);
                 }
             } else {
@@ -1037,9 +1035,7 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
                 }
         }
         if (!s->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size,
-                                                  lc->slice_or_tiles_up_boundary,
-                                                  lc->slice_or_tiles_left_boundary);
+            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
             if (s->pps->transquant_bypass_enable_flag &&
                 lc->cu.cu_transquant_bypass_flag)
                 set_deblocking_bypass(s, x0, y0, log2_trafo_size);
@@ -1051,7 +1047,6 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
 static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
 {
     //TODO: non-4:2:0 support
-    HEVCLocalContext *lc = s->HEVClc;
     GetBitContext gb;
     int cb_size   = 1 << log2_cb_size;
     int stride0   = s->frame->linesize[0];
@@ -1065,9 +1060,8 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     const uint8_t *pcm = skip_bytes(&s->HEVClc->cc, (length + 7) >> 3);
     int ret;
 
-    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                          lc->slice_or_tiles_up_boundary,
-                                          lc->slice_or_tiles_left_boundary);
+    if (!s->sh.disable_deblocking_filter_flag)
+        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
 
     ret = init_get_bits(&gb, pcm, length);
     if (ret < 0)
@@ -1080,7 +1074,7 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
 }
 
 /**
- * 8.5.3.2.2.1 Luma sample interpolation process
+ * 8.5.3.2.2.1 Luma sample unidirectional interpolation process
  *
  * @param s HEVC decoding context
  * @param dst target buffer for block data at block position
@@ -1091,49 +1085,148 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
  * @param y_off vertical position of block from origin (0, 0)
  * @param block_w width of block
  * @param block_h height of block
+ * @param luma_weight weighting factor applied to the luma prediction
+ * @param luma_offset additive offset applied to the luma prediction value
  */
-static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
-                    AVFrame *ref, const Mv *mv, int x_off, int y_off,
-                    int block_w, int block_h)
+
+static void luma_mc_uni(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
+                        AVFrame *ref, const Mv *mv, int x_off, int y_off,
+                        int block_w, int block_h, int luma_weight, int luma_offset)
 {
     HEVCLocalContext *lc = s->HEVClc;
     uint8_t *src         = ref->data[0];
     ptrdiff_t srcstride  = ref->linesize[0];
     int pic_width        = s->sps->width;
     int pic_height       = s->sps->height;
-
-    int mx         = mv->x & 3;
-    int my         = mv->y & 3;
-    int extra_left = ff_hevc_qpel_extra_before[mx];
-    int extra_top  = ff_hevc_qpel_extra_before[my];
+    int mx               = mv->x & 3;
+    int my               = mv->y & 3;
+    int weight_flag      = (s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
+                           (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag);
+    int idx              = ff_hevc_pel_weight[block_w];
 
     x_off += mv->x >> 2;
     y_off += mv->y >> 2;
     src   += y_off * srcstride + (x_off << s->sps->pixel_shift);
 
-    if (x_off < extra_left || y_off < extra_top ||
-        x_off >= pic_width - block_w - ff_hevc_qpel_extra_after[mx] ||
-        y_off >= pic_height - block_h - ff_hevc_qpel_extra_after[my]) {
+    if (x_off < QPEL_EXTRA_BEFORE || y_off < QPEL_EXTRA_AFTER ||
+        x_off >= pic_width - block_w - QPEL_EXTRA_AFTER ||
+        y_off >= pic_height - block_h - QPEL_EXTRA_AFTER) {
         const int edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->sps->pixel_shift;
-        int offset = extra_top * srcstride + (extra_left << s->sps->pixel_shift);
-        int buf_offset = extra_top *
-                         edge_emu_stride + (extra_left << s->sps->pixel_shift);
+        int offset     = QPEL_EXTRA_BEFORE * srcstride       + (QPEL_EXTRA_BEFORE << s->sps->pixel_shift);
+        int buf_offset = QPEL_EXTRA_BEFORE * edge_emu_stride + (QPEL_EXTRA_BEFORE << s->sps->pixel_shift);
 
         s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src - offset,
                                  edge_emu_stride, srcstride,
-                                 block_w + ff_hevc_qpel_extra[mx],
-                                 block_h + ff_hevc_qpel_extra[my],
-                                 x_off - extra_left, y_off - extra_top,
+                                 block_w + QPEL_EXTRA,
+                                 block_h + QPEL_EXTRA,
+                                 x_off - QPEL_EXTRA_BEFORE, y_off - QPEL_EXTRA_BEFORE,
                                  pic_width, pic_height);
         src = lc->edge_emu_buffer + buf_offset;
         srcstride = edge_emu_stride;
     }
-    s->hevcdsp.put_hevc_qpel[my][mx](dst, dststride, src, srcstride, block_w,
-                                     block_h, lc->mc_buffer);
+
+    if (!weight_flag)
+        s->hevcdsp.put_hevc_qpel_uni[idx][!!my][!!mx](dst, dststride, src, srcstride,
+                                                      block_h, mx, my, block_w);
+    else
+        s->hevcdsp.put_hevc_qpel_uni_w[idx][!!my][!!mx](dst, dststride, src, srcstride,
+                                                        block_h, s->sh.luma_log2_weight_denom,
+                                                        luma_weight, luma_offset, mx, my, block_w);
 }
 
 /**
- * 8.5.3.2.2.2 Chroma sample interpolation process
+ * 8.5.3.2.2.1 Luma sample bidirectional interpolation process
+ *
+ * @param s HEVC decoding context
+ * @param dst target buffer for block data at block position
+ * @param dststride stride of the dst buffer
+ * @param ref0 reference picture0 buffer at origin (0, 0)
+ * @param mv0 motion vector0 (relative to block position) to get pixel data from
+ * @param x_off horizontal position of block from origin (0, 0)
+ * @param y_off vertical position of block from origin (0, 0)
+ * @param block_w width of block
+ * @param block_h height of block
+ * @param ref1 reference picture1 buffer at origin (0, 0)
+ * @param mv1 motion vector1 (relative to block position) to get pixel data from
+ * @param current_mv current motion vector structure
+ */
+ static void luma_mc_bi(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
+                       AVFrame *ref0, const Mv *mv0, int x_off, int y_off,
+                       int block_w, int block_h, AVFrame *ref1, const Mv *mv1, struct MvField *current_mv)
+{
+    HEVCLocalContext *lc = s->HEVClc;
+    DECLARE_ALIGNED(16, int16_t,  tmp[MAX_PB_SIZE * MAX_PB_SIZE]);
+    ptrdiff_t src0stride  = ref0->linesize[0];
+    ptrdiff_t src1stride  = ref1->linesize[0];
+    int pic_width        = s->sps->width;
+    int pic_height       = s->sps->height;
+    int mx0              = mv0->x & 3;
+    int my0              = mv0->y & 3;
+    int mx1              = mv1->x & 3;
+    int my1              = mv1->y & 3;
+    int weight_flag      = (s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
+                           (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag);
+    int x_off0           = x_off + (mv0->x >> 2);
+    int y_off0           = y_off + (mv0->y >> 2);
+    int x_off1           = x_off + (mv1->x >> 2);
+    int y_off1           = y_off + (mv1->y >> 2);
+    int idx              = ff_hevc_pel_weight[block_w];
+
+    uint8_t *src0  = ref0->data[0] + y_off0 * src0stride + (x_off0 << s->sps->pixel_shift);
+    uint8_t *src1  = ref1->data[0] + y_off1 * src1stride + (x_off1 << s->sps->pixel_shift);
+
+    if (x_off0 < QPEL_EXTRA_BEFORE || y_off0 < QPEL_EXTRA_AFTER ||
+        x_off0 >= pic_width - block_w - QPEL_EXTRA_AFTER ||
+        y_off0 >= pic_height - block_h - QPEL_EXTRA_AFTER) {
+        const int edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->sps->pixel_shift;
+        int offset     = QPEL_EXTRA_BEFORE * src0stride       + (QPEL_EXTRA_BEFORE << s->sps->pixel_shift);
+        int buf_offset = QPEL_EXTRA_BEFORE * edge_emu_stride + (QPEL_EXTRA_BEFORE << s->sps->pixel_shift);
+
+        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src0 - offset,
+                                 edge_emu_stride, src0stride,
+                                 block_w + QPEL_EXTRA,
+                                 block_h + QPEL_EXTRA,
+                                 x_off0 - QPEL_EXTRA_BEFORE, y_off0 - QPEL_EXTRA_BEFORE,
+                                 pic_width, pic_height);
+        src0 = lc->edge_emu_buffer + buf_offset;
+        src0stride = edge_emu_stride;
+    }
+
+    if (x_off1 < QPEL_EXTRA_BEFORE || y_off1 < QPEL_EXTRA_AFTER ||
+        x_off1 >= pic_width - block_w - QPEL_EXTRA_AFTER ||
+        y_off1 >= pic_height - block_h - QPEL_EXTRA_AFTER) {
+        const int edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->sps->pixel_shift;
+        int offset     = QPEL_EXTRA_BEFORE * src1stride       + (QPEL_EXTRA_BEFORE << s->sps->pixel_shift);
+        int buf_offset = QPEL_EXTRA_BEFORE * edge_emu_stride + (QPEL_EXTRA_BEFORE << s->sps->pixel_shift);
+
+        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer2, src1 - offset,
+                                 edge_emu_stride, src1stride,
+                                 block_w + QPEL_EXTRA,
+                                 block_h + QPEL_EXTRA,
+                                 x_off1 - QPEL_EXTRA_BEFORE, y_off1 - QPEL_EXTRA_BEFORE,
+                                 pic_width, pic_height);
+        src1 = lc->edge_emu_buffer2 + buf_offset;
+        src1stride = edge_emu_stride;
+    }
+
+    s->hevcdsp.put_hevc_qpel[idx][!!my0][!!mx0](tmp, MAX_PB_SIZE, src0, src0stride,
+                                                block_h, mx0, my0, block_w);
+    if (!weight_flag)
+        s->hevcdsp.put_hevc_qpel_bi[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, tmp, MAX_PB_SIZE,
+                                                       block_h, mx1, my1, block_w);
+    else
+        s->hevcdsp.put_hevc_qpel_bi_w[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, tmp, MAX_PB_SIZE,
+                                                         block_h, s->sh.luma_log2_weight_denom,
+                                                         s->sh.luma_weight_l0[current_mv->ref_idx[0]],
+                                                         s->sh.luma_weight_l1[current_mv->ref_idx[1]],
+                                                         s->sh.luma_offset_l0[current_mv->ref_idx[0]],
+                                                         s->sh.luma_offset_l1[current_mv->ref_idx[1]],
+                                                         mx1, my1, block_w);
+
+}
+
+/**
+ * 8.5.3.2.2.2 Chroma sample uniprediction interpolation process
  *
  * @param s HEVC decoding context
  * @param dst1 target buffer for block data at block position (U plane)
@@ -1145,70 +1238,165 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
  * @param y_off vertical position of block from origin (0, 0)
  * @param block_w width of block
  * @param block_h height of block
+ * @param chroma_weight weighting factor applied to the chroma prediction
+ * @param chroma_offset additive offset applied to the chroma prediction value
  */
-static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
-                      ptrdiff_t dststride, AVFrame *ref, const Mv *mv,
-                      int x_off, int y_off, int block_w, int block_h)
+
+static void chroma_mc_uni(HEVCContext *s, uint8_t *dst0,
+                          ptrdiff_t dststride, uint8_t *src0, ptrdiff_t srcstride, int reflist,
+                          int x_off, int y_off, int block_w, int block_h, struct MvField *current_mv, int chroma_weight, int chroma_offset)
 {
     HEVCLocalContext *lc = s->HEVClc;
-    uint8_t *src1        = ref->data[1];
-    uint8_t *src2        = ref->data[2];
-    ptrdiff_t src1stride = ref->linesize[1];
-    ptrdiff_t src2stride = ref->linesize[2];
-    int pic_width        = s->sps->width >> 1;
-    int pic_height       = s->sps->height >> 1;
+    int pic_width        = s->sps->width >> s->sps->hshift[1];
+    int pic_height       = s->sps->height >> s->sps->vshift[1];
+    const Mv *mv         = &current_mv->mv[reflist];
+    int weight_flag      = (s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
+                           (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag);
+    int idx              = ff_hevc_pel_weight[block_w];
+    int hshift           = s->sps->hshift[1];
+    int vshift           = s->sps->vshift[1];
+    intptr_t mx          = mv->x & ((1 << (2 + hshift)) - 1);
+    intptr_t my          = mv->y & ((1 << (2 + vshift)) - 1);
+    intptr_t _mx         = mx << (1 - hshift);
+    intptr_t _my         = my << (1 - vshift);
 
-    int mx = mv->x & 7;
-    int my = mv->y & 7;
-
-    x_off += mv->x >> 3;
-    y_off += mv->y >> 3;
-    src1  += y_off * src1stride + (x_off << s->sps->pixel_shift);
-    src2  += y_off * src2stride + (x_off << s->sps->pixel_shift);
+    x_off += mv->x >> (2 + hshift);
+    y_off += mv->y >> (2 + vshift);
+    src0  += y_off * srcstride + (x_off << s->sps->pixel_shift);
 
     if (x_off < EPEL_EXTRA_BEFORE || y_off < EPEL_EXTRA_AFTER ||
         x_off >= pic_width - block_w - EPEL_EXTRA_AFTER ||
         y_off >= pic_height - block_h - EPEL_EXTRA_AFTER) {
         const int edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->sps->pixel_shift;
+        int offset0 = EPEL_EXTRA_BEFORE * (srcstride + (1 << s->sps->pixel_shift));
+        int buf_offset0 = EPEL_EXTRA_BEFORE *
+                          (edge_emu_stride + (1 << s->sps->pixel_shift));
+        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src0 - offset0,
+                                 edge_emu_stride, srcstride,
+                                 block_w + EPEL_EXTRA, block_h + EPEL_EXTRA,
+                                 x_off - EPEL_EXTRA_BEFORE,
+                                 y_off - EPEL_EXTRA_BEFORE,
+                                 pic_width, pic_height);
+
+        src0 = lc->edge_emu_buffer + buf_offset0;
+        srcstride = edge_emu_stride;
+    }
+    if (!weight_flag)
+        s->hevcdsp.put_hevc_epel_uni[idx][!!my][!!mx](dst0, dststride, src0, srcstride,
+                                                  block_h, _mx, _my, block_w);
+    else
+        s->hevcdsp.put_hevc_epel_uni_w[idx][!!my][!!mx](dst0, dststride, src0, srcstride,
+                                                        block_h, s->sh.chroma_log2_weight_denom,
+                                                        chroma_weight, chroma_offset, _mx, _my, block_w);
+}
+
+/**
+ * 8.5.3.2.2.2 Chroma sample bidirectional interpolation process
+ *
+ * @param s HEVC decoding context
+ * @param dst target buffer for block data at block position
+ * @param dststride stride of the dst buffer
+ * @param ref0 reference picture0 buffer at origin (0, 0)
+ * @param mv0 motion vector0 (relative to block position) to get pixel data from
+ * @param x_off horizontal position of block from origin (0, 0)
+ * @param y_off vertical position of block from origin (0, 0)
+ * @param block_w width of block
+ * @param block_h height of block
+ * @param ref1 reference picture1 buffer at origin (0, 0)
+ * @param mv1 motion vector1 (relative to block position) to get pixel data from
+ * @param current_mv current motion vector structure
+ * @param cidx chroma component(cb, cr)
+ */
+static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVFrame *ref0, AVFrame *ref1,
+                         int x_off, int y_off, int block_w, int block_h, struct MvField *current_mv, int cidx)
+{
+    DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
+    int tmpstride = MAX_PB_SIZE;
+    HEVCLocalContext *lc = s->HEVClc;
+    uint8_t *src1        = ref0->data[cidx+1];
+    uint8_t *src2        = ref1->data[cidx+1];
+    ptrdiff_t src1stride = ref0->linesize[cidx+1];
+    ptrdiff_t src2stride = ref1->linesize[cidx+1];
+    int weight_flag      = (s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
+                           (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag);
+    int pic_width        = s->sps->width >> s->sps->hshift[1];
+    int pic_height       = s->sps->height >> s->sps->vshift[1];
+    Mv *mv0              = &current_mv->mv[0];
+    Mv *mv1              = &current_mv->mv[1];
+    int hshift = s->sps->hshift[1];
+    int vshift = s->sps->vshift[1];
+
+    intptr_t mx0 = mv0->x & ((1 << (2 + hshift)) - 1);
+    intptr_t my0 = mv0->y & ((1 << (2 + vshift)) - 1);
+    intptr_t mx1 = mv1->x & ((1 << (2 + hshift)) - 1);
+    intptr_t my1 = mv1->y & ((1 << (2 + vshift)) - 1);
+    intptr_t _mx0 = mx0 << (1 - hshift);
+    intptr_t _my0 = my0 << (1 - vshift);
+    intptr_t _mx1 = mx1 << (1 - hshift);
+    intptr_t _my1 = my1 << (1 - vshift);
+
+    int x_off0 = x_off + (mv0->x >> (2 + hshift));
+    int y_off0 = y_off + (mv0->y >> (2 + vshift));
+    int x_off1 = x_off + (mv1->x >> (2 + hshift));
+    int y_off1 = y_off + (mv1->y >> (2 + vshift));
+    int idx = ff_hevc_pel_weight[block_w];
+    src1  += y_off0 * src1stride + (x_off0 << s->sps->pixel_shift);
+    src2  += y_off1 * src2stride + (x_off1 << s->sps->pixel_shift);
+
+    if (x_off0 < EPEL_EXTRA_BEFORE || y_off0 < EPEL_EXTRA_AFTER ||
+        x_off0 >= pic_width - block_w - EPEL_EXTRA_AFTER ||
+        y_off0 >= pic_height - block_h - EPEL_EXTRA_AFTER) {
+        const int edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->sps->pixel_shift;
         int offset1 = EPEL_EXTRA_BEFORE * (src1stride + (1 << s->sps->pixel_shift));
         int buf_offset1 = EPEL_EXTRA_BEFORE *
-                          (edge_emu_stride + (1 << s->sps->pixel_shift));
-        int offset2 = EPEL_EXTRA_BEFORE * (src2stride + (1 << s->sps->pixel_shift));
-        int buf_offset2 = EPEL_EXTRA_BEFORE *
                           (edge_emu_stride + (1 << s->sps->pixel_shift));
 
         s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src1 - offset1,
                                  edge_emu_stride, src1stride,
                                  block_w + EPEL_EXTRA, block_h + EPEL_EXTRA,
-                                 x_off - EPEL_EXTRA_BEFORE,
-                                 y_off - EPEL_EXTRA_BEFORE,
+                                 x_off0 - EPEL_EXTRA_BEFORE,
+                                 y_off0 - EPEL_EXTRA_BEFORE,
                                  pic_width, pic_height);
 
         src1 = lc->edge_emu_buffer + buf_offset1;
         src1stride = edge_emu_stride;
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, src1stride,
-                                             block_w, block_h, mx, my, lc->mc_buffer);
+    }
 
-        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src2 - offset2,
+    if (x_off1 < EPEL_EXTRA_BEFORE || y_off1 < EPEL_EXTRA_AFTER ||
+        x_off1 >= pic_width - block_w - EPEL_EXTRA_AFTER ||
+        y_off1 >= pic_height - block_h - EPEL_EXTRA_AFTER) {
+        const int edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->sps->pixel_shift;
+        int offset1 = EPEL_EXTRA_BEFORE * (src2stride + (1 << s->sps->pixel_shift));
+        int buf_offset1 = EPEL_EXTRA_BEFORE *
+                          (edge_emu_stride + (1 << s->sps->pixel_shift));
+
+        s->vdsp.emulated_edge_mc(lc->edge_emu_buffer2, src2 - offset1,
                                  edge_emu_stride, src2stride,
                                  block_w + EPEL_EXTRA, block_h + EPEL_EXTRA,
-                                 x_off - EPEL_EXTRA_BEFORE,
-                                 y_off - EPEL_EXTRA_BEFORE,
+                                 x_off1 - EPEL_EXTRA_BEFORE,
+                                 y_off1 - EPEL_EXTRA_BEFORE,
                                  pic_width, pic_height);
-        src2 = lc->edge_emu_buffer + buf_offset2;
-        src2stride = edge_emu_stride;
 
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, src2stride,
-                                             block_w, block_h, mx, my,
-                                             lc->mc_buffer);
-    } else {
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, src1stride,
-                                             block_w, block_h, mx, my,
-                                             lc->mc_buffer);
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, src2stride,
-                                             block_w, block_h, mx, my,
-                                             lc->mc_buffer);
+        src2 = lc->edge_emu_buffer2 + buf_offset1;
+        src2stride = edge_emu_stride;
     }
+
+    s->hevcdsp.put_hevc_epel[idx][!!my0][!!mx0](tmp, tmpstride, src1, src1stride,
+                                                block_h, _mx0, _my0, block_w);
+    if (!weight_flag)
+        s->hevcdsp.put_hevc_epel_bi[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
+                                                       src2, src2stride, tmp, tmpstride,
+                                                       block_h, _mx1, _my1, block_w);
+    else
+        s->hevcdsp.put_hevc_epel_bi_w[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
+                                                         src2, src2stride, tmp, tmpstride,
+                                                         block_h,
+                                                         s->sh.chroma_log2_weight_denom,
+                                                         s->sh.chroma_weight_l0[current_mv->ref_idx[0]][cidx],
+                                                         s->sh.chroma_weight_l1[current_mv->ref_idx[1]][cidx],
+                                                         s->sh.chroma_offset_l0[current_mv->ref_idx[0]][cidx],
+                                                         s->sh.chroma_offset_l1[current_mv->ref_idx[1]][cidx],
+                                                         _mx1, _my1, block_w);
 }
 
 static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
@@ -1236,9 +1424,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     MvField *tab_mvf = s->ref->tab_mvf;
     RefPicList  *refPicList = s->ref->refPicList;
     HEVCFrame *ref0, *ref1;
-
-    int tmpstride = MAX_PB_SIZE;
-
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
     uint8_t *dst2 = POS(2, x0, y0);
@@ -1287,6 +1472,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         } else {
             enum InterPredIdc inter_pred_idc = PRED_L0;
             ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
+            current_mv.pred_flag = 0;
             if (s->sh.slice_type == B_SLICE)
                 inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, nPbW, nPbH);
 
@@ -1295,7 +1481,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                     ref_idx[0] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L0]);
                     current_mv.ref_idx[0] = ref_idx[0];
                 }
-                current_mv.pred_flag[0] = 1;
+                current_mv.pred_flag = PF_L0;
                 ff_hevc_hls_mvd_coding(s, x0, y0, 0);
                 mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
@@ -1318,7 +1504,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                     ff_hevc_hls_mvd_coding(s, x0, y0, 1);
                 }
 
-                current_mv.pred_flag[1] = 1;
+                current_mv.pred_flag += PF_L1;
                 mvp_flag[1] = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv,
@@ -1336,148 +1522,69 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         }
     }
 
-    if (current_mv.pred_flag[0]) {
+    if (current_mv.pred_flag & PF_L0) {
         ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
         if (!ref0)
             return;
         hevc_await_progress(s, ref0, &current_mv.mv[0], y0, nPbH);
     }
-    if (current_mv.pred_flag[1]) {
+    if (current_mv.pred_flag & PF_L1) {
         ref1 = refPicList[1].ref[current_mv.ref_idx[1]];
         if (!ref1)
             return;
         hevc_await_progress(s, ref1, &current_mv.mv[1], y0, nPbH);
     }
 
-    if (current_mv.pred_flag[0] && !current_mv.pred_flag[1]) {
-        DECLARE_ALIGNED(16, int16_t,  tmp[MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
+    if (current_mv.pred_flag == PF_L0) {
+        int x0_c = x0 >> s->sps->hshift[1];
+        int y0_c = y0 >> s->sps->vshift[1];
+        int nPbW_c = nPbW >> s->sps->hshift[1];
+        int nPbH_c = nPbH >> s->sps->vshift[1];
 
-        luma_mc(s, tmp, tmpstride, ref0->frame,
-                &current_mv.mv[0], x0, y0, nPbW, nPbH);
+        luma_mc_uni(s, dst0, s->frame->linesize[0], ref0->frame,
+                    &current_mv.mv[0], x0, y0, nPbW, nPbH,
+                    s->sh.luma_weight_l0[current_mv.ref_idx[0]],
+                    s->sh.luma_offset_l0[current_mv.ref_idx[0]]);
 
-        if ((s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag)) {
-            s->hevcdsp.weighted_pred(s->sh.luma_log2_weight_denom,
-                                     s->sh.luma_weight_l0[current_mv.ref_idx[0]],
-                                     s->sh.luma_offset_l0[current_mv.ref_idx[0]],
-                                     dst0, s->frame->linesize[0], tmp,
-                                     tmpstride, nPbW, nPbH);
-        } else {
-            s->hevcdsp.put_unweighted_pred(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
-        }
-        chroma_mc(s, tmp, tmp2, tmpstride, ref0->frame,
-                  &current_mv.mv[0], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2);
+        chroma_mc_uni(s, dst1, s->frame->linesize[1], ref0->frame->data[1], ref0->frame->linesize[1],
+                      0, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
+                      s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0], s->sh.chroma_offset_l0[current_mv.ref_idx[0]][0]);
+        chroma_mc_uni(s, dst2, s->frame->linesize[2], ref0->frame->data[2], ref0->frame->linesize[2],
+                      0, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
+                      s->sh.chroma_weight_l0[current_mv.ref_idx[0]][1], s->sh.chroma_offset_l0[current_mv.ref_idx[0]][1]);
+    } else if (current_mv.pred_flag == PF_L1) {
+        int x0_c = x0 >> s->sps->hshift[1];
+        int y0_c = y0 >> s->sps->vshift[1];
+        int nPbW_c = nPbW >> s->sps->hshift[1];
+        int nPbH_c = nPbH >> s->sps->vshift[1];
 
-        if ((s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag)) {
-            s->hevcdsp.weighted_pred(s->sh.chroma_log2_weight_denom,
-                                     s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0],
-                                     s->sh.chroma_offset_l0[current_mv.ref_idx[0]][0],
-                                     dst1, s->frame->linesize[1], tmp, tmpstride,
-                                     nPbW / 2, nPbH / 2);
-            s->hevcdsp.weighted_pred(s->sh.chroma_log2_weight_denom,
-                                     s->sh.chroma_weight_l0[current_mv.ref_idx[0]][1],
-                                     s->sh.chroma_offset_l0[current_mv.ref_idx[0]][1],
-                                     dst2, s->frame->linesize[2], tmp2, tmpstride,
-                                     nPbW / 2, nPbH / 2);
-        } else {
-            s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
-            s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
-        }
-    } else if (!current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
-        DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
+        luma_mc_uni(s, dst0, s->frame->linesize[0], ref1->frame,
+                    &current_mv.mv[1], x0, y0, nPbW, nPbH,
+                    s->sh.luma_weight_l1[current_mv.ref_idx[1]],
+                    s->sh.luma_offset_l1[current_mv.ref_idx[1]]);
 
-        if (!ref1)
-            return;
+        chroma_mc_uni(s, dst1, s->frame->linesize[1], ref1->frame->data[1], ref1->frame->linesize[1],
+                      1, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
+                      s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0], s->sh.chroma_offset_l1[current_mv.ref_idx[1]][0]);
 
-        luma_mc(s, tmp, tmpstride, ref1->frame,
-                &current_mv.mv[1], x0, y0, nPbW, nPbH);
+        chroma_mc_uni(s, dst2, s->frame->linesize[2], ref1->frame->data[2], ref1->frame->linesize[2],
+                      1, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
+                      s->sh.chroma_weight_l1[current_mv.ref_idx[1]][1], s->sh.chroma_offset_l1[current_mv.ref_idx[1]][1]);
+    } else if (current_mv.pred_flag == PF_BI) {
+        int x0_c = x0 >> s->sps->hshift[1];
+        int y0_c = y0 >> s->sps->vshift[1];
+        int nPbW_c = nPbW >> s->sps->hshift[1];
+        int nPbH_c = nPbH >> s->sps->vshift[1];
 
-        if ((s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag)) {
-            s->hevcdsp.weighted_pred(s->sh.luma_log2_weight_denom,
-                                      s->sh.luma_weight_l1[current_mv.ref_idx[1]],
-                                      s->sh.luma_offset_l1[current_mv.ref_idx[1]],
-                                      dst0, s->frame->linesize[0], tmp, tmpstride,
-                                      nPbW, nPbH);
-        } else {
-            s->hevcdsp.put_unweighted_pred(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
-        }
+        luma_mc_bi(s, dst0, s->frame->linesize[0], ref0->frame,
+                   &current_mv.mv[0], x0, y0, nPbW, nPbH,
+                   ref1->frame, &current_mv.mv[1], &current_mv);
 
-        chroma_mc(s, tmp, tmp2, tmpstride, ref1->frame,
-                  &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2);
+        chroma_mc_bi(s, dst1, s->frame->linesize[1], ref0->frame, ref1->frame,
+                     x0_c, y0_c, nPbW_c, nPbH_c, &current_mv, 0);
 
-        if ((s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag)) {
-            s->hevcdsp.weighted_pred(s->sh.chroma_log2_weight_denom,
-                                     s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0],
-                                     s->sh.chroma_offset_l1[current_mv.ref_idx[1]][0],
-                                     dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
-            s->hevcdsp.weighted_pred(s->sh.chroma_log2_weight_denom,
-                                     s->sh.chroma_weight_l1[current_mv.ref_idx[1]][1],
-                                     s->sh.chroma_offset_l1[current_mv.ref_idx[1]][1],
-                                     dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
-        } else {
-            s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
-            s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
-        }
-    } else if (current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
-        DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp3[MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp4[MAX_PB_SIZE * MAX_PB_SIZE]);
-        HEVCFrame *ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
-        HEVCFrame *ref1 = refPicList[1].ref[current_mv.ref_idx[1]];
-
-        if (!ref0 || !ref1)
-            return;
-
-        luma_mc(s, tmp, tmpstride, ref0->frame,
-                &current_mv.mv[0], x0, y0, nPbW, nPbH);
-        luma_mc(s, tmp2, tmpstride, ref1->frame,
-                &current_mv.mv[1], x0, y0, nPbW, nPbH);
-
-        if ((s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag)) {
-            s->hevcdsp.weighted_pred_avg(s->sh.luma_log2_weight_denom,
-                                         s->sh.luma_weight_l0[current_mv.ref_idx[0]],
-                                         s->sh.luma_weight_l1[current_mv.ref_idx[1]],
-                                         s->sh.luma_offset_l0[current_mv.ref_idx[0]],
-                                         s->sh.luma_offset_l1[current_mv.ref_idx[1]],
-                                         dst0, s->frame->linesize[0],
-                                         tmp, tmp2, tmpstride, nPbW, nPbH);
-        } else {
-            s->hevcdsp.put_weighted_pred_avg(dst0, s->frame->linesize[0],
-                                             tmp, tmp2, tmpstride, nPbW, nPbH);
-        }
-
-        chroma_mc(s, tmp, tmp2, tmpstride, ref0->frame,
-                  &current_mv.mv[0], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2);
-        chroma_mc(s, tmp3, tmp4, tmpstride, ref1->frame,
-                  &current_mv.mv[1], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2);
-
-        if ((s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag)) {
-            s->hevcdsp.weighted_pred_avg(s->sh.chroma_log2_weight_denom,
-                                         s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0],
-                                         s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0],
-                                         s->sh.chroma_offset_l0[current_mv.ref_idx[0]][0],
-                                         s->sh.chroma_offset_l1[current_mv.ref_idx[1]][0],
-                                         dst1, s->frame->linesize[1], tmp, tmp3,
-                                         tmpstride, nPbW / 2, nPbH / 2);
-            s->hevcdsp.weighted_pred_avg(s->sh.chroma_log2_weight_denom,
-                                         s->sh.chroma_weight_l0[current_mv.ref_idx[0]][1],
-                                         s->sh.chroma_weight_l1[current_mv.ref_idx[1]][1],
-                                         s->sh.chroma_offset_l0[current_mv.ref_idx[0]][1],
-                                         s->sh.chroma_offset_l1[current_mv.ref_idx[1]][1],
-                                         dst2, s->frame->linesize[2], tmp2, tmp4,
-                                         tmpstride, nPbW / 2, nPbH / 2);
-        } else {
-            s->hevcdsp.put_weighted_pred_avg(dst1, s->frame->linesize[1], tmp, tmp3, tmpstride, nPbW/2, nPbH/2);
-            s->hevcdsp.put_weighted_pred_avg(dst2, s->frame->linesize[2], tmp2, tmp4, tmpstride, nPbW/2, nPbH/2);
-        }
+        chroma_mc_bi(s, dst2, s->frame->linesize[2], ref0->frame, ref1->frame,
+                     x0_c, y0_c, nPbW_c, nPbH_c, &current_mv, 1);
     }
 }
 
@@ -1557,15 +1664,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
                intra_pred_mode, size_in_pus);
 
         for (j = 0; j < size_in_pus; j++) {
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].is_intra     = 1;
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].pred_flag[0] = 0;
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].pred_flag[1] = 0;
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].ref_idx[0]   = 0;
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].ref_idx[1]   = 0;
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].mv[0].x      = 0;
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].mv[0].y      = 0;
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].mv[1].x      = 0;
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].mv[1].y      = 0;
+            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].pred_flag = PF_INTRA;
         }
     }
 
@@ -1640,11 +1739,12 @@ static void intra_prediction_unit_default_value(HEVCContext *s,
 
     if (size_in_pus == 0)
         size_in_pus = 1;
-    for (j = 0; j < size_in_pus; j++) {
+    for (j = 0; j < size_in_pus; j++)
         memset(&s->tab_ipm[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
-        for (k = 0; k < size_in_pus; k++)
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + k].is_intra = lc->cu.pred_mode == MODE_INTRA;
-    }
+    if (lc->cu.pred_mode == MODE_INTRA)
+        for (j = 0; j < size_in_pus; j++)
+            for (k = 0; k < size_in_pus; k++)
+                tab_mvf[(y_pu + j) * min_pu_width + x_pu + k].pred_flag = PF_INTRA;
 }
 
 static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
@@ -1680,7 +1780,6 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     if (s->sh.slice_type != I_SLICE) {
         uint8_t skip_flag = ff_hevc_skip_flag_decode(s, x0, y0, x_cb, y_cb);
 
-        lc->cu.pred_mode = MODE_SKIP;
         x = y_cb * min_cb_width + x_cb;
         for (y = 0; y < length; y++) {
             memset(&s->skip_flag[x], skip_flag, length);
@@ -1694,9 +1793,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
 
         if (!s->sh.disable_deblocking_filter_flag)
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                                  lc->slice_or_tiles_up_boundary,
-                                                  lc->slice_or_tiles_left_boundary);
+            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
     } else {
         if (s->sh.slice_type != I_SLICE)
             lc->cu.pred_mode = ff_hevc_pred_mode_decode(s);
@@ -1779,9 +1876,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                     return ret;
             } else {
                 if (!s->sh.disable_deblocking_filter_flag)
-                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                                          lc->slice_or_tiles_up_boundary,
-                                                          lc->slice_or_tiles_left_boundary);
+                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
             }
         }
     }

@@ -71,6 +71,9 @@
 #define EPEL_EXTRA_BEFORE 1
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
+#define QPEL_EXTRA_BEFORE 3
+#define QPEL_EXTRA_AFTER  4
+#define QPEL_EXTRA        7
 
 #define EDGE_EMU_BUFFER_STRIDE 80
 
@@ -199,6 +202,13 @@ enum InterPredIdc {
     PRED_L0 = 0,
     PRED_L1,
     PRED_BI,
+};
+
+enum PredFlag {
+    PF_INTRA = 0,
+    PF_L0,
+    PF_L1,
+    PF_BI,
 };
 
 enum IntraPredMode {
@@ -626,8 +636,7 @@ typedef struct Mv {
 typedef struct MvField {
     Mv mv[2];
     int8_t ref_idx[2];
-    int8_t pred_flag[2];
-    uint8_t is_intra;
+    int8_t pred_flag;
 } MvField;
 
 typedef struct NeighbourAvailable {
@@ -735,6 +744,8 @@ typedef struct HEVCLocalContext {
     int     end_of_tiles_y;
     /* +7 is for subpixel interpolation, *2 for high bit depths */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
+    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer2)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
+
     CodingTree ct;
     CodingUnit cu;
     PredictionUnit pu;
@@ -973,9 +984,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0,
 void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase,
                      int log2_cb_size);
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
-                                           int log2_trafo_size,
-                                           int slice_or_tiles_up_boundary,
-                                           int slice_or_tiles_left_boundary);
+                                           int log2_trafo_size);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
