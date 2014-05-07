@@ -129,7 +129,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.NumRefFrame        = avctx->refs < 0 ? 0 : avctx->refs;
     q->param.mfx.EncodedOrder       = 0;
     q->param.mfx.BufferSizeInKB     = 0;
-    q->param.mfx.RateControlMethod =
+    q->param.mfx.RateControlMethod  =
         (q->options.qpi >= 0 && q->options.qpp >= 0 && q->options.qpb >= 0) ||
         avctx->flags & CODEC_FLAG_QSCALE      ? MFX_RATECONTROL_CQP :
         avctx->rc_max_rate &&
@@ -204,9 +204,15 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.FrameInfo.PicStruct     = MFX_PICSTRUCT_UNKNOWN;
     q->param.mfx.FrameInfo.ChromaFormat  = MFX_CHROMAFORMAT_YUV420;
 
-    av_log(avctx, AV_LOG_VERBOSE, "FrameRate: %d/%d\n",
-           q->param.mfx.FrameInfo.FrameRateExtN,
-           q->param.mfx.FrameInfo.FrameRateExtD);
+    if ((q->param.mfx.FrameInfo.FrameRateExtN / q->param.mfx.FrameInfo.FrameRateExtD) > 1000) {
+        av_log(avctx, AV_LOG_WARNING, "FrameRate: %d/%d (perhaps too high)\n",
+               q->param.mfx.FrameInfo.FrameRateExtN,
+               q->param.mfx.FrameInfo.FrameRateExtD);
+    } else {
+        av_log(avctx, AV_LOG_VERBOSE, "FrameRate: %d/%d\n",
+               q->param.mfx.FrameInfo.FrameRateExtN,
+               q->param.mfx.FrameInfo.FrameRateExtD);
+    }
 
     q->extco.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION;
     q->extco.Header.BufferSz      = sizeof(q->extco);
