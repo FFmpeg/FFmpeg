@@ -1281,8 +1281,6 @@ static int cinepak_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
-    avctx->coded_frame = frame;
-
     FFSWAP(AVFrame *, s->last_frame, s->best_frame);
 
     if (++s->curframe >= s->keyint)
