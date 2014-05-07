@@ -70,6 +70,7 @@ typedef struct mkv_seekhead {
 
 typedef struct {
     uint64_t        pts;
+    int             stream_idx;
     int             tracknum;
     int64_t         cluster_pos;        ///< file offset of the cluster containing the block
     int64_t         relative_pos;       ///< relative offset from the position of the cluster containing the block
@@ -114,6 +115,8 @@ typedef struct MatroskaMuxContext {
     int cluster_size_limit;
     int64_t cues_pos;
     int64_t cluster_time_limit;
+    int is_dash;
+    int dash_track_number;
 
     uint32_t chapter_id_offset;
     int wrote_chapters;
@@ -399,8 +402,8 @@ static mkv_cues * mkv_start_cues(int64_t segment_offset)
     return cues;
 }
 
-static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t cluster_pos, int64_t relative_pos,
-                            int64_t duration)
+static int mkv_add_cuepoint(mkv_cues *cues, int stream, int tracknum, int64_t ts,
+                            int64_t cluster_pos, int64_t relative_pos, int64_t duration)
 {
     mkv_cuepoint *entries = cues->entries;
 
@@ -413,7 +416,8 @@ static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t clus
     cues->entries = entries;
 
     cues->entries[cues->num_entries].pts           = ts;
-    cues->entries[cues->num_entries].tracknum      = stream + 1;
+    cues->entries[cues->num_entries].stream_idx    = stream;
+    cues->entries[cues->num_entries].tracknum      = tracknum;
     cues->entries[cues->num_entries].cluster_pos   = cluster_pos - cues->segment_offset;
     cues->entries[cues->num_entries].relative_pos  = relative_pos;
     cues->entries[cues->num_entries++].duration    = duration;
@@ -443,7 +447,7 @@ static int64_t mkv_write_cues(AVIOContext *pb, mkv_cues *cues, mkv_track *tracks
         for (j = 0; j < num_tracks; j++)
             tracks[j].has_cue = 0;
         for (j = 0; j < cues->num_entries - i && entry[j].pts == pts; j++) {
-            int tracknum = entry[j].tracknum - 1;
+            int tracknum = entry[j].stream_idx;
             av_assert0(tracknum>=0 && tracknum<num_tracks);
             if (tracks[tracknum].has_cue)
                 continue;
@@ -646,8 +650,10 @@ static int mkv_write_tracks(AVFormatContext *s)
             get_aac_sample_rates(s, codec, &sample_rate, &output_sample_rate);
 
         track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY, 0);
-        put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER     , i + 1);
-        put_ebml_uint (pb, MATROSKA_ID_TRACKUID        , i + 1);
+        put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER,
+                       mkv->is_dash ? mkv->dash_track_number : i + 1);
+        put_ebml_uint (pb, MATROSKA_ID_TRACKUID,
+                       mkv->is_dash ? mkv->dash_track_number : i + 1);
         put_ebml_uint (pb, MATROSKA_ID_TRACKFLAGLACING , 0);    // no lacing (yet)
 
         if ((tag = av_dict_get(st->metadata, "title", NULL, 0)))
@@ -1435,7 +1441,8 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
 
     put_ebml_id(pb, blockid);
     put_ebml_num(pb, size+4, 0);
-    avio_w8(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
+    // this assumes stream_index is less than 126
+    avio_w8(pb, 0x80 | (mkv->is_dash ? mkv->dash_track_number : (pkt->stream_index + 1)));
     avio_wb16(pb, ts - mkv->cluster_pts);
     avio_w8(pb, flags);
     avio_write(pb, data + offset, size);
@@ -1549,7 +1556,7 @@ static void mkv_flush_dynbuf(AVFormatContext *s)
     mkv->dyn_bc = NULL;
 }
 
-static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
+static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_cue)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -1606,8 +1613,13 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         end_ebml_master(pb, blockgroup);
     }
 
-    if ((codec->codec_type == AVMEDIA_TYPE_VIDEO && keyframe) || codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, ts, mkv->cluster_pos, relative_packet_pos,
+    if ((codec->codec_type == AVMEDIA_TYPE_VIDEO && keyframe) ||
+        codec->codec_type == AVMEDIA_TYPE_SUBTITLE ||
+        add_cue) {
+        ret = mkv_add_cuepoint(mkv->cues,
+                               pkt->stream_index,
+                               mkv->is_dash ? mkv->dash_track_number : pkt->stream_index + 1,
+                               ts, mkv->cluster_pos, relative_packet_pos,
                                codec->codec_type == AVMEDIA_TYPE_SUBTITLE ? duration : -1);
         if (ret < 0) return ret;
     }
@@ -1625,6 +1637,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t cluster_time;
     AVIOContext *pb;
     int ret;
+    int start_new_cluster;
 
     if (mkv->tracks[pkt->stream_index].write_dts)
         cluster_time = pkt->dts - mkv->cluster_pts;
@@ -1642,11 +1655,26 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         cluster_size = avio_tell(pb);
     }
 
-    if (mkv->cluster_pos != -1 &&
-        (cluster_size > mkv->cluster_size_limit ||
-         cluster_time > mkv->cluster_time_limit ||
-         (codec_type == AVMEDIA_TYPE_VIDEO && keyframe &&
-          cluster_size > 4 * 1024))) {
+    if (mkv->is_dash && codec_type == AVMEDIA_TYPE_VIDEO) {
+        // WebM DASH specification states that the first block of every cluster
+        // has to be a key frame. So for DASH video, we only create a cluster
+        // on seeing key frames.
+        start_new_cluster = keyframe;
+    } else if (mkv->is_dash && codec_type == AVMEDIA_TYPE_AUDIO &&
+               cluster_time > mkv->cluster_time_limit) {
+        // For DASH audio, we create a Cluster based on cluster_time_limit
+        start_new_cluster = 1;
+    } else if (!mkv->is_dash &&
+               (cluster_size > mkv->cluster_size_limit ||
+                cluster_time > mkv->cluster_time_limit ||
+                (codec_type == AVMEDIA_TYPE_VIDEO && keyframe &&
+                 cluster_size > 4 * 1024))) {
+        start_new_cluster = 1;
+    } else {
+        start_new_cluster = 0;
+    }
+
+    if (mkv->cluster_pos != -1 && start_new_cluster) {
         av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
                " bytes, pts %" PRIu64 "dts %" PRIu64 "\n",
                avio_tell(pb), pkt->pts, pkt->dts);
@@ -1659,7 +1687,9 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // check if we have an audio packet cached
     if (mkv->cur_audio_pkt.size > 0) {
-        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
+        // for DASH audio, a CuePoint has to be added when there is a new cluster.
+        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt,
+                                        mkv->is_dash ? start_new_cluster : 0);
         av_free_packet(&mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Could not write cached audio packet ret:%d\n", ret);
@@ -1680,7 +1710,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
             ret = av_copy_packet_side_data(&mkv->cur_audio_pkt, &mkv->cur_audio_pkt);
         }
     } else
-        ret = mkv_write_packet_internal(s, pkt);
+        ret = mkv_write_packet_internal(s, pkt, 0);
     return ret;
 }
 
@@ -1716,7 +1746,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
     // check if we have an audio packet cached
     if (mkv->cur_audio_pkt.size > 0) {
-        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
+        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt, 0);
         av_free_packet(&mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Could not write cached audio packet ret:%d\n", ret);
@@ -1831,6 +1861,8 @@ static const AVOption options[] = {
     { "reserve_index_space", "Reserve a given amount of space (in bytes) at the beginning of the file for the index (cues).", OFFSET(reserve_cues_space), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX,   FLAGS },
     { "cluster_size_limit",  "Store at most the provided amount of bytes in a cluster. ",                                     OFFSET(cluster_size_limit), AV_OPT_TYPE_INT  , { .i64 = -1 }, -1, INT_MAX,   FLAGS },
     { "cluster_time_limit",  "Store at most the provided number of milliseconds in a cluster.",                               OFFSET(cluster_time_limit), AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, FLAGS },
+    { "dash", "Create a WebM file conforming to WebM DASH specification", OFFSET(is_dash), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+    { "dash_track_number", "Track number for the DASH stream", OFFSET(dash_track_number), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 127, FLAGS },
     { NULL },
 };
 
