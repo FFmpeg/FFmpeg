@@ -48,7 +48,7 @@ __asm__ volatile(\
     : "r" (((uint8_t*)(src+sample_index))-len),\
       "r" (((uint8_t*)filter)-len),\
       "r" (dst+dst_index)\
-      NAMED_CONSTRAINTS_ADD(ff_resample_int16_rounder)\
+      NAMED_CONSTRAINTS_ARRAY_ADD(ff_resample_int16_rounder)\
 );
 
 #define LINEAR_CORE_INT16_MMX2 \
@@ -100,7 +100,7 @@ __asm__ volatile(\
     : "r" (((uint8_t*)(src+sample_index))-len),\
       "r" (((uint8_t*)filter)-len),\
       "r" (dst+dst_index)\
-      NAMED_CONSTRAINTS_ADD(ff_resample_int16_rounder)\
+      NAMED_CONSTRAINTS_ARRAY_ADD(ff_resample_int16_rounder)\
       XMM_CLOBBERS_ONLY("%xmm0", "%xmm1")\
 );
 
