@@ -195,7 +195,7 @@ static int decode_motion(GetBitContext *gb)
 static int decode_mb(MadContext *s, AVFrame *frame, int inter)
 {
     int mv_map = 0;
-    int mv_x, mv_y;
+    int av_uninit(mv_x), av_uninit(mv_y);
     int j;
 
     if (inter) {
