@@ -120,7 +120,7 @@ void av_format_inject_global_side_data(AVFormatContext *s)
     }
 }
 
-static AVCodec *find_decoder(AVFormatContext *s, AVStream *st, enum AVCodecID codec_id)
+static const AVCodec *find_decoder(AVFormatContext *s, AVStream *st, enum AVCodecID codec_id)
 {
     if (st->codec->codec)
         return st->codec->codec;
@@ -3473,7 +3473,7 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
     int i, nb_streams = ic->nb_streams;
     int ret = AVERROR_STREAM_NOT_FOUND, best_count = -1, best_bitrate = -1, best_multiframe = -1, count, bitrate, multiframe;
     unsigned *program = NULL;
-    AVCodec *decoder = NULL, *best_decoder = NULL;
+    const AVCodec *decoder = NULL, *best_decoder = NULL;
 
     if (related_stream >= 0 && wanted_stream_nb < 0) {
         AVProgram *p = av_find_program_from_stream(ic, NULL, related_stream);
@@ -3524,7 +3524,7 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
         }
     }
     if (decoder_ret)
-        *decoder_ret = best_decoder;
+        *decoder_ret = (AVCodec*)best_decoder;
     return ret;
 }
 
