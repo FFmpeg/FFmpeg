@@ -105,7 +105,7 @@ static int parse_channel_expressions(AVFilterContext *ctx,
 {
     EvalContext *eval = ctx->priv;
     char *args1 = av_strdup(eval->exprs);
-    char *expr, *last_expr, *buf;
+    char *expr, *last_expr = NULL, *buf;
     double (* const *func1)(void *, double) = NULL;
     const char * const *func1_names = NULL;
     int i, ret = 0;
