@@ -31,15 +31,22 @@ static int h263_probe(AVProbeData *p)
     int res_change=0;
     int src_fmt, last_src_fmt=-1;
     int last_gn=0;
+    int tr, last_tr = -1;
 
     for(i=0; i<p->buf_size; i++){
         code = (code<<8) + p->buf[i];
         if ((code & 0xfffffc000000) == 0x80000000) {
+            tr = (code >> 18) & 0xFF;
             src_fmt= (code>>10)&7;
             if(   src_fmt != last_src_fmt
                && last_src_fmt>0 && last_src_fmt<6
                && src_fmt<6)
                 res_change++;
+
+            if (tr == last_tr) {
+                invalid_psc++;
+                continue;
+            }
 
             if (src_fmt != 7 && !(code&(1<<9)) && (code&(1<<5))) {
                 invalid_psc++;
@@ -52,6 +59,7 @@ static int h263_probe(AVProbeData *p)
             }else
                 invalid_psc++;
             last_src_fmt= src_fmt;
+            last_tr = tr;
         } else if((code & 0xffff80000000) == 0x80000000) {
             int gn= (code>>(31-5)) & 0x1F;
             if(gn<last_gn){
