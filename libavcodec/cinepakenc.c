@@ -623,7 +623,7 @@ static int encode_mode(CinepakEncContext *s, int h, AVPicture *scratch_pict, AVP
     int needs_extra_bit, should_write_temp;
     unsigned char temp[64]; //32/2 = 16 V4 blocks at 4 B each -> 64 B
     mb_info *mb;
-    AVPicture sub_scratch, sub_last;
+    AVPicture sub_scratch = {{0}}, sub_last = {{0}};
 
     //encode codebooks
 ////// MacOS vintage decoder compatibility dictates the presence of
