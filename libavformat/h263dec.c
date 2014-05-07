@@ -41,6 +41,11 @@ static int h263_probe(AVProbeData *p)
                && src_fmt<6)
                 res_change++;
 
+            if (src_fmt != 7 && !(code&(1<<9)) && (code&(1<<5))) {
+                invalid_psc++;
+                continue;
+            }
+
             if((code&0x30000)==0x20000 && src_fmt){
                 valid_psc++;
                 last_gn=0;
