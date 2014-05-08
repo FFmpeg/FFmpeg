@@ -122,8 +122,6 @@ static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old
     const int h = new->height;
     const int w = new->width;
     int bdif, tdif, pdif;
-    const uint8_t *end, *rend;
-    int top, t;
 
     if (mode == AUTO) {
         mode = new->interlaced_frame ? new->top_field_first ?
@@ -136,10 +134,14 @@ static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old
     if (mode <= BOTTOM_FIRST) {
         bdiff = pdiff = tdiff = 65536.0;
     } else {
+        int top = 0, t;
+        const uint8_t *rend, *end = nptr + (h - 2) * ns;
+
         bdiff = pdiff = tdiff = 0.0;
 
-        for (end = nptr + (h - 2) * ns, nptr += ns, optr += os, top = 0;
-             nptr < end; nptr += ns - w, optr += os - w, top ^= 1) {
+        nptr += ns;
+        optr += os;
+        while (nptr < end) {
             pdif = tdif = bdif = 0;
 
             switch (mode) {
@@ -204,6 +206,9 @@ static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old
             pdiff += (double)pdif;
             tdiff += (double)tdif;
             bdiff += (double)bdif;
+            nptr += ns - w;
+            optr += os - w;
+            top ^= 1;
         }
 
         scale = 1.0 / (w * (h - 3)) / 25.0;
