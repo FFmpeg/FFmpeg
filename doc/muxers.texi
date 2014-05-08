@@ -953,6 +953,28 @@ ffmpeg -re -i in.mkv -codec copy -map 0 -f segment -segment_list playlist.m3u8 \
 @end example
 @end itemize
 
+@section smoothstreaming
+
+Smooth Streaming muxer generates a set of files (Manifest, chunks) suitable for serving with conventional web server.
+
+@table @option
+@item window_size
+Specify the number of fragments kept in the manifest. Default 0 (keep all).
+
+@item extra_window_size
+Specify the number of fragments kept outside of the manifest before removing from disk. Default 5.
+
+@item lookahead_count
+Specify the number of lookahead fragments. Default 2.
+
+@item min_frag_duration
+Specify the minimum fragment duration (in microseconds). Default 5000000.
+
+@item remove_at_exit
+Specify whether to remove all fragments when finished. Default 0 (do not remove).
+
+@end table
+
 @section tee
 
 The tee muxer can be used to write the same data to several files or any
