@@ -111,7 +111,7 @@
         "2:                                                             \n\t"
 
 #else /* BROKEN_RELOCATIONS */
-#define TABLES_ARG NAMED_CONSTRAINTS_ADD(ff_h264_cabac_tables)
+#define TABLES_ARG NAMED_CONSTRAINTS_ARRAY_ADD(ff_h264_cabac_tables)
 #define RIP_ARG
 
 #if HAVE_FAST_CMOV
@@ -185,7 +185,7 @@ static av_always_inline int get_cabac_inline_x86(CABACContext *c,
     __asm__ volatile(
         "lea    "MANGLE(ff_h264_cabac_tables)", %0      \n\t"
         : "=&r"(tables)
-        : NAMED_CONSTRAINTS(ff_h264_cabac_tables)
+        : NAMED_CONSTRAINTS_ARRAY(ff_h264_cabac_tables)
     );
 #endif
 

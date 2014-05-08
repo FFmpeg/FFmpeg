@@ -206,14 +206,14 @@ static int start_jack(AVFormatContext *context)
 
 }
 
-static void free_pkt_fifo(AVFifoBuffer *fifo)
+static void free_pkt_fifo(AVFifoBuffer **fifo)
 {
     AVPacket pkt;
-    while (av_fifo_size(fifo)) {
-        av_fifo_generic_read(fifo, &pkt, sizeof(pkt), NULL);
+    while (av_fifo_size(*fifo)) {
+        av_fifo_generic_read(*fifo, &pkt, sizeof(pkt), NULL);
         av_free_packet(&pkt);
     }
-    av_fifo_free(fifo);
+    av_fifo_freep(fifo);
 }
 
 static void stop_jack(JackData *self)
@@ -224,8 +224,8 @@ static void stop_jack(JackData *self)
         jack_client_close(self->client);
     }
     sem_destroy(&self->packet_count);
-    free_pkt_fifo(self->new_pkts);
-    free_pkt_fifo(self->filled_pkts);
+    free_pkt_fifo(&self->new_pkts);
+    free_pkt_fifo(&self->filled_pkts);
     av_freep(&self->ports);
     ff_timefilter_destroy(self->timefilter);
 }

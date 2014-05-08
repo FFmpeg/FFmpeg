@@ -1159,7 +1159,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
         stream = ctx->streams[i]->priv_data;
 
         assert(av_fifo_size(stream->fifo) == 0);
-        av_fifo_free(stream->fifo);
+        av_fifo_freep(&stream->fifo);
     }
     return 0;
 }

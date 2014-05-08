@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-05-xx - xxxxxxx - lavu 52.82.0 - fifo.h
+  Add av_fifo_freep() function.
+
 2014-05-02 - ba52fb11 - lavu 52.81.0 - opt.h
   Add av_opt_set_dict2() function.
 

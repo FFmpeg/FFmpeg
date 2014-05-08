@@ -623,7 +623,7 @@ static int encode_mode(CinepakEncContext *s, int h, AVPicture *scratch_pict, AVP
     int needs_extra_bit, should_write_temp;
     unsigned char temp[64]; //32/2 = 16 V4 blocks at 4 B each -> 64 B
     mb_info *mb;
-    AVPicture sub_scratch, sub_last;
+    AVPicture sub_scratch = {{0}}, sub_last = {{0}};
 
     //encode codebooks
 ////// MacOS vintage decoder compatibility dictates the presence of
@@ -1280,8 +1280,6 @@ static int cinepak_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (s->curframe == 0)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
-
-    avctx->coded_frame = frame;
 
     FFSWAP(AVFrame *, s->last_frame, s->best_frame);
 

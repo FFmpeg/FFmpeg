@@ -234,7 +234,7 @@ void ff_frame_thread_encoder_free(AVCodecContext *avctx){
     pthread_mutex_destroy(&c->buffer_mutex);
     pthread_cond_destroy(&c->task_fifo_cond);
     pthread_cond_destroy(&c->finished_task_cond);
-    av_fifo_free(c->task_fifo); c->task_fifo = NULL;
+    av_fifo_freep(&c->task_fifo);
     av_freep(&avctx->internal->frame_thread_encoder);
 }
 
