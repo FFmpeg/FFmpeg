@@ -2947,6 +2947,11 @@ typedef struct AVHWAccel {
     struct AVHWAccel *next;
 
     /**
+     * Allocate a custom buffer
+     */
+    int (*alloc_frame)(AVCodecContext *avctx, AVFrame *frame);
+
+    /**
      * Called at the beginning of each frame or field picture.
      *
      * Meaningful frame information (codec specific) is guaranteed to
