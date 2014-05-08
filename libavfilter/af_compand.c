@@ -297,6 +297,7 @@ static int compand_drain(AVFilterLink *outlink)
     s->pts += av_rescale_q(frame->nb_samples,
             (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
 
+    av_assert0(channels > 0);
     for (chan = 0; chan < channels; chan++) {
         AVFrame *delay_frame = s->delay_frame;
         double *dbuf = (double *)delay_frame->extended_data[chan];
