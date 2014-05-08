@@ -1426,7 +1426,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "layer", "Set the decoding layer", OFFSET(layer),
         AV_OPT_TYPE_STRING, { .str = "" }, 0, 0, VD },
-    { "gamma", "Set the float gamma value when decoding", OFFSET(gamma),
+    { "gamma", "Set the float gamma value when decoding (experimental/unsupported)", OFFSET(gamma),
         AV_OPT_TYPE_FLOAT, { .dbl = 1.0f }, 0.001, FLT_MAX, VD },
     { NULL },
 };
