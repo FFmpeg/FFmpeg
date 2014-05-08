@@ -2487,7 +2487,8 @@ reconnect:
         // Strip any further query parameters from fname
         amp = strchr(fname, '&');
         if (amp) {
-            av_strlcpy(fname_buffer, fname, FFMIN(amp - fname + 1, sizeof(fname_buffer)));
+            av_strlcpy(fname_buffer, fname, FFMIN(amp - fname + 1,
+                                                  sizeof(fname_buffer)));
             fname = fname_buffer;
         }
     } else if (!strncmp(path, "/ondemand/", 10)) {
