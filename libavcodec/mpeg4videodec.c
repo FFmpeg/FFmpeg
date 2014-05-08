@@ -1167,6 +1167,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                 level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
                 LAST_SKIP_BITS(re, &s->gb, 1);
             }
+            tprintf(s->avctx, "Block: run:%d, level:%d, index:%d EOB:%d\n", run&63, level, i&63, i>62);
             if (i > 62) {
                 i -= 192;
                 if (i & (~63)) {
