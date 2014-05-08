@@ -513,7 +513,7 @@ void ff_free_vlc(VLC *vlc);
         SKIP_BITS(name, gb, n);                                 \
     } while (0)
 
-#define GET_RL_VLC(level, run, name, gb, table, bits,           \
+#define GET_RL_VLC_INTERNAL(level, run, name, gb, table, bits,  \
                    max_depth, need_update)                      \
     do {                                                        \
         int n, nb_bits;                                         \
@@ -642,6 +642,25 @@ static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2],
     return r;
 }
 
+#define GET_RL_VLC(level, run, name, gb, table, bits,           \
+                   max_depth, need_update)                      \
+    do {                                                        \
+        int show  = SHOW_UBITS(name, gb, 24);                   \
+        int len;                                                \
+        int pos = name ## _index;                               \
+                                                                \
+        GET_RL_VLC_INTERNAL(level, run, name, gb, table, bits,max_depth, need_update); \
+                                                                \
+        len = name ## _index - pos;                             \
+        show = show >> (24 - len);                              \
+                                                                \
+        print_bin(show, len);                                   \
+                                                                \
+        av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d/%3d RLV @%5d in %s %s:%d\n",\
+               show, len, run, level, pos, __FILE__, __PRETTY_FUNCTION__, __LINE__);\
+    } while (0)                                                 \
+
+
 static inline int get_xbits_trace(GetBitContext *s, int n, const char *file,
                                   const char *func, int line)
 {
@@ -666,6 +685,7 @@ static inline int get_xbits_trace(GetBitContext *s, int n, const char *file,
 
 #else //TRACE
 #define tprintf(p, ...) { }
+#define GET_RL_VLC GET_RL_VLC_INTERNAL
 #endif
 
 #endif /* AVCODEC_GET_BITS_H */
