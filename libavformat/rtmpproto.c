@@ -2482,12 +2482,12 @@ reconnect:
     if (qmark && strstr(qmark, "slist=")) {
         char* amp;
         // After slist we have the playpath, before the params, the app
-        av_strlcpy(rt->app, path + 1, qmark - path);
+        av_strlcpy(rt->app, path + 1, FFMIN(qmark - path, APP_MAX_LENGTH));
         fname = strstr(path, "slist=") + 6;
         // Strip any further query parameters from fname
         amp = strchr(fname, '&');
         if (amp) {
-            av_strlcpy(fname_buffer, fname, amp - fname + 1);
+            av_strlcpy(fname_buffer, fname, FFMIN(amp - fname + 1, sizeof(fname_buffer)));
             fname = fname_buffer;
         }
     } else if (!strncmp(path, "/ondemand/", 10)) {
