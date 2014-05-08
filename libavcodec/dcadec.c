@@ -2075,7 +2075,6 @@ static void dca_exss_parse_header(DCAContext *s)
     /* not parsed further, we were only interested in the extensions mask
      * from the asset header */
 
-    if (num_assets > 0) {
         j = get_bits_count(&s->gb);
         if (start_posn + hdrsize * 8 > j)
             skip_bits_long(&s->gb, start_posn + hdrsize * 8 - j);
@@ -2100,7 +2099,6 @@ static void dca_exss_parse_header(DCAContext *s)
             if (start_posn + asset_size[i] * 8 > j)
                 skip_bits_long(&s->gb, start_posn + asset_size[i] * 8 - j);
         }
-    }
 }
 
 /**
