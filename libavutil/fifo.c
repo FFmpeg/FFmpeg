@@ -45,6 +45,14 @@ void av_fifo_free(AVFifoBuffer *f)
     }
 }
 
+void av_fifo_freep(AVFifoBuffer **f)
+{
+    if (f) {
+        av_fifo_free(*f);
+        *f = NULL;
+    }
+}
+
 void av_fifo_reset(AVFifoBuffer *f)
 {
     f->wptr = f->rptr = f->buffer;

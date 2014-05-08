@@ -3116,7 +3116,7 @@ static void free_input_threads(void)
             av_fifo_generic_read(f->fifo, &pkt, sizeof(pkt), NULL);
             av_free_packet(&pkt);
         }
-        av_fifo_free(f->fifo);
+        av_fifo_freep(&f->fifo);
     }
 }
 

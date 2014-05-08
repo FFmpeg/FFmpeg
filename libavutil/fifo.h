@@ -48,6 +48,12 @@ AVFifoBuffer *av_fifo_alloc(unsigned int size);
 void av_fifo_free(AVFifoBuffer *f);
 
 /**
+ * Free an AVFifoBuffer and reset pointer to NULL.
+ * @param f AVFifoBuffer to free
+ */
+void av_fifo_freep(AVFifoBuffer **f);
+
+/**
  * Reset the AVFifoBuffer to the state right after av_fifo_alloc, in particular it is emptied.
  * @param f AVFifoBuffer to reset
  */
