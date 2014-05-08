@@ -2064,6 +2064,8 @@ static void dca_exss_parse_header(DCAContext *s)
         }
     }
 
+    av_assert0(num_assets > 0); // silence a warning
+
     for (i = 0; i < num_assets; i++)
         asset_size[i] = get_bits_long(&s->gb, 16 + 4 * blownup);
 
