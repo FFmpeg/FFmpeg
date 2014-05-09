@@ -1428,30 +1428,31 @@ bool projectGenerator::passStaticIncludeObject( uint & uiStartPos, uint & uiEndP
     //Add the found string to internal storage
     uiEndPos = m_sInLine.find_first_of( ". \t", uiStartPos );
     string sTag = m_sInLine.substr( uiStartPos, uiEndPos-uiStartPos );
-    if( sTag.find( '%' ) != string::npos )
+    if( sTag.find( '$' ) != string::npos )
     {
-        //Invalid include (This happens when the include is a variable etc.)
-        uiStartPos = m_sInLine.find( "%=", uiStartPos )+2;
-        uiEndPos = m_sInLine.find( '%', uiStartPos );
-        sTag = m_sInLine.substr( uiStartPos, uiEndPos-uiStartPos );
-        //% is usually used to define an entire directory to include
+        // Invalid include. Occurs when include is actually a variable
+        uiStartPos += 2;
+        sTag = m_sInLine.substr( uiStartPos, m_sInLine.find( ')', uiStartPos ) - uiStartPos );
+        // Check if additional variable (This happens when a string should be prepended to existing items within tag.)
+        string sTag2;
+        if( sTag.find( ':' ) != string::npos )
+        {
+            uiStartPos = sTag.find( ":%=" );
+            uint uiStartPos2 = uiStartPos + 3;
+            uiEndPos = sTag.find( '%', uiStartPos2 );
+            sTag2 = sTag.substr( uiStartPos2, uiEndPos - uiStartPos2 );
+            sTag = sTag.substr( 0, uiStartPos );
+        }
+        // Get variable contents
         vector<string> vFiles;
-        if( !findFiles( m_sProjectDir + sTag + "*.c", vFiles ) )
+        m_ConfigHelper.buildObjects( sTag, vFiles );
+        if( sTag2.length( ) > 0 )
         {
-            cout << "  Warning: Invalid include found (" << sTag << ")" << endl;
-            return false;
-        }
-        //Prepend the full library path
-        for( vector<string>::iterator vitFile=vFiles.begin(); vitFile<vFiles.end(); vitFile++ )
-        {
-            *vitFile = sTag + vitFile->substr( 0, vitFile->rfind('.') ); //Remove the unnecessary extension
-        }
-        //Check for any valid subdirectories
-        uint uiEnd = vFiles.size( );
-        findFiles( m_sProjectDir + sTag + "msvcrt/*.c", vFiles );
-        for( vector<string>::iterator vitFile=vFiles.begin()+uiEnd; vitFile<vFiles.end(); vitFile++ )
-        {
-            *vitFile = sTag + "msvcrt/" + vitFile->substr( 0, vitFile->rfind('.') );
+            //Prepend the full library path
+            for( vector<string>::iterator vitFile = vFiles.begin( ); vitFile<vFiles.end( ); vitFile++ )
+            {
+                *vitFile = sTag2 + *vitFile;
+            }
         }
         //Loop through each item and add to list
         for( vector<string>::iterator vitFile=vFiles.begin(); vitFile<vFiles.end(); vitFile++ )

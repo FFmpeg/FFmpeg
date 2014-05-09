@@ -440,3 +440,13 @@ void configGenerator::buildForcedDisables( string sOptionLower, vector<string> &
         vForceDisable.push_back( "dxva2_lib" );
     }
 }
+
+void configGenerator::buildObjects( const string & sTag, vector<string> & vObjects )
+{
+    if( sTag.compare( "COMPAT_OBJS" ) == 0 )
+    {
+        vObjects.push_back( "msvcrt/snprintf" ); //msvc only provides _snprintf which does not conform to snprintf standard
+        vObjects.push_back( "strtod" ); //msvc contains a strtod but it does not handle NaN's correctly
+        vObjects.push_back( "getopt" );
+    }
+}

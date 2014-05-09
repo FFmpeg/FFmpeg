@@ -73,6 +73,8 @@ private:
 
     void buildForcedDisables( string sOptionLower, vector<string> & vForceDisable );
 
+    void buildObjects( const string & sTag, vector<string> & vObjects );
+
 
 
     bool getConfigList( const string & sList, vector<string> & vReturn, bool bForce=true, uint uiCurrentFilePos=string::npos );
