@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 10.1:
+- pcm-dvd: Fix 20bit decoding (bug/592)
 - avi: Improve non-interleaved detection (bug/666)
 - arm: hpeldsp: fix put_pixels8_y2_{,no_rnd_}armv6
 - arm: hpeldsp: prevent overreads in armv6 asm (bug/646)

@@ -177,11 +177,11 @@ static void *pcm_dvd_decode_samples(AVCodecContext *avctx, const uint8_t *src,
                 dst32[2] = bytestream2_get_be16u(&gb) << 16;
                 dst32[3] = bytestream2_get_be16u(&gb) << 16;
                 t = bytestream2_get_byteu(&gb);
-                *dst32 += (t & 0xf0) << 8;
-                *dst32 += (t & 0x0f) << 12;
+                *dst32++ += (t & 0xf0) << 8;
+                *dst32++ += (t & 0x0f) << 12;
                 t = bytestream2_get_byteu(&gb);
-                *dst32 += (t & 0xf0) << 8;
-                *dst32 += (t & 0x0f) << 12;
+                *dst32++ += (t & 0xf0) << 8;
+                *dst32++ += (t & 0x0f) << 12;
             }
         } while (--blocks);
         return dst32;
