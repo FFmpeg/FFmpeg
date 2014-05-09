@@ -28,7 +28,6 @@
 #include "libavcodec/hevcdsp.h"
 #include "libavcodec/x86/hevcdsp.h"
 
-#if ARCH_X86_64
 
 #define mc_rep_func(name, bitd, step, W, opt) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst, ptrdiff_t dststride,                            \
@@ -82,6 +81,8 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dst
     mc_rep_uni_func(name, bitd, step, W, opt);        \
     mc_rep_bi_func(name, bitd, step, W, opt)
 
+
+#if ARCH_X86_64 && HAVE_SSE4_EXTERNAL
 
 mc_rep_funcs(pel_pixels, 8, 16, 64, sse4);
 mc_rep_funcs(pel_pixels, 8, 16, 48, sse4);
@@ -317,7 +318,7 @@ mc_bi_w_funcs(qpel_h, 10, sse4);
 mc_bi_w_funcs(qpel_v, 10, sse4);
 mc_bi_w_funcs(qpel_hv, 10, sse4);
 
-#endif //ARCH_X86_64
+#endif //ARCH_X86_64 && HAVE_SSE4_EXTERNAL
 
 
 #define EPEL_LINKS(pointer, my, mx, fname, bitd, opt )           \
