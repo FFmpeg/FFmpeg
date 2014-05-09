@@ -1519,6 +1519,15 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
                     ff_mov_get_lpcm_codec_id(st->codec->bits_per_coded_sample,
                                              flags);
         }
+        if (version == 0 || (version == 1 && sc->audio_cid != -2)) {
+            /* can't correctly handle variable sized packet as audio unit */
+            switch (st->codec->codec_id) {
+            case AV_CODEC_ID_MP2:
+            case AV_CODEC_ID_MP3:
+                st->need_parsing = AVSTREAM_PARSE_FULL;
+                break;
+            }
+        }
     }
 
     switch (st->codec->codec_id) {
@@ -1695,7 +1704,6 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
     case AV_CODEC_ID_MP3:
         /* force type after stsd for m1a hdlr */
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->need_parsing      = AVSTREAM_PARSE_FULL;
         break;
     case AV_CODEC_ID_GSM:
     case AV_CODEC_ID_ADPCM_MS:
