@@ -1762,6 +1762,7 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
+    dxva2api_cobj
     dxva2_lib
     libc_msvcrt
     libdc1394_1
@@ -4802,6 +4803,16 @@ require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes &&
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
 
+enabled dxva2api_h &&
+    check_cc <<EOF && enable dxva2api_cobj
+#define _WIN32_WINNT 0x0600
+#define COBJMACROS
+#include <windows.h>
+#include <d3d9.h>
+#include <dxva2api.h>
+int main(void) { IDirectXVideoDecoder *o = NULL; IDirectXVideoDecoder_Release(o); return 0; }
+EOF
+
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
     disable vaapi
@@ -5046,7 +5057,7 @@ if test $target_os = "haiku"; then
     disable posix_memalign
 fi
 
-enabled_all dxva2 CoTaskMemFree &&
+enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
     enable dxva2_lib
 
