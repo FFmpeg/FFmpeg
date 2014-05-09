@@ -651,13 +651,13 @@ static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2],
                                                                 \
         GET_RL_VLC_INTERNAL(level, run, name, gb, table, bits,max_depth, need_update); \
                                                                 \
-        len = name ## _index - pos;                             \
+        len = name ## _index - pos + 1;                         \
         show = show >> (24 - len);                              \
                                                                 \
         print_bin(show, len);                                   \
                                                                 \
-        av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d/%3d RLV @%5d in %s %s:%d\n",\
-               show, len, run, level, pos, __FILE__, __PRETTY_FUNCTION__, __LINE__);\
+        av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d/%-3d rlv @%5d in %s %s:%d\n",\
+               show, len, run-1, level, pos, __FILE__, __PRETTY_FUNCTION__, __LINE__);\
     } while (0)                                                 \
 
 
