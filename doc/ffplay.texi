@@ -174,7 +174,7 @@ Toggle full screen.
 Pause.
 
 @item a
-Cycle audio channel in the curret program.
+Cycle audio channel in the current program.
 
 @item v
 Cycle video channel.
