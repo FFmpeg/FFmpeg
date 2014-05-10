@@ -1,6 +1,13 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 10:
+- af_channelmap: fix ONE_STR mapping mode
+- matroskaenc: HEVC fixeswrite private data in hvcC format for HEVC.
+- doc: Point to the correct, actually maintained gas-preprocessor repo
+- http: Add support reading ICY metadata
+- configure: Support older version of openjpeg1
+
 version 10~beta2:
 - compand audio filter
 - and many various smaller fixes, for a full changelog, please refer to:
