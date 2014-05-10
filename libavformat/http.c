@@ -890,7 +890,6 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
         if (!s->chunksize) {
             char line[32];
 
-            for(;;) {
                 do {
                     if ((err = http_get_line(s, line, sizeof(line))) < 0)
                         return err;
@@ -902,8 +901,6 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
 
                 if (!s->chunksize)
                     return 0;
-                break;
-            }
         }
         size = FFMIN(size, s->chunksize);
     }
