@@ -274,7 +274,12 @@ static int parse_dat(AVFilterContext *ctx, FILE *f)
 
     NEXT_LINE(skip_line(line));
     if (!strncmp(line, "3DLUTSIZE ", 10)) {
-        lut3d->lutsize = size = strtol(line + 10, NULL, 0);
+        size = strtol(line + 10, NULL, 0);
+        if (size < 2 || size > MAX_LEVEL) {
+            av_log(ctx, AV_LOG_ERROR, "Too large or invalid 3D LUT size\n");
+            return AVERROR(EINVAL);
+        }
+        lut3d->lutsize = size;
         NEXT_LINE(skip_line(line));
     }
     for (k = 0; k < size; k++) {
