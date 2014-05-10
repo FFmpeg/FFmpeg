@@ -2824,7 +2824,10 @@ static int read_thread(void *arg)
     if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
         AVStream *st = ic->streams[st_index[AVMEDIA_TYPE_VIDEO]];
         AVCodecContext *avctx = st->codec;
-        VideoPicture vp = {.width = avctx->width, .height = avctx->height, .sar = av_guess_sample_aspect_ratio(ic, st, NULL)};
+        VideoPicture vp = {0};
+        vp.width = avctx->width;
+        vp.height = avctx->height;
+        vp.sar = av_guess_sample_aspect_ratio(ic, st, NULL);
         if (vp.width)
             set_default_window_size(&vp);
     }
