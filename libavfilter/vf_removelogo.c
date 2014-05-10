@@ -318,12 +318,16 @@ static av_cold int init(AVFilterContext *ctx)
 
     for (a = 0; a <= s->max_mask_size; a++) {
         mask[a] = (int **)av_malloc(sizeof(int *) * ((a * 2) + 1));
-        if (!mask[a])
+        if (!mask[a]) {
+            av_free(mask);
             return AVERROR(ENOMEM);
+        }
         for (b = -a; b <= a; b++) {
             mask[a][b + a] = (int *)av_malloc(sizeof(int) * ((a * 2) + 1));
-            if (!mask[a][b + a])
+            if (!mask[a][b + a]) {
+                av_free(mask);
                 return AVERROR(ENOMEM);
+            }
             for (c = -a; c <= a; c++) {
                 if ((b * b) + (c * c) <= (a * a)) /* Circular 0/1 mask. */
                     mask[a][b + a][c + a] = 1;
