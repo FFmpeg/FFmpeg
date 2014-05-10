@@ -241,7 +241,8 @@ static int config(struct vf_instance *vf,
             avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
             avctx_enc->global_quality= 123;
             av_dict_set(&opts, "no_bitstream", "1", 0);
-            avcodec_open2(avctx_enc, enc, &opts);
+            if (avcodec_open2(avctx_enc, enc, &opts) < 0)
+                return 0;
             av_dict_free(&opts);
             assert(avctx_enc->codec);
         }
