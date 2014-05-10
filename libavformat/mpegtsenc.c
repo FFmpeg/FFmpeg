@@ -126,7 +126,7 @@ static const AVOption options[] = {
       offsetof(MpegTSWrite, copyts), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "tables_version", "set PAT, PMT and SDT version",
       offsetof(MpegTSWrite, tables_version), AV_OPT_TYPE_INT, {.i64=0}, 0, 31, AV_OPT_FLAG_ENCODING_PARAM},
-    { "omit_video_pes_length", "Ommit the PES packet length for video packets",
+    { "omit_video_pes_length", "Omit the PES packet length for video packets",
       offsetof(MpegTSWrite, omit_video_pes_length), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
