@@ -3180,7 +3180,7 @@ static int init_input_threads(void)
     for (i = 0; i < nb_input_files; i++) {
         InputFile *f = input_files[i];
 
-        if (!(f->fifo = av_fifo_alloc(8*sizeof(AVPacket))))
+        if (!(f->fifo = av_fifo_alloc_array(8, sizeof(AVPacket))))
             return AVERROR(ENOMEM);
 
         if (f->ctx->pb ? !f->ctx->pb->seekable :
