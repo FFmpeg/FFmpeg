@@ -850,6 +850,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 
 static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
+    const AVHWAccel *hwaccel = avctx->hwaccel;
     int override_dimensions = 1;
     int ret;
 
@@ -871,6 +872,11 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
         return ret;
     if ((ret = ff_init_buffer_info(avctx, frame)) < 0)
         return ret;
+
+    if (hwaccel && hwaccel->alloc_frame) {
+        ret = hwaccel->alloc_frame(avctx, frame);
+        goto end;
+    }
 
 #if FF_API_GET_BUFFER
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -898,7 +904,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
          * avcodec_default_get_buffer
          */
         if (frame->buf[0])
-            goto end;
+            goto end0;
 
         priv = av_mallocz(sizeof(*priv));
         if (!priv) {
@@ -974,7 +980,7 @@ do {                                                                    \
 
         av_buffer_unref(&dummy_buf);
 
-end:
+end0:
         frame->width  = avctx->width;
         frame->height = avctx->height;
 
@@ -991,6 +997,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ret = avctx->get_buffer2(avctx, frame, flags);
 
+end:
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions) {
         frame->width  = avctx->width;
         frame->height = avctx->height;
