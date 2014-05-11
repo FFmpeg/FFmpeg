@@ -67,7 +67,8 @@ int ff_audio_interleave_init(AVFormatContext *s,
             aic->time_base = time_base;
 
             aic->fifo_size = 100* *aic->samples;
-            aic->fifo= av_fifo_alloc_array(100, *aic->samples);
+            if (!(aic->fifo= av_fifo_alloc_array(100, *aic->samples)))
+                return AVERROR(ENOMEM);
         }
     }
 
