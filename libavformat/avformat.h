@@ -743,6 +743,10 @@ typedef struct AVStream {
 
     /**
      * Average framerate
+     *
+     * - demuxing: May be set by libavformat when creating the stream or in
+     *             avformat_find_stream_info().
+     * - muxing: May be set by the caller before avformat_write_header().
      */
     AVRational avg_frame_rate;
 
