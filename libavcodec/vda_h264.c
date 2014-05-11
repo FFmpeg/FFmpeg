@@ -32,6 +32,17 @@ struct vda_buffer {
     CVPixelBufferRef cv_buffer;
 };
 
+typedef struct VDAContext {
+    // The current bitstream buffer.
+    uint8_t             *bitstream;
+
+    // The current size of the bitstream.
+    int                  bitstream_size;
+
+    // The reference size used for fast reallocation.
+    int                  allocated_size;
+} VDAContext;
+
 /* Decoder callback that adds the vda frame to the queue in display order. */
 static void vda_decoder_callback(void *vda_hw_ctx,
                                  CFDictionaryRef user_info,
@@ -53,15 +64,15 @@ static void vda_decoder_callback(void *vda_hw_ctx,
     vda_ctx->cv_buffer = CVPixelBufferRetain(image_buffer);
 }
 
-static int vda_sync_decode(struct vda_context *vda_ctx)
+static int vda_sync_decode(VDAContext *ctx, struct vda_context *vda_ctx)
 {
     OSStatus status;
     CFDataRef coded_frame;
     uint32_t flush_flags = 1 << 0; ///< kVDADecoderFlush_emitFrames
 
     coded_frame = CFDataCreate(kCFAllocatorDefault,
-                               vda_ctx->priv_bitstream,
-                               vda_ctx->priv_bitstream_size);
+                               ctx->bitstream,
+                               ctx->bitstream_size);
 
     status = VDADecoderDecode(vda_ctx->decoder, 0, coded_frame, NULL);
 
@@ -78,12 +89,13 @@ static int vda_h264_start_frame(AVCodecContext *avctx,
                                 av_unused const uint8_t *buffer,
                                 av_unused uint32_t size)
 {
+    VDAContext *vda = avctx->internal->hwaccel_priv_data;
     struct vda_context *vda_ctx = avctx->hwaccel_context;
 
     if (!vda_ctx->decoder)
         return -1;
 
-    vda_ctx->priv_bitstream_size = 0;
+    vda->bitstream_size = 0;
 
     return 0;
 }
@@ -92,24 +104,25 @@ static int vda_h264_decode_slice(AVCodecContext *avctx,
                                  const uint8_t *buffer,
                                  uint32_t size)
 {
+    VDAContext *vda             = avctx->internal->hwaccel_priv_data;
     struct vda_context *vda_ctx = avctx->hwaccel_context;
     void *tmp;
 
     if (!vda_ctx->decoder)
         return -1;
 
-    tmp = av_fast_realloc(vda_ctx->priv_bitstream,
-                          &vda_ctx->priv_allocated_size,
-                          vda_ctx->priv_bitstream_size + size + 4);
+    tmp = av_fast_realloc(vda->bitstream,
+                          &vda->allocated_size,
+                          vda->bitstream_size + size + 4);
     if (!tmp)
         return AVERROR(ENOMEM);
 
-    vda_ctx->priv_bitstream = tmp;
+    vda->bitstream = tmp;
 
-    AV_WB32(vda_ctx->priv_bitstream + vda_ctx->priv_bitstream_size, size);
-    memcpy(vda_ctx->priv_bitstream + vda_ctx->priv_bitstream_size + 4, buffer, size);
+    AV_WB32(vda->bitstream + vda->bitstream_size, size);
+    memcpy(vda->bitstream + vda->bitstream_size + 4, buffer, size);
 
-    vda_ctx->priv_bitstream_size += size + 4;
+    vda->bitstream_size += size + 4;
 
     return 0;
 }
@@ -124,16 +137,17 @@ static void vda_h264_release_buffer(void *opaque, uint8_t *data)
 static int vda_h264_end_frame(AVCodecContext *avctx)
 {
     H264Context *h                      = avctx->priv_data;
+    VDAContext *vda                     = avctx->internal->hwaccel_priv_data;
     struct vda_context *vda_ctx         = avctx->hwaccel_context;
     AVFrame *frame                      = &h->cur_pic_ptr->f;
     struct vda_buffer *context;
     AVBufferRef *buffer;
     int status;
 
-    if (!vda_ctx->decoder || !vda_ctx->priv_bitstream)
+    if (!vda_ctx->decoder || !vda->bitstream)
         return -1;
 
-    status = vda_sync_decode(vda_ctx);
+    status = vda_sync_decode(vda, vda_ctx);
     frame->data[3] = (void*)vda_ctx->cv_buffer;
 
     if (status)
@@ -250,9 +264,13 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
     if (vda_ctx->decoder)
         status = VDADecoderDestroy(vda_ctx->decoder);
 
-    av_freep(&vda_ctx->priv_bitstream);
-
     return status;
+}
+
+static void vda_h264_uninit(AVCodecContext *avctx)
+{
+    VDAContext *vda = avctx->internal->priv_data;
+    av_freep(&vda->bitstream);
 }
 
 AVHWAccel ff_h264_vda_hwaccel = {
@@ -263,4 +281,6 @@ AVHWAccel ff_h264_vda_hwaccel = {
     .start_frame    = vda_h264_start_frame,
     .decode_slice   = vda_h264_decode_slice,
     .end_frame      = vda_h264_end_frame,
+    .uninit         = vda_h264_uninit,
+    .priv_data_size = sizeof(VDAContext),
 };
