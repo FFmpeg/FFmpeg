@@ -1117,6 +1117,11 @@ enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const en
     return fmt[0];
 }
 
+int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
+{
+    return avctx->get_format(avctx, fmt);
+}
+
 #if FF_API_AVFRAME_LAVC
 void avcodec_get_frame_defaults(AVFrame *frame)
 {
@@ -3424,7 +3429,7 @@ int ff_thread_ref_frame(ThreadFrame *dst, ThreadFrame *src)
 
 enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
 {
-    return avctx->get_format(avctx, fmt);
+    return ff_get_format(avctx, fmt);
 }
 
 int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
