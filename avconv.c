@@ -1850,6 +1850,8 @@ static int transcode_init(void)
                     ost->filter->filter->inputs[0]->sample_aspect_ratio;
                 enc_ctx->pix_fmt = ost->filter->filter->inputs[0]->format;
 
+                ost->st->avg_frame_rate = ost->frame_rate;
+
                 if (dec_ctx &&
                     (enc_ctx->width   != dec_ctx->width  ||
                      enc_ctx->height  != dec_ctx->height ||
