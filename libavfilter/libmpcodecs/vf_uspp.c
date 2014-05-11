@@ -44,7 +44,7 @@
 #define BLOCK 16
 
 //===========================================================================//
-DECLARE_ASM_CONST(8, uint8_t, dither)[8][8]={
+DECLARE_ALIGNED(8, static const uint8_t, dither)[8][8] = {
 {  0*4,  48*4,  12*4,  60*4,   3*4,  51*4,  15*4,  63*4, },
 { 32*4,  16*4,  44*4,  28*4,  35*4,  19*4,  47*4,  31*4, },
 {  8*4,  56*4,   4*4,  52*4,  11*4,  59*4,   7*4,  55*4, },
@@ -241,7 +241,8 @@ static int config(struct vf_instance *vf,
             avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
             avctx_enc->global_quality= 123;
             av_dict_set(&opts, "no_bitstream", "1", 0);
-            avcodec_open2(avctx_enc, enc, &opts);
+            if (avcodec_open2(avctx_enc, enc, &opts) < 0)
+                return 0;
             av_dict_free(&opts);
             assert(avctx_enc->codec);
         }

@@ -27,13 +27,17 @@
  * For more information on the OpenEXR format, visit:
  *  http://openexr.com/
  *
- * exr_flt2uint() and exr_halflt2uint() is credited to  Reimar Döffinger
+ * exr_flt2uint() and exr_halflt2uint() is credited to  Reimar Döffinger.
+ * exr_half2float() is credited to Aaftab Munshi; Dan Ginsburg, Dave Shreiner.
+ *
  */
 
 #include <zlib.h>
+#include <float.h>
 
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
+#include "libavutil/intfloat.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -106,7 +110,74 @@ typedef struct EXRContext {
     EXRThreadData *thread_data;
 
     const char *layer;
+
+    float gamma;
+
+    uint16_t gamma_table[65536];
+
 } EXRContext;
+
+/* -15 stored using a single precision bias of 127 */
+#define HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP 0x38000000
+/* max exponent value in single precision that will be converted
+ * to Inf or Nan when stored as a half-float */
+#define HALF_FLOAT_MAX_BIASED_EXP_AS_SINGLE_FP_EXP 0x47800000
+
+/* 255 is the max exponent biased value */
+#define FLOAT_MAX_BIASED_EXP (0xFF << 23)
+
+#define HALF_FLOAT_MAX_BIASED_EXP (0x1F << 10)
+
+/*
+ * Convert a half float as a uint16_t into a full float.
+ *
+ * @param hf half float as uint16_t
+ *
+ * @return float value
+ */
+static union av_intfloat32 exr_half2float(uint16_t hf)
+{
+    unsigned int    sign = (unsigned int)(hf >> 15);
+    unsigned int    mantissa = (unsigned int)(hf & ((1 << 10) - 1));
+    unsigned int    exp = (unsigned int)(hf & HALF_FLOAT_MAX_BIASED_EXP);
+    union av_intfloat32   f;
+
+    if (exp == HALF_FLOAT_MAX_BIASED_EXP) {
+        // we have a half-float NaN or Inf
+        // half-float NaNs will be converted to a single precision NaN
+        // half-float Infs will be converted to a single precision Inf
+        exp = FLOAT_MAX_BIASED_EXP;
+        if (mantissa)
+            mantissa = (1 << 23) - 1;    // set all bits to indicate a NaN
+    } else if (exp == 0x0) {
+        // convert half-float zero/denorm to single precision value
+        if (mantissa) {
+            mantissa <<= 1;
+            exp = HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
+            // check for leading 1 in denorm mantissa
+            while ((mantissa & (1 << 10))) {
+                // for every leading 0, decrement single precision exponent by 1
+                // and shift half-float mantissa value to the left
+                mantissa <<= 1;
+                exp -= (1 << 23);
+            }
+            // clamp the mantissa to 10-bits
+            mantissa &= ((1 << 10) - 1);
+            // shift left to generate single-precision mantissa of 23-bits
+            mantissa <<= 13;
+        }
+    } else {
+        // shift left to generate single-precision mantissa of 23-bits
+        mantissa <<= 13;
+        // generate single precision biased exponent value
+        exp = (exp << 13) + HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
+    }
+
+    f.i = (sign << 31) | exp | mantissa;
+
+    return f;
+}
+
 
 /**
  * Convert from 32-bit float as uint32_t to uint16_t.
@@ -772,6 +843,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     int bxmin = s->xmin * 2 * s->desc->nb_components;
     int i, x, buf_size = s->buf_size;
     int ret;
+    float one_gamma = 1.0f / s->gamma;
 
     line_offset = AV_RL64(s->gb.buffer + jobnr * 8);
     // Check if the buffer has the required bytes needed from the offset
@@ -851,18 +923,30 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         if (s->pixel_type == EXR_FLOAT) {
             // 32-bit
             for (x = 0; x < xdelta; x++) {
-                *ptr_x++ = exr_flt2uint(bytestream_get_le32(&r));
-                *ptr_x++ = exr_flt2uint(bytestream_get_le32(&g));
-                *ptr_x++ = exr_flt2uint(bytestream_get_le32(&b));
+                union av_intfloat32 t;
+                t.i = bytestream_get_le32(&r);
+                if ( t.f > 0.0f )  /* avoid negative values */
+                    t.f = powf(t.f, one_gamma);
+                *ptr_x++ = exr_flt2uint(t.i);
+
+                t.i = bytestream_get_le32(&g);
+                if ( t.f > 0.0f )
+                    t.f = powf(t.f, one_gamma);
+                *ptr_x++ = exr_flt2uint(t.i);
+
+                t.i = bytestream_get_le32(&b);
+                if ( t.f > 0.0f )
+                    t.f = powf(t.f, one_gamma);
+                *ptr_x++ = exr_flt2uint(t.i);
                 if (channel_buffer[3])
                     *ptr_x++ = exr_flt2uint(bytestream_get_le32(&a));
             }
         } else {
             // 16-bit
             for (x = 0; x < xdelta; x++) {
-                *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&r));
-                *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&g));
-                *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&b));
+                *ptr_x++ = s->gamma_table[bytestream_get_le16(&r)];
+                *ptr_x++ = s->gamma_table[bytestream_get_le16(&g)];
+                *ptr_x++ = s->gamma_table[bytestream_get_le16(&b)];
                 if (channel_buffer[3])
                     *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&a));
             }
@@ -1261,7 +1345,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
+    uint32_t i;
+    union av_intfloat32 t;
     EXRContext *s = avctx->priv_data;
+    float one_gamma = 1.0f / s->gamma;
 
     s->avctx              = avctx;
     s->xmin               = ~0;
@@ -1279,6 +1366,23 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->nb_channels        = 0;
     s->w                  = 0;
     s->h                  = 0;
+
+    if ( one_gamma > 0.9999f && one_gamma < 1.0001f ) {
+        for ( i = 0; i < 65536; ++i ) {
+            s->gamma_table[i] = exr_halflt2uint(i);
+        }
+    } else {
+        for ( i = 0; i < 65536; ++i ) {
+            t = exr_half2float(i);
+            /* If negative value we reuse half value */
+            if ( t.f <= 0.0f ) {
+                s->gamma_table[i] = exr_halflt2uint(i);
+            } else {
+                t.f = powf(t.f, one_gamma);
+                s->gamma_table[i] = exr_flt2uint(t.i);
+            }
+        }
+    }
 
     // allocate thread data, used for non EXR_RAW compreesion types
     s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
@@ -1322,6 +1426,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "layer", "Set the decoding layer", OFFSET(layer),
         AV_OPT_TYPE_STRING, { .str = "" }, 0, 0, VD },
+    { "gamma", "Set the float gamma value when decoding (experimental/unsupported)", OFFSET(gamma),
+        AV_OPT_TYPE_FLOAT, { .dbl = 1.0f }, 0.001, FLT_MAX, VD },
     { NULL },
 };
 

@@ -37,7 +37,7 @@
 #endif
 #include "atomic.h"
 
-static pthread_mutex_t *atomic_opencl_lock = NULL;
+static volatile pthread_mutex_t *atomic_opencl_lock = NULL;
 #define LOCK_OPENCL pthread_mutex_lock(atomic_opencl_lock)
 #define UNLOCK_OPENCL pthread_mutex_unlock(atomic_opencl_lock)
 #else
@@ -326,7 +326,7 @@ void av_opencl_free_device_list(AVOpenCLDeviceList **device_list)
     av_freep(device_list);
 }
 
-inline int init_opencl_mtx(void)
+static inline int init_opencl_mtx(void)
 {
 #if HAVE_THREADS
     if (!atomic_opencl_lock) {

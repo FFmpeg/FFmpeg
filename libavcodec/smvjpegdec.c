@@ -153,8 +153,11 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
 
     /* We shouldn't get here if frames_per_jpeg <= 0 because this was rejected
        in init */
-    avcodec_set_dimensions(avctx, mjpeg_data->width,
-        mjpeg_data->height / s->frames_per_jpeg);
+    ret = ff_set_dimensions(avctx, mjpeg_data->width, mjpeg_data->height / s->frames_per_jpeg);
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR, "Failed to set dimensions\n");
+        return ret;
+    }
 
     if (*data_size) {
         s->picture[1]->extended_data = NULL;

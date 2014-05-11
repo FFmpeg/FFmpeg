@@ -1172,8 +1172,8 @@ static void luma_mc_uni(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
     int y_off1           = y_off + (mv1->y >> 2);
     int idx              = ff_hevc_pel_weight[block_w];
 
-    uint8_t *src0  = ref0->data[0] + y_off0 * src0stride + (x_off0 << s->sps->pixel_shift);
-    uint8_t *src1  = ref1->data[0] + y_off1 * src1stride + (x_off1 << s->sps->pixel_shift);
+    uint8_t *src0  = ref0->data[0] + y_off0 * src0stride + (int)((unsigned)x_off0 << s->sps->pixel_shift);
+    uint8_t *src1  = ref1->data[0] + y_off1 * src1stride + (int)((unsigned)x_off1 << s->sps->pixel_shift);
 
     if (x_off0 < QPEL_EXTRA_BEFORE || y_off0 < QPEL_EXTRA_AFTER ||
         x_off0 >= pic_width - block_w - QPEL_EXTRA_AFTER ||
@@ -1340,8 +1340,8 @@ static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVF
     int x_off1 = x_off + (mv1->x >> (2 + hshift));
     int y_off1 = y_off + (mv1->y >> (2 + vshift));
     int idx = ff_hevc_pel_weight[block_w];
-    src1  += y_off0 * src1stride + (x_off0 << s->sps->pixel_shift);
-    src2  += y_off1 * src2stride + (x_off1 << s->sps->pixel_shift);
+    src1  += y_off0 * src1stride + (int)((unsigned)x_off0 << s->sps->pixel_shift);
+    src2  += y_off1 * src2stride + (int)((unsigned)x_off1 << s->sps->pixel_shift);
 
     if (x_off0 < EPEL_EXTRA_BEFORE || y_off0 < EPEL_EXTRA_AFTER ||
         x_off0 >= pic_width - block_w - EPEL_EXTRA_AFTER ||

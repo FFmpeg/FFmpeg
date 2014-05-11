@@ -42,7 +42,7 @@ enum PhaseMode {
 typedef struct PhaseContext {
     const AVClass *class;
     enum PhaseMode mode;
-    AVFrame *frame;
+    AVFrame *frame; /* previous frame */
     int nb_planes;
     int planeheight[4];
     int linesize[4];
@@ -112,20 +112,16 @@ static int config_input(AVFilterLink *inlink)
  * Find which field combination has the smallest average squared difference
  * between the fields.
  */
-static enum PhaseMode analyze_plane(AVFilterContext *ctx, PhaseContext *s,
-                                    AVFrame *old, AVFrame *new)
+static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old, AVFrame *new)
 {
     double bdiff, tdiff, pdiff, scale;
     const int ns = new->linesize[0];
     const int os = old->linesize[0];
-    uint8_t *nptr = new->data[0];
-    uint8_t *optr = old->data[0];
+    const uint8_t *nptr = new->data[0];
+    const uint8_t *optr = old->data[0];
     const int h = new->height;
     const int w = new->width;
     int bdif, tdif, pdif;
-    enum PhaseMode mode = s->mode;
-    uint8_t *end, *rend;
-    int top, t;
 
     if (mode == AUTO) {
         mode = new->interlaced_frame ? new->top_field_first ?
@@ -138,10 +134,14 @@ static enum PhaseMode analyze_plane(AVFilterContext *ctx, PhaseContext *s,
     if (mode <= BOTTOM_FIRST) {
         bdiff = pdiff = tdiff = 65536.0;
     } else {
+        int top = 0, t;
+        const uint8_t *rend, *end = nptr + (h - 2) * ns;
+
         bdiff = pdiff = tdiff = 0.0;
 
-        for (end = nptr + (h - 2) * ns, nptr += ns, optr += os, top = 0;
-             nptr < end; nptr += ns - w, optr += os - w, top ^= 1) {
+        nptr += ns;
+        optr += os;
+        while (nptr < end) {
             pdif = tdif = bdif = 0;
 
             switch (mode) {
@@ -206,6 +206,9 @@ static enum PhaseMode analyze_plane(AVFilterContext *ctx, PhaseContext *s,
             pdiff += (double)pdif;
             tdiff += (double)tdif;
             bdiff += (double)bdif;
+            nptr += ns - w;
+            optr += os - w;
+            top ^= 1;
         }
 
         scale = 1.0 / (w * (h - 3)) / 25.0;
@@ -245,6 +248,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int plane, top, y;
     AVFrame *out;
 
+    if (ctx->is_disabled) {
+        av_frame_free(&s->frame);
+        /* we keep a reference to the previous frame so the filter can start
+         * being useful as soon as it's not disabled, avoiding the 1-frame
+         * delay. */
+        s->frame = av_frame_clone(in);
+        return ff_filter_frame(outlink, in);
+    }
+
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_frame_free(&in);
@@ -253,25 +265,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     if (!s->frame) {
+        s->frame = in;
         mode = PROGRESSIVE;
-        s->frame = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!s->frame) {
-            av_frame_free(&in);
-            av_frame_free(&out);
-            return AVERROR(ENOMEM);
-        }
     } else {
-        mode = analyze_plane(ctx, s, s->frame, in);
+        mode = analyze_plane(ctx, s->mode, s->frame, in);
     }
 
     for (plane = 0; plane < s->nb_planes; plane++) {
-        uint8_t *buf = s->frame->data[plane];
-        uint8_t *from = in->data[plane];
+        const uint8_t *buf = s->frame->data[plane];
+        const uint8_t *from = in->data[plane];
         uint8_t *to = out->data[plane];
 
         for (y = 0, top = 1; y < s->planeheight[plane]; y++, top ^= 1) {
             memcpy(to, mode == (top ? BOTTOM_FIRST : TOP_FIRST) ? buf : from, s->linesize[plane]);
-            memcpy(buf, from, s->linesize[plane]);
 
             buf += s->frame->linesize[plane];
             from += in->linesize[plane];
@@ -279,7 +285,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    av_frame_free(&in);
+    if (in != s->frame)
+        av_frame_free(&s->frame);
+    s->frame = in;
     return ff_filter_frame(outlink, out);
 }
 
@@ -317,4 +325,5 @@ AVFilter ff_vf_phase = {
     .query_formats = query_formats,
     .inputs        = phase_inputs,
     .outputs       = phase_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

@@ -75,7 +75,7 @@ static const short custom_threshold[64]=
   20,  27,  26,  23,  20,  15,  11,   5
 };
 
-DECLARE_ASM_CONST(32, uint8_t, dither)[8][8]={
+DECLARE_ALIGNED(32, static const uint8_t, dither)[8][8] = {
     {  0,  48,  12,  60,   3,  51,  15,  63, },
     { 32,  16,  44,  28,  35,  19,  47,  31, },
     {  8,  56,   4,  52,  11,  59,   7,  55, },

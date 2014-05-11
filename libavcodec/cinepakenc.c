@@ -1120,14 +1120,14 @@ static int write_cvid_header(CinepakEncContext *s, unsigned char *buf, int num_s
 
 static int rd_frame(CinepakEncContext *s, const AVFrame *frame, int isakeyframe, unsigned char *buf, int buf_size)
 {
-    int num_strips, strip, i, y, nexty, size, temp_size, best_size;
+    int num_strips, strip, i, y, nexty, size, temp_size;
     AVPicture last_pict, pict, scratch_pict;
     int64_t best_score = 0, score, score_temp;
 #ifdef CINEPAK_REPORT_SERR
     int64_t best_serr = 0, serr, serr_temp;
 #endif
 
-    int best_nstrips;
+    int best_nstrips = -1, best_size = -1; // mark as uninitialzed
 
     if(s->pix_fmt == AV_PIX_FMT_RGB24) {
         int x;
@@ -1238,6 +1238,8 @@ static int rd_frame(CinepakEncContext *s, const AVFrame *frame, int isakeyframe,
         if(num_strips - best_nstrips > 4)
             break;
     }
+
+    av_assert0(best_nstrips >= 0 && best_size >= 0);
 
 // let the number of strips slowly adapt to the changes in the contents,
 // compared to full bruteforcing every time this will occasionally lead

@@ -314,7 +314,7 @@ static void zero_head_and_tail(float *src, int len, int order0, int order1)
 }
 
 static void pretwiddle(float *src, float *dst, int dst_len, int tab_step,
-                       int step, int order0, int order1, const double **tabs)
+                       int step, int order0, int order1, const double * const *tabs)
 {
     float *src2, *out;
     const double *tab;
@@ -342,7 +342,7 @@ static void pretwiddle(float *src, float *dst, int dst_len, int tab_step,
 
 static void twiddle(float *src1, float *src2, int src2_len,
                     const double *tab, int tab_len, int step,
-                    int order0, int order1, const double **tabs)
+                    int order0, int order1, const double * const *tabs)
 {
     int steps;
     int mask;

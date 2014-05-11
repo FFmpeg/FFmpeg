@@ -397,20 +397,24 @@ static int mov_pcm_be_gt16(enum AVCodecID codec_id)
 
 static int mov_write_ms_tag(AVIOContext *pb, MOVTrack *track)
 {
+    int ret;
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0);
     avio_wl32(pb, track->tag); // store it byteswapped
     track->enc->codec_tag = av_bswap16(track->tag >> 16);
-    ff_put_wav_header(pb, track->enc, 0);
+    if ((ret = ff_put_wav_header(pb, track->enc, 0)) < 0)
+        return ret;
     return update_size(pb, pos);
 }
 
 static int mov_write_wfex_tag(AVIOContext *pb, MOVTrack *track)
 {
+    int ret;
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "wfex");
-    ff_put_wav_header(pb, track->enc, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
+    if ((ret = ff_put_wav_header(pb, track->enc, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX)) < 0)
+        return ret;
     return update_size(pb, pos);
 }
 

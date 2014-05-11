@@ -1153,7 +1153,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
     uint8_t *data[MAX_COMPONENTS];
     const uint8_t *reference_data[MAX_COMPONENTS];
     int linesize[MAX_COMPONENTS];
-    GetBitContext mb_bitmask_gb;
+    GetBitContext mb_bitmask_gb = {0}; // initialize to silence gcc warning
     int bytes_per_pixel = 1 + (s->bits > 8);
 
     if (mb_bitmask) {
