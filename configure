@@ -1956,7 +1956,6 @@ fast_unaligned_if_any="aarch64 ppc x86"
 need_memalign="altivec neon sse"
 
 # system capabilities
-log2_deps="!libc_msvcrt"
 
 symver_if_any="symver_asm_label symver_gnu_asm"
 
@@ -4125,6 +4124,9 @@ case $libc_type in
         add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
                                      _snprintf=avpriv_snprintf  \
                                      vsnprintf=avpriv_vsnprintf
+        # MSVC 2010 x64 requires log2 fix. However 2013 onwards is supported.
+        check_cpp_condition stdlib.h "_MSC_VER >= 1800" ||
+            disable log2
         ;;
 esac
 
