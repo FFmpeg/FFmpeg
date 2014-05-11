@@ -301,7 +301,7 @@ AVHWAccel ff_wmv3_dxva2_hwaccel = {
     .start_frame    = dxva2_vc1_start_frame,
     .decode_slice   = dxva2_vc1_decode_slice,
     .end_frame      = dxva2_vc1_end_frame,
-    .priv_data_size = sizeof(struct dxva2_picture_context),
+    .frame_priv_data_size = sizeof(struct dxva2_picture_context),
 };
 #endif
 
@@ -313,5 +313,5 @@ AVHWAccel ff_vc1_dxva2_hwaccel = {
     .start_frame    = dxva2_vc1_start_frame,
     .decode_slice   = dxva2_vc1_decode_slice,
     .end_frame      = dxva2_vc1_end_frame,
-    .priv_data_size = sizeof(struct dxva2_picture_context),
+    .frame_priv_data_size = sizeof(struct dxva2_picture_context),
 };

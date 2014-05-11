@@ -234,5 +234,5 @@ AVHWAccel ff_h264_vdpau_hwaccel = {
     .start_frame    = vdpau_h264_start_frame,
     .end_frame      = vdpau_h264_end_frame,
     .decode_slice   = vdpau_h264_decode_slice,
-    .priv_data_size = sizeof(struct vdpau_picture_context),
+    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
 };
