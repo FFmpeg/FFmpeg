@@ -3307,6 +3307,29 @@ typedef struct AVHWAccel {
      * @param s the mpeg context
      */
     void (*decode_mb)(struct MpegEncContext *s);
+
+    /**
+     * Initialize the hwaccel private data.
+     *
+     * This will be called from ff_get_format(), after hwaccel and
+     * hwaccel_context are set and the hwaccel private data in AVCodecInternal
+     * is allocated.
+     */
+    int (*init)(AVCodecContext *avctx);
+
+    /**
+     * Uninitialize the hwaccel private data.
+     *
+     * This will be called from get_format() or avcodec_close(), after hwaccel
+     * and hwaccel_context are already uninitialized.
+     */
+    int (*uninit)(AVCodecContext *avctx);
+
+    /**
+     * Size of the private data to allocate in
+     * AVCodecInternal.hwaccel_priv_data.
+     */
+    int priv_data_size;
 } AVHWAccel;
 
 /**

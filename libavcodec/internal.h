@@ -122,6 +122,11 @@ typedef struct AVCodecInternal {
      * Number of audio samples to skip at the start of the next decoded frame
      */
     int skip_samples;
+
+    /**
+     * hwaccel-specific private data
+     */
+    void *hwaccel_priv_data;
 } AVCodecInternal;
 
 struct AVCodecDefault {
