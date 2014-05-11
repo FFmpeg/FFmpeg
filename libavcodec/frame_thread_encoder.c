@@ -168,7 +168,7 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
     c->parent_avctx = avctx;
 
-    c->task_fifo = av_fifo_alloc(sizeof(Task) * BUFFER_SIZE);
+    c->task_fifo = av_fifo_alloc_array(BUFFER_SIZE, sizeof(Task));
     if(!c->task_fifo)
         goto fail;
 
