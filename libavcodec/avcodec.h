@@ -3233,7 +3233,19 @@ typedef struct AVHWAccel {
      */
     int capabilities;
 
+    /*****************************************************************
+     * No fields below this line are part of the public API. They
+     * may not be used outside of libavcodec and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
     struct AVHWAccel *next;
+
+    /**
+     * Allocate a custom buffer
+     */
+    int (*alloc_frame)(AVCodecContext *avctx, AVFrame *frame);
 
     /**
      * Called at the beginning of each frame or field picture.
@@ -3277,13 +3289,13 @@ typedef struct AVHWAccel {
     int (*end_frame)(AVCodecContext *avctx);
 
     /**
-     * Size of HW accelerator private data.
+     * Size of per-frame hardware accelerator private data.
      *
      * Private data is allocated with av_mallocz() before
      * AVCodecContext.get_buffer() and deallocated after
      * AVCodecContext.release_buffer().
      */
-    int priv_data_size;
+    int frame_priv_data_size;
 
     /**
      * Called for every Macroblock in a slice.
@@ -3295,6 +3307,29 @@ typedef struct AVHWAccel {
      * @param s the mpeg context
      */
     void (*decode_mb)(struct MpegEncContext *s);
+
+    /**
+     * Initialize the hwaccel private data.
+     *
+     * This will be called from ff_get_format(), after hwaccel and
+     * hwaccel_context are set and the hwaccel private data in AVCodecInternal
+     * is allocated.
+     */
+    int (*init)(AVCodecContext *avctx);
+
+    /**
+     * Uninitialize the hwaccel private data.
+     *
+     * This will be called from get_format() or avcodec_close(), after hwaccel
+     * and hwaccel_context are already uninitialized.
+     */
+    int (*uninit)(AVCodecContext *avctx);
+
+    /**
+     * Size of the private data to allocate in
+     * AVCodecInternal.hwaccel_priv_data.
+     */
+    int priv_data_size;
 } AVHWAccel;
 
 /**

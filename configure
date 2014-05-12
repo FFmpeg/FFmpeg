@@ -1956,7 +1956,6 @@ fast_unaligned_if_any="aarch64 ppc x86"
 need_memalign="altivec neon sse"
 
 # system capabilities
-log2_deps="!libc_msvcrt"
 
 symver_if_any="symver_asm_label symver_gnu_asm"
 
@@ -2196,6 +2195,8 @@ h264_vda_decoder_deps="vda"
 h264_vda_decoder_select="h264_decoder"
 h264_vda_hwaccel_deps="vda"
 h264_vda_hwaccel_select="h264_decoder"
+h264_vda_old_hwaccel_deps="vda"
+h264_vda_old_hwaccel_select="h264_decoder"
 h264_vdpau_decoder_deps="vdpau"
 h264_vdpau_decoder_select="h264_decoder"
 h264_vdpau_hwaccel_deps="vdpau"
@@ -3359,9 +3360,9 @@ probe_cc(){
         _ld_path='-libpath:'
         # -Qdiag-error to make icl error when seeing certain unknown arguments
         _flags='-nologo -Qdiag-error:4044,10157'
-        # -Qvec- -Qsimd- to prevent miscompilation, -GS for consistency
+        # -Qvec- -Qsimd- to prevent miscompilation, -GS, fp:precise for consistency
         # with MSVC which enables it by default.
-        _cflags='-D_USE_MATH_DEFINES -FIstdlib.h -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS'
+        _cflags='-D_USE_MATH_DEFINES -FIstdlib.h -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
@@ -4123,6 +4124,9 @@ case $libc_type in
         add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
                                      _snprintf=avpriv_snprintf  \
                                      vsnprintf=avpriv_vsnprintf
+        # MSVC 2010 x64 requires log2 fix. However 2013 onwards is supported.
+        check_cpp_condition stdlib.h "_MSC_VER >= 1800" ||
+            disable log2
         ;;
 esac
 

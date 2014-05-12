@@ -643,6 +643,9 @@ Do not use any hardware acceleration (the default).
 @item auto
 Automatically select the hardware acceleration method.
 
+@item vda
+Use Apple VDA hardware acceleration.
+
 @item vdpau
 Use VDPAU (Video Decode and Presentation API for Unix) hardware acceleration.
 

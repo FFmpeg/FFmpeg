@@ -850,6 +850,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 
 static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
+    const AVHWAccel *hwaccel = avctx->hwaccel;
     int override_dimensions = 1;
     int ret;
 
@@ -871,6 +872,11 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
         return ret;
     if ((ret = ff_init_buffer_info(avctx, frame)) < 0)
         return ret;
+
+    if (hwaccel && hwaccel->alloc_frame) {
+        ret = hwaccel->alloc_frame(avctx, frame);
+        goto end;
+    }
 
 #if FF_API_GET_BUFFER
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -898,7 +904,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
          * avcodec_default_get_buffer
          */
         if (frame->buf[0])
-            goto end;
+            goto end0;
 
         priv = av_mallocz(sizeof(*priv));
         if (!priv) {
@@ -974,7 +980,7 @@ do {                                                                    \
 
         av_buffer_unref(&dummy_buf);
 
-end:
+end0:
         frame->width  = avctx->width;
         frame->height = avctx->height;
 
@@ -991,6 +997,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ret = avctx->get_buffer2(avctx, frame, flags);
 
+end:
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions) {
         frame->width  = avctx->width;
         frame->height = avctx->height;
@@ -1115,6 +1122,64 @@ enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const en
     while (*fmt != AV_PIX_FMT_NONE && is_hwaccel_pix_fmt(*fmt))
         ++fmt;
     return fmt[0];
+}
+
+static AVHWAccel *find_hwaccel(enum AVCodecID codec_id,
+                               enum AVPixelFormat pix_fmt)
+{
+    AVHWAccel *hwaccel = NULL;
+
+    while ((hwaccel = av_hwaccel_next(hwaccel)))
+        if (hwaccel->id == codec_id
+            && hwaccel->pix_fmt == pix_fmt)
+            return hwaccel;
+    return NULL;
+}
+
+
+int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
+{
+    const AVPixFmtDescriptor *desc;
+    enum AVPixelFormat ret = avctx->get_format(avctx, fmt);
+
+    desc = av_pix_fmt_desc_get(ret);
+    if (!desc)
+        return AV_PIX_FMT_NONE;
+
+    if (avctx->hwaccel && avctx->hwaccel->uninit)
+        avctx->hwaccel->uninit(avctx);
+    av_freep(&avctx->internal->hwaccel_priv_data);
+    avctx->hwaccel = NULL;
+
+    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        AVHWAccel *hwaccel;
+        int err;
+
+        hwaccel = find_hwaccel(avctx->codec_id, ret);
+        if (!hwaccel) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Could not find an AVHWAccel for the pixel format: %s",
+                   desc->name);
+            return AV_PIX_FMT_NONE;
+        }
+
+        if (hwaccel->priv_data_size) {
+            avctx->internal->hwaccel_priv_data = av_mallocz(hwaccel->priv_data_size);
+            if (!avctx->internal->hwaccel_priv_data)
+                return AV_PIX_FMT_NONE;
+        }
+
+        if (hwaccel->init) {
+            err = hwaccel->init(avctx);
+            if (err < 0) {
+                av_freep(&avctx->internal->hwaccel_priv_data);
+                return AV_PIX_FMT_NONE;
+            }
+        }
+        avctx->hwaccel = hwaccel;
+    }
+
+    return ret;
 }
 
 #if FF_API_AVFRAME_LAVC
@@ -2645,6 +2710,11 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
             av_buffer_pool_uninit(&pool->pools[i]);
         av_freep(&avctx->internal->pool);
+
+        if (avctx->hwaccel && avctx->hwaccel->uninit)
+            avctx->hwaccel->uninit(avctx);
+        av_freep(&avctx->internal->hwaccel_priv_data);
+
         av_freep(&avctx->internal);
     }
 
@@ -3309,20 +3379,6 @@ AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel)
     return hwaccel ? hwaccel->next : first_hwaccel;
 }
 
-AVHWAccel *ff_find_hwaccel(AVCodecContext *avctx)
-{
-    enum AVCodecID codec_id = avctx->codec->id;
-    enum AVPixelFormat pix_fmt = avctx->pix_fmt;
-
-    AVHWAccel *hwaccel = NULL;
-
-    while ((hwaccel = av_hwaccel_next(hwaccel)))
-        if (hwaccel->id == codec_id
-            && hwaccel->pix_fmt == pix_fmt)
-            return hwaccel;
-    return NULL;
-}
-
 int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 {
     if (lockmgr_cb) {
@@ -3424,7 +3480,7 @@ int ff_thread_ref_frame(ThreadFrame *dst, ThreadFrame *src)
 
 enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
 {
-    return avctx->get_format(avctx, fmt);
+    return ff_get_format(avctx, fmt);
 }
 
 int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)

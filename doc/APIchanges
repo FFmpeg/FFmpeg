@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-xx-xx - xxxxxxx - lavu 53.14.0 - pixfmt.h
+  Add AV_PIX_FMT_VDA for new-style VDA acceleration.
+
 2014-05-xx - xxxxxxx - lavu 52.82.0 - fifo.h
   Add av_fifo_freep() function.
 

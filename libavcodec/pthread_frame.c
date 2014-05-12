@@ -226,6 +226,7 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
         dst->sample_rate    = src->sample_rate;
         dst->sample_fmt     = src->sample_fmt;
         dst->channel_layout = src->channel_layout;
+        dst->internal->hwaccel_priv_data = src->internal->hwaccel_priv_data;
     }
 
     if (for_user) {
@@ -832,7 +833,7 @@ enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixe
     PerThreadContext *p = avctx->internal->thread_ctx;
     if (!(avctx->active_thread_type & FF_THREAD_FRAME) || avctx->thread_safe_callbacks ||
         avctx->get_format == avcodec_default_get_format)
-        return avctx->get_format(avctx, fmt);
+        return ff_get_format(avctx, fmt);
     if (p->state != STATE_SETTING_UP) {
         av_log(avctx, AV_LOG_ERROR, "get_format() cannot be called after ff_thread_finish_setup()\n");
         return -1;

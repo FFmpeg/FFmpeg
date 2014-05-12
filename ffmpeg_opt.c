@@ -70,6 +70,9 @@ const HWAccel hwaccels[] = {
 #if HAVE_DXVA2_LIB
     { "dxva2", dxva2_init, HWACCEL_DXVA2, AV_PIX_FMT_DXVA2_VLD },
 #endif
+#if CONFIG_VDA
+    { "vda",   vda_init,   HWACCEL_VDA,   AV_PIX_FMT_VDA },
+#endif
     { 0 },
 };
 

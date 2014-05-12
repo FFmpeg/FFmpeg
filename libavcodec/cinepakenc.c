@@ -236,11 +236,11 @@ static av_cold int cinepak_encode_init(AVCodecContext *avctx)
     if (!(s->frame_buf = av_malloc(frame_buf_size)))
         goto enomem;
 
-    if (!(s->mb = av_malloc(mb_count*sizeof(mb_info))))
+    if (!(s->mb = av_malloc_array(mb_count, sizeof(mb_info))))
         goto enomem;
 
 #ifdef CINEPAKENC_DEBUG
-    if (!(s->best_mb = av_malloc(mb_count*sizeof(mb_info))))
+    if (!(s->best_mb = av_malloc_array(mb_count, sizeof(mb_info))))
         goto enomem;
 #endif
 

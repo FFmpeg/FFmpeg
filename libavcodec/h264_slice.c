@@ -157,6 +157,7 @@ static const enum AVPixelFormat h264_hwaccel_pixfmt_list_420[] = {
 #endif
 #if CONFIG_H264_VDA_HWACCEL
     AV_PIX_FMT_VDA_VLD,
+    AV_PIX_FMT_VDA,
 #endif
 #if CONFIG_H264_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,
@@ -174,6 +175,7 @@ static const enum AVPixelFormat h264_hwaccel_pixfmt_list_jpeg_420[] = {
 #endif
 #if CONFIG_H264_VDA_HWACCEL
     AV_PIX_FMT_VDA_VLD,
+    AV_PIX_FMT_VDA,
 #endif
 #if CONFIG_H264_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,
@@ -265,8 +267,8 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
     if (h->avctx->hwaccel) {
         const AVHWAccel *hwaccel = h->avctx->hwaccel;
         av_assert0(!pic->hwaccel_picture_private);
-        if (hwaccel->priv_data_size) {
-            pic->hwaccel_priv_buf = av_buffer_allocz(hwaccel->priv_data_size);
+        if (hwaccel->frame_priv_data_size) {
+            pic->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
             if (!pic->hwaccel_priv_buf)
                 return AVERROR(ENOMEM);
             pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;
@@ -1160,8 +1162,6 @@ static int h264_slice_header_init(H264Context *h, int reinit)
         av_reduce(&h->avctx->time_base.num, &h->avctx->time_base.den,
                   h->sps.num_units_in_tick, den, 1 << 30);
     }
-
-    h->avctx->hwaccel = ff_find_hwaccel(h->avctx);
 
     if (reinit)
         ff_h264_free_tables(h, 0);

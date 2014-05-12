@@ -122,6 +122,11 @@ typedef struct AVCodecInternal {
      * Number of audio samples to skip at the start of the next decoded frame
      */
     int skip_samples;
+
+    /**
+     * hwaccel-specific private data
+     */
+    void *hwaccel_priv_data;
 } AVCodecInternal;
 
 struct AVCodecDefault {
@@ -130,15 +135,6 @@ struct AVCodecDefault {
 };
 
 extern const uint8_t ff_log2_run[41];
-
-/**
- * Return the hardware accelerated codec for codec codec_id and
- * pixel format pix_fmt.
- *
- * @param avctx The codec context containing the codec_id and pixel format.
- * @return the hardware accelerated codec, or NULL if none was found.
- */
-AVHWAccel *ff_find_hwaccel(AVCodecContext *avctx);
 
 /**
  * Return the index into tab at which {a,b} match elements {[0],[1]} of tab.
@@ -252,6 +248,13 @@ int ff_set_dimensions(AVCodecContext *s, int width, int height);
  */
 int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
+
+/**
+ * Select the (possibly hardware accelerated) pixel format.
+ * This is a wrapper around AVCodecContext.get_format() and should be used
+ * instead of calling get_format() directly.
+ */
+int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
 
 /**
  * Set various frame properties from the codec context / packet data.

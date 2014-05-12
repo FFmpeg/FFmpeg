@@ -60,7 +60,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     if (avctx->codec->id == AV_CODEC_ID_MSS2)
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     else
-        avctx->pix_fmt = avctx->get_format(avctx, avctx->codec->pix_fmts);
+        avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
     s->unrestricted_mv = 1;
 
     /* select sub codec */
@@ -112,7 +112,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
     s->codec_id    = avctx->codec->id;
-    avctx->hwaccel = ff_find_hwaccel(avctx);
 
     if (avctx->stream_codec_tag == AV_RL32("l263") && avctx->extradata_size == 56 && avctx->extradata[0] == 1)
         s->ehc_mode = 1;
