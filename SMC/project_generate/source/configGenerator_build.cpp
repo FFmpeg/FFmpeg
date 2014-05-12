@@ -164,6 +164,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "wglgetprocaddress", true );
 
     fastToggleConfigValue( "dos_paths", true );
+    fastToggleConfigValue( "dxva2api_cobj", true );
     fastToggleConfigValue( "dxva2_lib", true );
 
     fastToggleConfigValue( "aligned_stack", true );
