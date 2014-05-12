@@ -89,6 +89,7 @@ EXPORTS
     av_fifo_alloc
     av_fifo_drain
     av_fifo_free
+	av_fifo_freep
     av_fifo_generic_read
     av_fifo_generic_write
     av_fifo_grow
