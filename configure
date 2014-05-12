@@ -4124,9 +4124,6 @@ case $libc_type in
         add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
                                      _snprintf=avpriv_snprintf  \
                                      vsnprintf=avpriv_vsnprintf
-        # MSVC 2010 x64 requires log2 fix. However 2013 onwards is supported.
-        check_cpp_condition stdlib.h "_MSC_VER >= 1800" ||
-            disable log2
         ;;
 esac
 
@@ -5021,6 +5018,8 @@ elif enabled_any msvc icl; then
             disable ebx_available
         fi
     fi
+    # msvcrt10 x64 incorrectly enables log2, only msvcrt12 onwards actually has log2.
+    check_cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION >= 12" || disable log2
 fi
 
 case $as_type in
