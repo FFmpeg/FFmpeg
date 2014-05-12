@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-05-xx - xxxxxxx - lavu 52.84.100 - time.h
+  Add av_gettime_relative() av_gettime_relative_is_monotonic()
+
 2014-05-xx - xxxxxxx - lavf 55.17.0 - avformat.h
   Add AVMFT_FLAG_BITEXACT flag. Muxers now use it instead of checking
   CODEC_FLAG_BITEXACT on the first stream.
