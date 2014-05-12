@@ -189,6 +189,8 @@ following option is recognized:
 set the file name to use for the report; @code{%p} is expanded to the name
 of the program, @code{%t} is expanded to a timestamp, @code{%%} is expanded
 to a plain @code{%}
+@item level
+set the log level
 @end table
 
 Errors in parsing the environment variable are not fatal, and will not
