@@ -40,12 +40,12 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 #define MIN_TB_ADDR_ZS(x, y) \
     s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
 #define EXTEND(ptr, start, length)                                             \
-        for (i = start; i < (start) + (length); i += 4)                          \
+        for (i = start; i < (start) + (length); i += 4)                        \
             AV_WN4P(&(ptr[i]), a)
 #define EXTEND_RIGHT_CIP(ptr, start, length)                                   \
-        for (i = start; i < (start) + (length); i += 4)                          \
+        for (i = start; i < (start) + (length); i += 4)                        \
             if (!IS_INTRA(i, -1))                                              \
-                AV_WN4P(&ptr[i], a);                                          \
+                AV_WN4P(&ptr[i], a);                                           \
             else                                                               \
                 a = PIXEL_SPLAT_X4(ptr[i+3])
 #define EXTEND_LEFT_CIP(ptr, start, length) \
@@ -53,15 +53,15 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             if (!IS_INTRA(i - 1, -1)) \
                 ptr[i - 1] = ptr[i]
 #define EXTEND_UP_CIP(ptr, start, length)                                      \
-        for (i = (start); i > (start) - (length); i -= 4)                        \
+        for (i = (start); i > (start) - (length); i -= 4)                      \
             if (!IS_INTRA(-1, i - 3))                                          \
-                AV_WN4P(&ptr[i - 3], a);                                        \
+                AV_WN4P(&ptr[i - 3], a);                                       \
             else                                                               \
                 a = PIXEL_SPLAT_X4(ptr[i - 3])
-#define EXTEND_DOWN_CIP(ptr, start, length)                                   \
-        for (i = start; i < (start) + (length); i += 4)                          \
+#define EXTEND_DOWN_CIP(ptr, start, length)                                    \
+        for (i = start; i < (start) + (length); i += 4)                        \
             if (!IS_INTRA(-1, i))                                              \
-                AV_WN4P(&ptr[i], a);                                          \
+                AV_WN4P(&ptr[i], a);                                           \
             else                                                               \
                 a = PIXEL_SPLAT_X4(ptr[i + 3])
 
@@ -71,9 +71,9 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     int vshift = s->sps->vshift[c_idx];
     int size = (1 << log2_size);
     int size_in_luma_h = size << hshift;
-    int size_in_tbs_h = size_in_luma_h >> s->sps->log2_min_tb_size;
+    int size_in_tbs_h  = size_in_luma_h >> s->sps->log2_min_tb_size;
     int size_in_luma_v = size << vshift;
-    int size_in_tbs_v = size_in_luma_v >> s->sps->log2_min_tb_size;
+    int size_in_tbs_v  = size_in_luma_v >> s->sps->log2_min_tb_size;
     int x = x0 >> hshift;
     int y = y0 >> vshift;
     int x_tb = x0 >> s->sps->log2_min_tb_size;
@@ -88,15 +88,15 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     enum IntraPredMode mode = c_idx ? lc->pu.intra_pred_mode_c :
                               lc->tu.cur_intra_pred_mode;
     pixel4 a;
-    pixel left_array[2 * MAX_TB_SIZE + 1];
-    pixel filtered_left_array[2 * MAX_TB_SIZE + 1];
-    pixel top_array[2 * MAX_TB_SIZE + 1];
-    pixel filtered_top_array[2 * MAX_TB_SIZE + 1];
+    pixel  left_array[2 * MAX_TB_SIZE + 1];
+    pixel  filtered_left_array[2 * MAX_TB_SIZE + 1];
+    pixel  top_array[2 * MAX_TB_SIZE + 1];
+    pixel  filtered_top_array[2 * MAX_TB_SIZE + 1];
 
-    pixel *left          = left_array + 1;
-    pixel *top           = top_array  + 1;
-    pixel *filtered_left = filtered_left_array + 1;
-    pixel *filtered_top  = filtered_top_array  + 1;
+    pixel  *left          = left_array + 1;
+    pixel  *top           = top_array  + 1;
+    pixel  *filtered_left = filtered_left_array + 1;
+    pixel  *filtered_top  = filtered_top_array  + 1;
 
     int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs_v);
     int cand_left        = lc->na.cand_left;
@@ -105,9 +105,9 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     int cand_up_right    = lc->na.cand_up_right && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs_h, y_tb - 1);
 
     int bottom_left_size = (FFMIN(y0 + 2 * size_in_luma_v, s->sps->height) -
-                            (y0 + size_in_luma_v)) >> vshift;
+                           (y0 + size_in_luma_v)) >> vshift;
     int top_right_size   = (FFMIN(x0 + 2 * size_in_luma_h, s->sps->width) -
-                            (x0 + size_in_luma_h)) >> hshift;
+                           (x0 + size_in_luma_h)) >> hshift;
 
     if (s->pps->constrained_intra_pred_flag == 1) {
         int size_in_luma_pu_v = PU(size_in_luma_v);
@@ -121,7 +121,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             int y_bottom_pu = PU(y0 + size_in_luma_v);
             int max = FFMIN(size_in_luma_pu_v, s->sps->min_pu_height - y_bottom_pu);
             cand_bottom_left = 0;
-            for (i = 0; i < max; i+=2)
+            for (i = 0; i < max; i += 2)
                 cand_bottom_left |= (MVF(x_left_pu, y_bottom_pu + i).pred_flag == PF_INTRA);
         }
         if (cand_left == 1 && on_pu_edge_x) {
@@ -129,7 +129,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             int y_left_pu   = PU(y0);
             int max = FFMIN(size_in_luma_pu_v, s->sps->min_pu_height - y_left_pu);
             cand_left = 0;
-            for (i = 0; i < max; i+=2)
+            for (i = 0; i < max; i += 2)
                 cand_left |= (MVF(x_left_pu, y_left_pu + i).pred_flag == PF_INTRA);
         }
         if (cand_up_left == 1) {
@@ -142,7 +142,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             int y_top_pu    = PU(y0 - 1);
             int max = FFMIN(size_in_luma_pu_h, s->sps->min_pu_width - x_top_pu);
             cand_up = 0;
-            for (i = 0; i < max; i+=2)
+            for (i = 0; i < max; i += 2)
                 cand_up |= (MVF(x_top_pu + i, y_top_pu).pred_flag == PF_INTRA);
         }
         if (cand_up_right == 1 && on_pu_edge_y) {
@@ -150,7 +150,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             int x_right_pu  = PU(x0 + size_in_luma_h);
             int max = FFMIN(size_in_luma_pu_h, s->sps->min_pu_width - x_right_pu);
             cand_up_right = 0;
-            for (i = 0; i < max; i+=2)
+            for (i = 0; i < max; i += 2)
                 cand_up_right |= (MVF(x_right_pu + i, y_top_pu).pred_flag == PF_INTRA);
         }
         memset(left, 128, 2 * MAX_TB_SIZE*sizeof(pixel));
