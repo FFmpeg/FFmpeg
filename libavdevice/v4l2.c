@@ -427,10 +427,7 @@ static void mmap_release_buffer(void *opaque, uint8_t *data)
 #if HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)
 static int64_t av_gettime_monotonic(void)
 {
-    struct timespec tv;
-
-    clock_gettime(CLOCK_MONOTONIC, &tv);
-    return (int64_t)tv.tv_sec * 1000000 + tv.tv_nsec / 1000;
+    return av_gettime_relative();
 }
 #endif
 
