@@ -251,6 +251,8 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
         if (lpd.buf_size > id3len + 16) {
             lpd.buf      += id3len;
             lpd.buf_size -= id3len;
+        } else if (id3len >= PROBE_BUF_MAX) {
+            nodat = 2;
         } else
             nodat = 1;
     }
@@ -274,7 +276,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
         } else if (score == score_max)
             fmt = NULL;
     }
-    if (nodat)
+    if (nodat == 1)
         score_max = FFMIN(AVPROBE_SCORE_EXTENSION / 2 - 1, score_max);
     *score_ret = score_max;
 
