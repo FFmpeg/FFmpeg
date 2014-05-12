@@ -4957,6 +4957,8 @@ if enabled icc; then
     check_ldflags -wd10156,11030
     # icc 11.0 and 11.1 work with ebp_available, but don't pass the test
     enable ebp_available
+    # The test above does not test linking
+    enabled lto && disable symver_asm_label
     if enabled x86_32; then
         icc_version=$($cc -dumpversion)
         test ${icc_version%%.*} -ge 11 &&
