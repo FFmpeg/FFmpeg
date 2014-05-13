@@ -726,6 +726,15 @@ prepend(){
     eval "$var=\"$* \$$var\""
 }
 
+unique(){
+    var=$1
+    uniq_list=""
+    for tok in $(eval echo \$$var); do
+        uniq_list="$(filter_out $tok $uniq_list) $tok"
+    done
+    eval "$var=\"${uniq_list}\""
+}
+
 add_cppflags(){
     append CPPFLAGS "$@"
 }
@@ -2537,11 +2546,11 @@ scaling_video_example_deps="avutil swscale"
 transcode_aac_example_deps="avcodec avformat swresample"
 transcoding_example_deps="avfilter avcodec avformat avutil"
 
-# libraries
+# libraries, in linking order
 avcodec_deps="avutil"
-avdevice_deps="avutil avcodec avformat"
+avdevice_deps="avformat avcodec avutil"
 avfilter_deps="avutil"
-avformat_deps="avutil avcodec"
+avformat_deps="avcodec avutil"
 avresample_deps="avutil"
 postproc_deps="avutil gpl"
 swscale_deps="avutil"
@@ -5104,6 +5113,42 @@ for thread in $THREADS_LIST; do
     fi
 done
 
+# conditional library dependencies, in linking order
+enabled aconvert_filter     && prepend avfilter_deps "swresample"
+enabled amovie_filter       && prepend avfilter_deps "avformat avcodec"
+enabled aresample_filter    && prepend avfilter_deps "swresample"
+enabled asyncts_filter      && prepend avfilter_deps "avresample"
+enabled atempo_filter       && prepend avfilter_deps "avcodec"
+enabled decimate_filter     && prepend avfilter_deps "avcodec"
+enabled deshake_filter      && prepend avfilter_deps "avcodec"
+enabled elbg_filter         && prepend avfilter_deps "avcodec"
+enabled mcdeint_filter      && prepend avfilter_deps "avcodec"
+enabled movie_filter    && prepend avfilter_deps "avformat avcodec"
+enabled mp_filter           && prepend avfilter_deps "avcodec"
+enabled pan_filter          && prepend avfilter_deps "swresample"
+enabled pp_filter           && prepend avfilter_deps "postproc"
+enabled removelogo_filter   && prepend avfilter_deps "avformat avcodec swscale"
+enabled resample_filter && prepend avfilter_deps "avresample"
+enabled sab_filter          && prepend avfilter_deps "swscale"
+enabled scale_filter    && prepend avfilter_deps "swscale"
+enabled showspectrum_filter && prepend avfilter_deps "avcodec"
+enabled smartblur_filter    && prepend avfilter_deps "swscale"
+enabled subtitles_filter    && prepend avfilter_deps "avformat avcodec"
+
+enabled lavfi_indev         && prepend avdevice_deps "avfilter"
+
+expand_deps(){
+    lib_deps=${1}_deps
+    eval "deps=\$$lib_deps"
+    append $lib_deps $(map 'eval echo \$${v}_deps' $deps)
+    unique $lib_deps
+}
+
+#we have to remove gpl from the deps here as some code assumes all lib deps are libs
+postproc_deps="$(filter_out 'gpl' $postproc_deps)"
+
+map 'expand_deps $v' $LIBRARY_LIST
+
 echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
@@ -5345,6 +5390,8 @@ get_version(){
 
 map 'get_version $v' $LIBRARY_LIST
 
+map 'eval echo "FFLIBS-${v}=\$${v}_deps" >> config.mak' $LIBRARY_LIST
+
 print_program_libs(){
     eval "program_libs=\$${1}_libs"
     eval echo "LIBS-${1}=${program_libs}" >> config.mak
@@ -5421,13 +5468,18 @@ fi
 
 # build pkg-config files
 
+lib_version(){
+    eval printf "\"lib${1}${build_suffix} >= \$LIB$(toupper ${1})_VERSION, \""
+}
+
 pkgconfig_generate(){
     name=$1
     shortname=${name#lib}${build_suffix}
     comment=$2
     version=$3
     libs=$4
-    requires=$5
+    requires=$(map 'lib_version $v' $(eval echo \$${name#lib}_deps))
+    requires=${requires%, }
     enabled ${name#lib} || return 0
     mkdir -p $name
     cat <<EOF > $name/$name${build_suffix}.pc
@@ -5466,24 +5518,12 @@ Cflags: -I\${includedir}
 EOF
 }
 
-lavfi_libs="libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-enabled libavfilter_deps_avcodec    && prepend lavfi_libs "libavcodec${build_suffix} = $LIBAVCODEC_VERSION,"
-enabled libavfilter_deps_avformat   && prepend lavfi_libs "libavformat${build_suffix} = $LIBAVFORMAT_VERSION,"
-enabled libavfilter_deps_avresample && prepend lavfi_libs "libavresample${build_suffix} = $LIBAVRESAMPLE_VERSION,"
-enabled libavfilter_deps_swscale    && prepend lavfi_libs "libswscale${build_suffix} = $LIBSWSCALE_VERSION,"
-enabled libavfilter_deps_swresample && prepend lavfi_libs "libswresample${build_suffix} = $LIBSWRESAMPLE_VERSION,"
-enabled libavfilter_deps_postproc   && prepend lavfi_libs "libpostproc${build_suffix} = $LIBPOSTPROC_VERSION,"
-lavfi_libs=${lavfi_libs%, }
-
-lavd_libs="libavformat${build_suffix} = $LIBAVFORMAT_VERSION"
-enabled lavfi_indev && prepend lavd_libs "libavfilter${build_suffix} = $LIBAVFILTER_VERSION,"
-
 pkgconfig_generate libavutil     "FFmpeg utility library"               "$LIBAVUTIL_VERSION"     "$LIBM"
-pkgconfig_generate libavcodec    "FFmpeg codec library"                 "$LIBAVCODEC_VERSION"    "$extralibs" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-pkgconfig_generate libavformat   "FFmpeg container format library"      "$LIBAVFORMAT_VERSION"   "$extralibs" "libavcodec${build_suffix} = $LIBAVCODEC_VERSION"
-pkgconfig_generate libavdevice   "FFmpeg device handling library"       "$LIBAVDEVICE_VERSION"   "$extralibs" "$lavd_libs"
-pkgconfig_generate libavfilter   "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION"   "$extralibs" "$lavfi_libs"
-pkgconfig_generate libpostproc   "FFmpeg postprocessing library"        "$LIBPOSTPROC_VERSION"   ""           "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$extralibs" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-pkgconfig_generate libswscale    "FFmpeg image rescaling library"       "$LIBSWSCALE_VERSION"    "$LIBM"      "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-pkgconfig_generate libswresample "FFmpeg audio resampling library"      "$LIBSWRESAMPLE_VERSION" "$LIBM"      "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
+pkgconfig_generate libavcodec    "FFmpeg codec library"                 "$LIBAVCODEC_VERSION"    "$extralibs"
+pkgconfig_generate libavformat   "FFmpeg container format library"      "$LIBAVFORMAT_VERSION"   "$extralibs"
+pkgconfig_generate libavdevice   "FFmpeg device handling library"       "$LIBAVDEVICE_VERSION"   "$extralibs"
+pkgconfig_generate libavfilter   "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION"   "$extralibs"
+pkgconfig_generate libpostproc   "FFmpeg postprocessing library"        "$LIBPOSTPROC_VERSION"   ""
+pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$extralibs"
+pkgconfig_generate libswscale    "FFmpeg image rescaling library"       "$LIBSWSCALE_VERSION"    "$LIBM"
+pkgconfig_generate libswresample "FFmpeg audio resampling library"      "$LIBSWRESAMPLE_VERSION" "$LIBM"

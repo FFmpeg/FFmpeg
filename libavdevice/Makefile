@@ -1,8 +1,6 @@
 include $(SUBDIR)../config.mak
 
 NAME    = avdevice
-FFLIBS  = avformat avcodec avutil
-FFLIBS-$(CONFIG_LAVFI_INDEV) += avfilter
 
 HEADERS = avdevice.h                                                    \
           version.h                                                     \
