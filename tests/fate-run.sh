@@ -71,6 +71,11 @@ run(){
     $target_exec $target_path/"$@"
 }
 
+runecho(){
+    test "${V:-0}" -gt 0 && echo "$target_exec" $target_path/"$@" >&3
+    $target_exec $target_path/"$@" >&3
+}
+
 probefmt(){
     run ffprobe -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
 }
