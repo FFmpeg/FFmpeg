@@ -1,8 +1,6 @@
 include $(SUBDIR)../config.mak
 
 NAME = avfilter
-EBUR128LIBS-$(CONFIG_SWRESAMPLE)              = swresample
-FFLIBS-$(CONFIG_EBUR128_FILTER)              += $(EBUR128LIBS-yes)
 
 HEADERS = asrc_abuffer.h                                                \
           avcodec.h                                                     \
