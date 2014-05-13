@@ -363,7 +363,8 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 }
 
 static av_always_inline void FUNC(pred_planar)(uint8_t *_src, const uint8_t *_top,
-                              const uint8_t *_left, ptrdiff_t stride, int trafo_size)
+                                  const uint8_t *_left, ptrdiff_t stride,
+                                  int trafo_size)
 {
     int x, y;
     pixel *src        = (pixel *)_src;
@@ -472,14 +473,14 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
             int fact = ((y + 1) * angle) & 31;
             if (fact) {
                 for (x = 0; x < size; x += 4) {
-                    POS(x, y) = ((32 - fact) * ref[x + idx + 1] +
-                                       fact  * ref[x + idx + 2] + 16) >> 5;
+                    POS(x    , y) = ((32 - fact) * ref[x + idx + 1] +
+                                           fact  * ref[x + idx + 2] + 16) >> 5;
                     POS(x + 1, y) = ((32 - fact) * ref[x + 1 + idx + 1] +
-                                 fact  * ref[x + 1 + idx + 2] + 16) >> 5;
+                                           fact  * ref[x + 1 + idx + 2] + 16) >> 5;
                     POS(x + 2, y) = ((32 - fact) * ref[x + 2 + idx + 1] +
-                                     fact  * ref[x + 2 + idx + 2] + 16) >> 5;
+                                           fact  * ref[x + 2 + idx + 2] + 16) >> 5;
                     POS(x + 3, y) = ((32 - fact) * ref[x + 3 + idx + 1] +
-                                     fact  * ref[x + 3 + idx + 2] + 16) >> 5;
+                                           fact  * ref[x + 3 + idx + 2] + 16) >> 5;
                 }
             } else {
                 for (x = 0; x < size; x += 4)
@@ -515,10 +516,10 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
         }
         if (mode == 10 && c_idx == 0 && size < 32) {
             for (x = 0; x < size; x += 4) {
-                POS(x, 0) = av_clip_pixel(left[0] + ((top[x] - top[-1]) >> 1));
-                POS(x+1, 0) = av_clip_pixel(left[0] + ((top[x+1] - top[-1]) >> 1));
-                POS(x+2, 0) = av_clip_pixel(left[0] + ((top[x+2] - top[-1]) >> 1));
-                POS(x+3, 0) = av_clip_pixel(left[0] + ((top[x+3] - top[-1]) >> 1));
+                POS(x,     0) = av_clip_pixel(left[0] + ((top[x    ] - top[-1]) >> 1));
+                POS(x + 1, 0) = av_clip_pixel(left[0] + ((top[x + 1] - top[-1]) >> 1));
+                POS(x + 2, 0) = av_clip_pixel(left[0] + ((top[x + 2] - top[-1]) >> 1));
+                POS(x + 3, 0) = av_clip_pixel(left[0] + ((top[x + 3] - top[-1]) >> 1));
             }
         }
     }
