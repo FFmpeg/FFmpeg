@@ -2553,6 +2553,7 @@ avfilter_deps="avutil"
 avformat_deps="avcodec avutil"
 avresample_deps="avutil"
 postproc_deps="avutil gpl"
+swresample_deps="avutil"
 swscale_deps="avutil"
 
 # programs
