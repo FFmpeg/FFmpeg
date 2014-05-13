@@ -1397,6 +1397,10 @@ HEADERS_LIST="
     winsock2_h
 "
 
+INTRINSICS_LIST="
+    intrinsics_neon
+"
+
 MATH_FUNCS="
     atanf
     atan2f
@@ -1512,6 +1516,7 @@ HAVE_LIST="
     $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
     $HEADERS_LIST
+    $INTRINSICS_LIST
     $MATH_FUNCS
     $SYSTEM_FUNCS
     $THREADS_LIST
@@ -1651,6 +1656,7 @@ armv6_deps="arm"
 armv6t2_deps="arm"
 armv8_deps="aarch64"
 neon_deps_any="aarch64 arm"
+intrinsics_neon_deps="neon"
 vfp_deps_any="aarch64 arm"
 vfpv3_deps="vfp"
 
@@ -2196,6 +2202,7 @@ nogas=":"
 # machine
 arch_default=$(uname -m)
 cpu="generic"
+intrinsics="none"
 
 # OS
 target_os_default=$(tolower $(uname -s))
@@ -3928,6 +3935,8 @@ EOF
 
 fi
 
+check_code cc arm_neon.h "int64x2_t test" && enable intrinsics_neon
+
 check_ldflags -Wl,--as-needed
 
 if check_func dlopen; then
@@ -4423,6 +4432,8 @@ enabled_all dxva2 CoTaskMemFree &&
 ! enabled_any memalign posix_memalign aligned_malloc &&
     enabled_any $need_memalign && enable memalign_hack
 
+map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
+
 for thread in $THREADS_LIST; do
     if enabled $thread; then
         test -n "$thread_type" &&
@@ -4555,6 +4566,7 @@ MANDIR=\$(DESTDIR)$mandir
 SRC_PATH=$source_path
 CC_IDENT=$cc_ident
 ARCH=$arch
+INTRINSICS=$intrinsics
 CC=$cc
 AS=$as
 LD=$ld
