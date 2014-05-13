@@ -8,7 +8,7 @@ all: all-yes
 include $(SRC_PATH)/arch.mak
 
 OBJS      += $(OBJS-yes)
-FFLIBS    := $(FFLIBS-$(NAME)) $(FFLIBS-yes) $(FFLIBS)
+FFLIBS    := $(FFLIBS-$(if $(NAME),$(NAME),no)) $(FFLIBS-yes) $(FFLIBS)
 TESTPROGS += $(TESTPROGS-yes)
 
 LDLIBS       = $(FFLIBS:%=%$(BUILDSUF))
