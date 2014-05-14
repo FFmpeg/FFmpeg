@@ -70,7 +70,7 @@ static int nut_write_header(AVFormatContext * avf) {
     nut_stream_header_tt * s;
     int i;
 
-    priv->s = s = av_mallocz((avf->nb_streams + 1) * sizeof*s);
+    priv->s = s = av_mallocz_array(avf->nb_streams + 1, sizeof*s);
     if(!s)
         return AVERROR(ENOMEM);
 
