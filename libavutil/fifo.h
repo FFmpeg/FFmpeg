@@ -65,7 +65,7 @@ void av_fifo_reset(AVFifoBuffer *f);
  * @param f AVFifoBuffer to read from
  * @return size
  */
-int av_fifo_size(const AVFifoBuffer *f);
+int av_fifo_size(FF_CONST_AVUTIL53 AVFifoBuffer *f);
 
 /**
  * Return the amount of space in bytes in the AVFifoBuffer, that is the
@@ -73,7 +73,7 @@ int av_fifo_size(const AVFifoBuffer *f);
  * @param f AVFifoBuffer to write into
  * @return size
  */
-int av_fifo_space(const AVFifoBuffer *f);
+int av_fifo_space(FF_CONST_AVUTIL53 AVFifoBuffer *f);
 
 /**
  * Feed data from an AVFifoBuffer to a user-supplied callback.
