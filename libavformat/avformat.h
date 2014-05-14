@@ -1175,7 +1175,11 @@ typedef struct AVFormatContext {
     AVIOContext *pb;
 
     /* stream info */
-    int ctx_flags; /**< Format-specific flags, see AVFMTCTX_xx */
+    /**
+     * Flags signalling stream properties. A combination of AVFMTCTX_*.
+     * Set by libavformat.
+     */
+    int ctx_flags;
 
     /**
      * Number of elements in AVFormatContext.streams.
@@ -1233,6 +1237,10 @@ typedef struct AVFormatContext {
     unsigned int packet_size;
     int max_delay;
 
+    /**
+     * Flags modifying the (de)muxer behaviour. A combination of AVFMT_FLAG_*.
+     * Set by the user before avformat_open_input() / avformat_write_header().
+     */
     int flags;
 #define AVFMT_FLAG_GENPTS       0x0001 ///< Generate missing pts even if it requires parsing future frames.
 #define AVFMT_FLAG_IGNIDX       0x0002 ///< Ignore index.
