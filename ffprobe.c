@@ -183,6 +183,7 @@ static const char unit_hertz_str[]          = "Hz"   ;
 static const char unit_byte_str[]           = "byte" ;
 static const char unit_bit_per_second_str[] = "bit/s";
 
+static int nb_streams;
 static uint64_t *nb_streams_packets;
 static uint64_t *nb_streams_frames;
 static int *selected_streams;
@@ -1456,6 +1457,14 @@ static void writer_register_all(void)
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 
+#define REALLOCZ_ARRAY_STREAM(ptr, cur_n, new_n)                        \
+{                                                                       \
+    ret = av_reallocp_array(&(ptr), (new_n), sizeof(*(ptr)));           \
+    if (ret < 0)                                                        \
+        goto end;                                                       \
+    memset( (ptr) + (cur_n), 0, ((new_n) - (cur_n)) * sizeof(*(ptr)) ); \
+}
+
 static inline void show_tags(WriterContext *wctx, AVDictionary *tags, int section_id)
 {
     AVDictionaryEntry *tag = NULL;
@@ -1674,6 +1683,12 @@ static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
         goto end;
     }
     while (!av_read_frame(fmt_ctx, &pkt)) {
+        if (fmt_ctx->nb_streams > nb_streams) {
+            REALLOCZ_ARRAY_STREAM(nb_streams_frames,  nb_streams, fmt_ctx->nb_streams);
+            REALLOCZ_ARRAY_STREAM(nb_streams_packets, nb_streams, fmt_ctx->nb_streams);
+            REALLOCZ_ARRAY_STREAM(selected_streams,   nb_streams, fmt_ctx->nb_streams);
+            nb_streams = fmt_ctx->nb_streams;
+        }
         if (selected_streams[pkt.stream_index]) {
             AVRational tb = fmt_ctx->streams[pkt.stream_index]->time_base;
 
@@ -2117,9 +2132,10 @@ static int probe_file(WriterContext *wctx, const char *filename)
     if (ret < 0)
         return ret;
 
-    nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
-    nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
-    selected_streams   = av_calloc(fmt_ctx->nb_streams, sizeof(*selected_streams));
+    nb_streams = fmt_ctx->nb_streams;
+    REALLOCZ_ARRAY_STREAM(nb_streams_frames,0,fmt_ctx->nb_streams);
+    REALLOCZ_ARRAY_STREAM(nb_streams_packets,0,fmt_ctx->nb_streams);
+    REALLOCZ_ARRAY_STREAM(selected_streams,0,fmt_ctx->nb_streams);
 
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         if (stream_specifier) {
