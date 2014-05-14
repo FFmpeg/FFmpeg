@@ -2533,6 +2533,20 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
              filesize > (DURATION_MAX_READ_SIZE << retry) &&
              ++retry <= DURATION_MAX_RETRY);
 
+    /* warn about audio/video streams which duration could not be estimated */
+    for (i = 0; i < ic->nb_streams; i++) {
+        st = ic->streams[i];
+        if (st->duration == AV_NOPTS_VALUE) {
+            switch (st->codec->codec_type) {
+            case AVMEDIA_TYPE_VIDEO:
+            case AVMEDIA_TYPE_AUDIO:
+                if (st->start_time != AV_NOPTS_VALUE || st->first_dts  != AV_NOPTS_VALUE) {
+                    av_log(ic, AV_LOG_DEBUG, "stream %d : no PTS found at end of file, duration not set\n", i);
+                } else
+                    av_log(ic, AV_LOG_DEBUG, "stream %d : no TS found at start of file, duration not set\n", i);
+            }
+        }
+    }
     fill_all_stream_timings(ic);
 
     avio_seek(ic->pb, old_offset, SEEK_SET);
