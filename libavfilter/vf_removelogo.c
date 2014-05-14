@@ -312,18 +312,18 @@ static av_cold int init(AVFilterContext *ctx)
        the filter is applied, the mask size is determined on a pixel
        by pixel basis, with pixels nearer the edge of the logo getting
        smaller mask sizes. */
-    mask = (int ***)av_malloc(sizeof(int **) * (s->max_mask_size + 1));
+    mask = (int ***)av_malloc_array(s->max_mask_size + 1, sizeof(int **));
     if (!mask)
         return AVERROR(ENOMEM);
 
     for (a = 0; a <= s->max_mask_size; a++) {
-        mask[a] = (int **)av_malloc(sizeof(int *) * ((a * 2) + 1));
+        mask[a] = (int **)av_malloc_array((a * 2) + 1, sizeof(int *));
         if (!mask[a]) {
             av_free(mask);
             return AVERROR(ENOMEM);
         }
         for (b = -a; b <= a; b++) {
-            mask[a][b + a] = (int *)av_malloc(sizeof(int) * ((a * 2) + 1));
+            mask[a][b + a] = (int *)av_malloc_array((a * 2) + 1, sizeof(int));
             if (!mask[a][b + a]) {
                 av_free(mask);
                 return AVERROR(ENOMEM);
