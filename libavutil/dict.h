@@ -31,6 +31,8 @@
 #ifndef AVUTIL_DICT_H
 #define AVUTIL_DICT_H
 
+#include "version.h"
+
 /**
  * @addtogroup lavu_dict AVDictionary
  * @ingroup lavu_data
@@ -98,7 +100,7 @@ typedef struct AVDictionary AVDictionary;
  * @return found entry or NULL in case no matching entry was found in the dictionary
  */
 AVDictionaryEntry *
-av_dict_get(const AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
+av_dict_get(FF_CONST_AVUTIL53 AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
 
 /**
  * Get number of entries in dictionary.
@@ -148,7 +150,7 @@ int av_dict_parse_string(AVDictionary **pm, const char *str,
  * @param flags flags to use when setting entries in *dst
  * @note metadata is read using the AV_DICT_IGNORE_SUFFIX flag
  */
-void av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags);
+void av_dict_copy(AVDictionary **dst, FF_CONST_AVUTIL53 AVDictionary *src, int flags);
 
 /**
  * Free all the memory allocated for an AVDictionary struct
