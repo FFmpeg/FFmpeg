@@ -133,7 +133,7 @@ static void denoise_depth(HQDN3DContext *s,
     uint16_t *frame_ant = *frame_ant_ptr;
     if (!frame_ant) {
         uint8_t *frame_src = src;
-        *frame_ant_ptr = frame_ant = av_malloc(w*h*sizeof(uint16_t));
+        *frame_ant_ptr = frame_ant = av_malloc_array(w, h*sizeof(uint16_t));
         for (y = 0; y < h; y++, src += sstride, frame_ant += w)
             for (x = 0; x < w; x++)
                 frame_ant[x] = LOAD(x);
@@ -259,7 +259,7 @@ static int config_input(AVFilterLink *inlink)
     s->vsub  = desc->log2_chroma_h;
     s->depth = desc->comp[0].depth_minus1+1;
 
-    s->line = av_malloc(inlink->w * sizeof(*s->line));
+    s->line = av_malloc_array(inlink->w, sizeof(*s->line));
     if (!s->line)
         return AVERROR(ENOMEM);
 
