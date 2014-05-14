@@ -1127,7 +1127,7 @@ static int mkv_write_header(AVFormatContext *s)
             version = 4;
     }
 
-    mkv->tracks = av_mallocz(s->nb_streams * sizeof(*mkv->tracks));
+    mkv->tracks = av_mallocz_array(s->nb_streams, sizeof(*mkv->tracks));
     if (!mkv->tracks)
         return AVERROR(ENOMEM);
 
