@@ -1153,6 +1153,12 @@ Set raise error timeout, expressed in microseconds.
 
 This option is only relevant in read mode: if no data arrived in more
 than this time interval, raise error.
+
+@item broadcast=@var{1|0}
+Explicitly allow or disallow UDP broadcasting.
+
+Note that broadcasting may not work properly on networks having
+a broadcast storm protection.
 @end table
 
 @subsection Examples
