@@ -92,8 +92,6 @@ typedef struct OpusRangeCoder {
 
 typedef struct SilkContext SilkContext;
 
-typedef struct CeltIMDCTContext CeltIMDCTContext;
-
 typedef struct CeltContext CeltContext;
 
 typedef struct OpusPacket {
@@ -397,22 +395,6 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
                               float *output[2],
                               enum OpusBandwidth bandwidth, int coded_channels,
                               int duration_ms);
-
-/**
- * Init an iMDCT of the length 2 * 15 * (2^N)
- */
-int ff_celt_imdct_init(CeltIMDCTContext **s, int N);
-
-/**
- * Free an iMDCT.
- */
-void ff_celt_imdct_uninit(CeltIMDCTContext **s);
-
-/**
- * Calculate the middle half of the iMDCT
- */
-void ff_celt_imdct_half(CeltIMDCTContext *s, float *dst, const float *src,
-                        int src_stride, float scale);
 
 int ff_celt_init(AVCodecContext *avctx, CeltContext **s, int output_channels);
 

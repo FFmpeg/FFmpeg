@@ -29,6 +29,7 @@
 #include "libavutil/float_dsp.h"
 
 #include "opus.h"
+#include "opus_imdct.h"
 
 enum CeltSpread {
     CELT_SPREAD_NONE,
@@ -2095,8 +2096,8 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
         for (j = 0; j < s->blocks; j++) {
             float *dst  = frame->buf + 1024 + j * s->blocksize;
 
-            ff_celt_imdct_half(imdct, dst + CELT_OVERLAP / 2, s->coeffs[i] + j,
-                               s->blocks, imdct_scale);
+            imdct->imdct_half(imdct, dst + CELT_OVERLAP / 2, s->coeffs[i] + j,
+                              s->blocks, imdct_scale);
             s->dsp.vector_fmul_window(dst, dst, dst + CELT_OVERLAP / 2,
                                       celt_window, CELT_OVERLAP / 2);
         }
