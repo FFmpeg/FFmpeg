@@ -1160,7 +1160,7 @@ static int mkv_write_header(AVFormatContext *s)
     put_ebml_uint(pb, MATROSKA_ID_TIMECODESCALE, 1000000);
     if ((tag = av_dict_get(s->metadata, "title", NULL, 0)))
         put_ebml_string(pb, MATROSKA_ID_TITLE, tag->value);
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+    if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
         uint32_t segment_uid[4];
         AVLFG lfg;
 

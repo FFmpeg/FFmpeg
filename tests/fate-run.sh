@@ -127,7 +127,7 @@ enc_dec_pcm(){
     ffmpeg -flags +bitexact -i ${encfile} -c:a pcm_${pcm_fmt} -f ${dec_fmt} -
 }
 
-FLAGS="-flags +bitexact -sws_flags +accurate_rnd+bitexact"
+FLAGS="-flags +bitexact -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
 DEC_OPTS="-threads $threads -idct simple $FLAGS"
 ENC_OPTS="-threads 1        -idct simple -dct fastint"
 

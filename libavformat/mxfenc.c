@@ -618,7 +618,7 @@ static void mxf_write_identification(AVFormatContext *s)
     mxf_write_metadata_key(pb, 0x013000);
     PRINT_KEY(s, "identification key", pb->buf_ptr - 16);
 
-    version = s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT ?
+    version = s->flags & AVFMT_FLAG_BITEXACT ?
         "0.0.0" : AV_STRINGIFY(LIBAVFORMAT_VERSION);
     length = 84 + (strlen(company)+strlen(product)+strlen(version))*2; // utf-16
     klv_encode_ber_length(pb, length);
@@ -1777,7 +1777,7 @@ static int mxf_write_header(AVFormatContext *s)
         mxf->essence_container_count = 1;
     }
 
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
+    if (!(s->flags & AVFMT_FLAG_BITEXACT))
         mxf_gen_umid(s);
 
     for (i = 0; i < s->nb_streams; i++) {

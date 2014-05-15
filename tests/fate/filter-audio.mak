@@ -56,7 +56,7 @@ FATE_FILTER_CHANNELMAP += fate-filter-channelmap-one-int
 fate-filter-channelmap-one-int: tests/data/filtergraphs/channelmap_one_int
 fate-filter-channelmap-one-int: SRC = $(TARGET_PATH)/tests/data/asynth-44100-6.wav
 fate-filter-channelmap-one-int: tests/data/asynth-44100-6.wav
-fate-filter-channelmap-one-int: CMD = md5 -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/channelmap_one_int -f wav -flags +bitexact
+fate-filter-channelmap-one-int: CMD = md5 -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/channelmap_one_int -f wav -fflags +bitexact
 fate-filter-channelmap-one-int: CMP = oneline
 fate-filter-channelmap-one-int: REF = 428b8f9fac6d57147069b97335019ef5
 
@@ -64,7 +64,7 @@ FATE_FILTER_CHANNELMAP += fate-filter-channelmap-one-str
 fate-filter-channelmap-one-str: tests/data/filtergraphs/channelmap_one_str
 fate-filter-channelmap-one-str: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-channelmap-one-str: tests/data/asynth-44100-2.wav
-fate-filter-channelmap-one-str: CMD = md5 -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/channelmap_one_str -f wav -flags +bitexact
+fate-filter-channelmap-one-str: CMD = md5 -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/channelmap_one_str -f wav -fflags +bitexact
 fate-filter-channelmap-one-str: CMP = oneline
 fate-filter-channelmap-one-str: REF = e788890db6a11c2fb29d7c4229072d49
 
