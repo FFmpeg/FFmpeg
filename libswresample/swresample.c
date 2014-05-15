@@ -251,6 +251,10 @@ av_cold void swr_free(SwrContext **ss){
     av_freep(ss);
 }
 
+av_cold void swr_close(SwrContext *s){
+    clear_context(s);
+}
+
 av_cold int swr_init(struct SwrContext *s){
     int ret;
 
