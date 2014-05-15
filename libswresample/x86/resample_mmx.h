@@ -25,6 +25,7 @@
 int swri_resample_int16_mmx2 (struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_int16_sse2 (struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_float_sse  (struct ResampleContext *c,   float *dst, const   float *src, int *consumed, int src_size, int dst_size, int update_ctx);
+int swri_resample_float_avx  (struct ResampleContext *c,   float *dst, const   float *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_double_sse2(struct ResampleContext *c,  double *dst, const  double *src, int *consumed, int src_size, int dst_size, int update_ctx);
 
 DECLARE_ALIGNED(16, const uint64_t, ff_resample_int16_rounder)[2]    = { 0x0000000000004000ULL, 0x0000000000000000ULL};
@@ -186,6 +187,66 @@ __asm__ volatile(\
     "addps      %%xmm3, %%xmm2    \n\t"\
     "movss      %%xmm0, %1        \n\t"\
     "movss      %%xmm2, %2        \n\t"\
+    : "+r" (len),\
+      "=m" (val),\
+      "=m" (v2)\
+    : "r" (((uint8_t*)(src+sample_index))-len),\
+      "r" (((uint8_t*)filter)-len),\
+      "r" (((uint8_t*)(filter+c->filter_alloc))-len)\
+    XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3")\
+);
+
+#define COMMON_CORE_FLT_AVX \
+    x86_reg len= -4*c->filter_length;\
+__asm__ volatile(\
+    "vxorps     %%ymm0, %%ymm0, %%ymm0    \n\t"\
+    "1:                                   \n\t"\
+    "vmovups  (%1, %0), %%ymm1            \n\t"\
+    "vmulps   (%2, %0), %%ymm1, %%ymm1    \n\t"\
+    "vaddps     %%ymm1, %%ymm0, %%ymm0    \n\t"\
+    "add           $32, %0                \n\t"\
+    " js 1b                               \n\t"\
+    "vextractf128   $1, %%ymm0, %%xmm1    \n\t"\
+    "vaddps     %%xmm1, %%xmm0, %%xmm0    \n\t"\
+    "vmovhlps   %%xmm0, %%xmm1, %%xmm1    \n\t"\
+    "vaddps     %%xmm1, %%xmm0, %%xmm0    \n\t"\
+    "vshufps $1, %%xmm0, %%xmm0, %%xmm1   \n\t"\
+    "vaddss     %%xmm1, %%xmm0, %%xmm0    \n\t"\
+    "vmovss     %%xmm0, (%3)              \n\t"\
+    : "+r" (len)\
+    : "r" (((uint8_t*)(src+sample_index))-len),\
+      "r" (((uint8_t*)filter)-len),\
+      "r" (dst+dst_index)\
+    XMM_CLOBBERS_ONLY("%xmm0", "%xmm1")\
+);
+
+#define LINEAR_CORE_FLT_AVX \
+    x86_reg len= -4*c->filter_length;\
+__asm__ volatile(\
+    "vxorps      %%ymm0, %%ymm0, %%ymm0   \n\t"\
+    "vxorps      %%ymm2, %%ymm2, %%ymm2   \n\t"\
+    "1:                                   \n\t"\
+    "vmovups   (%3, %0), %%ymm1           \n\t"\
+    "vmulps    (%5, %0), %%ymm1, %%ymm3   \n\t"\
+    "vmulps    (%4, %0), %%ymm1, %%ymm1   \n\t"\
+    "vaddps      %%ymm1, %%ymm0, %%ymm0   \n\t"\
+    "vaddps      %%ymm3, %%ymm2, %%ymm2   \n\t"\
+    "add            $32, %0               \n\t"\
+    " js 1b                               \n\t"\
+    "vextractf128    $1, %%ymm0, %%xmm1   \n\t"\
+    "vextractf128    $1, %%ymm2, %%xmm3   \n\t"\
+    "vaddps      %%xmm1, %%xmm0, %%xmm0   \n\t"\
+    "vaddps      %%xmm3, %%xmm2, %%xmm2   \n\t"\
+    "vmovhlps    %%xmm0, %%xmm1, %%xmm1   \n\t"\
+    "vmovhlps    %%xmm2, %%xmm3, %%xmm3   \n\t"\
+    "vaddps      %%xmm1, %%xmm0, %%xmm0   \n\t"\
+    "vaddps      %%xmm3, %%xmm2, %%xmm2   \n\t"\
+    "vshufps $1, %%xmm0, %%xmm0, %%xmm1   \n\t"\
+    "vshufps $1, %%xmm2, %%xmm2, %%xmm3   \n\t"\
+    "vaddss      %%xmm1, %%xmm0, %%xmm0   \n\t"\
+    "vaddss      %%xmm3, %%xmm2, %%xmm2   \n\t"\
+    "vmovss      %%xmm0, %1               \n\t"\
+    "vmovss      %%xmm2, %2               \n\t"\
     : "+r" (len),\
       "=m" (val),\
       "=m" (v2)\
