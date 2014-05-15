@@ -29,6 +29,27 @@
 #include "libavcodec/x86/hevcdsp.h"
 
 
+#define LFC_FUNC(DIR, DEPTH, OPT)                                        \
+void ff_hevc_ ## DIR ## _loop_filter_chroma_ ## DEPTH ## _ ## OPT(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+
+#define LFL_FUNC(DIR, DEPTH, OPT)                                        \
+void ff_hevc_ ## DIR ## _loop_filter_luma_ ## DEPTH ## _ ## OPT(uint8_t *_pix, ptrdiff_t stride, int *_beta, int *_tc, \
+uint8_t *_no_p, uint8_t *_no_q);
+
+#define LFC_FUNCS(type, depth) \
+LFC_FUNC(h, depth, sse2)  \
+LFC_FUNC(v, depth, sse2)
+
+#define LFL_FUNCS(type, depth) \
+LFL_FUNC(h, depth, ssse3)  \
+LFL_FUNC(v, depth, ssse3)
+
+LFC_FUNCS(uint8_t,   8)
+LFC_FUNCS(uint8_t,  10)
+LFL_FUNCS(uint8_t,   8)
+LFL_FUNCS(uint8_t,  10)
+
+
 #define mc_rep_func(name, bitd, step, W, opt) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst, ptrdiff_t dststride,                            \
                                                 uint8_t *_src, ptrdiff_t _srcstride, int height,                \
@@ -347,6 +368,14 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
     int mm_flags = av_get_cpu_flags();
 
     if (bit_depth == 8) {
+        if (EXTERNAL_SSE2(mm_flags)) {
+                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
+                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
+        }
+        if (EXTERNAL_SSSE3(mm_flags) && ARCH_X86_64) {
+                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
+                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
+        }
         if (EXTERNAL_SSE4(mm_flags) && ARCH_X86_64) {
 
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels,  8, sse4);
@@ -361,6 +390,14 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
         }
     } else if (bit_depth == 10) {
+        if (EXTERNAL_SSE2(mm_flags)) {
+                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
+                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
+        }
+        if (EXTERNAL_SSSE3(mm_flags) && ARCH_X86_64) {
+                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
+                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
+        }
         if (EXTERNAL_SSE4(mm_flags) && ARCH_X86_64) {
 
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 10, sse4);
