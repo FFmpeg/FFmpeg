@@ -95,19 +95,19 @@ typedef struct SilkContext SilkContext;
 typedef struct CeltContext CeltContext;
 
 typedef struct OpusPacket {
-    int packet_size;                /** packet size */
-    int data_size;                  /** size of the useful data -- packet size - padding */
-    int code;                       /** packet code: specifies the frame layout */
-    int stereo;                     /** whether this packet is mono or stereo */
-    int vbr;                        /** vbr flag */
-    int config;                     /** configuration: tells the audio mode,
+    int packet_size;                /**< packet size */
+    int data_size;                  /**< size of the useful data -- packet size - padding */
+    int code;                       /**< packet code: specifies the frame layout */
+    int stereo;                     /**< whether this packet is mono or stereo */
+    int vbr;                        /**< vbr flag */
+    int config;                     /**< configuration: tells the audio mode,
                                      **                bandwidth, and frame duration */
-    int frame_count;                /** frame count */
-    int frame_offset[MAX_FRAMES];   /** frame offsets */
-    int frame_size[MAX_FRAMES];     /** frame sizes */
-    int frame_duration;             /** frame duration, in samples @ 48kHz */
-    enum OpusMode mode;             /** mode */
-    enum OpusBandwidth bandwidth;   /** bandwidth */
+    int frame_count;                /**< frame count */
+    int frame_offset[MAX_FRAMES];   /**< frame offsets */
+    int frame_size[MAX_FRAMES];     /**< frame sizes */
+    int frame_duration;             /**< frame duration, in samples @ 48kHz */
+    enum OpusMode mode;             /**< mode */
+    enum OpusBandwidth bandwidth;   /**< bandwidth */
 } OpusPacket;
 
 typedef struct OpusStreamContext {
