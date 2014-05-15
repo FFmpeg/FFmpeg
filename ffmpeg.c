@@ -597,6 +597,9 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         ost->frame_number++;
     }
 
+    if (bsfc)
+        av_packet_split_side_data(pkt);
+
     while (bsfc) {
         AVPacket new_pkt = *pkt;
         int a = av_bitstream_filter_filter(bsfc, avctx, NULL,
