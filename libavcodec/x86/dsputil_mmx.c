@@ -177,7 +177,7 @@ void name(int16_t *blocks)                              \
 {                                                       \
     __asm__ volatile (                                  \
         "pxor %%mm7, %%mm7              \n\t"           \
-        "mov     %1,        %%"REG_a"   \n\t"           \
+        "mov  $-"#n",       %%"REG_a"   \n\t"           \
         "1:                             \n\t"           \
         "movq %%mm7,   (%0, %%"REG_a")  \n\t"           \
         "movq %%mm7,  8(%0, %%"REG_a")  \n\t"           \
@@ -185,12 +185,11 @@ void name(int16_t *blocks)                              \
         "movq %%mm7, 24(%0, %%"REG_a")  \n\t"           \
         "add    $32, %%"REG_a"          \n\t"           \
         "js      1b                     \n\t"           \
-        :: "r"(((uint8_t *) blocks) + 128 * n),         \
-           "i"(-128 * n)                                \
+        :: "r"(((uint8_t *) blocks) + n)              \
         : "%"REG_a);                                    \
 }
-CLEAR_BLOCKS(ff_clear_blocks_mmx, 6)
-CLEAR_BLOCKS(ff_clear_block_mmx, 1)
+CLEAR_BLOCKS(ff_clear_blocks_mmx, 768)
+CLEAR_BLOCKS(ff_clear_block_mmx, 128)
 
 void ff_clear_block_sse(int16_t *block)
 {
@@ -212,7 +211,7 @@ void ff_clear_blocks_sse(int16_t *blocks)
 {
     __asm__ volatile (
         "xorps  %%xmm0, %%xmm0              \n"
-        "mov        %1,         %%"REG_a"   \n"
+        "mov     $-768,         %%"REG_a"   \n"
         "1:                                 \n"
         "movaps %%xmm0,    (%0, %%"REG_a")  \n"
         "movaps %%xmm0,  16(%0, %%"REG_a")  \n"
@@ -224,7 +223,7 @@ void ff_clear_blocks_sse(int16_t *blocks)
         "movaps %%xmm0, 112(%0, %%"REG_a")  \n"
         "add      $128,         %%"REG_a"   \n"
         "js         1b                      \n"
-        :: "r"(((uint8_t *) blocks) + 128 * 6), "i"(-128 * 6)
+        :: "r"(((uint8_t *) blocks) + 128 * 6)
         : "%"REG_a);
 }
 
