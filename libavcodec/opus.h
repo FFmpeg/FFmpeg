@@ -29,7 +29,7 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/frame.h"
 
-#include "libavresample/avresample.h"
+#include "libswresample/swresample.h"
 
 #include "avcodec.h"
 #include "get_bits.h"
@@ -137,7 +137,7 @@ typedef struct OpusStreamContext {
     float *out_dummy;
     int    out_dummy_allocated_size;
 
-    AVAudioResampleContext *avr;
+    SwrContext *swr;
     AVAudioFifo *celt_delay;
     int silk_samplerate;
     /* number of samples we still want to get from the resampler */

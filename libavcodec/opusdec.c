@@ -40,7 +40,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 
-#include "libavresample/avresample.h"
+#include "libswresample/swresample.h"
 
 #include "avcodec.h"
 #include "celp_filters.h"
@@ -114,9 +114,9 @@ static int opus_flush_resample(OpusStreamContext *s, int nb_samples)
 {
     int celt_size = av_audio_fifo_size(s->celt_delay);
     int ret, i;
-
-    ret = avresample_convert(s->avr, (uint8_t**)s->out, s->out_size, nb_samples,
-                             NULL, 0, 0);
+    ret = swr_convert(s->swr,
+                      (uint8_t**)s->out, nb_samples,
+                      NULL, 0);
     if (ret < 0)
         return ret;
     else if (ret != nb_samples) {
@@ -159,15 +159,16 @@ static int opus_init_resample(OpusStreamContext *s)
     uint8_t *delayptr[2] = { (uint8_t*)delay, (uint8_t*)delay };
     int ret;
 
-    av_opt_set_int(s->avr, "in_sample_rate", s->silk_samplerate, 0);
-    ret = avresample_open(s->avr);
+    av_opt_set_int(s->swr, "in_sample_rate", s->silk_samplerate, 0);
+    ret = swr_init(s->swr);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error opening the resampler.\n");
         return ret;
     }
 
-    ret = avresample_convert(s->avr, NULL, 0, 0, delayptr, sizeof(delay),
-                             silk_resample_delay[s->packet.bandwidth]);
+    ret = swr_convert(s->swr,
+                      NULL, 0,
+                      delayptr, silk_resample_delay[s->packet.bandwidth]);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Error feeding initial silence to the resampler.\n");
@@ -218,7 +219,7 @@ static int opus_decode_frame(OpusStreamContext *s, const uint8_t *data, int size
 
     /* decode the silk frame */
     if (s->packet.mode == OPUS_MODE_SILK || s->packet.mode == OPUS_MODE_HYBRID) {
-        if (!avresample_is_open(s->avr)) {
+        if (!swr_is_initialized(s->swr)) {
             ret = opus_init_resample(s);
             if (ret < 0)
                 return ret;
@@ -232,12 +233,9 @@ static int opus_decode_frame(OpusStreamContext *s, const uint8_t *data, int size
             av_log(s->avctx, AV_LOG_ERROR, "Error decoding a SILK frame.\n");
             return samples;
         }
-
-        samples = avresample_convert(s->avr, (uint8_t**)s->out, s->out_size,
-                                     s->packet.frame_duration,
-                                     (uint8_t**)s->silk_output,
-                                     sizeof(s->silk_buf[0]),
-                                     samples);
+        samples = swr_convert(s->swr,
+                              (uint8_t**)s->out, s->packet.frame_duration,
+                              (uint8_t**)s->silk_output, samples);
         if (samples < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "Error resampling SILK data.\n");
             return samples;
@@ -374,10 +372,10 @@ static int opus_decode_subpacket(OpusStreamContext *s,
     int i, j, ret;
 
     /* check if we need to flush the resampler */
-    if (avresample_is_open(s->avr)) {
+    if (swr_is_initialized(s->swr)) {
         if (buf) {
             int64_t cur_samplerate;
-            av_opt_get_int(s->avr, "in_sample_rate", 0, &cur_samplerate);
+            av_opt_get_int(s->swr, "in_sample_rate", 0, &cur_samplerate);
             flush_needed = (s->packet.mode == OPUS_MODE_CELT) || (cur_samplerate != s->silk_samplerate);
         } else {
             flush_needed = !!s->delayed_samples;
@@ -406,7 +404,7 @@ static int opus_decode_subpacket(OpusStreamContext *s,
             av_log(s->avctx, AV_LOG_ERROR, "Error flushing the resampler.\n");
             return ret;
         }
-        avresample_close(s->avr);
+        swr_close(s->swr);
         output_samples += s->delayed_samples;
         s->delayed_samples = 0;
 
@@ -555,7 +553,7 @@ static av_cold void opus_decode_flush(AVCodecContext *ctx)
 
         if (s->celt_delay)
             av_audio_fifo_drain(s->celt_delay, av_audio_fifo_size(s->celt_delay));
-        avresample_close(s->avr);
+        swr_close(s->swr);
 
         ff_silk_flush(s->silk);
         ff_celt_flush(s->celt);
@@ -577,7 +575,7 @@ static av_cold int opus_decode_close(AVCodecContext *avctx)
         s->out_dummy_allocated_size = 0;
 
         av_audio_fifo_free(s->celt_delay);
-        avresample_free(&s->avr);
+        swr_free(&s->swr);
     }
 
     av_freep(&c->streams);
@@ -627,16 +625,17 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
 
         s->fdsp = &c->fdsp;
 
-        s->avr = avresample_alloc_context();
-        if (!s->avr)
+        s->swr =swr_alloc();
+        if (!s->swr)
             goto fail;
 
         layout = (s->output_channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
-        av_opt_set_int(s->avr, "in_sample_fmt",      avctx->sample_fmt,  0);
-        av_opt_set_int(s->avr, "out_sample_fmt",     avctx->sample_fmt,  0);
-        av_opt_set_int(s->avr, "in_channel_layout",  layout,             0);
-        av_opt_set_int(s->avr, "out_channel_layout", layout,             0);
-        av_opt_set_int(s->avr, "out_sample_rate",    avctx->sample_rate, 0);
+        av_opt_set_int(s->swr, "in_sample_fmt",      avctx->sample_fmt,  0);
+        av_opt_set_int(s->swr, "out_sample_fmt",     avctx->sample_fmt,  0);
+        av_opt_set_int(s->swr, "in_channel_layout",  layout,             0);
+        av_opt_set_int(s->swr, "out_channel_layout", layout,             0);
+        av_opt_set_int(s->swr, "out_sample_rate",    avctx->sample_rate, 0);
+        av_opt_set_int(s->swr, "filter_size",        16,                 0);
 
         ret = ff_silk_init(avctx, &s->silk, s->output_channels);
         if (ret < 0)
