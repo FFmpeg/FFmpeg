@@ -2110,6 +2110,7 @@ nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="audio_frame_queue mdct sinewin"
 nuv_decoder_select="dsputil lzo"
 on2avc_decoder_select="mdct"
+opus_decoder_deps="avresample"
 png_decoder_select="zlib"
 png_encoder_select="dsputil zlib"
 prores_decoder_select="dsputil"
@@ -5138,6 +5139,8 @@ enabled smartblur_filter    && prepend avfilter_deps "swscale"
 enabled subtitles_filter    && prepend avfilter_deps "avformat avcodec"
 
 enabled lavfi_indev         && prepend avdevice_deps "avfilter"
+
+enabled opus_decoder    && prepend avcodec_deps "avresample"
 
 expand_deps(){
     lib_deps=${1}_deps

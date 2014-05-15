@@ -23,6 +23,7 @@ version <next>:
 - support for decoding through DXVA2 in ffmpeg
 - libbs2b-based stereo-to-binaural audio filter
 - libx264 reference frames count limiting depending on level
+- native Opus decoder
 
 
 version 2.2:
