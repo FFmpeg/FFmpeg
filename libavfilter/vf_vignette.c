@@ -268,6 +268,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
