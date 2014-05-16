@@ -959,6 +959,15 @@ enum AVPacketSideDataType {
      * ReplayGain information in form of the AVReplayGain struct.
      */
     AV_PKT_DATA_REPLAYGAIN,
+
+    /**
+     * This side data contains a 3x3 transformation matrix describing an affine
+     * transformation that needs to be applied to the decoded video frames for
+     * correct presentation.
+     *
+     * See libavutil/display.h for a detailed description of the data.
+     */
+    AV_PKT_DATA_DISPLAYMATRIX,
 };
 
 typedef struct AVPacketSideData {

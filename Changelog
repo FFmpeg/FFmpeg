@@ -26,6 +26,7 @@ version <next>:
 - support for decoding through DXVA2 in avconv
 - libbs2b-based stereo-to-binaural audio filter
 - native Opus decoder
+- display matrix export and rotation api
 
 
 version 10:
