@@ -155,8 +155,8 @@ static int opus_flush_resample(OpusStreamContext *s, int nb_samples)
 
 static int opus_init_resample(OpusStreamContext *s)
 {
-    float delay[16] = { 0.0 };
-    uint8_t *delayptr[2] = { (uint8_t*)delay, (uint8_t*)delay };
+    static const float delay[16] = { 0.0 };
+    const uint8_t *delayptr[2] = { (uint8_t*)delay, (uint8_t*)delay };
     int ret;
 
     av_opt_set_int(s->swr, "in_sample_rate", s->silk_samplerate, 0);
@@ -235,7 +235,7 @@ static int opus_decode_frame(OpusStreamContext *s, const uint8_t *data, int size
         }
         samples = swr_convert(s->swr,
                               (uint8_t**)s->out, s->packet.frame_duration,
-                              (uint8_t**)s->silk_output, samples);
+                              (const uint8_t**)s->silk_output, samples);
         if (samples < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "Error resampling SILK data.\n");
             return samples;
