@@ -200,7 +200,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     unsigned x, y;
     AVFilterContext *ctx = inlink->dst;
     VignetteContext *s = ctx->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
