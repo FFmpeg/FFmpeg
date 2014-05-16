@@ -2530,7 +2530,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
             av_free_packet(pkt);
         }
     } while (end_time == AV_NOPTS_VALUE &&
-             filesize > (DURATION_MAX_READ_SIZE << retry) &&
+             offset &&
              ++retry <= DURATION_MAX_RETRY);
 
     /* warn about audio/video streams which duration could not be estimated */
