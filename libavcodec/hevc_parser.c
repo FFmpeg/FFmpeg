@@ -169,7 +169,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             s->picture_structure = h->picture_struct;
             s->field_order = h->picture_struct;
 
-            if (h->nal_unit_type >= 16 && h->nal_unit_type <= 23) {
+            if (IS_IRAP(h)) {
                 s->key_frame = 1;
                 sh->no_output_of_prior_pics_flag = get_bits1(gb);
             }
