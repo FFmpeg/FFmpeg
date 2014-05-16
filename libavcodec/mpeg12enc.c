@@ -240,11 +240,11 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     unsigned int vbv_buffer_size, fps, v;
     int i, constraint_parameter_flag;
     uint64_t time_code;
-    float best_aspect_error = 1E10;
-    float aspect_ratio      = av_q2d(s->avctx->sample_aspect_ratio);
+    int64_t best_aspect_error = INT64_MAX;
+    AVRational aspect_ratio = s->avctx->sample_aspect_ratio;
 
-    if (aspect_ratio == 0.0)
-        aspect_ratio = 1.0;             // pixel aspect 1.1 (VGA)
+    if (aspect_ratio.num == 0 || aspect_ratio.den == 0)
+        aspect_ratio = (AVRational){1,1};             // pixel aspect 1.1 (VGA)
 
     if (s->current_picture.f->key_frame) {
         AVRational framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
@@ -256,15 +256,15 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         put_sbits(&s->pb, 12, s->height & 0xFFF);
 
         for (i = 1; i < 15; i++) {
-            float error = aspect_ratio;
+            int64_t error = aspect_ratio.num * (1LL<<32) / aspect_ratio.den;
             if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO || i <= 1)
-                error -= 1.0 / ff_mpeg1_aspect[i];
+                error -= (1LL<<32) / ff_mpeg1_aspect[i];
             else
-                error -= av_q2d(ff_mpeg2_aspect[i]) * s->height / s->width;
+                error -= (1LL<<32)*ff_mpeg2_aspect[i].num * s->height / s->width / ff_mpeg2_aspect[i].den;
 
             error = FFABS(error);
 
-            if (error <= best_aspect_error) {
+            if (error - 2 <= best_aspect_error) {
                 best_aspect_error    = error;
                 s->aspect_ratio_info = i;
             }
