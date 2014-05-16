@@ -1724,6 +1724,8 @@ static int handle_connect_error(URLContext *s, const char *desc)
                 challenge = value;
             } else if (!strcmp(ptr, "nonce")) {
                 nonce = value;
+            } else {
+                av_log(s, AV_LOG_INFO, "Ignoring unsupported var %s\n", ptr);
             }
         } else {
             av_log(s, AV_LOG_WARNING, "Variable %s has NULL value\n", ptr);
