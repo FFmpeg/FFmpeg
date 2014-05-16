@@ -1712,18 +1712,21 @@ static int handle_connect_error(URLContext *s, const char *desc)
         char *value = strchr(ptr, '=');
         if (next)
             *next++ = '\0';
-        if (value)
+        if (value) {
             *value++ = '\0';
-        if (!strcmp(ptr, "user")) {
-            user = value;
-        } else if (!strcmp(ptr, "salt")) {
-            salt = value;
-        } else if (!strcmp(ptr, "opaque")) {
-            opaque = value;
-        } else if (!strcmp(ptr, "challenge")) {
-            challenge = value;
-        } else if (!strcmp(ptr, "nonce")) {
-            nonce = value;
+            if (!strcmp(ptr, "user")) {
+                user = value;
+            } else if (!strcmp(ptr, "salt")) {
+                salt = value;
+            } else if (!strcmp(ptr, "opaque")) {
+                opaque = value;
+            } else if (!strcmp(ptr, "challenge")) {
+                challenge = value;
+            } else if (!strcmp(ptr, "nonce")) {
+                nonce = value;
+            }
+        } else {
+            av_log(s, AV_LOG_WARNING, "Variable %s has NULL value\n", ptr);
         }
         ptr = next;
     }
