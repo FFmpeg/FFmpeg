@@ -2469,7 +2469,8 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
     AVPacket pkt1, *pkt = &pkt1;
     AVStream *st;
     int read_size, i, ret;
-    int all_duration_valid = 0;
+    int found_duration = 0;
+    int is_end;
     int64_t filesize, offset, duration;
     int retry = 0;
 
@@ -2494,6 +2495,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
     /* XXX: may need to support wrapping */
     filesize = ic->pb ? avio_size(ic->pb) : 0;
     do {
+        is_end = found_duration;
         offset = filesize - (DURATION_MAX_READ_SIZE << retry);
         if (offset < 0)
             offset = 0;
@@ -2515,6 +2517,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
                 (st->start_time != AV_NOPTS_VALUE ||
                  st->first_dts  != AV_NOPTS_VALUE)) {
                 duration = pkt->pts + pkt->duration;
+                found_duration = 1;
                 if (st->start_time != AV_NOPTS_VALUE)
                     duration -= st->start_time;
                 else
@@ -2530,17 +2533,19 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
         }
 
         /* check if all audio/video streams have valid duration */
-        all_duration_valid = 1;
-        for (i = 0; i < ic->nb_streams; i++) {
-            st = ic->streams[i];
-            switch (st->codec->codec_type) {
-                case AVMEDIA_TYPE_VIDEO:
-                case AVMEDIA_TYPE_AUDIO:
-                    if (st->duration == AV_NOPTS_VALUE)
-                        all_duration_valid = 0;
+        if (!is_end) {
+            is_end = 1;
+            for (i = 0; i < ic->nb_streams; i++) {
+                st = ic->streams[i];
+                switch (st->codec->codec_type) {
+                    case AVMEDIA_TYPE_VIDEO:
+                    case AVMEDIA_TYPE_AUDIO:
+                        if (st->duration == AV_NOPTS_VALUE)
+                            is_end = 0;
+                }
             }
         }
-    } while (!all_duration_valid &&
+    } while (!is_end &&
              offset &&
              ++retry <= DURATION_MAX_RETRY);
 
