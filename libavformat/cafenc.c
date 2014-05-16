@@ -131,8 +131,6 @@ static int caf_write_header(AVFormatContext *s)
     case AV_CODEC_ID_PCM_F32BE:
     case AV_CODEC_ID_PCM_F64LE:
     case AV_CODEC_ID_PCM_F64BE:
-    case AV_CODEC_ID_PCM_ALAW:
-    case AV_CODEC_ID_PCM_MULAW:
         codec_tag = MKTAG('l','p','c','m');
     }
 
