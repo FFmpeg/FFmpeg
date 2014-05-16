@@ -135,6 +135,8 @@ typedef struct MOVStreamContext {
     int64_t track_end;    ///< used for dts generation in fragmented movie files
     unsigned int rap_group_count;
     MOVSbgp *rap_group;
+
+    int32_t *display_matrix;
 } MOVStreamContext;
 
 typedef struct MOVContext {
