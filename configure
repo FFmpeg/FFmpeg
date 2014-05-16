@@ -2443,7 +2443,7 @@ case "$toolchain" in
     ;;
     clang-usan)
         cc_default="clang"
-        add_cflags  -fsanitize=undefined
+        add_cflags  -fsanitize=undefined -O1
         add_ldflags -fsanitize=undefined
     ;;
     gcc-asan)
