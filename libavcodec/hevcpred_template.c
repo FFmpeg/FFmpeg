@@ -41,14 +41,14 @@ static av_always_inline void FUNC(intra_pred)(HEVCContext *s, int x0, int y0,
     MVF_PU(x, y).is_intra
 #define MIN_TB_ADDR_ZS(x, y) \
     s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
-#define EXTEND_LEFT(ptr, start, length) \
-        for (i = (start); i > (start) - (length); i--) \
-            ptr[i - 1] = ptr[i]
-#define EXTEND_RIGHT(ptr, start, length) \
-        for (i = (start); i < (start) + (length); i++) \
-            ptr[i] = ptr[i - 1]
-#define EXTEND_UP(ptr, start, length)   EXTEND_LEFT(ptr, start, length)
-#define EXTEND_DOWN(ptr, start, length) EXTEND_RIGHT(ptr, start, length)
+
+#define EXTEND(ptr, val, len)         \
+do {                                  \
+    pixel4 pix = PIXEL_SPLAT_X4(val); \
+    for (i = 0; i < (len); i += 4)    \
+        AV_WN4P(ptr + i, pix);        \
+} while (0)
+
 #define EXTEND_LEFT_CIP(ptr, start, length) \
         for (i = (start); i > (start) - (length); i--) \
             if (!IS_INTRA(i - 1, -1)) \
@@ -233,12 +233,10 @@ static av_always_inline void FUNC(intra_pred)(HEVCContext *s, int x0, int y0,
             if (cand_bottom_left || cand_left) {
                 EXTEND_DOWN_CIP(left, j, size_max_y - j);
             }
-            if (!cand_left) {
-                EXTEND_DOWN(left, 0, size);
-            }
-            if (!cand_bottom_left) {
-                EXTEND_DOWN(left, size, size);
-            }
+            if (!cand_left)
+                EXTEND(left, left[-1], size);
+            if (!cand_bottom_left)
+                EXTEND(left + size, left[size - 1], size);
             if (x0 != 0 && y0 != 0) {
                 EXTEND_UP_CIP(left, size_max_y - 1, size_max_y);
             } else if (x0 == 0) {
@@ -255,42 +253,38 @@ static av_always_inline void FUNC(intra_pred)(HEVCContext *s, int x0, int y0,
     // Infer the unavailable samples
     if (!cand_bottom_left) {
         if (cand_left) {
-            EXTEND_DOWN(left, size, size);
+            EXTEND(left + size, left[size - 1], size);
         } else if (cand_up_left) {
-            EXTEND_DOWN(left, 0, 2 * size);
+            EXTEND(left, left[-1], 2 * size);
             cand_left = 1;
         } else if (cand_up) {
             left[-1] = top[0];
-            EXTEND_DOWN(left, 0, 2 * size);
+            EXTEND(left, left[-1], 2 * size);
             cand_up_left = 1;
             cand_left    = 1;
         } else if (cand_up_right) {
-            EXTEND_LEFT(top, size, size);
-            left[-1] = top[0];
-            EXTEND_DOWN(left, 0, 2 * size);
+            EXTEND(top, top[size], size);
+            left[-1] = top[size];
+            EXTEND(left, left[-1], 2 * size);
             cand_up      = 1;
             cand_up_left = 1;
             cand_left    = 1;
         } else { // No samples available
-            top[0] = left[-1] = (1 << (BIT_DEPTH - 1));
-            EXTEND_RIGHT(top, 1, 2 * size - 1);
-            EXTEND_DOWN(left, 0, 2 * size);
+            left[-1] = (1 << (BIT_DEPTH - 1));
+            EXTEND(top,  left[-1], 2 * size);
+            EXTEND(left, left[-1], 2 * size);
         }
     }
 
-    if (!cand_left) {
-        EXTEND_UP(left, size, size);
-    }
+    if (!cand_left)
+        EXTEND(left, left[size], size);
     if (!cand_up_left) {
         left[-1] = left[0];
     }
-    if (!cand_up) {
-        top[0] = left[-1];
-        EXTEND_RIGHT(top, 1, size - 1);
-    }
-    if (!cand_up_right) {
-        EXTEND_RIGHT(top, size, size);
-    }
+    if (!cand_up)
+        EXTEND(top, left[-1], size);
+    if (!cand_up_right)
+        EXTEND(top + size, top[size - 1], size);
 
     top[-1] = left[-1];
 
@@ -542,9 +536,6 @@ static void FUNC(pred_angular_3)(uint8_t *src, const uint8_t *top,
 #undef MVF_PU
 #undef MVF
 #undef PU
-#undef EXTEND_LEFT
-#undef EXTEND_RIGHT
-#undef EXTEND_UP
-#undef EXTEND_DOWN
+#undef EXTEND
 #undef MIN_TB_ADDR_ZS
 #undef POS
