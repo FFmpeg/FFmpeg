@@ -4,6 +4,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libavcodec", "libavcodec.vcxproj", "{B4824EFF-C340-425D-A4A8-E2E02A71A7AE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CE6C44DD-6E38-4293-8AB3-04EE28CCA972} = {CE6C44DD-6E38-4293-8AB3-04EE28CCA972}
+		{3CE4A9EF-98B6-4454-B76E-3AD9C03A2114} = {3CE4A9EF-98B6-4454-B76E-3AD9C03A2114}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libavdevice", "libavdevice.vcxproj", "{6E165FA4-44EB-4330-8394-9F0D76D8E03E}"

@@ -1139,6 +1139,21 @@
     <ClCompile Include="..\libavcodec\on2avcdata.c">
       <ObjectFileName>$(IntDir)\libavcodec_on2avcdata.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\opusdec.c">
+      <ObjectFileName>$(IntDir)\libavcodec_opusdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\opus.c">
+      <ObjectFileName>$(IntDir)\libavcodec_opus.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\opus_celt.c">
+      <ObjectFileName>$(IntDir)\libavcodec_opus_celt.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\opus_imdct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_opus_imdct.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\opus_silk.c">
+      <ObjectFileName>$(IntDir)\libavcodec_opus_silk.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\paf.c">
       <ObjectFileName>$(IntDir)\libavcodec_paf.obj</ObjectFileName>
     </ClCompile>
@@ -1733,14 +1748,11 @@
     <ClCompile Include="..\libavcodec\libmp3lame.c">
       <ObjectFileName>$(IntDir)\libavcodec_libmp3lame.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\libopusdec.c">
-      <ObjectFileName>$(IntDir)\libavcodec_libopusdec.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\libopusenc.c">
+      <ObjectFileName>$(IntDir)\libavcodec_libopusenc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\libopus.c">
       <ObjectFileName>$(IntDir)\libavcodec_libopus.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\libopusenc.c">
-      <ObjectFileName>$(IntDir)\libavcodec_libopusenc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\libspeexdec.c">
       <ObjectFileName>$(IntDir)\libavcodec_libspeexdec.obj</ObjectFileName>
@@ -1852,6 +1864,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpegvideo_parser.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpegvideo_parser.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\opus_parser.c">
+      <ObjectFileName>$(IntDir)\libavcodec_opus_parser.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\pnm_parser.c">
       <ObjectFileName>$(IntDir)\libavcodec_pnm_parser.obj</ObjectFileName>
@@ -2116,6 +2131,7 @@
     <YASM Include="..\libavcodec\x86\h264_qpel_8bit.asm" />
     <YASM Include="..\libavcodec\x86\h264_qpel_10bit.asm" />
     <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
+    <YASM Include="..\libavcodec\x86\hevc_deblock.asm" />
     <YASM Include="..\libavcodec\x86\hpeldsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_videodsp.asm" />
     <YASM Include="..\libavcodec\x86\imdct36.asm" />
@@ -2428,7 +2444,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.dll.lib;libbz2.dll.lib;libiconv.dll.lib;libfdk-aac.dll.lib;libmp3lame.dll.lib;libopus.dll.lib;libspeex.dll.lib;libtheora.dll.lib;libvorbis.dll.lib;libvpx.dll.lib;libx264.dll.lib;libxvidcore.dll.lib;libz.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libbz2.dll.lib;libiconv.dll.lib;libfdk-aac.dll.lib;libmp3lame.dll.lib;libopus.dll.lib;libspeex.dll.lib;libtheora.dll.lib;libvorbis.dll.lib;libvpx.dll.lib;libx264.dll.lib;libxvidcore.dll.lib;libz.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -2499,7 +2515,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.dll.lib;libbz2.dll.lib;libiconv.dll.lib;libfdk-aac.dll.lib;libmp3lame.dll.lib;libopus.dll.lib;libspeex.dll.lib;libtheora.dll.lib;libvorbis.dll.lib;libvpx.dll.lib;libx264.dll.lib;libxvidcore.dll.lib;libz.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libbz2.dll.lib;libiconv.dll.lib;libfdk-aac.dll.lib;libmp3lame.dll.lib;libopus.dll.lib;libspeex.dll.lib;libtheora.dll.lib;libvorbis.dll.lib;libvpx.dll.lib;libx264.dll.lib;libxvidcore.dll.lib;libz.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -2729,7 +2745,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.dll.lib;libbz2.dll.lib;libiconv.dll.lib;libfdk-aac.dll.lib;libmp3lame.dll.lib;libopus.dll.lib;libspeex.dll.lib;libtheora.dll.lib;libvorbis.dll.lib;libvpx.dll.lib;libx264.dll.lib;libxvidcore.dll.lib;libz.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libbz2.dll.lib;libiconv.dll.lib;libfdk-aac.dll.lib;libmp3lame.dll.lib;libopus.dll.lib;libspeex.dll.lib;libtheora.dll.lib;libvorbis.dll.lib;libvpx.dll.lib;libx264.dll.lib;libxvidcore.dll.lib;libz.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -2809,7 +2825,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.dll.lib;libbz2.dll.lib;libiconv.dll.lib;libfdk-aac.dll.lib;libmp3lame.dll.lib;libopus.dll.lib;libspeex.dll.lib;libtheora.dll.lib;libvorbis.dll.lib;libvpx.dll.lib;libx264.dll.lib;libxvidcore.dll.lib;libz.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.dll.lib;libswresample.dll.lib;libbz2.dll.lib;libiconv.dll.lib;libfdk-aac.dll.lib;libmp3lame.dll.lib;libopus.dll.lib;libspeex.dll.lib;libtheora.dll.lib;libvorbis.dll.lib;libvpx.dll.lib;libx264.dll.lib;libxvidcore.dll.lib;libz.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
