@@ -383,7 +383,7 @@ ALIGN 16
     pcmpgtw         m15, m13, m14; beta0, beta1
     movmskps        r13, m15 ;filtering mask 0d0 + 0d3 < beta0 (bit 2 or 3) , 1d0 + 1d3 < beta1 (bit 0 or 1)
     cmp             r13, 0
-    je bypasswrite_macro_%2%1
+    je .bypassluma
 
     ;weak / strong decision compare to beta_2
     psraw           m15, m13, 2;   beta >> 2
@@ -440,7 +440,7 @@ ALIGN 16
     movd             m9, r3; tc1
     add             r2d, r3d; tc0 + tc1
     cmp             r2d, 0;
-    je        bypasswrite_macro_%2%1
+    je        .bypassluma
     punpcklwd        m9, m9
     shufps           m8, m9, 0; tc0, tc1
     mova             m9, m8
@@ -497,7 +497,7 @@ ALIGN 16
     movd            m10, r2; store to xmm for mask generation
     or              r14, r2; final strong mask, bits 1 and 0
     cmp             r14, 0;
-    je      weakfilter_macro_%2%1
+    je      .weakfilter
 
     shufps          m10, m12, 0
 
@@ -583,11 +583,11 @@ ALIGN 16
     MASKED_COPY      m4, m8
     MASKED_COPY      m3, m12
 
-weakfilter_macro_%2%1:
+.weakfilter:
     not             r14; strong mask -> weak mask
     and             r14, r13; final weak filtering mask, bits 0 and 1
     cmp             r14, 0;
-    je      ready_macro_%2%1
+    je      .store
 
     ; weak filtering mask
     mov              r2, r14
@@ -693,10 +693,6 @@ weakfilter_macro_%2%1:
 
     psubw            m8, m4, m12 ; q0 - delta0
     MASKED_COPY      m4, m8
-ready_macro_%2%1:
-    jmp to_store_%2%1
-bypasswrite_macro_%2%1:
-    jmp bypass%2luma_10
 %endmacro
 
 INIT_XMM sse2
@@ -774,9 +770,9 @@ cglobal hevc_v_loop_filter_luma_8, 4, 15, 16, pix, stride, beta, tc
     add              r0, r5
     TRANSPOSE8x8B_LOAD  PASS8ROWS(r6, r0, r1, r5)
         LUMA_DEBLOCK_BODY 8, v
-to_store_v8:
+.store:
     TRANSPOSE8x8B_STORE PASS8ROWS(r6, r0, r1, r5)
-bypassvluma_8:
+.bypassluma:
     RET
 
 cglobal hevc_v_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc
@@ -786,9 +782,9 @@ cglobal hevc_v_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc
     add            pixq, r5
     TRANSPOSE8x8W_LOAD  PASS8ROWS(r6, pixq, strideq, r5)
         LUMA_DEBLOCK_BODY 10, v
-to_store_v10:
+.store:
     TRANSPOSE8x8W_STORE PASS8ROWS(r6, r0, r1, r5)
-bypassvluma_10:
+.bypassluma:
     RET
 
 ;-----------------------------------------------------------------------------
@@ -817,7 +813,7 @@ cglobal hevc_h_loop_filter_luma_8, 4, 15, 16, pix, stride, beta, tc, count, pix0
     punpcklbw        m6, m8
     punpcklbw        m7, m8
         LUMA_DEBLOCK_BODY 8, h
-to_store_h8:
+.store:
     packuswb         m1, m1; p2
     packuswb         m2, m2; p1
     packuswb         m3, m3; p0
@@ -830,7 +826,7 @@ to_store_h8:
     movq           [r0], m4;  q0
     movq        [r0+r1], m5;  q1
     movq      [r0+2*r1], m6;  q2
-bypasshluma_8:
+.bypassluma:
     RET
 
 cglobal hevc_h_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc, count, pix0, src3stride
@@ -847,7 +843,7 @@ cglobal hevc_h_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc, count, pix
     movdqu           m6, [pixq+2*strideq];  q2
     movdqu           m7, [pixq+src3strideq];    q3
         LUMA_DEBLOCK_BODY 10, h
-to_store_h10:
+.store:
     pxor             m8, m8; zeros reg
     CLIPW            m1, m8, [pw_pixel_max]
     CLIPW            m2, m8, [pw_pixel_max]
@@ -861,6 +857,6 @@ to_store_h10:
     movdqu              [pixq], m4;  q0
     movdqu      [pixq+strideq], m5;  q1
     movdqu    [pixq+2*strideq], m6;  q2
-bypasshluma_10:
+.bypassluma:
     RET
 %endif
