@@ -3635,7 +3635,7 @@ int main(int argc, char **argv)
         flags &= ~SDL_INIT_AUDIO;
     if (display_disable)
         SDL_putenv(dummy_videodriver); /* For the event queue, we always need a video driver. */
-#if !defined(__MINGW32__) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(__APPLE__)
     flags |= SDL_INIT_EVENTTHREAD; /* Not supported on Windows or Mac OS X */
 #endif
     if (SDL_Init (flags)) {
