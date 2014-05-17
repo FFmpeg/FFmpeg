@@ -363,7 +363,7 @@ int vp56_rac_get_tree(VP56RangeCoder *c,
                       const uint8_t *probs)
 {
     while (tree->val > 0) {
-        if (vp56_rac_get_prob(c, probs[tree->prob_idx]))
+        if (vp56_rac_get_prob_branchy(c, probs[tree->prob_idx]))
             tree += tree->val;
         else
             tree++;

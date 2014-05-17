@@ -295,8 +295,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 int ret = mov_read_covr(c, pb, data_type, str_size);
                 if (ret < 0) {
                     av_log(c->fc, AV_LOG_ERROR, "Error parsing cover art.\n");
-                    return ret;
                 }
+                return ret;
             }
         } else return 0;
     } else if (atom.size > 4 && key && !c->itunes_metadata) {

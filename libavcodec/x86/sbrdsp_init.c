@@ -51,6 +51,8 @@ void ff_sbr_hf_apply_noise_3_sse2(float (*Y)[2], const float *s_m,
                                   const float *q_filt, int noise,
                                   int kx, int m_max);
 
+void ff_sbr_qmf_deint_neg_sse(float *v, const float *src);
+
 av_cold void ff_sbrdsp_init_x86(SBRDSPContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -63,6 +65,7 @@ av_cold void ff_sbrdsp_init_x86(SBRDSPContext *s)
         s->hf_gen     = ff_sbr_hf_gen_sse;
         s->qmf_post_shuffle = ff_sbr_qmf_post_shuffle_sse;
         s->qmf_deint_bfly   = ff_sbr_qmf_deint_bfly_sse;
+        s->qmf_deint_neg    = ff_sbr_qmf_deint_neg_sse;
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {

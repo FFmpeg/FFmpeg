@@ -34,6 +34,7 @@
 
 #define ASF_INDEXED_INTERVAL    10000000
 #define ASF_INDEX_BLOCK         (1<<9)
+#define ASF_PAYLOADS_PER_PACKET 63
 
 #define ASF_PACKET_ERROR_CORRECTION_DATA_SIZE 0x2
 #define ASF_PACKET_ERROR_CORRECTION_FLAGS          \
@@ -857,6 +858,8 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, AVStream *avst,
         if (!asf->multi_payloads_present)
             flush_packet(s);
         else if (asf->packet_size_left <= (PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS + PACKET_HEADER_MIN_SIZE + 1))
+            flush_packet(s);
+        else if (asf->packet_nb_payloads == ASF_PAYLOADS_PER_PACKET)
             flush_packet(s);
     }
     stream->seq++;

@@ -92,7 +92,8 @@ YASM-OBJS-$(CONFIG_H264QPEL)           += x86/h264_qpel_8bit.o          \
                                           x86/h264_qpel_10bit.o         \
                                           x86/fpel.o                    \
                                           x86/qpel.o
-YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o
+YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
+                                          x86/hevc_deblock.o
 YASM-OBJS-$(CONFIG_HPELDSP)            += x86/fpel.o                    \
                                           x86/hpeldsp.o
 YASM-OBJS-$(CONFIG_LLVIDDSP)           += x86/lossless_videodsp.o

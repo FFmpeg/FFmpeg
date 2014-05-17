@@ -216,12 +216,12 @@ static int interp_##nbits##_##name(AVFilterContext *ctx, void *arg, int jobnr, i
     const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;                                     \
     uint8_t       *dstrow = out->data[0] + slice_start * out->linesize[0];                          \
     const uint8_t *srcrow = in ->data[0] + slice_start * in ->linesize[0];                          \
+    const float scale = (1. / ((1<<nbits) - 1)) * (lut3d->lutsize - 1);                             \
                                                                                                     \
     for (y = slice_start; y < slice_end; y++) {                                                     \
         uint##nbits##_t *dst = (uint##nbits##_t *)dstrow;                                           \
         const uint##nbits##_t *src = (const uint##nbits##_t *)srcrow;                               \
         for (x = 0; x < in->width * step; x += step) {                                              \
-            const float scale = (1. / ((1<<nbits) - 1)) * (lut3d->lutsize - 1);                     \
             const struct rgbvec scaled_rgb = {src[x + r] * scale,                                   \
                                               src[x + g] * scale,                                   \
                                               src[x + b] * scale};                                  \

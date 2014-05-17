@@ -9384,7 +9384,7 @@ Set the number of output video streams, that is also the number of video
 streams in each segment. Default is 1.
 
 @item a
-Set the number of output audio streams, that is also the number of video
+Set the number of output audio streams, that is also the number of audio
 streams in each segment. Default is 0.
 
 @item unsafe

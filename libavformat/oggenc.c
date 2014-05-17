@@ -432,7 +432,7 @@ static int ogg_write_header(AVFormatContext *s)
 
         oggstream->page.stream_index = i;
 
-        if (!(st->codec->flags & CODEC_FLAG_BITEXACT))
+        if (!(s->flags & AVFMT_FLAG_BITEXACT))
             do {
                 serial_num = av_get_random_seed();
                 for (j = 0; j < i; j++) {
@@ -448,7 +448,7 @@ static int ogg_write_header(AVFormatContext *s)
         st->priv_data = oggstream;
         if (st->codec->codec_id == AV_CODEC_ID_FLAC) {
             int err = ogg_build_flac_headers(st->codec, oggstream,
-                                             st->codec->flags & CODEC_FLAG_BITEXACT,
+                                             s->flags & AVFMT_FLAG_BITEXACT,
                                              &st->metadata);
             if (err) {
                 av_log(s, AV_LOG_ERROR, "Error writing FLAC headers\n");
@@ -457,7 +457,7 @@ static int ogg_write_header(AVFormatContext *s)
             }
         } else if (st->codec->codec_id == AV_CODEC_ID_SPEEX) {
             int err = ogg_build_speex_headers(st->codec, oggstream,
-                                              st->codec->flags & CODEC_FLAG_BITEXACT,
+                                              s->flags & AVFMT_FLAG_BITEXACT,
                                               &st->metadata);
             if (err) {
                 av_log(s, AV_LOG_ERROR, "Error writing Speex headers\n");
@@ -466,7 +466,7 @@ static int ogg_write_header(AVFormatContext *s)
             }
         } else if (st->codec->codec_id == AV_CODEC_ID_OPUS) {
             int err = ogg_build_opus_headers(st->codec, oggstream,
-                                             st->codec->flags & CODEC_FLAG_BITEXACT,
+                                             s->flags & AVFMT_FLAG_BITEXACT,
                                              &st->metadata);
             if (err) {
                 av_log(s, AV_LOG_ERROR, "Error writing Opus headers\n");
@@ -487,7 +487,7 @@ static int ogg_write_header(AVFormatContext *s)
                 return -1;
             }
 
-            p = ogg_write_vorbiscomment(7, st->codec->flags & CODEC_FLAG_BITEXACT,
+            p = ogg_write_vorbiscomment(7, s->flags & AVFMT_FLAG_BITEXACT,
                                         &oggstream->header_len[1], &st->metadata,
                                         framing_bit);
             oggstream->header[1] = p;

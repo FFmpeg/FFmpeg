@@ -38,14 +38,15 @@ HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 TOOLS       = qt-faststart trasher uncoded_frame
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 
-FFLIBS-$(CONFIG_AVDEVICE) += avdevice
-FFLIBS-$(CONFIG_AVFILTER) += avfilter
-FFLIBS-$(CONFIG_AVFORMAT) += avformat
+# $(FFLIBS-yes) needs to be in linking order
+FFLIBS-$(CONFIG_AVDEVICE)   += avdevice
+FFLIBS-$(CONFIG_AVFILTER)   += avfilter
+FFLIBS-$(CONFIG_AVFORMAT)   += avformat
+FFLIBS-$(CONFIG_AVCODEC)    += avcodec
 FFLIBS-$(CONFIG_AVRESAMPLE) += avresample
-FFLIBS-$(CONFIG_AVCODEC)  += avcodec
-FFLIBS-$(CONFIG_POSTPROC) += postproc
-FFLIBS-$(CONFIG_SWRESAMPLE)+= swresample
-FFLIBS-$(CONFIG_SWSCALE)  += swscale
+FFLIBS-$(CONFIG_POSTPROC)   += postproc
+FFLIBS-$(CONFIG_SWRESAMPLE) += swresample
+FFLIBS-$(CONFIG_SWSCALE)    += swscale
 
 FFLIBS := avutil
 

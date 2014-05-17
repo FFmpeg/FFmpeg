@@ -429,6 +429,8 @@ Possible values:
 iterative motion vector (MV) search (slow)
 @item deblock
 use strong deblock filter for damaged MBs
+@item favor_inter
+favor predicting from the previous frame instead of the current
 @end table
 
 @item bits_per_coded_sample @var{integer}

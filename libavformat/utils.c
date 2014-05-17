@@ -251,6 +251,8 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
         if (lpd.buf_size > id3len + 16) {
             lpd.buf      += id3len;
             lpd.buf_size -= id3len;
+        } else if (id3len >= PROBE_BUF_MAX) {
+            nodat = 2;
         } else
             nodat = 1;
     }
@@ -262,8 +264,11 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
         score = 0;
         if (fmt1->read_probe) {
             score = fmt1->read_probe(&lpd);
-            if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions))
-                score = FFMAX(score, nodat ? AVPROBE_SCORE_EXTENSION / 2 - 1 : 1);
+            if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) {
+                if      (nodat == 0) score = FFMAX(score, 1);
+                else if (nodat == 1) score = FFMAX(score, AVPROBE_SCORE_EXTENSION / 2 - 1);
+                else                 score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
+            }
         } else if (fmt1->extensions) {
             if (av_match_ext(lpd.filename, fmt1->extensions))
                 score = AVPROBE_SCORE_EXTENSION;
@@ -274,7 +279,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
         } else if (score == score_max)
             fmt = NULL;
     }
-    if (nodat)
+    if (nodat == 1)
         score_max = FFMIN(AVPROBE_SCORE_EXTENSION / 2 - 1, score_max);
     *score_ret = score_max;
 
@@ -2464,7 +2469,8 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
     AVPacket pkt1, *pkt = &pkt1;
     AVStream *st;
     int read_size, i, ret;
-    int64_t end_time;
+    int found_duration = 0;
+    int is_end;
     int64_t filesize, offset, duration;
     int retry = 0;
 
@@ -2488,8 +2494,8 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
     /* estimate the end time (duration) */
     /* XXX: may need to support wrapping */
     filesize = ic->pb ? avio_size(ic->pb) : 0;
-    end_time = AV_NOPTS_VALUE;
     do {
+        is_end = found_duration;
         offset = filesize - (DURATION_MAX_READ_SIZE << retry);
         if (offset < 0)
             offset = 0;
@@ -2510,7 +2516,8 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
             if (pkt->pts != AV_NOPTS_VALUE &&
                 (st->start_time != AV_NOPTS_VALUE ||
                  st->first_dts  != AV_NOPTS_VALUE)) {
-                duration = end_time = pkt->pts;
+                duration = pkt->pts + pkt->duration;
+                found_duration = 1;
                 if (st->start_time != AV_NOPTS_VALUE)
                     duration -= st->start_time;
                 else
@@ -2524,10 +2531,38 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
             }
             av_free_packet(pkt);
         }
-    } while (end_time == AV_NOPTS_VALUE &&
-             filesize > (DURATION_MAX_READ_SIZE << retry) &&
+
+        /* check if all audio/video streams have valid duration */
+        if (!is_end) {
+            is_end = 1;
+            for (i = 0; i < ic->nb_streams; i++) {
+                st = ic->streams[i];
+                switch (st->codec->codec_type) {
+                    case AVMEDIA_TYPE_VIDEO:
+                    case AVMEDIA_TYPE_AUDIO:
+                        if (st->duration == AV_NOPTS_VALUE)
+                            is_end = 0;
+                }
+            }
+        }
+    } while (!is_end &&
+             offset &&
              ++retry <= DURATION_MAX_RETRY);
 
+    /* warn about audio/video streams which duration could not be estimated */
+    for (i = 0; i < ic->nb_streams; i++) {
+        st = ic->streams[i];
+        if (st->duration == AV_NOPTS_VALUE) {
+            switch (st->codec->codec_type) {
+            case AVMEDIA_TYPE_VIDEO:
+            case AVMEDIA_TYPE_AUDIO:
+                if (st->start_time != AV_NOPTS_VALUE || st->first_dts  != AV_NOPTS_VALUE) {
+                    av_log(ic, AV_LOG_DEBUG, "stream %d : no PTS found at end of file, duration not set\n", i);
+                } else
+                    av_log(ic, AV_LOG_DEBUG, "stream %d : no TS found at start of file, duration not set\n", i);
+            }
+        }
+    }
     fill_all_stream_timings(ic);
 
     avio_seek(ic->pb, old_offset, SEEK_SET);

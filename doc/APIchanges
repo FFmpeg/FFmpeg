@@ -15,6 +15,13 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-05-xx - xxxxxxx - lavf 55.17.0 - avformat.h
+  Add AVMFT_FLAG_BITEXACT flag. Muxers now use it instead of checking
+  CODEC_FLAG_BITEXACT on the first stream.
+
+2014-05-15 - xxxxxxx - lswr 0.19.100 - swresample.h
+  Add swr_close()
+
 2014-xx-xx - xxxxxxx - lavu 53.14.0 - pixfmt.h
   Add AV_PIX_FMT_VDA for new-style VDA acceleration.
 

@@ -323,6 +323,12 @@ static int set_compensation(ResampleContext *c, int sample_delta, int compensati
 #undef TEMPLATE_RESAMPLE_DBL_SSE2
 #endif
 
+#if HAVE_AVX_INLINE
+#define TEMPLATE_RESAMPLE_FLT_AVX
+#include "resample_template.c"
+#undef TEMPLATE_RESAMPLE_FLT_AVX
+#endif
+
 #endif // HAVE_MMXEXT_INLINE
 
 static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){
@@ -343,6 +349,10 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
 #endif
              if(c->format == AV_SAMPLE_FMT_S16P) ret= swri_resample_int16(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
         else if(c->format == AV_SAMPLE_FMT_S32P) ret= swri_resample_int32(c, (int32_t*)dst->ch[i], (const int32_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+#if HAVE_AVX_INLINE
+        else if(c->format == AV_SAMPLE_FMT_FLTP && (mm_flags&AV_CPU_FLAG_AVX))
+                                                 ret= swri_resample_float_avx (c, (float*)dst->ch[i], (const float*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+#endif
 #if HAVE_SSE_INLINE
         else if(c->format == AV_SAMPLE_FMT_FLTP && (mm_flags&AV_CPU_FLAG_SSE))
                                                  ret= swri_resample_float_sse (c, (float*)dst->ch[i], (const float*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);

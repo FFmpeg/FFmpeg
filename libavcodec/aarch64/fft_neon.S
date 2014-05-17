@@ -348,7 +348,7 @@ function fft\n\()_neon  align=6
         sub             x0,  x28, #\n4*2*8
         ldp             x28, x30, [sp], #16
         movrel          x4,  X(ff_cos_\n)
-        mov             x2,  #\n4/2
+        mov             x2,  #\n4>>1
         b               fft_pass_neon
 endfunc
 .endm

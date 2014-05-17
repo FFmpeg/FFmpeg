@@ -235,6 +235,11 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
         (ret = av_opt_set_dict2(s->priv_data, &tmp, AV_OPT_SEARCH_CHILDREN)) < 0)
         goto fail;
 
+#if FF_API_LAVF_BITEXACT
+    if (s->nb_streams && s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)
+        s->flags |= AVFMT_FLAG_BITEXACT;
+#endif
+
     // some sanity checks
     if (s->nb_streams == 0 && !(of->flags & AVFMT_NOSTREAMS)) {
         av_log(s, AV_LOG_ERROR, "No streams to mux were specified\n");
@@ -340,7 +345,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     }
 
     /* set muxer identification string */
-    if (s->nb_streams && !(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+    if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
         av_dict_set(&s->metadata, "encoder", LIBAVFORMAT_IDENT, 0);
     } else {
         av_dict_set(&s->metadata, "encoder", NULL, 0);
@@ -846,12 +851,6 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
-
-        //FIXME/XXX/HACK drop zero sized packets
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && pkt->size == 0) {
-            ret = 0;
-            goto fail;
-        }
 
         av_dlog(s, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
                 pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));

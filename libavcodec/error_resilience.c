@@ -686,6 +686,9 @@ static int is_intra_more_likely(ERContext *s)
     if (!s->last_pic.f || !s->last_pic.f->data[0])
         return 1; // no previous frame available -> use spatial prediction
 
+    if (s->avctx->error_concealment & FF_EC_FAVOR_INTER)
+        return 0;
+
     undamaged_count = 0;
     for (i = 0; i < s->mb_num; i++) {
         const int mb_xy = s->mb_index2xy[i];

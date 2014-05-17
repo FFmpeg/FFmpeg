@@ -423,3 +423,25 @@ apply_noise_main:
     add    count, mmsize
     jl      .loop
     RET
+
+INIT_XMM sse
+cglobal sbr_qmf_deint_neg, 2,4,4,v,src,vrev,c
+%define COUNT  32*4
+%define OFFSET 32*4
+    mov        cq, -COUNT
+    lea     vrevq, [vq + OFFSET + COUNT]
+    add        vq, OFFSET-mmsize
+    add      srcq, 2*COUNT
+    mova       m3, [ps_neg]
+.loop:
+    mova       m0, [srcq + 2*cq + 0*mmsize]
+    mova       m1, [srcq + 2*cq + 1*mmsize]
+    shufps     m2, m0, m1, q2020
+    shufps     m1, m0, q1313
+    xorps      m2, m3
+    mova     [vq], m1
+    mova  [vrevq + cq], m2
+    sub        vq, mmsize
+    add        cq, mmsize
+    jl      .loop
+    REP_RET

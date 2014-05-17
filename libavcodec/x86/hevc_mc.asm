@@ -564,7 +564,7 @@ cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_hevc_bi_epel_h%1_%2, 8, 8, 15, dst, dststride, src, srcstride, src2, src2stride,height, mx, rfilter
+cglobal hevc_put_hevc_bi_epel_h%1_%2, 8, 9, 15, dst, dststride, src, srcstride, src2, src2stride,height, mx, rfilter
     movdqa            m9, [pw_bi_%2]
     EPEL_FILTER       %2, mx
 .loop

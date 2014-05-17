@@ -203,6 +203,16 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
 void swr_free(struct SwrContext **s);
 
 /**
+ * Closes the context so that swr_is_initialized() returns 0.
+ *
+ * the context can be brougt back to life by running swr_init(),
+ * swr_init() can also be used without swr_close().
+ * This function is mainly provided for simplifying the usecase
+ * where one tries to support libavresample and libswresample
+ */
+void swr_close(struct SwrContext *s);
+
+/**
  * Convert audio.
  *
  * in and in_count can be set to 0 to flush the last few samples out at the

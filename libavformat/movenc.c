@@ -3872,7 +3872,7 @@ static int mov_write_header(AVFormatContext *s)
     }
 
     for (i = 0; i < s->nb_streams; i++)
-        if (s->streams[i]->codec->flags & CODEC_FLAG_BITEXACT)
+        if (s->flags & AVFMT_FLAG_BITEXACT)
             mov->exact = 1;
 
     /* Set the FRAGMENT flag if any of the fragmentation methods are

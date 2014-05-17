@@ -98,7 +98,7 @@ static int flac_write_header(struct AVFormatContext *s)
         return ret;
 
     ret = flac_write_block_comment(s->pb, &s->metadata, !padding,
-                                   codec->flags & CODEC_FLAG_BITEXACT);
+                                   s->flags & AVFMT_FLAG_BITEXACT);
     if (ret)
         return ret;
 

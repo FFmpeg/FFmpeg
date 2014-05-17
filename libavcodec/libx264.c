@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/mem.h"
@@ -426,6 +427,28 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_qcompress       = avctx->qcompress; /* 0.0 => cbr, 1.0 => constant qp */
     if (avctx->refs >= 0)
         x4->params.i_frame_reference    = avctx->refs;
+    else if (x4->level) {
+        int i;
+        int mbn = FF_CEIL_RSHIFT(avctx->width, 4) * FF_CEIL_RSHIFT(avctx->height, 4);
+        int level_id = -1;
+        char *tail;
+        int scale = X264_BUILD < 129 ? 384 : 1;
+
+        if (!strcmp(x4->level, "1b")) {
+            level_id = 9;
+        } else if (strlen(x4->level) <= 3){
+            level_id = av_strtod(x4->level, &tail) * 10 + 0.5;
+            if (*tail)
+                level_id = -1;
+        }
+        if (level_id <= 0)
+            av_log(avctx, AV_LOG_WARNING, "Failed to parse level\n");
+
+        for (i = 0; i<x264_levels[i].level_idc; i++)
+            if (x264_levels[i].level_idc == level_id)
+                x4->params.i_frame_reference = av_clip(x264_levels[i].dpb / mbn / scale, 1, x4->params.i_frame_reference);
+    }
+
     if (avctx->trellis >= 0)
         x4->params.analyse.i_trellis    = avctx->trellis;
     if (avctx->me_range >= 0)

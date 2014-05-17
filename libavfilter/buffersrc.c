@@ -271,7 +271,7 @@ do {                                                                    \
 
         if (planes > FF_ARRAY_ELEMS(frame->buf)) {
             frame->nb_extended_buf = planes - FF_ARRAY_ELEMS(frame->buf);
-            frame->extended_buf = av_mallocz(sizeof(*frame->extended_buf) *
+            frame->extended_buf = av_mallocz_array(sizeof(*frame->extended_buf),
                                              frame->nb_extended_buf);
             if (!frame->extended_buf) {
                 ret = AVERROR(ENOMEM);
