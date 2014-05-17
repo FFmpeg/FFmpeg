@@ -373,49 +373,35 @@ void configGenerator::buildOptimisedDisables( OptimisedConfigList & mOptimisedDi
     //Opus: libopus
     //libopus >= libvorbis >= libfdk_aac > libmp3lame > libfaac >= eac3/ac3 > aac > libtwolame > vorbis > mp2 > wmav2/wmav1 > libvo_aacenc
     
-    //*****Encoder optimization is currently ignored as people may want to compare encoders. The commandline should be used to disable unwanted necoders*****//
+    //*****Encoder optimization is currently ignored as people may want to compare encoders. The commandline should be used to disable unwanted encoders*****//
     
     //mOptimisedDisables["LIBTWOLAME_ENCODER"].push_back( "MP2_ENCODER" );
-
     //mOptimisedDisables["LIBFDK_AAC_ENCODER"].push_back( "LIBFAAC_ENCODER" );
     //mOptimisedDisables["LIBFDK_AAC_ENCODER"].push_back( "AAC_ENCODER" );
     //mOptimisedDisables["LIBFDK_AAC_ENCODER"].push_back( "LIBVO_AACENC_ENCODER" );
-
     //mOptimisedDisables["LIBFDK_AAC_ENCODER"].push_back( "LIBAACPLUS_ENCODER" );
-
     //mOptimisedDisables["LIBFAAC_ENCODER"].push_back( "AAC_ENCODER" );
     //mOptimisedDisables["LIBFAAC_ENCODER"].push_back( "LIBVO_AACENC_ENCODER" );
-    //Eventually the inbuilt aac encoder should get better
     //mOptimisedDisables["AAC_ENCODER"].push_back( "LIBVO_AACENC_ENCODER" );
-
     //mOptimisedDisables["LIBVORBIS_ENCODER"].push_back( "VORBIS_ENCODER" );
-
     //mOptimisedDisables["LIBMP3LAME_ENCODER"].push_back( "LIBSHINE_ENCODER" );
+    //mOptimisedDisables["LIBOPENJPEG_ENCODER"].push_back( "JPEG2000_ENCODER" );//???
+    //mOptimisedDisables["LIBUTVIDEO_ENCODER"].push_back( "UTVIDEO_ENCODER" );//???
+    //mOptimisedDisables["LIBWAVPACK_ENCODER"].push_back( "WAVPACK_ENCODER" );//???
 
     mOptimisedDisables["LIBGSM_DECODER"].push_back( "GSM_DECODER" );//???
     mOptimisedDisables["LIBGSM_MS_DECODER"].push_back( "GSM_MS_DECODER" );//???
-
     mOptimisedDisables["LIBNUT_MUXER"].push_back( "NUT_MUXER" );
     mOptimisedDisables["LIBNUT_DEMUXER"].push_back( "NUT_DEMUXER" );
-
     mOptimisedDisables["LIBOPENCORE_AMRNB_DECODER"].push_back( "AMRNB_DECODER" );//???
     mOptimisedDisables["LIBOPENCORE_AMRWB_DECODER"].push_back( "AMRWB_DECODER" );//???
-
     mOptimisedDisables["LIBOPENJPEG_DECODER"].push_back( "JPEG2000_DECODER" );//???
-    //mOptimisedDisables["LIBOPENJPEG_ENCODER"].push_back( "JPEG2000_ENCODER" );//???
-
     mOptimisedDisables["LIBSCHROEDINGER_DECODER"].push_back( "DIRAC_DECODER" );
-
     mOptimisedDisables["LIBSTAGEFRIGHT_H264_DECODER"].push_back( "H264_DECODER" );
-
     mOptimisedDisables["LIBUTVIDEO_DECODER"].push_back( "UTVIDEO_DECODER" );//???
-    //mOptimisedDisables["LIBUTVIDEO_ENCODER"].push_back( "UTVIDEO_ENCODER" );//???
-
-    //Inbuilt native decoder is apparently faster
-    mOptimisedDisables["VP8_DECODER"].push_back( "LIBVPX_VP8_DECODER" );
+    mOptimisedDisables["VP8_DECODER"].push_back( "LIBVPX_VP8_DECODER" );//Inbuilt native decoder is apparently faster
     mOptimisedDisables["VP9_DECODER"].push_back( "LIBVPX_VP9_DECODER" );
-
-    //mOptimisedDisables["LIBWAVPACK_ENCODER"].push_back( "WAVPACK_ENCODER" );//???
+    mOptimisedDisables["OPUS_DECODER"].push_back( "LIBOPUS_DECODER" );//??? Not sure which is better
 }
 
 void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & vForceEnable )
