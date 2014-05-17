@@ -349,58 +349,34 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     }
 }
 
-static void FUNC(pred_planar_0)(uint8_t *_src, const uint8_t *_top,
-                                const uint8_t *_left,
-                                ptrdiff_t stride)
+static av_always_inline void FUNC(pred_planar)(uint8_t *_src, const uint8_t *_top,
+                                  const uint8_t *_left, ptrdiff_t stride,
+                                  int trafo_size)
 {
     int x, y;
     pixel *src        = (pixel *)_src;
     const pixel *top  = (const pixel *)_top;
     const pixel *left = (const pixel *)_left;
-    for (y = 0; y < 4; y++)
-        for (x = 0; x < 4; x++)
-            POS(x, y) = ((3 - x) * left[y] + (x + 1) * top[4]  +
-                         (3 - y) * top[x]  + (y + 1) * left[4] + 4) >> 3;
+    int size = 1 << trafo_size;
+    for (y = 0; y < size; y++)
+        for (x = 0; x < size; x++)
+            POS(x, y) = ((size - 1 - x) * left[y] + (x + 1) * top[size]  +
+                         (size - 1 - y) * top[x]  + (y + 1) * left[size] + size) >> (trafo_size + 1);
 }
 
-static void FUNC(pred_planar_1)(uint8_t *_src, const uint8_t *_top,
-                                const uint8_t *_left, ptrdiff_t stride)
-{
-    int x, y;
-    pixel *src        = (pixel *)_src;
-    const pixel *top  = (const pixel *)_top;
-    const pixel *left = (const pixel *)_left;
-    for (y = 0; y < 8; y++)
-        for (x = 0; x < 8; x++)
-            POS(x, y) = ((7 - x) * left[y] + (x + 1) * top[8]  +
-                         (7 - y) * top[x]  + (y + 1) * left[8] + 8) >> 4;
+#define PRED_PLANAR(size)\
+static void FUNC(pred_planar_ ## size)(uint8_t *src, const uint8_t *top,        \
+                                       const uint8_t *left, ptrdiff_t stride)   \
+{                                                                               \
+    FUNC(pred_planar)(src, top, left, stride, size + 2);                        \
 }
 
-static void FUNC(pred_planar_2)(uint8_t *_src, const uint8_t *_top,
-                                const uint8_t *_left, ptrdiff_t stride)
-{
-    int x, y;
-    pixel *src        = (pixel *)_src;
-    const pixel *top  = (const pixel *)_top;
-    const pixel *left = (const pixel *)_left;
-    for (y = 0; y < 16; y++)
-        for (x = 0; x < 16; x++)
-            POS(x, y) = ((15 - x) * left[y] + (x + 1) * top[16]  +
-                         (15 - y) * top[x]  + (y + 1) * left[16] + 16) >> 5;
-}
+PRED_PLANAR(0)
+PRED_PLANAR(1)
+PRED_PLANAR(2)
+PRED_PLANAR(3)
 
-static void FUNC(pred_planar_3)(uint8_t *_src, const uint8_t *_top,
-                                const uint8_t *_left, ptrdiff_t stride)
-{
-    int x, y;
-    pixel *src        = (pixel *)_src;
-    const pixel *top  = (const pixel *)_top;
-    const pixel *left = (const pixel *)_left;
-    for (y = 0; y < 32; y++)
-        for (x = 0; x < 32; x++)
-            POS(x, y) = ((31 - x) * left[y] + (x + 1) * top[32]  +
-                         (31 - y) * top[x]  + (y + 1) * left[32] + 32) >> 6;
-}
+#undef PRED_PLANAR
 
 static void FUNC(pred_dc)(uint8_t *_src, const uint8_t *_top,
                           const uint8_t *_left,
