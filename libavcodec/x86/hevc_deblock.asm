@@ -349,12 +349,12 @@ ALIGN 16
     psllw            m9, m2, 1; *2
     psubw           m10, m1, m9
     paddw           m10, m3
-    ABS1            m10, m10 ; 0dp0, 0dp3 , 1dp0, 1dp3
+    ABS1            m10, m11 ; 0dp0, 0dp3 , 1dp0, 1dp3
 
     psllw            m9, m5, 1; *2
     psubw           m11, m6, m9
     paddw           m11, m4
-    ABS1            m11, m11 ; 0dq0, 0dq3 , 1dq0, 1dq3
+    ABS1            m11, m13 ; 0dq0, 0dq3 , 1dq0, 1dq3
 
     ;beta calculations
     mov             r11, [betaq];
@@ -450,10 +450,10 @@ ALIGN 16
 
     ;----beta_3 comparison-----
     psubw           m12, m0, m3;      p3 - p0
-    ABS1            m12, m12; abs(p3 - p0)
+    ABS1            m12, m14; abs(p3 - p0)
 
     psubw           m15, m7, m4;      q3 - q0
-    ABS1            m15, m15; abs(q3 - q0)
+    ABS1            m15, m14; abs(q3 - q0)
 
     paddw           m12, m15; abs(p3 - p0) + abs(q3 - q0)
 
@@ -467,7 +467,7 @@ ALIGN 16
     ;----beta_3 comparison end-----
     ;----tc25 comparison---
     psubw           m12, m3, m4;      p0 - q0
-    ABS1            m12, m12; abs(p0 - q0)
+    ABS1            m12, m14; abs(p0 - q0)
 
     pshufhw         m12, m12, 0xf0 ;0b11110000;
     pshuflw         m12, m12, 0xf0 ;0b11110000;
