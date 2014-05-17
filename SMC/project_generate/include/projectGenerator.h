@@ -86,6 +86,10 @@ private:
 
     bool findSourceFile( const string & sFile, const string & sExtension, string & sRetFileName );
 
+    void buildInterDependenciesHelper( const StaticList & vConfigOptions, const StaticList & vAddDeps, StaticList & vLibs );
+
+    void buildInterDependencies( const string & sProjectName, StaticList & vLibs );
+
     void buildDependencies( const string & sProjectName, StaticList & vLibs, StaticList & vAddLibs, StaticList & vIncludeDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs );
 
     void buildProjectDependencies( const string & sProjectName, map<string,bool> & mProjectDeps );

@@ -734,6 +734,26 @@ bool configGenerator::getConfigList( const string & sList, vector<string> & vRet
                 //Make sure the closing ) is not included
                 uiEnd = ( m_sConfigureFile.at(uiEnd) == ')' )? uiEnd+1 : uiEnd;
             }
+            else if( sFunction.compare( "filter_out" ) == 0 )
+            {
+                //This should filter out occurrance of first parameter from the list passed in the second
+                uint uiStartSearch = uiStart - sList.length() - 5; //ensure search is before current instance of list
+                //Get first parameter
+                uiStart = m_sConfigureFile.find_first_not_of( m_sWhiteSpace, uiEnd + 1 );
+                uiEnd = m_sConfigureFile.find_first_of( m_sWhiteSpace, uiStart + 1 );
+                string sParam1 = m_sConfigureFile.substr( uiStart, uiEnd - uiStart );
+                //Get second parameter
+                uiStart = m_sConfigureFile.find_first_not_of( m_sWhiteSpace, uiEnd + 1 );
+                uiEnd = m_sConfigureFile.find_first_of( m_sWhiteSpace + ")", uiStart + 1 );
+                string sParam2 = m_sConfigureFile.substr( uiStart, uiEnd - uiStart );
+                //Call function add_suffix
+                if( !passFilterOut( sParam1, sParam2, vReturn, uiStartSearch ) )
+                {
+                    return false;
+                }
+                //Make sure the closing ) is not included
+                uiEnd = ( m_sConfigureFile.at( uiEnd ) == ')' ) ? uiEnd + 1 : uiEnd;
+            }
             else
             {
                 cout << "  Error: Unknown list function (" << sFunction << ") found in list (" << sList << ")" << endl;
@@ -873,6 +893,30 @@ bool configGenerator::passAddSuffix( const string & sParam1, const string & sPar
         for( vitList; vitList<vTemp.end( ); vitList++ )
         {
             vReturn.push_back( *vitList + sParam1Upper );
+        }
+        return true;
+    }
+    return false;
+}
+
+bool configGenerator::passFilterOut( const string & sParam1, const string & sParam2, vector<string> & vReturn, uint uiCurrentFilePos )
+{
+    //Remove the "'" from the front and back of first parameter
+    string sParam1Cut = sParam1.substr( 1, sParam1.length( ) - 2 );
+    //Erase the $ from variable2
+    string sParam2Cut = sParam2.substr( 1, sParam2.length( ) - 1 );
+    //Get the list
+    if( getConfigList( sParam2Cut, vReturn, true, uiCurrentFilePos ) )
+    {
+        vector<string>::iterator vitCheckItem = vReturn.begin( );
+        for( vitCheckItem; vitCheckItem<vReturn.end( ); vitCheckItem++ )
+        {
+            if( vitCheckItem->compare( sParam1Cut ) == 0 )
+            {
+                vReturn.erase( vitCheckItem );
+                //assume only appears once in list
+                break;
+            }
         }
         return true;
     }
@@ -1332,6 +1376,7 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
     }
     return true;
 }
+
 
 
 

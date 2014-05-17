@@ -1,6 +1,85 @@
 
 #include "projectGenerator.h"
 
+void projectGenerator::buildInterDependenciesHelper( const StaticList & vConfigOptions, const StaticList & vAddDeps, StaticList & vLibs )
+{
+    bool bFound = false;
+    for( StaticList::const_iterator itI = vConfigOptions.begin( ); itI < vConfigOptions.end( ); itI++ )
+    {
+        bFound = ( m_ConfigHelper.getConfigOption( *itI )->m_sValue.compare( "1" ) == 0 );
+        if( !bFound )
+        {
+            break;
+        }
+    }
+    if( bFound )
+    {
+        for( StaticList::const_iterator itI = vAddDeps.begin( ); itI < vAddDeps.end( ); itI++ )
+        {
+            string sSearchTag = "lib" + *itI;
+            if( find( vLibs.begin( ), vLibs.end( ), sSearchTag ) == vLibs.end( ) )
+            {
+                vLibs.push_back( sSearchTag );
+            }
+        }
+    }
+}
+void projectGenerator::buildInterDependencies( const string & sProjectName, StaticList & vLibs )
+{
+    //Get the lib dependencies from the configure file
+    if( sProjectName.find( "lib" ) == 0 )
+    {
+        //get the dependency list from configure
+        string sLibName = sProjectName.substr( 3 ) + "_deps";
+        vector<string> vLibDeps;
+        if( m_ConfigHelper.getConfigList( sLibName, vLibDeps, true ) )
+        {
+            for( vector<string>::iterator itI = vLibDeps.begin( ); itI < vLibDeps.end( ); itI++ )
+            {
+                string sSearchTag = "lib" + *itI;
+                if( find( vLibs.begin( ), vLibs.end( ), sSearchTag ) == vLibs.end( ) )
+                {
+                    vLibs.push_back( sSearchTag );
+                }
+            }
+        }
+    }
+
+    //Hard coded configuration checks for inter dependencies between different source libs.
+    if( sProjectName.compare( "libavfilter" ) == 0 )
+    {
+        buildInterDependenciesHelper( { "aconvert_filter" }, { "swresample" }, vLibs );
+        buildInterDependenciesHelper( { "amovie_filter" }, { "avformat", "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "aresample_filter" }, { "swresample" }, vLibs );
+        buildInterDependenciesHelper( { "asyncts_filter" }, { "avresample" }, vLibs );
+        buildInterDependenciesHelper( { "atempo_filter" }, { "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "decimate_filter" }, { "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "deshake_filter" }, { "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "ebur128_filter", "swresample" }, { "swresample" }, vLibs );
+        buildInterDependenciesHelper( { "elbg_filter" }, { "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "mcdeint_filter" }, { "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "movie_filter" }, { "avformat", "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "mp_filter" }, { "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "pan_filter" }, { "swresample" }, vLibs );
+        buildInterDependenciesHelper( { "pp_filter" }, { "postproc" }, vLibs );
+        buildInterDependenciesHelper( { "removelogo_filter" }, { "avformat", "avcodec", "swscale" }, vLibs );
+        buildInterDependenciesHelper( { "resample_filter" }, { "avresample" }, vLibs );
+        buildInterDependenciesHelper( { "sab_filter" }, { "swscale" }, vLibs );
+        buildInterDependenciesHelper( { "scale_filter" }, { "swscale" }, vLibs );
+        buildInterDependenciesHelper( { "showspectrum_filter" }, { "avcodec" }, vLibs );
+        buildInterDependenciesHelper( { "smartblur_filter" }, { "swscale" }, vLibs );
+        buildInterDependenciesHelper( { "subtitles_filter" }, { "avformat", "avcodec" }, vLibs );
+    }
+    else if( sProjectName.compare( "libavdevice" ) == 0 )
+    {
+        buildInterDependenciesHelper( { "lavfi_indev" }, { "avfilter" }, vLibs );
+    }
+    else if( sProjectName.compare( "libavcodec" ) == 0 )
+    {
+        buildInterDependenciesHelper( { "opus_decoder" }, { "swresample" }, vLibs );
+    }
+}
+
 void projectGenerator::buildDependencies( const string & sProjectName, StaticList & vLibs, StaticList & vAddLibs, StaticList & vIncludeDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs )
 {
     //Add any forced dependencies

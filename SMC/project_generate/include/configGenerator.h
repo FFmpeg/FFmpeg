@@ -83,6 +83,8 @@ private:
 
     bool passAddSuffix( const string & sParam1, const string & sParam2, vector<string> & vReturn, uint uiCurrentFilePos=string::npos );
 
+    bool passFilterOut( const string & sParam1, const string & sParam2, vector<string> & vReturn, uint uiCurrentFilePos );
+
     bool passConfigList( const string & sPrefix, const string & sSuffix, const string & sList );
 
     bool buildDefaultValues( );

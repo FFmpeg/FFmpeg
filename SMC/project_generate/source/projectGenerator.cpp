@@ -628,6 +628,7 @@ cd $(ProjectDir)\n\
     }
 
     //Add additional dependencies based on current config to Libs list
+    buildInterDependencies( sProjectName, m_vLibs );
     m_mProjectLibs[sProjectName] = m_vLibs; //Backup up current libs for solution
     StaticList vAddLibs;
     StaticList vIncludeDirs;
