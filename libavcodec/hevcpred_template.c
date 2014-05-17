@@ -160,34 +160,25 @@ do {                                  \
     }
     if (cand_bottom_left) {
         for (i = size + bottom_left_size; i < (size << 1); i++)
-            if (IS_INTRA(-1, size + bottom_left_size - 1) ||
-                !s->pps->constrained_intra_pred_flag)
-                left[i] = POS(-1, size + bottom_left_size - 1);
+            left[i] = POS(-1, size + bottom_left_size - 1);
         for (i = size + bottom_left_size - 1; i >= size; i--)
-            if (IS_INTRA(-1, i) || !s->pps->constrained_intra_pred_flag)
-                left[i] = POS(-1, i);
+            left[i] = POS(-1, i);
     }
     if (cand_left)
         for (i = size - 1; i >= 0; i--)
-            if (IS_INTRA(-1, i) || !s->pps->constrained_intra_pred_flag)
-                left[i] = POS(-1, i);
-    if (cand_up_left)
-        if (IS_INTRA(-1, -1) || !s->pps->constrained_intra_pred_flag) {
-            left[-1] = POS(-1, -1);
-            top[-1]  = left[-1];
-        }
+            left[i] = POS(-1, i);
+    if (cand_up_left) {
+        left[-1] = POS(-1, -1);
+        top[-1]  = left[-1];
+    }
     if (cand_up)
         for (i = size - 1; i >= 0; i--)
-            if (IS_INTRA(i, -1) || !s->pps->constrained_intra_pred_flag)
-                top[i] = POS(i, -1);
+            top[i] = POS(i, -1);
     if (cand_up_right) {
         for (i = size + top_right_size; i < (size << 1); i++)
-            if (IS_INTRA(size + top_right_size - 1, -1) ||
-                !s->pps->constrained_intra_pred_flag)
-                top[i] = POS(size + top_right_size - 1, -1);
+            top[i] = POS(size + top_right_size - 1, -1);
         for (i = size + top_right_size - 1; i >= size; i--)
-            if (IS_INTRA(i, -1) || !s->pps->constrained_intra_pred_flag)
-                top[i] = POS(i, -1);
+            top[i] = POS(i, -1);
     }
 
     if (s->pps->constrained_intra_pred_flag == 1) {
