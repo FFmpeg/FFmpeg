@@ -145,21 +145,17 @@ INIT_XMM sse2
     punpckldq        m0, m2
 
     movq             %1, m0
-    punpckhqdq       m0, m0
-    movq             %2, m0
+    movhps           %2, m0
     movq             %3, m6
-    punpckhqdq       m6, m6
-    movq             %4, m6
+    movhps           %4, m6
 
     punpckhdq        m6, m4, m5
     punpckldq        m4, m5
 
     movq             %5, m4
-    punpckhqdq       m4, m4
-    movq             %6, m4
+    movhps           %6, m4
     movq             %7, m6
-    punpckhqdq       m6, m6
-    movq             %8, m6
+    movhps           %8, m6
 %endmacro
 
 ; in: 8 rows of 8 bytes in %1..%8
@@ -237,17 +233,13 @@ INIT_XMM sse2
     punpckldq       m11, m8, m9;  4, 5
     punpckhdq        m8, m9;   6, 7
     movq             %1, m0
-    pshufd           m0, m0, 0x4E
-    movq             %2, m0
+    movhps           %2, m0
     movq             %3, m10
-    pshufd           m10, m10, 0x4E
-    movq             %4, m10
+    movhps           %4, m10
     movq             %5, m11
-    pshufd          m11, m11, 0x4E
-    movq             %6, m11
+    movhps           %6, m11
     movq             %7, m8
-    pshufd           m8, m8, 0x4E
-    movq             %8, m8
+    movhps           %8, m8
 %endmacro
 
 ; in: 8 rows of 8 words in %1..%8
