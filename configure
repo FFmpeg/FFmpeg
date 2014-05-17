@@ -1199,8 +1199,8 @@ require_libfreetype(){
     pkg="freetype2"
     check_cmd $pkg_config --exists --print-errors $pkg \
       || die "ERROR: $pkg not found"
-    pkg_cflags=$($pkg_config --cflags $pkg)
-    pkg_libs=$($pkg_config --libs $pkg)
+    pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
+    pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     {
         echo "#include <ft2build.h>"
         echo "#include FT_FREETYPE_H"
