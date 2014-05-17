@@ -59,14 +59,12 @@ INIT_XMM sse2
 
     punpckhdq        m2, m0, m4
     punpckldq        m0, m4
-    mova             m1, m0
-    mova             m3, m2
 
     pxor             m5, m5
+    punpckhbw        m1, m0, m5
     punpcklbw        m0, m5
-    punpckhbw        m1, m5
+    punpckhbw        m3, m2, m5
     punpcklbw        m2, m5
-    punpckhbw        m3, m5
 %endmacro
 
 ; in: 4 rows of 8 words in m0..m3
@@ -139,10 +137,9 @@ INIT_XMM sse2
     CLIPW            m2, m5, [pw_pixel_max]
     CLIPW            m3, m5, [pw_pixel_max]
 
-    mova             m4, m0
-    mova             m5, m2
-
+    punpckhwd        m4, m0, m1
     punpcklwd        m0, m1
+    punpckhwd        m5, m2, m3
     punpcklwd        m2, m3
     punpckhdq        m6, m0, m2
     punpckldq        m0, m2
@@ -154,8 +151,6 @@ INIT_XMM sse2
     punpckhqdq       m6, m6
     movq             %4, m6
 
-    punpckhwd        m4, m1
-    punpckhwd        m5, m3
     punpckhdq        m6, m4, m5
     punpckldq        m4, m5
 
@@ -301,8 +296,7 @@ INIT_XMM sse2
 ; clobbers m10
 %macro MASKED_COPY 2
     pand             %2, m11 ; and mask
-    mova            m10, m11
-    pandn           m10, %1; and -mask
+    pandn           m10, m11, %1; and -mask
     por              %2, m10
     mova             %1, %2
 %endmacro
@@ -320,10 +314,8 @@ INIT_XMM sse2
 ALIGN 16
 ; input in m0 ... m3 and tcs in r2. Output in m1 and m2
 %macro CHROMA_DEBLOCK_BODY 1
-    mova             m4, m2; temp copy of q0
-    mova             m5, m0; temp copy of p1
-    psubw            m4, m1; q0 - p0
-    psubw            m5, m3; p1 - q1
+    psubw            m4, m2, m1; q0 - p0
+    psubw            m5, m0, m3; p1 - q1
     psllw            m4, 2; << 2
     paddw            m5, m4;
 
@@ -334,9 +326,8 @@ ALIGN 16
     movd             m7, [r2]; tc1
     punpcklwd        m7, m7
     shufps           m6, m7, 0; tc0, tc1
-    mova             m4, m6
     pcmpeqw          m7, m7; set all bits to 1
-    pxor             m4, m7; flip all bits of first reg
+    pxor             m4, m6, m7; flip all bits of first reg
     psrlw            m7, 15; 1 in every cell
     paddw            m4, m7; -tc0, -tc1
     ;end tc calculations
@@ -355,17 +346,13 @@ ALIGN 16
 
 ; input in m0 ... m7, betas in r2 tcs in r3. Output in m1...m6
 %macro LUMA_DEBLOCK_BODY 2
-    mova             m9, m2
-    psllw            m9, 1; *2
-    mova            m10, m1
-    psubw           m10, m9
+    psllw            m9, m2, 1; *2
+    psubw           m10, m1, m9
     paddw           m10, m3
     ABS1            m10, m10 ; 0dp0, 0dp3 , 1dp0, 1dp3
 
-    mova             m9, m5
-    psllw            m9, 1; *2
-    mova            m11, m6
-    psubw           m11, m9
+    psllw            m9, m5, 1; *2
+    psubw           m11, m6, m9
     paddw           m11, m4
     ABS1            m11, m11 ; 0dq0, 0dq3 , 1dq0, 1dq3
 
@@ -382,8 +369,7 @@ ALIGN 16
     pshufd          m13, m14, 0; beta0, beta1
     ;end beta calculations
 
-    mova             m9, m10
-    paddw            m9, m11;   0d0, 0d3  ,  1d0, 1d3
+    paddw            m9, m10, m11;   0d0, 0d3  ,  1d0, 1d3
 
     pshufhw         m14, m9, 0x0f ;0b00001111;  0d3 0d3 0d0 0d0 in high
     pshuflw         m14, m14, 0x0f ;0b00001111;  1d3 1d3 1d0 1d0 in low
@@ -392,19 +378,16 @@ ALIGN 16
     pshuflw          m9, m9, 0xf0 ;0b11110000; 1d0 1d0 1d3 1d3
 
     paddw           m14, m9; 0d0+0d3, 1d0+1d3
-    mova            m15, m13; beta0, beta1
 
     ;compare
-    pcmpgtw         m15, m14
+    pcmpgtw         m15, m13, m14; beta0, beta1
     movmskps        r13, m15 ;filtering mask 0d0 + 0d3 < beta0 (bit 2 or 3) , 1d0 + 1d3 < beta1 (bit 0 or 1)
     cmp             r13, 0
     je bypasswrite_macro_%2%1
 
     ;weak / strong decision compare to beta_2
-    mova            m15, m13; beta0, beta1
-    psraw           m15, 2;   beta >> 2
-    mova             m8, m9;
-    psllw            m8, 1;
+    psraw           m15, m13, 2;   beta >> 2
+    psllw            m8, m9, 1;
     pcmpgtw         m15, m8; (d0 << 1) < beta_2, (d3 << 1) < beta_2
     movmskps        r14, m15;
     ;end weak / strong decision
@@ -466,12 +449,10 @@ ALIGN 16
     ;end tc25 calculations
 
     ;----beta_3 comparison-----
-    mova            m12, m0;      p3
-    psubw           m12, m3;      p3 - p0
+    psubw           m12, m0, m3;      p3 - p0
     ABS1            m12, m12; abs(p3 - p0)
 
-    mova            m15, m7;      q3
-    psubw           m15, m4;      q3 - q0
+    psubw           m15, m7, m4;      q3 - q0
     ABS1            m15, m15; abs(q3 - q0)
 
     paddw           m12, m15; abs(p3 - p0) + abs(q3 - q0)
@@ -485,8 +466,7 @@ ALIGN 16
     and             r14, r2; strong mask , beta_2 and beta_3 comparisons
     ;----beta_3 comparison end-----
     ;----tc25 comparison---
-    mova            m12, m3;      p0
-    psubw           m12, m4;      p0 - q0
+    psubw           m12, m3, m4;      p0 - q0
     ABS1            m12, m12; abs(p0 - q0)
 
     pshufhw         m12, m12, 0xf0 ;0b11110000;
@@ -501,8 +481,7 @@ ALIGN 16
     and             r14, r2; strong mask, bits 2 and 0
 
     pcmpeqw         m13, m13; set all bits to 1
-    mova            m14, m9; tc
-    pxor            m14, m13; invert bits
+    pxor            m14, m9, m13; invert bits
     psrlw           m13, 15; 1 in every cell
     paddw           m14, m13; -tc
 
@@ -528,8 +507,7 @@ ALIGN 16
 
     psllw           m13, 2; 4 in every cell
     pand            m11, m10; combine filtering mask and strong mask
-    mova            m12, m2;          p1
-    paddw           m12, m3;          p1 +   p0
+    paddw           m12, m2, m3;          p1 +   p0
     paddw           m12, m4;          p1 +   p0 +   q0
     mova            m10, m12; copy
     psllw           m12, 1;         2*p1 + 2*p0 + 2*q0
@@ -542,8 +520,7 @@ ALIGN 16
     pminsw          m12, m9; av_clip( , -2 * tc, 2 * tc)
     paddw           m12, m3; p0'
 
-    mova            m15, m1;  p2
-    paddw           m15, m10; p2 + p1 + p0 + q0
+    paddw           m15, m1, m10; p2 + p1 + p0 + q0
     psrlw           m13, 1; 2 in every cell
     paddw           m15, m13; p2 + p1 + p0 + q0 + 2
     psraw           m15, 2;  (p2 + p1 + p0 + q0 + 2) >> 2
@@ -552,8 +529,7 @@ ALIGN 16
     pminsw          m15, m9; av_clip( , -2 * tc, 2 * tc)
     paddw           m15, m2; p1'
 
-    mova             m8, m1;            p2
-    paddw            m8, m0;     p3 +   p2
+    paddw            m8, m1, m0;     p3 +   p2
     psllw            m8, 1;    2*p3 + 2*p2
     paddw            m8, m1;   2*p3 + 3*p2
     paddw            m8, m10;  2*p3 + 3*p2 + p1 + p0 + q0
@@ -566,8 +542,7 @@ ALIGN 16
     paddw            m8, m1; p2'
     MASKED_COPY      m1, m8
 
-    mova             m8, m3;         p0
-    paddw            m8, m4;         p0 +   q0
+    paddw            m8, m3, m4;         p0 +   q0
     paddw            m8, m5;         p0 +   q0 +   q1
     psllw            m8, 1;        2*p0 + 2*q0 + 2*q1
     paddw            m8, m2;  p1 + 2*p0 + 2*q0 + 2*q1
@@ -580,8 +555,7 @@ ALIGN 16
     paddw            m8, m4; q0'
     MASKED_COPY      m2, m15
 
-    mova            m15, m3;   p0
-    paddw           m15, m4;   p0 + q0
+    paddw           m15, m3, m4;   p0 + q0
     paddw           m15, m5;   p0 + q0 + q1
     mova            m10, m15;
     paddw           m15, m6;   p0 + q0 + q1 + q2
@@ -641,16 +615,12 @@ weakfilter_macro_%2%1:
     psrlw           m13, 15; 1 in every cell
     psllw           m13, 3; 8 in every cell
 
-    mova            m12, m4 ; q0
-    psubw           m12, m3 ; q0 - p0
-    mova            m10, m12
-    psllw           m10, 3; 8 * (q0 - p0)
+    psubw           m12, m4, m3 ; q0 - p0
+    psllw           m10, m12, 3; 8 * (q0 - p0)
     paddw           m12, m10 ; 9 * (q0 - p0)
 
-    mova            m10, m5 ; q1
-    psubw           m10, m2 ; q1 - p1
-    mova             m8, m10
-    psllw            m8, 1; 2 * ( q1 - p1 )
+    psubw           m10, m5, m2 ; q1 - p1
+    psllw            m8, m10, 1; 2 * ( q1 - p1 )
     paddw           m10, m8; 3 * ( q1 - p1 )
     psubw           m12, m10; 9 * (q0 - p0) - 3 * ( q1 - p1 )
     paddw           m12, m13; + 8
@@ -658,8 +628,7 @@ weakfilter_macro_%2%1:
     PABSW           m13, m12; abs(delta0)
 
 
-    mova            m10, m9; 2*tc
-    psllw           m10, 2; 8 * tc
+    psllw           m10, m9, 2; 8 * tc
     paddw           m10, m9; 10 * tc
     pcmpgtw         m10, m13
     pand            m11, m10
@@ -672,13 +641,11 @@ weakfilter_macro_%2%1:
 
     pcmpeqw         m13, m13; set all bits to 1
     psraw            m9, 1;   tc -> tc / 2
-    mova            m14, m9;
-    pxor            m14, m13; complement -tc
+    pxor            m14, m9, m13; complement -tc
     psrlw           m13, 15; set all cells to 1
     paddw           m14, m13; add 1, -tc / 2
 
-    mova            m15, m1;    p2
-    pavgw           m15, m3;   (p2 + p0 + 1) >> 1
+    pavgw           m15, m1, m3;   (p2 + p0 + 1) >> 1
     psubw           m15, m2;  ((p2 + p0 + 1) >> 1) - p1
     paddw           m15, m12; ((p2 + p0 + 1) >> 1) - p1 + delta0
     psraw           m15, 1;   (((p2 + p0 + 1) >> 1) - p1 + delta0) >> 1
@@ -698,14 +665,12 @@ weakfilter_macro_%2%1:
     punpcklwd        m8, m8
     punpcklwd       m13, m13
     shufps          m13, m8, 0;
-    mova             m8, m10; copy of beta
-    pcmpgtw          m8, m13
+    pcmpgtw          m8, m10, m13
     pand             m8, m11
     ;end beta calculations
     MASKED_COPY2     m2, m15, m8; write p1'
 
-    mova             m8, m6;    q2
-    pavgw            m8, m4;   (q2 + q0 + 1) >> 1
+    pavgw            m8, m6, m4;   (q2 + q0 + 1) >> 1
     psubw            m8, m5;  ((q2 + q0 + 1) >> 1) - q1
     psubw            m8, m12; ((q2 + q0 + 1) >> 1) - q1 - delta0)
     psraw            m8, 1;   ((q2 + q0 + 1) >> 1) - q1 - delta0) >> 1
@@ -723,12 +688,10 @@ weakfilter_macro_%2%1:
     pand            m10, m11
     MASKED_COPY2     m5, m8, m10; write q1'
 
-    mova            m15, m3 ; p0
-    paddw           m15, m12 ; p0 + delta0
+    paddw           m15, m3, m12 ; p0 + delta0
     MASKED_COPY      m3, m15
 
-    mova             m8, m4 ; q0
-    psubw            m8, m12 ; q0 - delta0
+    psubw            m8, m4, m12 ; q0 - delta0
     MASKED_COPY      m4, m8
 ready_macro_%2%1:
     jmp to_store_%2%1
