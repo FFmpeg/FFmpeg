@@ -159,10 +159,10 @@ do {                                  \
         }
     }
     if (cand_bottom_left) {
-        for (i = size + bottom_left_size; i < (size << 1); i++)
-            left[i] = POS(-1, size + bottom_left_size - 1);
-        for (i = size + bottom_left_size - 1; i >= size; i--)
+        for (i = size; i < size + bottom_left_size; i++)
             left[i] = POS(-1, i);
+        EXTEND(left + size + bottom_left_size, POS(-1, size + bottom_left_size - 1),
+               size - bottom_left_size);
     }
     if (cand_left)
         for (i = size - 1; i >= 0; i--)
@@ -172,13 +172,11 @@ do {                                  \
         top[-1]  = left[-1];
     }
     if (cand_up)
-        for (i = size - 1; i >= 0; i--)
-            top[i] = POS(i, -1);
+        memcpy(top, src - stride, size * sizeof(pixel));
     if (cand_up_right) {
-        for (i = size + top_right_size; i < (size << 1); i++)
-            top[i] = POS(size + top_right_size - 1, -1);
-        for (i = size + top_right_size - 1; i >= size; i--)
-            top[i] = POS(i, -1);
+        memcpy(top + size, src - stride + size, size * sizeof(pixel));
+        EXTEND(top + size + top_right_size, POS(size + top_right_size - 1, -1),
+               size - top_right_size);
     }
 
     if (s->pps->constrained_intra_pred_flag == 1) {
