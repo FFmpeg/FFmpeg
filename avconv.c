@@ -955,7 +955,7 @@ static void print_report(int is_last_report, int64_t timer_start)
             vid = 1;
         }
         /* compute min output value */
-        pts = (double)ost->st->pts.val * av_q2d(ost->st->time_base);
+        pts = (double)ost->last_mux_dts * av_q2d(ost->st->time_base);
         if ((pts < ti1) && (pts > 0))
             ti1 = pts;
     }
