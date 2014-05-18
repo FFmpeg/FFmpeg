@@ -1064,7 +1064,7 @@ static int mkv_write_attachments(AVFormatContext *s)
             return AVERROR(EINVAL);
         }
 
-        if (st->codec->flags & CODEC_FLAG_BITEXACT) {
+        if (s->flags & AVFMT_FLAG_BITEXACT) {
             struct AVSHA *sha = av_sha_alloc();
             uint8_t digest[20];
             if (!sha)
