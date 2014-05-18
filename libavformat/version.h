@@ -30,8 +30,8 @@
 #include "libavutil/version.h"
 
 #define LIBAVFORMAT_VERSION_MAJOR 55
-#define LIBAVFORMAT_VERSION_MINOR 19
-#define LIBAVFORMAT_VERSION_MICRO  1
+#define LIBAVFORMAT_VERSION_MINOR 20
+#define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -56,6 +56,9 @@
 #endif
 #ifndef FF_API_LAVF_FRAC
 #define FF_API_LAVF_FRAC                (LIBAVFORMAT_VERSION_MAJOR < 57)
+#endif
+#ifndef FF_API_LAVF_CODEC_TB
+#define FF_API_LAVF_CODEC_TB            (LIBAVFORMAT_VERSION_MAJOR < 57)
 #endif
 
 #endif /* AVFORMAT_VERSION_H */

@@ -1433,11 +1433,12 @@ static int mxf_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "video stream must be first track\n");
                 return -1;
             }
-            if (fabs(av_q2d(st->codec->time_base) - 1/25.0) < 0.0001) {
+            // TODO: should be avg_frame_rate
+            if (fabs(av_q2d(st->time_base) - 1/25.0) < 0.0001) {
                 samples_per_frame = PAL_samples_per_frame;
                 mxf->time_base = (AVRational){ 1, 25 };
                 mxf->timecode_base = 25;
-            } else if (fabs(av_q2d(st->codec->time_base) - 1001/30000.0) < 0.0001) {
+            } else if (fabs(av_q2d(st->time_base) - 1001/30000.0) < 0.0001) {
                 samples_per_frame = NTSC_samples_per_frame;
                 mxf->time_base = (AVRational){ 1001, 30000 };
                 mxf->timecode_base = 30;

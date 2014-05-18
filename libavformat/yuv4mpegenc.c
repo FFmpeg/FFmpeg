@@ -38,8 +38,9 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     width  = st->codec->width;
     height = st->codec->height;
 
-    av_reduce(&raten, &rated, st->codec->time_base.den,
-              st->codec->time_base.num, (1UL << 31) - 1);
+    // TODO: should be avg_frame_rate
+    av_reduce(&raten, &rated, st->time_base.den,
+              st->time_base.num, (1UL << 31) - 1);
 
     aspectn = st->sample_aspect_ratio.num;
     aspectd = st->sample_aspect_ratio.den;

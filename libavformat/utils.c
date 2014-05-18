@@ -2663,9 +2663,14 @@ AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
     }
 
     st->codec = avcodec_alloc_context3(c);
-    if (s->iformat)
+    if (s->iformat) {
         /* no default bitrate if decoding */
         st->codec->bit_rate = 0;
+
+        /* default pts setting is MPEG-like */
+        avpriv_set_pts_info(st, 33, 1, 90000);
+    }
+
     st->index      = s->nb_streams;
     st->start_time = AV_NOPTS_VALUE;
     st->duration   = AV_NOPTS_VALUE;
@@ -2677,8 +2682,6 @@ AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
     st->first_dts     = AV_NOPTS_VALUE;
     st->probe_packets = MAX_PROBE_PACKETS;
 
-    /* default pts setting is MPEG-like */
-    avpriv_set_pts_info(st, 33, 1, 90000);
     st->last_IP_pts = AV_NOPTS_VALUE;
     for (i = 0; i < MAX_REORDER_DELAY + 1; i++)
         st->pts_buffer[i] = AV_NOPTS_VALUE;

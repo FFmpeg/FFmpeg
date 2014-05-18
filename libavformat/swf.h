@@ -76,6 +76,7 @@ typedef struct SWFContext {
     int tag;
     AVFifoBuffer *audio_fifo;
     AVCodecContext *audio_enc, *video_enc;
+    AVStream *video_st;
 } SWFContext;
 
 extern const AVCodecTag ff_swf_codec_tags[];
