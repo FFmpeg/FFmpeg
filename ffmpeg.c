@@ -2394,6 +2394,8 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
 
     if (!(format_flags & AVFMT_FLAG_BITEXACT) && !(codec_flags & CODEC_FLAG_BITEXACT))
         av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
+    else
+        av_strlcpy(encoder_string, "Lavc ", encoder_string_len);
     av_strlcat(encoder_string, ost->enc->name, encoder_string_len);
     av_dict_set(&ost->st->metadata, "encoder",  encoder_string,
                 AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
