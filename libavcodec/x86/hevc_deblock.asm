@@ -424,15 +424,12 @@ ALIGN 16
     shl              r2, %1 - 8
     movd             m8, r2d; tc0
     add             tcq, 4;
-    punpcklwd        m8, m8
     mov             r3d, [tcq];
     shl              r3, %1 - 8
-    movd             m9, r3d; tc0
-    punpcklwd        m9, m9
     movd             m9, r3d; tc1
     add             r2d, r3d; tc0 + tc1
-    cmp             r2d, 0;
-    je        .bypassluma
+    jz        .bypassluma
+    punpcklwd        m8, m8
     punpcklwd        m9, m9
     shufps           m8, m9, 0; tc0, tc1
     mova             m9, m8
@@ -488,8 +485,7 @@ ALIGN 16
     and              r2, 1
     movd            m10, r2d; store to xmm for mask generation
     or              r14, r2; final strong mask, bits 1 and 0
-    cmp             r14, 0;
-    je      .weakfilter
+    jz      .weakfilter
 
     shufps          m10, m12, 0
 
@@ -578,8 +574,7 @@ ALIGN 16
 .weakfilter:
     not             r14; strong mask -> weak mask
     and             r14, r13; final weak filtering mask, bits 0 and 1
-    cmp             r14, 0;
-    je      .store
+    jz      .store
 
     ; weak filtering mask
     mov              r2, r14
