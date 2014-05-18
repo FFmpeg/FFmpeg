@@ -13,107 +13,107 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
-2014-08-xx - xxxxxxx - lavu 54.03.0 - mem.h
+2014-08-13 - 8ddc326 - lavu 54.03.0 - mem.h
   Add av_strndup().
 
-2014-xx-xx - xxxxxxx - lavu 54.02.0 - opt.h
+2014-08-13 - a8c104a - lavu 54.02.0 - opt.h
   Add av_opt_get_dict_val/set_dict_val with AV_OPT_TYPE_DICT to support
   dictionary types being set as options.
 
-2014-xx-xx - xxxxxxx - lavf 56.01.0 - avformat.h
+2014-08-13 - afbd4b8 - lavf 56.01.0 - avformat.h
   Add AVFormatContext.event_flags and AVStream.event_flags for signaling to
   the user when events happen in the file/stream.
 
-2014-04-xx - xxxxxxx - lavr 2.1.0 - avresample.h
+2014-08-10 - fb1ddcd - lavr 2.1.0 - avresample.h
   Add avresample_convert_frame() and avresample_config().
 
-2014-04-xx - xxxxxxx - lavu 54.1.0 - error.h
+2014-08-10 - fb1ddcd - lavu 54.1.0 - error.h
   Add AVERROR_INPUT_CHANGED and AVERROR_OUTPUT_CHANGED.
 
-2014-08-xx - xxxxxxx - lavc 55.57.4 - avcodec.h
+2014-08-08 - d35b94f - lavc 55.57.4 - avcodec.h
   Deprecate FF_IDCT_XVIDMMX define and xvidmmx idct option.
   Replaced by FF_IDCT_XVID and xvid respectively.
 
-2014-08-xx - xxxxxxx - lsws 2.1.3 - swscale.h
+2014-08-07 - bb78903 - lsws 2.1.3 - swscale.h
   sws_getCachedContext is not going to be removed in the future.
 
-2014-08-xx - xxxxxxx - lavc 55.57.3 - avcodec.h
+2014-08-07 - ad1ee5f - lavc 55.57.3 - avcodec.h
   reordered_opaque is not going to be removed in the future.
 
-2014-08-xx - xxxxxxx - lavu 53.22.0 - pixfmt.h
+2014-08-04 - e9abafc - lavu 53.22.0 - pixfmt.h
   Add AV_PIX_FMT_YA16 pixel format for 16 bit packed gray with alpha.
 
-2014-08-xx - xxxxxxx - lavu 53.21.1 - avstring.h
+2014-08-04 - e96c3b8 - lavu 53.21.1 - avstring.h
   Rename AV_PIX_FMT_Y400A to AV_PIX_FMT_YA8 to better identify the format.
   An alias pixel format and color space name are provided for compatibility.
 
-2014-08-xx - xxxxxxx - lavu 53.21.0 - pixdesc.h
+2014-08-04 - d2962e9 - lavu 53.21.0 - pixdesc.h
   Support name aliases for pixel formats.
 
-2014-08-xx - xxxxxxx - lavc 55.57.2 - avcodec.h
-2014-08-xx - xxxxxxx - lavu 53.20.0 - frame.h
+2014-08-03 - 1ef9e83 - lavc 55.57.2 - avcodec.h
+2014-08-03 - 1ef9e83 - lavu 53.20.0 - frame.h
   Deprecate AVCodecContext.dtg_active_format and use side-data instead.
 
-2014-08-xx - xxxxxxx - lavc 55.57.1 - avcodec.h
+2014-08-03 - 9f17685 - lavc 55.57.1 - avcodec.h
   Deprecate unused FF_IDCT_IPP define and ipp avcodec option.
   Deprecate unused FF_DEBUG_PTS define and pts avcodec option.
   Deprecate unused FF_CODER_TYPE_DEFLATE define and deflate avcodec option.
   Deprecate unused FF_DCT_INT define and int avcodec option.
   Deprecate unused avcodec option scenechange_factor.
 
-2014-07-xx - xxxxxxx - lavu 53.19.0 - avstring.h
+2014-07-29 - 69e7336 - lavu 53.19.0 - avstring.h
   Make name matching function from lavf public as av_match_name().
 
-2014-xx-xx - xxxxxxx - lavc 55.57.0 - avcodec.h
+2014-07-28 - c5fca01 - lavc 55.57.0 - avcodec.h
   Add AV_CODEC_PROP_REORDER to mark codecs supporting frame reordering.
 
-2014-07-xx - xxxxxxx - lavu 53.18.0 - display.h
+2014-07-09 - a54f03b - lavu 53.18.0 - display.h
   Add av_display_matrix_flip() to flip the transformation matrix.
 
-2014-07-xx - xxxxxxx - lavc 55.56.0 - dv_profile.h
+2014-07-09 - f6ee61f - lavc 55.56.0 - dv_profile.h
   Add a public API for DV profile handling.
 
-2014-06-xx - xxxxxxx - lavu 53.17.0 - imgutils.h
+2014-06-20 - 9e500ef - lavu 53.17.0 - imgutils.h
   Add av_image_check_sar().
 
-2014-06-xx - xxxxxxx - lavc 55.55.0 - avcodec.h
+2014-06-20 - 874390e - lavc 55.55.0 - avcodec.h
   Add av_packet_rescale_ts() to simplify timestamp conversion.
 
-2014-xx-xx - xxxxxxx - lavf 55.20.0 - avformat.h
+2014-06-18 - 194be1f - lavf 55.20.0 - avformat.h
   The proper way for providing a hint about the desired timebase to the muxers
   is now setting AVStream.time_base, instead of AVStream.codec.time_base as was
   done previously. The old method is now deprecated.
 
-2014-04-xx - xxxxxxx - lavc 55.54.0 - avcodec.h
+2014-06-01 - 0957b27 - lavc 55.54.0 - avcodec.h
   Add AVCodecContext.side_data_only_packets to allow encoders to output packets
   with only side data. This option may become mandatory in the future, so all
   users are recommended to update their code and enable this option.
 
-2014-xx-xx - xxxxxxx - lavu 53.16.0 - frame.h, pixfmt.h
+2014-06-01 - 8c02adc - lavu 53.16.0 - frame.h, pixfmt.h
   Move all color-related enums (AVColorPrimaries, AVColorSpace, AVColorRange,
   AVColorTransferCharacteristic, and AVChromaLocation) inside lavu.
   Add AVFrame fields for them on the next lavu major bump.
 
-2014-04-xx - xxxxxxx - lavr 1.3.0 - avresample.h
+2014-05-28 - b2d4565 - lavr 1.3.0 - avresample.h
   Add avresample_max_output_samples
 
-2014-05-24 - xxxxxxx - lavf 55.19.0 - avformat.h
+2014-05-28 - 6d21259 - lavf 55.19.0 - avformat.h
   Add strict_std_compliance and related AVOptions to support experimental
   muxing.
 
-2014-05-19 - xxxxxxx - lavf 55.18.0 - avformat.h
+2014-05-20 - c23c96b - lavf 55.18.0 - avformat.h
   Add av_stream_get_side_data() to access stream-level side data
   in the same way as av_packet_get_side_data().
 
-2014-05-xx - xxxxxxx - lavu 53.15.0 - frame.h, display.h
+2014-05-19 - bddd8cb - lavu 53.15.0 - frame.h, display.h
   Add AV_FRAME_DATA_DISPLAYMATRIX for exporting frame-level
   spatial rendering on video frames for proper display.
 
-2014-05-xx - xxxxxxx - lavc 55.53.0 - avcodec.h
+2014-05-19 - bddd8cb - lavc 55.53.0 - avcodec.h
   Add AV_PKT_DATA_DISPLAYMATRIX for exporting packet-level
   spatial rendering on video frames for proper display.
 
-2014-05-xx - xxxxxxx - lavf 55.17.1 - avformat.h
+2014-05-19 - a312f71 - lavf 55.17.1 - avformat.h
   Deprecate AVStream.pts and the AVFrac struct, which was its only use case.
   Those fields were poorly defined and not meant to be public, so there is
   no replacement for them.
