@@ -31,7 +31,7 @@ static int yuv4_read_header(AVFormatContext *s)
 {
     char header[MAX_YUV4_HEADER + 10];  // Include headroom for
                                         // the longest option
-    char *tokstart, *tokend, *header_end, interlaced = '?';
+    char *tokstart, *tokend, *header_end;
     int i;
     AVIOContext *pb = s->pb;
     int width = -1, height  = -1, raten   = 0,
@@ -39,6 +39,7 @@ static int yuv4_read_header(AVFormatContext *s)
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE, alt_pix_fmt = AV_PIX_FMT_NONE;
     enum AVChromaLocation chroma_sample_location = AVCHROMA_LOC_UNSPECIFIED;
     AVStream *st;
+    enum AVFieldOrder field_order;
 
     for (i = 0; i < MAX_YUV4_HEADER; i++) {
         header[i] = avio_r8(pb);
@@ -134,7 +135,26 @@ static int yuv4_read_header(AVFormatContext *s)
                 tokstart++;
             break;
         case 'I': // Interlace type
-            interlaced = *tokstart++;
+            switch (*tokstart++){
+            case '?':
+                field_order = AV_FIELD_UNKNOWN;
+                break;
+            case 'p':
+                field_order = AV_FIELD_PROGRESSIVE;
+                break;
+            case 't':
+                field_order = AV_FIELD_TT;
+                break;
+            case 'b':
+                field_order = AV_FIELD_BB;
+                break;
+            case 'm':
+                av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains mixed "
+                       "interlaced and non-interlaced frames.\n");
+            default:
+                av_log(s, AV_LOG_ERROR, "YUV4MPEG has invalid header.\n");
+                return AVERROR(EINVAL);
+            }
             break;
         case 'F': // Frame rate
             sscanf(tokstart, "%d:%d", &raten, &rated); // 0:0 if unknown
@@ -235,27 +255,7 @@ static int yuv4_read_header(AVFormatContext *s)
     st->codec->codec_id               = AV_CODEC_ID_RAWVIDEO;
     st->sample_aspect_ratio           = (AVRational){ aspectn, aspectd };
     st->codec->chroma_sample_location = chroma_sample_location;
-
-    switch (interlaced){
-    case 'p':
-        st->codec->field_order = AV_FIELD_PROGRESSIVE;
-        break;
-    case 't':
-        st->codec->field_order = AV_FIELD_TB;
-        break;
-    case 'b':
-        st->codec->field_order = AV_FIELD_BT;
-        break;
-    case 'm':
-        av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains mixed "
-               "interlaced and non-interlaced frames.\n");
-    case '?':
-        st->codec->field_order = AV_FIELD_UNKNOWN;
-        break;
-    default:
-        av_log(s, AV_LOG_ERROR, "YUV4MPEG has invalid header.\n");
-        return AVERROR(EINVAL);
-    }
+    st->codec->field_order            = field_order;
 
     return 0;
 }
