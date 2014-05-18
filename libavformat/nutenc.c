@@ -815,7 +815,6 @@ static int find_best_header_idx(NUTContext *nut, AVPacket *pkt)
 
 static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int is_meta)
 {
-    AVStream *st = s->streams[pkt->stream_index];
     int ret, i, dyn_size;
     unsigned flags;
     AVIOContext *dyn_bc;
@@ -865,7 +864,7 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                     put_str(dyn_bc, tmp);
                 } else {
                     snprintf(tmp, sizeof(tmp), "UserData%s-SD-%d",
-                            (st->codec->flags & CODEC_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT,
+                            (s->flags & AVFMT_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT,
                             pkt->side_data[i].type);
                     put_str(dyn_bc, tmp);
                 }
