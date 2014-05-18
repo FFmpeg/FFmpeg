@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-04-xx - xxxxxxx - lavc 55.52.0 - avcodec.h
+  Add avcodec_free_context(). From now on it should be used for freeing
+  AVCodecContext.
+
 2014-05-xx - xxxxxxx - lavu 52.84.100 - time.h
   Add av_gettime_relative() av_gettime_relative_is_monotonic()
 
