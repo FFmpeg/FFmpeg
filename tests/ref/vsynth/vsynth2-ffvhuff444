@@ -1,4 +1,4 @@
-50d1d79bcb2e9a9fe70ec0f211d07b09 *tests/data/fate/vsynth2-ffvhuff444.avi
+f77a213d963aef0384a8cc2e08a2e6d8 *tests/data/fate/vsynth2-ffvhuff444.avi
 8666652 tests/data/fate/vsynth2-ffvhuff444.avi
 d43cb310c130c69214332d74f6ee5f9a *tests/data/fate/vsynth2-ffvhuff444.out.rawvideo
 stddev:    0.41 PSNR: 55.80 MAXDIFF:    7 bytes:  7603200/  7603200
