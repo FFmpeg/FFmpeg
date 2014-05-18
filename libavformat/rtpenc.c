@@ -127,7 +127,7 @@ static int rtp_write_header(AVFormatContext *s1)
     // available range, so that any wraparound doesn't happen immediately.
     // (Immediate wraparound would be an issue for SRTP.)
     if (s->seq < 0) {
-        if (st->codec->flags & CODEC_FLAG_BITEXACT) {
+        if (s1->flags & AVFMT_FLAG_BITEXACT) {
             s->seq = 0;
         } else
             s->seq = av_get_random_seed() & 0x0fff;
