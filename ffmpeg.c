@@ -2673,6 +2673,8 @@ static int transcode_init(void)
                            av_get_pix_fmt_name(ost->filter->filter->inputs[0]->format));
                 enc_ctx->pix_fmt = ost->filter->filter->inputs[0]->format;
 
+                ost->st->avg_frame_rate = ost->frame_rate;
+
                 if (!dec_ctx ||
                     enc_ctx->width   != dec_ctx->width  ||
                     enc_ctx->height  != dec_ctx->height ||
