@@ -125,7 +125,7 @@ static int mp3_write_xing(AVFormatContext *s)
     int xing_offset;
     int ver = 0;
     int bytes_needed;
-    const char *vendor = (codec->flags & CODEC_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT;
+    const char *vendor = (s->flags & AVFMT_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT;
 
     if (!s->pb->seekable || !mp3->write_xing)
         return 0;
