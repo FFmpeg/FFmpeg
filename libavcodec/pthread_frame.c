@@ -63,8 +63,6 @@ typedef struct PerThreadContext {
     AVCodecContext *avctx;          ///< Context used to decode packets passed to this thread.
 
     AVPacket       avpkt;           ///< Input packet (for decoding) or output (for encoding).
-    uint8_t       *buf;             ///< backup storage for packet data when the input packet is not refcounted
-    int            allocated_buf_size; ///< Size allocated for buf
 
     AVFrame *frame;                 ///< Output frame (for decoding) or input (for encoding).
     int     got_frame;              ///< The output of got_picture_ptr from the last avcodec_decode_video() call.
@@ -317,16 +315,8 @@ static int submit_packet(PerThreadContext *p, AVPacket *avpkt)
         }
     }
 
-    av_buffer_unref(&p->avpkt.buf);
-    p->avpkt = *avpkt;
-    if (avpkt->buf)
-        p->avpkt.buf = av_buffer_ref(avpkt->buf);
-    else {
-        av_fast_malloc(&p->buf, &p->allocated_buf_size, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
-        p->avpkt.data = p->buf;
-        memcpy(p->buf, avpkt->data, avpkt->size);
-        memset(p->buf + avpkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-    }
+    av_packet_unref(&p->avpkt);
+    av_packet_ref(&p->avpkt, avpkt);
 
     p->state = STATE_SETTING_UP;
     pthread_cond_signal(&p->input_cond);
@@ -542,8 +532,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         pthread_cond_destroy(&p->input_cond);
         pthread_cond_destroy(&p->progress_cond);
         pthread_cond_destroy(&p->output_cond);
-        av_buffer_unref(&p->avpkt.buf);
-        av_freep(&p->buf);
+        av_packet_unref(&p->avpkt);
         av_freep(&p->released_buffers);
 
         if (i) {
