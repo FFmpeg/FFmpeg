@@ -94,6 +94,10 @@ API changes, most recent first:
 2014-02-19 - 6bb8720 - lavu 53.03.01 - opt.h
   Deprecate unused AV_OPT_FLAG_METADATA.
 
+------------------------------8<-------------------------------------
+                   10 branch was cut here
+----------------------------->8--------------------------------------
+
 2014-02-15 - c98f316 - lavu 53.3.0 - frame.h
   Add AV_FRAME_DATA_DOWNMIX_INFO value to the AVFrameSideDataType enum and
   downmix_info.h API, which identify downmix-related metadata.
