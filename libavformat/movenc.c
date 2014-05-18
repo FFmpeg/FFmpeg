@@ -1184,12 +1184,14 @@ static int mov_write_pasp_tag(AVIOContext *pb, MOVTrack *track)
 
 static void find_compressor(char * compressor_name, int len, MOVTrack *track)
 {
+    AVDictionaryEntry *encoder;
     int xdcam_res =  (track->enc->width == 1280 && track->enc->height == 720)
                   || (track->enc->width == 1440 && track->enc->height == 1080)
                   || (track->enc->width == 1920 && track->enc->height == 1080);
 
-    if (track->mode == MODE_MOV && track->enc->codec && track->enc->codec->name) {
-        av_strlcpy(compressor_name, track->enc->codec->name, 32);
+    if (track->mode == MODE_MOV &&
+        (encoder = av_dict_get(track->st->metadata, "encoder", NULL, 0))) {
+        av_strlcpy(compressor_name, encoder->value, 32);
     } else if (track->enc->codec_id == AV_CODEC_ID_MPEG2VIDEO && xdcam_res) {
         int interlaced = track->enc->field_order > AV_FIELD_PROGRESSIVE;
         AVStream *st = track->st;
@@ -3984,8 +3986,8 @@ static int mov_write_header(AVFormatContext *s)
         MOVTrack *track= &mov->tracks[i];
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
 
+        track->st  = st;
         track->enc = st->codec;
-        track->st = st;
         track->language = ff_mov_iso639_to_lang(lang?lang->value:"und", mov->mode!=MODE_MOV);
         if (track->language < 0)
             track->language = 0;
