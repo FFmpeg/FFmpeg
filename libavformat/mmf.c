@@ -69,7 +69,7 @@ static int mmf_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t pos;
     int rate;
-    const char *version = s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT ?
+    const char *version = s->flags & AVFMT_FLAG_BITEXACT ?
                           "VN:Lavf," :
                           "VN:"LIBAVFORMAT_IDENT",";
 
