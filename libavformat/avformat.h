@@ -366,6 +366,7 @@ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size);
  */
 int av_append_packet(AVIOContext *s, AVPacket *pkt, int size);
 
+#if FF_API_LAVF_FRAC
 /*************************************************/
 /* fractional numbers for exact pts handling */
 
@@ -376,6 +377,7 @@ int av_append_packet(AVIOContext *s, AVPacket *pkt, int size);
 typedef struct AVFrac {
     int64_t val, num, den;
 } AVFrac;
+#endif
 
 /*************************************************/
 /* input/output formats */
@@ -695,10 +697,13 @@ typedef struct AVStream {
     AVCodecContext *codec;
     void *priv_data;
 
+#if FF_API_LAVF_FRAC
     /**
-     * encoding: pts generation when outputting stream
+     * @deprecated this field is unused
      */
+    attribute_deprecated
     struct AVFrac pts;
+#endif
 
     /**
      * This is the fundamental unit of time (in seconds) in terms

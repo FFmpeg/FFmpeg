@@ -51,56 +51,6 @@
  * muxing functions for use within Libav
  */
 
-/* fraction handling */
-
-/**
- * f = val + (num / den) + 0.5.
- *
- * 'num' is normalized so that it is such as 0 <= num < den.
- *
- * @param f fractional number
- * @param val integer value
- * @param num must be >= 0
- * @param den must be >= 1
- */
-static void frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
-{
-    num += (den >> 1);
-    if (num >= den) {
-        val += num / den;
-        num  = num % den;
-    }
-    f->val = val;
-    f->num = num;
-    f->den = den;
-}
-
-/**
- * Fractional addition to f: f = f + (incr / f->den).
- *
- * @param f fractional number
- * @param incr increment, can be positive or negative
- */
-static void frac_add(AVFrac *f, int64_t incr)
-{
-    int64_t num, den;
-
-    num = f->num + incr;
-    den = f->den;
-    if (num < 0) {
-        f->val += num / den;
-        num     = num % den;
-        if (num < 0) {
-            num += den;
-            f->val--;
-        }
-    } else if (num >= den) {
-        f->val += num / den;
-        num     = num % den;
-    }
-    f->num = num;
-}
-
 static int validate_codec_tag(AVFormatContext *s, AVStream *st)
 {
     const AVCodecTag *avctag;
@@ -273,37 +223,6 @@ fail:
     return ret;
 }
 
-static int init_pts(AVFormatContext *s)
-{
-    int i;
-    AVStream *st;
-
-    /* init PTS generation */
-    for (i = 0; i < s->nb_streams; i++) {
-        int64_t den = AV_NOPTS_VALUE;
-        st = s->streams[i];
-
-        switch (st->codec->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            den = (int64_t)st->time_base.num * st->codec->sample_rate;
-            break;
-        case AVMEDIA_TYPE_VIDEO:
-            den = (int64_t)st->time_base.num * st->codec->time_base.den;
-            break;
-        default:
-            break;
-        }
-        if (den != AV_NOPTS_VALUE) {
-            if (den <= 0)
-                return AVERROR_INVALIDDATA;
-
-            frac_init(&st->pts, 0, 0, den);
-        }
-    }
-
-    return 0;
-}
-
 int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 {
     int ret = 0;
@@ -317,9 +236,6 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
             return ret;
     }
 
-    if ((ret = init_pts(s)) < 0)
-        return ret;
-
     return 0;
 }
 
@@ -327,7 +243,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     int delay = FFMAX(st->codec->has_b_frames, !!st->codec->max_b_frames);
-    int num, den, frame_size, i;
+    int num, den, i;
 
     av_dlog(s, "compute_pkt_fields2: pts:%" PRId64 " dts:%" PRId64 " cur_dts:%" PRId64 " b:%d size:%d st:%d\n",
             pkt->pts, pkt->dts, st->cur_dts, delay, pkt->size, pkt->stream_index);
@@ -373,26 +289,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     av_dlog(s, "av_write_frame: pts2:%"PRId64" dts2:%"PRId64"\n",
             pkt->pts, pkt->dts);
     st->cur_dts = pkt->dts;
-    st->pts.val = pkt->dts;
 
-    /* update pts */
-    switch (st->codec->codec_type) {
-    case AVMEDIA_TYPE_AUDIO:
-        frame_size = ff_get_audio_frame_size(st->codec, pkt->size, 1);
-
-        /* HACK/FIXME, we skip the initial 0 size packets as they are most
-         * likely equal to the encoder delay, but it would be better if we
-         * had the real timestamps from the encoder */
-        if (frame_size >= 0 && (pkt->size || st->pts.num != st->pts.den >> 1 || st->pts.val)) {
-            frac_add(&st->pts, (int64_t)st->time_base.den * frame_size);
-        }
-        break;
-    case AVMEDIA_TYPE_VIDEO:
-        frac_add(&st->pts, (int64_t)st->time_base.den * st->codec->time_base.num);
-        break;
-    default:
-        break;
-    }
     return 0;
 }
 
