@@ -2370,6 +2370,7 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     uint8_t *encoder_string;
     int encoder_string_len;
     int format_flags = 0;
+    int codec_flags = 0;
 
     e = av_dict_get(of->opts, "fflags", NULL, 0);
     if (e) {
@@ -2378,13 +2379,20 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
             return;
         av_opt_eval_flags(of->ctx, o, e->value, &format_flags);
     }
+    e = av_dict_get(ost->encoder_opts, "flags", NULL, 0);
+    if (e) {
+        const AVOption *o = av_opt_find(ost->st->codec, "flags", NULL, 0, 0);
+        if (!o)
+            return;
+        av_opt_eval_flags(ost->st->codec, o, e->value, &codec_flags);
+    }
 
     encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(ost->enc->name) + 2;
     encoder_string     = av_mallocz(encoder_string_len);
     if (!encoder_string)
         exit_program(1);
 
-    if (!(format_flags & AVFMT_FLAG_BITEXACT))
+    if (!(format_flags & AVFMT_FLAG_BITEXACT) && !(codec_flags & CODEC_FLAG_BITEXACT))
         av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
     av_strlcat(encoder_string, ost->enc->name, encoder_string_len);
     av_dict_set(&ost->st->metadata, "encoder",  encoder_string,
