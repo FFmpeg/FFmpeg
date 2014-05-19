@@ -767,6 +767,16 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 
             memcpy(frame_sd->data, packet_sd, size);
         }
+
+        /* copy the displaymatrix to the output frame */
+        packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX, &size);
+        if (packet_sd) {
+            frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX, size);
+            if (!frame_sd)
+                return AVERROR(ENOMEM);
+
+            memcpy(frame_sd->data, packet_sd, size);
+        }
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
         av_frame_set_pkt_pos     (frame, -1);

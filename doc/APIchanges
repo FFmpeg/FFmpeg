@@ -15,6 +15,14 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-05-xx - xxxxxxx - lavu 53.15.0 - frame.h, display.h
+  Add AV_FRAME_DATA_DISPLAYMATRIX for exporting frame-level
+  spatial rendering on video frames for proper display.
+
+2014-05-xx - xxxxxxx - lavc 55.52.0 - avcodec.h
+  Add AV_PKT_DATA_DISPLAYMATRIX for exporting packet-level
+  spatial rendering on video frames for proper display.
+
 2014-05-xx - xxxxxxx - lavf 55.17.1 - avformat.h
   Deprecate AVStream.pts and the AVFrac struct, which was its only use case.
   Those fields were poorly defined and not meant to be public, so there is
