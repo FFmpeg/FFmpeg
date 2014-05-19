@@ -2560,7 +2560,7 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int width;
     int height;
     int64_t disp_transform[2];
-    int display_matrix[3][2];
+    int display_matrix[3][3];
     AVStream *st;
     MOVStreamContext *sc;
     int version;
@@ -2597,11 +2597,12 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     //read in the display matrix (outlined in ISO 14496-12, Section 6.2.2)
     // they're kept in fixed point format through all calculations
-    // ignore u,v,z b/c we don't need the scale factor to calc aspect ratio
+    // save u,v,z to store the whole matrix in the AV_PKT_DATA_DISPLAYMATRIX
+    // side data, but the scale factor is not needed to calculate aspect ratio
     for (i = 0; i < 3; i++) {
         display_matrix[i][0] = avio_rb32(pb);   // 16.16 fixed point
         display_matrix[i][1] = avio_rb32(pb);   // 16.16 fixed point
-        avio_rb32(pb);           // 2.30 fixed point (not used)
+        display_matrix[i][2] = avio_rb32(pb);   //  2.30 fixed point
     }
 
     width = avio_rb32(pb);       // 16.16 fixed point track width
@@ -2622,6 +2623,25 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (display_matrix[1][0] == 65536 && display_matrix[0][1] == -65536) {
          av_dict_set(&st->metadata, "rotate", "270", 0);
+    }
+
+    // save the matrix when it is not the default identity
+    if (display_matrix[0][0] != (1 << 16) ||
+        display_matrix[1][1] != (1 << 16) ||
+        display_matrix[2][2] != (1 << 30) ||
+        display_matrix[0][1] || display_matrix[0][2] ||
+        display_matrix[1][0] || display_matrix[1][2] ||
+        display_matrix[2][0] || display_matrix[2][1]) {
+        int i, j;
+
+        av_freep(&sc->display_matrix);
+        sc->display_matrix = av_malloc(sizeof(int32_t) * 9);
+        if (!sc->display_matrix)
+            return AVERROR(ENOMEM);
+
+        for (i = 0; i < 3; i++)
+            for (j = 0; j < 3; j++)
+                sc->display_matrix[i * 3 + j] = display_matrix[j][i];
     }
 
     // transform the display width/height according to the matrix
@@ -3395,6 +3415,7 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->stts_data);
         av_freep(&sc->stps_data);
         av_freep(&sc->rap_group);
+        av_freep(&sc->display_matrix);
     }
 
     if (mov->dv_demux) {
@@ -3544,14 +3565,35 @@ static int mov_read_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
+        MOVStreamContext *sc = st->priv_data;
 
-        if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO)
-            continue;
+        switch (st->codec->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            err = ff_replaygain_export(st, s->metadata);
+            if (err < 0) {
+                mov_read_close(s);
+                return err;
+            }
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            if (sc->display_matrix) {
+                AVPacketSideData *sd, *tmp;
 
-        err = ff_replaygain_export(st, s->metadata);
-        if (err < 0) {
-            mov_read_close(s);
-            return err;
+                tmp = av_realloc_array(st->side_data,
+                                       st->nb_side_data + 1, sizeof(*tmp));
+                if (!tmp)
+                    return AVERROR(ENOMEM);
+
+                st->side_data = tmp;
+                st->nb_side_data++;
+
+                sd = &st->side_data[st->nb_side_data - 1];
+                sd->type = AV_PKT_DATA_DISPLAYMATRIX;
+                sd->size = sizeof(int32_t) * 9;
+                sd->data = (uint8_t*)sc->display_matrix;
+                sc->display_matrix = NULL;
+            }
+            break;
         }
     }
 

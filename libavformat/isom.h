@@ -145,6 +145,8 @@ typedef struct MOVStreamContext {
 
     int nb_frames_for_fps;
     int64_t duration_for_fps;
+
+    int32_t *display_matrix;
 } MOVStreamContext;
 
 typedef struct MOVContext {
