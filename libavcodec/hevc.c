@@ -834,18 +834,18 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
         int trafo_size = 1 << log2_trafo_size;
         ff_hevc_set_neighbour_available(s, x0, y0, trafo_size, trafo_size);
 
-        s->hpc.intra_pred(s, x0, y0, log2_trafo_size, 0);
+        s->hpc.intra_pred[log2_trafo_size - 2](s, x0, y0, 0);
         if (log2_trafo_size > 2) {
             trafo_size = trafo_size << (s->sps->hshift[1] - 1);
             ff_hevc_set_neighbour_available(s, x0, y0, trafo_size, trafo_size);
-            s->hpc.intra_pred(s, x0, y0, log2_trafo_size - 1, 1);
-            s->hpc.intra_pred(s, x0, y0, log2_trafo_size - 1, 2);
+            s->hpc.intra_pred[log2_trafo_size - 3](s, x0, y0, 1);
+            s->hpc.intra_pred[log2_trafo_size - 3](s, x0, y0, 2);
         } else if (blk_idx == 3) {
             trafo_size = trafo_size << s->sps->hshift[1];
             ff_hevc_set_neighbour_available(s, xBase, yBase,
                                             trafo_size, trafo_size);
-            s->hpc.intra_pred(s, xBase, yBase, log2_trafo_size, 1);
-            s->hpc.intra_pred(s, xBase, yBase, log2_trafo_size, 2);
+            s->hpc.intra_pred[log2_trafo_size - 2](s, xBase, yBase, 1);
+            s->hpc.intra_pred[log2_trafo_size - 2](s, xBase, yBase, 2);
         }
     }
 

@@ -27,7 +27,8 @@
 
 #define POS(x, y) src[(x) + stride * (y)]
 
-static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int c_idx)
+static av_always_inline void FUNC(intra_pred)(HEVCContext *s, int x0, int y0,
+                                              int log2_size, int c_idx)
 {
 #define PU(x) \
     ((x) >> s->sps->log2_min_pu_size)
@@ -361,6 +362,19 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         break;
     }
 }
+
+#define INTRA_PRED(size)                                                            \
+static void FUNC(intra_pred_ ## size)(HEVCContext *s, int x0, int y0, int c_idx)    \
+{                                                                                   \
+    FUNC(intra_pred)(s, x0, y0, size, c_idx);                                       \
+}
+
+INTRA_PRED(2)
+INTRA_PRED(3)
+INTRA_PRED(4)
+INTRA_PRED(5)
+
+#undef INTRA_PRED
 
 static av_always_inline void FUNC(pred_planar)(uint8_t *_src, const uint8_t *_top,
                                   const uint8_t *_left, ptrdiff_t stride,
