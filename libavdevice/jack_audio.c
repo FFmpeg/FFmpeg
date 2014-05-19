@@ -194,9 +194,9 @@ static int start_jack(AVFormatContext *context)
     }
 
     /* Create FIFO buffers */
-    self->filled_pkts = av_fifo_alloc(FIFO_PACKETS_NUM * sizeof(AVPacket));
+    self->filled_pkts = av_fifo_alloc_array(FIFO_PACKETS_NUM, sizeof(AVPacket));
     /* New packets FIFO with one extra packet for safety against underruns */
-    self->new_pkts    = av_fifo_alloc((FIFO_PACKETS_NUM + 1) * sizeof(AVPacket));
+    self->new_pkts    = av_fifo_alloc_array((FIFO_PACKETS_NUM + 1), sizeof(AVPacket));
     if ((test = supply_new_packets(self, context))) {
         jack_client_close(self->client);
         return test;
