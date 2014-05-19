@@ -658,7 +658,11 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         pkt->dts = max;
       }
     }
+    ost->last_mux_dts_plus_duration =
     ost->last_mux_dts = pkt->dts;
+
+    if (ost->last_mux_dts_plus_duration != AV_NOPTS_VALUE)
+        ost->last_mux_dts_plus_duration += pkt->duration;
 
     ost->data_size += pkt->size;
     ost->packets_written++;
@@ -1102,7 +1106,7 @@ static void do_video_stats(OutputStream *ost, int frame_size)
 
         fprintf(vstats_file,"f_size= %6d ", frame_size);
         /* compute pts value */
-        ti1 = ost->last_mux_dts * av_q2d(enc->time_base);
+        ti1 = ost->last_mux_dts_plus_duration * av_q2d(enc->time_base);
         if (ti1 < 0.01)
             ti1 = 0.01;
 
@@ -1414,8 +1418,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             vid = 1;
         }
         /* compute min output value */
-        if (ost->last_mux_dts != AV_NOPTS_VALUE)
-            pts = FFMAX(pts, av_rescale_q(ost->last_mux_dts,
+        if (ost->last_mux_dts_plus_duration != AV_NOPTS_VALUE)
+            pts = FFMAX(pts, av_rescale_q(ost->last_mux_dts_plus_duration,
                                           ost->st->time_base, AV_TIME_BASE_Q));
     }
 
