@@ -32,8 +32,7 @@ API changes, most recent first:
 
 2014-05-xx - xxxxxxx - lavf 55.17.1 - avformat.h
   Deprecate AVStream.pts and the AVFrac struct, which was its only use case.
-  Those fields were poorly defined and not meant to be public, so there is
-  no replacement for them.
+  See use av_stream_get_end_pts()
 
 2014-05-18 - fd05602 - lavc 55.52.0 - avcodec.h
   Add avcodec_free_context(). From now on it should be used for freeing
