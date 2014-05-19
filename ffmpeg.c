@@ -837,6 +837,7 @@ static void do_subtitle_out(AVFormatContext *s,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
+        pkt.dts = pkt.pts;
         write_frame(s, &pkt, ost);
     }
 }
