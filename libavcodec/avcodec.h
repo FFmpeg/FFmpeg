@@ -1053,6 +1053,15 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_REPLAYGAIN,
 
     /**
+     * This side data contains a 3x3 transformation matrix describing an affine
+     * transformation that needs to be applied to the decoded video frames for
+     * correct presentation.
+     *
+     * See libavutil/display.h for a detailed description of the data.
+     */
+    AV_PKT_DATA_DISPLAYMATRIX,
+
+    /**
      * Recommmends skipping the specified number of samples
      * @code
      * u32le number of samples to skip from start of this packet

@@ -658,7 +658,11 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         pkt->dts = max;
       }
     }
+    ost->last_mux_dts_plus_duration =
     ost->last_mux_dts = pkt->dts;
+
+    if (ost->last_mux_dts_plus_duration != AV_NOPTS_VALUE)
+        ost->last_mux_dts_plus_duration += pkt->duration;
 
     ost->data_size += pkt->size;
     ost->packets_written++;
@@ -833,6 +837,7 @@ static void do_subtitle_out(AVFormatContext *s,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
+        pkt.dts = pkt.pts;
         write_frame(s, &pkt, ost);
     }
 }
@@ -1102,7 +1107,7 @@ static void do_video_stats(OutputStream *ost, int frame_size)
 
         fprintf(vstats_file,"f_size= %6d ", frame_size);
         /* compute pts value */
-        ti1 = ost->st->pts.val * av_q2d(enc->time_base);
+        ti1 = ost->last_mux_dts_plus_duration * av_q2d(ost->st->time_base);
         if (ti1 < 0.01)
             ti1 = 0.01;
 
@@ -1414,8 +1419,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             vid = 1;
         }
         /* compute min output value */
-        if (ost->st->pts.val != AV_NOPTS_VALUE)
-            pts = FFMAX(pts, av_rescale_q(ost->st->pts.val,
+        if (ost->last_mux_dts_plus_duration != AV_NOPTS_VALUE)
+            pts = FFMAX(pts, av_rescale_q(ost->last_mux_dts_plus_duration,
                                           ost->st->time_base, AV_TIME_BASE_Q));
     }
 
@@ -2430,7 +2435,7 @@ static int transcode_init(void)
         InputFile *ifile = input_files[i];
         if (ifile->rate_emu)
             for (j = 0; j < ifile->nb_streams; j++)
-                input_streams[j + ifile->ist_index]->start = av_gettime();
+                input_streams[j + ifile->ist_index]->start = av_gettime_relative();
     }
 
     /* output stream init */
@@ -3175,7 +3180,7 @@ static int init_input_threads(void)
     for (i = 0; i < nb_input_files; i++) {
         InputFile *f = input_files[i];
 
-        if (!(f->fifo = av_fifo_alloc(8*sizeof(AVPacket))))
+        if (!(f->fifo = av_fifo_alloc_array(8, sizeof(AVPacket))))
             return AVERROR(ENOMEM);
 
         if (f->ctx->pb ? !f->ctx->pb->seekable :
@@ -3228,7 +3233,7 @@ static int get_input_packet(InputFile *f, AVPacket *pkt)
         for (i = 0; i < f->nb_streams; i++) {
             InputStream *ist = input_streams[f->ist_index + i];
             int64_t pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
-            int64_t now = av_gettime() - ist->start;
+            int64_t now = av_gettime_relative() - ist->start;
             if (pts > now)
                 return AVERROR(EAGAIN);
         }
@@ -3594,7 +3599,7 @@ static int transcode(void)
         av_log(NULL, AV_LOG_INFO, "Press [q] to stop, [?] for help\n");
     }
 
-    timer_start = av_gettime();
+    timer_start = av_gettime_relative();
 
 #if HAVE_PTHREADS
     if ((ret = init_input_threads()) < 0)
@@ -3602,7 +3607,7 @@ static int transcode(void)
 #endif
 
     while (!received_sigterm) {
-        int64_t cur_time= av_gettime();
+        int64_t cur_time= av_gettime_relative();
 
         /* if 'q' pressed, exits */
         if (stdin_interaction)
@@ -3649,7 +3654,7 @@ static int transcode(void)
     }
 
     /* dump report by using the first video and audio streams */
-    print_report(1, timer_start, av_gettime());
+    print_report(1, timer_start, av_gettime_relative());
 
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {

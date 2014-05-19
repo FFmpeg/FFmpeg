@@ -27,6 +27,12 @@
 SECTION_RODATA
 
 pw_pixel_max: times 8 dw ((1 << 10)-1)
+pw_m1:        times 8 dw -1
+pw_m2:        times 8 dw -2
+pd_1 :        times 4 dd  1
+
+cextern pw_4
+cextern pw_8
 
 SECTION .text
 INIT_XMM sse2
@@ -318,14 +324,10 @@ ALIGN 16
     movd             m7, [r2]; tc1
     punpcklwd        m7, m7
     shufps           m6, m7, 0; tc0, tc1
-    pcmpeqw          m7, m7; set all bits to 1
-    pxor             m4, m6, m7; flip all bits of first reg
-    psrlw            m7, 15; 1 in every cell
-    paddw            m4, m7; -tc0, -tc1
+    pmullw           m4, m6, [pw_m1]; -tc0, -tc1
     ;end tc calculations
 
-    psllw            m7, 2; 4 in every cell
-    paddw            m5, m7; +4
+    paddw            m5, [pw_4]; +4
     psraw            m5, 3; >> 3
 
     psllw            m4, %1-8; << (BIT_DEPTH - 8)
@@ -414,9 +416,7 @@ ALIGN 16
     shl              r2, 1
     or              r13, r2
 
-    pcmpeqd         m15, m15; set all bits to 1
-    psrld           m15, 31; set to 32bit 1
-    pcmpeqd         m11, m15; filtering mask
+    pcmpeqd         m11, [pd_1]; filtering mask
 
     ;decide between strong and weak filtering
     ;tc25 calculations
@@ -469,13 +469,8 @@ ALIGN 16
     shr              r2, 1;
     and             r14, r2; strong mask, bits 2 and 0
 
-    pcmpeqw         m13, m13; set all bits to 1
-    pxor            m14, m9, m13; invert bits
-    psrlw           m13, 15; 1 in every cell
-    paddw           m14, m13; -tc
-
+    pmullw          m14, m9, [pw_m2]; -tc * 2
     psllw            m9, 1;  tc * 2
-    psllw           m14, 1; -tc * 2
 
     and             r14, 5; 0b101
     mov              r2, r14; strong mask
@@ -488,12 +483,9 @@ ALIGN 16
     jz      .weakfilter
 
     shufps          m10, m12, 0
+    pcmpeqd         m10, [pd_1]; strong mask
 
-    pcmpeqd         m12, m12; set all bits to 1
-    psrld           m12, 31; set to 32bit 1
-    pcmpeqd         m10, m12; strong mask
-
-    psllw           m13, 2; 4 in every cell
+    mova            m13, [pw_4]; 4 in every cell
     pand            m11, m10; combine filtering mask and strong mask
     paddw           m12, m2, m3;          p1 +   p0
     paddw           m12, m4;          p1 +   p0 +   q0
@@ -583,10 +575,7 @@ ALIGN 16
     and             r14, 1
     movd            m11, r14d
     shufps          m11, m12, 0
-
-    pcmpeqd         m12, m12; set all bits to 1
-    psrld           m12, 31; set to 32bit 1
-    pcmpeqd         m11, m12; filtering mask
+    pcmpeqd         m11, [pd_1]; filtering mask
 
     mov             r13, r11; beta0
     shr             r13, 1;
@@ -598,10 +587,7 @@ ALIGN 16
     add             r12, r13
     shr             r12, 3; ((beta1+(beta1>>1))>>3))
 
-    pcmpeqw         m13, m13; set all bits to 1
-    psrlw           m13, 15; 1 in every cell
-    psllw           m13, 3; 8 in every cell
-
+    mova            m13, [pw_8]
     psubw           m12, m4, m3 ; q0 - p0
     psllw           m10, m12, 3; 8 * (q0 - p0)
     paddw           m12, m10 ; 9 * (q0 - p0)
@@ -626,11 +612,8 @@ ALIGN 16
     pmaxsw          m12, m14
     pminsw          m12, m9;  av_clip(delta0, -tc, tc)
 
-    pcmpeqw         m13, m13; set all bits to 1
     psraw            m9, 1;   tc -> tc / 2
-    pxor            m14, m9, m13; complement -tc
-    psrlw           m13, 15; set all cells to 1
-    paddw           m14, m13; add 1, -tc / 2
+    pmullw          m14, m9, [pw_m1]; -tc / 2
 
     pavgw           m15, m1, m3;   (p2 + p0 + 1) >> 1
     psubw           m15, m2;  ((p2 + p0 + 1) >> 1) - p1

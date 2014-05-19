@@ -35,7 +35,9 @@
 
 #define FF_SANE_NB_CHANNELS 63U
 
-#if HAVE_NEON || ARCH_PPC || HAVE_MMX
+#if HAVE_AVX
+#   define STRIDE_ALIGN 32
+#elif HAVE_NEON || ARCH_PPC || HAVE_MMX
 #   define STRIDE_ALIGN 16
 #else
 #   define STRIDE_ALIGN 8

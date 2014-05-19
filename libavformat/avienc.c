@@ -64,6 +64,7 @@ typedef struct  {
     int64_t audio_strm_length;
     int packet_count;
     int entry;
+    int max_size;
 
     AVIIndex indexes;
 } AVIStream;
@@ -282,7 +283,7 @@ static int avi_write_header(AVFormatContext *s)
         else
             avio_wl32(pb, 0);  /* length, XXX: filled later */
 
-        /* suggested buffer size */ //FIXME set at the end to largest chunk
+        /* suggested buffer size, is set to largest chunk size in avi_write_trailer */
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
             avio_wl32(pb, 1024 * 1024);
         else if (enc->codec_type == AVMEDIA_TYPE_AUDIO)
@@ -628,6 +629,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         idx->cluster[cl][id].flags = flags;
         idx->cluster[cl][id].pos   = avio_tell(pb) - avi->movi_list;
         idx->cluster[cl][id].len   = size;
+        avist->max_size = FFMAX(avist->max_size, size);
         idx->entry++;
     }
 
@@ -689,6 +691,10 @@ static int avi_write_trailer(AVFormatContext *s)
             av_freep(&avist->indexes.cluster[j]);
         av_freep(&avist->indexes.cluster);
         avist->indexes.ents_allocated = avist->indexes.entry = 0;
+        if (pb->seekable) {
+            avio_seek(pb, avist->frames_hdr_strm + 4, SEEK_SET);
+            avio_wl32(pb, avist->max_size);
+        }
     }
 
     return res;

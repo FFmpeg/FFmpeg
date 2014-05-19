@@ -79,7 +79,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     FPSContext *s = ctx->priv;
 
-    if (!(s->fifo = av_fifo_alloc(2*sizeof(AVFrame*))))
+    if (!(s->fifo = av_fifo_alloc_array(2, sizeof(AVFrame*))))
         return AVERROR(ENOMEM);
 
     s->first_pts    = AV_NOPTS_VALUE;

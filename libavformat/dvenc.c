@@ -331,7 +331,7 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
         c->start_time = ff_iso8601_to_unix_time(t->value);
 
     for (i=0; i < c->n_ast; i++) {
-        if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc(100*MAX_AUDIO_FRAME_SIZE))) {
+        if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc_array(100, MAX_AUDIO_FRAME_SIZE))) {
             while (i > 0) {
                 i--;
                 av_fifo_freep(&c->audio_data[i]);

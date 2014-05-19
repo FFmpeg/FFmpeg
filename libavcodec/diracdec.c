@@ -201,6 +201,7 @@ typedef struct DiracContext {
 
     uint16_t *mctmp;            /* buffer holding the MC data multipled by OBMC weights */
     uint8_t *mcscratch;
+    int buffer_stride;
 
     DECLARE_ALIGNED(16, uint8_t, obmc_weight)[3][MAX_BLOCKSIZE*MAX_BLOCKSIZE];
 
@@ -343,19 +344,41 @@ static int alloc_sequence_buffers(DiracContext *s)
             return AVERROR(ENOMEM);
     }
 
-    w = s->source.width;
-    h = s->source.height;
-
     /* fixme: allocate using real stride here */
     s->sbsplit  = av_malloc_array(sbwidth, sbheight);
     s->blmotion = av_malloc_array(sbwidth, sbheight * 16 * sizeof(*s->blmotion));
-    s->edge_emu_buffer_base = av_malloc_array((w+64), MAX_BLOCKSIZE);
 
-    s->mctmp     = av_malloc_array((w+64+MAX_BLOCKSIZE), (h+MAX_BLOCKSIZE) * sizeof(*s->mctmp));
-    s->mcscratch = av_malloc_array((w+64), MAX_BLOCKSIZE);
-
-    if (!s->sbsplit || !s->blmotion || !s->mctmp || !s->mcscratch)
+    if (!s->sbsplit || !s->blmotion)
         return AVERROR(ENOMEM);
+    return 0;
+}
+
+static int alloc_buffers(DiracContext *s, int stride)
+{
+    int w = s->source.width;
+    int h = s->source.height;
+
+    av_assert0(stride >= w);
+    stride += 64;
+
+    if (s->buffer_stride >= stride)
+        return 0;
+    s->buffer_stride = 0;
+
+    av_freep(&s->edge_emu_buffer_base);
+    memset(s->edge_emu_buffer, 0, sizeof(s->edge_emu_buffer));
+    av_freep(&s->mctmp);
+    av_freep(&s->mcscratch);
+
+    s->edge_emu_buffer_base = av_malloc_array(stride, MAX_BLOCKSIZE);
+
+    s->mctmp     = av_malloc_array((stride+MAX_BLOCKSIZE), (h+MAX_BLOCKSIZE) * sizeof(*s->mctmp));
+    s->mcscratch = av_malloc_array(stride, MAX_BLOCKSIZE);
+
+    if (!s->edge_emu_buffer_base || !s->mctmp || !s->mcscratch)
+        return AVERROR(ENOMEM);
+
+    s->buffer_stride = stride;
     return 0;
 }
 
@@ -382,6 +405,7 @@ static void free_sequence_buffers(DiracContext *s)
         av_freep(&s->plane[i].idwt_tmp);
     }
 
+    s->buffer_stride = 0;
     av_freep(&s->sbsplit);
     av_freep(&s->blmotion);
     av_freep(&s->edge_emu_buffer_base);
@@ -1853,6 +1877,9 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         s->plane[0].stride = pic->avframe->linesize[0];
         s->plane[1].stride = pic->avframe->linesize[1];
         s->plane[2].stride = pic->avframe->linesize[2];
+
+        if (alloc_buffers(s, FFMAX3(FFABS(s->plane[0].stride), FFABS(s->plane[1].stride), FFABS(s->plane[2].stride))) < 0)
+            return AVERROR(ENOMEM);
 
         /* [DIRAC_STD] 11.1 Picture parse. picture_parse() */
         if (dirac_decode_picture_header(s))

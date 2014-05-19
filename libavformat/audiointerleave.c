@@ -45,11 +45,11 @@ int ff_audio_interleave_init(AVFormatContext *s,
     int i;
 
     if (!samples_per_frame)
-        return -1;
+        return AVERROR(EINVAL);
 
     if (!time_base.num) {
         av_log(s, AV_LOG_ERROR, "timebase not set for audio interleave\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -60,14 +60,15 @@ int ff_audio_interleave_init(AVFormatContext *s,
                                 av_get_bits_per_sample(st->codec->codec_id)) / 8;
             if (!aic->sample_size) {
                 av_log(s, AV_LOG_ERROR, "could not compute sample size\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             aic->samples_per_frame = samples_per_frame;
             aic->samples = aic->samples_per_frame;
             aic->time_base = time_base;
 
             aic->fifo_size = 100* *aic->samples;
-            aic->fifo= av_fifo_alloc(100 * *aic->samples);
+            if (!(aic->fifo= av_fifo_alloc_array(100, *aic->samples)))
+                return AVERROR(ENOMEM);
         }
     }
 
@@ -113,7 +114,7 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
             unsigned new_size = av_fifo_size(aic->fifo) + pkt->size;
             if (new_size > aic->fifo_size) {
                 if (av_fifo_realloc2(aic->fifo, new_size) < 0)
-                    return -1;
+                    return AVERROR(ENOMEM);
                 aic->fifo_size = new_size;
             }
             av_fifo_generic_write(aic->fifo, pkt->data, pkt->size, NULL);
