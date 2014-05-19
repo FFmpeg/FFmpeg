@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-05-19 - xxxxxxx - lavf 55.18.0 - avformat.h
+  Add av_stream_get_side_data() to access stream-level side data
+  in the same way as av_packet_get_side_data().
+
 2014-05-xx - xxxxxxx - lavu 53.15.0 - frame.h, display.h
   Add AV_FRAME_DATA_DISPLAYMATRIX for exporting frame-level
   spatial rendering on video frames for proper display.

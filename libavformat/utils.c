@@ -3474,3 +3474,18 @@ int ff_generate_avci_extradata(AVStream *st)
 
     return 0;
 }
+
+uint8_t *av_stream_get_side_data(AVStream *st, enum AVPacketSideDataType type,
+                                 int *size)
+{
+    int i;
+
+    for (i = 0; i < st->nb_side_data; i++) {
+        if (st->side_data[i].type == type) {
+            if (size)
+                *size = st->side_data[i].size;
+            return st->side_data[i].data;
+        }
+    }
+    return NULL;
+}

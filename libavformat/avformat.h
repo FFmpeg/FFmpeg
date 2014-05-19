@@ -1326,6 +1326,17 @@ const AVClass *avformat_get_class(void);
  */
 AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c);
 
+/**
+ * Get side information from stream.
+ *
+ * @param stream stream
+ * @param type desired side information type
+ * @param size pointer for side information size to store (optional)
+ * @return pointer to data if present or NULL otherwise
+ */
+uint8_t *av_stream_get_side_data(AVStream *stream,
+                                 enum AVPacketSideDataType type, int *size);
+
 AVProgram *av_new_program(AVFormatContext *s, int id);
 
 /**
