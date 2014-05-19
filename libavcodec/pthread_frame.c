@@ -316,7 +316,6 @@ static int submit_packet(PerThreadContext *p, AVPacket *avpkt)
     FrameThreadContext *fctx = p->parent;
     PerThreadContext *prev_thread = fctx->prev_thread;
     const AVCodec *codec = p->avctx->codec;
-    int ret;
 
     if (!avpkt->size && !(codec->capabilities & CODEC_CAP_DELAY)) return 0;
 
