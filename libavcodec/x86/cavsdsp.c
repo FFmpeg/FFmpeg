@@ -461,7 +461,7 @@ static void OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, uint8_t *
 
 #endif /* (HAVE_MMXEXT_INLINE || HAVE_AMD3DNOW_INLINE) */
 
-#if HAVE_MMX_INLINE
+#if HAVE_MMX_EXTERNAL
 static void put_cavs_qpel8_mc00_mmx(uint8_t *dst, uint8_t *src,
                                     ptrdiff_t stride)
 {
@@ -485,19 +485,23 @@ static void avg_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src,
 {
     ff_avg_pixels16_mmx(dst, src, stride, 16);
 }
+#endif
 
 static av_cold void cavsdsp_init_mmx(CAVSDSPContext *c,
                                      AVCodecContext *avctx)
 {
+#if HAVE_MMX_EXTERNAL
     c->put_cavs_qpel_pixels_tab[0][0] = put_cavs_qpel16_mc00_mmx;
     c->put_cavs_qpel_pixels_tab[1][0] = put_cavs_qpel8_mc00_mmx;
     c->avg_cavs_qpel_pixels_tab[0][0] = avg_cavs_qpel16_mc00_mmx;
     c->avg_cavs_qpel_pixels_tab[1][0] = avg_cavs_qpel8_mc00_mmx;
+#endif
 
+#if HAVE_MMX_INLINE
     c->cavs_idct8_add = cavs_idct8_add_mmx;
     c->idct_perm      = FF_TRANSPOSE_IDCT_PERM;
-}
 #endif /* HAVE_MMX_INLINE */
+}
 
 #define DSPFUNC(PFX, IDX, NUM, EXT)                                                       \
     c->PFX ## _cavs_qpel_pixels_tab[IDX][ 2] = PFX ## _cavs_qpel ## NUM ## _mc20_ ## EXT; \
@@ -545,12 +549,9 @@ static av_cold void cavsdsp_init_3dnow(CAVSDSPContext *c,
 
 av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
 {
-#if HAVE_MMX_INLINE
     int cpu_flags = av_get_cpu_flags();
 
-    if (INLINE_MMX(cpu_flags))
-        cavsdsp_init_mmx(c, avctx);
-#endif /* HAVE_MMX_INLINE */
+    cavsdsp_init_mmx(c, avctx);
 #if HAVE_AMD3DNOW_INLINE
     if (INLINE_AMD3DNOW(cpu_flags))
         cavsdsp_init_3dnow(c, avctx);

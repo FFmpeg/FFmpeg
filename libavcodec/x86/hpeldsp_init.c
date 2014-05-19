@@ -165,15 +165,17 @@ HPELDSP_AVG_PIXELS16(_mmxext)
 
 #define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU)                                     \
     do {                                                                        \
+        if (HAVE_MMX_EXTERNAL)                                                  \
         c->PFX ## _pixels_tab IDX [0] = PFX ## _pixels ## SIZE ## _     ## CPU; \
+        if (HAVE_MMX_INLINE) {                                                  \
         c->PFX ## _pixels_tab IDX [1] = PFX ## _pixels ## SIZE ## _x2_  ## CPU; \
         c->PFX ## _pixels_tab IDX [2] = PFX ## _pixels ## SIZE ## _y2_  ## CPU; \
         c->PFX ## _pixels_tab IDX [3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
+        }                                                                       \
     } while (0)
 
 static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int cpu_flags)
 {
-#if HAVE_MMX_INLINE
     SET_HPEL_FUNCS(put,        [0], 16, mmx);
     SET_HPEL_FUNCS(put_no_rnd, [0], 16, mmx);
     SET_HPEL_FUNCS(avg,        [0], 16, mmx);
@@ -181,7 +183,6 @@ static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int cpu_flags)
     SET_HPEL_FUNCS(put,        [1],  8, mmx);
     SET_HPEL_FUNCS(put_no_rnd, [1],  8, mmx);
     SET_HPEL_FUNCS(avg,        [1],  8, mmx);
-#endif /* HAVE_MMX_INLINE */
 }
 
 static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int cpu_flags)

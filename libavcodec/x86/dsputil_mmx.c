@@ -554,13 +554,12 @@ void ff_ ## OPNAME2 ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[
     }\
 }
 
-#if HAVE_MMX_INLINE
-CALL_2X_PIXELS(ff_avg_pixels16_mmxext, ff_avg_pixels8_mmxext, 8)
+#if HAVE_YASM
+void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
+                            ptrdiff_t line_size, int h);
+
 DIRAC_PIXOP(put, ff_put, mmx)
 DIRAC_PIXOP(avg, ff_avg, mmx)
-#endif
-
-#if HAVE_YASM
 DIRAC_PIXOP(avg, ff_avg, mmxext)
 
 void ff_put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)

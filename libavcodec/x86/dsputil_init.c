@@ -73,8 +73,8 @@ void ff_avg_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
                                          int dstStride, int srcStride);
 void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
                                                 int dstStride, int srcStride);
-#define ff_put_no_rnd_pixels16_mmxext ff_put_pixels16_mmxext
-#define ff_put_no_rnd_pixels8_mmxext ff_put_pixels8_mmxext
+#define ff_put_no_rnd_pixels16_mmxext ff_put_pixels16_mmx
+#define ff_put_no_rnd_pixels8_mmxext ff_put_pixels8_mmx
 
 int32_t ff_scalarproduct_int16_mmxext(const int16_t *v1, const int16_t *v2,
                                       int order);
@@ -112,8 +112,11 @@ void ff_vector_clip_int32_sse4(int32_t *dst, const int32_t *src,
 
 #if HAVE_YASM
 
-CALL_2X_PIXELS(ff_avg_pixels16_mmxext, ff_avg_pixels8_mmxext, 8)
-CALL_2X_PIXELS(ff_put_pixels16_mmxext, ff_put_pixels8_mmxext, 8)
+#define ff_put_pixels16_mmxext ff_put_pixels16_mmx
+#define ff_put_pixels8_mmxext  ff_put_pixels8_mmx
+
+void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
+                            ptrdiff_t line_size, int h);
 
 #define QPEL_OP(OPNAME, RND, MMX)                                       \
 static void OPNAME ## qpel8_mc00_ ## MMX(uint8_t *dst, uint8_t *src,    \
