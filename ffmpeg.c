@@ -1107,7 +1107,7 @@ static void do_video_stats(OutputStream *ost, int frame_size)
 
         fprintf(vstats_file,"f_size= %6d ", frame_size);
         /* compute pts value */
-        ti1 = ost->last_mux_dts_plus_duration * av_q2d(enc->time_base);
+        ti1 = ost->last_mux_dts_plus_duration * av_q2d(ost->st->time_base);
         if (ti1 < 0.01)
             ti1 = 0.01;
 
