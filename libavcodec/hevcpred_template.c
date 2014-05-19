@@ -168,25 +168,20 @@ do {                                  \
         top[-1]  = left[-1];
     }
     if (cand_up)
-        for (i = 0; i <size; i+=4)
-            AV_WN4P(&top[i], AV_RN4P(&POS(i, -1)));
-
+        memcpy(top, src - stride, size * sizeof(pixel));
     if (cand_up_right) {
-        a = PIXEL_SPLAT_X4(POS(size + top_right_size - 1, -1));
-        for (i = size + top_right_size; i < (size << 1); i += 4)
-            AV_WN4P(&top[i], a);
-        for (i = size ; i < size+top_right_size; i+=4)
-            AV_WN4P(&top[i], AV_RN4P(&POS(i, -1)));
+        memcpy(top + size, src - stride + size, size * sizeof(pixel));
+        EXTEND(top + size + top_right_size, POS(size + top_right_size - 1, -1),
+               size - top_right_size);
     }
     if (cand_left)
         for (i = 0; i < size; i++)
             left[i] = POS(-1, i);
     if (cand_bottom_left) {
-        for (i = size ; i < size+bottom_left_size; i++)
+        for (i = size; i < size + bottom_left_size; i++)
             left[i] = POS(-1, i);
-        a = PIXEL_SPLAT_X4(POS(-1, size + bottom_left_size - 1));
-        for (i = size + bottom_left_size; i < (size << 1); i+=4)
-            AV_WN4P(&left[i], a);
+        EXTEND(left + size + bottom_left_size, POS(-1, size + bottom_left_size - 1),
+               size - bottom_left_size);
     }
 
     if (s->pps->constrained_intra_pred_flag == 1) {
