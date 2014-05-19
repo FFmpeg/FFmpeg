@@ -377,29 +377,19 @@ static av_always_inline void FUNC(pred_planar)(uint8_t *_src, const uint8_t *_to
                          (size - 1 - y) * top[x]  + (y + 1) * left[size] + size) >> (trafo_size + 1);
 }
 
-static void FUNC(pred_planar_0)(uint8_t *_src, const uint8_t *_top,
-                                const uint8_t *_left, ptrdiff_t stride)
-{
-    FUNC(pred_planar)(_src, _top, _left, stride, 2);
+#define PRED_PLANAR(size)\
+static void FUNC(pred_planar_ ## size)(uint8_t *src, const uint8_t *top,        \
+                                       const uint8_t *left, ptrdiff_t stride)   \
+{                                                                               \
+    FUNC(pred_planar)(src, top, left, stride, size + 2);                        \
 }
 
-static void FUNC(pred_planar_1)(uint8_t *_src, const uint8_t *_top,
-                                const uint8_t *_left, ptrdiff_t stride)
-{
-    FUNC(pred_planar)(_src, _top, _left, stride, 3);
-}
+PRED_PLANAR(0)
+PRED_PLANAR(1)
+PRED_PLANAR(2)
+PRED_PLANAR(3)
 
-static void FUNC(pred_planar_2)(uint8_t *_src, const uint8_t *_top,
-                                const uint8_t *_left, ptrdiff_t stride)
-{
-    FUNC(pred_planar)(_src, _top, _left, stride, 4);
-}
-
-static void FUNC(pred_planar_3)(uint8_t *_src, const uint8_t *_top,
-                                const uint8_t *_left, ptrdiff_t stride)
-{
-    FUNC(pred_planar)(_src, _top, _left, stride, 5);
-}
+#undef PRED_PLANAR
 
 static void FUNC(pred_dc)(uint8_t *_src, const uint8_t *_top,
                           const uint8_t *_left,
