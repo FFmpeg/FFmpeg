@@ -2377,6 +2377,9 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     int format_flags = 0;
     int codec_flags = 0;
 
+    if (av_dict_get(ost->st->metadata, "encoder",  NULL, 0))
+        return;
+
     e = av_dict_get(of->opts, "fflags", NULL, 0);
     if (e) {
         const AVOption *o = av_opt_find(of->ctx, "fflags", NULL, 0, 0);
