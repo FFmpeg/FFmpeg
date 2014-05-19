@@ -23,6 +23,7 @@
 #include <math.h>
 
 #include "display.h"
+#include "mathematics.h"
 
 // fixed point to double
 #define CONV_FP(x) ((double) (x)) / (1 << 16)
