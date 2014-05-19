@@ -1,5 +1,5 @@
 /*
- * MMX/SSE constants used across x86 dsp optimizations.
+ * MMX/SSE/AVX constants used across x86 dsp optimizations.
  *
  * This file is part of FFmpeg.
  *
@@ -47,7 +47,9 @@ DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_512)  = { 0x0200020002000200ULL, 0x020
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_1019) = { 0x03FB03FB03FB03FBULL, 0x03FB03FB03FB03FBULL };
 
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_0)    = { 0x0000000000000000ULL, 0x0000000000000000ULL };
-DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_1)    = { 0x0101010101010101ULL, 0x0101010101010101ULL };
-DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_3)    = { 0x0303030303030303ULL, 0x0303030303030303ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pb_1)    = { 0x0101010101010101ULL, 0x0101010101010101ULL,
+                                                    0x0101010101010101ULL, 0x0101010101010101ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pb_3)    = { 0x0303030303030303ULL, 0x0303030303030303ULL,
+                                                    0x0303030303030303ULL, 0x0303030303030303ULL };
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_80)   = { 0x8080808080808080ULL, 0x8080808080808080ULL };
 DECLARE_ALIGNED(8,  const uint64_t, ff_pb_FC)   =   0xFCFCFCFCFCFCFCFCULL;
