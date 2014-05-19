@@ -295,7 +295,7 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         if ((ret = ff_af_queue_add(&s->afq, frame)) < 0)
             return ret;
     } else {
-        if (!s->eof)
+        if (!s->eof && s->afq.frame_alloc)
             if ((ret = vorbis_analysis_wrote(&s->vd, 0)) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "error in vorbis_analysis_wrote()\n");
                 return vorbis_error_to_averror(ret);
