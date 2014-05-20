@@ -21,7 +21,7 @@ API changes, most recent first:
   Add AV_FRAME_DATA_DISPLAYMATRIX for exporting frame-level
   spatial rendering on video frames for proper display.
 
-2014-05-xx - xxxxxxx - lavc 55.52.0 - avcodec.h
+2014-05-xx - xxxxxxx - lavc 55.53.0 - avcodec.h
   Add AV_PKT_DATA_DISPLAYMATRIX for exporting packet-level
   spatial rendering on video frames for proper display.
 
