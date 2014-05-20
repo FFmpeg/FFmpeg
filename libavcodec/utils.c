@@ -2677,15 +2677,6 @@ void avsubtitle_free(AVSubtitle *sub)
     memset(sub, 0, sizeof(AVSubtitle));
 }
 
-av_cold int ff_codec_close_recursive(AVCodecContext *avctx)
-{
-    int ret = 0;
-
-    ret = avcodec_close(avctx);
-
-    return ret;
-}
-
 av_cold int avcodec_close(AVCodecContext *avctx)
 {
     if (!avctx)

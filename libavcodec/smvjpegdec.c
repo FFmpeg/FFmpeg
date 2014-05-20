@@ -184,7 +184,7 @@ static av_cold int smvjpeg_decode_end(AVCodecContext *avctx)
     jpg->picture_ptr = NULL;
     av_frame_free(&s->picture[0]);
     av_frame_free(&s->picture[1]);
-    ff_codec_close_recursive(s->avctx);
+    avcodec_close(s->avctx);
     av_freep(&s->avctx);
     return 0;
 }
