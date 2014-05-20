@@ -5396,7 +5396,7 @@ get_version(){
 
 map 'get_version $v' $LIBRARY_LIST
 
-map 'eval echo "FFLIBS-${v}=\$${v}_deps" >> config.mak' $LIBRARY_LIST
+map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> config.mak' $LIBRARY_LIST
 
 print_program_libs(){
     eval "program_libs=\$${1}_libs"

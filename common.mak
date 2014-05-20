@@ -93,7 +93,7 @@ include $(SRC_PATH)/arch.mak
 
 OBJS      += $(OBJS-yes)
 SLIBOBJS  += $(SLIBOBJS-yes)
-FFLIBS    := $(FFLIBS-$(if $(NAME),$(NAME),no)) $(FFLIBS-yes) $(FFLIBS)
+FFLIBS    := $($(NAME)_FFLIBS) $(FFLIBS-yes) $(FFLIBS)
 TESTPROGS += $(TESTPROGS-yes)
 
 LDLIBS       = $(FFLIBS:%=%$(BUILDSUF))
