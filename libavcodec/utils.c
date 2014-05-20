@@ -2553,7 +2553,7 @@ end:
         iconv_close(cd);
     return ret;
 #else
-    av_assert0(!"requesting subtitles recoding without iconv");
+    return AVERROR(EINVAL);
 #endif
 }
 
