@@ -3615,7 +3615,10 @@ elif enabled arm; then
 
     case "$subarch" in
         armv5t*)    enable fast_clz                ;;
-        armv[6-8]*) enable fast_clz fast_unaligned ;;
+        armv[6-8]*)
+            enable fast_clz
+            disabled fast_unaligned || enable fast_unaligned
+            ;;
     esac
 
 elif enabled avr32; then
