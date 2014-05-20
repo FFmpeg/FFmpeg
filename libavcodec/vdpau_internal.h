@@ -75,6 +75,8 @@ struct vdpau_picture_context {
      */
     VdpBitstreamBuffer *bitstream_buffers;
 };
+#else
+struct vdpau_picture_context;
 #endif
 
 int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic,
