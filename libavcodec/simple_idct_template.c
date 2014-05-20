@@ -110,12 +110,12 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
     if (((((uint64_t *)row)[0] & ~ROW0_MASK) | ((uint64_t *)row)[1]) == 0) {
         uint64_t temp;
         if (DC_SHIFT - extra_shift >= 0) {
-            temp = (row[0] << (DC_SHIFT - extra_shift)) & 0xffff;
+            temp = (row[0] * (1 << (DC_SHIFT - extra_shift))) & 0xffff;
         } else {
             temp = ((row[0] + (1<<(extra_shift - DC_SHIFT-1))) >> (extra_shift - DC_SHIFT)) & 0xffff;
         }
-        temp += temp << 16;
-        temp += temp << 32;
+        temp += temp * (1 << 16);
+        temp += temp * ((uint64_t) 1 << 32);
         ((uint64_t *)row)[0] = temp;
         ((uint64_t *)row)[1] = temp;
         return;
@@ -127,11 +127,11 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
           row[1])) {
         uint32_t temp;
         if (DC_SHIFT - extra_shift >= 0) {
-            temp = (row[0] << (DC_SHIFT - extra_shift)) & 0xffff;
+            temp = (row[0] * (1 << (DC_SHIFT - extra_shift))) & 0xffff;
         } else {
             temp = ((row[0] + (1<<(extra_shift - DC_SHIFT-1))) >> (extra_shift - DC_SHIFT)) & 0xffff;
         }
-        temp += temp << 16;
+        temp += temp * (1 << 16);
         ((uint32_t*)row)[0]=((uint32_t*)row)[1] =
             ((uint32_t*)row)[2]=((uint32_t*)row)[3] = temp;
         return;
