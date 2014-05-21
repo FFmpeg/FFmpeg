@@ -163,16 +163,26 @@ HPELDSP_AVG_PIXELS16(_mmxext)
 
 #endif /* HAVE_YASM */
 
+#define SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU)                             \
+    if (HAVE_MMX_EXTERNAL)                                                  \
+    c->PFX ## _pixels_tab IDX [0] = PFX ## _pixels ## SIZE ## _     ## CPU;
+
+#if HAVE_MMX_INLINE
 #define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU)                                     \
     do {                                                                        \
-        if (HAVE_MMX_EXTERNAL)                                                  \
-        c->PFX ## _pixels_tab IDX [0] = PFX ## _pixels ## SIZE ## _     ## CPU; \
+        SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU)                                 \
         if (HAVE_MMX_INLINE) {                                                  \
         c->PFX ## _pixels_tab IDX [1] = PFX ## _pixels ## SIZE ## _x2_  ## CPU; \
         c->PFX ## _pixels_tab IDX [2] = PFX ## _pixels ## SIZE ## _y2_  ## CPU; \
         c->PFX ## _pixels_tab IDX [3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
         }                                                                       \
     } while (0)
+#else
+#define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU)                                     \
+    do {                                                                        \
+        SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU)                                 \
+    } while (0)
+#endif
 
 static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int cpu_flags)
 {
