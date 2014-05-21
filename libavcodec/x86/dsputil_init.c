@@ -534,8 +534,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
     c->add_pixels_clamped        = ff_add_pixels_clamped_mmx;
 
     if (!high_bit_depth) {
-        c->clear_block  = ff_clear_block_mmx;
-        c->clear_blocks = ff_clear_blocks_mmx;
         c->draw_edges   = ff_draw_edges_mmx;
     }
 
@@ -547,6 +545,10 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_MMX_INLINE */
 
 #if HAVE_MMX_EXTERNAL
+    if (!high_bit_depth) {
+        c->clear_block  = ff_clear_block_mmx;
+        c->clear_blocks = ff_clear_blocks_mmx;
+    }
     c->vector_clip_int32 = ff_vector_clip_int32_mmx;
 #endif /* HAVE_MMX_EXTERNAL */
 }
@@ -585,7 +587,10 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
 {
 #if HAVE_SSE_INLINE
     c->vector_clipf = ff_vector_clipf_sse;
+#endif /* HAVE_SSE_INLINE */
 
+#if HAVE_YASM
+#if HAVE_SSE_EXTERNAL
     /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
     if (CONFIG_XVMC && avctx->hwaccel && avctx->hwaccel->decode_mb)
         return;
@@ -594,9 +599,7 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
         c->clear_block  = ff_clear_block_sse;
         c->clear_blocks = ff_clear_blocks_sse;
     }
-#endif /* HAVE_SSE_INLINE */
-
-#if HAVE_YASM
+#endif
 #if HAVE_INLINE_ASM && CONFIG_VIDEODSP
     c->gmc = ff_gmc_sse;
 #endif
