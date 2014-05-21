@@ -37,6 +37,8 @@ void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
                                int line_size);
 void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
                                       int line_size);
+void ff_put_signed_pixels_clamped_sse2(const int16_t *block, uint8_t *pixels,
+                                       int line_size);
 
 void ff_clear_block_mmx(int16_t *block);
 void ff_clear_block_sse(int16_t *block);

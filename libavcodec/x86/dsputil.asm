@@ -31,6 +31,8 @@ pb_zzzz3333zzzzbbbb: db -1,-1,-1,-1,3,3,3,3,-1,-1,-1,-1,11,11,11,11
 pb_zz11zz55zz99zzdd: db -1,-1,1,1,-1,-1,5,5,-1,-1,9,9,-1,-1,13,13
 pb_bswap32: db 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
 
+cextern pb_80
+
 SECTION_TEXT
 
 %macro SCALARPRODUCT 0
@@ -573,3 +575,53 @@ CLEAR_BLOCKS 0
 INIT_XMM sse
 %define ZERO xorps
 CLEAR_BLOCKS 1
+
+;--------------------------------------------------------------------------
+;void ff_put_signed_pixels_clamped(const int16_t *block, uint8_t *pixels,
+;                                  int line_size)
+;--------------------------------------------------------------------------
+
+%macro PUT_SIGNED_PIXELS_CLAMPED_HALF 1
+    mova     m1, [blockq+mmsize*0+%1]
+    mova     m2, [blockq+mmsize*2+%1]
+%if mmsize == 8
+    mova     m3, [blockq+mmsize*4+%1]
+    mova     m4, [blockq+mmsize*6+%1]
+%endif
+    packsswb m1, [blockq+mmsize*1+%1]
+    packsswb m2, [blockq+mmsize*3+%1]
+%if mmsize == 8
+    packsswb m3, [blockq+mmsize*5+%1]
+    packsswb m4, [blockq+mmsize*7+%1]
+%endif
+    paddb    m1, m0
+    paddb    m2, m0
+%if mmsize == 8
+    paddb    m3, m0
+    paddb    m4, m0
+    movq     [pixelsq+lsizeq*0], m1
+    movq     [pixelsq+lsizeq*1], m2
+    movq     [pixelsq+lsizeq*2], m3
+    movq     [pixelsq+lsize3q ], m4
+%else
+    movq     [pixelsq+lsizeq*0], m1
+    movhps   [pixelsq+lsizeq*1], m1
+    movq     [pixelsq+lsizeq*2], m2
+    movhps   [pixelsq+lsize3q ], m2
+%endif
+%endmacro
+
+%macro PUT_SIGNED_PIXELS_CLAMPED 1
+cglobal put_signed_pixels_clamped, 3, 4, %1, block, pixels, lsize, lsize3
+    mova     m0, [pb_80]
+    lea      lsize3q, [lsizeq*3]
+    PUT_SIGNED_PIXELS_CLAMPED_HALF 0
+    lea      pixelsq, [pixelsq+lsizeq*4]
+    PUT_SIGNED_PIXELS_CLAMPED_HALF 64
+    RET
+%endmacro
+
+INIT_MMX mmx
+PUT_SIGNED_PIXELS_CLAMPED 0
+INIT_XMM sse2
+PUT_SIGNED_PIXELS_CLAMPED 3
