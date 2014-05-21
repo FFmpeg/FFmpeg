@@ -349,7 +349,8 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             avctx->delay              = duration;
             av_assert0(!s->afq.remaining_delay);
             s->afq.frames->duration  += duration;
-            s->afq.frames->pts       -= duration;
+            if (s->afq.frames->pts != AV_NOPTS_VALUE)
+                s->afq.frames->pts       -= duration;
             s->afq.remaining_samples += duration;
         }
         ff_af_queue_remove(&s->afq, duration, &avpkt->pts, &avpkt->duration);
