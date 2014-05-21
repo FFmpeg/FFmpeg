@@ -384,7 +384,7 @@ static int query_codec(enum AVCodecID id, int std_compliance)
 AVOutputFormat ff_mp2_muxer = {
     .name              = "mp2",
     .long_name         = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
-    .mime_type         = "audio/x-mpeg",
+    .mime_type         = "audio/mpeg",
     .extensions        = "mp2,m2a,mpa",
     .audio_codec       = AV_CODEC_ID_MP2,
     .video_codec       = AV_CODEC_ID_NONE,
@@ -526,7 +526,7 @@ static int mp3_write_header(struct AVFormatContext *s)
 AVOutputFormat ff_mp3_muxer = {
     .name              = "mp3",
     .long_name         = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
-    .mime_type         = "audio/x-mpeg",
+    .mime_type         = "audio/mpeg",
     .extensions        = "mp3",
     .priv_data_size    = sizeof(MP3Context),
     .audio_codec       = AV_CODEC_ID_MP3,
