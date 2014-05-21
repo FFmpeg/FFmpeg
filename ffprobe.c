@@ -2740,7 +2740,7 @@ static int parse_read_intervals(const char *intervals_spec)
             n++;
     n++;
 
-    read_intervals = av_malloc(n * sizeof(*read_intervals));
+    read_intervals = av_malloc_array(n, sizeof(*read_intervals));
     if (!read_intervals) {
         ret = AVERROR(ENOMEM);
         goto end;
