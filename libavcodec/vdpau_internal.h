@@ -42,6 +42,7 @@ static inline uintptr_t ff_vdpau_get_surface_id(AVFrame *pic)
     return (uintptr_t)pic->data[3];
 }
 
+struct vdpau_picture_context;
 #if CONFIG_VDPAU
 #if !FF_API_BUFS_VDPAU
 union AVVDPAUPictureInfo {
@@ -75,8 +76,6 @@ struct vdpau_picture_context {
      */
     VdpBitstreamBuffer *bitstream_buffers;
 };
-#else
-struct vdpau_picture_context;
 #endif
 
 int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic,
