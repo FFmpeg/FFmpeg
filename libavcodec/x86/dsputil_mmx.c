@@ -506,37 +506,4 @@ void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride,
 #endif
 #endif
 
-void ff_vector_clipf_sse(float *dst, const float *src,
-                         float min, float max, int len)
-{
-    x86_reg i = (len - 16) * 4;
-    __asm__ volatile (
-        "movss          %3, %%xmm4      \n\t"
-        "movss          %4, %%xmm5      \n\t"
-        "shufps $0, %%xmm4, %%xmm4      \n\t"
-        "shufps $0, %%xmm5, %%xmm5      \n\t"
-        "1:                             \n\t"
-        "movaps   (%2, %0), %%xmm0      \n\t" // 3/1 on intel
-        "movaps 16(%2, %0), %%xmm1      \n\t"
-        "movaps 32(%2, %0), %%xmm2      \n\t"
-        "movaps 48(%2, %0), %%xmm3      \n\t"
-        "maxps      %%xmm4, %%xmm0      \n\t"
-        "maxps      %%xmm4, %%xmm1      \n\t"
-        "maxps      %%xmm4, %%xmm2      \n\t"
-        "maxps      %%xmm4, %%xmm3      \n\t"
-        "minps      %%xmm5, %%xmm0      \n\t"
-        "minps      %%xmm5, %%xmm1      \n\t"
-        "minps      %%xmm5, %%xmm2      \n\t"
-        "minps      %%xmm5, %%xmm3      \n\t"
-        "movaps     %%xmm0,   (%1, %0)  \n\t"
-        "movaps     %%xmm1, 16(%1, %0)  \n\t"
-        "movaps     %%xmm2, 32(%1, %0)  \n\t"
-        "movaps     %%xmm3, 48(%1, %0)  \n\t"
-        "sub           $64, %0          \n\t"
-        "jge            1b              \n\t"
-        : "+&r" (i)
-        : "r" (dst), "r" (src), "m" (min), "m" (max)
-        : "memory");
-}
-
 #endif /* HAVE_INLINE_ASM */

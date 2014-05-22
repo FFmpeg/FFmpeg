@@ -585,12 +585,10 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
                                      int cpu_flags, unsigned high_bit_depth)
 {
-#if HAVE_SSE_INLINE
-    c->vector_clipf = ff_vector_clipf_sse;
-#endif /* HAVE_SSE_INLINE */
-
 #if HAVE_YASM
 #if HAVE_SSE_EXTERNAL
+    c->vector_clipf = ff_vector_clipf_sse;
+
     /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
     if (CONFIG_XVMC && avctx->hwaccel && avctx->hwaccel->decode_mb)
         return;

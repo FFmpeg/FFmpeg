@@ -625,3 +625,47 @@ INIT_MMX mmx
 PUT_SIGNED_PIXELS_CLAMPED 0
 INIT_XMM sse2
 PUT_SIGNED_PIXELS_CLAMPED 3
+
+;-----------------------------------------------------
+;void ff_vector_clipf(float *dst, const float *src,
+;                     float min, float max, int len)
+;-----------------------------------------------------
+INIT_XMM sse
+%if ARCH_X86_32
+cglobal vector_clipf, 5,5,6, dst, src, min, max, len
+%else
+cglobal vector_clipf, 3,3,6, dst, src, len
+%endif
+%if WIN64
+    SWAP 0, 2
+    SWAP 1, 3
+%elif ARCH_X86_32
+    movss   m0, minm
+    movss   m1, maxm
+%endif
+    SPLATD  m0
+    SPLATD  m1
+        shl lenq, 2
+        add srcq, lenq
+        add dstq, lenq
+        neg lenq
+.loop:
+    mova    m2,  [srcq+lenq+mmsize*0]
+    mova    m3,  [srcq+lenq+mmsize*1]
+    mova    m4,  [srcq+lenq+mmsize*2]
+    mova    m5,  [srcq+lenq+mmsize*3]
+    maxps   m2, m0
+    maxps   m3, m0
+    maxps   m4, m0
+    maxps   m5, m0
+    minps   m2, m1
+    minps   m3, m1
+    minps   m4, m1
+    minps   m5, m1
+    mova    [dstq+lenq+mmsize*0], m2
+    mova    [dstq+lenq+mmsize*1], m3
+    mova    [dstq+lenq+mmsize*2], m4
+    mova    [dstq+lenq+mmsize*3], m5
+    add     lenq, mmsize*4
+    jl .loop
+    REP_RET
