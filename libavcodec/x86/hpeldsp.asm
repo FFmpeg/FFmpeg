@@ -35,21 +35,39 @@ SECTION_TEXT
 
 ; void ff_put_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro PUT_PIXELS8_X2 0
+%if cpuflag(sse2)
+cglobal put_pixels16_x2, 4,5,4
+%else
 cglobal put_pixels8_x2, 4,5
+%endif
     lea          r4, [r2*2]
 .loop:
-    mova         m0, [r1]
-    mova         m1, [r1+r2]
-    PAVGB        m0, [r1+1]
-    PAVGB        m1, [r1+r2+1]
+    movu         m0, [r1+1]
+    movu         m1, [r1+r2+1]
+%if cpuflag(sse2)
+    movu         m2, [r1]
+    movu         m3, [r1+r2]
+    pavgb        m0, m2
+    pavgb        m1, m3
+%else
+    PAVGB        m0, [r1]
+    PAVGB        m1, [r1+r2]
+%endif
     mova       [r0], m0
     mova    [r0+r2], m1
     add          r1, r4
     add          r0, r4
-    mova         m0, [r1]
-    mova         m1, [r1+r2]
-    PAVGB        m0, [r1+1]
-    PAVGB        m1, [r1+r2+1]
+    movu         m0, [r1+1]
+    movu         m1, [r1+r2+1]
+%if cpuflag(sse2)
+    movu         m2, [r1]
+    movu         m3, [r1+r2]
+    pavgb        m0, m2
+    pavgb        m1, m3
+%else
+    PAVGB        m0, [r1]
+    PAVGB        m1, [r1+r2]
+%endif
     add          r1, r4
     mova       [r0], m0
     mova    [r0+r2], m1
@@ -107,6 +125,9 @@ INIT_MMX mmxext
 PUT_PIXELS_16
 INIT_MMX 3dnow
 PUT_PIXELS_16
+; The 8_X2 macro can easily be used here
+INIT_XMM sse2
+PUT_PIXELS8_X2
 
 
 ; void ff_put_no_rnd_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
@@ -199,20 +220,24 @@ PUT_NO_RND_PIXELS8_X2_EXACT
 
 ; void ff_put_pixels8_y2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro PUT_PIXELS8_Y2 0
+%if cpuflag(sse2)
+cglobal put_pixels16_y2, 4,5,3
+%else
 cglobal put_pixels8_y2, 4,5
+%endif
     lea          r4, [r2*2]
-    mova         m0, [r1]
+    movu         m0, [r1]
     sub          r0, r2
 .loop:
-    mova         m1, [r1+r2]
-    mova         m2, [r1+r4]
+    movu         m1, [r1+r2]
+    movu         m2, [r1+r4]
     add          r1, r4
     PAVGB        m0, m1
     PAVGB        m1, m2
     mova    [r0+r2], m0
     mova    [r0+r4], m1
-    mova         m1, [r1+r2]
-    mova         m0, [r1+r4]
+    movu         m1, [r1+r2]
+    movu         m0, [r1+r4]
     add          r0, r4
     add          r1, r4
     PAVGB        m2, m1
@@ -228,6 +253,9 @@ cglobal put_pixels8_y2, 4,5
 INIT_MMX mmxext
 PUT_PIXELS8_Y2
 INIT_MMX 3dnow
+PUT_PIXELS8_Y2
+; actually, put_pixels16_y2_sse2
+INIT_XMM sse2
 PUT_PIXELS8_Y2
 
 
@@ -352,34 +380,50 @@ AVG_PIXELS8
 %endmacro
 
 %macro AVG_PIXELS8_X2 0
+%if cpuflag(sse2)
+cglobal avg_pixels16_x2, 4,5,4
+%else
 cglobal avg_pixels8_x2, 4,5
+%endif
     lea          r4, [r2*2]
 %if notcpuflag(mmxext)
     pcmpeqd      m5, m5
     paddb        m5, m5
 %endif
 .loop:
-    mova         m0, [r1]
-    mova         m2, [r1+r2]
+    movu         m0, [r1]
+    movu         m2, [r1+r2]
 %if notcpuflag(mmxext)
     PAVGB_MMX    [r1+1], m0, m3, m5
     PAVGB_MMX    [r1+r2+1], m2, m4, m5
     PAVGB_MMX    [r0], m0, m3, m5
     PAVGB_MMX    [r0+r2], m2, m4, m5
 %else
+%if cpuflag(sse2)
+    movu         m1, [r1+1]
+    movu         m3, [r1+r2+1]
+    pavgb        m0, m1
+    pavgb        m2, m3
+%else
     PAVGB        m0, [r1+1]
     PAVGB        m2, [r1+r2+1]
+%endif
     PAVGB        m0, [r0]
     PAVGB        m2, [r0+r2]
 %endif
     add          r1, r4
     mova       [r0], m0
     mova    [r0+r2], m2
-    mova         m0, [r1]
-    mova         m2, [r1+r2]
+    movu         m0, [r1]
+    movu         m2, [r1+r2]
 %if notcpuflag(mmxext)
     PAVGB_MMX    [r1+1], m0, m3, m5
     PAVGB_MMX    [r1+r2+1], m2, m4, m5
+%elif cpuflag(sse2)
+    movu         m1, [r1+1]
+    movu         m3, [r1+r2+1]
+    pavgb        m0, m1
+    pavgb        m2, m3
 %else
     PAVGB        m0, [r1+1]
     PAVGB        m2, [r1+r2+1]
@@ -389,6 +433,9 @@ cglobal avg_pixels8_x2, 4,5
 %if notcpuflag(mmxext)
     PAVGB_MMX    [r0], m0, m3, m5
     PAVGB_MMX    [r0+r2], m2, m4, m5
+%elif cpuflag(sse2)
+    pavgb        m0, [r0]
+    pavgb        m2, [r0+r2]
 %else
     PAVGB        m0, [r0]
     PAVGB        m2, [r0+r2]
@@ -407,36 +454,39 @@ INIT_MMX mmxext
 AVG_PIXELS8_X2
 INIT_MMX 3dnow
 AVG_PIXELS8_X2
+; actually avg_pixels16_x2
+INIT_XMM sse2
+AVG_PIXELS8_X2
 
 
 ; void ff_avg_pixels8_y2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro AVG_PIXELS8_Y2 0
+%if cpuflag(sse2)
+cglobal avg_pixels16_y2, 4,5,3
+%else
 cglobal avg_pixels8_y2, 4,5
+%endif
     lea          r4, [r2*2]
-    mova         m0, [r1]
+    movu         m0, [r1]
     sub          r0, r2
 .loop:
-    mova         m1, [r1+r2]
-    mova         m2, [r1+r4]
+    movu         m1, [r1+r2]
+    movu         m2, [r1+r4]
     add          r1, r4
     PAVGB        m0, m1
     PAVGB        m1, m2
-    mova         m3, [r0+r2]
-    mova         m4, [r0+r4]
-    PAVGB        m0, m3
-    PAVGB        m1, m4
+    PAVGB        m0, [r0+r2]
+    PAVGB        m1, [r0+r4]
     mova    [r0+r2], m0
     mova    [r0+r4], m1
-    mova         m1, [r1+r2]
-    mova         m0, [r1+r4]
+    movu         m1, [r1+r2]
+    movu         m0, [r1+r4]
     PAVGB        m2, m1
     PAVGB        m1, m0
     add          r0, r4
     add          r1, r4
-    mova         m3, [r0+r2]
-    mova         m4, [r0+r4]
-    PAVGB        m2, m3
-    PAVGB        m1, m4
+    PAVGB        m2, [r0+r2]
+    PAVGB        m1, [r0+r4]
     mova    [r0+r2], m2
     mova    [r0+r4], m1
     add          r0, r4
@@ -448,6 +498,9 @@ cglobal avg_pixels8_y2, 4,5
 INIT_MMX mmxext
 AVG_PIXELS8_Y2
 INIT_MMX 3dnow
+AVG_PIXELS8_Y2
+; actually avg_pixels16_y2
+INIT_XMM sse2
 AVG_PIXELS8_Y2
 
 
@@ -570,4 +623,6 @@ cglobal avg_pixels8_xy2, 4,5
 INIT_MMX mmxext
 AVG_PIXELS_XY2
 INIT_MMX 3dnow
+AVG_PIXELS_XY2
+INIT_XMM sse2
 AVG_PIXELS_XY2
