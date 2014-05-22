@@ -551,11 +551,11 @@ AVG_APPROX_PIXELS8_XY2
 
 
 ; void ff_avg_pixels16_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro AVG_PIXELS_XY2 0
+%macro SET_PIXELS_XY2 1
 %if cpuflag(sse2)
-cglobal avg_pixels16_xy2, 4,5,8
+cglobal %1_pixels16_xy2, 4,5,8
 %else
-cglobal avg_pixels8_xy2, 4,5
+cglobal %1_pixels8_xy2, 4,5
 %endif
     pxor        m7, m7
     mova        m6, [pw_2]
@@ -588,9 +588,13 @@ cglobal avg_pixels8_xy2, 4,5
     paddusw     m5, m1
     psrlw       m4, 2
     psrlw       m5, 2
+%ifidn %1, avg
     mova        m3, [r0+r4]
     packuswb    m4, m5
     PAVGB       m4, m3
+%else
+    packuswb    m4, m5
+%endif
     mova   [r0+r4], m4
     add         r4, r2
 
@@ -610,9 +614,13 @@ cglobal avg_pixels8_xy2, 4,5
     paddusw     m1, m5
     psrlw       m0, 2
     psrlw       m1, 2
+%ifidn %1, avg
     mova        m3, [r0+r4]
     packuswb    m0, m1
     PAVGB       m0, m3
+%else
+    packuswb    m0, m1
+%endif
     mova   [r0+r4], m0
     add         r4, r2
     sub        r3d, 2
@@ -621,8 +629,9 @@ cglobal avg_pixels8_xy2, 4,5
 %endmacro
 
 INIT_MMX mmxext
-AVG_PIXELS_XY2
+SET_PIXELS_XY2 avg
 INIT_MMX 3dnow
-AVG_PIXELS_XY2
+SET_PIXELS_XY2 avg
 INIT_XMM sse2
-AVG_PIXELS_XY2
+SET_PIXELS_XY2 put
+SET_PIXELS_XY2 avg
