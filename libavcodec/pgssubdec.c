@@ -341,7 +341,7 @@ static int parse_presentation_segment(AVCodecContext *avctx,
     }
 
     av_freep(&ctx->presentation.objects);
-    ctx->presentation.objects = av_malloc(sizeof(PGSSubPictureReference) * ctx->presentation.object_count);
+    ctx->presentation.objects = av_malloc_array(ctx->presentation.object_count, sizeof(PGSSubPictureReference));
     if (!ctx->presentation.objects) {
         ctx->presentation.object_count = 0;
         return AVERROR(ENOMEM);
@@ -417,7 +417,7 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
     sub->format             = 0;
 
     sub->num_rects = ctx->presentation.object_count;
-    sub->rects     = av_mallocz(sizeof(*sub->rects) * sub->num_rects);
+    sub->rects     = av_mallocz_array(sub->num_rects, sizeof(*sub->rects));
 
     for (rect = 0; rect < sub->num_rects; ++rect) {
         uint16_t picture_id    = ctx->presentation.objects[rect].picture_id;
