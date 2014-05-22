@@ -154,6 +154,8 @@ static void get_private_data(OutputStream *os)
     if (!ptr)
         return;
     os->private_str = av_mallocz(2*size + 1);
+    if (!os->private_str)
+        return;
     for (i = 0; i < size; i++)
         snprintf(&os->private_str[2*i], 3, "%02x", ptr[i]);
     if (ptr != codec->extradata)
