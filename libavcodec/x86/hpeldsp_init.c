@@ -190,7 +190,14 @@ static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int cpu_flags)
     SET_HPEL_FUNCS(avg_no_rnd,    , 16, mmx);
     SET_HPEL_FUNCS(put,        [1],  8, mmx);
     SET_HPEL_FUNCS(put_no_rnd, [1],  8, mmx);
-    SET_HPEL_FUNCS(avg,        [1],  8, mmx);
+    if (HAVE_MMX_EXTERNAL) {
+        c->avg_pixels_tab[1][0] = ff_avg_pixels8_mmx;
+        c->avg_pixels_tab[1][1] = ff_avg_pixels8_x2_mmx;
+    }
+#if HAVE_MMX_INLINE
+    c->avg_pixels_tab[1][2] = avg_pixels8_y2_mmx;
+    c->avg_pixels_tab[1][3] = ff_avg_pixels8_xy2_mmx;
+#endif
 }
 
 static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int cpu_flags)
