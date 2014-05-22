@@ -74,8 +74,6 @@ static av_always_inline void update(SilenceDetectContext *s, AVFrame *insamples,
                 s->start = insamples->pts - (int64_t)(s->duration / av_q2d(time_base) + .5);
                 av_dict_set(&insamples->metadata, "lavfi.silence_start",
                             av_ts2timestr(s->start, &time_base), 0);
-                av_log(s, AV_LOG_INFO, "silence_start: %s\n",
-                       get_metadata_val(insamples, "lavfi.silence_start"));
             }
         }
     } else {
@@ -85,7 +83,8 @@ static av_always_inline void update(SilenceDetectContext *s, AVFrame *insamples,
             av_dict_set(&insamples->metadata, "lavfi.silence_duration",
                         av_ts2timestr(insamples->pts - s->start, &time_base), 0);
             av_log(s, AV_LOG_INFO,
-                   "silence_end: %s | silence_duration: %s\n",
+                   "silence_start:%s silence_end:%s silence_duration:%s\n",
+                   av_ts2timestr(s->start, &time_base),
                    get_metadata_val(insamples, "lavfi.silence_end"),
                    get_metadata_val(insamples, "lavfi.silence_duration"));
         }
