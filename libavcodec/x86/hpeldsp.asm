@@ -451,8 +451,10 @@ AVG_PIXELS8_Y2
 
 
 ; void ff_avg_pixels8_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro AVG_PIXELS8_XY2 0
-cglobal avg_pixels8_xy2, 4,5
+; Note this is not correctly rounded, and is therefore used for
+; not-bitexact output
+%macro AVG_APPROX_PIXELS8_XY2 0
+cglobal avg_approx_pixels8_xy2, 4,5
     mova         m6, [pb_1]
     lea          r4, [r2*2]
     mova         m0, [r1]
@@ -489,6 +491,6 @@ cglobal avg_pixels8_xy2, 4,5
 %endmacro
 
 INIT_MMX mmxext
-AVG_PIXELS8_XY2
+AVG_APPROX_PIXELS8_XY2
 INIT_MMX 3dnow
-AVG_PIXELS8_XY2
+AVG_APPROX_PIXELS8_XY2

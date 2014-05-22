@@ -74,10 +74,10 @@ void ff_avg_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 void ff_avg_pixels8_y2_3dnow(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
-void ff_avg_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
-                               ptrdiff_t line_size, int h);
-void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
+void ff_avg_approx_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
+                                      ptrdiff_t line_size, int h);
+void ff_avg_approx_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
+                                     ptrdiff_t line_size, int h);
 
 #define avg_pixels8_mmx         ff_avg_pixels8_mmx
 #define avg_pixels8_x2_mmx      ff_avg_pixels8_x2_mmx
@@ -156,7 +156,7 @@ CALL_2X_PIXELS_EXPORT(ff_put_pixels16_xy2_mmx, ff_put_pixels8_xy2_mmx, 8)
     CALL_2X_PIXELS(avg_pixels16           ## CPUEXT, ff_avg_pixels8           ## CPUEXT, 8) \
     CALL_2X_PIXELS(avg_pixels16_x2        ## CPUEXT, ff_avg_pixels8_x2        ## CPUEXT, 8) \
     CALL_2X_PIXELS(avg_pixels16_y2        ## CPUEXT, ff_avg_pixels8_y2        ## CPUEXT, 8) \
-    CALL_2X_PIXELS(avg_pixels16_xy2       ## CPUEXT, ff_avg_pixels8_xy2       ## CPUEXT, 8)
+    CALL_2X_PIXELS(avg_approx_pixels16_xy2## CPUEXT, ff_avg_approx_pixels8_xy2## CPUEXT, 8)
 
 HPELDSP_AVG_PIXELS16(_3dnow)
 HPELDSP_AVG_PIXELS16(_mmxext)
@@ -223,8 +223,8 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int cpu_flags)
         c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_mmxext;
         c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_mmxext;
 
-        c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmxext;
-        c->avg_pixels_tab[1][3] = ff_avg_pixels8_xy2_mmxext;
+        c->avg_pixels_tab[0][3] = avg_approx_pixels16_xy2_mmxext;
+        c->avg_pixels_tab[1][3] = ff_avg_approx_pixels8_xy2_mmxext;
     }
 
     if (flags & CODEC_FLAG_BITEXACT && CONFIG_VP3_DECODER) {
@@ -257,8 +257,8 @@ static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags, int cpu_flags)
         c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_3dnow;
         c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_3dnow;
 
-        c->avg_pixels_tab[0][3] = avg_pixels16_xy2_3dnow;
-        c->avg_pixels_tab[1][3] = ff_avg_pixels8_xy2_3dnow;
+        c->avg_pixels_tab[0][3] = avg_approx_pixels16_xy2_3dnow;
+        c->avg_pixels_tab[1][3] = ff_avg_approx_pixels8_xy2_3dnow;
     }
 
     if (flags & CODEC_FLAG_BITEXACT && CONFIG_VP3_DECODER) {
