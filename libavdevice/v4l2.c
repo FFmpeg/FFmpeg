@@ -351,12 +351,12 @@ static int mmap_init(AVFormatContext *ctx)
         return AVERROR(ENOMEM);
     }
     s->buffers = req.count;
-    s->buf_start = av_malloc(sizeof(void *) * s->buffers);
+    s->buf_start = av_malloc_array(s->buffers, sizeof(void *));
     if (s->buf_start == NULL) {
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate buffer pointers\n");
         return AVERROR(ENOMEM);
     }
-    s->buf_len = av_malloc(sizeof(unsigned int) * s->buffers);
+    s->buf_len = av_malloc_array(s->buffers, sizeof(unsigned int));
     if (s->buf_len == NULL) {
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate buffer sizes\n");
         av_free(s->buf_start);
