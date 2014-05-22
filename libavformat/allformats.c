@@ -265,6 +265,7 @@ void av_register_all(void)
     REGISTER_MUXER   (SEGMENT,          stream_segment);
     REGISTER_DEMUXER (SHORTEN,          shorten);
     REGISTER_DEMUXER (SIFF,             siff);
+    REGISTER_DEMUXER (SLN,              sln);
     REGISTER_DEMUXER (SMACKER,          smacker);
     REGISTER_MUXDEMUX(SMJPEG,           smjpeg);
     REGISTER_MUXER   (SMOOTHSTREAMING,  smoothstreaming);
