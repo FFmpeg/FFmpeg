@@ -57,10 +57,10 @@ INIT_XMM sse2
     movd             m4, %5
     movd             m6, %6
     movd             m5, %7
-    movd             m7, %8
+    movd             m3, %8
 
     punpcklbw        m4, m6
-    punpcklbw        m5, m7
+    punpcklbw        m5, m3
     punpcklwd        m4, m5
 
     punpckhdq        m2, m0, m4
@@ -120,10 +120,10 @@ INIT_XMM sse2
     movq             m4, %5
     movq             m6, %6
     movq             m5, %7
-    movq             m7, %8
+    movq             m3, %8
 
     punpcklwd        m4, m6
-    punpcklwd        m5, m7
+    punpcklwd        m5, m3
     punpckhdq        m6, m4, m5
     punpckldq        m4, m5
 
@@ -310,7 +310,7 @@ INIT_XMM sse2
 %endmacro
 
 ALIGN 16
-; input in m0 ... m3 and tcs in r2. Output in m1 and m2
+; input in m0 ... m3 and tcs in tc (r2). Output in m1 and m2
 %macro CHROMA_DEBLOCK_BODY 1
     psubw            m4, m2, m1; q0 - p0
     psubw            m5, m0, m3; p1 - q1
@@ -318,12 +318,11 @@ ALIGN 16
     paddw            m5, m4;
 
     ;tc calculations
-    movd             m6, [r2]; tc0
-    add              r2, 4;
+    movd             m6, [tcq]; tc0
     punpcklwd        m6, m6
-    movd             m7, [r2]; tc1
-    punpcklwd        m7, m7
-    shufps           m6, m7, 0; tc0, tc1
+    movd             m4, [tcq+4]; tc1
+    punpcklwd        m4, m4
+    shufps           m6, m4, 0; tc0, tc1
     pmullw           m4, m6, [pw_m1]; -tc0, -tc1
     ;end tc calculations
 
@@ -669,37 +668,37 @@ INIT_XMM sse2
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_v_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q)
 ;-----------------------------------------------------------------------------
-cglobal hevc_v_loop_filter_chroma_8, 3, 6, 8
-    sub              r0, 2
-    lea              r5, [3*r1]
-    mov              r4, r0
-    add              r0, r5
-    TRANSPOSE4x8B_LOAD  PASS8ROWS(r4, r0, r1, r5)
+cglobal hevc_v_loop_filter_chroma_8, 3, 5, 7, pix, stride, tc, pix0, r3stride
+    sub            pixq, 2
+    lea       r3strideq, [3*strideq]
+    mov           pix0q, pixq
+    add            pixq, r3strideq
+    TRANSPOSE4x8B_LOAD  PASS8ROWS(pix0q, pixq, strideq, r3strideq)
     CHROMA_DEBLOCK_BODY 8
-    TRANSPOSE8x4B_STORE PASS8ROWS(r4, r0, r1, r5)
+    TRANSPOSE8x4B_STORE PASS8ROWS(pix0q, pixq, strideq, r3strideq)
     RET
 
-cglobal hevc_v_loop_filter_chroma_10, 3, 6, 8
-    sub              r0, 4
-    lea              r5, [3*r1]
-    mov              r4, r0
-    add              r0, r5
-    TRANSPOSE4x8W_LOAD  PASS8ROWS(r4, r0, r1, r5)
+cglobal hevc_v_loop_filter_chroma_10, 3, 5, 7, pix, stride, tc, pix0, r3stride
+    sub            pixq, 4
+    lea       r3strideq, [3*strideq]
+    mov           pix0q, pixq
+    add            pixq, r3strideq
+    TRANSPOSE4x8W_LOAD  PASS8ROWS(pix0q, pixq, strideq, r3strideq)
     CHROMA_DEBLOCK_BODY 10
-    TRANSPOSE8x4W_STORE PASS8ROWS(r4, r0, r1, r5)
+    TRANSPOSE8x4W_STORE PASS8ROWS(pix0q, pixq, strideq, r3strideq)
     RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_h_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q
 ;-----------------------------------------------------------------------------
-cglobal hevc_h_loop_filter_chroma_8, 3, 6, 8
-    mov              r5, r0; pix
-    sub              r5, r1
-    sub              r5, r1
-    movq             m0, [r5];    p1
-    movq             m1, [r5+r1]; p0
-    movq             m2, [r0];    q0
-    movq             m3, [r0+r1]; q1
+cglobal hevc_h_loop_filter_chroma_8, 3, 4, 7, pix, stride, tc, pix0
+    mov           pix0q, pixq
+    sub           pix0q, strideq
+    sub           pix0q, strideq
+    movq             m0, [pix0q];    p1
+    movq             m1, [pix0q+strideq]; p0
+    movq             m2, [pixq];    q0
+    movq             m3, [pixq+strideq]; q1
     pxor             m5, m5; zeros reg
     punpcklbw        m0, m5
     punpcklbw        m1, m5
@@ -708,24 +707,24 @@ cglobal hevc_h_loop_filter_chroma_8, 3, 6, 8
     CHROMA_DEBLOCK_BODY  8
     packuswb         m1, m1 ; p0' packed in bytes on low quadword
     packuswb         m2, m2 ; q0' packed in bytes on low quadword
-    movq        [r5+r1], m1
-    movq           [r0], m2
+    movq [pix0q+strideq], m1
+    movq         [pixq], m2
     RET
 
-cglobal hevc_h_loop_filter_chroma_10, 3, 6, 8
-    mov             r5, r0; pix
-    sub             r5, r1
-    sub             r5, r1
-    movdqu          m0, [r5];    p1
-    movdqu          m1, [r5+r1]; p0
-    movdqu          m2, [r0];    q0
-    movdqu          m3, [r0+r1]; q1
+cglobal hevc_h_loop_filter_chroma_10, 3, 4, 7, pix, stride, tc, pix0
+    mov          pix0q, pixq
+    sub          pix0q, strideq
+    sub          pix0q, strideq
+    movu            m0, [pix0q];    p1
+    movu            m1, [pix0q+strideq]; p0
+    movu            m2, [pixq];    q0
+    movu            m3, [pixq+strideq]; q1
     CHROMA_DEBLOCK_BODY 10
     pxor            m5, m5; zeros reg
     CLIPW           m1, m5, [pw_pixel_max]
     CLIPW           m2, m5, [pw_pixel_max]
-    movdqu     [r5+r1], m1
-    movdqu        [r0], m2
+    movu [pix0q+strideq], m1
+    movu        [pixq], m2
     RET
 
 %if ARCH_X86_64
