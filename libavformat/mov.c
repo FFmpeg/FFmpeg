@@ -3303,6 +3303,11 @@ static void mov_read_chapters(AVFormatContext *s)
         uint16_t ch;
         int len, title_len;
 
+        if (end < sample->timestamp) {
+            av_log(s, AV_LOG_WARNING, "ignoring stream duration which is shorter than chapters\n");
+            end = AV_NOPTS_VALUE;
+        }
+
         if (avio_seek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
             av_log(s, AV_LOG_ERROR, "Chapter %d not found in file\n", i);
             goto finish;
