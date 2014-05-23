@@ -3789,6 +3789,11 @@ AVChapter *avpriv_new_chapter(AVFormatContext *s, int id, AVRational time_base,
     AVChapter *chapter = NULL;
     int i;
 
+    if (end != AV_NOPTS_VALUE && start > end) {
+        av_log(s, AV_LOG_ERROR, "Chapter end time %"PRId64" before start %"PRId64"\n", end, start);
+        return NULL;
+    }
+
     for (i = 0; i < s->nb_chapters; i++)
         if (s->chapters[i]->id == id)
             chapter = s->chapters[i];
