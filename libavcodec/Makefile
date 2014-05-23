@@ -487,6 +487,7 @@ OBJS-$(CONFIG_WAVPACK_ENCODER)         += wavpackenc.o
 OBJS-$(CONFIG_WEBP_DECODER)            += vp8.o vp8dsp.o vp56rac.o
 OBJS-$(CONFIG_WEBP_DECODER)            += webp.o exif.o tiff_common.o
 OBJS-$(CONFIG_WEBVTT_DECODER)          += webvttdec.o
+OBJS-$(CONFIG_WEBVTT_ENCODER)          += webvttenc.o
 OBJS-$(CONFIG_WMALOSSLESS_DECODER)     += wmalosslessdec.o wma_common.o
 OBJS-$(CONFIG_WMAPRO_DECODER)          += wmaprodec.o wma.o wma_common.o
 OBJS-$(CONFIG_WMAV1_DECODER)           += wmadec.o wma.o wma_common.o aactab.o
