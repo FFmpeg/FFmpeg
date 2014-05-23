@@ -631,10 +631,10 @@ PUT_SIGNED_PIXELS_CLAMPED 3
 ;                     float min, float max, int len)
 ;-----------------------------------------------------
 INIT_XMM sse
-%if ARCH_X86_32
-cglobal vector_clipf, 5,5,6, dst, src, min, max, len
-%else
+%if UNIX64
 cglobal vector_clipf, 3,3,6, dst, src, len
+%else
+cglobal vector_clipf, 5,5,6, dst, src, min, max, len
 %endif
 %if WIN64
     SWAP 0, 2
@@ -645,7 +645,7 @@ cglobal vector_clipf, 3,3,6, dst, src, len
 %endif
     SPLATD  m0
     SPLATD  m1
-        shl lenq, 2
+        shl lend, 2
         add srcq, lenq
         add dstq, lenq
         neg lenq
