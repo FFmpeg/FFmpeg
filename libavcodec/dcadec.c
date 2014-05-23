@@ -2107,7 +2107,7 @@ static float dca_dmix_code(unsigned code)
 {
     int sign = (code >> 8) - 1;
     code &= 0xff;
-    return ((dca_dmixtable[code] ^ sign) - sign) * pow(2, -15);
+    return ((dca_dmixtable[code] ^ sign) - sign) * 0x1p-15;
 }
 
 /**
