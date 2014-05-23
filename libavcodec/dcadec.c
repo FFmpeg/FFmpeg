@@ -2103,6 +2103,13 @@ static void dca_exss_parse_header(DCAContext *s)
         }
 }
 
+static float dca_dmix_code(unsigned code)
+{
+    int sign = (code >> 8) - 1;
+    code &= 0xff;
+    return ldexpf((dca_dmixtable[code] ^ sign) - sign, -15);
+}
+
 /**
  * Main frame decoding function
  * FIXME add arguments
@@ -2171,16 +2178,10 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
              */
             if (s->core_downmix && (s->core_downmix_amode == DCA_STEREO ||
                                     s->core_downmix_amode == DCA_STEREO_TOTAL)) {
-                int sign, code;
                 for (i = 0; i < num_core_channels + !!s->lfe; i++) {
-                    sign = s->core_downmix_codes[i][0] & 0x100 ? 1 : -1;
-                    code = s->core_downmix_codes[i][0] & 0x0FF;
-                    s->downmix_coef[i][0] = (!code ? 0.0f :
-                                             sign * dca_dmixtable[code - 1]);
-                    sign = s->core_downmix_codes[i][1] & 0x100 ? 1 : -1;
-                    code = s->core_downmix_codes[i][1] & 0x0FF;
-                    s->downmix_coef[i][1] = (!code ? 0.0f :
-                                             sign * dca_dmixtable[code - 1]);
+                    /* Range checked earlier */
+                    s->downmix_coef[i][0] = dca_dmix_code(s->core_downmix_codes[i][0]);
+                    s->downmix_coef[i][1] = dca_dmix_code(s->core_downmix_codes[i][1]);
                 }
                 s->output = s->core_downmix_amode;
             } else {
