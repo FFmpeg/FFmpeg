@@ -2063,9 +2063,6 @@
     <ClCompile Include="..\libavcodec\x86\dsputil_mmx.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dsputil_mmx.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\fpel_mmx.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_fpel_mmx.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\idct_mmx_xvid.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_idct_mmx_xvid.obj</ObjectFileName>
     </ClCompile>
@@ -2077,9 +2074,6 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dirac_dwt.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dirac_dwt.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\hpeldsp_mmx.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_hpeldsp_mmx.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_snowdsp.obj</ObjectFileName>

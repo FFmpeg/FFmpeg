@@ -87,6 +87,7 @@ EXPORTS
     av_fast_malloc
     av_fast_realloc
     av_fifo_alloc
+    av_fifo_alloc_array
     av_fifo_drain
     av_fifo_free
 	av_fifo_freep
@@ -182,6 +183,7 @@ EXPORTS
     av_get_string
     av_get_token
     av_gettime
+    av_gettime_relative
     av_hash_alloc
     av_hash_final
     av_hash_freep

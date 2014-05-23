@@ -1070,8 +1070,11 @@
     <ClCompile Include="..\libavformat\yop.c">
       <ObjectFileName>$(IntDir)\libavformat_yop.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavformat\yuv4mpeg.c">
-      <ObjectFileName>$(IntDir)\libavformat_yuv4mpeg.obj</ObjectFileName>
+    <ClCompile Include="..\libavformat\yuv4mpegenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_yuv4mpegenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\yuv4mpegdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_yuv4mpegdec.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavformat\libmodplug.c">
       <ObjectFileName>$(IntDir)\libavformat_libmodplug.obj</ObjectFileName>

@@ -1053,7 +1053,10 @@
     <ClCompile Include="..\libavformat\yop.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\yuv4mpeg.c">
+    <ClCompile Include="..\libavformat\yuv4mpegenc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\yuv4mpegdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\libmodplug.c">

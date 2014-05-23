@@ -2049,9 +2049,6 @@
     <ClCompile Include="..\libavcodec\x86\dsputil_mmx.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\fpel_mmx.c">
-      <Filter>Source Files\libavcodec\x86</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\idct_mmx_xvid.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
@@ -2062,9 +2059,6 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dirac_dwt.c">
-      <Filter>Source Files\libavcodec\x86</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\hpeldsp_mmx.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c">

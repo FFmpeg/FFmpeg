@@ -83,6 +83,9 @@
     <ClCompile Include="..\libavutil\des.c">
       <ObjectFileName>$(IntDir)\libavutil_des.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavutil\display.c">
+      <ObjectFileName>$(IntDir)\libavutil_display.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavutil\downmix_info.c">
       <ObjectFileName>$(IntDir)\libavutil_downmix_info.obj</ObjectFileName>
     </ClCompile>
@@ -243,6 +246,7 @@
     <ClInclude Include="..\libavutil\common.h" />
     <ClInclude Include="..\libavutil\cpu.h" />
     <ClInclude Include="..\libavutil\crc.h" />
+    <ClInclude Include="..\libavutil\display.h" />
     <ClInclude Include="..\libavutil\downmix_info.h" />
     <ClInclude Include="..\libavutil\error.h" />
     <ClInclude Include="..\libavutil\eval.h" />
@@ -462,6 +466,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
 copy ..\libavutil\eval.h $(OutDir)\include\libavutil
@@ -577,6 +582,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
 copy ..\libavutil\eval.h $(OutDir)\include\libavutil
@@ -695,6 +701,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
 copy ..\libavutil\eval.h $(OutDir)\include\libavutil
@@ -813,6 +820,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
 copy ..\libavutil\eval.h $(OutDir)\include\libavutil
@@ -935,6 +943,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
 copy ..\libavutil\eval.h $(OutDir)\include\libavutil
@@ -1057,6 +1066,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
 copy ..\libavutil\eval.h $(OutDir)\include\libavutil
@@ -1184,6 +1194,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
 copy ..\libavutil\eval.h $(OutDir)\include\libavutil
@@ -1311,6 +1322,7 @@ copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
+copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
 copy ..\libavutil\eval.h $(OutDir)\include\libavutil
