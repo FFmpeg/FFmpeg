@@ -26,6 +26,7 @@
 #include "avi.h"
 #include "avio_internal.h"
 #include "riff.h"
+#include "mpegts.h"
 #include "libavformat/avlanguage.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
@@ -570,6 +571,11 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIStream *avist    = s->streams[stream_index]->priv_data;
     AVCodecContext *enc = s->streams[stream_index]->codec;
 
+    if (enc->codec_id == AV_CODEC_ID_H264 && enc->codec_tag == MKTAG('H','2','6','4')) {
+        int ret = ff_check_h264_startcode(s, s->streams[stream_index], pkt);
+        if (ret < 0)
+            return ret;
+    }
     av_dlog(s, "dts:%s packet_count:%d stream_index:%d\n", av_ts2str(pkt->dts), avist->packet_count, stream_index);
     while (enc->block_align == 0 && pkt->dts != AV_NOPTS_VALUE &&
            pkt->dts > avist->packet_count && enc->codec_id != AV_CODEC_ID_XSUB && avist->packet_count) {
