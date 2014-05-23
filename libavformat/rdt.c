@@ -399,6 +399,8 @@ rdt_parse_b64buf (unsigned int *target_len, const char *p)
     }
     *target_len = len * 3 / 4;
     target = av_mallocz(*target_len + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!target)
+        return NULL;
     av_base64_decode(target, p, *target_len);
     return target;
 }
@@ -521,8 +523,10 @@ static PayloadContext *
 rdt_new_context (void)
 {
     PayloadContext *rdt = av_mallocz(sizeof(PayloadContext));
-
-    int ret = avformat_open_input(&rdt->rmctx, "", &ff_rdt_demuxer, NULL);
+    int ret;
+    if (!rdt)
+        return NULL;
+    ret = avformat_open_input(&rdt->rmctx, "", &ff_rdt_demuxer, NULL);
     if (ret < 0) {
         av_free(rdt);
         return NULL;
