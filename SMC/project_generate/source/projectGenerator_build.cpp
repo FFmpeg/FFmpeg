@@ -387,7 +387,6 @@ void projectGenerator::buildProgramIncludes( const string & sProject, StaticList
         vHIncludes.push_back( "..\\ffmpeg.h" );
 
         vLibs.push_back( "SDL.lib" );
-        vLibs.push_back( "SDLmain.lib" );
 
         vIncDirs.push_back( "$(OutDir)\\include\\SDL" );
     }
@@ -412,7 +411,6 @@ void projectGenerator::buildProgramIncludes( const string & sProject, StaticList
         vHIncludes.push_back( "..\\avconv.h" );
 
         vLibs.push_back( "SDL.lib" );
-        vLibs.push_back( "SDLmain.lib" );
 
         vIncDirs.push_back( "$(OutDir)\\include\\SDL" );
     }
