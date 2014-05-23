@@ -96,6 +96,14 @@ enum AVFrameSideDataType {
      * ReplayGain information in the form of the AVReplayGain struct.
      */
     AV_FRAME_DATA_REPLAYGAIN,
+    /**
+     * This side data contains a 3x3 transformation matrix describing an affine
+     * transformation that needs to be applied to the frame for correct
+     * presentation.
+     *
+     * See libavutil/display.h for a detailed description of the data.
+     */
+    AV_FRAME_DATA_DISPLAYMATRIX,
 };
 
 typedef struct AVFrameSideData {

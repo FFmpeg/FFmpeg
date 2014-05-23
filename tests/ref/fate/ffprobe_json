@@ -11,7 +11,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "572",
+            "pos": "642",
             "flags": "K"
         },
         {
@@ -26,7 +26,7 @@
             "best_effort_timestamp_time": "0.000000",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "572",
+            "pkt_pos": "642",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -43,7 +43,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "2647",
+            "pos": "2717",
             "flags": "K"
         },
         {
@@ -58,7 +58,7 @@
             "best_effort_timestamp_time": "0.000000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "2647",
+            "pkt_pos": "2717",
             "pkt_size": "230400",
             "width": 320,
             "height": 240,
@@ -82,7 +82,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "233068",
+            "pos": "233138",
             "flags": "K"
         },
         {
@@ -97,7 +97,7 @@
             "best_effort_timestamp_time": "0.000000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "233068",
+            "pkt_pos": "233138",
             "pkt_size": "30000",
             "width": 100,
             "height": 100,
@@ -121,7 +121,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "263073",
+            "pos": "263143",
             "flags": "K"
         },
         {
@@ -136,7 +136,7 @@
             "best_effort_timestamp_time": "0.023220",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "263073",
+            "pkt_pos": "263143",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -153,7 +153,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "265151",
+            "pos": "265221",
             "flags": "K"
         },
         {
@@ -168,7 +168,7 @@
             "best_effort_timestamp_time": "0.040000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "265151",
+            "pkt_pos": "265221",
             "pkt_size": "230400",
             "width": 320,
             "height": 240,
@@ -192,7 +192,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "495575",
+            "pos": "495645",
             "flags": "K"
         },
         {
@@ -207,7 +207,7 @@
             "best_effort_timestamp_time": "0.040000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "495575",
+            "pkt_pos": "495645",
             "pkt_size": "30000",
             "width": 100,
             "height": 100,
@@ -231,7 +231,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "525580",
+            "pos": "525650",
             "flags": "K"
         },
         {
@@ -246,7 +246,7 @@
             "best_effort_timestamp_time": "0.046440",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "525580",
+            "pkt_pos": "525650",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -263,7 +263,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "527651",
+            "pos": "527721",
             "flags": "K"
         },
         {
@@ -278,7 +278,7 @@
             "best_effort_timestamp_time": "0.069660",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "527651",
+            "pkt_pos": "527721",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -295,7 +295,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "529729",
+            "pos": "529799",
             "flags": "K"
         },
         {
@@ -310,7 +310,7 @@
             "best_effort_timestamp_time": "0.080000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "529729",
+            "pkt_pos": "529799",
             "pkt_size": "230400",
             "width": 320,
             "height": 240,
@@ -334,7 +334,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "760153",
+            "pos": "760223",
             "flags": "K"
         },
         {
@@ -349,7 +349,7 @@
             "best_effort_timestamp_time": "0.080000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "760153",
+            "pkt_pos": "760223",
             "pkt_size": "30000",
             "width": 100,
             "height": 100,
@@ -373,7 +373,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "790158",
+            "pos": "790228",
             "flags": "K"
         },
         {
@@ -388,7 +388,7 @@
             "best_effort_timestamp_time": "0.092880",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "790158",
+            "pkt_pos": "790228",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -405,7 +405,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "792229",
+            "pos": "792299",
             "flags": "K"
         },
         {
@@ -420,7 +420,7 @@
             "best_effort_timestamp_time": "0.116100",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "792229",
+            "pkt_pos": "792299",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -437,7 +437,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "794307",
+            "pos": "794377",
             "flags": "K"
         },
         {
@@ -452,7 +452,7 @@
             "best_effort_timestamp_time": "0.120000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "794307",
+            "pkt_pos": "794377",
             "pkt_size": "230400",
             "width": 320,
             "height": 240,
@@ -476,7 +476,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "1024731",
+            "pos": "1024801",
             "flags": "K"
         },
         {
@@ -491,7 +491,7 @@
             "best_effort_timestamp_time": "0.120000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "1024731",
+            "pkt_pos": "1024801",
             "pkt_size": "30000",
             "width": 100,
             "height": 100,
@@ -539,7 +539,8 @@
                 "attached_pic": 0
             },
             "tags": {
-                "E": "mc²"
+                "E": "mc²",
+                "encoder": "Lavc pcm_s16le"
             }
         },
         {
@@ -578,7 +579,8 @@
             },
             "tags": {
                 "title": "foobar",
-                "duration_ts": "field-and-tags-conflict-attempt"
+                "duration_ts": "field-and-tags-conflict-attempt",
+                "encoder": "Lavc rawvideo"
             }
         },
         {
@@ -614,6 +616,9 @@
                 "visual_impaired": 0,
                 "clean_effects": 0,
                 "attached_pic": 0
+            },
+            "tags": {
+                "encoder": "Lavc rawvideo"
             }
         }
     ],
@@ -624,8 +629,8 @@
         "format_name": "nut",
         "start_time": "0.000000",
         "duration": "0.120000",
-        "size": "1054812",
-        "bit_rate": "70320800",
+        "size": "1054882",
+        "bit_rate": "70325466",
         "probe_score": 100,
         "tags": {
             "title": "ffprobe test file",

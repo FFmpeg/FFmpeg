@@ -142,9 +142,10 @@ static int wav_write_header(AVFormatContext *s)
     /* format header */
     fmt = ff_start_tag(pb, "fmt ");
     if (ff_put_wav_header(pb, s->streams[0]->codec, 0) < 0) {
+        const AVCodecDescriptor *desc = avcodec_descriptor_get(s->streams[0]->codec->codec_id);
         av_log(s, AV_LOG_ERROR, "%s codec not supported in WAVE format\n",
-               s->streams[0]->codec->codec ? s->streams[0]->codec->codec->name : "NONE");
-        return -1;
+               desc ? desc->name : "unknown");
+        return AVERROR(ENOSYS);
     }
     ff_end_tag(pb, fmt);
 

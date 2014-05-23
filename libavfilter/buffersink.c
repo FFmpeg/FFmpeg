@@ -246,7 +246,7 @@ static av_cold int common_init(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
 
-    buf->fifo = av_fifo_alloc(FIFO_INIT_SIZE*sizeof(AVFilterBufferRef *));
+    buf->fifo = av_fifo_alloc_array(FIFO_INIT_SIZE, sizeof(AVFilterBufferRef *));
     if (!buf->fifo) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate fifo\n");
         return AVERROR(ENOMEM);

@@ -438,7 +438,7 @@ int main(int argc, char **argv)
         /* we measure during about 1 seconds */
         nb_its = 1;
         for(;;) {
-            time_start = av_gettime();
+            time_start = av_gettime_relative();
             for (it = 0; it < nb_its; it++) {
                 switch (transform) {
                 case TRANSFORM_MDCT:
@@ -464,7 +464,7 @@ int main(int argc, char **argv)
 #endif
                 }
             }
-            duration = av_gettime() - time_start;
+            duration = av_gettime_relative() - time_start;
             if (duration >= 1000000)
                 break;
             nb_its *= 2;

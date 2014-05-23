@@ -2066,6 +2066,8 @@ loop_end:
                 continue;
             ist = input_streams[output_streams[i]->source_index];
             av_dict_copy(&output_streams[i]->st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
+            if (!output_streams[i]->stream_copy)
+                av_dict_set(&output_streams[i]->st->metadata, "encoder", NULL, 0);
         }
 
     /* process manually set metadata */

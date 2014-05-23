@@ -1,4 +1,4 @@
-83e315ce8083a6d035f801bb862942bf *tests/data/fate/acodec-pcm-s24le_planar.nut
-1590202 tests/data/fate/acodec-pcm-s24le_planar.nut
+aa9f8ca95de20b2e83f66dcbb15cc307 *tests/data/fate/acodec-pcm-s24le_planar.nut
+1590251 tests/data/fate/acodec-pcm-s24le_planar.nut
 95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-pcm-s24le_planar.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

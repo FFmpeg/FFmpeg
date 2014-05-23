@@ -351,12 +351,12 @@ static int mmap_init(AVFormatContext *ctx)
         return AVERROR(ENOMEM);
     }
     s->buffers = req.count;
-    s->buf_start = av_malloc(sizeof(void *) * s->buffers);
+    s->buf_start = av_malloc_array(s->buffers, sizeof(void *));
     if (s->buf_start == NULL) {
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate buffer pointers\n");
         return AVERROR(ENOMEM);
     }
-    s->buf_len = av_malloc(sizeof(unsigned int) * s->buffers);
+    s->buf_len = av_malloc_array(s->buffers, sizeof(unsigned int));
     if (s->buf_len == NULL) {
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate buffer sizes\n");
         av_free(s->buf_start);
@@ -427,10 +427,7 @@ static void mmap_release_buffer(void *opaque, uint8_t *data)
 #if HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)
 static int64_t av_gettime_monotonic(void)
 {
-    struct timespec tv;
-
-    clock_gettime(CLOCK_MONOTONIC, &tv);
-    return (int64_t)tv.tv_sec * 1000000 + tv.tv_nsec / 1000;
+    return av_gettime_relative();
 }
 #endif
 

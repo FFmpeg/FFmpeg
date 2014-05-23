@@ -225,6 +225,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     AVDictionary *tmp = NULL;
     AVCodecContext *codec = NULL;
     AVOutputFormat *of = s->oformat;
+    AVDictionaryEntry *e;
 
     if (options)
         av_dict_copy(&tmp, *options, 0);
@@ -351,6 +352,10 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
         av_dict_set(&s->metadata, "encoder", NULL, 0);
     }
 
+    for (e = NULL; e = av_dict_get(s->metadata, "encoder-", e, AV_DICT_IGNORE_SUFFIX); ) {
+        av_dict_set(&s->metadata, e->key, NULL, 0);
+    }
+
     if (options) {
          av_dict_free(options);
          *options = tmp;
@@ -435,7 +440,8 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     int delay = FFMAX(st->codec->has_b_frames, st->codec->max_b_frames > 0);
-    int num, den, frame_size, i;
+    int num, den, i;
+    int frame_size;
 
     av_dlog(s, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), delay, pkt->size, pkt->stream_index);
@@ -515,8 +521,6 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         break;
     case AVMEDIA_TYPE_VIDEO:
         frac_add(&st->pts, (int64_t)st->time_base.den * st->codec->time_base.num);
-        break;
-    default:
         break;
     }
     return 0;

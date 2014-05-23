@@ -166,8 +166,8 @@ static av_cold int atrac3p_decode_init(AVCodecContext *avctx)
 
     ctx->my_channel_layout = avctx->channel_layout;
 
-    ctx->ch_units = av_mallocz(sizeof(*ctx->ch_units) *
-                               ctx->num_channel_blocks);
+    ctx->ch_units = av_mallocz_array(ctx->num_channel_blocks, sizeof(*ctx->ch_units));
+
     if (!ctx->ch_units) {
         atrac3p_decode_close(avctx);
         return AVERROR(ENOMEM);

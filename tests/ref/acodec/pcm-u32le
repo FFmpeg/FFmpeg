@@ -1,4 +1,4 @@
-34df9a7e1fe60da0bc6ec0485b68726e *tests/data/fate/acodec-pcm-u32le.nut
-2120148 tests/data/fate/acodec-pcm-u32le.nut
+87f75abd86f84571bafc656e06b63038 *tests/data/fate/acodec-pcm-u32le.nut
+2120190 tests/data/fate/acodec-pcm-u32le.nut
 95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-pcm-u32le.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

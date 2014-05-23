@@ -35,7 +35,9 @@
 
 #define FF_SANE_NB_CHANNELS 63U
 
-#if HAVE_NEON || ARCH_PPC || HAVE_MMX
+#if HAVE_AVX
+#   define STRIDE_ALIGN 32
+#elif HAVE_NEON || ARCH_PPC || HAVE_MMX
 #   define STRIDE_ALIGN 16
 #else
 #   define STRIDE_ALIGN 8
@@ -222,11 +224,6 @@ int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx);
  * already locked
  */
 int ff_codec_open2_recursive(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-
-/**
- * Call avcodec_close recursively, counterpart to avcodec_open2_recursive.
- */
-int ff_codec_close_recursive(AVCodecContext *avctx);
 
 /**
  * Finalize buf into extradata and set its size appropriately.

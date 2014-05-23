@@ -15,14 +15,40 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
-2014-05-xx - xxxxxxx - lavf 55.17.0 - avformat.h
+2014-05-19 - xxxxxxx - lavf 55.18.0 - avformat.h
+  Add av_stream_get_side_data() to access stream-level side data
+  in the same way as av_packet_get_side_data().
+
+2014-05-xx - xxxxxxx - lavu 52.86.100 - fifo.h
+  Add av_fifo_alloc_array() function.
+
+2014-05-xx - xxxxxxx - lavu 53.15.0 - frame.h, display.h
+  Add AV_FRAME_DATA_DISPLAYMATRIX for exporting frame-level
+  spatial rendering on video frames for proper display.
+
+2014-05-xx - xxxxxxx - lavc 55.52.0 - avcodec.h
+  Add AV_PKT_DATA_DISPLAYMATRIX for exporting packet-level
+  spatial rendering on video frames for proper display.
+
+2014-05-xx - xxxxxxx - lavf 55.17.1 - avformat.h
+  Deprecate AVStream.pts and the AVFrac struct, which was its only use case.
+  See use av_stream_get_end_pts()
+
+2014-05-18 - fd05602 - lavc 55.52.0 - avcodec.h
+  Add avcodec_free_context(). From now on it should be used for freeing
+  AVCodecContext.
+
+2014-05-xx - xxxxxxx - lavu 52.84.100 - time.h
+  Add av_gettime_relative() av_gettime_relative_is_monotonic()
+
+2014-05-15 - 0c1959b - lavf 55.17.0 - avformat.h
   Add AVMFT_FLAG_BITEXACT flag. Muxers now use it instead of checking
   CODEC_FLAG_BITEXACT on the first stream.
 
 2014-05-15 - xxxxxxx - lswr 0.19.100 - swresample.h
   Add swr_close()
 
-2014-xx-xx - xxxxxxx - lavu 53.14.0 - pixfmt.h
+2014-05-11 - 66e6c8a - lavu 53.14.0 - pixfmt.h
   Add AV_PIX_FMT_VDA for new-style VDA acceleration.
 
 2014-05-xx - xxxxxxx - lavu 52.82.0 - fifo.h
@@ -31,19 +57,19 @@ API changes, most recent first:
 2014-05-02 - ba52fb11 - lavu 52.81.0 - opt.h
   Add av_opt_set_dict2() function.
 
-2014-04-xx - e77b985 / a2941c8 - lavc 55.60.103 / 55.50.3 - avcodec.h
+2014-05-01 - e77b985 / a2941c8 - lavc 55.60.103 / 55.50.3 - avcodec.h
   Deprecate CODEC_FLAG_MV0. It is replaced by the flag "mv0" in the
   "mpv_flags" private option of the mpegvideo encoders.
 
-2014-04-xx - e40ae8c / 6484149 - lavc 55.60.102 / 55.50.2 - avcodec.h
+2014-05-01 - e40ae8c / 6484149 - lavc 55.60.102 / 55.50.2 - avcodec.h
   Deprecate CODEC_FLAG_GMC. It is replaced by the "gmc" private option of the
   libxvid encoder.
 
-2014-04-xx - 1851643 / b2c3171 - lavc 55.60.101 / 55.50.1 - avcodec.h
+2014-05-01 - 1851643 / b2c3171 - lavc 55.60.101 / 55.50.1 - avcodec.h
   Deprecate CODEC_FLAG_NORMALIZE_AQP. It is replaced by the flag "naq" in the
   "mpv_flags" private option of the mpegvideo encoders.
 
-2014-04-xx - xxxxxxx - avcodec.h
+2014-05-01 - 5fcceda - avcodec.h
   Deprecate CODEC_FLAG_INPUT_PRESERVED. Its functionality is replaced by passing
   reference-counted frames to encoders.
 
@@ -56,10 +82,10 @@ API changes, most recent first:
 2014-03-07 - 8b2a130 - lavc 55.50.0 / 55.53.100 - dxva2.h
   Add FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO for old Intel GPUs.
 
-2014-04-22 - dac7e8a - lavu 53.13.0 / 52.78.100 - avutil.h
+2014-04-22 - 502512e /dac7e8a - lavu 53.13.0 / 52.78.100 - avutil.h
   Add av_get_time_base_q().
 
-2014-04-xx - xxxxxxx - lavu 53.12.0 / 52.77.100 - crc.h
+2014-04-17 - 0983d48 - lavu 53.12.0 / 52.77.100 - crc.h
   Add AV_CRC_16_ANSI_LE crc variant.
 
 2014-04-XX - xxxxxxx - lavf xx.xx.1xx - avformat.h
@@ -89,22 +115,22 @@ API changes, most recent first:
 2014-03-29 - cd50a44b - lavu 52.70.100 - mem.h
   Add av_dynarray_add_nofree() function.
 
-2014-02-xx - 3e1f241 / d161ae0 - lavu 52.69.100 / 53.8.0 - frame.h
+2014-02-24 - 3e1f241 / d161ae0 - lavu 52.69.100 / 53.8.0 - frame.h
   Add av_frame_remove_side_data() for removing a single side data
   instance from a frame.
 
-2014-02-xx - 83e8978 / 5a7e35d - lavu 52.68.100 / 53.7.0 - frame.h, replaygain.h
+2014-03-24 - 83e8978 / 5a7e35d - lavu 52.68.100 / 53.7.0 - frame.h, replaygain.h
   Add AV_FRAME_DATA_REPLAYGAIN for exporting replaygain tags.
   Add a new header replaygain.h with the AVReplayGain struct.
 
-2014-02-xx - 83e8978 / 5a7e35d - lavc 55.54.100 / 55.36.0 - avcodec.h
+2014-03-24 - 83e8978 / 5a7e35d - lavc 55.54.100 / 55.36.0 - avcodec.h
   Add AV_PKT_DATA_REPLAYGAIN for exporting replaygain tags.
 
-2014-02-xx - 595ba3b / 25b3258 - lavf 55.35.100 / 55.13.0 - avformat.h
+2014-03-24 - 595ba3b / 25b3258 - lavf 55.35.100 / 55.13.0 - avformat.h
   Add AVStream.side_data and AVStream.nb_side_data for exporting stream-global
   side data (e.g. replaygain tags, video rotation)
 
-2014-02-xx - bd34e26 / 0e2c3ee - lavc 55.53.100 / 55.35.0 - avcodec.h
+2014-03-24 - bd34e26 / 0e2c3ee - lavc 55.53.100 / 55.35.0 - avcodec.h
   Give the name AVPacketSideData to the previously anonymous struct used for
   AVPacket.side_data.
 

@@ -67,7 +67,7 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc, int flags)
     /* We use the known constant frame size for the codec if known, otherwise
      * fall back on using AVCodecContext.frame_size, which is not as reliable
      * for indicating packet duration. */
-    frame_size = av_get_audio_frame_duration(enc, 0);
+    frame_size = av_get_audio_frame_duration(enc, enc->block_align);
     if (!frame_size)
         frame_size = enc->frame_size;
 

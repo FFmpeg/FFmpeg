@@ -295,7 +295,7 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         if ((ret = ff_af_queue_add(&s->afq, frame)) < 0)
             return ret;
     } else {
-        if (!s->eof)
+        if (!s->eof && s->afq.frame_alloc)
             if ((ret = vorbis_analysis_wrote(&s->vd, 0)) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "error in vorbis_analysis_wrote()\n");
                 return vorbis_error_to_averror(ret);
@@ -349,7 +349,8 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             avctx->delay              = duration;
             av_assert0(!s->afq.remaining_delay);
             s->afq.frames->duration  += duration;
-            s->afq.frames->pts       -= duration;
+            if (s->afq.frames->pts != AV_NOPTS_VALUE)
+                s->afq.frames->pts       -= duration;
             s->afq.remaining_samples += duration;
         }
         ff_af_queue_remove(&s->afq, duration, &avpkt->pts, &avpkt->duration);

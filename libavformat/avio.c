@@ -312,8 +312,8 @@ static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
             } else {
                 if (h->rw_timeout) {
                     if (!wait_since)
-                        wait_since = av_gettime();
-                    else if (av_gettime() > wait_since + h->rw_timeout)
+                        wait_since = av_gettime_relative();
+                    else if (av_gettime_relative() > wait_since + h->rw_timeout)
                         return AVERROR(EIO);
                 }
                 av_usleep(1000);

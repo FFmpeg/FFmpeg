@@ -64,6 +64,7 @@ typedef struct  {
     int64_t audio_strm_length;
     int packet_count;
     int entry;
+    int max_size;
 
     AVIIndex indexes;
 } AVIStream;
@@ -152,7 +153,7 @@ static int avi_write_header(AVFormatContext *s)
     AVIContext *avi = s->priv_data;
     AVIOContext *pb = s->pb;
     int bitrate, n, i, nb_frames, au_byterate, au_ssize, au_scale;
-    AVCodecContext *stream, *video_enc;
+    AVCodecContext *video_enc;
     int64_t list1, list2, strh, strf;
     AVDictionaryEntry *t = NULL;
     int padding;
@@ -180,10 +181,10 @@ static int avi_write_header(AVFormatContext *s)
 
     video_enc = NULL;
     for (n = 0; n < s->nb_streams; n++) {
-        stream   = s->streams[n]->codec;
-        bitrate += stream->bit_rate;
-        if (stream->codec_type == AVMEDIA_TYPE_VIDEO)
-            video_enc = stream;
+        AVCodecContext *codec = s->streams[n]->codec;
+        bitrate += codec->bit_rate;
+        if (codec->codec_type == AVMEDIA_TYPE_VIDEO)
+            video_enc = codec;
     }
 
     nb_frames = 0;
@@ -218,19 +219,19 @@ static int avi_write_header(AVFormatContext *s)
 
     /* stream list */
     for (i = 0; i < n; i++) {
-        AVIStream *avist = s->streams[i]->priv_data;
+        AVStream *st = s->streams[i];
+        AVCodecContext *enc = st->codec;
+        AVIStream *avist = st->priv_data;
         list2 = ff_start_tag(pb, "LIST");
         ffio_wfourcc(pb, "strl");
 
-        stream = s->streams[i]->codec;
-
         /* stream generic header */
         strh = ff_start_tag(pb, "strh");
-        switch (stream->codec_type) {
+        switch (enc->codec_type) {
         case AVMEDIA_TYPE_SUBTITLE:
             // XSUB subtitles behave like video tracks, other subtitles
             // are not (yet) supported.
-            if (stream->codec_id != AV_CODEC_ID_XSUB) {
+            if (enc->codec_id != AV_CODEC_ID_XSUB) {
                 av_log(s, AV_LOG_ERROR,
                        "Subtitle streams other than DivX XSUB are not supported by the AVI muxer.\n");
                 return AVERROR_PATCHWELCOME;
@@ -248,9 +249,9 @@ static int avi_write_header(AVFormatContext *s)
             ffio_wfourcc(pb, "dats");
             break;
         }
-        if (stream->codec_type == AVMEDIA_TYPE_VIDEO ||
-            stream->codec_id == AV_CODEC_ID_XSUB)
-            avio_wl32(pb, stream->codec_tag);
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO ||
+            enc->codec_id == AV_CODEC_ID_XSUB)
+            avio_wl32(pb, enc->codec_tag);
         else
             avio_wl32(pb, 1);
         avio_wl32(pb, 0); /* flags */
@@ -258,16 +259,16 @@ static int avi_write_header(AVFormatContext *s)
         avio_wl16(pb, 0); /* language */
         avio_wl32(pb, 0); /* initial frame */
 
-        ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
+        ff_parse_specific_params(enc, &au_byterate, &au_ssize, &au_scale);
 
-        if (   stream->codec_type == AVMEDIA_TYPE_VIDEO
-            && stream->codec_id != AV_CODEC_ID_XSUB
+        if (   enc->codec_type == AVMEDIA_TYPE_VIDEO
+            && enc->codec_id != AV_CODEC_ID_XSUB
             && au_byterate > 1000LL*au_scale) {
             au_byterate = 600;
             au_scale    = 1;
         }
-        avpriv_set_pts_info(s->streams[i], 64, au_scale, au_byterate);
-        if (stream->codec_id == AV_CODEC_ID_XSUB)
+        avpriv_set_pts_info(st, 64, au_scale, au_byterate);
+        if (enc->codec_id == AV_CODEC_ID_XSUB)
             au_scale = au_byterate = 0;
 
         avio_wl32(pb, au_scale); /* scale */
@@ -282,64 +283,64 @@ static int avi_write_header(AVFormatContext *s)
         else
             avio_wl32(pb, 0);  /* length, XXX: filled later */
 
-        /* suggested buffer size */ //FIXME set at the end to largest chunk
-        if (stream->codec_type == AVMEDIA_TYPE_VIDEO)
+        /* suggested buffer size, is set to largest chunk size in avi_write_trailer */
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
             avio_wl32(pb, 1024 * 1024);
-        else if (stream->codec_type == AVMEDIA_TYPE_AUDIO)
+        else if (enc->codec_type == AVMEDIA_TYPE_AUDIO)
             avio_wl32(pb, 12 * 1024);
         else
             avio_wl32(pb, 0);
         avio_wl32(pb, -1); /* quality */
         avio_wl32(pb, au_ssize); /* sample size */
         avio_wl32(pb, 0);
-        avio_wl16(pb, stream->width);
-        avio_wl16(pb, stream->height);
+        avio_wl16(pb, enc->width);
+        avio_wl16(pb, enc->height);
         ff_end_tag(pb, strh);
 
-        if (stream->codec_type != AVMEDIA_TYPE_DATA) {
+        if (enc->codec_type != AVMEDIA_TYPE_DATA) {
             int ret;
             enum AVPixelFormat pix_fmt;
 
             strf = ff_start_tag(pb, "strf");
-            switch (stream->codec_type) {
+            switch (enc->codec_type) {
             case AVMEDIA_TYPE_SUBTITLE:
                 /* XSUB subtitles behave like video tracks, other subtitles
                  * are not (yet) supported. */
-                if (stream->codec_id != AV_CODEC_ID_XSUB)
+                if (enc->codec_id != AV_CODEC_ID_XSUB)
                     break;
             case AVMEDIA_TYPE_VIDEO:
                 /* WMP expects RGB 5:5:5 rawvideo in avi to have bpp set to 16. */
-                if (  !stream->codec_tag
-                    && stream->codec_id == AV_CODEC_ID_RAWVIDEO
-                    && stream->pix_fmt == AV_PIX_FMT_RGB555LE
-                    && stream->bits_per_coded_sample == 15)
-                    stream->bits_per_coded_sample = 16;
-                ff_put_bmp_header(pb, stream, ff_codec_bmp_tags, 0, 0);
+                if (  !enc->codec_tag
+                    && enc->codec_id == AV_CODEC_ID_RAWVIDEO
+                    && enc->pix_fmt == AV_PIX_FMT_RGB555LE
+                    && enc->bits_per_coded_sample == 15)
+                    enc->bits_per_coded_sample = 16;
+                ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 0, 0);
                 pix_fmt = avpriv_find_pix_fmt(avpriv_pix_fmt_bps_avi,
-                                              stream->bits_per_coded_sample);
-                if (   !stream->codec_tag
-                    && stream->codec_id == AV_CODEC_ID_RAWVIDEO
-                    && stream->pix_fmt != pix_fmt
-                    && stream->pix_fmt != AV_PIX_FMT_NONE)
+                                              enc->bits_per_coded_sample);
+                if (   !enc->codec_tag
+                    && enc->codec_id == AV_CODEC_ID_RAWVIDEO
+                    && enc->pix_fmt != pix_fmt
+                    && enc->pix_fmt != AV_PIX_FMT_NONE)
                     av_log(s, AV_LOG_ERROR, "%s rawvideo cannot be written to avi, output file will be unreadable\n",
-                          av_get_pix_fmt_name(stream->pix_fmt));
+                          av_get_pix_fmt_name(enc->pix_fmt));
                 break;
             case AVMEDIA_TYPE_AUDIO:
-                if ((ret = ff_put_wav_header(pb, stream, 0)) < 0)
+                if ((ret = ff_put_wav_header(pb, enc, 0)) < 0)
                     return ret;
                 break;
             default:
                 av_log(s, AV_LOG_ERROR,
                     "Invalid or not supported codec type '%s' found in the input\n",
-                    (char *)av_x_if_null(av_get_media_type_string(stream->codec_type), "?"));
+                    (char *)av_x_if_null(av_get_media_type_string(enc->codec_type), "?"));
                 return AVERROR(EINVAL);
             }
             ff_end_tag(pb, strf);
-            if ((t = av_dict_get(s->streams[i]->metadata, "title", NULL, 0))) {
+            if ((t = av_dict_get(st->metadata, "title", NULL, 0))) {
                 ff_riff_write_info_tag(s->pb, "strn", t->value);
                 t = NULL;
             }
-            if (stream->codec_id == AV_CODEC_ID_XSUB
+            if (enc->codec_id == AV_CODEC_ID_XSUB
             && (t = av_dict_get(s->streams[i]->metadata, "language", NULL, 0))) {
                 const char* langstr = av_convert_lang_to(t->value, AV_LANG_ISO639_1);
                 t = NULL;
@@ -365,7 +366,7 @@ static int avi_write_header(AVFormatContext *s)
             avio_w8(pb, 0);     /* bIndexSubType (0 == frame index) */
             avio_w8(pb, 0);     /* bIndexType (0 == AVI_INDEX_OF_INDEXES) */
             avio_wl32(pb, 0);   /* nEntriesInUse (will fill out later on) */
-            ffio_wfourcc(pb, avi_stream2fourcc(tag, i, stream->codec_type));
+            ffio_wfourcc(pb, avi_stream2fourcc(tag, i, enc->codec_type));
                                 /* dwChunkId */
             avio_wl64(pb, 0);   /* dwReserved[3] */
             // avio_wl32(pb, 0);   /* Must be 0.    */
@@ -374,31 +375,31 @@ static int avi_write_header(AVFormatContext *s)
             ff_end_tag(pb, avist->indexes.indx_start);
         }
 
-        if (stream->codec_type == AVMEDIA_TYPE_VIDEO   &&
-            s->streams[i]->sample_aspect_ratio.num > 0 &&
-            s->streams[i]->sample_aspect_ratio.den > 0) {
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO   &&
+            st->sample_aspect_ratio.num > 0 &&
+            st->sample_aspect_ratio.den > 0) {
             int vprp       = ff_start_tag(pb, "vprp");
-            AVRational dar = av_mul_q(s->streams[i]->sample_aspect_ratio,
-                                      (AVRational) { stream->width,
-                                                     stream->height });
+            AVRational dar = av_mul_q(st->sample_aspect_ratio,
+                                      (AVRational) { enc->width,
+                                                     enc->height });
             int num, den;
             av_reduce(&num, &den, dar.num, dar.den, 0xFFFF);
 
             avio_wl32(pb, 0); // video format   = unknown
             avio_wl32(pb, 0); // video standard = unknown
-            avio_wl32(pb, lrintf(1.0 / av_q2d(stream->time_base)));
-            avio_wl32(pb, stream->width);
-            avio_wl32(pb, stream->height);
+            avio_wl32(pb, lrintf(1.0 / av_q2d(enc->time_base)));
+            avio_wl32(pb, enc->width);
+            avio_wl32(pb, enc->height);
             avio_wl16(pb, den);
             avio_wl16(pb, num);
-            avio_wl32(pb, stream->width);
-            avio_wl32(pb, stream->height);
+            avio_wl32(pb, enc->width);
+            avio_wl32(pb, enc->height);
             avio_wl32(pb, 1); // progressive FIXME
 
-            avio_wl32(pb, stream->height);
-            avio_wl32(pb, stream->width);
-            avio_wl32(pb, stream->height);
-            avio_wl32(pb, stream->width);
+            avio_wl32(pb, enc->height);
+            avio_wl32(pb, enc->width);
+            avio_wl32(pb, enc->height);
+            avio_wl32(pb, enc->width);
             avio_wl32(pb, 0);
             avio_wl32(pb, 0);
 
@@ -628,6 +629,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         idx->cluster[cl][id].flags = flags;
         idx->cluster[cl][id].pos   = avio_tell(pb) - avi->movi_list;
         idx->cluster[cl][id].len   = size;
+        avist->max_size = FFMAX(avist->max_size, size);
         idx->entry++;
     }
 
@@ -689,6 +691,10 @@ static int avi_write_trailer(AVFormatContext *s)
             av_freep(&avist->indexes.cluster[j]);
         av_freep(&avist->indexes.cluster);
         avist->indexes.ents_allocated = avist->indexes.entry = 0;
+        if (pb->seekable) {
+            avio_seek(pb, avist->frames_hdr_strm + 4, SEEK_SET);
+            avio_wl32(pb, avist->max_size);
+        }
     }
 
     return res;

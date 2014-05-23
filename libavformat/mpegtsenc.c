@@ -1270,6 +1270,8 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             av_init_packet(&pkt2);
             pkt2.data = pkt->data;
             pkt2.size = pkt->size;
+            av_assert0(pkt->dts != AV_NOPTS_VALUE);
+            pkt2.dts = av_rescale_q(pkt->dts, st->time_base, ts_st->amux->streams[0]->time_base);
             ret = avio_open_dyn_buf(&ts_st->amux->pb);
             if (ret < 0)
                 return AVERROR(ENOMEM);
@@ -1391,7 +1393,7 @@ static int mpegts_write_end(AVFormatContext *s)
 AVOutputFormat ff_mpegts_muxer = {
     .name              = "mpegts",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-TS (MPEG-2 Transport Stream)"),
-    .mime_type         = "video/x-mpegts",
+    .mime_type         = "video/MP2T",
     .extensions        = "ts,m2t,m2ts,mts",
     .priv_data_size    = sizeof(MpegTSWrite),
     .audio_codec       = AV_CODEC_ID_MP2,

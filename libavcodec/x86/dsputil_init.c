@@ -73,8 +73,8 @@ void ff_avg_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
                                          int dstStride, int srcStride);
 void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
                                                 int dstStride, int srcStride);
-#define ff_put_no_rnd_pixels16_mmxext ff_put_pixels16_mmxext
-#define ff_put_no_rnd_pixels8_mmxext ff_put_pixels8_mmxext
+#define ff_put_no_rnd_pixels16_mmxext ff_put_pixels16_mmx
+#define ff_put_no_rnd_pixels8_mmxext ff_put_pixels8_mmx
 
 int32_t ff_scalarproduct_int16_mmxext(const int16_t *v1, const int16_t *v2,
                                       int order);
@@ -112,8 +112,11 @@ void ff_vector_clip_int32_sse4(int32_t *dst, const int32_t *src,
 
 #if HAVE_YASM
 
-CALL_2X_PIXELS(ff_avg_pixels16_mmxext, ff_avg_pixels8_mmxext, 8)
-CALL_2X_PIXELS(ff_put_pixels16_mmxext, ff_put_pixels8_mmxext, 8)
+#define ff_put_pixels16_mmxext ff_put_pixels16_mmx
+#define ff_put_pixels8_mmxext  ff_put_pixels8_mmx
+
+void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
+                            ptrdiff_t line_size, int h);
 
 #define QPEL_OP(OPNAME, RND, MMX)                                       \
 static void OPNAME ## qpel8_mc00_ ## MMX(uint8_t *dst, uint8_t *src,    \
@@ -527,12 +530,9 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 {
 #if HAVE_MMX_INLINE
     c->put_pixels_clamped        = ff_put_pixels_clamped_mmx;
-    c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_mmx;
     c->add_pixels_clamped        = ff_add_pixels_clamped_mmx;
 
     if (!high_bit_depth) {
-        c->clear_block  = ff_clear_block_mmx;
-        c->clear_blocks = ff_clear_blocks_mmx;
         c->draw_edges   = ff_draw_edges_mmx;
     }
 
@@ -544,7 +544,12 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_MMX_INLINE */
 
 #if HAVE_MMX_EXTERNAL
+    if (!high_bit_depth) {
+        c->clear_block  = ff_clear_block_mmx;
+        c->clear_blocks = ff_clear_blocks_mmx;
+    }
     c->vector_clip_int32 = ff_vector_clip_int32_mmx;
+    c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_mmx;
 #endif /* HAVE_MMX_EXTERNAL */
 }
 
@@ -580,7 +585,8 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
                                      int cpu_flags, unsigned high_bit_depth)
 {
-#if HAVE_SSE_INLINE
+#if HAVE_YASM
+#if HAVE_SSE_EXTERNAL
     c->vector_clipf = ff_vector_clipf_sse;
 
     /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
@@ -591,9 +597,7 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
         c->clear_block  = ff_clear_block_sse;
         c->clear_blocks = ff_clear_blocks_sse;
     }
-#endif /* HAVE_SSE_INLINE */
-
-#if HAVE_YASM
+#endif
 #if HAVE_INLINE_ASM && CONFIG_VIDEODSP
     c->gmc = ff_gmc_sse;
 #endif
@@ -621,6 +625,7 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
         c->vector_clip_int32 = ff_vector_clip_int32_sse2;
     }
     c->bswap_buf = ff_bswap32_buf_sse2;
+    c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_sse2;
 #endif /* HAVE_SSE2_EXTERNAL */
 }
 

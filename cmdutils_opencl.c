@@ -181,12 +181,12 @@ static int64_t run_opencl_bench(AVOpenCLExternalEnv *ext_opencl_env)
     OCLCHECK(clSetKernelArg, kernel, arg++, sizeof(cl_int), &width);
     OCLCHECK(clSetKernelArg, kernel, arg++, sizeof(cl_int), &height);
 
-    start = av_gettime();
+    start = av_gettime_relative();
     for (i = 0; i < OPENCL_NB_ITER; i++)
         OCLCHECK(clEnqueueNDRangeKernel, ext_opencl_env->command_queue, kernel, 2, NULL,
                  global_work_size_2d, local_work_size_2d, 0, NULL, NULL);
     clFinish(ext_opencl_env->command_queue);
-    ret = (av_gettime() - start)/OPENCL_NB_ITER;
+    ret = (av_gettime_relative() - start)/OPENCL_NB_ITER;
 end:
     if (kernel)
         clReleaseKernel(kernel);

@@ -25,85 +25,83 @@
 
 SECTION .text
 
-INIT_MMX mmxext
+%macro PAVGB_MMX 4
+    LOAD   %3, %1
+    por    %3, %2
+    pxor   %2, %1
+    pand   %2, %4
+    psrlq  %2, 1
+    psubb  %3, %2
+    SWAP   %2, %3
+%endmacro
+
 ; void ff_put/avg_pixels(uint8_t *block, const uint8_t *pixels,
 ;                        ptrdiff_t line_size, int h)
-%macro PIXELS48 2
-%if %2 == 4
-%define OP movh
+%macro OP_PIXELS 2
+%if %2 == mmsize/2
+%define LOAD movh
+%define SAVE movh
+%define LEN  mmsize
 %else
-%define OP mova
+%define LOAD movu
+%define SAVE mova
+%define LEN  %2
 %endif
-cglobal %1_pixels%2, 4,5
+cglobal %1_pixels%2, 4,5,4
     movsxdifnidn r2, r2d
     lea          r4, [r2*3]
-.loop:
-    OP           m0, [r1]
-    OP           m1, [r1+r2]
-    OP           m2, [r1+r2*2]
-    OP           m3, [r1+r4]
-    lea          r1, [r1+r2*4]
 %ifidn %1, avg
-    pavgb        m0, [r0]
-    pavgb        m1, [r0+r2]
-    pavgb        m2, [r0+r2*2]
-    pavgb        m3, [r0+r4]
+%if notcpuflag(mmxext)
+    pcmpeqd      m6, m6
+    paddb        m6, m6
 %endif
-    OP         [r0], m0
-    OP      [r0+r2], m1
-    OP    [r0+r2*2], m2
-    OP      [r0+r4], m3
+%endif
+.loop:
+%assign %%i 0
+%rep LEN/mmsize
+    LOAD         m0, [r1 + %%i]
+    LOAD         m1, [r1+r2 + %%i]
+    LOAD         m2, [r1+r2*2 + %%i]
+    LOAD         m3, [r1+r4 + %%i]
+%ifidn %1, avg
+%if notcpuflag(mmxext)
+    PAVGB_MMX    [r0 + %%i], m0, m4, m6
+    PAVGB_MMX    [r0+r2 + %%i], m1, m5, m6
+    PAVGB_MMX    [r0+r2*2 + %%i], m2, m4, m6
+    PAVGB_MMX    [r0+r4 + %%i], m3, m5, m6
+%else
+    pavgb        m0, [r0 + %%i]
+    pavgb        m1, [r0+r2 + %%i]
+    pavgb        m2, [r0+r2*2 + %%i]
+    pavgb        m3, [r0+r4 + %%i]
+%endif
+%endif
+    SAVE       [r0 + %%i], m0
+    SAVE    [r0+r2 + %%i], m1
+    SAVE  [r0+r2*2 + %%i], m2
+    SAVE    [r0+r4 + %%i], m3
+%assign %%i %%i+mmsize
+%endrep
     sub         r3d, 4
+    lea          r1, [r1+r2*4]
     lea          r0, [r0+r2*4]
     jne       .loop
     RET
 %endmacro
 
-PIXELS48 put, 4
-PIXELS48 avg, 4
-PIXELS48 put, 8
-PIXELS48 avg, 8
+INIT_MMX mmx
+OP_PIXELS put, 4
+OP_PIXELS avg, 4
+OP_PIXELS put, 8
+OP_PIXELS avg, 8
+OP_PIXELS put, 16
+OP_PIXELS avg, 16
 
+INIT_MMX mmxext
+OP_PIXELS avg, 4
+OP_PIXELS avg, 8
+OP_PIXELS avg, 16
 
 INIT_XMM sse2
-; void ff_put_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-;                           ptrdiff_t line_size, int h)
-cglobal put_pixels16, 4,5,4
-    lea          r4, [r2*3]
-.loop:
-    movu         m0, [r1]
-    movu         m1, [r1+r2]
-    movu         m2, [r1+r2*2]
-    movu         m3, [r1+r4]
-    lea          r1, [r1+r2*4]
-    mova       [r0], m0
-    mova    [r0+r2], m1
-    mova  [r0+r2*2], m2
-    mova    [r0+r4], m3
-    sub         r3d, 4
-    lea          r0, [r0+r2*4]
-    jnz       .loop
-    REP_RET
-
-; void ff_avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-;                           ptrdiff_t line_size, int h)
-cglobal avg_pixels16, 4,5,4
-    lea          r4, [r2*3]
-.loop:
-    movu         m0, [r1]
-    movu         m1, [r1+r2]
-    movu         m2, [r1+r2*2]
-    movu         m3, [r1+r4]
-    lea          r1, [r1+r2*4]
-    pavgb        m0, [r0]
-    pavgb        m1, [r0+r2]
-    pavgb        m2, [r0+r2*2]
-    pavgb        m3, [r0+r4]
-    mova       [r0], m0
-    mova    [r0+r2], m1
-    mova  [r0+r2*2], m2
-    mova    [r0+r4], m3
-    sub         r3d, 4
-    lea          r0, [r0+r2*4]
-    jnz       .loop
-    REP_RET
+OP_PIXELS put, 16
+OP_PIXELS avg, 16

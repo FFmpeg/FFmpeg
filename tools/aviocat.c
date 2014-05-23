@@ -82,7 +82,7 @@ int main(int argc, char **argv)
         goto fail;
     }
 
-    start_time = av_gettime();
+    start_time = av_gettime_relative();
     while (1) {
         uint8_t buf[1024];
         int n;
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
         stream_pos += n;
         if (bps) {
             avio_flush(output);
-            while ((av_gettime() - start_time) * bps / AV_TIME_BASE < stream_pos)
+            while ((av_gettime_relative() - start_time) * bps / AV_TIME_BASE < stream_pos)
                 av_usleep(50 * 1000);
         }
     }

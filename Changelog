@@ -24,6 +24,7 @@ version <next>:
 - libbs2b-based stereo-to-binaural audio filter
 - libx264 reference frames count limiting depending on level
 - native Opus decoder
+- display matrix export and rotation api
 
 
 version 2.2:

@@ -259,6 +259,7 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
     AVSubtitleRect vrect;
     uint8_t *vrect_data = NULL;
     int x2, y2;
+    int forced = 0;
 
     if (rects == 0 || h->rects == NULL)
         return AVERROR(EINVAL);
@@ -266,6 +267,12 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
         if (h->rects[i]->type != SUBTITLE_BITMAP) {
             av_log(avctx, AV_LOG_ERROR, "Bitmap subtitle required\n");
             return AVERROR(EINVAL);
+        }
+    /* Mark this subtitle forced if any of the rectangles is forced. */
+    for (i = 0; i < rects; i++)
+        if ((h->rects[i]->flags & AV_SUBTITLE_FLAG_FORCED) != 0) {
+            forced = 1;
+            break;
         }
     vrect = *h->rects[0];
 
@@ -371,7 +378,7 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
     bytestream_put_be16(&q, offset1);
     bytestream_put_be16(&q, offset2);
 
-    *q++ = 0x01; // start command
+    *q++ = forced ? 0x00 : 0x01; // start command
     *q++ = 0xff; // terminating command
 
     // send stop display command last

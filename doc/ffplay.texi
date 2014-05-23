@@ -84,6 +84,9 @@ output. In the filtergraph, the input is associated to the label
 ffmpeg-filters manual for more information about the filtergraph
 syntax.
 
+You can specify this parameter multiple times and cycle through the specified
+filtergraphs along with the show modes by pressing the key @key{w}.
+
 @item -af @var{filtergraph}
 @var{filtergraph} is a description of the filtergraph to apply to
 the input audio.
@@ -174,7 +177,7 @@ Toggle full screen.
 Pause.
 
 @item a
-Cycle audio channel in the curret program.
+Cycle audio channel in the current program.
 
 @item v
 Cycle video channel.
@@ -186,7 +189,7 @@ Cycle subtitle channel in the current program.
 Cycle program.
 
 @item w
-Show audio waves.
+Cycle video filters or show modes.
 
 @item s
 Step to the next frame.

@@ -53,6 +53,26 @@ int64_t av_gettime(void)
 #endif
 }
 
+int64_t av_gettime_relative(void)
+{
+#if HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+#else
+    return av_gettime();
+#endif
+}
+
+int av_gettime_relative_is_monotonic(void)
+{
+#if HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 int av_usleep(unsigned usec)
 {
 #if HAVE_NANOSLEEP
