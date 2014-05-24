@@ -661,6 +661,7 @@ AVInputFormat ff_mpegps_demuxer = {
 #if CONFIG_VOBSUB_DEMUXER
 
 #define REF_STRING "# VobSub index file,"
+#define MAX_LINE_SIZE 2048
 
 static int vobsub_probe(AVProbeData *p)
 {
@@ -679,6 +680,9 @@ static int vobsub_read_header(AVFormatContext *s)
     AVBPrint header;
     int64_t delay = 0;
     AVStream *st = NULL;
+    int stream_id = -1;
+    char id[64] = {0};
+    char alt[MAX_LINE_SIZE] = {0};
 
     sub_name = av_strdup(s->filename);
     fname_len = strlen(sub_name);
@@ -699,7 +703,7 @@ static int vobsub_read_header(AVFormatContext *s)
 
     av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
     while (!url_feof(s->pb)) {
-        char line[2048];
+        char line[MAX_LINE_SIZE];
         int len = ff_get_line(s->pb, line, sizeof(line));
 
         if (!len)
@@ -708,11 +712,7 @@ static int vobsub_read_header(AVFormatContext *s)
         line[strcspn(line, "\r\n")] = 0;
 
         if (!strncmp(line, "id:", 3)) {
-            int n, stream_id = 0;
-            char id[64] = {0};
-
-            n = sscanf(line, "id: %63[^,], index: %u", id, &stream_id);
-            if (n != 2) {
+            if (sscanf(line, "id: %63[^,], index: %u", id, &stream_id) != 2) {
                 av_log(s, AV_LOG_WARNING, "Unable to parse index line '%s', "
                        "assuming 'id: und, index: 0'\n", line);
                 strcpy(id, "und");
@@ -725,36 +725,46 @@ static int vobsub_read_header(AVFormatContext *s)
                 goto end;
             }
 
-            st = avformat_new_stream(s, NULL);
-            if (!st) {
-                ret = AVERROR(ENOMEM);
-                goto end;
-            }
-            st->id = stream_id;
-            st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-            st->codec->codec_id   = AV_CODEC_ID_DVD_SUBTITLE;
-            avpriv_set_pts_info(st, 64, 1, 1000);
-            av_dict_set(&st->metadata, "language", id, 0);
-            av_log(s, AV_LOG_DEBUG, "IDX stream[%d] id=%s\n", stream_id, id);
             header_parsed = 1;
+            alt[0] = '\0';
+            /* We do not create the stream immediately to avoid adding empty
+             * streams. See the following timestamp entry. */
 
-        } else if (st && !strncmp(line, "timestamp:", 10)) {
+            av_log(s, AV_LOG_DEBUG, "IDX stream[%d] id=%s\n", stream_id, id);
+
+        } else if (!strncmp(line, "timestamp:", 10)) {
             AVPacket *sub;
             int hh, mm, ss, ms;
             int64_t pos, timestamp;
             const char *p = line + 10;
 
-            if (!s->nb_streams) {
+            if (stream_id == -1) {
                 av_log(s, AV_LOG_ERROR, "Timestamp declared before any stream\n");
                 ret = AVERROR_INVALIDDATA;
                 goto end;
+            }
+
+            if (!st || st->id != stream_id) {
+                st = avformat_new_stream(s, NULL);
+                if (!st) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
+                st->id = stream_id;
+                st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+                st->codec->codec_id   = AV_CODEC_ID_DVD_SUBTITLE;
+                avpriv_set_pts_info(st, 64, 1, 1000);
+                av_dict_set(&st->metadata, "language", id, 0);
+                if (alt[0])
+                    av_dict_set(&st->metadata, "title", alt, 0);
             }
 
             if (sscanf(p, "%02d:%02d:%02d:%03d, filepos: %"SCNx64,
                        &hh, &mm, &ss, &ms, &pos) != 5) {
                 av_log(s, AV_LOG_ERROR, "Unable to parse timestamp line '%s', "
                        "abort parsing\n", line);
-                break;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
             timestamp = (hh*3600LL + mm*60LL + ss) * 1000LL + ms + delay;
             timestamp = av_rescale_q(timestamp, av_make_q(1, 1000), st->time_base);
@@ -768,13 +778,13 @@ static int vobsub_read_header(AVFormatContext *s)
             sub->pts = timestamp;
             sub->stream_index = s->nb_streams - 1;
 
-        } else if (st && !strncmp(line, "alt:", 4)) {
+        } else if (!strncmp(line, "alt:", 4)) {
             const char *p = line + 4;
 
             while (*p == ' ')
                 p++;
-            av_dict_set(&st->metadata, "title", p, 0);
             av_log(s, AV_LOG_DEBUG, "IDX stream[%d] name=%s\n", st->id, p);
+            av_strlcpy(alt, p, sizeof(alt));
             header_parsed = 1;
 
         } else if (!strncmp(line, "delay:", 6)) {
@@ -840,7 +850,9 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
     int sid = 0;
     for (i = 0; i < s->nb_streams; i++) {
         FFDemuxSubtitlesQueue *tmpq = &vobsub->q[i];
-        int64_t ts = tmpq->subs[tmpq->current_sub_idx].pts;
+        int64_t ts;
+        av_assert0(tmpq->nb_subs);
+        ts = tmpq->subs[tmpq->current_sub_idx].pts;
         if (ts < min_ts) {
             min_ts = ts;
             sid = i;
