@@ -487,3 +487,45 @@ cglobal pix_norm1, 2, 4
     movd        eax, m1
     RET
 
+%macro DCT_SAD4 1
+    mova      m2, [blockq+%1+0 ]
+    mova      m3, [blockq+%1+16]
+    mova      m4, [blockq+%1+32]
+    mova      m5, [blockq+%1+48]
+    ABS1_SUM  m2, m6, m0
+    ABS1_SUM  m3, m6, m1
+    ABS1_SUM  m4, m6, m0
+    ABS1_SUM  m5, m6, m1
+%endmacro
+
+;-----------------------------------------------
+;int ff_sum_abs_dctelem(int16_t *block)
+;-----------------------------------------------
+; %1 = number of xmm registers used
+
+%macro SUM_ABS_DCTELEM 1
+cglobal sum_abs_dctelem, 1, 1, %1, block
+    pxor    m0, m0
+    pxor    m1, m1
+    DCT_SAD4 0
+%if mmsize == 8
+    DCT_SAD4 8
+%endif
+    DCT_SAD4 64
+%if mmsize == 8
+    DCT_SAD4 72
+%endif
+    paddusw m0, m1
+    HSUM    m0, m1, eax
+    and     eax, 0xFFFF
+    RET
+%endmacro
+
+INIT_MMX mmx
+SUM_ABS_DCTELEM 0
+INIT_MMX mmxext
+SUM_ABS_DCTELEM 0
+INIT_XMM sse2
+SUM_ABS_DCTELEM 7
+INIT_XMM ssse3
+SUM_ABS_DCTELEM 6
