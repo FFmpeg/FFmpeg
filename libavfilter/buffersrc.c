@@ -264,7 +264,7 @@ static av_cold int init_video(AVFilterContext *ctx)
     if ((c->pix_fmt = av_get_pix_fmt(c->pix_fmt_str)) == AV_PIX_FMT_NONE) {
         char *tail;
         c->pix_fmt = strtol(c->pix_fmt_str, &tail, 10);
-        if (*tail || c->pix_fmt < 0 || c->pix_fmt >= AV_PIX_FMT_NB) {
+        if (*tail || c->pix_fmt < 0 || !av_pix_fmt_desc_get(c->pix_fmt)) {
             av_log(ctx, AV_LOG_ERROR, "Invalid pixel format string '%s'\n", c->pix_fmt_str);
             return AVERROR(EINVAL);
         }
