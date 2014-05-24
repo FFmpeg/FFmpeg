@@ -274,19 +274,27 @@ INIT_XMM ssse3
 %define ABS_SUM_8x8 ABS_SUM_8x8_64
 HADAMARD8_DIFF 9
 
-INIT_XMM sse2
-; int ff_sse16_sse2(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-;                   int line_size, int h);
-cglobal sse16, 5, 5, 8
-    shr      r4d, 1
+; int ff_sse*_*(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+;               int line_size, int h)
+
+%macro SUM_SQUARED_ERRORS 2
+cglobal sse%1, 5,5,%2, v, pix1, pix2, lsize, h
+%if %1 == mmsize
+    shr       hd, 1
+%endif
     pxor      m0, m0         ; mm0 = 0
     pxor      m7, m7         ; mm7 holds the sum
 
 .next2lines: ; FIXME why are these unaligned movs? pix1[] is aligned
-    movu      m1, [r1   ]    ; mm1 = pix1[0][0-15]
-    movu      m2, [r2   ]    ; mm2 = pix2[0][0-15]
-    movu      m3, [r1+r3]    ; mm3 = pix1[1][0-15]
-    movu      m4, [r2+r3]    ; mm4 = pix2[1][0-15]
+    movu      m1, [pix1q]    ; m1 = pix1[0][0-15], [0-7] for mmx
+    movu      m2, [pix2q]    ; m2 = pix2[0][0-15], [0-7] for mmx
+%if %1 == mmsize
+    movu      m3, [pix1q+lsizeq] ; m3 = pix1[1][0-15], [0-7] for mmx
+    movu      m4, [pix2q+lsizeq] ; m4 = pix2[1][0-15], [0-7] for mmx
+%else  ; %1 / 2 == mmsize; mmx only
+    mova      m3, [pix1q+8]  ; m3 = pix1[0][8-15]
+    mova      m4, [pix2q+8]  ; m4 = pix2[0][8-15]
+%endif
 
     ; todo: mm1-mm2, mm3-mm4
     ; algo: subtract mm1 from mm2 with saturation and vice versa
@@ -315,25 +323,43 @@ cglobal sse16, 5, 5, 8
     pmaddwd   m1, m1
     pmaddwd   m3, m3
 
-    lea       r1, [r1+r3*2]  ; pix1 += 2*line_size
-    lea       r2, [r2+r3*2]  ; pix2 += 2*line_size
-
     paddd     m1, m2
     paddd     m3, m4
     paddd     m7, m1
     paddd     m7, m3
 
-    dec       r4
+%if %1 == mmsize
+    lea    pix1q, [pix1q + 2*lsizeq]
+    lea    pix2q, [pix2q + 2*lsizeq]
+%else
+    add    pix1q, lsizeq
+    add    pix2q, lsizeq
+%endif
+    dec       hd
     jnz .next2lines
 
     mova      m1, m7
+%if mmsize == 8
+    psrlq     m7, 32         ; shift hi dword to lo
+%else
     psrldq    m7, 8          ; shift hi qword to lo
     paddd     m7, m1
     mova      m1, m7
     psrldq    m7, 4          ; shift hi dword to lo
+%endif
     paddd     m7, m1
     movd     eax, m7         ; return value
     RET
+%endmacro
+
+INIT_MMX mmx
+SUM_SQUARED_ERRORS 8,  0
+
+INIT_MMX mmx
+SUM_SQUARED_ERRORS 16, 0
+
+INIT_XMM sse2
+SUM_SQUARED_ERRORS 16, 8
 
 INIT_MMX mmx
 ; void ff_get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size)
