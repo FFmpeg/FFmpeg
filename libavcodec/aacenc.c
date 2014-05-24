@@ -769,7 +769,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (HAVE_MIPSDSPR1)
         ff_aac_coder_init_mips(s);
 
-    s->lambda = avctx->global_quality ? avctx->global_quality : 120;
+    s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
 
     ff_aac_tableinit();
 
