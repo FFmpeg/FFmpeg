@@ -263,7 +263,6 @@ typedef struct VideoState {
     int video_stream;
     AVStream *video_st;
     PacketQueue videoq;
-    int64_t video_current_pos;      // current displayed file pos
     double max_frame_duration;      // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
 #if !CONFIG_AVFILTER
     struct SwsContext *img_convert_ctx;
@@ -635,6 +634,16 @@ static int frame_queue_prev(FrameQueue *f)
 static int frame_queue_nb_remaining(FrameQueue *f)
 {
     return f->size - f->rindex_shown;
+}
+
+/* return last shown position */
+static int64_t frame_queue_last_pos(FrameQueue *f)
+{
+    Frame *fp = &f->queue[f->rindex];
+    if (f->rindex_shown && fp->serial == f->pktq->serial)
+        return fp->pos;
+    else
+        return -1;
 }
 
 static inline void fill_rectangle(SDL_Surface *screen,
@@ -1432,7 +1441,6 @@ static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial
     /* update current video pts */
     set_clock(&is->vidclk, pts, serial);
     sync_clock_to_slave(&is->extclk, &is->vidclk);
-    is->video_current_pos = pos;
 }
 
 /* called to display each frame */
@@ -1472,7 +1480,6 @@ retry:
 
             if (vp->serial != is->videoq.serial) {
                 frame_queue_next(&is->pictq);
-                is->video_current_pos = -1;
                 redisplay = 0;
                 goto retry;
             }
@@ -3385,11 +3392,12 @@ static void event_loop(VideoState *cur_stream)
                 incr = -60.0;
             do_seek:
                     if (seek_by_bytes) {
-                        if (cur_stream->video_stream >= 0 && cur_stream->video_current_pos >= 0) {
-                            pos = cur_stream->video_current_pos;
-                        } else if (cur_stream->audio_stream >= 0 && cur_stream->audio_pkt.pos >= 0) {
+                        pos = -1;
+                        if (pos < 0 && cur_stream->video_stream >= 0)
+                            pos = frame_queue_last_pos(&cur_stream->pictq);
+                        if (pos < 0 && cur_stream->audio_stream >= 0)
                             pos = cur_stream->audio_pkt.pos;
-                        } else
+                        if (pos < 0)
                             pos = avio_tell(cur_stream->ic->pb);
                         if (cur_stream->ic->bit_rate)
                             incr *= cur_stream->ic->bit_rate / 8.0;
