@@ -287,6 +287,9 @@
     <ClCompile Include="..\libavformat\avienc.c">
       <ObjectFileName>$(IntDir)\libavformat_avienc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\mpegtsenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_mpegtsenc.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\avisynth.c">
       <ObjectFileName>$(IntDir)\libavformat_avisynth.obj</ObjectFileName>
     </ClCompile>
@@ -664,9 +667,6 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\mpegts.c">
       <ObjectFileName>$(IntDir)\libavformat_mpegts.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\mpegtsenc.c">
-      <ObjectFileName>$(IntDir)\libavformat_mpegtsenc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavformat\mpegvideodec.c">
       <ObjectFileName>$(IntDir)\libavformat_mpegvideodec.obj</ObjectFileName>

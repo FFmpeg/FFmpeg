@@ -73,6 +73,7 @@ EXPORTS
     av_dict_parse_string
     av_dict_set
     av_dirname
+    av_display_rotation_get
     av_div_q
     av_downmix_info_update_side_data
     av_dynarray2_add
