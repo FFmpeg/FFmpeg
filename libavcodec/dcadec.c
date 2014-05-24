@@ -478,6 +478,8 @@ typedef struct {
     FmtConvertContext fmt_conv;
 } DCAContext;
 
+static float dca_dmix_code(unsigned code);
+
 static const uint16_t dca_vlc_offs[] = {
         0,   512,   640,   768,  1282,  1794,  2436,  3080,  3770,  4454,  5364,
      5372,  5380,  5388,  5392,  5396,  5412,  5420,  5428,  5460,  5492,  5508,
@@ -568,7 +570,7 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
     static const int bitlen[11] = { 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 };
     static const int thr[11]    = { 0, 1, 3, 3, 3, 3, 7, 7, 7, 7, 7 };
     int hdr_pos = 0, hdr_size = 0;
-    float sign, mag, scale_factor;
+    float scale_factor;
     int this_chans, acc_mask;
     int embedded_downmix;
     int nchans, mask[8];
@@ -598,8 +600,8 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
         /* check for downmixing information */
         if (get_bits1(&s->gb)) {
             embedded_downmix = get_bits1(&s->gb);
-            scale_factor     =
-               1.0f / dca_dmixtable[(get_bits(&s->gb, 6) - 1) << 2];
+            coeff            = get_bits(&s->gb, 6);
+            scale_factor     = -1.0f / dca_dmix_code(FFMAX(coeff<<2, 4)-3);
 
             s->xxch_dmix_sf[s->xxch_chset] = scale_factor;
 
@@ -619,10 +621,8 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
                         }
 
                         coeff = get_bits(&s->gb, 7);
-                        sign  = (coeff & 64) ? 1.0 : -1.0;
-                        mag   = dca_dmixtable[((coeff & 63) - 1) << 2];
                         ichan = dca_xxch2index(s, 1 << i);
-                        s->xxch_dmix_coeff[j][ichan] = sign * mag;
+                        s->xxch_dmix_coeff[j][ichan] = dca_dmix_code(FFMAX(coeff<<2, 3)-3);
                     }
                 }
             }
@@ -2103,6 +2103,14 @@ static void dca_exss_parse_header(DCAContext *s)
         }
 }
 
+static float dca_dmix_code(unsigned code)
+{
+    int sign = (code >> 8) - 1;
+    code &= 0xff;
+#define POW2_MINUS15 .000030517578125
+    return ((dca_dmixtable[code] ^ sign) - sign) * POW2_MINUS15;
+}
+
 /**
  * Main frame decoding function
  * FIXME add arguments
@@ -2171,16 +2179,10 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
              */
             if (s->core_downmix && (s->core_downmix_amode == DCA_STEREO ||
                                     s->core_downmix_amode == DCA_STEREO_TOTAL)) {
-                int sign, code;
                 for (i = 0; i < num_core_channels + !!s->lfe; i++) {
-                    sign = s->core_downmix_codes[i][0] & 0x100 ? 1 : -1;
-                    code = s->core_downmix_codes[i][0] & 0x0FF;
-                    s->downmix_coef[i][0] = (!code ? 0.0f :
-                                             sign * dca_dmixtable[code - 1]);
-                    sign = s->core_downmix_codes[i][1] & 0x100 ? 1 : -1;
-                    code = s->core_downmix_codes[i][1] & 0x0FF;
-                    s->downmix_coef[i][1] = (!code ? 0.0f :
-                                             sign * dca_dmixtable[code - 1]);
+                    /* Range checked earlier */
+                    s->downmix_coef[i][0] = dca_dmix_code(s->core_downmix_codes[i][0]);
+                    s->downmix_coef[i][1] = dca_dmix_code(s->core_downmix_codes[i][1]);
                 }
                 s->output = s->core_downmix_amode;
             } else {

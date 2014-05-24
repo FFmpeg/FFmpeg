@@ -29,9 +29,7 @@
 #include "libavcodec/pixels.h"
 #include "libavcodec/videodsp.h"
 #include "constants.h"
-#include "diracdsp_mmx.h"
 #include "dsputil_x86.h"
-#include "fpel.h"
 #include "inline_asm.h"
 
 #if HAVE_INLINE_ASM
@@ -436,74 +434,4 @@ void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
 }
 #endif
 #endif
-
-#if CONFIG_DIRAC_DECODER
-#define DIRAC_PIXOP(OPNAME2, OPNAME, EXT)\
-void ff_ ## OPNAME2 ## _dirac_pixels8_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
-{\
-    if (h&3)\
-        ff_ ## OPNAME2 ## _dirac_pixels8_c(dst, src, stride, h);\
-    else\
-        OPNAME ## _pixels8_ ## EXT(dst, src[0], stride, h);\
-}\
-void ff_ ## OPNAME2 ## _dirac_pixels16_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
-{\
-    if (h&3)\
-        ff_ ## OPNAME2 ## _dirac_pixels16_c(dst, src, stride, h);\
-    else\
-        OPNAME ## _pixels16_ ## EXT(dst, src[0], stride, h);\
-}\
-void ff_ ## OPNAME2 ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
-{\
-    if (h&3) {\
-        ff_ ## OPNAME2 ## _dirac_pixels32_c(dst, src, stride, h);\
-    } else {\
-        OPNAME ## _pixels16_ ## EXT(dst   , src[0]   , stride, h);\
-        OPNAME ## _pixels16_ ## EXT(dst+16, src[0]+16, stride, h);\
-    }\
-}
-
-#if HAVE_YASM
-void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
-                            ptrdiff_t line_size, int h);
-
-DIRAC_PIXOP(put, ff_put, mmx)
-DIRAC_PIXOP(avg, ff_avg, mmx)
-DIRAC_PIXOP(avg, ff_avg, mmxext)
-
-void ff_put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
-{
-    if (h&3)
-        ff_put_dirac_pixels16_c(dst, src, stride, h);
-    else
-    ff_put_pixels16_sse2(dst, src[0], stride, h);
-}
-void ff_avg_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
-{
-    if (h&3)
-        ff_avg_dirac_pixels16_c(dst, src, stride, h);
-    else
-    ff_avg_pixels16_sse2(dst, src[0], stride, h);
-}
-void ff_put_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
-{
-    if (h&3) {
-        ff_put_dirac_pixels32_c(dst, src, stride, h);
-    } else {
-    ff_put_pixels16_sse2(dst   , src[0]   , stride, h);
-    ff_put_pixels16_sse2(dst+16, src[0]+16, stride, h);
-    }
-}
-void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
-{
-    if (h&3) {
-        ff_avg_dirac_pixels32_c(dst, src, stride, h);
-    } else {
-    ff_avg_pixels16_sse2(dst   , src[0]   , stride, h);
-    ff_avg_pixels16_sse2(dst+16, src[0]+16, stride, h);
-    }
-}
-#endif
-#endif
-
 #endif /* HAVE_INLINE_ASM */
