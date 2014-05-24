@@ -807,19 +807,21 @@ static void free_subpicture(SubPicture *sp)
     avsubtitle_free(&sp->sub);
 }
 
-static void calculate_display_rect(SDL_Rect *rect, int scr_xleft, int scr_ytop, int scr_width, int scr_height, VideoPicture *vp)
+static void calculate_display_rect(SDL_Rect *rect,
+                                   int scr_xleft, int scr_ytop, int scr_width, int scr_height,
+                                   int pic_width, int pic_height, AVRational pic_sar)
 {
     float aspect_ratio;
     int width, height, x, y;
 
-    if (vp->sar.num == 0)
+    if (pic_sar.num == 0)
         aspect_ratio = 0;
     else
-        aspect_ratio = av_q2d(vp->sar);
+        aspect_ratio = av_q2d(pic_sar);
 
     if (aspect_ratio <= 0.0)
         aspect_ratio = 1.0;
-    aspect_ratio *= (float)vp->width / (float)vp->height;
+    aspect_ratio *= (float)pic_width / (float)pic_height;
 
     /* XXX: we suppose the screen has a 1.0 pixel ratio */
     height = scr_height;
@@ -870,7 +872,7 @@ static void video_image_display(VideoState *is)
             }
         }
 
-        calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp);
+        calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
 
         SDL_DisplayYUVOverlay(vp->bmp, &rect);
 
@@ -1077,10 +1079,10 @@ static void sigterm_handler(int sig)
     exit(123);
 }
 
-static void set_default_window_size(VideoPicture *vp)
+static void set_default_window_size(int width, int height, AVRational sar)
 {
     SDL_Rect rect;
-    calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
+    calculate_display_rect(&rect, 0, 0, INT_MAX, height, width, height, sar);
     default_width  = rect.w;
     default_height = rect.h;
 }
@@ -1094,7 +1096,7 @@ static int video_open(VideoState *is, int force_set_video_mode, VideoPicture *vp
     else                flags |= SDL_RESIZABLE;
 
     if (vp && vp->width)
-        set_default_window_size(vp);
+        set_default_window_size(vp->width, vp->height, vp->sar);
 
     if (is_full_screen && fs_screen_width) {
         w = fs_screen_width;
@@ -2876,12 +2878,9 @@ static int read_thread(void *arg)
     if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
         AVStream *st = ic->streams[st_index[AVMEDIA_TYPE_VIDEO]];
         AVCodecContext *avctx = st->codec;
-        VideoPicture vp = {0};
-        vp.width = avctx->width;
-        vp.height = avctx->height;
-        vp.sar = av_guess_sample_aspect_ratio(ic, st, NULL);
-        if (vp.width)
-            set_default_window_size(&vp);
+        AVRational sar = av_guess_sample_aspect_ratio(ic, st, NULL);
+        if (avctx->width)
+            set_default_window_size(avctx->width, avctx->height, sar);
     }
 
     /* open the streams */
