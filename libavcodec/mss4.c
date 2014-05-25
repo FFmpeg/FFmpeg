@@ -363,7 +363,7 @@ static int get_value_cached(GetBitContext *gb, int vec_pos, uint8_t *vec,
     return prev[component];
 }
 
-#define MKVAL(vals)  (vals[0] | (vals[1] << 3) | (vals[2] << 6))
+#define MKVAL(vals)  ((vals)[0] | ((vals)[1] << 3) | ((vals)[2] << 6))
 
 /* Image mode - the hardest to comprehend MSS4 coding mode.
  *
