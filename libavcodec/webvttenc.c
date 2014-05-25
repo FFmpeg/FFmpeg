@@ -52,7 +52,7 @@ static void webvtt_print(WebVTTContext *s, const char *str, ...)
 static int webvtt_stack_push(WebVTTContext *s, const char c)
 {
     if (s->stack_ptr >= WEBVTT_STACK_SIZE)
-        return AVERROR(EOVERFLOW);
+        return -1;
     s->stack[s->stack_ptr++] = c;
     return 0;
 }
