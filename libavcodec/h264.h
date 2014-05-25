@@ -61,10 +61,10 @@
 #define MAX_SLICES 16
 
 #ifdef ALLOW_INTERLACE
-#define MB_MBAFF(h)    h->mb_mbaff
-#define MB_FIELD(h)    h->mb_field_decoding_flag
-#define FRAME_MBAFF(h) h->mb_aff_frame
-#define FIELD_PICTURE(h) (h->picture_structure != PICT_FRAME)
+#define MB_MBAFF(h)    (h)->mb_mbaff
+#define MB_FIELD(h)    (h)->mb_field_decoding_flag
+#define FRAME_MBAFF(h) (h)->mb_aff_frame
+#define FIELD_PICTURE(h) ((h)->picture_structure != PICT_FRAME)
 #define LEFT_MBS 2
 #define LTOP     0
 #define LBOT     1
@@ -84,12 +84,12 @@
 #define FIELD_OR_MBAFF_PICTURE(h) (FRAME_MBAFF(h) || FIELD_PICTURE(h))
 
 #ifndef CABAC
-#define CABAC(h) h->pps.cabac
+#define CABAC(h) (h)->pps.cabac
 #endif
 
-#define CHROMA(h)    (h->sps.chroma_format_idc)
-#define CHROMA422(h) (h->sps.chroma_format_idc == 2)
-#define CHROMA444(h) (h->sps.chroma_format_idc == 3)
+#define CHROMA(h)    ((h)->sps.chroma_format_idc)
+#define CHROMA422(h) ((h)->sps.chroma_format_idc == 2)
+#define CHROMA444(h) ((h)->sps.chroma_format_idc == 3)
 
 #define EXTENDED_SAR       255
 
