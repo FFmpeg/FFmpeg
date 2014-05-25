@@ -446,9 +446,9 @@ static void clone_tables(H264Context *dst, H264Context *src, int i)
 #define IN_RANGE(a, b, size) (((a) >= (b)) && ((a) < ((b) + (size))))
 #undef REBASE_PICTURE
 #define REBASE_PICTURE(pic, new_ctx, old_ctx)             \
-    ((pic && pic >= old_ctx->DPB &&                       \
-      pic < old_ctx->DPB + H264_MAX_PICTURE_COUNT) ?          \
-     &new_ctx->DPB[pic - old_ctx->DPB] : NULL)
+    (((pic) && (pic) >= (old_ctx)->DPB &&                       \
+      (pic) < (old_ctx)->DPB + H264_MAX_PICTURE_COUNT) ?          \
+     &(new_ctx)->DPB[(pic) - (old_ctx)->DPB] : NULL)
 
 static void copy_picture_range(H264Picture **to, H264Picture **from, int count,
                                H264Context *new_base,
@@ -486,8 +486,8 @@ static int copy_parameter_set(void **to, void **from, int count, int size)
 }
 
 #define copy_fields(to, from, start_field, end_field)                   \
-    memcpy(&to->start_field, &from->start_field,                        \
-           (char *)&to->end_field - (char *)&to->start_field)
+    memcpy(&(to)->start_field, &(from)->start_field,                        \
+           (char *)&(to)->end_field - (char *)&(to)->start_field)
 
 static int h264_slice_header_init(H264Context *h, int reinit);
 
@@ -966,13 +966,13 @@ static void init_scan_tables(H264Context *h)
 {
     int i;
     for (i = 0; i < 16; i++) {
-#define TRANSPOSE(x) (x >> 2) | ((x << 2) & 0xF)
+#define TRANSPOSE(x) ((x) >> 2) | (((x) << 2) & 0xF)
         h->zigzag_scan[i] = TRANSPOSE(zigzag_scan[i]);
         h->field_scan[i]  = TRANSPOSE(field_scan[i]);
 #undef TRANSPOSE
     }
     for (i = 0; i < 64; i++) {
-#define TRANSPOSE(x) (x >> 3) | ((x & 7) << 3)
+#define TRANSPOSE(x) ((x) >> 3) | (((x) & 7) << 3)
         h->zigzag_scan8x8[i]       = TRANSPOSE(ff_zigzag_direct[i]);
         h->zigzag_scan8x8_cavlc[i] = TRANSPOSE(zigzag_scan8x8_cavlc[i]);
         h->field_scan8x8[i]        = TRANSPOSE(field_scan8x8[i]);
