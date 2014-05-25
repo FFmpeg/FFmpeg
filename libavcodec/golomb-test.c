@@ -58,7 +58,7 @@ int main(void)
         }
     }
 
-#define EXTEND(i) (i << 3 | i & 7)
+#define EXTEND(i) ((i) << 3 | (i) & 7)
     init_put_bits(&pb, temp, SIZE);
     for (i = 0; i < COUNT; i++)
         set_ue_golomb(&pb, EXTEND(i));
