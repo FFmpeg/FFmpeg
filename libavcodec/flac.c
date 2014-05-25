@@ -225,7 +225,10 @@ void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
     avctx->bits_per_raw_sample = s->bps;
-    ff_flac_set_channel_layout(avctx);
+
+    if (!avctx->channel_layout ||
+        av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels)
+        ff_flac_set_channel_layout(avctx);
 
     s->samples  = get_bits_long(&gb, 32) << 4;
     s->samples |= get_bits(&gb, 4);
