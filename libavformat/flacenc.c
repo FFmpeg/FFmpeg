@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libavcodec/flac.h"
 #include "avformat.h"
@@ -82,6 +83,23 @@ static int flac_write_header(struct AVFormatContext *s)
     ret = ff_flac_write_header(s->pb, codec, 0);
     if (ret)
         return ret;
+
+    /* add the channel layout tag */
+    if (codec->channel_layout &&
+        !(codec->channel_layout & ~0x3ffffULL) &&
+        !ff_flac_is_native_layout(codec->channel_layout)) {
+        AVDictionaryEntry *chmask = av_dict_get(s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK",
+                                                NULL, 0);
+
+        if (chmask) {
+            av_log(s, AV_LOG_WARNING, "A WAVEFORMATEXTENSIBLE_CHANNEL_MASK is "
+                   "already present, this muxer will not overwrite it.\n");
+        } else {
+            uint8_t buf[32];
+            snprintf(buf, sizeof(buf), "0x%"PRIx64, codec->channel_layout);
+            av_dict_set(&s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
+        }
+    }
 
     ret = flac_write_block_comment(s->pb, &s->metadata, 0,
                                    s->flags & AVFMT_FLAG_BITEXACT);
