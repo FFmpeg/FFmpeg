@@ -42,12 +42,137 @@ int ff_sum_abs_dctelem_mmx(int16_t *block);
 int ff_sum_abs_dctelem_mmxext(int16_t *block);
 int ff_sum_abs_dctelem_sse2(int16_t *block);
 int ff_sum_abs_dctelem_ssse3(int16_t *block);
-int ff_sse8_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                int line_size, int h);
-int ff_sse16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                 int line_size, int h);
 
 #if HAVE_INLINE_ASM
+
+static int sse8_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                    int line_size, int h)
+{
+    int tmp;
+
+    __asm__ volatile (
+        "movl         %4, %%ecx          \n"
+        "shr          $1, %%ecx          \n"
+        "pxor      %%mm0, %%mm0          \n" /* mm0 = 0 */
+        "pxor      %%mm7, %%mm7          \n" /* mm7 holds the sum */
+        "1:                              \n"
+        "movq       (%0), %%mm1          \n" /* mm1 = pix1[0][0 - 7] */
+        "movq       (%1), %%mm2          \n" /* mm2 = pix2[0][0 - 7] */
+        "movq   (%0, %3), %%mm3          \n" /* mm3 = pix1[1][0 - 7] */
+        "movq   (%1, %3), %%mm4          \n" /* mm4 = pix2[1][0 - 7] */
+
+        /* todo: mm1-mm2, mm3-mm4 */
+        /* algo: subtract mm1 from mm2 with saturation and vice versa */
+        /*       OR the results to get absolute difference */
+        "movq      %%mm1, %%mm5          \n"
+        "movq      %%mm3, %%mm6          \n"
+        "psubusb   %%mm2, %%mm1          \n"
+        "psubusb   %%mm4, %%mm3          \n"
+        "psubusb   %%mm5, %%mm2          \n"
+        "psubusb   %%mm6, %%mm4          \n"
+
+        "por       %%mm1, %%mm2          \n"
+        "por       %%mm3, %%mm4          \n"
+
+        /* now convert to 16-bit vectors so we can square them */
+        "movq      %%mm2, %%mm1          \n"
+        "movq      %%mm4, %%mm3          \n"
+
+        "punpckhbw %%mm0, %%mm2          \n"
+        "punpckhbw %%mm0, %%mm4          \n"
+        "punpcklbw %%mm0, %%mm1          \n" /* mm1 now spread over (mm1, mm2) */
+        "punpcklbw %%mm0, %%mm3          \n" /* mm4 now spread over (mm3, mm4) */
+
+        "pmaddwd   %%mm2, %%mm2          \n"
+        "pmaddwd   %%mm4, %%mm4          \n"
+        "pmaddwd   %%mm1, %%mm1          \n"
+        "pmaddwd   %%mm3, %%mm3          \n"
+
+        "lea (%0, %3, 2), %0             \n" /* pix1 += 2 * line_size */
+        "lea (%1, %3, 2), %1             \n" /* pix2 += 2 * line_size */
+
+        "paddd     %%mm2, %%mm1          \n"
+        "paddd     %%mm4, %%mm3          \n"
+        "paddd     %%mm1, %%mm7          \n"
+        "paddd     %%mm3, %%mm7          \n"
+
+        "decl      %%ecx                 \n"
+        "jnz       1b                    \n"
+
+        "movq      %%mm7, %%mm1          \n"
+        "psrlq       $32, %%mm7          \n" /* shift hi dword to lo */
+        "paddd     %%mm7, %%mm1          \n"
+        "movd      %%mm1, %2             \n"
+        : "+r" (pix1), "+r" (pix2), "=r" (tmp)
+        : "r" ((x86_reg) line_size), "m" (h)
+        : "%ecx");
+
+    return tmp;
+}
+
+static int sse16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                     int line_size, int h)
+{
+    int tmp;
+
+    __asm__ volatile (
+        "movl %4, %%ecx\n"
+        "pxor %%mm0, %%mm0\n"    /* mm0 = 0 */
+        "pxor %%mm7, %%mm7\n"    /* mm7 holds the sum */
+        "1:\n"
+        "movq (%0), %%mm1\n"     /* mm1 = pix1[0 -  7] */
+        "movq (%1), %%mm2\n"     /* mm2 = pix2[0 -  7] */
+        "movq 8(%0), %%mm3\n"    /* mm3 = pix1[8 - 15] */
+        "movq 8(%1), %%mm4\n"    /* mm4 = pix2[8 - 15] */
+
+        /* todo: mm1-mm2, mm3-mm4 */
+        /* algo: subtract mm1 from mm2 with saturation and vice versa */
+        /*       OR the results to get absolute difference */
+        "movq %%mm1, %%mm5\n"
+        "movq %%mm3, %%mm6\n"
+        "psubusb %%mm2, %%mm1\n"
+        "psubusb %%mm4, %%mm3\n"
+        "psubusb %%mm5, %%mm2\n"
+        "psubusb %%mm6, %%mm4\n"
+
+        "por %%mm1, %%mm2\n"
+        "por %%mm3, %%mm4\n"
+
+        /* now convert to 16-bit vectors so we can square them */
+        "movq %%mm2, %%mm1\n"
+        "movq %%mm4, %%mm3\n"
+
+        "punpckhbw %%mm0, %%mm2\n"
+        "punpckhbw %%mm0, %%mm4\n"
+        "punpcklbw %%mm0, %%mm1\n" /* mm1 now spread over (mm1, mm2) */
+        "punpcklbw %%mm0, %%mm3\n" /* mm4 now spread over (mm3, mm4) */
+
+        "pmaddwd %%mm2, %%mm2\n"
+        "pmaddwd %%mm4, %%mm4\n"
+        "pmaddwd %%mm1, %%mm1\n"
+        "pmaddwd %%mm3, %%mm3\n"
+
+        "add %3, %0\n"
+        "add %3, %1\n"
+
+        "paddd %%mm2, %%mm1\n"
+        "paddd %%mm4, %%mm3\n"
+        "paddd %%mm1, %%mm7\n"
+        "paddd %%mm3, %%mm7\n"
+
+        "decl %%ecx\n"
+        "jnz 1b\n"
+
+        "movq %%mm7, %%mm1\n"
+        "psrlq $32, %%mm7\n"    /* shift hi dword to lo */
+        "paddd %%mm7, %%mm1\n"
+        "movd %%mm1, %2\n"
+        : "+r" (pix1), "+r" (pix2), "=r" (tmp)
+        : "r" ((x86_reg) line_size), "m" (h)
+        : "%ecx");
+
+    return tmp;
+}
 
 static int hf_noise8_mmx(uint8_t *pix1, int line_size, int h)
 {
@@ -302,7 +427,7 @@ static int nsse16_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
     if (c)
         score1 = c->dsp.sse[0](c, pix1, pix2, line_size, h);
     else
-        score1 = ff_sse16_mmx(c, pix1, pix2, line_size, h);
+        score1 = sse16_mmx(c, pix1, pix2, line_size, h);
     score2 = hf_noise16_mmx(pix1, line_size, h) -
              hf_noise16_mmx(pix2, line_size, h);
 
@@ -315,7 +440,7 @@ static int nsse16_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
 static int nsse8_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
                      int line_size, int h)
 {
-    int score1 = ff_sse8_mmx(c, pix1, pix2, line_size, h);
+    int score1 = sse8_mmx(c, pix1, pix2, line_size, h);
     int score2 = hf_noise8_mmx(pix1, line_size, h) -
                  hf_noise8_mmx(pix2, line_size, h);
 
@@ -766,8 +891,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
         c->diff_pixels = ff_diff_pixels_mmx;
         c->pix_sum     = ff_pix_sum16_mmx;
         c->pix_norm1   = ff_pix_norm1_mmx;
-        c->sse[0]      = ff_sse16_mmx;
-        c->sse[1]      = ff_sse8_mmx;
     }
 
     if (EXTERNAL_SSE2(cpu_flags))
@@ -781,6 +904,8 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
             c->fdct = ff_fdct_mmx;
 
         c->diff_bytes      = diff_bytes_mmx;
+        c->sse[0]  = sse16_mmx;
+        c->sse[1]  = sse8_mmx;
         c->vsad[4] = vsad_intra16_mmx;
 
         c->nsse[0] = nsse16_mmx;
