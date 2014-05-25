@@ -49,9 +49,9 @@ static av_cold int sgirle_decode_init(AVCodecContext *avctx)
  * Convert SGI RBG323 pixel into AV_PIX_FMT_BGR8
  * SGI RGB data is packed as 8bpp, (msb)3R 2B 3G(lsb)
  */
-#define RBG323_TO_BGR8(x) (((x << 3) & 0xC0) |                                \
-                           ((x << 3) & 0x38) |                                \
-                           ((x >> 5) & 7))
+#define RBG323_TO_BGR8(x) ((((x) << 3) & 0xC0) |                                \
+                           (((x) << 3) & 0x38) |                                \
+                           (((x) >> 5) & 7))
 static av_always_inline
 void rbg323_to_bgr8(uint8_t *dst, const uint8_t *src, int size)
 {
