@@ -443,7 +443,7 @@ sh_quote(){
 }
 
 cleanws(){
-    echo "$@" | sed 's/^ *//;s/  */ /g;s/ *$//;s/\r//g'
+    echo "$@" | sed 's/^ *//;s/  */ /g;s/ *$//;s/\\r//g'
 }
 
 filter(){
