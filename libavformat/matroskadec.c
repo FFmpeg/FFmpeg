@@ -1438,68 +1438,13 @@ static int matroska_aac_sri(int samplerate)
     return sri;
 }
 
-static int matroska_read_header(AVFormatContext *s)
+static int matroska_parse_tracks(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    EbmlList *attachments_list = &matroska->attachments;
-    EbmlList *chapters_list    = &matroska->chapters;
-    MatroskaAttachment *attachments;
-    MatroskaChapter *chapters;
-    MatroskaTrack *tracks;
-    uint64_t max_start = 0;
-    int64_t pos;
-    Ebml ebml = { 0 };
+    MatroskaTrack *tracks = matroska->tracks.elem;
     AVStream *st;
-    int i, j, res;
+    int i, j;
 
-    matroska->ctx = s;
-
-    /* First read the EBML header. */
-    if (ebml_parse(matroska, ebml_syntax, &ebml) ||
-        ebml.version         > EBML_VERSION      ||
-        ebml.max_size        > sizeof(uint64_t)  ||
-        ebml.id_length       > sizeof(uint32_t)  ||
-        ebml.doctype_version > 2) {
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "EBML header using unsupported features\n"
-               "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
-               ebml.version, ebml.doctype, ebml.doctype_version);
-        ebml_free(ebml_syntax, &ebml);
-        return AVERROR_PATCHWELCOME;
-    }
-    for (i = 0; i < FF_ARRAY_ELEMS(matroska_doctypes); i++)
-        if (!strcmp(ebml.doctype, matroska_doctypes[i]))
-            break;
-    if (i >= FF_ARRAY_ELEMS(matroska_doctypes)) {
-        av_log(s, AV_LOG_WARNING, "Unknown EBML doctype '%s'\n", ebml.doctype);
-        if (matroska->ctx->error_recognition & AV_EF_EXPLODE) {
-            ebml_free(ebml_syntax, &ebml);
-            return AVERROR_INVALIDDATA;
-        }
-    }
-    ebml_free(ebml_syntax, &ebml);
-
-    /* The next thing is a segment. */
-    pos = avio_tell(matroska->ctx->pb);
-    res = ebml_parse(matroska, matroska_segments, matroska);
-    // try resyncing until we find a EBML_STOP type element.
-    while (res != 1) {
-        res = matroska_resync(matroska, pos);
-        if (res < 0)
-            return res;
-        pos = avio_tell(matroska->ctx->pb);
-        res = ebml_parse(matroska, matroska_segment, matroska);
-    }
-    matroska_execute_seekhead(matroska);
-
-    if (!matroska->time_scale)
-        matroska->time_scale = 1000000;
-    if (matroska->duration)
-        matroska->ctx->duration = matroska->duration * matroska->time_scale *
-                                  1000 / AV_TIME_BASE;
-    av_dict_set(&s->metadata, "title", matroska->title, 0);
-
-    tracks = matroska->tracks.elem;
     for (i = 0; i < matroska->tracks.nb_elem; i++) {
         MatroskaTrack *track = &tracks[i];
         enum AVCodecID codec_id = AV_CODEC_ID_NONE;
@@ -1794,6 +1739,72 @@ static int matroska_read_header(AVFormatContext *s)
                 matroska->contains_ssa = 1;
         }
     }
+
+    return 0;
+}
+
+static int matroska_read_header(AVFormatContext *s)
+{
+    MatroskaDemuxContext *matroska = s->priv_data;
+    EbmlList *attachments_list = &matroska->attachments;
+    EbmlList *chapters_list    = &matroska->chapters;
+    MatroskaAttachment *attachments;
+    MatroskaChapter *chapters;
+    uint64_t max_start = 0;
+    int64_t pos;
+    Ebml ebml = { 0 };
+    int i, j, res;
+
+    matroska->ctx = s;
+
+    /* First read the EBML header. */
+    if (ebml_parse(matroska, ebml_syntax, &ebml) ||
+        ebml.version         > EBML_VERSION      ||
+        ebml.max_size        > sizeof(uint64_t)  ||
+        ebml.id_length       > sizeof(uint32_t)  ||
+        ebml.doctype_version > 2) {
+        av_log(matroska->ctx, AV_LOG_ERROR,
+               "EBML header using unsupported features\n"
+               "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
+               ebml.version, ebml.doctype, ebml.doctype_version);
+        ebml_free(ebml_syntax, &ebml);
+        return AVERROR_PATCHWELCOME;
+    }
+    for (i = 0; i < FF_ARRAY_ELEMS(matroska_doctypes); i++)
+        if (!strcmp(ebml.doctype, matroska_doctypes[i]))
+            break;
+    if (i >= FF_ARRAY_ELEMS(matroska_doctypes)) {
+        av_log(s, AV_LOG_WARNING, "Unknown EBML doctype '%s'\n", ebml.doctype);
+        if (matroska->ctx->error_recognition & AV_EF_EXPLODE) {
+            ebml_free(ebml_syntax, &ebml);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+    ebml_free(ebml_syntax, &ebml);
+
+    /* The next thing is a segment. */
+    pos = avio_tell(matroska->ctx->pb);
+    res = ebml_parse(matroska, matroska_segments, matroska);
+    // try resyncing until we find a EBML_STOP type element.
+    while (res != 1) {
+        res = matroska_resync(matroska, pos);
+        if (res < 0)
+            return res;
+        pos = avio_tell(matroska->ctx->pb);
+        res = ebml_parse(matroska, matroska_segment, matroska);
+    }
+    matroska_execute_seekhead(matroska);
+
+    if (!matroska->time_scale)
+        matroska->time_scale = 1000000;
+    if (matroska->duration)
+        matroska->ctx->duration = matroska->duration * matroska->time_scale *
+                                  1000 / AV_TIME_BASE;
+    av_dict_set(&s->metadata, "title", matroska->title, 0);
+
+    res = matroska_parse_tracks(s);
+    if (res < 0)
+        return res;
 
     attachments = attachments_list->elem;
     for (j = 0; j < attachments_list->nb_elem; j++) {
