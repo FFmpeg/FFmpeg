@@ -60,6 +60,8 @@
 #define AVERROR_BUG                (-0x5fb8aabe) ///< Bug detected, please report the issue
 #define AVERROR_UNKNOWN            (-0x31b4b1ab) ///< Unknown error, typically from an external library
 #define AVERROR_EXPERIMENTAL       (-0x2bb2afa8) ///< Requested feature is flagged experimental. Set strict_std_compliance if you really want to use it.
+#define AVERROR_INPUT_CHANGED      (-0x636e6701) ///< Input changed between calls. Reconfiguration is required. (can be OR-ed with AVERROR_OUTPUT_CHANGED)
+#define AVERROR_OUTPUT_CHANGED     (-0x636e6702) ///< Output changed between calls. Reconfiguration is required. (can be OR-ed with AVERROR_INPUT_CHANGED)
 
 /**
  * Put a description of the AVERROR code errnum in errbuf.

@@ -95,6 +95,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
+#include "libavutil/frame.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
 
@@ -165,6 +166,10 @@ AVAudioResampleContext *avresample_alloc_context(void);
 
 /**
  * Initialize AVAudioResampleContext.
+ * @note The context must be configured using the AVOption API.
+ *
+ * @see av_opt_set_int()
+ * @see av_opt_set_dict()
  *
  * @param avr  audio resample context
  * @return     0 on success, negative AVERROR code on failure
@@ -421,6 +426,70 @@ int avresample_available(AVAudioResampleContext *avr);
  * @return            the number of samples written to output
  */
 int avresample_read(AVAudioResampleContext *avr, uint8_t **output, int nb_samples);
+
+/**
+ * Convert the samples in the input AVFrame and write them to the output AVFrame.
+ *
+ * Input and output AVFrames must have channel_layout, sample_rate and format set.
+ *
+ * The upper bound on the number of output samples is obtained through
+ * avresample_get_out_samples().
+ *
+ * If the output AVFrame does not have the data pointers allocated the nb_samples
+ * field will be set using avresample_get_out_samples() and av_frame_get_buffer()
+ * is called to allocate the frame.
+ *
+ * The output AVFrame can be NULL or have fewer allocated samples than required.
+ * In this case, any remaining samples not written to the output will be added
+ * to an internal FIFO buffer, to be returned at the next call to this function
+ * or to avresample_convert() or to avresample_read().
+ *
+ * If converting sample rate, there may be data remaining in the internal
+ * resampling delay buffer. avresample_get_delay() tells the number of
+ * remaining samples. To get this data as output, call this function or
+ * avresample_convert() with NULL input.
+ *
+ * At the end of the conversion process, there may be data remaining in the
+ * internal FIFO buffer. avresample_available() tells the number of remaining
+ * samples. To get this data as output, either call this function or
+ * avresample_convert() with NULL input or call avresample_read().
+ *
+ * If the AVAudioResampleContext configuration does not match the output and
+ * input AVFrame settings the conversion does not take place and depending on
+ * which AVFrame is not matching AVERROR_OUTPUT_CHANGED, AVERROR_INPUT_CHANGED
+ * or AVERROR_OUTPUT_CHANGED|AVERROR_INPUT_CHANGED is returned.
+ *
+ * @see avresample_get_out_samples()
+ * @see avresample_available()
+ * @see avresample_convert()
+ * @see avresample_read()
+ * @see avresample_get_delay()
+ *
+ * @param avr             audio resample context
+ * @param output          output AVFrame
+ * @param input           input AVFrame
+ * @return                0 on success, AVERROR on failure or nonmatching
+ *                        configuration.
+ */
+int avresample_convert_frame(AVAudioResampleContext *avr,
+                             AVFrame *output, AVFrame *input);
+
+/**
+ * Configure or reconfigure the AVAudioResampleContext using the information
+ * provided by the AVFrames.
+ *
+ * The original resampling context is reset even on failure.
+ * The function calls avresample_close() internally if the context is open.
+ *
+ * @see avresample_open();
+ * @see avresample_close();
+ *
+ * @param avr             audio resample context
+ * @param output          output AVFrame
+ * @param input           input AVFrame
+ * @return                0 on success, AVERROR on failure.
+ */
+int avresample_config(AVAudioResampleContext *avr, AVFrame *out, AVFrame *in);
 
 /**
  * @}
