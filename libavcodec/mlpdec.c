@@ -872,7 +872,7 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
     return 0;
 }
 
-#define MSB_MASK(bits)  (-1u << bits)
+#define MSB_MASK(bits)  (-1u << (bits))
 
 /** Generate PCM samples using the prediction filters and residual values
  *  read from the data stream, and update the filter state. */
