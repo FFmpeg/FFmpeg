@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-05-16 - c37d179 - lavf 55.41.100 - avformat.h
+  Add format_probesize to AVFormatContext.
+
 2014-05-19 - xxxxxxx - lavf 55.18.0 - avformat.h
   Add av_stream_get_side_data() to access stream-level side data
   in the same way as av_packet_get_side_data().
