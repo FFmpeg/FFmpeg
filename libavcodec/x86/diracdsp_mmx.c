@@ -83,9 +83,6 @@ void ff_ ## OPNAME2 ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[
     }\
 }
 
-void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
-                            ptrdiff_t line_size, int h);
-
 DIRAC_PIXOP(put, ff_put, mmx)
 DIRAC_PIXOP(avg, ff_avg, mmx)
 DIRAC_PIXOP(avg, ff_avg, mmxext)

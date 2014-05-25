@@ -53,9 +53,6 @@ void ff_avg_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
 #define ff_put_pixels8_mmxext   ff_put_pixels8_mmx
 #define ff_put_pixels4_mmxext   ff_put_pixels4_mmx
 
-void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
-                            ptrdiff_t line_size, int h);
-
 #define DEF_QPEL(OPNAME)\
 void ff_ ## OPNAME ## _h264_qpel4_h_lowpass_mmxext(uint8_t *dst, uint8_t *src, int dstStride, int srcStride);\
 void ff_ ## OPNAME ## _h264_qpel8_h_lowpass_mmxext(uint8_t *dst, uint8_t *src, int dstStride, int srcStride);\

@@ -115,9 +115,6 @@ void ff_vector_clip_int32_sse4(int32_t *dst, const int32_t *src,
 #define ff_put_pixels16_mmxext ff_put_pixels16_mmx
 #define ff_put_pixels8_mmxext  ff_put_pixels8_mmx
 
-void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
-                            ptrdiff_t line_size, int h);
-
 #define QPEL_OP(OPNAME, RND, MMX)                                       \
 static void OPNAME ## qpel8_mc00_ ## MMX(uint8_t *dst, uint8_t *src,    \
                                          ptrdiff_t stride)              \

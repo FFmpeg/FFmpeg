@@ -48,10 +48,6 @@ void ff_put_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
 void ff_avg_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
-void ff_put_pixels16_xy2_sse2(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_avg_pixels16_xy2_sse2(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
                                      ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_x2_3dnow(uint8_t *block, const uint8_t *pixels,
@@ -86,23 +82,12 @@ void ff_avg_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 void ff_avg_pixels8_y2_3dnow(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
-void ff_avg_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
-                               ptrdiff_t line_size, int h);
 void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 void ff_avg_approx_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
                                       ptrdiff_t line_size, int h);
 void ff_avg_approx_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
                                      ptrdiff_t line_size, int h);
-
-void ff_put_pixels8_xy2_ssse3(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_avg_pixels8_xy2_ssse3(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_put_pixels16_xy2_ssse3(uint8_t *block, const uint8_t *pixels,
-                               ptrdiff_t line_size, int h);
-void ff_avg_pixels16_xy2_ssse3(uint8_t *block, const uint8_t *pixels,
-                               ptrdiff_t line_size, int h);
 
 #define avg_pixels8_mmx         ff_avg_pixels8_mmx
 #define avg_pixels8_x2_mmx      ff_avg_pixels8_x2_mmx
