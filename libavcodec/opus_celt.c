@@ -1295,7 +1295,7 @@ static inline float celt_decode_pulses(OpusRangeCoder *rc, int *y, unsigned int 
 {
     unsigned int idx;
 #define CELT_PVQ_U(n, k) (celt_pvq_u_row[FFMIN(n, k)][FFMAX(n, k)])
-#define CELT_PVQ_V(n, k) (CELT_PVQ_U(n, k) + CELT_PVQ_U(n, k + 1))
+#define CELT_PVQ_V(n, k) (CELT_PVQ_U(n, k) + CELT_PVQ_U(n, (k) + 1))
     idx = opus_rc_unimodel(rc, CELT_PVQ_V(N, K));
     return celt_cwrsi(N, K, idx, y);
 }
