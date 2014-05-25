@@ -237,7 +237,7 @@ static void png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
                 *(int *)(dst + i) = p;
             }
         } else {
-#define OP_SUB(x, s, l) x + s
+#define OP_SUB(x, s, l) ((x) + (s))
             UNROLL_FILTER(OP_SUB);
         }
         break;
@@ -249,7 +249,7 @@ static void png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
             p      = (last[i] >> 1);
             dst[i] = p + src[i];
         }
-#define OP_AVG(x, s, l) (((x + l) >> 1) + s) & 0xff
+#define OP_AVG(x, s, l) (((((x) + (l)) >> 1) + (s)) & 0xff)
         UNROLL_FILTER(OP_AVG);
         break;
     case PNG_FILTER_VALUE_PAETH:
