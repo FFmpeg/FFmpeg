@@ -509,7 +509,7 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
     }
 }
 
-#define GET_PTS_DIFF(a, b) ((a - b + 8192) & 0x1FFF)
+#define GET_PTS_DIFF(a, b) (((a) - (b) + 8192) & 0x1FFF)
 
 /**
  * Calculate motion vector component that should be added for direct blocks.
