@@ -81,10 +81,10 @@
 #define SAMPLE_CTB(tab, x, y) ((tab)[(y) * min_cb_width + (x)])
 #define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
 
-#define IS_IDR(s) (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP)
-#define IS_BLA(s) (s->nal_unit_type == NAL_BLA_W_RADL || s->nal_unit_type == NAL_BLA_W_LP || \
-                   s->nal_unit_type == NAL_BLA_N_LP)
-#define IS_IRAP(s) (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
+#define IS_IDR(s) ((s)->nal_unit_type == NAL_IDR_W_RADL || (s)->nal_unit_type == NAL_IDR_N_LP)
+#define IS_BLA(s) ((s)->nal_unit_type == NAL_BLA_W_RADL || (s)->nal_unit_type == NAL_BLA_W_LP || \
+                   (s)->nal_unit_type == NAL_BLA_N_LP)
+#define IS_IRAP(s) ((s)->nal_unit_type >= 16 && (s)->nal_unit_type <= 23)
 
 /**
  * Table 7-3: NAL unit type codes
