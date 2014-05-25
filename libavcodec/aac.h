@@ -81,7 +81,7 @@ enum BandType {
     INTENSITY_BT   = 15,    ///< Scalefactor data are intensity stereo positions.
 };
 
-#define IS_CODEBOOK_UNSIGNED(x) ((x - 1) & 10)
+#define IS_CODEBOOK_UNSIGNED(x) (((x) - 1) & 10)
 
 enum ChannelPosition {
     AAC_CHANNEL_OFF   = 0,
