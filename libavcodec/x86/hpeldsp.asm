@@ -372,16 +372,6 @@ AVG_PIXELS8
 
 
 ; void ff_avg_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro PAVGB_MMX 4
-    movu   %3, %1
-    por    %3, %2
-    pxor   %2, %1
-    pand   %2, %4
-    psrlq  %2, 1
-    psubb  %3, %2
-    SWAP   %2, %3
-%endmacro
-
 %macro AVG_PIXELS8_X2 0
 %if cpuflag(sse2)
 cglobal avg_pixels16_x2, 4,5,4
@@ -396,53 +386,35 @@ cglobal avg_pixels8_x2, 4,5
 .loop:
     movu         m0, [r1]
     movu         m2, [r1+r2]
-%if notcpuflag(mmxext)
-    PAVGB_MMX    [r1+1], m0, m3, m5
-    PAVGB_MMX    [r1+r2+1], m2, m4, m5
-    PAVGB_MMX    [r0], m0, m3, m5
-    PAVGB_MMX    [r0+r2], m2, m4, m5
-%else
 %if cpuflag(sse2)
     movu         m1, [r1+1]
     movu         m3, [r1+r2+1]
     pavgb        m0, m1
     pavgb        m2, m3
 %else
-    PAVGB        m0, [r1+1]
-    PAVGB        m2, [r1+r2+1]
+    PAVGB        m0, [r1+1], m3, m5
+    PAVGB        m2, [r1+r2+1], m4, m5
 %endif
-    PAVGB        m0, [r0]
-    PAVGB        m2, [r0+r2]
-%endif
+    PAVGB        m0, [r0], m3, m5
+    PAVGB        m2, [r0+r2], m4, m5
     add          r1, r4
     mova       [r0], m0
     mova    [r0+r2], m2
     movu         m0, [r1]
     movu         m2, [r1+r2]
-%if notcpuflag(mmxext)
-    PAVGB_MMX    [r1+1], m0, m3, m5
-    PAVGB_MMX    [r1+r2+1], m2, m4, m5
-%elif cpuflag(sse2)
+%if cpuflag(sse2)
     movu         m1, [r1+1]
     movu         m3, [r1+r2+1]
     pavgb        m0, m1
     pavgb        m2, m3
 %else
-    PAVGB        m0, [r1+1]
-    PAVGB        m2, [r1+r2+1]
+    PAVGB        m0, [r1+1], m3, m5
+    PAVGB        m2, [r1+r2+1], m4, m5
 %endif
     add          r0, r4
     add          r1, r4
-%if notcpuflag(mmxext)
-    PAVGB_MMX    [r0], m0, m3, m5
-    PAVGB_MMX    [r0+r2], m2, m4, m5
-%elif cpuflag(sse2)
-    pavgb        m0, [r0]
-    pavgb        m2, [r0+r2]
-%else
-    PAVGB        m0, [r0]
-    PAVGB        m2, [r0+r2]
-%endif
+    PAVGB        m0, [r0], m3, m5
+    PAVGB        m2, [r0+r2], m4, m5
     mova       [r0], m0
     mova    [r0+r2], m2
     add          r0, r4
