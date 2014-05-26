@@ -93,10 +93,9 @@ static inline uint8_t lag_get_rac(lag_rac *l)
              */
             low_scaled = FASTDIV(l->low - (l->low >> 24), div);
             shift -= l->hash_shift;
-            shift &= 31;
-            low_scaled = (low_scaled << shift) | (low_scaled >> (32 - shift));
+            low_scaled = (low_scaled >> (32 - shift));
             /* low_scaled is now a lower bound of low/range_scaled */
-            val = l->range_hash[(uint8_t) low_scaled];
+            val = l->range_hash[low_scaled];
             while (l->low >= range_scaled * l->prob[val + 1])
                 val++;
         }
