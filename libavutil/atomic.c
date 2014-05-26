@@ -64,7 +64,7 @@ void *avpriv_atomic_ptr_cas(void * volatile *ptr, void *oldval, void *newval)
     void *ret;
     pthread_mutex_lock(&atomic_lock);
     ret = *ptr;
-    if (*ptr == oldval)
+    if (ret == oldval)
         *ptr = newval;
     pthread_mutex_unlock(&atomic_lock);
     return ret;
