@@ -419,6 +419,31 @@ cglobal diff_pixels, 4,5
     jne .loop
     REP_RET
 
+INIT_XMM sse2
+cglobal diff_pixels, 4, 5, 5
+    movsxdifnidn r3, r3d
+    pxor         m4, m4
+    add          r0,  128
+    mov          r4, -128
+.loop:
+    movh         m0, [r1]
+    movh         m2, [r2]
+    movh         m1, [r1+r3]
+    movh         m3, [r2+r3]
+    punpcklbw    m0, m4
+    punpcklbw    m1, m4
+    punpcklbw    m2, m4
+    punpcklbw    m3, m4
+    psubw        m0, m2
+    psubw        m1, m3
+    mova [r0+r4+0 ], m0
+    mova [r0+r4+16], m1
+    lea          r1, [r1+r3*2]
+    lea          r2, [r2+r3*2]
+    add          r4, 32
+    jne .loop
+    RET
+
 INIT_MMX mmx
 ; int ff_pix_sum16_mmx(uint8_t *pix, int line_size)
 cglobal pix_sum16, 2, 3
