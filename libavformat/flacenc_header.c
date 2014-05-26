@@ -26,8 +26,8 @@
 #include "avformat.h"
 #include "flacenc.h"
 
-int ff_flac_write_header(AVIOContext *pb, AVCodecContext *codec,
-                         int last_block)
+int ff_flac_write_header(AVIOContext *pb, uint8_t *extradata,
+                         int extradata_size, int last_block)
 {
     uint8_t header[8] = {
         0x66, 0x4C, 0x61, 0x43, 0x00, 0x00, 0x00, 0x22
@@ -35,14 +35,14 @@ int ff_flac_write_header(AVIOContext *pb, AVCodecContext *codec,
 
     header[4] = last_block ? 0x80 : 0x00;
 
-    if (codec->extradata_size < FLAC_STREAMINFO_SIZE)
+    if (extradata_size < FLAC_STREAMINFO_SIZE)
         return AVERROR_INVALIDDATA;
 
     /* write "fLaC" stream marker and first metadata block header */
     avio_write(pb, header, 8);
 
     /* write STREAMINFO */
-    avio_write(pb, codec->extradata, FLAC_STREAMINFO_SIZE);
+    avio_write(pb, extradata, FLAC_STREAMINFO_SIZE);
 
     return 0;
 }
