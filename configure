@@ -417,7 +417,7 @@ EOF
     else
         cat <<EOF
 Include the log file "$logfile" produced by configure as this will help
-solving the problem.
+solve the problem.
 EOF
     fi
     exit 1
