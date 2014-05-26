@@ -72,9 +72,8 @@ static inline void lag_rac_refill(lag_rac *l)
  */
 static inline uint8_t lag_get_rac(lag_rac *l)
 {
-    unsigned range_scaled, low_scaled, div;
+    unsigned range_scaled, low_scaled;
     int val;
-    uint8_t shift;
 
     lag_rac_refill(l);
 
@@ -85,16 +84,8 @@ static inline uint8_t lag_get_rac(lag_rac *l)
         if (l->low < range_scaled * l->prob[1]) {
             val = 0;
         } else {
-            /* FIXME __builtin_clz is ~20% faster here, but not allowed in generic code. */
-            shift = 30 - av_log2(range_scaled);
-            div = ((range_scaled << shift) + (1 << 23) - 1) >> 23;
-            /* low>>24 ensures that any cases too big for exact FASTDIV are
-             * under- rather than over-estimated
-             */
-            low_scaled = FASTDIV(l->low - (l->low >> 24), div);
-            shift -= l->hash_shift;
-            low_scaled = (low_scaled >> (32 - shift));
-            /* low_scaled is now a lower bound of low/range_scaled */
+            low_scaled = l->low / (range_scaled<<(l->hash_shift));
+
             val = l->range_hash[low_scaled];
             while (l->low >= range_scaled * l->prob[val + 1])
                 val++;

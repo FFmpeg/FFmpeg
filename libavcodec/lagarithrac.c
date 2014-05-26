@@ -53,7 +53,4 @@ void ff_lag_rac_init(lag_rac *l, GetBitContext *gb, int length)
             j++;
         l->range_hash[i] = j;
     }
-
-    /* Add conversion factor to hash_shift so we don't have to in lag_get_rac. */
-    l->hash_shift += 23;
 }
