@@ -1291,6 +1291,7 @@ typedef struct AVFormatContext {
      * Maximum duration (in AV_TIME_BASE units) of the data read
      * from input in avformat_find_stream_info().
      * Demuxing only, set by the caller before avformat_find_stream_info().
+     * Can be set to 0 to let avformat choose using a heuristic.
      */
     int max_analyze_duration;
 
