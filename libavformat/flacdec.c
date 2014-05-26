@@ -51,7 +51,7 @@ static int flac_read_header(AVFormatContext *s)
     /* process metadata blocks */
     while (!s->pb->eof_reached && !metadata_last) {
         avio_read(s->pb, header, 4);
-        avpriv_flac_parse_block_header(header, &metadata_last, &metadata_type,
+        flac_parse_block_header(header, &metadata_last, &metadata_type,
                                    &metadata_size);
         switch (metadata_type) {
         /* allocate and read metadata block for supported types */
