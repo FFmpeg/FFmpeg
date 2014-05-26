@@ -48,7 +48,7 @@ typedef struct lag_rac {
     const uint8_t *bytestream_end;    /**< End position of input bytestream. */
 
     uint32_t prob[258];         /**< Table of cumulative probability for each symbol. */
-    uint8_t  range_hash[256];   /**< Hash table mapping upper byte to approximate symbol. */
+    uint8_t  range_hash[1024];   /**< Hash table mapping upper byte to approximate symbol. */
 } lag_rac;
 
 void ff_lag_rac_init(lag_rac *l, GetBitContext *gb, int length);
