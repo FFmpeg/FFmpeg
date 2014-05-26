@@ -107,6 +107,7 @@ static int caf_write_header(AVFormatContext *s)
     AVDictionaryEntry *t = NULL;
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, enc->codec_id);
     int64_t chunk_size = 0;
+    int frame_size = enc->frame_size;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "CAF files have exactly one stream\n");
@@ -144,6 +145,9 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    if (enc->codec_id != AV_CODEC_ID_MP3 || frame_size != 576)
+        frame_size = samples_per_packet(enc->codec_id, enc->channels);
+
     ffio_wfourcc(pb, "caff"); //< mFileType
     avio_wb16(pb, 1);         //< mFileVersion
     avio_wb16(pb, 0);         //< mFileFlags
@@ -154,7 +158,7 @@ static int caf_write_header(AVFormatContext *s)
     avio_wl32(pb, codec_tag);                         //< mFormatID
     avio_wb32(pb, codec_flags(enc->codec_id));        //< mFormatFlags
     avio_wb32(pb, enc->block_align);                  //< mBytesPerPacket
-    avio_wb32(pb, samples_per_packet(enc->codec_id, enc->channels)); //< mFramesPerPacket
+    avio_wb32(pb, frame_size);                        //< mFramesPerPacket
     avio_wb32(pb, enc->channels);                     //< mChannelsPerFrame
     avio_wb32(pb, av_get_bits_per_sample(enc->codec_id)); //< mBitsPerChannel
 
