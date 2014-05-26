@@ -141,7 +141,7 @@ static int flac_read_header(AVFormatContext *s)
             if (metadata_type == FLAC_METADATA_TYPE_VORBIS_COMMENT) {
                 AVDictionaryEntry *chmask;
 
-                if (ff_vorbis_comment(s, &s->metadata, buffer, metadata_size)) {
+                if (ff_vorbis_comment(s, &s->metadata, buffer, metadata_size, 1)) {
                     av_log(s, AV_LOG_WARNING, "error parsing VorbisComment metadata\n");
                 }
 

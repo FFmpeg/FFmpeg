@@ -72,7 +72,8 @@ static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
 }
 
 int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
-                      const uint8_t *buf, int size)
+                      const uint8_t *buf, int size,
+                      int parse_picture)
 {
     const uint8_t *p   = buf;
     const uint8_t *end = buf + size;
@@ -137,7 +138,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
              * 'METADATA_BLOCK_PICTURE'. This is the preferred and
              * recommended way of embedding cover art within VorbisComments."
              */
-            if (!strcmp(tt, "METADATA_BLOCK_PICTURE")) {
+            if (!strcmp(tt, "METADATA_BLOCK_PICTURE") && parse_picture) {
                 int ret;
                 char *pict = av_malloc(vl);
 
@@ -305,7 +306,7 @@ static int vorbis_header(AVFormatContext *s, int idx)
     } else if (os->buf[os->pstart] == 3) {
         if (os->psize > 8 &&
             ff_vorbis_comment(s, &st->metadata, os->buf + os->pstart + 7,
-                              os->psize - 8) >= 0) {
+                              os->psize - 8, 1) >= 0) {
             unsigned new_len;
 
             int ret = ff_replaygain_export(st, st->metadata);
