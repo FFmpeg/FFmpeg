@@ -3291,8 +3291,12 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             int64_t t = 0;
             int max_analyze_duration = ic->max_analyze_duration;
 
-            if (!max_analyze_duration)
-                max_analyze_duration = 5*AV_TIME_BASE;
+            if (!max_analyze_duration) {
+                if (!strcmp(ic->iformat->name, "flv") && !(ic->ctx_flags & AVFMTCTX_NOHEADER)) {
+                    max_analyze_duration = 10*AV_TIME_BASE;
+                } else
+                    max_analyze_duration = 5*AV_TIME_BASE;
+            }
 
             if (st->time_base.den > 0)
                 t = av_rescale_q(st->info->codec_info_duration, st->time_base, AV_TIME_BASE_Q);
