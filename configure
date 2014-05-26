@@ -3386,7 +3386,7 @@ case "$arch" in
     tilegx|tile-gx)
         arch="tilegx"
     ;;
-    i[3-6]86|i86pc|BePC|x86pc|x86_64|x86_32|amd64)
+    i[3-6]86*|i86pc|BePC|x86pc|x86_64|x86_32|amd64)
         arch="x86"
     ;;
 esac
