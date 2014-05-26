@@ -4593,6 +4593,9 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     elif check_func pthread_join -pthreads && check_func pthread_create -pthreads; then
         add_cflags -pthreads
         add_extralibs -pthreads
+    elif check_func pthread_join -ldl -pthread && check_func pthread_create -ldl -pthread; then
+        add_cflags -ldl -pthread
+        add_extralibs -ldl -pthread
     elif check_func pthread_join -lpthreadGC2 && check_func pthread_create -lpthreadGC2; then
         add_extralibs -lpthreadGC2
     elif check_lib pthread.h pthread_join -lpthread && check_lib pthread.h pthread_create -lpthread; then
