@@ -92,7 +92,7 @@ static av_cold int init(AVFilterContext *ctx)
     if (!strcmp(ctx->filter->name, "noformat")) {
         const AVPixFmtDescriptor *desc = NULL;
         enum AVPixelFormat *formats_allowed;
-        int nb_formats_lavu = 0, nb_formats_allowed = 0;;
+        int nb_formats_lavu = 0, nb_formats_allowed = 0;
 
         /* count the formats known to lavu */
         while ((desc = av_pix_fmt_desc_next(desc)))
