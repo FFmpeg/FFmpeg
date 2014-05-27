@@ -620,6 +620,9 @@ static int mkv_write_tracks(AVFormatContext *s)
         int output_sample_rate = 0;
         AVDictionaryEntry *tag;
 
+        // ms precision is the de-facto standard timescale for mkv files
+        avpriv_set_pts_info(st, 64, 1, 1000);
+
         if (codec->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
             mkv->have_attachments = 1;
             continue;
@@ -759,9 +762,6 @@ static int mkv_write_tracks(AVFormatContext *s)
         if (ret < 0) return ret;
 
         end_ebml_master(pb, track);
-
-        // ms precision is the de-facto standard timescale for mkv files
-        avpriv_set_pts_info(st, 64, 1, 1000);
     }
     end_ebml_master(pb, tracks);
     return 0;
