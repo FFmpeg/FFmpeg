@@ -32,6 +32,9 @@ void ff_add_hfyu_median_pred_cmov(uint8_t *dst, const uint8_t *top,
 void ff_add_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
                                     const uint8_t *diff, int w,
                                     int *left, int *left_top);
+void ff_add_hfyu_median_pred_sse2(uint8_t *dst, const uint8_t *top,
+                                  const uint8_t *diff, int w,
+                                  int *left, int *left_top);
 
 int  ff_add_hfyu_left_pred_ssse3(uint8_t *dst, const uint8_t *src,
                                  int w, int left);
@@ -58,6 +61,7 @@ av_cold void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c)
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->add_bytes            = ff_add_bytes_sse2;
+        c->add_hfyu_median_pred = ff_add_hfyu_median_pred_sse2;
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
