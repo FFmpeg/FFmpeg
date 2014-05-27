@@ -24,7 +24,6 @@
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "bytestream.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "get_bits.h"
 #include "golomb.h"
