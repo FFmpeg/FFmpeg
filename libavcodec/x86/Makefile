@@ -19,6 +19,7 @@ OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
 OBJS-$(CONFIG_HPELDSP)                 += x86/hpeldsp_init.o
 OBJS-$(CONFIG_LLVIDDSP)                += x86/lossless_videodsp_init.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += x86/huffyuvdsp_init.o
+OBJS-$(CONFIG_HUFFYUVENCDSP)           += x86/huffyuvencdsp_mmx.o
 OBJS-$(CONFIG_LPC)                     += x86/lpc.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += x86/mpegaudiodsp.o
 OBJS-$(CONFIG_MPEGVIDEO)               += x86/mpegvideo.o

@@ -31,6 +31,7 @@
 #include "bytestream.h"
 #include "put_bits.h"
 #include "dsputil.h"
+#include "huffyuvencdsp.h"
 #include "mathops.h"
 #include "utvideo.h"
 #include "huffman.h"
@@ -109,6 +110,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     }
 
     ff_dsputil_init(&c->dsp, avctx);
+    ff_huffyuvencdsp_init(&c->hdsp);
 
     /* Check the prediction method, and error out if unsupported */
     if (avctx->prediction_method < 0 || avctx->prediction_method > 4) {
@@ -312,7 +314,7 @@ static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int st
 
     /* Rest of the coded part uses median prediction */
     for (j = 1; j < height; j++) {
-        c->dsp.sub_hfyu_median_prediction(dst, src - stride, src, width, &A, &B);
+        c->hdsp.sub_hfyu_median_pred(dst, src - stride, src, width, &A, &B);
         dst += width;
         src += stride;
     }

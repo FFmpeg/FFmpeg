@@ -35,6 +35,7 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "huffyuvdsp.h"
+#include "huffyuvencdsp.h"
 #include "put_bits.h"
 #include "lossless_videodsp.h"
 
@@ -97,6 +98,7 @@ typedef struct HYuvContext {
     unsigned int bitstream_buffer_size;
     DSPContext dsp;
     HuffYUVDSPContext hdsp;
+    HuffYUVEncDSPContext hencdsp;
     LLVidDSPContext llviddsp;
 } HYuvContext;
 

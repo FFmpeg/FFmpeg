@@ -42,7 +42,7 @@ av_cold void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c)
     int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_7REGS && HAVE_INLINE_ASM
-    if (cpu_flags & AV_CPU_FLAG_CMOV)
+    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_CMOV)
         c->add_hfyu_median_pred = ff_add_hfyu_median_pred_cmov;
 #endif
 
