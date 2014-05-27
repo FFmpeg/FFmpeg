@@ -120,7 +120,7 @@ static int query_formats(AVFilterContext *ctx)
     int i;
 
     s->outdesc = av_pix_fmt_desc_get(s->out_fmt);
-    for (i = 0; i < AV_PIX_FMT_NB; i++) {
+    for (i = 0; av_pix_fmt_desc_get(i); i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
         if (desc->comp[0].depth_minus1 == s->outdesc->comp[0].depth_minus1 &&
             av_pix_fmt_count_planes(i) == desc->nb_components)
