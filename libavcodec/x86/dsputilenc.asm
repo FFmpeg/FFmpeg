@@ -361,7 +361,7 @@ cglobal get_pixels, 3,4
     REP_RET
 
 INIT_XMM sse2
-cglobal get_pixels, 3, 4
+cglobal get_pixels, 3, 4, 5
     movsxdifnidn r2, r2d
     lea          r3, [r2*3]
     pxor         m4, m4
