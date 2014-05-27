@@ -550,6 +550,8 @@ static int ogg_write_header(AVFormatContext *s)
 
     oggstream->page.start_granule = AV_NOPTS_VALUE;
 
+    ogg_write_pages(s, 1);
+
     return 0;
 }
 
