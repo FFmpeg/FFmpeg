@@ -431,10 +431,17 @@ int show_license(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the formats supported by the
- * program.
+ * program (including devices).
  * This option processing function does not utilize the arguments.
  */
 int show_formats(void *optctx, const char *opt, const char *arg);
+
+/**
+ * Print a listing containing all the devices supported by the
+ * program.
+ * This option processing function does not utilize the arguments.
+ */
+int show_devices(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the codecs supported by the

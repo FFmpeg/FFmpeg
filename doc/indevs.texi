@@ -13,8 +13,8 @@ You can disable all the input devices using the configure option
 option "--enable-indev=@var{INDEV}", or you can disable a particular
 input device using the option "--disable-indev=@var{INDEV}".
 
-The option "-formats" of the ff* tools will display the list of
-supported input devices (amongst the demuxers).
+The option "-devices" of the ff* tools will display the list of
+supported input devices.
 
 A description of the currently available input devices follows.
 
