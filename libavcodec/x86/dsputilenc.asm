@@ -326,12 +326,7 @@ cglobal sse16, 5, 5, 8
     dec       r4
     jnz .next2lines
 
-    mova      m1, m7
-    psrldq    m7, 8          ; shift hi qword to lo
-    paddd     m7, m1
-    mova      m1, m7
-    psrldq    m7, 4          ; shift hi dword to lo
-    paddd     m7, m1
+    HADDD     m7, m1
     movd     eax, m7         ; return value
     RET
 
