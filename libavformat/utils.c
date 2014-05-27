@@ -379,8 +379,6 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
 
     if (!max_probe_size)
         max_probe_size = PROBE_BUF_MAX;
-    else if (max_probe_size > PROBE_BUF_MAX)
-        max_probe_size = PROBE_BUF_MAX;
     else if (max_probe_size < PROBE_BUF_MIN) {
         av_log(logctx, AV_LOG_ERROR,
                "Specified probe size value %u cannot be < %u\n", max_probe_size, PROBE_BUF_MIN);
@@ -474,7 +472,7 @@ static int init_input(AVFormatContext *s, const char *filename,
         s->flags |= AVFMT_FLAG_CUSTOM_IO;
         if (!s->iformat)
             return av_probe_input_buffer2(s->pb, &s->iformat, filename,
-                                         s, 0, s->probesize);
+                                         s, 0, s->format_probesize);
         else if (s->iformat->flags & AVFMT_NOFILE)
             av_log(s, AV_LOG_WARNING, "Custom AVIOContext makes no sense and "
                                       "will be ignored with AVFMT_NOFILE format.\n");
@@ -491,7 +489,7 @@ static int init_input(AVFormatContext *s, const char *filename,
     if (s->iformat)
         return 0;
     return av_probe_input_buffer2(s->pb, &s->iformat, filename,
-                                 s, 0, s->probesize);
+                                 s, 0, s->format_probesize);
 }
 
 static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
@@ -3291,6 +3289,15 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
         if (st->codec_info_nb_frames>1) {
             int64_t t = 0;
+            int max_analyze_duration = ic->max_analyze_duration;
+
+            if (!max_analyze_duration) {
+                if (!strcmp(ic->iformat->name, "flv") && !(ic->ctx_flags & AVFMTCTX_NOHEADER)) {
+                    max_analyze_duration = 10*AV_TIME_BASE;
+                } else
+                    max_analyze_duration = 5*AV_TIME_BASE;
+            }
+
             if (st->time_base.den > 0)
                 t = av_rescale_q(st->info->codec_info_duration, st->time_base, AV_TIME_BASE_Q);
             if (st->avg_frame_rate.num > 0)
@@ -3302,9 +3309,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 && st->info->fps_last_dts  != AV_NOPTS_VALUE)
                 t = FFMAX(t, av_rescale_q(st->info->fps_last_dts - st->info->fps_first_dts, st->time_base, AV_TIME_BASE_Q));
 
-            if (t >= ic->max_analyze_duration) {
+            if (t >= max_analyze_duration) {
                 av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %d reached at %"PRId64" microseconds\n",
-                       ic->max_analyze_duration,
+                       max_analyze_duration,
                        t);
                 break;
             }

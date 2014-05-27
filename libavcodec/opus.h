@@ -57,7 +57,7 @@
 #define SILK_HISTORY                 322
 #define SILK_MAX_LPC                 16
 
-#define ROUND_MULL(a,b,s) (((MUL64(a, b) >> (s - 1)) + 1) >> 1)
+#define ROUND_MULL(a,b,s) (((MUL64(a, b) >> ((s) - 1)) + 1) >> 1)
 #define ROUND_MUL16(a,b)  ((MUL16(a, b) + 16384) >> 15)
 #define opus_ilog(i) (av_log2(i) + !!(i))
 

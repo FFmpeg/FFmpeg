@@ -36,8 +36,14 @@ void ff_get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size);
 void ff_get_pixels_sse2(int16_t *block, const uint8_t *pixels, int line_size);
 void ff_diff_pixels_mmx(int16_t *block, const uint8_t *s1, const uint8_t *s2,
                         int stride);
+void ff_diff_pixels_sse2(int16_t *block, const uint8_t *s1, const uint8_t *s2,
+                         int stride);
 int ff_pix_sum16_mmx(uint8_t *pix, int line_size);
 int ff_pix_norm1_mmx(uint8_t *pix, int line_size);
+int ff_sum_abs_dctelem_mmx(int16_t *block);
+int ff_sum_abs_dctelem_mmxext(int16_t *block);
+int ff_sum_abs_dctelem_sse2(int16_t *block);
+int ff_sum_abs_dctelem_ssse3(int16_t *block);
 
 #if HAVE_INLINE_ASM
 
@@ -759,118 +765,6 @@ static void sub_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *src1,
     *left     = src2[w - 1];
 }
 
-#define MMABS_MMX(a,z)                          \
-    "pxor "    #z ", " #z "             \n\t"   \
-    "pcmpgtw " #a ", " #z "             \n\t"   \
-    "pxor "    #z ", " #a "             \n\t"   \
-    "psubw "   #z ", " #a "             \n\t"
-
-#define MMABS_MMXEXT(a, z)                      \
-    "pxor "    #z ", " #z "             \n\t"   \
-    "psubw "   #a ", " #z "             \n\t"   \
-    "pmaxsw "  #z ", " #a "             \n\t"
-
-#define MMABS_SSSE3(a,z)                        \
-    "pabsw "   #a ", " #a "             \n\t"
-
-#define MMABS_SUM(a,z, sum)                     \
-    MMABS(a,z)                                  \
-    "paddusw " #a ", " #sum "           \n\t"
-
-/* FIXME: HSUM_* saturates at 64k, while an 8x8 hadamard or dct block can get
- * up to about 100k on extreme inputs. But that's very unlikely to occur in
- * natural video, and it's even more unlikely to not have any alternative
- * mvs/modes with lower cost. */
-#define HSUM_MMX(a, t, dst)                     \
-    "movq    " #a ", " #t "             \n\t"   \
-    "psrlq      $32, " #a "             \n\t"   \
-    "paddusw " #t ", " #a "             \n\t"   \
-    "movq    " #a ", " #t "             \n\t"   \
-    "psrlq      $16, " #a "             \n\t"   \
-    "paddusw " #t ", " #a "             \n\t"   \
-    "movd    " #a ", " #dst "           \n\t"   \
-
-#define HSUM_MMXEXT(a, t, dst)                  \
-    "pshufw   $0x0E, " #a ", " #t "     \n\t"   \
-    "paddusw " #t ", " #a "             \n\t"   \
-    "pshufw   $0x01, " #a ", " #t "     \n\t"   \
-    "paddusw " #t ", " #a "             \n\t"   \
-    "movd    " #a ", " #dst "           \n\t"   \
-
-#define HSUM_SSE2(a, t, dst)                    \
-    "movhlps " #a ", " #t "             \n\t"   \
-    "paddusw " #t ", " #a "             \n\t"   \
-    "pshuflw  $0x0E, " #a ", " #t "     \n\t"   \
-    "paddusw " #t ", " #a "             \n\t"   \
-    "pshuflw  $0x01, " #a ", " #t "     \n\t"   \
-    "paddusw " #t ", " #a "             \n\t"   \
-    "movd    " #a ", " #dst "           \n\t"   \
-
-#define DCT_SAD4(m, mm, o)                      \
-    "mov"#m" "#o" +  0(%1), " #mm "2    \n\t"   \
-    "mov"#m" "#o" + 16(%1), " #mm "3    \n\t"   \
-    "mov"#m" "#o" + 32(%1), " #mm "4    \n\t"   \
-    "mov"#m" "#o" + 48(%1), " #mm "5    \n\t"   \
-    MMABS_SUM(mm ## 2, mm ## 6, mm ## 0)        \
-    MMABS_SUM(mm ## 3, mm ## 7, mm ## 1)        \
-    MMABS_SUM(mm ## 4, mm ## 6, mm ## 0)        \
-    MMABS_SUM(mm ## 5, mm ## 7, mm ## 1)        \
-
-#define DCT_SAD_MMX                             \
-    "pxor    %%mm0, %%mm0               \n\t"   \
-    "pxor    %%mm1, %%mm1               \n\t"   \
-    DCT_SAD4(q, %%mm, 0)                        \
-    DCT_SAD4(q, %%mm, 8)                        \
-    DCT_SAD4(q, %%mm, 64)                       \
-    DCT_SAD4(q, %%mm, 72)                       \
-    "paddusw %%mm1, %%mm0               \n\t"   \
-    HSUM(%%mm0, %%mm1, %0)
-
-#define DCT_SAD_SSE2                            \
-    "pxor    %%xmm0, %%xmm0             \n\t"   \
-    "pxor    %%xmm1, %%xmm1             \n\t"   \
-    DCT_SAD4(dqa, %%xmm, 0)                     \
-    DCT_SAD4(dqa, %%xmm, 64)                    \
-    "paddusw %%xmm1, %%xmm0             \n\t"   \
-    HSUM(%%xmm0, %%xmm1, %0)
-
-#define DCT_SAD_FUNC(cpu)                           \
-static int sum_abs_dctelem_ ## cpu(int16_t *block)  \
-{                                                   \
-    int sum;                                        \
-    __asm__ volatile (                              \
-        DCT_SAD                                     \
-        :"=r"(sum)                                  \
-        :"r"(block));                               \
-    return sum & 0xFFFF;                            \
-}
-
-#define DCT_SAD         DCT_SAD_MMX
-#define HSUM(a, t, dst) HSUM_MMX(a, t, dst)
-#define MMABS(a, z)     MMABS_MMX(a, z)
-DCT_SAD_FUNC(mmx)
-#undef MMABS
-#undef HSUM
-
-#define HSUM(a, t, dst) HSUM_MMXEXT(a, t, dst)
-#define MMABS(a, z)     MMABS_MMXEXT(a, z)
-DCT_SAD_FUNC(mmxext)
-#undef HSUM
-#undef DCT_SAD
-
-#define DCT_SAD         DCT_SAD_SSE2
-#define HSUM(a, t, dst) HSUM_SSE2(a, t, dst)
-DCT_SAD_FUNC(sse2)
-#undef MMABS
-
-#if HAVE_SSSE3_INLINE
-#define MMABS(a, z)     MMABS_SSSE3(a, z)
-DCT_SAD_FUNC(ssse3)
-#undef MMABS
-#endif
-#undef HSUM
-#undef DCT_SAD
-
 static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2,
                                  int size)
 {
@@ -1012,8 +906,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
             c->fdct = ff_fdct_mmx;
 
         c->diff_bytes      = diff_bytes_mmx;
-        c->sum_abs_dctelem = sum_abs_dctelem_mmx;
-
         c->sse[0]  = sse16_mmx;
         c->sse[1]  = sse8_mmx;
         c->vsad[4] = vsad_intra16_mmx;
@@ -1041,7 +933,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
             (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
             c->fdct = ff_fdct_mmxext;
 
-        c->sum_abs_dctelem = sum_abs_dctelem_mmxext;
         c->vsad[4]         = vsad_intra16_mmxext;
 
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
@@ -1055,8 +946,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
         if (!high_bit_depth &&
             (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
             c->fdct = ff_fdct_sse2;
-
-        c->sum_abs_dctelem = sum_abs_dctelem_sse2;
     }
 
 #if HAVE_SSSE3_INLINE
@@ -1065,7 +954,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
             c->try_8x8basis = try_8x8basis_ssse3;
         }
         c->add_8x8basis    = add_8x8basis_ssse3;
-        c->sum_abs_dctelem = sum_abs_dctelem_ssse3;
     }
 #endif
 #endif /* HAVE_INLINE_ASM */
@@ -1073,15 +961,19 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
     if (EXTERNAL_MMX(cpu_flags)) {
         c->hadamard8_diff[0] = ff_hadamard8_diff16_mmx;
         c->hadamard8_diff[1] = ff_hadamard8_diff_mmx;
+        c->sum_abs_dctelem   = ff_sum_abs_dctelem_mmx;
     }
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         c->hadamard8_diff[0] = ff_hadamard8_diff16_mmxext;
         c->hadamard8_diff[1] = ff_hadamard8_diff_mmxext;
+        c->sum_abs_dctelem   = ff_sum_abs_dctelem_mmxext;
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->sse[0] = ff_sse16_sse2;
+        c->sum_abs_dctelem   = ff_sum_abs_dctelem_sse2;
+        c->diff_pixels = ff_diff_pixels_sse2;
 
 #if HAVE_ALIGNED_STACK
         c->hadamard8_diff[0] = ff_hadamard8_diff16_sse2;
@@ -1089,9 +981,12 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
 #endif
     }
 
-    if (EXTERNAL_SSSE3(cpu_flags) && HAVE_ALIGNED_STACK) {
+    if (EXTERNAL_SSSE3(cpu_flags)) {
+        c->sum_abs_dctelem   = ff_sum_abs_dctelem_ssse3;
+#if HAVE_ALIGNED_STACK
         c->hadamard8_diff[0] = ff_hadamard8_diff16_ssse3;
         c->hadamard8_diff[1] = ff_hadamard8_diff_ssse3;
+#endif
     }
 
     ff_dsputil_init_pix_mmx(c, avctx);

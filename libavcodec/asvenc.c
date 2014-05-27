@@ -239,7 +239,7 @@ static av_cold int encode_init(AVCodecContext *avctx){
 
     ff_asv_common_init(avctx);
 
-    if(avctx->global_quality == 0) avctx->global_quality= 4*FF_QUALITY_SCALE;
+    if(avctx->global_quality <= 0) avctx->global_quality= 4*FF_QUALITY_SCALE;
 
     a->inv_qscale= (32*scale*FF_QUALITY_SCALE +  avctx->global_quality/2) / avctx->global_quality;
 

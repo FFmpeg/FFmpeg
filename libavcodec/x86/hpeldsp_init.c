@@ -48,10 +48,6 @@ void ff_put_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
 void ff_avg_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
-void ff_put_pixels16_xy2_sse2(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_avg_pixels16_xy2_sse2(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
                                      ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_x2_3dnow(uint8_t *block, const uint8_t *pixels,
@@ -86,8 +82,6 @@ void ff_avg_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 void ff_avg_pixels8_y2_3dnow(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
-void ff_avg_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
-                               ptrdiff_t line_size, int h);
 void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 void ff_avg_approx_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
@@ -307,6 +301,16 @@ static void hpeldsp_init_sse2(HpelDSPContext *c, int flags, int cpu_flags)
 #endif /* HAVE_SSE2_EXTERNAL */
 }
 
+static void hpeldsp_init_ssse3(HpelDSPContext *c, int flags, int cpu_flags)
+{
+#if HAVE_SSSE3_EXTERNAL
+    c->put_pixels_tab[0][3]            = ff_put_pixels16_xy2_ssse3;
+    c->avg_pixels_tab[0][3]            = ff_avg_pixels16_xy2_ssse3;
+    c->put_pixels_tab[1][3]            = ff_put_pixels8_xy2_ssse3;
+    c->avg_pixels_tab[1][3]            = ff_avg_pixels8_xy2_ssse3;
+#endif
+}
+
 av_cold void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -322,4 +326,7 @@ av_cold void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
 
     if (EXTERNAL_SSE2(cpu_flags))
         hpeldsp_init_sse2(c, flags, cpu_flags);
+
+    if (EXTERNAL_SSSE3(cpu_flags))
+        hpeldsp_init_ssse3(c, flags, cpu_flags);
 }

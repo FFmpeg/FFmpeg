@@ -52,6 +52,9 @@ fate-sub-vplayer: CMD = md5 -i $(TARGET_SAMPLES)/sub/VPlayer_capability_tester.t
 FATE_SUBTITLES_ASS-$(call DEMDEC, WEBVTT, WEBVTT) += fate-sub-webvtt
 fate-sub-webvtt: CMD = md5 -i $(TARGET_SAMPLES)/sub/WebVTT_capability_tester.vtt -f ass
 
+FATE_SUBTITLES_ASS-$(call ENCMUX, WEBVTT, WEBVTT) += fate-sub-webvttenc
+fate-sub-webvttenc: CMD = md5 -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt -f webvtt
+
 FATE_SUBTITLES_ASS-$(call ALLYES, MICRODVD_DEMUXER MICRODVD_DECODER ICONV) += fate-sub-charenc
 fate-sub-charenc: CMD = md5 -sub_charenc cp1251 -i $(TARGET_SAMPLES)/sub/cp1251-subtitles.sub -f ass
 

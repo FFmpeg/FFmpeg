@@ -30,6 +30,9 @@
 SECTION_RODATA
 cextern pb_1
 cextern pw_2
+pw_8192: times 8 dw (1<<13)
+pb_interleave16: db 0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15
+pb_interleave8:  db 0, 4, 1, 5, 2, 6, 3, 7
 
 SECTION_TEXT
 
@@ -635,3 +638,70 @@ SET_PIXELS_XY2 avg
 INIT_XMM sse2
 SET_PIXELS_XY2 put
 SET_PIXELS_XY2 avg
+
+%macro SSSE3_PIXELS_XY2 1-2
+%if %0 == 2 ; sse2
+cglobal %1_pixels16_xy2, 4,5,%2
+    mova        m4, [pb_interleave16]
+%else
+cglobal %1_pixels8_xy2, 4,5
+    mova        m4, [pb_interleave8]
+%endif
+    mova        m5, [pb_1]
+    movu        m0, [r1]
+    movu        m1, [r1+1]
+    pmaddubsw   m0, m5
+    pmaddubsw   m1, m5
+    xor         r4, r4
+    add         r1, r2
+.loop:
+    movu        m2, [r1+r4]
+    movu        m3, [r1+r4+1]
+    pmaddubsw   m2, m5
+    pmaddubsw   m3, m5
+    paddusw     m0, m2
+    paddusw     m1, m3
+    pmulhrsw    m0, [pw_8192]
+    pmulhrsw    m1, [pw_8192]
+%ifidn %1, avg
+    mova        m6, [r0+r4]
+    packuswb    m0, m1
+    pshufb      m0, m4
+    pavgb       m0, m6
+%else
+    packuswb    m0, m1
+    pshufb      m0, m4
+%endif
+    mova   [r0+r4], m0
+    add         r4, r2
+
+    movu        m0, [r1+r4]
+    movu        m1, [r1+r4+1]
+    pmaddubsw   m0, m5
+    pmaddubsw   m1, m5
+    paddusw     m2, m0
+    paddusw     m3, m1
+    pmulhrsw    m2, [pw_8192]
+    pmulhrsw    m3, [pw_8192]
+%ifidn %1, avg
+    mova        m6, [r0+r4]
+    packuswb    m2, m3
+    pshufb      m2, m4
+    pavgb       m2, m6
+%else
+    packuswb    m2, m3
+    pshufb      m2, m4
+%endif
+    mova   [r0+r4], m2
+    add         r4, r2
+    sub        r3d, 2
+    jnz .loop
+    REP_RET
+%endmacro
+
+INIT_MMX ssse3
+SSSE3_PIXELS_XY2 put
+SSSE3_PIXELS_XY2 avg
+INIT_XMM ssse3
+SSSE3_PIXELS_XY2 put, 6
+SSSE3_PIXELS_XY2 avg, 7

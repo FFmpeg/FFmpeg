@@ -1,0 +1,424 @@
+This document is a tutorial/initiation for writing simple filters in
+libavfilter.
+
+Foreword: just like everything else in FFmpeg, libavfilter is monolithic, which
+means that it is highly recommended that you submit your filters to the FFmpeg
+development mailing-list and make sure it is applied. Otherwise, your filter is
+likely to have a very short lifetime due to more a less regular internal API
+changes, and a limited distribution, review, and testing.
+
+Bootstrap
+=========
+
+Let's say you want to write a new simple video filter called "foobar" which
+takes one frame in input, changes the pixels in whatever fashion you fancy, and
+outputs the modified frame. The most simple way of doing this is to take a
+similar filter.  We'll pick edgedetect, but any other should do. You can look
+for others using the `./ffmpeg -v 0 -filters|grep ' V->V '` command.
+
+ - cp libavfilter/vf_{edgedetect,foobar}.c
+ - sed -i s/edgedetect/foobar/g -i libavfilter/vf_foobar.c
+ - sed -i s/EdgeDetect/Foobar/g -i libavfilter/vf_foobar.c
+ - edit libavfilter/Makefile, and add an entry for "foobar" following the
+   pattern of the other filters.
+ - edit libavfilter/allfilters.c, and add an entry for "foobar" following the
+   pattern of the other filters.
+ - ./configure ...
+ - make -j<whatever> ffmpeg
+ - ./ffmpeg -i tests/lena.pnm -vf foobar foobar.png
+
+If everything went right, you should get a foobar.png with Lena edge-detected.
+
+That's it, your new playground is ready.
+
+Some little details about what's going on:
+libavfilter/allfilters.c:avfilter_register_all() is called at runtime to create
+a list of the available filters, but it's important to know that this file is
+also parsed by the configure script, which in turn will define variables for
+the build system and the C:
+
+    --- after running configure ---
+
+    $ grep FOOBAR config.mak
+    CONFIG_FOOBAR_FILTER=yes
+    $ grep FOOBAR config.h
+    #define CONFIG_FOOBAR_FILTER 1
+
+CONFIG_FOOBAR_FILTER=yes from the config.mak is later used to enable the filter in
+libavfilter/Makefile and CONFIG_FOOBAR_FILTER=1 from the config.h will be used
+for registering the filter in libavfilter/allfilters.c.
+
+Filter code layout
+==================
+
+You now need some theory about the general code layout of a filter. Open your
+libavfilter/vf_foobar.c. This section will detail the important parts of the
+code you need to understand before messing with it.
+
+Copyright
+---------
+
+First chunk is the copyright. Most filters are LGPL, and we are assuming
+vf_foobar is as well. We are also assuming vf_foobar is not an edge detector
+filter, so you can update the boilerplate with your credits.
+
+Doxy
+----
+
+Next chunk is the Doxygen about the file. See http://ffmpeg.org/doxygen/trunk/.
+Detail here what the filter is, does, and add some references if you feel like
+it.
+
+Context
+-------
+
+Skip the headers and scroll down to the definition of FoobarContext. This is
+your local state context. It is already filled with 0 when you get it so do not
+worry about uninitialized read into this context. This is where you put every
+"global" information you need, typically the variable storing the user options.
+You'll notice the first field "const AVClass *class"; it's the only field you
+need to keep assuming you have a context. There are some magic you don't care
+about around this field, just let it be (in first position) for now.
+
+Options
+-------
+
+Then comes the options array. This is what will define the user accessible
+options. For example, -vf foobar=mode=colormix:high=0.4:low=0.1. Most options
+have the following pattern:
+  name, description, offset, type, default value, minimum value, maximum value, flags
+
+ - name is the option name, keep it simple, lowercase
+ - description are short, in lowercase, without period, and describe what they
+   do, for example "set the foo of the bar"
+ - offset is the offset of the field in your local context, see the OFFSET()
+   macro; the option parser will use that information to fill the fields
+   according to the user input
+ - type is any of AV_OPT_TYPE_* defined in libavutil/opt.h
+ - default value is an union where you pick the appropriate type; "{.dbl=0.3}",
+   "{.i64=0x234}", "{.str=NULL}", ...
+ - min and max values define the range of available values, inclusive
+ - flags are AVOption generic flags. See AV_OPT_FLAG_* definitions
+
+In doubt, just look at the other AVOption definitions all around the codebase,
+there are tons of examples.
+
+Class
+-----
+
+AVFILTER_DEFINE_CLASS(foobar) will define a unique foobar_class with some kind
+of signature referencing the options, etc. which will be referenced in the
+definition of the AVFilter.
+
+Filter definition
+-----------------
+
+At the end of the file, you will find foobar_inputs, foobar_outputs and
+the AVFilter ff_vf_foobar. Don't forget to update the AVFilter.description with
+a description of what the filter does, starting with a capitalized letter and
+ending with a period. You'd better drop the AVFilter.flags entry for now, and
+re-add them later depending on the capabilities of your filter.
+
+Callbacks
+---------
+
+Let's now study the common callbacks. Before going into details, note that all
+these callbacks are explained in details in libavfilter/avfilter.h, so in
+doubt, refer to the doxy in that file.
+
+init()
+~~~~~~
+
+First one to be called is init(). It's flagged as cold because not called
+often. Look for "cold" on
+http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html for more
+information.
+
+As the name suggests, init() is where you eventually initialize and allocate
+your buffers, pre-compute your data, etc. Note that at this point, your local
+context already has the user options initialized, but you still haven't any
+clue about the kind of data input you will get, so this function is often
+mainly used to sanitize the user options.
+
+Some init()s will also define the number of inputs or outputs dynamically
+according to the user options. A good example of this is the split filter, but
+we won't cover this here since vf_foobar is just a simple 1:1 filter.
+
+uninit()
+~~~~~~~~
+
+Similarly, there is the uninit() callback, doing what the name suggest. Free
+everything you allocated here.
+
+query_formats()
+~~~~~~~~~~~~~~~
+
+This is following the init() and is used for the format negotiation, basically
+where you say what pixel format(s) (gray, rgb 32, yuv 4:2:0, ...) you accept
+for your inputs, and what you can output. All pixel formats are defined in
+libavutil/pixfmt.h. If you don't change the pixel format between the input and
+the output, you just have to define a pixel formats array and call
+ff_set_common_formats(). For more complex negotiation, you can refer to other
+filters such as vf_scale.
+
+config_props()
+~~~~~~~~~~~~~~
+
+This callback is not necessary, but you will probably have one or more
+config_props() anyway. It's not a callback for the filter itself but for its
+inputs or outputs (they're called "pads" - AVFilterPad - in libavfilter's
+lexicon).
+
+Inside the input config_props(), you are at a point where you know which pixel
+format has been picked after query_formats(), and more information such as the
+video width and height (inlink->{w,h}). So if you need to update your internal
+context state depending on your input you can do it here. In edgedetect you can
+see that this callback is used to allocate buffers depending on these
+information. They will be destroyed in uninit().
+
+Inside the output config_props(), you can define what you want to change in the
+output. Typically, if your filter is going to double the size of the video, you
+will update outlink->w and outlink->h.
+
+filter_frame()
+~~~~~~~~~~~~~~
+
+This is the callback you are waiting from the beginning: it is where you
+process the received frames. Along with the frame, you get the input link from
+where the frame comes from.
+
+    static int filter_frame(AVFilterLink *inlink, AVFrame *in) { ... }
+
+You can get the filter context through that input link:
+
+    AVFilterContext *ctx = inlink->dst;
+
+Then access your internal state context:
+
+    FoobarContext *foobar = ctx->priv;
+
+And also the output link where you will send your frame when you are done:
+
+    AVFilterLink *outlink = ctx->outputs[0];
+
+Here, we are picking the first output. You can have several, but in our case we
+only have one since we are in a 1:1 input-output situation.
+
+If you want to define a simple pass-through filter, you can just do:
+
+    return ff_filter_frame(outlink, in);
+
+But of course, you probably want to change the data of that frame.
+
+This can be done by accessing frame->data[] and frame->linesize[].  Important
+note here: the width does NOT match the linesize. The linesize is always
+greater or equal to the width. The padding created should not be changed or
+even read. Typically, keep in mind that a previous filter in your chain might
+have altered the frame dimension but not the linesize. Imagine a crop filter
+that halves the video size: the linesizes won't be changed, just the width.
+
+    <-------------- linesize ------------------------>
+    +-------------------------------+----------------+ ^
+    |                               |                | |
+    |                               |                | |
+    |           picture             |    padding     | | height
+    |                               |                | |
+    |                               |                | |
+    +-------------------------------+----------------+ v
+    <----------- width ------------->
+
+Before modifying the "in" frame, you have to make sure it is writable, or get a
+new one. Multiple scenarios are possible here depending on the kind of
+processing you are doing.
+
+Let's say you want to change one pixel depending on multiple pixels (typically
+the surrounding ones) of the input. In that case, you can't do an in-place
+processing of the input so you will need to allocate a new frame, with the same
+properties as the input one, and send that new frame to the next filter:
+
+    AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
+    }
+    av_frame_copy_props(out, in);
+
+    // out->data[...] = foobar(in->data[...])
+
+    av_frame_free(&in);
+    return ff_filter_frame(outlink, out);
+
+In-place processing
+~~~~~~~~~~~~~~~~~~~
+
+If you can just alter the input frame, you probably just want to do that
+instead:
+
+    av_frame_make_writable(in);
+    // in->data[...] = foobar(in->data[...])
+    return ff_filter_frame(outlink, in);
+
+You may wonder why a frame might not be writable. The answer is that for
+example a previous filter might still own the frame data: imagine a filter
+prior to yours in the filtergraph that needs to cache the frame. You must not
+alter that frame, otherwise it will make that previous filter buggy. This is
+where av_frame_make_writable() helps (it won't have any effect if the frame
+already is writable).
+
+The problem with using av_frame_make_writable() is that in the worst case it
+will copy the whole input frame before you change it all over again with your
+filter: if the frame is not writable, av_frame_make_writable() will allocate
+new buffers, and copy the input frame data. You don't want that, and you can
+avoid it by just allocating a new buffer if necessary, and process from in to
+out in your filter, saving the memcpy. Generally, this is done following this
+scheme:
+
+    int direct = 0;
+    AVFrame *out;
+
+    if (av_frame_is_writable(in)) {
+        direct = 1;
+        out = in;
+    } else {
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out) {
+            av_frame_free(&in);
+            return AVERROR(ENOMEM);
+        }
+        av_frame_copy_props(out, in);
+    }
+
+    // out->data[...] = foobar(in->data[...])
+
+    if (!direct)
+        av_frame_free(&in);
+    return ff_filter_frame(outlink, out);
+
+Of course, this will only work if you can do in-place processing. To test if
+your filter handles well the permissions, you can use the perms filter. For
+example with:
+
+    -vf perms=random,foobar
+
+Make sure no automatic pixel conversion is inserted between perms and foobar,
+otherwise the frames permissions might change again and the test will be
+meaningless: add av_log(0,0,"direct=%d\n",direct) in your code to check that.
+You can avoid the issue with something like:
+
+    -vf format=rgb24,perms=random,foobar
+
+...assuming your filter accepts rgb24 of course. This will make sure the
+necessary conversion is inserted before the perms filter.
+
+Timeline
+~~~~~~~~
+
+Adding timeline support
+(http://ffmpeg.org/ffmpeg-filters.html#Timeline-editing) is often an easy
+feature to add. In the most simple case, you just have to add
+AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC to the AVFilter.flags. You can typically
+do this when your filter does not need to save the previous context frames, or
+basically if your filter just alter whatever goes in and doesn't need
+previous/future information. See for instance commit 86cb986ce that adds
+timeline support to the fieldorder filter.
+
+In some cases, you might need to reset your context somehow. This is handled by
+the AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL flag which is used if the filter
+must not process the frames but still wants to keep track of the frames going
+through (to keep them in cache for when it's enabled again). See for example
+commit 69d72140a that adds timeline support to the phase filter.
+
+Threading
+~~~~~~~~~
+
+libavfilter does not yet support frame threading, but you can add slice
+threading to your filters.
+
+Let's say the foobar filter has the following frame processing function:
+
+    dst = out->data[0];
+    src = in ->data[0];
+
+    for (y = 0; y < inlink->h; y++) {
+        for (x = 0; x < inlink->w; x++)
+            dst[x] = foobar(src[x]);
+        dst += out->linesize[0];
+        src += in ->linesize[0];
+    }
+
+The first thing is to make this function work into slices. The new code will
+look like this:
+
+    for (y = slice_start; y < slice_end; y++) {
+        for (x = 0; x < inlink->w; x++)
+            dst[x] = foobar(src[x]);
+        dst += out->linesize[0];
+        src += in ->linesize[0];
+    }
+
+The source and destination pointers, and slice_start/slice_end will be defined
+according to the number of jobs. Generally, it looks like this:
+
+    const int slice_start = (in->height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;
+    uint8_t       *dst = out->data[0] + slice_start * out->linesize[0];
+    const uint8_t *src =  in->data[0] + slice_start *  in->linesize[0];
+
+This new code will be isolated in a new filter_slice():
+
+    static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs) { ... }
+
+Note that we need our input and output frame to define slice_{start,end} and
+dst/src, which are not available in that callback. They will be transmitted
+through the opaque void *arg. You have to define a structure which contains
+everything you need:
+
+    typedef struct ThreadData {
+        AVFrame *in, *out;
+    } ThreadData;
+
+If you need some more information from your local context, put them here.
+
+In you filter_slice function, you access it like that:
+
+    const ThreadData *td = arg;
+
+Then in your filter_frame() callback, you need to call the threading
+distributor with something like this:
+
+    ThreadData td;
+
+    // ...
+
+    td.in  = in;
+    td.out = out;
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+
+    // ...
+
+    return ff_filter_frame(outlink, out);
+
+Last step is to add AVFILTER_FLAG_SLICE_THREADS flag to AVFilter.flags.
+
+For more example of slice threading additions, you can try to run git log -p
+--grep 'slice threading' libavfilter/
+
+Finalization
+~~~~~~~~~~~~
+
+When your awesome filter is finished, you have a few more steps before you're
+done:
+
+ - write its documentation in doc/filters.texi, and test the output with make
+   doc/ffmpeg-filters.html.
+ - add a FATE test, generally by adding an entry in
+   tests/fate/filter-video.mak, add running make fate-filter-foobar GEN=1 to
+   generate the data.
+ - add an entry in the Changelog
+ - edit libavfilter/version.h and increase LIBAVFILTER_VERSION_MINOR by one
+   (and reset LIBAVFILTER_VERSION_MICRO to 100)
+ - git add ... && git commit -m "avfilter: add foobar filter." && git format-patch -1
+
+When all of this is done, you can submit your patch to the ffmpeg-devel
+mailing-list for review.  If you need any help, feel free to come on our IRC
+channel, #ffmpeg-devel on irc.freenode.net.

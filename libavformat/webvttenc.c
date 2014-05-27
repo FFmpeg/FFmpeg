@@ -93,6 +93,7 @@ AVOutputFormat ff_webvtt_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
     .extensions        = "vtt",
     .mime_type         = "text/vtt",
+    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
     .subtitle_codec    = AV_CODEC_ID_WEBVTT,
     .write_header      = webvtt_write_header,
     .write_packet      = webvtt_write_packet,

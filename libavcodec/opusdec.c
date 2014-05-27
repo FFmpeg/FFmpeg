@@ -240,6 +240,7 @@ static int opus_decode_frame(OpusStreamContext *s, const uint8_t *data, int size
             av_log(s->avctx, AV_LOG_ERROR, "Error resampling SILK data.\n");
             return samples;
         }
+        av_assert2((samples & 7) == 0);
         s->delayed_samples += s->packet.frame_duration - samples;
     } else
         ff_silk_flush(s->silk);
