@@ -517,6 +517,8 @@ int avformat_queue_attached_pictures(AVFormatContext *s)
         if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC &&
             s->streams[i]->discard < AVDISCARD_ALL) {
             AVPacket copy = s->streams[i]->attached_pic;
+            if (copy.size <= 0)
+                return AVERROR(EINVAL);
             copy.buf = av_buffer_ref(copy.buf);
             if (!copy.buf)
                 return AVERROR(ENOMEM);
