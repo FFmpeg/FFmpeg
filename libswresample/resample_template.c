@@ -112,12 +112,11 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
     int frac= c->frac;
     int dst_incr_frac= c->dst_incr % c->src_incr;
     int dst_incr=      c->dst_incr / c->src_incr;
-    int compensation_distance= c->compensation_distance;
 
     av_assert1(c->filter_shift == FILTER_SHIFT);
     av_assert1(c->felem_size == sizeof(FELEM));
 
-    if(compensation_distance == 0 && c->filter_length == 1 && c->phase_shift==0){
+    if (c->filter_length == 1 && c->phase_shift == 0) {
         int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*index;
         int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
         int new_size = (src_size * (int64_t)c->src_incr - frac + c->dst_incr - 1) / c->dst_incr;
@@ -134,8 +133,7 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         av_assert2(index >= 0);
         *consumed= index;
         index = 0;
-    } else if (compensation_distance == 0 &&
-               index >= 0 &&
+    } else if (index >= 0 &&
                src_size*(int64_t)c->src_incr < (INT64_MAX >> (c->phase_shift+1))) {
         int64_t end_index = (1LL + src_size - c->filter_length) << c->phase_shift;
         int64_t delta_frac = (end_index - index) * c->src_incr - c->frac;
@@ -243,27 +241,15 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 frac -= c->src_incr;
                 index++;
             }
-
-            if(dst_index + 1 == compensation_distance){
-                compensation_distance= 0;
-                dst_incr_frac= c->ideal_dst_incr % c->src_incr;
-                dst_incr=      c->ideal_dst_incr / c->src_incr;
-            }
         }
         *consumed= FFMAX(sample_index, 0);
         index += FFMIN(sample_index, 0) << c->phase_shift;
-
-        if(compensation_distance){
-            compensation_distance -= dst_index;
-            av_assert1(compensation_distance > 0);
-        }
     }
 
     if(update_ctx){
         c->frac= frac;
         c->index= index;
         c->dst_incr= dst_incr_frac + c->src_incr*dst_incr;
-        c->compensation_distance= compensation_distance;
     }
 
     return dst_index;

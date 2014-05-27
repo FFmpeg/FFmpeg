@@ -336,6 +336,9 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
     int av_unused mm_flags = av_get_cpu_flags();
     int need_emms= 0;
 
+    if (c->compensation_distance)
+        dst_size = FFMIN(dst_size, c->compensation_distance);
+
     for(i=0; i<dst->ch_count; i++){
 #if HAVE_MMXEXT_INLINE
 #if HAVE_SSE2_INLINE
@@ -366,6 +369,13 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
     }
     if(need_emms)
         emms_c();
+
+    if (c->compensation_distance) {
+        c->compensation_distance -= ret;
+        if (!c->compensation_distance)
+            c->dst_incr = c->ideal_dst_incr / c->src_incr;
+    }
+
     return ret;
 }
 
