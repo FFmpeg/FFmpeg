@@ -1578,6 +1578,9 @@
     <ClCompile Include="..\libavcodec\webvttdec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\webvttenc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\wmalosslessdec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

@@ -136,36 +136,36 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\..\..\msvc32</OutDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
     <IntDir>$(ProjectDir)\obj\$(Configuration)\$(Platform)\ffplay\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(ProjectDir)\obj\$(Configuration)\$(Platform)\ffplay\</IntDir>
-    <OutDir>..\..\..\msvc64</OutDir>
+    <OutDir>..\..\..\msvc64\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
-    <OutDir>..\..\..\msvc32</OutDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
     <IntDir>$(ProjectDir)\obj\$(Configuration)\$(Platform)\ffplay\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
     <IntDir>$(ProjectDir)\obj\$(Configuration)\$(Platform)\ffplay\</IntDir>
-    <OutDir>..\..\..\msvc64</OutDir>
+    <OutDir>..\..\..\msvc64\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\..\msvc32</OutDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
     <IntDir>$(ProjectDir)\obj\$(Configuration)\$(Platform)\ffplay\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>$(ProjectDir)\obj\$(Configuration)\$(Platform)\ffplay\</IntDir>
-    <OutDir>..\..\..\msvc64</OutDir>
+    <OutDir>..\..\..\msvc64\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'">
-    <OutDir>..\..\..\msvc32</OutDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
     <IntDir>$(ProjectDir)\obj\$(Configuration)\$(Platform)\ffplay\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'">
     <IntDir>$(ProjectDir)\obj\$(Configuration)\$(Platform)\ffplay\</IntDir>
-    <OutDir>..\..\..\msvc64</OutDir>
+    <OutDir>..\..\..\msvc64\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

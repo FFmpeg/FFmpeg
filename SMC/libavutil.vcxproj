@@ -191,6 +191,9 @@
     <ClCompile Include="..\libavutil\stereo3d.c">
       <ObjectFileName>$(IntDir)\libavutil_stereo3d.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavutil\threadmessage.c">
+      <ObjectFileName>$(IntDir)\libavutil_threadmessage.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavutil\time.c">
       <ObjectFileName>$(IntDir)\libavutil_time.obj</ObjectFileName>
     </ClCompile>
@@ -279,6 +282,7 @@
     <ClInclude Include="..\libavutil\sha.h" />
     <ClInclude Include="..\libavutil\sha512.h" />
     <ClInclude Include="..\libavutil\stereo3d.h" />
+    <ClInclude Include="..\libavutil\threadmessage.h" />
     <ClInclude Include="..\libavutil\time.h" />
     <ClInclude Include="..\libavutil\timecode.h" />
     <ClInclude Include="..\libavutil\timestamp.h" />
@@ -499,6 +503,7 @@ copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
+copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
@@ -615,6 +620,7 @@ copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
+copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
@@ -734,6 +740,7 @@ copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
+copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
@@ -853,6 +860,7 @@ copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
+copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
@@ -976,6 +984,7 @@ copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
+copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
@@ -1099,6 +1108,7 @@ copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
+copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
@@ -1227,6 +1237,7 @@ copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
+copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
@@ -1355,6 +1366,7 @@ copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
+copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil

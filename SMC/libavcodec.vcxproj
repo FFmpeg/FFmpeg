@@ -1592,6 +1592,9 @@
     <ClCompile Include="..\libavcodec\webvttdec.c">
       <ObjectFileName>$(IntDir)\libavcodec_webvttdec.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\webvttenc.c">
+      <ObjectFileName>$(IntDir)\libavcodec_webvttenc.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\wmalosslessdec.c">
       <ObjectFileName>$(IntDir)\libavcodec_wmalosslessdec.obj</ObjectFileName>
     </ClCompile>
