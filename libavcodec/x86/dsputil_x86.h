@@ -45,12 +45,6 @@ void ff_clear_block_sse(int16_t *block);
 void ff_clear_blocks_mmx(int16_t *blocks);
 void ff_clear_blocks_sse(int16_t *blocks);
 
-void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w);
-
-void ff_add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top,
-                                        const uint8_t *diff, int w,
-                                        int *left, int *left_top);
-
 void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
                        int w, int h, int sides);
 

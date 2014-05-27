@@ -134,31 +134,6 @@ void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
     } while (--i);
 }
 
-void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w)
-{
-    x86_reg i = 0;
-
-    __asm__ volatile (
-        "jmp          2f                \n\t"
-        "1:                             \n\t"
-        "movq   (%1, %0), %%mm0         \n\t"
-        "movq   (%2, %0), %%mm1         \n\t"
-        "paddb     %%mm0, %%mm1         \n\t"
-        "movq      %%mm1, (%2, %0)      \n\t"
-        "movq  8(%1, %0), %%mm0         \n\t"
-        "movq  8(%2, %0), %%mm1         \n\t"
-        "paddb     %%mm0, %%mm1         \n\t"
-        "movq      %%mm1, 8(%2, %0)     \n\t"
-        "add         $16, %0            \n\t"
-        "2:                             \n\t"
-        "cmp          %3, %0            \n\t"
-        "js           1b                \n\t"
-        : "+r" (i)
-        : "r" (src), "r" (dst), "r" ((x86_reg) w - 15));
-
-    for (; i < w; i++)
-        dst[i + 0] += src[i + 0];
-}
 
 /* Draw the edges of width 'w' of an image of size width, height
  * this MMX version can only handle w == 8 || w == 16. */

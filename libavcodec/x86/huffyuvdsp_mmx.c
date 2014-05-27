@@ -20,14 +20,14 @@
 
 #include "config.h"
 #include "libavutil/x86/asm.h"
-#include "dsputil_x86.h"
+#include "huffyuvdsp.h"
 
 #if HAVE_INLINE_ASM
 
 #if HAVE_7REGS
-void ff_add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top,
-                                        const uint8_t *diff, int w,
-                                        int *left, int *left_top)
+void ff_add_hfyu_median_pred_cmov(uint8_t *dst, const uint8_t *top,
+                                  const uint8_t *diff, int w,
+                                  int *left, int *left_top)
 {
     x86_reg w2 = -w;
     x86_reg x;
@@ -61,5 +61,31 @@ void ff_add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top,
     *left_top = tl;
 }
 #endif
+
+void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w)
+{
+    x86_reg i = 0;
+
+    __asm__ volatile (
+        "jmp          2f                \n\t"
+        "1:                             \n\t"
+        "movq   (%1, %0), %%mm0         \n\t"
+        "movq   (%2, %0), %%mm1         \n\t"
+        "paddb     %%mm0, %%mm1         \n\t"
+        "movq      %%mm1, (%2, %0)      \n\t"
+        "movq  8(%1, %0), %%mm0         \n\t"
+        "movq  8(%2, %0), %%mm1         \n\t"
+        "paddb     %%mm0, %%mm1         \n\t"
+        "movq      %%mm1, 8(%2, %0)     \n\t"
+        "add         $16, %0            \n\t"
+        "2:                             \n\t"
+        "cmp          %3, %0            \n\t"
+        "js           1b                \n\t"
+        : "+r" (i)
+        : "r" (src), "r" (dst), "r" ((x86_reg) w - 15));
+
+    for (; i < w; i++)
+        dst[i + 0] += src[i + 0];
+}
 
 #endif /* HAVE_INLINE_ASM */
