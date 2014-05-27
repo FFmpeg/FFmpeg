@@ -47,9 +47,10 @@ static int query_formats(AVFilterContext *ctx)
     /** accept any input pixel format that is not hardware accelerated, not
      *  a bitstream format, and does not have vertically sub-sampled chroma */
     if (ctx->inputs[0]) {
+        const AVPixFmtDescriptor *desc = NULL;
         formats = NULL;
-        for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++) {
-            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+        while ((desc = av_pix_fmt_desc_next(desc))) {
+            pix_fmt = av_pix_fmt_desc_get_id(desc);
             if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL ||
                   desc->flags & AV_PIX_FMT_FLAG_PAL     ||
                   desc->flags & AV_PIX_FMT_FLAG_BITSTREAM) &&
