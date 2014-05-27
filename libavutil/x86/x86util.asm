@@ -288,7 +288,12 @@
     paddd   %1, %2
 %endif
 %if notcpuflag(xop) || sizeof%1 != 16
+%if cpuflag(mmxext)
     PSHUFLW %2, %1, q0032
+%else ; mmx
+    mova    %2, %1
+    psrlq   %2, 32
+%endif
     paddd   %1, %2
 %endif
 %undef %1

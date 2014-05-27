@@ -23,6 +23,10 @@
 
 %include "libavutil/x86/x86util.asm"
 
+SECTION_RODATA
+
+cextern pw_1
+
 SECTION .text
 
 %macro DIFF_PIXELS_1 4
@@ -439,73 +443,92 @@ cglobal diff_pixels, 4, 5, 5
     jne .loop
     RET
 
-INIT_MMX mmx
 ; int ff_pix_sum16_mmx(uint8_t *pix, int line_size)
-cglobal pix_sum16, 2, 3
+; %1 = number of xmm registers used
+; %2 = number of loops
+%macro PIX_SUM16 2
+cglobal pix_sum16, 2, 3, %1
     movsxdifnidn r1, r1d
-    mov          r2, r1
-    neg          r2
-    shl          r2, 4
-    sub          r0, r2
-    pxor         m7, m7
-    pxor         m6, m6
+    mov          r2, %2
+    pxor         m5, m5
+    pxor         m4, m4
 .loop:
-    mova         m0, [r0+r2+0]
-    mova         m1, [r0+r2+0]
-    mova         m2, [r0+r2+8]
-    mova         m3, [r0+r2+8]
-    punpcklbw    m0, m7
-    punpckhbw    m1, m7
-    punpcklbw    m2, m7
-    punpckhbw    m3, m7
+    mova         m0, [r0]
+%if mmsize == 8
+    mova         m1, [r0+8]
+%else
+    mova         m1, [r0+r1]
+%endif
+    punpckhbw    m2, m0, m5
+    punpcklbw    m0, m5
+    punpckhbw    m3, m1, m5
+    punpcklbw    m1, m5
     paddw        m1, m0
     paddw        m3, m2
     paddw        m3, m1
-    paddw        m6, m3
-    add          r2, r1
-    js .loop
-    mova         m5, m6
-    psrlq        m6, 32
-    paddw        m6, m5
-    mova         m5, m6
-    psrlq        m6, 16
-    paddw        m6, m5
-    movd        eax, m6
+    paddw        m4, m3
+%if mmsize == 8
+    add          r0, r1
+%else
+    lea          r0, [r0+r1*2]
+%endif
+    dec r2
+    jne .loop
+    HADDW        m4, m5
+    movd        eax, m4
     and         eax, 0xffff
     RET
+%endmacro
 
 INIT_MMX mmx
+PIX_SUM16 0, 16
+INIT_XMM sse2
+PIX_SUM16 6, 8
+
 ; int ff_pix_norm1_mmx(uint8_t *pix, int line_size)
-cglobal pix_norm1, 2, 4
+; %1 = number of xmm registers used
+; %2 = number of loops
+%macro PIX_NORM1 2
+cglobal pix_norm1, 2, 3, %1
     movsxdifnidn r1, r1d
-    mov          r2, 16
+    mov          r2, %2
     pxor         m0, m0
-    pxor         m7, m7
+    pxor         m5, m5
 .loop:
     mova         m2, [r0+0]
+%if mmsize == 8
     mova         m3, [r0+8]
-    mova         m1, m2
-    punpckhbw    m1, m0
+%else
+    mova         m3, [r0+r1]
+%endif
+    punpckhbw    m1, m2, m0
     punpcklbw    m2, m0
-    mova         m4, m3
-    punpckhbw    m3, m0
-    punpcklbw    m4, m0
+    punpckhbw    m4, m3, m0
+    punpcklbw    m3, m0
     pmaddwd      m1, m1
     pmaddwd      m2, m2
     pmaddwd      m3, m3
     pmaddwd      m4, m4
     paddd        m2, m1
     paddd        m4, m3
-    paddd        m7, m2
+    paddd        m5, m2
+    paddd        m5, m4
+%if mmsize == 8
     add          r0, r1
-    paddd        m7, m4
+%else
+    lea          r0, [r0+r1*2]
+%endif
     dec r2
     jne .loop
-    mova         m1, m7
-    psrlq        m7, 32
-    paddd        m1, m7
-    movd        eax, m1
+    HADDD        m5, m1
+    movd        eax, m5
     RET
+%endmacro
+
+INIT_MMX mmx
+PIX_NORM1 0, 16
+INIT_XMM sse2
+PIX_NORM1 6, 8
 
 ;-----------------------------------------------
 ;int ff_sum_abs_dctelem(int16_t *block)
