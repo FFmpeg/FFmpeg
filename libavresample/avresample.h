@@ -76,9 +76,8 @@
  * while (get_input(&input, &in_linesize, &in_samples)) {
  *     uint8_t *output
  *     int out_linesize;
- *     int out_samples = avresample_available(avr) +
- *                       av_rescale_rnd(avresample_get_delay(avr) +
- *                                      in_samples, 44100, 48000, AV_ROUND_UP);
+ *     int out_samples = avresample_get_out_samples(avr, in_samples);
+ *
  *     av_samples_alloc(&output, &out_linesize, 2, out_samples,
  *                      AV_SAMPLE_FMT_S16, 0);
  *     out_samples = avresample_convert(avr, &output, out_linesize, out_samples,
@@ -97,6 +96,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
+#include "libavutil/mathematics.h"
 
 #include "libavresample/version.h"
 
@@ -313,11 +313,23 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
                                 int compensation_distance);
 
 /**
+ * Provide the upper bound on the number of samples the configured
+ * conversion would output.
+ *
+ * @param avr           audio resample context
+ * @param in_nb_samples number of input samples
+ *
+ * @return              number of samples or AVERROR(EINVAL) if the value
+ *                      would exceed INT_MAX
+ */
+
+int avresample_get_out_samples(AVAudioResampleContext *avr, int in_nb_samples);
+
+/**
  * Convert input samples and write them to the output FIFO.
  *
- * The upper bound on the number of output samples is given by
- * avresample_available() + (avresample_get_delay() + number of input samples) *
- * output sample rate / input sample rate.
+ * The upper bound on the number of output samples can be obtained through
+ * avresample_get_out_samples().
  *
  * The output data can be NULL or have fewer allocated samples than required.
  * In this case, any remaining samples not written to the output will be added
@@ -334,7 +346,7 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
  * samples. To get this data as output, either call avresample_convert() with
  * NULL input or call avresample_read().
  *
- * @see avresample_available()
+ * @see avresample_get_out_samples()
  * @see avresample_read()
  * @see avresample_get_delay()
  *

@@ -622,6 +622,25 @@ int avresample_available(AVAudioResampleContext *avr)
     return av_audio_fifo_size(avr->out_fifo);
 }
 
+int avresample_get_out_samples(AVAudioResampleContext *avr, int in_nb_samples)
+{
+    int64_t samples = avresample_get_delay(avr) + (int64_t)in_nb_samples;
+
+    if (avr->resample_needed) {
+        samples = av_rescale_rnd(samples,
+                                 avr->out_sample_rate,
+                                 avr->in_sample_rate,
+                                 AV_ROUND_UP);
+    }
+
+    samples += avresample_available(avr);
+
+    if (samples > INT_MAX)
+        return AVERROR(EINVAL);
+
+    return samples;
+}
+
 int avresample_read(AVAudioResampleContext *avr, uint8_t **output, int nb_samples)
 {
     if (!output)
