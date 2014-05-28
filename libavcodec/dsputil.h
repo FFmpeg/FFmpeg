@@ -187,30 +187,6 @@ typedef struct DSPContext {
 
     me_cmp_func pix_abs[2][4];
 
-    /* HuffYUV specific */
-    void (*add_bytes)(uint8_t *dst /* align 16 */,
-                      uint8_t *src /* align 16 */,
-                      int w);
-    void (*diff_bytes)(uint8_t *dst /* align 16 */,
-                       const uint8_t *src1 /* align 16 */,
-                       const uint8_t *src2 /* align 1 */,
-                       int w);
-    /**
-     * Subtract HuffYUV's variant of median prediction.
-     * Note, this might read from src1[-1], src2[-1].
-     */
-    void (*sub_hfyu_median_prediction)(uint8_t *dst, const uint8_t *src1,
-                                       const uint8_t *src2, int w,
-                                       int *left, int *left_top);
-    void (*add_hfyu_median_prediction)(uint8_t *dst, const uint8_t *top,
-                                       const uint8_t *diff, int w,
-                                       int *left, int *left_top);
-    int (*add_hfyu_left_prediction)(uint8_t *dst, const uint8_t *src,
-                                    int w, int left);
-    void (*add_hfyu_left_prediction_bgr32)(uint8_t *dst, const uint8_t *src,
-                                           int w, int *red, int *green,
-                                           int *blue, int *alpha);
-    /* this might write to dst[w] */
     void (*bswap_buf)(uint32_t *dst, const uint32_t *src, int w);
     void (*bswap16_buf)(uint16_t *dst, const uint16_t *src, int len);
 

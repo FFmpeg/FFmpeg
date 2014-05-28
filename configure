@@ -1805,6 +1805,8 @@ CONFIG_EXTRA="
     h264qpel
     hpeldsp
     huffman
+    huffyuvdsp
+    huffyuvencdsp
     intrax8
     lgplv3
     llviddsp
@@ -2059,8 +2061,8 @@ h263p_encoder_select="h263_encoder"
 h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel videodsp"
 h264_decoder_suggest="error_resilience"
 hevc_decoder_select="cabac dsputil golomb videodsp"
-huffyuv_decoder_select="dsputil llviddsp"
-huffyuv_encoder_select="dsputil huffman llviddsp"
+huffyuv_decoder_select="dsputil huffyuvdsp llviddsp"
+huffyuv_encoder_select="dsputil huffman huffyuvencdsp llviddsp"
 iac_decoder_select="imc_decoder"
 imc_decoder_select="dsputil fft mdct sinewin"
 indeo3_decoder_select="hpeldsp"
@@ -2068,7 +2070,7 @@ interplay_video_decoder_select="hpeldsp"
 jpegls_decoder_select="golomb mjpeg_decoder"
 jpegls_encoder_select="golomb"
 jv_decoder_select="dsputil"
-lagarith_decoder_select="dsputil"
+lagarith_decoder_select="huffyuvdsp"
 ljpeg_encoder_select="aandcttables mpegvideoenc"
 loco_decoder_select="golomb"
 mdec_decoder_select="dsputil error_resilience mpegvideo"
@@ -2112,7 +2114,7 @@ nuv_decoder_select="dsputil lzo"
 on2avc_decoder_select="mdct"
 opus_decoder_deps="swresample"
 png_decoder_select="zlib"
-png_encoder_select="dsputil zlib"
+png_encoder_select="huffyuvencdsp zlib"
 prores_decoder_select="dsputil"
 prores_encoder_select="dsputil"
 qcelp_decoder_select="lsp"
@@ -2150,8 +2152,8 @@ truespeech_decoder_select="dsputil"
 tscc_decoder_select="zlib"
 twinvq_decoder_select="mdct lsp sinewin"
 utvideo_decoder_select="dsputil"
-utvideo_encoder_select="dsputil huffman"
-vble_decoder_select="dsputil"
+utvideo_encoder_select="dsputil huffman huffyuvencdsp"
+vble_decoder_select="huffyuvdsp"
 vc1_decoder_select="error_resilience h263_decoder h264chroma h264qpel intrax8"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
@@ -3538,7 +3540,7 @@ case "$arch" in
     tilegx|tile-gx)
         arch="tilegx"
     ;;
-    i[3-6]86|i86pc|BePC|x86pc|x86_64|x86_32|amd64)
+    i[3-6]86*|i86pc|BePC|x86pc|x86_64|x86_32|amd64)
         arch="x86"
     ;;
 esac

@@ -3,8 +3,7 @@ OBJS                                   += x86/constants.o               \
 
 OBJS-$(CONFIG_AC3DSP)                  += x86/ac3dsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
-OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o            \
-                                          x86/dsputil_x86.o
+OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o
 OBJS-$(CONFIG_ENCODERS)                += x86/dsputilenc_mmx.o          \
                                           x86/fdct.o                    \
                                           x86/motion_est.o
@@ -19,6 +18,8 @@ OBJS-$(CONFIG_H264QPEL)                += x86/h264_qpel.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
 OBJS-$(CONFIG_HPELDSP)                 += x86/hpeldsp_init.o
 OBJS-$(CONFIG_LLVIDDSP)                += x86/lossless_videodsp_init.o
+OBJS-$(CONFIG_HUFFYUVDSP)              += x86/huffyuvdsp_init.o
+OBJS-$(CONFIG_HUFFYUVENCDSP)           += x86/huffyuvencdsp_mmx.o
 OBJS-$(CONFIG_LPC)                     += x86/lpc.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += x86/mpegaudiodsp.o
 OBJS-$(CONFIG_MPEGVIDEO)               += x86/mpegvideo.o
@@ -54,6 +55,7 @@ MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
                                           x86/idct_sse2_xvid.o          \
                                           x86/simple_idct.o
 MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
+MMX-OBJS-$(CONFIG_HUFFYUVDSP)          += x86/huffyuvdsp_mmx.o
 
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_SNOW_ENCODER)        += x86/snowdsp.o
@@ -93,6 +95,7 @@ YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
                                           x86/hevc_deblock.o
 YASM-OBJS-$(CONFIG_HPELDSP)            += x86/fpel.o                    \
                                           x86/hpeldsp.o
+YASM-OBJS-$(CONFIG_HUFFYUVDSP)         += x86/huffyuvdsp.o
 YASM-OBJS-$(CONFIG_LLVIDDSP)           += x86/lossless_videodsp.o
 YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36.o
 YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o

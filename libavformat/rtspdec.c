@@ -696,7 +696,7 @@ static int rtsp_read_header(AVFormatContext *s)
             return ret;
 
         rt->real_setup_cache = !s->nb_streams ? NULL :
-            av_mallocz(2 * s->nb_streams * sizeof(*rt->real_setup_cache));
+            av_mallocz_array(s->nb_streams, 2 * sizeof(*rt->real_setup_cache));
         if (!rt->real_setup_cache && s->nb_streams)
             return AVERROR(ENOMEM);
         rt->real_setup = rt->real_setup_cache + s->nb_streams;
