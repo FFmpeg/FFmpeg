@@ -23,7 +23,8 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/huffyuvdsp.h"
 
-void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w);
+void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, intptr_t w);
+void ff_add_bytes_sse2(uint8_t *dst, uint8_t *src, intptr_t w);
 
 void ff_add_hfyu_median_pred_cmov(uint8_t *dst, const uint8_t *top,
                                   const uint8_t *diff, int w,
@@ -46,13 +47,17 @@ av_cold void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c)
         c->add_hfyu_median_pred = ff_add_hfyu_median_pred_cmov;
 #endif
 
-    if (INLINE_MMX(cpu_flags))
+    if (EXTERNAL_MMX(cpu_flags))
         c->add_bytes = ff_add_bytes_mmx;
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         /* slower than cmov version on AMD */
         if (!(cpu_flags & AV_CPU_FLAG_3DNOW))
             c->add_hfyu_median_pred = ff_add_hfyu_median_pred_mmxext;
+    }
+
+    if (EXTERNAL_SSE2(cpu_flags)) {
+        c->add_bytes            = ff_add_bytes_sse2;
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {

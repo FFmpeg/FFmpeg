@@ -163,3 +163,40 @@ cglobal add_hfyu_left_pred, 3,3,7, dst, src, w, left
     ADD_HFYU_LEFT_LOOP 0, 1
 .src_unaligned:
     ADD_HFYU_LEFT_LOOP 0, 0
+
+%macro ADD_BYTES 0
+cglobal add_bytes, 3,4,2, dst, src, w, size
+    mov  sizeq, wq
+    and  sizeq, -2*mmsize
+    jz  .2
+    add   dstq, sizeq
+    add   srcq, sizeq
+    neg  sizeq
+.1:
+    mova    m0, [srcq + sizeq]
+    mova    m1, [srcq + sizeq + mmsize]
+    paddb   m0, [dstq + sizeq]
+    paddb   m1, [dstq + sizeq + mmsize]
+    mova   [dstq + sizeq], m0
+    mova   [dstq + sizeq + mmsize], m1
+    add  sizeq, 2*mmsize
+    jl .1
+.2:
+    and     wq, 2*mmsize-1
+    jz    .end
+    add   dstq, wq
+    add   srcq, wq
+    neg     wq
+.3
+    mov  sizeb, [srcq + wq]
+    add [dstq + wq], sizeb
+    inc     wq
+    jl .3
+.end:
+    REP_RET
+%endmacro
+
+INIT_MMX mmx
+ADD_BYTES
+INIT_XMM sse2
+ADD_BYTES

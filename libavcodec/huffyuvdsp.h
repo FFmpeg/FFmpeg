@@ -35,7 +35,7 @@
 
 typedef struct HuffYUVDSPContext {
     void (*add_bytes)(uint8_t *dst /* align 16 */, uint8_t *src /* align 16 */,
-                      int w);
+                      intptr_t w);
     void (*add_hfyu_median_pred)(uint8_t *dst, const uint8_t *top,
                                  const uint8_t *diff, int w,
                                  int *left, int *left_top);

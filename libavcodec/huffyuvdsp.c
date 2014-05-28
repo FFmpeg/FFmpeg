@@ -27,7 +27,7 @@
 #define pb_7f (~0UL / 255 * 0x7f)
 #define pb_80 (~0UL / 255 * 0x80)
 
-static void add_bytes_c(uint8_t *dst, uint8_t *src, int w)
+static void add_bytes_c(uint8_t *dst, uint8_t *src, intptr_t w)
 {
     long i;
 
