@@ -32,9 +32,11 @@
 #include "matroska.h"
 #include "riff.h"
 #include "subtitles.h"
+#include "vorbiscomment.h"
 #include "wv.h"
 
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
@@ -505,6 +507,49 @@ static int put_wv_codecpriv(AVIOContext *pb, AVCodecContext *codec)
     return 0;
 }
 
+static int put_flac_codecpriv(AVFormatContext *s,
+                              AVIOContext *pb, AVCodecContext *codec)
+{
+    int write_comment = (codec->channel_layout &&
+                         !(codec->channel_layout & ~0x3ffffULL) &&
+                         !ff_flac_is_native_layout(codec->channel_layout));
+    int ret = ff_flac_write_header(pb, codec, !write_comment);
+
+    if (ret < 0)
+        return ret;
+
+    if (write_comment) {
+        const char *vendor = (s->flags & AVFMT_FLAG_BITEXACT) ?
+                             "Libav" : LIBAVFORMAT_IDENT;
+        AVDictionary *dict = NULL;
+        uint8_t buf[32], *data, *p;
+        int len;
+
+        snprintf(buf, sizeof(buf), "0x%"PRIx64, codec->channel_layout);
+        av_dict_set(&dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
+
+        len = ff_vorbiscomment_length(dict, vendor);
+        data = av_malloc(len + 4);
+        if (!data) {
+            av_dict_free(&dict);
+            return AVERROR(ENOMEM);
+        }
+
+        data[0] = 0x84;
+        AV_WB24(data + 1, len);
+
+        p = data + 4;
+        ff_vorbiscomment_write(&p, &dict, vendor);
+
+        avio_write(pb, data, len + 4);
+
+        av_freep(&data);
+        av_dict_free(&dict);
+    }
+
+    return 0;
+}
+
 static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int *sample_rate, int *output_sample_rate)
 {
     MPEG4AudioConfig mp4ac;
@@ -533,7 +578,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         if (codec->codec_id == AV_CODEC_ID_VORBIS || codec->codec_id == AV_CODEC_ID_THEORA)
             ret = put_xiph_codecpriv(s, dyn_cp, codec);
         else if (codec->codec_id == AV_CODEC_ID_FLAC)
-            ret = ff_flac_write_header(dyn_cp, codec, 1);
+            ret = put_flac_codecpriv(s, dyn_cp, codec);
         else if (codec->codec_id == AV_CODEC_ID_WAVPACK)
             ret = put_wv_codecpriv(dyn_cp, codec);
         else if (codec->codec_id == AV_CODEC_ID_H264)
