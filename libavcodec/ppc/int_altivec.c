@@ -30,6 +30,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
 
@@ -45,9 +46,6 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
     } u = { .vscore = vec_splat_s32(0) };
 
 // XXX lazy way, fix it later
-
-#define vec_unaligned_load(b)                                   \
-    vec_perm(vec_ld(0, b), vec_ld(15, b), vec_lvsl(0, b));
 
     while (size16) {
         // score += (pix1[i] - pix2[i]) * (pix1[i] - pix2[i]);

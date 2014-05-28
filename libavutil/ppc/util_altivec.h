@@ -106,6 +106,9 @@ static inline vec_u8 load_with_perm_vec(int offset, uint8_t *src, vec_u8 perm_ve
     return vec_perm(a, b, perm_vec);
 }
 
+#define vec_unaligned_load(b)                                   \
+    vec_perm(vec_ld(0, b), vec_ld(15, b), vec_lvsl(0, b));
+
 #endif /* HAVE_ALTIVEC */
 
 #endif /* AVUTIL_PPC_UTIL_ALTIVEC_H */
