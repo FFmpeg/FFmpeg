@@ -341,7 +341,7 @@ static int decode_main_header(NUTContext *nut)
     }
 
     // flags had been effectively introduced in version 4
-    if (nut->version > NUT_STABLE_VERSION) {
+    if (nut->version > 3 && end > avio_tell(bc) + 4) {
         nut->flags = ffio_read_varlen(bc);
     }
 
