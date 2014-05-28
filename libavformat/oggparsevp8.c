@@ -64,7 +64,7 @@ static int vp8_header(AVFormatContext *s, int idx)
     case 0x02:
         if (p[6] != 0x20)
             return AVERROR_INVALIDDATA;
-        ff_vorbis_comment(s, &st->metadata, p + 7, os->psize - 7);
+        ff_vorbis_comment(s, &st->metadata, p + 7, os->psize - 7, 1);
         break;
     default:
         av_log(s, AV_LOG_ERROR, "Unknown VP8 header type 0x%02X\n", p[5]);

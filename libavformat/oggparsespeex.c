@@ -83,7 +83,7 @@ static int speex_header(AVFormatContext *s, int idx) {
 
         avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
     } else
-        ff_vorbis_comment(s, &st->metadata, p, os->psize);
+        ff_vorbis_comment(s, &st->metadata, p, os->psize, 1);
 
     spxp->seq++;
     return 1;
