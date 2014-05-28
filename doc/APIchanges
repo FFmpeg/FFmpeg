@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-05-24 - xxxxxxx - lavf 55.19.0 - avformat.h
+  Add strict_std_compliance and related AVOptions to support experimental
+  muxing.
+
 2014-05-26 - xxxxxxx - lavu 52.87.100 - threadmessage.h
   Add thread message queue API.
 

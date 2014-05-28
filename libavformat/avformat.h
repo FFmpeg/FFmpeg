@@ -1424,6 +1424,12 @@ typedef struct AVFormatContext {
     int64_t max_interleave_delta;
 
     /**
+     * Allow non-standard and experimental extension
+     * @see AVCodecContext.strict_std_compliance
+     */
+    int strict_std_compliance;
+
+    /**
      * Transport stream id.
      * This will be moved into demuxer private options. Thus no API/ABI compatibility
      */
