@@ -48,6 +48,7 @@
 #include "libavutil/mathematics.h"
 
 #include "libavcodec/bytestream.h"
+#include "libavcodec/flac.h"
 #include "libavcodec/mpeg4audio.h"
 
 #include "avformat.h"
@@ -1570,12 +1571,30 @@ static void matroska_metadata_creation_time(AVDictionary **metadata, int64_t dat
     av_dict_set(metadata, "creation_time", buffer, 0);
 }
 
+static int matroska_parse_flac(AVFormatContext *s,
+                               MatroskaTrack *track,
+                               int *offset)
+{
+    uint8_t *p = track->codec_priv.data;
+    int size   = track->codec_priv.size;
+
+    if (size < 8 + FLAC_STREAMINFO_SIZE || p[4] & 0x7f) {
+        av_log(s, AV_LOG_WARNING, "Invalid FLAC private data\n");
+        track->codec_priv.size = 0;
+        return 0;
+    }
+    *offset = 8;
+    track->codec_priv.size = 8 + FLAC_STREAMINFO_SIZE;
+
+    return 0;
+}
+
 static int matroska_parse_tracks(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
     MatroskaTrack *tracks = matroska->tracks.elem;
     AVStream *st;
-    int i, j;
+    int i, j, ret;
     int k;
 
     for (i = 0; i < matroska->tracks.nb_elem; i++) {
@@ -1854,6 +1873,10 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 st->codec->block_align = track->audio.sub_packet_size;
                 extradata_offset       = 78;
             }
+        } else if (codec_id == AV_CODEC_ID_FLAC && track->codec_priv.size) {
+            ret = matroska_parse_flac(s, track, &extradata_offset);
+            if (ret < 0)
+                return ret;
         } else if (codec_id == AV_CODEC_ID_PRORES && track->codec_priv.size == 4) {
             fourcc = AV_RL32(track->codec_priv.data);
         }
