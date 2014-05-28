@@ -29,4 +29,6 @@
 int ff_flac_write_header(AVIOContext *pb, AVCodecContext *codec,
                          int last_block);
 
+int ff_flac_is_native_layout(uint64_t channel_layout);
+
 #endif /* AVFORMAT_FLACENC_H */
