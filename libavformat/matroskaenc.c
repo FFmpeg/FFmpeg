@@ -761,11 +761,11 @@ static int mkv_write_tracks(AVFormatContext *s)
 
         if (mkv->mode == MODE_WEBM && !(codec->codec_id == AV_CODEC_ID_VP8 ||
                                         codec->codec_id == AV_CODEC_ID_VP9 ||
-                                      ((codec->codec_id == AV_CODEC_ID_OPUS)&&(codec->strict_std_compliance <= FF_COMPLIANCE_EXPERIMENTAL)) ||
+                                        codec->codec_id == AV_CODEC_ID_OPUS ||
                                         codec->codec_id == AV_CODEC_ID_VORBIS ||
                                         codec->codec_id == AV_CODEC_ID_WEBVTT)) {
             av_log(s, AV_LOG_ERROR,
-                   "Only VP8,VP9 video and Vorbis,Opus(experimental, use -strict -2) audio and WebVTT subtitles are supported for WebM.\n");
+                   "Only VP8,VP9 video and Vorbis,Opus audio and WebVTT subtitles are supported for WebM.\n");
             return AVERROR(EINVAL);
         }
 
