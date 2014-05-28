@@ -520,7 +520,7 @@ static int put_flac_codecpriv(AVFormatContext *s,
 
     if (write_comment) {
         const char *vendor = (s->flags & AVFMT_FLAG_BITEXACT) ?
-                             "Libav" : LIBAVFORMAT_IDENT;
+                             "Lavf" : LIBAVFORMAT_IDENT;
         AVDictionary *dict = NULL;
         uint8_t buf[32], *data, *p;
         int len;
