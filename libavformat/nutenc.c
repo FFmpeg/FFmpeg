@@ -342,7 +342,7 @@ static void write_mainheader(NUTContext *nut, AVIOContext *bc)
 
     ff_put_v(bc, nut->version);
     if (nut->version > 3)
-        ff_put_v(bc, nut->minor_version);
+        ff_put_v(bc, nut->minor_version = 1);
     ff_put_v(bc, nut->avf->nb_streams);
     ff_put_v(bc, nut->max_distance);
     ff_put_v(bc, nut->time_base_count);
