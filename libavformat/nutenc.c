@@ -697,7 +697,7 @@ static int nut_write_header(AVFormatContext *s)
 
     nut->avf = s;
 
-    nut->version = NUT_STABLE_VERSION + !!nut->flags;
+    nut->version = FFMAX(NUT_STABLE_VERSION, 3 + !!nut->flags);
     if (nut->flags && s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(s, AV_LOG_ERROR,
                "The additional syncpoint modes require version %d, "
