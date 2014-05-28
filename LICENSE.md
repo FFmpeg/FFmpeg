@@ -10,7 +10,7 @@ version 2 or later (GPL v2+). See the file COPYING.GPLv2 for details. None of
 these parts are used by default, you have to explicitly pass --enable-gpl to
 configure to activate them. In this case, FFmpeg's license changes to GPL v2+.
 
-Specifically, the GPL parts of FFmpeg are
+Specifically, the GPL parts of FFmpeg are:
 
 - libpostproc
 - libmpcodecs
