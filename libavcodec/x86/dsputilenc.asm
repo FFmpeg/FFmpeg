@@ -476,7 +476,6 @@ cglobal pix_sum16, 2, 3, %1
     jne .loop
     HADDW        m4, m5
     movd        eax, m4
-    and         eax, 0xffff
     RET
 %endmacro
 
