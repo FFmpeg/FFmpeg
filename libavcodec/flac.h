@@ -28,6 +28,7 @@
 #define AVCODEC_FLAC_H
 
 #include "avcodec.h"
+#include "bytestream.h"
 #include "get_bits.h"
 
 #define FLAC_STREAMINFO_SIZE   34
@@ -109,15 +110,10 @@ int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
                                    enum FLACExtradataFormat *format,
                                    uint8_t **streaminfo_start);
 
-/**
- * Parse the metadata block parameters from the header.
- * @param[in]  block_header header data, at least 4 bytes
- * @param[out] last indicator for last metadata block
- * @param[out] type metadata block type
- * @param[out] size metadata block size
- */
+#if LIBAVCODEC_VERSION_MAJOR < 56
 void avpriv_flac_parse_block_header(const uint8_t *block_header,
                                     int *last, int *type, int *size);
+#endif
 
 /**
  * Calculate an estimate for the maximum frame size based on verbatim mode.
@@ -139,5 +135,24 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
                                 FLACFrameInfo *fi, int log_level_offset);
 
 void ff_flac_set_channel_layout(AVCodecContext *avctx);
+
+/**
+ * Parse the metadata block parameters from the header.
+ * @param[in]  block_header header data, at least 4 bytes
+ * @param[out] last indicator for last metadata block
+ * @param[out] type metadata block type
+ * @param[out] size metadata block size
+ */
+static av_always_inline void flac_parse_block_header(const uint8_t *block_header,
+                                                      int *last, int *type, int *size)
+{
+    int tmp = bytestream_get_byte(&block_header);
+    if (last)
+        *last = tmp & 0x80;
+    if (type)
+        *type = tmp & 0x7F;
+    if (size)
+        *size = bytestream_get_be24(&block_header);
+}
 
 #endif /* AVCODEC_FLAC_H */
