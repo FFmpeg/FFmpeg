@@ -182,6 +182,12 @@
     <ClCompile Include="..\libavcodec\huffman.c">
       <ObjectFileName>$(IntDir)\libavcodec_huffman.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\huffyuvdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_huffyuvdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\huffyuvencdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_huffyuvencdsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\intrax8.c">
       <ObjectFileName>$(IntDir)\libavcodec_intrax8.obj</ObjectFileName>
     </ClCompile>
@@ -1955,9 +1961,6 @@
     <ClCompile Include="..\libavcodec\x86\dsputil_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dsputil_init.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\dsputil_x86.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_dsputil_x86.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dsputilenc_mmx.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dsputilenc_mmx.obj</ObjectFileName>
     </ClCompile>
@@ -1996,6 +1999,12 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\lossless_videodsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_lossless_videodsp_init.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\huffyuvdsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_huffyuvdsp_init.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\huffyuvencdsp_mmx.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_huffyuvencdsp_mmx.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\lpc.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_lpc.obj</ObjectFileName>
@@ -2078,6 +2087,9 @@
     <ClCompile Include="..\libavcodec\x86\dirac_dwt.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dirac_dwt.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\huffyuvdsp_mmx.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_huffyuvdsp_mmx.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_snowdsp.obj</ObjectFileName>
     </ClCompile>
@@ -2130,6 +2142,7 @@
     <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
     <YASM Include="..\libavcodec\x86\hevc_deblock.asm" />
     <YASM Include="..\libavcodec\x86\hpeldsp.asm" />
+    <YASM Include="..\libavcodec\x86\huffyuvdsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_videodsp.asm" />
     <YASM Include="..\libavcodec\x86\imdct36.asm" />
     <YASM Include="..\libavcodec\x86\videodsp.asm" />
