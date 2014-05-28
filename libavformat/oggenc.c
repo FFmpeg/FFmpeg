@@ -401,7 +401,7 @@ static void ogg_write_pages(AVFormatContext *s, int flush)
         if (oggstream->page_count < 2 && !flush)
             break;
         ogg_write_page(s, &p->page,
-                       flush && oggstream->page_count == 1 ? 4 : 0); // eos
+                       flush == 1 && oggstream->page_count == 1 ? 4 : 0); // eos
         next = p->next;
         av_freep(&p);
         p = next;
@@ -540,7 +540,7 @@ static int ogg_write_header(AVFormatContext *s)
 
     oggstream->page.start_granule = AV_NOPTS_VALUE;
 
-    ogg_write_pages(s, 1);
+    ogg_write_pages(s, 2);
 
     return 0;
 }
