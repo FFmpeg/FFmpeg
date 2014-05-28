@@ -410,7 +410,7 @@ static void write_mainheader(NUTContext *nut, AVIOContext *bc)
         avio_write(bc, nut->header[i], nut->header_len[i]);
     }
     // flags had been effectively introduced in version 4
-    if (nut->version > NUT_STABLE_VERSION)
+    if (nut->version > 3)
         ff_put_v(bc, nut->flags);
 }
 
