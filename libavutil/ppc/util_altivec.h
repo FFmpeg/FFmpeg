@@ -48,17 +48,6 @@
 #define WORD_s3 0x1c,0x1d,0x1e,0x1f
 
 #define vcprm(a,b,c,d) (const vector unsigned char){WORD_ ## a, WORD_ ## b, WORD_ ## c, WORD_ ## d}
-#define vcii(a,b,c,d) (const vector float){FLOAT_ ## a, FLOAT_ ## b, FLOAT_ ## c, FLOAT_ ## d}
-
-// vcprmle is used to keep the same index as in the SSE version.
-// it's the same as vcprm, with the index inversed
-// ('le' is Little Endian)
-#define vcprmle(a,b,c,d) vcprm(d,c,b,a)
-
-// used to build inverse/identity vectors (vcii)
-// n is _n_egative, p is _p_ositive
-#define FLOAT_n -1.
-#define FLOAT_p 1.
 
 
 // Transpose 8x8 matrix of 16-bit elements (in-place)
