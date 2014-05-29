@@ -129,10 +129,10 @@ void ff_mspel_motion(MpegEncContext *s,
         emu=1;
     }
 
-    s->dsp.put_mspel_pixels_tab[dxy](dest_y             , ptr             , linesize);
-    s->dsp.put_mspel_pixels_tab[dxy](dest_y+8           , ptr+8           , linesize);
-    s->dsp.put_mspel_pixels_tab[dxy](dest_y  +8*linesize, ptr  +8*linesize, linesize);
-    s->dsp.put_mspel_pixels_tab[dxy](dest_y+8+8*linesize, ptr+8+8*linesize, linesize);
+    w->wdsp.put_mspel_pixels_tab[dxy](dest_y,                    ptr,                    linesize);
+    w->wdsp.put_mspel_pixels_tab[dxy](dest_y     + 8,            ptr     + 8,            linesize);
+    w->wdsp.put_mspel_pixels_tab[dxy](dest_y     + 8 * linesize, ptr     + 8 * linesize, linesize);
+    w->wdsp.put_mspel_pixels_tab[dxy](dest_y + 8 + 8 * linesize, ptr + 8 + 8 * linesize, linesize);
 
     if(s->flags&CODEC_FLAG_GRAY) return;
 
