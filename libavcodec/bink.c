@@ -889,7 +889,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 c->dsp.clear_block(block);
                 v = binkb_get_value(c, BINKB_SRC_INTER_COEFS);
                 read_residue(gb, block, v);
-                c->dsp.add_pixels8(dst, block, stride);
+                c->bdsp.add_pixels8(dst, block, stride);
                 break;
             case 4:
                 xoff = binkb_get_value(c, BINKB_SRC_X_OFF);
@@ -1126,7 +1126,7 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 c->dsp.clear_block(block);
                 v = get_bits(gb, 7);
                 read_residue(gb, block, v);
-                c->dsp.add_pixels8(dst, block, stride);
+                c->bdsp.add_pixels8(dst, block, stride);
                 break;
             case INTRA_BLOCK:
                 memset(dctblock, 0, sizeof(*dctblock) * 64);
