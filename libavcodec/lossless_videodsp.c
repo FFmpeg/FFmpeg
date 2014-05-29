@@ -95,7 +95,7 @@ static void sub_hfyu_median_pred_int16_c(uint16_t *dst, const uint16_t *src1, co
     *left_top = lt;
 }
 
-static int add_hfyu_left_prediction_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc){
+static int add_hfyu_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc){
     int i;
 
     for(i=0; i<w-1; i++){
@@ -119,7 +119,7 @@ void ff_llviddsp_init(LLVidDSPContext *c, AVCodecContext *avctx)
 {
     c->add_int16 = add_int16_c;
     c->diff_int16= diff_int16_c;
-    c->add_hfyu_left_prediction_int16   = add_hfyu_left_prediction_int16_c;
+    c->add_hfyu_left_pred_int16   = add_hfyu_left_pred_int16_c;
     c->add_hfyu_median_pred_int16 = add_hfyu_median_pred_int16_c;
     c->sub_hfyu_median_pred_int16 = sub_hfyu_median_pred_int16_c;
 
