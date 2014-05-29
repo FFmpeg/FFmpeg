@@ -59,6 +59,7 @@ MMX-OBJS-$(CONFIG_HUFFYUVDSP)          += x86/huffyuvdsp_mmx.o
 
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_SNOW_ENCODER)        += x86/snowdsp.o
+MMX-OBJS-$(CONFIG_SVQ1_ENCODER)        += x86/svq1enc_mmx.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 
 YASM-OBJS                              += x86/deinterlace.o             \
