@@ -1044,7 +1044,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
      * That's exactly the same Intel decoders do.
      */
     if (avctx->codec_id == AV_CODEC_ID_INDEO4 &&
-        ctx->frame_type == 0/*FRAMETYPE_INTRA*/) {
+        ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
             // skip version string
         while (get_bits(&ctx->gb, 8)) {
             if (get_bits_left(&ctx->gb) < 8)
