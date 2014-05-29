@@ -354,6 +354,29 @@ fate-swr-resample_nn-s16p-8000-44100: CMP_TARGET = 3163.39
 fate-swr-resample_nn-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 endef
 
+define ARESAMPLE_ASYNC
+FATE_SWR_RESAMPLE += fate-swr-resample_async-$(3)-$(1)-$(2)
+fate-swr-resample_async-$(3)-$(1)-$(2): tests/data/asynth-$(1)-1.wav
+fate-swr-resample_async-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -af atrim=end_sample=10240,asetpts=PTS+random\(0\)*200-100,aresample=$(2):async=50:min_hard_comp=0.100000:first_pts=0:internal_sample_fmt=$(3),aformat=$(3),aresample=$(1):internal_sample_fmt=$(3) -f wav -acodec pcm_s16le -
+
+fate-swr-resample_async-$(3)-$(1)-$(2): CMP = stddev
+fate-swr-resample_async-$(3)-$(1)-$(2): CMP_UNIT = $(5)
+fate-swr-resample_async-$(3)-$(1)-$(2): FUZZ = 0.1
+fate-swr-resample_async-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
+
+fate-swr-resample_async-fltp-44100-8000: CMP_TARGET = 4047.25
+fate-swr-resample_async-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20132
+
+fate-swr-resample_async-fltp-8000-44100: CMP_TARGET = 11193.77
+fate-swr-resample_async-fltp-8000-44100: SIZE_TOLERANCE = 96000 - 20312
+
+fate-swr-resample_async-s16p-44100-8000: CMP_TARGET = 4047.24
+fate-swr-resample_async-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20132
+
+fate-swr-resample_async-s16p-8000-44100: CMP_TARGET = 11194.08
+fate-swr-resample_async-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20312
+endef
+
 $(call CROSS_TEST,$(SAMPLERATES),ARESAMPLE,s16p,s16le,s16)
 $(call CROSS_TEST,$(SAMPLERATES),ARESAMPLE,s32p,s32le,s16)
 $(call CROSS_TEST,$(SAMPLERATES),ARESAMPLE,fltp,f32le,s16)
@@ -365,6 +388,10 @@ $(call CROSS_TEST,$(SAMPLERATES_LITE),ARESAMPLE_LIN,dblp,f64le,s16)
 
 $(call CROSS_TEST,$(SAMPLERATES_NN),ARESAMPLE_NN,s16p,s16le,s16)
 $(call CROSS_TEST,$(SAMPLERATES_NN),ARESAMPLE_NN,fltp,f32le,s16)
+
+$(call CROSS_TEST,$(SAMPLERATES_NN),ARESAMPLE_ASYNC,s16p,s16le,s16)
+$(call CROSS_TEST,$(SAMPLERATES_NN),ARESAMPLE_ASYNC,fltp,f32le,s16)
+
 
 FATE_SWR_RESAMPLE-$(call FILTERDEMDECENCMUX, ARESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_SWR_RESAMPLE)
 fate-swr-resample: $(FATE_SWR_RESAMPLE-yes)
