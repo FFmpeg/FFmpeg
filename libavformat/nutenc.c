@@ -991,7 +991,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (store_sp &&
         (!(nut->flags & NUT_PIPE) || nut->last_syncpoint_pos == INT_MIN)) {
-        Syncpoint *sp, dummy = { .pos = INT64_MAX };
+        int64_t sp_pos = INT64_MAX;
 
         ff_nut_reset_ts(nut, *nus->time_base, pkt->dts);
         for (i = 0; i < s->nb_streams; i++) {
@@ -1003,19 +1003,15 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
             int index = av_index_search_timestamp(st, dts_tb,
                                                   AVSEEK_FLAG_BACKWARD);
             if (index >= 0)
-                dummy.pos = FFMIN(dummy.pos, st->index_entries[index].pos);
+                sp_pos = FFMIN(sp_pos, st->index_entries[index].pos);
         }
-        if (dummy.pos == INT64_MAX)
-            dummy.pos = 0;
-        sp = av_tree_find(nut->syncpoints, &dummy, (void *)ff_nut_sp_pos_cmp,
-                          NULL);
 
         nut->last_syncpoint_pos = avio_tell(bc);
         ret                     = avio_open_dyn_buf(&dyn_bc);
         if (ret < 0)
             return ret;
         put_tt(nut, nus->time_base, dyn_bc, pkt->dts);
-        ff_put_v(dyn_bc, sp ? (nut->last_syncpoint_pos - sp->pos) >> 4 : 0);
+        ff_put_v(dyn_bc, sp_pos != INT64_MAX ? (nut->last_syncpoint_pos - sp_pos) >> 4 : 0);
 
         if (nut->flags & NUT_BROADCAST) {
             put_tt(nut, nus->time_base, dyn_bc,
