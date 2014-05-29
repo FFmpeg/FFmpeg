@@ -42,8 +42,7 @@ typedef struct HuffYUVDSPContext {
     int (*add_hfyu_left_pred)(uint8_t *dst, const uint8_t *src,
                               int w, int left);
     void (*add_hfyu_left_pred_bgr32)(uint8_t *dst, const uint8_t *src,
-                                     int w, int *red, int *green,
-                                     int *blue, int *alpha);
+                                     intptr_t w, uint8_t *left);
 } HuffYUVDSPContext;
 
 void ff_huffyuvdsp_init(HuffYUVDSPContext *c);
