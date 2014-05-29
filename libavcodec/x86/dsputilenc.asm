@@ -500,8 +500,10 @@ INIT_MMX mmx
 PIX_SUM16 0, 16, 3, 0
 INIT_XMM sse2
 PIX_SUM16 6, 8,  3, 2
+%if HAVE_XOP_EXTERNAL
 INIT_XMM xop
 PIX_SUM16 5, 4,  4, 4
+%endif
 
 ; int ff_pix_norm1_mmx(uint8_t *pix, int line_size)
 ; %1 = number of xmm registers used
