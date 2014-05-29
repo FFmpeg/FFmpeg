@@ -772,8 +772,10 @@ static int mkv_write_tracks(AVFormatContext *s)
         switch (codec->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
-                if(st->avg_frame_rate.num && st->avg_frame_rate.den && 1.0/av_q2d(st->avg_frame_rate) > av_q2d(codec->time_base))
-                    put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1E9/av_q2d(st->avg_frame_rate));
+
+                if(   st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0
+                   && 1.0/av_q2d(st->avg_frame_rate) > av_q2d(codec->time_base))
+                    put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1E9 / av_q2d(st->avg_frame_rate));
                 else
                     put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, av_q2d(codec->time_base)*1E9);
 
