@@ -106,6 +106,7 @@ typedef struct NUTContext {
     AVRational *time_base;
     struct AVTreeNode *syncpoints;
     int sp_count;
+    int write_index;
     int64_t max_pts;
     AVRational *max_pts_tb;
 #define NUT_BROADCAST 1 // use extended syncpoints

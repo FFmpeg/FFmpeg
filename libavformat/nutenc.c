@@ -1019,6 +1019,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         put_packet(nut, bc, dyn_bc, 1, SYNCPOINT_STARTCODE);
 
+        if (nut->write_index) {
         if ((ret = ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0 /*unused*/, pkt->dts)) < 0)
             return ret;
 
@@ -1031,6 +1032,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
                     return AVERROR(ENOMEM);
                 for (j=nut->sp_count == 1 ? 0 : nut->sp_count; j<2*nut->sp_count; j++)
                     nus->keyframe_pts[j] = AV_NOPTS_VALUE;
+        }
         }
     }
     av_assert0(nus->last_pts != AV_NOPTS_VALUE);
@@ -1157,7 +1159,7 @@ static int nut_write_trailer(AVFormatContext *s)
         write_headers(s, bc);
 
     ret = avio_open_dyn_buf(&dyn_bc);
-    if (ret >= 0 && nut->sp_count) {
+    if (ret >= 0 && nut->sp_count && nut->write_index) {
         write_index(nut, dyn_bc);
         put_packet(nut, bc, dyn_bc, 1, INDEX_STARTCODE);
     }
@@ -1180,6 +1182,7 @@ static const AVOption options[] = {
     { "default",     "",                                                0,             AV_OPT_TYPE_CONST, {.i64 = 0},             INT_MIN, INT_MAX, E, "syncpoints" },
     { "none",        "Disable syncpoints, low overhead and unseekable", 0,             AV_OPT_TYPE_CONST, {.i64 = NUT_PIPE},      INT_MIN, INT_MAX, E, "syncpoints" },
     { "timestamped", "Extend syncpoints with a wallclock timestamp",    0,             AV_OPT_TYPE_CONST, {.i64 = NUT_BROADCAST}, INT_MIN, INT_MAX, E, "syncpoints" },
+    { "write_index", "Write index",                               OFFSET(write_index), AV_OPT_TYPE_INT,   {.i64 = 1},                   0,       1, E, },
     { NULL },
 };
 
