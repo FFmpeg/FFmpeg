@@ -108,4 +108,5 @@ AVOutputFormat ff_rso_muxer = {
     .write_packet   =   rso_write_packet,
     .write_trailer  =   rso_write_trailer,
     .codec_tag      =   (const AVCodecTag* const []){ff_codec_rso_tags, 0},
+    .flags          =   AVFMT_NOTIMESTAMPS,
 };

@@ -172,4 +172,5 @@ AVOutputFormat ff_adts_muxer = {
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = adts_write_header,
     .write_packet      = adts_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };
