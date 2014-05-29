@@ -58,8 +58,8 @@ ELF     .size   \name, . - \name
 
 .macro  movrel rd, val
 #if CONFIG_PIC
-        adrp            \rd, #:pg_hi21:\val
-        add             \rd, \rd, #:lo12:\val
+        adrp            \rd, :pg_hi21:\val
+        add             \rd, \rd, :lo12:\val
 #else
         ldr             \rd, =\val
 #endif
