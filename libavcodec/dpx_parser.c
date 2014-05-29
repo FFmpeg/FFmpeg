@@ -48,7 +48,7 @@ static int dpx_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
     *poutbuf_size = 0;
     if (buf_size == 0)
-        return 0;
+        next = 0;
 
     if (!d->pc.frame_start_found) {
         for (; i < buf_size; i++) {
