@@ -252,7 +252,7 @@ cglobal add_hfyu_median_prediction_int16, 7,7,0, dst, top, diff, mask, w, left, 
     mov [left_topq], r2d
     RET
 
-cglobal sub_hfyu_median_prediction_int16, 7,7,0, dst, src1, src2, mask, w, left, left_top
+cglobal sub_hfyu_median_pred_int16, 7,7,0, dst, src1, src2, mask, w, left, left_top
     add      wd, wd
     movd    mm7, maskd
     SPLATW  mm7, mm7
