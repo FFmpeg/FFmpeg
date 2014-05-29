@@ -262,6 +262,9 @@ typedef struct IVI45DecContext {
 
     int gop_invalid;
     int buf_invalid[3];
+
+    AVFrame         *p_frame;
+    int             got_p_frame;
 } IVI45DecContext;
 
 /** compare some properties of two pictures */
