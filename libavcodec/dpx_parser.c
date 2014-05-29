@@ -68,7 +68,6 @@ static int dpx_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             d->remaining_size -= i;
             if (d->remaining_size)
                 goto flush;
-            next = i;
         }
     }
 
@@ -84,8 +83,15 @@ static int dpx_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             if (d->fsize > buf_size - i + 19)
                 d->remaining_size = d->fsize - buf_size + i - 19;
             else
-                next = d->fsize + i - 19;
+                i += d->fsize - 19;
+
             break;
+        } else if (d->index > 17) {
+            if (d->pc.state == MKBETAG('S','D','P','X') ||
+                d->pc.state == MKTAG('S','D','P','X')) {
+                next = i - 4;
+                break;
+            }
         }
     }
 
