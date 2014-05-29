@@ -3736,6 +3736,10 @@ if enabled asm; then
 m x
 EOF
 
+    check_as <<EOF || $nogas "GNU assembler not found, install gas-preprocessor"
+.altmacro
+EOF
+
     check_as <<EOF && enable as_func
 .func test
 .endfunc
