@@ -545,7 +545,7 @@ static int ogg_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
+static int ogg_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
     OGGStreamContext *oggstream = st->priv_data;
@@ -580,6 +580,23 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     oggstream->last_granule = granule;
 
+    return 0;
+}
+
+static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    int i;
+
+    if (pkt)
+        return ogg_write_packet_internal(s, pkt);
+
+    for (i = 0; i < s->nb_streams; i++) {
+        OGGStreamContext *oggstream = s->streams[i]->priv_data;
+        if (oggstream->page.segments_count)
+            ogg_buffer_page(s, oggstream);
+    }
+
+    ogg_write_pages(s, 2);
     return 0;
 }
 
@@ -623,6 +640,6 @@ AVOutputFormat ff_ogg_muxer = {
     .write_header      = ogg_write_header,
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
-    .flags             = AVFMT_TS_NEGATIVE,
+    .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
     .priv_class        = &ogg_muxer_class,
 };
