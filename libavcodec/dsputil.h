@@ -257,16 +257,6 @@ typedef struct DSPContext {
      */
     int32_t (*scalarproduct_int16)(const int16_t *v1,
                                    const int16_t *v2 /* align 16 */, int len);
-    /* ape functions */
-    /**
-     * Calculate scalar product of v1 and v2,
-     * and v1[i] += v3[i] * mul
-     * @param len length of vectors, should be multiple of 16
-     */
-    int32_t (*scalarproduct_and_madd_int16)(int16_t *v1 /* align 16 */,
-                                            const int16_t *v2,
-                                            const int16_t *v3,
-                                            int len, int mul);
 
     /**
      * Clip each element in an array of int32_t to a given minimum and
