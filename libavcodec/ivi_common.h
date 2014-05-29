@@ -260,6 +260,9 @@ typedef struct IVI45DecContext {
     int             (*is_nonnull_frame)(struct IVI45DecContext *ctx);
 
     int gop_invalid;
+
+    AVFrame         *p_frame;
+    int             got_p_frame;
 } IVI45DecContext;
 
 /** compare some properties of two pictures */
