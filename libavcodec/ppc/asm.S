@@ -36,12 +36,20 @@
 
 .macro extfunc name
     .global X(\name)
+#if _CALL_ELF == 2
+    .text
+X(\name):
+    addis %r2, %r12, .TOC.-X(\name)@ha
+    addi %r2, %r2, .TOC.-X(\name)@l
+    .localentry X(\name), .-X(\name)
+#else
     .section .opd, "aw"
 X(\name):
     .quad L(\name), .TOC.@tocbase, 0
     .previous
     .type X(\name), STT_FUNC
 L(\name):
+#endif
 .endm
 
 .macro movrel rd, sym, gp
