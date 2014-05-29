@@ -57,6 +57,7 @@ static int dpx_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                 state == MKTAG('S','D','P','X')) {
                 d->pc.frame_start_found = 1;
                 d->is_be = state == MKBETAG('S','D','P','X');
+                d->index = 0;
                 break;
             }
         }
@@ -73,27 +74,26 @@ static int dpx_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
     for (;d->pc.frame_start_found && i < buf_size; i++) {
         d->pc.state = (d->pc.state << 8) | buf[i];
-        if (d->index == 16) {
+        d->index++;
+        if (d->index == 17) {
             d->fsize = d->is_be ? d->pc.state : av_bswap32(d->pc.state);
             if (d->fsize <= 1664) {
-                d->index = d->pc.frame_start_found = 0;
+                d->pc.frame_start_found = 0;
                 goto flush;
             }
-            d->index = 0;
             if (d->fsize > buf_size - i + 19)
                 d->remaining_size = d->fsize - buf_size + i - 19;
             else
                 next = d->fsize + i - 19;
             break;
         }
-        d->index++;
     }
 
 flush:
     if (ff_combine_frame(&d->pc, next, &buf, &buf_size) < 0)
         return buf_size;
 
-    d->index = d->pc.frame_start_found = 0;
+    d->pc.frame_start_found = 0;
 
     *poutbuf      = buf;
     *poutbuf_size = buf_size;
