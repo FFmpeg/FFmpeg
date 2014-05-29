@@ -483,8 +483,8 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
         if (!sd_dst) {
             for (i = 0; i < dst->nb_side_data; i++) {
                 av_freep(&dst->side_data[i]->data);
-                av_freep(&dst->side_data[i]);
                 av_dict_free(&dst->side_data[i]->metadata);
+                av_freep(&dst->side_data[i]);
             }
             av_freep(&dst->side_data);
             return AVERROR(ENOMEM);
