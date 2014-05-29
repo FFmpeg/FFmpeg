@@ -1002,8 +1002,15 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
                 AV_ROUND_DOWN);
             int index = av_index_search_timestamp(st, dts_tb,
                                                   AVSEEK_FLAG_BACKWARD);
-            if (index >= 0)
+            if (index >= 0) {
                 sp_pos = FFMIN(sp_pos, st->index_entries[index].pos);
+                if (!nut->write_index && 2*index > st->nb_index_entries) {
+                    memmove(st->index_entries,
+                            st->index_entries + index,
+                            sizeof(*st->index_entries) * (st->nb_index_entries - index));
+                    st->nb_index_entries -=  index;
+                }
+            }
         }
 
         nut->last_syncpoint_pos = avio_tell(bc);
