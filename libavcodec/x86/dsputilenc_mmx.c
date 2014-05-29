@@ -39,6 +39,7 @@ void ff_diff_pixels_sse2(int16_t *block, const uint8_t *s1, const uint8_t *s2,
                          int stride);
 int ff_pix_sum16_mmx(uint8_t *pix, int line_size);
 int ff_pix_sum16_sse2(uint8_t *pix, int line_size);
+int ff_pix_sum16_xop(uint8_t *pix, int line_size);
 int ff_pix_norm1_mmx(uint8_t *pix, int line_size);
 int ff_pix_norm1_sse2(uint8_t *pix, int line_size);
 int ff_sum_abs_dctelem_mmx(int16_t *block);
@@ -923,6 +924,10 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
         c->hadamard8_diff[0] = ff_hadamard8_diff16_ssse3;
         c->hadamard8_diff[1] = ff_hadamard8_diff_ssse3;
 #endif
+    }
+
+    if (EXTERNAL_XOP(cpu_flags)) {
+        c->pix_sum           = ff_pix_sum16_xop;
     }
 
     ff_dsputil_init_pix_mmx(c, avctx);

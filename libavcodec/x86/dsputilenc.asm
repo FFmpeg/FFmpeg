@@ -446,13 +446,24 @@ cglobal diff_pixels, 4, 5, 5
 ; int ff_pix_sum16_mmx(uint8_t *pix, int line_size)
 ; %1 = number of xmm registers used
 ; %2 = number of loops
-%macro PIX_SUM16 2
-cglobal pix_sum16, 2, 3, %1
+; %3 = number of GPRs used
+%macro PIX_SUM16 4
+cglobal pix_sum16, 2, %3, %1
     movsxdifnidn r1, r1d
     mov          r2, %2
+%if cpuflag(xop)
+    lea          r3, [r1*3]
+%else
     pxor         m5, m5
+%endif
     pxor         m4, m4
 .loop:
+%if cpuflag(xop)
+    vphaddubq    m0, [r0]
+    vphaddubq    m1, [r0+r1]
+    vphaddubq    m2, [r0+r1*2]
+    vphaddubq    m3, [r0+r3]
+%else
     mova         m0, [r0]
 %if mmsize == 8
     mova         m1, [r0+8]
@@ -463,6 +474,7 @@ cglobal pix_sum16, 2, 3, %1
     punpcklbw    m0, m5
     punpckhbw    m3, m1, m5
     punpcklbw    m1, m5
+%endif ; cpuflag(xop)
     paddw        m1, m0
     paddw        m3, m2
     paddw        m3, m1
@@ -470,19 +482,26 @@ cglobal pix_sum16, 2, 3, %1
 %if mmsize == 8
     add          r0, r1
 %else
-    lea          r0, [r0+r1*2]
+    lea          r0, [r0+r1*%4]
 %endif
     dec r2
     jne .loop
+%if cpuflag(xop)
+    pshufd       m0, m4, q0032
+    paddd        m4, m0
+%else
     HADDW        m4, m5
+%endif
     movd        eax, m4
     RET
 %endmacro
 
 INIT_MMX mmx
-PIX_SUM16 0, 16
+PIX_SUM16 0, 16, 3, 0
 INIT_XMM sse2
-PIX_SUM16 6, 8
+PIX_SUM16 6, 8,  3, 2
+INIT_XMM xop
+PIX_SUM16 5, 4,  4, 4
 
 ; int ff_pix_norm1_mmx(uint8_t *pix, int line_size)
 ; %1 = number of xmm registers used
