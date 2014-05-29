@@ -189,7 +189,7 @@ cglobal add_hfyu_left_prediction_int16, 4,4,8, dst, src, mask, w, left
 
 ; void add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int mask, int w, int *left, int *left_top)
 INIT_MMX mmxext
-cglobal add_hfyu_median_prediction_int16, 7,7,0, dst, top, diff, mask, w, left, left_top
+cglobal add_hfyu_median_pred_int16, 7,7,0, dst, top, diff, mask, w, left, left_top
     add      wd, wd
     movd    mm6, maskd
     SPLATW  mm6, mm6

@@ -768,7 +768,7 @@ static void add_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *s
     if (s->bps <= 8) {
         s->hdsp.add_hfyu_median_pred(dst, src, diff, w, left, left_top);
     } else {
-        s->llviddsp.add_hfyu_median_prediction_int16((uint16_t *)dst, (const uint16_t *)src, (const uint16_t *)diff, s->n-1, w, left, left_top);
+        s->llviddsp.add_hfyu_median_pred_int16((uint16_t *)dst, (const uint16_t *)src, (const uint16_t *)diff, s->n-1, w, left, left_top);
     }
 }
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
