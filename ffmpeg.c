@@ -1220,7 +1220,7 @@ static void print_final_stats(int64_t total_size)
         data_size  += ost->data_size;
     }
 
-    if (data_size && total_size >= data_size)
+    if (data_size && total_size>0 && total_size >= data_size)
         percent = 100.0 * (total_size - data_size) / data_size;
 
     av_log(NULL, AV_LOG_INFO, "\n");
