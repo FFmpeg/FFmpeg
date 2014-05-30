@@ -22,13 +22,11 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/huffyuvdsp.h"
+#include "huffyuvdsp.h"
 
 void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, intptr_t w);
 void ff_add_bytes_sse2(uint8_t *dst, uint8_t *src, intptr_t w);
 
-void ff_add_hfyu_median_pred_cmov(uint8_t *dst, const uint8_t *top,
-                                  const uint8_t *diff, intptr_t w,
-                                  int *left, int *left_top);
 void ff_add_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
                                     const uint8_t *diff, intptr_t w,
                                     int *left, int *left_top);

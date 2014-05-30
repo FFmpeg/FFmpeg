@@ -24,7 +24,7 @@
 
 #if HAVE_INLINE_ASM && HAVE_7REGS && ARCH_X86_32
 void ff_add_hfyu_median_pred_cmov(uint8_t *dst, const uint8_t *top,
-                                  const uint8_t *diff, int w,
+                                  const uint8_t *diff, intptr_t w,
                                   int *left, int *left_top)
 {
     x86_reg w2 = -w;
