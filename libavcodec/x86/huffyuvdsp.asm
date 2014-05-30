@@ -110,8 +110,10 @@ cglobal add_hfyu_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     RET
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX mmxext
 HFYU_MEDIAN
+%endif
 INIT_XMM sse2
 HFYU_MEDIAN
 
@@ -219,8 +221,10 @@ cglobal add_bytes, 3,4,2, dst, src, w, size
     REP_RET
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX mmx
 ADD_BYTES
+%endif
 INIT_XMM sse2
 ADD_BYTES
 
@@ -257,7 +261,9 @@ cglobal add_hfyu_left_pred_bgr32, 4,4,3, dst, src, w, left
     REP_RET
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX mmx
 LEFT_BGR32
+%endif
 INIT_XMM sse2
 LEFT_BGR32

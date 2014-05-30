@@ -22,7 +22,7 @@
 #include "libavutil/x86/asm.h"
 #include "huffyuvdsp.h"
 
-#if HAVE_INLINE_ASM && HAVE_7REGS
+#if HAVE_INLINE_ASM && HAVE_7REGS && ARCH_X86_32
 void ff_add_hfyu_median_pred_cmov(uint8_t *dst, const uint8_t *top,
                                   const uint8_t *diff, int w,
                                   int *left, int *left_top)
