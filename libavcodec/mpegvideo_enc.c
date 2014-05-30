@@ -46,6 +46,7 @@
 #include "mpegutils.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"
+#include "qpeldsp.h"
 #include "faandct.h"
 #include "thread.h"
 #include "aandcttab.h"
@@ -802,6 +803,8 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     /* init */
     if (ff_MPV_common_init(s) < 0)
         return -1;
+
+    ff_qpeldsp_init(&s->qdsp);
 
     s->avctx->coded_frame = s->current_picture.f;
 
@@ -2090,10 +2093,10 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
 
         if ((!s->no_rounding) || s->pict_type == AV_PICTURE_TYPE_B) {
             op_pix  = s->hdsp.put_pixels_tab;
-            op_qpix = s->dsp.put_qpel_pixels_tab;
+            op_qpix = s->qdsp.put_qpel_pixels_tab;
         } else {
             op_pix  = s->hdsp.put_no_rnd_pixels_tab;
-            op_qpix = s->dsp.put_no_rnd_qpel_pixels_tab;
+            op_qpix = s->qdsp.put_no_rnd_qpel_pixels_tab;
         }
 
         if (s->mv_dir & MV_DIR_FORWARD) {
@@ -2101,7 +2104,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                           s->last_picture.f->data,
                           op_pix, op_qpix);
             op_pix  = s->hdsp.avg_pixels_tab;
-            op_qpix = s->dsp.avg_qpel_pixels_tab;
+            op_qpix = s->qdsp.avg_qpel_pixels_tab;
         }
         if (s->mv_dir & MV_DIR_BACKWARD) {
             ff_MPV_motion(s, dest_y, dest_cb, dest_cr, 1,

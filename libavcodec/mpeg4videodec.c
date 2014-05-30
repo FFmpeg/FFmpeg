@@ -2157,9 +2157,9 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
             s->workaround_bugs |= FF_BUG_DC_CLIP;
 
 #define SET_QPEL_FUNC(postfix1, postfix2)                           \
-    s->dsp.put_        ## postfix1 = ff_put_        ## postfix2;    \
-    s->dsp.put_no_rnd_ ## postfix1 = ff_put_no_rnd_ ## postfix2;    \
-    s->dsp.avg_        ## postfix1 = ff_avg_        ## postfix2;
+    s->qdsp.put_        ## postfix1 = ff_put_        ## postfix2;   \
+    s->qdsp.put_no_rnd_ ## postfix1 = ff_put_no_rnd_ ## postfix2;   \
+    s->qdsp.avg_        ## postfix1 = ff_avg_        ## postfix2;
 
         if (ctx->lavc_build < 4653U)
             s->workaround_bugs |= FF_BUG_STD_QPEL;

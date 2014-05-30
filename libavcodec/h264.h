@@ -39,6 +39,7 @@
 #include "h264qpel.h"
 #include "mpegutils.h"
 #include "parser.h"
+#include "qpeldsp.h"
 #include "rectangle.h"
 #include "videodsp.h"
 

@@ -22,7 +22,7 @@
 #ifndef AVCODEC_H264QPEL_H
 #define AVCODEC_H264QPEL_H
 
-#include "dsputil.h"
+#include "qpeldsp.h"
 
 typedef struct H264QpelContext {
     qpel_mc_func put_h264_qpel_pixels_tab[4][16];

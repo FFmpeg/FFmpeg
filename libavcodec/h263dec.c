@@ -38,6 +38,7 @@
 #include "mpeg4video_parser.h"
 #include "mpegvideo.h"
 #include "msmpeg4.h"
+#include "qpeldsp.h"
 #include "vdpau_internal.h"
 #include "thread.h"
 
@@ -124,6 +125,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
             return ret;
 
     ff_h263dsp_init(&s->h263dsp);
+    ff_qpeldsp_init(&s->qdsp);
     ff_h263_decode_init_vlc();
 
     return 0;
@@ -556,11 +558,11 @@ retry:
     }
 
     if ((!s->no_rounding) || s->pict_type == AV_PICTURE_TYPE_B) {
-        s->me.qpel_put = s->dsp.put_qpel_pixels_tab;
-        s->me.qpel_avg = s->dsp.avg_qpel_pixels_tab;
+        s->me.qpel_put = s->qdsp.put_qpel_pixels_tab;
+        s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
     } else {
-        s->me.qpel_put = s->dsp.put_no_rnd_qpel_pixels_tab;
-        s->me.qpel_avg = s->dsp.avg_qpel_pixels_tab;
+        s->me.qpel_put = s->qdsp.put_no_rnd_qpel_pixels_tab;
+        s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
     }
 
     if ((ret = ff_MPV_frame_start(s, avctx)) < 0)

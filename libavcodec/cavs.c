@@ -30,6 +30,7 @@
 #include "golomb.h"
 #include "h264chroma.h"
 #include "mathops.h"
+#include "qpeldsp.h"
 #include "cavs.h"
 
 static const uint8_t alpha_tab[64] = {

@@ -1,9 +1,5 @@
 /*
- * DSP utils
- * Copyright (c) 2000, 2001 Fabrice Bellard
- * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
- *
- * gmc & q-pel & 32/64 bit based MC by Michael Niedermayer <michaelni@gmx.at>
+ * quarterpel DSP function templates
  *
  * This file is part of FFmpeg.
  *
@@ -24,7 +20,7 @@
 
 /**
  * @file
- * DSP utils
+ * quarterpel DSP function templates
  */
 
 #define PIXOP2(OPNAME, OP)                                              \
