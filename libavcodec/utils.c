@@ -580,6 +580,13 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
     int size;
     AVFrameSideData *frame_sd;
 
+#if FF_API_AVFRAME_COLORSPACE
+    frame->color_primaries = avctx->color_primaries;
+    frame->color_trc       = avctx->color_trc;
+    frame->colorspace      = avctx->colorspace;
+    frame->color_range     = avctx->color_range;
+    frame->chroma_location = avctx->chroma_sample_location;
+#endif
 
     frame->reordered_opaque = avctx->reordered_opaque;
     if (!pkt) {
