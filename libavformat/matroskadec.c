@@ -3018,7 +3018,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
                 tracks[i].stream, st->index_entries[index].timestamp,
                 AVSEEK_FLAG_BACKWARD);
             while (index_sub >= 0 &&
-                  index_min >= 0 &&
+                  index_min > 0 &&
                   tracks[i].stream->index_entries[index_sub].pos < st->index_entries[index_min].pos &&
                   st->index_entries[index].timestamp - tracks[i].stream->index_entries[index_sub].timestamp < 30000000000 / matroska->time_scale)
                 index_min--;
