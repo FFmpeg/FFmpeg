@@ -536,7 +536,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         sc->last_ts = ts;
 
     avio_wb24(pb, size + flags_size);
-    avio_wb24(pb, ts);
+    avio_wb24(pb, ts & 0xFFFFFF);
     avio_w8(pb, (ts >> 24) & 0x7F); // timestamps are 32 bits _signed_
     avio_wb24(pb, flv->reserved);
 
