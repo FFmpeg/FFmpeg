@@ -608,3 +608,80 @@ INIT_XMM sse2
 SUM_ABS_DCTELEM 7, 2
 INIT_XMM ssse3
 SUM_ABS_DCTELEM 6, 2
+
+;------------------------------------------------------------------------------
+; int ff_hf_noise*_mmx(uint8_t *pix1, int lsize, int h)
+;------------------------------------------------------------------------------
+; %1 = 8/16. %2-5=m#
+%macro HF_NOISE_PART1 5
+    mova      m%2, [pix1q]
+%if %1 == 8
+    mova      m%3, m%2
+    psllq     m%2, 8
+    psrlq     m%3, 8
+    psrlq     m%2, 8
+%else
+    mova      m%3, [pix1q+1]
+%endif
+    mova      m%4, m%2
+    mova      m%5, m%3
+    punpcklbw m%2, m7
+    punpcklbw m%3, m7
+    punpckhbw m%4, m7
+    punpckhbw m%5, m7
+    psubw     m%2, m%3
+    psubw     m%4, m%5
+%endmacro
+
+; %1-2 = m#
+%macro HF_NOISE_PART2 4
+    psubw     m%1, m%3
+    psubw     m%2, m%4
+    pxor       m3, m3
+    pxor       m1, m1
+    pcmpgtw    m3, m%1
+    pcmpgtw    m1, m%2
+    pxor      m%1, m3
+    pxor      m%2, m1
+    psubw     m%1, m3
+    psubw     m%2, m1
+    paddw     m%2, m%1
+    paddw      m6, m%2
+%endmacro
+
+; %1 = 8/16
+%macro HF_NOISE 1
+cglobal hf_noise%1, 3,3,0, pix1, lsize, h
+    movsxdifnidn lsizeq, lsized
+    sub        hd, 2
+    pxor       m7, m7
+    pxor       m6, m6
+    HF_NOISE_PART1 %1, 0, 1, 2, 3
+    add     pix1q, lsizeq
+    HF_NOISE_PART1 %1, 4, 1, 5, 3
+    HF_NOISE_PART2     0, 2, 4, 5
+    add     pix1q, lsizeq
+.loop:
+    HF_NOISE_PART1 %1, 0, 1, 2, 3
+    HF_NOISE_PART2     4, 5, 0, 2
+    add     pix1q, lsizeq
+    HF_NOISE_PART1 %1, 4, 1, 5, 3
+    HF_NOISE_PART2     0, 2, 4, 5
+    add     pix1q, lsizeq
+    sub        hd, 2
+        jne .loop
+
+    mova       m0, m6
+    punpcklwd  m0, m7
+    punpckhwd  m6, m7
+    paddd      m6, m0
+    mova       m0, m6
+    psrlq      m6, 32
+    paddd      m0, m6
+    movd      eax, m0   ; eax = result of hf_noise8;
+    REP_RET                 ; return eax;
+%endmacro
+
+INIT_MMX mmx
+HF_NOISE 8
+HF_NOISE 16
