@@ -436,20 +436,6 @@ typedef struct SwsContext {
     vector signed short  *vYCoeffsBank, *vCCoeffsBank;
 #endif
 
-#if ARCH_BFIN
-    DECLARE_ALIGNED(4, uint32_t, oy);
-    DECLARE_ALIGNED(4, uint32_t, oc);
-    DECLARE_ALIGNED(4, uint32_t, zero);
-    DECLARE_ALIGNED(4, uint32_t, cy);
-    DECLARE_ALIGNED(4, uint32_t, crv);
-    DECLARE_ALIGNED(4, uint32_t, rmask);
-    DECLARE_ALIGNED(4, uint32_t, cbu);
-    DECLARE_ALIGNED(4, uint32_t, bmask);
-    DECLARE_ALIGNED(4, uint32_t, cgu);
-    DECLARE_ALIGNED(4, uint32_t, cgv);
-    DECLARE_ALIGNED(4, uint32_t, gmask);
-#endif
-
     /* function pointers for swscale() */
     yuv2planar1_fn yuv2plane1;
     yuv2planarX_fn yuv2planeX;
@@ -568,7 +554,6 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
 
 SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
-SwsFunc ff_yuv2rgb_init_bfin(SwsContext *c);
 
 const char *sws_format_name(enum AVPixelFormat format);
 
@@ -733,7 +718,6 @@ extern const AVClass sws_context_class;
  * source and destination formats, bit depths, flags, etc.
  */
 void ff_get_unscaled_swscale(SwsContext *c);
-void ff_get_unscaled_swscale_bfin(SwsContext *c);
 void ff_get_unscaled_swscale_ppc(SwsContext *c);
 
 /**

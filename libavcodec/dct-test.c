@@ -47,10 +47,6 @@
 #include "x86/idct_xvid.h"
 #include "dctref.h"
 
-// BFIN
-void ff_bfin_idct(int16_t *block);
-void ff_bfin_fdct(int16_t *block);
-
 // ALTIVEC
 void ff_fdct_altivec(int16_t *block);
 
@@ -92,10 +88,6 @@ static const struct algo fdct_tab[] = {
     { "altivecfdct",    ff_fdct_altivec,       NO_PERM,   AV_CPU_FLAG_ALTIVEC },
 #endif
 
-#if ARCH_BFIN
-    { "BFINfdct",       ff_bfin_fdct,          NO_PERM  },
-#endif
-
     { 0 }
 };
 
@@ -114,10 +106,6 @@ static const struct algo idct_tab[] = {
 #endif
 #if HAVE_SSE2_INLINE
     { "XVID-SSE2",      ff_idct_xvid_sse2,     SSE2_PERM, AV_CPU_FLAG_SSE2, 1 },
-#endif
-
-#if ARCH_BFIN
-    { "BFINidct",       ff_bfin_idct,          NO_PERM  },
 #endif
 
 #if ARCH_ARM

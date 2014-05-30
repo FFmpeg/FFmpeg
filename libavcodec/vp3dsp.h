@@ -47,7 +47,6 @@ typedef struct VP3DSPContext {
 
 void ff_vp3dsp_init(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_arm(VP3DSPContext *c, int flags);
-void ff_vp3dsp_init_bfin(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags);
 

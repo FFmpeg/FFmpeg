@@ -52,5 +52,8 @@
 #ifndef FF_API_SWS_CPU_CAPS
 #define FF_API_SWS_CPU_CAPS    (LIBSWSCALE_VERSION_MAJOR < 3)
 #endif
+#ifndef FF_API_ARCH_BFIN
+#define FF_API_ARCH_BFIN       (LIBSWSCALE_VERSION_MAJOR < 3)
+#endif
 
 #endif /* SWSCALE_VERSION_H */
