@@ -120,7 +120,7 @@ static int avi_write_counters(AVFormatContext *s, int riff_id)
         assert(avist->frames_hdr_strm);
         stream = s->streams[n]->codec;
         avio_seek(pb, avist->frames_hdr_strm, SEEK_SET);
-        ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
+        ff_parse_specific_params(s->streams[n], &au_byterate, &au_ssize, &au_scale);
         if (au_ssize == 0)
             avio_wl32(pb, avist->packet_count);
         else
@@ -248,7 +248,7 @@ static int avi_write_header(AVFormatContext *s)
         avio_wl16(pb, 0); /* language */
         avio_wl32(pb, 0); /* initial frame */
 
-        ff_parse_specific_params(enc, &au_byterate, &au_ssize, &au_scale);
+        ff_parse_specific_params(st, &au_byterate, &au_ssize, &au_scale);
 
         avio_wl32(pb, au_scale); /* scale */
         avio_wl32(pb, au_byterate); /* rate */

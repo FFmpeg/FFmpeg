@@ -674,7 +674,7 @@ static int nut_write_header(AVFormatContext *s)
         AVStream *st = s->streams[i];
         int ssize;
         AVRational time_base;
-        ff_parse_specific_params(st->codec, &time_base.den, &ssize,
+        ff_parse_specific_params(st, &time_base.den, &ssize,
                                  &time_base.num);
 
         avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
