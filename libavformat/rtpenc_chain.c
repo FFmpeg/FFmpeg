@@ -98,6 +98,9 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
         return ret;
     }
 
+    /* Copy the RTP AVStream timebase back to the original AVStream */
+    st->time_base = rtpctx->streams[0]->time_base;
+
     *out = rtpctx;
     return 0;
 
