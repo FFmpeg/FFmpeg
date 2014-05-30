@@ -41,7 +41,7 @@ static void add_bytes_c(uint8_t *dst, uint8_t *src, intptr_t w)
 }
 
 static void add_hfyu_median_pred_c(uint8_t *dst, const uint8_t *src1,
-                                   const uint8_t *diff, int w,
+                                   const uint8_t *diff, intptr_t w,
                                    int *left, int *left_top)
 {
     int i;
@@ -60,7 +60,7 @@ static void add_hfyu_median_pred_c(uint8_t *dst, const uint8_t *src1,
     *left_top = lt;
 }
 
-static int add_hfyu_left_pred_c(uint8_t *dst, const uint8_t *src, int w,
+static int add_hfyu_left_pred_c(uint8_t *dst, const uint8_t *src, intptr_t w,
                                 int acc)
 {
     int i;
