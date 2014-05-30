@@ -965,6 +965,8 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR,
                "Negative pts not supported stream %d, pts %"PRId64"\n",
                pkt->stream_index, pkt->pts);
+        if (pkt->pts == AV_NOPTS_VALUE)
+            av_log(s, AV_LOG_ERROR, "Try to enable the genpts flag\n");
         return AVERROR(EINVAL);
     }
 
