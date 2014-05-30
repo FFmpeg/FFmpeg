@@ -39,7 +39,7 @@
 #include "put_bits.h"
 #include "lossless_videodsp.h"
 
-#define VLC_BITS 11
+#define VLC_BITS 12
 
 #define MAX_BITS 16
 #define MAX_N (1<<MAX_BITS)
