@@ -545,6 +545,8 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "need YUV422P10\n");
         return -1;
     }
+    avctx->bits_per_raw_sample = 10;
+
     if (avctx->width & 0x1) {
         av_log(avctx, AV_LOG_ERROR,
                 "frame width needs to be multiple of 2\n");
