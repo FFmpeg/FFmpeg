@@ -757,6 +757,72 @@ const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *pre
     return NULL;
 }
 
+static int opt_size(enum AVOptionType type)
+{
+    switch(type) {
+    case AV_OPT_TYPE_INT:
+    case AV_OPT_TYPE_FLAGS:     return sizeof(int);
+    case AV_OPT_TYPE_INT64:     return sizeof(int64_t);
+    case AV_OPT_TYPE_DOUBLE:    return sizeof(double);
+    case AV_OPT_TYPE_FLOAT:     return sizeof(float);
+    case AV_OPT_TYPE_STRING:    return sizeof(uint8_t*);
+    case AV_OPT_TYPE_RATIONAL:  return sizeof(AVRational);
+    case AV_OPT_TYPE_BINARY:    return sizeof(uint8_t*) + sizeof(int);
+    }
+    return AVERROR(EINVAL);
+}
+
+int av_opt_copy(void *dst, const void *src)
+{
+    const AVOption *o = NULL;
+    const AVClass *c;
+    int ret = 0;
+
+    if (!src)
+        return AVERROR(EINVAL);
+
+    c = *(AVClass**)src;
+    if (!c || c != *(AVClass**)dst)
+        return AVERROR(EINVAL);
+
+    while ((o = av_opt_next(src, o))) {
+        void *field_dst = ((uint8_t*)dst) + o->offset;
+        void *field_src = ((uint8_t*)src) + o->offset;
+        uint8_t **field_dst8 = (uint8_t**)field_dst;
+        uint8_t **field_src8 = (uint8_t**)field_src;
+
+        if (o->type == AV_OPT_TYPE_STRING) {
+            set_string(dst, o, *field_src8, field_dst8);
+            if (*field_src8 && !*field_dst8)
+                ret = AVERROR(ENOMEM);
+        } else if (o->type == AV_OPT_TYPE_BINARY) {
+            int len = *(int*)(field_src8 + 1);
+            if (*field_dst8 != *field_src8)
+                av_freep(field_dst8);
+            if (len) {
+                *field_dst8 = av_malloc(len);
+                if (!*field_dst8) {
+                    ret = AVERROR(ENOMEM);
+                    len = 0;
+                }
+                memcpy(*field_dst8, *field_src8, len);
+            } else {
+                *field_dst8 = NULL;
+            }
+            *(int*)(field_dst8 + 1) = len;
+        } else if (o->type == AV_OPT_TYPE_CONST) {
+            // do nothing
+        } else {
+            int size = opt_size(o->type);
+            if (size < 0)
+                ret = size;
+            else
+                memcpy(field_dst, field_src, size);
+        }
+    }
+    return ret;
+}
+
 #ifdef TEST
 
 typedef struct TestContext

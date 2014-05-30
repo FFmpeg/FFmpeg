@@ -530,6 +530,19 @@ int av_opt_get_q       (void *obj, const char *name, int search_flags, AVRationa
  * be freed with av_dict_free() by the caller
  */
 int av_opt_get_dict_val(void *obj, const char *name, int search_flags, AVDictionary **out_val);
+
+/**
+ * Copy options from src object into dest object.
+ *
+ * Options that require memory allocation (e.g. string or binary) are malloc'ed in dest object.
+ * Original memory allocated for such options is freed unless both src and dest options points to the same memory.
+ *
+ * @param dest Object to copy from
+ * @param src  Object to copy into
+ * @return 0 on success, negative on error
+ */
+int av_opt_copy(void *dest, const void *src);
+
 /**
  * @}
  * @}
