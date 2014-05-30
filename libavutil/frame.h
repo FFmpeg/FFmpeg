@@ -33,6 +33,7 @@
 #include "dict.h"
 #include "rational.h"
 #include "samplefmt.h"
+#include "pixfmt.h"
 #include "version.h"
 
 
@@ -416,6 +417,18 @@ typedef struct AVFrame {
      * Frame flags, a combination of @ref lavu_frame_flags
      */
     int flags;
+
+#if FF_API_AVFRAME_COLORSPACE
+    enum AVColorRange color_range;
+
+    enum AVColorPrimaries color_primaries;
+
+    enum AVColorTransferCharacteristic color_trc;
+
+    enum AVColorSpace colorspace;
+
+    enum AVChromaLocation chroma_location;
+#endif
 } AVFrame;
 
 /**

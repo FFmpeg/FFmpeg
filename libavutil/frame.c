@@ -38,6 +38,13 @@ static void get_frame_defaults(AVFrame *frame)
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
     frame->extended_data       = frame->data;
+#if FF_API_AVFRAME_COLORSPACE
+    frame->color_primaries     = AVCOL_PRI_UNSPECIFIED;
+    frame->color_trc           = AVCOL_TRC_UNSPECIFIED;
+    frame->colorspace          = AVCOL_SPC_UNSPECIFIED;
+    frame->color_range         = AVCOL_RANGE_UNSPECIFIED;
+    frame->chroma_location     = AVCHROMA_LOC_UNSPECIFIED;
+#endif
 }
 
 AVFrame *av_frame_alloc(void)
@@ -373,6 +380,13 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->coded_picture_number   = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
     dst->flags                  = src->flags;
+#if FF_API_AVFRAME_COLORSPACE
+    dst->color_primaries        = src->color_primaries;
+    dst->color_trc              = src->color_trc;
+    dst->colorspace             = src->colorspace;
+    dst->color_range            = src->color_range;
+    dst->chroma_location        = src->chroma_location;
+#endif
 
     memcpy(dst->error, src->error, sizeof(dst->error));
 
