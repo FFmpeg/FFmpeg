@@ -19,7 +19,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/apedsp.h"
+#include "libavcodec/lossless_audiodsp.h"
 
 int32_t ff_scalarproduct_and_madd_int16_mmxext(int16_t *v1, const int16_t *v2,
                                                const int16_t *v3,
@@ -31,7 +31,7 @@ int32_t ff_scalarproduct_and_madd_int16_ssse3(int16_t *v1, const int16_t *v2,
                                               const int16_t *v3,
                                               int order, int mul);
 
-av_cold void ff_apedsp_init_x86(APEDSPContext *c)
+av_cold void ff_llauddsp_init_x86(LLAudDSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 

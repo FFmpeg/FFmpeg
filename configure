@@ -1811,6 +1811,7 @@ CONFIG_EXTRA="
     huffyuvencdsp
     intrax8
     lgplv3
+    llauddsp
     llviddsp
     lpc
     mpegaudio
@@ -2007,7 +2008,7 @@ amrnb_decoder_select="lsp"
 amrwb_decoder_select="lsp"
 amv_decoder_select="sp5x_decoder exif"
 amv_encoder_select="aandcttables"
-ape_decoder_select="dsputil"
+ape_decoder_select="dsputil llauddsp"
 asv1_decoder_select="dsputil"
 asv1_encoder_select="dsputil"
 asv2_decoder_select="dsputil"
