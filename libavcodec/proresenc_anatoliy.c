@@ -145,6 +145,7 @@ static const uint8_t QMAT_CHROMA[4][64] = {
 
 
 typedef struct {
+    DSPContext dsp;
     uint8_t* fill_y;
     uint8_t* fill_u;
     uint8_t* fill_v;
@@ -276,27 +277,29 @@ static void get(uint8_t *pixels, int stride, int16_t* block)
     }
 }
 
-static void fdct_get(uint8_t *pixels, int stride, int16_t* block)
+static void fdct_get(DSPContext *dsp, uint8_t *pixels, int stride, int16_t* block)
 {
     get(pixels, stride, block);
-    ff_jpeg_fdct_islow_10(block);
+    dsp->fdct(block);
 }
 
 static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
         uint8_t *src, int src_stride, uint8_t *buf, unsigned buf_size,
         int *qmat, int chroma)
 {
+    ProresContext* ctx = avctx->priv_data;
+    DSPContext *dsp = &ctx->dsp;
     DECLARE_ALIGNED(16, int16_t, blocks)[DEFAULT_SLICE_MB_WIDTH << 8], *block;
     int i, blocks_per_slice;
     PutBitContext pb;
 
     block = blocks;
     for (i = 0; i < mb_count; i++) {
-        fdct_get(src,                  src_stride, block + (0 << 6));
-        fdct_get(src + 8 * src_stride, src_stride, block + ((2 - chroma) << 6));
+        fdct_get(dsp, src,                  src_stride, block + (0 << 6));
+        fdct_get(dsp, src + 8 * src_stride, src_stride, block + ((2 - chroma) << 6));
         if (!chroma) {
-            fdct_get(src + 16,                  src_stride, block + (1 << 6));
-            fdct_get(src + 16 + 8 * src_stride, src_stride, block + (3 << 6));
+            fdct_get(dsp, src + 16,                  src_stride, block + (1 << 6));
+            fdct_get(dsp, src + 16 + 8 * src_stride, src_stride, block + (3 << 6));
         }
 
         block += (256 >> chroma);
@@ -575,6 +578,8 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
                 avctx->profile);
         return -1;
     }
+
+    ff_dsputil_init(&ctx->dsp, avctx);
 
     avctx->codec_tag = AV_RL32((const uint8_t*)profiles[avctx->profile].name);
 
