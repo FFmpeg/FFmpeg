@@ -1,0 +1,4 @@
+7b20b20734352d33b18b802513f5fc47 *tests/data/fate/vsynth3-rgb.avi
+180248 tests/data/fate/vsynth3-rgb.avi
+693aff10c094f8bd31693f74cf79d2b2 *tests/data/fate/vsynth3-rgb.out.rawvideo
+stddev:    3.67 PSNR: 36.82 MAXDIFF:   43 bytes:    86700/    86700

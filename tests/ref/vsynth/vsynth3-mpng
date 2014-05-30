@@ -1,0 +1,4 @@
+f1a9b596c743645e5518a41e4fe2b043 *tests/data/fate/vsynth3-mpng.avi
+179800 tests/data/fate/vsynth3-mpng.avi
+693aff10c094f8bd31693f74cf79d2b2 *tests/data/fate/vsynth3-mpng.out.rawvideo
+stddev:    3.67 PSNR: 36.82 MAXDIFF:   43 bytes:    86700/    86700
