@@ -265,13 +265,12 @@ static void encode_ac_coeffs(AVCodecContext *avctx, PutBitContext *pb,
 static void get(uint8_t *pixels, int stride, int16_t* block)
 {
     int16_t *p = (int16_t*)pixels;
-    int i, j;
+    int i;
 
     stride >>= 1;
     for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            block[j] = p[j];
-        }
+        AV_WN64(block, AV_RN64(p));
+        AV_WN64(block+4, AV_RN64(p+4));
         p += stride;
         block += 8;
     }
