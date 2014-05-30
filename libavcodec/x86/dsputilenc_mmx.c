@@ -46,6 +46,19 @@ int ff_sum_abs_dctelem_mmx(int16_t *block);
 int ff_sum_abs_dctelem_mmxext(int16_t *block);
 int ff_sum_abs_dctelem_sse2(int16_t *block);
 int ff_sum_abs_dctelem_ssse3(int16_t *block);
+int ff_sse16_sse2(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                  int line_size, int h);
+
+#define hadamard_func(cpu)                                              \
+    int ff_hadamard8_diff_ ## cpu(MpegEncContext *s, uint8_t *src1,     \
+                                  uint8_t *src2, int stride, int h);    \
+    int ff_hadamard8_diff16_ ## cpu(MpegEncContext *s, uint8_t *src1,   \
+                                    uint8_t *src2, int stride, int h);
+
+hadamard_func(mmx)
+hadamard_func(mmxext)
+hadamard_func(sse2)
+hadamard_func(ssse3)
 
 #if HAVE_INLINE_ASM
 
@@ -770,20 +783,6 @@ static int vsad16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 #endif /* HAVE_SSSE3_INLINE */
 
 #endif /* HAVE_INLINE_ASM */
-
-int ff_sse16_sse2(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                  int line_size, int h);
-
-#define hadamard_func(cpu)                                              \
-    int ff_hadamard8_diff_ ## cpu(MpegEncContext *s, uint8_t *src1,     \
-                                  uint8_t *src2, int stride, int h);    \
-    int ff_hadamard8_diff16_ ## cpu(MpegEncContext *s, uint8_t *src1,   \
-                                    uint8_t *src2, int stride, int h);
-
-hadamard_func(mmx)
-hadamard_func(mmxext)
-hadamard_func(sse2)
-hadamard_func(ssse3)
 
 av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                     unsigned high_bit_depth)
