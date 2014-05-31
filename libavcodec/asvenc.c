@@ -181,6 +181,48 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int size, ret;
     int mb_x, mb_y;
 
+    if (pict->width % 16 || pict->height % 16) {
+        AVFrame *clone = av_frame_alloc();
+        int i;
+
+        if (!clone)
+            return AVERROR(ENOMEM);
+        clone->format = pict->format;
+        clone->width  = FFALIGN(pict->width, 16);
+        clone->height = FFALIGN(pict->height, 16);
+        ret = av_frame_get_buffer(clone, 32);
+        if (ret < 0) {
+            av_frame_free(&clone);
+            return ret;
+        }
+
+        ret = av_frame_copy(clone, pict);
+        if (ret < 0) {
+            av_frame_free(&clone);
+            return ret;
+        }
+
+        for (i = 0; i<3; i++) {
+            int x, y;
+            int w  = FF_CEIL_RSHIFT(pict->width, !!i);
+            int h  = FF_CEIL_RSHIFT(pict->height, !!i);
+            int w2 = FF_CEIL_RSHIFT(clone->width, !!i);
+            int h2 = FF_CEIL_RSHIFT(clone->height, !!i);
+            for (y=0; y<h; y++)
+                for (x=w; x<w2; x++)
+                    clone->data[i][x + y*clone->linesize[i]] =
+                        clone->data[i][w - 1 + y*clone->linesize[i]];
+            for (y=h; y<h2; y++)
+                for (x=0; x<w2; x++)
+                    clone->data[i][x + y*clone->linesize[i]] =
+                        clone->data[i][x + (h-1)*clone->linesize[i]];
+        }
+        ret = encode_frame(avctx, pkt, clone, got_packet);
+
+        av_frame_free(&clone);
+        return ret;
+    }
+
     if ((ret = ff_alloc_packet2(avctx, pkt, a->mb_height*a->mb_width*MAX_MB_SIZE +
                                   FF_MIN_BUFFER_SIZE)) < 0)
         return ret;
