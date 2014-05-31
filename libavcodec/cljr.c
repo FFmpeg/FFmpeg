@@ -102,21 +102,6 @@ typedef struct CLJRContext {
     int             dither_type;
 } CLJRContext;
 
-static av_cold int encode_init(AVCodecContext *avctx)
-{
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
-
-static av_cold int encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
-
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *p, int *got_packet)
 {
@@ -132,9 +117,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if ((ret = ff_alloc_packet2(avctx, pkt, 32*avctx->height*avctx->width/4)) < 0)
         return ret;
-
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    avctx->coded_frame->key_frame = 1;
 
     init_put_bits(&pb, pkt->data, pkt->size);
 
@@ -186,9 +168,7 @@ AVCodec ff_cljr_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_CLJR,
     .priv_data_size = sizeof(CLJRContext),
-    .init           = encode_init,
     .encode2        = encode_frame,
-    .close          = encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
                                                    AV_PIX_FMT_NONE },
     .priv_class     = &cljr_class,
