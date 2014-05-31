@@ -104,7 +104,6 @@ float max_error_rate  = 2.0/3;
 static int intra_only         = 0;
 static int file_overwrite     = 0;
 static int no_file_overwrite  = 0;
-static int video_discard      = 0;
 static int intra_dc_precision = 8;
 static int do_psnr            = 0;
 static int input_sync;
@@ -2875,8 +2874,6 @@ const OptionDef options[] = {
         "deprecated use -g 1" },
     { "vn",           OPT_VIDEO | OPT_BOOL  | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,{ .off = OFFSET(video_disable) },
         "disable video" },
-    { "vdt",          OPT_VIDEO | OPT_INT | HAS_ARG | OPT_EXPERT ,               { &video_discard },
-        "discard threshold", "n" },
     { "rc_override",  OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC |
                       OPT_OUTPUT,                                                { .off = OFFSET(rc_overrides) },
         "rate control override for specific intervals", "override" },
