@@ -278,6 +278,23 @@ int ff_amf_read_bool(GetByteContext *gbc, int *val);
 int ff_amf_read_number(GetByteContext *gbc, double *val);
 
 /**
+ * Get AMF string value.
+ *
+ * This function behaves the same as ff_amf_read_string except that
+ * it does not expect the AMF type prepended to the actual data.
+ * Appends a trailing null byte to output string in order to
+ * ease later parsing.
+ *
+ *@param[in,out] gbc     GetByteContext initialized with AMF-formatted data
+ *@param[out]    str     read string
+ *@param[in]     strsize buffer size available to store the read string
+ *@param[out]    length  read string length
+ *@return 0 on success or an AVERROR code on failure
+*/
+int ff_amf_get_string(GetByteContext *bc, uint8_t *str,
+                      int strsize, int *length);
+
+/**
  * Read AMF string value.
  *
  * Appends a trailing null byte to output string in order to
