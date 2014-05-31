@@ -124,11 +124,17 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         uint8_t *luma = &p->data[0][y * p->linesize[0]];
         uint8_t *cb   = &p->data[1][y * p->linesize[1]];
         uint8_t *cr   = &p->data[2][y * p->linesize[2]];
+        uint8_t luma_tmp[4];
         for (x = 0; x < avctx->width; x += 4) {
             switch (a->dither_type) {
             case 0: dither = 0x492A0000;                       break;
             case 1: dither = dither * 1664525 + 1013904223;    break;
             case 2: dither = ordered_dither[ y&1 ][ (x>>2)&1 ];break;
+            }
+            if (x+3 >= avctx->width) {
+                memset(luma_tmp, 0, sizeof(luma_tmp));
+                memcpy(luma_tmp, luma, avctx->width - x);
+                luma = luma_tmp;
             }
             put_bits(&pb, 5, (249*(luma[3] +  (dither>>29)   )) >> 11);
             put_bits(&pb, 5, (249*(luma[2] + ((dither>>26)&7))) >> 11);
