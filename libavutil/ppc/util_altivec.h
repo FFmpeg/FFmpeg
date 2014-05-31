@@ -48,17 +48,6 @@
 #define WORD_s3 0x1c,0x1d,0x1e,0x1f
 
 #define vcprm(a,b,c,d) (const vector unsigned char){WORD_ ## a, WORD_ ## b, WORD_ ## c, WORD_ ## d}
-#define vcii(a,b,c,d) (const vector float){FLOAT_ ## a, FLOAT_ ## b, FLOAT_ ## c, FLOAT_ ## d}
-
-// vcprmle is used to keep the same index as in the SSE version.
-// it's the same as vcprm, with the index inversed
-// ('le' is Little Endian)
-#define vcprmle(a,b,c,d) vcprm(d,c,b,a)
-
-// used to build inverse/identity vectors (vcii)
-// n is _n_egative, p is _p_ositive
-#define FLOAT_n -1.
-#define FLOAT_p 1.
 
 
 // Transpose 8x8 matrix of 16-bit elements (in-place)
@@ -116,6 +105,9 @@ static inline vec_u8 load_with_perm_vec(int offset, uint8_t *src, vec_u8 perm_ve
     vec_u8 b = vec_ld(offset+15, src);
     return vec_perm(a, b, perm_vec);
 }
+
+#define vec_unaligned_load(b)                                   \
+    vec_perm(vec_ld(0, b), vec_ld(15, b), vec_lvsl(0, b));
 
 #endif /* HAVE_ALTIVEC */
 

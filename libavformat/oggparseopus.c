@@ -78,7 +78,7 @@ static int opus_header(AVFormatContext *avf, int idx)
     if (priv->need_comments) {
         if (os->psize < 8 || memcmp(packet, "OpusTags", 8))
             return AVERROR_INVALIDDATA;
-        ff_vorbis_comment(avf, &st->metadata, packet + 8, os->psize - 8);
+        ff_vorbis_comment(avf, &st->metadata, packet + 8, os->psize - 8, 1);
         priv->need_comments--;
         return 1;
     }

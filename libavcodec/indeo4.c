@@ -34,19 +34,6 @@
 #include "ivi_common.h"
 #include "indeo4data.h"
 
-/**
- *  Indeo 4 frame types.
- */
-enum {
-    FRAMETYPE_INTRA       = 0,
-    FRAMETYPE_INTRA1      = 1,  ///< intra frame with slightly different bitstream coding
-    FRAMETYPE_INTER       = 2,  ///< non-droppable P-frame
-    FRAMETYPE_BIDIR       = 3,  ///< bidirectional frame
-    FRAMETYPE_INTER_NOREF = 4,  ///< droppable P-frame
-    FRAMETYPE_NULL_FIRST  = 5,  ///< empty frame with no data
-    FRAMETYPE_NULL_LAST   = 6   ///< empty frame with no data
-};
-
 #define IVI4_PIC_SIZE_ESC   7
 
 
@@ -132,7 +119,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
 #if IVI4_STREAM_ANALYSER
-    if (ctx->frame_type == FRAMETYPE_BIDIR)
+    if (ctx->frame_type == IVI4_FRAMETYPE_BIDIR)
         ctx->has_b_frames = 1;
 #endif
 
@@ -152,7 +139,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     ctx->data_size = get_bits1(&ctx->gb) ? get_bits(&ctx->gb, 24) : 0;
 
     /* null frames don't contain anything else so we just return */
-    if (ctx->frame_type >= FRAMETYPE_NULL_FIRST) {
+    if (ctx->frame_type >= IVI4_FRAMETYPE_NULL_FIRST) {
         av_dlog(avctx, "Null frame encountered!\n");
         return 0;
     }
@@ -329,7 +316,7 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
 
         band->glob_quant = get_bits(&ctx->gb, 5);
 
-        if (!get_bits1(&ctx->gb) || ctx->frame_type == FRAMETYPE_INTRA) {
+        if (!get_bits1(&ctx->gb) || ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
             transform_id = get_bits(&ctx->gb, 5);
             if (transform_id >= FF_ARRAY_ELEMS(transforms) ||
                 !transforms[transform_id].inv_trans) {
@@ -489,7 +476,7 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
     offs   = tile->ypos * band->pitch + tile->xpos;
 
     blks_per_mb  = band->mb_size   != band->blk_size  ? 4 : 1;
-    mb_type_bits = ctx->frame_type == FRAMETYPE_BIDIR ? 2 : 1;
+    mb_type_bits = ctx->frame_type == IVI4_FRAMETYPE_BIDIR ? 2 : 1;
 
     /* scale factor for motion vectors */
     mv_scale = (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3);
@@ -509,7 +496,7 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
             mb->buf_offs = mb_offset;
 
             if (get_bits1(&ctx->gb)) {
-                if (ctx->frame_type == FRAMETYPE_INTRA) {
+                if (ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
                     av_log(avctx, AV_LOG_ERROR, "Empty macroblock in an INTRA picture!\n");
                     return AVERROR_INVALIDDATA;
                 }
@@ -542,8 +529,8 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
                         return AVERROR_INVALIDDATA;
                     }
                     mb->type = ref_mb->type;
-                } else if (ctx->frame_type == FRAMETYPE_INTRA ||
-                           ctx->frame_type == FRAMETYPE_INTRA1) {
+                } else if (ctx->frame_type == IVI4_FRAMETYPE_INTRA ||
+                           ctx->frame_type == IVI4_FRAMETYPE_INTRA1) {
                     mb->type = 0; /* mb_type is always INTRA for intra-frames */
                 } else {
                     mb->type = get_bits(&ctx->gb, mb_type_bits);
@@ -620,29 +607,29 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
 static void switch_buffers(IVI45DecContext *ctx)
 {
     switch (ctx->prev_frame_type) {
-    case FRAMETYPE_INTRA:
-    case FRAMETYPE_INTRA1:
-    case FRAMETYPE_INTER:
+    case IVI4_FRAMETYPE_INTRA:
+    case IVI4_FRAMETYPE_INTRA1:
+    case IVI4_FRAMETYPE_INTER:
         ctx->buf_switch ^= 1;
         ctx->dst_buf     = ctx->buf_switch;
         ctx->ref_buf     = ctx->buf_switch ^ 1;
         break;
-    case FRAMETYPE_INTER_NOREF:
+    case IVI4_FRAMETYPE_INTER_NOREF:
         break;
     }
 
     switch (ctx->frame_type) {
-    case FRAMETYPE_INTRA:
-    case FRAMETYPE_INTRA1:
+    case IVI4_FRAMETYPE_INTRA:
+    case IVI4_FRAMETYPE_INTRA1:
         ctx->buf_switch = 0;
         /* FALLTHROUGH */
-    case FRAMETYPE_INTER:
+    case IVI4_FRAMETYPE_INTER:
         ctx->dst_buf = ctx->buf_switch;
         ctx->ref_buf = ctx->buf_switch ^ 1;
         break;
-    case FRAMETYPE_INTER_NOREF:
-    case FRAMETYPE_NULL_FIRST:
-    case FRAMETYPE_NULL_LAST:
+    case IVI4_FRAMETYPE_INTER_NOREF:
+    case IVI4_FRAMETYPE_NULL_FIRST:
+    case IVI4_FRAMETYPE_NULL_LAST:
         break;
     }
 }
@@ -650,7 +637,7 @@ static void switch_buffers(IVI45DecContext *ctx)
 
 static int is_nonnull_frame(IVI45DecContext *ctx)
 {
-    return ctx->frame_type < FRAMETYPE_NULL_FIRST;
+    return ctx->frame_type < IVI4_FRAMETYPE_NULL_FIRST;
 }
 
 
@@ -675,6 +662,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->decode_mb_info   = decode_mb_info;
     ctx->switch_buffers   = switch_buffers;
     ctx->is_nonnull_frame = is_nonnull_frame;
+
+    ctx->p_frame = av_frame_alloc();
+    if (!ctx->p_frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }

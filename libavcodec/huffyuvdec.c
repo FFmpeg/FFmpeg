@@ -750,7 +750,7 @@ static int left_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src, int
     if (s->bps <= 8) {
         return s->hdsp.add_hfyu_left_pred(dst, src, w, acc);
     } else {
-        return s->llviddsp.add_hfyu_left_prediction_int16((      uint16_t *)dst, (const uint16_t *)src, s->n-1, w, acc);
+        return s->llviddsp.add_hfyu_left_pred_int16((      uint16_t *)dst, (const uint16_t *)src, s->n-1, w, acc);
     }
 }
 
@@ -768,7 +768,7 @@ static void add_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *s
     if (s->bps <= 8) {
         s->hdsp.add_hfyu_median_pred(dst, src, diff, w, left, left_top);
     } else {
-        s->llviddsp.add_hfyu_median_prediction_int16((uint16_t *)dst, (const uint16_t *)src, (const uint16_t *)diff, s->n-1, w, left, left_top);
+        s->llviddsp.add_hfyu_median_pred_int16((uint16_t *)dst, (const uint16_t *)src, (const uint16_t *)diff, s->n-1, w, left, left_top);
     }
 }
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
@@ -1028,19 +1028,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     } else {
         int y;
-        int leftr, leftg, leftb, lefta;
+        uint8_t left[4];
         const int last_line = (height - 1) * p->linesize[0];
 
         if (s->bitstream_bpp == 32) {
-            lefta = p->data[0][last_line+A] = get_bits(&s->gb, 8);
-            leftr = p->data[0][last_line+R] = get_bits(&s->gb, 8);
-            leftg = p->data[0][last_line+G] = get_bits(&s->gb, 8);
-            leftb = p->data[0][last_line+B] = get_bits(&s->gb, 8);
+            left[A] = p->data[0][last_line+A] = get_bits(&s->gb, 8);
+            left[R] = p->data[0][last_line+R] = get_bits(&s->gb, 8);
+            left[G] = p->data[0][last_line+G] = get_bits(&s->gb, 8);
+            left[B] = p->data[0][last_line+B] = get_bits(&s->gb, 8);
         } else {
-            leftr = p->data[0][last_line+R] = get_bits(&s->gb, 8);
-            leftg = p->data[0][last_line+G] = get_bits(&s->gb, 8);
-            leftb = p->data[0][last_line+B] = get_bits(&s->gb, 8);
-            lefta = p->data[0][last_line+A] = 255;
+            left[R] = p->data[0][last_line+R] = get_bits(&s->gb, 8);
+            left[G] = p->data[0][last_line+G] = get_bits(&s->gb, 8);
+            left[B] = p->data[0][last_line+B] = get_bits(&s->gb, 8);
+            left[A] = p->data[0][last_line+A] = 255;
             skip_bits(&s->gb, 8);
         }
 
@@ -1049,14 +1049,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             case LEFT:
             case PLANE:
                 decode_bgr_bitstream(s, width - 1);
-                s->hdsp.add_hfyu_left_pred_bgr32(p->data[0] + last_line + 4, s->temp[0], width - 1, &leftr, &leftg, &leftb, &lefta);
+                s->hdsp.add_hfyu_left_pred_bgr32(p->data[0] + last_line + 4, s->temp[0], width - 1, left);
 
                 for (y = s->height - 2; y >= 0; y--) { //Yes it is stored upside down.
                     decode_bgr_bitstream(s, width);
 
-                    s->hdsp.add_hfyu_left_pred_bgr32(p->data[0] + p->linesize[0] * y, s->temp[0], width, &leftr, &leftg, &leftb, &lefta);
+                    s->hdsp.add_hfyu_left_pred_bgr32(p->data[0] + p->linesize[0] * y, s->temp[0], width, left);
                     if (s->predictor == PLANE) {
-                        if (s->bitstream_bpp != 32) lefta = 0;
+                        if (s->bitstream_bpp != 32) left[A] = 0;
                         if ((y & s->interlaced) == 0 &&
                             y < s->height - 1 - s->interlaced) {
                             s->hdsp.add_bytes(p->data[0] + p->linesize[0] * y,

@@ -30,53 +30,9 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
-
-static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
-                                     int size)
-{
-    int i, size16 = size >> 4;
-    vector signed char vpix1;
-    vector signed short vpix2, vdiff, vpix1l, vpix1h;
-    union {
-        vector signed int vscore;
-        int32_t score[4];
-    } u = { .vscore = vec_splat_s32(0) };
-
-// XXX lazy way, fix it later
-
-#define vec_unaligned_load(b)                                   \
-    vec_perm(vec_ld(0, b), vec_ld(15, b), vec_lvsl(0, b));
-
-    while (size16) {
-        // score += (pix1[i] - pix2[i]) * (pix1[i] - pix2[i]);
-        // load pix1 and the first batch of pix2
-
-        vpix1 = vec_unaligned_load(pix1);
-        vpix2 = vec_unaligned_load(pix2);
-        pix2 += 8;
-        // unpack
-        vpix1h = vec_unpackh(vpix1);
-        vdiff  = vec_sub(vpix1h, vpix2);
-        vpix1l = vec_unpackl(vpix1);
-        // load another batch from pix2
-        vpix2    = vec_unaligned_load(pix2);
-        u.vscore = vec_msum(vdiff, vdiff, u.vscore);
-        vdiff    = vec_sub(vpix1l, vpix2);
-        u.vscore = vec_msum(vdiff, vdiff, u.vscore);
-        pix1    += 16;
-        pix2    += 8;
-        size16--;
-    }
-    u.vscore = vec_sums(u.vscore, vec_splat_s32(0));
-
-    size %= 16;
-    for (i = 0; i < size; i++)
-        u.score[3] += (pix1[i] - pix2[i]) * (pix1[i] - pix2[i]);
-
-    return u.score[3];
-}
 
 static int32_t scalarproduct_int16_altivec(const int16_t *v1, const int16_t *v2,
                                            int order)
@@ -100,51 +56,7 @@ static int32_t scalarproduct_int16_altivec(const int16_t *v1, const int16_t *v2,
     return ires;
 }
 
-static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1,
-                                                    const int16_t *v2,
-                                                    const int16_t *v3,
-                                                    int order, int mul)
-{
-    LOAD_ZERO;
-    vec_s16 *pv1 = (vec_s16 *) v1;
-    register vec_s16 muls = { mul, mul, mul, mul, mul, mul, mul, mul };
-    register vec_s16 t0, t1, i0, i1, i4;
-    register vec_s16 i2 = vec_ld(0, v2), i3 = vec_ld(0, v3);
-    register vec_s32 res = zero_s32v;
-    register vec_u8 align = vec_lvsl(0, v2);
-    int32_t ires;
-
-    order >>= 4;
-    do {
-        i1     = vec_ld(16, v2);
-        t0     = vec_perm(i2, i1, align);
-        i2     = vec_ld(32, v2);
-        t1     = vec_perm(i1, i2, align);
-        i0     = pv1[0];
-        i1     = pv1[1];
-        res    = vec_msum(t0, i0, res);
-        res    = vec_msum(t1, i1, res);
-        i4     = vec_ld(16, v3);
-        t0     = vec_perm(i3, i4, align);
-        i3     = vec_ld(32, v3);
-        t1     = vec_perm(i4, i3, align);
-        pv1[0] = vec_mladd(t0, muls, i0);
-        pv1[1] = vec_mladd(t1, muls, i1);
-        pv1   += 2;
-        v2    += 16;
-        v3    += 16;
-    } while (--order);
-    res = vec_splat(vec_sums(res, zero_s32v), 3);
-    vec_ste(res, 0, &ires);
-
-    return ires;
-}
-
 av_cold void ff_int_init_altivec(DSPContext *c, AVCodecContext *avctx)
 {
-    c->ssd_int8_vs_int16 = ssd_int8_vs_int16_altivec;
-
     c->scalarproduct_int16 = scalarproduct_int16_altivec;
-
-    c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_altivec;
 }

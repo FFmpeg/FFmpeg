@@ -21,10 +21,8 @@
 
 #include <stdint.h>
 
-void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w);
-
 void ff_add_hfyu_median_pred_cmov(uint8_t *dst, const uint8_t *top,
-                                  const uint8_t *diff, int w,
+                                  const uint8_t *diff, intptr_t w,
                                   int *left, int *left_top);
 
 #endif /* AVCODEC_X86_HUFFYUVDSP_H */

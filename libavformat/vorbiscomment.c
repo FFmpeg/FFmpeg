@@ -38,28 +38,26 @@ const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
     { 0 }
 };
 
-int ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string,
-                            unsigned *count)
+int ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string)
 {
     int len = 8;
     len += strlen(vendor_string);
-    *count = 0;
     if (m) {
         AVDictionaryEntry *tag = NULL;
         while ((tag = av_dict_get(m, "", tag, AV_DICT_IGNORE_SUFFIX))) {
             len += 4 +strlen(tag->key) + 1 + strlen(tag->value);
-            (*count)++;
         }
     }
     return len;
 }
 
 int ff_vorbiscomment_write(uint8_t **p, AVDictionary **m,
-                           const char *vendor_string, const unsigned count)
+                           const char *vendor_string)
 {
     bytestream_put_le32(p, strlen(vendor_string));
     bytestream_put_buffer(p, vendor_string, strlen(vendor_string));
     if (*m) {
+        int count = av_dict_count(*m);
         AVDictionaryEntry *tag = NULL;
         bytestream_put_le32(p, count);
         while ((tag = av_dict_get(*m, "", tag, AV_DICT_IGNORE_SUFFIX))) {

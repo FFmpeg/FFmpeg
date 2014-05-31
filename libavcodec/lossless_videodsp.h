@@ -29,9 +29,9 @@ typedef struct LLVidDSPContext {
     void (*add_int16)(uint16_t *dst/*align 16*/, const uint16_t *src/*align 16*/, unsigned mask, int w);
     void (*diff_int16)(uint16_t *dst/*align 16*/, const uint16_t *src1/*align 16*/, const uint16_t *src2/*align 1*/, unsigned mask, int w);
 
-    void (*sub_hfyu_median_prediction_int16)(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top);
-    void (*add_hfyu_median_prediction_int16)(uint16_t *dst, const uint16_t *top, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top);
-    int  (*add_hfyu_left_prediction_int16)(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned left);
+    void (*sub_hfyu_median_pred_int16)(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top);
+    void (*add_hfyu_median_pred_int16)(uint16_t *dst, const uint16_t *top, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top);
+    int  (*add_hfyu_left_pred_int16)(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned left);
 } LLVidDSPContext;
 
 void ff_llviddsp_init(LLVidDSPContext *llviddsp, AVCodecContext *avctx);

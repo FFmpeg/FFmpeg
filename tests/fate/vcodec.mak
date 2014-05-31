@@ -163,7 +163,8 @@ FATE_MPEG4_AVI = mpeg4-rc                                               \
                  mpeg4-qpel                                             \
                  mpeg4-thread                                           \
                  mpeg4-error                                            \
-                 mpeg4-nr
+                 mpeg4-nr                                               \
+                 mpeg4-nsse
 
 FATE_VCODEC-$(call ENCDEC, MPEG4, MP4 MOV) += $(FATE_MPEG4_MP4)
 FATE_VCODEC-$(call ENCDEC, MPEG4, AVI)     += $(FATE_MPEG4_AVI)
@@ -184,6 +185,10 @@ fate-vsynth%-mpeg4-error:        ENCOPTS = -qscale 7 -flags +mv4+aic    \
                                            -ps 250 -error 10
 
 fate-vsynth%-mpeg4-nr:           ENCOPTS = -qscale 8 -flags +mv4 -mbd rd -nr 200
+
+fate-vsynth%-mpeg4-nsse:         ENCOPTS = -qscale 7 -cmp nsse -subcmp nsse \
+                                           -mbcmp nsse -precmp nsse         \
+                                           -skipcmp nsse
 
 fate-vsynth%-mpeg4-qpel:         ENCOPTS = -qscale 7 -flags +mv4+qpel -mbd 2 \
                                            -bf 2 -cmp 1 -subcmp 2

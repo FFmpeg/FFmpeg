@@ -1,6 +1,7 @@
 ;******************************************************************************
 ;* SIMD-optimized HuffYUV functions
 ;* Copyright (c) 2008 Loren Merritt
+;* Copyright (c) 2014 Christophe Gisquet
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -33,64 +34,88 @@ SECTION_TEXT
 ; void ff_add_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
 ;                                     const uint8_t *diff, int w,
 ;                                     int *left, int *left_top)
-INIT_MMX mmxext
-cglobal add_hfyu_median_pred, 6,6,0, dst, top, diff, w, left, left_top
-    movq    mm0, [topq]
-    movq    mm2, mm0
-    movd    mm4, [left_topq]
-    psllq   mm2, 8
-    movq    mm1, mm0
-    por     mm4, mm2
-    movd    mm3, [leftq]
-    psubb   mm0, mm4 ; t-tl
+%macro LSHIFT 2
+%if mmsize > 8
+    pslldq  %1, %2
+%else
+    psllq   %1, 8*(%2)
+%endif
+%endmacro
+
+%macro RSHIFT 2
+%if mmsize > 8
+    psrldq  %1, %2
+%else
+    psrlq   %1, 8*(%2)
+%endif
+%endmacro
+
+%macro HFYU_MEDIAN 0
+cglobal add_hfyu_median_pred, 6,6,8, dst, top, diff, w, left, left_top
+    movu    m0, [topq]
+    mova    m2, m0
+    movd    m4, [left_topq]
+    LSHIFT  m2, 1
+    mova    m1, m0
+    por     m4, m2
+    movd    m3, [leftq]
+    psubb   m0, m4 ; t-tl
     add    dstq, wq
     add    topq, wq
     add   diffq, wq
     neg      wq
     jmp .skip
 .loop:
-    movq    mm4, [topq+wq]
-    movq    mm0, mm4
-    psllq   mm4, 8
-    por     mm4, mm1
-    movq    mm1, mm0 ; t
-    psubb   mm0, mm4 ; t-tl
+    movu    m4, [topq+wq]
+    mova    m0, m4
+    LSHIFT  m4, 1
+    por     m4, m1
+    mova    m1, m0 ; t
+    psubb   m0, m4 ; t-tl
 .skip:
-    movq    mm2, [diffq+wq]
+    movu    m2, [diffq+wq]
 %assign i 0
-%rep 8
-    movq    mm4, mm0
-    paddb   mm4, mm3 ; t-tl+l
-    movq    mm5, mm3
-    pmaxub  mm3, mm1
-    pminub  mm5, mm1
-    pminub  mm3, mm4
-    pmaxub  mm3, mm5 ; median
-    paddb   mm3, mm2 ; +residual
+%rep mmsize
+    mova    m4, m0
+    paddb   m4, m3 ; t-tl+l
+    mova    m5, m3
+    pmaxub  m3, m1
+    pminub  m5, m1
+    pminub  m3, m4
+    pmaxub  m3, m5 ; median
+    paddb   m3, m2 ; +residual
 %if i==0
-    movq    mm7, mm3
-    psllq   mm7, 56
+    mova    m7, m3
+    LSHIFT  m7, mmsize-1
 %else
-    movq    mm6, mm3
-    psrlq   mm7, 8
-    psllq   mm6, 56
-    por     mm7, mm6
+    mova    m6, m3
+    RSHIFT  m7, 1
+    LSHIFT  m6, mmsize-1
+    por     m7, m6
 %endif
-%if i<7
-    psrlq   mm0, 8
-    psrlq   mm1, 8
-    psrlq   mm2, 8
+%if i<mmsize-1
+    RSHIFT  m0, 1
+    RSHIFT  m1, 1
+    RSHIFT  m2, 1
 %endif
 %assign i i+1
 %endrep
-    movq [dstq+wq], mm7
-    add      wq, 8
+    movu [dstq+wq], m7
+    add      wq, mmsize
     jl .loop
     movzx   r2d, byte [dstq-1]
     mov [leftq], r2d
     movzx   r2d, byte [topq-1]
     mov [left_topq], r2d
     RET
+%endmacro
+
+%if ARCH_X86_32
+INIT_MMX mmxext
+HFYU_MEDIAN
+%endif
+INIT_XMM sse2
+HFYU_MEDIAN
 
 
 %macro ADD_HFYU_LEFT_LOOP 2 ; %1 = dst_is_aligned, %2 = src_is_aligned
@@ -163,3 +188,82 @@ cglobal add_hfyu_left_pred, 3,3,7, dst, src, w, left
     ADD_HFYU_LEFT_LOOP 0, 1
 .src_unaligned:
     ADD_HFYU_LEFT_LOOP 0, 0
+
+%macro ADD_BYTES 0
+cglobal add_bytes, 3,4,2, dst, src, w, size
+    mov  sizeq, wq
+    and  sizeq, -2*mmsize
+    jz  .2
+    add   dstq, sizeq
+    add   srcq, sizeq
+    neg  sizeq
+.1:
+    mova    m0, [srcq + sizeq]
+    mova    m1, [srcq + sizeq + mmsize]
+    paddb   m0, [dstq + sizeq]
+    paddb   m1, [dstq + sizeq + mmsize]
+    mova   [dstq + sizeq], m0
+    mova   [dstq + sizeq + mmsize], m1
+    add  sizeq, 2*mmsize
+    jl .1
+.2:
+    and     wq, 2*mmsize-1
+    jz    .end
+    add   dstq, wq
+    add   srcq, wq
+    neg     wq
+.3
+    mov  sizeb, [srcq + wq]
+    add [dstq + wq], sizeb
+    inc     wq
+    jl .3
+.end:
+    REP_RET
+%endmacro
+
+%if ARCH_X86_32
+INIT_MMX mmx
+ADD_BYTES
+%endif
+INIT_XMM sse2
+ADD_BYTES
+
+; void add_hfyu_left_pred_bgr32(uint8_t *dst, const uint8_t *src,
+;                               intptr_t w, uint8_t *left)
+%macro LEFT_BGR32 0
+cglobal add_hfyu_left_pred_bgr32, 4,4,3, dst, src, w, left
+    shl           wq, 2
+    movd          m0, [leftq]
+    lea         dstq, [dstq + wq]
+    lea         srcq, [srcq + wq]
+    LSHIFT        m0, mmsize-4
+    neg           wq
+.loop:
+    movu          m1, [srcq+wq]
+    mova          m2, m1
+%if mmsize == 8
+    punpckhdq     m0, m0
+%endif
+    LSHIFT        m1, 4
+    paddb         m1, m2
+%if mmsize == 16
+    pshufd        m0, m0, q3333
+    mova          m2, m1
+    LSHIFT        m1, 8
+    paddb         m1, m2
+%endif
+    paddb         m0, m1
+    movu   [dstq+wq], m0
+    add           wq, mmsize
+    jl         .loop
+    movd          m0, [dstq-4]
+    movd     [leftq], m0
+    REP_RET
+%endmacro
+
+%if ARCH_X86_32
+INIT_MMX mmx
+LEFT_BGR32
+%endif
+INIT_XMM sse2
+LEFT_BGR32

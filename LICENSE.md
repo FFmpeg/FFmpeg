@@ -1,4 +1,4 @@
-FFmpeg:
+#FFmpeg:
 
 Most files in FFmpeg are under the GNU Lesser General Public License version 2.1
 or later (LGPL v2.1+). Read the file COPYING.LGPLv2.1 for details. Some other
@@ -10,7 +10,7 @@ version 2 or later (GPL v2+). See the file COPYING.GPLv2 for details. None of
 these parts are used by default, you have to explicitly pass --enable-gpl to
 configure to activate them. In this case, FFmpeg's license changes to GPL v2+.
 
-Specifically, the GPL parts of FFmpeg are
+Specifically, the GPL parts of FFmpeg are:
 
 - libpostproc
 - libmpcodecs

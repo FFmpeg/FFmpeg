@@ -179,10 +179,7 @@ static int request_frame(AVFilterLink *outlink)
     /* flush the lavr delay buffer */
     if (ret == AVERROR_EOF && s->avr) {
         AVFrame *frame;
-        int nb_samples = av_rescale_rnd(avresample_get_delay(s->avr),
-                                        outlink->sample_rate,
-                                        ctx->inputs[0]->sample_rate,
-                                        AV_ROUND_UP);
+        int nb_samples = avresample_get_out_samples(s->avr, 0);
 
         if (!nb_samples)
             return ret;
@@ -218,9 +215,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         /* maximum possible samples lavr can output */
         delay      = avresample_get_delay(s->avr);
-        nb_samples = av_rescale_rnd(in->nb_samples + delay,
-                                    outlink->sample_rate, inlink->sample_rate,
-                                    AV_ROUND_UP);
+        nb_samples = avresample_get_out_samples(s->avr, in->nb_samples);
 
         out = ff_get_audio_buffer(outlink, nb_samples);
         if (!out) {

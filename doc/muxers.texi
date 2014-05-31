@@ -706,6 +706,25 @@ Alternatively you can write the command as:
 ffmpeg -benchmark -i INPUT -f null -
 @end example
 
+@section nut
+
+@table @option
+@item -syncpoints @var{flags}
+Change the syncpoint usage in nut:
+@table @option
+@item @var{default} use the normal low-overhead seeking aids.
+@item @var{none} do not use the syncpoints at all, reducing the overhead but making the stream non-seekable;
+@item @var{timestamped} extend the syncpoint with a wallclock field.
+@end table
+The @var{none} and @var{timestamped} flags are experimental.
+@item -write_index @var{bool}
+Write index at the end, the default is to write an index.
+@end table
+
+@example
+ffmpeg -i INPUT -f_strict experimental -syncpoints none - | processor
+@end example
+
 @section ogg
 
 Ogg container muxer.

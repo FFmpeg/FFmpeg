@@ -23,7 +23,9 @@
 #define AVCODEC_CAVSDSP_H
 
 #include <stdint.h>
-#include "dsputil.h"
+
+#include "avcodec.h"
+#include "qpeldsp.h"
 
 typedef struct CAVSDSPContext {
     qpel_mc_func put_cavs_qpel_pixels_tab[2][16];

@@ -32,16 +32,7 @@
 
 #include "avcodec.h"
 
-/* encoding scans */
-extern const uint8_t ff_alternate_horizontal_scan[64];
-extern const uint8_t ff_alternate_vertical_scan[64];
-
 extern uint32_t ff_square_tab[512];
-
-void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 
 void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r,
@@ -64,32 +55,8 @@ void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
  * Block sizes for op_pixels_func are 8x4,8x8 16x8 16x16.
  * h for op_pixels_func is limited to { width / 2, width },
  * but never larger than 16 and never smaller than 4. */
-typedef void (*qpel_mc_func)(uint8_t *dst /* align width (8 or 16) */,
-                             uint8_t *src /* align 1 */, ptrdiff_t stride);
-
 typedef void (*op_fill_func)(uint8_t *block /* align width (8 or 16) */,
                              uint8_t value, int line_size, int h);
-
-#define DEF_OLD_QPEL(name)                                                     \
-    void ff_put_        ## name(uint8_t *dst /* align width (8 or 16) */,      \
-                                uint8_t *src /* align 1 */, ptrdiff_t stride); \
-    void ff_put_no_rnd_ ## name(uint8_t *dst /* align width (8 or 16) */,      \
-                                uint8_t *src /* align 1 */, ptrdiff_t stride); \
-    void ff_avg_        ## name(uint8_t *dst /* align width (8 or 16) */,      \
-                                uint8_t *src /* align 1 */, ptrdiff_t stride);
-
-DEF_OLD_QPEL(qpel16_mc11_old_c)
-DEF_OLD_QPEL(qpel16_mc31_old_c)
-DEF_OLD_QPEL(qpel16_mc12_old_c)
-DEF_OLD_QPEL(qpel16_mc32_old_c)
-DEF_OLD_QPEL(qpel16_mc13_old_c)
-DEF_OLD_QPEL(qpel16_mc33_old_c)
-DEF_OLD_QPEL(qpel8_mc11_old_c)
-DEF_OLD_QPEL(qpel8_mc31_old_c)
-DEF_OLD_QPEL(qpel8_mc12_old_c)
-DEF_OLD_QPEL(qpel8_mc32_old_c)
-DEF_OLD_QPEL(qpel8_mc13_old_c)
-DEF_OLD_QPEL(qpel8_mc33_old_c)
 
 struct MpegEncContext;
 /* Motion estimation:
@@ -136,7 +103,6 @@ typedef struct DSPContext {
     void (*add_pixels_clamped)(const int16_t *block /* align 16 */,
                                uint8_t *pixels /* align 8 */,
                                int line_size);
-    void (*add_pixels8)(uint8_t *pixels, int16_t *block, int line_size);
     int (*sum_abs_dctelem)(int16_t *block /* align 16 */);
     /**
      * translational global motion compensation.
@@ -176,14 +142,6 @@ typedef struct DSPContext {
     me_cmp_func mb_cmp[6];
     me_cmp_func ildct_cmp[6]; // only width 16 used
     me_cmp_func frame_skip_cmp[6]; // only width 8 used
-
-    int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
-                             int size);
-
-    qpel_mc_func put_qpel_pixels_tab[2][16];
-    qpel_mc_func avg_qpel_pixels_tab[2][16];
-    qpel_mc_func put_no_rnd_qpel_pixels_tab[2][16];
-    qpel_mc_func put_mspel_pixels_tab[8];
 
     me_cmp_func pix_abs[2][4];
 
@@ -261,16 +219,6 @@ typedef struct DSPContext {
      */
     int32_t (*scalarproduct_int16)(const int16_t *v1,
                                    const int16_t *v2 /* align 16 */, int len);
-    /* ape functions */
-    /**
-     * Calculate scalar product of v1 and v2,
-     * and v1[i] += v3[i] * mul
-     * @param len length of vectors, should be multiple of 16
-     */
-    int32_t (*scalarproduct_and_madd_int16)(int16_t *v1 /* align 16 */,
-                                            const int16_t *v2,
-                                            const int16_t *v3,
-                                            int len, int mul);
 
     /**
      * Clip each element in an array of int32_t to a given minimum and

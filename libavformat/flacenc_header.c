@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
+
 #include "libavcodec/flac.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
@@ -43,5 +45,19 @@ int ff_flac_write_header(AVIOContext *pb, AVCodecContext *codec,
     /* write STREAMINFO */
     avio_write(pb, streaminfo, FLAC_STREAMINFO_SIZE);
 
+    return 0;
+}
+
+int ff_flac_is_native_layout(uint64_t channel_layout)
+{
+    if (channel_layout == AV_CH_LAYOUT_MONO     ||
+        channel_layout == AV_CH_LAYOUT_STEREO   ||
+        channel_layout == AV_CH_LAYOUT_SURROUND ||
+        channel_layout == AV_CH_LAYOUT_QUAD     ||
+        channel_layout == AV_CH_LAYOUT_5POINT0  ||
+        channel_layout == AV_CH_LAYOUT_5POINT1  ||
+        channel_layout == AV_CH_LAYOUT_6POINT1  ||
+        channel_layout == AV_CH_LAYOUT_7POINT1)
+        return 1;
     return 0;
 }

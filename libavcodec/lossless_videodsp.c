@@ -60,7 +60,7 @@ static void diff_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *sr
         dst[i] = (src1[i] - src2[i]) & mask;
 }
 
-static void add_hfyu_median_prediction_int16_c(uint16_t *dst, const uint16_t *src, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top){
+static void add_hfyu_median_pred_int16_c(uint16_t *dst, const uint16_t *src, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top){
     int i;
     uint16_t l, lt;
 
@@ -77,7 +77,7 @@ static void add_hfyu_median_prediction_int16_c(uint16_t *dst, const uint16_t *sr
     *left_top = lt;
 }
 
-static void sub_hfyu_median_prediction_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top){
+static void sub_hfyu_median_pred_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top){
     int i;
     uint16_t l, lt;
 
@@ -95,7 +95,7 @@ static void sub_hfyu_median_prediction_int16_c(uint16_t *dst, const uint16_t *sr
     *left_top = lt;
 }
 
-static int add_hfyu_left_prediction_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc){
+static int add_hfyu_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc){
     int i;
 
     for(i=0; i<w-1; i++){
@@ -119,9 +119,9 @@ void ff_llviddsp_init(LLVidDSPContext *c, AVCodecContext *avctx)
 {
     c->add_int16 = add_int16_c;
     c->diff_int16= diff_int16_c;
-    c->add_hfyu_left_prediction_int16   = add_hfyu_left_prediction_int16_c;
-    c->add_hfyu_median_prediction_int16 = add_hfyu_median_prediction_int16_c;
-    c->sub_hfyu_median_prediction_int16 = sub_hfyu_median_prediction_int16_c;
+    c->add_hfyu_left_pred_int16   = add_hfyu_left_pred_int16_c;
+    c->add_hfyu_median_pred_int16 = add_hfyu_median_pred_int16_c;
+    c->sub_hfyu_median_pred_int16 = sub_hfyu_median_pred_int16_c;
 
     if (ARCH_X86)
         ff_llviddsp_init_x86(c, avctx);

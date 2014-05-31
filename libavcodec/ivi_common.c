@@ -997,6 +997,18 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (ctx->gop_invalid)
         return AVERROR_INVALIDDATA;
 
+    if (avctx->codec_id == AV_CODEC_ID_INDEO4 &&
+        ctx->frame_type == IVI4_FRAMETYPE_NULL_LAST) {
+        if (ctx->got_p_frame) {
+            av_frame_move_ref(data, ctx->p_frame);
+            *got_frame = 1;
+            ctx->got_p_frame = 0;
+        } else {
+            *got_frame = 0;
+        }
+        return buf_size;
+    }
+
     if (ctx->gop_flags & IVI5_IS_PROTECTED) {
         avpriv_report_missing_feature(avctx, "Password-protected clip!\n");
         return AVERROR_PATCHWELCOME;
@@ -1038,24 +1050,6 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     //STOP_TIMER("decode_planes"); }
 
-    /* If the bidirectional mode is enabled, next I and the following P
-     * frame will be sent together. Unfortunately the approach below seems
-     * to be the only way to handle the B-frames mode.
-     * That's exactly the same Intel decoders do.
-     */
-    if (avctx->codec_id == AV_CODEC_ID_INDEO4 &&
-        ctx->frame_type == 0/*FRAMETYPE_INTRA*/) {
-            // skip version string
-        while (get_bits(&ctx->gb, 8)) {
-            if (get_bits_left(&ctx->gb) < 8)
-                return AVERROR_INVALIDDATA;
-        }
-
-        skip_bits_long(&ctx->gb, 64);  // skip padding, TODO: implement correct 8-bytes alignment
-        if (get_bits_left(&ctx->gb) > 18 && show_bits(&ctx->gb, 18) == 0x3FFF8)
-            av_log(avctx, AV_LOG_ERROR, "Buffer contains IP frames!\n");
-    }
-
     if (!ctx->is_nonnull_frame(ctx))
         return buf_size;
 
@@ -1079,6 +1073,31 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     ivi_output_plane(&ctx->planes[1], frame->data[2], frame->linesize[2]);
 
     *got_frame = 1;
+
+    /* If the bidirectional mode is enabled, next I and the following P
+     * frame will be sent together. Unfortunately the approach below seems
+     * to be the only way to handle the B-frames mode.
+     * That's exactly the same Intel decoders do.
+     */
+    if (avctx->codec_id == AV_CODEC_ID_INDEO4 &&
+        ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
+        int left;
+
+            // skip version string
+        while (get_bits(&ctx->gb, 8)) {
+            if (get_bits_left(&ctx->gb) < 8)
+                return AVERROR_INVALIDDATA;
+        }
+        left = get_bits_count(&ctx->gb) & 0x18;
+        skip_bits_long(&ctx->gb, 64 - left);
+        if (get_bits_left(&ctx->gb) > 18 &&
+            show_bits_long(&ctx->gb, 21) == 0xBFFF8) { // syncheader + inter type
+            AVPacket pkt;
+            pkt.data = avpkt->data + (get_bits_count(&ctx->gb) >> 3);
+            pkt.size = get_bits_left(&ctx->gb) >> 3;
+            ff_ivi_decode_frame(avctx, ctx->p_frame, &ctx->got_p_frame, &pkt);
+        }
+    }
 
     return buf_size;
 }
@@ -1111,6 +1130,8 @@ av_cold int ff_ivi_decode_close(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "This video uses fullpel motion vectors!\n");
     }
 #endif
+
+    av_frame_free(&ctx->p_frame);
 
     return 0;
 }

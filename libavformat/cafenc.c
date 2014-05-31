@@ -51,7 +51,7 @@ static uint32_t codec_flags(enum AVCodecID codec_id) {
     }
 }
 
-static uint32_t samples_per_packet(enum AVCodecID codec_id, int channels) {
+static uint32_t samples_per_packet(enum AVCodecID codec_id, int channels, int block_align) {
     switch (codec_id) {
     case AV_CODEC_ID_PCM_S8:
     case AV_CODEC_ID_PCM_S16LE:
@@ -91,9 +91,9 @@ static uint32_t samples_per_packet(enum AVCodecID codec_id, int channels) {
     case AV_CODEC_ID_ALAC:
         return 4096;
     case AV_CODEC_ID_ADPCM_IMA_WAV:
-        return (1024 - 4 * channels) * 8 / (4 * channels) + 1;
+        return (block_align - 4 * channels) * 8 / (4 * channels) + 1;
     case AV_CODEC_ID_ADPCM_MS:
-        return (1024 - 7 * channels) * 2 / channels + 2;
+        return (block_align - 7 * channels) * 2 / channels + 2;
     default:
         return 0;
     }
@@ -146,7 +146,7 @@ static int caf_write_header(AVFormatContext *s)
     }
 
     if (enc->codec_id != AV_CODEC_ID_MP3 || frame_size != 576)
-        frame_size = samples_per_packet(enc->codec_id, enc->channels);
+        frame_size = samples_per_packet(enc->codec_id, enc->channels, enc->block_align);
 
     ffio_wfourcc(pb, "caff"); //< mFileType
     avio_wb16(pb, 1);         //< mFileVersion
@@ -259,7 +259,7 @@ static int caf_write_trailer(AVFormatContext *s)
             ffio_wfourcc(pb, "pakt");
             avio_wb64(pb, caf->size_entries_used + 24);
             avio_wb64(pb, caf->packets); ///< mNumberPackets
-            avio_wb64(pb, caf->packets * samples_per_packet(enc->codec_id, enc->channels)); ///< mNumberValidFrames
+            avio_wb64(pb, caf->packets * samples_per_packet(enc->codec_id, enc->channels, enc->block_align)); ///< mNumberValidFrames
             avio_wb32(pb, 0); ///< mPrimingFrames
             avio_wb32(pb, 0); ///< mRemainderFrames
             avio_write(pb, caf->pkt_sizes, caf->size_entries_used);

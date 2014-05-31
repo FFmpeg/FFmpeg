@@ -24,6 +24,7 @@
 
 #include "dsputil.h"
 #include "hpeldsp.h"
+#include "qpeldsp.h"
 #include "snow_dwt.h"
 
 #include "rangecoder.h"
@@ -111,6 +112,7 @@ typedef struct SnowContext{
     RangeCoder c;
     DSPContext dsp;
     HpelDSPContext hdsp;
+    QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H264QpelContext h264qpel;
     SnowDWTContext dwt;

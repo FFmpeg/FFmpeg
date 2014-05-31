@@ -48,6 +48,7 @@
 #include "libavutil/mathematics.h"
 
 #include "libavcodec/bytestream.h"
+#include "libavcodec/flac.h"
 #include "libavcodec/mpeg4audio.h"
 
 #include "avformat.h"
@@ -55,6 +56,7 @@
 #include "internal.h"
 #include "isom.h"
 #include "matroska.h"
+#include "oggdec.h"
 /* For ff_codec_get_id(). */
 #include "riff.h"
 #include "rmsipr.h"
@@ -1570,78 +1572,69 @@ static void matroska_metadata_creation_time(AVDictionary **metadata, int64_t dat
     av_dict_set(metadata, "creation_time", buffer, 0);
 }
 
-static int matroska_read_header(AVFormatContext *s)
+static int matroska_parse_flac(AVFormatContext *s,
+                               MatroskaTrack *track,
+                               int *offset)
+{
+    AVStream *st = track->stream;
+    uint8_t *p = track->codec_priv.data;
+    int size   = track->codec_priv.size;
+
+    if (size < 8 + FLAC_STREAMINFO_SIZE || p[4] & 0x7f) {
+        av_log(s, AV_LOG_WARNING, "Invalid FLAC private data\n");
+        track->codec_priv.size = 0;
+        return 0;
+    }
+    *offset = 8;
+    track->codec_priv.size = 8 + FLAC_STREAMINFO_SIZE;
+
+    p    += track->codec_priv.size;
+    size -= track->codec_priv.size;
+
+    /* parse the remaining metadata blocks if present */
+    while (size >= 4) {
+        int block_last, block_type, block_size;
+
+        flac_parse_block_header(p, &block_last, &block_type, &block_size);
+
+        p    += 4;
+        size -= 4;
+        if (block_size > size)
+            return 0;
+
+        /* check for the channel mask */
+        if (block_type == FLAC_METADATA_TYPE_VORBIS_COMMENT) {
+            AVDictionary *dict = NULL;
+            AVDictionaryEntry *chmask;
+
+            ff_vorbis_comment(s, &dict, p, block_size, 0);
+            chmask = av_dict_get(dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", NULL, 0);
+            if (chmask) {
+                uint64_t mask = strtol(chmask->value, NULL, 0);
+                if (!mask || mask & ~0x3ffffULL) {
+                    av_log(s, AV_LOG_WARNING,
+                           "Invalid value of WAVEFORMATEXTENSIBLE_CHANNEL_MASK\n");
+                } else
+                    st->codec->channel_layout = mask;
+            }
+            av_dict_free(&dict);
+        }
+
+        p    += block_size;
+        size -= block_size;
+    }
+
+    return 0;
+}
+
+static int matroska_parse_tracks(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    EbmlList *attachments_list = &matroska->attachments;
-    EbmlList *chapters_list    = &matroska->chapters;
-    MatroskaAttachment *attachments;
-    MatroskaChapter *chapters;
-    MatroskaTrack *tracks;
-    uint64_t max_start = 0;
-    int64_t pos;
-    Ebml ebml = { 0 };
+    MatroskaTrack *tracks = matroska->tracks.elem;
     AVStream *st;
-    int i, j, k, res;
+    int i, j, ret;
+    int k;
 
-    matroska->ctx = s;
-
-    /* First read the EBML header. */
-    if (ebml_parse(matroska, ebml_syntax, &ebml) ||
-        ebml.version         > EBML_VERSION      ||
-        ebml.max_size        > sizeof(uint64_t)  ||
-        ebml.id_length       > sizeof(uint32_t)  ||
-        ebml.doctype_version > 3                 ||
-        !ebml.doctype) {
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "EBML header using unsupported features\n"
-               "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
-               ebml.version, ebml.doctype, ebml.doctype_version);
-        ebml_free(ebml_syntax, &ebml);
-        return AVERROR_PATCHWELCOME;
-    } else if (ebml.doctype_version == 3) {
-        av_log(matroska->ctx, AV_LOG_WARNING,
-               "EBML header using unsupported features\n"
-               "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
-               ebml.version, ebml.doctype, ebml.doctype_version);
-    }
-    for (i = 0; i < FF_ARRAY_ELEMS(matroska_doctypes); i++)
-        if (!strcmp(ebml.doctype, matroska_doctypes[i]))
-            break;
-    if (i >= FF_ARRAY_ELEMS(matroska_doctypes)) {
-        av_log(s, AV_LOG_WARNING, "Unknown EBML doctype '%s'\n", ebml.doctype);
-        if (matroska->ctx->error_recognition & AV_EF_EXPLODE) {
-            ebml_free(ebml_syntax, &ebml);
-            return AVERROR_INVALIDDATA;
-        }
-    }
-    ebml_free(ebml_syntax, &ebml);
-
-    /* The next thing is a segment. */
-    pos = avio_tell(matroska->ctx->pb);
-    res = ebml_parse(matroska, matroska_segments, matroska);
-    // try resyncing until we find a EBML_STOP type element.
-    while (res != 1) {
-        res = matroska_resync(matroska, pos);
-        if (res < 0)
-            return res;
-        pos = avio_tell(matroska->ctx->pb);
-        res = ebml_parse(matroska, matroska_segment, matroska);
-    }
-    matroska_execute_seekhead(matroska);
-
-    if (!matroska->time_scale)
-        matroska->time_scale = 1000000;
-    if (matroska->duration)
-        matroska->ctx->duration = matroska->duration * matroska->time_scale *
-                                  1000 / AV_TIME_BASE;
-    av_dict_set(&s->metadata, "title", matroska->title, 0);
-    av_dict_set(&s->metadata, "encoder", matroska->muxingapp, 0);
-
-    if (matroska->date_utc.size == 8)
-        matroska_metadata_creation_time(&s->metadata, AV_RB64(matroska->date_utc.data));
-
-    tracks = matroska->tracks.elem;
     for (i = 0; i < matroska->tracks.nb_elem; i++) {
         MatroskaTrack *track = &tracks[i];
         enum AVCodecID codec_id = AV_CODEC_ID_NONE;
@@ -1918,6 +1911,10 @@ static int matroska_read_header(AVFormatContext *s)
                 st->codec->block_align = track->audio.sub_packet_size;
                 extradata_offset       = 78;
             }
+        } else if (codec_id == AV_CODEC_ID_FLAC && track->codec_priv.size) {
+            ret = matroska_parse_flac(s, track, &extradata_offset);
+            if (ret < 0)
+                return ret;
         } else if (codec_id == AV_CODEC_ID_PRORES && track->codec_priv.size == 4) {
             fourcc = AV_RL32(track->codec_priv.data);
         }
@@ -2049,6 +2046,82 @@ static int matroska_read_header(AVFormatContext *s)
                 matroska->contains_ssa = 1;
         }
     }
+
+    return 0;
+}
+
+static int matroska_read_header(AVFormatContext *s)
+{
+    MatroskaDemuxContext *matroska = s->priv_data;
+    EbmlList *attachments_list = &matroska->attachments;
+    EbmlList *chapters_list    = &matroska->chapters;
+    MatroskaAttachment *attachments;
+    MatroskaChapter *chapters;
+    uint64_t max_start = 0;
+    int64_t pos;
+    Ebml ebml = { 0 };
+    int i, j, res;
+
+    matroska->ctx = s;
+
+    /* First read the EBML header. */
+    if (ebml_parse(matroska, ebml_syntax, &ebml) ||
+        ebml.version         > EBML_VERSION      ||
+        ebml.max_size        > sizeof(uint64_t)  ||
+        ebml.id_length       > sizeof(uint32_t)  ||
+        ebml.doctype_version > 3                 ||
+        !ebml.doctype) {
+        av_log(matroska->ctx, AV_LOG_ERROR,
+               "EBML header using unsupported features\n"
+               "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
+               ebml.version, ebml.doctype, ebml.doctype_version);
+        ebml_free(ebml_syntax, &ebml);
+        return AVERROR_PATCHWELCOME;
+    } else if (ebml.doctype_version == 3) {
+        av_log(matroska->ctx, AV_LOG_WARNING,
+               "EBML header using unsupported features\n"
+               "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
+               ebml.version, ebml.doctype, ebml.doctype_version);
+    }
+    for (i = 0; i < FF_ARRAY_ELEMS(matroska_doctypes); i++)
+        if (!strcmp(ebml.doctype, matroska_doctypes[i]))
+            break;
+    if (i >= FF_ARRAY_ELEMS(matroska_doctypes)) {
+        av_log(s, AV_LOG_WARNING, "Unknown EBML doctype '%s'\n", ebml.doctype);
+        if (matroska->ctx->error_recognition & AV_EF_EXPLODE) {
+            ebml_free(ebml_syntax, &ebml);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+    ebml_free(ebml_syntax, &ebml);
+
+    /* The next thing is a segment. */
+    pos = avio_tell(matroska->ctx->pb);
+    res = ebml_parse(matroska, matroska_segments, matroska);
+    // try resyncing until we find a EBML_STOP type element.
+    while (res != 1) {
+        res = matroska_resync(matroska, pos);
+        if (res < 0)
+            return res;
+        pos = avio_tell(matroska->ctx->pb);
+        res = ebml_parse(matroska, matroska_segment, matroska);
+    }
+    matroska_execute_seekhead(matroska);
+
+    if (!matroska->time_scale)
+        matroska->time_scale = 1000000;
+    if (matroska->duration)
+        matroska->ctx->duration = matroska->duration * matroska->time_scale *
+                                  1000 / AV_TIME_BASE;
+    av_dict_set(&s->metadata, "title", matroska->title, 0);
+    av_dict_set(&s->metadata, "encoder", matroska->muxingapp, 0);
+
+    if (matroska->date_utc.size == 8)
+        matroska_metadata_creation_time(&s->metadata, AV_RB64(matroska->date_utc.data));
+
+    res = matroska_parse_tracks(s);
+    if (res < 0)
+        return res;
 
     attachments = attachments_list->elem;
     for (j = 0; j < attachments_list->nb_elem; j++) {
@@ -2945,7 +3018,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
                 tracks[i].stream, st->index_entries[index].timestamp,
                 AVSEEK_FLAG_BACKWARD);
             while (index_sub >= 0 &&
-                  index_min >= 0 &&
+                  index_min > 0 &&
                   tracks[i].stream->index_entries[index_sub].pos < st->index_entries[index_min].pos &&
                   st->index_entries[index].timestamp - tracks[i].stream->index_entries[index_sub].timestamp < 30000000000 / matroska->time_scale)
                 index_min--;

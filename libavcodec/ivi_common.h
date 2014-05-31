@@ -33,6 +33,19 @@
 #include "get_bits.h"
 #include <stdint.h>
 
+/**
+ *  Indeo 4 frame types.
+ */
+enum {
+    IVI4_FRAMETYPE_INTRA       = 0,
+    IVI4_FRAMETYPE_INTRA1      = 1,  ///< intra frame with slightly different bitstream coding
+    IVI4_FRAMETYPE_INTER       = 2,  ///< non-droppable P-frame
+    IVI4_FRAMETYPE_BIDIR       = 3,  ///< bidirectional frame
+    IVI4_FRAMETYPE_INTER_NOREF = 4,  ///< droppable P-frame
+    IVI4_FRAMETYPE_NULL_FIRST  = 5,  ///< empty frame with no data
+    IVI4_FRAMETYPE_NULL_LAST   = 6   ///< empty frame with no data
+};
+
 #define IVI_VLC_BITS 13 ///< max number of bits of the ivi's huffman codes
 #define IVI4_STREAM_ANALYSER    0
 #define IVI5_IS_PROTECTED       0x20
@@ -249,6 +262,9 @@ typedef struct IVI45DecContext {
 
     int gop_invalid;
     int buf_invalid[3];
+
+    AVFrame         *p_frame;
+    int             got_p_frame;
 } IVI45DecContext;
 
 /** compare some properties of two pictures */

@@ -225,7 +225,10 @@ void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
     avctx->bits_per_raw_sample = s->bps;
-    ff_flac_set_channel_layout(avctx);
+
+    if (!avctx->channel_layout ||
+        av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels)
+        ff_flac_set_channel_layout(avctx);
 
     s->samples = get_bits64(&gb, 36);
 
@@ -233,14 +236,10 @@ void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *
     skip_bits_long(&gb, 64); /* md5 sum */
 }
 
+#if LIBAVCODEC_VERSION_MAJOR < 56
 void avpriv_flac_parse_block_header(const uint8_t *block_header,
                                 int *last, int *type, int *size)
 {
-    int tmp = bytestream_get_byte(&block_header);
-    if (last)
-        *last = tmp & 0x80;
-    if (type)
-        *type = tmp & 0x7F;
-    if (size)
-        *size = bytestream_get_be24(&block_header);
+    flac_parse_block_header(block_header, last, type, size);
 }
+#endif

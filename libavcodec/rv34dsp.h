@@ -27,8 +27,8 @@
 #ifndef AVCODEC_RV34DSP_H
 #define AVCODEC_RV34DSP_H
 
-#include "dsputil.h"
 #include "h264chroma.h"
+#include "qpeldsp.h"
 
 typedef void (*rv40_weight_func)(uint8_t *dst/*align width (8 or 16)*/,
                                  uint8_t *src1/*align width (8 or 16)*/,

@@ -26,10 +26,10 @@ void ff_add_int16_mmx(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
 void ff_add_int16_sse2(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
 void ff_diff_int16_mmx (uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w);
 void ff_diff_int16_sse2(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w);
-int ff_add_hfyu_left_prediction_int16_ssse3(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc);
-int ff_add_hfyu_left_prediction_int16_sse4(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc);
-void ff_add_hfyu_median_prediction_int16_mmxext(uint16_t *dst, const uint16_t *top, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top);
-void ff_sub_hfyu_median_prediction_int16_mmxext(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top);
+int ff_add_hfyu_left_pred_int16_ssse3(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc);
+int ff_add_hfyu_left_pred_int16_sse4(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc);
+void ff_add_hfyu_median_pred_int16_mmxext(uint16_t *dst, const uint16_t *top, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top);
+void ff_sub_hfyu_median_pred_int16_mmxext(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top);
 
 
 void ff_llviddsp_init_x86(LLVidDSPContext *c, AVCodecContext *avctx)
@@ -43,8 +43,8 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c, AVCodecContext *avctx)
     }
 
     if (EXTERNAL_MMXEXT(cpu_flags) && pix_desc->comp[0].depth_minus1<15) {
-        c->add_hfyu_median_prediction_int16 = ff_add_hfyu_median_prediction_int16_mmxext;
-        c->sub_hfyu_median_prediction_int16 = ff_sub_hfyu_median_prediction_int16_mmxext;
+        c->add_hfyu_median_pred_int16 = ff_add_hfyu_median_pred_int16_mmxext;
+        c->sub_hfyu_median_pred_int16 = ff_sub_hfyu_median_pred_int16_mmxext;
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
@@ -53,10 +53,10 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c, AVCodecContext *avctx)
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
-        c->add_hfyu_left_prediction_int16 = ff_add_hfyu_left_prediction_int16_ssse3;
+        c->add_hfyu_left_pred_int16 = ff_add_hfyu_left_pred_int16_ssse3;
     }
 
     if (EXTERNAL_SSE4(cpu_flags)) {
-        c->add_hfyu_left_prediction_int16 = ff_add_hfyu_left_prediction_int16_sse4;
+        c->add_hfyu_left_pred_int16 = ff_add_hfyu_left_pred_int16_sse4;
     }
 }

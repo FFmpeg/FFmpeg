@@ -43,7 +43,6 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
     SpeexHeader *header = NULL;
     int spx_mode;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_NONE;
     if (avctx->extradata && avctx->extradata_size >= 80) {
         header = speex_packet_to_header(avctx->extradata,
                                         avctx->extradata_size);

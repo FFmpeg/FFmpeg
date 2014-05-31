@@ -1161,7 +1161,8 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
     av_freep(&avctx->internal->hwaccel_priv_data);
     avctx->hwaccel = NULL;
 
-    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL &&
+        !(avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)) {
         AVHWAccel *hwaccel;
         int err;
 

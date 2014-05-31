@@ -39,6 +39,7 @@
 #include "ratecontrol.h"
 #include "parser.h"
 #include "mpeg12data.h"
+#include "qpeldsp.h"
 #include "rl.h"
 #include "thread.h"
 #include "videodsp.h"
@@ -85,6 +86,10 @@ enum OutputFormat {
 #define SLICE_MAX_START_CODE    0x000001af
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2
+
+/* encoding scans */
+extern const uint8_t ff_alternate_horizontal_scan[64];
+extern const uint8_t ff_alternate_vertical_scan[64];
 
 struct MpegEncContext;
 
@@ -352,6 +357,7 @@ typedef struct MpegEncContext {
     DSPContext dsp;             ///< pointers for accelerated dsp functions
     H264ChromaContext h264chroma;
     HpelDSPContext hdsp;
+    QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H263DSPContext h263dsp;
     int f_code;                 ///< forward MV resolution

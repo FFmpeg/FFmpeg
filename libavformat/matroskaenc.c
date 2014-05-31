@@ -32,9 +32,11 @@
 #include "matroska.h"
 #include "riff.h"
 #include "subtitles.h"
+#include "vorbiscomment.h"
 #include "wv.h"
 
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
@@ -505,6 +507,49 @@ static int put_wv_codecpriv(AVIOContext *pb, AVCodecContext *codec)
     return 0;
 }
 
+static int put_flac_codecpriv(AVFormatContext *s,
+                              AVIOContext *pb, AVCodecContext *codec)
+{
+    int write_comment = (codec->channel_layout &&
+                         !(codec->channel_layout & ~0x3ffffULL) &&
+                         !ff_flac_is_native_layout(codec->channel_layout));
+    int ret = ff_flac_write_header(pb, codec, !write_comment);
+
+    if (ret < 0)
+        return ret;
+
+    if (write_comment) {
+        const char *vendor = (s->flags & AVFMT_FLAG_BITEXACT) ?
+                             "Lavf" : LIBAVFORMAT_IDENT;
+        AVDictionary *dict = NULL;
+        uint8_t buf[32], *data, *p;
+        int len;
+
+        snprintf(buf, sizeof(buf), "0x%"PRIx64, codec->channel_layout);
+        av_dict_set(&dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
+
+        len = ff_vorbiscomment_length(dict, vendor);
+        data = av_malloc(len + 4);
+        if (!data) {
+            av_dict_free(&dict);
+            return AVERROR(ENOMEM);
+        }
+
+        data[0] = 0x84;
+        AV_WB24(data + 1, len);
+
+        p = data + 4;
+        ff_vorbiscomment_write(&p, &dict, vendor);
+
+        avio_write(pb, data, len + 4);
+
+        av_freep(&data);
+        av_dict_free(&dict);
+    }
+
+    return 0;
+}
+
 static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int *sample_rate, int *output_sample_rate)
 {
     MPEG4AudioConfig mp4ac;
@@ -533,7 +578,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         if (codec->codec_id == AV_CODEC_ID_VORBIS || codec->codec_id == AV_CODEC_ID_THEORA)
             ret = put_xiph_codecpriv(s, dyn_cp, codec);
         else if (codec->codec_id == AV_CODEC_ID_FLAC)
-            ret = ff_flac_write_header(dyn_cp, codec, 1);
+            ret = put_flac_codecpriv(s, dyn_cp, codec);
         else if (codec->codec_id == AV_CODEC_ID_WAVPACK)
             ret = put_wv_codecpriv(dyn_cp, codec);
         else if (codec->codec_id == AV_CODEC_ID_H264)
@@ -636,6 +681,9 @@ static int mkv_write_tracks(AVFormatContext *s)
         int display_height_div = 1;
         AVDictionaryEntry *tag;
 
+        // ms precision is the de-facto standard timescale for mkv files
+        avpriv_set_pts_info(st, 64, 1, 1000);
+
         if (codec->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
             mkv->have_attachments = 1;
             continue;
@@ -716,19 +764,21 @@ static int mkv_write_tracks(AVFormatContext *s)
 
         if (mkv->mode == MODE_WEBM && !(codec->codec_id == AV_CODEC_ID_VP8 ||
                                         codec->codec_id == AV_CODEC_ID_VP9 ||
-                                      ((codec->codec_id == AV_CODEC_ID_OPUS)&&(codec->strict_std_compliance <= FF_COMPLIANCE_EXPERIMENTAL)) ||
+                                        codec->codec_id == AV_CODEC_ID_OPUS ||
                                         codec->codec_id == AV_CODEC_ID_VORBIS ||
                                         codec->codec_id == AV_CODEC_ID_WEBVTT)) {
             av_log(s, AV_LOG_ERROR,
-                   "Only VP8,VP9 video and Vorbis,Opus(experimental, use -strict -2) audio and WebVTT subtitles are supported for WebM.\n");
+                   "Only VP8,VP9 video and Vorbis,Opus audio and WebVTT subtitles are supported for WebM.\n");
             return AVERROR(EINVAL);
         }
 
         switch (codec->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
-                if(st->avg_frame_rate.num && st->avg_frame_rate.den && 1.0/av_q2d(st->avg_frame_rate) > av_q2d(codec->time_base))
-                    put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1E9/av_q2d(st->avg_frame_rate));
+
+                if(   st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0
+                   && 1.0/av_q2d(st->avg_frame_rate) > av_q2d(codec->time_base))
+                    put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1E9 / av_q2d(st->avg_frame_rate));
                 else
                     put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, av_q2d(codec->time_base)*1E9);
 
@@ -853,9 +903,6 @@ static int mkv_write_tracks(AVFormatContext *s)
         }
 
         end_ebml_master(pb, track);
-
-        // ms precision is the de-facto standard timescale for mkv files
-        avpriv_set_pts_info(st, 64, 1, 1000);
     }
     end_ebml_master(pb, tracks);
     return 0;

@@ -328,9 +328,11 @@ int ff_init_me(MpegEncContext *s){
 /*FIXME s->no_rounding b_type*/
     if(s->flags&CODEC_FLAG_QPEL){
         c->sub_motion_search= qpel_motion_search;
-        c->qpel_avg= s->dsp.avg_qpel_pixels_tab;
-        if(s->no_rounding) c->qpel_put= s->dsp.put_no_rnd_qpel_pixels_tab;
-        else               c->qpel_put= s->dsp.put_qpel_pixels_tab;
+        c->qpel_avg = s->qdsp.avg_qpel_pixels_tab;
+        if (s->no_rounding)
+            c->qpel_put = s->qdsp.put_no_rnd_qpel_pixels_tab;
+        else
+            c->qpel_put = s->qdsp.put_qpel_pixels_tab;
     }else{
         if(c->avctx->me_sub_cmp&FF_CMP_CHROMA)
             c->sub_motion_search= hpel_motion_search;
@@ -636,9 +638,9 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
                 dxy = ((my4 & 3) << 2) | (mx4 & 3);
 
                 if(s->no_rounding)
-                    s->dsp.put_no_rnd_qpel_pixels_tab[1][dxy](dest_y   , ref    , stride);
+                    s->qdsp.put_no_rnd_qpel_pixels_tab[1][dxy](dest_y, ref, stride);
                 else
-                    s->dsp.put_qpel_pixels_tab       [1][dxy](dest_y   , ref    , stride);
+                    s->qdsp.put_qpel_pixels_tab[1][dxy](dest_y, ref, stride);
             }else{
                 uint8_t *ref= c->ref[block][0] + (mx4>>1) + (my4>>1)*stride;
                 dxy = ((my4 & 1) << 1) | (mx4 & 1);
@@ -1226,14 +1228,14 @@ static inline int check_bidir_mv(MpegEncContext * s,
         src_y = motion_fy >> 2;
 
         ptr = ref_data[0] + (src_y * stride) + src_x;
-        s->dsp.put_qpel_pixels_tab[0][dxy](dest_y    , ptr    , stride);
+        s->qdsp.put_qpel_pixels_tab[0][dxy](dest_y, ptr, stride);
 
         dxy = ((motion_by & 3) << 2) | (motion_bx & 3);
         src_x = motion_bx >> 2;
         src_y = motion_by >> 2;
 
         ptr = ref2_data[0] + (src_y * stride) + src_x;
-        s->dsp.avg_qpel_pixels_tab[size][dxy](dest_y    , ptr    , stride);
+        s->qdsp.avg_qpel_pixels_tab[size][dxy](dest_y, ptr, stride);
     }else{
         dxy = ((motion_fy & 1) << 1) | (motion_fx & 1);
         src_x = motion_fx >> 1;

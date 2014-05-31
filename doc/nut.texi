@@ -21,6 +21,27 @@ The official nut specification is at svn://svn.mplayerhq.hu/nut
 In case of any differences between this text and the official specification,
 the official specification shall prevail.
 
+@chapter Modes
+NUT has some variants signaled by using the flags field in its main header.
+
+@multitable @columnfractions .4 .4
+@item BROADCAST   @tab Extend the syncpoint to report the sender wallclock
+@item PIPE        @tab Omit completely the syncpoint
+@end multitable
+
+@section BROADCAST
+
+The BROADCAST variant provides a secondary time reference to facilitate
+detecting endpoint latency and network delays.
+It assumes all the endpoint clocks are syncronized.
+To be used in real-time scenarios.
+
+@section PIPE
+
+The PIPE variant assumes NUT is used as non-seekable intermediate container,
+by not using syncpoint removes unneeded overhead and reduces the overall
+memory usage.
+
 @chapter Container-specific codec tags
 
 @section Generic raw YUVA formats

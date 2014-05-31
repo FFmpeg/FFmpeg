@@ -127,6 +127,7 @@ fate-seek-vsynth2-mpeg4-adap:        SRC = fate/vsynth2-mpeg4-adap.avi
 fate-seek-vsynth2-mpeg4-adv:         SRC = fate/vsynth2-mpeg4-adv.avi
 fate-seek-vsynth2-mpeg4-error:       SRC = fate/vsynth2-mpeg4-error.avi
 fate-seek-vsynth2-mpeg4-nr:          SRC = fate/vsynth2-mpeg4-nr.avi
+fate-seek-vsynth2-mpeg4-nsse:        SRC = fate/vsynth2-mpeg4-nsse.avi
 fate-seek-vsynth2-mpeg4-qpel:        SRC = fate/vsynth2-mpeg4-qpel.avi
 fate-seek-vsynth2-mpeg4-qprd:        SRC = fate/vsynth2-mpeg4-qprd.avi
 fate-seek-vsynth2-mpeg4-rc:          SRC = fate/vsynth2-mpeg4-rc.avi

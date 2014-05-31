@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libavcodec/flac.h"
 #include "avformat.h"
@@ -46,12 +47,12 @@ static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
                                     int last_block, int bitexact)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
-    unsigned int len, count;
+    unsigned int len;
     uint8_t *p, *p0;
 
     ff_metadata_conv(m, ff_vorbiscomment_metadata_conv, NULL);
 
-    len = ff_vorbiscomment_length(*m, vendor, &count);
+    len = ff_vorbiscomment_length(*m, vendor);
     p0 = av_malloc(len+4);
     if (!p0)
         return AVERROR(ENOMEM);
@@ -59,7 +60,7 @@ static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
 
     bytestream_put_byte(&p, last_block ? 0x84 : 0x04);
     bytestream_put_be24(&p, len);
-    ff_vorbiscomment_write(&p, m, vendor, count);
+    ff_vorbiscomment_write(&p, m, vendor);
 
     avio_write(pb, p0, len+4);
     av_freep(&p0);
@@ -96,6 +97,23 @@ static int flac_write_header(struct AVFormatContext *s)
     ret = ff_flac_write_header(s->pb, codec, 0);
     if (ret)
         return ret;
+
+    /* add the channel layout tag */
+    if (codec->channel_layout &&
+        !(codec->channel_layout & ~0x3ffffULL) &&
+        !ff_flac_is_native_layout(codec->channel_layout)) {
+        AVDictionaryEntry *chmask = av_dict_get(s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK",
+                                                NULL, 0);
+
+        if (chmask) {
+            av_log(s, AV_LOG_WARNING, "A WAVEFORMATEXTENSIBLE_CHANNEL_MASK is "
+                   "already present, this muxer will not overwrite it.\n");
+        } else {
+            uint8_t buf[32];
+            snprintf(buf, sizeof(buf), "0x%"PRIx64, codec->channel_layout);
+            av_dict_set(&s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
+        }
+    }
 
     ret = flac_write_block_comment(s->pb, &s->metadata, !padding,
                                    s->flags & AVFMT_FLAG_BITEXACT);

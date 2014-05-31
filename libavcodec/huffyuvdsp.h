@@ -21,17 +21,28 @@
 
 #include <stdint.h>
 
+#if HAVE_BIGENDIAN
+#define B 3
+#define G 2
+#define R 1
+#define A 0
+#else
+#define B 0
+#define G 1
+#define R 2
+#define A 3
+#endif
+
 typedef struct HuffYUVDSPContext {
     void (*add_bytes)(uint8_t *dst /* align 16 */, uint8_t *src /* align 16 */,
-                      int w);
+                      intptr_t w);
     void (*add_hfyu_median_pred)(uint8_t *dst, const uint8_t *top,
-                                 const uint8_t *diff, int w,
+                                 const uint8_t *diff, intptr_t w,
                                  int *left, int *left_top);
     int (*add_hfyu_left_pred)(uint8_t *dst, const uint8_t *src,
-                              int w, int left);
+                              intptr_t w, int left);
     void (*add_hfyu_left_pred_bgr32)(uint8_t *dst, const uint8_t *src,
-                                     int w, int *red, int *green,
-                                     int *blue, int *alpha);
+                                     intptr_t w, uint8_t *left);
 } HuffYUVDSPContext;
 
 void ff_huffyuvdsp_init(HuffYUVDSPContext *c);

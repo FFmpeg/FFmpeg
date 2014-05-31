@@ -34,49 +34,12 @@
 #include "internal.h"
 #include "mpegutils.h"
 #include "svq1.h"
+#include "svq1enc.h"
 #include "svq1enc_cb.h"
 #include "libavutil/avassert.h"
 
 
-typedef struct SVQ1Context {
-    /* FIXME: Needed for motion estimation, should not be used for anything
-     * else, the idea is to make the motion estimation eventually independent
-     * of MpegEncContext, so this will be removed then. */
-    MpegEncContext m;
-    AVCodecContext *avctx;
-    DSPContext dsp;
-    HpelDSPContext hdsp;
-    AVFrame *current_picture;
-    AVFrame *last_picture;
-    PutBitContext pb;
-    GetBitContext gb;
-
-    /* why ooh why this sick breadth first order,
-     * everything is slower and more complex */
-    PutBitContext reorder_pb[6];
-
-    int frame_width;
-    int frame_height;
-
-    /* Y plane block dimensions */
-    int y_block_width;
-    int y_block_height;
-
-    /* U & V plane (C planes) block dimensions */
-    int c_block_width;
-    int c_block_height;
-
-    uint16_t *mb_type;
-    uint32_t *dummy;
-    int16_t (*motion_val8[3])[2];
-    int16_t (*motion_val16[3])[2];
-
-    int64_t rd_total;
-
-    uint8_t *scratchbuf;
-} SVQ1Context;
-
-static void svq1_write_header(SVQ1Context *s, int frame_type)
+static void svq1_write_header(SVQ1EncContext *s, int frame_type)
 {
     int i;
 
@@ -113,7 +76,17 @@ static void svq1_write_header(SVQ1Context *s, int frame_type)
 #define QUALITY_THRESHOLD    100
 #define THRESHOLD_MULTIPLIER 0.6
 
-static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
+static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
+                               int size)
+{
+    int score = 0, i;
+
+    for (i = 0; i < size; i++)
+        score += (pix1[i] - pix2[i]) * (pix1[i] - pix2[i]);
+    return score;
+}
+
+static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
                         uint8_t *decoded, int stride, int level,
                         int threshold, int lambda, int intra)
 {
@@ -174,7 +147,7 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
                 int sqr, diff, score;
 
                 vector = codebook + stage * size * 16 + i * size;
-                sqr    = s->dsp.ssd_int8_vs_int16(vector, block[stage], size);
+                sqr    = s->ssd_int8_vs_int16(vector, block[stage], size);
                 diff   = block_sum[stage] - sum;
                 score  = sqr - (diff * (int64_t)diff >> (level + 3)); // FIXME: 64bit slooow
                 if (score < best_vector_score) {
@@ -267,7 +240,7 @@ static void init_block_index(MpegEncContext *s){
     s->block_index[5]= s->mb_stride*(s->mb_y + s->mb_height + 2) + s->b8_stride*s->mb_height*2 + s->mb_x;
 }
 
-static int svq1_encode_plane(SVQ1Context *s, int plane,
+static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                              unsigned char *src_plane,
                              unsigned char *ref_plane,
                              unsigned char *decoded_plane,
@@ -508,7 +481,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
 
 static av_cold int svq1_encode_end(AVCodecContext *avctx)
 {
-    SVQ1Context *const s = avctx->priv_data;
+    SVQ1EncContext *const s = avctx->priv_data;
     int i;
 
     av_log(avctx, AV_LOG_DEBUG, "RD: %f\n",
@@ -539,7 +512,7 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
 
 static av_cold int svq1_encode_init(AVCodecContext *avctx)
 {
-    SVQ1Context *const s = avctx->priv_data;
+    SVQ1EncContext *const s = avctx->priv_data;
     int ret;
 
     ff_dsputil_init(&s->dsp, avctx);
@@ -580,6 +553,13 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
                                         s->y_block_height * sizeof(int16_t));
     s->dummy               = av_mallocz((s->y_block_width + 1) *
                                         s->y_block_height * sizeof(int32_t));
+    s->ssd_int8_vs_int16   = ssd_int8_vs_int16_c;
+
+    if (ARCH_PPC)
+        ff_svq1enc_init_ppc(s);
+    if (ARCH_X86)
+        ff_svq1enc_init_x86(s);
+
     ff_h263_encode_init(&s->m); // mv_penalty
 
     return 0;
@@ -588,8 +568,8 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pict, int *got_packet)
 {
-    SVQ1Context *const s = avctx->priv_data;
-    AVFrame *const p     = avctx->coded_frame;
+    SVQ1EncContext *const s = avctx->priv_data;
+    AVFrame *const p        = avctx->coded_frame;
     int i, ret;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, s->y_block_width * s->y_block_height *
@@ -649,7 +629,7 @@ AVCodec ff_svq1_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SVQ1,
-    .priv_data_size = sizeof(SVQ1Context),
+    .priv_data_size = sizeof(SVQ1EncContext),
     .init           = svq1_encode_init,
     .encode2        = svq1_encode_frame,
     .close          = svq1_encode_end,
