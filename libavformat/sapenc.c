@@ -158,6 +158,7 @@ static int sap_write_header(AVFormatContext *s)
         if (ret < 0)
             goto fail;
         s->streams[i]->priv_data = contexts[i];
+        s->streams[i]->time_base = contexts[i]->streams[0]->time_base;
         av_strlcpy(contexts[i]->filename, url, sizeof(contexts[i]->filename));
     }
 
