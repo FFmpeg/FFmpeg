@@ -257,6 +257,9 @@
     <ClCompile Include="..\libavcodec\ratecontrol.c">
       <ObjectFileName>$(IntDir)\libavcodec_ratecontrol.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\qpeldsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_qpeldsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\rangecoder.c">
       <ObjectFileName>$(IntDir)\libavcodec_rangecoder.obj</ObjectFileName>
     </ClCompile>
@@ -2018,6 +2021,9 @@
     <ClCompile Include="..\libavcodec\x86\mpegvideoenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideoenc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\qpeldsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_qpeldsp_init.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\videodsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_videodsp_init.obj</ObjectFileName>
     </ClCompile>
@@ -2026,6 +2032,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\sbrdsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_sbrdsp_init.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\apedsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_apedsp_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\cavsdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_cavsdsp.obj</ObjectFileName>
@@ -2050,6 +2059,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\rv40dsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_rv40dsp_init.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\svq1enc_mmx.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_svq1enc_mmx.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\v210-init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_v210-init.obj</ObjectFileName>
@@ -2120,9 +2132,6 @@
     <YASM Include="..\libavcodec\x86\dwt_yasm.asm" />
     <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
     <YASM Include="..\libavcodec\x86\dsputil.asm" />
-    <YASM Include="..\libavcodec\x86\fpel.asm" />
-    <YASM Include="..\libavcodec\x86\mpeg4qpel.asm" />
-    <YASM Include="..\libavcodec\x86\qpel.asm" />
     <YASM Include="..\libavcodec\x86\dsputilenc.asm" />
     <YASM Include="..\libavcodec\x86\fft.asm" />
     <YASM Include="..\libavcodec\x86\flacdsp.asm" />
@@ -2139,15 +2148,19 @@
     <YASM Include="..\libavcodec\x86\h264_intrapred_10bit.asm" />
     <YASM Include="..\libavcodec\x86\h264_qpel_8bit.asm" />
     <YASM Include="..\libavcodec\x86\h264_qpel_10bit.asm" />
+    <YASM Include="..\libavcodec\x86\fpel.asm" />
+    <YASM Include="..\libavcodec\x86\qpel.asm" />
     <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
     <YASM Include="..\libavcodec\x86\hevc_deblock.asm" />
     <YASM Include="..\libavcodec\x86\hpeldsp.asm" />
     <YASM Include="..\libavcodec\x86\huffyuvdsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_videodsp.asm" />
     <YASM Include="..\libavcodec\x86\imdct36.asm" />
+    <YASM Include="..\libavcodec\x86\qpeldsp.asm" />
     <YASM Include="..\libavcodec\x86\videodsp.asm" />
     <YASM Include="..\libavcodec\x86\vp3dsp.asm" />
     <YASM Include="..\libavcodec\x86\sbrdsp.asm" />
+    <YASM Include="..\libavcodec\x86\apedsp.asm" />
     <YASM Include="..\libavcodec\x86\dcadsp.asm" />
     <YASM Include="..\libavcodec\x86\pngdsp.asm" />
     <YASM Include="..\libavcodec\x86\proresdsp.asm" />
