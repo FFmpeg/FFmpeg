@@ -33,7 +33,6 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     MOVTrack *src_track = &mov->tracks[src_index];
     AVStream *src_st    = s->streams[src_index];
     int ret = AVERROR(ENOMEM);
-    AVRational src_timebase = src_st->time_base;
 
     track->tag = MKTAG('r','t','p',' ');
     track->src_track = src_index;
@@ -48,8 +47,6 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
                                 RTP_MAX_PACKET_SIZE, src_index);
     if (ret < 0)
         goto fail;
-
-    src_st->time_base = src_timebase; // prevent ff_rtp_chain_mux_open() from corrupting the timebase
 
     /* Copy the RTP AVStream timebase back to the hint AVStream */
     track->timescale = track->rtp_ctx->streams[0]->time_base.den;
