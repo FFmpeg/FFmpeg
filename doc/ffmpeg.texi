@@ -1146,6 +1146,30 @@ requested by @command{ffserver}.
 The option is intended for cases where features are needed that cannot be
 specified to @command{ffserver} but can be to @command{ffmpeg}.
 
+@item -discard (@emph{input})
+Allows discarding specific streams or frames of streams at the demuxer.
+Not all demuxers support this.
+
+@table @option
+@item none
+Discard no frame.
+
+@item default
+Default, which discards no frames.
+
+@item noref
+Discard all non-reference frames.
+
+@item bidir
+Discard all bidirectional frames.
+
+@item nokey
+Discard all frames excepts keyframes.
+
+@item all
+Discard all frames.
+@end table
+
 @end table
 
 As a special exception, you can use a bitmap subtitle stream as input: it

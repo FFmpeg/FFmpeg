@@ -204,6 +204,8 @@ typedef struct OptionsContext {
     int        nb_guess_layout_max;
     SpecifierOpt *apad;
     int        nb_apad;
+    SpecifierOpt *discard;
+    int        nb_discard;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -240,6 +242,7 @@ typedef struct InputStream {
     int file_index;
     AVStream *st;
     int discard;             /* true if stream data should be discarded */
+    int user_set_discard;
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
     AVCodecContext *dec_ctx;
     AVCodec *dec;
