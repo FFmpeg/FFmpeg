@@ -3559,6 +3559,8 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
         }
         count = st->codec_info_nb_frames;
         bitrate = avctx->bit_rate;
+        if (!bitrate)
+            bitrate = avctx->rc_max_rate;
         multiframe = FFMIN(5, count);
         if ((best_multiframe >  multiframe) ||
             (best_multiframe == multiframe && best_bitrate >  bitrate) ||
