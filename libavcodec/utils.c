@@ -785,15 +785,21 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
     }
     frame->reordered_opaque = avctx->reordered_opaque;
 
+#if FF_API_AVFRAME_COLORSPACE
+    frame->color_primaries = avctx->color_primaries;
+    frame->color_trc       = avctx->color_trc;
+    if (av_frame_get_colorspace(frame) == AVCOL_SPC_UNSPECIFIED)
+        av_frame_set_colorspace(frame, avctx->colorspace);
+    if (av_frame_get_color_range(frame) == AVCOL_RANGE_UNSPECIFIED)
+        av_frame_set_color_range(frame, avctx->color_range);
+    frame->chroma_location = avctx->chroma_sample_location;
+#endif
+
     switch (avctx->codec->type) {
     case AVMEDIA_TYPE_VIDEO:
         frame->format              = avctx->pix_fmt;
         if (!frame->sample_aspect_ratio.num)
             frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
-        if (av_frame_get_colorspace(frame) == AVCOL_SPC_UNSPECIFIED)
-            av_frame_set_colorspace(frame, avctx->colorspace);
-        if (av_frame_get_color_range(frame) == AVCOL_RANGE_UNSPECIFIED)
-            av_frame_set_color_range(frame, avctx->color_range);
         break;
     case AVMEDIA_TYPE_AUDIO:
         if (!frame->sample_rate)
