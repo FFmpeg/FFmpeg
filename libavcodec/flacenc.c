@@ -115,6 +115,9 @@ typedef struct FlacEncodeContext {
     unsigned int md5_buffer_size;
     DSPContext dsp;
     FLACDSPContext flac_dsp;
+
+    int flushed;
+    int64_t next_pts;
 } FlacEncodeContext;
 
 
@@ -1239,6 +1242,20 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->max_framesize = s->max_encoded_framesize;
         av_md5_final(s->md5ctx, s->md5sum);
         write_streaminfo(s, avctx->extradata);
+
+        if (avctx->side_data_only_packets && !s->flushed) {
+            uint8_t *side_data = av_packet_new_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                                         avctx->extradata_size);
+            if (!side_data)
+                return AVERROR(ENOMEM);
+            memcpy(side_data, avctx->extradata, avctx->extradata_size);
+
+            avpkt->pts = s->next_pts;
+
+            *got_packet_ptr = 1;
+            s->flushed = 1;
+        }
+
         return 0;
     }
 
@@ -1289,6 +1306,9 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     avpkt->pts      = frame->pts;
     avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
     avpkt->size     = out_bytes;
+
+    s->next_pts = avpkt->pts + avpkt->duration;
+
     *got_packet_ptr = 1;
     return 0;
 }
