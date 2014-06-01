@@ -379,8 +379,10 @@ QPEL_TABLE 10, 4, w, sse4
     pmaddwd           m3, %4
     paddd             m1, m3
 %endif
+%if %1 != 8
     psrad             m0, %1-8
     psrad             m1, %1-8
+%endif
     packssdw          m0, m1
 %endif
 %endmacro
@@ -408,7 +410,9 @@ QPEL_TABLE 10, 4, w, sse4
     paddd             m0, m2
     paddd             m4, m6
     paddd             m0, m4
+%if %2 != 8
     psrad             m0, %2-8
+%endif
 %if %1 > 4
     pmaddwd           m1, [rfilterq + %3q*8   ]
     pmaddwd           m3, [rfilterq + %3q*8+16]
@@ -417,7 +421,9 @@ QPEL_TABLE 10, 4, w, sse4
     paddd             m1, m3
     paddd             m5, m7
     paddd             m1, m5
+%if %2 != 8
     psrad             m1, %2-8
+%endif
 %endif
     p%4               m0, m1
 %endif
@@ -449,7 +455,9 @@ QPEL_TABLE 10, 4, w, sse4
     paddd             m0, m2
     paddd             m4, m6
     paddd             m0, m4
+%if %2 != 8
     psrad             m0, %2-8
+%endif
 %if %1 > 4
     pmaddwd           m1, m12
     pmaddwd           m3, m13
@@ -458,7 +466,9 @@ QPEL_TABLE 10, 4, w, sse4
     paddd             m1, m3
     paddd             m5, m7
     paddd             m1, m5
+%if %2 != 8
     psrad             m1, %2-8
+%endif
 %endif
 %endif
 %endmacro
