@@ -2644,6 +2644,9 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
         return 0;                                                 \
     } while (0)
 
+    if (   avctx->codec_id == AV_CODEC_ID_NONE
+        && avctx->codec_type != AVMEDIA_TYPE_DATA)
+        FAIL("unknown codec");
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         if (!avctx->frame_size && determinable_frame_size(avctx))
@@ -2675,8 +2678,6 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
         if (avctx->codec_id == AV_CODEC_ID_NONE) return 1;
     }
 
-    if (avctx->codec_id == AV_CODEC_ID_NONE)
-        FAIL("unknown codec");
     return 1;
 }
 
