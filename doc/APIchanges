@@ -15,6 +15,11 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-04-xx - xxxxxxx - lavc 55.54.0 - avcodec.h
+  Add AVCodecContext.side_data_only_packets to allow encoders to output packets
+  with only side data. This option may become mandatory in the future, so all
+  users are recommended to update their code and enable this option.
+
 2014-xx-xx - xxxxxxx - lavu 53.16.0 - frame.h, pixfmt.h
   Move all color-related enums (AVColorPrimaries, AVColorSpace, AVColorRange,
   AVColorTransferCharacteristic, and AVChromaLocation) inside lavu.
