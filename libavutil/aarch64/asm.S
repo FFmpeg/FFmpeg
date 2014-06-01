@@ -57,7 +57,10 @@ ELF     .size   \name, . - \name
 .endm
 
 .macro  movrel rd, val
-#if CONFIG_PIC
+#if CONFIG_PIC && defined(__APPLE__)
+        adrp            \rd, \val@PAGE
+        add             \rd, \rd, \val@PAGEOFF
+#elif CONFIG_PIC
         adrp            \rd, :pg_hi21:\val
         add             \rd, \rd, :lo12:\val
 #else
