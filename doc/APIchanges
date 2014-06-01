@@ -15,6 +15,7 @@ API changes, most recent first:
 
 2016-xx-xx - lavc 57.14.0 - avcodec.h
   xxxxxxx - Add AVCodecParameters and its related API.
+  xxxxxxx - Add av_get_audio_frame_duration2().
 
 2016-xx-xx - xxxxxxx - lavf 57.4.0 - avformat.h
   Add AVFormatContext.protocol_whitelist and protocol_blacklist.

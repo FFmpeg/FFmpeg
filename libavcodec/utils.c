@@ -2037,21 +2037,15 @@ int av_get_bits_per_sample(enum AVCodecID codec_id)
     }
 }
 
-int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
+static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
+                                    uint32_t tag, int bits_per_coded_sample, int frame_bytes)
 {
-    int id, sr, ch, ba, tag, bps;
-
-    id  = avctx->codec_id;
-    sr  = avctx->sample_rate;
-    ch  = avctx->channels;
-    ba  = avctx->block_align;
-    tag = avctx->codec_tag;
-    bps = av_get_exact_bits_per_sample(avctx->codec_id);
+    int bps = av_get_exact_bits_per_sample(id);
 
     /* codecs with an exact constant bits per sample */
     if (bps > 0 && ch > 0 && frame_bytes > 0)
         return (frame_bytes * 8) / (bps * ch);
-    bps = avctx->bits_per_coded_sample;
+    bps = bits_per_coded_sample;
 
     /* codecs with a fixed packet duration */
     switch (id) {
@@ -2155,7 +2149,7 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
             if (ba > 0) {
                 /* calc from frame_bytes, channels, and block_align */
                 int blocks = frame_bytes / ba;
-                switch (avctx->codec_id) {
+                switch (id) {
                 case AV_CODEC_ID_ADPCM_IMA_WAV:
                     return blocks * (1 + (ba - 4 * ch) / (4 * ch) * 8);
                 case AV_CODEC_ID_ADPCM_IMA_DK3:
@@ -2169,7 +2163,7 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
 
             if (bps > 0) {
                 /* calc from frame_bytes, channels, and bits_per_coded_sample */
-                switch (avctx->codec_id) {
+                switch (id) {
                 case AV_CODEC_ID_PCM_DVD:
                     return 2 * (frame_bytes / ((bps * 2 / 8) * ch));
                 case AV_CODEC_ID_PCM_BLURAY:
@@ -2182,6 +2176,22 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
     }
 
     return 0;
+}
+
+int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
+{
+    return get_audio_frame_duration(avctx->codec_id, avctx->sample_rate,
+                                    avctx->channels, avctx->block_align,
+                                    avctx->codec_tag, avctx->bits_per_coded_sample,
+                                    frame_bytes);
+}
+
+int av_get_audio_frame_duration2(AVCodecParameters *par, int frame_bytes)
+{
+    return get_audio_frame_duration(par->codec_id, par->sample_rate,
+                                    par->channels, par->block_align,
+                                    par->codec_tag, par->bits_per_coded_sample,
+                                    frame_bytes);
 }
 
 #if !HAVE_THREADS

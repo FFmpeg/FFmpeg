@@ -4686,6 +4686,12 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id);
  */
 int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes);
 
+/**
+ * This function is the same as av_get_audio_frame_duration(), except it works
+ * with AVCodecParameters instead of an AVCodecContext.
+ */
+int av_get_audio_frame_duration2(AVCodecParameters *par, int frame_bytes);
+
 
 typedef struct AVBitStreamFilterContext {
     void *priv_data;
