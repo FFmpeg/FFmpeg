@@ -1,6 +1,40 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.12:
+
+- h264: set parameters from SPS whenever it changes
+- alac: Limit max_samples_per_frame
+- swscale: Fix an undefined behaviour
+- apedec: do not buffer decoded samples over AVPackets
+- isom: lpcm in mov default to big endian
+- movdec: handle 0x7fff langcode as macintosh per the specs
+- avi: Improve non-interleaved detection
+- h264: reset next_output_pic earlier in start_frame()
+- tiffdec: use bytestream2 to simplify overread/overwrite protection
+- bytestream: add bytestream2_copy_buffer() functions
+- bytestream: add functions for accessing size of buffer
+- movenc: allow override of "writing application" tag
+- matroskaenc: allow override of "writing application" tag
+- avfilter: Add missing emms_c when needed
+- mpeg12: check scantable indices in all decode_block functions
+- sgidec: fix buffer size check in expand_rle_row()
+- adx: check that the offset is not negative
+- mpegvideo: set reference/pict_type on generated reference frames
+- h264: reset data partitioning at the beginning of each decode call
+- h264: reset ref count if decoding the slice header fails
+- h264: reset first_field if frame_start() fails for missing refs
+- h264: limit allowed pred modes in ff_h264_check_intra_pred_mode() to 3
+- h264: reject mismatching luma/chroma bit depths during sps parsing
+- h264: check that execute_decode_slices() is not called too many times
+- h264: do not use 422 functions for monochrome
+- h264: reset data_partitioning if decoding the slice header for NAL_DPA fails
+- h264_refs: make sure not to write over the bounds of the default ref list
+- h264: check buffer size before accessing it
+- configure: use utilities from /usr/xpg4/bin if it exists
+- cmdutils: update copyright year to 2014.
+- ituh263: reject b-frame with pp_time = 0
+
 version 0.8.11:
 
 - configure: Update freetype check to follow upstream
@@ -19,7 +53,6 @@ version 0.8.11:
 - rpza: limit the number of blocks to the total remaining blocks in the frame
 - Prepare for 0.8.11 Release
 - lavf: make av_probe_input_buffer more robust
-
 
 version 0.8.10:
 
