@@ -514,7 +514,8 @@ static int put_flac_codecpriv(AVFormatContext *s,
     int write_comment = (codec->channel_layout &&
                          !(codec->channel_layout & ~0x3ffffULL) &&
                          !ff_flac_is_native_layout(codec->channel_layout));
-    int ret = ff_flac_write_header(pb, codec, !write_comment);
+    int ret = ff_flac_write_header(pb, codec->extradata, codec->extradata_size,
+                                   !write_comment);
 
     if (ret < 0)
         return ret;
