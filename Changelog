@@ -6,11 +6,11 @@ version 0.8.12:
 - h264: set parameters from SPS whenever it changes
 - alac: Limit max_samples_per_frame
 - swscale: Fix an undefined behaviour
-- apedec: do not buffer decoded samples over AVPackets
+- apedec: do not buffer decoded samples over AVPackets (debian/744901)
 - isom: lpcm in mov default to big endian
 - movdec: handle 0x7fff langcode as macintosh per the specs
-- avi: Improve non-interleaved detection
-- h264: reset next_output_pic earlier in start_frame()
+- avi: Improve non-interleaved detection (libav/666)
+- h264: reset next_output_pic earlier in start_frame() (libav/672, debian/741240, ubuntu/1288206)
 - tiffdec: use bytestream2 to simplify overread/overwrite protection
 - bytestream: add bytestream2_copy_buffer() functions
 - bytestream: add functions for accessing size of buffer
