@@ -2841,6 +2841,7 @@ static int transcode_init(void)
                    "Error initializing the output stream codec context.\n");
             exit_program(1);
         }
+        ost->st->codec->codec= ost->enc_ctx->codec;
     }
 
     /* init input streams */
