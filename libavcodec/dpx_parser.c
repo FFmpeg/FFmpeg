@@ -89,7 +89,7 @@ static int dpx_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         } else if (d->index > 17) {
             if (d->pc.state == MKBETAG('S','D','P','X') ||
                 d->pc.state == MKTAG('S','D','P','X')) {
-                next = i - 4;
+                next = i - 3;
                 break;
             }
         }
