@@ -539,11 +539,13 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     if(s->avctx->flags & CODEC_FLAG_EMU_EDGE)
         return AVERROR(EINVAL);
 
-    if (avctx->height & 15) {
+    if ((avctx->height & 15) && avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
         av_log(avctx, AV_LOG_ERROR,
-               "Height must be a multiple of 16, also note, "
-               "if you have a AMV sample thats mod 16 != 0, please contact us\n");
-        return AVERROR(EINVAL);
+               "Heights which are not a multiple of 16 might fail with some decoders, "
+               "use vstrict=-1 / -strict -1 to use %d anyway.\n", avctx->height);
+        av_log(avctx, AV_LOG_WARNING, "If you have a device that plays AMV videos, please test if videos "
+               "with such heights work with it and report your findings to ffmpeg-devel@ffmpeg.org\n");
+        return AVERROR_EXPERIMENTAL;
     }
 
     pic = av_frame_clone(pic_arg);
