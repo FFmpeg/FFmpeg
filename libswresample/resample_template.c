@@ -134,8 +134,10 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         av_assert2(index >= 0);
         *consumed= index;
         index = 0;
-    } else if (compensation_distance == 0 && index >= 0) {
-        int64_t end_index = (1 + src_size - c->filter_length) << c->phase_shift;
+    } else if (compensation_distance == 0 &&
+               index >= 0 &&
+               src_size*(int64_t)c->src_incr < (INT64_MAX >> (c->phase_shift+1))) {
+        int64_t end_index = (1LL + src_size - c->filter_length) << c->phase_shift;
         int64_t delta_frac = (end_index - index) * c->src_incr - c->frac;
         int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
         int n = FFMIN(dst_size, delta_n);
