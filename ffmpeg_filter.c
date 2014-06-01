@@ -595,8 +595,8 @@ static int sub2video_prepare(InputStream *ist)
     /* Compute the size of the canvas for the subtitles stream.
        If the subtitles codec has set a size, use it. Otherwise use the
        maximum dimensions of the video streams in the same file. */
-    w = ist->st->codec->width;
-    h = ist->st->codec->height;
+    w = ist->dec_ctx->width;
+    h = ist->dec_ctx->height;
     if (!(w && h)) {
         for (i = 0; i < avf->nb_streams; i++) {
             if (avf->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -610,12 +610,12 @@ static int sub2video_prepare(InputStream *ist)
         }
         av_log(avf, AV_LOG_INFO, "sub2video: using %dx%d canvas\n", w, h);
     }
-    ist->sub2video.w = ist->st->codec->width  = ist->resample_width  = w;
-    ist->sub2video.h = ist->st->codec->height = ist->resample_height = h;
+    ist->sub2video.w = ist->dec_ctx->width  = ist->resample_width  = w;
+    ist->sub2video.h = ist->dec_ctx->height = ist->resample_height = h;
 
     /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
        palettes for all rectangles are identical or compatible */
-    ist->resample_pix_fmt = ist->st->codec->pix_fmt = AV_PIX_FMT_RGB32;
+    ist->resample_pix_fmt = ist->dec_ctx->pix_fmt = AV_PIX_FMT_RGB32;
 
     ist->sub2video.frame = av_frame_alloc();
     if (!ist->sub2video.frame)
@@ -638,7 +638,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     char name[255];
     int ret, pad_idx = 0;
 
-    if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+    if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         av_log(NULL, AV_LOG_ERROR, "Cannot connect video filter to audio input\n");
         return AVERROR(EINVAL);
     }
@@ -646,7 +646,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if (!fr.num)
         fr = av_guess_frame_rate(input_files[ist->file_index]->ctx, ist->st, NULL);
 
-    if (ist->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+    if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         ret = sub2video_prepare(ist);
         if (ret < 0)
             return ret;
