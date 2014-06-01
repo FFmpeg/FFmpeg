@@ -94,6 +94,8 @@ typedef struct MatroskaMuxContext {
     AVPacket        cur_audio_pkt;
 
     int have_attachments;
+
+    int64_t ts_offset;
 } MatroskaMuxContext;
 
 
@@ -1203,8 +1205,17 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb->seekable ? s->pb : mkv->dyn_bc;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     int ret, keyframe = !!(pkt->flags & AV_PKT_FLAG_KEY);
-    int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
+    int64_t ts;
     int cluster_size = avio_tell(pb) - (s->pb->seekable ? mkv->cluster_pos : 0);
+
+    if (pkt->dts < 0 && !mkv->ts_offset)
+        mkv->ts_offset = -pkt->dts;
+
+    pkt->dts += mkv->ts_offset;
+    if (pkt->pts != AV_NOPTS_VALUE)
+        pkt->pts += mkv->ts_offset;
+
+    ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
