@@ -115,6 +115,13 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         { 0xCB2A0000, 0xCB250000 },
     };
 
+    if (avctx->width%4 && avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+         av_log(avctx, AV_LOG_ERROR,
+                "Widths which are not a multiple of 4 might fail with some decoders, "
+                "use vstrict=-1 / -strict -1 to use %d anyway.\n", avctx->width);
+         return AVERROR_EXPERIMENTAL;
+    }
+
     if ((ret = ff_alloc_packet2(avctx, pkt, 32*avctx->height*avctx->width/4)) < 0)
         return ret;
 
