@@ -1856,7 +1856,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     ret = avcodec_decode_video2(ist->dec_ctx,
                                 decoded_frame, got_output, pkt);
     update_benchmark("decode_video %d.%d", ist->file_index, ist->st->index);
-    ist->st->codec->has_b_frames = ist->dec_ctx->has_b_frames;
+    ist->st->codec->has_b_frames = ist->dec_ctx->has_b_frames; //FIXME remove this once all AVParsers set it correctly
 
     if (*got_output || ret<0 || pkt->size)
         decode_error_stat[ret<0] ++;
