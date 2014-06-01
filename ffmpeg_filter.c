@@ -149,8 +149,8 @@ static char *choose_pix_fmts(OutputStream *ost)
 #define DEF_CHOOSE_FORMAT(type, var, supported_list, none, get_name)           \
 static char *choose_ ## var ## s(OutputStream *ost)                            \
 {                                                                              \
-    if (ost->st->codec->var != none) {                                         \
-        get_name(ost->st->codec->var);                                         \
+    if (ost->enc_ctx->var != none) {                                           \
+        get_name(ost->enc_ctx->var);                                           \
         return av_strdup(name);                                                \
     } else if (ost->enc && ost->enc->supported_list) {                         \
         const type *p;                                                         \
@@ -344,7 +344,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     char *pix_fmts;
     OutputStream *ost = ofilter->ost;
     OutputFile    *of = output_files[ost->file_index];
-    AVCodecContext *codec = ost->st->codec;
+    AVCodecContext *codec = ost->enc_ctx;
     AVFilterContext *last_filter = out->filter_ctx;
     int pad_idx = out->pad_idx;
     int ret;
@@ -434,7 +434,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
 {
     OutputStream *ost = ofilter->ost;
     OutputFile    *of = output_files[ost->file_index];
-    AVCodecContext *codec  = ost->st->codec;
+    AVCodecContext *codec  = ost->enc_ctx;
     AVFilterContext *last_filter = out->filter_ctx;
     int pad_idx = out->pad_idx;
     char *sample_fmts, *sample_rates, *channel_layouts;
