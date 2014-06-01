@@ -503,6 +503,8 @@ static void ffmpeg_cleanup(int ret)
         av_freep(&ist->filters);
         av_freep(&ist->hwaccel_device);
 
+        avcodec_free_context(&ist->dec_ctx);
+
         av_freep(&input_streams[i]);
     }
 
@@ -1246,7 +1248,7 @@ static void print_final_stats(int64_t total_size)
 
         for (j = 0; j < f->nb_streams; j++) {
             InputStream *ist = input_streams[f->ist_index + j];
-            enum AVMediaType type = ist->st->codec->codec_type;
+            enum AVMediaType type = ist->dec_ctx->codec_type;
 
             total_size    += ist->data_size;
             total_packets += ist->nb_packets;
@@ -1676,7 +1678,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 
 int guess_input_channel_layout(InputStream *ist)
 {
-    AVCodecContext *dec = ist->st->codec;
+    AVCodecContext *dec = ist->dec_ctx;
 
     if (!dec->channel_layout) {
         char layout_name[256];
@@ -1697,7 +1699,7 @@ int guess_input_channel_layout(InputStream *ist)
 static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVFrame *decoded_frame, *f;
-    AVCodecContext *avctx = ist->st->codec;
+    AVCodecContext *avctx = ist->dec_ctx;
     int i, ret, err = 0, resample_changed;
     AVRational decoded_frame_tb;
 
@@ -1812,8 +1814,8 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     pkt->pts           = AV_NOPTS_VALUE;
     if (decoded_frame->pts != AV_NOPTS_VALUE)
         decoded_frame->pts = av_rescale_delta(decoded_frame_tb, decoded_frame->pts,
-                                              (AVRational){1, ist->st->codec->sample_rate}, decoded_frame->nb_samples, &ist->filter_in_rescale_delta_last,
-                                              (AVRational){1, ist->st->codec->sample_rate});
+                                              (AVRational){1, avctx->sample_rate}, decoded_frame->nb_samples, &ist->filter_in_rescale_delta_last,
+                                              (AVRational){1, avctx->sample_rate});
     for (i = 0; i < ist->nb_filters; i++) {
         if (i < ist->nb_filters - 1) {
             f = ist->filter_frame;
@@ -1851,7 +1853,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     pkt->dts  = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
 
     update_benchmark(NULL);
-    ret = avcodec_decode_video2(ist->st->codec,
+    ret = avcodec_decode_video2(ist->dec_ctx,
                                 decoded_frame, got_output, pkt);
     update_benchmark("decode_video %d.%d", ist->file_index, ist->st->index);
 
@@ -1876,7 +1878,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     ist->frames_decoded++;
 
     if (ist->hwaccel_retrieve_data && decoded_frame->format == ist->hwaccel_pix_fmt) {
-        err = ist->hwaccel_retrieve_data(ist->st->codec, decoded_frame);
+        err = ist->hwaccel_retrieve_data(ist->dec_ctx, decoded_frame);
         if (err < 0)
             goto fail;
     }
@@ -1956,7 +1958,7 @@ fail:
 static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVSubtitle subtitle;
-    int i, ret = avcodec_decode_subtitle2(ist->st->codec,
+    int i, ret = avcodec_decode_subtitle2(ist->dec_ctx,
                                           &subtitle, got_output, pkt);
 
     if (*got_output || ret<0 || pkt->size)
@@ -2066,7 +2068,7 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
             ist->showed_multi_packet_warning = 1;
         }
 
-        switch (ist->st->codec->codec_type) {
+        switch (ist->dec_ctx->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             ret = decode_audio    (ist, &avpkt, &got_output);
             break;
@@ -2074,11 +2076,11 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
             ret = decode_video    (ist, &avpkt, &got_output);
             if (avpkt.duration) {
                 duration = av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
-            } else if(ist->st->codec->time_base.num != 0 && ist->st->codec->time_base.den != 0) {
-                int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
+            } else if(ist->dec_ctx->time_base.num != 0 && ist->dec_ctx->time_base.den != 0) {
+                int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->dec_ctx->ticks_per_frame;
                 duration = ((int64_t)AV_TIME_BASE *
-                                ist->st->codec->time_base.num * ticks) /
-                                ist->st->codec->time_base.den;
+                                ist->dec_ctx->time_base.num * ticks) /
+                                ist->dec_ctx->time_base.den;
             } else
                 duration = 0;
 
@@ -2118,10 +2120,10 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
     /* handle stream copy */
     if (!ist->decoding_needed) {
         ist->dts = ist->next_dts;
-        switch (ist->st->codec->codec_type) {
+        switch (ist->dec_ctx->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            ist->next_dts += ((int64_t)AV_TIME_BASE * ist->st->codec->frame_size) /
-                             ist->st->codec->sample_rate;
+            ist->next_dts += ((int64_t)AV_TIME_BASE * ist->dec_ctx->frame_size) /
+                             ist->dec_ctx->sample_rate;
             break;
         case AVMEDIA_TYPE_VIDEO:
             if (ist->framerate.num) {
@@ -2131,11 +2133,11 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
                 ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
             } else if (pkt->duration) {
                 ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
-            } else if(ist->st->codec->time_base.num != 0) {
-                int ticks= ist->st->parser ? ist->st->parser->repeat_pict + 1 : ist->st->codec->ticks_per_frame;
+            } else if(ist->dec_ctx->time_base.num != 0) {
+                int ticks= ist->st->parser ? ist->st->parser->repeat_pict + 1 : ist->dec_ctx->ticks_per_frame;
                 ist->next_dts += ((int64_t)AV_TIME_BASE *
-                                  ist->st->codec->time_base.num * ticks) /
-                                  ist->st->codec->time_base.den;
+                                  ist->dec_ctx->time_base.num * ticks) /
+                                  ist->dec_ctx->time_base.den;
             }
             break;
         }
@@ -2237,20 +2239,20 @@ static int init_input_stream(int ist_index, char *error, int error_len)
         AVCodec *codec = ist->dec;
         if (!codec) {
             snprintf(error, error_len, "Decoder (codec %s) not found for input stream #%d:%d",
-                    avcodec_get_name(ist->st->codec->codec_id), ist->file_index, ist->st->index);
+                    avcodec_get_name(ist->dec_ctx->codec_id), ist->file_index, ist->st->index);
             return AVERROR(EINVAL);
         }
 
-        ist->st->codec->opaque      = ist;
-        ist->st->codec->get_format  = get_format;
-        ist->st->codec->get_buffer2 = get_buffer;
-        ist->st->codec->thread_safe_callbacks = 1;
+        ist->dec_ctx->opaque                = ist;
+        ist->dec_ctx->get_format            = get_format;
+        ist->dec_ctx->get_buffer2           = get_buffer;
+        ist->dec_ctx->thread_safe_callbacks = 1;
 
-        av_opt_set_int(ist->st->codec, "refcounted_frames", 1, 0);
+        av_opt_set_int(ist->dec_ctx, "refcounted_frames", 1, 0);
 
         if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
             av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
-        if ((ret = avcodec_open2(ist->st->codec, codec, &ist->decoder_opts)) < 0) {
+        if ((ret = avcodec_open2(ist->dec_ctx, codec, &ist->decoder_opts)) < 0) {
             if (ret == AVERROR_EXPERIMENTAL)
                 abort_codec_experimental(codec, 0);
 
@@ -2462,7 +2464,7 @@ static int transcode_init(void)
         enc_ctx = ost->st->codec;
 
         if (ist) {
-            dec_ctx = ist->st->codec;
+            dec_ctx = ist->dec_ctx;
 
             ost->st->disposition          = ist->st->disposition;
             enc_ctx->bits_per_raw_sample    = dec_ctx->bits_per_raw_sample;
@@ -2795,7 +2797,7 @@ static int transcode_init(void)
             AVCodecContext *dec = NULL;
 
             if ((ist = get_input_stream(ost)))
-                dec = ist->st->codec;
+                dec = ist->dec_ctx;
             if (dec && dec->subtitle_header) {
                 /* ASS code assumes this buffer is null terminated so add extra byte. */
                 ost->st->codec->subtitle_header = av_mallocz(dec->subtitle_header_size + 1);
@@ -3624,9 +3626,9 @@ static int transcode(void)
     for (i = 0; i < nb_input_streams; i++) {
         ist = input_streams[i];
         if (ist->decoding_needed) {
-            avcodec_close(ist->st->codec);
+            avcodec_close(ist->dec_ctx);
             if (ist->hwaccel_uninit)
-                ist->hwaccel_uninit(ist->st->codec);
+                ist->hwaccel_uninit(ist->dec_ctx);
         }
     }
 

@@ -262,7 +262,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         /* find the first unused stream of corresponding type */
         for (i = 0; i < nb_input_streams; i++) {
             ist = input_streams[i];
-            if (ist->st->codec->codec_type == type && ist->discard)
+            if (ist->dec_ctx->codec_type == type && ist->discard)
                 break;
         }
         if (i == nb_input_streams) {
@@ -654,7 +654,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 
     sar = ist->st->sample_aspect_ratio.num ?
           ist->st->sample_aspect_ratio :
-          ist->st->codec->sample_aspect_ratio;
+          ist->dec_ctx->sample_aspect_ratio;
     if(!sar.den)
         sar = (AVRational){0,1};
     av_bprint_init(&args, 0, 1);
@@ -664,7 +664,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
              ist->resample_height,
              ist->hwaccel_retrieve_data ? ist->hwaccel_retrieved_pix_fmt : ist->resample_pix_fmt,
              tb.num, tb.den, sar.num, sar.den,
-             SWS_BILINEAR + ((ist->st->codec->flags&CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
+             SWS_BILINEAR + ((ist->dec_ctx->flags&CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
     if (fr.num && fr.den)
         av_bprintf(&args, ":frame_rate=%d/%d", fr.num, fr.den);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
@@ -732,21 +732,21 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     char name[255];
     int ret, pad_idx = 0;
 
-    if (ist->st->codec->codec_type != AVMEDIA_TYPE_AUDIO) {
+    if (ist->dec_ctx->codec_type != AVMEDIA_TYPE_AUDIO) {
         av_log(NULL, AV_LOG_ERROR, "Cannot connect audio filter to non audio input\n");
         return AVERROR(EINVAL);
     }
 
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&args, "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
-             1, ist->st->codec->sample_rate,
-             ist->st->codec->sample_rate,
-             av_get_sample_fmt_name(ist->st->codec->sample_fmt));
-    if (ist->st->codec->channel_layout)
+             1, ist->dec_ctx->sample_rate,
+             ist->dec_ctx->sample_rate,
+             av_get_sample_fmt_name(ist->dec_ctx->sample_fmt));
+    if (ist->dec_ctx->channel_layout)
         av_bprintf(&args, ":channel_layout=0x%"PRIx64,
-                   ist->st->codec->channel_layout);
+                   ist->dec_ctx->channel_layout);
     else
-        av_bprintf(&args, ":channels=%d", ist->st->codec->channels);
+        av_bprintf(&args, ":channels=%d", ist->dec_ctx->channels);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
 
