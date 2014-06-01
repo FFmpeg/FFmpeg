@@ -37,7 +37,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
 
-enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodec *codec, enum AVPixelFormat target)
+enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx, AVCodec *codec, enum AVPixelFormat target)
 {
     if (codec && codec->pix_fmts) {
         const enum AVPixelFormat *p = codec->pix_fmts;
@@ -50,10 +50,10 @@ enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodec *codec, enum AVPixelFo
             { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUV420P,
               AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_BGRA, AV_PIX_FMT_NONE };
 
-        if (st->codec->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
-            if (st->codec->codec_id == AV_CODEC_ID_MJPEG) {
+        if (enc_ctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
+            if (enc_ctx->codec_id == AV_CODEC_ID_MJPEG) {
                 p = mjpeg_formats;
-            } else if (st->codec->codec_id == AV_CODEC_ID_LJPEG) {
+            } else if (enc_ctx->codec_id == AV_CODEC_ID_LJPEG) {
                 p =ljpeg_formats;
             }
         }
@@ -113,7 +113,7 @@ static char *choose_pix_fmts(OutputStream *ost)
         return av_strdup(av_get_pix_fmt_name(ost->enc_ctx->pix_fmt));
     }
     if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
-        return av_strdup(av_get_pix_fmt_name(choose_pixel_fmt(ost->st, ost->enc, ost->enc_ctx->pix_fmt)));
+        return av_strdup(av_get_pix_fmt_name(choose_pixel_fmt(ost->st, ost->enc_ctx, ost->enc, ost->enc_ctx->pix_fmt)));
     } else if (ost->enc && ost->enc->pix_fmts) {
         const enum AVPixelFormat *p;
         AVIOContext *s = NULL;
