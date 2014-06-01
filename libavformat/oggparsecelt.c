@@ -42,7 +42,7 @@ static int celt_header(AVFormatContext *s, int idx)
         !memcmp(p, ff_celt_codec.magic, ff_celt_codec.magicsize)) {
         /* Main header */
 
-        uint32_t version, sample_rate, nb_channels, frame_size;
+        uint32_t version, sample_rate, nb_channels;
         uint32_t overlap, extra_headers;
         uint8_t *extradata;
 
@@ -58,7 +58,6 @@ static int celt_header(AVFormatContext *s, int idx)
         /* unused header size field skipped */
         sample_rate      = AV_RL32(p + 36);
         nb_channels      = AV_RL32(p + 40);
-        frame_size       = AV_RL32(p + 44);
         overlap          = AV_RL32(p + 48);
         /* unused bytes per packet field skipped */
         extra_headers    = AV_RL32(p + 56);
@@ -68,7 +67,6 @@ static int celt_header(AVFormatContext *s, int idx)
         st->codec->codec_id       = AV_CODEC_ID_CELT;
         st->codec->sample_rate    = sample_rate;
         st->codec->channels       = nb_channels;
-        st->codec->frame_size     = frame_size;
         st->codec->extradata      = extradata;
         st->codec->extradata_size = 2 * sizeof(uint32_t);
         if (sample_rate)
