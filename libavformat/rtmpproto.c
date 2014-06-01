@@ -97,6 +97,9 @@ typedef struct RTMPContext {
     uint32_t      bytes_read;                 ///< number of bytes read from server
     uint32_t      last_bytes_read;            ///< number of bytes read last reported to server
     int           skip_bytes;                 ///< number of bytes to skip from the input FLV stream in the next write call
+    int           has_audio;                  ///< presence of audio data
+    int           has_video;                  ///< presence of video data
+    int           received_metadata;          ///< Indicates if we have received metadata about the streams
     uint8_t       flv_header[RTMP_HEADER];    ///< partial incoming flv packet header
     int           flv_header_bytes;           ///< number of initialized bytes in flv_header
     int           nb_invokes;                 ///< keeps track of invoke messages
@@ -2112,6 +2115,12 @@ static int append_flv_data(RTMPContext *rt, RTMPPacket *pkt, int skip)
     const int size      = pkt->size - skip;
     uint32_t ts         = pkt->timestamp;
 
+    if (pkt->type == RTMP_PT_AUDIO) {
+        rt->has_audio = 1;
+    } else if (pkt->type == RTMP_PT_VIDEO) {
+        rt->has_video = 1;
+    }
+
     old_flv_size = update_offset(rt, size + 15);
 
     if ((ret = av_reallocp(&rt->flv_data, rt->flv_size)) < 0) {
@@ -2143,6 +2152,38 @@ static int handle_notify(URLContext *s, RTMPPacket *pkt)
     if (ff_amf_read_string(&gbc, commandbuffer, sizeof(commandbuffer),
                            &stringlen))
         return AVERROR_INVALIDDATA;
+
+    if (!strcmp(commandbuffer, "onMetaData")) {
+        // metadata properties should be stored in a mixed array
+        if (bytestream2_get_byte(&gbc) == AMF_DATA_TYPE_MIXEDARRAY) {
+            // We have found a metaData Array so flv can determine the streams
+            // from this.
+            rt->received_metadata = 1;
+            // skip 32-bit max array index
+            bytestream2_skip(&gbc, 4);
+            while (bytestream2_get_bytes_left(&gbc) > 3) {
+                if (ff_amf_get_string(&gbc, statusmsg, sizeof(statusmsg),
+                                      &stringlen))
+                    return AVERROR_INVALIDDATA;
+                // We do not care about the content of the property (yet).
+                stringlen = ff_amf_tag_size(gbc.buffer, gbc.buffer_end);
+                if (stringlen < 0)
+                    return AVERROR_INVALIDDATA;
+                bytestream2_skip(&gbc, stringlen);
+
+                // The presence of the following properties indicates that the
+                // respective streams are present.
+                if (!strcmp(statusmsg, "videocodecid")) {
+                    rt->has_video = 1;
+                }
+                if (!strcmp(statusmsg, "audiocodecid")) {
+                    rt->has_audio = 1;
+                }
+            }
+            if (bytestream2_get_be24(&gbc) != AMF_END_OF_OBJECT)
+                return AVERROR_INVALIDDATA;
+        }
+    }
 
     // Skip the @setDataFrame string and validate it is a notification
     if (!strcmp(commandbuffer, "@setDataFrame")) {
@@ -2578,6 +2619,9 @@ reconnect:
 
     rt->client_report_size = 1048576;
     rt->bytes_read = 0;
+    rt->has_audio = 0;
+    rt->has_video = 0;
+    rt->received_metadata = 0;
     rt->last_bytes_read = 0;
     rt->server_bw = 2500000;
 
@@ -2617,7 +2661,27 @@ reconnect:
         if ((err = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
             return err;
         rt->flv_off  = 0;
-        memcpy(rt->flv_data, "FLV\1\5\0\0\0\011\0\0\0\0", rt->flv_size);
+        memcpy(rt->flv_data, "FLV\1\0\0\0\0\011\0\0\0\0", rt->flv_size);
+
+        // Read packets until we reach the first A/V packet or read metadata.
+        // If there was a metadata package in front of the A/V packets, we can
+        // build the FLV header from this. If we do not receive any metadata,
+        // the FLV decoder will allocate the needed streams when their first
+        // audio or video packet arrives.
+        while (!rt->has_audio && !rt->has_video && !rt->received_metadata) {
+            if ((ret = get_packet(s, 0)) < 0)
+               return ret;
+        }
+
+        // Either after we have read the metadata or (if there is none) the
+        // first packet of an A/V stream, we have a better knowledge about the
+        // streams, so set the FLV header accordingly.
+        if (rt->has_audio) {
+            rt->flv_data[4] |= FLV_HEADER_FLAG_HASAUDIO;
+        }
+        if (rt->has_video) {
+            rt->flv_data[4] |= FLV_HEADER_FLAG_HASVIDEO;
+        }
     } else {
         rt->flv_size = 0;
         rt->flv_data = NULL;
