@@ -1632,6 +1632,7 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
             choose_sample_fmt(st, codec);
         else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !ost->stream_copy)
             choose_pixel_fmt(st, st->codec, codec, st->codec->pix_fmt);
+        avcodec_copy_context(ost->enc_ctx, st->codec);
     }
 
     avformat_close_input(&ic);
