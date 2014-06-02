@@ -4047,8 +4047,13 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             hx->intra_gb_ptr=
             hx->inter_gb_ptr= NULL;
 
-            if ((err = decode_slice_header(hx, h)) < 0)
+            if ((err = decode_slice_header(hx, h)) < 0) {
+                /* make sure data_partitioning is cleared if it was set
+                 * before, so we don't try decoding a slice without a valid
+                 * slice header later */
+                s->data_partitioning = 0;
                 break;
+            }
 
             hx->s.data_partitioning = 1;
 
