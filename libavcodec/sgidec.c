@@ -247,6 +247,8 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int sgi_init(AVCodecContext *avctx){
     SgiState *s = avctx->priv_data;
 
+    s->avctx = avctx;
+
     avcodec_get_frame_defaults(&s->picture);
     avctx->coded_frame = &s->picture;
 
@@ -263,15 +265,6 @@ static av_cold int sgi_end(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int sgi_decode_init(AVCodecContext *avctx)
-{
-    SgiState *s = avctx->priv_data;
-
-    s->avctx = avctx;
-
-    return 0;
-}
-
 AVCodec ff_sgi_decoder = {
     .name           = "sgi",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -280,7 +273,6 @@ AVCodec ff_sgi_decoder = {
     .init           = sgi_init,
     .close          = sgi_end,
     .decode         = decode_frame,
-    .init           = sgi_decode_init,
     .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
     .capabilities   = CODEC_CAP_DR1,
 };
