@@ -89,7 +89,7 @@ static void ff_h264dsp_init_neon(H264DSPContext *c, const int bit_depth, const i
     c->h264_idct_dc_add     = ff_h264_idct_dc_add_neon;
     c->h264_idct_add16      = ff_h264_idct_add16_neon;
     c->h264_idct_add16intra = ff_h264_idct_add16intra_neon;
-    if (chroma_format_idc == 1)
+    if (chroma_format_idc <= 1)
         c->h264_idct_add8   = ff_h264_idct_add8_neon;
     c->h264_idct8_add       = ff_h264_idct8_add_neon;
     c->h264_idct8_dc_add    = ff_h264_idct8_dc_add_neon;
