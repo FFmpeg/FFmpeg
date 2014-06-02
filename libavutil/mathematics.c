@@ -188,7 +188,8 @@ simple_round:
 
 int64_t av_add_stable(AVRational ts_tb, int64_t ts, AVRational inc_tb, int64_t inc)
 {
-    inc_tb = av_mul_q(inc_tb, (AVRational) {inc, 1});
+    if (inc != 1)
+        inc_tb = av_mul_q(inc_tb, (AVRational) {inc, 1});
 
     if (av_cmp_q(inc_tb, ts_tb) < 0) {
         //increase step is too small for even 1 step to be representable
