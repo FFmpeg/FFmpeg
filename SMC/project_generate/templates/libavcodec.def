@@ -133,6 +133,7 @@ EXPORTS
     avcodec_find_encoder
     avcodec_find_encoder_by_name
     avcodec_flush_buffers
+    avcodec_free_context
     avcodec_free_frame
     avcodec_get_chroma_sub_sample
     avcodec_get_class

@@ -91,7 +91,7 @@ EXPORTS
     av_fifo_alloc_array
     av_fifo_drain
     av_fifo_free
-	av_fifo_freep
+    av_fifo_freep
     av_fifo_generic_read
     av_fifo_generic_write
     av_fifo_grow
@@ -264,10 +264,12 @@ EXPORTS
     av_opencl_init
     av_opencl_register_kernel_code
     av_opencl_set_option
+    ff_opencl_set_parameter
     av_opencl_uninit
 ;endif
     av_opt_child_class_next
     av_opt_child_next
+    av_opt_copy
     av_opt_eval_double
     av_opt_eval_flags
     av_opt_eval_float
@@ -439,6 +441,3 @@ EXPORTS
     ff_cpu_xgetbv DATA
     ff_get_channel_layout
     ff_log2_tab ;DATA
-;if opencl
-    ff_opencl_set_parameter
-;endif
