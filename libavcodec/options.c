@@ -186,6 +186,10 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     memcpy(dest, src, sizeof(*dest));
 
     dest->priv_data       = orig_priv_data;
+
+    if (orig_priv_data)
+        av_opt_copy(orig_priv_data, src->priv_data);
+
     dest->codec           = orig_codec;
 
     /* set values specific to opened codecs back to their default state */

@@ -1110,10 +1110,6 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                     uint8_t *src = pic_arg->data[i];
                     uint8_t *dst = pic->f->data[i];
 
-                    if (s->codec_id == AV_CODEC_ID_AMV && !(s->avctx->flags & CODEC_FLAG_EMU_EDGE)) {
-                        h = ((s->height + 15)/16*16) >> v_shift;
-                    }
-
                     if (!s->avctx->rc_buffer_size)
                         dst += INPLACE_OFFSET;
 

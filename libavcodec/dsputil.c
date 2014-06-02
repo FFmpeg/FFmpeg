@@ -1277,20 +1277,24 @@ static int vsad_intra ## size ## _c(MpegEncContext *c,                  \
 VSAD_INTRA(8)
 VSAD_INTRA(16)
 
-static int vsad16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,
-                    int stride, int h)
-{
-    int score = 0, x, y;
-
-    for (y = 1; y < h; y++) {
-        for (x = 0; x < 16; x++)
-            score += FFABS(s1[x] - s2[x] - s1[x + stride] + s2[x + stride]);
-        s1 += stride;
-        s2 += stride;
-    }
-
-    return score;
+#define VSAD(size)                                                             \
+static int vsad ## size ## _c(MpegEncContext *c,                               \
+                              uint8_t *s1, uint8_t *s2,                        \
+                              int stride, int h)                               \
+{                                                                              \
+    int score = 0, x, y;                                                       \
+                                                                               \
+    for (y = 1; y < h; y++) {                                                  \
+        for (x = 0; x < size; x++)                                             \
+            score += FFABS(s1[x] - s2[x] - s1[x + stride] + s2[x + stride]);   \
+        s1 += stride;                                                          \
+        s2 += stride;                                                          \
+    }                                                                          \
+                                                                               \
+    return score;                                                              \
 }
+VSAD(8)
+VSAD(16)
 
 #define SQ(a) ((a) * (a))
 #define VSSE_INTRA(size)                                                \
@@ -1315,20 +1319,23 @@ static int vsse_intra ## size ## _c(MpegEncContext *c,                  \
 VSSE_INTRA(8)
 VSSE_INTRA(16)
 
-static int vsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,
-                    int stride, int h)
-{
-    int score = 0, x, y;
-
-    for (y = 1; y < h; y++) {
-        for (x = 0; x < 16; x++)
-            score += SQ(s1[x] - s2[x] - s1[x + stride] + s2[x + stride]);
-        s1 += stride;
-        s2 += stride;
-    }
-
-    return score;
+#define VSSE(size)                                                             \
+static int vsse ## size ## _c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,     \
+                    int stride, int h)                                         \
+{                                                                              \
+    int score = 0, x, y;                                                       \
+                                                                               \
+    for (y = 1; y < h; y++) {                                                  \
+        for (x = 0; x < size; x++)                                             \
+            score += SQ(s1[x] - s2[x] - s1[x + stride] + s2[x + stride]);      \
+        s1 += stride;                                                          \
+        s2 += stride;                                                          \
+    }                                                                          \
+                                                                               \
+    return score;                                                              \
 }
+VSSE(8)
+VSSE(16)
 
 #define WRAPPER8_16_SQ(name8, name16)                                   \
 static int name16(MpegEncContext *s, uint8_t *dst, uint8_t *src,        \
@@ -1668,9 +1675,11 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     SET_CMP_FUNC(rd)
     SET_CMP_FUNC(bit)
     c->vsad[0] = vsad16_c;
+    c->vsad[1] = vsad8_c;
     c->vsad[4] = vsad_intra16_c;
     c->vsad[5] = vsad_intra8_c;
     c->vsse[0] = vsse16_c;
+    c->vsse[1] = vsse8_c;
     c->vsse[4] = vsse_intra16_c;
     c->vsse[5] = vsse_intra8_c;
     c->nsse[0] = nsse16_c;

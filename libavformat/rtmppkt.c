@@ -102,13 +102,11 @@ int ff_amf_read_number(GetByteContext *bc, double *val)
     return 0;
 }
 
-int ff_amf_read_string(GetByteContext *bc, uint8_t *str,
-                       int strsize, int *length)
+int ff_amf_get_string(GetByteContext *bc, uint8_t *str,
+                      int strsize, int *length)
 {
     int stringlen = 0;
     int readsize;
-    if (bytestream2_get_byte(bc) != AMF_DATA_TYPE_STRING)
-        return AVERROR_INVALIDDATA;
     stringlen = bytestream2_get_be16(bc);
     if (stringlen + 1 > strsize)
         return AVERROR(EINVAL);
@@ -120,6 +118,14 @@ int ff_amf_read_string(GetByteContext *bc, uint8_t *str,
     str[readsize] = '\0';
     *length = FFMIN(stringlen, readsize);
     return 0;
+}
+
+int ff_amf_read_string(GetByteContext *bc, uint8_t *str,
+                       int strsize, int *length)
+{
+    if (bytestream2_get_byte(bc) != AMF_DATA_TYPE_STRING)
+        return AVERROR_INVALIDDATA;
+    return ff_amf_get_string(bc, str, strsize, length);
 }
 
 int ff_amf_read_null(GetByteContext *bc)

@@ -102,21 +102,6 @@ typedef struct CLJRContext {
     int             dither_type;
 } CLJRContext;
 
-static av_cold int encode_init(AVCodecContext *avctx)
-{
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
-
-static av_cold int encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
-
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *p, int *got_packet)
 {
@@ -130,11 +115,15 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         { 0xCB2A0000, 0xCB250000 },
     };
 
+    if (avctx->width%4 && avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+         av_log(avctx, AV_LOG_ERROR,
+                "Widths which are not a multiple of 4 might fail with some decoders, "
+                "use vstrict=-1 / -strict -1 to use %d anyway.\n", avctx->width);
+         return AVERROR_EXPERIMENTAL;
+    }
+
     if ((ret = ff_alloc_packet2(avctx, pkt, 32*avctx->height*avctx->width/4)) < 0)
         return ret;
-
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    avctx->coded_frame->key_frame = 1;
 
     init_put_bits(&pb, pkt->data, pkt->size);
 
@@ -142,11 +131,17 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         uint8_t *luma = &p->data[0][y * p->linesize[0]];
         uint8_t *cb   = &p->data[1][y * p->linesize[1]];
         uint8_t *cr   = &p->data[2][y * p->linesize[2]];
+        uint8_t luma_tmp[4];
         for (x = 0; x < avctx->width; x += 4) {
             switch (a->dither_type) {
             case 0: dither = 0x492A0000;                       break;
             case 1: dither = dither * 1664525 + 1013904223;    break;
             case 2: dither = ordered_dither[ y&1 ][ (x>>2)&1 ];break;
+            }
+            if (x+3 >= avctx->width) {
+                memset(luma_tmp, 0, sizeof(luma_tmp));
+                memcpy(luma_tmp, luma, avctx->width - x);
+                luma = luma_tmp;
             }
             put_bits(&pb, 5, (249*(luma[3] +  (dither>>29)   )) >> 11);
             put_bits(&pb, 5, (249*(luma[2] + ((dither>>26)&7))) >> 11);
@@ -186,9 +181,7 @@ AVCodec ff_cljr_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_CLJR,
     .priv_data_size = sizeof(CLJRContext),
-    .init           = encode_init,
     .encode2        = encode_frame,
-    .close          = encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
                                                    AV_PIX_FMT_NONE },
     .priv_class     = &cljr_class,

@@ -134,37 +134,71 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         av_assert2(index >= 0);
         *consumed= index;
         index = 0;
-    }else if(compensation_distance == 0 && !c->linear && index >= 0){
-        int sample_index = 0;
-        for(dst_index=0; dst_index < dst_size; dst_index++){
-            FELEM *filter;
-            sample_index += index >> c->phase_shift;
-            index &= c->phase_mask;
-            filter= ((FELEM*)c->filter_bank) + c->filter_alloc*index;
+    } else if (compensation_distance == 0 &&
+               index >= 0 &&
+               src_size*(int64_t)c->src_incr < (INT64_MAX >> (c->phase_shift+1))) {
+        int64_t end_index = (1LL + src_size - c->filter_length) << c->phase_shift;
+        int64_t delta_frac = (end_index - index) * c->src_incr - c->frac;
+        int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
+        int n = FFMIN(dst_size, delta_n);
+        int sample_index;
 
-            if(sample_index + c->filter_length > src_size){
-                break;
-            }else{
+        if (!c->linear) {
+            sample_index = index >> c->phase_shift;
+            index &= c->phase_mask;
+            for (dst_index = 0; dst_index < n; dst_index++) {
+                FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
+
 #ifdef COMMON_CORE
                 COMMON_CORE
 #else
                 FELEM2 val=0;
-                for(i=0; i<c->filter_length; i++){
+                for (i = 0; i < c->filter_length; i++) {
                     val += src[sample_index + i] * (FELEM2)filter[i];
                 }
                 OUT(dst[dst_index], val);
 #endif
-            }
 
-            frac += dst_incr_frac;
-            index += dst_incr;
-            if(frac >= c->src_incr){
-                frac -= c->src_incr;
-                index++;
+                frac += dst_incr_frac;
+                index += dst_incr;
+                if (frac >= c->src_incr) {
+                    frac -= c->src_incr;
+                    index++;
+                }
+                sample_index += index >> c->phase_shift;
+                index &= c->phase_mask;
+            }
+        } else {
+            sample_index = index >> c->phase_shift;
+            index &= c->phase_mask;
+            for (dst_index = 0; dst_index < n; dst_index++) {
+                FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
+                FELEM2 val=0, v2 = 0;
+
+#ifdef LINEAR_CORE
+                LINEAR_CORE
+#else
+                for (i = 0; i < c->filter_length; i++) {
+                    val += src[sample_index + i] * (FELEM2)filter[i];
+                    v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_alloc];
+                }
+#endif
+                val += (v2 - val) * (FELEML) frac / c->src_incr;
+                OUT(dst[dst_index], val);
+
+                frac += dst_incr_frac;
+                index += dst_incr;
+                if (frac >= c->src_incr) {
+                    frac -= c->src_incr;
+                    index++;
+                }
+                sample_index += index >> c->phase_shift;
+                index &= c->phase_mask;
             }
         }
+
         *consumed = sample_index;
-    }else{
+    } else {
         int sample_index = 0;
         for(dst_index=0; dst_index < dst_size; dst_index++){
             FELEM *filter;

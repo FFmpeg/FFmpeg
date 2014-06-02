@@ -822,6 +822,8 @@ void av_opt_freep_ranges(AVOptionRanges **ranges);
  */
 int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags);
 
+int av_opt_copy(void *dest, void *src);
+
 /**
  * Get a default list of allowed ranges for the given option.
  *

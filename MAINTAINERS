@@ -418,6 +418,7 @@ Muxers/Demuxers:
   matroska.c                            Aurelien Jacobs
   matroskadec.c                         Aurelien Jacobs
   matroskaenc.c                         David Conrad
+  matroska subtitles (matroskaenc.c)    John Peebles
   metadata*                             Aurelien Jacobs
   mgsts.c                               Paul B Mahol
   microdvd*                             Aurelien Jacobs

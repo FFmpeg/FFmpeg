@@ -655,52 +655,6 @@ enum AVDiscard{
     AVDISCARD_ALL     = 48, ///< discard all
 };
 
-enum AVColorPrimaries{
-    AVCOL_PRI_BT709       = 1, ///< also ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B
-    AVCOL_PRI_UNSPECIFIED = 2,
-    AVCOL_PRI_BT470M      = 4,
-    AVCOL_PRI_BT470BG     = 5, ///< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM
-    AVCOL_PRI_SMPTE170M   = 6, ///< also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC
-    AVCOL_PRI_SMPTE240M   = 7, ///< functionally identical to above
-    AVCOL_PRI_FILM        = 8,
-    AVCOL_PRI_BT2020      = 9, ///< ITU-R BT2020
-    AVCOL_PRI_NB             , ///< Not part of ABI
-};
-
-enum AVColorTransferCharacteristic{
-    AVCOL_TRC_BT709        =  1, ///< also ITU-R BT1361
-    AVCOL_TRC_UNSPECIFIED  =  2,
-    AVCOL_TRC_GAMMA22      =  4, ///< also ITU-R BT470M / ITU-R BT1700 625 PAL & SECAM
-    AVCOL_TRC_GAMMA28      =  5, ///< also ITU-R BT470BG
-    AVCOL_TRC_SMPTE170M    =  6, ///< also ITU-R BT601-6 525 or 625 / ITU-R BT1358 525 or 625 / ITU-R BT1700 NTSC
-    AVCOL_TRC_SMPTE240M    =  7,
-    AVCOL_TRC_LINEAR       =  8, ///< "Linear transfer characteristics"
-    AVCOL_TRC_LOG          =  9, ///< "Logarithmic transfer characteristic (100:1 range)"
-    AVCOL_TRC_LOG_SQRT     = 10, ///< "Logarithmic transfer characteristic (100 * Sqrt( 10 ) : 1 range)"
-    AVCOL_TRC_IEC61966_2_4 = 11, ///< IEC 61966-2-4
-    AVCOL_TRC_BT1361_ECG   = 12, ///< ITU-R BT1361 Extended Colour Gamut
-    AVCOL_TRC_IEC61966_2_1 = 13, ///< IEC 61966-2-1 (sRGB or sYCC)
-    AVCOL_TRC_BT2020_10    = 14, ///< ITU-R BT2020 for 10 bit system
-    AVCOL_TRC_BT2020_12    = 15, ///< ITU-R BT2020 for 12 bit system
-    AVCOL_TRC_NB               , ///< Not part of ABI
-};
-
-/**
- *  X   X      3 4 X      X are luma samples,
- *             1 2        1-6 are possible chroma positions
- *  X   X      5 6 X      0 is undefined/unknown position
- */
-enum AVChromaLocation{
-    AVCHROMA_LOC_UNSPECIFIED = 0,
-    AVCHROMA_LOC_LEFT        = 1, ///< mpeg2/4, h264 default
-    AVCHROMA_LOC_CENTER      = 2, ///< mpeg1, jpeg, h263
-    AVCHROMA_LOC_TOPLEFT     = 3, ///< DV
-    AVCHROMA_LOC_TOP         = 4,
-    AVCHROMA_LOC_BOTTOMLEFT  = 5,
-    AVCHROMA_LOC_BOTTOM      = 6,
-    AVCHROMA_LOC_NB             , ///< Not part of ABI
-};
-
 enum AVAudioServiceType {
     AV_AUDIO_SERVICE_TYPE_MAIN              = 0,
     AV_AUDIO_SERVICE_TYPE_EFFECTS           = 1,
@@ -2975,6 +2929,21 @@ typedef struct AVCodecContext {
      * - decoding: unused.
      */
     uint64_t vbv_delay;
+
+    /**
+     * Encoding only. Allow encoders to output packets that do not contain any
+     * encoded data, only side data.
+     *
+     * Some encoders need to output such packets, e.g. to update some stream
+     * parameters at the end of encoding.
+     *
+     * All callers are strongly recommended to set this option to 1 and update
+     * their code to deal with such packets, since this behaviour may become
+     * always enabled in the future (then this option will be deprecated and
+     * later removed). To avoid ABI issues when this happens, the callers should
+     * use AVOptions to set this field.
+     */
+    int side_data_only_packets;
 
     /**
      * Timebase in which pkt_dts/pts and AVPacket.dts/pts are.

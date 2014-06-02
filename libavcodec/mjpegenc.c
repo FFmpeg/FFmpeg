@@ -539,13 +539,22 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     if(s->avctx->flags & CODEC_FLAG_EMU_EDGE)
         return AVERROR(EINVAL);
 
+    if ((avctx->height & 15) && avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Heights which are not a multiple of 16 might fail with some decoders, "
+               "use vstrict=-1 / -strict -1 to use %d anyway.\n", avctx->height);
+        av_log(avctx, AV_LOG_WARNING, "If you have a device that plays AMV videos, please test if videos "
+               "with such heights work with it and report your findings to ffmpeg-devel@ffmpeg.org\n");
+        return AVERROR_EXPERIMENTAL;
+    }
+
     pic = av_frame_clone(pic_arg);
     if (!pic)
         return AVERROR(ENOMEM);
     //picture should be flipped upside-down
     for(i=0; i < 3; i++) {
         int vsample = i ? 2 >> chroma_v_shift : 2;
-        pic->data[i] += (pic->linesize[i] * (vsample * (8 * s->mb_height -((s->height/V_MAX)&7)) - 1 ));
+        pic->data[i] += pic->linesize[i] * (vsample * s->height / V_MAX - 1);
         pic->linesize[i] *= -1;
     }
     ret = ff_MPV_encode_picture(avctx, pkt, pic, got_packet);
