@@ -3234,7 +3234,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             }
         }
 #if FF_API_R_FRAME_RATE
-        ff_rfps_add_frame(ic, st, pkt->dts);
+        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+            ff_rfps_add_frame(ic, st, pkt->dts);
 #endif
         if (st->parser && st->parser->parser->split && !st->codec->extradata) {
             int i = st->parser->parser->split(st->codec, pkt->data, pkt->size);
