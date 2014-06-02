@@ -38,7 +38,6 @@ HEVC_SAMPLES =                  \
     FILLER_A_Sony_1             \
     HRD_A_Fujitsu_2             \
     INITQP_A_Sony_1             \
-    INITQP_B_Sony_1             \
     ipcm_A_NEC_3                \
     ipcm_B_NEC_3                \
     ipcm_C_NEC_3                \
@@ -142,6 +141,7 @@ HEVC_SAMPLES_10BIT =            \
     WPP_D_ericsson_MAIN10_2     \
     WPP_E_ericsson_MAIN10_2     \
     WPP_F_ericsson_MAIN10_2     \
+    INITQP_B_Sony_1             \
 
 # equivalent bitstreams
 # AMP_D_Hisilicon_3 -- AMP_D_Hisilicon
