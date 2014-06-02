@@ -688,6 +688,13 @@ check_ld(){
     check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $libs $extralibs
 }
 
+print_include(){
+    hdr=$1
+    test "${hdr%.h}" = "${hdr}" &&
+        echo "#include $hdr"    ||
+        echo "#include <$hdr>"
+}
+
 check_cppflags(){
     log check_cppflags "$@"
     set -- $($filter_cppflags "$@")
@@ -765,7 +772,7 @@ check_func_headers(){
     shift 2
     {
         for hdr in $headers; do
-            echo "#include <$hdr>"
+            print_include $hdr
         done
         for func in $funcs; do
             echo "long check_$func(void) { return (long) $func; }"
