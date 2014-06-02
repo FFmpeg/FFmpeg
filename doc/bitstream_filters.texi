@@ -121,6 +121,13 @@ ffmpeg -i frame_%d.jpg -c:v copy rotated.avi
 
 @section noise
 
+Damages the contents of packets without damaging the container. Can be
+used for fuzzing or testing error resilience/concealment.
+
+@example
+ffmpeg -i INPUT -c copy -bsf noise output.mkv
+@end example
+
 @section remove_extra
 
 @c man end BITSTREAM FILTERS
