@@ -473,20 +473,6 @@ typedef struct SwsContext {
     vector signed short  *vYCoeffsBank, *vCCoeffsBank;
 #endif
 
-#if ARCH_BFIN
-    DECLARE_ALIGNED(4, uint32_t, oy);
-    DECLARE_ALIGNED(4, uint32_t, oc);
-    DECLARE_ALIGNED(4, uint32_t, zero);
-    DECLARE_ALIGNED(4, uint32_t, cy);
-    DECLARE_ALIGNED(4, uint32_t, crv);
-    DECLARE_ALIGNED(4, uint32_t, rmask);
-    DECLARE_ALIGNED(4, uint32_t, cbu);
-    DECLARE_ALIGNED(4, uint32_t, bmask);
-    DECLARE_ALIGNED(4, uint32_t, cgu);
-    DECLARE_ALIGNED(4, uint32_t, cgv);
-    DECLARE_ALIGNED(4, uint32_t, gmask);
-#endif
-
     int use_mmx_vfilter;
 
 /* pre defined color-spaces gamma */
@@ -622,7 +608,6 @@ av_cold void ff_sws_init_range_convert(SwsContext *c);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
-SwsFunc ff_yuv2rgb_init_bfin(SwsContext *c);
 
 #if FF_API_SWS_FORMAT_NAME
 /**
@@ -851,7 +836,6 @@ extern const AVClass sws_context_class;
  * source and destination formats, bit depths, flags, etc.
  */
 void ff_get_unscaled_swscale(SwsContext *c);
-void ff_get_unscaled_swscale_bfin(SwsContext *c);
 void ff_get_unscaled_swscale_ppc(SwsContext *c);
 void ff_get_unscaled_swscale_arm(SwsContext *c);
 
