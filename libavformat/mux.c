@@ -675,7 +675,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             av_free(this_pktl);
             return ret;
         }
-        av_copy_packet_side_data(&this_pktl->pkt, &this_pktl->pkt); // copy side data
     }
 
     if (s->streams[pkt->stream_index]->last_in_packet_buffer) {
