@@ -270,7 +270,7 @@ static void sub2video_heartbeat(InputStream *ist, int64_t pts)
         if (!ist2->sub2video.frame)
             continue;
         /* subtitles seem to be usually muxed ahead of other streams;
-           if not, substracting a larger time here is necessary */
+           if not, subtracting a larger time here is necessary */
         pts2 = av_rescale_q(pts, ist->st->time_base, ist2->st->time_base) - 1;
         /* do not send the heartbeat frame if the subtitle is already ahead */
         if (pts2 <= ist2->sub2video.last_pts)

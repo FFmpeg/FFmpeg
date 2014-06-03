@@ -2423,7 +2423,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         }
 
-        /* make sure that we have managed to get equivelant dts/avcodec channel
+        /* make sure that we have managed to get equivalent dts/avcodec channel
          * masks in some sense -- unfortunately some channels could overlap */
         if (av_popcount(channel_mask) != av_popcount(channel_layout)) {
             av_log(avctx, AV_LOG_DEBUG,

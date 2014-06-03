@@ -714,7 +714,7 @@ Change the syncpoint usage in nut:
 @table @option
 @item @var{default} use the normal low-overhead seeking aids.
 @item @var{none} do not use the syncpoints at all, reducing the overhead but making the stream non-seekable;
-    Use of this option is not recommanded, as the resulting files are very damage
+    Use of this option is not recommended, as the resulting files are very damage
     sensitive and seeking is not possible. Also in general the overhead from
     syncpoints is negligible. Note, -@code{write_index} 0 can be used to disable
     all growing data tables, allowing to mux endless streams with limited memory

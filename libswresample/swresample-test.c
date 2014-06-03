@@ -164,7 +164,7 @@ static void audiogen(void *data, enum AVSampleFormat sample_fmt,
         a += M_PI * 1000.0 * 2.0 / sample_rate;
     }
 
-    /* 1 second of varing frequency between 100 and 10000 Hz */
+    /* 1 second of varying frequency between 100 and 10000 Hz */
     a = 0;
     for (i = 0; i < 1 * sample_rate && k < nb_samples; i++, k++) {
         v = sin(a) * 0.30;

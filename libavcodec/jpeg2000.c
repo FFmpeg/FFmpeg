@@ -249,7 +249,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         else
             reslevel->nbands = 3;
 
-        /* Number of precincts wich span the tile for resolution level reslevelno
+        /* Number of precincts which span the tile for resolution level reslevelno
          * see B.6 in ISO/IEC 15444-1:2002 eq. B-16
          * num_precincts_x = |- trx_1 / 2 ^ log2_prec_width) -| - (trx_0 / 2 ^ log2_prec_width)
          * num_precincts_y = |- try_1 / 2 ^ log2_prec_width) -| - (try_0 / 2 ^ log2_prec_width)

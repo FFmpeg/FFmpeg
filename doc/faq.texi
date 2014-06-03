@@ -392,7 +392,7 @@ VOB and a few other formats do not have a global header that describes
 everything present in the file. Instead, applications are supposed to scan
 the file to see what it contains. Since VOB files are frequently large, only
 the beginning is scanned. If the subtitles happen only later in the file,
-they will not be initally detected.
+they will not be initially detected.
 
 Some applications, including the @code{ffmpeg} command-line tool, can only
 work with streams that were detected during the initial scan; streams that

@@ -257,7 +257,7 @@ enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc);
  *
  * See av_get_chroma_sub_sample() for a function that asserts a
  * valid pixel format instead of returning an error code.
- * Its recommanded that you use avcodec_get_chroma_sub_sample unless
+ * Its recommended that you use avcodec_get_chroma_sub_sample unless
  * you do check the return code!
  *
  * @param[in]  pix_fmt the pixel format

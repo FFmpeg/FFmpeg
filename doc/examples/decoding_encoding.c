@@ -640,7 +640,7 @@ int main(int argc, char **argv)
                "This program generates a synthetic stream and encodes it to a file\n"
                "named test.h264, test.mp2 or test.mpg depending on output_type.\n"
                "The encoded stream is then decoded and written to a raw data output.\n"
-               "output_type must be choosen between 'h264', 'mp2', 'mpg'.\n",
+               "output_type must be chosen between 'h264', 'mp2', 'mpg'.\n",
                argv[0]);
         return 1;
     }

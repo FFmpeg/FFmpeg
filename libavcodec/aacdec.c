@@ -1946,7 +1946,7 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
             avpriv_request_sample(ac->avctx, "SSR");
             return AVERROR_PATCHWELCOME;
         }
-        // I see no textual basis in the spec for this occuring after SSR gain
+        // I see no textual basis in the spec for this occurring after SSR gain
         // control, but this is what both reference and real implmentations do
         if (tns->present && er_syntax)
             if (decode_tns(ac, tns, gb, ics) < 0)
