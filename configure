@@ -1718,6 +1718,7 @@ SYSTEM_FUNCS="
 "
 
 TOOLCHAIN_FEATURES="
+    as_dn_directive
     asm_mod_q
     attribute_may_alias
     attribute_packed
@@ -4267,6 +4268,20 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
+
+if enabled asm; then
+    enabled     arm         && nogas=die
+    enabled_all ppc altivec && nogas=warn
+    as=${gas:=$as}
+    check_as <<EOF && enable gnu_as || \
+        $nogas "GNU assembler not found, install gas-preprocessor"
+.macro m n
+\n: .int 0
+.endm
+m x
+EOF
+fi
+
 check_inline_asm inline_asm_labels '"1:\n"'
 
 check_inline_asm inline_asm_nonlocal_labels '"Label:\n"'
@@ -4290,7 +4305,6 @@ float func(float a, float b){ return a+b; }
 EOF
 
     enabled thumb && check_cflags -mthumb || check_cflags -marm
-    nogas=die
 
     if     check_cpp_condition stddef.h "defined __ARM_PCS_VFP"; then
         enable vfp_args
@@ -4317,6 +4331,11 @@ EOF
             $ARCH_EXT_LIST_ARM
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
+
+    check_as <<EOF && enable as_dn_directive
+ra .dn d0.i16
+.unreq ra
+EOF
 
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
 
@@ -4351,9 +4370,6 @@ elif enabled ppc; then
 
     # AltiVec flags: The FSF version of GCC differs from the Apple version
     if enabled altivec; then
-        if ! enabled_any pic ppc64; then
-            nogas=warn
-        fi
         check_cflags -maltivec -mabi=altivec &&
         { check_header altivec.h && inc_altivec_h="#include <altivec.h>" ; } ||
         check_cflags -faltivec
@@ -4437,17 +4453,6 @@ EOF
         ;;
     esac
 
-fi
-
-if enabled asm; then
-    as=${gas:=$as}
-    check_as <<EOF && enable gnu_as || \
-        $nogas "GNU assembler not found, install gas-preprocessor"
-.macro m n
-\n: .int 0
-.endm
-m x
-EOF
 fi
 
 check_ldflags -Wl,--as-needed
