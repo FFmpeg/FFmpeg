@@ -262,6 +262,20 @@ typedef struct Vp3DecodeContext {
  * VP3 specific functions
  ************************************************************************/
 
+static av_cold void free_tables(AVCodecContext *avctx)
+{
+    Vp3DecodeContext *s = avctx->priv_data;
+
+    av_freep(&s->superblock_coding);
+    av_freep(&s->all_fragments);
+    av_freep(&s->coded_fragment_list[0]);
+    av_freep(&s->dct_tokens_base);
+    av_freep(&s->superblock_fragments);
+    av_freep(&s->macroblock_coding);
+    av_freep(&s->motion_val[0]);
+    av_freep(&s->motion_val[1]);
+}
+
 static void vp3_decode_flush(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
@@ -279,14 +293,7 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     Vp3DecodeContext *s = avctx->priv_data;
     int i;
 
-    av_freep(&s->superblock_coding);
-    av_freep(&s->all_fragments);
-    av_freep(&s->coded_fragment_list[0]);
-    av_freep(&s->dct_tokens_base);
-    av_freep(&s->superblock_fragments);
-    av_freep(&s->macroblock_coding);
-    av_freep(&s->motion_val[0]);
-    av_freep(&s->motion_val[1]);
+    free_tables(avctx);
     av_freep(&s->edge_emu_buffer);
 
     s->theora_tables = 0;
