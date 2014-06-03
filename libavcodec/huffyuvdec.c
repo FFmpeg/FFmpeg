@@ -559,23 +559,62 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
     return 0;
 }
 
-/* TODO instead of restarting the read when the code isn't in the first level
- * of the joint table, jump into the 2nd level of the individual table. */
-#define READ_2PIX(dst0, dst1, plane1){\
-    uint16_t code = get_vlc2(&s->gb, s->vlc[4+plane1].table, VLC_BITS, 1);\
-    if(code != 0xffff){\
-        dst0 = code>>8;\
-        dst1 = code;\
-    }else{\
-        dst0 = get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3);\
-        dst1 = get_vlc2(&s->gb, s->vlc[plane1].table, VLC_BITS, 3);\
-    }\
-}
+#define DUAL_INTERN(dst, table, gb, name, bits, max_depth)            \
+    code = table[index][0];                                 \
+    n    = table[index][1];                                 \
+    if (max_depth > 1 && n < 0) {                           \
+        LAST_SKIP_BITS(name, gb, bits);                     \
+        UPDATE_CACHE(name, gb);                             \
+                                                            \
+        nb_bits = -n;                                       \
+        index   = SHOW_UBITS(name, gb, nb_bits) + code;     \
+        code    = table[index][0];                          \
+        n       = table[index][1];                          \
+        if (max_depth > 2 && n < 0) {                       \
+            LAST_SKIP_BITS(name, gb, nb_bits);              \
+            UPDATE_CACHE(name, gb);                         \
+                                                            \
+            nb_bits = -n;                                   \
+            index   = SHOW_UBITS(name, gb, nb_bits) + code; \
+            code    = table[index][0];                      \
+            n       = table[index][1];                      \
+        }                                                   \
+    }                                                       \
+    dst = code;                                             \
+    LAST_SKIP_BITS(name, gb, n)
+
+
+#define GET_VLC_DUAL(dst0, dst1, name, gb, dtable, table1, table2,  \
+                     bits, max_depth, rsvd )                        \
+    do {                                                            \
+        unsigned int index = SHOW_UBITS(name, gb, bits);            \
+        int          code  = dtable[index][0];                      \
+        int          n     = dtable[index][1];                      \
+                                                                    \
+        if (code != rsvd && n>0) {                                  \
+            dst0 = code>>8;                                         \
+            dst1 = code;                                            \
+            LAST_SKIP_BITS(name, gb, n);                            \
+        } else {                                                    \
+            int nb_bits;                                            \
+            DUAL_INTERN(dst0, table1, gb, name, bits, max_depth);   \
+                                                                    \
+            UPDATE_CACHE(re, gb);                                   \
+            index = SHOW_UBITS(name, gb, bits);                     \
+            DUAL_INTERN(dst1, table2, gb, name, bits, max_depth);   \
+        }                                                           \
+    } while (0)
+
+#define READ_2PIX(dst0, dst1, plane1)\
+    UPDATE_CACHE(re, &s->gb); \
+    GET_VLC_DUAL(dst0, dst1, re, &s->gb, s->vlc[4+plane1].table, \
+                 s->vlc[0].table, s->vlc[plane1].table, \
+                 VLC_BITS, 3, 0xffff)
 
 static void decode_422_bitstream(HYuvContext *s, int count)
 {
     int i;
-
+    OPEN_READER(re, &s->gb);
     count /= 2;
 
     if (count >= (get_bits_left(&s->gb)) / (31 * 4)) {
@@ -592,8 +631,11 @@ static void decode_422_bitstream(HYuvContext *s, int count)
             READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
         }
     }
+    CLOSE_READER(re, &s->gb);
 }
 
+/* TODO instead of restarting the read when the code isn't in the first level
+ * of the joint table, jump into the 2nd level of the individual table. */
 #define READ_2PIX_PLANE(dst0, dst1, plane){\
     uint16_t code = get_vlc2(&s->gb, s->vlc[4+plane].table, VLC_BITS, 1);\
     if(code != 0xffff){\
@@ -663,7 +705,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
 static void decode_gray_bitstream(HYuvContext *s, int count)
 {
     int i;
-
+    OPEN_READER(re, &s->gb);
     count/=2;
 
     if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
@@ -675,6 +717,7 @@ static void decode_gray_bitstream(HYuvContext *s, int count)
             READ_2PIX(s->temp[0][2 * i], s->temp[0][2 * i + 1], 0);
         }
     }
+    CLOSE_READER(re, &s->gb);
 }
 
 static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
