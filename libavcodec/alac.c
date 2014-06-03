@@ -615,6 +615,12 @@ static int alac_set_info(ALACContext *alac)
 
     /* buffer size / 2 ? */
     alac->setinfo_max_samples_per_frame = bytestream_get_be32(&ptr);
+    if (!alac->setinfo_max_samples_per_frame ||
+        alac->setinfo_max_samples_per_frame > INT_MAX / sizeof(int32_t)) {
+        av_log(alac->avctx, AV_LOG_ERROR, "max samples per frame invalid: %u\n",
+               alac->setinfo_max_samples_per_frame);
+        return AVERROR_INVALIDDATA;
+    }
     ptr++;                          /* compatible version */
     alac->setinfo_sample_size           = *ptr++;
     alac->setinfo_rice_historymult      = *ptr++;
