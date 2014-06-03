@@ -1863,6 +1863,12 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     // The following line may be required in some cases where there is no parser
     // or the parser does not has_b_frames correctly
 //     ist->st->codec->has_b_frames = ist->dec_ctx->has_b_frames;
+    if (ist->st->codec->has_b_frames < ist->dec_ctx->has_b_frames) {
+        av_log(ist->dec_ctx, AV_LOG_WARNING, "has_b_frames is larger in decoder than demuxer");
+        av_log(ist->dec_ctx, AV_LOG_WARNING, "If you want to help, upload a sample "
+               "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
+               "and contact the ffmpeg-devel mailing list.\n");
+    }
 
     if (*got_output || ret<0 || pkt->size)
         decode_error_stat[ret<0] ++;
