@@ -61,7 +61,7 @@ ELF     .size   \name, . - \name
         adrp            \rd, \val@PAGE
         add             \rd, \rd, \val@PAGEOFF
 #elif CONFIG_PIC
-        adrp            \rd, :pg_hi21:\val
+        adrp            \rd, \val
         add             \rd, \rd, :lo12:\val
 #else
         ldr             \rd, =\val
