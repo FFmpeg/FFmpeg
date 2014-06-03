@@ -668,7 +668,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "muxer <- type:%s "
                 "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s size:%d\n",
-                av_get_media_type_string(ost->st->codec->codec_type),
+                av_get_media_type_string(ost->enc_ctx->codec_type),
                 av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
                 av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ost->st->time_base),
                 pkt->size
@@ -690,7 +690,7 @@ static void close_output_stream(OutputStream *ost)
 
     ost->finished |= ENCODER_FINISHED;
     if (of->shortest) {
-        int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, AV_TIME_BASE_Q);
+        int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, ost->enc_ctx->time_base, AV_TIME_BASE_Q);
         of->recording_time = FFMIN(of->recording_time, end);
     }
 }
@@ -1548,7 +1548,7 @@ static void flush_encoders(void)
                     pkt.duration = av_rescale_q(pkt.duration, enc->time_base, ost->st->time_base);
                 pkt_size = pkt.size;
                 write_frame(os, &pkt, ost);
-                if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename) {
+                if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename) {
                     do_video_stats(ost, pkt_size);
                 }
             }
@@ -2393,10 +2393,10 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     }
     e = av_dict_get(ost->encoder_opts, "flags", NULL, 0);
     if (e) {
-        const AVOption *o = av_opt_find(ost->st->codec, "flags", NULL, 0, 0);
+        const AVOption *o = av_opt_find(ost->enc_ctx, "flags", NULL, 0, 0);
         if (!o)
             return;
-        av_opt_eval_flags(ost->st->codec, o, e->value, &codec_flags);
+        av_opt_eval_flags(ost->enc_ctx, o, e->value, &codec_flags);
     }
 
     encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(ost->enc->name) + 2;
@@ -3096,7 +3096,7 @@ static int check_keyboard_interaction(int64_t cur_time)
         }
         for(i=0;i<nb_output_streams;i++) {
             OutputStream *ost = output_streams[i];
-            ost->st->codec->debug = debug;
+            ost->enc_ctx->debug = debug;
         }
         if(debug) av_log_set_level(AV_LOG_DEBUG);
         fprintf(stderr,"debug=%d\n", debug);
