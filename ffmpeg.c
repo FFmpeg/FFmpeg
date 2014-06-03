@@ -1867,7 +1867,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         av_log(ist->dec_ctx, AV_LOG_WARNING, "has_b_frames is larger in decoder than demuxer");
         av_log(ist->dec_ctx, AV_LOG_WARNING, "If you want to help, upload a sample "
                "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
-               "and contact the ffmpeg-devel mailing list.\n");
+               "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n");
     }
 
     if (*got_output || ret<0 || pkt->size)
