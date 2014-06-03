@@ -1662,6 +1662,8 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
     Vp3DecodeContext *s = avctx->priv_data;
     int y_fragment_count, c_fragment_count;
 
+    free_tables(avctx);
+
     y_fragment_count = s->fragment_width[0] * s->fragment_height[0];
     c_fragment_count = s->fragment_width[1] * s->fragment_height[1];
 
