@@ -23,7 +23,7 @@
 #ifdef __ELF__
 #   define ELF
 #else
-#   define ELF //
+#   define ELF  #
 #endif
 
 .macro  function name, export=0, align=2
