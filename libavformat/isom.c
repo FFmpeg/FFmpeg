@@ -263,6 +263,7 @@ const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_PCM_MULAW,       MKTAG('u', 'l', 'a', 'w') },
     { CODEC_ID_PCM_S16BE,       MKTAG('t', 'w', 'o', 's') },
     { CODEC_ID_PCM_S16LE,       MKTAG('s', 'o', 'w', 't') },
+    { CODEC_ID_PCM_S16BE,       MKTAG('l', 'p', 'c', 'm') },
     { CODEC_ID_PCM_S16LE,       MKTAG('l', 'p', 'c', 'm') },
     { CODEC_ID_PCM_S24BE,       MKTAG('i', 'n', '2', '4') },
     { CODEC_ID_PCM_S24LE,       MKTAG('i', 'n', '2', '4') },
