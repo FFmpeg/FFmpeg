@@ -658,6 +658,8 @@ typedef struct H264Context {
 
     FPA sei_fpa;
 
+    int has_recovery_point;
+
     int luma_weight_flag[2];    ///< 7.4.3.2 luma_weight_lX_flag
     int chroma_weight_flag[2];  ///< 7.4.3.2 chroma_weight_lX_flag
 
