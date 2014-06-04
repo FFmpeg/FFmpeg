@@ -601,7 +601,7 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
         if (get_bits1(&s->gb)) {
             embedded_downmix = get_bits1(&s->gb);
             coeff            = get_bits(&s->gb, 6);
-            scale_factor     = -1.0f / dca_dmix_code(FFMAX(coeff<<2, 4)-3);
+            scale_factor     = -1.0f / dca_dmix_code((coeff<<2)-3);
 
             s->xxch_dmix_sf[s->xxch_chset] = scale_factor;
 
@@ -622,7 +622,7 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
 
                         coeff = get_bits(&s->gb, 7);
                         ichan = dca_xxch2index(s, 1 << i);
-                        s->xxch_dmix_coeff[j][ichan] = dca_dmix_code(FFMAX(coeff<<2, 3)-3);
+                        s->xxch_dmix_coeff[j][ichan] = dca_dmix_code((coeff<<2)-3);
                     }
                 }
             }
