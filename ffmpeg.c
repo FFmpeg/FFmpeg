@@ -2950,10 +2950,32 @@ static int transcode_init(void)
                    ost->sync_ist->st->index);
         if (ost->stream_copy)
             av_log(NULL, AV_LOG_INFO, " (copy)");
-        else
-            av_log(NULL, AV_LOG_INFO, " (%s -> %s)", input_streams[ost->source_index]->dec ?
-                   input_streams[ost->source_index]->dec->name : "?",
-                   ost->enc ? ost->enc->name : "?");
+        else {
+            const AVCodec *in_codec    = input_streams[ost->source_index]->dec;
+            const AVCodec *out_codec   = ost->enc;
+            const char *decoder_name   = "?";
+            const char *in_codec_name  = "?";
+            const char *encoder_name   = "?";
+            const char *out_codec_name = "?";
+
+            if (in_codec) {
+                decoder_name  = in_codec->name;
+                in_codec_name = avcodec_descriptor_get(in_codec->id)->name;
+                if (!strcmp(decoder_name, in_codec_name))
+                    decoder_name = "native";
+            }
+
+            if (out_codec) {
+                encoder_name   = out_codec->name;
+                out_codec_name = avcodec_descriptor_get(out_codec->id)->name;
+                if (!strcmp(encoder_name, in_codec_name))
+                    encoder_name = "native";
+            }
+
+            av_log(NULL, AV_LOG_INFO, " (%s (%s) -> %s (%s))",
+                   in_codec_name, decoder_name,
+                   out_codec_name, encoder_name);
+        }
         av_log(NULL, AV_LOG_INFO, "\n");
     }
 
