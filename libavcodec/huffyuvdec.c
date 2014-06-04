@@ -729,10 +729,10 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
 
         UPDATE_CACHE(re, &s->gb);
         index = SHOW_UBITS(re, &s->gb, VLC_BITS);
-        code  = s->vlc[4].table[index][0];
         n     = s->vlc[4].table[index][1];
 
-        if (code != -1) {
+        if (n>0) {
+            code  = s->vlc[4].table[index][0];
             *(uint32_t*)&s->temp[0][4 * i] = s->pix_bgr_map[code];
             LAST_SKIP_BITS(re, &s->gb, n);
         } else {
