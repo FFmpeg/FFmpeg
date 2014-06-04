@@ -1561,6 +1561,7 @@ again:
                 if(!idr_cleared)
                     idr(h); // FIXME ensure we don't lose some frames if there is reordering
                 idr_cleared = 1;
+                h->has_recovery_point = 1;
             case NAL_SLICE:
                 init_get_bits(&hx->gb, ptr, bit_length);
                 hx->intra_gb_ptr      =
