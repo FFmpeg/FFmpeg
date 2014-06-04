@@ -601,6 +601,12 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
         if (get_bits1(&s->gb)) {
             embedded_downmix = get_bits1(&s->gb);
             coeff            = get_bits(&s->gb, 6);
+
+            if (coeff<1 || coeff>61) {
+                av_log(s->avctx, AV_LOG_ERROR, "6bit coeff %d is out of range\n", coeff);
+                return AVERROR_INVALIDDATA;
+            }
+
             scale_factor     = -1.0f / dca_dmix_code((coeff<<2)-3);
 
             s->xxch_dmix_sf[s->xxch_chset] = scale_factor;
@@ -622,6 +628,10 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
 
                         coeff = get_bits(&s->gb, 7);
                         ichan = dca_xxch2index(s, 1 << i);
+                        if ((coeff&63)<1 || (coeff&63)>61) {
+                            av_log(s->avctx, AV_LOG_ERROR, "7bit coeff %d is out of range\n", coeff);
+                            return AVERROR_INVALIDDATA;
+                        }
                         s->xxch_dmix_coeff[j][ichan] = dca_dmix_code((coeff<<2)-3);
                     }
                 }
