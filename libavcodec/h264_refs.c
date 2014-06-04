@@ -771,7 +771,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
     if (   err >= 0
         && h->long_ref_count==0
         && (h->short_ref_count<=2 || h->pps.ref_count[0] <= 1 && h->pps.ref_count[1] <= 1 && pps_count == 1)
-        && h->pps.ref_count[0]<=2 + (h->picture_structure != PICT_FRAME)
+        && h->pps.ref_count[0]<=2 + (h->picture_structure != PICT_FRAME) + (2*!h->has_recovery_point)
         && h->cur_pic_ptr->f.pict_type == AV_PICTURE_TYPE_I){
         h->cur_pic_ptr->recovered |= 1;
         if(!h->avctx->has_b_frames)

@@ -183,6 +183,8 @@ static int decode_recovery_point(H264Context *h)
     if (h->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(h->avctx, AV_LOG_DEBUG, "sei_recovery_frame_cnt: %d\n", h->sei_recovery_frame_cnt);
 
+    h->has_recovery_point = 1;
+
     return 0;
 }
 
