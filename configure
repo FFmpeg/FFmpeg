@@ -1719,6 +1719,7 @@ SYSTEM_FUNCS="
 
 TOOLCHAIN_FEATURES="
     as_dn_directive
+    as_func
     asm_mod_q
     attribute_may_alias
     attribute_packed
@@ -4279,6 +4280,11 @@ if enabled asm; then
 \n: .int 0
 .endm
 m x
+EOF
+
+    check_as <<EOF && enable as_func
+.func test
+.endfunc
 EOF
 fi
 

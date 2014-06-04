@@ -26,10 +26,16 @@
 #   define ELF  #
 #endif
 
+#if HAVE_AS_FUNC
+#   define FUNC
+#else
+#   define FUNC #
+#endif
+
 .macro  function name, export=0, align=2
     .macro endfunc
 ELF     .size   \name, . - \name
-        .endfunc
+FUNC    .endfunc
         .purgem endfunc
     .endm
         .text
@@ -37,11 +43,11 @@ ELF     .size   \name, . - \name
     .if \export
         .global EXTERN_ASM\name
 ELF     .type   EXTERN_ASM\name, %function
-        .func   EXTERN_ASM\name
+FUNC    .func   EXTERN_ASM\name
 EXTERN_ASM\name:
     .else
 ELF     .type   \name, %function
-        .func   \name
+FUNC    .func   \name
 \name:
     .endif
 .endm
