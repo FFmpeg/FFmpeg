@@ -637,16 +637,12 @@ static void decode_422_bitstream(HYuvContext *s, int count)
 
 /* TODO instead of restarting the read when the code isn't in the first level
  * of the joint table, jump into the 2nd level of the individual table. */
-#define READ_2PIX_PLANE(dst0, dst1, plane){\
-    uint16_t code = get_vlc2(&s->gb, s->vlc[4+plane].table, VLC_BITS, 1);\
-    if(code != 0xffff){\
-        dst0 = code>>8;\
-        dst1 = code;\
-    }else{\
-        dst0 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
-        dst1 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3);\
-    }\
-}
+#define READ_2PIX_PLANE(dst0, dst1, plane) \
+    UPDATE_CACHE(re, &s->gb); \
+    GET_VLC_DUAL(dst0, dst1, re, &s->gb, s->vlc[4+plane].table, \
+                 s->vlc[plane].table, s->vlc[plane].table, \
+                 VLC_BITS, 3, 0xffff)
+
 #define READ_2PIX_PLANE14(dst0, dst1, plane){\
     int16_t code = get_vlc2(&s->gb, s->vlc[4+plane].table, VLC_BITS, 1);\
     if(code != (int16_t)0xffff){\
@@ -671,6 +667,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
     count/=2;
 
     if (s->bps <= 8) {
+        OPEN_READER(re, &s->gb);
         if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
                 READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane);
@@ -680,6 +677,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
                 READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane);
             }
         }
+        CLOSE_READER(re, &s->gb);
     } else if (s->bps <= 14) {
         if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
