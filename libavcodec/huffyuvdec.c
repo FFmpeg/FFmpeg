@@ -586,13 +586,13 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 
 
 #define GET_VLC_DUAL(dst0, dst1, name, gb, dtable, table1, table2,  \
-                     bits, max_depth, rsvd )                        \
+                     bits, max_depth)                               \
     do {                                                            \
         unsigned int index = SHOW_UBITS(name, gb, bits);            \
-        int          code  = dtable[index][0];                      \
-        int          n     = dtable[index][1];                      \
+        int          code, n = dtable[index][1];                    \
                                                                     \
-        if (code != rsvd && n>0) {                                  \
+        if (n>0) {                                                  \
+            code = dtable[index][0];                                \
             dst0 = code>>8;                                         \
             dst1 = code;                                            \
             LAST_SKIP_BITS(name, gb, n);                            \
@@ -609,8 +609,7 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 #define READ_2PIX(dst0, dst1, plane1)\
     UPDATE_CACHE(re, &s->gb); \
     GET_VLC_DUAL(dst0, dst1, re, &s->gb, s->vlc[4+plane1].table, \
-                 s->vlc[0].table, s->vlc[plane1].table, \
-                 VLC_BITS, 3, 0xffff)
+                 s->vlc[0].table, s->vlc[plane1].table, VLC_BITS, 3)
 
 static void decode_422_bitstream(HYuvContext *s, int count)
 {
@@ -640,8 +639,7 @@ static void decode_422_bitstream(HYuvContext *s, int count)
 #define READ_2PIX_PLANE(dst0, dst1, plane) \
     UPDATE_CACHE(re, &s->gb); \
     GET_VLC_DUAL(dst0, dst1, re, &s->gb, s->vlc[4+plane].table, \
-                 s->vlc[plane].table, s->vlc[plane].table, \
-                 VLC_BITS, 3, 0xffff)
+                 s->vlc[plane].table, s->vlc[plane].table, VLC_BITS, 3)
 
 #define READ_2PIX_PLANE14(dst0, dst1, plane){\
     int16_t code = get_vlc2(&s->gb, s->vlc[4+plane].table, VLC_BITS, 1);\
