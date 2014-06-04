@@ -494,8 +494,10 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
         c->sum_abs_dctelem   = ff_sum_abs_dctelem_mmx;
         c->sse[0]            = ff_sse16_mmx;
         c->sse[1]            = ff_sse8_mmx;
+#if HAVE_YASM
         c->nsse[0]           = nsse16_mmx;
         c->nsse[1]           = nsse8_mmx;
+#endif
     }
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
