@@ -1,0 +1,4 @@
+0a30509d9296b857e134b762b76dbc31 *tests/data/fate/acodec-adpcm-adx-trellis.adx
+297720 tests/data/fate/acodec-adpcm-adx-trellis.adx
+7260139001fcac62384dad50a1023e75 *tests/data/fate/acodec-adpcm-adx-trellis.out.wav
+stddev: 6989.46 PSNR: 19.44 MAXDIFF:65398 bytes:  1058400/  1058432
