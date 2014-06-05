@@ -557,7 +557,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             put_bits(&pb, 7,  status->step_index);
             if (avctx->trellis > 0) {
                 uint8_t buf[64];
-                adpcm_compress_trellis(avctx, &samples_p[ch][1], buf, status,
+                adpcm_compress_trellis(avctx, &samples_p[ch][0], buf, status,
                                        64, 1);
                 for (i = 0; i < 64; i++)
                     put_bits(&pb, 4, buf[i ^ 1]);
