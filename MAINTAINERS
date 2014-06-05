@@ -341,6 +341,7 @@ Filters:
   af_ladspa.c                           Paul B Mahol
   af_pan.c                              Nicolas George
   avf_avectorscope.c                    Paul B Mahol
+  avf_showcqt.c                         Muhammad Faiz
   vf_blend.c                            Paul B Mahol
   vf_colorbalance.c                     Paul B Mahol
   vf_dejudder.c                         Nicholas Robbins

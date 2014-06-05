@@ -10133,6 +10133,76 @@ settb=AVTB
 @end example
 @end itemize
 
+@section showcqt
+Convert input audio to a video output (at full HD resolution), representing
+frequency spectrum logarithmically (using constant Q transform with
+Brown-Puckette algorithm), with musical tone scale, from E0 to D#10 (10 octaves).
+
+The filter accepts the following options:
+
+@table @option
+@item volume
+Specify the transform volume (multiplier). Acceptable value is [1.0, 100.0].
+Default value is @code{16.0}.
+
+@item timeclamp
+Specify the transform timeclamp. At low frequency, there is trade-off between
+accuracy in time domain and frequency domain. If timeclamp is lower,
+event in time domain is represented more accurately (such as fast bass drum),
+otherwise event in frequency domain is represented more accurately
+(such as bass guitar). Acceptable value is [0.1, 1.0]. Default value is @code{0.17}.
+
+@item coeffclamp
+Specify the transform coeffclamp. If coeffclamp is lower, transform is
+more accurate, otherwise transform is faster. Acceptable value is [0.1, 10.0].
+Default value is @code{1.0}.
+
+@item gamma
+Specify gamma. Lower gamma makes the spectrum more contrast, higher gamma
+makes the spectrum having more range. Acceptable value is [1.0, 7.0].
+Default value is @code{3.0}.
+
+@item fps
+Specify video fps. Default value is @code{25}.
+
+@item count
+Specify number of transform per frame, so there are fps*count transforms
+per second. Note tha audio data rate must be divisible by fps*count.
+Default value is @code{6}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Playing audio while showing the spectrum:
+@example
+ffplay -f lavfi 'amovie=a.mp3, asplit [a][out1]; [a] showcqt [out0]'
+@end example
+
+@item
+Same as above, but with frame rate 30 fps:
+@example
+ffplay -f lavfi 'amovie=a.mp3, asplit [a][out1]; [a] showcqt=fps=30:count=5 [out0]'
+@end example
+
+@item
+A1 and its harmonics: A1, A2, (near)E3, A3:
+@example
+ffplay -f lavfi 'aevalsrc=0.1*sin(2*PI*55*t)+0.1*sin(4*PI*55*t)+0.1*sin(6*PI*55*t)+0.1*sin(8*PI*55*t),
+                 asplit[a][out1]; [a] showcqt [out0]'
+@end example
+
+@item
+Same as above, but with more accuracy in frequency domain (and slower):
+@example
+ffplay -f lavfi 'aevalsrc=0.1*sin(2*PI*55*t)+0.1*sin(4*PI*55*t)+0.1*sin(6*PI*55*t)+0.1*sin(8*PI*55*t),
+                 asplit[a][out1]; [a] showcqt=timeclamp=0.5 [out0]'
+@end example
+
+@end itemize
+
 @section showspectrum
 
 Convert input audio to a video output, representing the audio frequency
