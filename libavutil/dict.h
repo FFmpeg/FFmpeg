@@ -99,8 +99,8 @@ typedef struct AVDictionary AVDictionary;
  * @param flags a collection of AV_DICT_* flags controlling how the entry is retrieved
  * @return found entry or NULL in case no matching entry was found in the dictionary
  */
-AVDictionaryEntry *
-av_dict_get(FF_CONST_AVUTIL53 AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
+AVDictionaryEntry *av_dict_get(FF_CONST_AVUTIL53 AVDictionary *m, const char *key,
+                               const AVDictionaryEntry *prev, int flags);
 
 /**
  * Get number of entries in dictionary.
