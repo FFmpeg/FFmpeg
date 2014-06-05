@@ -23,6 +23,7 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/vp3dsp.h"
@@ -179,7 +180,7 @@ static void vp3_idct_add_altivec(uint8_t *dst, int stride, int16_t block[64])
 av_cold void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags)
 {
 #if HAVE_ALTIVEC
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+    if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 
     c->idct_put = vp3_idct_put_altivec;
