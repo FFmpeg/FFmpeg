@@ -24,6 +24,8 @@
 #endif
 
 #include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavcodec/apedsp.h"
 
@@ -72,6 +74,9 @@ static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1,
 av_cold void ff_apedsp_init_ppc(APEDSPContext *c)
 {
 #if HAVE_ALTIVEC
+    if (!PPC_ALTIVEC(av_get_cpu_flags()))
+        return;
+
     c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_altivec;
 #endif /* HAVE_ALTIVEC */
 }
