@@ -624,6 +624,27 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
     return ret;
 }
 
+static void mkv_write_stereo_mode(AVIOContext *pb, uint8_t stereo_fmt,
+                                  int mode)
+{
+    int valid_fmt = 0;
+
+    switch (mode) {
+    case MODE_WEBM:
+        if (stereo_fmt <= MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM ||
+            stereo_fmt == MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT)
+            valid_fmt = 1;
+        break;
+    case MODE_MATROSKAv2:
+        if (stereo_fmt <= MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_RL)
+            valid_fmt = 1;
+        break;
+    }
+
+    if (valid_fmt)
+        put_ebml_uint (pb, MATROSKA_ID_VIDEOSTEREOMODE, stereo_fmt);
+}
+
 static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                            int i, AVIOContext *pb)
 {
@@ -723,23 +744,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , codec->width);
         put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, codec->height);
         if ((tag = av_dict_get(s->metadata, "stereo_mode", NULL, 0))) {
-            uint8_t stereo_fmt = atoi(tag->value);
-            int valid_fmt = 0;
-
-            switch (mkv->mode) {
-            case MODE_WEBM:
-                if (stereo_fmt <= MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM ||
-                    stereo_fmt == MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT)
-                    valid_fmt = 1;
-                break;
-            case MODE_MATROSKAv2:
-                if (stereo_fmt <= MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_RL)
-                    valid_fmt = 1;
-                break;
-            }
-
-            if (valid_fmt)
-                put_ebml_uint (pb, MATROSKA_ID_VIDEOSTEREOMODE, stereo_fmt);
+            mkv_write_stereo_mode(pb, atoi(tag->value), mkv->mode);
         }
         if (st->sample_aspect_ratio.num) {
             int d_width = codec->width*av_q2d(st->sample_aspect_ratio);
