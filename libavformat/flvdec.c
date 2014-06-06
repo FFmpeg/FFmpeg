@@ -56,19 +56,33 @@ typedef struct {
     int searched_for_end;
 } FLVContext;
 
-static int flv_probe(AVProbeData *p)
+static int probe(AVProbeData *p, int live)
 {
-    const uint8_t *d;
+    const uint8_t *d = p->buf;
+    unsigned offset = AV_RB32(d + 5);
 
-    d = p->buf;
     if (d[0] == 'F' &&
         d[1] == 'L' &&
         d[2] == 'V' &&
         d[3] < 5 && d[5] == 0 &&
-        AV_RB32(d + 5) > 8) {
-        return AVPROBE_SCORE_MAX;
+        offset + 100 < p->buf_size &&
+        offset > 8) {
+        int is_live = !memcmp(d + offset + 40, "NGINX RTMP", 10);
+
+        if (live == is_live)
+            return AVPROBE_SCORE_MAX;
     }
     return 0;
+}
+
+static int flv_probe(AVProbeData *p)
+{
+    return probe(p, 0);
+}
+
+static int live_flv_probe(AVProbeData *p)
+{
+    return probe(p, 1);
 }
 
 static AVStream *create_stream(AVFormatContext *s, int codec_type)
@@ -1048,4 +1062,25 @@ AVInputFormat ff_flv_demuxer = {
     .read_close     = flv_read_close,
     .extensions     = "flv",
     .priv_class     = &flv_class,
+};
+
+static const AVClass live_flv_class = {
+    .class_name = "flvdec",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVInputFormat ff_live_flv_demuxer = {
+    .name           = "live_flv",
+    .long_name      = NULL_IF_CONFIG_SMALL("live RTMP FLV (Flash Video)"),
+    .priv_data_size = sizeof(FLVContext),
+    .read_probe     = live_flv_probe,
+    .read_header    = flv_read_header,
+    .read_packet    = flv_read_packet,
+    .read_seek      = flv_read_seek,
+    .read_close     = flv_read_close,
+    .extensions     = "flv",
+    .priv_class     = &live_flv_class,
+    .flags          = AVFMT_TS_DISCONT
 };
