@@ -84,7 +84,10 @@ static av_always_inline float cbrtf(float x)
 
 #if !HAVE_FMINF
 #undef fminf
-#define fminf(x, y) (FFMIN(x,y))
+static av_always_inline av_const float fminf(float x, float y)
+{
+    return FFMIN(x, y);
+}
 #endif
 
 #if !HAVE_ISINF
