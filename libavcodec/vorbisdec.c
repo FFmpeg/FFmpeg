@@ -1828,6 +1828,7 @@ static av_cold void vorbis_decode_flush(AVCodecContext *avctx)
                              sizeof(*vc->saved));
     }
     vc->previous_window = -1;
+    vc->first_frame = 0;
 }
 
 AVCodec ff_vorbis_decoder = {
