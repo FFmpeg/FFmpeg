@@ -332,7 +332,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx,
                     uint8_t *h;\
                     dec_sample = av_clip_int16(dec_sample);\
                     d = sample - dec_sample;\
-                    ssd = nodes[j]->ssd + d*d;\
+                    ssd = nodes[j]->ssd + d*(unsigned)d;\
                     /* Check for wraparound, skip such samples completely. \
                      * Note, changing ssd to a 64 bit variable would be \
                      * simpler, avoiding this check, but it's slower on \
