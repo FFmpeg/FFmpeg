@@ -553,6 +553,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                                        64, 1);
                 for (i = 0; i < 64; i++)
                     put_bits(&pb, 4, buf[i ^ 1]);
+                status->prev_sample = status->predictor;
             } else {
                 for (i = 0; i < 64; i += 2) {
                     int t1, t2;
