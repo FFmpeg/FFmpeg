@@ -79,6 +79,7 @@ typedef struct MpegTSWrite {
 
     int reemit_pat_pmt; // backward compatibility
 
+    int pcr_period;
 #define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
 #define MPEGTS_FLAG_AAC_LATM        0x02
     int flags;
@@ -559,7 +560,7 @@ static int mpegts_write_header(AVFormatContext *s)
     }
 
     if (ts->mux_rate > 1) {
-        service->pcr_packet_period = (ts->mux_rate * PCR_RETRANS_TIME) /
+        service->pcr_packet_period = (ts->mux_rate * ts->pcr_period) /
             (TS_PACKET_SIZE * 8 * 1000);
         ts->sdt_packet_period      = (ts->mux_rate * SDT_RETRANS_TIME) /
             (TS_PACKET_SIZE * 8 * 1000);
@@ -1154,6 +1155,8 @@ static const AVOption options[] = {
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
       offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "pcr_period", "PCR retransmission time",
+      offsetof(MpegTSWrite, pcr_period), AV_OPT_TYPE_INT, { .i64 = PCR_RETRANS_TIME }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 

@@ -405,6 +405,9 @@ Set the first PID for PMT (default 0x1000, max 0x1f00).
 Set the first PID for data packets (default 0x0100, max 0x0f00).
 @item -muxrate @var{number}
 Set a constant muxrate (default VBR).
+@item -pcr_period @var{numer}
+Override the default PCR retransmission time (default 20ms), ignored
+if variable muxrate is selected.
 @end table
 
 The recognized metadata settings in mpegts muxer are @code{service_provider}
