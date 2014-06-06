@@ -80,7 +80,7 @@ static const AVOption options[] = {
     { "pagesize", "preferred page size in bytes (deprecated)",
         OFFSET(pref_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, MAX_PAGE_SIZE, PARAM },
     { "page_duration", "preferred page duration, in microseconds",
-        OFFSET(pref_duration), AV_OPT_TYPE_INT, { .i64 = 1000000 }, 0, INT64_MAX, PARAM },
+        OFFSET(pref_duration), AV_OPT_TYPE_INT64, { .i64 = 1000000 }, 0, INT64_MAX, PARAM },
     { NULL },
 };
 
