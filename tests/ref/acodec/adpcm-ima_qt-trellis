@@ -1,0 +1,4 @@
+9adceae86367ee131ca18f3fdf867d87 *tests/data/fate/acodec-adpcm-ima_qt-trellis.aiff
+281252 tests/data/fate/acodec-adpcm-ima_qt-trellis.aiff
+3f53c10d523f26093103b058baada98c *tests/data/fate/acodec-adpcm-ima_qt-trellis.out.wav
+stddev:  862.02 PSNR: 37.62 MAXDIFF:23859 bytes:  1058400/  1058560
