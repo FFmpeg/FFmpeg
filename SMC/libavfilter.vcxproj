@@ -530,6 +530,9 @@
     <ClCompile Include="..\libavfilter\avf_concat.c">
       <ObjectFileName>$(IntDir)\libavfilter_avf_concat.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_showcqt.c">
+      <ObjectFileName>$(IntDir)\libavfilter_avf_showcqt.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showspectrum.c">
       <ObjectFileName>$(IntDir)\libavfilter_avf_showspectrum.obj</ObjectFileName>
     </ClCompile>
