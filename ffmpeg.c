@@ -270,7 +270,7 @@ static void sub2video_heartbeat(InputStream *ist, int64_t pts)
         if (!ist2->sub2video.frame)
             continue;
         /* subtitles seem to be usually muxed ahead of other streams;
-           if not, substracting a larger time here is necessary */
+           if not, subtracting a larger time here is necessary */
         pts2 = av_rescale_q(pts, ist->st->time_base, ist2->st->time_base) - 1;
         /* do not send the heartbeat frame if the subtitle is already ahead */
         if (pts2 <= ist2->sub2video.last_pts)
@@ -636,7 +636,8 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         bsfc = bsfc->next;
     }
 
-    if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
+    if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
+     if(
         (avctx->codec_type == AVMEDIA_TYPE_AUDIO || avctx->codec_type == AVMEDIA_TYPE_VIDEO) &&
         pkt->dts != AV_NOPTS_VALUE &&
         ost->last_mux_dts != AV_NOPTS_VALUE) {
@@ -657,6 +658,16 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
             pkt->pts = FFMAX(pkt->pts, max);
         pkt->dts = max;
       }
+     }
+        if (pkt->dts != AV_NOPTS_VALUE &&
+            pkt->pts != AV_NOPTS_VALUE &&
+            pkt->dts > pkt->pts) {
+            av_log(s, AV_LOG_WARNING, "Invalid DTS: %"PRId64" PTS: %"PRId64" in output stream %d:%d\n",
+                   pkt->dts, pkt->pts,
+                   ost->file_index, ost->st->index);
+            pkt->pts = AV_NOPTS_VALUE;
+            pkt->dts = AV_NOPTS_VALUE;
+        }
     }
     ost->last_mux_dts = pkt->dts;
 
@@ -668,7 +679,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "muxer <- type:%s "
                 "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s size:%d\n",
-                av_get_media_type_string(ost->st->codec->codec_type),
+                av_get_media_type_string(ost->enc_ctx->codec_type),
                 av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
                 av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ost->st->time_base),
                 pkt->size
@@ -690,7 +701,7 @@ static void close_output_stream(OutputStream *ost)
 
     ost->finished |= ENCODER_FINISHED;
     if (of->shortest) {
-        int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, AV_TIME_BASE_Q);
+        int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, ost->enc_ctx->time_base, AV_TIME_BASE_Q);
         of->recording_time = FFMIN(of->recording_time, end);
     }
 }
@@ -1548,7 +1559,7 @@ static void flush_encoders(void)
                     pkt.duration = av_rescale_q(pkt.duration, enc->time_base, ost->st->time_base);
                 pkt_size = pkt.size;
                 write_frame(os, &pkt, ost);
-                if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename) {
+                if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename) {
                     do_video_stats(ost, pkt_size);
                 }
             }
@@ -1859,7 +1870,13 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     ret = avcodec_decode_video2(ist->dec_ctx,
                                 decoded_frame, got_output, pkt);
     update_benchmark("decode_video %d.%d", ist->file_index, ist->st->index);
-    ist->st->codec->has_b_frames = ist->dec_ctx->has_b_frames; //FIXME remove this once all AVParsers set it correctly
+
+    // The following line may be required in some cases where there is no parser
+    // or the parser does not has_b_frames correctly
+//     ist->st->codec->has_b_frames = ist->dec_ctx->has_b_frames;
+    if (ist->st->codec->has_b_frames < ist->dec_ctx->has_b_frames) {
+        av_log_ask_for_sample(ist->dec_ctx, "has_b_frames is larger in decoder than demuxer");
+    }
 
     if (*got_output || ret<0 || pkt->size)
         decode_error_stat[ret<0] ++;
@@ -2387,10 +2404,10 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     }
     e = av_dict_get(ost->encoder_opts, "flags", NULL, 0);
     if (e) {
-        const AVOption *o = av_opt_find(ost->st->codec, "flags", NULL, 0, 0);
+        const AVOption *o = av_opt_find(ost->enc_ctx, "flags", NULL, 0, 0);
         if (!o)
             return;
-        av_opt_eval_flags(ost->st->codec, o, e->value, &codec_flags);
+        av_opt_eval_flags(ost->enc_ctx, o, e->value, &codec_flags);
     }
 
     encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(ost->enc->name) + 2;
@@ -2944,10 +2961,32 @@ static int transcode_init(void)
                    ost->sync_ist->st->index);
         if (ost->stream_copy)
             av_log(NULL, AV_LOG_INFO, " (copy)");
-        else
-            av_log(NULL, AV_LOG_INFO, " (%s -> %s)", input_streams[ost->source_index]->dec ?
-                   input_streams[ost->source_index]->dec->name : "?",
-                   ost->enc ? ost->enc->name : "?");
+        else {
+            const AVCodec *in_codec    = input_streams[ost->source_index]->dec;
+            const AVCodec *out_codec   = ost->enc;
+            const char *decoder_name   = "?";
+            const char *in_codec_name  = "?";
+            const char *encoder_name   = "?";
+            const char *out_codec_name = "?";
+
+            if (in_codec) {
+                decoder_name  = in_codec->name;
+                in_codec_name = avcodec_descriptor_get(in_codec->id)->name;
+                if (!strcmp(decoder_name, in_codec_name))
+                    decoder_name = "native";
+            }
+
+            if (out_codec) {
+                encoder_name   = out_codec->name;
+                out_codec_name = avcodec_descriptor_get(out_codec->id)->name;
+                if (!strcmp(encoder_name, in_codec_name))
+                    encoder_name = "native";
+            }
+
+            av_log(NULL, AV_LOG_INFO, " (%s (%s) -> %s (%s))",
+                   in_codec_name, decoder_name,
+                   out_codec_name, encoder_name);
+        }
         av_log(NULL, AV_LOG_INFO, "\n");
     }
 
@@ -3090,7 +3129,7 @@ static int check_keyboard_interaction(int64_t cur_time)
         }
         for(i=0;i<nb_output_streams;i++) {
             OutputStream *ost = output_streams[i];
-            ost->st->codec->debug = debug;
+            ost->enc_ctx->debug = debug;
         }
         if(debug) av_log_set_level(AV_LOG_DEBUG);
         fprintf(stderr,"debug=%d\n", debug);

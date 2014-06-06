@@ -886,7 +886,7 @@ Set frame skip factor.
 Set frame skip exponent.
 Negative values behave identical to the corresponding positive ones, except
 that the score is normalized.
-Positive values exist primarly for compatibility reasons and are not so useful.
+Positive values exist primarily for compatibility reasons and are not so useful.
 
 @item skipcmp @var{integer} (@emph{encoding,video})
 Set frame skip compare function.

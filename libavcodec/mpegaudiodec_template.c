@@ -1705,7 +1705,9 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
 static void mp_flush(MPADecodeContext *ctx)
 {
     memset(ctx->synth_buf, 0, sizeof(ctx->synth_buf));
+    memset(ctx->mdct_buf, 0, sizeof(ctx->mdct_buf));
     ctx->last_buf_size = 0;
+    ctx->dither_state = 0;
 }
 
 static void flush(AVCodecContext *avctx)

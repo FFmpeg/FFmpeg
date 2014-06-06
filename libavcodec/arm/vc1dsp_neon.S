@@ -24,6 +24,8 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
+#include "config.h"
+
 @ Transpose rows into columns of a matrix of 16-bit elements. For 4x4, pass
 @ double-word registers, for 8x4, pass quad-word registers.
 .macro transpose16 r0, r1, r2, r3
@@ -661,6 +663,7 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         bx              lr
 endfunc
 
+#if HAVE_AS_DN_DIRECTIVE
 @ The absolute value of multiplication constants from vc1_mspel_filter and vc1_mspel_{ver,hor}_filter_16bits.
 @ The sign is embedded in the code below that carries out the multiplication (mspel_filter{,.16}).
 #define MSPEL_MODE_1_MUL_CONSTANTS  4 53 18 3
@@ -984,6 +987,7 @@ PUT_VC1_MSPEL_MC_V_ONLY(2)
 PUT_VC1_MSPEL_MC_V_ONLY(3)
 
 #undef PUT_VC1_MSPEL_MC_V_ONLY
+#endif
 
 function ff_put_pixels8x8_neon, export=1
         vld1.64         {d0}, [r1], r2

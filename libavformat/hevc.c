@@ -799,7 +799,7 @@ static void hvcc_init(HEVCDecoderConfigurationRecord *hvcc)
 
     /*
      * Initialize this field with an invalid value which can be used to detect
-     * whether we didn't see any VUI (in wich case it should be reset to zero).
+     * whether we didn't see any VUI (in which case it should be reset to zero).
      */
     hvcc->min_spatial_segmentation_idc = MAX_SPATIAL_SEGMENTATION + 1;
 }

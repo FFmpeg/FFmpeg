@@ -92,7 +92,9 @@ const char *swscale_license(void);
 #define SWS_CPU_CAPS_MMX2     0x20000000
 #define SWS_CPU_CAPS_3DNOW    0x40000000
 #define SWS_CPU_CAPS_ALTIVEC  0x10000000
+#if FF_API_ARCH_BFIN
 #define SWS_CPU_CAPS_BFIN     0x01000000
+#endif
 #define SWS_CPU_CAPS_SSE2     0x02000000
 #endif
 

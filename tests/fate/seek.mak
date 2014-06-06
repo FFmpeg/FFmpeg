@@ -1,10 +1,14 @@
 # files from fate-acodec
 
 FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_IMA_QT,  AIFF)    += adpcm-ima_qt
-FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_IMA_WAV, WAV)     += adpcm-ima_wav
-FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_MS,      WAV)     += adpcm-ms
-FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_SWF,     FLV)     += adpcm-swf
-FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_YAMAHA,  WAV)     += adpcm-yamaha
+FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_IMA_WAV, WAV)     += adpcm-ima_wav \
+                                                           adpcm-ima_wav-trellis
+FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_MS,      WAV)     += adpcm-ms      \
+                                                           adpcm-ms-trellis
+FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_SWF,     FLV)     += adpcm-swf     \
+                                                           adpcm-swf-trellis
+FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_YAMAHA,  WAV)     += adpcm-yamaha  \
+                                                           adpcm-yamaha-trellis
 FATE_SEEK_ACODEC-$(call ENCDEC, ALAC,          MOV)     += alac
 FATE_SEEK_ACODEC-$(call ENCDEC, FLAC,          FLAC)    += flac
 FATE_SEEK_ACODEC-$(call ENCDEC, MP2,           MP2 MP3) += mp2
@@ -28,6 +32,11 @@ fate-seek-acodec-adpcm-ima_wav: SRC = fate/acodec-adpcm-ima_wav.wav
 fate-seek-acodec-adpcm-ms:      SRC = fate/acodec-adpcm-ms.wav
 fate-seek-acodec-adpcm-swf:     SRC = fate/acodec-adpcm-swf.flv
 fate-seek-acodec-adpcm-yamaha:  SRC = fate/acodec-adpcm-yamaha.wav
+#fate-seek-acodec-adpcm-ima_qt-trellis:  SRC = fate/acodec-adpcm-ima_qt-trellis.aiff
+fate-seek-acodec-adpcm-ima_wav-trellis: SRC = fate/acodec-adpcm-ima_wav-trellis.wav
+fate-seek-acodec-adpcm-ms-trellis:      SRC = fate/acodec-adpcm-ms-trellis.wav
+fate-seek-acodec-adpcm-swf-trellis:     SRC = fate/acodec-adpcm-swf-trellis.flv
+fate-seek-acodec-adpcm-yamaha-trellis:  SRC = fate/acodec-adpcm-yamaha-trellis.wav
 fate-seek-acodec-alac:          SRC = fate/acodec-alac.mov
 fate-seek-acodec-flac:          SRC = fate/acodec-flac.flac
 fate-seek-acodec-mp2:           SRC = fate/acodec-mp2.mp2

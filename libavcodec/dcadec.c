@@ -601,7 +601,13 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
         if (get_bits1(&s->gb)) {
             embedded_downmix = get_bits1(&s->gb);
             coeff            = get_bits(&s->gb, 6);
-            scale_factor     = -1.0f / dca_dmix_code(FFMAX(coeff<<2, 4)-3);
+
+            if (coeff<1 || coeff>61) {
+                av_log(s->avctx, AV_LOG_ERROR, "6bit coeff %d is out of range\n", coeff);
+                return AVERROR_INVALIDDATA;
+            }
+
+            scale_factor     = -1.0f / dca_dmix_code((coeff<<2)-3);
 
             s->xxch_dmix_sf[s->xxch_chset] = scale_factor;
 
@@ -622,7 +628,11 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
 
                         coeff = get_bits(&s->gb, 7);
                         ichan = dca_xxch2index(s, 1 << i);
-                        s->xxch_dmix_coeff[j][ichan] = dca_dmix_code(FFMAX(coeff<<2, 3)-3);
+                        if ((coeff&63)<1 || (coeff&63)>61) {
+                            av_log(s->avctx, AV_LOG_ERROR, "7bit coeff %d is out of range\n", coeff);
+                            return AVERROR_INVALIDDATA;
+                        }
+                        s->xxch_dmix_coeff[j][ichan] = dca_dmix_code((coeff<<2)-3);
                     }
                 }
             }
@@ -2423,7 +2433,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         }
 
-        /* make sure that we have managed to get equivelant dts/avcodec channel
+        /* make sure that we have managed to get equivalent dts/avcodec channel
          * masks in some sense -- unfortunately some channels could overlap */
         if (av_popcount(channel_mask) != av_popcount(channel_layout)) {
             av_log(avctx, AV_LOG_DEBUG,

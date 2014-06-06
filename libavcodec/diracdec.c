@@ -199,7 +199,7 @@ typedef struct DiracContext {
     uint8_t *edge_emu_buffer[4];
     uint8_t *edge_emu_buffer_base;
 
-    uint16_t *mctmp;            /* buffer holding the MC data multipled by OBMC weights */
+    uint16_t *mctmp;            /* buffer holding the MC data multiplied by OBMC weights */
     uint8_t *mcscratch;
     int buffer_stride;
 
@@ -694,7 +694,7 @@ static void lowdelay_subband(DiracContext *s, GetBitContext *gb, int quant,
     IDWTELEM *buf1 =      b1->ibuf + top * b1->stride;
     IDWTELEM *buf2 = b2 ? b2->ibuf + top * b2->stride : NULL;
     int x, y;
-    /* we have to constantly check for overread since the spec explictly
+    /* we have to constantly check for overread since the spec explicitly
        requires this, with the meaning that all remaining coeffs are set to 0 */
     if (get_bits_count(gb) >= bits_end)
         return;

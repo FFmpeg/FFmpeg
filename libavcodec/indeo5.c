@@ -335,7 +335,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
     if (ctx->frame_type == FRAMETYPE_INTER_SCAL && !ctx->is_scalable) {
-        av_log(avctx, AV_LOG_ERROR, "Scalable inter frame in non scaleable stream\n");
+        av_log(avctx, AV_LOG_ERROR, "Scalable inter frame in non scalable stream\n");
         ctx->frame_type = FRAMETYPE_INTER;
         return AVERROR_INVALIDDATA;
     }

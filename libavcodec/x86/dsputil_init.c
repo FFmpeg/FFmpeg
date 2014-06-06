@@ -31,7 +31,6 @@
 #include "dsputil_x86.h"
 #include "idct_xvid.h"
 
-
 int32_t ff_scalarproduct_int16_mmxext(const int16_t *v1, const int16_t *v2,
                                       int order);
 int32_t ff_scalarproduct_int16_sse2(const int16_t *v1, const int16_t *v2,
@@ -58,6 +57,23 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 
     if (!high_bit_depth) {
         c->draw_edges   = ff_draw_edges_mmx;
+    }
+
+    if (avctx->lowres == 0 && !high_bit_depth) {
+        switch (avctx->idct_algo) {
+        case FF_IDCT_AUTO:
+        case FF_IDCT_SIMPLEMMX:
+            c->idct_put              = ff_simple_idct_put_mmx;
+            c->idct_add              = ff_simple_idct_add_mmx;
+            c->idct                  = ff_simple_idct_mmx;
+            c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
+            break;
+        case FF_IDCT_XVIDMMX:
+            c->idct_put              = ff_idct_xvid_mmx_put;
+            c->idct_add              = ff_idct_xvid_mmx_add;
+            c->idct                  = ff_idct_xvid_mmx;
+            break;
+        }
     }
 
 #if CONFIG_VIDEODSP && (ARCH_X86_32 || !HAVE_YASM)
@@ -158,26 +174,8 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (X86_MMX(cpu_flags)) {
-#if HAVE_INLINE_ASM
-        const int idct_algo = avctx->idct_algo;
-
-        if (avctx->lowres == 0 && !high_bit_depth) {
-            if (idct_algo == FF_IDCT_AUTO || idct_algo == FF_IDCT_SIMPLEMMX) {
-                c->idct_put              = ff_simple_idct_put_mmx;
-                c->idct_add              = ff_simple_idct_add_mmx;
-                c->idct                  = ff_simple_idct_mmx;
-                c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
-            } else if (idct_algo == FF_IDCT_XVIDMMX) {
-                c->idct_put              = ff_idct_xvid_mmx_put;
-                c->idct_add              = ff_idct_xvid_mmx_add;
-                c->idct                  = ff_idct_xvid_mmx;
-            }
-        }
-#endif /* HAVE_INLINE_ASM */
-
+    if (X86_MMX(cpu_flags))
         dsputil_init_mmx(c, avctx, cpu_flags, high_bit_depth);
-    }
 
     if (X86_MMXEXT(cpu_flags))
         dsputil_init_mmxext(c, avctx, cpu_flags, high_bit_depth);

@@ -472,12 +472,12 @@ av_cold void ff_dsputil_init_pix_mmx(DSPContext *c, AVCodecContext *avctx)
         c->sad[0] = sad16_mmxext;
         c->sad[1] = sad8_mmxext;
 
+        c->pix_abs[0][1] = sad16_x2_mmxext;
+        c->pix_abs[0][2] = sad16_y2_mmxext;
+        c->pix_abs[1][1] = sad8_x2_mmxext;
+        c->pix_abs[1][2] = sad8_y2_mmxext;
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
-            c->pix_abs[0][1] = sad16_x2_mmxext;
-            c->pix_abs[0][2] = sad16_y2_mmxext;
             c->pix_abs[0][3] = sad16_xy2_mmxext;
-            c->pix_abs[1][1] = sad8_x2_mmxext;
-            c->pix_abs[1][2] = sad8_y2_mmxext;
             c->pix_abs[1][3] = sad8_xy2_mmxext;
         }
     }

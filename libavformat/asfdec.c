@@ -501,6 +501,8 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         }
         if (st->codec->codec_id == AV_CODEC_ID_H264)
             st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
+        if (st->codec->codec_id == AV_CODEC_ID_MPEG4)
+            st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
     }
     pos2 = avio_tell(pb);
     avio_skip(pb, size - (pos2 - pos1 + 24));

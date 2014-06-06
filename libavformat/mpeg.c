@@ -464,7 +464,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     MpegDemuxContext *m = s->priv_data;
     AVStream *st;
     int len, startcode, i, es_type, ret;
-    int lpcm_header_len = -1; //Init to supress warning
+    int lpcm_header_len = -1; //Init to suppress warning
     int request_probe= 0;
     enum AVCodecID codec_id = AV_CODEC_ID_NONE;
     enum AVMediaType type;

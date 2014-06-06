@@ -1495,6 +1495,10 @@ static int dvbsub_decode(AVCodecContext *avctx,
         segment_length = AV_RB16(p);
         p += 2;
 
+        if (avctx->debug & FF_DEBUG_STARTCODE) {
+            av_log(avctx, AV_LOG_DEBUG, "segment_type:%d page_id:%d segment_length:%d\n", segment_type, page_id, segment_length);
+        }
+
         if (p_end - p < segment_length) {
             av_dlog(avctx, "incomplete or broken packet");
             return -1;
@@ -1538,8 +1542,10 @@ static int dvbsub_decode(AVCodecContext *avctx,
     }
     // Some streams do not send a display segment but if we have all the other
     // segments then we need no further data.
-    if (got_segment == 15 && sub)
+    if (got_segment == 15 && sub) {
+        av_log(avctx, AV_LOG_DEBUG, "Missing display_end_segment, emulating\n");
         *data_size = dvbsub_display_end_segment(avctx, p, 0, sub);
+    }
 
     return p - buf;
 }

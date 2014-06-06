@@ -66,7 +66,7 @@
 
 /* FF_GL_RED_COMPONENT is used for plannar pixel types.
  * Only red component is sampled in shaders.
- * On some platforms GL_RED is not availabe and GL_LUMINANCE have to be used,
+ * On some platforms GL_RED is not available and GL_LUMINANCE have to be used,
  * but since OpenGL 3.0 GL_LUMINANCE is deprecated.
  * GL_RED produces RGBA = value, 0, 0, 1.
  * GL_LUMINANCE produces RGBA = value, value, value, 1.
@@ -583,7 +583,7 @@ static void opengl_make_ortho(float matrix[16], float left, float right,
 static av_cold int opengl_read_limits(OpenGLContext *opengl)
 {
     static const struct{
-        const char *extention;
+        const char *extension;
         int major;
         int minor;
     } required_extensions[] = {
@@ -603,12 +603,12 @@ static av_cold int opengl_read_limits(OpenGLContext *opengl)
     av_log(opengl, AV_LOG_DEBUG, "OpenGL version: %s\n", version);
     sscanf(version, "%d.%d", &major, &minor);
 
-    for (i = 0; required_extensions[i].extention; i++) {
+    for (i = 0; required_extensions[i].extension; i++) {
         if (major < required_extensions[i].major &&
             (major == required_extensions[i].major && minor < required_extensions[i].minor) &&
-            !strstr(extensions, required_extensions[i].extention)) {
+            !strstr(extensions, required_extensions[i].extension)) {
             av_log(opengl, AV_LOG_ERROR, "Required extension %s is not supported.\n",
-                   required_extensions[i].extention);
+                   required_extensions[i].extension);
             av_log(opengl, AV_LOG_DEBUG, "Supported extensions are: %s\n", extensions);
             return AVERROR(ENOSYS);
         }

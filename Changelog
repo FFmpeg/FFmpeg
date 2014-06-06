@@ -9,10 +9,10 @@ version <next>:
 - replaygain data export
 - VP7 video decoder
 - Alias PIX image encoder and decoder
-- Improvments to the BRender PIX image decoder
-- Improvments to the XBM decoder
+- Improvements to the BRender PIX image decoder
+- Improvements to the XBM decoder
 - QTKit input device
-- improvments to OpenEXR image decoder
+- improvements to OpenEXR image decoder
 - support decoding 16-bit RLE SGI images
 - GDI screen grabbing for Windows
 - alternative rendition support for HTTP Live Streaming
@@ -26,6 +26,7 @@ version <next>:
 - native Opus decoder
 - display matrix export and rotation api
 - WebVTT encoder
+- showcqt multimedia filter
 
 
 version 2.2:

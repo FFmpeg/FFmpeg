@@ -17,6 +17,7 @@ OBJS-$(CONFIG_H264PRED)                += x86/h264_intrapred_init.o
 OBJS-$(CONFIG_H264QPEL)                += x86/h264_qpel.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
 OBJS-$(CONFIG_HPELDSP)                 += x86/hpeldsp_init.o
+OBJS-$(CONFIG_LLAUDDSP)                += x86/lossless_audiodsp_init.o
 OBJS-$(CONFIG_LLVIDDSP)                += x86/lossless_videodsp_init.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += x86/huffyuvdsp_init.o
 OBJS-$(CONFIG_HUFFYUVENCDSP)           += x86/huffyuvencdsp_mmx.o
@@ -30,7 +31,6 @@ OBJS-$(CONFIG_VP3DSP)                  += x86/vp3dsp_init.o
 OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
 OBJS-$(CONFIG_AAC_DECODER)             += x86/sbrdsp_init.o
-OBJS-$(CONFIG_APE_DECODER)             += x86/apedsp_init.o
 OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
@@ -96,6 +96,7 @@ YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
 YASM-OBJS-$(CONFIG_HPELDSP)            += x86/fpel.o                    \
                                           x86/hpeldsp.o
 YASM-OBJS-$(CONFIG_HUFFYUVDSP)         += x86/huffyuvdsp.o
+YASM-OBJS-$(CONFIG_LLAUDDSP)           += x86/lossless_audiodsp.o
 YASM-OBJS-$(CONFIG_LLVIDDSP)           += x86/lossless_videodsp.o
 YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36.o
 YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
@@ -105,7 +106,6 @@ YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
-YASM-OBJS-$(CONFIG_APE_DECODER)        += x86/apedsp.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
 YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o

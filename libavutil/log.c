@@ -395,8 +395,8 @@ static void missing_feature_sample(int sample, void *avc, const char *msg,
            "been implemented.\n");
     if (sample)
         av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
-               "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
-               "and contact the ffmpeg-devel mailing list.\n");
+               "of this file to ftp://upload.ffmpeg.org/incoming/ "
+               "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n");
 }
 
 void avpriv_request_sample(void *avc, const char *msg, ...)

@@ -1749,8 +1749,6 @@ void ff_get_unscaled_swscale(SwsContext *c)
             c->swscale = planarCopyWrapper;
     }
 
-    if (ARCH_BFIN)
-        ff_get_unscaled_swscale_bfin(c);
     if (ARCH_PPC)
         ff_get_unscaled_swscale_ppc(c);
 //     if (ARCH_ARM)

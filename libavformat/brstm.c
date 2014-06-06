@@ -200,7 +200,7 @@ static int read_header(AVFormatContext *s)
                 goto fail;
             }
             if (b->adpc) {
-                av_log(s, AV_LOG_WARNING, "skipping additonal ADPC chunk\n");
+                av_log(s, AV_LOG_WARNING, "skipping additional ADPC chunk\n");
                 goto skip;
             } else {
                 b->adpc = av_mallocz(asize);

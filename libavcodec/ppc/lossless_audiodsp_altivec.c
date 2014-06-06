@@ -25,7 +25,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/ppc/types_altivec.h"
-#include "libavcodec/apedsp.h"
+#include "libavcodec/lossless_audiodsp.h"
 
 #if HAVE_ALTIVEC
 static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1,
@@ -69,7 +69,7 @@ static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1,
 }
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_apedsp_init_ppc(APEDSPContext *c)
+av_cold void ff_llauddsp_init_ppc(LLAudDSPContext *c)
 {
 #if HAVE_ALTIVEC
     c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_altivec;

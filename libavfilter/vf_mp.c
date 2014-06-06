@@ -210,7 +210,7 @@ int ff_mp_msg_test(int mod, int lev){
 
 void ff_init_avcodec(void)
 {
-    //we maybe should init but its kinda 1. unneeded 2. a bit inpolite from here
+    //we maybe should init but its kinda 1. unneeded 2. a bit impolite from here
 }
 
 //Exact copy of vf.c

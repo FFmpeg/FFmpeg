@@ -666,6 +666,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     pkt->buf       = NULL;
+    pkt->side_data = NULL;
+    pkt->side_data_elems = 0;
     if ((pkt->flags & AV_PKT_FLAG_UNCODED_FRAME)) {
         av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
         av_assert0(((AVFrame *)pkt->data)->buf);
@@ -675,7 +677,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             av_free(this_pktl);
             return ret;
         }
-        av_copy_packet_side_data(&this_pktl->pkt, &this_pktl->pkt); // copy side data
     }
 
     if (s->streams[pkt->stream_index]->last_in_packet_buffer) {

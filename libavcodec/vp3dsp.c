@@ -289,8 +289,6 @@ av_cold void ff_vp3dsp_init(VP3DSPContext *c, int flags)
 
     if (ARCH_ARM)
         ff_vp3dsp_init_arm(c, flags);
-    if (ARCH_BFIN)
-        ff_vp3dsp_init_bfin(c, flags);
     if (ARCH_PPC)
         ff_vp3dsp_init_ppc(c, flags);
     if (ARCH_X86)

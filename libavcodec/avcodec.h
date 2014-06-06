@@ -575,7 +575,7 @@ typedef struct AVCodecDescriptor {
     /**
      * MIME type(s) associated with the codec.
      * May be NULL; if not, a NULL-terminated array of MIME types.
-     * The first item is always non-NULL and is the prefered MIME type.
+     * The first item is always non-NULL and is the preferred MIME type.
      */
     const char *const *mime_types;
 } AVCodecDescriptor;
@@ -2290,7 +2290,7 @@ typedef struct AVCodecContext {
     /**
      * maximum bitrate
      * - encoding: Set by user.
-     * - decoding: unused
+     * - decoding: Set by libavcodec.
      */
     int rc_max_rate;
 
@@ -4957,7 +4957,7 @@ AVBitStreamFilterContext *av_bitstream_filter_init(const char *name);
  * @return >= 0 in case of success, or a negative error code in case of failure
  *
  * If the return value is positive, an output buffer is allocated and
- * is availble in *poutbuf, and is distinct from the input buffer.
+ * is available in *poutbuf, and is distinct from the input buffer.
  *
  * If the return value is 0, the output buffer is not allocated and
  * should be considered identical to the input buffer, or in case

@@ -361,8 +361,6 @@ av_cold void ff_hpeldsp_init(HpelDSPContext *c, int flags)
         ff_hpeldsp_init_alpha(c, flags);
     if (ARCH_ARM)
         ff_hpeldsp_init_arm(c, flags);
-    if (ARCH_BFIN)
-        ff_hpeldsp_init_bfin(c, flags);
     if (ARCH_PPC)
         ff_hpeldsp_init_ppc(c, flags);
     if (ARCH_X86)

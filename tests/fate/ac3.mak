@@ -26,6 +26,14 @@ FATE_AC3 += fate-ac3-5.1-downmix-stereo
 fate-ac3-5.1-downmix-stereo: CMD = pcm -request_channels 2 -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3
 fate-ac3-5.1-downmix-stereo: REF = $(SAMPLES)/ac3/monsters_inc_5.1_448_small_stereo_v2.pcm
 
+FATE_AC3 += fate-ac3-fixed-2.0
+fate-ac3-fixed-2.0: CMD = pcm -c ac3_fixed -i $(TARGET_SAMPLES)/ac3/monsters_inc_2.0_192_small.ac3
+fate-ac3-fixed-2.0: REF = $(SAMPLES)/ac3/monsters_inc_2.0_192_small_v2.pcm
+
+FATE_AC3 += fate-ac3-fixed-4.0-downmix-mono
+fate-ac3-fixed-4.0-downmix-mono: CMD = pcm -c ac3_fixed -request_channels 1 -i $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
+fate-ac3-fixed-4.0-downmix-mono: REF = $(SAMPLES)/ac3/millers_crossing_4.0_mono_v2.pcm
+
 FATE_EAC3 += fate-eac3-1
 fate-eac3-1: CMD = pcm -i $(TARGET_SAMPLES)/eac3/csi_miami_5.1_256_spx_small.eac3
 fate-eac3-1: REF = $(SAMPLES)/eac3/csi_miami_5.1_256_spx_small_v2.pcm

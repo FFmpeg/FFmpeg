@@ -138,7 +138,7 @@ int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame);
  * Add a frame to the buffer source.
  *
  * By default, if the frame is reference-counted, this function will take
- * ownership of the reference(s) and reset the frame. This can be controled
+ * ownership of the reference(s) and reset the frame. This can be controlled
  * using the flags.
  *
  * If this function returns an error, the input frame is not touched.

@@ -80,7 +80,7 @@ thresholds with quantizer steps to find the appropriate quantization with
 distortion below threshold band by band.
 
 The quality of this method is comparable to the two loop searching method
-descibed below, but somewhat a little better and slower.
+described below, but somewhat a little better and slower.
 
 @item anmr
 Average noise to mask ratio (ANMR) trellis-based solution.

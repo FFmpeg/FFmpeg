@@ -786,13 +786,16 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
     frame->reordered_opaque = avctx->reordered_opaque;
 
 #if FF_API_AVFRAME_COLORSPACE
-    frame->color_primaries = avctx->color_primaries;
-    frame->color_trc       = avctx->color_trc;
+    if (frame->color_primaries == AVCOL_PRI_UNSPECIFIED)
+        frame->color_primaries = avctx->color_primaries;
+    if (frame->color_trc == AVCOL_TRC_UNSPECIFIED)
+        frame->color_trc = avctx->color_trc;
     if (av_frame_get_colorspace(frame) == AVCOL_SPC_UNSPECIFIED)
         av_frame_set_colorspace(frame, avctx->colorspace);
     if (av_frame_get_color_range(frame) == AVCOL_RANGE_UNSPECIFIED)
         av_frame_set_color_range(frame, avctx->color_range);
-    frame->chroma_location = avctx->chroma_sample_location;
+    if (frame->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
+        frame->chroma_location = avctx->chroma_sample_location;
 #endif
 
     switch (avctx->codec->type) {
@@ -3363,8 +3366,8 @@ void av_log_ask_for_sample(void *avc, const char *msg, ...)
     if (msg)
         av_vlog(avc, AV_LOG_WARNING, msg, argument_list);
     av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
-            "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
-            "and contact the ffmpeg-devel mailing list.\n");
+            "of this file to ftp://upload.ffmpeg.org/incoming/ "
+            "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n");
 
     va_end(argument_list);
 }

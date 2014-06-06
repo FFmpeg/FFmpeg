@@ -510,7 +510,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (ffm_read_data(s, ffm->header+16, 4, 1) != 4)
                 return -1;
         ffm->read_state = READ_DATA;
-        /* fall thru */
+        /* fall through */
     case READ_DATA:
         size = AV_RB24(ffm->header + 2);
         if ((ret = ffm_is_avail_data(s, size)) < 0)

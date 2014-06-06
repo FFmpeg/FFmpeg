@@ -25,7 +25,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
-#include "apedsp.h"
+#include "lossless_audiodsp.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "bytestream.h"
@@ -137,7 +137,7 @@ typedef struct APEContext {
     AVClass *class;                          ///< class for AVOptions
     AVCodecContext *avctx;
     DSPContext dsp;
-    APEDSPContext adsp;
+    LLAudDSPContext adsp;
     int channels;
     int samples;                             ///< samples left to decode in current frame
     int bps;
@@ -210,19 +210,6 @@ static av_cold int ape_decode_close(AVCodecContext *avctx)
     s->decoded_size = s->data_size = 0;
 
     return 0;
-}
-
-static int32_t scalarproduct_and_madd_int16_c(int16_t *v1, const int16_t *v2,
-                                              const int16_t *v3,
-                                              int order, int mul)
-{
-    int res = 0;
-
-    while (order--) {
-        res   += *v1 * *v2++;
-        *v1++ += mul * *v3++;
-    }
-    return res;
 }
 
 static av_cold int ape_decode_init(AVCodecContext *avctx)
@@ -306,16 +293,8 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
         s->predictor_decode_stereo = predictor_decode_stereo_3950;
     }
 
-    s->adsp.scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_c;
-
-    if (ARCH_ARM)
-        ff_apedsp_init_arm(&s->adsp);
-    if (ARCH_PPC)
-        ff_apedsp_init_ppc(&s->adsp);
-    if (ARCH_X86)
-        ff_apedsp_init_x86(&s->adsp);
-
     ff_dsputil_init(&s->dsp, avctx);
+    ff_llauddsp_init(&s->adsp);
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
     return 0;
