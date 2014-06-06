@@ -227,7 +227,7 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     char language[4] = { 0 };
     char buf[100];
     uint16_t langcode = 0;
-    double longitude, latitude, altitude;
+    av_unused double longitude, latitude, altitude;
     const char *key = "location";
 
     if (len < 4 + 2 + 1 + 1 + 4 + 4 + 4)
