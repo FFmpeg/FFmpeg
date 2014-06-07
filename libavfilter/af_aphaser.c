@@ -269,7 +269,7 @@ static int config_output(AVFilterLink *outlink)
     p->delay_buffer_length = p->delay * 0.001 * inlink->sample_rate + 0.5;
     p->delay_buffer = av_calloc(p->delay_buffer_length, sizeof(*p->delay_buffer) * inlink->channels);
     p->modulation_buffer_length = inlink->sample_rate / p->speed + 0.5;
-    p->modulation_buffer = av_malloc(p->modulation_buffer_length * sizeof(*p->modulation_buffer));
+    p->modulation_buffer = av_malloc_array(p->modulation_buffer_length, sizeof(*p->modulation_buffer));
 
     if (!p->modulation_buffer || !p->delay_buffer)
         return AVERROR(ENOMEM);
