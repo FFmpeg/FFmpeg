@@ -1098,6 +1098,8 @@ int ff_pred_weight_table(H264Context *h);
 int ff_set_ref_count(H264Context *h);
 
 int ff_h264_decode_slice_header(H264Context *h, H264Context *h0);
+#define SLICE_SKIPED 2
+
 int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count);
 int ff_h264_update_thread_context(AVCodecContext *dst,
                                   const AVCodecContext *src);

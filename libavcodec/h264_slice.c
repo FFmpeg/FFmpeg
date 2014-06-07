@@ -1321,6 +1321,15 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
         return AVERROR_INVALIDDATA;
     }
 
+    if (
+        (h->avctx->skip_frame >= AVDISCARD_NONREF && !h->nal_ref_idc) ||
+        (h->avctx->skip_frame >= AVDISCARD_BIDIR  && h->slice_type_nos == AV_PICTURE_TYPE_B) ||
+        (h->avctx->skip_frame >= AVDISCARD_NONINTRA && h->slice_type_nos != AV_PICTURE_TYPE_I) ||
+        (h->avctx->skip_frame >= AVDISCARD_NONKEY && h->nal_unit_type != NAL_IDR_SLICE) ||
+         h->avctx->skip_frame >= AVDISCARD_ALL) {
+         return SLICE_SKIPED;
+     }
+
     // to make a few old functions happy, it's wrong though
     h->pict_type = h->slice_type;
 
