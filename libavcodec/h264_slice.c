@@ -1856,7 +1856,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     }
 
     if (h->avctx->skip_loop_filter >= AVDISCARD_ALL ||
-        (h->avctx->skip_loop_filter >= AVDISCARD_NONKEY &&
+        (h->avctx->skip_loop_filter >= AVDISCARD_NONINTRA &&
          h->slice_type_nos != AV_PICTURE_TYPE_I) ||
         (h->avctx->skip_loop_filter >= AVDISCARD_BIDIR  &&
          h->slice_type_nos == AV_PICTURE_TYPE_B) ||

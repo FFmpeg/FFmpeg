@@ -1622,7 +1622,7 @@ again:
                      hx->nal_ref_idc) &&
                     (avctx->skip_frame < AVDISCARD_BIDIR  ||
                      hx->slice_type_nos != AV_PICTURE_TYPE_B) &&
-                    (avctx->skip_frame < AVDISCARD_NONKEY ||
+                    (avctx->skip_frame < AVDISCARD_NONINTRA ||
                      hx->slice_type_nos == AV_PICTURE_TYPE_I) &&
                     avctx->skip_frame < AVDISCARD_ALL) {
                     if (avctx->hwaccel) {
@@ -1683,7 +1683,7 @@ again:
                     (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc) &&
                     (avctx->skip_frame < AVDISCARD_BIDIR  ||
                      hx->slice_type_nos != AV_PICTURE_TYPE_B) &&
-                    (avctx->skip_frame < AVDISCARD_NONKEY ||
+                    (avctx->skip_frame < AVDISCARD_NONINTRA ||
                      hx->slice_type_nos == AV_PICTURE_TYPE_I) &&
                     avctx->skip_frame < AVDISCARD_ALL)
                     context_count++;
