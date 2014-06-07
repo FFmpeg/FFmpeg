@@ -312,7 +312,7 @@ static int channelmap_filter_frame(AVFilterLink *inlink, AVFrame *buf)
     if (nch_out > nch_in) {
         if (nch_out > FF_ARRAY_ELEMS(buf->data)) {
             uint8_t **new_extended_data =
-                av_mallocz(nch_out * sizeof(*buf->extended_data));
+                av_mallocz_array(nch_out, sizeof(*buf->extended_data));
             if (!new_extended_data) {
                 av_frame_free(&buf);
                 return AVERROR(ENOMEM);
