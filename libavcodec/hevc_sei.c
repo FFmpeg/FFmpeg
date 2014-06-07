@@ -43,7 +43,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s)
             // picture_crc = get_bits(gb, 16);
             skip_bits(gb, 16);
         } else if (hash_type == 2) {
-            // picture_checksum = get_bits(gb, 32);
+            // picture_checksum = get_bits_long(gb, 32);
             skip_bits(gb, 32);
         }
     }
