@@ -1835,6 +1835,16 @@ void av_url_split(char *proto,         int proto_size,
                   const char *url);
 
 
+/**
+ * Print detailed information about the input or output format, such as
+ * duration, bitrate, streams, container, programs, metadata, side data,
+ * codec and time base.
+ *
+ * @param ic        the context to analyze
+ * @param index     the index to print, if you have multiple inputs or outputs
+ * @param url       the URL to print, such as source or destination file
+ * @param is_output whether the context is input or ouput
+ */
 void av_dump_format(AVFormatContext *ic,
                     int index,
                     const char *url,
