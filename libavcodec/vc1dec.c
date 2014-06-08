@@ -5578,7 +5578,7 @@ av_cold void ff_vc1_init_transposed_scantables(VC1Context *v)
 {
     int i;
     for (i = 0; i < 64; i++) {
-#define transpose(x) ((x >> 3) | ((x & 7) << 3))
+#define transpose(x) (((x) >> 3) | (((x) & 7) << 3))
         v->zz_8x8[0][i] = transpose(ff_wmv1_scantable[0][i]);
         v->zz_8x8[1][i] = transpose(ff_wmv1_scantable[1][i]);
         v->zz_8x8[2][i] = transpose(ff_wmv1_scantable[2][i]);
