@@ -238,6 +238,9 @@ cglobal vector_fmul_window, 5, 6, 6, dst, src0, src1, win, len, len1
     sub       len1q, mmsize
     add       lenq,  mmsize
     jl .loop
+%if mmsize == 8
+    femms
+%endif
     REP_RET
 %endmacro
 
