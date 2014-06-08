@@ -1381,7 +1381,7 @@ static int mov_write_ctts_tag(AVIOContext *pb, MOVTrack *track)
     uint32_t atom_size;
     int i;
 
-    ctts_entries = av_malloc((track->entry + 1) * sizeof(*ctts_entries)); /* worst case */
+    ctts_entries = av_malloc_array((track->entry + 1), sizeof(*ctts_entries)); /* worst case */
     ctts_entries[0].count = 1;
     ctts_entries[0].duration = track->cluster[0].cts;
     for (i = 1; i < track->entry; i++) {
@@ -1422,7 +1422,7 @@ static int mov_write_stts_tag(AVIOContext *pb, MOVTrack *track)
         entries = 1;
     } else {
         stts_entries = track->entry ?
-                       av_malloc(track->entry * sizeof(*stts_entries)) : /* worst case */
+                       av_malloc_array(track->entry, sizeof(*stts_entries)) : /* worst case */
                        NULL;
         for (i = 0; i < track->entry; i++) {
             int duration = get_cluster_duration(track, i);
@@ -3987,7 +3987,7 @@ static int mov_write_header(AVFormatContext *s)
 
     // Reserve an extra stream for chapters for the case where chapters
     // are written in the trailer
-    mov->tracks = av_mallocz((mov->nb_streams + 1) * sizeof(*mov->tracks));
+    mov->tracks = av_mallocz_array((mov->nb_streams + 1), sizeof(*mov->tracks));
     if (!mov->tracks)
         return AVERROR(ENOMEM);
 
