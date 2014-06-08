@@ -631,7 +631,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
 
     avctx->internal->thread_ctx = fctx = av_mallocz(sizeof(FrameThreadContext));
 
-    fctx->threads = av_mallocz(sizeof(PerThreadContext) * thread_count);
+    fctx->threads = av_mallocz_array(thread_count, sizeof(PerThreadContext));
     pthread_mutex_init(&fctx->buffer_mutex, NULL);
     fctx->delaying = 1;
 
