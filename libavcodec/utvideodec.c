@@ -155,7 +155,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
                            "Slice decoding ran out of bits\n");
                     goto fail;
                 }
-                pix = get_vlc2(&gb, vlc.table, vlc.bits, 4);
+                pix = get_vlc2(&gb, vlc.table, vlc.bits, 3);
                 if (pix < 0) {
                     av_log(c->avctx, AV_LOG_ERROR, "Decoding error\n");
                     goto fail;
