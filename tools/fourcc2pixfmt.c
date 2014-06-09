@@ -100,7 +100,7 @@ int main(int argc, char **argv)
     }
 
     if (list_pix_fmt_fourccs) {
-        for (i = 0; i < AV_PIX_FMT_NB; i++) {
+        for (i = 0; av_pix_fmt_desc_get(i); i++) {
             const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(i);
             if (!pix_desc->name || pix_desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
                 continue;
