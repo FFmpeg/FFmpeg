@@ -214,6 +214,7 @@ typedef struct AVSContext {
     int luma_scan[4];
     int qp;
     int qp_fixed;
+    int pic_qp_fixed;
     int cbp;
     ScanTable scantable;
 

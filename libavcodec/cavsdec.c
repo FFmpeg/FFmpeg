@@ -904,7 +904,7 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb)
 
     /* mark top macroblocks as unavailable */
     h->flags &= ~(B_AVAIL | C_AVAIL);
-    if ((h->mby == 0) && (!h->qp_fixed)) {
+    if (!h->pic_qp_fixed) {
         h->qp_fixed = get_bits1(gb);
         h->qp       = get_bits(gb, 6);
     }
@@ -1027,6 +1027,7 @@ static int decode_pic(AVSContext *h)
         skip_bits1(&h->gb);     //advanced_pred_mode_disable
     skip_bits1(&h->gb);        //top_field_first
     skip_bits1(&h->gb);        //repeat_first_field
+    h->pic_qp_fixed =
     h->qp_fixed = get_bits1(&h->gb);
     h->qp       = get_bits(&h->gb, 6);
     if (h->cur.f->pict_type == AV_PICTURE_TYPE_I) {
