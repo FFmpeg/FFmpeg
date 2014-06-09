@@ -849,14 +849,18 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
         if (is_meta) {
             if (   pkt->side_data[i].type == AV_PKT_DATA_METADATA_UPDATE
                 || pkt->side_data[i].type == AV_PKT_DATA_STRINGS_METADATA) {
-                if (!size || data[size-1])
-                    return AVERROR(EINVAL);
+                if (!size || data[size-1]) {
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
                 while (data < data_end) {
                     const uint8_t *key = data;
                     const uint8_t *val = data + strlen(key) + 1;
 
-                    if(val >= data_end)
-                        return AVERROR(EINVAL);
+                    if(val >= data_end) {
+                        ret = AVERROR(EINVAL);
+                        goto fail;
+                    }
                     put_str(dyn_bc, key);
                     put_s(dyn_bc, -1);
                     put_str(dyn_bc, val);
@@ -937,12 +941,13 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
         }
     }
 
+fail:
     ff_put_v(bc, sm_data_count);
     dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(bc, dyn_buf, dyn_size);
     av_freep(&dyn_buf);
 
-    return 0;
+    return ret;
 }
 
 static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
