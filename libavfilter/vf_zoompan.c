@@ -159,6 +159,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (i = 0; i < nb_frames; i++) {
         int px[4];
         int py[4];
+        uint8_t *input[4];
         int64_t pts = av_rescale_q(in->pts, inlink->time_base,
                                    outlink->time_base) + s->frame_count;
 
@@ -208,8 +209,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-
-        uint8_t *input[4];
 
         for (k = 0; in->data[k]; k++)
             input[k] = in->data[k] + py[k] * in->linesize[k] + px[k];
