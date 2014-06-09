@@ -6,7 +6,6 @@ FATE_LAVF-$(call ENCDEC2, MPEG4,      MP2,       AVI)                += avi
 FATE_LAVF-$(call ENCDEC,  BMP,                   IMAGE2)             += bmp
 FATE_LAVF-$(call ENCDEC,  DPX,                   IMAGE2)             += dpx
 FATE_LAVF-$(call ENCDEC2, DVVIDEO,    PCM_S16LE, AVI)                += dv_fmt
-FATE_LAVF-$(call ENCDEC2, MPEG1VIDEO, MP2,       FFM)                += ffm
 FATE_LAVF-$(call ENCDEC,  FLV,                   FLV)                += flv_fmt
 FATE_LAVF-$(call ENCDEC,  GIF,                   IMAGE2)             += gif
 FATE_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, GXF)                += gxf

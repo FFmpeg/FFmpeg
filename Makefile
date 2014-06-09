@@ -63,12 +63,11 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 AVPROGS-$(CONFIG_AVCONV)   += avconv
 AVPROGS-$(CONFIG_AVPLAY)   += avplay
 AVPROGS-$(CONFIG_AVPROBE)  += avprobe
-AVPROGS-$(CONFIG_AVSERVER) += avserver
 
 AVPROGS    := $(AVPROGS-yes:%=%$(EXESUF))
 PROGS      += $(AVPROGS)
 
-AVBASENAMES = avconv avplay avprobe avserver
+AVBASENAMES = avconv avplay avprobe
 ALLAVPROGS  = $(AVBASENAMES:%=%$(EXESUF))
 
 $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))

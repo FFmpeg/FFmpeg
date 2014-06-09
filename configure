@@ -108,7 +108,7 @@ Program options:
   --disable-avconv         disable avconv build
   --disable-avplay         disable avplay build
   --disable-avprobe        disable avprobe build
-  --disable-avserver       disable avserver build
+  --disable-avserver       deprecated, does nothing
 
 Component options:
   --disable-doc            do not build documentation
@@ -1209,7 +1209,6 @@ PROGRAM_LIST="
     avconv
     avplay
     avprobe
-    avserver
 "
 
 SUBSYSTEM_LIST="
@@ -2142,8 +2141,6 @@ avplay_deps="avcodec avformat avresample swscale sdl"
 avplay_libs='$sdl_libs'
 avplay_select="rdft"
 avprobe_deps="avcodec avformat"
-avserver_deps="avformat fork !shared"
-avserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 
 # documentation
 pod2man_deps="doc"
@@ -2379,6 +2376,10 @@ for opt do
             eval list=\$$(toupper $thing)_LIST
             name=$(echo "${optval}" | sed "s/,/_${thing}|/g")_${thing}
             $action $(filter "$name" $list)
+        ;;
+        --enable-avserver|--disable-avserver*)
+            warn "avserver has been removed, the ${opt} option is only"\
+                 "provided for compatibility and will be removed in the future"
         ;;
         --enable-?*|--disable-?*)
             eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
@@ -3539,7 +3540,6 @@ case $target_os in
         add_compat strtod.o strtod=avpriv_strtod
         network_extralibs='-lbsd'
         exeobjs=compat/plan9/main.o
-        disable avserver
         cp_f='cp'
         ;;
     none)

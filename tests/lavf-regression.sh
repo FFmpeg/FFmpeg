@@ -78,10 +78,6 @@ if [ -n "$do_swf" ] ; then
 do_lavf swf "" "-an"
 fi
 
-if [ -n "$do_ffm" ] ; then
-do_lavf ffm "" "-ar 44100"
-fi
-
 if [ -n "$do_flv_fmt" ] ; then
 do_lavf flv "" "-an"
 fi

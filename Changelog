@@ -27,6 +27,7 @@ version <next>:
 - libbs2b-based stereo-to-binaural audio filter
 - native Opus decoder
 - display matrix export and rotation api
+- drop avserver, it was unmaintained for years and largely broken
 
 
 version 10:
