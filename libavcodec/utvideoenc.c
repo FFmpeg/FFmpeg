@@ -468,7 +468,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     }
 
     /* Calculate huffman lengths */
-    if ((ret = ff_huff_gen_len_table(lengths, counts, 256)) < 0)
+    if ((ret = ff_huff_gen_len_table(lengths, counts, 256, 0)) < 0)
         return ret;
 
     /*
