@@ -479,6 +479,9 @@
     <ClCompile Include="..\libavfilter\vf_yadif.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_yadif.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_zoompan.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_zoompan.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vsrc_cellauto.c">
       <ObjectFileName>$(IntDir)\libavfilter_vsrc_cellauto.obj</ObjectFileName>
     </ClCompile>

@@ -468,6 +468,9 @@
     <ClCompile Include="..\libavfilter\vf_yadif.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_zoompan.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vsrc_cellauto.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
