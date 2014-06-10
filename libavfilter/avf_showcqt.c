@@ -357,9 +357,9 @@ static int plot_cqt(AVFilterLink *inlink)
         result[x][2] = r.re * r.re + r.im * r.im;
         result[x][1] = 0.5f * (result[x][0] + result[x][2]);
         result[x][3] = result[x][1];
-        result[x][0] = 255.0f * powf(fminf(1.0f,result[x][0]), g);
-        result[x][1] = 255.0f * powf(fminf(1.0f,result[x][1]), g);
-        result[x][2] = 255.0f * powf(fminf(1.0f,result[x][2]), g);
+        result[x][0] = 255.0f * powf(FFMIN(1.0f,result[x][0]), g);
+        result[x][1] = 255.0f * powf(FFMIN(1.0f,result[x][1]), g);
+        result[x][2] = 255.0f * powf(FFMIN(1.0f,result[x][2]), g);
     }
 
     for (x = 0; x < VIDEO_WIDTH; x++)

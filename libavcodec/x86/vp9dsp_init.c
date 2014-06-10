@@ -241,6 +241,13 @@ ipred_funcs(hd, ssse3, avx);
 ipred_funcs(vl, ssse3, avx);
 ipred_funcs(vr, ssse3, avx);
 
+ipred_func(32, dc, avx2);
+ipred_func(32, dc_left, avx2);
+ipred_func(32, dc_top, avx2);
+ipred_func(32, v, avx2);
+ipred_func(32, h, avx2);
+ipred_func(32, tm, avx2);
+
 #undef ipred_funcs
 #undef ipred_func_set
 #undef ipred_func
@@ -386,6 +393,15 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
         init_ipred(TX_8X8,    8, avx);
         init_ipred(TX_16X16, 16, avx);
         init_ipred(TX_32X32, 32, avx);
+    }
+
+    if (EXTERNAL_AVX2(cpu_flags)) {
+        dsp->intra_pred[TX_32X32][DC_PRED] = ff_vp9_ipred_dc_32x32_avx2;
+        dsp->intra_pred[TX_32X32][LEFT_DC_PRED] = ff_vp9_ipred_dc_left_32x32_avx2;
+        dsp->intra_pred[TX_32X32][TOP_DC_PRED] = ff_vp9_ipred_dc_top_32x32_avx2;
+        dsp->intra_pred[TX_32X32][VERT_PRED] = ff_vp9_ipred_v_32x32_avx2;
+        dsp->intra_pred[TX_32X32][HOR_PRED] = ff_vp9_ipred_h_32x32_avx2;
+        dsp->intra_pred[TX_32X32][TM_VP8_PRED] = ff_vp9_ipred_tm_32x32_avx2;
     }
 
 #undef init_fpel

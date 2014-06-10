@@ -29,10 +29,10 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
+SECTION_RODATA 32
 
-pw_m256: times 8 dw -256
-pw_m255: times 8 dw -255
+pw_m256: times 16 dw -256
+pw_m255: times 16 dw -255
 pw_512:  times 8 dw  512
 pw_1024: times 8 dw 1024
 pw_2048: times 8 dw 2048
@@ -72,7 +72,7 @@ pb_3to1_5x0:  db 3, 2, 1
               times 9 db 0
 pb_Fto0:      db 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 
-pb_2:  times 16 db 2
+pb_2:  times 32 db 2
 pb_15: times 16 db 15
 
 cextern pb_1
@@ -180,6 +180,40 @@ cglobal vp9_ipred_dc_32x32, 4, 4, 5, dst, stride, l, a
     jg .loop
     RET
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+cglobal vp9_ipred_dc_32x32, 4, 4, 3, dst, stride, l, a
+    mova                    m0, [lq]
+    mova                    m1, [aq]
+    DEFINE_ARGS dst, stride, stride3, cnt
+    lea               stride3q, [strideq*3]
+    pxor                    m2, m2
+    psadbw                  m0, m2
+    psadbw                  m1, m2
+    paddw                   m0, m1
+    vextracti128           xm1, m0, 1
+    paddw                  xm0, xm1
+    movhlps                xm1, xm0
+    paddw                  xm0, xm1
+    pmulhrsw               xm0, [pw_512]
+    vpbroadcastb            m0, xm0
+    mov                   cntd, 4
+.loop:
+    mova      [dstq+strideq*0], m0
+    mova      [dstq+strideq*1], m0
+    mova      [dstq+strideq*2], m0
+    mova      [dstq+stride3q ], m0
+    lea                   dstq, [dstq+strideq*4]
+    mova      [dstq+strideq*0], m0
+    mova      [dstq+strideq*1], m0
+    mova      [dstq+strideq*2], m0
+    mova      [dstq+stride3q ], m0
+    lea                   dstq, [dstq+strideq*4]
+    dec                   cntd
+    jg .loop
+    RET
+%endif
+
 ; dc_top/left_NxN(uint8_t *dst, ptrdiff_t stride, const uint8_t *l, const uint8_t *a)
 
 %macro DC_1D_FUNCS 2 ; dir (top or left), arg (a or l)
@@ -267,6 +301,37 @@ cglobal vp9_ipred_dc_%1_32x32, 4, 4, 3, dst, stride, l, a
     dec                   cntd
     jg .loop
     RET
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+cglobal vp9_ipred_dc_%1_32x32, 4, 4, 3, dst, stride, l, a
+    mova                    m0, [%2q]
+    DEFINE_ARGS dst, stride, stride3, cnt
+    lea               stride3q, [strideq*3]
+    pxor                    m2, m2
+    psadbw                  m0, m2
+    vextracti128           xm1, m0, 1
+    paddw                  xm0, xm1
+    movhlps                xm1, xm0
+    paddw                  xm0, xm1
+    pmulhrsw               xm0, [pw_1024]
+    vpbroadcastb            m0, xm0
+    mov                   cntd, 4
+.loop:
+    mova      [dstq+strideq*0], m0
+    mova      [dstq+strideq*1], m0
+    mova      [dstq+strideq*2], m0
+    mova      [dstq+stride3q ], m0
+    lea                   dstq, [dstq+strideq*4]
+    mova      [dstq+strideq*0], m0
+    mova      [dstq+strideq*1], m0
+    mova      [dstq+strideq*2], m0
+    mova      [dstq+stride3q ], m0
+    lea                   dstq, [dstq+strideq*4]
+    dec                   cntd
+    jg .loop
+    RET
+%endif
 %endmacro
 
 DC_1D_FUNCS top,  a
@@ -326,6 +391,29 @@ cglobal vp9_ipred_v_32x32, 4, 4, 2, dst, stride, l, a
     dec                   cntd
     jg .loop
     RET
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+cglobal vp9_ipred_v_32x32, 4, 4, 1, dst, stride, l, a
+    mova                    m0, [aq]
+    DEFINE_ARGS dst, stride, stride3, cnt
+    lea               stride3q, [strideq*3]
+    mov                   cntd, 4
+.loop:
+    mova      [dstq+strideq*0], m0
+    mova      [dstq+strideq*1], m0
+    mova      [dstq+strideq*2], m0
+    mova      [dstq+stride3q ], m0
+    lea                   dstq, [dstq+strideq*4]
+    mova      [dstq+strideq*0], m0
+    mova      [dstq+strideq*1], m0
+    mova      [dstq+strideq*2], m0
+    mova      [dstq+stride3q ], m0
+    lea                   dstq, [dstq+strideq*4]
+    dec                   cntd
+    jg .loop
+    RET
+%endif
 
 ; h
 
@@ -416,6 +504,32 @@ cglobal vp9_ipred_h_32x32, 3, 5, 8, dst, stride, l, stride3, cnt
 
 H_XMM_FUNCS ssse3
 H_XMM_FUNCS avx
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+cglobal vp9_ipred_h_32x32, 3, 5, 8, dst, stride, l, stride3, cnt
+    mova                    m5, [pb_1]
+    mova                    m6, [pb_2]
+    mova                    m7, [pb_3]
+    pxor                    m4, m4
+    lea               stride3q, [strideq*3]
+    mov                   cntq, 7
+.loop:
+    movd                   xm3, [lq+cntq*4]
+    vinserti128             m3, m3, xm3, 1
+    pshufb                  m0, m3, m7
+    pshufb                  m1, m3, m6
+    mova      [dstq+strideq*0], m0
+    mova      [dstq+strideq*1], m1
+    pshufb                  m2, m3, m5
+    pshufb                  m3, m4
+    mova      [dstq+strideq*2], m2
+    mova      [dstq+stride3q ], m3
+    lea                   dstq, [dstq+strideq*4]
+    dec                   cntq
+    jge .loop
+    RET
+%endif
 
 ; tm
 
@@ -553,6 +667,41 @@ cglobal vp9_ipred_tm_32x32, 4, 4, 14, dst, stride, l, a
 
 TM_XMM_FUNCS ssse3
 TM_XMM_FUNCS avx
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+cglobal vp9_ipred_tm_32x32, 4, 4, 8, dst, stride, l, a
+    pxor                    m3, m3
+    pinsrw                 xm2, [aq-1], 0
+    vinserti128             m2, m2, xm2, 1
+    mova                    m0, [aq]
+    DEFINE_ARGS dst, stride, l, cnt
+    mova                    m4, [pw_m256]
+    mova                    m5, [pw_m255]
+    pshufb                  m2, m4
+    punpckhbw               m1, m0, m3
+    punpcklbw               m0, m3
+    psubw                   m1, m2
+    psubw                   m0, m2
+    mov                   cntq, 15
+.loop:
+    pinsrw                 xm7, [lq+cntq*2], 0
+    vinserti128             m7, m7, xm7, 1
+    pshufb                  m3, m7, m5
+    pshufb                  m7, m4
+    paddw                   m2, m3, m0
+    paddw                   m3, m1
+    paddw                   m6, m7, m0
+    paddw                   m7, m1
+    packuswb                m2, m3
+    packuswb                m6, m7
+    mova      [dstq+strideq*0], m2
+    mova      [dstq+strideq*1], m6
+    lea                   dstq, [dstq+strideq*2]
+    dec                   cntq
+    jge .loop
+    RET
+%endif
 
 ; dl
 

@@ -144,7 +144,7 @@ static int tta_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         temp = value;
-#define PRED(x, k) (int32_t)((((uint64_t)x << k) - x) >> k)
+#define PRED(x, k) (int32_t)((((uint64_t)(x) << (k)) - (x)) >> (k))
         switch (s->bps) {
         case 1: value -= PRED(c->predictor, 4); break;
         case 2:

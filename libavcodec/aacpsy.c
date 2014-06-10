@@ -354,7 +354,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
         }
     }
 
-    pctx->ch = av_mallocz(sizeof(AacPsyChannel) * ctx->avctx->channels);
+    pctx->ch = av_mallocz_array(ctx->avctx->channels, sizeof(AacPsyChannel));
 
     lame_window_init(pctx, ctx->avctx);
 

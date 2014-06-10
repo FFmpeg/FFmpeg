@@ -211,7 +211,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     }
 
     /* create a sink for each output and connect them to the graph */
-    lavfi->sinks = av_malloc(sizeof(AVFilterContext *) * avctx->nb_streams);
+    lavfi->sinks = av_malloc_array(avctx->nb_streams, sizeof(AVFilterContext *));
     if (!lavfi->sinks)
         FAIL(AVERROR(ENOMEM));
 

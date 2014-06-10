@@ -192,6 +192,64 @@ VECTOR_DMUL_SCALAR
 %endif
 
 ;-----------------------------------------------------------------------------
+; vector_fmul_window(float *dst, const float *src0,
+;                    const float *src1, const float *win, int len);
+;-----------------------------------------------------------------------------
+%macro VECTOR_FMUL_WINDOW 0
+cglobal vector_fmul_window, 5, 6, 6, dst, src0, src1, win, len, len1
+    shl     lend, 2
+    lea    len1q, [lenq - mmsize]
+    add    src0q, lenq
+    add     dstq, lenq
+    add     winq, lenq
+    neg     lenq
+.loop
+    mova      m0, [winq  + lenq]
+    mova      m4, [src0q + lenq]
+%if cpuflag(sse)
+    mova      m1, [winq  + len1q]
+    mova      m5, [src1q + len1q]
+    shufps    m1, m1, 0x1b
+    shufps    m5, m5, 0x1b
+    mova      m2, m0
+    mova      m3, m1
+    mulps     m2, m4
+    mulps     m3, m5
+    mulps     m1, m4
+    mulps     m0, m5
+    addps     m2, m3
+    subps     m1, m0
+    shufps    m2, m2, 0x1b
+%else
+    pswapd    m1, [winq  + len1q]
+    pswapd    m5, [src1q + len1q]
+    mova      m2, m0
+    mova      m3, m1
+    pfmul     m2, m4
+    pfmul     m3, m5
+    pfmul     m1, m4
+    pfmul     m0, m5
+    pfadd     m2, m3
+    pfsub     m1, m0
+    pswapd    m2, m2
+%endif
+    mova      [dstq + lenq], m1
+    mova      [dstq + len1q], m2
+    sub       len1q, mmsize
+    add       lenq,  mmsize
+    jl .loop
+%if mmsize == 8
+    femms
+%endif
+    REP_RET
+%endmacro
+
+INIT_MMX 3dnowext
+VECTOR_FMUL_WINDOW
+INIT_XMM sse
+VECTOR_FMUL_WINDOW
+
+;-----------------------------------------------------------------------------
 ; vector_fmul_add(float *dst, const float *src0, const float *src1,
 ;                 const float *src2, int len)
 ;-----------------------------------------------------------------------------

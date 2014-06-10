@@ -249,7 +249,7 @@ static int config_output(AVFilterLink *outlink)
     memset(s->input_state, INPUT_ON, s->nb_inputs);
     s->active_inputs = s->nb_inputs;
 
-    s->input_scale = av_mallocz(s->nb_inputs * sizeof(*s->input_scale));
+    s->input_scale = av_mallocz_array(s->nb_inputs, sizeof(*s->input_scale));
     if (!s->input_scale)
         return AVERROR(ENOMEM);
     s->scale_norm = s->active_inputs;

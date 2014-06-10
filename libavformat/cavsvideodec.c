@@ -61,7 +61,7 @@ static int cavsvideo_probe(AVProbeData *p)
         }
     }
     if(seq && seq*9<=pic*10)
-        return AVPROBE_SCORE_EXTENSION;
+        return AVPROBE_SCORE_EXTENSION+1;
     return 0;
 }
 

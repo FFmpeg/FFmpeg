@@ -1645,6 +1645,7 @@ MATH_FUNCS="
     exp2
     exp2f
     expf
+    fminf
     isinf
     isnan
     ldexpf
@@ -2171,6 +2172,7 @@ vp7_decoder_select="h264pred videodsp"
 vp8_decoder_select="h264pred videodsp"
 vp9_decoder_select="videodsp vp9_parser"
 webp_decoder_select="vp8_decoder"
+wmalossless_decoder_select="llauddsp"
 wmapro_decoder_select="mdct sinewin"
 wmav1_decoder_select="mdct sinewin"
 wmav1_encoder_select="mdct sinewin"
@@ -2538,6 +2540,7 @@ pixfmts_super2xsai_test_deps="super2xsai_filter"
 tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
 zmq_filter_deps="libzmq"
+zoompan_filter_deps="swscale"
 
 # examples
 avio_reading="avformat avcodec avutil"
@@ -4283,6 +4286,10 @@ if enabled asm; then
 m x
 EOF
 
+    check_as <<EOF || $nogas "GNU assembler not found, install gas-preprocessor"
+.altmacro
+EOF
+
     check_as <<EOF && enable as_func
 .func test
 .endfunc
@@ -4635,6 +4642,7 @@ disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersi
 atan2f_args=2
 ldexpf_args=2
 powf_args=2
+fminf_args=2
 
 for func in $MATH_FUNCS; do
     eval check_mathfunc $func \${${func}_args:-1}

@@ -332,7 +332,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx,
                     uint8_t *h;\
                     dec_sample = av_clip_int16(dec_sample);\
                     d = sample - dec_sample;\
-                    ssd = nodes[j]->ssd + d*d;\
+                    ssd = nodes[j]->ssd + d*(unsigned)d;\
                     /* Check for wraparound, skip such samples completely. \
                      * Note, changing ssd to a 64 bit variable would be \
                      * simpler, avoiding this check, but it's slower on \
@@ -549,10 +549,11 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             put_bits(&pb, 7,  status->step_index);
             if (avctx->trellis > 0) {
                 uint8_t buf[64];
-                adpcm_compress_trellis(avctx, &samples_p[ch][1], buf, status,
+                adpcm_compress_trellis(avctx, &samples_p[ch][0], buf, status,
                                        64, 1);
                 for (i = 0; i < 64; i++)
                     put_bits(&pb, 4, buf[i ^ 1]);
+                status->prev_sample = status->predictor;
             } else {
                 for (i = 0; i < 64; i += 2) {
                     int t1, t2;

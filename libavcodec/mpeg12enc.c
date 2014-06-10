@@ -329,6 +329,22 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 1, s->low_delay);
             put_bits(&s->pb, 2, s->mpeg2_frame_rate_ext.num-1); // frame_rate_ext_n
             put_bits(&s->pb, 5, s->mpeg2_frame_rate_ext.den-1); // frame_rate_ext_d
+
+            if (s->avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+                s->avctx->color_trc != AVCOL_TRC_UNSPECIFIED ||
+                s->avctx->colorspace != AVCOL_SPC_UNSPECIFIED) {
+                put_header(s, EXT_START_CODE);
+                put_bits(&s->pb, 4, 2);                         // sequence display extension
+                put_bits(&s->pb, 3, 0);                         // video_format: 0 is components
+                put_bits(&s->pb, 1, 1);                         // colour_description
+                put_bits(&s->pb, 8, s->avctx->color_primaries); // colour_primaries
+                put_bits(&s->pb, 8, s->avctx->color_trc);       // transfer_characteristics
+                put_bits(&s->pb, 8, s->avctx->colorspace);      // matrix_coefficients
+                put_bits(&s->pb, 14, s->width);                 // display_horizontal_size
+                put_bits(&s->pb, 1, 1);                         // marker_bit
+                put_bits(&s->pb, 14, s->height);                // display_vertical_size
+                put_bits(&s->pb, 3, 0);                         // remaining 3 bits are zero padding
+            }
         }
 
         put_header(s, GOP_START_CODE);

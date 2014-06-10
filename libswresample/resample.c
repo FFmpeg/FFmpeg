@@ -335,9 +335,11 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
     int i, ret= -1;
     int av_unused mm_flags = av_get_cpu_flags();
     int need_emms= 0;
+    int64_t max_src_size = (INT64_MAX >> (c->phase_shift+1)) / c->src_incr;
 
     if (c->compensation_distance)
         dst_size = FFMIN(dst_size, c->compensation_distance);
+    src_size = FFMIN(src_size, max_src_size);
 
     for(i=0; i<dst->ch_count; i++){
 #if HAVE_MMXEXT_INLINE
