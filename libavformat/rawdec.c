@@ -193,7 +193,7 @@ static int mjpeg_probe(AVProbeData *p)
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(mjpeg, "raw MJPEG video", mjpeg_probe, "mjpg,mjpeg,mpo", AV_CODEC_ID_MJPEG)
+FF_DEF_RAWVIDEO_DEMUXER2(mjpeg, "raw MJPEG video", mjpeg_probe, "mjpg,mjpeg,mpo", AV_CODEC_ID_MJPEG, AVFMT_GENERIC_INDEX|AVFMT_NOTIMESTAMPS)
 #endif
 
 #if CONFIG_MLP_DEMUXER
@@ -233,5 +233,5 @@ AVInputFormat ff_shorten_demuxer = {
 #endif
 
 #if CONFIG_VC1_DEMUXER
-FF_DEF_RAWVIDEO_DEMUXER(vc1, "raw VC-1", NULL, "vc1", AV_CODEC_ID_VC1)
+FF_DEF_RAWVIDEO_DEMUXER2(vc1, "raw VC-1", NULL, "vc1", AV_CODEC_ID_VC1, AVFMT_GENERIC_INDEX|AVFMT_NOTIMESTAMPS)
 #endif
