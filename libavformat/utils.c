@@ -3095,7 +3095,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     // new streams might appear, no options for those
     int orig_nb_streams = ic->nb_streams;
     int flush_codecs    = ic->probesize > 0;
-    int max_analyze_duration = ic->max_analyze_duration;
+    int64_t max_analyze_duration = ic->max_analyze_duration2;
+    if (!max_analyze_duration)
+        max_analyze_duration = ic->max_analyze_duration;
 
     if (!max_analyze_duration) {
         if (!strcmp(ic->iformat->name, "flv") && !(ic->ctx_flags & AVFMTCTX_NOHEADER)) {
@@ -3318,7 +3320,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 t = FFMAX(t, av_rescale_q(st->info->fps_last_dts - st->info->fps_first_dts, st->time_base, AV_TIME_BASE_Q));
 
             if (t >= max_analyze_duration) {
-                av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %d reached at %"PRId64" microseconds\n",
+                av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %"PRId64" reached at %"PRId64" microseconds\n",
                        max_analyze_duration,
                        t);
                 break;
