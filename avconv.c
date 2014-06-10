@@ -687,6 +687,19 @@ static int poll_filter(OutputStream *ost)
     return 0;
 }
 
+static void finish_output_stream(OutputStream *ost)
+{
+    OutputFile *of = output_files[ost->file_index];
+    int i;
+
+    ost->finished = 1;
+
+    if (of->shortest) {
+        for (i = 0; i < of->ctx->nb_streams; i++)
+            output_streams[of->ost_index + i]->finished = 1;
+    }
+}
+
 /*
  * Read as many frames from possible from lavfi and encode them.
  *
@@ -697,7 +710,7 @@ static int poll_filter(OutputStream *ost)
  */
 static int poll_filters(void)
 {
-    int i, j, ret = 0;
+    int i, ret = 0;
 
     while (ret >= 0 && !received_sigterm) {
         OutputStream *ost = NULL;
@@ -724,15 +737,7 @@ static int poll_filters(void)
         ret = poll_filter(ost);
 
         if (ret == AVERROR_EOF) {
-            OutputFile *of = output_files[ost->file_index];
-
-            ost->finished = 1;
-
-            if (of->shortest) {
-                for (j = 0; j < of->ctx->nb_streams; j++)
-                    output_streams[of->ost_index + j]->finished = 1;
-            }
-
+            finish_output_stream(ost);
             ret = 0;
         } else if (ret == AVERROR(EAGAIN))
             return 0;
@@ -2205,7 +2210,7 @@ static int process_input(void)
 
                 if (ost->source_index == ifile->ist_index + i &&
                     (ost->stream_copy || ost->enc->type == AVMEDIA_TYPE_SUBTITLE))
-                    ost->finished= 1;
+                    finish_output_stream(ost);
             }
         }
 
