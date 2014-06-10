@@ -403,6 +403,8 @@ Set the service_id (default 0x0001) also known as program in DVB.
 Set the first PID for PMT (default 0x1000, max 0x1f00).
 @item -mpegts_start_pid @var{number}
 Set the first PID for data packets (default 0x0100, max 0x0f00).
+@item -muxrate @var{number}
+Set a constant muxrate (default VBR).
 @end table
 
 The recognized metadata settings in mpegts muxer are @code{service_provider}
