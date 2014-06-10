@@ -637,7 +637,7 @@ Set the first PID for data packets (default 0x0100, max 0x0f00).
 @item -mpegts_m2ts_mode @var{number}
 Enable m2ts mode if set to 1. Default value is -1 which disables m2ts mode.
 @item -muxrate @var{number}
-Set muxrate.
+Set a constant muxrate (default VBR).
 @item -pes_payload_size @var{number}
 Set minimum PES packet payload in bytes.
 @item -mpegts_flags @var{flags}
