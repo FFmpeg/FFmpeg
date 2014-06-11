@@ -42,6 +42,38 @@ static const AVRational avf_time_base_q = {
     .den = avf_time_base
 };
 
+struct AVFPixelFormatSpec {
+    enum AVPixelFormat ff_id;
+    OSType avf_id;
+};
+
+static const struct AVFPixelFormatSpec avf_pixel_formats[] = {
+    { AV_PIX_FMT_MONOBLACK,    kCVPixelFormatType_1Monochrome },
+    { AV_PIX_FMT_RGB555BE,     kCVPixelFormatType_16BE555 },
+    { AV_PIX_FMT_RGB555LE,     kCVPixelFormatType_16LE555 },
+    { AV_PIX_FMT_RGB565BE,     kCVPixelFormatType_16BE565 },
+    { AV_PIX_FMT_RGB565LE,     kCVPixelFormatType_16LE565 },
+    { AV_PIX_FMT_RGB24,        kCVPixelFormatType_24RGB },
+    { AV_PIX_FMT_BGR24,        kCVPixelFormatType_24BGR },
+    { AV_PIX_FMT_0RGB,         kCVPixelFormatType_32ARGB },
+    { AV_PIX_FMT_BGR0,         kCVPixelFormatType_32BGRA },
+    { AV_PIX_FMT_0BGR,         kCVPixelFormatType_32ABGR },
+    { AV_PIX_FMT_RGB0,         kCVPixelFormatType_32RGBA },
+    { AV_PIX_FMT_BGR48BE,      kCVPixelFormatType_48RGB },
+    { AV_PIX_FMT_UYVY422,      kCVPixelFormatType_422YpCbCr8 },
+    { AV_PIX_FMT_YUVA444P,     kCVPixelFormatType_4444YpCbCrA8R },
+    { AV_PIX_FMT_YUVA444P16LE, kCVPixelFormatType_4444AYpCbCr16 },
+    { AV_PIX_FMT_YUV444P,      kCVPixelFormatType_444YpCbCr8 },
+    { AV_PIX_FMT_YUV422P16,    kCVPixelFormatType_422YpCbCr16 },
+    { AV_PIX_FMT_YUV422P10,    kCVPixelFormatType_422YpCbCr10 },
+    { AV_PIX_FMT_YUV444P10,    kCVPixelFormatType_444YpCbCr10 },
+    { AV_PIX_FMT_YUV420P,      kCVPixelFormatType_420YpCbCr8Planar },
+    { AV_PIX_FMT_NV12,         kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange },
+    { AV_PIX_FMT_YUYV422,      kCVPixelFormatType_422YpCbCr8_yuvs },
+    { AV_PIX_FMT_GRAY8,        kCVPixelFormatType_OneComponent8 },
+    { AV_PIX_FMT_NONE, 0 }
+};
+
 typedef struct
 {
     AVClass*        class;
@@ -55,6 +87,7 @@ typedef struct
 
     int             list_devices;
     int             video_device_index;
+    enum AVPixelFormat pixel_format;
 
     AVCaptureSession         *capture_session;
     AVCaptureVideoDataOutput *video_output;
@@ -233,7 +266,6 @@ static int avf_read_header(AVFormatContext *s)
     }
 
     // Attaching output
-    // FIXME: Allow for a user defined pixel format
     ctx->video_output = [[AVCaptureVideoDataOutput alloc] init];
 
     if (!ctx->video_output) {
@@ -241,7 +273,63 @@ static int avf_read_header(AVFormatContext *s)
         goto fail;
     }
 
-    NSNumber     *pixel_format = [NSNumber numberWithUnsignedInt:kCVPixelFormatType_24RGB];
+    // select pixel format
+    struct AVFPixelFormatSpec pxl_fmt_spec;
+    pxl_fmt_spec.ff_id = AV_PIX_FMT_NONE;
+
+    for (int i = 0; avf_pixel_formats[i].ff_id != AV_PIX_FMT_NONE; i++) {
+        if (ctx->pixel_format == avf_pixel_formats[i].ff_id) {
+            pxl_fmt_spec = avf_pixel_formats[i];
+            break;
+        }
+    }
+
+    // check if selected pixel format is supported by AVFoundation
+    if (pxl_fmt_spec.ff_id == AV_PIX_FMT_NONE) {
+        av_log(s, AV_LOG_ERROR, "Selected pixel format (%s) is not supported by AVFoundation.\n",
+               av_get_pix_fmt_name(pxl_fmt_spec.ff_id));
+        goto fail;
+    }
+
+    // check if the pixel format is available for this device
+    if ([[ctx->video_output availableVideoCVPixelFormatTypes] indexOfObject:[NSNumber numberWithInt:pxl_fmt_spec.avf_id]] == NSNotFound) {
+        av_log(s, AV_LOG_ERROR, "Selected pixel format (%s) is not supported by the input device.\n",
+               av_get_pix_fmt_name(pxl_fmt_spec.ff_id));
+
+        pxl_fmt_spec.ff_id = AV_PIX_FMT_NONE;
+
+        av_log(s, AV_LOG_ERROR, "Supported pixel formats:\n");
+        for (NSNumber *pxl_fmt in [ctx->video_output availableVideoCVPixelFormatTypes]) {
+            struct AVFPixelFormatSpec pxl_fmt_dummy;
+            pxl_fmt_dummy.ff_id = AV_PIX_FMT_NONE;
+            for (int i = 0; avf_pixel_formats[i].ff_id != AV_PIX_FMT_NONE; i++) {
+                if ([pxl_fmt intValue] == avf_pixel_formats[i].avf_id) {
+                    pxl_fmt_dummy = avf_pixel_formats[i];
+                    break;
+                }
+            }
+
+            if (pxl_fmt_dummy.ff_id != AV_PIX_FMT_NONE) {
+                av_log(s, AV_LOG_ERROR, "  %s\n", av_get_pix_fmt_name(pxl_fmt_dummy.ff_id));
+
+                // select first supported pixel format instead of user selected (or default) pixel format
+                if (pxl_fmt_spec.ff_id == AV_PIX_FMT_NONE) {
+                    pxl_fmt_spec = pxl_fmt_dummy;
+                }
+            }
+        }
+
+        // fail if there is no appropriate pixel format or print a warning about overriding the pixel format
+        if (pxl_fmt_spec.ff_id == AV_PIX_FMT_NONE) {
+            goto fail;
+        } else {
+            av_log(s, AV_LOG_WARNING, "Overriding selected pixel format to use %s instead.\n",
+                   av_get_pix_fmt_name(pxl_fmt_spec.ff_id));
+        }
+    }
+
+
+    NSNumber     *pixel_format = [NSNumber numberWithUnsignedInt:pxl_fmt_spec.avf_id];
     NSDictionary *capture_dict = [NSDictionary dictionaryWithObject:pixel_format
                                                forKey:(id)kCVPixelBufferPixelFormatTypeKey];
 
@@ -285,7 +373,7 @@ static int avf_read_header(AVFormatContext *s)
     stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     stream->codec->width      = (int)image_buffer_size.width;
     stream->codec->height     = (int)image_buffer_size.height;
-    stream->codec->pix_fmt    = AV_PIX_FMT_RGB24;
+    stream->codec->pix_fmt    = pxl_fmt_spec.ff_id;
 
     CFRelease(ctx->current_frame);
     ctx->current_frame = nil;
@@ -352,6 +440,7 @@ static const AVOption options[] = {
     { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
     { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
     { "video_device_index", "select video device by index for devices with same name (starts at 0)", offsetof(AVFContext, video_device_index), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "pixel_format", "set pixel format", offsetof(AVFContext, pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV420P}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
     { NULL },
 };
 
