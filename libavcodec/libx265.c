@@ -123,11 +123,6 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         }
     }
 
-    if (x265_max_bit_depth == 8)
-        ctx->params->internalBitDepth = 8;
-    else if (x265_max_bit_depth == 12)
-        ctx->params->internalBitDepth = 10;
-
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV420P10:
