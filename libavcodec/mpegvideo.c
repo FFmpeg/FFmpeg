@@ -3231,8 +3231,11 @@ void ff_mpeg_set_erpic(ERPicture *dst, Picture *src)
     int i;
 
     memset(dst, 0, sizeof(*dst));
-    if (!src)
+    if (!src) {
+        dst->f  = NULL;
+        dst->tf = NULL;
         return;
+    }
 
     dst->f = src->f;
     dst->tf = &src->tf;
