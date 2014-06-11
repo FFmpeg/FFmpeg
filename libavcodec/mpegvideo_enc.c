@@ -1120,6 +1120,11 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                     int h = s->height >> v_shift;
                     uint8_t *src = pic_arg->data[i];
                     uint8_t *dst = pic->f->data[i];
+                    int vpad = 16;
+
+                    if (   s->codec_id == AV_CODEC_ID_MPEG2VIDEO
+                        && !s->progressive_sequence)
+                        vpad = 32;
 
                     if (!s->avctx->rc_buffer_size)
                         dst += INPLACE_OFFSET;
@@ -1135,11 +1140,11 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                             src += src_stride;
                         }
                     }
-                    if ((s->width & 15) || (s->height & 15)) {
+                    if ((s->width & 15) || (s->height & (vpad-1))) {
                         s->dsp.draw_edges(dst, dst_stride,
                                           w, h,
                                           16>>h_shift,
-                                          16>>v_shift,
+                                          vpad>>v_shift,
                                           EDGE_BOTTOM);
                     }
                 }
