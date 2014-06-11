@@ -20,6 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#if defined(_MSC_VER)
+#define X265_API_IMPORTS 1
+#endif
+
 #include <x265.h>
 
 #include "libavutil/internal.h"
@@ -28,10 +32,6 @@
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
-
-#if defined(_MSC_VER)
-#define X265_API_IMPORTS 1
-#endif
 
 typedef struct libx265Context {
     const AVClass *class;
