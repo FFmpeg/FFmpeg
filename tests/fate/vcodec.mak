@@ -304,7 +304,7 @@ RESIZE_OFF   = dnxhd-720p dnxhd-720p-rd dnxhd-720p-10bit dnxhd-1080i \
                dv dv-411 dv-50 avui snow snow-hpel snow-ll
 # Incorrect parameters - usually size or color format restrictions
 INC_PAR_OFF  = h261 h261-trellis h263 h263p h263-obmc msvideo1 \
-               roqvideo rv10 rv20 y41p
+               roqvideo rv10 rv20 y41p qtrlegray
 VSYNTH3_OFF  = $(RESIZE_OFF) $(INC_PAR_OFF)
 
 FATE_VCODEC3 = $(filter-out $(VSYNTH3_OFF),$(FATE_VCODEC))
