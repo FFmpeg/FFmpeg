@@ -2470,8 +2470,11 @@ void ff_mpeg_set_erpic(ERPicture *dst, Picture *src)
 {
     int i;
 
-    if (!src)
+    if (!src) {
+        dst->f  = NULL;
+        dst->tf = NULL;
         return;
+    }
 
     dst->f = src->f;
     dst->tf = &src->tf;
