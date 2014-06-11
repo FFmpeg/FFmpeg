@@ -400,7 +400,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             for (j = 0; j < s->vlc_n; j++) {
                 int d = FFMIN(j, s->vlc_n - j);
 
-                s->stats[i][j] = 100000000 / (d + 1);
+                s->stats[i][j] = 100000000 / (d*d + 1);
             }
     }
 
@@ -414,7 +414,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             int pels = s->width * s->height / (i ? 40 : 10);
             for (j = 0; j < s->vlc_n; j++) {
                 int d = FFMIN(j, s->vlc_n - j);
-                s->stats[i][j] = pels/(d + 1);
+                s->stats[i][j] = pels/(d*d + 1);
             }
         }
     } else {

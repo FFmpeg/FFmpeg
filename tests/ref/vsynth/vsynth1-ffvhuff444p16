@@ -1,4 +1,4 @@
-ba3943140ad9d11f1b8019c890a9be19 *tests/data/fate/vsynth1-ffvhuff444p16.avi
-20610414 tests/data/fate/vsynth1-ffvhuff444p16.avi
+9d7ab6d77fb4004512246c2f93f93c29 *tests/data/fate/vsynth1-ffvhuff444p16.avi
+24706272 tests/data/fate/vsynth1-ffvhuff444p16.avi
 ee8379fa217dfd023de3aa6974a14d1e *tests/data/fate/vsynth1-ffvhuff444p16.out.rawvideo
 stddev:    2.66 PSNR: 39.62 MAXDIFF:   44 bytes:  7603200/  7603200
