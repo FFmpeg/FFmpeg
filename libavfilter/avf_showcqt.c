@@ -49,14 +49,6 @@ typedef struct {
     int index;
 } SparseCoeff;
 
-static inline int qsort_sparsecoeff(const SparseCoeff *a, const SparseCoeff *b)
-{
-    if (fabsf(a->value) >= fabsf(b->value))
-        return 1;
-    else
-        return -1;
-}
-
 typedef struct {
     const AVClass *class;
     AVFrame *outpicref;
@@ -148,6 +140,14 @@ static int query_formats(AVFilterContext *ctx)
     ff_formats_ref(formats, &outlink->in_formats);
 
     return 0;
+}
+
+static inline int qsort_sparsecoeff(const SparseCoeff *a, const SparseCoeff *b)
+{
+    if (fabsf(a->value) >= fabsf(b->value))
+        return 1;
+    else
+        return -1;
 }
 
 static int config_output(AVFilterLink *outlink)
