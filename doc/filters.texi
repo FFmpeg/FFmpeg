@@ -10388,7 +10388,7 @@ settb=AVTB
 @end itemize
 
 @section showcqt
-Convert input audio to a video output (at full HD resolution), representing
++Convert input audio to a video output representing
 frequency spectrum logarithmically (using constant Q transform with
 Brown-Puckette algorithm), with musical tone scale, from E0 to D#10 (10 octaves).
 
@@ -10416,6 +10416,10 @@ Specify gamma. Lower gamma makes the spectrum more contrast, higher gamma
 makes the spectrum having more range. Acceptable value is [1.0, 7.0].
 Default value is @code{3.0}.
 
+@item fullhd
+If set to 1 (the default), the video size is 1920x1080 (full HD),
+if set to 0, the video size is 960x540. Use this option to make CPU usage lower.
+
 @item fps
 Specify video fps. Default value is @code{25}.
 
@@ -10439,6 +10443,12 @@ ffplay -f lavfi 'amovie=a.mp3, asplit [a][out1]; [a] showcqt [out0]'
 Same as above, but with frame rate 30 fps:
 @example
 ffplay -f lavfi 'amovie=a.mp3, asplit [a][out1]; [a] showcqt=fps=30:count=5 [out0]'
+@end example
+
+@item
+Playing at 960x540 and lower CPU usage:
+@example
+ffplay -f lavfi 'amovie=a.mp3, asplit [a][out1]; [a] showcqt=fullhd=0:count=3 [out0]'
 @end example
 
 @item

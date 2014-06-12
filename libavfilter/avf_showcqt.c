@@ -56,11 +56,11 @@ typedef struct {
     FFTComplex *fft_data;
     FFTComplex *fft_result_left;
     FFTComplex *fft_result_right;
+    uint8_t *spectogram;
     SparseCoeff *coeff_sort;
     SparseCoeff *coeffs[VIDEO_WIDTH];
     int coeffs_len[VIDEO_WIDTH];
     uint8_t font_color[VIDEO_WIDTH];
-    uint8_t spectogram[SPECTOGRAM_HEIGHT][VIDEO_WIDTH][3];
     int64_t frame_count;
     int spectogram_count;
     int spectogram_index;
@@ -70,6 +70,7 @@ typedef struct {
     double volume;
     double timeclamp;   /* lower timeclamp, time-accurate, higher timeclamp, freq-accurate (at low freq)*/
     float coeffclamp;   /* lower coeffclamp, more precise, higher coeffclamp, faster */
+    int fullhd;         /* if true, output video is at full HD resolution, otherwise it will be halved */
     float gamma;        /* lower gamma, more contrast, higher gamma, more range */
     int fps;            /* the required fps is so strict, so it's enough to be int, but 24000/1001 etc cannot be encoded */
     int count;          /* fps * count = transform rate */
@@ -83,6 +84,7 @@ static const AVOption showcqt_options[] = {
     { "timeclamp", "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 }, 0.1, 1.0, FLAGS },
     { "coeffclamp", "set coeffclamp", OFFSET(coeffclamp), AV_OPT_TYPE_FLOAT, { .dbl = 1 }, 0.1, 10, FLAGS },
     { "gamma", "set gamma", OFFSET(gamma), AV_OPT_TYPE_FLOAT, { .dbl = 3 }, 1, 7, FLAGS },
+    { "fullhd", "set full HD resolution", OFFSET(fullhd), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS },
     { "fps", "set video fps", OFFSET(fps), AV_OPT_TYPE_INT, { .i64 = 25 }, 10, 100, FLAGS },
     { "count", "set number of transform per frame", OFFSET(count), AV_OPT_TYPE_INT, { .i64 = 6 }, 1, 30, FLAGS },
     { NULL }
@@ -103,6 +105,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->fft_result_left);
     av_freep(&s->fft_result_right);
     av_freep(&s->coeff_sort);
+    av_freep(&s->spectogram);
     av_frame_free(&s->outpicref);
 }
 
@@ -160,6 +163,10 @@ static int config_output(AVFilterLink *outlink)
     int rate = inlink->sample_rate;
     double max_len = rate * (double) s->timeclamp;
     int64_t start_time, end_time;
+    int video_scale = s->fullhd ? 2 : 1;
+    int video_width = (VIDEO_WIDTH/2) * video_scale;
+    int video_height = (VIDEO_HEIGHT/2) * video_scale;
+    int spectogram_height = (SPECTOGRAM_HEIGHT/2) * video_scale;
 
     s->fft_bits = ceil(log2(max_len));
     fft_len = 1 << s->fft_bits;
@@ -179,9 +186,9 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     /* initializing font */
-    for (x = 0; x < VIDEO_WIDTH; x++) {
-        if (x >= (12*3+8)*16 && x < (12*4+8)*16) {
-            float fx = (x-(12*3+8)*16) * (1.0f/192.0f);
+    for (x = 0; x < video_width; x++) {
+        if (x >= (12*3+8)*8*video_scale && x < (12*4+8)*8*video_scale) {
+            float fx = (x-(12*3+8)*8*video_scale) * (2.0f/(192.0f*video_scale));
             float sv = sinf(M_PI*fx);
             s->font_color[x] = sv*sv*255.0f + 0.5f;
         } else {
@@ -273,19 +280,22 @@ static int config_output(AVFilterLink *outlink)
     end_time = av_gettime_relative();
     av_log(ctx, AV_LOG_INFO, "Elapsed time %.6f s (fft_len=%u, num_coeffs=%u)\n", 1e-6 * (end_time-start_time), fft_len, num_coeffs);
 
-    outlink->w = VIDEO_WIDTH;
-    outlink->h = VIDEO_HEIGHT;
+    outlink->w = video_width;
+    outlink->h = video_height;
 
     s->req_fullfilled = 0;
     s->spectogram_index = 0;
     s->frame_count = 0;
     s->spectogram_count = 0;
     s->remaining_fill = fft_len >> 1;
-    memset(s->spectogram, 0, VIDEO_WIDTH * SPECTOGRAM_HEIGHT * 3);
     memset(s->fft_data, 0, fft_len * sizeof(*s->fft_data));
 
     s->outpicref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!s->outpicref)
+        return AVERROR(ENOMEM);
+
+    s->spectogram = av_calloc(spectogram_height, s->outpicref->linesize[0]);
+    if (!s->spectogram)
         return AVERROR(ENOMEM);
 
     outlink->sample_aspect_ratio = av_make_q(1, 1);
@@ -302,6 +312,12 @@ static int plot_cqt(AVFilterLink *inlink)
     int fft_len = 1 << s->fft_bits;
     FFTSample result[VIDEO_WIDTH][4];
     int x, y, ret = 0;
+    int linesize = s->outpicref->linesize[0];
+    int video_scale = s->fullhd ? 2 : 1;
+    int video_width = (VIDEO_WIDTH/2) * video_scale;
+    int spectogram_height = (SPECTOGRAM_HEIGHT/2) * video_scale;
+    int spectogram_start = (SPECTOGRAM_START/2) * video_scale;
+    int font_height = (FONT_HEIGHT/2) * video_scale;
 
     /* real part contains left samples, imaginary part contains right samples */
     memcpy(s->fft_result_left, s->fft_data, fft_len * sizeof(*s->fft_data));
@@ -352,26 +368,34 @@ static int plot_cqt(AVFilterLink *inlink)
         result[x][2] = 255.0f * powf(FFMIN(1.0f,result[x][2]), g);
     }
 
-    for (x = 0; x < VIDEO_WIDTH; x++) {
-        s->spectogram[s->spectogram_index][x][0] = result[x][0] + 0.5f;
-        s->spectogram[s->spectogram_index][x][1] = result[x][1] + 0.5f;
-        s->spectogram[s->spectogram_index][x][2] = result[x][2] + 0.5f;
+    if (!s->fullhd) {
+        for (x = 0; x < video_width; x++) {
+            result[x][0] = 0.5f * (result[2*x][0] + result[2*x+1][0]);
+            result[x][1] = 0.5f * (result[2*x][1] + result[2*x+1][1]);
+            result[x][2] = 0.5f * (result[2*x][2] + result[2*x+1][2]);
+            result[x][3] = 0.5f * (result[2*x][3] + result[2*x+1][3]);
+        }
+    }
+
+    for (x = 0; x < video_width; x++) {
+        s->spectogram[s->spectogram_index*linesize + 3*x] = result[x][0] + 0.5f;
+        s->spectogram[s->spectogram_index*linesize + 3*x + 1] = result[x][1] + 0.5f;
+        s->spectogram[s->spectogram_index*linesize + 3*x + 2] = result[x][2] + 0.5f;
     }
 
     /* drawing */
     if (!s->spectogram_count) {
         uint8_t *data = (uint8_t*) s->outpicref->data[0];
-        int linesize = s->outpicref->linesize[0];
         float rcp_result[VIDEO_WIDTH];
 
-        for (x = 0; x < VIDEO_WIDTH; x++)
+        for (x = 0; x < video_width; x++)
             rcp_result[x] = 1.0f / (result[x][3]+0.0001f);
 
         /* drawing bar */
-        for (y = 0; y < SPECTOGRAM_HEIGHT; y++) {
-            float height = (SPECTOGRAM_HEIGHT - y) * (1.0f/SPECTOGRAM_HEIGHT);
+        for (y = 0; y < spectogram_height; y++) {
+            float height = (spectogram_height - y) * (1.0f/spectogram_height);
             uint8_t *lineptr = data + y * linesize;
-            for (x = 0; x < VIDEO_WIDTH; x++) {
+            for (x = 0; x < video_width; x++) {
                 float mul;
                 if (result[x][3] <= height) {
                     *lineptr++ = 0;
@@ -384,35 +408,39 @@ static int plot_cqt(AVFilterLink *inlink)
                     *lineptr++ = mul * result[x][2] + 0.5f;
                 }
             }
-
         }
 
         /* drawing font */
-        for (y = 0; y < FONT_HEIGHT; y++) {
-            uint8_t *lineptr = data + (SPECTOGRAM_HEIGHT + y) * linesize;
-            memcpy(lineptr, s->spectogram[s->spectogram_index], VIDEO_WIDTH*3);
+        for (y = 0; y < font_height; y++) {
+            uint8_t *lineptr = data + (spectogram_height + y) * linesize;
+            memcpy(lineptr, s->spectogram + s->spectogram_index * linesize, video_width*3);
         }
-        for (x = 0; x < VIDEO_WIDTH; x += VIDEO_WIDTH/10) {
+        for (x = 0; x < video_width; x += video_width/10) {
             int u;
             static const char str[] = "EF G A BC D ";
-            uint8_t *startptr = data + SPECTOGRAM_HEIGHT * linesize + x * 3;
+            uint8_t *startptr = data + spectogram_height * linesize + x * 3;
             for (u = 0; str[u]; u++) {
                 int v;
                 for (v = 0; v < 16; v++) {
-                    uint8_t *p = startptr + 2 * v * linesize + 16 * 3 * u;
-                    int ux = x + 16 * u;
+                    uint8_t *p = startptr + v * linesize * video_scale + 8 * 3 * u * video_scale;
+                    int ux = x + 8 * u * video_scale;
                     int mask;
                     for (mask = 0x80; mask; mask >>= 1) {
                         if (mask & avpriv_vga16_font[str[u] * 16 + v]) {
-                            p[0] = p[linesize] = 255 - s->font_color[ux];
-                            p[1] = p[linesize+1] = 0;
-                            p[2] = p[linesize+2] = s->font_color[ux];
-                            p[3] = p[linesize+3] = 255 - s->font_color[ux+1];
-                            p[4] = p[linesize+4] = 0;
-                            p[5] = p[linesize+5] = s->font_color[ux+1];
+                            p[0] = 255 - s->font_color[ux];
+                            p[1] = 0;
+                            p[2] = s->font_color[ux];
+                            if (video_scale == 2) {
+                                p[linesize] = p[0];
+                                p[linesize+1] = p[1];
+                                p[linesize+2] = p[2];
+                                p[3] = p[linesize+3] = 255 - s->font_color[ux+1];
+                                p[4] = p[linesize+4] = 0;
+                                p[5] = p[linesize+5] = s->font_color[ux+1];
+                            }
                         }
-                        p += 6;
-                        ux += 2;
+                        p  += 3 * video_scale;
+                        ux += video_scale;
                     }
                 }
             }
@@ -420,18 +448,14 @@ static int plot_cqt(AVFilterLink *inlink)
         }
 
         /* drawing spectogram/sonogram */
-        if (linesize == VIDEO_WIDTH * 3) {
-            int total_length = VIDEO_WIDTH * SPECTOGRAM_HEIGHT * 3;
-            int back_length = VIDEO_WIDTH * s->spectogram_index * 3;
-            data += SPECTOGRAM_START * VIDEO_WIDTH * 3;
-            memcpy(data, s->spectogram[s->spectogram_index], total_length - back_length);
-            data += total_length - back_length;
-            if (back_length)
-                memcpy(data, s->spectogram[0], back_length);
-        } else {
-            for (y = 0; y < SPECTOGRAM_HEIGHT; y++)
-                memcpy(data + (SPECTOGRAM_START + y) * linesize, s->spectogram[(s->spectogram_index + y) % SPECTOGRAM_HEIGHT], VIDEO_WIDTH * 3);
-        }
+        int total_length = linesize * spectogram_height;
+        int back_length = linesize * s->spectogram_index;
+        data += spectogram_start * linesize;
+        memcpy(data, s->spectogram + s->spectogram_index*linesize, total_length - back_length);
+
+        data += total_length - back_length;
+        if (back_length)
+            memcpy(data, s->spectogram, back_length);
 
         s->outpicref->pts = s->frame_count;
         ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
@@ -439,7 +463,7 @@ static int plot_cqt(AVFilterLink *inlink)
         s->frame_count++;
     }
     s->spectogram_count = (s->spectogram_count + 1) % s->count;
-    s->spectogram_index = (s->spectogram_index + SPECTOGRAM_HEIGHT - 1) % SPECTOGRAM_HEIGHT;
+    s->spectogram_index = (s->spectogram_index + spectogram_height - 1) % spectogram_height;
     return ret;
 }
 
