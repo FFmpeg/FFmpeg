@@ -33,7 +33,7 @@
 
 #define BIT_DEPTH 8
 #include "hpel_template.c"
-#include "tpel_template.c"
+#include "pel_template.c"
 
 #define PIXOP2(OPNAME, OP)                                              \
 static inline void OPNAME ## _no_rnd_pixels8_l2_8(uint8_t *dst,         \
