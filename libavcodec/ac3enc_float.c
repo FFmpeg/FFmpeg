@@ -33,7 +33,6 @@
 #include "kbdwin.h"
 
 
-#if CONFIG_AC3_ENCODER
 #define AC3ENC_TYPE AC3ENC_TYPE_AC3
 #include "ac3enc_opts_template.c"
 static const AVClass ac3enc_class = {
@@ -42,7 +41,6 @@ static const AVClass ac3enc_class = {
     .option     = ac3_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-#endif
 
 #include "ac3enc_template.c"
 
@@ -137,7 +135,6 @@ static CoefType calc_cpl_coord(CoefSumType energy_ch, CoefSumType energy_cpl)
 }
 
 
-#if CONFIG_AC3_ENCODER
 AVCodec ff_ac3_encoder = {
     .name            = "ac3",
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
@@ -153,4 +150,3 @@ AVCodec ff_ac3_encoder = {
     .channel_layouts = ff_ac3_channel_layouts,
     .defaults        = ac3_defaults,
 };
-#endif
