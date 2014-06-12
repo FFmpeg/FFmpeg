@@ -142,8 +142,16 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
     if (avctx->codec_id == AV_CODEC_ID_HUFFYUV ||
         avctx->codec_id == AV_CODEC_ID_FFVHUFF) {
+        int warn = 0;
+        if (avctx->flags & CODEC_FLAG_PASS1)
+            warn = 1;
+        else if(avctx->context_model > 0) {
+            AVDictionaryEntry *t = av_dict_get(options, "non_deterministic",
+                                               NULL, AV_DICT_MATCH_CASE);
+            warn = !t || !t->value || !atoi(t->value) ? 1 : 0;
+        }
         // huffyuv does not support these with multiple frame threads currently
-        if (avctx->context_model > 0 || (avctx->flags & CODEC_FLAG_PASS1)) {
+        if (warn) {
             av_log(avctx, AV_LOG_WARNING,
                "Forcing thread count to 1 for huffyuv encoding with first pass or context 1\n");
             avctx->thread_count = 1;
