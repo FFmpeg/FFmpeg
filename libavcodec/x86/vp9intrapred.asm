@@ -817,13 +817,13 @@ cglobal vp9_ipred_vl_4x4, 4, 4, 0, dst, stride, l, a
     psrlq                   m2, m1, 8
     LOWPASS                  2,  1, 0, 3
     pavgb                   m1, m0
-    movq      [dstq+strideq*0], m1
-    movq      [dstq+strideq*1], m2
+    movd      [dstq+strideq*0], m1
+    movd      [dstq+strideq*1], m2
     lea                   dstq, [dstq+strideq*2]
     psrlq                   m1, 8
     psrlq                   m2, 8
-    movq      [dstq+strideq*0], m1
-    movq      [dstq+strideq*1], m2
+    movd      [dstq+strideq*0], m1
+    movd      [dstq+strideq*1], m2
     RET
 
 %macro VL_XMM_FUNCS 1
