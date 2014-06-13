@@ -434,6 +434,9 @@
     <ClCompile Include="..\libavfilter\vf_shuffleplanes.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_shuffleplanes.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_signalstats.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_signalstats.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_smartblur.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_smartblur.obj</ObjectFileName>
     </ClCompile>
