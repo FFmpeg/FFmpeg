@@ -36,7 +36,7 @@
 
 #define BIT_DEPTH 8
 #include "hpel_template.c"
-#include "tpel_template.c"
+#include "pel_template.c"
 #include "qpel_template.c"
 
 #define QPEL_MC(r, OPNAME, RND, OP)                                           \

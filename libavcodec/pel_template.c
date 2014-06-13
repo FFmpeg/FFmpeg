@@ -25,7 +25,7 @@
 
 #include "bit_depth_template.c"
 
-#define DEF_TPEL(OPNAME, OP)                                            \
+#define DEF_PEL(OPNAME, OP)                                             \
 static inline void FUNCC(OPNAME ## _pixels2)(uint8_t *block,            \
                                              const uint8_t *pixels,     \
                                              ptrdiff_t line_size,       \
@@ -74,7 +74,7 @@ CALL_2X_PIXELS(FUNCC(OPNAME ## _pixels16),                              \
 #define op_avg(a, b) a = rnd_avg_pixel4(a, b)
 #define op_put(a, b) a = b
 
-DEF_TPEL(avg, op_avg)
-DEF_TPEL(put, op_put)
+DEF_PEL(avg, op_avg)
+DEF_PEL(put, op_put)
 #undef op_avg
 #undef op_put
