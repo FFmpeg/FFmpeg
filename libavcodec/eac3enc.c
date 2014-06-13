@@ -251,7 +251,6 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 }
 
 
-#if CONFIG_EAC3_ENCODER
 AVCodec ff_eac3_encoder = {
     .name            = "eac3",
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
@@ -267,4 +266,3 @@ AVCodec ff_eac3_encoder = {
     .channel_layouts = ff_ac3_channel_layouts,
     .defaults        = ac3_defaults,
 };
-#endif

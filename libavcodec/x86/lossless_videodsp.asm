@@ -37,19 +37,21 @@ SECTION_TEXT
     add     wd, wd
     test    wq, 2*mmsize - 1
     jz %%.tomainloop
+    push  tmpq
 %%.wordloop:
     sub     wq, 2
 %ifidn %2, add
-    mov     ax, [srcq+wq]
-    add     ax, [dstq+wq]
+    mov   tmpw, [srcq+wq]
+    add   tmpw, [dstq+wq]
 %else
-    mov     ax, [src1q+wq]
-    sub     ax, [src2q+wq]
+    mov   tmpw, [src1q+wq]
+    sub   tmpw, [src2q+wq]
 %endif
-    and     ax, maskw
-    mov     [dstq+wq], ax
+    and   tmpw, maskw
+    mov     [dstq+wq], tmpw
     test    wq, 2*mmsize - 1
     jnz %%.wordloop
+    pop   tmpq
 %%.tomainloop:
 %ifidn %2, add
     add     srcq, wq
@@ -85,11 +87,11 @@ SECTION_TEXT
 %endmacro
 
 INIT_MMX mmx
-cglobal add_int16, 4,4,5, dst, src, mask, w
+cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
     INT16_LOOP a, add
 
 INIT_XMM sse2
-cglobal add_int16, 4,4,5, dst, src, mask, w
+cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
     test srcq, mmsize-1
     jnz .unaligned
     test dstq, mmsize-1
@@ -99,11 +101,11 @@ cglobal add_int16, 4,4,5, dst, src, mask, w
     INT16_LOOP u, add
 
 INIT_MMX mmx
-cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
+cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
     INT16_LOOP a, sub
 
 INIT_XMM sse2
-cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
+cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
     test src1q, mmsize-1
     jnz .unaligned
     test src2q, mmsize-1

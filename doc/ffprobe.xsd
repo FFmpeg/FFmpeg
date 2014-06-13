@@ -165,6 +165,7 @@
       <xsd:attribute name="duration_ts"      type="xsd:long"/>
       <xsd:attribute name="duration"         type="xsd:float"/>
       <xsd:attribute name="bit_rate"         type="xsd:int"/>
+      <xsd:attribute name="max_bit_rate"     type="xsd:int"/>
       <xsd:attribute name="nb_frames"        type="xsd:int"/>
       <xsd:attribute name="nb_read_frames"   type="xsd:int"/>
       <xsd:attribute name="nb_read_packets"  type="xsd:int"/>

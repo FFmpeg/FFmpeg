@@ -194,6 +194,39 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
             x264_encoder_reconfig(x4->enc, &x4->params);
         }
 
+        if (x4->params.rc.i_vbv_buffer_size != ctx->rc_buffer_size / 1000 ||
+            x4->params.rc.i_vbv_max_bitrate != ctx->rc_max_rate    / 1000) {
+            x4->params.rc.i_vbv_buffer_size = ctx->rc_buffer_size / 1000;
+            x4->params.rc.i_vbv_max_bitrate = ctx->rc_max_rate    / 1000;
+            x264_encoder_reconfig(x4->enc, &x4->params);
+        }
+
+        if (x4->params.rc.i_rc_method == X264_RC_ABR &&
+            x4->params.rc.i_bitrate != ctx->bit_rate / 1000) {
+            x4->params.rc.i_bitrate = ctx->bit_rate / 1000;
+            x264_encoder_reconfig(x4->enc, &x4->params);
+        }
+
+        if (x4->params.rc.i_rc_method == X264_RC_CRF &&
+            x4->crf >= 0 &&
+            x4->params.rc.f_rf_constant != x4->crf) {
+            x4->params.rc.f_rf_constant = x4->crf;
+            x264_encoder_reconfig(x4->enc, &x4->params);
+        }
+
+        if (x4->params.rc.i_rc_method == X264_RC_CQP &&
+            x4->cqp >= 0 &&
+            x4->params.rc.i_qp_constant != x4->cqp) {
+            x4->params.rc.i_qp_constant = x4->cqp;
+            x264_encoder_reconfig(x4->enc, &x4->params);
+        }
+
+        if (x4->crf_max >= 0 &&
+            x4->params.rc.f_rf_constant_max != x4->crf_max) {
+            x4->params.rc.f_rf_constant_max = x4->crf_max;
+            x264_encoder_reconfig(x4->enc, &x4->params);
+        }
+
         side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_STEREO3D);
         if (side_data) {
             AVStereo3D *stereo = (AVStereo3D *)side_data->data;

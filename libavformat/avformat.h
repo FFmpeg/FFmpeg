@@ -1288,11 +1288,9 @@ typedef struct AVFormatContext {
     unsigned int probesize;
 
     /**
-     * Maximum duration (in AV_TIME_BASE units) of the data read
-     * from input in avformat_find_stream_info().
-     * Demuxing only, set by the caller before avformat_find_stream_info().
-     * Can be set to 0 to let avformat choose using a heuristic.
+     * @deprecated deprecated in favor of max_analyze_duration2
      */
+    attribute_deprecated
     int max_analyze_duration;
 
     const uint8_t *key;
@@ -1649,6 +1647,15 @@ typedef struct AVFormatContext {
      * Muxing: set by user via AVOptions (NO direct access)
      */
     int64_t output_ts_offset;
+
+    /**
+     * Maximum duration (in AV_TIME_BASE units) of the data read
+     * from input in avformat_find_stream_info().
+     * Demuxing only, set by the caller before avformat_find_stream_info()
+     * via AVOptions (NO direct access).
+     * Can be set to 0 to let avformat choose using a heuristic.
+     */
+    int64_t max_analyze_duration2;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);

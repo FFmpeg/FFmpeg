@@ -1,0 +1,4 @@
+5e4bb1c9bd845896891ca5fe418948a3 *tests/data/fate/vsynth3-mpeg4-qpel.avi
+42618 tests/data/fate/vsynth3-mpeg4-qpel.avi
+50af37a5ae05f0af34bd56dcef997c8d *tests/data/fate/vsynth3-mpeg4-qpel.out.rawvideo
+stddev:    6.59 PSNR: 31.75 MAXDIFF:   54 bytes:    86700/    86700

@@ -427,6 +427,10 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         }
         os->lastpts                 =
         os->lastdts                 = os->granule - duration;
+
+        if (!os->granule && duration) //hack to deal with broken files (Ticket3710)
+            os->lastpts = os->lastdts = AV_NOPTS_VALUE;
+
         if (s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = FFMAX(os->lastpts, 0);
             if (s->streams[idx]->duration != AV_NOPTS_VALUE)

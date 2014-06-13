@@ -64,6 +64,11 @@ A given device index will override any given device name.
 If the desired device consists of numbers only, use -video_device_index to identify it.
 The default device will be chosen if an empty string  or the device name "default" is given.
 The available devices can be enumerated by using -list_devices.
+The pixel format can be set using -pixel_format.
+Available formats:
+ monob, rgb555be, rgb555le, rgb565be, rgb565le, rgb24, bgr24, 0rgb, bgr0, 0bgr, rgb0,
+ bgr48be, uyvy422, yuva444p, yuva444p16le, yuv444p, yuv422p16, yuv422p10, yuv444p10,
+ yuv420p, nv12, yuyv422, gray
 
 @example
 ffmpeg -f avfoundation -i "0" out.mpg
@@ -74,7 +79,7 @@ ffmpeg -f avfoundation -video_device_index 0 -i "" out.mpg
 @end example
 
 @example
-ffmpeg -f avfoundation -i "default" out.mpg
+ffmpeg -f avfoundation -pixel_format bgr0 -i "default" out.mpg
 @end example
 
 @example

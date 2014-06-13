@@ -20,6 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#if defined(_MSC_VER)
+#define X265_API_IMPORTS 1
+#endif
+
 #include <x265.h>
 
 #include "libavutil/internal.h"
@@ -28,10 +32,6 @@
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
-
-#if defined(_MSC_VER)
-#define X265_API_IMPORTS 1
-#endif
 
 typedef struct libx265Context {
     const AVClass *class;
@@ -82,10 +82,9 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     int nnal;
 
     if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL &&
-        !av_pix_fmt_desc_get(avctx->pix_fmt)->log2_chroma_w &&
-        !av_pix_fmt_desc_get(avctx->pix_fmt)->log2_chroma_h) {
+        !av_pix_fmt_desc_get(avctx->pix_fmt)->log2_chroma_w) {
         av_log(avctx, AV_LOG_ERROR,
-               "4:4:4 support is not fully defined for HEVC yet. "
+               "4:2:2 and 4:4:4 support is not fully defined for HEVC yet. "
                "Set -strict experimental to encode anyway.\n");
         return AVERROR(ENOSYS);
     }
@@ -124,15 +123,14 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         }
     }
 
-    if (x265_max_bit_depth == 8)
-        ctx->params->internalBitDepth = 8;
-    else if (x265_max_bit_depth == 12)
-        ctx->params->internalBitDepth = 10;
-
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV420P10:
         ctx->params->internalCsp = X265_CSP_I420;
+        break;
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV422P10:
+        ctx->params->internalCsp = X265_CSP_I422;
         break;
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUV444P10:
@@ -262,14 +260,17 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static const enum AVPixelFormat x265_csp_eight[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat x265_csp_twelve[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_YUV420P10,
+    AV_PIX_FMT_YUV422P10,
     AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_NONE
 };

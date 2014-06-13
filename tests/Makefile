@@ -3,6 +3,8 @@ FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
 VREF = tests/vsynth1/00.pgm
 AREF = tests/data/asynth1.sw
 
+FATEW = 34
+FATEH = 34
 
 $(AREF): CMP=
 
@@ -29,6 +31,9 @@ tests/data/vsynth1.yuv: tests/videogen$(HOSTEXESUF) | tests/data
 
 tests/data/vsynth2.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
 	$(M)$< $(SRC_PATH)/tests/lena.pnm $@
+
+tests/data/vsynth3.yuv: tests/videogen$(HOSTEXESUF) | tests/data
+	$(M)$< $@ $(FATEW) $(FATEH)
 
 tests/data/ffprobe-test.nut: ffmpeg$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) ./$< \

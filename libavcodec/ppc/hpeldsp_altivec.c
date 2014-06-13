@@ -28,6 +28,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/hpeldsp.h"
@@ -449,7 +450,7 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdi
 av_cold void ff_hpeldsp_init_ppc(HpelDSPContext *c, int flags)
 {
 #if HAVE_ALTIVEC
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+    if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 
     c->avg_pixels_tab[0][0]        = ff_avg_pixels16_altivec;

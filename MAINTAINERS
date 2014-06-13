@@ -44,8 +44,8 @@ Miscellaneous Areas
 ===================
 
 documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu
-build system (configure,Makefiles)      Diego Biurrun, Mans Rullgard
-project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Döffinger, Alexander Strasser
+build system (configure, makefiles)     Diego Biurrun, Mans Rullgard
+project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
@@ -56,7 +56,7 @@ Communication
 
 website                                 Robert Swain
 Trac bug tracker                        Alexander Strasser, Michael Niedermayer, Carl Eugen Hoyos, Lou Logan
-mailinglists                            Michael Niedermayer, Baptiste Coudurier, Lou Logan
+mailing lists                           Michael Niedermayer, Baptiste Coudurier, Lou Logan
 Google+                                 Paul B Mahol, Michael Niedermayer, Alexander Strasser
 Twitter                                 Lou Logan
 Launchpad                               Timothy Gu
@@ -268,8 +268,8 @@ Codecs:
   vda_h264_dec.c                        Xidorn Quan
   vima.c                                Paul B Mahol
   vmnc.c                                Kostya Shishkov
-  vorbis_dec.c                          Denes Balatoni, David Conrad
-  vorbis_enc.c                          Oded Shimon
+  vorbisdec.c                           Denes Balatoni, David Conrad
+  vorbisenc.c                           Oded Shimon
   vp3*                                  Mike Melanson
   vp5                                   Aurelien Jacobs
   vp6                                   Aurelien Jacobs
@@ -542,7 +542,7 @@ Attila Kinali                 11F0 F9A6 A1D2 11F6 C745 D10C 6520 BCDD F2DF E765
 Baptiste Coudurier            8D77 134D 20CC 9220 201F C5DB 0AC9 325C 5C1A BAAA
 Ben Littler                   3EE3 3723 E560 3214 A8CD 4DEB 2CDB FCE7 768C 8D2C
 Benoit Fouet                  B22A 4F4F 43EF 636B BB66 FCDC 0023 AE1E 2985 49C8
-Bœsch Clément                 52D0 3A82 D445 F194 DB8B 2B16 87EE 2CB8 F4B8 FCF9
+Clément Bœsch                 52D0 3A82 D445 F194 DB8B 2B16 87EE 2CB8 F4B8 FCF9
 Daniel Verkamp                78A6 07ED 782C 653E C628 B8B9 F0EB 8DD8 2F0E 21C7
 Diego Biurrun                 8227 1E31 B6D9 4994 7427 E220 9CAE D6CC 4757 FCC5
 FFmpeg release signing key    FCF9 86EA 15E6 E293 A564 4F10 B432 2F04 D676 58D8
@@ -557,7 +557,7 @@ Michael Niedermayer           9FF2 128B 147E F673 0BAD F133 611E C787 040B 0FAB
 Nicolas George                24CE 01CE 9ACC 5CEB 74D8 8D9D B063 D997 36E5 4C93
 Panagiotis Issaris            6571 13A3 33D9 3726 F728 AA98 F643 B12E ECF3 E029
 Peter Ross                    A907 E02F A6E5 0CD2 34CD 20D2 6760 79C5 AC40 DD6B
-Reimar Döffinger              C61D 16E5 9E2C D10C 8958 38A4 0899 A2B9 06D4 D9C7
+Reimar Doeffinger             C61D 16E5 9E2C D10C 8958 38A4 0899 A2B9 06D4 D9C7
 Reinhard Tartler              9300 5DC2 7E87 6C37 ED7B CA9A 9808 3544 9453 48A4
 Reynaldo H. Verdejo Pinochet  6E27 CD34 170C C78E 4D4F 5F40 C18E 077F 3114 452A
 Robert Swain                  EE7A 56EA 4A81 A7B5 2001 A521 67FA 362D A2FC 3E71

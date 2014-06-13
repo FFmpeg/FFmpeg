@@ -1,5 +1,5 @@
 /*
- * General DV muxer/demuxer
+ * General DV demuxer
  * Copyright (c) 2003 Roman Shaposhnik
  *
  * Many thanks to Dan Dennedy <dan@dennedy.org> for providing wealth
@@ -622,7 +622,6 @@ static int dv_probe(AVProbeData *p)
     return 0;
 }
 
-#if CONFIG_DV_DEMUXER
 AVInputFormat ff_dv_demuxer = {
     .name           = "dv",
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
@@ -634,4 +633,3 @@ AVInputFormat ff_dv_demuxer = {
     .read_seek      = dv_read_seek,
     .extensions     = "dv,dif",
 };
-#endif

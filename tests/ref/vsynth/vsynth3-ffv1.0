@@ -1,0 +1,4 @@
+aa9187b44d9d8ff4d0ac7b9c5301830c *tests/data/fate/vsynth3-ffv1.0.avi
+52252 tests/data/fate/vsynth3-ffv1.0.avi
+a038ad7c3c09f776304ef7accdea9c74 *tests/data/fate/vsynth3-ffv1.0.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:    86700/    86700

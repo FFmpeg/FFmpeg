@@ -185,15 +185,23 @@ static int mjpeg_probe(AVProbeData *p)
         }
     }
 
-    if (nb_invalid == 0 && nb_frames > 2)
-        return AVPROBE_SCORE_EXTENSION / 2;
-    if (nb_invalid*4 + 1 < nb_frames)
+    if (nb_invalid*4 + 1 < nb_frames) {
+        static const char ct_jpeg[] = "\r\nContent-Type: image/jpeg\r\n\r\n";
+        int i;
+
+        for (i=0; i<FFMIN(p->buf_size - sizeof(ct_jpeg), 100); i++)
+            if (!memcmp(p->buf + i, ct_jpeg, sizeof(ct_jpeg) - 1))
+                return AVPROBE_SCORE_EXTENSION;
+
+        if (nb_invalid == 0 && nb_frames > 2)
+            return AVPROBE_SCORE_EXTENSION / 2;
         return AVPROBE_SCORE_EXTENSION / 4;
+    }
 
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(mjpeg, "raw MJPEG video", mjpeg_probe, "mjpg,mjpeg,mpo", AV_CODEC_ID_MJPEG)
+FF_DEF_RAWVIDEO_DEMUXER2(mjpeg, "raw MJPEG video", mjpeg_probe, "mjpg,mjpeg,mpo", AV_CODEC_ID_MJPEG, AVFMT_GENERIC_INDEX|AVFMT_NOTIMESTAMPS)
 #endif
 
 #if CONFIG_MLP_DEMUXER
@@ -233,5 +241,5 @@ AVInputFormat ff_shorten_demuxer = {
 #endif
 
 #if CONFIG_VC1_DEMUXER
-FF_DEF_RAWVIDEO_DEMUXER(vc1, "raw VC-1", NULL, "vc1", AV_CODEC_ID_VC1)
+FF_DEF_RAWVIDEO_DEMUXER2(vc1, "raw VC-1", NULL, "vc1", AV_CODEC_ID_VC1, AVFMT_GENERIC_INDEX|AVFMT_NOTIMESTAMPS)
 #endif

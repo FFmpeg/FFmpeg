@@ -827,10 +827,10 @@ cglobal deblock_v_chroma_8, 5,6
 ;                          int8_t *tc0)
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_chroma_8, 5,7
-%if UNIX64
-    %define buf0 [rsp-24]
-    %define buf1 [rsp-16]
-%elif WIN64
+%if ARCH_X86_64
+    ; This could use the red zone on 64 bit unix to avoid the stack pointer
+    ; readjustment, but valgrind assumes the red zone is clobbered on
+    ; function calls and returns.
     sub   rsp, 16
     %define buf0 [rsp]
     %define buf1 [rsp+8]
@@ -850,7 +850,7 @@ cglobal deblock_h_chroma_8, 5,7
     movq  m0, buf0
     movq  m3, buf1
     TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
-%if WIN64
+%if ARCH_X86_64
     add   rsp, 16
 %endif
     RET

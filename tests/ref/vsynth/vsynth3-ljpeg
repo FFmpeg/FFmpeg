@@ -1,0 +1,4 @@
+39cd774ffe47c804f2f58d5bbcf7b0a5 *tests/data/fate/vsynth3-ljpeg.avi
+105840 tests/data/fate/vsynth3-ljpeg.avi
+a038ad7c3c09f776304ef7accdea9c74 *tests/data/fate/vsynth3-ljpeg.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:    86700/    86700

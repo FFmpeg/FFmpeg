@@ -698,7 +698,7 @@ static int nut_write_header(AVFormatContext *s)
     nut->avf = s;
 
     nut->version = FFMAX(NUT_STABLE_VERSION, 3 + !!nut->flags);
-    if (nut->flags && s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+    if (nut->version > 3 && s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(s, AV_LOG_ERROR,
                "The additional syncpoint modes require version %d, "
                "that is currently not finalized, "
@@ -849,14 +849,18 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
         if (is_meta) {
             if (   pkt->side_data[i].type == AV_PKT_DATA_METADATA_UPDATE
                 || pkt->side_data[i].type == AV_PKT_DATA_STRINGS_METADATA) {
-                if (!size || data[size-1])
-                    return AVERROR(EINVAL);
+                if (!size || data[size-1]) {
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
                 while (data < data_end) {
                     const uint8_t *key = data;
                     const uint8_t *val = data + strlen(key) + 1;
 
-                    if(val >= data_end)
-                        return AVERROR(EINVAL);
+                    if(val >= data_end) {
+                        ret = AVERROR(EINVAL);
+                        goto fail;
+                    }
                     put_str(dyn_bc, key);
                     put_s(dyn_bc, -1);
                     put_str(dyn_bc, val);
@@ -937,12 +941,13 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
         }
     }
 
+fail:
     ff_put_v(bc, sm_data_count);
     dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(bc, dyn_buf, dyn_size);
     av_freep(&dyn_buf);
 
-    return 0;
+    return ret;
 }
 
 static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
@@ -956,10 +961,10 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     int best_header_idx;
     int key_frame = !!(pkt->flags & AV_PKT_FLAG_KEY);
     int store_sp  = 0;
-    int ret;
+    int ret = 0;
     int sm_size = 0;
     int data_size = pkt->size;
-    uint8_t *sm_buf;
+    uint8_t *sm_buf = NULL;
 
     if (pkt->pts < 0) {
         av_log(s, AV_LOG_ERROR,
@@ -974,9 +979,12 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         ret = avio_open_dyn_buf(&sm_bc);
         if (ret < 0)
             return ret;
-        write_sm_data(s, sm_bc, pkt, 0);
-        write_sm_data(s, sm_bc, pkt, 1);
+        ret = write_sm_data(s, sm_bc, pkt, 0);
+        if (ret >= 0)
+            ret = write_sm_data(s, sm_bc, pkt, 1);
         sm_size = avio_close_dyn_buf(sm_bc, &sm_buf);
+        if (ret < 0)
+            goto fail;
         data_size += sm_size;
     }
 
@@ -1018,7 +1026,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         nut->last_syncpoint_pos = avio_tell(bc);
         ret                     = avio_open_dyn_buf(&dyn_bc);
         if (ret < 0)
-            return ret;
+            goto fail;
         put_tt(nut, nus->time_base, dyn_bc, pkt->dts);
         ff_put_v(dyn_bc, sp_pos != INT64_MAX ? (nut->last_syncpoint_pos - sp_pos) >> 4 : 0);
 
@@ -1030,15 +1038,17 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (nut->write_index) {
         if ((ret = ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0 /*unused*/, pkt->dts)) < 0)
-            return ret;
+            goto fail;
 
         if ((1ll<<60) % nut->sp_count == 0)
             for (i=0; i<s->nb_streams; i++) {
                 int j;
                 StreamContext *nus = &nut->stream[i];
                 av_reallocp_array(&nus->keyframe_pts, 2*nut->sp_count, sizeof(*nus->keyframe_pts));
-                if (!nus->keyframe_pts)
-                    return AVERROR(ENOMEM);
+                if (!nus->keyframe_pts) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
                 for (j=nut->sp_count == 1 ? 0 : nut->sp_count; j<2*nut->sp_count; j++)
                     nus->keyframe_pts[j] = AV_NOPTS_VALUE;
         }
@@ -1130,7 +1140,6 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (flags & FLAG_SM_DATA) {
         avio_write(bc, sm_buf, sm_size);
-        av_freep(&sm_buf);
     }
     avio_write(bc, pkt->data + nut->header_len[header_idx], pkt->size - nut->header_len[header_idx]);
 
@@ -1155,7 +1164,10 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         nut->max_pts_tb = nus->time_base;
     }
 
-    return 0;
+fail:
+    av_freep(&sm_buf);
+
+    return ret;
 }
 
 static int nut_write_trailer(AVFormatContext *s)

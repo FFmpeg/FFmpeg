@@ -28,6 +28,7 @@ version <next>:
 - WebVTT encoder
 - showcqt multimedia filter
 - zoompan filter
+- signalstats filter
 
 
 version 2.2:
