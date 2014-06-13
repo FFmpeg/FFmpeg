@@ -39,8 +39,8 @@ do {                                                                       \
     type ***tmp;                                                           \
     int i;                                                                 \
                                                                            \
-    if (!(tmp = av_realloc(ret->refs,                                      \
-                           sizeof(*tmp) * (ret->refcount + a->refcount)))) \
+    if (!(tmp = av_realloc_array(ret->refs, ret->refcount + a->refcount,   \
+                                 sizeof(*tmp))))                           \
         goto fail;                                                         \
     ret->refs = tmp;                                                       \
                                                                            \
@@ -66,7 +66,7 @@ do {                                                                            
         goto fail;                                                              \
                                                                                 \
     if (count) {                                                                \
-        if (!(ret->fmts = av_malloc(sizeof(*ret->fmts) * count)))               \
+        if (!(ret->fmts = av_malloc_array(count, sizeof(*ret->fmts))))          \
             goto fail;                                                          \
         for (i = 0; i < a->nb; i++)                                             \
             for (j = 0; j < b->nb; j++)                                         \
@@ -196,8 +196,8 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
 
     ret_max = a->nb_channel_layouts + b->nb_channel_layouts;
     if (!(ret = av_mallocz(sizeof(*ret))) ||
-        !(ret->channel_layouts = av_malloc(sizeof(*ret->channel_layouts) *
-                                           ret_max)))
+        !(ret->channel_layouts = av_malloc_array(ret_max,
+                                                 sizeof(*ret->channel_layouts))))
         goto fail;
 
     /* a[known] intersect b[known] */
@@ -284,7 +284,7 @@ int ff_fmt_is_in(int fmt, const int *fmts)
     if (!formats) return NULL;                                          \
     formats->count_field = count;                                       \
     if (count) {                                                        \
-        formats->field = av_malloc(sizeof(*formats->field)*count);      \
+        formats->field = av_malloc_array(count, sizeof(*formats->field));      \
         if (!formats->field) {                                          \
             av_free(formats);                                           \
             return NULL;                                                \
