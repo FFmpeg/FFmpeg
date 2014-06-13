@@ -95,7 +95,7 @@ static av_cold int dejudder_init(AVFilterContext *ctx)
 {
     DejudderContext *dj = ctx->priv;
 
-    dj->ringbuff = av_mallocz(sizeof(*dj->ringbuff) * (dj->cycle+2));
+    dj->ringbuff = av_mallocz_array(dj->cycle+2, sizeof(*dj->ringbuff));
     if (!dj->ringbuff)
         return AVERROR(ENOMEM);
 
