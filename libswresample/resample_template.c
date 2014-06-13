@@ -107,7 +107,10 @@
 #endif
 
 int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int *consumed, int src_size, int dst_size, int update_ctx){
-    int dst_index, i;
+    int dst_index;
+#if !defined(COMMON_CORE) || !defined(LINEAR_CORE)
+    int i;
+#endif
     int index= c->index;
     int frac= c->frac;
     int dst_incr_frac= c->dst_incr % c->src_incr;
@@ -133,7 +136,7 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         av_assert2(index >= 0);
         *consumed= index;
         index = 0;
-    } else if (index >= 0) {
+    } else {
         int64_t end_index = (1LL + src_size - c->filter_length) << c->phase_shift;
         int64_t delta_frac = (end_index - index) * c->src_incr - c->frac;
         int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
@@ -195,54 +198,6 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         }
 
         *consumed = sample_index;
-    } else {
-        int sample_index = 0;
-        for(dst_index=0; dst_index < dst_size; dst_index++){
-            FELEM *filter;
-            FELEM2 val=0;
-
-            sample_index += index >> c->phase_shift;
-            index &= c->phase_mask;
-            filter = ((FELEM*)c->filter_bank) + c->filter_alloc*index;
-
-            if(sample_index + c->filter_length > src_size || -sample_index >= src_size){
-                break;
-            }else if(sample_index < 0){
-                for(i=0; i<c->filter_length; i++)
-                    val += src[FFABS(sample_index + i)] * (FELEM2)filter[i];
-                OUT(dst[dst_index], val);
-            }else if(c->linear){
-                FELEM2 v2=0;
-#ifdef LINEAR_CORE
-                LINEAR_CORE
-#else
-                for(i=0; i<c->filter_length; i++){
-                    val += src[sample_index + i] * (FELEM2)filter[i];
-                    v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_alloc];
-                }
-#endif
-                val+=(v2-val)*(FELEML)frac / c->src_incr;
-                OUT(dst[dst_index], val);
-            }else{
-#ifdef COMMON_CORE
-                COMMON_CORE
-#else
-                for(i=0; i<c->filter_length; i++){
-                    val += src[sample_index + i] * (FELEM2)filter[i];
-                }
-                OUT(dst[dst_index], val);
-#endif
-            }
-
-            frac += dst_incr_frac;
-            index += dst_incr;
-            if(frac >= c->src_incr){
-                frac -= c->src_incr;
-                index++;
-            }
-        }
-        *consumed= FFMAX(sample_index, 0);
-        index += FFMIN(sample_index, 0) << c->phase_shift;
     }
 
     if(update_ctx){

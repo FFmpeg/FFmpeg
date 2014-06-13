@@ -407,6 +407,51 @@ static int resample_flush(struct SwrContext *s) {
     return 0;
 }
 
+// in fact the whole handle multiple ridiculously small buffers might need more thinking...
+static int invert_initial_buffer(ResampleContext *c, AudioData *dst, const AudioData *src,
+                                 int in_count, int *out_idx, int *out_sz)
+{
+    int n, ch, num = FFMIN(in_count + *out_sz, c->filter_length + 1), res;
+
+    if (c->index >= 0)
+        return 0;
+
+    if ((res = swri_realloc_audio(dst, c->filter_length * 2 + 1)) < 0)
+        return res;
+
+    // copy
+    for (n = *out_sz; n < num; n++) {
+        for (ch = 0; ch < src->ch_count; ch++) {
+            memcpy(dst->ch[ch] + ((c->filter_length + n) * c->felem_size),
+                   src->ch[ch] + ((n - *out_sz) * c->felem_size), c->felem_size);
+        }
+    }
+
+    // if not enough data is in, return and wait for more
+    if (num < c->filter_length + 1) {
+        *out_sz = num;
+        *out_idx = c->filter_length;
+        return INT_MAX;
+    }
+
+    // else invert
+    for (n = 1; n <= c->filter_length; n++) {
+        for (ch = 0; ch < src->ch_count; ch++) {
+            memcpy(dst->ch[ch] + ((c->filter_length - n) * c->felem_size),
+                   dst->ch[ch] + ((c->filter_length + n) * c->felem_size),
+                   c->felem_size);
+        }
+    }
+
+    res = num - *out_sz;
+    *out_idx = c->filter_length + (c->index >> c->phase_shift);
+    *out_sz = 1 + c->filter_length * 2 - *out_idx;
+    c->index &= c->phase_mask;
+    assert(res > 0);
+
+    return res;
+}
+
 struct Resampler const swri_resampler={
   resample_init,
   resample_free,
@@ -414,4 +459,5 @@ struct Resampler const swri_resampler={
   resample_flush,
   set_compensation,
   get_delay,
+  invert_initial_buffer,
 };
