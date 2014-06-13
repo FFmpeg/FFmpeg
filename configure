@@ -3340,6 +3340,13 @@ case $target_os in
         add_cppflags '-I\$(SRC_PATH)/compat/aix'
         enabled shared && add_ldflags -Wl,-brtl
         ;;
+    android)
+        disable symver
+        SLIB_INSTALL_NAME='$(SLIBNAME)'
+        SLIB_INSTALL_LINKS=
+        # soname not set on purpose
+        SHFLAGS=-shared
+        ;;
     haiku)
         prefix_default="/boot/common"
         network_extralibs="-lnetwork"
