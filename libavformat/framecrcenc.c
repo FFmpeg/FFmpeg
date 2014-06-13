@@ -26,6 +26,22 @@
 #include "avformat.h"
 #include "internal.h"
 
+static int framecrc_write_header(struct AVFormatContext *s)
+{
+    int i;
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        AVCodecContext *avctx = st->codec;
+        if (avctx->extradata) {
+            uint32_t crc = av_adler32_update(0, avctx->extradata, avctx->extradata_size);
+            avio_printf(s->pb, "#extradata %d: %8d, 0x%08"PRIx32"\n",
+                        i, avctx->extradata_size, crc);
+        }
+    }
+
+    return ff_framehash_write_header(s);
+}
+
 static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     uint32_t crc = av_adler32_update(0, pkt->data, pkt->size);
@@ -65,7 +81,7 @@ AVOutputFormat ff_framecrc_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("framecrc testing"),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
-    .write_header      = ff_framehash_write_header,
+    .write_header      = framecrc_write_header,
     .write_packet      = framecrc_write_packet,
     .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
