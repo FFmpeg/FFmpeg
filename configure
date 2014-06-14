@@ -2268,7 +2268,7 @@ h264_parser_select="h264_decoder"
 hevc_parser_select="hevc_decoder"
 mpegvideo_parser_select="error_resilience mpegvideo"
 mpeg4video_parser_select="error_resilience h263dsp mpegvideo qpeldsp"
-vc1_parser_select="mpegvideo"
+vc1_parser_select="mpegvideo vc1_decoder"
 
 # external libraries
 libaacplus_encoder_deps="libaacplus"
