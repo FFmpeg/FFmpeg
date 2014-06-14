@@ -67,11 +67,10 @@ const int program_birth_year = 2003;
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
 #define MIN_FRAMES 5
 
-/* Minimum SDL audio buffer size, in samples. Should be small to have precise
-   A/V sync as SDL does not have hardware buffer fullness info. */
+/* Minimum SDL audio buffer size, in samples. */
 #define SDL_AUDIO_MIN_BUFFER_SIZE 512
 /* Calculate actual buffer size keeping in mind not cause too frequent audio callbacks */
-#define SDL_AUDIO_MAX_CALLBACKS_PER_SEC 60
+#define SDL_AUDIO_MAX_CALLBACKS_PER_SEC 30
 
 /* no AV sync correction is done if below the minimum AV sync threshold */
 #define AV_SYNC_THRESHOLD_MIN 0.04
