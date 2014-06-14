@@ -152,7 +152,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     c->curbits = (curbits + size2) & 0x1F;
 
-    if ((ret = av_new_packet(pkt, size)) < 0)
+    if ((ret = av_new_packet(pkt, size + 4)) < 0)
         return ret;
 
     pkt->data[0] = curbits;
