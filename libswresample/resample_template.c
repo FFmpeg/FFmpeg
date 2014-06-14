@@ -248,7 +248,6 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
     if(update_ctx){
         c->frac= frac;
         c->index= index;
-        c->dst_incr= dst_incr_frac + c->src_incr*dst_incr;
     }
 
     return dst_index;
