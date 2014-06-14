@@ -23,6 +23,7 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/opt.h"
 
 #define DVBSUB_PAGE_SEGMENT     0x10
 #define DVBSUB_REGION_SEGMENT   0x11
@@ -227,6 +228,7 @@ typedef struct DVBSubDisplayDefinition {
 } DVBSubDisplayDefinition;
 
 typedef struct DVBSubContext {
+    AVClass *class;
     int composition_id;
     int ancillary_id;
 
@@ -1551,6 +1553,15 @@ static int dvbsub_decode(AVCodecContext *avctx,
     return p - buf;
 }
 
+static const AVOption options[] = {
+    {NULL}
+};
+static const AVClass dvbsubdec_class = {
+    .class_name = "DVB Sub Decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_dvbsub_decoder = {
     .name           = "dvbsub",
@@ -1561,4 +1572,5 @@ AVCodec ff_dvbsub_decoder = {
     .init           = dvbsub_init_decoder,
     .close          = dvbsub_close_decoder,
     .decode         = dvbsub_decode,
+    .priv_class     = &dvbsubdec_class,
 };
