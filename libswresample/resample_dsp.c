@@ -27,6 +27,15 @@
 
 #include "resample.h"
 
+int swri_resample_common_int16 (ResampleContext *c, int16_t *dst, const int16_t *src, int n, int update_ctx);
+int swri_resample_common_int32 (ResampleContext *c, int32_t *dst, const int32_t *src, int n, int update_ctx);
+int swri_resample_common_float (ResampleContext *c,   float *dst, const   float *src, int n, int update_ctx);
+int swri_resample_common_double(ResampleContext *c,  double *dst, const  double *src, int n, int update_ctx);
+int swri_resample_linear_int16 (ResampleContext *c, int16_t *dst, const int16_t *src, int n, int update_ctx);
+int swri_resample_linear_int32 (ResampleContext *c, int32_t *dst, const int32_t *src, int n, int update_ctx);
+int swri_resample_linear_float (ResampleContext *c,   float *dst, const   float *src, int n, int update_ctx);
+int swri_resample_linear_double(ResampleContext *c,  double *dst, const  double *src, int n, int update_ctx);
+
 #define DO_RESAMPLE_ONE 1
 
 #define TEMPLATE_RESAMPLE_S16
@@ -55,15 +64,15 @@ void swresample_dsp_init(ResampleContext *c)
     c->dsp.resample_one[FNIDX(FLTP)] = (resample_one_fn) resample_one_float;
     c->dsp.resample_one[FNIDX(DBLP)] = (resample_one_fn) resample_one_double;
 
-    c->dsp.resample_common[FNIDX(S16P)] = (resample_fn) resample_common_int16;
-    c->dsp.resample_common[FNIDX(S32P)] = (resample_fn) resample_common_int32;
-    c->dsp.resample_common[FNIDX(FLTP)] = (resample_fn) resample_common_float;
-    c->dsp.resample_common[FNIDX(DBLP)] = (resample_fn) resample_common_double;
+    c->dsp.resample_common[FNIDX(S16P)] = (resample_fn) swri_resample_common_int16;
+    c->dsp.resample_common[FNIDX(S32P)] = (resample_fn) swri_resample_common_int32;
+    c->dsp.resample_common[FNIDX(FLTP)] = (resample_fn) swri_resample_common_float;
+    c->dsp.resample_common[FNIDX(DBLP)] = (resample_fn) swri_resample_common_double;
 
-    c->dsp.resample_linear[FNIDX(S16P)] = (resample_fn) resample_linear_int16;
-    c->dsp.resample_linear[FNIDX(S32P)] = (resample_fn) resample_linear_int32;
-    c->dsp.resample_linear[FNIDX(FLTP)] = (resample_fn) resample_linear_float;
-    c->dsp.resample_linear[FNIDX(DBLP)] = (resample_fn) resample_linear_double;
+    c->dsp.resample_linear[FNIDX(S16P)] = (resample_fn) swri_resample_linear_int16;
+    c->dsp.resample_linear[FNIDX(S32P)] = (resample_fn) swri_resample_linear_int32;
+    c->dsp.resample_linear[FNIDX(FLTP)] = (resample_fn) swri_resample_linear_float;
+    c->dsp.resample_linear[FNIDX(DBLP)] = (resample_fn) swri_resample_linear_double;
 
     if (ARCH_X86) swresample_dsp_x86_init(c);
 }

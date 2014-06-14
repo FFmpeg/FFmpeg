@@ -119,9 +119,9 @@ static void RENAME(resample_one)(DELEM *dst, const DELEM *src,
 }
 #endif
 
-static int RENAME(resample_common)(ResampleContext *c,
-                                   DELEM *dst, const DELEM *src,
-                                   int n, int update_ctx)
+int RENAME(swri_resample_common)(ResampleContext *c,
+                                 DELEM *dst, const DELEM *src,
+                                 int n, int update_ctx)
 {
             int dst_index;
             int index= c->index;
@@ -163,9 +163,9 @@ static int RENAME(resample_common)(ResampleContext *c,
     return sample_index;
 }
 
-static int RENAME(resample_linear)(ResampleContext *c,
-                                   DELEM *dst, const DELEM *src,
-                                   int n, int update_ctx)
+int RENAME(swri_resample_linear)(ResampleContext *c,
+                                 DELEM *dst, const DELEM *src,
+                                 int n, int update_ctx)
 {
             int dst_index;
             int index= c->index;

@@ -27,6 +27,17 @@
 
 #include "libswresample/resample.h"
 
+int swri_resample_common_int16_mmx2 (ResampleContext *c, int16_t *dst, const int16_t *src, int n, int update_ctx);
+int swri_resample_linear_int16_mmx2 (ResampleContext *c, int16_t *dst, const int16_t *src, int n, int update_ctx);
+int swri_resample_common_int16_sse2 (ResampleContext *c, int16_t *dst, const int16_t *src, int n, int update_ctx);
+int swri_resample_linear_int16_sse2 (ResampleContext *c, int16_t *dst, const int16_t *src, int n, int update_ctx);
+int swri_resample_common_float_sse  (ResampleContext *c,   float *dst, const   float *src, int n, int update_ctx);
+int swri_resample_linear_float_sse  (ResampleContext *c,   float *dst, const   float *src, int n, int update_ctx);
+int swri_resample_common_float_avx  (ResampleContext *c,   float *dst, const   float *src, int n, int update_ctx);
+int swri_resample_linear_float_avx  (ResampleContext *c,   float *dst, const   float *src, int n, int update_ctx);
+int swri_resample_common_double_sse2(ResampleContext *c,  double *dst, const  double *src, int n, int update_ctx);
+int swri_resample_linear_double_sse2(ResampleContext *c,  double *dst, const  double *src, int n, int update_ctx);
+
 #if HAVE_MMXEXT_INLINE
 
 #define DO_RESAMPLE_ONE 0
@@ -69,21 +80,21 @@ void swresample_dsp_x86_init(ResampleContext *c)
 
 #define FNIDX(fmt) (AV_SAMPLE_FMT_##fmt - AV_SAMPLE_FMT_S16P)
     if (ARCH_X86_32 && HAVE_MMXEXT_INLINE && mm_flags & AV_CPU_FLAG_MMX2) {
-        c->dsp.resample_common[FNIDX(S16P)] = (resample_fn) resample_common_int16_mmx2;
-        c->dsp.resample_linear[FNIDX(S16P)] = (resample_fn) resample_linear_int16_mmx2;
+        c->dsp.resample_common[FNIDX(S16P)] = (resample_fn) swri_resample_common_int16_mmx2;
+        c->dsp.resample_linear[FNIDX(S16P)] = (resample_fn) swri_resample_linear_int16_mmx2;
     }
     if (HAVE_SSE_INLINE && mm_flags & AV_CPU_FLAG_SSE) {
-        c->dsp.resample_common[FNIDX(FLTP)] = (resample_fn) resample_common_float_sse;
-        c->dsp.resample_linear[FNIDX(FLTP)] = (resample_fn) resample_linear_float_sse;
+        c->dsp.resample_common[FNIDX(FLTP)] = (resample_fn) swri_resample_common_float_sse;
+        c->dsp.resample_linear[FNIDX(FLTP)] = (resample_fn) swri_resample_linear_float_sse;
     }
     if (HAVE_SSE2_INLINE && mm_flags & AV_CPU_FLAG_SSE2) {
-        c->dsp.resample_common[FNIDX(S16P)] = (resample_fn) resample_common_int16_sse2;
-        c->dsp.resample_linear[FNIDX(S16P)] = (resample_fn) resample_linear_int16_sse2;
-        c->dsp.resample_common[FNIDX(DBLP)] = (resample_fn) resample_common_double_sse2;
-        c->dsp.resample_linear[FNIDX(DBLP)] = (resample_fn) resample_linear_double_sse2;
+        c->dsp.resample_common[FNIDX(S16P)] = (resample_fn) swri_resample_common_int16_sse2;
+        c->dsp.resample_linear[FNIDX(S16P)] = (resample_fn) swri_resample_linear_int16_sse2;
+        c->dsp.resample_common[FNIDX(DBLP)] = (resample_fn) swri_resample_common_double_sse2;
+        c->dsp.resample_linear[FNIDX(DBLP)] = (resample_fn) swri_resample_linear_double_sse2;
     }
     if (HAVE_AVX_INLINE && mm_flags & AV_CPU_FLAG_AVX) {
-        c->dsp.resample_common[FNIDX(FLTP)] = (resample_fn) resample_common_float_avx;
-        c->dsp.resample_linear[FNIDX(FLTP)] = (resample_fn) resample_linear_float_avx;
+        c->dsp.resample_common[FNIDX(FLTP)] = (resample_fn) swri_resample_common_float_avx;
+        c->dsp.resample_linear[FNIDX(FLTP)] = (resample_fn) swri_resample_linear_float_avx;
     }
 }
