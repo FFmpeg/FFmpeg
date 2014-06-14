@@ -1167,7 +1167,9 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
     version = ((*buf)>>4) & 15;
     page_state = ((*buf++) >> 2) & 3;
 
-    if (ctx->version != version) {
+    if (ctx->version == version) {
+        return;
+    }
 
     ctx->time_out = timeout;
     ctx->version = version;
@@ -1219,7 +1221,6 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
         tmp_display_list = display->next;
 
         av_free(display);
-    }
     }
 
 }
