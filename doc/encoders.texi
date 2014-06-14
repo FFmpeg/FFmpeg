@@ -2042,6 +2042,30 @@ fastest.
 
 @end table
 
+@section mpeg2
+
+MPEG-2 video encoder.
+
+@subsection Options
+
+@table @option
+@item seq_disp_ext @var{integer}
+Specifies if the encoder should write a sequence_display_extension to the
+output.
+@table @option
+@item -1
+@itemx auto
+Decide automatically to write it or not (this is the default) by checking if
+the data to be written is different from the default or unspecified values.
+@item 0
+@itemx never
+Never write it.
+@item 1
+@itemx always
+Always write it.
+@end table
+@end table
+
 @section png
 
 PNG image encoder.

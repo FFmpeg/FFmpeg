@@ -350,7 +350,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                                 s->avctx->color_trc != AVCOL_TRC_UNSPECIFIED ||
                                 s->avctx->colorspace != AVCOL_SPC_UNSPECIFIED);
 
-            if (use_seq_disp_ext) {
+            if (s->seq_disp_ext == 1 || (s->seq_disp_ext == -1 && use_seq_disp_ext)) {
                 put_header(s, EXT_START_CODE);
                 put_bits(&s->pb, 4, 2);                         // sequence display extension
                 put_bits(&s->pb, 3, 0);                         // video_format: 0 is components
@@ -1123,6 +1123,10 @@ static const AVOption mpeg2_options[] = {
     COMMON_OPTS
     { "non_linear_quant", "Use nonlinear quantizer.",    OFFSET(q_scale_type),   AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "alternate_scan",   "Enable alternate scantable.", OFFSET(alternate_scan), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "seq_disp_ext",     "Write sequence_display_extension blocks.", OFFSET(seq_disp_ext), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE, "seq_disp_ext" },
+    {     "auto",   NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = -1},  0, 0, VE, "seq_disp_ext" },
+    {     "never",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = 0 },  0, 0, VE, "seq_disp_ext" },
+    {     "always", NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = 1 },  0, 0, VE, "seq_disp_ext" },
     FF_MPV_COMMON_OPTS
     { NULL },
 };

@@ -588,6 +588,7 @@ typedef struct MpegEncContext {
     int q_scale_type;
     int intra_vlc_format;
     int alternate_scan;
+    int seq_disp_ext;
     int repeat_first_field;
     int chroma_420_type;
     int chroma_format;
