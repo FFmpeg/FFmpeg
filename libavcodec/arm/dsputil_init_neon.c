@@ -46,6 +46,7 @@ av_cold void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx,
 {
     if (!avctx->lowres && !high_bit_depth) {
         if (avctx->idct_algo == FF_IDCT_AUTO ||
+            avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
             avctx->idct_algo == FF_IDCT_SIMPLENEON) {
             c->idct_put              = ff_simple_idct_put_neon;
             c->idct_add              = ff_simple_idct_add_neon;

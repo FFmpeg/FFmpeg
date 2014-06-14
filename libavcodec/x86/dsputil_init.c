@@ -60,6 +60,7 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
     if (avctx->lowres == 0 && !high_bit_depth) {
         switch (avctx->idct_algo) {
         case FF_IDCT_AUTO:
+        case FF_IDCT_SIMPLEAUTO:
         case FF_IDCT_SIMPLEMMX:
             c->idct_put              = ff_simple_idct_put_mmx;
             c->idct_add              = ff_simple_idct_add_mmx;

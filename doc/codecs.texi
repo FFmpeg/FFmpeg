@@ -394,6 +394,9 @@ Possible values:
 
 @item simplemmx
 
+@item simpleauto
+Automatically pick a IDCT compatible with the simple one
+
 @item arm
 
 @item altivec
