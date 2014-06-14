@@ -106,45 +106,30 @@
 
 #endif
 
-int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int *consumed, int src_size, int dst_size, int update_ctx){
+#if DO_RESAMPLE_ONE
+static void RENAME(resample_one)(DELEM *dst, const DELEM *src,
+                                 int dst_size, int64_t index2, int64_t incr)
+{
     int dst_index;
-#if !defined(COMMON_CORE) || !defined(LINEAR_CORE)
-    int i;
+
+    for (dst_index = 0; dst_index < dst_size; dst_index++) {
+        dst[dst_index] = src[index2 >> 32];
+        index2 += incr;
+    }
+}
 #endif
-    int index= c->index;
-    int frac= c->frac;
-    int dst_incr_frac= c->dst_incr % c->src_incr;
-    int dst_incr=      c->dst_incr / c->src_incr;
 
-    av_assert1(c->filter_shift == FILTER_SHIFT);
-    av_assert1(c->felem_size == sizeof(FELEM));
+static int RENAME(resample_common)(ResampleContext *c,
+                                   DELEM *dst, const DELEM *src,
+                                   int n, int update_ctx)
+{
+            int dst_index;
+            int index= c->index;
+            int frac= c->frac;
+            int dst_incr_frac= c->dst_incr % c->src_incr;
+            int dst_incr=      c->dst_incr / c->src_incr;
+            int sample_index = index >> c->phase_shift;
 
-    if (c->filter_length == 1 && c->phase_shift == 0) {
-        int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*index;
-        int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
-        int new_size = (src_size * (int64_t)c->src_incr - frac + c->dst_incr - 1) / c->dst_incr;
-
-        dst_size= FFMIN(dst_size, new_size);
-
-        for(dst_index=0; dst_index < dst_size; dst_index++){
-            dst[dst_index] = src[index2>>32];
-            index2 += incr;
-        }
-        index += dst_index * dst_incr;
-        index += (frac + dst_index * (int64_t)dst_incr_frac) / c->src_incr;
-        frac   = (frac + dst_index * (int64_t)dst_incr_frac) % c->src_incr;
-        av_assert2(index >= 0);
-        *consumed= index;
-        index = 0;
-    } else {
-        int64_t end_index = (1LL + src_size - c->filter_length) << c->phase_shift;
-        int64_t delta_frac = (end_index - index) * c->src_incr - c->frac;
-        int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
-        int n = FFMIN(dst_size, delta_n);
-        int sample_index;
-
-        if (!c->linear) {
-            sample_index = index >> c->phase_shift;
             index &= c->phase_mask;
             for (dst_index = 0; dst_index < n; dst_index++) {
                 FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
@@ -153,6 +138,7 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 COMMON_CORE
 #else
                 FELEM2 val=0;
+                int i;
                 for (i = 0; i < c->filter_length; i++) {
                     val += src[sample_index + i] * (FELEM2)filter[i];
                 }
@@ -168,8 +154,26 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 sample_index += index >> c->phase_shift;
                 index &= c->phase_mask;
             }
-        } else {
-            sample_index = index >> c->phase_shift;
+
+            if(update_ctx){
+                c->frac= frac;
+                c->index= index;
+            }
+
+    return sample_index;
+}
+
+static int RENAME(resample_linear)(ResampleContext *c,
+                                   DELEM *dst, const DELEM *src,
+                                   int n, int update_ctx)
+{
+            int dst_index;
+            int index= c->index;
+            int frac= c->frac;
+            int dst_incr_frac= c->dst_incr % c->src_incr;
+            int dst_incr=      c->dst_incr / c->src_incr;
+            int sample_index = index >> c->phase_shift;
+
             index &= c->phase_mask;
             for (dst_index = 0; dst_index < n; dst_index++) {
                 FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
@@ -178,6 +182,7 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
 #ifdef LINEAR_CORE
                 LINEAR_CORE
 #else
+                int i;
                 for (i = 0; i < c->filter_length; i++) {
                     val += src[sample_index + i] * (FELEM2)filter[i];
                     v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_alloc];
@@ -195,17 +200,13 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 sample_index += index >> c->phase_shift;
                 index &= c->phase_mask;
             }
-        }
 
-        *consumed = sample_index;
-    }
+            if(update_ctx){
+                c->frac= frac;
+                c->index= index;
+            }
 
-    if(update_ctx){
-        c->frac= frac;
-        c->index= index;
-    }
-
-    return dst_index;
+    return sample_index;
 }
 
 #undef COMMON_CORE
