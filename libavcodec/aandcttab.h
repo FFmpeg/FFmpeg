@@ -18,7 +18,7 @@
 
 /**
  * @file
- * AAN (Arai Agui Nakajima) (I)DCT tables
+ * AAN (Arai, Agui and Nakajima) (I)DCT tables
  */
 
 #ifndef AVCODEC_AANDCTTAB_H

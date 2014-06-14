@@ -18,7 +18,7 @@
 
 /**
  * @file
- * AAN (Arai Agui Aakajima) (I)DCT tables
+ * AAN (Arai, Agui and Nakajima) (I)DCT tables
  */
 
 #include <stdint.h>
