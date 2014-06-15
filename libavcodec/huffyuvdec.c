@@ -138,7 +138,6 @@ static int generate_joint_tables(HYuvContext *s)
                     len[i] = len0 + len1;
                     bits[i] = (s->bits[p0][y] << len1) + s->bits[p][u];
                     symbols[i] = (y << 8) + (u & 0xFF);
-                    if(symbols[i] != 0xffff) // reserved to mean "invalid"
                         i++;
                 }
             }
