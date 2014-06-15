@@ -375,9 +375,10 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
             goto err;
         }
         if (vps->vps_num_reorder_pics[i] > vps->vps_max_dec_pic_buffering[i] - 1) {
-            av_log(s->avctx, AV_LOG_ERROR, "vps_max_num_reorder_pics out of range: %d\n",
+            av_log(s->avctx, AV_LOG_WARNING, "vps_max_num_reorder_pics out of range: %d\n",
                    vps->vps_num_reorder_pics[i]);
-            goto err;
+            if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                goto err;
         }
     }
 
@@ -760,10 +761,14 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             goto err;
         }
         if (sps->temporal_layer[i].num_reorder_pics > sps->temporal_layer[i].max_dec_pic_buffering - 1) {
-            av_log(s->avctx, AV_LOG_ERROR, "sps_max_num_reorder_pics out of range: %d\n",
+            av_log(s->avctx, AV_LOG_WARNING, "sps_max_num_reorder_pics out of range: %d\n",
                    sps->temporal_layer[i].num_reorder_pics);
-            ret = AVERROR_INVALIDDATA;
-            goto err;
+            if (s->avctx->err_recognition & AV_EF_EXPLODE ||
+                sps->temporal_layer[i].num_reorder_pics > MAX_DPB_SIZE - 1) {
+                ret = AVERROR_INVALIDDATA;
+                goto err;
+            }
+            sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[i].num_reorder_pics + 1;
         }
     }
 
