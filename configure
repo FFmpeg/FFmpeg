@@ -4281,7 +4281,7 @@ od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
 if enabled asm && ! enabled_any ppc64 pic; then
     enabled     arm         && nogas=die
-    enabled_all ppc altivec && nogas=warn
+    enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
     as=${gas:=$as}
     check_as <<EOF && enable gnu_as || \
         $nogas "GNU assembler not found, install gas-preprocessor"
