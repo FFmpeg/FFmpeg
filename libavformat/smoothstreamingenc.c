@@ -303,7 +303,7 @@ static int ism_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    c->streams = av_mallocz(sizeof(*c->streams) * s->nb_streams);
+    c->streams = av_mallocz_array(s->nb_streams, sizeof(*c->streams));
     if (!c->streams) {
         ret = AVERROR(ENOMEM);
         goto fail;
