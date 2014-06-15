@@ -30,6 +30,8 @@
  * huffyuv decoder
  */
 
+#define UNCHECKED_BITSTREAM_READER 1
+
 #include "avcodec.h"
 #include "get_bits.h"
 #include "huffyuv.h"
@@ -613,13 +615,19 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 
 static void decode_422_bitstream(HYuvContext *s, int count)
 {
-    int i;
+    int i, icount;
     OPEN_READER(re, &s->gb);
     count /= 2;
 
-    if (count >= (get_bits_left(&s->gb)) / (32 * 4)) {
-        for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
+    icount = get_bits_left(&s->gb) / (32 * 4);
+    if (count >= icount) {
+        for (i = 0; i < icount; i++) {
             READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
+            READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
+        }
+        for (; i < count && get_bits_left(&s->gb) > 0; i++) {
+            READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
+            if (get_bits_left(&s->gb) <= 0) break;
             READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
         }
         for (; i < count; i++)
@@ -716,7 +724,7 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
     int i;
     OPEN_READER(re, &s->gb);
 
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
         unsigned int index;
         int code, n;
 
