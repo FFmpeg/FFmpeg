@@ -7,6 +7,12 @@ fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(TARGET
 FATE_YADIF += fate-filter-yadif-mode1
 fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 59 -vf yadif=1
 
+FATE_YADIF += fate-filter-yadif10
+fate-filter-yadif10: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -flags bitexact -pix_fmt yuv420p10le -vframes 30 -vf yadif=0
+
+FATE_YADIF += fate-filter-yadif16
+fate-filter-yadif16: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -flags bitexact -pix_fmt yuv420p16le -vframes 30 -vf yadif=0
+
 FATE_FILTER-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += $(FATE_YADIF)
 
 FATE_MCDEINT += fate-filter-mcdeint-fast
