@@ -314,6 +314,7 @@ Advanced options (experts only):
                            (faster, but may crash)
   --enable-memalign-hack   emulate memalign, interferes with memory debuggers
   --enable-sram            allow use of on-chip SRAM
+  --sws-max-filter-size=N  the max filter size swscale uses [$sws_max_filter_size_default]
 
 Optimization options (experts only):
   --disable-asm            disable all assembler optimizations
@@ -1892,6 +1893,7 @@ CMDLINE_SET="
     ranlib
     samples
     strip
+    sws_max_filter_size
     sysinclude
     sysroot
     target_exec
@@ -2266,7 +2268,7 @@ h264_parser_select="h264_decoder"
 hevc_parser_select="hevc_decoder"
 mpegvideo_parser_select="error_resilience mpegvideo"
 mpeg4video_parser_select="error_resilience h263dsp mpegvideo qpeldsp"
-vc1_parser_select="mpegvideo"
+vc1_parser_select="mpegvideo vc1_decoder"
 
 # external libraries
 libaacplus_encoder_deps="libaacplus"
@@ -2645,6 +2647,9 @@ enable runtime_cpudetect
 enable safe_bitstream_reader
 enable static
 enable swscale_alpha
+
+sws_max_filter_size_default=256
+set_default sws_max_filter_size
 
 # Enable hwaccels by default.
 enable dxva2 vaapi vda vdpau xvmc
@@ -5451,6 +5456,7 @@ cat > $TMPH <<EOF
 #define BUILDSUF "$build_suffix"
 #define SLIBSUF "$SLIBSUF"
 #define HAVE_MMX2 HAVE_MMXEXT
+#define SWS_MAX_FILTER_SIZE $sws_max_filter_size
 EOF
 
 test -n "$assert_level" &&

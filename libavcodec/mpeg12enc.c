@@ -311,6 +311,11 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         ff_write_quant_matrix(&s->pb, s->avctx->inter_matrix);
 
         if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+            AVFrameSideData *side_data;
+            int width = s->width;
+            int height = s->height;
+            int use_seq_disp_ext;
+
             put_header(s, EXT_START_CODE);
             put_bits(&s->pb, 4, 1);                 // seq ext
 
@@ -330,9 +335,22 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 2, s->mpeg2_frame_rate_ext.num-1); // frame_rate_ext_n
             put_bits(&s->pb, 5, s->mpeg2_frame_rate_ext.den-1); // frame_rate_ext_d
 
-            if (s->avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
-                s->avctx->color_trc != AVCOL_TRC_UNSPECIFIED ||
-                s->avctx->colorspace != AVCOL_SPC_UNSPECIFIED) {
+            side_data = av_frame_get_side_data(s->current_picture_ptr->f, AV_FRAME_DATA_PANSCAN);
+            if (side_data) {
+                AVPanScan *pan_scan = (AVPanScan *)side_data->data;
+                if (pan_scan->width && pan_scan->height) {
+                    width = pan_scan->width >> 4;
+                    height = pan_scan->height >> 4;
+                }
+            }
+
+            use_seq_disp_ext = (width != s->width ||
+                                height != s->height ||
+                                s->avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+                                s->avctx->color_trc != AVCOL_TRC_UNSPECIFIED ||
+                                s->avctx->colorspace != AVCOL_SPC_UNSPECIFIED);
+
+            if (s->seq_disp_ext == 1 || (s->seq_disp_ext == -1 && use_seq_disp_ext)) {
                 put_header(s, EXT_START_CODE);
                 put_bits(&s->pb, 4, 2);                         // sequence display extension
                 put_bits(&s->pb, 3, 0);                         // video_format: 0 is components
@@ -340,9 +358,9 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 put_bits(&s->pb, 8, s->avctx->color_primaries); // colour_primaries
                 put_bits(&s->pb, 8, s->avctx->color_trc);       // transfer_characteristics
                 put_bits(&s->pb, 8, s->avctx->colorspace);      // matrix_coefficients
-                put_bits(&s->pb, 14, s->width);                 // display_horizontal_size
+                put_bits(&s->pb, 14, width);                    // display_horizontal_size
                 put_bits(&s->pb, 1, 1);                         // marker_bit
-                put_bits(&s->pb, 14, s->height);                // display_vertical_size
+                put_bits(&s->pb, 14, height);                   // display_vertical_size
                 put_bits(&s->pb, 3, 0);                         // remaining 3 bits are zero padding
             }
         }
@@ -1105,6 +1123,10 @@ static const AVOption mpeg2_options[] = {
     COMMON_OPTS
     { "non_linear_quant", "Use nonlinear quantizer.",    OFFSET(q_scale_type),   AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "alternate_scan",   "Enable alternate scantable.", OFFSET(alternate_scan), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "seq_disp_ext",     "Write sequence_display_extension blocks.", OFFSET(seq_disp_ext), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE, "seq_disp_ext" },
+    {     "auto",   NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = -1},  0, 0, VE, "seq_disp_ext" },
+    {     "never",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = 0 },  0, 0, VE, "seq_disp_ext" },
+    {     "always", NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = 1 },  0, 0, VE, "seq_disp_ext" },
     FF_MPV_COMMON_OPTS
     { NULL },
 };

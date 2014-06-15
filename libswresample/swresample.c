@@ -541,6 +541,12 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
     tmp=out=*out_param;
     in =  *in_param;
 
+    border = s->resampler->invert_initial_buffer(s->resample, &s->in_buffer,
+                 &in, in_count, &s->in_buffer_index, &s->in_buffer_count);
+    if (border == INT_MAX) return 0;
+    else if (border < 0) return border;
+    else if (border) { buf_set(&in, &in, border); in_count -= border; s->resample_in_constraint = 0; }
+
     do{
         int ret, size, consumed;
         if(!s->resample_in_constraint && s->in_buffer_count){

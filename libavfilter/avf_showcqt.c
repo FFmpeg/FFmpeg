@@ -387,6 +387,8 @@ static int plot_cqt(AVFilterLink *inlink)
     if (!s->spectogram_count) {
         uint8_t *data = (uint8_t*) s->outpicref->data[0];
         float rcp_result[VIDEO_WIDTH];
+        int total_length = linesize * spectogram_height;
+        int back_length = linesize * s->spectogram_index;
 
         for (x = 0; x < video_width; x++)
             rcp_result[x] = 1.0f / (result[x][3]+0.0001f);
@@ -448,8 +450,6 @@ static int plot_cqt(AVFilterLink *inlink)
         }
 
         /* drawing spectogram/sonogram */
-        int total_length = linesize * spectogram_height;
-        int back_length = linesize * s->spectogram_index;
         data += spectogram_start * linesize;
         memcpy(data, s->spectogram + s->spectogram_index*linesize, total_length - back_length);
 

@@ -8930,7 +8930,7 @@ display aspect ratio
 @item
 Zoom-in up to 1.5 and pan at same time to some spot near center of picture:
 @example
-"zoompan=z=min(zoom+0.0015\,1.5):d=700:x=if(gte(zoom\,1.5)\,x\,x+1/a):y=if(gte(zoom\,1.5)\,y\,y+1):s=640x360"
+zoompan=z='min(zoom+0.0015,1.5)':d=700:x='if(gte(zoom,1.5),x,x+1/a)':y='if(gte(zoom,1.5),y,y+1)':s=640x360
 @end example
 @end itemize
 

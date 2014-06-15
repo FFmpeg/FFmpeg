@@ -1738,7 +1738,9 @@ vbv_retry:
             ff_write_pass1_stats(s);
 
         for (i = 0; i < 4; i++) {
-            s->current_picture_ptr->f->error[i] = s->current_picture.f->error[i];
+            s->current_picture_ptr->f->error[i] =
+            s->current_picture.f->error[i] =
+                s->current_picture.error[i];
             avctx->error[i] += s->current_picture_ptr->f->error[i];
         }
 
@@ -2684,7 +2686,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
         /* note: quant matrix value (8) is implied here */
         s->last_dc[i] = 128 << s->intra_dc_precision;
 
-        s->current_picture.f->error[i] = 0;
+        s->current_picture.error[i] = 0;
     }
     if(s->codec_id==AV_CODEC_ID_AMV){
         s->last_dc[0] = 128*8/13;
@@ -3251,13 +3253,13 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 if(s->mb_x*16 + 16 > s->width ) w= s->width - s->mb_x*16;
                 if(s->mb_y*16 + 16 > s->height) h= s->height- s->mb_y*16;
 
-                s->current_picture.f->error[0] += sse(
+                s->current_picture.error[0] += sse(
                     s, s->new_picture.f->data[0] + s->mb_x*16 + s->mb_y*s->linesize*16,
                     s->dest[0], w, h, s->linesize);
-                s->current_picture.f->error[1] += sse(
+                s->current_picture.error[1] += sse(
                     s, s->new_picture.f->data[1] + s->mb_x*8  + s->mb_y*s->uvlinesize*chr_h,
                     s->dest[1], w>>1, h>>s->chroma_y_shift, s->uvlinesize);
-                s->current_picture.f->error[2] += sse(
+                s->current_picture.error[2] += sse(
                     s, s->new_picture.f->data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*chr_h,
                     s->dest[2], w>>1, h>>s->chroma_y_shift, s->uvlinesize);
             }
@@ -3310,9 +3312,9 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(misc_bits);
     MERGE(er.error_count);
     MERGE(padding_bug_score);
-    MERGE(current_picture.f->error[0]);
-    MERGE(current_picture.f->error[1]);
-    MERGE(current_picture.f->error[2]);
+    MERGE(current_picture.error[0]);
+    MERGE(current_picture.error[1]);
+    MERGE(current_picture.error[2]);
 
     if(dst->avctx->noise_reduction){
         for(i=0; i<64; i++){

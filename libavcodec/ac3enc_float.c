@@ -134,6 +134,12 @@ static CoefType calc_cpl_coord(CoefSumType energy_ch, CoefSumType energy_cpl)
     return FFMIN(coord, COEF_MAX);
 }
 
+av_cold int ff_ac3_float_encode_init(AVCodecContext *avctx)
+{
+    AC3EncodeContext *s = avctx->priv_data;
+    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    return ff_ac3_encode_init(avctx);
+}
 
 AVCodec ff_ac3_encoder = {
     .name            = "ac3",
@@ -141,7 +147,7 @@ AVCodec ff_ac3_encoder = {
     .type            = AVMEDIA_TYPE_AUDIO,
     .id              = AV_CODEC_ID_AC3,
     .priv_data_size  = sizeof(AC3EncodeContext),
-    .init            = ff_ac3_encode_init,
+    .init            = ff_ac3_float_encode_init,
     .encode2         = ff_ac3_float_encode_frame,
     .close           = ff_ac3_encode_close,
     .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,

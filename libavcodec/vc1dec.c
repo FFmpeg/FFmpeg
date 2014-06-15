@@ -439,7 +439,8 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         || s->h_edge_pos < 22 || v_edge_pos < 22
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 16 - s->mspel * 3
         || (unsigned)(src_y - 1)        > v_edge_pos    - (my&3) - 16 - 3) {
-        uint8_t *uvbuf = s->edge_emu_buffer + 19 * s->linesize;
+        uint8_t *ubuf = s->edge_emu_buffer + 19 * s->linesize;
+        uint8_t *vbuf = ubuf + 9 * s->uvlinesize;
 
         srcY -= s->mspel * (1 + s->linesize);
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
@@ -448,18 +449,18 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
                                  src_x - s->mspel, src_y - s->mspel,
                                  s->h_edge_pos, v_edge_pos);
         srcY = s->edge_emu_buffer;
-        s->vdsp.emulated_edge_mc(uvbuf, srcU,
+        s->vdsp.emulated_edge_mc(ubuf, srcU,
                                  s->uvlinesize, s->uvlinesize,
                                  8 + 1, 8 + 1,
                                  uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
-        s->vdsp.emulated_edge_mc(uvbuf + 16, srcV,
+        s->vdsp.emulated_edge_mc(vbuf, srcV,
                                  s->uvlinesize, s->uvlinesize,
                                  8 + 1, 8 + 1,
                                  uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
-        srcU = uvbuf;
-        srcV = uvbuf + 16;
+        srcU = ubuf;
+        srcV = vbuf;
         /* if we deal with range reduction we need to scale source blocks */
         if (v->rangeredfrm) {
             int i, j;
@@ -1959,7 +1960,8 @@ static void vc1_interp_mc(VC1Context *v)
     if (v->rangeredfrm || s->h_edge_pos < 22 || v_edge_pos < 22 || use_ic
         || (unsigned)(src_x - 1) > s->h_edge_pos - (mx & 3) - 16 - 3
         || (unsigned)(src_y - 1) > v_edge_pos    - (my & 3) - 16 - 3) {
-        uint8_t *uvbuf = s->edge_emu_buffer + 19 * s->linesize;
+        uint8_t *ubuf = s->edge_emu_buffer + 19 * s->linesize;
+        uint8_t *vbuf = ubuf + 9 * s->uvlinesize;
 
         srcY -= s->mspel * (1 + s->linesize);
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
@@ -1968,18 +1970,18 @@ static void vc1_interp_mc(VC1Context *v)
                                  src_x - s->mspel, src_y - s->mspel,
                                  s->h_edge_pos, v_edge_pos);
         srcY = s->edge_emu_buffer;
-        s->vdsp.emulated_edge_mc(uvbuf, srcU,
+        s->vdsp.emulated_edge_mc(ubuf, srcU,
                                  s->uvlinesize, s->uvlinesize,
                                  8 + 1, 8 + 1,
                                  uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
-        s->vdsp.emulated_edge_mc(uvbuf + 16, srcV,
+        s->vdsp.emulated_edge_mc(vbuf, srcV,
                                  s->uvlinesize, s->uvlinesize,
                                  8 + 1, 8 + 1,
                                  uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
-        srcU = uvbuf;
-        srcV = uvbuf + 16;
+        srcU = ubuf;
+        srcV = vbuf;
         /* if we deal with range reduction we need to scale source blocks */
         if (v->rangeredfrm) {
             int i, j;

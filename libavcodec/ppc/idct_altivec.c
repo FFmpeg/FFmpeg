@@ -148,6 +148,22 @@ static const vec_s16 constants[5] = {
     { 19266, 26722, 25172, 22654,  19266,  22654, 25172, 26722 }
 };
 
+void ff_idct_altivec(int16_t *blk)
+{
+    vec_s16 *block = (vec_s16 *) blk;
+
+    IDCT;
+
+    block[0] = vx0;
+    block[1] = vx1;
+    block[2] = vx2;
+    block[3] = vx3;
+    block[4] = vx4;
+    block[5] = vx5;
+    block[6] = vx6;
+    block[7] = vx7;
+}
+
 void ff_idct_put_altivec(uint8_t *dest, int stride, int16_t *blk)
 {
     vec_s16 *block = (vec_s16 *) blk;

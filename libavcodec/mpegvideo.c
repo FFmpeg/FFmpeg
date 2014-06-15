@@ -434,6 +434,11 @@ static int frame_size_alloc(MpegEncContext *s, int linesize)
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
 
+    if (linesize < 24) {
+        av_log(s->avctx, AV_LOG_ERROR, "Image too small, temporary buffers cannot function\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     // edge emu needs blocksize + filter length - 1
     // (= 17x17 for  halfpel / 21x21 for  h264)
     // VC1 computes luma and chroma simultaneously and needs 19X19 + 9x9

@@ -116,7 +116,7 @@ static int push_samples(AVFilterLink *outlink)
     outsamples->pts = asns->next_out_pts;
 
     if (asns->next_out_pts != AV_NOPTS_VALUE)
-        asns->next_out_pts += nb_out_samples;
+        asns->next_out_pts += av_rescale_q(nb_out_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
     ret = ff_filter_frame(outlink, outsamples);
     if (ret < 0)

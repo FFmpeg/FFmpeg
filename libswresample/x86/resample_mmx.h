@@ -22,12 +22,6 @@
 #include "libavutil/cpu.h"
 #include "libswresample/swresample_internal.h"
 
-int swri_resample_int16_mmx2 (struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
-int swri_resample_int16_sse2 (struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
-int swri_resample_float_sse  (struct ResampleContext *c,   float *dst, const   float *src, int *consumed, int src_size, int dst_size, int update_ctx);
-int swri_resample_float_avx  (struct ResampleContext *c,   float *dst, const   float *src, int *consumed, int src_size, int dst_size, int update_ctx);
-int swri_resample_double_sse2(struct ResampleContext *c,  double *dst, const  double *src, int *consumed, int src_size, int dst_size, int update_ctx);
-
 DECLARE_ALIGNED(16, const uint64_t, ff_resample_int16_rounder)[2]    = { 0x0000000000004000ULL, 0x0000000000000000ULL};
 
 #define COMMON_CORE_INT16_MMX2 \

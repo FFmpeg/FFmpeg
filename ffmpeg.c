@@ -575,7 +575,7 @@ static void close_all_output_streams(OutputStream *ost, OSTFinished this_stream,
 static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
 {
     AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
-    AVCodecContext          *avctx = ost->enc_ctx;
+    AVCodecContext          *avctx = ost->st->codec;
     int ret;
 
     if ((avctx->codec_type == AVMEDIA_TYPE_VIDEO && video_sync_method == VSYNC_DROP) ||
@@ -1886,9 +1886,16 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     // The following line may be required in some cases where there is no parser
     // or the parser does not has_b_frames correctly
-//     ist->st->codec->has_b_frames = ist->dec_ctx->has_b_frames;
     if (ist->st->codec->has_b_frames < ist->dec_ctx->has_b_frames) {
-        av_log_ask_for_sample(ist->dec_ctx, "has_b_frames is larger in decoder than demuxer");
+        if (ist->dec_ctx->codec_id == AV_CODEC_ID_H264) {
+            ist->st->codec->has_b_frames = ist->dec_ctx->has_b_frames;
+        } else
+            av_log_ask_for_sample(
+                ist->dec_ctx,
+                "has_b_frames is larger in decoder than demuxer %d > %d ",
+                ist->dec_ctx->has_b_frames,
+                ist->st->codec->has_b_frames
+            );
     }
 
     if (*got_output || ret<0 || pkt->size)

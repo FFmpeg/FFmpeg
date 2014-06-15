@@ -87,7 +87,14 @@ static int64_t get_delay(struct SwrContext *s, int64_t base){
     return (int64_t)(delay_s * base + .5);
 }
 
+static int invert_initial_buffer(struct ResampleContext *c, AudioData *dst, const AudioData *src,
+                                 int in_count, int *out_idx, int *out_sz)
+{
+    return 0;
+}
+
 struct Resampler const soxr_resampler={
     create, destroy, process, flush, NULL /* set_compensation */, get_delay,
+    invert_initial_buffer,
 };
 
