@@ -204,6 +204,7 @@ void configGenerator::buildFixedValues( DefaultValuesList & mFixedValues )
     mFixedValues["${extern_prefix}"] = "";
     mFixedValues["$build_suffix"] = "";
     mFixedValues["$SLIBSUF"] = "";
+    mFixedValues["$sws_max_filter_size"] = "256";
 }
 
 void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, DefaultValuesList & mASMReplaceValues )

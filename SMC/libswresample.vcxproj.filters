@@ -33,6 +33,9 @@
     <ClCompile Include="..\libswresample\resample.c">
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>
+    <ClCompile Include="..\libswresample\resample_dsp.c">
+      <Filter>Source Files\libswresample</Filter>
+    </ClCompile>
     <ClCompile Include="..\libswresample\swresample.c">
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>
@@ -43,6 +46,9 @@
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>
     <ClCompile Include="..\libswresample\x86\swresample_x86.c">
+      <Filter>Source Files\libswresample\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libswresample\x86\resample_x86_dsp.c">
       <Filter>Source Files\libswresample\x86</Filter>
     </ClCompile>
   </ItemGroup>

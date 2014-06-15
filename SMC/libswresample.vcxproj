@@ -47,6 +47,9 @@
     <ClCompile Include="..\libswresample\resample.c">
       <ObjectFileName>$(IntDir)\libswresample_resample.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libswresample\resample_dsp.c">
+      <ObjectFileName>$(IntDir)\libswresample_resample_dsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libswresample\swresample.c">
       <ObjectFileName>$(IntDir)\libswresample_swresample.obj</ObjectFileName>
     </ClCompile>
@@ -58,6 +61,9 @@
     </ClCompile>
     <ClCompile Include="..\libswresample\x86\swresample_x86.c">
       <ObjectFileName>$(IntDir)\libswresample_x86_swresample_x86.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libswresample\x86\resample_x86_dsp.c">
+      <ObjectFileName>$(IntDir)\libswresample_x86_resample_x86_dsp.obj</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
