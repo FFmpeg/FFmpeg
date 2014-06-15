@@ -618,7 +618,7 @@ static void decode_422_bitstream(HYuvContext *s, int count)
     OPEN_READER(re, &s->gb);
     count /= 2;
 
-    if (count >= (get_bits_left(&s->gb)) / (31 * 4)) {
+    if (count >= (get_bits_left(&s->gb)) / (32 * 4)) {
         for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
             READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
             READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
@@ -658,7 +658,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
 
     if (s->bps <= 8) {
         OPEN_READER(re, &s->gb);
-        if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+        if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
                 READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane, OP8bits);
             }
@@ -670,7 +670,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
         CLOSE_READER(re, &s->gb);
     } else if (s->bps <= 14) {
         OPEN_READER(re, &s->gb);
-        if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+        if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
                 READ_2PIX_PLANE(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane, OP14bits);
             }
@@ -681,7 +681,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
         }
         CLOSE_READER(re, &s->gb);
     } else {
-        if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+        if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
                 READ_2PIX_PLANE16(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane);
             }
@@ -699,7 +699,7 @@ static void decode_gray_bitstream(HYuvContext *s, int count)
     OPEN_READER(re, &s->gb);
     count/=2;
 
-    if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+    if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
         for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
             READ_2PIX(s->temp[0][2 * i], s->temp[0][2 * i + 1], 0);
         }
