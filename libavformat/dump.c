@@ -1,5 +1,6 @@
 /*
  * Various pretty-printing functions for use within FFmpeg
+ * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *
