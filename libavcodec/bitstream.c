@@ -117,6 +117,7 @@ static int alloc_table(VLC *vlc, int size, int use_static)
             vlc->table_size = 0;
             return AVERROR(ENOMEM);
         }
+        memset(vlc->table + vlc->table_allocated - (1 << vlc->bits), 0, sizeof(VLC_TYPE) * 2 << vlc->bits);
     }
     return index;
 }
