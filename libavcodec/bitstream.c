@@ -174,11 +174,6 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
         return table_index;
     table = &vlc->table[table_index];
 
-    for (i = 0; i < table_size; i++) {
-        table[i][1] = 0; //bits
-        table[i][0] = -1; //codes
-    }
-
     /* first pass: map codes and compute auxiliary table sizes */
     for (i = 0; i < nb_codes; i++) {
         n      = codes[i].bits;
@@ -237,6 +232,12 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             i = k-1;
         }
     }
+
+    for (i = 0; i < table_size; i++) {
+        if (table[i][1] == 0) //bits
+            table[i][0] = -1; //codes
+    }
+
     return table_index;
 }
 
