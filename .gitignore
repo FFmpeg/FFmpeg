@@ -3,6 +3,7 @@
 *.d
 *.def
 *.dll
+*.dylib
 *.exe
 *.exp
 *.gcda
@@ -14,6 +15,7 @@
 *.pdb
 *.so
 *.so.*
+*.swp
 *.ver
 *-example
 *-test
