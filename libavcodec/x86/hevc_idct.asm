@@ -112,7 +112,7 @@ cglobal hevc_idct8_dc_add_8, 2, 3, 0
 
 INIT_XMM sse2
 ; void ff_hevc_idct16_dc_add_8_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
-cglobal hevc_idct16_dc_add_8, 3, 4, 0
+cglobal hevc_idct16_dc_add_8, 3, 4, 6
     movsx             r3, word [r1]
     DC_ADD_INIT       r3, r2
     DC_ADD_OP       mova, r0, r2, r3
