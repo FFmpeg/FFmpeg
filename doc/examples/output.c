@@ -234,20 +234,23 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum AVCodecID codec_id)
 static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
 {
     AVFrame *picture;
-    uint8_t *picture_buf;
-    int size;
+    int ret;
 
     picture = av_frame_alloc();
     if (!picture)
         return NULL;
-    size        = avpicture_get_size(pix_fmt, width, height);
-    picture_buf = av_malloc(size);
-    if (!picture_buf) {
-        av_free(picture);
-        return NULL;
+
+    picture->format = pix_fmt;
+    picture->width  = width;
+    picture->height = height;
+
+    /* allocate the buffers for the frame data */
+    ret = av_frame_get_buffer(picture, 32);
+    if (ret < 0) {
+        fprintf(stderr, "Could not allocate frame data.\n");
+        exit(1);
     }
-    avpicture_fill((AVPicture *)picture, picture_buf,
-                   pix_fmt, width, height);
+
     return picture;
 }
 
@@ -287,7 +290,15 @@ static void open_video(AVFormatContext *oc, AVStream *st)
 static void fill_yuv_image(AVFrame *pict, int frame_index,
                            int width, int height)
 {
-    int x, y, i;
+    int x, y, i, ret;
+
+    /* when we pass a frame to the encoder, it may keep a reference to it
+     * internally;
+     * make sure we do not overwrite it here
+     */
+    ret = av_frame_make_writable(pict);
+    if (ret < 0)
+        exit(1);
 
     i = frame_index;
 
@@ -381,12 +392,8 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 static void close_video(AVFormatContext *oc, AVStream *st)
 {
     avcodec_close(st->codec);
-    av_free(picture->data[0]);
-    av_free(picture);
-    if (tmp_picture) {
-        av_free(tmp_picture->data[0]);
-        av_free(tmp_picture);
-    }
+    av_frame_free(&picture);
+    av_frame_free(&tmp_picture);
 }
 
 /**************************************************************/
