@@ -133,6 +133,8 @@ idct_dc_proto(8, 8,mmxext);
 idct_dc_proto(16,8,  sse2);
 idct_dc_proto(32,8,  sse2);
 
+idct_dc_proto(32,8,  avx2);
+
 
 idct_dc_proto(4, 10,mmxext);
 idct_dc_proto(8, 10,  sse2);
@@ -141,6 +143,10 @@ idct_dc_proto(32,10,  sse2);
 idct_dc_proto(8, 10,   avx);
 idct_dc_proto(16,10,   avx);
 idct_dc_proto(32,10,   avx);
+
+idct_dc_proto(16,10,  avx2);
+idct_dc_proto(32,10,  avx2);
+
 
 
 
