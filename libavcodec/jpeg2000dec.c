@@ -27,6 +27,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
@@ -1691,7 +1692,7 @@ end:
     return ret;
 }
 
-static void jpeg2000_init_static_data(AVCodec *codec)
+static av_cold void jpeg2000_init_static_data(AVCodec *codec)
 {
     ff_jpeg2000_init_tier1_luts();
     ff_mqc_init_context_tables();
