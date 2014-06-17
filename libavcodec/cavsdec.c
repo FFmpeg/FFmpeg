@@ -1199,8 +1199,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 break;
             *got_frame = 1;
             if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
-                if (h->DPB[1].f->data[0]) {
-                    if ((ret = av_frame_ref(data, h->DPB[1].f)) < 0)
+                if (h->DPB[!h->low_delay].f->data[0]) {
+                    if ((ret = av_frame_ref(data, h->DPB[!h->low_delay].f)) < 0)
                         return ret;
                 } else {
                     *got_frame = 0;
