@@ -2999,7 +2999,7 @@ static int transcode_init(void)
             if (out_codec) {
                 encoder_name   = out_codec->name;
                 out_codec_name = avcodec_descriptor_get(out_codec->id)->name;
-                if (!strcmp(encoder_name, in_codec_name))
+                if (!strcmp(encoder_name, out_codec_name))
                     encoder_name = "native";
             }
 
