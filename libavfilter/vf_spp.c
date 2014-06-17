@@ -270,8 +270,8 @@ static int config_input(AVFilterLink *inlink)
     spp->hsub = desc->log2_chroma_w;
     spp->vsub = desc->log2_chroma_h;
     spp->temp_linesize = FFALIGN(inlink->w + 16, 16);
-    spp->temp = av_malloc(spp->temp_linesize * h * sizeof(*spp->temp));
-    spp->src  = av_malloc(spp->temp_linesize * h * sizeof(*spp->src));
+    spp->temp = av_malloc_array(spp->temp_linesize, h * sizeof(*spp->temp));
+    spp->src  = av_malloc_array(spp->temp_linesize, h * sizeof(*spp->src));
     if (!spp->use_bframe_qp) {
         /* we are assuming here the qp blocks will not be smaller that 16x16 */
         spp->non_b_qp_alloc_size = FF_CEIL_RSHIFT(inlink->w, 4) * FF_CEIL_RSHIFT(inlink->h, 4);
