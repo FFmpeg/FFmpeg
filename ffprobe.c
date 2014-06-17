@@ -2058,6 +2058,13 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
             if (s) print_str    ("pix_fmt", s);
             else   print_str_opt("pix_fmt", "unknown");
             print_int("level",   dec_ctx->level);
+            if (dec_ctx->color_range != AVCOL_RANGE_UNSPECIFIED)
+                print_str    ("color_range", dec_ctx->color_range == AVCOL_RANGE_MPEG ? "tv": "pc");
+            else
+                print_str_opt("color_range", "N/A");
+            s = av_get_colorspace_name(dec_ctx->colorspace);
+            if (s) print_str    ("color_space", s);
+            else   print_str_opt("color_space", "unknown");
             if (dec_ctx->timecode_frame_start >= 0) {
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_mpeg_tc_string(tcbuf, dec_ctx->timecode_frame_start);

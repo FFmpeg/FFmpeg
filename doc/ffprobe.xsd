@@ -147,6 +147,8 @@
       <xsd:attribute name="display_aspect_ratio" type="xsd:string"/>
       <xsd:attribute name="pix_fmt"              type="xsd:string"/>
       <xsd:attribute name="level"                type="xsd:int"/>
+      <xsd:attribute name="color_range"          type="xsd:string"/>
+      <xsd:attribute name="color_space"          type="xsd:string"/>
       <xsd:attribute name="timecode"             type="xsd:string"/>
 
       <!-- audio attributes -->
