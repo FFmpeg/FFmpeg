@@ -309,6 +309,22 @@ static void copy_default_source_addrs(struct RTSPSource **addrs, int count,
     }
 }
 
+static void parse_fmtp(AVFormatContext *s, RTSPState *rt,
+                       int payload_type, const char *line)
+{
+    int i;
+
+    for (i = 0; i < rt->nb_rtsp_streams; i++) {
+        RTSPStream *rtsp_st = rt->rtsp_streams[i];
+        if (rtsp_st->sdp_payload_type == payload_type &&
+            rtsp_st->dynamic_handler &&
+            rtsp_st->dynamic_handler->parse_sdp_a_line) {
+            rtsp_st->dynamic_handler->parse_sdp_a_line(s, i,
+            rtsp_st->dynamic_protocol_context, line);
+        }
+    }
+}
+
 static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                            int letter, const char *buf)
 {
@@ -316,7 +332,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     char buf1[64], st_type[64];
     const char *p;
     enum AVMediaType codec_type;
-    int payload_type, i;
+    int payload_type;
     AVStream *st;
     RTSPStream *rtsp_st;
     RTSPSource *rtsp_src;
@@ -494,14 +510,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             // let dynamic protocol handlers have a stab at the line.
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);
-            for (i = 0; i < rt->nb_rtsp_streams; i++) {
-                rtsp_st = rt->rtsp_streams[i];
-                if (rtsp_st->sdp_payload_type == payload_type &&
-                    rtsp_st->dynamic_handler &&
-                    rtsp_st->dynamic_handler->parse_sdp_a_line)
-                    rtsp_st->dynamic_handler->parse_sdp_a_line(s, i,
-                        rtsp_st->dynamic_protocol_context, buf);
-            }
+            parse_fmtp(s, rt, payload_type, buf);
         } else if (av_strstart(p, "range:", &p)) {
             int64_t start, end;
 
