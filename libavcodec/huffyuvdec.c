@@ -770,7 +770,8 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
                 index = SHOW_UBITS(re, &s->gb, VLC_BITS);
                 VLC_INTERN(s->temp[0][4 * i + A], s->vlc[2].table,
                            &s->gb, re, VLC_BITS, 3);
-            }
+            } else
+                s->temp[0][4 * i + A] = 0;
         }
     }
     CLOSE_READER(re, &s->gb);
