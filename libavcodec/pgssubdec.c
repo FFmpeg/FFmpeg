@@ -37,7 +37,7 @@
 
 enum SegmentType {
     PALETTE_SEGMENT      = 0x14,
-    PICTURE_SEGMENT      = 0x15,
+    OBJECT_SEGMENT       = 0x15,
     PRESENTATION_SEGMENT = 0x16,
     WINDOW_SEGMENT       = 0x17,
     DISPLAY_SEGMENT      = 0x80,
@@ -497,7 +497,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
         case PALETTE_SEGMENT:
             parse_palette_segment(avctx, buf, segment_length);
             break;
-        case PICTURE_SEGMENT:
+        case OBJECT_SEGMENT:
             parse_picture_segment(avctx, buf, segment_length);
             break;
         case PRESENTATION_SEGMENT:
