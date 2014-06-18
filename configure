@@ -4287,7 +4287,7 @@ EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
 
-if enabled asm && ! enabled_any ppc64 pic; then
+if enabled asm; then
     enabled     arm         && nogas=die
     enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
     as=${gas:=$as}
