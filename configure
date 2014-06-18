@@ -227,14 +227,13 @@ Toolchain options:
   --target-path=DIR        path to view of build directory on target
   --target-samples=DIR     path to samples directory on target
   --toolchain=NAME         set tool defaults according to NAME
-  --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --nm=NM                  use nm tool
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
   --cc=CC                  use C compiler CC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
   --ld=LD                  use linker LD
-  --pkg-config=PKGCONF     use pkg-config PKGCONF [$pkg_config_default]
+  --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
