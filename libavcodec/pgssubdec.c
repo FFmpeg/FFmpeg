@@ -111,7 +111,7 @@ static av_cold int close_decoder(AVCodecContext *avctx)
  * @param buf pointer to the RLE data to process
  * @param buf_size size of the RLE data to process
  */
-static int decode_rle(AVCodecContext *avctx, AVSubtitle *sub, int rect,
+static int decode_rle(AVCodecContext *avctx, AVSubtitleRect *rect,
                       const uint8_t *buf, unsigned int buf_size)
 {
     const uint8_t *rle_bitmap_end;
@@ -119,15 +119,15 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitle *sub, int rect,
 
     rle_bitmap_end = buf + buf_size;
 
-    sub->rects[rect]->pict.data[0] = av_malloc(sub->rects[rect]->w * sub->rects[rect]->h);
+    rect->pict.data[0] = av_malloc(rect->w * rect->h);
 
-    if (!sub->rects[rect]->pict.data[0])
+    if (!rect->pict.data[0])
         return -1;
 
     pixel_count = 0;
     line_count  = 0;
 
-    while (buf < rle_bitmap_end && line_count < sub->rects[rect]->h) {
+    while (buf < rle_bitmap_end && line_count < rect->h) {
         uint8_t flags, color;
         int run;
 
@@ -142,27 +142,27 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitle *sub, int rect,
             color = flags & 0x80 ? bytestream_get_byte(&buf) : 0;
         }
 
-        if (run > 0 && pixel_count + run <= sub->rects[rect]->w * sub->rects[rect]->h) {
-            memset(sub->rects[rect]->pict.data[0] + pixel_count, color, run);
+        if (run > 0 && pixel_count + run <= rect->w * rect->h) {
+            memset(rect->pict.data[0] + pixel_count, color, run);
             pixel_count += run;
         } else if (!run) {
             /*
              * New Line. Check if correct pixels decoded, if not display warning
              * and adjust bitmap pointer to correct new line position.
              */
-            if (pixel_count % sub->rects[rect]->w > 0)
+            if (pixel_count % rect->w > 0)
                 av_log(avctx, AV_LOG_ERROR, "Decoded %d pixels, when line should be %d pixels\n",
-                       pixel_count % sub->rects[rect]->w, sub->rects[rect]->w);
+                       pixel_count % rect->w, rect->w);
             line_count++;
         }
     }
 
-    if (pixel_count < sub->rects[rect]->w * sub->rects[rect]->h) {
+    if (pixel_count < rect->w * rect->h) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient RLE data for subtitle\n");
         return -1;
     }
 
-    av_dlog(avctx, "Pixel Count = %d, Area = %d\n", pixel_count, sub->rects[rect]->w * sub->rects[rect]->h);
+    av_dlog(avctx, "Pixel Count = %d, Area = %d\n", pixel_count, rect->w * rect->h);
 
     return 0;
 }
@@ -439,7 +439,7 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
             if (ctx->pictures[picture_id].rle_remaining_len)
                 av_log(avctx, AV_LOG_ERROR, "RLE data length %u is %u bytes shorter than expected\n",
                        ctx->pictures[picture_id].rle_data_len, ctx->pictures[picture_id].rle_remaining_len);
-            if (decode_rle(avctx, sub, rect, ctx->pictures[picture_id].rle, ctx->pictures[picture_id].rle_data_len) < 0)
+            if (decode_rle(avctx, sub->rects[rect], ctx->pictures[picture_id].rle, ctx->pictures[picture_id].rle_data_len) < 0)
                 return 0;
         }
 
