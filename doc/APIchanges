@@ -13,6 +13,9 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-07-xx - xxxxxxx - lavu 53.18.0 - display.h
+  Add av_display_matrix_flip() to flip the transformation matrix.
+
 2014-07-xx - xxxxxxx - lavc 55.56.0 - dv_profile.h
   Add a public API for DV profile handling.
 
