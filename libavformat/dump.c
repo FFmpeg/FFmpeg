@@ -297,6 +297,9 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     int g = av_gcd(st->time_base.num, st->time_base.den);
     AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
 
+    if (!g)
+        g = 1;
+
     avcodec_string(buf, sizeof(buf), st->codec, is_output);
     av_log(NULL, AV_LOG_INFO, "    Stream #%d:%d", index, i);
 
