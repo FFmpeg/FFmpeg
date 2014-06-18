@@ -91,11 +91,11 @@ static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t 
 static int adts_write_header(AVFormatContext *s)
 {
     ADTSContext *adts = s->priv_data;
-    AVCodecContext *avc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (avc->extradata_size > 0)
-        return adts_decode_extradata(s, adts, avc->extradata,
-                                     avc->extradata_size);
+    if (par->extradata_size > 0)
+        return adts_decode_extradata(s, adts, par->extradata,
+                                     par->extradata_size);
 
     return 0;
 }

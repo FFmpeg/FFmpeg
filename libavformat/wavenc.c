@@ -109,15 +109,15 @@ static int wav_write_header(AVFormatContext *s)
 
     /* format header */
     fmt = ff_start_tag(pb, "fmt ");
-    if (ff_put_wav_header(pb, s->streams[0]->codec) < 0) {
-        const AVCodecDescriptor *desc = avcodec_descriptor_get(s->streams[0]->codec->codec_id);
+    if (ff_put_wav_header(s, pb, s->streams[0]->codecpar) < 0) {
+        const AVCodecDescriptor *desc = avcodec_descriptor_get(s->streams[0]->codecpar->codec_id);
         av_log(s, AV_LOG_ERROR, "%s codec not supported in WAVE format\n",
                desc ? desc->name : "unknown");
         return AVERROR(ENOSYS);
     }
     ff_end_tag(pb, fmt);
 
-    if (s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
+    if (s->streams[0]->codecpar->codec_tag != 0x01 /* hence for all other than PCM */
         && s->pb->seekable) {
         wav->fact_pos = ff_start_tag(pb, "fact");
         avio_wl32(pb, 0);
@@ -127,7 +127,7 @@ static int wav_write_header(AVFormatContext *s)
     if (wav->write_bext)
         bwf_write_bext_chunk(s);
 
-    avpriv_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
+    avpriv_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codecpar->sample_rate);
     wav->maxpts = wav->last_duration = 0;
     wav->minpts = INT64_MAX;
 
@@ -175,11 +175,11 @@ static int wav_write_trailer(AVFormatContext *s)
 
         avio_flush(pb);
 
-        if(s->streams[0]->codec->codec_tag != 0x01) {
+        if(s->streams[0]->codecpar->codec_tag != 0x01) {
             /* Update num_samps in fact chunk */
             int number_of_samples;
             number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,
-                                           s->streams[0]->codec->sample_rate * (int64_t)s->streams[0]->time_base.num,
+                                           s->streams[0]->codecpar->sample_rate * (int64_t)s->streams[0]->time_base.num,
                                            s->streams[0]->time_base.den);
             avio_seek(pb, wav->fact_pos, SEEK_SET);
             avio_wl32(pb, number_of_samples);

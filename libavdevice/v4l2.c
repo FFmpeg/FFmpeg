@@ -827,8 +827,8 @@ static int v4l2_read_header(AVFormatContext *s1)
     if ((res = v4l2_set_parameters(s1) < 0))
         return res;
 
-    st->codec->pix_fmt = fmt_v4l2ff(desired_format, codec_id);
-    s->frame_size = av_image_get_buffer_size(st->codec->pix_fmt,
+    st->codecpar->format = fmt_v4l2ff(desired_format, codec_id);
+    s->frame_size = av_image_get_buffer_size(st->codecpar->format,
                                              s->width, s->height, 1);
 
     if ((res = mmap_init(s1)) ||
@@ -839,14 +839,14 @@ static int v4l2_read_header(AVFormatContext *s1)
 
     s->top_field_first = first_field(s->fd);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = codec_id;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = codec_id;
     if (codec_id == AV_CODEC_ID_RAWVIDEO)
-        st->codec->codec_tag =
-            avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
-    st->codec->width = s->width;
-    st->codec->height = s->height;
-    st->codec->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
+        st->codecpar->codec_tag =
+            avcodec_pix_fmt_to_codec_tag(st->codecpar->format);
+    st->codecpar->width = s->width;
+    st->codecpar->height = s->height;
+    st->codecpar->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
 
     return 0;
 }

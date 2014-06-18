@@ -77,21 +77,21 @@ static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
 static int flac_write_header(struct AVFormatContext *s)
 {
     int ret;
-    AVCodecContext *codec = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     FlacMuxerContext *c   = s->priv_data;
 
     if (!c->write_header)
         return 0;
 
-    ret = ff_flac_write_header(s->pb, codec->extradata,
-                               codec->extradata_size, 0);
+    ret = ff_flac_write_header(s->pb, par->extradata,
+                               par->extradata_size, 0);
     if (ret)
         return ret;
 
     /* add the channel layout tag */
-    if (codec->channel_layout &&
-        !(codec->channel_layout & ~0x3ffffULL) &&
-        !ff_flac_is_native_layout(codec->channel_layout)) {
+    if (par->channel_layout &&
+        !(par->channel_layout & ~0x3ffffULL) &&
+        !ff_flac_is_native_layout(par->channel_layout)) {
         AVDictionaryEntry *chmask = av_dict_get(s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK",
                                                 NULL, 0);
 
@@ -100,7 +100,7 @@ static int flac_write_header(struct AVFormatContext *s)
                    "already present, this muxer will not overwrite it.\n");
         } else {
             uint8_t buf[32];
-            snprintf(buf, sizeof(buf), "0x%"PRIx64, codec->channel_layout);
+            snprintf(buf, sizeof(buf), "0x%"PRIx64, par->channel_layout);
             av_dict_set(&s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
         }
     }
@@ -125,7 +125,7 @@ static int flac_write_trailer(struct AVFormatContext *s)
     int64_t file_size;
     FlacMuxerContext *c = s->priv_data;
     uint8_t *streaminfo = c->streaminfo ? c->streaminfo :
-                                          s->streams[0]->codec->extradata;
+                                          s->streams[0]->codecpar->extradata;
 
     if (!c->write_header || !streaminfo)
         return 0;

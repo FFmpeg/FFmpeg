@@ -45,33 +45,33 @@ static int apc_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_APC;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_ADPCM_IMA_APC;
 
     avio_rl32(pb); /* number of samples */
-    st->codec->sample_rate = avio_rl32(pb);
+    st->codecpar->sample_rate = avio_rl32(pb);
 
-    st->codec->extradata_size = 2 * 4;
-    st->codec->extradata = av_malloc(st->codec->extradata_size +
-                                     AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    st->codecpar->extradata_size = 2 * 4;
+    st->codecpar->extradata = av_malloc(st->codecpar->extradata_size +
+                                        AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codecpar->extradata)
         return AVERROR(ENOMEM);
 
     /* initial predictor values for adpcm decoder */
-    avio_read(pb, st->codec->extradata, 2 * 4);
+    avio_read(pb, st->codecpar->extradata, 2 * 4);
 
     if (avio_rl32(pb)) {
-        st->codec->channels       = 2;
-        st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+        st->codecpar->channels       = 2;
+        st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
     } else {
-        st->codec->channels       = 1;
-        st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+        st->codecpar->channels       = 1;
+        st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
     }
 
-    st->codec->bits_per_coded_sample = 4;
-    st->codec->bit_rate = st->codec->bits_per_coded_sample * st->codec->channels
-                          * st->codec->sample_rate;
-    st->codec->block_align = 1;
+    st->codecpar->bits_per_coded_sample = 4;
+    st->codecpar->bit_rate = st->codecpar->bits_per_coded_sample * st->codecpar->channels
+                          * st->codecpar->sample_rate;
+    st->codecpar->block_align = 1;
 
     return 0;
 }

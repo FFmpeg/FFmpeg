@@ -108,13 +108,13 @@ static int au_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_tag   = id;
-    st->codec->codec_id    = codec;
-    st->codec->channels    = channels;
-    st->codec->sample_rate = rate;
-    st->codec->bit_rate    = channels * rate * bps;
-    st->codec->block_align = channels * bps >> 3;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_tag   = id;
+    st->codecpar->codec_id    = codec;
+    st->codecpar->channels    = channels;
+    st->codecpar->sample_rate = rate;
+    st->codecpar->bit_rate    = channels * rate * bps;
+    st->codecpar->block_align = channels * bps >> 3;
 
     st->start_time = 0;
     avpriv_set_pts_info(st, 64, 1, rate);
@@ -127,12 +127,12 @@ static int au_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     ret = av_get_packet(s->pb, pkt, BLOCK_SIZE *
-                        s->streams[0]->codec->block_align);
+                        s->streams[0]->codecpar->block_align);
     if (ret < 0)
         return ret;
 
     pkt->stream_index = 0;
-    pkt->duration     = ret / s->streams[0]->codec->block_align;
+    pkt->duration     = ret / s->streams[0]->codecpar->block_align;
 
     return 0;
 }
@@ -157,17 +157,17 @@ AVInputFormat ff_au_demuxer = {
 #define AU_UNKNOWN_SIZE ((uint32_t)(~0))
 
 /* AUDIO_FILE header */
-static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
+static int put_au_header(AVIOContext *pb, AVCodecParameters *par)
 {
-    if (!enc->codec_tag)
+    if (!par->codec_tag)
         return AVERROR(EINVAL);
 
     ffio_wfourcc(pb, ".snd");                   /* magic number */
     avio_wb32(pb, 24);                          /* header size */
     avio_wb32(pb, AU_UNKNOWN_SIZE);             /* data size */
-    avio_wb32(pb, enc->codec_tag);              /* codec ID */
-    avio_wb32(pb, enc->sample_rate);
-    avio_wb32(pb, enc->channels);
+    avio_wb32(pb, par->codec_tag);              /* codec ID */
+    avio_wb32(pb, par->sample_rate);
+    avio_wb32(pb, par->channels);
 
     return 0;
 }
@@ -179,7 +179,7 @@ static int au_write_header(AVFormatContext *s)
 
     s->priv_data = NULL;
 
-    if ((ret = put_au_header(pb, s->streams[0]->codec)) < 0)
+    if ((ret = put_au_header(pb, s->streams[0]->codecpar)) < 0)
         return ret;
 
     avio_flush(pb);

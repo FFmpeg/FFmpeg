@@ -82,8 +82,8 @@ static int adts_aac_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = s->iformat->raw_codec_id;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id   = s->iformat->raw_codec_id;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
 
     ff_id3v1_read(s);

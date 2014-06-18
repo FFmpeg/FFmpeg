@@ -28,18 +28,18 @@ typedef struct ASSContext{
 static int write_header(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
-    AVCodecContext *avctx= s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     uint8_t *last= NULL;
 
-    if(s->nb_streams != 1 || avctx->codec_id != AV_CODEC_ID_SSA){
+    if(s->nb_streams != 1 || par->codec_id != AV_CODEC_ID_SSA){
         av_log(s, AV_LOG_ERROR, "Exactly one ASS/SSA stream is needed.\n");
         return -1;
     }
 
-    while(ass->extra_index < avctx->extradata_size){
-        uint8_t *p  = avctx->extradata + ass->extra_index;
+    while(ass->extra_index < par->extradata_size){
+        uint8_t *p  = par->extradata + ass->extra_index;
         uint8_t *end= strchr(p, '\n');
-        if(!end) end= avctx->extradata + avctx->extradata_size;
+        if(!end) end= par->extradata + par->extradata_size;
         else     end++;
 
         avio_write(s->pb, p, end-p);
@@ -64,10 +64,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 static int write_trailer(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
-    AVCodecContext *avctx= s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
-    avio_write(s->pb, avctx->extradata      + ass->extra_index,
-                      avctx->extradata_size - ass->extra_index);
+    avio_write(s->pb, par->extradata      + ass->extra_index,
+                      par->extradata_size - ass->extra_index);
 
     return 0;
 }

@@ -40,17 +40,17 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
     s->timestamp = s->cur_timestamp;
 
     /* convert video pixel dimensions from pixels to blocks */
-    w = (s1->streams[0]->codec->width  + 7) >> 3;
-    h = (s1->streams[0]->codec->height + 7) >> 3;
+    w = (s1->streams[0]->codecpar->width  + 7) >> 3;
+    h = (s1->streams[0]->codecpar->height + 7) >> 3;
 
     /* get the pixel format type or fail */
-    if (s1->streams[0]->codec->pix_fmt == AV_PIX_FMT_YUVJ422P ||
-        (s1->streams[0]->codec->color_range == AVCOL_RANGE_JPEG &&
-         s1->streams[0]->codec->pix_fmt == AV_PIX_FMT_YUV422P)) {
+    if (s1->streams[0]->codecpar->format == AV_PIX_FMT_YUVJ422P ||
+        (s1->streams[0]->codecpar->color_range == AVCOL_RANGE_JPEG &&
+         s1->streams[0]->codecpar->format == AV_PIX_FMT_YUV422P)) {
         type = 0;
-    } else if (s1->streams[0]->codec->pix_fmt == AV_PIX_FMT_YUVJ420P ||
-               (s1->streams[0]->codec->color_range == AVCOL_RANGE_JPEG &&
-                s1->streams[0]->codec->pix_fmt == AV_PIX_FMT_YUV420P)) {
+    } else if (s1->streams[0]->codecpar->format == AV_PIX_FMT_YUVJ420P ||
+               (s1->streams[0]->codecpar->color_range == AVCOL_RANGE_JPEG &&
+                s1->streams[0]->codecpar->format == AV_PIX_FMT_YUV420P)) {
         type = 1;
     } else {
         av_log(s1, AV_LOG_ERROR, "Unsupported pixel format\n");

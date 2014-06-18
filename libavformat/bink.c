@@ -86,7 +86,7 @@ static int read_header(AVFormatContext *s)
     if (!vst)
         return AVERROR(ENOMEM);
 
-    vst->codec->codec_tag = avio_rl32(pb);
+    vst->codecpar->codec_tag = avio_rl32(pb);
 
     bink->file_size = avio_rl32(pb) + 8;
     vst->duration   = avio_rl32(pb);
@@ -104,8 +104,8 @@ static int read_header(AVFormatContext *s)
 
     avio_skip(pb, 4);
 
-    vst->codec->width  = avio_rl32(pb);
-    vst->codec->height = avio_rl32(pb);
+    vst->codecpar->width  = avio_rl32(pb);
+    vst->codecpar->height = avio_rl32(pb);
 
     fps_num = avio_rl32(pb);
     fps_den = avio_rl32(pb);
@@ -118,13 +118,13 @@ static int read_header(AVFormatContext *s)
     avpriv_set_pts_info(vst, 64, fps_den, fps_num);
     vst->avg_frame_rate = av_inv_q(vst->time_base);
 
-    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = AV_CODEC_ID_BINKVIDEO;
-    vst->codec->extradata  = av_mallocz(4 + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!vst->codec->extradata)
+    vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    vst->codecpar->codec_id   = AV_CODEC_ID_BINKVIDEO;
+    vst->codecpar->extradata  = av_mallocz(4 + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!vst->codecpar->extradata)
         return AVERROR(ENOMEM);
-    vst->codec->extradata_size = 4;
-    avio_read(pb, vst->codec->extradata, 4);
+    vst->codecpar->extradata_size = 4;
+    avio_read(pb, vst->codecpar->extradata, 4);
 
     bink->num_audio_tracks = avio_rl32(pb);
 
@@ -142,25 +142,25 @@ static int read_header(AVFormatContext *s)
             ast = avformat_new_stream(s, NULL);
             if (!ast)
                 return AVERROR(ENOMEM);
-            ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-            ast->codec->codec_tag   = 0;
-            ast->codec->sample_rate = avio_rl16(pb);
-            avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
+            ast->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+            ast->codecpar->codec_tag   = 0;
+            ast->codecpar->sample_rate = avio_rl16(pb);
+            avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate);
             flags = avio_rl16(pb);
-            ast->codec->codec_id = flags & BINK_AUD_USEDCT ?
+            ast->codecpar->codec_id = flags & BINK_AUD_USEDCT ?
                                    AV_CODEC_ID_BINKAUDIO_DCT : AV_CODEC_ID_BINKAUDIO_RDFT;
             if (flags & BINK_AUD_STEREO) {
-                ast->codec->channels       = 2;
-                ast->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                ast->codecpar->channels       = 2;
+                ast->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
             } else {
-                ast->codec->channels       = 1;
-                ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                ast->codecpar->channels       = 1;
+                ast->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
             }
-            ast->codec->extradata = av_mallocz(4 + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!ast->codec->extradata)
+            ast->codecpar->extradata = av_mallocz(4 + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!ast->codecpar->extradata)
                 return AVERROR(ENOMEM);
-            ast->codec->extradata_size = 4;
-            AV_WL32(ast->codec->extradata, vst->codec->codec_tag);
+            ast->codecpar->extradata_size = 4;
+            AV_WL32(ast->codecpar->extradata, vst->codecpar->codec_tag);
         }
 
         for (i = 0; i < bink->num_audio_tracks; i++)
@@ -242,7 +242,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
                (in bytes). We use this value to calcuate the audio PTS */
             if (pkt->size >= 4)
                 bink->audio_pts[bink->current_track -1] +=
-                    AV_RL32(pkt->data) / (2 * s->streams[bink->current_track]->codec->channels);
+                    AV_RL32(pkt->data) / (2 * s->streams[bink->current_track]->codecpar->channels);
             return 0;
         } else {
             avio_skip(pb, audio_size);

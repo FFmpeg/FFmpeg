@@ -62,13 +62,13 @@ static int celt_header(AVFormatContext *s, int idx)
         /* unused bytes per packet field skipped */
         extra_headers    = AV_RL32(p + 56);
         av_free(os->private);
-        av_free(st->codec->extradata);
-        st->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id       = AV_CODEC_ID_CELT;
-        st->codec->sample_rate    = sample_rate;
-        st->codec->channels       = nb_channels;
-        st->codec->extradata      = extradata;
-        st->codec->extradata_size = 2 * sizeof(uint32_t);
+        av_free(st->codecpar->extradata);
+        st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id       = AV_CODEC_ID_CELT;
+        st->codecpar->sample_rate    = sample_rate;
+        st->codecpar->channels       = nb_channels;
+        st->codecpar->extradata      = extradata;
+        st->codecpar->extradata_size = 2 * sizeof(uint32_t);
         if (sample_rate)
             avpriv_set_pts_info(st, 64, 1, sample_rate);
         priv->extra_headers_left  = 1 + extra_headers;

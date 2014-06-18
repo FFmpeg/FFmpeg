@@ -344,23 +344,23 @@ static int ape_read_header(AVFormatContext * s)
 
     total_blocks = (ape->totalframes == 0) ? 0 : ((ape->totalframes - 1) * ape->blocksperframe) + ape->finalframeblocks;
 
-    st->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id        = AV_CODEC_ID_APE;
-    st->codec->codec_tag       = MKTAG('A', 'P', 'E', ' ');
-    st->codec->channels        = ape->channels;
-    st->codec->sample_rate     = ape->samplerate;
-    st->codec->bits_per_coded_sample = ape->bps;
+    st->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id        = AV_CODEC_ID_APE;
+    st->codecpar->codec_tag       = MKTAG('A', 'P', 'E', ' ');
+    st->codecpar->channels        = ape->channels;
+    st->codecpar->sample_rate     = ape->samplerate;
+    st->codecpar->bits_per_coded_sample = ape->bps;
 
     st->nb_frames = ape->totalframes;
     st->start_time = 0;
     st->duration  = total_blocks / MAC_SUBFRAME_SIZE;
     avpriv_set_pts_info(st, 64, MAC_SUBFRAME_SIZE, ape->samplerate);
 
-    st->codec->extradata = av_malloc(APE_EXTRADATA_SIZE);
-    st->codec->extradata_size = APE_EXTRADATA_SIZE;
-    AV_WL16(st->codec->extradata + 0, ape->fileversion);
-    AV_WL16(st->codec->extradata + 2, ape->compressiontype);
-    AV_WL16(st->codec->extradata + 4, ape->formatflags);
+    st->codecpar->extradata = av_malloc(APE_EXTRADATA_SIZE);
+    st->codecpar->extradata_size = APE_EXTRADATA_SIZE;
+    AV_WL16(st->codecpar->extradata + 0, ape->fileversion);
+    AV_WL16(st->codecpar->extradata + 2, ape->compressiontype);
+    AV_WL16(st->codecpar->extradata + 4, ape->formatflags);
 
     pts = 0;
     for (i = 0; i < ape->totalframes; i++) {

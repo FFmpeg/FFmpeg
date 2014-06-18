@@ -63,7 +63,7 @@ static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
         AVStream *st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     }
     return ff_voc_get_packet(s, pkt, s->streams[0], 0);
 }

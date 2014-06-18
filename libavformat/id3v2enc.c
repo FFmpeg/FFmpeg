@@ -171,7 +171,7 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
 
     /* get the mimetype*/
     while (mime->id != AV_CODEC_ID_NONE) {
-        if (mime->id == st->codec->codec_id) {
+        if (mime->id == st->codecpar->codec_id) {
             mimetype = mime->str;
             break;
         }

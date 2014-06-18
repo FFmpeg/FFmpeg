@@ -83,9 +83,9 @@ static int read_header(AVFormatContext *avctx)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    st->codec->codec_tag   = 0;
-    st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id    = AV_CODEC_ID_ANSI;
+    st->codecpar->codec_tag   = 0;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id    = AV_CODEC_ID_ANSI;
 
     if (s->video_size && (ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
         av_log (avctx, AV_LOG_ERROR, "Couldn't parse video size.\n");
@@ -95,8 +95,8 @@ static int read_header(AVFormatContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s->framerate);
         goto fail;
     }
-    st->codec->width  = width;
-    st->codec->height = height;
+    st->codecpar->width  = width;
+    st->codecpar->height = height;
     avpriv_set_pts_info(st, 60, framerate.den, framerate.num);
     st->avg_frame_rate = framerate;
 

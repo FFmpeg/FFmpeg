@@ -27,19 +27,19 @@ typedef struct RCVContext {
 
 static int vc1test_write_header(AVFormatContext *s)
 {
-    AVCodecContext *avc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     AVIOContext *pb = s->pb;
 
-    if (avc->codec_id != AV_CODEC_ID_WMV3) {
+    if (par->codec_id != AV_CODEC_ID_WMV3) {
         av_log(s, AV_LOG_ERROR, "Only WMV3 is accepted!\n");
         return -1;
     }
     avio_wl24(pb, 0); //frames count will be here
     avio_w8(pb, 0xC5);
     avio_wl32(pb, 4);
-    avio_write(pb, avc->extradata, 4);
-    avio_wl32(pb, avc->height);
-    avio_wl32(pb, avc->width);
+    avio_write(pb, par->extradata, 4);
+    avio_wl32(pb, par->height);
+    avio_wl32(pb, par->width);
     avio_wl32(pb, 0xC);
     avio_wl24(pb, 0); // hrd_buffer
     avio_w8(pb, 0x80); // level|cbr|res1

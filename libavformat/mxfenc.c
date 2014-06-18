@@ -611,7 +611,7 @@ static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
     if (st == mxf->timecode_track)
         avio_write(pb, smpte_12m_timecode_track_data_ul, 16);
     else {
-        const MXFCodecUL *data_def_ul = mxf_get_data_definition_ul(st->codec->codec_type);
+        const MXFCodecUL *data_def_ul = mxf_get_data_definition_ul(st->codecpar->codec_type);
         avio_write(pb, data_def_ul->uid, 16);
     }
 
@@ -782,27 +782,27 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
 {
     MXFStreamContext *sc = st->priv_data;
     AVIOContext *pb = s->pb;
-    int stored_height = (st->codec->height+15)/16*16;
+    int stored_height = (st->codecpar->height+15)/16*16;
     int display_height;
     int f1, f2;
 
     mxf_write_generic_desc(s, st, key, size+8+8+8+8+8+8+5+16+sc->interlaced*4+12+20);
 
     mxf_write_local_tag(pb, 4, 0x3203);
-    avio_wb32(pb, st->codec->width);
+    avio_wb32(pb, st->codecpar->width);
 
     mxf_write_local_tag(pb, 4, 0x3202);
     avio_wb32(pb, stored_height>>sc->interlaced);
 
     mxf_write_local_tag(pb, 4, 0x3209);
-    avio_wb32(pb, st->codec->width);
+    avio_wb32(pb, st->codecpar->width);
 
-    if (st->codec->height == 608) // PAL + VBI
+    if (st->codecpar->height == 608) // PAL + VBI
         display_height = 576;
-    else if (st->codec->height == 512)  // NTSC + VBI
+    else if (st->codecpar->height == 512)  // NTSC + VBI
         display_height = 486;
     else
-        display_height = st->codec->height;
+        display_height = st->codecpar->height;
 
     mxf_write_local_tag(pb, 4, 0x3208);
     avio_wb32(pb, display_height>>sc->interlaced);
@@ -820,7 +820,7 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     avio_w8(pb, sc->interlaced);
 
     // video line map
-    switch (st->codec->height) {
+    switch (st->codecpar->height) {
     case  576: f1 = 23; f2 = 336; break;
     case  608: f1 =  7; f2 = 320; break;
     case  480: f1 = 20; f2 = 283; break;
@@ -858,17 +858,17 @@ static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st)
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
 {
     AVIOContext *pb = s->pb;
-    int profile_and_level = (st->codec->profile<<4) | st->codec->level;
+    int profile_and_level = (st->codecpar->profile<<4) | st->codecpar->level;
 
     mxf_write_cdci_common(s, st, mxf_mpegvideo_descriptor_key, 8+5);
 
     // bit rate
     mxf_write_local_tag(pb, 4, 0x8000);
-    avio_wb32(pb, st->codec->bit_rate);
+    avio_wb32(pb, st->codecpar->bit_rate);
 
     // profile and level
     mxf_write_local_tag(pb, 1, 0x8007);
-    if (!st->codec->profile)
+    if (!st->codecpar->profile)
         profile_and_level |= 0x80; // escape bit
     avio_w8(pb, profile_and_level);
 }
@@ -885,14 +885,14 @@ static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, con
 
     // write audio sampling rate
     mxf_write_local_tag(pb, 8, 0x3D03);
-    avio_wb32(pb, st->codec->sample_rate);
+    avio_wb32(pb, st->codecpar->sample_rate);
     avio_wb32(pb, 1);
 
     mxf_write_local_tag(pb, 4, 0x3D07);
-    avio_wb32(pb, st->codec->channels);
+    avio_wb32(pb, st->codecpar->channels);
 
     mxf_write_local_tag(pb, 4, 0x3D01);
-    avio_wb32(pb, av_get_bits_per_sample(st->codec->codec_id));
+    avio_wb32(pb, av_get_bits_per_sample(st->codecpar->codec_id));
 }
 
 static void mxf_write_wav_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
@@ -902,11 +902,11 @@ static void mxf_write_wav_common(AVFormatContext *s, AVStream *st, const UID key
     mxf_write_generic_sound_common(s, st, key, size+6+8);
 
     mxf_write_local_tag(pb, 2, 0x3D0A);
-    avio_wb16(pb, st->codec->block_align);
+    avio_wb16(pb, st->codecpar->block_align);
 
     // avg bytes per sec
     mxf_write_local_tag(pb, 4, 0x3D09);
-    avio_wb32(pb, st->codec->block_align*st->codec->sample_rate);
+    avio_wb32(pb, st->codecpar->block_align*st->codecpar->sample_rate);
 }
 
 static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
@@ -1293,21 +1293,21 @@ static const UID mxf_mpeg2_codec_uls[] = {
     { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x03,0x04,0x01,0x02,0x02,0x01,0x05,0x03,0x00 }, // MP@H-14 Long GOP
 };
 
-static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
+static const UID *mxf_get_mpeg2_codec_ul(AVCodecParameters *par)
 {
     int long_gop = 1;
 
-    if (avctx->profile == 4) { // Main
-        if (avctx->level == 8) // Main
+    if (par->profile == 4) { // Main
+        if (par->level == 8) // Main
             return &mxf_mpeg2_codec_uls[0+long_gop];
-        else if (avctx->level == 4) // High
+        else if (par->level == 4) // High
             return &mxf_mpeg2_codec_uls[4+long_gop];
-        else if (avctx->level == 6) // High 14
+        else if (par->level == 6) // High 14
             return &mxf_mpeg2_codec_uls[8+long_gop];
-    } else if (avctx->profile == 0) { // 422
-        if (avctx->level == 5) // Main
+    } else if (par->profile == 0) { // 422
+        if (par->level == 5) // Main
             return &mxf_mpeg2_codec_uls[2+long_gop];
-        else if (avctx->level == 2) // High
+        else if (par->level == 2) // High
             return &mxf_mpeg2_codec_uls[6+long_gop];
     }
     return NULL;
@@ -1325,8 +1325,8 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
         c = (c<<8) + pkt->data[i];
         if (c == 0x1b5) {
             if ((pkt->data[i+1] & 0xf0) == 0x10) { // seq ext
-                st->codec->profile = pkt->data[i+1] & 0x07;
-                st->codec->level   = pkt->data[i+2] >> 4;
+                st->codecpar->profile = pkt->data[i+1] & 0x07;
+                st->codecpar->level   = pkt->data[i+2] >> 4;
             } else if (i + 5 < pkt->size && (pkt->data[i+1] & 0xf0) == 0x80) { // pict coding ext
                 sc->interlaced = !(pkt->data[i+5] & 0x80); // progressive frame
                 break;
@@ -1360,7 +1360,7 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
             case 4:  sc->aspect_ratio = (AVRational){221,100}; break;
             default:
                 av_reduce(&sc->aspect_ratio.num, &sc->aspect_ratio.den,
-                          st->codec->width, st->codec->height, 1024*1024);
+                          st->codecpar->width, st->codecpar->height, 1024*1024);
             }
         } else if (c == 0x100) { // pic
             int pict_type = (pkt->data[i+2]>>3) & 0x07;
@@ -1381,7 +1381,7 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
         }
     }
     if (s->oformat != &ff_mxf_d10_muxer)
-        sc->codec_ul = mxf_get_mpeg2_codec_ul(st->codec);
+        sc->codec_ul = mxf_get_mpeg2_codec_ul(st->codecpar);
     return !!sc->codec_ul;
 }
 
@@ -1430,7 +1430,7 @@ static int mxf_write_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         st->priv_data = sc;
 
-        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (i != 0) {
                 av_log(s, AV_LOG_ERROR, "video stream must be first track\n");
                 return -1;
@@ -1450,13 +1450,13 @@ static int mxf_write_header(AVFormatContext *s)
             }
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
             if (s->oformat == &ff_mxf_d10_muxer) {
-                if (st->codec->bit_rate == 50000000)
+                if (st->codecpar->bit_rate == 50000000)
                     if (mxf->time_base.den == 25) sc->index = 3;
                     else                          sc->index = 5;
-                else if (st->codec->bit_rate == 40000000)
+                else if (st->codecpar->bit_rate == 40000000)
                     if (mxf->time_base.den == 25) sc->index = 7;
                     else                          sc->index = 9;
-                else if (st->codec->bit_rate == 30000000)
+                else if (st->codecpar->bit_rate == 30000000)
                     if (mxf->time_base.den == 25) sc->index = 11;
                     else                          sc->index = 13;
                 else {
@@ -1465,25 +1465,25 @@ static int mxf_write_header(AVFormatContext *s)
                 }
 
                 mxf->edit_unit_byte_count = KAG_SIZE; // system element
-                mxf->edit_unit_byte_count += 16 + 4 + (uint64_t)st->codec->bit_rate *
+                mxf->edit_unit_byte_count += 16 + 4 + (uint64_t)st->codecpar->bit_rate *
                     mxf->time_base.num / (8*mxf->time_base.den);
                 mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
                 mxf->edit_unit_byte_count += 16 + 4 + 4 + samples_per_frame[0]*8*4;
                 mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
             }
-        } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (st->codec->sample_rate != 48000) {
+        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (st->codecpar->sample_rate != 48000) {
                 av_log(s, AV_LOG_ERROR, "only 48khz is implemented\n");
                 return -1;
             }
-            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
             if (s->oformat == &ff_mxf_d10_muxer) {
                 if (st->index != 1) {
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support one audio track\n");
                     return -1;
                 }
-                if (st->codec->codec_id != AV_CODEC_ID_PCM_S16LE &&
-                    st->codec->codec_id != AV_CODEC_ID_PCM_S24LE) {
+                if (st->codecpar->codec_id != AV_CODEC_ID_PCM_S16LE &&
+                    st->codecpar->codec_id != AV_CODEC_ID_PCM_S24LE) {
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support 16 or 24 bits le audio\n");
                 }
                 sc->index = ((MXFStreamContext*)s->streams[0]->priv_data)->index + 1;
@@ -1492,7 +1492,7 @@ static int mxf_write_header(AVFormatContext *s)
         }
 
         if (!sc->index) {
-            sc->index = mxf_get_essence_container_ul_index(st->codec->codec_id);
+            sc->index = mxf_get_essence_container_ul_index(st->codecpar->codec_id);
             if (sc->index == -1) {
                 av_log(s, AV_LOG_ERROR, "track %d: could not find essence container ul, "
                        "codec not currently supported in container\n", i);
@@ -1615,7 +1615,7 @@ static void mxf_write_d10_video_packet(AVFormatContext *s, AVStream *st, AVPacke
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int packet_size = (uint64_t)st->codec->bit_rate*mxf->time_base.num /
+    int packet_size = (uint64_t)st->codecpar->bit_rate*mxf->time_base.num /
         (8*mxf->time_base.den); // frame size
     int pad;
 
@@ -1645,7 +1645,7 @@ static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacke
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int frame_size = pkt->size / st->codec->block_align;
+    int frame_size = pkt->size / st->codecpar->block_align;
     uint8_t *samples = pkt->data;
     uint8_t *end = pkt->data + pkt->size;
     int i;
@@ -1654,12 +1654,12 @@ static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacke
 
     avio_w8(pb, (frame_size == 1920 ? 0 : (mxf->edit_units_count-1) % 5 + 1));
     avio_wl16(pb, frame_size);
-    avio_w8(pb, (1<<st->codec->channels)-1);
+    avio_w8(pb, (1<<st->codecpar->channels)-1);
 
     while (samples < end) {
-        for (i = 0; i < st->codec->channels; i++) {
+        for (i = 0; i < st->codecpar->channels; i++) {
             uint32_t sample;
-            if (st->codec->codec_id == AV_CODEC_ID_PCM_S24LE) {
+            if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S24LE) {
                 sample = AV_RL24(samples)<< 4;
                 samples += 3;
             } else {
@@ -1691,7 +1691,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+    if (st->codecpar->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         if (!mxf_parse_mpeg2_frame(s, st, pkt, &ie)) {
             av_log(s, AV_LOG_ERROR, "could not get mpeg2 profile and level\n");
             return -1;
@@ -1740,7 +1740,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     mxf_write_klv_fill(s);
     avio_write(pb, sc->track_essence_element_key, 16); // write key
     if (s->oformat == &ff_mxf_d10_muxer) {
-        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
             mxf_write_d10_video_packet(s, st, pkt);
         else
             mxf_write_d10_audio_packet(s, st, pkt);

@@ -487,8 +487,8 @@ static int avi_read_header(AVFormatContext *s)
                     goto fail;
 
                 ast = s->streams[0]->priv_data;
-                av_freep(&s->streams[0]->codec->extradata);
-                av_freep(&s->streams[0]->codec);
+                av_freep(&s->streams[0]->codecpar->extradata);
+                av_freep(&s->streams[0]->codecpar);
                 av_freep(&s->streams[0]->info);
                 av_freep(&s->streams[0]);
                 s->nb_streams = 0;
@@ -606,10 +606,10 @@ static int avi_read_header(AVFormatContext *s)
                 switch (codec_type) {
                 case AVMEDIA_TYPE_VIDEO:
                     if (amv_file_format) {
-                        st->codec->width      = avih_width;
-                        st->codec->height     = avih_height;
-                        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-                        st->codec->codec_id   = AV_CODEC_ID_AMV;
+                        st->codecpar->width      = avih_width;
+                        st->codecpar->height     = avih_height;
+                        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+                        st->codecpar->codec_id   = AV_CODEC_ID_AMV;
                         avio_skip(pb, size);
                         break;
                     }
@@ -617,41 +617,41 @@ static int avi_read_header(AVFormatContext *s)
 
                     if (tag1 == MKTAG('D', 'X', 'S', 'B') ||
                         tag1 == MKTAG('D', 'X', 'S', 'A')) {
-                        st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-                        st->codec->codec_tag  = tag1;
-                        st->codec->codec_id   = AV_CODEC_ID_XSUB;
+                        st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+                        st->codecpar->codec_tag  = tag1;
+                        st->codecpar->codec_id   = AV_CODEC_ID_XSUB;
                         break;
                     }
 
                     if (size > 10 * 4 && size < (1 << 30)) {
-                        st->codec->extradata_size = size - 10 * 4;
-                        st->codec->extradata      = av_malloc(st->codec->extradata_size +
-                                                              AV_INPUT_BUFFER_PADDING_SIZE);
-                        if (!st->codec->extradata) {
-                            st->codec->extradata_size = 0;
+                        st->codecpar->extradata_size = size - 10 * 4;
+                        st->codecpar->extradata      = av_malloc(st->codecpar->extradata_size +
+                                                                 AV_INPUT_BUFFER_PADDING_SIZE);
+                        if (!st->codecpar->extradata) {
+                            st->codecpar->extradata_size = 0;
                             return AVERROR(ENOMEM);
                         }
                         avio_read(pb,
-                                  st->codec->extradata,
-                                  st->codec->extradata_size);
+                                  st->codecpar->extradata,
+                                  st->codecpar->extradata_size);
                     }
 
                     // FIXME: check if the encoder really did this correctly
-                    if (st->codec->extradata_size & 1)
+                    if (st->codecpar->extradata_size & 1)
                         avio_r8(pb);
 
                     /* Extract palette from extradata if bpp <= 8.
                      * This code assumes that extradata contains only palette.
                      * This is true for all paletted codecs implemented in
                      * Libav. */
-                    if (st->codec->extradata_size &&
-                        (st->codec->bits_per_coded_sample <= 8)) {
-                        int pal_size = (1 << st->codec->bits_per_coded_sample) << 2;
+                    if (st->codecpar->extradata_size &&
+                        (st->codecpar->bits_per_coded_sample <= 8)) {
+                        int pal_size = (1 << st->codecpar->bits_per_coded_sample) << 2;
                         const uint8_t *pal_src;
 
-                        pal_size = FFMIN(pal_size, st->codec->extradata_size);
-                        pal_src  = st->codec->extradata +
-                                   st->codec->extradata_size - pal_size;
+                        pal_size = FFMIN(pal_size, st->codecpar->extradata_size);
+                        pal_src  = st->codecpar->extradata +
+                                   st->codecpar->extradata_size - pal_size;
 #if HAVE_BIGENDIAN
                         for (i = 0; i < pal_size / 4; i++)
                             ast->pal[i] = av_bswap32(((uint32_t *)pal_src)[i]);
@@ -663,17 +663,17 @@ static int avi_read_header(AVFormatContext *s)
 
                     print_tag("video", tag1, 0);
 
-                    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-                    st->codec->codec_tag  = tag1;
-                    st->codec->codec_id   = ff_codec_get_id(ff_codec_bmp_tags,
+                    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+                    st->codecpar->codec_tag  = tag1;
+                    st->codecpar->codec_id   = ff_codec_get_id(ff_codec_bmp_tags,
                                                             tag1);
                     /* If codec is not found yet, try with the mov tags. */
-                    if (!st->codec->codec_id) {
+                    if (!st->codecpar->codec_id) {
                         char tag_buf[32];
                         av_get_codec_tag_string(tag_buf, sizeof(tag_buf), tag1);
-                        st->codec->codec_id =
+                        st->codecpar->codec_id =
                             ff_codec_get_id(ff_codec_movvideo_tags, tag1);
-                        if (st->codec->codec_id)
+                        if (st->codecpar->codec_id)
                            av_log(s, AV_LOG_WARNING,
                                   "mov tag found in avi (fourcc %s)\n",
                                   tag_buf);
@@ -682,45 +682,45 @@ static int avi_read_header(AVFormatContext *s)
                      * for generating correct pts. */
                     st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
-                    if (st->codec->codec_id == AV_CODEC_ID_MPEG4 &&
+                    if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4 &&
                         ast->handler == MKTAG('X', 'V', 'I', 'D'))
-                        st->codec->codec_tag = MKTAG('X', 'V', 'I', 'D');
+                        st->codecpar->codec_tag = MKTAG('X', 'V', 'I', 'D');
 
                     // Support "Resolution 1:1" for Avid AVI Codec
                     if (tag1 == MKTAG('A', 'V', 'R', 'n') &&
-                        st->codec->extradata_size >= 31   &&
-                        !memcmp(&st->codec->extradata[28], "1:1", 3))
-                        st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
+                        st->codecpar->extradata_size >= 31   &&
+                        !memcmp(&st->codecpar->extradata[28], "1:1", 3))
+                        st->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
 
-                    if (st->codec->codec_tag == 0 && st->codec->height > 0 &&
-                        st->codec->extradata_size < 1U << 30) {
-                        st->codec->extradata_size += 9;
-                        if ((ret = av_reallocp(&st->codec->extradata,
-                                               st->codec->extradata_size +
+                    if (st->codecpar->codec_tag == 0 && st->codecpar->height > 0 &&
+                        st->codecpar->extradata_size < 1U << 30) {
+                        st->codecpar->extradata_size += 9;
+                        if ((ret = av_reallocp(&st->codecpar->extradata,
+                                               st->codecpar->extradata_size +
                                                AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
-                            st->codec->extradata_size = 0;
+                            st->codecpar->extradata_size = 0;
                             return ret;
                         } else
-                            memcpy(st->codec->extradata + st->codec->extradata_size - 9,
+                            memcpy(st->codecpar->extradata + st->codecpar->extradata_size - 9,
                                    "BottomUp", 9);
                     }
-                    st->codec->height = FFABS(st->codec->height);
+                    st->codecpar->height = FFABS(st->codecpar->height);
 
 //                    avio_skip(pb, size - 5 * 4);
                     break;
                 case AVMEDIA_TYPE_AUDIO:
-                    ret = ff_get_wav_header(s, pb, st->codec, size);
+                    ret = ff_get_wav_header(s, pb, st->codecpar, size);
                     if (ret < 0)
                         return ret;
-                    ast->dshow_block_align = st->codec->block_align;
-                    if (ast->sample_size && st->codec->block_align &&
-                        ast->sample_size != st->codec->block_align) {
+                    ast->dshow_block_align = st->codecpar->block_align;
+                    if (ast->sample_size && st->codecpar->block_align &&
+                        ast->sample_size != st->codecpar->block_align) {
                         av_log(s,
                                AV_LOG_WARNING,
                                "sample size (%d) != block align (%d)\n",
                                ast->sample_size,
-                               st->codec->block_align);
-                        ast->sample_size = st->codec->block_align;
+                               st->codecpar->block_align);
+                        ast->sample_size = st->codecpar->block_align;
                     }
                     /* 2-aligned
                      * (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
@@ -732,28 +732,28 @@ static int avi_read_header(AVFormatContext *s)
                     /* ADTS header is in extradata, AAC without header must be
                      * stored as exact frames. Parser not needed and it will
                      * fail. */
-                    if (st->codec->codec_id == AV_CODEC_ID_AAC &&
-                        st->codec->extradata_size)
+                    if (st->codecpar->codec_id == AV_CODEC_ID_AAC &&
+                        st->codecpar->extradata_size)
                         st->need_parsing = AVSTREAM_PARSE_NONE;
                     /* AVI files with Xan DPCM audio (wrongly) declare PCM
                      * audio in the header but have Axan as stream_code_tag. */
                     if (ast->handler == AV_RL32("Axan")) {
-                        st->codec->codec_id  = AV_CODEC_ID_XAN_DPCM;
-                        st->codec->codec_tag = 0;
+                        st->codecpar->codec_id  = AV_CODEC_ID_XAN_DPCM;
+                        st->codecpar->codec_tag = 0;
                     }
                     if (amv_file_format) {
-                        st->codec->codec_id    = AV_CODEC_ID_ADPCM_IMA_AMV;
+                        st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_IMA_AMV;
                         ast->dshow_block_align = 0;
                     }
                     break;
                 case AVMEDIA_TYPE_SUBTITLE:
-                    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-                    st->codec->codec_id   = AV_CODEC_ID_PROBE;
+                    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+                    st->codecpar->codec_id   = AV_CODEC_ID_PROBE;
                     break;
                 default:
-                    st->codec->codec_type = AVMEDIA_TYPE_DATA;
-                    st->codec->codec_id   = AV_CODEC_ID_NONE;
-                    st->codec->codec_tag  = 0;
+                    st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+                    st->codecpar->codec_id   = AV_CODEC_ID_NONE;
+                    st->codecpar->codec_tag  = 0;
                     avio_skip(pb, size);
                     break;
                 }
@@ -895,8 +895,7 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt)
         ast->sub_ctx->pb = pb;
         if (!avformat_open_input(&ast->sub_ctx, "", sub_demuxer, NULL)) {
             ff_read_packet(ast->sub_ctx, &ast->sub_pkt);
-            *st->codec = *ast->sub_ctx->streams[0]->codec;
-            ast->sub_ctx->streams[0]->codec->extradata = NULL;
+            avcodec_parameters_copy(st->codecpar, ast->sub_ctx->streams[0]->codecpar);
             time_base = ast->sub_ctx->streams[0]->time_base;
             avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
         }
@@ -1022,8 +1021,8 @@ start_sync:
                 AVIStream *ast1 = st1->priv_data;
                 // workaround for broken small-file-bug402.avi
                 if (d[2] == 'w' && d[3] == 'b' && n == 0 &&
-                    st->codec->codec_type  == AVMEDIA_TYPE_VIDEO &&
-                    st1->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+                    st->codecpar->codec_type  == AVMEDIA_TYPE_VIDEO &&
+                    st1->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
                     ast->prefix == 'd' * 256 + 'c' &&
                     (d[2] * 256 + d[3] == ast1->prefix ||
                      !ast1->prefix_count)) {
@@ -1230,8 +1229,8 @@ resync:
             pkt->flags |= AV_PKT_FLAG_KEY;
             if (size < 0)
                 av_packet_unref(pkt);
-        } else if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE &&
-                   !st->codec->codec_tag && read_gab2_sub(st, pkt)) {
+        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE &&
+                   !st->codecpar->codec_tag && read_gab2_sub(st, pkt)) {
             ast->frame_offset++;
             avi->stream_index = -1;
             ast->remaining    = 0;
@@ -1255,7 +1254,7 @@ resync:
                     size);
             pkt->stream_index = avi->stream_index;
 
-            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                 AVIndexEntry *e;
                 int index;
                 assert(st->index_entries);
@@ -1391,7 +1390,7 @@ static int check_stream_max_drift(AVFormatContext *s)
                 max_dts = FFMAX(max_dts, dts);
                 max_buffer = FFMAX(max_buffer,
                                    av_rescale(dts - min_dts,
-                                              st->codec->bit_rate,
+                                              st->codecpar->bit_rate,
                                               AV_TIME_BASE));
             }
         }
@@ -1555,7 +1554,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index,
         if (st2->nb_index_entries <= 0)
             continue;
 
-//        assert(st2->codec->block_align);
+//        assert(st2->codecpar->block_align);
         assert((int64_t)st2->time_base.num * ast2->rate ==
                (int64_t)st2->time_base.den * ast2->scale);
         index = av_index_search_timestamp(st2,

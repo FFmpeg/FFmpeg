@@ -97,16 +97,16 @@ static void close_context(PayloadContext *data)
     av_free(data->mode);
 }
 
-static int parse_fmtp_config(AVCodecContext *codec, const char *value)
+static int parse_fmtp_config(AVCodecParameters *par, char *value)
 {
     /* decode the hexa encoded parameter */
     int len = ff_hex_to_data(NULL, value);
-    av_free(codec->extradata);
-    codec->extradata = av_mallocz(len + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!codec->extradata)
+    av_free(par->extradata);
+    par->extradata = av_mallocz(len + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!par->extradata)
         return AVERROR(ENOMEM);
-    codec->extradata_size = len;
-    ff_hex_to_data(codec->extradata, value);
+    par->extradata_size = len;
+    ff_hex_to_data(par->extradata, value);
     return 0;
 }
 
@@ -275,17 +275,17 @@ static int parse_fmtp(AVFormatContext *s,
                       AVStream *stream, PayloadContext *data,
                       const char *attr, const char *value)
 {
-    AVCodecContext *codec = stream->codec;
+    AVCodecParameters *par = stream->codecpar;
     int res, i;
 
     if (!strcmp(attr, "config")) {
-        res = parse_fmtp_config(codec, value);
+        res = parse_fmtp_config(par, value);
 
         if (res < 0)
             return res;
     }
 
-    if (codec->codec_id == AV_CODEC_ID_AAC) {
+    if (par->codec_id == AV_CODEC_ID_AAC) {
         /* Looking for a known attribute */
         for (i = 0; attr_names[i].str; ++i) {
             if (!av_strcasecmp(attr, attr_names[i].str)) {

@@ -431,8 +431,8 @@ static int asf_read_picture(AVFormatContext *s, int len)
     }
 
     st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
-    st->codec->codec_type         = asf_st->type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id           = id;
+    st->codecpar->codec_type      = asf_st->type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id        = id;
     st->attached_pic              = pkt;
     st->attached_pic.stream_index = asf_st->index = st->index;
     st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
@@ -695,26 +695,26 @@ static int parse_video_info(AVIOContext *pb, AVStream *st)
     uint16_t size;
     unsigned int tag;
 
-    st->codec->width  = avio_rl32(pb);
-    st->codec->height = avio_rl32(pb);
+    st->codecpar->width  = avio_rl32(pb);
+    st->codecpar->height = avio_rl32(pb);
     avio_skip(pb, 1); // skip reserved flags
     size = avio_rl16(pb); // size of the Format Data
     tag  = ff_get_bmp_header(pb, st);
-    st->codec->codec_tag = tag;
-    st->codec->codec_id  = ff_codec_get_id(ff_codec_bmp_tags, tag);
+    st->codecpar->codec_tag = tag;
+    st->codecpar->codec_id  = ff_codec_get_id(ff_codec_bmp_tags, tag);
 
     if (size > BMP_HEADER_SIZE) {
         int ret;
-        st->codec->extradata_size  = size - BMP_HEADER_SIZE;
-        if (!(st->codec->extradata = av_malloc(st->codec->extradata_size +
+        st->codecpar->extradata_size  = size - BMP_HEADER_SIZE;
+        if (!(st->codecpar->extradata = av_malloc(st->codecpar->extradata_size +
                                                AV_INPUT_BUFFER_PADDING_SIZE))) {
-            st->codec->extradata_size = 0;
+            st->codecpar->extradata_size = 0;
             return AVERROR(ENOMEM);
         }
-        memset(st->codec->extradata + st->codec->extradata_size , 0,
+        memset(st->codecpar->extradata + st->codecpar->extradata_size , 0,
                AV_INPUT_BUFFER_PADDING_SIZE);
-        if ((ret = avio_read(pb, st->codec->extradata,
-                             st->codec->extradata_size)) < 0)
+        if ((ret = avio_read(pb, st->codecpar->extradata,
+                             st->codecpar->extradata_size)) < 0)
             return ret;
     }
     return 0;
@@ -773,7 +773,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 32, 1, 1000); // pts should be dword, in milliseconds
-    st->codec->codec_type = type;
+    st->codecpar->codec_type = type;
     asf->asf_st[asf->nb_streams] = av_mallocz(sizeof(*asf_st));
     if (!asf->asf_st[asf->nb_streams])
         return AVERROR(ENOMEM);
@@ -790,7 +790,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     switch (type) {
     case AVMEDIA_TYPE_AUDIO:
         asf_st->type = AVMEDIA_TYPE_AUDIO;
-        if ((ret = ff_get_wav_header(s, pb, st->codec, ts_data_len)) < 0)
+        if ((ret = ff_get_wav_header(s, pb, st->codecpar, ts_data_len)) < 0)
             return ret;
         break;
     case AVMEDIA_TYPE_VIDEO:
@@ -867,7 +867,7 @@ static int asf_read_ext_stream_properties(AVFormatContext *s, const GUIDParseTab
     if (st) {
         st->start_time           = start_time;
         st->duration             = end_time - start_time;
-        st->codec->bit_rate      = bitrate;
+        st->codecpar->bit_rate   = bitrate;
         st->avg_frame_rate.num   = 10000000;
         st->avg_frame_rate.den   = time_per_frame;
     }

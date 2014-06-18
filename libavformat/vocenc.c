@@ -34,7 +34,7 @@ static int voc_write_header(AVFormatContext *s)
     const int version = 0x0114;
 
     if (s->nb_streams != 1
-        || s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
+        || s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
         return AVERROR_PATCHWELCOME;
 
     avio_write(pb, ff_voc_magic, sizeof(ff_voc_magic) - 1);
@@ -48,30 +48,30 @@ static int voc_write_header(AVFormatContext *s)
 static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VocEncContext *voc = s->priv_data;
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     AVIOContext *pb = s->pb;
 
     if (!voc->param_written) {
-        if (enc->codec_tag > 0xFF) {
+        if (par->codec_tag > 0xFF) {
             avio_w8(pb, VOC_TYPE_NEW_VOICE_DATA);
             avio_wl24(pb, pkt->size + 12);
-            avio_wl32(pb, enc->sample_rate);
-            avio_w8(pb, enc->bits_per_coded_sample);
-            avio_w8(pb, enc->channels);
-            avio_wl16(pb, enc->codec_tag);
+            avio_wl32(pb, par->sample_rate);
+            avio_w8(pb, par->bits_per_coded_sample);
+            avio_w8(pb, par->channels);
+            avio_wl16(pb, par->codec_tag);
             avio_wl32(pb, 0);
         } else {
-            if (s->streams[0]->codec->channels > 1) {
+            if (s->streams[0]->codecpar->channels > 1) {
                 avio_w8(pb, VOC_TYPE_EXTENDED);
                 avio_wl24(pb, 4);
-                avio_wl16(pb, 65536-256000000/(enc->sample_rate*enc->channels));
-                avio_w8(pb, enc->codec_tag);
-                avio_w8(pb, enc->channels - 1);
+                avio_wl16(pb, 65536-256000000/(par->sample_rate*par->channels));
+                avio_w8(pb, par->codec_tag);
+                avio_w8(pb, par->channels - 1);
             }
             avio_w8(pb, VOC_TYPE_VOICE_DATA);
             avio_wl24(pb, pkt->size + 2);
-            avio_w8(pb, 256 - 1000000 / enc->sample_rate);
-            avio_w8(pb, enc->codec_tag);
+            avio_w8(pb, 256 - 1000000 / par->sample_rate);
+            avio_w8(pb, par->codec_tag);
         }
         voc->param_written = 1;
     } else {

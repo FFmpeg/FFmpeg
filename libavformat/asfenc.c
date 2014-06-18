@@ -377,7 +377,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     int header_size, n, extra_size, extra_size2, wav_extra_size, file_time;
     int has_title;
     int metadata_count;
-    AVCodecContext *enc;
+    AVCodecParameters *par;
     int64_t header_offset, cur_pos, hpos;
     int bit_rate;
     int64_t duration;
@@ -396,11 +396,11 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
 
     bit_rate = 0;
     for (n = 0; n < s->nb_streams; n++) {
-        enc = s->streams[n]->codec;
+        par = s->streams[n]->codecpar;
 
         avpriv_set_pts_info(s->streams[n], 32, 1, 1000); /* 32 bit pts in ms */
 
-        bit_rate += enc->bit_rate;
+        bit_rate += par->bit_rate;
     }
 
     if (asf->is_streamed) {
@@ -479,11 +479,11 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
         int64_t es_pos;
         //        ASFStream *stream = &asf->streams[n];
 
-        enc                 = s->streams[n]->codec;
+        par                 = s->streams[n]->codecpar;
         asf->streams[n].num = n + 1;
         asf->streams[n].seq = 0;
 
-        switch (enc->codec_type) {
+        switch (par->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             wav_extra_size = 0;
             extra_size     = 18 + wav_extra_size;
@@ -491,14 +491,14 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             break;
         default:
         case AVMEDIA_TYPE_VIDEO:
-            wav_extra_size = enc->extradata_size;
+            wav_extra_size = par->extradata_size;
             extra_size     = 0x33 + wav_extra_size;
             extra_size2    = 0;
             break;
         }
 
         hpos = put_header(pb, &ff_asf_stream_header);
-        if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
             put_guid(pb, &ff_asf_audio_stream);
             put_guid(pb, &ff_asf_audio_conceal_spread);
         } else {
@@ -512,9 +512,9 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
         avio_wl16(pb, n + 1); /* stream number */
         avio_wl32(pb, 0); /* ??? */
 
-        if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
             /* WAVEFORMATEX header */
-            int wavsize = ff_put_wav_header(pb, enc);
+            int wavsize = ff_put_wav_header(s, pb, par);
 
             if (wavsize < 0)
                 return -1;
@@ -526,23 +526,23 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             }
             /* ERROR Correction */
             avio_w8(pb, 0x01);
-            if (enc->codec_id == AV_CODEC_ID_ADPCM_G726 || !enc->block_align) {
+            if (par->codec_id == AV_CODEC_ID_ADPCM_G726 || !par->block_align) {
                 avio_wl16(pb, 0x0190);
                 avio_wl16(pb, 0x0190);
             } else {
-                avio_wl16(pb, enc->block_align);
-                avio_wl16(pb, enc->block_align);
+                avio_wl16(pb, par->block_align);
+                avio_wl16(pb, par->block_align);
             }
             avio_wl16(pb, 0x01);
             avio_w8(pb, 0x00);
         } else {
-            avio_wl32(pb, enc->width);
-            avio_wl32(pb, enc->height);
+            avio_wl32(pb, par->width);
+            avio_wl32(pb, par->height);
             avio_w8(pb, 2); /* ??? */
-            avio_wl16(pb, 40 + enc->extradata_size); /* size */
+            avio_wl16(pb, 40 + par->extradata_size); /* size */
 
             /* BITMAPINFOHEADER header */
-            ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 1);
+            ff_put_bmp_header(pb, par, ff_codec_bmp_tags, 1);
         }
         end_header(pb, hpos);
     }
@@ -556,17 +556,17 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
         const AVCodecDescriptor *codec_desc;
         const char *desc;
 
-        enc  = s->streams[n]->codec;
-        codec_desc = avcodec_descriptor_get(enc->codec_id);
+        par  = s->streams[n]->codecpar;
+        codec_desc = avcodec_descriptor_get(par->codec_id);
 
-        if (enc->codec_type == AVMEDIA_TYPE_AUDIO)
+        if (par->codec_type == AVMEDIA_TYPE_AUDIO)
             avio_wl16(pb, 2);
-        else if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
+        else if (par->codec_type == AVMEDIA_TYPE_VIDEO)
             avio_wl16(pb, 1);
         else
             avio_wl16(pb, -1);
 
-        if (enc->codec_id == AV_CODEC_ID_WMAV2)
+        if (par->codec_id == AV_CODEC_ID_WMAV2)
             desc = "Windows Media Audio V8";
         else
             desc = codec_desc ? codec_desc->name : NULL;
@@ -591,14 +591,14 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
         avio_wl16(pb, 0); /* no parameters */
 
         /* id */
-        if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
             avio_wl16(pb, 2);
-            avio_wl16(pb, enc->codec_tag);
+            avio_wl16(pb, par->codec_tag);
         } else {
             avio_wl16(pb, 4);
-            avio_wl32(pb, enc->codec_tag);
+            avio_wl32(pb, par->codec_tag);
         }
-        if (!enc->codec_tag)
+        if (!par->codec_tag)
             return -1;
     }
     end_header(pb, hpos);
@@ -813,7 +813,7 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, AVStream *avst,
                         PACKET_HEADER_MIN_SIZE - 1;
 
             if (frag_len1 < payload_len &&
-                avst->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+                avst->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
                 flush_packet(s);
                 continue;
             }
@@ -855,16 +855,16 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     ASFStream *stream;
     int64_t duration;
-    AVCodecContext *codec;
+    AVCodecParameters *par;
     int64_t packet_st, pts;
     int start_sec, i;
     int flags = pkt->flags;
     uint64_t offset = avio_tell(pb);
 
-    codec  = s->streams[pkt->stream_index]->codec;
+    par  = s->streams[pkt->stream_index]->codecpar;
     stream = &asf->streams[pkt->stream_index];
 
-    if (codec->codec_type == AVMEDIA_TYPE_AUDIO)
+    if (par->codec_type == AVMEDIA_TYPE_AUDIO)
         flags &= ~AV_PKT_FLAG_KEY;
 
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;

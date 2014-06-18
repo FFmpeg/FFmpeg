@@ -67,12 +67,12 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
     for (n = 0; s->oformat->codec_tag[n]; n++) {
         avctag = s->oformat->codec_tag[n];
         while (avctag->id != AV_CODEC_ID_NONE) {
-            if (avpriv_toupper4(avctag->tag) == avpriv_toupper4(st->codec->codec_tag)) {
+            if (avpriv_toupper4(avctag->tag) == avpriv_toupper4(st->codecpar->codec_tag)) {
                 id = avctag->id;
-                if (id == st->codec->codec_id)
+                if (id == st->codecpar->codec_id)
                     return 1;
             }
-            if (avctag->id == st->codec->codec_id)
+            if (avctag->id == st->codecpar->codec_id)
                 tag = avctag->tag;
             avctag++;
         }
@@ -90,7 +90,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     int ret = 0, i;
     AVStream *st;
     AVDictionary *tmp = NULL;
-    AVCodecContext *codec = NULL;
+    AVCodecParameters *par = NULL;
     AVOutputFormat *of = s->oformat;
     const AVCodecDescriptor *desc;
 
@@ -101,8 +101,10 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
         goto fail;
 
 #if FF_API_LAVF_BITEXACT
+FF_DISABLE_DEPRECATION_WARNINGS
     if (s->nb_streams && s->streams[0]->codec->flags & AV_CODEC_FLAG_BITEXACT)
         s->flags |= AVFMT_FLAG_BITEXACT;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     // some sanity checks
@@ -113,41 +115,55 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     }
 
     for (i = 0; i < s->nb_streams; i++) {
-        st    = s->streams[i];
-        codec = st->codec;
+        st  = s->streams[i];
+        par = st->codecpar;
 
 #if FF_API_LAVF_CODEC_TB
 FF_DISABLE_DEPRECATION_WARNINGS
-        if (!st->time_base.num && codec->time_base.num) {
+        if (!st->time_base.num && st->codec->time_base.num) {
             av_log(s, AV_LOG_WARNING, "Using AVStream.codec.time_base as a "
                    "timebase hint to the muxer is deprecated. Set "
                    "AVStream.time_base instead.\n");
-            avpriv_set_pts_info(st, 64, codec->time_base.num, codec->time_base.den);
+            avpriv_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_UNKNOWN &&
+            st->codec->codec_type    != AVMEDIA_TYPE_UNKNOWN) {
+            av_log(s, AV_LOG_WARNING, "Using AVStream.codec to pass codec "
+                   "parameters to muxers is deprecated, use AVStream.codecpar "
+                   "instead.\n");
+            ret = avcodec_parameters_from_context(st->codecpar, st->codec);
+            if (ret < 0)
+                goto fail;
         }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
         if (!st->time_base.num) {
             /* fall back on the default timebase values */
-            if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->sample_rate)
-                avpriv_set_pts_info(st, 64, 1, codec->sample_rate);
+            if (par->codec_type == AVMEDIA_TYPE_AUDIO && par->sample_rate)
+                avpriv_set_pts_info(st, 64, 1, par->sample_rate);
             else
                 avpriv_set_pts_info(st, 33, 1, 90000);
         }
 
-        switch (codec->codec_type) {
+        switch (par->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            if (codec->sample_rate <= 0) {
+            if (par->sample_rate <= 0) {
                 av_log(s, AV_LOG_ERROR, "sample rate not set\n");
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            if (!codec->block_align)
-                codec->block_align = codec->channels *
-                                     av_get_bits_per_sample(codec->codec_id) >> 3;
+            if (!par->block_align)
+                par->block_align = par->channels *
+                                   av_get_bits_per_sample(par->codec_id) >> 3;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            if ((codec->width <= 0 || codec->height <= 0) &&
+            if ((par->width <= 0 || par->height <= 0) &&
                 !(of->flags & AVFMT_NODIMENSIONS)) {
                 av_log(s, AV_LOG_ERROR, "dimensions not set\n");
                 ret = AVERROR(EINVAL);
@@ -155,16 +171,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
 
             if (av_cmp_q(st->sample_aspect_ratio,
-                         codec->sample_aspect_ratio)) {
+                         par->sample_aspect_ratio)) {
                 if (st->sample_aspect_ratio.num != 0 &&
                     st->sample_aspect_ratio.den != 0 &&
-                    codec->sample_aspect_ratio.den != 0 &&
-                    codec->sample_aspect_ratio.den != 0) {
+                    par->sample_aspect_ratio.den != 0 &&
+                    par->sample_aspect_ratio.den != 0) {
                     av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between muxer "
                             "(%d/%d) and encoder layer (%d/%d)\n",
                             st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
-                            codec->sample_aspect_ratio.num,
-                            codec->sample_aspect_ratio.den);
+                            par->sample_aspect_ratio.num,
+                            par->sample_aspect_ratio.den);
                     ret = AVERROR(EINVAL);
                     goto fail;
                 }
@@ -172,34 +188,34 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         }
 
-        desc = avcodec_descriptor_get(codec->codec_id);
+        desc = avcodec_descriptor_get(par->codec_id);
         if (desc && desc->props & AV_CODEC_PROP_REORDER)
             st->internal->reorder = 1;
 
         if (of->codec_tag) {
-            if (codec->codec_tag &&
-                codec->codec_id == AV_CODEC_ID_RAWVIDEO &&
-                !av_codec_get_tag(of->codec_tag, codec->codec_id) &&
+            if (par->codec_tag &&
+                par->codec_id == AV_CODEC_ID_RAWVIDEO &&
+                !av_codec_get_tag(of->codec_tag, par->codec_id) &&
                 !validate_codec_tag(s, st)) {
                 // the current rawvideo encoding system ends up setting
                 // the wrong codec_tag for avi, we override it here
-                codec->codec_tag = 0;
+                par->codec_tag = 0;
             }
-            if (codec->codec_tag) {
+            if (par->codec_tag) {
                 if (!validate_codec_tag(s, st)) {
                     char tagbuf[32];
-                    av_get_codec_tag_string(tagbuf, sizeof(tagbuf), codec->codec_tag);
+                    av_get_codec_tag_string(tagbuf, sizeof(tagbuf), par->codec_tag);
                     av_log(s, AV_LOG_ERROR,
                            "Tag %s/0x%08x incompatible with output codec id '%d'\n",
-                           tagbuf, codec->codec_tag, codec->codec_id);
+                           tagbuf, par->codec_tag, par->codec_id);
                     ret = AVERROR_INVALIDDATA;
                     goto fail;
                 }
             } else
-                codec->codec_tag = av_codec_get_tag(of->codec_tag, codec->codec_id);
+                par->codec_tag = av_codec_get_tag(of->codec_tag, par->codec_id);
         }
 
-        if (codec->codec_type != AVMEDIA_TYPE_ATTACHMENT)
+        if (par->codec_type != AVMEDIA_TYPE_ATTACHMENT)
             s->internal->nb_interleaved_streams++;
     }
 
@@ -258,6 +274,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 }
 
 #if FF_API_COMPUTE_PKT_FIELDS2
+FF_DISABLE_DEPRECATION_WARNINGS
 //FIXME merge with compute_pkt_fields
 static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
@@ -324,6 +341,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
     return 0;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 /*
@@ -384,7 +402,7 @@ static int check_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EINVAL);
     }
 
-    if (s->streams[pkt->stream_index]->codec->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
+    if (s->streams[pkt->stream_index]->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
         av_log(s, AV_LOG_ERROR, "Received a packet for an attachment stream.\n");
         return AVERROR(EINVAL);
     }

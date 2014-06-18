@@ -59,12 +59,12 @@ static int rso_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->duration            = (size * 8) / bps;
-    st->codec->codec_type   = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_tag    = id;
-    st->codec->codec_id     = codec;
-    st->codec->channels     = 1;
-    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
-    st->codec->sample_rate  = rate;
+    st->codecpar->codec_type   = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_tag    = id;
+    st->codecpar->codec_id     = codec;
+    st->codecpar->channels     = 1;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->sample_rate  = rate;
 
     avpriv_set_pts_info(st, 64, 1, rate);
 
@@ -75,7 +75,7 @@ static int rso_read_header(AVFormatContext *s)
 
 static int rso_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int bps = av_get_bits_per_sample(s->streams[0]->codec->codec_id);
+    int bps = av_get_bits_per_sample(s->streams[0]->codecpar->codec_id);
     int ret = av_get_packet(s->pb, pkt, BLOCK_SIZE * bps >> 3);
 
     if (ret < 0)

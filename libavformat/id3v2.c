@@ -761,8 +761,8 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
             return AVERROR(ENOMEM);
 
         st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = apic->id;
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_id   = apic->id;
 
         if (apic->description[0])
             av_dict_set(&st->metadata, "title", apic->description, 0);

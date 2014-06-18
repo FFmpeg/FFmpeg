@@ -93,23 +93,23 @@ static int wsvqa_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->start_time = 0;
     wsvqa->video_stream_index = st->index;
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_WS_VQA;
-    st->codec->codec_tag = 0;  /* no fourcc */
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_WS_VQA;
+    st->codecpar->codec_tag = 0;  /* no fourcc */
 
     /* skip to the start of the VQA header */
     avio_seek(pb, 20, SEEK_SET);
 
     /* the VQA header needs to go to the decoder */
-    st->codec->extradata_size = VQA_HEADER_SIZE;
-    st->codec->extradata = av_mallocz(VQA_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
-    header = (unsigned char *)st->codec->extradata;
-    if (avio_read(pb, st->codec->extradata, VQA_HEADER_SIZE) !=
+    st->codecpar->extradata_size = VQA_HEADER_SIZE;
+    st->codecpar->extradata = av_mallocz(VQA_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
+    header = (unsigned char *)st->codecpar->extradata;
+    if (avio_read(pb, st->codecpar->extradata, VQA_HEADER_SIZE) !=
         VQA_HEADER_SIZE) {
         return AVERROR(EIO);
     }
-    st->codec->width = AV_RL16(&header[6]);
-    st->codec->height = AV_RL16(&header[8]);
+    st->codecpar->width = AV_RL16(&header[6]);
+    st->codecpar->height = AV_RL16(&header[8]);
     fps = header[12];
     st->nb_frames =
     st->duration  = AV_RL16(&header[4]);
@@ -204,30 +204,30 @@ static int wsvqa_read_packet(AVFormatContext *s,
                         wsvqa->channels = 1;
                     if (!wsvqa->bps)
                         wsvqa->bps = 8;
-                    st->codec->sample_rate = wsvqa->sample_rate;
-                    st->codec->bits_per_coded_sample = wsvqa->bps;
-                    st->codec->channels = wsvqa->channels;
-                    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+                    st->codecpar->sample_rate = wsvqa->sample_rate;
+                    st->codecpar->bits_per_coded_sample = wsvqa->bps;
+                    st->codecpar->channels = wsvqa->channels;
+                    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
 
-                    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+                    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
                     switch (chunk_type) {
                     case SND0_TAG:
                         if (wsvqa->bps == 16)
-                            st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
+                            st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
                         else
-                            st->codec->codec_id = AV_CODEC_ID_PCM_U8;
+                            st->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
                         break;
                     case SND1_TAG:
-                        st->codec->codec_id = AV_CODEC_ID_WESTWOOD_SND1;
+                        st->codecpar->codec_id = AV_CODEC_ID_WESTWOOD_SND1;
                         break;
                     case SND2_TAG:
-                        st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_WS;
-                        st->codec->extradata_size = 2;
-                        st->codec->extradata = av_mallocz(2 + AV_INPUT_BUFFER_PADDING_SIZE);
-                        if (!st->codec->extradata)
+                        st->codecpar->codec_id = AV_CODEC_ID_ADPCM_IMA_WS;
+                        st->codecpar->extradata_size = 2;
+                        st->codecpar->extradata = av_mallocz(2 + AV_INPUT_BUFFER_PADDING_SIZE);
+                        if (!st->codecpar->extradata)
                             return AVERROR(ENOMEM);
-                        AV_WL16(st->codec->extradata, wsvqa->version);
+                        AV_WL16(st->codecpar->extradata, wsvqa->version);
                         break;
                     }
                 }

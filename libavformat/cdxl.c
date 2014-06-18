@@ -99,17 +99,17 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type    = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_tag     = 0;
-            st->codec->codec_id      = AV_CODEC_ID_PCM_S8;
+            st->codecpar->codec_type    = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_tag     = 0;
+            st->codecpar->codec_id      = AV_CODEC_ID_PCM_S8;
             if (cdxl->header[1] & 0x10) {
-                st->codec->channels       = 2;
-                st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                st->codecpar->channels       = 2;
+                st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
             } else {
-                st->codec->channels       = 1;
-                st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                st->codecpar->channels       = 1;
+                st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
             }
-            st->codec->sample_rate   = cdxl->sample_rate;
+            st->codecpar->sample_rate   = cdxl->sample_rate;
             st->start_time           = 0;
             cdxl->audio_stream_index = st->index;
             avpriv_set_pts_info(st, 64, 1, cdxl->sample_rate);
@@ -128,11 +128,11 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type    = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_tag     = 0;
-            st->codec->codec_id      = AV_CODEC_ID_CDXL;
-            st->codec->width         = width;
-            st->codec->height        = height;
+            st->codecpar->codec_type    = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_tag     = 0;
+            st->codecpar->codec_id      = AV_CODEC_ID_CDXL;
+            st->codecpar->width         = width;
+            st->codecpar->height        = height;
             st->start_time           = 0;
             cdxl->video_stream_index = st->index;
             if (cdxl->framerate)

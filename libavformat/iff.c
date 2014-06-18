@@ -122,11 +122,11 @@ static int iff_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->channels = 1;
-    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->channels = 1;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
     avio_skip(pb, 8);
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
-    st->codec->codec_tag = avio_rl32(pb);
+    st->codecpar->codec_tag = avio_rl32(pb);
 
     while(!pb->eof_reached) {
         uint64_t orig_pos;
@@ -138,12 +138,12 @@ static int iff_read_header(AVFormatContext *s)
 
         switch(chunk_id) {
         case ID_VHDR:
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
 
             if (data_size < 14)
                 return AVERROR_INVALIDDATA;
             avio_skip(pb, 12);
-            st->codec->sample_rate = avio_rb16(pb);
+            st->codecpar->sample_rate = avio_rb16(pb);
             if (data_size >= 16) {
                 avio_skip(pb, 1);
                 compression        = avio_r8(pb);
@@ -159,11 +159,11 @@ static int iff_read_header(AVFormatContext *s)
             if (data_size < 4)
                 return AVERROR_INVALIDDATA;
             if (avio_rb32(pb) < 6) {
-                st->codec->channels       = 1;
-                st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                st->codecpar->channels       = 1;
+                st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
             } else {
-                st->codec->channels       = 2;
-                st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                st->codecpar->channels       = 2;
+                st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
             }
             break;
 
@@ -173,22 +173,22 @@ static int iff_read_header(AVFormatContext *s)
                         data_size);
                  return AVERROR_INVALIDDATA;
             }
-            st->codec->extradata_size = data_size;
-            st->codec->extradata      = av_malloc(data_size);
-            if (!st->codec->extradata)
+            st->codecpar->extradata_size = data_size;
+            st->codecpar->extradata      = av_malloc(data_size);
+            if (!st->codecpar->extradata)
                 return AVERROR(ENOMEM);
-            if (avio_read(pb, st->codec->extradata, data_size) < 0)
+            if (avio_read(pb, st->codecpar->extradata, data_size) < 0)
                 return AVERROR(EIO);
             break;
 
         case ID_BMHD:
-            st->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_type            = AVMEDIA_TYPE_VIDEO;
             if (data_size <= 8)
                 return AVERROR_INVALIDDATA;
-            st->codec->width                 = avio_rb16(pb);
-            st->codec->height                = avio_rb16(pb);
+            st->codecpar->width                 = avio_rb16(pb);
+            st->codecpar->height                = avio_rb16(pb);
             avio_skip(pb, 4); // x, y offset
-            st->codec->bits_per_coded_sample = avio_r8(pb);
+            st->codecpar->bits_per_coded_sample = avio_r8(pb);
             if (data_size >= 11) {
                 avio_skip(pb, 1); // masking
                 compression                  = avio_r8(pb);
@@ -229,37 +229,37 @@ static int iff_read_header(AVFormatContext *s)
 
     avio_seek(pb, iff->body_pos, SEEK_SET);
 
-    switch(st->codec->codec_type) {
+    switch(st->codecpar->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
+        avpriv_set_pts_info(st, 32, 1, st->codecpar->sample_rate);
 
         switch(compression) {
         case COMP_NONE:
-            st->codec->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
             break;
         case COMP_FIB:
-            st->codec->codec_id = AV_CODEC_ID_8SVX_FIB;
+            st->codecpar->codec_id = AV_CODEC_ID_8SVX_FIB;
             break;
         case COMP_EXP:
-            st->codec->codec_id = AV_CODEC_ID_8SVX_EXP;
+            st->codecpar->codec_id = AV_CODEC_ID_8SVX_EXP;
             break;
         default:
             av_log(s, AV_LOG_ERROR, "unknown compression method\n");
             return -1;
         }
 
-        st->codec->bits_per_coded_sample = 8;
-        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate * st->codec->bits_per_coded_sample;
-        st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+        st->codecpar->bits_per_coded_sample = 8;
+        st->codecpar->bit_rate    = st->codecpar->channels * st->codecpar->sample_rate * st->codecpar->bits_per_coded_sample;
+        st->codecpar->block_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample;
         break;
 
     case AVMEDIA_TYPE_VIDEO:
         switch (compression) {
         case BITMAP_RAW:
-            st->codec->codec_id = AV_CODEC_ID_IFF_ILBM;
+            st->codecpar->codec_id = AV_CODEC_ID_IFF_ILBM;
             break;
         case BITMAP_BYTERUN1:
-            st->codec->codec_id = AV_CODEC_ID_IFF_BYTERUN1;
+            st->codecpar->codec_id = AV_CODEC_ID_IFF_BYTERUN1;
             break;
         default:
             av_log(s, AV_LOG_ERROR, "unknown compression method\n");

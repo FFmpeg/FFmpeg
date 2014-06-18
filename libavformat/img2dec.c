@@ -184,8 +184,8 @@ static int img_read_header(AVFormatContext *s1)
     avpriv_set_pts_info(st, 60, framerate.den, framerate.num);
 
     if (width && height) {
-        st->codec->width  = width;
-        st->codec->height = height;
+        st->codecpar->width  = width;
+        st->codecpar->height = height;
     }
 
     if (!s->is_pipe) {
@@ -201,18 +201,18 @@ static int img_read_header(AVFormatContext *s1)
     }
 
     if (s1->video_codec_id) {
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = s1->video_codec_id;
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_id   = s1->video_codec_id;
     } else if (s1->audio_codec_id) {
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id   = s1->audio_codec_id;
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id   = s1->audio_codec_id;
     } else {
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = ff_guess_image2_codec(s->path);
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_id   = ff_guess_image2_codec(s->path);
     }
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
         pix_fmt != AV_PIX_FMT_NONE)
-        st->codec->pix_fmt = pix_fmt;
+        st->codecpar->format = pix_fmt;
 
     return 0;
 }
@@ -224,7 +224,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int i, res;
     int size[3]           = { 0 }, ret[3] = { 0 };
     AVIOContext *f[3]     = { NULL };
-    AVCodecContext *codec = s1->streams[0]->codec;
+    AVCodecParameters *par = s1->streams[0]->codecpar;
 
     if (!s->is_pipe) {
         /* loop over input */
@@ -247,13 +247,13 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             }
             size[i] = avio_size(f[i]);
 
-            if (codec->codec_id != AV_CODEC_ID_RAWVIDEO)
+            if (par->codec_id != AV_CODEC_ID_RAWVIDEO)
                 break;
             filename[strlen(filename) - 1] = 'U' + i;
         }
 
-        if (codec->codec_id == AV_CODEC_ID_RAWVIDEO && !codec->width)
-            infer_size(&codec->width, &codec->height, size[0]);
+        if (par->codec_id == AV_CODEC_ID_RAWVIDEO && !par->width)
+            infer_size(&par->width, &par->height, size[0]);
     } else {
         f[0] = s1->pb;
         if (f[0]->eof_reached)

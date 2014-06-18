@@ -91,11 +91,11 @@ static int read_header(AVFormatContext *s)
     if (!st)
         return -1;
     avpriv_set_pts_info(st, 64, 1, 100);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_SSA;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_SSA;
 
     header_remaining = INT_MAX;
-    dst[0] = &st->codec->extradata;
+    dst[0] = &st->codecpar->extradata;
     dst[1] = &ass->event_buffer;
     while (!pb->eof_reached) {
         uint8_t line[MAX_LINESIZE];
@@ -123,7 +123,7 @@ static int read_header(AVFormatContext *s)
         else
             header_remaining--;
     }
-    st->codec->extradata_size = pos[0];
+    st->codecpar->extradata_size = pos[0];
 
     if (ass->event_count >= UINT_MAX / sizeof(*ass->event))
         goto fail;
@@ -163,7 +163,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
     pkt->flags |= AV_PKT_FLAG_KEY;
-    pkt->pos    = p - ass->event_buffer + s->streams[0]->codec->extradata_size;
+    pkt->pos    = p - ass->event_buffer + s->streams[0]->codecpar->extradata_size;
     pkt->pts    = pkt->dts = get_pts(p);
     memcpy(pkt->data, p, pkt->size);
 

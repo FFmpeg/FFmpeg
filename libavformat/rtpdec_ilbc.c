@@ -31,10 +31,10 @@ static int ilbc_parse_fmtp(AVFormatContext *s,
         int mode = atoi(value);
         switch (mode) {
         case 20:
-            stream->codec->block_align = 38;
+            stream->codecpar->block_align = 38;
             break;
         case 30:
-            stream->codec->block_align = 50;
+            stream->codecpar->block_align = 50;
             break;
         default:
             av_log(s, AV_LOG_ERROR, "Unsupported iLBC mode %d\n", mode);
@@ -58,7 +58,7 @@ static int ilbc_parse_sdp_line(AVFormatContext *s, int st_index,
         int ret = ff_parse_fmtp(s, st, data, p, ilbc_parse_fmtp);
         if (ret < 0)
             return ret;
-        if (!st->codec->block_align) {
+        if (!st->codecpar->block_align) {
             av_log(s, AV_LOG_ERROR, "No iLBC mode set\n");
             return AVERROR(EINVAL);
         }

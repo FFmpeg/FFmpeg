@@ -617,7 +617,7 @@ static int hls_read_header(AVFormatContext *s)
             ff_program_add_stream_index(s, i, stream_offset + j);
             st->id = i;
             avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
-            avcodec_copy_context(st->codec, v->ctx->streams[j]->codec);
+            avcodec_parameters_copy(st->codecpar, v->ctx->streams[j]->codecpar);
             if (v->bandwidth)
                 av_dict_set(&st->metadata, "variant_bitrate", bitrate_str,
                                  0);

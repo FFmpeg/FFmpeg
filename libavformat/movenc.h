@@ -93,7 +93,7 @@ typedef struct MOVTrack {
     int         track_id;
     int         tag; ///< stsd fourcc
     AVStream        *st;
-    AVCodecContext *enc;
+    AVCodecParameters *par;
 
     int         vos_len;
     uint8_t     *vos_data;

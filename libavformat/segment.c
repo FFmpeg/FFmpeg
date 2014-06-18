@@ -75,7 +75,7 @@ static int segment_mux_init(AVFormatContext *s)
         AVStream *st;
         if (!(st = avformat_new_stream(oc, NULL)))
             return AVERROR(ENOMEM);
-        avcodec_copy_context(st->codec, s->streams[i]->codec);
+        avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
     }
@@ -215,7 +215,7 @@ static int seg_write_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++)
         seg->has_video +=
-            (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO);
+            (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO);
 
     if (seg->has_video > 1)
         av_log(s, AV_LOG_WARNING,
@@ -293,7 +293,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EINVAL);
 
     if (seg->has_video) {
-        can_split = st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+        can_split = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                     pkt->flags & AV_PKT_FLAG_KEY;
     }
 

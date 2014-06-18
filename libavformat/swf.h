@@ -81,7 +81,7 @@ typedef struct SWFContext {
     int frame_rate;
     int tag;
     AVFifoBuffer *audio_fifo;
-    AVCodecContext *audio_enc, *video_enc;
+    AVCodecParameters *audio_par, *video_par;
     AVStream *video_st;
 #if CONFIG_ZLIB
 #define ZBUF_SIZE 4096

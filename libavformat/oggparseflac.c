@@ -57,16 +57,16 @@ flac_header (AVFormatContext * s, int idx)
         if (get_bits_long(&gb, 32) != FLAC_STREAMINFO_SIZE)
             return -1;
 
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = AV_CODEC_ID_FLAC;
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id = AV_CODEC_ID_FLAC;
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
-        st->codec->extradata =
+        st->codecpar->extradata =
             av_malloc(FLAC_STREAMINFO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
-        memcpy(st->codec->extradata, streaminfo_start, FLAC_STREAMINFO_SIZE);
-        st->codec->extradata_size = FLAC_STREAMINFO_SIZE;
+        memcpy(st->codecpar->extradata, streaminfo_start, FLAC_STREAMINFO_SIZE);
+        st->codecpar->extradata_size = FLAC_STREAMINFO_SIZE;
 
-        samplerate = AV_RB24(st->codec->extradata + 10) >> 4;
+        samplerate = AV_RB24(st->codecpar->extradata + 10) >> 4;
         if (!samplerate)
             return AVERROR_INVALIDDATA;
 
@@ -82,8 +82,8 @@ static int
 old_flac_header (AVFormatContext * s, int idx)
 {
     AVStream *st = s->streams[idx];
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_FLAC;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_FLAC;
 
     return 0;
 }

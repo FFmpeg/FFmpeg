@@ -37,14 +37,14 @@ static int aiff_write_header(AVFormatContext *s)
 {
     AIFFOutputContext *aiff = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     uint64_t sample_rate;
     int aifc = 0;
 
     /* First verify if format is ok */
-    if (!enc->codec_tag)
+    if (!par->codec_tag)
         return -1;
-    if (enc->codec_tag != MKTAG('N','O','N','E'))
+    if (par->codec_tag != MKTAG('N','O','N','E'))
         aifc = 1;
 
     /* FORM AIFF header */
@@ -54,8 +54,8 @@ static int aiff_write_header(AVFormatContext *s)
     ffio_wfourcc(pb, aifc ? "AIFC" : "AIFF");
 
     if (aifc) { // compressed audio
-        enc->bits_per_coded_sample = 16;
-        if (!enc->block_align) {
+        par->bits_per_coded_sample = 16;
+        if (!par->block_align) {
             av_log(s, AV_LOG_ERROR, "block align not set\n");
             return -1;
         }
@@ -68,28 +68,28 @@ static int aiff_write_header(AVFormatContext *s)
     /* Common chunk */
     ffio_wfourcc(pb, "COMM");
     avio_wb32(pb, aifc ? 24 : 18); /* size */
-    avio_wb16(pb, enc->channels);  /* Number of channels */
+    avio_wb16(pb, par->channels);  /* Number of channels */
 
     aiff->frames = avio_tell(pb);
     avio_wb32(pb, 0);              /* Number of frames */
 
-    if (!enc->bits_per_coded_sample)
-        enc->bits_per_coded_sample = av_get_bits_per_sample(enc->codec_id);
-    if (!enc->bits_per_coded_sample) {
+    if (!par->bits_per_coded_sample)
+        par->bits_per_coded_sample = av_get_bits_per_sample(par->codec_id);
+    if (!par->bits_per_coded_sample) {
         av_log(s, AV_LOG_ERROR, "could not compute bits per sample\n");
         return -1;
     }
-    if (!enc->block_align)
-        enc->block_align = (enc->bits_per_coded_sample * enc->channels) >> 3;
+    if (!par->block_align)
+        par->block_align = (par->bits_per_coded_sample * par->channels) >> 3;
 
-    avio_wb16(pb, enc->bits_per_coded_sample); /* Sample size */
+    avio_wb16(pb, par->bits_per_coded_sample); /* Sample size */
 
-    sample_rate = av_double2int(enc->sample_rate);
+    sample_rate = av_double2int(par->sample_rate);
     avio_wb16(pb, (sample_rate >> 52) + (16383 - 1023));
     avio_wb64(pb, UINT64_C(1) << 63 | sample_rate << 11);
 
     if (aifc) {
-        avio_wl32(pb, enc->codec_tag);
+        avio_wl32(pb, par->codec_tag);
         avio_wb16(pb, 0);
     }
 
@@ -100,7 +100,7 @@ static int aiff_write_header(AVFormatContext *s)
     avio_wb32(pb, 0);                    /* Data offset */
     avio_wb32(pb, 0);                    /* Block-size (block align) */
 
-    avpriv_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
+    avpriv_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codecpar->sample_rate);
 
     /* Data is starting here */
     avio_flush(pb);
@@ -119,7 +119,7 @@ static int aiff_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AIFFOutputContext *aiff = s->priv_data;
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     /* Chunks sizes must be even */
     int64_t file_size, end_size;
@@ -136,7 +136,7 @@ static int aiff_write_trailer(AVFormatContext *s)
 
         /* Number of sample frames */
         avio_seek(pb, aiff->frames, SEEK_SET);
-        avio_wb32(pb, (file_size-aiff->ssnd-12)/enc->block_align);
+        avio_wb32(pb, (file_size - aiff->ssnd - 12) / par->block_align);
 
         /* Sound Data chunk size */
         avio_seek(pb, aiff->ssnd, SEEK_SET);

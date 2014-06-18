@@ -48,20 +48,20 @@ static int mxg_read_header(AVFormatContext *s)
     video_st = avformat_new_stream(s, NULL);
     if (!video_st)
         return AVERROR(ENOMEM);
-    video_st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    video_st->codec->codec_id = AV_CODEC_ID_MXPEG;
+    video_st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    video_st->codecpar->codec_id = AV_CODEC_ID_MXPEG;
     avpriv_set_pts_info(video_st, 64, 1, 1000000);
 
     audio_st = avformat_new_stream(s, NULL);
     if (!audio_st)
         return AVERROR(ENOMEM);
-    audio_st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    audio_st->codec->codec_id = AV_CODEC_ID_PCM_ALAW;
-    audio_st->codec->channels = 1;
-    audio_st->codec->channel_layout = AV_CH_LAYOUT_MONO;
-    audio_st->codec->sample_rate = 8000;
-    audio_st->codec->bits_per_coded_sample = 8;
-    audio_st->codec->block_align = 1;
+    audio_st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    audio_st->codecpar->codec_id = AV_CODEC_ID_PCM_ALAW;
+    audio_st->codecpar->channels = 1;
+    audio_st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    audio_st->codecpar->sample_rate = 8000;
+    audio_st->codecpar->bits_per_coded_sample = 8;
+    audio_st->codecpar->block_align = 1;
     avpriv_set_pts_info(audio_st, 64, 1, 1000000);
 
     mxg->soi_ptr = mxg->buffer_ptr = mxg->buffer = 0;

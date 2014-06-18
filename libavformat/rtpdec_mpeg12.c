@@ -34,7 +34,7 @@ static int mpeg_parse_packet(AVFormatContext *ctx, PayloadContext *data,
     h    = AV_RB32(buf);
     buf += 4;
     len -= 4;
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && h & (1 << 26)) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && h & (1 << 26)) {
         /* MPEG-2 */
         if (len <= 4)
             return AVERROR_INVALIDDATA;

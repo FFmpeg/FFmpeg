@@ -517,8 +517,8 @@ skip:
     if (!st)
         goto skip;
     st->id                = startcode;
-    st->codec->codec_type = type;
-    st->codec->codec_id   = codec_id;
+    st->codecpar->codec_type = type;
+    st->codecpar->codec_id   = codec_id;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
 
 found:

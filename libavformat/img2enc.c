@@ -58,7 +58,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     VideoMuxData *img = s->priv_data;
     AVIOContext *pb[3];
     char filename[1024];
-    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
+    AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
     int i;
 
     if (!img->is_pipe) {
@@ -77,7 +77,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(EIO);
             }
 
-            if (codec->codec_id != AV_CODEC_ID_RAWVIDEO)
+            if (par->codec_id != AV_CODEC_ID_RAWVIDEO)
                 break;
             filename[strlen(filename) - 1] = 'U' + i;
         }
@@ -85,8 +85,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         pb[0] = s->pb;
     }
 
-    if (codec->codec_id == AV_CODEC_ID_RAWVIDEO) {
-        int ysize = codec->width * codec->height;
+    if (par->codec_id == AV_CODEC_ID_RAWVIDEO) {
+        int ysize = par->width * par->height;
         avio_write(pb[0], pkt->data, ysize);
         avio_write(pb[1], pkt->data + ysize,                           (pkt->size - ysize) / 2);
         avio_write(pb[2], pkt->data + ysize + (pkt->size - ysize) / 2, (pkt->size - ysize) / 2);
@@ -95,8 +95,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         if (ff_guess_image2_codec(s->filename) == AV_CODEC_ID_JPEG2000) {
             AVStream *st = s->streams[0];
-            if (st->codec->extradata_size > 8 &&
-                AV_RL32(st->codec->extradata + 4) == MKTAG('j', 'p', '2', 'h')) {
+            if (st->codecpar->extradata_size > 8 &&
+                AV_RL32(st->codecpar->extradata + 4) == MKTAG('j', 'p', '2', 'h')) {
                 if (pkt->size < 8 ||
                     AV_RL32(pkt->data + 4) != MKTAG('j', 'p', '2', 'c'))
                     goto error;
@@ -108,9 +108,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 ffio_wfourcc(pb[0], "jp2 ");
                 avio_wb32(pb[0], 0);
                 ffio_wfourcc(pb[0], "jp2 ");
-                avio_write(pb[0], st->codec->extradata, st->codec->extradata_size);
+                avio_write(pb[0], st->codecpar->extradata, st->codecpar->extradata_size);
             } else if (pkt->size < 8 ||
-                       (!st->codec->extradata_size &&
+                       (!st->codecpar->extradata_size &&
                         AV_RL32(pkt->data + 4) != MKTAG('j', 'P', ' ', ' '))) { // signature
 error:
                 av_log(s, AV_LOG_ERROR, "malformed JPEG 2000 codestream\n");

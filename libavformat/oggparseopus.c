@@ -52,9 +52,9 @@ static int opus_header(AVFormatContext *avf, int idx)
         if (os->psize < OPUS_HEAD_SIZE || (AV_RL8(packet + 8) & 0xF0) != 0)
             return AVERROR_INVALIDDATA;
 
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id   = AV_CODEC_ID_OPUS;
-        st->codec->channels   = AV_RL8(packet + 9);
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id   = AV_CODEC_ID_OPUS;
+        st->codecpar->channels   = AV_RL8(packet + 9);
         priv->pre_skip        = AV_RL16(packet + 10);
 
         extradata = av_malloc(os->psize + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -62,10 +62,10 @@ static int opus_header(AVFormatContext *avf, int idx)
             return AVERROR(ENOMEM);
 
         memcpy(extradata, packet, os->psize);
-        st->codec->extradata      = extradata;
-        st->codec->extradata_size = os->psize;
+        st->codecpar->extradata      = extradata;
+        st->codecpar->extradata_size = os->psize;
 
-        st->codec->sample_rate = 48000;
+        st->codecpar->sample_rate = 48000;
         avpriv_set_pts_info(st, 64, 1, 48000);
         priv->need_comments = 1;
         return 1;

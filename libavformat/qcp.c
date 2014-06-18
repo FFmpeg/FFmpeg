@@ -95,12 +95,12 @@ static int qcp_read_header(AVFormatContext *s)
     avio_rb32(pb);                    // "RIFF"
     avio_skip(pb, 4 + 8 + 4 + 1 + 1);    // filesize + "QLCMfmt " + chunk-size + major-version + minor-version
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->channels   = 1;
-    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->channels   = 1;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
     avio_read(pb, buf, 16);
     if (is_qcelp_13k_guid(buf)) {
-        st->codec->codec_id = AV_CODEC_ID_QCELP;
+        st->codecpar->codec_id = AV_CODEC_ID_QCELP;
     } else if (!memcmp(buf, guid_evrc, 16)) {
         av_log(s, AV_LOG_ERROR, "EVRC codec is not supported.\n");
         return AVERROR_PATCHWELCOME;
@@ -112,11 +112,11 @@ static int qcp_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
     avio_skip(pb, 2 + 80); // codec-version + codec-name
-    st->codec->bit_rate = avio_rl16(pb);
+    st->codecpar->bit_rate = avio_rl16(pb);
 
     s->packet_size = avio_rl16(pb);
     avio_skip(pb, 2); // block-size
-    st->codec->sample_rate = avio_rl16(pb);
+    st->codecpar->sample_rate = avio_rl16(pb);
     avio_skip(pb, 2); // sample-size
 
     memset(c->rates_per_mode, -1, sizeof(c->rates_per_mode));

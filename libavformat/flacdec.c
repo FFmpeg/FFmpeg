@@ -36,8 +36,8 @@ static int flac_read_header(AVFormatContext *s)
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_FLAC;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_FLAC;
     st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
 
@@ -88,14 +88,14 @@ static int flac_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             }
             found_streaminfo = 1;
-            st->codec->extradata      = buffer;
-            st->codec->extradata_size = metadata_size;
+            st->codecpar->extradata      = buffer;
+            st->codecpar->extradata_size = metadata_size;
             buffer = NULL;
 
             /* get sample rate and sample count from STREAMINFO header;
              * other parameters will be extracted by the parser */
-            samplerate = AV_RB24(st->codec->extradata + 10) >> 4;
-            samples    = (AV_RB64(st->codec->extradata + 13) >> 24) & ((1ULL << 36) - 1);
+            samplerate = AV_RB24(st->codecpar->extradata + 10) >> 4;
+            samples    = (AV_RB64(st->codecpar->extradata + 13) >> 24) & ((1ULL << 36) - 1);
 
             /* set time base and duration */
             if (samplerate > 0) {
@@ -159,7 +159,7 @@ static int flac_read_header(AVFormatContext *s)
                         av_log(s, AV_LOG_WARNING,
                                "Invalid value of WAVEFORMATEXTENSIBLE_CHANNEL_MASK\n");
                     } else {
-                        st->codec->channel_layout = mask;
+                        st->codecpar->channel_layout = mask;
                         av_dict_set(&s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", NULL, 0);
                     }
                 }

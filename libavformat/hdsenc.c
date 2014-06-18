@@ -338,18 +338,18 @@ static int hds_write_header(AVFormatContext *s)
         AVFormatContext *ctx;
         AVStream *st = s->streams[i];
 
-        if (!st->codec->bit_rate) {
+        if (!st->codecpar->bit_rate) {
             av_log(s, AV_LOG_ERROR, "No bit rate set for stream %d\n", i);
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (os->has_video) {
                 c->nb_streams++;
                 os++;
             }
             os->has_video = 1;
-        } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (os->has_audio) {
                 c->nb_streams++;
                 os++;
@@ -360,7 +360,7 @@ static int hds_write_header(AVFormatContext *s)
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        os->bitrate += s->streams[i]->codec->bit_rate;
+        os->bitrate += s->streams[i]->codecpar->bit_rate;
 
         if (!os->ctx) {
             os->first_stream = i;
@@ -389,8 +389,8 @@ static int hds_write_header(AVFormatContext *s)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        avcodec_copy_context(st->codec, s->streams[i]->codec);
-        st->codec->codec_tag = 0;
+        avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
+        st->codecpar->codec_tag = 0;
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
     }
@@ -517,7 +517,7 @@ static int hds_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->first_dts == AV_NOPTS_VALUE)
         st->first_dts = pkt->dts;
 
-    if ((!os->has_video || st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
+    if ((!os->has_video || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
         av_compare_ts(pkt->dts - st->first_dts, st->time_base,
                       end_dts, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY && os->packets_written) {

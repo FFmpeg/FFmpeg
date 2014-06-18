@@ -180,7 +180,7 @@ static int sap_read_header(AVFormatContext *s)
             goto fail;
         }
         st->id = i;
-        avcodec_copy_context(st->codec, sap->sdp_ctx->streams[i]->codec);
+        avcodec_parameters_copy(st->codecpar, sap->sdp_ctx->streams[i]->codecpar);
         st->time_base = sap->sdp_ctx->streams[i]->time_base;
     }
 
@@ -229,7 +229,7 @@ static int sap_fetch_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(ENOMEM);
             }
             st->id = i;
-            avcodec_copy_context(st->codec, sap->sdp_ctx->streams[i]->codec);
+            avcodec_parameters_copy(st->codecpar, sap->sdp_ctx->streams[i]->codecpar);
             st->time_base = sap->sdp_ctx->streams[i]->time_base;
         }
     }

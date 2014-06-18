@@ -87,22 +87,22 @@ static int ape_tag_read_field(AVFormatContext *s)
             }
 
             st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id   = id;
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_id   = id;
 
             st->attached_pic              = pkt;
             st->attached_pic.stream_index = st->index;
             st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
         } else {
-            st->codec->extradata = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!st->codec->extradata)
+            st->codecpar->extradata = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!st->codecpar->extradata)
                 return AVERROR(ENOMEM);
-            if (avio_read(pb, st->codec->extradata, size) != size) {
-                av_freep(&st->codec->extradata);
+            if (avio_read(pb, st->codecpar->extradata, size) != size) {
+                av_freep(&st->codecpar->extradata);
                 return AVERROR(EIO);
             }
-            st->codec->extradata_size = size;
-            st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
+            st->codecpar->extradata_size = size;
+            st->codecpar->codec_type = AVMEDIA_TYPE_ATTACHMENT;
         }
     } else {
         value = av_malloc(size+1);

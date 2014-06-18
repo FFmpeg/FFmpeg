@@ -137,8 +137,8 @@ static int read_header(AVFormatContext *s)
             if (!st)
                 return -1;
 
-            st->codec->codec_type = AVMEDIA_TYPE_DATA;
-            st->codec->codec_id   = AV_CODEC_ID_FFMETADATA;
+            st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+            st->codecpar->codec_id   = AV_CODEC_ID_FFMETADATA;
 
             m = &st->metadata;
         } else if (!memcmp(line, ID_CHAPTER, strlen(ID_CHAPTER))) {

@@ -24,7 +24,7 @@ int
 ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 {
     VocDecContext *voc = s->priv_data;
-    AVCodecContext *dec = st->codec;
+    AVCodecParameters *par = st->codecpar;
     AVIOContext *pb = s->pb;
     VocType type;
     int size, tmp_codec=-1;
@@ -45,13 +45,13 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 
         switch (type) {
         case VOC_TYPE_VOICE_DATA:
-            if (!dec->sample_rate) {
-                dec->sample_rate = 1000000 / (256 - avio_r8(pb));
+            if (!par->sample_rate) {
+                par->sample_rate = 1000000 / (256 - avio_r8(pb));
                 if (sample_rate)
-                    dec->sample_rate = sample_rate;
-                avpriv_set_pts_info(st, 64, 1, dec->sample_rate);
-                dec->channels = channels;
-                dec->bits_per_coded_sample = av_get_bits_per_sample(dec->codec_id);
+                    par->sample_rate = sample_rate;
+                avpriv_set_pts_info(st, 64, 1, par->sample_rate);
+                par->channels = channels;
+                par->bits_per_coded_sample = av_get_bits_per_sample(par->codec_id);
             } else
                 avio_skip(pb, 1);
             tmp_codec = avio_r8(pb);
@@ -73,11 +73,11 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             break;
 
         case VOC_TYPE_NEW_VOICE_DATA:
-            if (!dec->sample_rate) {
-                dec->sample_rate = avio_rl32(pb);
-                avpriv_set_pts_info(st, 64, 1, dec->sample_rate);
-                dec->bits_per_coded_sample = avio_r8(pb);
-                dec->channels = avio_r8(pb);
+            if (!par->sample_rate) {
+                par->sample_rate = avio_rl32(pb);
+                avpriv_set_pts_info(st, 64, 1, par->sample_rate);
+                par->bits_per_coded_sample = avio_r8(pb);
+                par->channels = avio_r8(pb);
             } else
                 avio_skip(pb, 6);
             tmp_codec = avio_rl16(pb);
@@ -96,11 +96,11 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 
     if (tmp_codec >= 0) {
         tmp_codec = ff_codec_get_id(ff_voc_codec_tags, tmp_codec);
-        if (dec->codec_id == AV_CODEC_ID_NONE)
-            dec->codec_id = tmp_codec;
-        else if (dec->codec_id != tmp_codec)
+        if (par->codec_id == AV_CODEC_ID_NONE)
+            par->codec_id = tmp_codec;
+        else if (par->codec_id != tmp_codec)
             av_log(s, AV_LOG_WARNING, "Ignoring mid-stream change in audio codec\n");
-        if (dec->codec_id == AV_CODEC_ID_NONE) {
+        if (par->codec_id == AV_CODEC_ID_NONE) {
             if (s->audio_codec_id == AV_CODEC_ID_NONE) {
                 av_log(s, AV_LOG_ERROR, "unknown codec tag\n");
                 return AVERROR(EINVAL);
@@ -109,7 +109,7 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
         }
     }
 
-    dec->bit_rate = dec->sample_rate * dec->bits_per_coded_sample;
+    par->bit_rate = par->sample_rate * par->bits_per_coded_sample;
 
     if (max_size <= 0)
         max_size = 2048;

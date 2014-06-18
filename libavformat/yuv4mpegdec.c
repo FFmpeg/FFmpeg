@@ -186,17 +186,17 @@ static int yuv4_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->width  = width;
-    st->codec->height = height;
+    st->codecpar->width  = width;
+    st->codecpar->height = height;
     av_reduce(&raten, &rated, raten, rated, (1UL << 31) - 1);
     avpriv_set_pts_info(st, 64, rated, raten);
-    st->avg_frame_rate                = av_inv_q(st->time_base);
-    st->codec->pix_fmt                = pix_fmt;
-    st->codec->codec_type             = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id               = AV_CODEC_ID_RAWVIDEO;
-    st->sample_aspect_ratio           = (AVRational){ aspectn, aspectd };
-    st->codec->chroma_sample_location = chroma_sample_location;
-    st->codec->field_order            = field_order;
+    st->avg_frame_rate            = av_inv_q(st->time_base);
+    st->codecpar->format          = pix_fmt;
+    st->codecpar->codec_type      = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id        = AV_CODEC_ID_RAWVIDEO;
+    st->sample_aspect_ratio       = (AVRational){ aspectn, aspectd };
+    st->codecpar->chroma_location = chroma_sample_location;
+    st->codecpar->field_order     = field_order;
 
     return 0;
 }
@@ -225,10 +225,10 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (strncmp(header, Y4M_FRAME_MAGIC, strlen(Y4M_FRAME_MAGIC)))
         return AVERROR_INVALIDDATA;
 
-    width  = st->codec->width;
-    height = st->codec->height;
+    width  = st->codecpar->width;
+    height = st->codecpar->height;
 
-    packet_size = av_image_get_buffer_size(st->codec->pix_fmt,
+    packet_size = av_image_get_buffer_size(st->codecpar->format,
                                            width, height, 1);
     if (packet_size < 0)
         return packet_size;

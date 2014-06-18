@@ -58,16 +58,16 @@ static int vc1t_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_WMV3;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_WMV3;
 
-    st->codec->extradata = av_malloc(VC1_EXTRADATA_SIZE);
-    if (!st->codec->extradata)
+    st->codecpar->extradata = av_malloc(VC1_EXTRADATA_SIZE);
+    if (!st->codecpar->extradata)
         return AVERROR(ENOMEM);
-    st->codec->extradata_size = VC1_EXTRADATA_SIZE;
-    avio_read(pb, st->codec->extradata, VC1_EXTRADATA_SIZE);
-    st->codec->height = avio_rl32(pb);
-    st->codec->width = avio_rl32(pb);
+    st->codecpar->extradata_size = VC1_EXTRADATA_SIZE;
+    avio_read(pb, st->codecpar->extradata, VC1_EXTRADATA_SIZE);
+    st->codecpar->height = avio_rl32(pb);
+    st->codecpar->width = avio_rl32(pb);
     if(avio_rl32(pb) != 0xC)
         return AVERROR_INVALIDDATA;
     avio_skip(pb, 8);

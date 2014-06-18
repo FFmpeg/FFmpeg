@@ -102,12 +102,12 @@ static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
     if (!*st)
         return AVERROR(ENOMEM);
 
-    ret = ff_get_wav_header(s, pb, (*st)->codec, size);
+    ret = ff_get_wav_header(s, pb, (*st)->codecpar, size);
     if (ret < 0)
         return ret;
     (*st)->need_parsing = AVSTREAM_PARSE_FULL;
 
-    avpriv_set_pts_info(*st, 64, 1, (*st)->codec->sample_rate);
+    avpriv_set_pts_info(*st, 64, 1, (*st)->codecpar->sample_rate);
 
     return 0;
 }
@@ -328,11 +328,11 @@ break_loop:
 
     avio_seek(pb, data_ofs, SEEK_SET);
 
-    if (!sample_count && st->codec->channels &&
-        av_get_bits_per_sample(st->codec->codec_id))
+    if (!sample_count && st->codecpar->channels &&
+        av_get_bits_per_sample(st->codecpar->codec_id))
         sample_count = (data_size << 3) /
-                       (st->codec->channels *
-                        (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
+                       (st->codecpar->channels *
+                        (uint64_t)av_get_bits_per_sample(st->codecpar->codec_id));
     if (sample_count)
         st->duration = sample_count;
 
@@ -391,10 +391,10 @@ static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     size = MAX_SIZE;
-    if (st->codec->block_align > 1) {
-        if (size < st->codec->block_align)
-            size = st->codec->block_align;
-        size = (size / st->codec->block_align) * st->codec->block_align;
+    if (st->codecpar->block_align > 1) {
+        if (size < st->codecpar->block_align)
+            size = st->codecpar->block_align;
+        size = (size / st->codecpar->block_align) * st->codecpar->block_align;
     }
     size = FFMIN(size, left);
     ret  = av_get_packet(s->pb, pkt, size);
@@ -411,7 +411,7 @@ static int wav_read_seek(AVFormatContext *s,
     AVStream *st;
 
     st = s->streams[0];
-    switch (st->codec->codec_id) {
+    switch (st->codecpar->codec_id) {
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MP3:
     case AV_CODEC_ID_AC3:
@@ -498,14 +498,14 @@ static int w64_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     /* subtract chunk header size - normal wav file doesn't count it */
-    ret = ff_get_wav_header(s, pb, st->codec, size - 24);
+    ret = ff_get_wav_header(s, pb, st->codecpar, size - 24);
     if (ret < 0)
         return ret;
     avio_skip(pb, FFALIGN(size, INT64_C(8)) - size);
 
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     size = find_guid(pb, guid_data);
     if (size < 0) {

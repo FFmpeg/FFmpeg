@@ -518,12 +518,12 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
 
     rtp_init_statistics(&s->statistics, 0);
     if (st) {
-        switch (st->codec->codec_id) {
+        switch (st->codecpar->codec_id) {
         case AV_CODEC_ID_ADPCM_G722:
             /* According to RFC 3551, the stream clock rate is 8000
              * even if the sample rate is 16000. */
-            if (st->codec->sample_rate == 8000)
-                st->codec->sample_rate = 16000;
+            if (st->codecpar->sample_rate == 8000)
+                st->codecpar->sample_rate = 16000;
             break;
         default:
             break;

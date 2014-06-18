@@ -46,9 +46,9 @@ static int rawvideo_read_header(AVFormatContext *ctx)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
 
-    st->codec->codec_id = ctx->iformat->raw_codec_id;
+    st->codecpar->codec_id = ctx->iformat->raw_codec_id;
 
     if (s->video_size &&
         (ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
@@ -70,9 +70,9 @@ static int rawvideo_read_header(AVFormatContext *ctx)
 
     avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
 
-    st->codec->width  = width;
-    st->codec->height = height;
-    st->codec->pix_fmt = pix_fmt;
+    st->codecpar->width  = width;
+    st->codecpar->height = height;
+    st->codecpar->format = pix_fmt;
 
     return 0;
 }
@@ -83,10 +83,10 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     int packet_size, ret, width, height;
     AVStream *st = s->streams[0];
 
-    width = st->codec->width;
-    height = st->codec->height;
+    width = st->codecpar->width;
+    height = st->codecpar->height;
 
-    packet_size = av_image_get_buffer_size(st->codec->pix_fmt, width, height, 1);
+    packet_size = av_image_get_buffer_size(st->codecpar->format, width, height, 1);
     if (packet_size < 0)
         return -1;
 

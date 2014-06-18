@@ -149,14 +149,14 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
 
 static void get_private_data(OutputStream *os)
 {
-    AVCodecContext *codec = os->ctx->streams[0]->codec;
-    uint8_t *ptr = codec->extradata;
-    int size = codec->extradata_size;
+    AVCodecParameters *par = os->ctx->streams[0]->codecpar;
+    uint8_t *ptr = par->extradata;
+    int size = par->extradata_size;
     int i;
-    if (codec->codec_id == AV_CODEC_ID_H264) {
+    if (par->codec_id == AV_CODEC_ID_H264) {
         ff_avc_write_annexb_extradata(ptr, &ptr, &size);
         if (!ptr)
-            ptr = codec->extradata;
+            ptr = par->extradata;
     }
     if (!ptr)
         return;
@@ -166,7 +166,7 @@ static void get_private_data(OutputStream *os)
     for (i = 0; i < size; i++)
         snprintf(&os->private_str[2*i], 3, "%02x", ptr[i]);
 fail:
-    if (ptr != codec->extradata)
+    if (ptr != par->extradata)
         av_free(ptr);
 }
 
@@ -241,7 +241,7 @@ static int write_manifest(AVFormatContext *s, int final)
             Fragment *last = os->fragments[os->nb_fragments - 1];
             duration = last->start_time + last->duration;
         }
-        if (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             video_chunks = os->nb_fragments;
             video_streams++;
         } else {
@@ -266,10 +266,10 @@ static int write_manifest(AVFormatContext *s, int final)
         avio_printf(out, "<StreamIndex Type=\"video\" QualityLevels=\"%d\" Chunks=\"%d\" Url=\"QualityLevels({bitrate})/Fragments(video={start time})\">\n", video_streams, video_chunks);
         for (i = 0; i < s->nb_streams; i++) {
             OutputStream *os = &c->streams[i];
-            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_VIDEO)
+            if (s->streams[i]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
                 continue;
             last = i;
-            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%d\" FourCC=\"%s\" MaxWidth=\"%d\" MaxHeight=\"%d\" CodecPrivateData=\"%s\" />\n", index, s->streams[i]->codec->bit_rate, os->fourcc, s->streams[i]->codec->width, s->streams[i]->codec->height, os->private_str);
+            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%d\" FourCC=\"%s\" MaxWidth=\"%d\" MaxHeight=\"%d\" CodecPrivateData=\"%s\" />\n", index, s->streams[i]->codecpar->bit_rate, os->fourcc, s->streams[i]->codecpar->width, s->streams[i]->codecpar->height, os->private_str);
             index++;
         }
         output_chunk_list(&c->streams[last], out, final, c->lookahead_count, c->window_size);
@@ -280,10 +280,10 @@ static int write_manifest(AVFormatContext *s, int final)
         avio_printf(out, "<StreamIndex Type=\"audio\" QualityLevels=\"%d\" Chunks=\"%d\" Url=\"QualityLevels({bitrate})/Fragments(audio={start time})\">\n", audio_streams, audio_chunks);
         for (i = 0; i < s->nb_streams; i++) {
             OutputStream *os = &c->streams[i];
-            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
+            if (s->streams[i]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
                 continue;
             last = i;
-            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%d\" FourCC=\"%s\" SamplingRate=\"%d\" Channels=\"%d\" BitsPerSample=\"16\" PacketSize=\"%d\" AudioTag=\"%d\" CodecPrivateData=\"%s\" />\n", index, s->streams[i]->codec->bit_rate, os->fourcc, s->streams[i]->codec->sample_rate, s->streams[i]->codec->channels, os->packet_size, os->audio_tag, os->private_str);
+            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%d\" FourCC=\"%s\" SamplingRate=\"%d\" Channels=\"%d\" BitsPerSample=\"16\" PacketSize=\"%d\" AudioTag=\"%d\" CodecPrivateData=\"%s\" />\n", index, s->streams[i]->codecpar->bit_rate, os->fourcc, s->streams[i]->codecpar->sample_rate, s->streams[i]->codecpar->channels, os->packet_size, os->audio_tag, os->private_str);
             index++;
         }
         output_chunk_list(&c->streams[last], out, final, c->lookahead_count, c->window_size);
@@ -331,12 +331,12 @@ static int ism_write_header(AVFormatContext *s)
         AVDictionary *opts = NULL;
         char buf[10];
 
-        if (!s->streams[i]->codec->bit_rate) {
+        if (!s->streams[i]->codecpar->bit_rate) {
             av_log(s, AV_LOG_ERROR, "No bit rate set for stream %d\n", i);
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        snprintf(os->dirname, sizeof(os->dirname), "%s/QualityLevels(%d)", s->filename, s->streams[i]->codec->bit_rate);
+        snprintf(os->dirname, sizeof(os->dirname), "%s/QualityLevels(%d)", s->filename, s->streams[i]->codecpar->bit_rate);
         if (mkdir(os->dirname, 0777) == -1 && errno != EEXIST) {
             ret = AVERROR(errno);
             goto fail;
@@ -357,7 +357,7 @@ static int ism_write_header(AVFormatContext *s)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        avcodec_copy_context(st->codec, s->streams[i]->codec);
+        avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
 
@@ -377,12 +377,12 @@ static int ism_write_header(AVFormatContext *s)
         avio_flush(ctx->pb);
         av_dict_free(&opts);
         s->streams[i]->time_base = st->time_base;
-        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             c->has_video = 1;
             os->stream_type_tag = "video";
-            if (st->codec->codec_id == AV_CODEC_ID_H264) {
+            if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
                 os->fourcc = "H264";
-            } else if (st->codec->codec_id == AV_CODEC_ID_VC1) {
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_VC1) {
                 os->fourcc = "WVC1";
             } else {
                 av_log(s, AV_LOG_ERROR, "Unsupported video codec\n");
@@ -392,10 +392,10 @@ static int ism_write_header(AVFormatContext *s)
         } else {
             c->has_audio = 1;
             os->stream_type_tag = "audio";
-            if (st->codec->codec_id == AV_CODEC_ID_AAC) {
+            if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
                 os->fourcc = "AACL";
                 os->audio_tag = 0xff;
-            } else if (st->codec->codec_id == AV_CODEC_ID_WMAPRO) {
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_WMAPRO) {
                 os->fourcc = "WMAP";
                 os->audio_tag = 0x0162;
             } else {
@@ -403,7 +403,7 @@ static int ism_write_header(AVFormatContext *s)
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            os->packet_size = st->codec->block_align ? st->codec->block_align : 4;
+            os->packet_size = st->codecpar->block_align ? st->codecpar->block_align : 4;
         }
         get_private_data(os);
     }
@@ -603,7 +603,7 @@ static int ism_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->first_dts == AV_NOPTS_VALUE)
         st->first_dts = pkt->dts;
 
-    if ((!c->has_video || st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
+    if ((!c->has_video || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
         av_compare_ts(pkt->dts - st->first_dts, st->time_base,
                       end_dts, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY && os->packets_written) {

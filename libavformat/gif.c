@@ -264,7 +264,7 @@ static int gif_write_header(AVFormatContext *s)
 {
     GIFContext *gif = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVCodecContext *enc, *video_enc;
+    AVCodecParameters *par, *video_par;
     int i, width, height /*, rate*/;
 
 /* XXX: do we reject audio streams or just ignore them ?
@@ -274,23 +274,23 @@ static int gif_write_header(AVFormatContext *s)
     gif->time      = 0;
     gif->file_time = 0;
 
-    video_enc = NULL;
+    video_par = NULL;
     for (i = 0; i < s->nb_streams; i++) {
-        enc = s->streams[i]->codec;
-        if (enc->codec_type != AVMEDIA_TYPE_AUDIO)
-            video_enc = enc;
+        par = s->streams[i]->codecpar;
+        if (par->codec_type != AVMEDIA_TYPE_AUDIO)
+            video_par = par;
     }
 
-    if (!video_enc) {
+    if (!video_par) {
         av_free(gif);
         return -1;
     } else {
-        width  = video_enc->width;
-        height = video_enc->height;
+        width  = video_par->width;
+        height = video_par->height;
 //        rate = video_enc->time_base.den;
     }
 
-    if (video_enc->pix_fmt != AV_PIX_FMT_RGB24) {
+    if (video_par->format != AV_PIX_FMT_RGB24) {
         av_log(s, AV_LOG_ERROR,
                "ERROR: gif only handles the rgb24 pixel format. Use -pix_fmt rgb24.\n");
         return AVERROR(EIO);
@@ -302,9 +302,10 @@ static int gif_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int gif_write_video(AVFormatContext *s, AVCodecContext *enc,
+static int gif_write_video(AVFormatContext *s, AVStream *st,
                            const uint8_t *buf, int size)
 {
+    AVCodecParameters *par = st->codecpar;
     AVIOContext *pb = s->pb;
     int jiffies;
 
@@ -319,26 +320,26 @@ static int gif_write_video(AVFormatContext *s, AVCodecContext *enc,
     /* XXX: should use delay, in order to be more accurate */
     /* instead of using the same rounded value each time */
     /* XXX: don't even remember if I really use it for now */
-    jiffies = (70 * enc->time_base.num / enc->time_base.den) - 1;
+    jiffies = (70 * st->time_base.num / st->time_base.den) - 1;
 
     avio_wl16(pb, jiffies);
 
     avio_w8(pb, 0x1f); /* transparent color index */
     avio_w8(pb, 0x00);
 
-    gif_image_write_image(pb, 0, 0, enc->width, enc->height,
-                          buf, enc->width * 3, AV_PIX_FMT_RGB24);
+    gif_image_write_image(pb, 0, 0, par->width, par->height,
+                          buf, par->width * 3, AV_PIX_FMT_RGB24);
 
     return 0;
 }
 
 static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
-    if (codec->codec_type == AVMEDIA_TYPE_AUDIO)
+    AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
+    if (par->codec_type == AVMEDIA_TYPE_AUDIO)
         return 0; /* just ignore audio */
     else
-        return gif_write_video(s, codec, pkt->data, pkt->size);
+        return gif_write_video(s, s->streams[pkt->stream_index], pkt->data, pkt->size);
 }
 
 static int gif_write_trailer(AVFormatContext *s)

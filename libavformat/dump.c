@@ -400,8 +400,22 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     int flags = (is_output ? ic->oformat->flags : ic->iformat->flags);
     AVStream *st = ic->streams[i];
     AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
+    AVCodecContext *avctx;
+    int ret;
 
-    avcodec_string(buf, sizeof(buf), st->codec, is_output);
+    avctx = avcodec_alloc_context3(NULL);
+    if (!avctx)
+        return;
+
+    ret = avcodec_parameters_to_context(avctx, st->codecpar);
+    if (ret < 0) {
+        avcodec_free_context(&avctx);
+        return;
+    }
+
+    avcodec_string(buf, sizeof(buf), avctx, is_output);
+    avcodec_free_context(&avctx);
+
     av_log(NULL, AV_LOG_INFO, "    Stream #%d:%d", index, i);
 
     /* the pid is an important information, so we display it */
@@ -414,31 +428,27 @@ static void dump_stream_format(AVFormatContext *ic, int i,
            st->time_base.num, st->time_base.den);
     av_log(NULL, AV_LOG_INFO, ": %s", buf);
 
-    if (st->sample_aspect_ratio.num && // default
-        av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)) {
+    if (st->sample_aspect_ratio.num) {
         AVRational display_aspect_ratio;
         av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
-                  st->codec->width  * st->sample_aspect_ratio.num,
-                  st->codec->height * st->sample_aspect_ratio.den,
+                  st->codecpar->width  * st->sample_aspect_ratio.num,
+                  st->codecpar->height * st->sample_aspect_ratio.den,
                   1024 * 1024);
         av_log(NULL, AV_LOG_INFO, ", PAR %d:%d DAR %d:%d",
                st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
                display_aspect_ratio.num, display_aspect_ratio.den);
     }
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         int fps = st->avg_frame_rate.den && st->avg_frame_rate.num;
         int tbn = st->time_base.den && st->time_base.num;
-        int tbc = st->codec->time_base.den && st->codec->time_base.num;
 
-        if (fps || tbn || tbc)
+        if (fps || tbn)
             av_log(NULL, AV_LOG_INFO, "\n      ");
         if (fps)
-            print_fps(av_q2d(st->avg_frame_rate), tbn || tbc ? "fps, " : "fps");
+            print_fps(av_q2d(st->avg_frame_rate), tbn ? "fps, " : "fps");
         if (tbn)
-            print_fps(1 / av_q2d(st->time_base), tbc ? "tbn, " : "tbn");
-        if (tbc)
-            print_fps(1 / av_q2d(st->codec->time_base), "tbc");
+            print_fps(1 / av_q2d(st->time_base), "tbn");
     }
 
     if (st->disposition & AV_DISPOSITION_DEFAULT)
