@@ -422,7 +422,10 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
         return 1;
 
     sub->start_display_time = 0;
-    sub->end_display_time   = 20000;
+    // There is no explicit end time for PGS subtitles.  The end time
+    // is defined by the start of the next sub which may contain no
+    // objects (i.e. clears the previous sub)
+    sub->end_display_time   = UINT32_MAX;
     sub->format             = 0;
 
     sub->num_rects = ctx->presentation.object_count;
