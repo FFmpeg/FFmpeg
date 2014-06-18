@@ -722,7 +722,7 @@ static int nut_write_header(AVFormatContext *s)
         AVStream *st = s->streams[i];
         int ssize;
         AVRational time_base;
-        ff_parse_specific_params(st->codec, &time_base.den, &ssize, &time_base.num);
+        ff_parse_specific_params(st, &time_base.den, &ssize, &time_base.num);
 
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->sample_rate) {
             time_base = (AVRational) {1, st->codec->sample_rate};

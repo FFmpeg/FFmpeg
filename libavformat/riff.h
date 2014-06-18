@@ -67,7 +67,7 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size);
 extern const AVCodecTag ff_codec_bmp_tags[]; // exposed through avformat_get_riff_video_tags()
 extern const AVCodecTag ff_codec_wav_tags[];
 
-void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale);
+void ff_parse_specific_params(AVStream *st, int *au_rate, int *au_ssize, int *au_scale);
 
 int ff_read_riff_info(AVFormatContext *s, int64_t size);
 
