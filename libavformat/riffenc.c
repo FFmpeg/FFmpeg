@@ -255,8 +255,8 @@ void ff_parse_specific_params(AVStream *st, int *au_rate,
     } else if (codec->codec_type == AVMEDIA_TYPE_VIDEO ||
                codec->codec_type == AVMEDIA_TYPE_DATA ||
                codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        *au_scale = codec->time_base.num;
-        *au_rate  = codec->time_base.den;
+        *au_scale = st->time_base.num;
+        *au_rate  = st->time_base.den;
     } else {
         *au_scale = codec->block_align ? codec->block_align * 8 : 8;
         *au_rate  = codec->bit_rate ? codec->bit_rate :

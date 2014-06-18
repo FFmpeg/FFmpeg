@@ -252,6 +252,25 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
         st    = s->streams[i];
         codec = st->codec;
 
+#if FF_API_LAVF_CODEC_TB
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (!st->time_base.num && codec->time_base.num) {
+            av_log(s, AV_LOG_WARNING, "Using AVStream.codec.time_base as a "
+                   "timebase hint to the muxer is deprecated. Set "
+                   "AVStream.time_base instead.\n");
+            avpriv_set_pts_info(st, 64, codec->time_base.num, codec->time_base.den);
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+        if (!st->time_base.num) {
+            /* fall back on the default timebase values */
+            if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->sample_rate)
+                avpriv_set_pts_info(st, 64, 1, codec->sample_rate);
+            else
+                avpriv_set_pts_info(st, 33, 1, 90000);
+        }
+
         switch (codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             if (codec->sample_rate <= 0) {
@@ -264,13 +283,6 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
                                      av_get_bits_per_sample(codec->codec_id) >> 3;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            if (codec->time_base.num <= 0 ||
-                codec->time_base.den <= 0) { //FIXME audio too?
-                av_log(s, AV_LOG_ERROR, "time base not set\n");
-                ret = AVERROR(EINVAL);
-                goto fail;
-            }
-
             if ((codec->width <= 0 || codec->height <= 0) &&
                 !(of->flags & AVFMT_NODIMENSIONS)) {
                 av_log(s, AV_LOG_ERROR, "dimensions not set\n");
