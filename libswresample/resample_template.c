@@ -126,8 +126,6 @@ int RENAME(swri_resample_common)(ResampleContext *c,
     int dst_index;
     int index= c->index;
     int frac= c->frac;
-    int dst_incr_frac= c->dst_incr % c->src_incr;
-    int dst_incr=      c->dst_incr / c->src_incr;
     int sample_index = index >> c->phase_shift;
 
     index &= c->phase_mask;
@@ -145,8 +143,8 @@ int RENAME(swri_resample_common)(ResampleContext *c,
         OUT(dst[dst_index], val);
 #endif
 
-        frac += dst_incr_frac;
-        index += dst_incr;
+        frac  += c->dst_incr_mod;
+        index += c->dst_incr_div;
         if (frac >= c->src_incr) {
             frac -= c->src_incr;
             index++;

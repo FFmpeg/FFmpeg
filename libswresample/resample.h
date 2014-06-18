@@ -39,6 +39,8 @@ typedef struct ResampleContext {
     int filter_alloc;
     int ideal_dst_incr;
     int dst_incr;
+    int dst_incr_div;
+    int dst_incr_mod;
     int index;
     int frac;
     int src_incr;

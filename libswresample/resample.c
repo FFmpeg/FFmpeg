@@ -231,7 +231,9 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
     c->compensation_distance= 0;
     if(!av_reduce(&c->src_incr, &c->dst_incr, out_rate, in_rate * (int64_t)phase_count, INT32_MAX/2))
         goto error;
-    c->ideal_dst_incr= c->dst_incr;
+    c->ideal_dst_incr = c->dst_incr;
+    c->dst_incr_div   = c->dst_incr / c->src_incr;
+    c->dst_incr_mod   = c->dst_incr % c->src_incr;
 
     c->index= -phase_count*((c->filter_length-1)/2);
     c->frac= 0;
@@ -258,6 +260,10 @@ static int set_compensation(ResampleContext *c, int sample_delta, int compensati
         c->dst_incr = c->ideal_dst_incr - c->ideal_dst_incr * (int64_t)sample_delta / compensation_distance;
     else
         c->dst_incr = c->ideal_dst_incr;
+
+    c->dst_incr_div   = c->dst_incr / c->src_incr;
+    c->dst_incr_mod   = c->dst_incr % c->src_incr;
+
     return 0;
 }
 
@@ -270,8 +276,6 @@ static int swri_resample(ResampleContext *c,
     if (c->filter_length == 1 && c->phase_shift == 0) {
         int index= c->index;
         int frac= c->frac;
-        int dst_incr_frac= c->dst_incr % c->src_incr;
-        int dst_incr=      c->dst_incr / c->src_incr;
         int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*index;
         int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
         int new_size = (src_size * (int64_t)c->src_incr - frac + c->dst_incr - 1) / c->dst_incr;
@@ -279,12 +283,12 @@ static int swri_resample(ResampleContext *c,
         dst_size= FFMIN(dst_size, new_size);
         c->dsp.resample_one[fn_idx](dst, src, dst_size, index2, incr);
 
-        index += dst_size * dst_incr;
-        index += (frac + dst_size * (int64_t)dst_incr_frac) / c->src_incr;
+        index += dst_size * c->dst_incr_div;
+        index += (frac + dst_size * (int64_t)c->dst_incr_mod) / c->src_incr;
         av_assert2(index >= 0);
         *consumed= index;
         if (update_ctx) {
-            c->frac   = (frac + dst_size * (int64_t)dst_incr_frac) % c->src_incr;
+            c->frac   = (frac + dst_size * (int64_t)c->dst_incr_mod) % c->src_incr;
             c->index = 0;
         }
     } else {
@@ -323,8 +327,11 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
 
     if (c->compensation_distance) {
         c->compensation_distance -= ret;
-        if (!c->compensation_distance)
-            c->dst_incr = c->ideal_dst_incr / c->src_incr;
+        if (!c->compensation_distance) {
+            c->dst_incr     = c->ideal_dst_incr;
+            c->dst_incr_div = c->dst_incr / c->src_incr;
+            c->dst_incr_mod = c->dst_incr % c->src_incr;
+        }
     }
 
     return ret;
