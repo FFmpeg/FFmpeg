@@ -47,6 +47,15 @@ static void get_frame_defaults(AVFrame *frame)
 #endif
 }
 
+static void free_side_data(AVFrameSideData **ptr_sd)
+{
+    AVFrameSideData *sd = *ptr_sd;
+
+    av_freep(&sd->data);
+    av_dict_free(&sd->metadata);
+    av_freep(ptr_sd);
+}
+
 AVFrame *av_frame_alloc(void)
 {
     AVFrame *frame = av_mallocz(sizeof(*frame));
@@ -278,9 +287,7 @@ void av_frame_unref(AVFrame *frame)
     int i;
 
     for (i = 0; i < frame->nb_side_data; i++) {
-        av_freep(&frame->side_data[i]->data);
-        av_dict_free(&frame->side_data[i]->metadata);
-        av_freep(&frame->side_data[i]);
+        free_side_data(&frame->side_data[i]);
     }
     av_freep(&frame->side_data);
 
@@ -396,9 +403,7 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
                                                          sd_src->size);
         if (!sd_dst) {
             for (i = 0; i < dst->nb_side_data; i++) {
-                av_freep(&dst->side_data[i]->data);
-                av_dict_free(&dst->side_data[i]->metadata);
-                av_freep(&dst->side_data[i]);
+                free_side_data(&dst->side_data[i]);
             }
             av_freep(&dst->side_data);
             return AVERROR(ENOMEM);
@@ -548,9 +553,7 @@ void av_frame_remove_side_data(AVFrame *frame, enum AVFrameSideDataType type)
     for (i = 0; i < frame->nb_side_data; i++) {
         AVFrameSideData *sd = frame->side_data[i];
         if (sd->type == type) {
-            av_freep(&sd->data);
-            av_dict_free(&sd->metadata);
-            av_freep(&frame->side_data[i]);
+            free_side_data(&frame->side_data[i]);
             frame->side_data[i] = frame->side_data[frame->nb_side_data - 1];
             frame->nb_side_data--;
         }
