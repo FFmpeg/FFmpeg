@@ -122,7 +122,7 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitleRect *rect,
     rect->pict.data[0] = av_malloc(rect->w * rect->h);
 
     if (!rect->pict.data[0])
-        return -1;
+        return AVERROR(ENOMEM);
 
     pixel_count = 0;
     line_count  = 0;
@@ -159,7 +159,7 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitleRect *rect,
 
     if (pixel_count < rect->w * rect->h) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient RLE data for subtitle\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     av_dlog(avctx, "Pixel Count = %d, Area = %d\n", pixel_count, rect->w * rect->h);
@@ -188,7 +188,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
     uint16_t picture_id;
 
     if (buf_size <= 4)
-        return -1;
+        return AVERROR_INVALIDDATA;
     buf_size -= 4;
 
     picture_id = bytestream_get_be16(&buf);
@@ -202,7 +202,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
     if (!(sequence_desc & 0x80)) {
         /* Additional RLE data */
         if (buf_size > ctx->pictures[picture_id].rle_remaining_len)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         memcpy(ctx->pictures[picture_id].rle + ctx->pictures[picture_id].rle_data_len, buf, buf_size);
         ctx->pictures[picture_id].rle_data_len += buf_size;
@@ -212,7 +212,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
     }
 
     if (buf_size <= 7)
-        return -1;
+        return AVERROR_INVALIDDATA;
     buf_size -= 7;
 
     /* Decode rle bitmap length, stored size includes width/height data */
@@ -225,7 +225,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
     /* Make sure the bitmap is not too large */
     if (avctx->width < width || avctx->height < height) {
         av_log(avctx, AV_LOG_ERROR, "Bitmap dimensions larger than video.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (buf_size > rle_bitmap_len) {
@@ -239,7 +239,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
     av_fast_padded_malloc(&ctx->pictures[picture_id].rle, &ctx->pictures[picture_id].rle_buffer_size, rle_bitmap_len);
 
     if (!ctx->pictures[picture_id].rle)
-        return -1;
+        return AVERROR(ENOMEM);
 
     memcpy(ctx->pictures[picture_id].rle, buf, buf_size);
     ctx->pictures[picture_id].rle_data_len      = buf_size;
