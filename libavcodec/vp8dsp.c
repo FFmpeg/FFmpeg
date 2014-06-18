@@ -254,7 +254,7 @@ MK_IDCT_DC_ADD4_C(vp8)
     int av_unused q2 = p[ 2 * stride];                                        \
     int av_unused q3 = p[ 3 * stride];
 
-#define clip_int8(n) (cm[n + 0x80] - 0x80)
+#define clip_int8(n) (cm[(n) + 0x80] - 0x80)
 
 static av_always_inline void filter_common(uint8_t *p, ptrdiff_t stride,
                                            int is4tap, int is_vp7)

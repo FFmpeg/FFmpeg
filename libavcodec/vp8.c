@@ -2755,7 +2755,7 @@ static av_cold int vp8_decode_init_thread_copy(AVCodecContext *avctx)
     return 0;
 }
 
-#define REBASE(pic) pic ? pic - &s_src->frames[0] + &s->frames[0] : NULL
+#define REBASE(pic) ((pic) ? (pic) - &s_src->frames[0] + &s->frames[0] : NULL)
 
 static int vp8_decode_update_thread_context(AVCodecContext *dst,
                                             const AVCodecContext *src)
