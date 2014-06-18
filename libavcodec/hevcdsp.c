@@ -187,4 +187,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
         HEVC_DSP(8);
         break;
     }
+
+    if (ARCH_X86)
+        ff_hevc_dsp_init_x86(hevcdsp, bit_depth);
 }

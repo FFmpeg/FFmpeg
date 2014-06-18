@@ -13,6 +13,7 @@ OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
 OBJS-$(CONFIG_H264DSP)                 += x86/h264dsp_init.o
 OBJS-$(CONFIG_H264PRED)                += x86/h264_intrapred_init.o
 OBJS-$(CONFIG_H264QPEL)                += x86/h264_qpel.o
+OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
 OBJS-$(CONFIG_HPELDSP)                 += x86/hpeldsp_init.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += x86/huffyuvdsp_init.o
 OBJS-$(CONFIG_HUFFYUVENCDSP)           += x86/huffyuvencdsp_mmx.o
@@ -86,6 +87,7 @@ YASM-OBJS-$(CONFIG_H264QPEL)           += x86/h264_qpel_8bit.o          \
                                           x86/h264_qpel_10bit.o         \
                                           x86/fpel.o                    \
                                           x86/qpel.o
+YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_deblock.o
 YASM-OBJS-$(CONFIG_HPELDSP)            += x86/fpel.o                    \
                                           x86/hpeldsp.o
 YASM-OBJS-$(CONFIG_HUFFYUVDSP)         += x86/huffyuvdsp.o

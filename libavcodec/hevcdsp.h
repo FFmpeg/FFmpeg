@@ -104,6 +104,8 @@ typedef struct HEVCDSPContext {
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
 
+void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth);
+
 extern const int8_t ff_hevc_epel_filters[7][16];
 
 #endif /* AVCODEC_HEVCDSP_H */
