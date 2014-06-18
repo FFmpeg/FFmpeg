@@ -32,7 +32,7 @@
 /**
  * number of bin by SyntaxElement.
  */
-static const int8_t num_bins_in_se[] = {
+av_unused static const int8_t num_bins_in_se[] = {
      1, // sao_merge_flag
      1, // sao_type_idx
      0, // sao_eo_class
