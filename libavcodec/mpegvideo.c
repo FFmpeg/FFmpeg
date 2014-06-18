@@ -434,6 +434,9 @@ static int frame_size_alloc(MpegEncContext *s, int linesize)
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
 
+    if (s->avctx->hwaccel || s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+        return 0;
+
     if (linesize < 24) {
         av_log(s->avctx, AV_LOG_ERROR, "Image too small, temporary buffers cannot function\n");
         return AVERROR_PATCHWELCOME;
