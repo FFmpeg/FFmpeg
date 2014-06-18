@@ -107,11 +107,8 @@ AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precisio
     AVRational q;
     int j;
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        q = (AVRational){1, st->codec->sample_rate};
-    } else {
-        q = st->codec->time_base;
-    }
+    q = st->time_base;
+
     for (j=2; j<14; j+= 1+(j>2))
         while (q.den / q.num < min_precision && q.num % j == 0)
             q.num /= j;
