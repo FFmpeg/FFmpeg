@@ -25,11 +25,6 @@
 #include "libavutil/rational.h"
 #include "avcodec.h"
 
-typedef struct DVwork_chunk {
-    uint16_t  buf_offset;
-    uint16_t  mb_coordinates[5];
-} DVwork_chunk;
-
 /*
  * DVprofile is used to express the differences between various
  * DV flavors. For now it's primarily used for differentiating
@@ -47,8 +42,6 @@ typedef struct DVprofile {
     int              height;                /* picture height in pixels */
     int              width;                 /* picture width in pixels */
     AVRational       sar[2];                /* sample aspect ratios for 4:3 and 16:9 */
-    DVwork_chunk    *work_chunks;           /* each thread gets its own chunk of frame to work on */
-    uint32_t        *idct_factor;           /* set of iDCT factor tables */
     enum AVPixelFormat pix_fmt;             /* picture pixel format */
     int              bpm;                   /* blocks per macroblock */
     const uint8_t   *block_sizes;           /* AC block sizes, in bits */

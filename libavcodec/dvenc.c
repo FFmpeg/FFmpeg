@@ -46,7 +46,7 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
         ff_dv_print_profiles(avctx, AV_LOG_ERROR);
         return AVERROR(EINVAL);
     }
-    ret = ff_dv_init_dynamic_tables(s->sys);
+    ret = ff_dv_init_dynamic_tables(s, s->sys);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing work tables.\n");
         return ret;
@@ -680,7 +680,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     c->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     s->buf = pkt->data;
-    c->execute(c, dv_encode_video_segment, s->sys->work_chunks, NULL,
+    c->execute(c, dv_encode_video_segment, s->work_chunks, NULL,
                dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
 
     emms_c();
