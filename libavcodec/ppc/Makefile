@@ -26,4 +26,5 @@ ALTIVEC-OBJS-$(CONFIG_DSPUTIL)         += ppc/dsputil_altivec.o         \
                                           ppc/int_altivec.o             \
 
 FFT-OBJS-$(HAVE_GNU_AS)                += ppc/fft_altivec_s.o
+FFT-OBJS-$(HAVE_VSX)                   += ppc/fft_vsx.o
 ALTIVEC-OBJS-$(CONFIG_FFT)             += $(FFT-OBJS-yes)

@@ -1548,6 +1548,7 @@ ARCH_EXT_LIST_PPC="
     dcbzl
     ldbrx
     ppc4xx
+    vsx
 "
 
 ARCH_EXT_LIST_X86="
@@ -1933,6 +1934,7 @@ mipsdspr2_deps="mips"
 
 altivec_deps="ppc"
 ppc4xx_deps="ppc"
+vsx_deps="ppc"
 
 cpunop_deps="i686"
 x86_64_select="i686"
@@ -3691,6 +3693,7 @@ elif enabled mips; then
 elif enabled ppc; then
 
     disable ldbrx
+    disable vsx
 
     case $(tolower $cpu) in
         601|ppc601|powerpc601)
@@ -3718,7 +3721,7 @@ elif enabled ppc; then
         g5|970|ppc970|powerpc970)
             cpuflags="-mcpu=970"
         ;;
-        power[3-7]*)
+        power[3-8]*)
             cpuflags="-mcpu=$cpu"
         ;;
         cell)
@@ -4286,6 +4289,12 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
+if  [ "$cpu" = "power7" ] || [ "$cpu" = "power8" ] ;then
+    if ! enabled bigendian ;then
+        enable vsx
+    fi
+fi
+
 
 if enabled asm; then
     enabled     arm         && nogas=die
@@ -4415,6 +4424,9 @@ EOF
         enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
     fi
 
+    if enabled vsx; then
+        check_cflags -mvsx
+    fi
 elif enabled x86; then
 
     check_builtin rdtsc    intrin.h   "__rdtsc()"
@@ -5256,6 +5268,7 @@ fi
 if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
     echo "PPC 4xx optimizations     ${ppc4xx-no}"
+    echo "PPC VSX optimizations     ${vsx-no}"
     echo "dcbzl available           ${dcbzl-no}"
 fi
 echo "debug symbols             ${debug-no}"

@@ -36,8 +36,12 @@
  * It also assumes all FFTComplex are 8 bytes-aligned pairs of floats.
  */
 
+#if HAVE_VSX
+#include "fft_vsx.h"
+#else
 void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_interleave_altivec(FFTContext *s, FFTComplex *z);
+#endif
 
 #if HAVE_GNU_AS && HAVE_ALTIVEC
 static void imdct_half_altivec(FFTContext *s, FFTSample *output, const FFTSample *input)
@@ -94,7 +98,11 @@ static void imdct_half_altivec(FFTContext *s, FFTSample *output, const FFTSample
         k--;
     } while(k >= 0);
 
+#if HAVE_VSX
+    ff_fft_calc_vsx(s, (FFTComplex*)output);
+#else
     ff_fft_calc_altivec(s, (FFTComplex*)output);
+#endif
 
     /* post rotation + reordering */
     j = -n32;
@@ -147,7 +155,11 @@ av_cold void ff_fft_init_ppc(FFTContext *s)
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 
+#if HAVE_VSX
+    s->fft_calc = ff_fft_calc_interleave_vsx;
+#else
     s->fft_calc   = ff_fft_calc_interleave_altivec;
+#endif
     if (s->mdct_bits >= 5) {
         s->imdct_calc = imdct_calc_altivec;
         s->imdct_half = imdct_half_altivec;
