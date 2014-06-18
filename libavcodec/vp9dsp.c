@@ -896,7 +896,7 @@ itxfm_wrapper(iadst, idct,  sz, bits, 0) \
 itxfm_wrapper(idct,  iadst, sz, bits, 0) \
 itxfm_wrapper(iadst, iadst, sz, bits, 0)
 
-#define IN(x) in[x * stride]
+#define IN(x) in[(x) * stride]
 
 static av_always_inline void idct4_1d(const int16_t *in, ptrdiff_t stride,
                                       int16_t *out, int pass)
