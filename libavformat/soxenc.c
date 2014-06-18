@@ -118,4 +118,5 @@ AVOutputFormat ff_sox_muxer = {
     .write_header      = sox_write_header,
     .write_packet      = ff_raw_write_packet,
     .write_trailer     = sox_write_trailer,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };

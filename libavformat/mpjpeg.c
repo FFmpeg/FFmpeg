@@ -65,4 +65,5 @@ AVOutputFormat ff_mpjpeg_muxer = {
     .write_header      = mpjpeg_write_header,
     .write_packet      = mpjpeg_write_packet,
     .write_trailer     = mpjpeg_write_trailer,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };

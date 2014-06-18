@@ -184,5 +184,6 @@ AVOutputFormat ff_amr_muxer = {
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = amr_write_header,
     .write_packet      = amr_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif

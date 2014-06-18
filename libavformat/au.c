@@ -220,6 +220,7 @@ AVOutputFormat ff_au_muxer = {
     .write_packet  = ff_raw_write_packet,
     .write_trailer = au_write_trailer,
     .codec_tag     = (const AVCodecTag* const []) { codec_au_tags, 0 },
+    .flags         = AVFMT_NOTIMESTAMPS,
 };
 
 #endif /* CONFIG_AU_MUXER */

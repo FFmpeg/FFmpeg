@@ -103,4 +103,5 @@ AVOutputFormat ff_oma_muxer = {
     .write_header      = oma_write_header,
     .write_packet      = ff_raw_write_packet,
     .codec_tag         = (const AVCodecTag* const []){ff_oma_codec_tags, 0},
+    .flags             = AVFMT_NOTIMESTAMPS,
 };

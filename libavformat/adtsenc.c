@@ -202,4 +202,5 @@ AVOutputFormat ff_adts_muxer = {
     .write_packet      = adts_write_packet,
     .write_trailer     = adts_write_trailer,
     .priv_class        = &adts_muxer_class,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };
