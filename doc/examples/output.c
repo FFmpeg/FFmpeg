@@ -362,14 +362,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         ret = avcodec_encode_video2(c, &pkt, picture, &got_packet);
         /* If size is zero, it means the image was buffered. */
         if (!ret && got_packet && pkt.size) {
-            if (pkt.pts != AV_NOPTS_VALUE) {
-                pkt.pts = av_rescale_q(pkt.pts,
-                                       c->time_base, st->time_base);
-            }
-            if (pkt.dts != AV_NOPTS_VALUE) {
-                pkt.dts = av_rescale_q(pkt.dts,
-                                       c->time_base, st->time_base);
-            }
+            av_packet_rescale_ts(&pkt, c->time_base, st->time_base);
             pkt.stream_index = st->index;
 
             /* Write the compressed frame to the media file. */
