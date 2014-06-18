@@ -254,7 +254,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
  * @param buf pointer to the packet to process
  * @param buf_size size of packet to process
  */
-static void parse_palette_segment(AVCodecContext *avctx,
+static int parse_palette_segment(AVCodecContext *avctx,
                                   const uint8_t *buf, int buf_size)
 {
     PGSSubContext *ctx = avctx->priv_data;
@@ -283,6 +283,7 @@ static void parse_palette_segment(AVCodecContext *avctx,
         /* Store color in palette */
         ctx->clut[color_id] = RGBA(r,g,b,alpha);
     }
+    return 0;
 }
 
 /**
@@ -493,17 +494,16 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
         if (segment_type != DISPLAY_SEGMENT && segment_length > buf_end - buf)
             break;
 
+        ret = 0;
         switch (segment_type) {
         case PALETTE_SEGMENT:
-            parse_palette_segment(avctx, buf, segment_length);
+            ret = parse_palette_segment(avctx, buf, segment_length);
             break;
         case OBJECT_SEGMENT:
-            parse_picture_segment(avctx, buf, segment_length);
+            ret = parse_picture_segment(avctx, buf, segment_length);
             break;
         case PRESENTATION_SEGMENT:
             ret = parse_presentation_segment(avctx, buf, segment_length, sub->pts);
-            if (ret < 0)
-                return ret;
             break;
         case WINDOW_SEGMENT:
             /*
@@ -516,13 +516,18 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
              */
             break;
         case DISPLAY_SEGMENT:
-            *data_size = display_end_segment(avctx, data, buf, segment_length);
+            ret = display_end_segment(avctx, data, buf, segment_length);
+            if (ret >= 0)
+                *data_size = ret;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unknown subtitle segment type 0x%x, length %d\n",
                    segment_type, segment_length);
+            ret = AVERROR_INVALIDDATA;
             break;
         }
+        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+            return ret;
 
         buf += segment_length;
     }
