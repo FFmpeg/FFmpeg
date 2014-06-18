@@ -150,9 +150,13 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitleRect *rect,
              * New Line. Check if correct pixels decoded, if not display warning
              * and adjust bitmap pointer to correct new line position.
              */
-            if (pixel_count % rect->w > 0)
+            if (pixel_count % rect->w > 0) {
                 av_log(avctx, AV_LOG_ERROR, "Decoded %d pixels, when line should be %d pixels\n",
                        pixel_count % rect->w, rect->w);
+                if (avctx->err_recognition & AV_EF_EXPLODE) {
+                    return AVERROR_INVALIDDATA;
+                }
+            }
             line_count++;
         }
     }
