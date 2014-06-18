@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - lavc 57.14.0 - avcodec.h
+  xxxxxxx - Add AVCodecParameters and its related API.
+
 2016-xx-xx - xxxxxxx - lavf 57.4.0 - avformat.h
   Add AVFormatContext.protocol_whitelist and protocol_blacklist.
   Add 'protocol_whitelist' and 'protocol_blacklist' private options for
