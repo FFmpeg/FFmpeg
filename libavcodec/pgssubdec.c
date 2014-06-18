@@ -73,6 +73,20 @@ typedef struct PGSSubContext {
     int forced_subs_only;
 } PGSSubContext;
 
+static void flush_cache(AVCodecContext *avctx)
+{
+    PGSSubContext *ctx = avctx->priv_data;
+    uint16_t picture;
+
+    av_freep(&ctx->presentation.objects);
+    ctx->presentation.object_count = 0;
+
+    for (picture = 0; picture < UINT16_MAX; ++picture) {
+        av_freep(&ctx->pictures[picture].rle);
+        ctx->pictures[picture].rle_buffer_size = 0;
+    }
+}
+
 static av_cold int init_decoder(AVCodecContext *avctx)
 {
     avctx->pix_fmt     = AV_PIX_FMT_PAL8;
@@ -82,17 +96,7 @@ static av_cold int init_decoder(AVCodecContext *avctx)
 
 static av_cold int close_decoder(AVCodecContext *avctx)
 {
-    uint16_t picture;
-
-    PGSSubContext *ctx = avctx->priv_data;
-
-    av_freep(&ctx->presentation.objects);
-    ctx->presentation.object_count = 0;
-
-    for (picture = 0; picture < UINT16_MAX; ++picture) {
-        av_freep(&ctx->pictures[picture].rle);
-        ctx->pictures[picture].rle_buffer_size = 0;
-    }
+    flush_cache(avctx);
 
     return 0;
 }
