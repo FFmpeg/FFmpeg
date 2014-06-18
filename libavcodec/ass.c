@@ -34,6 +34,8 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
 {
     avctx->subtitle_header = av_asprintf(
              "[Script Info]\r\n"
+             "PlayResX: 384\r\n"
+             "PlayResY: 288\r\n"
              "ScriptType: v4.00+\r\n"
              "\r\n"
              "[V4+ Styles]\r\n"
