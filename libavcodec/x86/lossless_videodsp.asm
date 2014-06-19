@@ -287,8 +287,8 @@ cglobal sub_hfyu_median_pred_int16, 7,7,0, dst, src1, src2, mask, w, left, left_
     movq    mm2, [src2q + maskq - 2]
     cmp     maskq, wq
         jb .loop
-    mov maskd, [src1q + wq - 2]
+    movzx maskd, word [src1q + wq - 2]
     mov [left_topq], maskd
-    mov maskd, [src2q + wq - 2]
+    movzx maskd, word [src2q + wq - 2]
     mov [leftq], maskd
     RET
