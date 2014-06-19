@@ -935,10 +935,8 @@ static void long_filter_ehigh_3830(int32_t *buffer, int length)
 {
     int i, j;
     int32_t dotprod, sign;
-    int32_t coeffs[8], delay[8];
+    int32_t coeffs[8] = { 0 }, delay[8] = { 0 };
 
-    memset(coeffs, 0, sizeof(coeffs));
-    memset(delay,  0, sizeof(delay));
     for (i = 0; i < length; i++) {
         dotprod = 0;
         sign = APESIGN(buffer[i]);
