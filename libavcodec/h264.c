@@ -1727,7 +1727,7 @@ again:
                 if (err < 0)
                     av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
                 h->ref_count[0] = h->ref_count[1] = h->list_count = 0;
-            } else if (err == 1) {
+            } else if (err == SLICE_SINGLETHREAD) {
                 /* Slice could not be decoded in parallel mode, copy down
                  * NAL unit stuff to context 0 and restart. Note that
                  * rbsp_buffer is not transferred, but since we no longer

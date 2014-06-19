@@ -1890,7 +1890,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
             if (h != h0) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "Deblocking switched inside frame.\n");
-                return 1;
+                return SLICE_SINGLETHREAD;
             }
         }
     }
