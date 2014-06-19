@@ -4467,7 +4467,12 @@ EOF
         elif check_cmd nasm -v; then
             yasmexe=nasm
             yasm_debug="-g -F dwarf"
-            enabled x86_64 && test "$objformat" = elf && objformat=elf64
+            if enabled x86_64; then
+                case "$objformat" in
+                    elf)   objformat=elf64 ;;
+                    win32) objformat=win64 ;;
+                esac
+            fi
         fi
 
         YASMFLAGS="-f $objformat $yasm_extra"
