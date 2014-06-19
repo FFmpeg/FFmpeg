@@ -32,7 +32,7 @@ SECTION .text
 %macro DC_ADD_INIT 2
     add              %1w, ((1 << 14-8) + 1)
     sar              %1w, (15-8)
-    movd              m0, %1
+    movd              m0, %1d
     lea               %1, [%2*3]
     SPLATW            m0, m0, 0
     pxor              m1, m1
