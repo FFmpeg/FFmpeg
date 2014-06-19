@@ -4483,10 +4483,8 @@ EOF
 
         check_yasm "movbe ecx, [5]" && enable yasm ||
             die "yasm/nasm not found or too old. Use --disable-yasm for a crippled build."
-        check_yasm "vextractf128 xmm0, ymm0, 0"      || disable avx_external avresample
         check_yasm "vextracti128 xmm0, ymm0, 0"      || disable avx2_external
         check_yasm "vpmacsdd xmm0, xmm1, xmm2, xmm3" || disable xop_external
-        check_yasm "vfmadd132ps ymm0, ymm1, ymm2"    || disable fma3_external
         check_yasm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
         check_yasm "CPU amdnop" || disable cpunop
     fi
