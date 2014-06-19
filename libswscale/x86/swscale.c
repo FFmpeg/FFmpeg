@@ -202,7 +202,8 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
                            const uint8_t *dither, int offset)
 {
     if(((int)dest) & 15){
-        return yuv2yuvX_mmxext(filter, filterSize, src, dest, dstW, dither, offset);
+        yuv2yuvX_mmxext(filter, filterSize, src, dest, dstW, dither, offset);
+        return;
     }
     if (offset) {
         __asm__ volatile("movq       (%0), %%xmm3\n\t"
