@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "bytestream.h"
@@ -52,6 +53,7 @@ typedef struct {
 
     GetBitContext   gb;
     ScanTable       scantable;
+    BlockDSPContext bdsp;
     DSPContext      dsp;
     HpelDSPContext  hdsp;
     VLC             vlc;
@@ -146,6 +148,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "error initializing vlc table\n");
         return ret;
     }
+    ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_dsputil_init(&ctx->dsp, avctx);
     ff_hpeldsp_init(&ctx->hdsp, avctx->flags);
     ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, col_zag);
@@ -228,7 +231,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
     int16_t *block = ctx->dct_block;
     unsigned int pos;
 
-    ctx->dsp.clear_block(block);
+    ctx->bdsp.clear_block(block);
 
     block[0] = get_bits(&ctx->gb, 8) << 3;
 

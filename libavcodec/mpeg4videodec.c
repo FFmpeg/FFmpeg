@@ -1261,7 +1261,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 
     if (!IS_SKIP(mb_type)) {
         int i;
-        s->dsp.clear_blocks(s->block[0]);
+        s->bdsp.clear_blocks(s->block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
             if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, s->mb_intra, ctx->rvlc) < 0) {
@@ -1339,7 +1339,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             }
         } while (cbpc == 20);
 
-        s->dsp.clear_blocks(s->block[0]);
+        s->bdsp.clear_blocks(s->block[0]);
         dquant      = cbpc & 8;
         s->mb_intra = ((cbpc & 4) != 0);
         if (s->mb_intra)
@@ -1485,7 +1485,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             if (modb2) {
                 cbp = 0;
             } else {
-                s->dsp.clear_blocks(s->block[0]);
+                s->bdsp.clear_blocks(s->block[0]);
                 cbp = get_bits(&s->gb, 6);
             }
 
@@ -1620,7 +1620,7 @@ intra:
         if (!s->progressive_sequence)
             s->interlaced_dct = get_bits1(&s->gb);
 
-        s->dsp.clear_blocks(s->block[0]);
+        s->bdsp.clear_blocks(s->block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
             if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, 1, 0) < 0)

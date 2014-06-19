@@ -31,6 +31,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "bytestream.h"
 #include "dsputil.h"
 #include "get_bits.h"
@@ -134,6 +135,7 @@ typedef struct CFrameBuffer {
 typedef struct FourXContext {
     AVCodecContext *avctx;
     DSPContext dsp;
+    BlockDSPContext bdsp;
     uint16_t *frame_buffer;
     uint16_t *last_frame_buffer;
     GetBitContext pre_gb;          ///< ac/dc prefix
@@ -592,7 +594,7 @@ static int decode_i_mb(FourXContext *f)
     int ret;
     int i;
 
-    f->dsp.clear_blocks(f->block[0]);
+    f->bdsp.clear_blocks(f->block[0]);
 
     for (i = 0; i < 6; i++)
         if ((ret = decode_i_block(f, f->block[i])) < 0)
@@ -998,6 +1000,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     f->version = AV_RL32(avctx->extradata) >> 16;
+    ff_blockdsp_init(&f->bdsp, avctx);
     ff_dsputil_init(&f->dsp, avctx);
     f->avctx = avctx;
     init_vlcs(f);

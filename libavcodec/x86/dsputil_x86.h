@@ -40,11 +40,6 @@ void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
 void ff_put_signed_pixels_clamped_sse2(const int16_t *block, uint8_t *pixels,
                                        int line_size);
 
-void ff_clear_block_mmx(int16_t *block);
-void ff_clear_block_sse(int16_t *block);
-void ff_clear_blocks_mmx(int16_t *blocks);
-void ff_clear_blocks_sse(int16_t *blocks);
-
 void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
                        int w, int h, int sides);
 

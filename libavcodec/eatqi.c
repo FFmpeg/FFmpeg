@@ -27,6 +27,7 @@
  */
 
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "get_bits.h"
 #include "aandcttab.h"
 #include "eaidct.h"
@@ -46,6 +47,7 @@ static av_cold int tqi_decode_init(AVCodecContext *avctx)
     TqiContext *t = avctx->priv_data;
     MpegEncContext *s = &t->s;
     s->avctx = avctx;
+    ff_blockdsp_init(&s->bdsp, avctx);
     ff_dsputil_init(&s->dsp, avctx);
     ff_init_scantable_permutation(s->dsp.idct_permutation, FF_NO_IDCT_PERM);
     ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable, ff_zigzag_direct);
@@ -59,7 +61,7 @@ static av_cold int tqi_decode_init(AVCodecContext *avctx)
 static int tqi_decode_mb(MpegEncContext *s, int16_t (*block)[64])
 {
     int n;
-    s->dsp.clear_blocks(block[0]);
+    s->bdsp.clear_blocks(block[0]);
     for (n=0; n<6; n++)
         if (ff_mpeg1_decode_block_intra(s, block[n], n) < 0)
             return -1;

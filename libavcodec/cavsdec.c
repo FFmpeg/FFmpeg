@@ -589,7 +589,7 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                       dequant_shift[qp], i)) < 0)
         return ret;
     h->cdsp.cavs_idct8_add(dst, block, stride);
-    h->dsp.clear_block(block);
+    h->bdsp.clear_block(block);
     return 0;
 }
 

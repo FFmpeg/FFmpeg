@@ -196,7 +196,7 @@ static inline int get_p_cbp(MpegEncContext * s,
         for (i = 0; i < 6; i++) {
             if (s->block_last_index[i] >= 0 && ((cbp >> (5 - i))&1)==0 ){
                 s->block_last_index[i]= -1;
-                s->dsp.clear_block(s->block[i]);
+                s->bdsp.clear_block(s->block[i]);
             }
         }
     }else{

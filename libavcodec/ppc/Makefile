@@ -1,5 +1,6 @@
 OBJS                                   += ppc/fmtconvert_altivec.o      \
 
+OBJS-$(CONFIG_BLOCKDSP)                += ppc/blockdsp.o
 OBJS-$(CONFIG_DSPUTIL)                 += ppc/dsputil_ppc.o
 OBJS-$(CONFIG_FFT)                     += ppc/fft_altivec.o
 OBJS-$(CONFIG_H264CHROMA)              += ppc/h264chroma_init.o
