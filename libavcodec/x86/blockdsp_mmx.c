@@ -22,7 +22,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/cpu.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/blockdsp.h"
 #include "libavcodec/version.h"
@@ -43,7 +42,7 @@ av_cold void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth)
     int cpu_flags = av_get_cpu_flags();
 
     if (!high_bit_depth) {
-        if (INLINE_MMX(cpu_flags)) {
+        if (EXTERNAL_MMX(cpu_flags)) {
             c->clear_block  = ff_clear_block_mmx;
             c->clear_blocks = ff_clear_blocks_mmx;
         }
@@ -52,7 +51,7 @@ av_cold void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth)
     if (CONFIG_XVMC && avctx->hwaccel && avctx->hwaccel->decode_mb)
         return;
 
-        if (INLINE_SSE(cpu_flags)) {
+        if (EXTERNAL_SSE(cpu_flags)) {
             c->clear_block  = ff_clear_block_sse;
             c->clear_blocks = ff_clear_blocks_sse;
         }
