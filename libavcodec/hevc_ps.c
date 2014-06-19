@@ -981,7 +981,6 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
     av_freep(&pps->ctb_addr_ts_to_rs);
     av_freep(&pps->tile_pos_rs);
     av_freep(&pps->tile_id);
-    av_freep(&pps->min_cb_addr_zs);
     av_freep(&pps->min_tb_addr_zs);
 
     av_freep(&pps);
@@ -1236,10 +1235,9 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->ctb_addr_rs_to_ts = av_malloc_array(pic_area_in_ctbs,    sizeof(*pps->ctb_addr_rs_to_ts));
     pps->ctb_addr_ts_to_rs = av_malloc_array(pic_area_in_ctbs,    sizeof(*pps->ctb_addr_ts_to_rs));
     pps->tile_id           = av_malloc_array(pic_area_in_ctbs,    sizeof(*pps->tile_id));
-    pps->min_cb_addr_zs    = av_malloc_array(pic_area_in_min_cbs, sizeof(*pps->min_cb_addr_zs));
     pps->min_tb_addr_zs    = av_malloc_array(pic_area_in_min_tbs, sizeof(*pps->min_tb_addr_zs));
     if (!pps->ctb_addr_rs_to_ts || !pps->ctb_addr_ts_to_rs ||
-        !pps->tile_id || !pps->min_cb_addr_zs || !pps->min_tb_addr_zs) {
+        !pps->tile_id || !pps->min_tb_addr_zs) {
         ret = AVERROR(ENOMEM);
         goto err;
     }
@@ -1292,21 +1290,6 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     for (j = 0; j < pps->num_tile_rows; j++)
         for (i = 0; i < pps->num_tile_columns; i++)
             pps->tile_pos_rs[j * pps->num_tile_columns + i] = pps->row_bd[j] * sps->ctb_width + pps->col_bd[i];
-
-    for (y = 0; y < sps->min_cb_height; y++) {
-        for (x = 0; x < sps->min_cb_width; x++) {
-            int tb_x        = x >> sps->log2_diff_max_min_coding_block_size;
-            int tb_y        = y >> sps->log2_diff_max_min_coding_block_size;
-            int ctb_addr_rs = sps->ctb_width * tb_y + tb_x;
-            int val         = pps->ctb_addr_rs_to_ts[ctb_addr_rs] <<
-                              (sps->log2_diff_max_min_coding_block_size * 2);
-            for (i = 0; i < sps->log2_diff_max_min_coding_block_size; i++) {
-                int m = 1 << i;
-                val += (m & x ? m * m : 0) + (m & y ? 2 * m * m : 0);
-            }
-            pps->min_cb_addr_zs[y * sps->min_cb_width + x] = val;
-        }
-    }
 
     log2_diff_ctb_min_tb_size = sps->log2_ctb_size - sps->log2_min_tb_size;
     for (y = 0; y < sps->min_tb_height; y++) {

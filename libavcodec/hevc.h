@@ -531,7 +531,6 @@ typedef struct HEVCPPS {
     int *ctb_addr_ts_to_rs; ///< CtbAddrTSToRS
     int *tile_id;           ///< TileId
     int *tile_pos_rs;       ///< TilePosRS
-    int *min_cb_addr_zs;    ///< MinCbAddrZS
     int *min_tb_addr_zs;    ///< MinTbAddrZS
 } HEVCPPS;
 
