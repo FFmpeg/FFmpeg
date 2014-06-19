@@ -1102,6 +1102,19 @@ static void do_video_stats(OutputStream *ost, int frame_size)
     }
 }
 
+static void finish_output_stream(OutputStream *ost)
+{
+    OutputFile *of = output_files[ost->file_index];
+    int i;
+
+    ost->finished = ENCODER_FINISHED | MUXER_FINISHED;
+
+    if (of->shortest) {
+        for (i = 0; i < of->ctx->nb_streams; i++)
+            output_streams[of->ost_index + i]->finished = ENCODER_FINISHED | MUXER_FINISHED;
+    }
+}
+
 /**
  * Get and encode new output from any of the filtergraphs, without causing
  * activity.
@@ -3158,7 +3171,7 @@ static int process_input(int file_index)
 
                 if (ost->source_index == ifile->ist_index + i &&
                     (ost->stream_copy || ost->enc->type == AVMEDIA_TYPE_SUBTITLE))
-                    close_output_stream(ost);
+                    finish_output_stream(ost);
             }
         }
 
