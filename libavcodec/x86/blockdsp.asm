@@ -1,6 +1,8 @@
 ;******************************************************************************
-;*
 ;* SIMD-optimized clear block functions
+;* Copyright (c) 2002 Michael Niedermayer
+;* Copyright (c) 2008 Loren Merritt
+;* Copyright (c) 2009 Jason Garrett-Glaser
 ;*
 ;* This file is part of FFmpeg.
 ;*
