@@ -777,27 +777,16 @@ seek:
     return;
 }
 
-void ff_id3v2_read(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra_meta,
-                   unsigned int max_search_size)
+void ff_id3v2_read(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra_meta)
 {
     int len, ret;
     uint8_t buf[ID3v2_HEADER_SIZE];
     int     found_header;
-    int64_t start, off;
+    int64_t off;
 
-    if (max_search_size && max_search_size < ID3v2_HEADER_SIZE)
-        return;
-
-    start = avio_tell(s->pb);
     do {
         /* save the current offset in case there's nothing to read/skip */
         off = avio_tell(s->pb);
-        ret = avio_read(s->pb, buf, ID3v2_HEADER_SIZE);
-        if (max_search_size && off - start >= max_search_size - ID3v2_HEADER_SIZE) {
-            avio_seek(s->pb, off, SEEK_SET);
-            break;
-        }
-
         ret = avio_read(s->pb, buf, ID3v2_HEADER_SIZE);
         if (ret != ID3v2_HEADER_SIZE) {
             avio_seek(s->pb, off, SEEK_SET);
@@ -833,8 +822,6 @@ void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta)
         av_freep(&current);
         current = next;
     }
-
-    *extra_meta = NULL;
 }
 
 int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
