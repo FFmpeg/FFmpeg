@@ -1702,6 +1702,7 @@ threads_if_any="$THREADS_LIST"
 # subsystems
 dct_select="rdft"
 error_resilience_select="dsputil"
+intrax8_select="error_resilience"
 mdct_select="fft"
 rdft_select="fft"
 mpegaudio_select="mpegaudiodsp"
