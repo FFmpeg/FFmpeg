@@ -171,6 +171,7 @@ int ff_h264_field_end(H264Context *h, int in_setup)
                    "hardware accelerator failed to decode picture\n");
     }
 
+#if CONFIG_ERROR_RESILIENCE
     /*
      * FIXME: Error handling code does not seem to support interlaced
      * when slices span multiple rows
@@ -183,7 +184,7 @@ int ff_h264_field_end(H264Context *h, int in_setup)
      * past end by one (callers fault) and resync_mb_y != 0
      * causes problems for the first MB line, too.
      */
-    if (CONFIG_ERROR_RESILIENCE && !FIELD_PICTURE(h)) {
+    if (!FIELD_PICTURE(h)) {
         h264_set_erpic(&h->er.cur_pic, h->cur_pic_ptr);
         h264_set_erpic(&h->er.last_pic,
                        h->ref_count[0] ? &h->ref_list[0][0] : NULL);
@@ -191,6 +192,8 @@ int ff_h264_field_end(H264Context *h, int in_setup)
                        h->ref_count[1] ? &h->ref_list[1][0] : NULL);
         ff_er_frame_end(&h->er);
     }
+#endif /* CONFIG_ERROR_RESILIENCE */
+
     emms_c();
 
     h->current_slice = 0;
