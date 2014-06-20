@@ -26,6 +26,7 @@
  */
 
 #include "avcodec.h"
+#include "mpeg_er.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h263.h"

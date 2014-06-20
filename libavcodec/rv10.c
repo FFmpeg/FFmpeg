@@ -33,6 +33,7 @@
 #include "error_resilience.h"
 #include "h263.h"
 #include "internal.h"
+#include "mpeg_er.h"
 #include "mpegvideo.h"
 #include "mpeg4video.h"
 
