@@ -296,6 +296,9 @@ typedef struct SDPParseState {
     struct RTSPSource **default_include_source_addrs; /**< Source-specific multicast include source IP address (from SDP content) */
     int nb_default_exclude_source_addrs; /**< Number of source-specific multicast exclude source IP address (from SDP content) */
     struct RTSPSource **default_exclude_source_addrs; /**< Source-specific multicast exclude source IP address (from SDP content) */
+    int seen_rtpmap;
+    int seen_fmtp;
+    char delayed_fmtp[2048];
 } SDPParseState;
 
 static void copy_default_source_addrs(struct RTSPSource **addrs, int count,
@@ -313,6 +316,22 @@ static void copy_default_source_addrs(struct RTSPSource **addrs, int count,
     }
 }
 
+static void parse_fmtp(AVFormatContext *s, RTSPState *rt,
+                       int payload_type, const char *line)
+{
+    int i;
+
+    for (i = 0; i < rt->nb_rtsp_streams; i++) {
+        RTSPStream *rtsp_st = rt->rtsp_streams[i];
+        if (rtsp_st->sdp_payload_type == payload_type &&
+            rtsp_st->dynamic_handler &&
+            rtsp_st->dynamic_handler->parse_sdp_a_line) {
+            rtsp_st->dynamic_handler->parse_sdp_a_line(s, i,
+            rtsp_st->dynamic_protocol_context, line);
+        }
+    }
+}
+
 static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                            int letter, const char *buf)
 {
@@ -320,7 +339,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     char buf1[64], st_type[64];
     const char *p;
     enum AVMediaType codec_type;
-    int payload_type, i;
+    int payload_type;
     AVStream *st;
     RTSPStream *rtsp_st;
     RTSPSource *rtsp_src;
@@ -369,7 +388,9 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         break;
     case 'm':
         /* new stream */
-        s1->skip_media = 0;
+        s1->skip_media  = 0;
+        s1->seen_fmtp   = 0;
+        s1->seen_rtpmap = 0;
         codec_type = AVMEDIA_TYPE_UNKNOWN;
         get_word(st_type, sizeof(st_type), &p);
         if (!strcmp(st_type, "audio")) {
@@ -492,19 +513,20 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 st = s->streams[rtsp_st->stream_index];
                 sdp_parse_rtpmap(s, st, rtsp_st, payload_type, p);
             }
+            s1->seen_rtpmap = 1;
+            if (s1->seen_fmtp) {
+                parse_fmtp(s, rt, payload_type, s1->delayed_fmtp);
+            }
         } else if (av_strstart(p, "fmtp:", &p) ||
                    av_strstart(p, "framesize:", &p)) {
-            /* NOTE: fmtp is only supported AFTER the 'a=rtpmap:xxx' tag */
             // let dynamic protocol handlers have a stab at the line.
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);
-            for (i = 0; i < rt->nb_rtsp_streams; i++) {
-                rtsp_st = rt->rtsp_streams[i];
-                if (rtsp_st->sdp_payload_type == payload_type &&
-                    rtsp_st->dynamic_handler &&
-                    rtsp_st->dynamic_handler->parse_sdp_a_line)
-                    rtsp_st->dynamic_handler->parse_sdp_a_line(s, i,
-                        rtsp_st->dynamic_protocol_context, buf);
+            if (s1->seen_rtpmap) {
+                parse_fmtp(s, rt, payload_type, buf);
+            } else {
+                s1->seen_fmtp = 1;
+                av_strlcpy(s1->delayed_fmtp, buf, sizeof(s1->delayed_fmtp));
             }
         } else if (av_strstart(p, "range:", &p)) {
             int64_t start, end;

@@ -743,3 +743,19 @@ PMA_EMU PMADCSWD, pmadcswd, pmaddwd, paddd
         addps   %1, %4
     %endif
 %endmacro
+
+%macro LSHIFT 2
+%if mmsize > 8
+    pslldq  %1, %2
+%else
+    psllq   %1, 8*(%2)
+%endif
+%endmacro
+
+%macro RSHIFT 2
+%if mmsize > 8
+    psrldq  %1, %2
+%else
+    psrlq   %1, 8*(%2)
+%endif
+%endmacro

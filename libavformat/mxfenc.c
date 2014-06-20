@@ -1689,7 +1689,8 @@ static int mxf_write_header(AVFormatContext *s)
         }
 
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            AVRational rate, tbc = st->codec->time_base;
+            // TODO: should be avg_frame_rate
+            AVRational rate, tbc = st->time_base;
             // Default component depth to 8
             sc->component_depth = 8;
             mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;

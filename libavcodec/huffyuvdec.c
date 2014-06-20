@@ -30,6 +30,8 @@
  * huffyuv decoder
  */
 
+#define UNCHECKED_BITSTREAM_READER 1
+
 #include "avcodec.h"
 #include "get_bits.h"
 #include "huffyuv.h"
@@ -138,7 +140,6 @@ static int generate_joint_tables(HYuvContext *s)
                     len[i] = len0 + len1;
                     bits[i] = (s->bits[p0][y] << len1) + s->bits[p][u];
                     symbols[i] = (y << 8) + (u & 0xFF);
-                    if(symbols[i] != 0xffff) // reserved to mean "invalid"
                         i++;
                 }
             }
@@ -591,17 +592,17 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
         unsigned int index = SHOW_UBITS(name, gb, bits);            \
         int          code, n = dtable[index][1];                    \
                                                                     \
-        if (n>0) {                                                  \
-            code = dtable[index][0];                                \
-            OP(dst0, dst1, code);                                   \
-            LAST_SKIP_BITS(name, gb, n);                            \
-        } else {                                                    \
+        if (n<=0) {                                                 \
             int nb_bits;                                            \
             VLC_INTERN(dst0, table1, gb, name, bits, max_depth);    \
                                                                     \
             UPDATE_CACHE(re, gb);                                   \
             index = SHOW_UBITS(name, gb, bits);                     \
             VLC_INTERN(dst1, table2, gb, name, bits, max_depth);    \
+        } else {                                                    \
+            code = dtable[index][0];                                \
+            OP(dst0, dst1, code);                                   \
+            LAST_SKIP_BITS(name, gb, n);                            \
         }                                                           \
     } while (0)
 
@@ -614,18 +615,24 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 
 static void decode_422_bitstream(HYuvContext *s, int count)
 {
-    int i;
+    int i, icount;
     OPEN_READER(re, &s->gb);
     count /= 2;
 
-    if (count >= (get_bits_left(&s->gb)) / (31 * 4)) {
-        for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
+    icount = get_bits_left(&s->gb) / (32 * 4);
+    if (count >= icount) {
+        for (i = 0; i < icount; i++) {
             READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
+            READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
+        }
+        for (; i < count && get_bits_left(&s->gb) > 0; i++) {
+            READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
+            if (get_bits_left(&s->gb) <= 0) break;
             READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
         }
         for (; i < count; i++)
             s->temp[0][2 * i    ] = s->temp[1][i] =
-            s->temp[0][2 * i + 1] = s->temp[2][i] = 128;
+            s->temp[0][2 * i + 1] = s->temp[2][i] = 0;
     } else {
         for (i = 0; i < count; i++) {
             READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
@@ -658,7 +665,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
 
     if (s->bps <= 8) {
         OPEN_READER(re, &s->gb);
-        if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+        if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
                 READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane, OP8bits);
             }
@@ -670,7 +677,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
         CLOSE_READER(re, &s->gb);
     } else if (s->bps <= 14) {
         OPEN_READER(re, &s->gb);
-        if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+        if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
                 READ_2PIX_PLANE(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane, OP14bits);
             }
@@ -681,7 +688,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
         }
         CLOSE_READER(re, &s->gb);
     } else {
-        if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+        if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
                 READ_2PIX_PLANE16(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane);
             }
@@ -699,7 +706,7 @@ static void decode_gray_bitstream(HYuvContext *s, int count)
     OPEN_READER(re, &s->gb);
     count/=2;
 
-    if (count >= (get_bits_left(&s->gb)) / (31 * 2)) {
+    if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
         for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
             READ_2PIX(s->temp[0][2 * i], s->temp[0][2 * i + 1], 0);
         }
@@ -717,7 +724,7 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
     int i;
     OPEN_READER(re, &s->gb);
 
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
         unsigned int index;
         int code, n;
 
@@ -763,7 +770,8 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
                 index = SHOW_UBITS(re, &s->gb, VLC_BITS);
                 VLC_INTERN(s->temp[0][4 * i + A], s->vlc[2].table,
                            &s->gb, re, VLC_BITS, 3);
-            }
+            } else
+                s->temp[0][4 * i + A] = 0;
         }
     }
     CLOSE_READER(re, &s->gb);

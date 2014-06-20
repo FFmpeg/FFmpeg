@@ -25,6 +25,7 @@
  * JPEG 2000 image encoder and decoder common functions
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
@@ -153,7 +154,7 @@ static int getsgnctxno(int flag, uint8_t *xorbit)
     return ctxlbltab[hcontrib][vcontrib];
 }
 
-void ff_jpeg2000_init_tier1_luts(void)
+void av_cold ff_jpeg2000_init_tier1_luts(void)
 {
     int i, j;
     for (i = 0; i < 256; i++)

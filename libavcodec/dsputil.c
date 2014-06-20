@@ -436,26 +436,6 @@ static int sum_abs_dctelem_c(int16_t *block)
     return sum;
 }
 
-static void fill_block16_c(uint8_t *block, uint8_t value, int line_size, int h)
-{
-    int i;
-
-    for (i = 0; i < h; i++) {
-        memset(block, value, 16);
-        block += line_size;
-    }
-}
-
-static void fill_block8_c(uint8_t *block, uint8_t value, int line_size, int h)
-{
-    int i;
-
-    for (i = 0; i < h; i++) {
-        memset(block, value, 8);
-        block += line_size;
-    }
-}
-
 #define avg2(a, b) ((a + b + 1) >> 1)
 #define avg4(a, b, c, d) ((a + b + c + d + 2) >> 2)
 
@@ -1517,16 +1497,6 @@ static void draw_edges_8_c(uint8_t *buf, int wrap, int width, int height,
             memcpy(last_line + (i + 1) * wrap, last_line, width + w + w);
 }
 
-static void clear_block_8_c(int16_t *block)
-{
-    memset(block, 0, sizeof(int16_t) * 64);
-}
-
-static void clear_blocks_8_c(int16_t *blocks)
-{
-    memset(blocks, 0, sizeof(int16_t) * 6 * 64);
-}
-
 /* init static data */
 av_cold void ff_dsputil_static_init(void)
 {
@@ -1641,9 +1611,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->pix_sum   = pix_sum_c;
     c->pix_norm1 = pix_norm1_c;
 
-    c->fill_block_tab[0] = fill_block16_c;
-    c->fill_block_tab[1] = fill_block8_c;
-
     /* TODO [0] 16  [1] 8 */
     c->pix_abs[0][0] = pix_abs16_c;
     c->pix_abs[0][1] = pix_abs16_x2_c;
@@ -1704,9 +1671,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->shrink[3] = ff_shrink88;
 
     c->draw_edges = draw_edges_8_c;
-
-    c->clear_block  = clear_block_8_c;
-    c->clear_blocks = clear_blocks_8_c;
 
     switch (avctx->bits_per_raw_sample) {
     case 9:

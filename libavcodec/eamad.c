@@ -44,6 +44,7 @@
 
 typedef struct MadContext {
     AVCodecContext *avctx;
+    BlockDSPContext bdsp;
     DSPContext dsp;
     AVFrame *last_frame;
     GetBitContext gb;
@@ -61,6 +62,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     MadContext *s = avctx->priv_data;
     s->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    ff_blockdsp_init(&s->bdsp, avctx);
     ff_dsputil_init(&s->dsp, avctx);
     ff_init_scantable_permutation(s->dsp.idct_permutation, FF_NO_IDCT_PERM);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);
@@ -213,7 +215,7 @@ static int decode_mb(MadContext *s, AVFrame *frame, int inter)
             if (s->last_frame->data[0])
                 comp_block(s, frame, s->mb_x, s->mb_y, j, mv_x, mv_y, add);
         } else {
-            s->dsp.clear_block(s->block);
+            s->bdsp.clear_block(s->block);
             if(decode_block_intra(s, s->block) < 0)
                 return -1;
             idct_put(s, frame, s->block, s->mb_x, s->mb_y, j);

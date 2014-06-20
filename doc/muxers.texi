@@ -814,6 +814,13 @@ Allow caching (only affects M3U8 list files).
 Allow live-friendly file generation.
 @end table
 
+@item segment_list_type @var{type}
+Select the listing format.
+@table @option
+@item @var{flat} use a simple flat list of entries.
+@item @var{hls} use a m3u8-like structure.
+@end table
+
 @item segment_list_size @var{size}
 Update the list file so that it contains at most the last @var{size}
 segments. If 0 the list file will contain all the segments. Default
@@ -822,9 +829,6 @@ value is 0.
 @item segment_list_entry_prefix @var{prefix}
 Prepend @var{prefix} to each entry. Useful to generate absolute paths.
 By default no prefix is applied.
-
-@item segment_list_type @var{type}
-Specify the format for the segment list file.
 
 The following values are recognized:
 @table @samp

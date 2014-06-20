@@ -10,6 +10,7 @@ OBJS = allformats.o         \
        avio.o               \
        aviobuf.o            \
        cutils.o             \
+       dump.o               \
        format.o             \
        id3v1.o              \
        id3v2.o              \
@@ -145,6 +146,7 @@ OBJS-$(CONFIG_FLAC_MUXER)                += flacenc.o flacenc_header.o \
                                             vorbiscomment.o
 OBJS-$(CONFIG_FLIC_DEMUXER)              += flic.o
 OBJS-$(CONFIG_FLV_DEMUXER)               += flvdec.o
+OBJS-$(CONFIG_LIVE_FLV_DEMUXER)          += flvdec.o
 OBJS-$(CONFIG_FLV_MUXER)                 += flvenc.o avc.o
 OBJS-$(CONFIG_FOURXM_DEMUXER)            += 4xm.o
 OBJS-$(CONFIG_FRAMECRC_MUXER)            += framecrcenc.o framehash.o

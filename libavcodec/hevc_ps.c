@@ -376,9 +376,10 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
             goto err;
         }
         if (vps->vps_num_reorder_pics[i] > vps->vps_max_dec_pic_buffering[i] - 1) {
-            av_log(s->avctx, AV_LOG_ERROR, "vps_max_num_reorder_pics out of range: %d\n",
+            av_log(s->avctx, AV_LOG_WARNING, "vps_max_num_reorder_pics out of range: %d\n",
                    vps->vps_num_reorder_pics[i]);
-            goto err;
+            if (s->avctx->strict_std_compliance > FF_COMPLIANCE_NORMAL)
+                goto err;
         }
     }
 

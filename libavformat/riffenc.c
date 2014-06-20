@@ -234,32 +234,33 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
     }
 }
 
-void ff_parse_specific_params(AVCodecContext *stream, int *au_rate,
+void ff_parse_specific_params(AVStream *st, int *au_rate,
                               int *au_ssize, int *au_scale)
 {
+    AVCodecContext *codec = st->codec;
     int gcd;
     int audio_frame_size;
 
     /* We use the known constant frame size for the codec if known, otherwise
      * fall back on using AVCodecContext.frame_size, which is not as reliable
      * for indicating packet duration. */
-    audio_frame_size = av_get_audio_frame_duration(stream, 0);
+    audio_frame_size = av_get_audio_frame_duration(codec, 0);
     if (!audio_frame_size)
-        audio_frame_size = stream->frame_size;
+        audio_frame_size = codec->frame_size;
 
-    *au_ssize = stream->block_align;
-    if (audio_frame_size && stream->sample_rate) {
+    *au_ssize = codec->block_align;
+    if (audio_frame_size && codec->sample_rate) {
         *au_scale = audio_frame_size;
-        *au_rate  = stream->sample_rate;
-    } else if (stream->codec_type == AVMEDIA_TYPE_VIDEO ||
-               stream->codec_type == AVMEDIA_TYPE_DATA ||
-               stream->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        *au_scale = stream->time_base.num;
-        *au_rate  = stream->time_base.den;
+        *au_rate  = codec->sample_rate;
+    } else if (codec->codec_type == AVMEDIA_TYPE_VIDEO ||
+               codec->codec_type == AVMEDIA_TYPE_DATA ||
+               codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+        *au_scale = st->time_base.num;
+        *au_rate  = st->time_base.den;
     } else {
-        *au_scale = stream->block_align ? stream->block_align * 8 : 8;
-        *au_rate  = stream->bit_rate ? stream->bit_rate :
-                    8 * stream->sample_rate;
+        *au_scale = codec->block_align ? codec->block_align * 8 : 8;
+        *au_rate  = codec->bit_rate ? codec->bit_rate :
+                    8 * codec->sample_rate;
     }
     gcd        = av_gcd(*au_scale, *au_rate);
     *au_scale /= gcd;

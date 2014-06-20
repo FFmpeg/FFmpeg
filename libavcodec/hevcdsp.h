@@ -50,7 +50,9 @@ typedef struct HEVCDSPContext {
     void (*transform_skip)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
     void (*transform_4x4_luma_add)(uint8_t *dst, int16_t *coeffs,
                                    ptrdiff_t stride);
-    void (*transform_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+    void (*transform_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit);
+
+    void (*transform_dc_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
     void (*sao_band_filter[4])(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
                                struct SAOParams *sao, int *borders,

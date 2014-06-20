@@ -50,6 +50,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->bits_per_raw_sample = 10;
 
     ff_dsputil_init(&ctx->dsp, avctx);
+    ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_proresdsp_init(&ctx->prodsp, avctx);
 
     ff_init_scantable_permutation(idct_permutation,
@@ -366,7 +367,7 @@ static int decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
     int ret;
 
     for (i = 0; i < blocks_per_slice; i++)
-        ctx->dsp.clear_block(blocks+(i<<6));
+        ctx->bdsp.clear_block(blocks+(i<<6));
 
     init_get_bits(&gb, buf, buf_size << 3);
 
@@ -399,7 +400,7 @@ static int decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
     int ret;
 
     for (i = 0; i < blocks_per_slice; i++)
-        ctx->dsp.clear_block(blocks+(i<<6));
+        ctx->bdsp.clear_block(blocks+(i<<6));
 
     init_get_bits(&gb, buf, buf_size << 3);
 
@@ -478,7 +479,7 @@ static void decode_slice_alpha(ProresContext *ctx,
     int16_t *block;
 
     for (i = 0; i < blocks_per_slice<<2; i++)
-        ctx->dsp.clear_block(blocks+(i<<6));
+        ctx->bdsp.clear_block(blocks+(i<<6));
 
     init_get_bits(&gb, buf, buf_size << 3);
 

@@ -34,22 +34,6 @@ SECTION_TEXT
 ; void ff_add_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
 ;                                     const uint8_t *diff, int w,
 ;                                     int *left, int *left_top)
-%macro LSHIFT 2
-%if mmsize > 8
-    pslldq  %1, %2
-%else
-    psllq   %1, 8*(%2)
-%endif
-%endmacro
-
-%macro RSHIFT 2
-%if mmsize > 8
-    psrldq  %1, %2
-%else
-    psrlq   %1, 8*(%2)
-%endif
-%endmacro
-
 %macro HFYU_MEDIAN 0
 cglobal add_hfyu_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     movu    m0, [topq]

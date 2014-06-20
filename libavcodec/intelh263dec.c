@@ -26,6 +26,10 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
 {
     int format;
 
+    if (get_bits_left(&s->gb) == 64) { /* special dummy frames */
+        return FRAME_SKIPPED;
+    }
+
     /* picture header */
     if (get_bits_long(&s->gb, 22) != 0x20) {
         av_log(s->avctx, AV_LOG_ERROR, "Bad picture start code\n");

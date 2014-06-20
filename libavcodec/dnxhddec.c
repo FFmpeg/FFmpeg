@@ -25,6 +25,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/timer.h"
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "get_bits.h"
 #include "dnxhddata.h"
 #include "dsputil.h"
@@ -34,6 +35,7 @@
 typedef struct DNXHDContext {
     AVCodecContext *avctx;
     GetBitContext gb;
+    BlockDSPContext bdsp;
     int64_t cid;                        ///< compression id
     unsigned int width, height;
     unsigned int mb_width, mb_height;
@@ -142,6 +144,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         ctx->avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
         ctx->avctx->bits_per_raw_sample = 10;
         if (ctx->bit_depth != 10) {
+            ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
             ff_dsputil_init(&ctx->dsp, ctx->avctx);
             ctx->bit_depth = 10;
             ctx->decode_dct_block = dnxhd_decode_dct_block_10_444;
@@ -151,6 +154,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         ctx->avctx->bits_per_raw_sample = 10;
         if (ctx->bit_depth != 10) {
+            ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
             ff_dsputil_init(&ctx->dsp, ctx->avctx);
             ctx->bit_depth = 10;
             ctx->decode_dct_block = dnxhd_decode_dct_block_10;
@@ -159,6 +163,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         ctx->avctx->bits_per_raw_sample = 8;
         if (ctx->bit_depth != 8) {
+            ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
             ff_dsputil_init(&ctx->dsp, ctx->avctx);
             ctx->bit_depth = 8;
             ctx->decode_dct_block = dnxhd_decode_dct_block_8;
@@ -338,12 +343,12 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
     }
 
     for (i = 0; i < 8; i++) {
-        ctx->dsp.clear_block(ctx->blocks[i]);
+        ctx->bdsp.clear_block(ctx->blocks[i]);
         ctx->decode_dct_block(ctx, ctx->blocks[i], i, qscale);
     }
     if (ctx->is_444) {
         for (; i < 12; i++) {
-            ctx->dsp.clear_block(ctx->blocks[i]);
+            ctx->bdsp.clear_block(ctx->blocks[i]);
             ctx->decode_dct_block(ctx, ctx->blocks[i], i, qscale);
         }
     }

@@ -134,7 +134,6 @@ void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
     } while (--i);
 }
 
-
 /* Draw the edges of width 'w' of an image of size width, height
  * this MMX version can only handle w == 8 || w == 16. */
 void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,

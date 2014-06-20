@@ -201,6 +201,7 @@ typedef struct MpegTSWriteStream {
     int payload_flags;
     uint8_t *payload;
     AVFormatContext *amux;
+    AVRational user_tb;
 } MpegTSWriteStream;
 
 static void mpegts_write_pat(AVFormatContext *s)
@@ -602,13 +603,17 @@ static int mpegts_write_header(AVFormatContext *s)
     /* assign pids to each stream */
     for(i = 0;i < s->nb_streams; i++) {
         st = s->streams[i];
-        avpriv_set_pts_info(st, 33, 1, 90000);
+
         ts_st = av_mallocz(sizeof(MpegTSWriteStream));
         if (!ts_st) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
         st->priv_data = ts_st;
+
+        ts_st->user_tb = st->time_base;
+        avpriv_set_pts_info(st, 33, 1, 90000);
+
         ts_st->payload = av_mallocz(ts->pes_payload_size);
         if (!ts_st->payload) {
             ret = AVERROR(ENOMEM);
@@ -683,7 +688,8 @@ static int mpegts_write_header(AVFormatContext *s)
         pcr_st = s->streams[0];
         ts_st = pcr_st->priv_data;
         service->pcr_pid = ts_st->pid;
-    }
+    } else
+        ts_st = pcr_st->priv_data;
 
     if (ts->mux_rate > 1) {
         service->pcr_packet_period = (ts->mux_rate * ts->pcr_period) /
@@ -710,8 +716,9 @@ static int mpegts_write_header(AVFormatContext *s)
             }
         } else {
             // max delta PCR 0.1s
+            // TODO: should be avg_frame_rate
             service->pcr_packet_period =
-                pcr_st->codec->time_base.den/(10*pcr_st->codec->time_base.num);
+                ts_st->user_tb.den / (10 * ts_st->user_tb.num);
         }
         if(!service->pcr_packet_period)
             service->pcr_packet_period = 1;

@@ -180,7 +180,7 @@ Codecs:
   h261*                                 Michael Niedermayer
   h263*                                 Michael Niedermayer
   h264*                                 Loren Merritt, Michael Niedermayer
-  huffyuv.c                             Michael Niedermayer
+  huffyuv*                              Michael Niedermayer, Christophe Gisquet
   idcinvideo.c                          Mike Melanson
   imc*                                  Benjamin Larsson
   indeo2*                               Kostya Shishkov
@@ -240,7 +240,7 @@ Codecs:
   rtjpeg.c, rtjpeg.h                    Reimar Doeffinger
   rv10.c                                Michael Niedermayer
   rv3*                                  Kostya Shishkov
-  rv4*                                  Kostya Shishkov
+  rv4*                                  Kostya Shishkov, Christophe Gisquet
   s3tc*                                 Ivo van Poorten
   smacker.c                             Kostya Shishkov
   smc.c                                 Mike Melanson
@@ -264,7 +264,7 @@ Codecs:
   v410*.c                               Derek Buitenhuis
   vb.c                                  Kostya Shishkov
   vble.c                                Derek Buitenhuis
-  vc1*                                  Kostya Shishkov
+  vc1*                                  Kostya Shishkov, Christophe Gisquet
   vcr1.c                                Michael Niedermayer
   vda_h264_dec.c                        Xidorn Quan
   vima.c                                Paul B Mahol

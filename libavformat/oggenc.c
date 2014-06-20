@@ -432,8 +432,8 @@ static int ogg_write_header(AVFormatContext *s)
                 avpriv_set_pts_info(st, 64, 1, 48000);
             else
                 avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
-        } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-            avpriv_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
+        }
+
         if (st->codec->codec_id != AV_CODEC_ID_VORBIS &&
             st->codec->codec_id != AV_CODEC_ID_THEORA &&
             st->codec->codec_id != AV_CODEC_ID_SPEEX  &&

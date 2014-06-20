@@ -74,7 +74,18 @@ format with @command{ffmpeg}, you can use the command:
 ffmpeg -i INPUT.mp4 -codec copy -bsf:v h264_mp4toannexb OUTPUT.ts
 @end example
 
-@section imx_dump_header
+@section imxdump
+
+Modifies the bitstream to fit in MOV and to be usable by the Final Cut
+Pro decoder. This filter only applies to the mpeg2video codec, and is
+likely not needed for Final Cut Pro 7 and newer with the appropriate
+@option{-tag:v}.
+
+For example, to remux 30 MB/sec NTSC IMX to MOV:
+
+@example
+ffmpeg -i input.mxf -c copy -bsf:v imxdump -tag:v mx3n output.mov
+@end example
 
 @section mjpeg2jpeg
 

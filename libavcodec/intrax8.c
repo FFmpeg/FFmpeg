@@ -535,7 +535,7 @@ static int x8_decode_intra_mb(IntraX8Context* const w, const int chroma){
     int sign;
 
     av_assert2(w->orient<12);
-    s->dsp.clear_block(s->block[0]);
+    s->bdsp.clear_block(s->block[0]);
 
     if(chroma){
         dc_mode=2;

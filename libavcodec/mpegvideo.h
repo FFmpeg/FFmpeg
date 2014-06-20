@@ -29,6 +29,7 @@
 #define AVCODEC_MPEGVIDEO_H
 
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "dsputil.h"
 #include "error_resilience.h"
 #include "get_bits.h"
@@ -356,6 +357,7 @@ typedef struct MpegEncContext {
     int unrestricted_mv;        ///< mv can point outside of the coded picture
     int h263_long_vectors;      ///< use horrible h263v1 long vector mode
 
+    BlockDSPContext bdsp;
     DSPContext dsp;             ///< pointers for accelerated dsp functions
     H264ChromaContext h264chroma;
     HpelDSPContext hdsp;

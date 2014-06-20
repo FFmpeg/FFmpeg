@@ -29,6 +29,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "bytestream.h"
 #include "dsputil.h"
 #include "get_bits.h"
@@ -72,6 +73,7 @@ static const uint8_t chroma_quant[64] = {
 };
 
 typedef struct JPGContext {
+    BlockDSPContext bdsp;
     DSPContext dsp;
     ScanTable  scantable;
 
@@ -150,6 +152,7 @@ static av_cold int jpg_init(AVCodecContext *avctx, JPGContext *c)
     if (ret)
         return ret;
 
+    ff_blockdsp_init(&c->bdsp, avctx);
     ff_dsputil_init(&c->dsp, avctx);
     ff_init_scantable(c->dsp.idct_permutation, &c->scantable,
                       ff_zigzag_direct);
@@ -193,7 +196,7 @@ static int jpg_decode_block(JPGContext *c, GetBitContext *gb,
     const int is_chroma = !!plane;
     const uint8_t *qmat = is_chroma ? chroma_quant : luma_quant;
 
-    c->dsp.clear_block(block);
+    c->bdsp.clear_block(block);
     dc = get_vlc2(gb, c->dc_vlc[is_chroma].table, 9, 3);
     if (dc < 0)
         return AVERROR_INVALIDDATA;
@@ -259,7 +262,7 @@ static int jpg_decode_data(JPGContext *c, int width, int height,
     for (i = 0; i < 3; i++)
         c->prev_dc[i] = 1024;
     bx = by = 0;
-    c->dsp.clear_blocks(c->block[0]);
+    c->bdsp.clear_blocks(c->block[0]);
     for (mb_y = 0; mb_y < mb_h; mb_y++) {
         for (mb_x = 0; mb_x < mb_w; mb_x++) {
             if (mask && !mask[mb_x * 2] && !mask[mb_x * 2 + 1] &&

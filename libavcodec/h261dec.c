@@ -442,7 +442,7 @@ static int h261_decode_mb(H261Context *h)
 intra:
     /* decode each block */
     if (s->mb_intra || HAS_CBP(h->mtype)) {
-        s->dsp.clear_blocks(s->block[0]);
+        s->bdsp.clear_blocks(s->block[0]);
         for (i = 0; i < 6; i++) {
             if (h261_decode_block(h, s->block[i], i, cbp & 32) < 0)
                 return SLICE_ERROR;

@@ -888,8 +888,10 @@ static int open_input_file(OptionsContext *o, const char *filename)
     ret = avformat_find_stream_info(ic, opts);
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL, "%s: could not find codec parameters\n", filename);
-        avformat_close_input(&ic);
-        exit_program(1);
+        if (ic->nb_streams == 0) {
+            avformat_close_input(&ic);
+            exit_program(1);
+        }
     }
 
     timestamp = (o->start_time == AV_NOPTS_VALUE) ? 0 : o->start_time;

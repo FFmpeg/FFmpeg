@@ -414,8 +414,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     DEBUG_BUFFERS("vLumFilterSize: %d vLumBufSize: %d vChrFilterSize: %d vChrBufSize: %d\n",
                   vLumFilterSize, vLumBufSize, vChrFilterSize, vChrBufSize);
 
-    if (dstStride[0]%16 !=0 || dstStride[1]%16 !=0 ||
-        dstStride[2]%16 !=0 || dstStride[3]%16 != 0) {
+    if (dstStride[0]&15 || dstStride[1]&15 ||
+        dstStride[2]&15 || dstStride[3]&15) {
         static int warnedAlready = 0; // FIXME maybe move this into the context
         if (flags & SWS_PRINT_INFO && !warnedAlready) {
             av_log(c, AV_LOG_WARNING,
@@ -425,10 +425,10 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         }
     }
 
-    if (   (uintptr_t)dst[0]%16 || (uintptr_t)dst[1]%16 || (uintptr_t)dst[2]%16
-        || (uintptr_t)src[0]%16 || (uintptr_t)src[1]%16 || (uintptr_t)src[2]%16
-        || dstStride[0]%16 || dstStride[1]%16 || dstStride[2]%16 || dstStride[3]%16
-        || srcStride[0]%16 || srcStride[1]%16 || srcStride[2]%16 || srcStride[3]%16
+    if (   (uintptr_t)dst[0]&15 || (uintptr_t)dst[1]&15 || (uintptr_t)dst[2]&15
+        || (uintptr_t)src[0]&15 || (uintptr_t)src[1]&15 || (uintptr_t)src[2]&15
+        || dstStride[0]&15 || dstStride[1]&15 || dstStride[2]&15 || dstStride[3]&15
+        || srcStride[0]&15 || srcStride[1]&15 || srcStride[2]&15 || srcStride[3]&15
     ) {
         static int warnedAlready=0;
         int cpu_flags = av_get_cpu_flags();

@@ -3016,7 +3016,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     int scale;
     int q1, q2 = 0;
 
-    s->dsp.clear_block(block);
+    s->bdsp.clear_block(block);
 
     /* XXX: Guard against dumb values of mquant */
     mquant = (mquant < 1) ? 0 : ((mquant > 31) ? 31 : mquant);
@@ -3223,7 +3223,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
     int ttblk = ttmb & 7;
     int pat = 0;
 
-    s->dsp.clear_block(block);
+    s->bdsp.clear_block(block);
 
     if (ttmb == -1) {
         ttblk = ff_vc1_ttblk_to_tt[v->tt_index][get_vlc2(gb, ff_vc1_ttblk_vlc[v->tt_index].table, VC1_TTBLK_VLC_BITS, 1)];
@@ -4801,7 +4801,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
             dst[3] = dst[2] + 8;
             dst[4] = s->dest[1];
             dst[5] = s->dest[2];
-            s->dsp.clear_blocks(s->block[0]);
+            s->bdsp.clear_blocks(s->block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_width;
             s->current_picture.mb_type[mb_pos]                     = MB_TYPE_INTRA;
             s->current_picture.qscale_table[mb_pos]                = v->pq;
@@ -4941,7 +4941,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
         for (;s->mb_x < s->mb_width; s->mb_x++) {
             int16_t (*block)[64] = v->block[v->cur_blk_idx];
             ff_update_block_index(s);
-            s->dsp.clear_blocks(block[0]);
+            s->bdsp.clear_blocks(block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_stride;
             s->current_picture.mb_type[mb_pos + v->mb_off]                         = MB_TYPE_INTRA;
             s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][0] = 0;
@@ -5626,6 +5626,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     // That this is necessary might indicate a bug.
     ff_vc1_decode_end(avctx);
 
+    ff_blockdsp_init(&s->bdsp, avctx);
     ff_h264chroma_init(&v->h264chroma, 8);
     ff_qpeldsp_init(&s->qdsp);
 

@@ -44,9 +44,11 @@ int swri_resample_linear_double_sse2(ResampleContext *c,  double *dst, const  do
 
 #include "resample_mmx.h"
 
+#if ARCH_X86_32
 #define TEMPLATE_RESAMPLE_S16_MMX2
 #include "libswresample/resample_template.c"
 #undef TEMPLATE_RESAMPLE_S16_MMX2
+#endif
 
 #if HAVE_SSE_INLINE
 #define TEMPLATE_RESAMPLE_FLT_SSE

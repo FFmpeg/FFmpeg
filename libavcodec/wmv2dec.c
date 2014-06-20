@@ -385,7 +385,7 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
         wmv2_pred_motion(w, &mx, &my);
 
         if(cbp){
-            s->dsp.clear_blocks(s->block[0]);
+            s->bdsp.clear_blocks(s->block[0]);
             if(s->per_mb_rl_table){
                 s->rl_table_index = decode012(&s->gb);
                 s->rl_chroma_table_index = s->rl_table_index;
@@ -431,7 +431,7 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
             s->rl_chroma_table_index = s->rl_table_index;
         }
 
-        s->dsp.clear_blocks(s->block[0]);
+        s->bdsp.clear_blocks(s->block[0]);
         for (i = 0; i < 6; i++) {
             if (ff_msmpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
             {

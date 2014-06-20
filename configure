@@ -274,7 +274,6 @@ Toolchain options:
   --target-samples=DIR     path to samples directory on target
   --tempprefix=PATH        force fixed dir/prefix instead of mktemp for checks
   --toolchain=NAME         set tool defaults according to NAME
-  --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
@@ -284,7 +283,7 @@ Toolchain options:
   --cxx=CXX                use C compiler CXX [$cxx_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
   --ld=LD                  use linker LD [$ld_default]
-  --pkg-config=PKGCONF     use pkg-config PKGCONF [$pkg_config_default]
+  --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
   --ranlib=RANLIB          use ranlib RANLIB [$ranlib_default]
   --host-cc=HOSTCC         use host C compiler HOSTCC
@@ -1548,6 +1547,7 @@ ARCH_EXT_LIST_PPC="
     dcbzl
     ldbrx
     ppc4xx
+    vsx
 "
 
 ARCH_EXT_LIST_X86="
@@ -1795,6 +1795,7 @@ CONFIG_EXTRA="
     aandcttables
     ac3dsp
     audio_frame_queue
+    blockdsp
     cabac
     dsputil
     exif
@@ -1933,6 +1934,7 @@ mipsdspr2_deps="mips"
 
 altivec_deps="ppc"
 ppc4xx_deps="ppc"
+vsx_deps="ppc"
 
 cpunop_deps="i686"
 x86_64_select="i686"
@@ -1993,7 +1995,7 @@ mdct_select="fft"
 rdft_select="fft"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
-mpegvideo_select="dsputil h264chroma hpeldsp videodsp"
+mpegvideo_select="blockdsp dsputil h264chroma hpeldsp videodsp"
 mpegvideoenc_select="dsputil mpegvideo qpeldsp"
 
 # decoders / encoders
@@ -2012,18 +2014,18 @@ amrwb_decoder_select="lsp"
 amv_decoder_select="sp5x_decoder exif"
 amv_encoder_select="aandcttables"
 ape_decoder_select="dsputil llauddsp"
-asv1_decoder_select="dsputil"
+asv1_decoder_select="blockdsp dsputil"
 asv1_encoder_select="dsputil"
-asv2_decoder_select="dsputil"
+asv2_decoder_select="blockdsp dsputil"
 asv2_encoder_select="dsputil"
 atrac1_decoder_select="mdct sinewin"
 atrac3_decoder_select="mdct"
 atrac3p_decoder_select="mdct sinewin"
 avrn_decoder_select="exif"
-bink_decoder_select="dsputil hpeldsp"
+bink_decoder_select="blockdsp hpeldsp"
 binkaudio_dct_decoder_select="mdct rdft dct sinewin"
 binkaudio_rdft_decoder_select="mdct rdft sinewin"
-cavs_decoder_select="dsputil golomb h264chroma qpeldsp videodsp"
+cavs_decoder_select="blockdsp dsputil golomb h264chroma qpeldsp videodsp"
 cllc_decoder_select="dsputil"
 comfortnoise_encoder_select="lpc"
 cook_decoder_select="dsputil mdct sinewin"
@@ -2031,16 +2033,16 @@ cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
 dca_decoder_select="mdct"
 dirac_decoder_select="dsputil dwt golomb videodsp"
-dnxhd_decoder_select="dsputil"
-dnxhd_encoder_select="aandcttables dsputil mpegvideoenc"
+dnxhd_decoder_select="blockdsp dsputil"
+dnxhd_encoder_select="aandcttables blockdsp dsputil mpegvideoenc"
 dvvideo_decoder_select="dsputil"
 dvvideo_encoder_select="dsputil"
 dxa_decoder_select="zlib"
 eac3_decoder_select="ac3_decoder"
 eac3_encoder_select="ac3_encoder"
-eamad_decoder_select="aandcttables dsputil mpegvideo"
+eamad_decoder_select="aandcttables blockdsp dsputil mpegvideo"
 eatgq_decoder_select="aandcttables"
-eatqi_decoder_select="aandcttables dsputil error_resilience mpegvideo"
+eatqi_decoder_select="aandcttables blockdsp dsputil error_resilience mpegvideo"
 exr_decoder_select="zlib"
 ffv1_decoder_select="golomb rangecoder"
 ffv1_encoder_select="rangecoder"
@@ -2055,9 +2057,9 @@ flashsv2_encoder_select="zlib"
 flashsv2_decoder_select="zlib"
 flv_decoder_select="h263_decoder"
 flv_encoder_select="h263_encoder"
-fourxm_decoder_select="dsputil"
+fourxm_decoder_select="blockdsp dsputil"
 fraps_decoder_select="dsputil huffman"
-g2m_decoder_select="dsputil zlib"
+g2m_decoder_select="blockdsp dsputil zlib"
 g729_decoder_select="dsputil"
 h261_decoder_select="error_resilience mpegvideo"
 h261_encoder_select="aandcttables mpegvideoenc"
@@ -2076,14 +2078,14 @@ indeo3_decoder_select="hpeldsp"
 interplay_video_decoder_select="hpeldsp"
 jpegls_decoder_select="golomb mjpeg_decoder"
 jpegls_encoder_select="golomb"
-jv_decoder_select="dsputil"
+jv_decoder_select="blockdsp"
 lagarith_decoder_select="huffyuvdsp"
 ljpeg_encoder_select="aandcttables mpegvideoenc"
 loco_decoder_select="golomb"
-mdec_decoder_select="dsputil error_resilience mpegvideo"
+mdec_decoder_select="blockdsp dsputil error_resilience mpegvideo"
 metasound_decoder_select="lsp mdct sinewin"
-mimic_decoder_select="dsputil hpeldsp"
-mjpeg_decoder_select="dsputil hpeldsp exif"
+mimic_decoder_select="blockdsp dsputil hpeldsp"
+mjpeg_decoder_select="blockdsp dsputil hpeldsp exif"
 mjpeg_encoder_select="aandcttables mpegvideoenc"
 mjpegb_decoder_select="mjpeg_decoder"
 mlp_decoder_select="mlp_parser"
@@ -2122,7 +2124,7 @@ on2avc_decoder_select="mdct"
 opus_decoder_deps="swresample"
 png_decoder_select="zlib"
 png_encoder_select="huffyuvencdsp zlib"
-prores_decoder_select="dsputil"
+prores_decoder_select="blockdsp dsputil"
 prores_encoder_select="dsputil"
 qcelp_decoder_select="lsp"
 qdm2_decoder_select="mdct rdft mpegaudiodsp"
@@ -2161,7 +2163,7 @@ twinvq_decoder_select="mdct lsp sinewin"
 utvideo_decoder_select="dsputil"
 utvideo_encoder_select="dsputil huffman huffyuvencdsp"
 vble_decoder_select="huffyuvdsp"
-vc1_decoder_select="error_resilience h263_decoder h264chroma h264qpel intrax8 qpeldsp"
+vc1_decoder_select="blockdsp error_resilience h263_decoder h264chroma h264qpel intrax8 qpeldsp"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
@@ -2183,7 +2185,7 @@ wmav2_encoder_select="mdct sinewin"
 wmavoice_decoder_select="lsp rdft dct mdct sinewin"
 wmv1_decoder_select="h263_decoder"
 wmv1_encoder_select="h263_encoder"
-wmv2_decoder_select="h263_decoder intrax8 videodsp"
+wmv2_decoder_select="blockdsp h263_decoder intrax8 videodsp"
 wmv2_encoder_select="h263_encoder"
 wmv3_decoder_select="vc1_decoder"
 wmv3image_decoder_select="wmv3_decoder"
@@ -2627,6 +2629,7 @@ host_os=$target_os_default
 # machine
 if test "$target_os_default" = aix; then
     arch_default=$(uname -p)
+    strip_default="strip -X32_64"
 else
     arch_default=$(uname -m)
 fi
@@ -3690,6 +3693,7 @@ elif enabled mips; then
 elif enabled ppc; then
 
     disable ldbrx
+    disable vsx
 
     case $(tolower $cpu) in
         601|ppc601|powerpc601)
@@ -3717,7 +3721,7 @@ elif enabled ppc; then
         g5|970|ppc970|powerpc970)
             cpuflags="-mcpu=970"
         ;;
-        power[3-7]*)
+        power[3-8]*)
             cpuflags="-mcpu=$cpu"
         ;;
         cell)
@@ -3867,6 +3871,13 @@ case $target_os in
         SHFLAGS=-shared
         add_cppflags '-I\$(SRC_PATH)/compat/aix'
         enabled shared && add_ldflags -Wl,-brtl
+        ;;
+    android)
+        disable symver
+        SLIB_INSTALL_NAME='$(SLIBNAME)'
+        SLIB_INSTALL_LINKS=
+        # soname not set on purpose
+        SHFLAGS=-shared
         ;;
     haiku)
         prefix_default="/boot/common"
@@ -4278,10 +4289,16 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
+if  [ "$cpu" = "power7" ] || [ "$cpu" = "power8" ] ;then
+    if ! enabled bigendian ;then
+        enable vsx
+    fi
+fi
+
 
 if enabled asm; then
     enabled     arm         && nogas=die
-    enabled_all ppc altivec && nogas=warn
+    enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
     as=${gas:=$as}
     check_as <<EOF && enable gnu_as || \
         $nogas "GNU assembler not found, install gas-preprocessor"
@@ -4407,6 +4424,9 @@ EOF
         enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
     fi
 
+    if enabled vsx; then
+        check_cflags -mvsx
+    fi
 elif enabled x86; then
 
     check_builtin rdtsc    intrin.h   "__rdtsc()"
@@ -4446,7 +4466,12 @@ EOF
         elif check_cmd nasm -v; then
             yasmexe=nasm
             yasm_debug="-g -F dwarf"
-            enabled x86_64 && test "$objformat" = elf && objformat=elf64
+            if enabled x86_64; then
+                case "$objformat" in
+                    elf)   objformat=elf64 ;;
+                    win32) objformat=win64 ;;
+                esac
+            fi
         fi
 
         YASMFLAGS="-f $objformat $yasm_extra"
@@ -5248,6 +5273,7 @@ fi
 if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
     echo "PPC 4xx optimizations     ${ppc4xx-no}"
+    echo "PPC VSX optimizations     ${vsx-no}"
     echo "dcbzl available           ${dcbzl-no}"
 fi
 echo "debug symbols             ${debug-no}"

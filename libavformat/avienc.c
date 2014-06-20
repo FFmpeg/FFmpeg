@@ -131,7 +131,7 @@ static int avi_write_counters(AVFormatContext *s, int riff_id)
         av_assert0(avist->frames_hdr_strm);
         stream = s->streams[n]->codec;
         avio_seek(pb, avist->frames_hdr_strm, SEEK_SET);
-        ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
+        ff_parse_specific_params(s->streams[n], &au_byterate, &au_ssize, &au_scale);
         if (au_ssize == 0)
             avio_wl32(pb, avist->packet_count);
         else
@@ -155,6 +155,7 @@ static int avi_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int bitrate, n, i, nb_frames, au_byterate, au_ssize, au_scale;
     AVCodecContext *video_enc;
+    AVStream *video_st = NULL;
     int64_t list1, list2, strh, strf;
     AVDictionaryEntry *t = NULL;
     int padding;
@@ -184,15 +185,18 @@ static int avi_write_header(AVFormatContext *s)
     for (n = 0; n < s->nb_streams; n++) {
         AVCodecContext *codec = s->streams[n]->codec;
         bitrate += codec->bit_rate;
-        if (codec->codec_type == AVMEDIA_TYPE_VIDEO)
+        if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             video_enc = codec;
+            video_st = s->streams[n];
+        }
     }
 
     nb_frames = 0;
 
-    if (video_enc)
-        avio_wl32(pb, (uint32_t) (INT64_C(1000000) * video_enc->time_base.num /
-                                  video_enc->time_base.den));
+    // TODO: should be avg_frame_rate
+    if (video_st)
+        avio_wl32(pb, (uint32_t) (INT64_C(1000000) * video_st->time_base.num /
+                                  video_st->time_base.den));
     else
         avio_wl32(pb, 0);
     avio_wl32(pb, bitrate / 8); /* XXX: not quite exact */
@@ -260,7 +264,7 @@ static int avi_write_header(AVFormatContext *s)
         avio_wl16(pb, 0); /* language */
         avio_wl32(pb, 0); /* initial frame */
 
-        ff_parse_specific_params(enc, &au_byterate, &au_ssize, &au_scale);
+        ff_parse_specific_params(st, &au_byterate, &au_ssize, &au_scale);
 
         if (   enc->codec_type == AVMEDIA_TYPE_VIDEO
             && enc->codec_id != AV_CODEC_ID_XSUB
@@ -388,7 +392,8 @@ static int avi_write_header(AVFormatContext *s)
 
             avio_wl32(pb, 0); // video format   = unknown
             avio_wl32(pb, 0); // video standard = unknown
-            avio_wl32(pb, lrintf(1.0 / av_q2d(enc->time_base)));
+            // TODO: should be avg_frame_rate
+            avio_wl32(pb, lrintf(1.0 / av_q2d(st->time_base)));
             avio_wl32(pb, enc->width);
             avio_wl32(pb, enc->height);
             avio_wl16(pb, den);

@@ -2117,8 +2117,7 @@ static float dca_dmix_code(unsigned code)
 {
     int sign = (code >> 8) - 1;
     code &= 0xff;
-#define POW2_MINUS15 .000030517578125
-    return ((dca_dmixtable[code] ^ sign) - sign) * POW2_MINUS15;
+    return ((dca_dmixtable[code] ^ sign) - sign) * (1.0 / (1 << 15));
 }
 
 /**

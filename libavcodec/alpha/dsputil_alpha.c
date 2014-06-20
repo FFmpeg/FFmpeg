@@ -101,31 +101,9 @@ void add_pixels_clamped_mvi(const int16_t *block, uint8_t *pixels,
 }
 #endif
 
-static void clear_blocks_axp(int16_t *blocks) {
-    uint64_t *p = (uint64_t *) blocks;
-    int n = sizeof(int16_t) * 6 * 64;
-
-    do {
-        p[0] = 0;
-        p[1] = 0;
-        p[2] = 0;
-        p[3] = 0;
-        p[4] = 0;
-        p[5] = 0;
-        p[6] = 0;
-        p[7] = 0;
-        p += 8;
-        n -= 8 * 8;
-    } while (n);
-}
-
 av_cold void ff_dsputil_init_alpha(DSPContext *c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-
-    if (!high_bit_depth) {
-        c->clear_blocks = clear_blocks_axp;
-    }
 
     /* amask clears all bits that correspond to present features.  */
     if (amask(AMASK_MVI) == 0) {

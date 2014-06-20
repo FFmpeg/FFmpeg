@@ -324,8 +324,8 @@ static av_always_inline void rgb16_32ToUV_half_c_template(int16_t *dstU,
     maskb |= maskb << 1;
     maskg |= maskg << 1;
     for (i = 0; i < width; i++) {
-        int px0 = input_pixel(2 * i + 0) >> shp;
-        int px1 = input_pixel(2 * i + 1) >> shp;
+        unsigned px0 = input_pixel(2 * i + 0) >> shp;
+        unsigned px1 = input_pixel(2 * i + 1) >> shp;
         int b, r, g = (px0 & maskgx) + (px1 & maskgx);
         int rb = px0 + px1 - g;
 
