@@ -78,6 +78,9 @@
     <ClCompile Include="..\libavcodec\audio_frame_queue.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\blockdsp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\cabac.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -1947,6 +1950,9 @@
     <ClCompile Include="..\libavcodec\x86\ac3dsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\blockdsp_mmx.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dct_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
@@ -2140,6 +2146,9 @@
     <YASM Include="..\libavcodec\x86\ac3dsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\blockdsp.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\dct32.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -2213,6 +2222,9 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\hevc_deblock.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavcodec\x86\hevc_idct.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\hpeldsp.asm">

@@ -30,6 +30,9 @@
     <ClCompile Include="..\libavformat\cutils.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\dump.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\format.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

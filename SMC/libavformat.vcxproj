@@ -47,6 +47,9 @@
     <ClCompile Include="..\libavformat\cutils.c">
       <ObjectFileName>$(IntDir)\libavformat_cutils.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\dump.c">
+      <ObjectFileName>$(IntDir)\libavformat_dump.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\format.c">
       <ObjectFileName>$(IntDir)\libavformat_format.obj</ObjectFileName>
     </ClCompile>
