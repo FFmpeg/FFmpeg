@@ -968,8 +968,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (ctx->gop_invalid)
         return AVERROR_INVALIDDATA;
 
-    if (avctx->codec_id == AV_CODEC_ID_INDEO4 &&
-        ctx->frame_type == IVI4_FRAMETYPE_NULL_LAST) {
+    if (ctx->is_indeo4 && ctx->frame_type == IVI4_FRAMETYPE_NULL_LAST) {
         if (ctx->got_p_frame) {
             av_frame_move_ref(data, ctx->p_frame);
             *got_frame = 1;
@@ -1027,7 +1026,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if (ctx->is_scalable) {
-        if (avctx->codec_id == AV_CODEC_ID_INDEO4)
+        if (ctx->is_indeo4)
             ff_ivi_recompose_haar(&ctx->planes[0], frame->data[0], frame->linesize[0]);
         else
             ff_ivi_recompose53   (&ctx->planes[0], frame->data[0], frame->linesize[0]);
@@ -1045,8 +1044,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
      * to be the only way to handle the B-frames mode.
      * That's exactly the same Intel decoders do.
      */
-    if (avctx->codec_id == AV_CODEC_ID_INDEO4 &&
-        ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
+    if (ctx->is_indeo4 && ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
         int left;
 
         while (get_bits(&ctx->gb, 8)); // skip version string
@@ -1077,7 +1075,7 @@ av_cold int ff_ivi_decode_close(AVCodecContext *avctx)
         ff_free_vlc(&ctx->mb_vlc.cust_tab);
 
 #if IVI4_STREAM_ANALYSER
-    if (avctx->codec_id == AV_CODEC_ID_INDEO4) {
+    if (ctx->is_indeo4) {
     if (ctx->is_scalable)
         av_log(avctx, AV_LOG_ERROR, "This video uses scalability mode!\n");
     if (ctx->uses_tiling)
