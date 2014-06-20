@@ -25,20 +25,6 @@
 #include "avcodec.h"
 #include "dv_profile.h"
 
-static DVwork_chunk work_chunks_dv25pal   [1*12*27];
-static DVwork_chunk work_chunks_dv25pal411[1*12*27];
-static DVwork_chunk work_chunks_dv25ntsc  [1*10*27];
-static DVwork_chunk work_chunks_dv50pal   [2*12*27];
-static DVwork_chunk work_chunks_dv50ntsc  [2*10*27];
-static DVwork_chunk work_chunks_dv100palp [2*12*27];
-static DVwork_chunk work_chunks_dv100ntscp[2*10*27];
-static DVwork_chunk work_chunks_dv100pali [4*12*27];
-static DVwork_chunk work_chunks_dv100ntsci[4*10*27];
-
-static uint32_t dv_idct_factor_sd    [2*2*22*64];
-static uint32_t dv_idct_factor_hd1080[2*4*16*64];
-static uint32_t dv_idct_factor_hd720 [2*4*16*64];
-
 static const uint8_t dv_audio_shuffle525[10][9] = {
   {  0, 30, 60, 20, 50, 80, 10, 40, 70 }, /* 1st channel */
   {  6, 36, 66, 26, 56, 86, 16, 46, 76 },
@@ -89,8 +75,6 @@ static const DVprofile dv_profiles[] = {
       .height = 480,
       .width = 720,
       .sar = {{8, 9}, {32, 27}},
-      .work_chunks = &work_chunks_dv25ntsc[0],
-      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = AV_PIX_FMT_YUV411P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -109,8 +93,6 @@ static const DVprofile dv_profiles[] = {
       .height = 576,
       .width = 720,
       .sar = {{16, 15}, {64, 45}},
-      .work_chunks = &work_chunks_dv25pal[0],
-      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = AV_PIX_FMT_YUV420P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -129,8 +111,6 @@ static const DVprofile dv_profiles[] = {
       .height = 576,
       .width = 720,
       .sar = {{16, 15}, {64, 45}},
-      .work_chunks = &work_chunks_dv25pal411[0],
-      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = AV_PIX_FMT_YUV411P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -149,8 +129,6 @@ static const DVprofile dv_profiles[] = {
       .height = 480,
       .width = 720,
       .sar = {{8, 9}, {32, 27}},
-      .work_chunks = &work_chunks_dv50ntsc[0],
-      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = AV_PIX_FMT_YUV422P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -169,8 +147,6 @@ static const DVprofile dv_profiles[] = {
       .height = 576,
       .width = 720,
       .sar = {{16, 15}, {64, 45}},
-      .work_chunks = &work_chunks_dv50pal[0],
-      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = AV_PIX_FMT_YUV422P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -189,8 +165,6 @@ static const DVprofile dv_profiles[] = {
       .height = 1080,
       .width = 1280,
       .sar = {{1, 1}, {3, 2}},
-      .work_chunks = &work_chunks_dv100ntsci[0],
-      .idct_factor = &dv_idct_factor_hd1080[0],
       .pix_fmt = AV_PIX_FMT_YUV422P,
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
@@ -209,8 +183,6 @@ static const DVprofile dv_profiles[] = {
       .height = 1080,
       .width = 1440,
       .sar = {{1, 1}, {4, 3}},
-      .work_chunks = &work_chunks_dv100pali[0],
-      .idct_factor = &dv_idct_factor_hd1080[0],
       .pix_fmt = AV_PIX_FMT_YUV422P,
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
@@ -229,8 +201,6 @@ static const DVprofile dv_profiles[] = {
       .height = 720,
       .width = 960,
       .sar = {{1, 1}, {4, 3}},
-      .work_chunks = &work_chunks_dv100ntscp[0],
-      .idct_factor = &dv_idct_factor_hd720[0],
       .pix_fmt = AV_PIX_FMT_YUV422P,
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
@@ -249,8 +219,6 @@ static const DVprofile dv_profiles[] = {
       .height = 720,
       .width = 960,
       .sar = {{1, 1}, {4, 3}},
-      .work_chunks = &work_chunks_dv100palp[0],
-      .idct_factor = &dv_idct_factor_hd720[0],
       .pix_fmt = AV_PIX_FMT_YUV422P,
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
@@ -269,8 +237,6 @@ static const DVprofile dv_profiles[] = {
       .height = 576,
       .width = 720,
       .sar = {{16, 15}, {64, 45}},
-      .work_chunks = &work_chunks_dv25pal[0],
-      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = AV_PIX_FMT_YUV420P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,

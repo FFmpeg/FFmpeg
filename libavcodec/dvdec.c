@@ -179,12 +179,12 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
             if (DV_PROFILE_IS_HD(s->sys)) {
                 mb->idct_put     = s->idct_put[0];
                 mb->scan_table   = s->dv_zigzag[0];
-                mb->factor_table = &s->sys->idct_factor[(j >= 4)*4*16*64 + class1*16*64 + quant*64];
+                mb->factor_table = &s->idct_factor[(j >= 4)*4*16*64 + class1*16*64 + quant*64];
                 is_field_mode[mb_index] |= !j && dct_mode;
             } else {
                 mb->idct_put     = s->idct_put[dct_mode && log2_blocksize == 3];
                 mb->scan_table   = s->dv_zigzag[dct_mode];
-                mb->factor_table = &s->sys->idct_factor[(class1 == 3)*2*22*64 + dct_mode*22*64 +
+                mb->factor_table = &s->idct_factor[(class1 == 3)*2*22*64 + dct_mode*22*64 +
                                                         (quant + ff_dv_quant_offset[class1])*64];
             }
             dc = dc << 2;
@@ -321,11 +321,21 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     DVVideoContext *s = avctx->priv_data;
     const uint8_t* vsc_pack;
     int apt, is16_9, ret;
+    const DVprofile *sys;
 
-    s->sys = avpriv_dv_frame_profile2(avctx, s->sys, buf, buf_size);
-    if (!s->sys || buf_size < s->sys->frame_size || ff_dv_init_dynamic_tables(s->sys)) {
+    sys = avpriv_dv_frame_profile2(avctx, s->sys, buf, buf_size);
+    if (!sys || buf_size < sys->frame_size) {
         av_log(avctx, AV_LOG_ERROR, "could not find dv frame profile\n");
         return -1; /* NOTE: we only accept several full frames */
+    }
+
+    if (sys != s->sys) {
+        ret = ff_dv_init_dynamic_tables(s, sys);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Error initializing the work tables.\n");
+            return ret;
+        }
+        s->sys = sys;
     }
 
     s->frame            = data;
@@ -353,7 +363,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     }
 
     s->buf = buf;
-    avctx->execute(avctx, dv_decode_video_segment, s->sys->work_chunks, NULL,
+    avctx->execute(avctx, dv_decode_video_segment, s->work_chunks, NULL,
                    dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
 
     emms_c();
