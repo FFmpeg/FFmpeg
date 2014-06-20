@@ -35,7 +35,11 @@
 
 static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 {
-    if (!avpriv_dv_codec_profile(avctx)) {
+    DVVideoContext *s = avctx->priv_data;
+    int ret;
+
+    s->sys = avpriv_dv_codec_profile(avctx);
+    if (!s->sys) {
         av_log(avctx, AV_LOG_ERROR, "Found no DV profile for %ix%i %s video. "
                "Valid DV profiles are:\n",
                avctx->width, avctx->height, av_get_pix_fmt_name(avctx->pix_fmt));
@@ -45,6 +49,11 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
     if (avctx->height > 576) {
         av_log(avctx, AV_LOG_ERROR, "DVCPRO HD encoding is not supported.\n");
         return AVERROR_PATCHWELCOME;
+    }
+    ret = ff_dv_init_dynamic_tables(s->sys);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error initializing work tables.\n");
+        return ret;
     }
 
     avctx->coded_frame = av_frame_alloc();
@@ -665,9 +674,6 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     DVVideoContext *s = c->priv_data;
     int ret;
 
-    s->sys = avpriv_dv_codec_profile(c);
-    if (!s->sys || ff_dv_init_dynamic_tables(s->sys))
-        return -1;
     if ((ret = ff_alloc_packet2(c, pkt, s->sys->frame_size)) < 0)
         return ret;
 
