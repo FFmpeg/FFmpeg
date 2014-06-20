@@ -30,17 +30,17 @@
 #include "wavpack.h"
 
 #define UPDATE_WEIGHT(weight, delta, source, result) \
-    if (source && result) { \
-        int32_t s = (int32_t) (source ^ result) >> 31; \
-        weight = (delta ^ s) + (weight - s); \
+    if ((source) && (result)) { \
+        int32_t s = (int32_t) ((source) ^ (result)) >> 31; \
+        weight = ((delta) ^ s) + ((weight) - s); \
     }
 
-#define APPLY_WEIGHT_F(weight, sample) (((((sample & 0xffff) * weight) >> 9) + \
-    (((sample & ~0xffff) >> 9) * weight) + 1) >> 1)
+#define APPLY_WEIGHT_F(weight, sample) ((((((sample) & 0xffff) * (weight)) >> 9) + \
+    ((((sample) & ~0xffff) >> 9) * (weight)) + 1) >> 1)
 
-#define APPLY_WEIGHT_I(weight, sample) ((weight * sample + 512) >> 10)
+#define APPLY_WEIGHT_I(weight, sample) (((weight) * (sample) + 512) >> 10)
 
-#define APPLY_WEIGHT(weight, sample) (sample != (short) sample ? \
+#define APPLY_WEIGHT(weight, sample) ((sample) != (short) (sample) ? \
     APPLY_WEIGHT_F(weight, sample) : APPLY_WEIGHT_I (weight, sample))
 
 #define CLEAR(destin) memset(&destin, 0, sizeof(destin));
