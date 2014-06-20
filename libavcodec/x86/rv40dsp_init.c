@@ -134,8 +134,8 @@ QPEL_FUNCS_DECL(OP, 3, 2, OPT)
 /** @} */
 
 #define LOOPSIZE  8
-#define HCOFF(x)  (32 * (x - 1))
-#define VCOFF(x)  (32 * (x - 1))
+#define HCOFF(x)  (32 * ((x) - 1))
+#define VCOFF(x)  (32 * ((x) - 1))
 QPEL_MC_DECL(put_, _ssse3)
 QPEL_MC_DECL(avg_, _ssse3)
 
@@ -143,8 +143,8 @@ QPEL_MC_DECL(avg_, _ssse3)
 #undef HCOFF
 #undef VCOFF
 #define LOOPSIZE  8
-#define HCOFF(x)  (64 * (x - 1))
-#define VCOFF(x)  (64 * (x - 1))
+#define HCOFF(x)  (64 * ((x) - 1))
+#define VCOFF(x)  (64 * ((x) - 1))
 QPEL_MC_DECL(put_, _sse2)
 QPEL_MC_DECL(avg_, _sse2)
 
@@ -153,8 +153,8 @@ QPEL_MC_DECL(avg_, _sse2)
 #undef HCOFF
 #undef VCOFF
 #define LOOPSIZE  4
-#define HCOFF(x)  (64 * (x - 1))
-#define VCOFF(x)  (64 * (x - 1))
+#define HCOFF(x)  (64 * ((x) - 1))
+#define VCOFF(x)  (64 * ((x) - 1))
 
 QPEL_MC_DECL(put_, _mmx)
 
