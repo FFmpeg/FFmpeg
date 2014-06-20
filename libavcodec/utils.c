@@ -819,7 +819,8 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
         if (!frame->sample_aspect_ratio.num)
             frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
 
-        if (av_image_check_sar(frame->width, frame->height,
+        if (frame->width && frame->height &&
+            av_image_check_sar(frame->width, frame->height,
                                frame->sample_aspect_ratio) < 0) {
             av_log(avctx, AV_LOG_WARNING, "ignoring invalid SAR: %u/%u\n",
                    frame->sample_aspect_ratio.num,
