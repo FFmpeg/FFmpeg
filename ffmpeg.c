@@ -755,12 +755,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     update_benchmark("encode_audio %d.%d", ost->file_index, ost->index);
 
     if (got_packet) {
-        if (pkt.pts != AV_NOPTS_VALUE)
-            pkt.pts      = av_rescale_q(pkt.pts,      enc->time_base, ost->st->time_base);
-        if (pkt.dts != AV_NOPTS_VALUE)
-            pkt.dts      = av_rescale_q(pkt.dts,      enc->time_base, ost->st->time_base);
-        if (pkt.duration > 0)
-            pkt.duration = av_rescale_q(pkt.duration, enc->time_base, ost->st->time_base);
+        av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
 
         if (debug_ts) {
             av_log(NULL, AV_LOG_INFO, "encoder -> type:audio "
@@ -1052,10 +1047,7 @@ static void do_video_out(AVFormatContext *s,
             if (pkt.pts == AV_NOPTS_VALUE && !(enc->codec->capabilities & CODEC_CAP_DELAY))
                 pkt.pts = ost->sync_opts;
 
-            if (pkt.pts != AV_NOPTS_VALUE)
-                pkt.pts = av_rescale_q(pkt.pts, enc->time_base, ost->st->time_base);
-            if (pkt.dts != AV_NOPTS_VALUE)
-                pkt.dts = av_rescale_q(pkt.dts, enc->time_base, ost->st->time_base);
+            av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
 
             if (debug_ts) {
                 av_log(NULL, AV_LOG_INFO, "encoder -> type:video "
@@ -1564,12 +1556,7 @@ static void flush_encoders(void)
                     av_free_packet(&pkt);
                     continue;
                 }
-                if (pkt.pts != AV_NOPTS_VALUE)
-                    pkt.pts = av_rescale_q(pkt.pts, enc->time_base, ost->st->time_base);
-                if (pkt.dts != AV_NOPTS_VALUE)
-                    pkt.dts = av_rescale_q(pkt.dts, enc->time_base, ost->st->time_base);
-                if (pkt.duration > 0)
-                    pkt.duration = av_rescale_q(pkt.duration, enc->time_base, ost->st->time_base);
+                av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
                 pkt_size = pkt.size;
                 write_frame(os, &pkt, ost);
                 if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename) {
