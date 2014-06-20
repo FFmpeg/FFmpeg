@@ -3806,6 +3806,19 @@ void av_packet_move_ref(AVPacket *dst, AVPacket *src);
 int av_packet_copy_props(AVPacket *dst, const AVPacket *src);
 
 /**
+ * Convert valid timing fields (timestamps / durations) in a packet from one
+ * timebase to another. Timestamps with unknown values (AV_NOPTS_VALUE) will be
+ * ignored.
+ *
+ * @param pkt packet on which the conversion will be performed
+ * @param tb_src source timebase, in which the timing fields in pkt are
+ *               expressed
+ * @param tb_dst destination timebase, to which the timing fields will be
+ *               converted
+ */
+void av_packet_rescale_ts(AVPacket *pkt, AVRational tb_src, AVRational tb_dst);
+
+/**
  * @}
  */
 
