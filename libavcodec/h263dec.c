@@ -526,6 +526,8 @@ retry:
         if (ret < 0)
             return ret;
 
+        ff_set_sar(avctx, avctx->sample_aspect_ratio);
+
         if ((ret = ff_MPV_common_frame_size_change(s)))
             return ret;
     }

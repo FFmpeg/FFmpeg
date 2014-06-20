@@ -322,6 +322,8 @@ int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
     if (ret < 0)
         return ret;
 
+    ff_set_sar(avctx, avctx->sample_aspect_ratio);
+
     /* [DIRAC_STD] picture_coding_mode shall be 0 for fields and 1 for frames
      * currently only used to signal field coding */
     picture_coding_mode = svq3_get_ue_golomb(gb);

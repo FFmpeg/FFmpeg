@@ -37,6 +37,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -348,17 +349,21 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     if (ret < 0)
         return ret;
 
+    /* Determine the codec's sample_aspect ratio from the packet */
+    vsc_pack = buf + 80*5 + 48 + 5;
+    if ( *vsc_pack == dv_video_control ) {
+        apt = buf[4] & 0x07;
+        is16_9 = (vsc_pack && ((vsc_pack[2] & 0x07) == 0x02 || (!apt && (vsc_pack[2] & 0x07) == 0x07)));
+        ff_set_sar(avctx, s->sys->sar[is16_9]);
+    }
+
     if ((ret = ff_get_buffer(avctx, s->frame, 0)) < 0)
         return ret;
     s->frame->interlaced_frame = 1;
     s->frame->top_field_first  = 0;
 
-    /* Determine the codec's sample_aspect ratio and field order from the packet */
-    vsc_pack = buf + 80*5 + 48 + 5;
+    /* Determine the codec's field order from the packet */
     if ( *vsc_pack == dv_video_control ) {
-        apt = buf[4] & 0x07;
-        is16_9 = (vsc_pack[2] & 0x07) == 0x02 || (!apt && (vsc_pack[2] & 0x07) == 0x07);
-        avctx->sample_aspect_ratio = s->sys->sar[is16_9];
         s->frame->top_field_first = !(vsc_pack[3] & 0x40);
     }
 

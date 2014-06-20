@@ -255,6 +255,8 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     }
 
+    ff_set_sar(avctx, avctx->sample_aspect_ratio);
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 

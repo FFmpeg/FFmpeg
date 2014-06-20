@@ -1150,8 +1150,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
                     h->avctx->thread_count : 1;
     int i, ret;
 
-    h->avctx->sample_aspect_ratio = h->sps.sar;
-    av_assert0(h->avctx->sample_aspect_ratio.den);
+    ff_set_sar(h->avctx, h->sps.sar);
     av_pix_fmt_get_chroma_sub_sample(h->avctx->pix_fmt,
                                      &h->chroma_x_shift, &h->chroma_y_shift);
 

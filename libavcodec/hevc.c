@@ -293,8 +293,9 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     s->avctx->width               = sps->output_width;
     s->avctx->height              = sps->output_height;
     s->avctx->pix_fmt             = sps->pix_fmt;
-    s->avctx->sample_aspect_ratio = sps->vui.sar;
     s->avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
+
+    ff_set_sar(s->avctx, sps->vui.sar);
 
     if (sps->vui.video_signal_type_present_flag)
         s->avctx->color_range = sps->vui.video_full_range_flag ? AVCOL_RANGE_JPEG
