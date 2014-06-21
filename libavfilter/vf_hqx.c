@@ -24,6 +24,7 @@
  *
  * @see http://en.wikipedia.org/wiki/Hqx
  * @see http://web.archive.org/web/20131114143602/http://www.hiend3d.com/hq3x.html
+ * @see http://blog.pkh.me/p/19-butchering-hqx-scaling-filters.html
  */
 
 #include "libavutil/opt.h"
