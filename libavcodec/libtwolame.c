@@ -77,6 +77,10 @@ static av_cold int twolame_encode_init(AVCodecContext *avctx)
     twolame_set_num_channels(s->glopts, avctx->channels);
     twolame_set_in_samplerate(s->glopts, avctx->sample_rate);
     twolame_set_out_samplerate(s->glopts, avctx->sample_rate);
+
+    if (!avctx->bit_rate)
+        avctx->bit_rate = avctx->sample_rate < 28000 ? 160000 : 384000;
+
     if (avctx->flags & CODEC_FLAG_QSCALE || !avctx->bit_rate) {
         twolame_set_VBR(s->glopts, TRUE);
         twolame_set_VBR_level(s->glopts,
@@ -190,7 +194,7 @@ static const AVClass twolame_class = {
 };
 
 static const AVCodecDefault twolame_defaults[] = {
-    { "b", "384000" },
+    { "b", "0" },
     { NULL },
 };
 
