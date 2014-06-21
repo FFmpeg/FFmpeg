@@ -710,7 +710,7 @@ Do not start playing the stream immediately if set to 1. Default value
 is 0.
 
 @item rtsp_transport
-Set RTSP trasport protocols.
+Set RTSP transport protocols.
 
 It accepts the following values:
 @table @samp
@@ -769,17 +769,17 @@ Set maximum local UDP port. Default value is 65000.
 @item timeout
 Set maximum timeout (in seconds) to wait for incoming connections.
 
-A value of -1 mean infinite (default). This option implies the
+A value of -1 means infinite (default). This option implies the
 @option{rtsp_flags} set to @samp{listen}.
 
 @item reorder_queue_size
 Set number of packets to buffer for handling of reordered packets.
 
 @item stimeout
-Set socket TCP I/O timeout in micro seconds.
+Set socket TCP I/O timeout in microseconds.
 
 @item user-agent
-Override User-Agent header. If not specified, it default to the
+Override User-Agent header. If not specified, it defaults to the
 libavformat identifier string.
 @end table
 

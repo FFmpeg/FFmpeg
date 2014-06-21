@@ -32,6 +32,11 @@
 #include "get_bits.h"
 #include "dv_profile.h"
 
+typedef struct DVwork_chunk {
+    uint16_t  buf_offset;
+    uint16_t  mb_coordinates[5];
+} DVwork_chunk;
+
 typedef struct DVVideoContext {
     const DVprofile *sys;
     AVFrame         *frame;
@@ -44,6 +49,8 @@ typedef struct DVVideoContext {
     void (*fdct[2])(int16_t *block);
     void (*idct_put[2])(uint8_t *dest, int line_size, int16_t *block);
     me_cmp_func ildct_cmp;
+    DVwork_chunk work_chunks[4 * 12 * 27];
+    uint32_t idct_factor[2 * 4 * 16 * 64];
 } DVVideoContext;
 
 enum dv_section_type {
@@ -88,7 +95,7 @@ enum dv_pack_type {
 
 extern RL_VLC_ELEM ff_dv_rl_vlc[1184];
 
-int ff_dv_init_dynamic_tables(const DVprofile *d);
+int ff_dv_init_dynamic_tables(DVVideoContext *s, const DVprofile *d);
 int ff_dvvideo_init(AVCodecContext *avctx);
 
 static inline int dv_work_pool_size(const DVprofile *d)

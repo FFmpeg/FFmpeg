@@ -412,6 +412,8 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         if ((ret = ff_set_dimensions(s->avctx, s->w, s->h)) < 0)
             return ret;
 
+        ff_set_sar(s->avctx, s->avctx->sample_aspect_ratio);
+
         av_fast_malloc(&s->vert_pred, &s->vert_pred_size, s->avctx->width * sizeof(unsigned int));
         if (!s->vert_pred)
             return AVERROR(ENOMEM);

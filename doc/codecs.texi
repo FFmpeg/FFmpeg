@@ -1035,15 +1035,26 @@ Set the log level offset.
 Number of slices, used in parallelized encoding.
 
 @item thread_type @var{flags} (@emph{decoding/encoding,video})
-Select multithreading type.
+Select which multithreading methods to use.
+
+Use of @samp{frame} will increase decoding delay by one frame per
+thread, so clients which cannot provide future frames should not use
+it.
 
 Possible values:
 @table @samp
 @item slice
+Decode more than one part of a single frame at once.
+
+Multithreading using slices works only when the video was encoded with
+slices.
 
 @item frame
-
+Decode more than one frame at once.
 @end table
+
+Default value is @samp{slice+frame}.
+
 @item audio_service_type @var{integer} (@emph{encoding,audio})
 Set audio service type.
 

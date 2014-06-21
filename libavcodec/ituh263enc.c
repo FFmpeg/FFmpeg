@@ -231,14 +231,6 @@ void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
 
         put_bits(&s->pb, 1, 1);
     }
-
-    if(s->h263_aic){
-         s->y_dc_scale_table=
-         s->c_dc_scale_table= ff_aic_dc_scale_table;
-    }else{
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
-    }
 }
 
 /**
@@ -815,12 +807,15 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
             s->min_qcoeff= -127;
             s->max_qcoeff=  127;
         }
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
         break;
     default: //nothing needed - default table already set in mpegvideo.c
         s->min_qcoeff= -127;
         s->max_qcoeff=  127;
+    }
+    if(s->h263_aic){
+         s->y_dc_scale_table=
+         s->c_dc_scale_table= ff_aic_dc_scale_table;
+    }else{
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }

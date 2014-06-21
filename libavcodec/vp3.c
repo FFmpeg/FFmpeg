@@ -2279,6 +2279,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         av_reduce(&avctx->sample_aspect_ratio.num,
                   &avctx->sample_aspect_ratio.den,
                   aspect.num, aspect.den, 1 << 30);
+        ff_set_sar(avctx, avctx->sample_aspect_ratio);
     }
 
     if (s->theora < 0x030200)

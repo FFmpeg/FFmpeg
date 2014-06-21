@@ -15,6 +15,12 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-06-xx - xxxxxxx - lavu 53.17.0 - imgutils.h
+  Add av_image_check_sar().
+
+2014-06-xx - xxxxxxx - lavc 55.55.0 - avcodec.h
+  Add av_packet_rescale_ts() to simplify timestamp conversion.
+
 2014-xx-xx - xxxxxxx - lavf 55.20.0 - avformat.h
   The proper way for providing a hint about the desired timebase to the muxers
   is now setting AVStream.time_base, instead of AVStream.codec.time_base as was

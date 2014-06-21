@@ -163,7 +163,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
     int table_size, table_index, index, code_prefix, symbol, subtable_bits;
     int i, j, k, n, nb, inc;
     uint32_t code;
-    volatile VLC_TYPE (*table)[2];
+    volatile VLC_TYPE (* volatile table)[2];
 
     table_size = 1 << table_nb_bits;
     if (table_nb_bits > 30)

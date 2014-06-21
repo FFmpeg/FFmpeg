@@ -1347,6 +1347,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             }
         } // MPEG-2
 
+        ff_set_sar(s->avctx, s->avctx->sample_aspect_ratio);
+
         avctx->pix_fmt = mpeg_get_pixelformat(avctx);
         setup_hwaccel_for_pixfmt(avctx);
 

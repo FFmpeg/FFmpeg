@@ -471,6 +471,7 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
                       v->s.avctx->width * h,
                       1 << 30);
         }
+        ff_set_sar(v->s.avctx, v->s.avctx->sample_aspect_ratio);
         av_log(v->s.avctx, AV_LOG_DEBUG, "Aspect: %i:%i\n",
                v->s.avctx->sample_aspect_ratio.num,
                v->s.avctx->sample_aspect_ratio.den);

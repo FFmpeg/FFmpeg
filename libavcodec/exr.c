@@ -1191,8 +1191,8 @@ static int decode_header(EXRContext *s)
             if (!var_size)
                 return AVERROR_INVALIDDATA;
 
-            s->avctx->sample_aspect_ratio =
-                av_d2q(av_int2float(bytestream2_get_le32(&s->gb)), 255);
+            ff_set_sar(s->avctx,
+                       av_d2q(av_int2float(bytestream2_get_le32(&s->gb)), 255));
 
             continue;
         } else if ((var_size = check_header_variable(s, "compression",

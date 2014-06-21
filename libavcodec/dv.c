@@ -175,58 +175,54 @@ static const uint8_t dv100_qstep[16] = {
 
 static const uint8_t dv_quant_areas[4]  = { 6, 21, 43, 64 };
 
-int ff_dv_init_dynamic_tables(const DVprofile *d)
+int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const DVprofile *d)
 {
     int j,i,c,s,p;
     uint32_t *factor1, *factor2;
     const int *iweight1, *iweight2;
 
-    if (!d->work_chunks[dv_work_pool_size(d)-1].buf_offset) {
-        p = i = 0;
-        for (c=0; c<d->n_difchan; c++) {
-            for (s=0; s<d->difseg_size; s++) {
-                p += 6;
-                for (j=0; j<27; j++) {
-                    p += !(j%3);
-                    if (!(DV_PROFILE_IS_1080i50(d) && c != 0 && s == 11) &&
-                        !(DV_PROFILE_IS_720p50(d) && s > 9)) {
-                          dv_calc_mb_coordinates(d, c, s, j, &d->work_chunks[i].mb_coordinates[0]);
-                          d->work_chunks[i++].buf_offset = p;
-                    }
-                    p += 5;
+    p = i = 0;
+    for (c = 0; c < d->n_difchan; c++) {
+        for (s = 0; s < d->difseg_size; s++) {
+            p += 6;
+            for (j = 0; j < 27; j++) {
+                p += !(j % 3);
+                if (!(DV_PROFILE_IS_1080i50(d) && c != 0 && s == 11) &&
+                    !(DV_PROFILE_IS_720p50(d) && s > 9)) {
+                      dv_calc_mb_coordinates(d, c, s, j, &ctx->work_chunks[i].mb_coordinates[0]);
+                      ctx->work_chunks[i++].buf_offset = p;
                 }
+                p += 5;
             }
         }
     }
 
-    if (!d->idct_factor[DV_PROFILE_IS_HD(d)?8191:5631]) {
-        factor1 = &d->idct_factor[0];
-        factor2 = &d->idct_factor[DV_PROFILE_IS_HD(d)?4096:2816];
-        if (d->height == 720) {
-            iweight1 = &ff_dv_iweight_720_y[0];
-            iweight2 = &ff_dv_iweight_720_c[0];
-        } else {
-            iweight1 = &ff_dv_iweight_1080_y[0];
-            iweight2 = &ff_dv_iweight_1080_c[0];
-        }
-        if (DV_PROFILE_IS_HD(d)) {
-            for (c = 0; c < 4; c++) {
-                for (s = 0; s < 16; s++) {
-                    for (i = 0; i < 64; i++) {
-                        *factor1++ = (dv100_qstep[s] << (c + 9)) * iweight1[i];
-                        *factor2++ = (dv100_qstep[s] << (c + 9)) * iweight2[i];
-                    }
+    factor1 = &ctx->idct_factor[0];
+    factor2 = &ctx->idct_factor[DV_PROFILE_IS_HD(d) ? 4096 : 2816];
+    if (d->height == 720) {
+        iweight1 = &ff_dv_iweight_720_y[0];
+        iweight2 = &ff_dv_iweight_720_c[0];
+    } else {
+        iweight1 = &ff_dv_iweight_1080_y[0];
+        iweight2 = &ff_dv_iweight_1080_c[0];
+    }
+    if (DV_PROFILE_IS_HD(d)) {
+        for (c = 0; c < 4; c++) {
+            for (s = 0; s < 16; s++) {
+                for (i = 0; i < 64; i++) {
+                    *factor1++ = (dv100_qstep[s] << (c + 9)) * iweight1[i];
+                    *factor2++ = (dv100_qstep[s] << (c + 9)) * iweight2[i];
                 }
             }
-        } else {
-            iweight1 = &ff_dv_iweight_88[0];
-            for (j = 0; j < 2; j++, iweight1 = &ff_dv_iweight_248[0]) {
-                for (s = 0; s < 22; s++) {
-                    for (i = c = 0; c < 4; c++) {
-                        for (; i < dv_quant_areas[c]; i++) {
-                            *factor1   = iweight1[i] << (ff_dv_quant_shifts[s][c] + 1);
-                            *factor2++ = (*factor1++) << 1;
-                        }
+        }
+    } else {
+        iweight1 = &ff_dv_iweight_88[0];
+        for (j = 0; j < 2; j++, iweight1 = &ff_dv_iweight_248[0]) {
+            for (s = 0; s < 22; s++) {
+                for (i = c = 0; c < 4; c++) {
+                    for (; i < dv_quant_areas[c]; i++) {
+                        *factor1   = iweight1[i] << (ff_dv_quant_shifts[s][c] + 1);
+                        *factor2++ = (*factor1++) << 1;
                     }
                 }
             }

@@ -183,6 +183,7 @@ int ff_h264_field_end(H264Context *h, int in_setup)
         h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_h264_picture_complete(h);
 
+#if CONFIG_ERROR_RESILIENCE
     /*
      * FIXME: Error handling code does not seem to support interlaced
      * when slices span multiple rows
@@ -195,10 +196,12 @@ int ff_h264_field_end(H264Context *h, int in_setup)
      * past end by one (callers fault) and resync_mb_y != 0
      * causes problems for the first MB line, too.
      */
-    if (CONFIG_ERROR_RESILIENCE && !FIELD_PICTURE(h) && h->current_slice && !h->sps.new) {
+    if (!FIELD_PICTURE(h) && h->current_slice && !h->sps.new) {
         ff_h264_set_erpic(&h->er.cur_pic, h->cur_pic_ptr);
         ff_er_frame_end(&h->er);
     }
+#endif /* CONFIG_ERROR_RESILIENCE */
+
     if (!in_setup && !h->droppable)
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
                                   h->picture_structure == PICT_BOTTOM_FIELD);

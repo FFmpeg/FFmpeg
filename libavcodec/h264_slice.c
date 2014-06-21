@@ -1150,8 +1150,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
                     h->avctx->thread_count : 1;
     int i, ret;
 
-    h->avctx->sample_aspect_ratio = h->sps.sar;
-    av_assert0(h->avctx->sample_aspect_ratio.den);
+    ff_set_sar(h->avctx, h->sps.sar);
     av_pix_fmt_get_chroma_sub_sample(h->avctx->pix_fmt,
                                      &h->chroma_x_shift, &h->chroma_y_shift);
 
@@ -1884,7 +1883,10 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
             h0->max_contexts = 1;
             if (!h0->single_decode_warning) {
                 av_log(h->avctx, AV_LOG_INFO,
-                       "Cannot parallelize deblocking type 1, decoding such frames in sequential order\n");
+                       "Cannot parallelize slice decoding with deblocking filter type 1, decoding such frames in sequential order\n"
+                       "To parallelize slice decoding you need video encoded with disable_deblocking_filter_idc set to 2 (deblock only edges that do not cross slices).\n"
+                       "Setting the flags2 libavcodec option to +fast (-flags2 +fast) will disable deblocking across slices and enable parallel slice decoding "
+                       "but will generate non-standard-compliant output.\n");
                 h0->single_decode_warning = 1;
             }
             if (h != h0) {
