@@ -63,6 +63,7 @@ EXPORTS
     av_packet_new_side_data
     av_packet_pack_dictionary
     av_packet_ref
+    av_packet_rescale_ts
     av_packet_shrink_side_data
     av_packet_split_side_data
     av_packet_unref
