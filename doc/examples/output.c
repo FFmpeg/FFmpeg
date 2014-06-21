@@ -46,6 +46,14 @@
 
 static int sws_flags = SWS_BICUBIC;
 
+// a wrapper around a single output AVStream
+typedef struct OutputStream {
+    AVStream *st;
+
+    AVFrame *frame;
+    AVFrame *tmp_frame;
+} OutputStream;
+
 /**************************************************************/
 /* audio output */
 
@@ -176,14 +184,13 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
 /**************************************************************/
 /* video output */
 
-static AVFrame *picture, *tmp_picture;
 static int frame_count;
 
 /* Add a video output stream. */
-static AVStream *add_video_stream(AVFormatContext *oc, enum AVCodecID codec_id)
+static void add_video_stream(OutputStream *ost, AVFormatContext *oc,
+                             enum AVCodecID codec_id)
 {
     AVCodecContext *c;
-    AVStream *st;
     AVCodec *codec;
 
     /* find the video encoder */
@@ -193,13 +200,13 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum AVCodecID codec_id)
         exit(1);
     }
 
-    st = avformat_new_stream(oc, codec);
-    if (!st) {
+    ost->st = avformat_new_stream(oc, codec);
+    if (!ost->st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
 
-    c = st->codec;
+    c = ost->st->codec;
 
     /* Put sample parameters. */
     c->bit_rate = 400000;
@@ -227,8 +234,6 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum AVCodecID codec_id)
     /* Some formats want stream headers to be separate. */
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags |= CODEC_FLAG_GLOBAL_HEADER;
-
-    return st;
 }
 
 static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
@@ -254,11 +259,11 @@ static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
     return picture;
 }
 
-static void open_video(AVFormatContext *oc, AVStream *st)
+static void open_video(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
 
-    c = st->codec;
+    c = ost->st->codec;
 
     /* open the codec */
     if (avcodec_open2(c, NULL, NULL) < 0) {
@@ -267,8 +272,8 @@ static void open_video(AVFormatContext *oc, AVStream *st)
     }
 
     /* Allocate the encoded raw picture. */
-    picture = alloc_picture(c->pix_fmt, c->width, c->height);
-    if (!picture) {
+    ost->frame = alloc_picture(c->pix_fmt, c->width, c->height);
+    if (!ost->frame) {
         fprintf(stderr, "Could not allocate picture\n");
         exit(1);
     }
@@ -276,10 +281,10 @@ static void open_video(AVFormatContext *oc, AVStream *st)
     /* If the output format is not YUV420P, then a temporary YUV420P
      * picture is needed too. It is then converted to the required
      * output format. */
-    tmp_picture = NULL;
+    ost->tmp_frame = NULL;
     if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
-        tmp_picture = alloc_picture(AV_PIX_FMT_YUV420P, c->width, c->height);
-        if (!tmp_picture) {
+        ost->tmp_frame = alloc_picture(AV_PIX_FMT_YUV420P, c->width, c->height);
+        if (!ost->tmp_frame) {
             fprintf(stderr, "Could not allocate temporary picture\n");
             exit(1);
         }
@@ -316,13 +321,13 @@ static void fill_yuv_image(AVFrame *pict, int frame_index,
     }
 }
 
-static void write_video_frame(AVFormatContext *oc, AVStream *st)
+static void write_video_frame(AVFormatContext *oc, OutputStream *ost)
 {
     int ret;
     AVCodecContext *c;
     static struct SwsContext *img_convert_ctx;
 
-    c = st->codec;
+    c = ost->st->codec;
 
     if (frame_count >= STREAM_NB_FRAMES) {
         /* No more frames to compress. The codec has a latency of a few
@@ -344,11 +349,11 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
                     exit(1);
                 }
             }
-            fill_yuv_image(tmp_picture, frame_count, c->width, c->height);
-            sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
-                      0, c->height, picture->data, picture->linesize);
+            fill_yuv_image(ost->tmp_frame, frame_count, c->width, c->height);
+            sws_scale(img_convert_ctx, ost->tmp_frame->data, ost->tmp_frame->linesize,
+                      0, c->height, ost->frame->data, ost->frame->linesize);
         } else {
-            fill_yuv_image(picture, frame_count, c->width, c->height);
+            fill_yuv_image(ost->frame, frame_count, c->width, c->height);
         }
     }
 
@@ -359,8 +364,8 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         av_init_packet(&pkt);
 
         pkt.flags        |= AV_PKT_FLAG_KEY;
-        pkt.stream_index  = st->index;
-        pkt.data          = (uint8_t *)picture;
+        pkt.stream_index  = ost->st->index;
+        pkt.data          = (uint8_t *)ost->frame;
         pkt.size          = sizeof(AVPicture);
 
         ret = av_interleaved_write_frame(oc, &pkt);
@@ -370,11 +375,11 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         av_init_packet(&pkt);
 
         /* encode the image */
-        ret = avcodec_encode_video2(c, &pkt, picture, &got_packet);
+        ret = avcodec_encode_video2(c, &pkt, ost->frame, &got_packet);
         /* If size is zero, it means the image was buffered. */
         if (!ret && got_packet && pkt.size) {
-            av_packet_rescale_ts(&pkt, c->time_base, st->time_base);
-            pkt.stream_index = st->index;
+            av_packet_rescale_ts(&pkt, c->time_base, ost->st->time_base);
+            pkt.stream_index = ost->st->index;
 
             /* Write the compressed frame to the media file. */
             ret = av_interleaved_write_frame(oc, &pkt);
@@ -389,11 +394,11 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
     frame_count++;
 }
 
-static void close_video(AVFormatContext *oc, AVStream *st)
+static void close_video(AVFormatContext *oc, OutputStream *ost)
 {
-    avcodec_close(st->codec);
-    av_frame_free(&picture);
-    av_frame_free(&tmp_picture);
+    avcodec_close(ost->st->codec);
+    av_frame_free(&ost->frame);
+    av_frame_free(&ost->tmp_frame);
 }
 
 /**************************************************************/
@@ -401,11 +406,13 @@ static void close_video(AVFormatContext *oc, AVStream *st)
 
 int main(int argc, char **argv)
 {
+    OutputStream video_st;
     const char *filename;
     AVOutputFormat *fmt;
     AVFormatContext *oc;
-    AVStream *audio_st, *video_st;
+    AVStream *audio_st;
     double audio_pts, video_pts;
+    int have_video = 0;
     int i;
 
     /* Initialize libavcodec, and register all codecs and formats. */
@@ -444,10 +451,10 @@ int main(int argc, char **argv)
 
     /* Add the audio and video streams using the default format codecs
      * and initialize the codecs. */
-    video_st = NULL;
     audio_st = NULL;
     if (fmt->video_codec != AV_CODEC_ID_NONE) {
-        video_st = add_video_stream(oc, fmt->video_codec);
+        add_video_stream(&video_st, oc, fmt->video_codec);
+        have_video = 1;
     }
     if (fmt->audio_codec != AV_CODEC_ID_NONE) {
         audio_st = add_audio_stream(oc, fmt->audio_codec);
@@ -455,8 +462,8 @@ int main(int argc, char **argv)
 
     /* Now that all the parameters are set, we can open the audio and
      * video codecs and allocate the necessary encode buffers. */
-    if (video_st)
-        open_video(oc, video_st);
+    if (have_video)
+        open_video(oc, &video_st);
     if (audio_st)
         open_audio(oc, audio_st);
 
@@ -480,21 +487,21 @@ int main(int argc, char **argv)
         else
             audio_pts = 0.0;
 
-        if (video_st)
-            video_pts = (double)video_st->pts.val * video_st->time_base.num /
-                        video_st->time_base.den;
+        if (have_video)
+            video_pts = (double)video_st.st->pts.val * video_st.st->time_base.num /
+                        video_st.st->time_base.den;
         else
             video_pts = 0.0;
 
         if ((!audio_st || audio_pts >= STREAM_DURATION) &&
-            (!video_st || video_pts >= STREAM_DURATION))
+            (!have_video || video_pts >= STREAM_DURATION))
             break;
 
         /* write interleaved audio and video frames */
-        if (!video_st || (video_st && audio_st && audio_pts < video_pts)) {
+        if (!have_video || (have_video && audio_st && audio_pts < video_pts)) {
             write_audio_frame(oc, audio_st);
         } else {
-            write_video_frame(oc, video_st);
+            write_video_frame(oc, &video_st);
         }
     }
 
@@ -505,8 +512,8 @@ int main(int argc, char **argv)
     av_write_trailer(oc);
 
     /* Close each codec. */
-    if (video_st)
-        close_video(oc, video_st);
+    if (have_video)
+        close_video(oc, &video_st);
     if (audio_st)
         close_audio(oc, audio_st);
 
