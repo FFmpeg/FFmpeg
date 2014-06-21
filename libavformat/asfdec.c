@@ -370,7 +370,8 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
 
     if (!(asf->hdr.flags & 0x01)) { // if we aren't streaming...
         int64_t fsize = avio_size(pb);
-        if (fsize <= 0 || (int64_t)asf->hdr.file_size <= 0 || FFABS(fsize - (int64_t)asf->hdr.file_size) < 10000)
+        if (fsize <= 0 || (int64_t)asf->hdr.file_size <= 0 ||
+            FFABS(fsize - (int64_t)asf->hdr.file_size) / (float)FFMIN(fsize, asf->hdr.file_size) < 0.05)
             st->duration = asf->hdr.play_time /
                        (10000000 / 1000) - start_time;
     }
