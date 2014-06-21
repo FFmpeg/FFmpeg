@@ -401,28 +401,22 @@ static av_always_inline void hqx_filter(const ThreadData *td, int jobnr, int nb_
         const int nextline = y < height - 1 ?  src32_linesize : 0;
 
         for (x = 0; x < width; x++) {
-            uint32_t yuv1, yuv2;
             const int prevcol = x > 0        ? -1 : 0;
             const int nextcol = x < width -1 ?  1 : 0;
-            int pattern = 0, flag = 1, k;
             const uint32_t w[3*3] = {
                 src32[prevcol + prevline], src32[prevline], src32[prevline + nextcol],
                 src32[prevcol           ], src32[       0], src32[           nextcol],
                 src32[prevcol + nextline], src32[nextline], src32[nextline + nextcol]
             };
-
-            yuv1 = rgb2yuv(r2y, w[4]);
-
-            for (k = 0; k < FF_ARRAY_ELEMS(w); k++) {
-                if (k == 4)
-                    continue;
-                if (w[k] != w[4]) {
-                    yuv2 = rgb2yuv(r2y, w[k]);
-                    if (yuv_diff(yuv1, yuv2))
-                        pattern |= flag;
-                }
-                flag <<= 1;
-            }
+            const uint32_t yuv1 = rgb2yuv(r2y, w[4]);
+            const int pattern = (w[4] != w[0] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[0]))) : 0) << 0
+                              | (w[4] != w[1] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[1]))) : 0) << 1
+                              | (w[4] != w[2] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[2]))) : 0) << 2
+                              | (w[4] != w[3] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[3]))) : 0) << 3
+                              | (w[4] != w[5] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[5]))) : 0) << 4
+                              | (w[4] != w[6] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[6]))) : 0) << 5
+                              | (w[4] != w[7] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[7]))) : 0) << 6
+                              | (w[4] != w[8] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[8]))) : 0) << 7;
 
             if (n == 2) {
                 dst32[dst32_linesize*0 + 0] = hq2x_interp_1x1(r2y, pattern, w, 0,1,2,3,4,5,6,7,8);  // 00
