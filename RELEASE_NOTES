@@ -164,6 +164,7 @@
     • signalstats filter
     • hqx filter (hq2x, hq3x, hq4x)
     • flanger filter
+    • libfribidi support in drawtext
 
  ┌────────────────────────────┐
  │ ⚠  Behaviour changes       │

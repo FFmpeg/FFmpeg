@@ -3653,6 +3653,8 @@ To enable compilation of this filter, you need to configure FFmpeg with
 @code{--enable-libfreetype}.
 To enable default font fallback and the @var{font} option you need to
 configure FFmpeg with @code{--enable-libfontconfig}.
+To enable the @var{text_shaping} option, you need to configure FFmpeg with
+@code{--enable-libfribidi}.
 
 @subsection Syntax
 
@@ -3706,6 +3708,12 @@ This parameter is mandatory if the fontconfig support is disabled.
 @item fontsize
 The font size to be used for drawing text.
 The default value of @var{fontsize} is 16.
+
+@item text_shaping
+If set to 1, attempt to shape the text (for example, reverse the order of
+right-to-left text and join Arabic characters) before drawing it.
+Otherwise, just draw the text exactly as given.
+By default 1 (if supported).
 
 @item ft_load_flags
 The flags to be used for loading the fonts.
@@ -4009,6 +4017,9 @@ For more information about libfreetype, check:
 
 For more information about fontconfig, check:
 @url{http://freedesktop.org/software/fontconfig/fontconfig-user.html}.
+
+For more information about libfribidi, check:
+@url{http://fribidi.org/}.
 
 @section edgedetect
 
