@@ -328,15 +328,15 @@ static int wav_write_header(AVFormatContext *s)
     }
 
     if (wav->write_peak != 2) {
-    /* format header */
-    fmt = ff_start_tag(pb, "fmt ");
-    if (ff_put_wav_header(pb, s->streams[0]->codec, 0) < 0) {
-        const AVCodecDescriptor *desc = avcodec_descriptor_get(s->streams[0]->codec->codec_id);
-        av_log(s, AV_LOG_ERROR, "%s codec not supported in WAVE format\n",
-               desc ? desc->name : "unknown");
-        return AVERROR(ENOSYS);
-    }
-    ff_end_tag(pb, fmt);
+        /* format header */
+        fmt = ff_start_tag(pb, "fmt ");
+        if (ff_put_wav_header(pb, s->streams[0]->codec, 0) < 0) {
+            const AVCodecDescriptor *desc = avcodec_descriptor_get(s->streams[0]->codec->codec_id);
+            av_log(s, AV_LOG_ERROR, "%s codec not supported in WAVE format\n",
+                   desc ? desc->name : "unknown");
+            return AVERROR(ENOSYS);
+        }
+        ff_end_tag(pb, fmt);
     }
 
     if (s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
@@ -360,11 +360,11 @@ static int wav_write_header(AVFormatContext *s)
     wav->minpts = INT64_MAX;
 
     if (wav->write_peak != 2) {
-    /* info header */
-    ff_riff_write_info(s);
+        /* info header */
+        ff_riff_write_info(s);
 
-    /* data header */
-    wav->data = ff_start_tag(pb, "data");
+        /* data header */
+        wav->data = ff_start_tag(pb, "data");
     }
 
     avio_flush(pb);
@@ -378,7 +378,7 @@ static int wav_write_packet(AVFormatContext *s, AVPacket *pkt)
     WAVMuxContext    *wav = s->priv_data;
 
     if (wav->write_peak != 2)
-    avio_write(pb, pkt->data, pkt->size);
+        avio_write(pb, pkt->data, pkt->size);
 
     if (wav->write_peak) {
         int c = 0;
