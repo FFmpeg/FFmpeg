@@ -323,8 +323,8 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples, int nb
             av_rdft_calc(s->rdft, s->rdft_data[ch]);
 
         /* fill a new spectrum column */
-#define RE(y, ch) s->rdft_data[ch][2 * y + 0]
-#define IM(y, ch) s->rdft_data[ch][2 * y + 1]
+#define RE(y, ch) s->rdft_data[ch][2 * (y) + 0]
+#define IM(y, ch) s->rdft_data[ch][2 * (y) + 1]
 #define MAGNITUDE(y, ch) hypot(RE(y, ch), IM(y, ch))
 
         /* initialize buffer for combining to black */
