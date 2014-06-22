@@ -252,13 +252,16 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (mp3->xing_offset && pkt->size >= 4) {
         MPADecodeHeader c;
+        uint32_t h;
 
-        avpriv_mpegaudio_decode_header(&c, AV_RB32(pkt->data));
-
-        if (!mp3->initial_bitrate)
-            mp3->initial_bitrate = c.bit_rate;
-        if ((c.bit_rate == 0) || (mp3->initial_bitrate != c.bit_rate))
-            mp3->has_variable_bitrate = 1;
+        h = AV_RB32(pkt->data);
+        if (ff_mpa_check_header(h) == 0) {
+            avpriv_mpegaudio_decode_header(&c, h);
+            if (!mp3->initial_bitrate)
+                mp3->initial_bitrate = c.bit_rate;
+            if ((c.bit_rate == 0) || (mp3->initial_bitrate != c.bit_rate))
+                mp3->has_variable_bitrate = 1;
+        }
 
         mp3_xing_add_frame(mp3, pkt);
     }
