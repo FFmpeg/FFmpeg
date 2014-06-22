@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2002 Brian Foley
- * Copyright (c) 2002 Dieter Shirley
- * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
+ * ARM NEON optimised audio functions
+ * Copyright (c) 2008 Mans Rullgard <mans@mansr.com>
  *
  * This file is part of FFmpeg.
  *
@@ -20,21 +19,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PPC_DSPUTIL_ALTIVEC_H
-#define AVCODEC_PPC_DSPUTIL_ALTIVEC_H
-
 #include <stdint.h>
 
-#include "libavcodec/dsputil.h"
+#include "libavutil/attributes.h"
+#include "libavcodec/audiodsp.h"
+#include "audiodsp_arm.h"
 
-void ff_fdct_altivec(int16_t *block);
-void ff_gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
-                     int x16, int y16, int rounder);
-void ff_idct_altivec(int16_t *block);
-void ff_idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
-void ff_idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
+void ff_vector_clipf_neon(float *dst, const float *src, float min, float max,
+                          int len);
+void ff_vector_clip_int32_neon(int32_t *dst, const int32_t *src, int32_t min,
+                               int32_t max, unsigned int len);
 
-void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx,
-                             unsigned high_bit_depth);
+int32_t ff_scalarproduct_int16_neon(const int16_t *v1, const int16_t *v2, int len);
 
-#endif /* AVCODEC_PPC_DSPUTIL_ALTIVEC_H */
+av_cold void ff_audiodsp_init_neon(AudioDSPContext *c)
+{
+    c->vector_clip_int32 = ff_vector_clip_int32_neon;
+    c->vector_clipf      = ff_vector_clipf_neon;
+
+    c->scalarproduct_int16 = ff_scalarproduct_int16_neon;
+}

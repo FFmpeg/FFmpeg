@@ -4,6 +4,7 @@ OBJS                                   += arm/fmtconvert_init_arm.o
 
 OBJS-$(CONFIG_AC3DSP)                  += arm/ac3dsp_init_arm.o         \
                                           arm/ac3dsp_arm.o
+OBJS-$(CONFIG_AUDIODSP)                += arm/audiodsp_init_arm.o
 OBJS-$(CONFIG_BLOCKDSP)                += arm/blockdsp_init_arm.o
 OBJS-$(CONFIG_DSPUTIL)                 += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
@@ -80,11 +81,13 @@ VFP-OBJS-$(CONFIG_DCA_DECODER)         += arm/dcadsp_vfp.o              \
 NEON-OBJS                              += arm/fmtconvert_neon.o
 
 NEON-OBJS-$(CONFIG_AC3DSP)             += arm/ac3dsp_neon.o
+NEON-OBJS-$(CONFIG_AUDIODSP)           += arm/audiodsp_init_neon.o      \
+                                          arm/audiodsp_neon.o           \
+                                          arm/int_neon.o
 NEON-OBJS-$(CONFIG_BLOCKDSP)           += arm/blockdsp_init_neon.o      \
                                           arm/blockdsp_neon.o
 NEON-OBJS-$(CONFIG_DSPUTIL)            += arm/dsputil_init_neon.o       \
                                           arm/dsputil_neon.o            \
-                                          arm/int_neon.o                \
                                           arm/simple_idct_neon.o
 NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
                                           arm/fft_fixed_neon.o

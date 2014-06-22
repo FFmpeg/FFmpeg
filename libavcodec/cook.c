@@ -44,9 +44,10 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
+
+#include "audiodsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "bytestream.h"
 #include "fft.h"
 #include "internal.h"
@@ -123,7 +124,7 @@ typedef struct cook {
     void (*saturate_output)(struct cook *q, float *out);
 
     AVCodecContext*     avctx;
-    DSPContext          dsp;
+    AudioDSPContext     adsp;
     GetBitContext       gb;
     /* stream data */
     int                 num_vectors;
@@ -873,8 +874,8 @@ static inline void decode_bytes_and_gain(COOKContext *q, COOKSubpacket *p,
  */
 static void saturate_output_float(COOKContext *q, float *out)
 {
-    q->dsp.vector_clipf(out, q->mono_mdct_output + q->samples_per_channel,
-                        -1.0f, 1.0f, FFALIGN(q->samples_per_channel, 8));
+    q->adsp.vector_clipf(out, q->mono_mdct_output + q->samples_per_channel,
+                         -1.0f, 1.0f, FFALIGN(q->samples_per_channel, 8));
 }
 
 
@@ -1072,7 +1073,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     /* Initialize RNG. */
     av_lfg_init(&q->random_state, 0);
 
-    ff_dsputil_init(&q->dsp, avctx);
+    ff_audiodsp_init(&q->adsp);
 
     while (edata_ptr < edata_ptr_end) {
         /* 8 for mono, 16 for stereo, ? for multichannel

@@ -20,7 +20,7 @@
 
 /**
  * @file
- * miscellaneous integer operations
+ * miscellaneous audio operations
  */
 
 #include "config.h"
@@ -29,10 +29,13 @@
 #endif
 
 #include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
-#include "libavcodec/dsputil.h"
-#include "dsputil_altivec.h"
+#include "libavcodec/audiodsp.h"
+
+#if HAVE_ALTIVEC
 
 static int32_t scalarproduct_int16_altivec(const int16_t *v1, const int16_t *v2,
                                            int order)
@@ -56,7 +59,14 @@ static int32_t scalarproduct_int16_altivec(const int16_t *v1, const int16_t *v2,
     return ires;
 }
 
-av_cold void ff_int_init_altivec(DSPContext *c, AVCodecContext *avctx)
+#endif /* HAVE_ALTIVEC */
+
+av_cold void ff_audiodsp_init_ppc(AudioDSPContext *c)
 {
+#if HAVE_ALTIVEC
+    if (!PPC_ALTIVEC(av_get_cpu_flags()))
+        return;
+
     c->scalarproduct_int16 = scalarproduct_int16_altivec;
+#endif /* HAVE_ALTIVEC */
 }

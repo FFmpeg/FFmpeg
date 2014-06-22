@@ -140,11 +140,6 @@ typedef struct DSPContext {
     void (*bswap_buf)(uint32_t *dst, const uint32_t *src, int w);
     void (*bswap16_buf)(uint16_t *dst, const uint16_t *src, int len);
 
-    /* assume len is a multiple of 8, and arrays are 16-byte aligned */
-    void (*vector_clipf)(float *dst /* align 16 */,
-                         const float *src /* align 16 */,
-                         float min, float max, int len /* align 16 */);
-
     /* (I)DCT */
     void (*fdct)(int16_t *block /* align 16 */);
     void (*fdct248)(int16_t *block /* align 16 */);
@@ -204,30 +199,6 @@ typedef struct DSPContext {
 
     void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,
                       int src_wrap, int width, int height);
-
-    /**
-     * Calculate scalar product of two vectors.
-     * @param len length of vectors, should be multiple of 16
-     */
-    int32_t (*scalarproduct_int16)(const int16_t *v1,
-                                   const int16_t *v2 /* align 16 */, int len);
-
-    /**
-     * Clip each element in an array of int32_t to a given minimum and
-     * maximum value.
-     * @param dst  destination array
-     *             constraints: 16-byte aligned
-     * @param src  source array
-     *             constraints: 16-byte aligned
-     * @param min  minimum value
-     *             constraints: must be in the range [-(1 << 24), 1 << 24]
-     * @param max  maximum value
-     *             constraints: must be in the range [-(1 << 24), 1 << 24]
-     * @param len  number of elements in the array
-     *             constraints: multiple of 32 greater than zero
-     */
-    void (*vector_clip_int32)(int32_t *dst, const int32_t *src, int32_t min,
-                              int32_t max, unsigned int len);
 } DSPContext;
 
 void ff_dsputil_static_init(void);

@@ -28,9 +28,9 @@
 #include "libavutil/internal.h"
 #include "libavutil/samplefmt.h"
 #include "tak.h"
+#include "audiodsp.h"
 #include "thread.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "unary.h"
 
@@ -46,7 +46,7 @@ typedef struct MCDParam {
 
 typedef struct TAKDecContext {
     AVCodecContext *avctx;                          ///< parent AVCodecContext
-    DSPContext      dsp;
+    AudioDSPContext adsp;
     TAKStreamInfo   ti;
     GetBitContext   gb;                             ///< bitstream reader initialized to start at the current frame
 
@@ -171,7 +171,7 @@ static av_cold int tak_decode_init(AVCodecContext *avctx)
 {
     TAKDecContext *s = avctx->priv_data;
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_audiodsp_init(&s->adsp);
 
     s->avctx = avctx;
     avctx->bits_per_raw_sample = avctx->bits_per_coded_sample;
@@ -469,8 +469,8 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
             int v = 1 << (filter_quant - 1);
 
             if (filter_order & -16)
-                v += s->dsp.scalarproduct_int16(&s->residues[i], s->filter,
-                                                filter_order & -16);
+                v += s->adsp.scalarproduct_int16(&s->residues[i], s->filter,
+                                                 filter_order & -16);
             for (j = filter_order & -16; j < filter_order; j += 4) {
                 v += s->residues[i + j + 3] * s->filter[j + 3] +
                      s->residues[i + j + 2] * s->filter[j + 2] +
@@ -640,8 +640,8 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
                 int v = 1 << 9;
 
                 if (filter_order == 16) {
-                    v += s->dsp.scalarproduct_int16(&s->residues[i], s->filter,
-                                                    filter_order);
+                    v += s->adsp.scalarproduct_int16(&s->residues[i], s->filter,
+                                                     filter_order);
                 } else {
                     v += s->residues[i + 7] * s->filter[7] +
                          s->residues[i + 6] * s->filter[6] +

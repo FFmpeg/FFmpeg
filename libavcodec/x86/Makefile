@@ -2,6 +2,7 @@ OBJS                                   += x86/constants.o               \
                                           x86/fmtconvert_init.o         \
 
 OBJS-$(CONFIG_AC3DSP)                  += x86/ac3dsp_init.o
+OBJS-$(CONFIG_AUDIODSP)                += x86/audiodsp_init.o
 OBJS-$(CONFIG_BLOCKDSP)                += x86/blockdsp_mmx.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o
@@ -69,6 +70,7 @@ YASM-OBJS                              += x86/deinterlace.o             \
                                           x86/fmtconvert.o              \
 
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
+YASM-OBJS-$(CONFIG_AUDIODSP)           += x86/audiodsp.o
 YASM-OBJS-$(CONFIG_BLOCKDSP)           += x86/blockdsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
 YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o\

@@ -28,7 +28,6 @@
 #include "libavutil/x86/asm.h"
 #include "libavcodec/pixels.h"
 #include "libavcodec/videodsp.h"
-#include "constants.h"
 #include "dsputil_x86.h"
 #include "inline_asm.h"
 

@@ -37,6 +37,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "put_bits.h"
+#include "audiodsp.h"
 #include "ac3dsp.h"
 #include "ac3.h"
 #include "fft.h"
@@ -2478,6 +2479,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
     if (ret)
         goto init_fail;
 
+    ff_audiodsp_init(&s->adsp);
     ff_dsputil_init(&s->dsp, avctx);
     ff_ac3dsp_init(&s->ac3dsp, avctx->flags & CODEC_FLAG_BITEXACT);
 

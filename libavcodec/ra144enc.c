@@ -61,7 +61,7 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     ractx->lpc_coef[0] = ractx->lpc_tables[0];
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
     ractx->avctx = avctx;
-    ff_dsputil_init(&ractx->dsp, avctx);
+    ff_audiodsp_init(&ractx->adsp);
     ret = ff_lpc_init(&ractx->lpc_ctx, avctx->frame_size, LPC_ORDER,
                       FF_LPC_TYPE_LEVINSON);
     if (ret < 0)
@@ -374,7 +374,7 @@ static void ra144_encode_subblock(RA144Context *ractx,
         memcpy(cba, work + LPC_ORDER, sizeof(cba));
 
         ff_copy_and_dup(ractx->buffer_a, ractx->adapt_cb, cba_idx + BLOCKSIZE / 2 - 1);
-        m[0] = (ff_irms(&ractx->dsp, ractx->buffer_a) * rms) >> 12;
+        m[0] = (ff_irms(&ractx->adsp, ractx->buffer_a) * rms) >> 12;
     }
     fixed_cb_search(work + LPC_ORDER, coefs, data, cba_idx, &cb1_idx, &cb2_idx);
     for (i = 0; i < BLOCKSIZE; i++) {
