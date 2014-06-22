@@ -61,7 +61,7 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
         }
     }
 
-#if CONFIG_VIDEODSP && (ARCH_X86_32 || !HAVE_YASM)
+#if CONFIG_VIDEODSP
     c->gmc = ff_gmc_mmx;
 #endif
 #endif /* HAVE_MMX_INLINE */
@@ -81,16 +81,6 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
         c->idct     = ff_idct_xvid_mmxext;
     }
 #endif /* HAVE_MMXEXT_INLINE */
-}
-
-static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
-                                     int cpu_flags, unsigned high_bit_depth)
-{
-#if HAVE_YASM
-#if HAVE_INLINE_ASM && CONFIG_VIDEODSP
-    c->gmc = ff_gmc_sse;
-#endif
-#endif /* HAVE_YASM */
 }
 
 static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
@@ -129,9 +119,6 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
 
     if (X86_MMXEXT(cpu_flags))
         dsputil_init_mmxext(c, avctx, cpu_flags, high_bit_depth);
-
-    if (X86_SSE(cpu_flags))
-        dsputil_init_sse(c, avctx, cpu_flags, high_bit_depth);
 
     if (X86_SSE2(cpu_flags))
         dsputil_init_sse2(c, avctx, cpu_flags, high_bit_depth);

@@ -48,11 +48,6 @@ void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
                 int dxx, int dxy, int dyx, int dyy,
                 int shift, int r, int width, int height);
 
-void ff_gmc_sse(uint8_t *dst, uint8_t *src,
-                int stride, int h, int ox, int oy,
-                int dxx, int dxy, int dyx, int dyy,
-                int shift, int r, int width, int height);
-
 void ff_mmx_idct(int16_t *block);
 void ff_mmxext_idct(int16_t *block);
 

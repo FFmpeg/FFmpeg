@@ -247,17 +247,11 @@ void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
     }
 }
 
-typedef void emulated_edge_mc_func(uint8_t *dst, const uint8_t *src,
-                                   ptrdiff_t dst_stride,
-                                   ptrdiff_t src_linesize,
-                                   int block_w, int block_h,
-                                   int src_x, int src_y, int w, int h);
-
-static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
-                                 int stride, int h, int ox, int oy,
-                                 int dxx, int dxy, int dyx, int dyy,
-                                 int shift, int r, int width, int height,
-                                 emulated_edge_mc_func *emu_edge_fn)
+#if CONFIG_VIDEODSP
+void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
+                int stride, int h, int ox, int oy,
+                int dxx, int dxy, int dyx, int dyy,
+                int shift, int r, int width, int height)
 {
     const int w    = 8;
     const int ix   = ox  >> (16 + shift);
@@ -298,7 +292,7 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
 
     src += ix + iy * stride;
     if (need_emu) {
-        emu_edge_fn(edge_buf, src, stride, stride, w + 1, h + 1, ix, iy, width, height);
+        ff_emulated_edge_mc_8(edge_buf, src, stride, stride, w + 1, h + 1, ix, iy, width, height);
         src = edge_buf;
     }
 
@@ -375,36 +369,5 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
         src += 4 - h * stride;
     }
 }
-
-#if CONFIG_VIDEODSP
-#if HAVE_YASM
-#if ARCH_X86_32
-void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
-                int stride, int h, int ox, int oy,
-                int dxx, int dxy, int dyx, int dyy,
-                int shift, int r, int width, int height)
-{
-    gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
-        width, height, &ff_emulated_edge_mc_8);
-}
-#endif
-void ff_gmc_sse(uint8_t *dst, uint8_t *src,
-                int stride, int h, int ox, int oy,
-                int dxx, int dxy, int dyx, int dyy,
-                int shift, int r, int width, int height)
-{
-    gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
-        width, height, &ff_emulated_edge_mc_8);
-}
-#else
-void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
-                int stride, int h, int ox, int oy,
-                int dxx, int dxy, int dyx, int dyy,
-                int shift, int r, int width, int height)
-{
-    gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
-        width, height, &ff_emulated_edge_mc_8);
-}
-#endif
 #endif
 #endif /* HAVE_INLINE_ASM */
