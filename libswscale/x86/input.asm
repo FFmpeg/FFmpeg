@@ -347,8 +347,9 @@ cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, table
 %if ARCH_X86_64
     movsxd         wq, wd
 %endif
-    lea          srcq, [srcq+wq*4]
     add            wq, wq
+    sub            wq, mmsize - 1
+    lea          srcq, [srcq+wq*2]
     add          dstq, wq
     neg            wq
     mova           m4, [rgb_Yrnd]
@@ -373,6 +374,23 @@ cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, table
     mova    [dstq+wq], m0
     add            wq, mmsize
     jl .loop
+    sub            wq, mmsize - 1
+    jz .end
+    add            srcq, 2*mmsize - 2
+    add            dstq, mmsize - 1
+.loop2:
+    movd           m0, [srcq+wq*2+0]      ; (byte) { Bx, Gx, Rx, xx }[0-3]
+    DEINTB          1,  0,  3,  2,  7     ; (word) { Gx, xx (m0/m2) or Bx, Rx (m1/m3) }[0-3]/[4-7]
+    pmaddwd        m1, m5                 ; (dword) { Bx*BY + Rx*RY }[0-3]
+    pmaddwd        m0, m6                 ; (dword) { Gx*GY }[0-3]
+    paddd          m0, m4                 ; += rgb_Yrnd
+    paddd          m0, m1                 ; (dword) { Y[0-3] }
+    psrad          m0, 9
+    packssdw       m0, m0                 ; (word) { Y[0-7] }
+    movd    [dstq+wq], m0
+    add            wq, 2
+    jl .loop2
+.end:
     REP_RET
 %endif ; %0 == 3
 %endmacro
