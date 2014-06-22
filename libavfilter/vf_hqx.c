@@ -461,7 +461,7 @@ HQX_FUNC(4)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum AVPixelFormat pix_fmts[] = {AV_PIX_FMT_BGRA, AV_PIX_FMT_NONE};
+    static const enum AVPixelFormat pix_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
