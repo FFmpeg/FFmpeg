@@ -410,7 +410,7 @@ static av_always_inline void hqx_filter(const ThreadData *td, int jobnr, int nb_
                 src32[prevcol + nextline], src32[nextline], src32[nextline + nextcol]
             };
             const uint32_t yuv1 = rgb2yuv(r2y, w[4]);
-            const int pattern = (w[4] != w[0] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[0]))) : 0) << 0
+            const int pattern = (w[4] != w[0] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[0]))) : 0)
                               | (w[4] != w[1] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[1]))) : 0) << 1
                               | (w[4] != w[2] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[2]))) : 0) << 2
                               | (w[4] != w[3] ? (yuv_diff(yuv1, rgb2yuv(r2y, w[3]))) : 0) << 3
