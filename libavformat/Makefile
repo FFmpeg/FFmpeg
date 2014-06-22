@@ -209,7 +209,7 @@ OBJS-$(CONFIG_M4V_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)          += matroskadec.o matroska.o  \
                                             isom.o rmsipr.o flac_picture.o \
                                             oggparsevorbis.o vorbiscomment.o \
-                                            replaygain.o
+                                            flac_picture.o replaygain.o
 OBJS-$(CONFIG_MATROSKA_MUXER)            += matroskaenc.o matroska.o \
                                             isom.o avc.o hevc.o \
                                             flacenc_header.o avlanguage.o vorbiscomment.o wv.o
