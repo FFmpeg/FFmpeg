@@ -234,6 +234,9 @@ typedef struct DVBSubContext {
 
     int version;
     int time_out;
+    int compute_edt; /**< if 1 end display time calculated using pts
+                          if 0 (Default) calculated using time out */
+    int64_t prev_start;
     DVBSubRegion *region_list;
     DVBSubCLUT   *clut_list;
     DVBSubObject *object_list;
@@ -383,6 +386,7 @@ static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
     }
 
     ctx->version = -1;
+    ctx->prev_start = AV_NOPTS_VALUE;
 
     default_clut.id = -1;
     default_clut.next = NULL;
@@ -759,7 +763,7 @@ static int dvbsub_read_8bit_string(uint8_t *destbuf, int dbuf_len,
     return pixels_read;
 }
 
-static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub)
+static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_output)
 {
     DVBSubContext *ctx = avctx->priv_data;
     DVBSubRegionDisplay *display;
@@ -771,14 +775,19 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub)
     int i;
     int offset_x=0, offset_y=0;
 
-    sub->end_display_time = ctx->time_out * 1000;
+    if(ctx->compute_edt == 0)
+        sub->end_display_time = ctx->time_out * 1000;
 
     if (display_def) {
         offset_x = display_def->x;
         offset_y = display_def->y;
     }
 
-    sub->num_rects = 0;
+    /* Not touching AVSubtitles again*/
+    if(sub->num_rects) {
+        avpriv_request_sample(ctx, "Different Version of Segment asked Twice\n");
+        return;
+    }
     for (display = ctx->display_list; display; display = display->next) {
         region = get_region(ctx, display->region_id);
         if (region && region->dirty)
@@ -786,6 +795,13 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub)
     }
 
     if (sub->num_rects > 0) {
+        if(ctx->compute_edt == 1 && ctx->prev_start != AV_NOPTS_VALUE) {
+            sub->end_display_time = av_rescale_q((sub->pts - ctx->prev_start ), AV_TIME_BASE_Q, (AVRational){ 1, 1000 }) - 1;
+            *got_output = 1;
+        } else if (ctx->compute_edt == 0) {
+            *got_output = 1;
+        }
+
         sub->rects = av_mallocz_array(sizeof(*sub->rects), sub->num_rects);
         for(i=0; i<sub->num_rects; i++)
             sub->rects[i] = av_mallocz(sizeof(*sub->rects[i]));
@@ -1228,7 +1244,7 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
 }
 
 static void dvbsub_parse_page_segment(AVCodecContext *avctx,
-                                        const uint8_t *buf, int buf_size, AVSubtitle *sub)
+                                        const uint8_t *buf, int buf_size, AVSubtitle *sub, int *got_output)
 {
     DVBSubContext *ctx = avctx->priv_data;
     DVBSubRegionDisplay *display;
@@ -1255,6 +1271,9 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
     ctx->version = version;
 
     av_dlog(avctx, "Page time out %ds, state %d\n", ctx->time_out, page_state);
+
+    if(ctx->compute_edt == 1)
+        save_subtitle_set(avctx, sub, got_output);
 
     if (page_state == 1 || page_state == 2) {
         delete_regions(ctx);
@@ -1445,17 +1464,17 @@ static void dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
     }
 }
 
-static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
-                                        int buf_size, AVSubtitle *sub)
+static void dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
+                                        int buf_size, AVSubtitle *sub,int *got_output)
 {
     DVBSubContext *ctx = avctx->priv_data;
 
-    save_subtitle_set(avctx,sub);
+    if(ctx->compute_edt == 0)
+        save_subtitle_set(avctx, sub, got_output);
 #ifdef DEBUG
     save_display_set(ctx);
 #endif
 
-    return 1;
 }
 
 static int dvbsub_decode(AVCodecContext *avctx,
@@ -1471,7 +1490,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
     int page_id;
     int segment_length;
     int i;
-    int ret;
+    int ret = 0;
     int got_segment = 0;
 
     av_dlog(avctx, "DVB sub packet:\n");
@@ -1507,14 +1526,15 @@ static int dvbsub_decode(AVCodecContext *avctx,
 
         if (p_end - p < segment_length) {
             av_dlog(avctx, "incomplete or broken packet");
-            return -1;
+            ret = -1;
+            goto end;
         }
 
         if (page_id == ctx->composition_id || page_id == ctx->ancillary_id ||
             ctx->composition_id == -1 || ctx->ancillary_id == -1) {
             switch (segment_type) {
             case DVBSUB_PAGE_SEGMENT:
-                dvbsub_parse_page_segment(avctx, p, segment_length, sub);
+                dvbsub_parse_page_segment(avctx, p, segment_length, sub, data_size);
                 got_segment |= 1;
                 break;
             case DVBSUB_REGION_SEGMENT:
@@ -1523,7 +1543,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
                 break;
             case DVBSUB_CLUT_SEGMENT:
                 ret = dvbsub_parse_clut_segment(avctx, p, segment_length);
-                if (ret < 0) return ret;
+                if (ret < 0) goto end;
                 got_segment |= 4;
                 break;
             case DVBSUB_OBJECT_SEGMENT:
@@ -1534,7 +1554,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
                 dvbsub_parse_display_definition_segment(avctx, p, segment_length);
                 break;
             case DVBSUB_DISPLAY_SEGMENT:
-                *data_size = dvbsub_display_end_segment(avctx, p, segment_length, sub);
+                dvbsub_display_end_segment(avctx, p, segment_length, sub, data_size);
                 got_segment |= 16;
                 break;
             default:
@@ -1550,13 +1570,24 @@ static int dvbsub_decode(AVCodecContext *avctx,
     // segments then we need no further data.
     if (got_segment == 15 && sub) {
         av_log(avctx, AV_LOG_DEBUG, "Missing display_end_segment, emulating\n");
-        *data_size = dvbsub_display_end_segment(avctx, p, 0, sub);
+        dvbsub_display_end_segment(avctx, p, 0, sub, data_size);
+    }
+
+end:
+    if(ret < 0) {
+        *data_size = 0;
+        avsubtitle_free(sub);
+        return ret;
+    } else {
+        if(ctx->compute_edt == 1 )
+            FFSWAP(int64_t, ctx->prev_start, sub->pts);
     }
 
     return p - buf;
 }
 
 static const AVOption options[] = {
+    {"compute_edt", "compute end of time using pts or timeout", offsetof(DVBSubContext, compute_edt), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
     {NULL}
 };
 static const AVClass dvbsubdec_class = {
