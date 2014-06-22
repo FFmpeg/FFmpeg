@@ -755,7 +755,6 @@ void ff_set_qscale(MpegEncContext * s, int qscale);
 
 /* Error resilience */
 void ff_mpeg_er_frame_start(MpegEncContext *s);
-void ff_mpeg_set_erpic(ERPicture *dst, Picture *src);
 
 int ff_dct_common_init(MpegEncContext *s);
 int ff_dct_encode_init(MpegEncContext *s);
