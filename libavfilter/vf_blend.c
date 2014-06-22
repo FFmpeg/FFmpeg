@@ -179,10 +179,10 @@ static void blend_## name(const uint8_t *top, int top_linesize,       \
 #define A top[j]
 #define B bottom[j]
 
-#define MULTIPLY(x, a, b) (x * ((a * b) / 255))
-#define SCREEN(x, a, b)   (255 - x * ((255 - a) * (255 - b) / 255))
-#define BURN(a, b)        ((a == 0) ? a : FFMAX(0, 255 - ((255 - b) << 8) / a))
-#define DODGE(a, b)       ((a == 255) ? a : FFMIN(255, ((b << 8) / (255 - a))))
+#define MULTIPLY(x, a, b) ((x) * (((a) * (b)) / 255))
+#define SCREEN(x, a, b)   (255 - (x) * ((255 - (a)) * (255 - (b)) / 255))
+#define BURN(a, b)        (((a) == 0) ? (a) : FFMAX(0, 255 - ((255 - (b)) << 8) / (a)))
+#define DODGE(a, b)       (((a) == 255) ? (a) : FFMIN(255, (((b) << 8) / (255 - (a)))))
 
 DEFINE_BLEND(addition,   FFMIN(255, A + B))
 DEFINE_BLEND(average,    (A + B) / 2)
