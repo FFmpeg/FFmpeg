@@ -911,7 +911,7 @@ static int expand_text(AVFilterContext *ctx)
 }
 
 static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
-                       int width, int height, const uint8_t rgbcolor[4],
+                       int width, int height,
                        FFDrawColor *color, int x, int y, int borderw)
 {
     char *text = s->expanded_text.str;
@@ -1105,17 +1105,17 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
                            s->x, s->y, box_w, box_h);
 
     if (s->shadowx || s->shadowy) {
-        if ((ret = draw_glyphs(s, frame, width, height, s->shadowcolor.rgba,
+        if ((ret = draw_glyphs(s, frame, width, height,
                                &s->shadowcolor, s->shadowx, s->shadowy, 0)) < 0)
             return ret;
     }
 
     if (s->borderw) {
-        if ((ret = draw_glyphs(s, frame, width, height, s->bordercolor.rgba,
+        if ((ret = draw_glyphs(s, frame, width, height,
                                &s->bordercolor, 0, 0, s->borderw)) < 0)
             return ret;
     }
-    if ((ret = draw_glyphs(s, frame, width, height, s->fontcolor.rgba,
+    if ((ret = draw_glyphs(s, frame, width, height,
                            &s->fontcolor, 0, 0, 0)) < 0)
         return ret;
 
