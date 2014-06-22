@@ -207,8 +207,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
             x264_encoder_reconfig(x4->enc, &x4->params);
         }
 
-        if (x4->params.rc.i_rc_method == X264_RC_CRF &&
-            x4->crf >= 0 &&
+        if (x4->crf >= 0 &&
+            x4->params.rc.i_rc_method == X264_RC_CRF &&
             x4->params.rc.f_rf_constant != x4->crf) {
             x4->params.rc.f_rf_constant = x4->crf;
             x264_encoder_reconfig(x4->enc, &x4->params);
