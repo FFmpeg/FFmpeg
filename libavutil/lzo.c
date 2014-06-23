@@ -110,7 +110,7 @@ static inline void copy(LZOContext *c, int cnt)
 /**
  * @brief Copies previously decoded bytes to current position.
  * @param back how many bytes back we start, must be > 0
- * @param cnt number of bytes to copy, must be >= 0
+ * @param cnt number of bytes to copy, must be > 0
  *
  * cnt > back is valid, this will copy the bytes we just copied,
  * thus creating a repeating pattern with a period length of back.
