@@ -913,7 +913,7 @@ static void long_filter_high_3800(int32_t *buffer, int order, int shift,
         sign = APESIGN(buffer[i]);
         for (j = 0; j < order; j++) {
             dotprod += delay[j] * coeffs[j];
-            coeffs[j] -= (((delay[j] >> 30) & 2) - 1) * sign;
+            coeffs[j] += ((delay[j] >> 31) | 1) * sign;
         }
         buffer[i] -= dotprod >> shift;
         for (j = 0; j < order - 1; j++)
@@ -933,7 +933,7 @@ static void long_filter_ehigh_3830(int32_t *buffer, int length)
         sign = APESIGN(buffer[i]);
         for (j = 7; j >= 0; j--) {
             dotprod += delay[j] * coeffs[j];
-            coeffs[j] -= (((delay[j] >> 30) & 2) - 1) * sign;
+            coeffs[j] += ((delay[j] >> 31) | 1) * sign;
         }
         for (j = 7; j > 0; j--)
             delay[j] = delay[j - 1];
