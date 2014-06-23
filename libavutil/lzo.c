@@ -217,6 +217,7 @@ int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen)
 
 int main(int argc, char *argv[]) {
     FILE *in = fopen(argv[1], "rb");
+    int comp_level = argc > 2 ? atoi(argv[2]) : 0;
     uint8_t *orig = av_malloc(MAXSZ + 16);
     uint8_t *comp = av_malloc(2*MAXSZ + 16);
     uint8_t *decomp = av_malloc(MAXSZ + 16);
@@ -226,7 +227,16 @@ int main(int argc, char *argv[]) {
     int inlen, outlen;
     int i;
     av_log_set_level(AV_LOG_DEBUG);
-    lzo1x_999_compress(orig, s, comp, &clen, tmp);
+    if (comp_level == 0) {
+        lzo1x_1_compress(orig, s, comp, &clen, tmp);
+    } else if (comp_level == 11) {
+        lzo1x_1_11_compress(orig, s, comp, &clen, tmp);
+    } else if (comp_level == 12) {
+        lzo1x_1_12_compress(orig, s, comp, &clen, tmp);
+    } else if (comp_level == 15) {
+        lzo1x_1_15_compress(orig, s, comp, &clen, tmp);
+    } else
+        lzo1x_999_compress(orig, s, comp, &clen, tmp);
     for (i = 0; i < 300; i++) {
 START_TIMER
         inlen = clen; outlen = MAXSZ;
