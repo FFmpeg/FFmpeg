@@ -29,6 +29,7 @@
 #include "internal.h"
 #include "avcodec.h"
 #include "error_resilience.h"
+#include "mpeg_er.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h263.h"
