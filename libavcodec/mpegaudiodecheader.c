@@ -24,6 +24,8 @@
  * MPEG Audio header decoder.
  */
 
+#include "libavutil/common.h"
+
 #include "avcodec.h"
 #include "mpegaudio.h"
 #include "mpegaudiodata.h"
@@ -45,6 +47,8 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     s->layer = 4 - ((header >> 17) & 3);
     /* extract frequency */
     sample_rate_index = (header >> 10) & 3;
+    if (sample_rate_index >= FF_ARRAY_ELEMS(avpriv_mpa_freq_tab))
+        sample_rate_index = 0;
     sample_rate = avpriv_mpa_freq_tab[sample_rate_index] >> (s->lsf + mpeg25);
     sample_rate_index += 3 * (s->lsf + mpeg25);
     s->sample_rate_index = sample_rate_index;
