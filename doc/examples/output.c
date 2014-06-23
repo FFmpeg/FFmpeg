@@ -34,6 +34,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/mathematics.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
@@ -90,6 +91,7 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum AVCodecID codec_id)
     c->bit_rate    = 64000;
     c->sample_rate = 44100;
     c->channels    = 2;
+    c->channel_layout = AV_CH_LAYOUT_STEREO;
 
     // some formats want stream headers to be separate
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
