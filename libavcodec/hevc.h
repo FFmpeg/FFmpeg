@@ -27,8 +27,8 @@
 #include "libavutil/md5.h"
 
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "cabac.h"
-#include "dsputil.h"
 #include "get_bits.h"
 #include "hevcpred.h"
 #include "hevcdsp.h"
@@ -814,7 +814,7 @@ typedef struct HEVCContext {
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
     VideoDSPContext vdsp;
-    DSPContext dsp;
+    BswapDSPContext bdsp;
     int8_t *qp_y_tab;
     uint8_t *split_cu_flag;
     uint8_t *horizontal_bs;

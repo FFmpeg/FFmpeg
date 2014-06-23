@@ -867,8 +867,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (!s->bitstream_buffer)
         return AVERROR(ENOMEM);
 
-    s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer,
-                     (const uint32_t*)buf, buf_size / 4);
+    s->bdsp.bswap_buf((uint32_t *) s->bitstream_buffer,
+                      (const uint32_t *) buf, buf_size / 4);
 
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;

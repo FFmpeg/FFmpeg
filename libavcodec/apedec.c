@@ -27,7 +27,7 @@
 #include "libavutil/opt.h"
 #include "lossless_audiodsp.h"
 #include "avcodec.h"
-#include "dsputil.h"
+#include "bswapdsp.h"
 #include "bytestream.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -136,7 +136,7 @@ typedef struct APEPredictor {
 typedef struct APEContext {
     AVClass *class;                          ///< class for AVOptions
     AVCodecContext *avctx;
-    DSPContext dsp;
+    BswapDSPContext bdsp;
     LLAudDSPContext adsp;
     int channels;
     int samples;                             ///< samples left to decode in current frame
@@ -293,7 +293,7 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
         s->predictor_decode_stereo = predictor_decode_stereo_3950;
     }
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_bswapdsp_init(&s->bdsp);
     ff_llauddsp_init(&s->adsp);
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
@@ -1443,7 +1443,8 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
         av_fast_padded_malloc(&s->data, &s->data_size, buf_size);
         if (!s->data)
             return AVERROR(ENOMEM);
-        s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
+        s->bdsp.bswap_buf((uint32_t *) s->data, (const uint32_t *) buf,
+                          buf_size >> 2);
         memset(s->data + (buf_size & ~3), 0, buf_size & 3);
         s->ptr = s->data;
         s->data_end = s->data + buf_size;

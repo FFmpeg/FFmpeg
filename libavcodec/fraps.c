@@ -35,7 +35,7 @@
 #include "get_bits.h"
 #include "huffman.h"
 #include "bytestream.h"
-#include "dsputil.h"
+#include "bswapdsp.h"
 #include "internal.h"
 #include "thread.h"
 
@@ -47,9 +47,9 @@
  */
 typedef struct FrapsContext {
     AVCodecContext *avctx;
+    BswapDSPContext bdsp;
     uint8_t *tmpbuf;
     int tmpbuf_size;
-    DSPContext dsp;
 } FrapsContext;
 
 
@@ -65,7 +65,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->avctx  = avctx;
     s->tmpbuf = NULL;
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_bswapdsp_init(&s->bdsp);
 
     return 0;
 }
@@ -102,7 +102,8 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     /* we have built Huffman table and are ready to decode plane */
 
     /* convert bits so they may be used by standard bitreader */
-    s->dsp.bswap_buf((uint32_t *)s->tmpbuf, (const uint32_t *)src, size >> 2);
+    s->bdsp.bswap_buf((uint32_t *) s->tmpbuf,
+                      (const uint32_t *) src, size >> 2);
 
     init_get_bits(&gb, s->tmpbuf, size * 8);
     for (j = 0; j < h; j++) {

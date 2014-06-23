@@ -221,7 +221,8 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
 
     if (avctx->codec_id == AV_CODEC_ID_ASV1)
-        a->dsp.bswap_buf((uint32_t*)a->bitstream_buffer, (const uint32_t*)buf, buf_size/4);
+        a->bbdsp.bswap_buf((uint32_t *) a->bitstream_buffer,
+                           (const uint32_t *) buf, buf_size / 4);
     else {
         int i;
         for (i = 0; i < buf_size; i++)

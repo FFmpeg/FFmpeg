@@ -33,7 +33,7 @@
 #include "libavutil/mem.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "bswapdsp.h"
 #include "huffyuv.h"
 
 int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int n)
@@ -75,7 +75,7 @@ av_cold void ff_huffyuv_common_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->flags = avctx->flags;
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_bswapdsp_init(&s->bdsp);
     ff_llviddsp_init(&s->llviddsp, avctx);
 
     s->width = avctx->width;

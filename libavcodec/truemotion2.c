@@ -27,9 +27,9 @@
 #include <inttypes.h>
 
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "bytestream.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "internal.h"
 
 #define TM2_ESCAPE 0x80000000
@@ -63,7 +63,7 @@ typedef struct TM2Context {
     AVFrame *pic;
 
     GetBitContext gb;
-    DSPContext dsp;
+    BswapDSPContext bdsp;
 
     uint8_t *buffer;
     int buffer_size;
@@ -889,7 +889,8 @@ static int decode_frame(AVCodecContext *avctx,
     if ((ret = ff_reget_buffer(avctx, p)) < 0)
         return ret;
 
-    l->dsp.bswap_buf((uint32_t*)l->buffer, (const uint32_t*)buf, buf_size >> 2);
+    l->bdsp.bswap_buf((uint32_t *) l->buffer, (const uint32_t *) buf,
+                      buf_size >> 2);
 
     if ((ret = tm2_read_header(l, l->buffer)) < 0) {
         return ret;
@@ -940,7 +941,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!l->pic)
         return AVERROR(ENOMEM);
 
-    ff_dsputil_init(&l->dsp, avctx);
+    ff_bswapdsp_init(&l->bdsp);
 
     l->last  = av_malloc_array(w >> 2, 4 * sizeof(*l->last) );
     l->clast = av_malloc_array(w >> 2, 4 * sizeof(*l->clast));

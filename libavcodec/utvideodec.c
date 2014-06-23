@@ -29,9 +29,9 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "bytestream.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "thread.h"
 #include "utvideo.h"
 
@@ -143,8 +143,9 @@ static int decode_plane(UtvideoContext *c, int plane_no,
         memcpy(c->slice_bits, src + slice_data_start + c->slices * 4,
                slice_size);
         memset(c->slice_bits + slice_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-        c->dsp.bswap_buf((uint32_t *) c->slice_bits, (uint32_t *) c->slice_bits,
-                         (slice_data_end - slice_data_start + 3) >> 2);
+        c->bdsp.bswap_buf((uint32_t *) c->slice_bits,
+                          (uint32_t *) c->slice_bits,
+                          (slice_data_end - slice_data_start + 3) >> 2);
         init_get_bits(&gb, c->slice_bits, slice_size * 8);
 
         prev = 0x80;
@@ -471,7 +472,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->avctx = avctx;
 
-    ff_dsputil_init(&c->dsp, avctx);
+    ff_bswapdsp_init(&c->bdsp);
 
     if (avctx->extradata_size < 16) {
         av_log(avctx, AV_LOG_ERROR,

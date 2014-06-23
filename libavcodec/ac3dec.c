@@ -33,6 +33,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/downmix_info.h"
 #include "libavutil/opt.h"
+#include "bswapdsp.h"
 #include "internal.h"
 #include "aac_ac3_parser.h"
 #include "ac3_parser.h"
@@ -180,7 +181,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     ff_mdct_init(&s->imdct_256, 8, 1, 1.0);
     ff_mdct_init(&s->imdct_512, 9, 1, 1.0);
     AC3_RENAME(ff_kbd_window_init)(s->window, 5.0, 256);
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_bswapdsp_init(&s->bdsp);
 
 #if (USE_FIXED)
     s->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & CODEC_FLAG_BITEXACT);
@@ -1397,7 +1398,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     if (buf_size >= 2 && AV_RB16(buf) == 0x770B) {
         // seems to be byte-swapped AC-3
         int cnt = FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE) >> 1;
-        s->dsp.bswap16_buf((uint16_t *)s->input_buffer, (const uint16_t *)buf, cnt);
+        s->bdsp.bswap16_buf((uint16_t *) s->input_buffer,
+                            (const uint16_t *) buf, cnt);
     } else
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
     buf = s->input_buffer;

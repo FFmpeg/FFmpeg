@@ -964,7 +964,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         avctx->stats_out[0] = '\0';
     if (!(s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)) {
         flush_put_bits(&s->pb);
-        s->dsp.bswap_buf((uint32_t*)pkt->data, (uint32_t*)pkt->data, size);
+        s->bdsp.bswap_buf((uint32_t *) pkt->data, (uint32_t *) pkt->data, size);
     }
 
     s->picture_number++;

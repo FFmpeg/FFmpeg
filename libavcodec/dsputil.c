@@ -190,30 +190,6 @@ static int pix_norm1_c(uint8_t *pix, int line_size)
     return s;
 }
 
-static void bswap_buf(uint32_t *dst, const uint32_t *src, int w)
-{
-    int i;
-
-    for (i = 0; i + 8 <= w; i += 8) {
-        dst[i + 0] = av_bswap32(src[i + 0]);
-        dst[i + 1] = av_bswap32(src[i + 1]);
-        dst[i + 2] = av_bswap32(src[i + 2]);
-        dst[i + 3] = av_bswap32(src[i + 3]);
-        dst[i + 4] = av_bswap32(src[i + 4]);
-        dst[i + 5] = av_bswap32(src[i + 5]);
-        dst[i + 6] = av_bswap32(src[i + 6]);
-        dst[i + 7] = av_bswap32(src[i + 7]);
-    }
-    for (; i < w; i++)
-        dst[i + 0] = av_bswap32(src[i + 0]);
-}
-
-static void bswap16_buf(uint16_t *dst, const uint16_t *src, int len)
-{
-    while (len--)
-        *dst++ = av_bswap16(*src++);
-}
-
 static int sse4_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                   int line_size, int h)
 {
@@ -1573,9 +1549,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
 #if CONFIG_SNOW_DECODER || CONFIG_SNOW_ENCODER
     ff_dsputil_init_dwt(c);
 #endif
-
-    c->bswap_buf   = bswap_buf;
-    c->bswap16_buf = bswap16_buf;
 
     c->try_8x8basis = try_8x8basis_c;
     c->add_8x8basis = add_8x8basis_c;
