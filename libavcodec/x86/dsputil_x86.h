@@ -43,12 +43,7 @@ void ff_put_signed_pixels_clamped_sse2(const int16_t *block, uint8_t *pixels,
 void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
                        int w, int h, int sides);
 
-void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
-                int stride, int h, int ox, int oy,
-                int dxx, int dxy, int dyx, int dyy,
-                int shift, int r, int width, int height);
 
 void ff_mmx_idct(int16_t *block);
 void ff_mmxext_idct(int16_t *block);
-
 #endif /* AVCODEC_X86_DSPUTIL_X86_H */

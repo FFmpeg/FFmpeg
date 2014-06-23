@@ -36,6 +36,7 @@
 #include "h264chroma.h"
 #include "h263dsp.h"
 #include "hpeldsp.h"
+#include "mpegvideodsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
 #include "parser.h"
@@ -361,6 +362,7 @@ typedef struct MpegEncContext {
     DSPContext dsp;             ///< pointers for accelerated dsp functions
     H264ChromaContext h264chroma;
     HpelDSPContext hdsp;
+    MpegVideoDSPContext mdsp;
     QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H263DSPContext h263dsp;

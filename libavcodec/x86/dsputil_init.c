@@ -58,9 +58,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
         }
     }
 
-#if CONFIG_VIDEODSP
-    c->gmc = ff_gmc_mmx;
-#endif
 #endif /* HAVE_MMX_INLINE */
 
 #if HAVE_MMX_EXTERNAL

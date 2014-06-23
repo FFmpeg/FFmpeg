@@ -28,8 +28,7 @@
 #include "libavcodec/dsputil.h"
 
 void ff_fdct_altivec(int16_t *block);
-void ff_gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
-                     int x16, int y16, int rounder);
+
 void ff_idct_altivec(int16_t *block);
 void ff_idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
 void ff_idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
