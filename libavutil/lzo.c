@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "avutil.h"
+#include "avassert.h"
 #include "common.h"
 #include "intreadwrite.h"
 #include "lzo.h"
@@ -85,6 +86,7 @@ static inline void copy(LZOContext *c, int cnt)
 {
     register const uint8_t *src = c->in;
     register uint8_t *dst       = c->out;
+    av_assert0(cnt >= 0);
     if (cnt > c->in_end - src) {
         cnt       = FFMAX(c->in_end - src, 0);
         c->error |= AV_LZO_INPUT_DEPLETED;
@@ -116,6 +118,7 @@ static inline void copy(LZOContext *c, int cnt)
 static inline void copy_backptr(LZOContext *c, int back, int cnt)
 {
     register uint8_t *dst       = c->out;
+    av_assert0(cnt > 0);
     if (dst - c->out_start < back) {
         c->error |= AV_LZO_INVALID_BACKPTR;
         return;
