@@ -798,6 +798,7 @@ static void revert_cdlms(WmallDecodeCtx *s, int ch,
             s->channel_residues[ch][icoef] = input;
         }
     }
+    emms_c();
 }
 
 static void revert_inter_ch_decorr(WmallDecodeCtx *s, int tile_size)
