@@ -263,6 +263,8 @@ typedef struct IVI45DecContext {
     int gop_invalid;
     int buf_invalid[3];
 
+    int is_indeo4;
+
     AVFrame         *p_frame;
     int             got_p_frame;
 } IVI45DecContext;

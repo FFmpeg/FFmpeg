@@ -672,6 +672,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->switch_buffers   = switch_buffers;
     ctx->is_nonnull_frame = is_nonnull_frame;
 
+    ctx->is_indeo4 = 0;
+
     avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
     return 0;

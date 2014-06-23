@@ -663,6 +663,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->switch_buffers   = switch_buffers;
     ctx->is_nonnull_frame = is_nonnull_frame;
 
+    ctx->is_indeo4 = 1;
+
     ctx->p_frame = av_frame_alloc();
     if (!ctx->p_frame)
         return AVERROR(ENOMEM);
