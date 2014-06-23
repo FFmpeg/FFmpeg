@@ -618,6 +618,9 @@ lavd 54.0.0, lavfi 3.5.0
   Add avformat_close_input().
   Deprecate av_close_input_file() and av_close_input_stream().
 
+2011-12-09 - b2890f5 - lavu 51.20.0 - audioconvert.h
+  Expand the channel layout list.
+
 2011-12-02 - 0eea212 - lavc 53.25.0
   Add nb_samples and extended_data fields to AVFrame.
   Deprecate AVCODEC_MAX_AUDIO_FRAME_SIZE.
@@ -630,6 +633,10 @@ lavd 54.0.0, lavfi 3.5.0
   Change AVPicture.data[4]/linesize[4] to [8] at next major bump.
   Change AVCodecContext.error[4] to [8] at next major bump.
   Add AV_NUM_DATA_POINTERS to simplify the bump transition.
+
+2011-11-24 - lavu 51.19.0
+  bd97b2e - add planar RGB pixel formats
+  6b0768e - add PIX_FMT_PLANAR and PIX_FMT_RGB pixel descriptions
 
 2011-11-23 - bbb46f3 - lavu 51.18.0
   Add av_samples_get_buffer_size(), av_samples_fill_arrays(), and
