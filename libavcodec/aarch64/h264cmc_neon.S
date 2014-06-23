@@ -95,9 +95,10 @@ function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
         b.gt            1b
         ret
 
-2:      tst             w6,  w6
-        add             w12, w12, w6
+2:      adds            w12, w12, w6
         dup             v0.8B, w4
+        b.eq            5f
+        tst             w6,  w6
         dup             v1.8B, w12
         b.eq            4f
 
@@ -160,6 +161,33 @@ function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
         st1             {v16.8B}, [x0], x2
         st1             {v17.8B}, [x0], x2
         b.gt            4b
+        ret
+
+5:      ld1             {v4.8B}, [x1], x2
+        ld1             {v5.8B}, [x1], x2
+        prfm            pldl1strm, [x1]
+        subs            w3,  w3,  #2
+        umull           v16.8H, v4.8B, v0.8B
+        umull           v17.8H, v5.8B, v0.8B
+        prfm            pldl1strm, [x1, x2]
+  .ifc \codec,h264
+        rshrn           v16.8B, v16.8H, #6
+        rshrn           v17.8B, v17.8H, #6
+  .else
+        add             v16.8H, v16.8H, v22.8H
+        add             v17.8H, v17.8H, v22.8H
+        shrn            v16.8B, v16.8H, #6
+        shrn            v17.8B, v17.8H, #6
+  .endif
+  .ifc \type,avg
+        ld1             {v20.8B}, [x8], x2
+        ld1             {v21.8B}, [x8], x2
+        urhadd          v16.8B, v16.8B, v20.8B
+        urhadd          v17.8B, v17.8B, v21.8B
+  .endif
+        st1             {v16.8B}, [x0], x2
+        st1             {v17.8B}, [x0], x2
+        b.gt            5b
         ret
 endfunc
 .endm
@@ -238,9 +266,10 @@ function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
         b.gt            1b
         ret
 
-2:      tst             w6,  w6
-        add             w12, w12, w6
+2:      adds            w12, w12, w6
         dup             v30.8B, w4
+        b.eq            5f
+        tst             w6,  w6
         dup             v31.8B, w12
         trn1            v0.2S,  v30.2S, v31.2S
         trn2            v1.2S,  v30.2S, v31.2S
@@ -302,6 +331,28 @@ function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
         st1             {v16.S}[0], [x0], x2
         st1             {v16.S}[1], [x0], x2
         b.gt            4b
+        ret
+
+5:      ld1             {v4.S}[0], [x1], x2
+        ld1             {v4.S}[1], [x1], x2
+        umull           v18.8H, v4.8B,  v30.8B
+        subs            w3,  w3,  #2
+        prfm            pldl1strm, [x1]
+  .ifc \codec,h264
+        rshrn           v16.8B, v18.8H, #6
+  .else
+        add             v18.8H, v18.8H, v22.8H
+        shrn            v16.8B, v18.8H, #6
+  .endif
+  .ifc \type,avg
+        ld1             {v20.S}[0], [x8], x2
+        ld1             {v20.S}[1], [x8], x2
+        urhadd          v16.8B, v16.8B, v20.8B
+  .endif
+        prfm            pldl1strm, [x1]
+        st1             {v16.S}[0], [x0], x2
+        st1             {v16.S}[1], [x0], x2
+        b.gt            5b
         ret
 endfunc
 .endm
