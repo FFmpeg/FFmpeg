@@ -55,6 +55,8 @@ typedef struct OutputStream {
     AVFrame *tmp_frame;
 
     float t, tincr, tincr2;
+
+    struct SwsContext *sws_ctx;
 } OutputStream;
 
 /**************************************************************/
@@ -327,7 +329,6 @@ static void write_video_frame(AVFormatContext *oc, OutputStream *ost)
 {
     int ret;
     AVCodecContext *c;
-    static struct SwsContext *img_convert_ctx;
 
     c = ost->st->codec;
 
@@ -339,20 +340,20 @@ static void write_video_frame(AVFormatContext *oc, OutputStream *ost)
         if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
             /* as we only generate a YUV420P picture, we must convert it
              * to the codec pixel format if needed */
-            if (img_convert_ctx == NULL) {
-                img_convert_ctx = sws_getContext(c->width, c->height,
-                                                 AV_PIX_FMT_YUV420P,
-                                                 c->width, c->height,
-                                                 c->pix_fmt,
-                                                 SCALE_FLAGS, NULL, NULL, NULL);
-                if (img_convert_ctx == NULL) {
+            if (!ost->sws_ctx) {
+                ost->sws_ctx = sws_getContext(c->width, c->height,
+                                              AV_PIX_FMT_YUV420P,
+                                              c->width, c->height,
+                                              c->pix_fmt,
+                                              SCALE_FLAGS, NULL, NULL, NULL);
+                if (!ost->sws_ctx) {
                     fprintf(stderr,
                             "Cannot initialize the conversion context\n");
                     exit(1);
                 }
             }
             fill_yuv_image(ost->tmp_frame, frame_count, c->width, c->height);
-            sws_scale(img_convert_ctx, ost->tmp_frame->data, ost->tmp_frame->linesize,
+            sws_scale(ost->sws_ctx, ost->tmp_frame->data, ost->tmp_frame->linesize,
                       0, c->height, ost->frame->data, ost->frame->linesize);
         } else {
             fill_yuv_image(ost->frame, frame_count, c->width, c->height);
@@ -401,6 +402,7 @@ static void close_stream(AVFormatContext *oc, OutputStream *ost)
     avcodec_close(ost->st->codec);
     av_frame_free(&ost->frame);
     av_frame_free(&ost->tmp_frame);
+    sws_freeContext(ost->sws_ctx);
 }
 
 /**************************************************************/
