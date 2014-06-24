@@ -51,6 +51,9 @@
 typedef struct OutputStream {
     AVStream *st;
 
+    /* pts of the next frame that will be generated */
+    int64_t next_pts;
+
     AVFrame *frame;
     AVFrame *tmp_frame;
 
@@ -139,56 +142,71 @@ static void open_audio(AVFormatContext *oc, OutputStream *ost)
 
 /* Prepare a 16 bit dummy audio frame of 'frame_size' samples and
  * 'nb_channels' channels. */
-static void get_audio_frame(OutputStream *ost, AVFrame *frame, int nb_channels)
+static AVFrame *get_audio_frame(OutputStream *ost)
 {
     int j, i, v, ret;
-    int16_t *q = (int16_t*)frame->data[0];
+    int16_t *q = (int16_t*)ost->frame->data[0];
+
+    /* check if we want to generate more frames */
+    if (av_compare_ts(ost->next_pts, ost->st->codec->time_base,
+                      STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
+        return NULL;
 
     /* when we pass a frame to the encoder, it may keep a reference to it
      * internally;
      * make sure we do not overwrite it here
      */
-    ret = av_frame_make_writable(frame);
+    ret = av_frame_make_writable(ost->frame);
     if (ret < 0)
         exit(1);
 
-    for (j = 0; j < frame->nb_samples; j++) {
+    for (j = 0; j < ost->frame->nb_samples; j++) {
         v = (int)(sin(ost->t) * 10000);
-        for (i = 0; i < nb_channels; i++)
+        for (i = 0; i < ost->st->codec->channels; i++)
             *q++ = v;
         ost->t     += ost->tincr;
         ost->tincr += ost->tincr2;
     }
+
+    ost->frame->pts = ost->next_pts;
+    ost->next_pts  += ost->frame->nb_samples;
+
+    return ost->frame;
 }
 
-static void write_audio_frame(AVFormatContext *oc, OutputStream *ost)
+/*
+ * encode one audio frame and send it to the muxer
+ * return 1 when encoding is finished, 0 otherwise
+ */
+static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
-    int got_packet, ret;
+    AVFrame *frame;
+    int got_packet;
 
     av_init_packet(&pkt);
     c = ost->st->codec;
 
-    get_audio_frame(ost, ost->frame, c->channels);
+    frame = get_audio_frame(ost);
 
-    avcodec_encode_audio2(c, &pkt, ost->frame, &got_packet);
-    if (!got_packet)
-        return;
+    avcodec_encode_audio2(c, &pkt, frame, &got_packet);
 
-    pkt.stream_index = ost->st->index;
+    if (got_packet) {
+        pkt.stream_index = ost->st->index;
 
-    /* Write the compressed frame to the media file. */
-    if (av_interleaved_write_frame(oc, &pkt) != 0) {
-        fprintf(stderr, "Error while writing audio frame\n");
-        exit(1);
+        /* Write the compressed frame to the media file. */
+        if (av_interleaved_write_frame(oc, &pkt) != 0) {
+            fprintf(stderr, "Error while writing audio frame\n");
+            exit(1);
+        }
     }
+
+    return (frame || got_packet) ? 0 : 1;
 }
 
 /**************************************************************/
 /* video output */
-
-static int frame_count;
 
 /* Add a video output stream. */
 static void add_video_stream(OutputStream *ost, AVFormatContext *oc,
@@ -325,76 +343,99 @@ static void fill_yuv_image(AVFrame *pict, int frame_index,
     }
 }
 
-static void write_video_frame(AVFormatContext *oc, OutputStream *ost)
+static AVFrame *get_video_frame(OutputStream *ost)
+{
+    AVCodecContext *c = ost->st->codec;
+
+    /* check if we want to generate more frames */
+    if (av_compare_ts(ost->next_pts, ost->st->codec->time_base,
+                      STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
+        return NULL;
+
+    if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
+        /* as we only generate a YUV420P picture, we must convert it
+         * to the codec pixel format if needed */
+        if (!ost->sws_ctx) {
+            ost->sws_ctx = sws_getContext(c->width, c->height,
+                                          AV_PIX_FMT_YUV420P,
+                                          c->width, c->height,
+                                          c->pix_fmt,
+                                          SCALE_FLAGS, NULL, NULL, NULL);
+            if (!ost->sws_ctx) {
+                fprintf(stderr,
+                        "Cannot initialize the conversion context\n");
+                exit(1);
+            }
+        }
+        fill_yuv_image(ost->tmp_frame, ost->next_pts, c->width, c->height);
+        sws_scale(ost->sws_ctx, ost->tmp_frame->data, ost->tmp_frame->linesize,
+                  0, c->height, ost->frame->data, ost->frame->linesize);
+    } else {
+        fill_yuv_image(ost->frame, ost->next_pts, c->width, c->height);
+    }
+
+    ost->frame->pts = ost->next_pts++;
+
+    return ost->frame;
+}
+
+/*
+ * encode one video frame and send it to the muxer
+ * return 1 when encoding is finished, 0 otherwise
+ */
+static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
 {
     int ret;
     AVCodecContext *c;
+    AVFrame *frame;
+    int got_packet = 0;
 
     c = ost->st->codec;
 
-    if (frame_count >= STREAM_NB_FRAMES) {
-        /* No more frames to compress. The codec has a latency of a few
-         * frames if using B-frames, so we get the last frames by
-         * passing the same picture again. */
-    } else {
-        if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
-            /* as we only generate a YUV420P picture, we must convert it
-             * to the codec pixel format if needed */
-            if (!ost->sws_ctx) {
-                ost->sws_ctx = sws_getContext(c->width, c->height,
-                                              AV_PIX_FMT_YUV420P,
-                                              c->width, c->height,
-                                              c->pix_fmt,
-                                              SCALE_FLAGS, NULL, NULL, NULL);
-                if (!ost->sws_ctx) {
-                    fprintf(stderr,
-                            "Cannot initialize the conversion context\n");
-                    exit(1);
-                }
-            }
-            fill_yuv_image(ost->tmp_frame, frame_count, c->width, c->height);
-            sws_scale(ost->sws_ctx, ost->tmp_frame->data, ost->tmp_frame->linesize,
-                      0, c->height, ost->frame->data, ost->frame->linesize);
-        } else {
-            fill_yuv_image(ost->frame, frame_count, c->width, c->height);
-        }
-    }
+    frame = get_video_frame(ost);
 
     if (oc->oformat->flags & AVFMT_RAWPICTURE) {
-        /* Raw video case - the API will change slightly in the near
-         * future for that. */
+        /* a hack to avoid data copy with some raw video muxers */
         AVPacket pkt;
         av_init_packet(&pkt);
 
+        if (!frame)
+            return 1;
+
         pkt.flags        |= AV_PKT_FLAG_KEY;
         pkt.stream_index  = ost->st->index;
-        pkt.data          = (uint8_t *)ost->frame;
+        pkt.data          = (uint8_t *)frame;
         pkt.size          = sizeof(AVPicture);
+
+        pkt.pts = pkt.dts = frame->pts;
+        av_packet_rescale_ts(&pkt, c->time_base, ost->st->time_base);
 
         ret = av_interleaved_write_frame(oc, &pkt);
     } else {
         AVPacket pkt = { 0 };
-        int got_packet;
         av_init_packet(&pkt);
 
         /* encode the image */
-        ret = avcodec_encode_video2(c, &pkt, ost->frame, &got_packet);
-        /* If size is zero, it means the image was buffered. */
-        if (!ret && got_packet && pkt.size) {
+        ret = avcodec_encode_video2(c, &pkt, frame, &got_packet);
+        if (ret < 0) {
+            fprintf(stderr, "Error encoding a video frame\n");
+            exit(1);
+        }
+
+        if (got_packet) {
             av_packet_rescale_ts(&pkt, c->time_base, ost->st->time_base);
             pkt.stream_index = ost->st->index;
 
             /* Write the compressed frame to the media file. */
             ret = av_interleaved_write_frame(oc, &pkt);
-        } else {
-            ret = 0;
         }
     }
     if (ret != 0) {
         fprintf(stderr, "Error while writing video frame\n");
         exit(1);
     }
-    frame_count++;
+
+    return (frame || got_packet) ? 0 : 1;
 }
 
 static void close_stream(AVFormatContext *oc, OutputStream *ost)
@@ -414,8 +455,8 @@ int main(int argc, char **argv)
     const char *filename;
     AVOutputFormat *fmt;
     AVFormatContext *oc;
-    double audio_pts, video_pts;
     int have_video = 0, have_audio = 0;
+    int encode_video = 0, encode_audio = 0;
     int i;
 
     /* Initialize libavcodec, and register all codecs and formats. */
@@ -457,10 +498,12 @@ int main(int argc, char **argv)
     if (fmt->video_codec != AV_CODEC_ID_NONE) {
         add_video_stream(&video_st, oc, fmt->video_codec);
         have_video = 1;
+        encode_video = 1;
     }
     if (fmt->audio_codec != AV_CODEC_ID_NONE) {
         add_audio_stream(&audio_st, oc, fmt->audio_codec);
         have_audio = 1;
+        encode_audio = 1;
     }
 
     /* Now that all the parameters are set, we can open the audio and
@@ -483,28 +526,14 @@ int main(int argc, char **argv)
     /* Write the stream header, if any. */
     avformat_write_header(oc, NULL);
 
-    for (;;) {
-        /* Compute current audio and video time. */
-        if (have_audio)
-            audio_pts = (double)audio_st.st->pts.val * audio_st.st->time_base.num / audio_st.st->time_base.den;
-        else
-            audio_pts = 0.0;
-
-        if (have_video)
-            video_pts = (double)video_st.st->pts.val * video_st.st->time_base.num /
-                        video_st.st->time_base.den;
-        else
-            video_pts = 0.0;
-
-        if ((!have_audio || audio_pts >= STREAM_DURATION) &&
-            (!have_video || video_pts >= STREAM_DURATION))
-            break;
-
-        /* write interleaved audio and video frames */
-        if (!have_video || (have_video && have_audio && audio_pts < video_pts)) {
-            write_audio_frame(oc, &audio_st);
+    while (encode_video || encode_audio) {
+        /* select the stream to encode */
+        if (encode_video &&
+            (!encode_audio || av_compare_ts(video_st.next_pts, video_st.st->codec->time_base,
+                                            audio_st.next_pts, audio_st.st->codec->time_base) <= 0)) {
+            encode_video = !write_video_frame(oc, &video_st);
         } else {
-            write_video_frame(oc, &video_st);
+            encode_audio = !write_audio_frame(oc, &audio_st);
         }
     }
 
