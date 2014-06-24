@@ -174,14 +174,9 @@ static av_cold int peak_init_writer(AVFormatContext *s)
     }
 
     wav->peak_maxpos = av_mallocz(enc->channels * sizeof(*wav->peak_maxpos));
-    if (!wav->peak_maxpos)
-        goto nomem;
     wav->peak_maxneg = av_mallocz(enc->channels * sizeof(*wav->peak_maxneg));
-    if (!wav->peak_maxneg)
-        goto nomem;
-
     wav->peak_output = av_malloc(PEAK_BUFFER_SIZE);
-    if (!wav->peak_output)
+    if (!wav->peak_maxpos || !wav->peak_maxneg || !wav->peak_output)
         goto nomem;
 
     wav->peak_outbuf_size = PEAK_BUFFER_SIZE;
