@@ -45,7 +45,7 @@
 #define STREAM_NB_FRAMES  ((int)(STREAM_DURATION * STREAM_FRAME_RATE))
 #define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P /* default pix_fmt */
 
-static int sws_flags = SWS_BICUBIC;
+#define SCALE_FLAGS SWS_BICUBIC
 
 // a wrapper around a single output AVStream
 typedef struct OutputStream {
@@ -344,7 +344,7 @@ static void write_video_frame(AVFormatContext *oc, OutputStream *ost)
                                                  AV_PIX_FMT_YUV420P,
                                                  c->width, c->height,
                                                  c->pix_fmt,
-                                                 sws_flags, NULL, NULL, NULL);
+                                                 SCALE_FLAGS, NULL, NULL, NULL);
                 if (img_convert_ctx == NULL) {
                     fprintf(stderr,
                             "Cannot initialize the conversion context\n");
