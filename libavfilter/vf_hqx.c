@@ -511,12 +511,12 @@ static av_cold int init(AVFilterContext *ctx)
 
     uint32_t c;
     for (c = 0; c < FF_ARRAY_ELEMS(hqx->rgbtoyuv); c++) {
-        const uint32_t r = c >> 16 & 0xff;
-        const uint32_t g = c >>  8 & 0xff;
-        const uint32_t b = c       & 0xff;
-        const uint32_t y = (uint32_t)( 0.299*r + 0.587*g + 0.114*b);
-        const uint32_t u = (uint32_t)(-0.169*r - 0.331*g +   0.5*b) + 128;
-        const uint32_t v = (uint32_t)(   0.5*r - 0.419*g - 0.081*b) + 128;
+        const int r = c >> 16 & 0xff;
+        const int g = c >>  8 & 0xff;
+        const int b = c       & 0xff;
+        const uint32_t y = (uint32_t)(( 299*r + 587*g + 114*b)/1000);
+        const uint32_t u = (uint32_t)((-169*r - 331*g + 500*b)/1000) + 128;
+        const uint32_t v = (uint32_t)(( 500*r - 419*g -  81*b)/1000) + 128;
         hqx->rgbtoyuv[c] = (y << 16) + (u << 8) + v;
     }
 
