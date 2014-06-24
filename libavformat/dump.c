@@ -279,7 +279,6 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     char buf[256];
     int flags = (is_output ? ic->oformat->flags : ic->iformat->flags);
     AVStream *st = ic->streams[i];
-    int g = av_gcd(st->time_base.num, st->time_base.den);
     AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
 
     avcodec_string(buf, sizeof(buf), st->codec, is_output);
@@ -292,7 +291,7 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     if (lang)
         av_log(NULL, AV_LOG_INFO, "(%s)", lang->value);
     av_log(NULL, AV_LOG_DEBUG, ", %d, %d/%d", st->codec_info_nb_frames,
-           st->time_base.num / g, st->time_base.den / g);
+           st->time_base.num, st->time_base.den);
     av_log(NULL, AV_LOG_INFO, ": %s", buf);
 
     if (st->sample_aspect_ratio.num && // default
