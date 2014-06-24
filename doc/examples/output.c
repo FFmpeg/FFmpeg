@@ -59,7 +59,6 @@ typedef struct OutputStream {
 /* audio output */
 
 static float t, tincr, tincr2;
-static int16_t *samples;
 static int audio_input_frame_size;
 
 /*
@@ -122,20 +121,24 @@ static void open_audio(AVFormatContext *oc, AVStream *st)
         audio_input_frame_size = 10000;
     else
         audio_input_frame_size = c->frame_size;
-    samples = av_malloc(audio_input_frame_size *
-                        av_get_bytes_per_sample(c->sample_fmt) *
-                        c->channels);
 }
 
 /* Prepare a 16 bit dummy audio frame of 'frame_size' samples and
  * 'nb_channels' channels. */
-static void get_audio_frame(int16_t *samples, int frame_size, int nb_channels)
+static void get_audio_frame(AVFrame *frame, int nb_channels)
 {
-    int j, i, v;
-    int16_t *q;
+    int j, i, v, ret;
+    int16_t *q = (int16_t*)frame->data[0];
 
-    q = samples;
-    for (j = 0; j < frame_size; j++) {
+    /* when we pass a frame to the encoder, it may keep a reference to it
+     * internally;
+     * make sure we do not overwrite it here
+     */
+    ret = av_frame_make_writable(frame);
+    if (ret < 0)
+        exit(1);
+
+    for (j = 0; j < frame->nb_samples; j++) {
         v = (int)(sin(t) * 10000);
         for (i = 0; i < nb_channels; i++)
             *q++ = v;
@@ -149,18 +152,22 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
     AVFrame *frame = av_frame_alloc();
-    int got_packet;
+    int got_packet, ret;
 
     av_init_packet(&pkt);
     c = st->codec;
 
-    get_audio_frame(samples, audio_input_frame_size, c->channels);
-    frame->nb_samples = audio_input_frame_size;
-    avcodec_fill_audio_frame(frame, c->channels, c->sample_fmt,
-                             (uint8_t *)samples,
-                             audio_input_frame_size *
-                             av_get_bytes_per_sample(c->sample_fmt) *
-                             c->channels, 1);
+    frame->sample_rate    = c->sample_rate;
+    frame->nb_samples     = audio_input_frame_size;
+    frame->format         = AV_SAMPLE_FMT_S16;
+    frame->channel_layout = c->channel_layout;
+    ret = av_frame_get_buffer(frame, 0);
+    if (ret < 0) {
+        fprintf(stderr, "Could not allocate an audio frame.\n");
+        exit(1);
+    }
+
+    get_audio_frame(frame, c->channels);
 
     avcodec_encode_audio2(c, &pkt, frame, &got_packet);
     if (!got_packet)
@@ -179,8 +186,6 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 static void close_audio(AVFormatContext *oc, AVStream *st)
 {
     avcodec_close(st->codec);
-
-    av_free(samples);
 }
 
 /**************************************************************/
