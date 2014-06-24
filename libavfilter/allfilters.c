@@ -80,6 +80,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(BS2B,           bs2b,           af);
     REGISTER_FILTER(CHANNELMAP,     channelmap,     af);
     REGISTER_FILTER(CHANNELSPLIT,   channelsplit,   af);
+    REGISTER_FILTER(CHORUS,         chorus,         af);
     REGISTER_FILTER(COMPAND,        compand,        af);
     REGISTER_FILTER(DCSHIFT,        dcshift,        af);
     REGISTER_FILTER(EARWAX,         earwax,         af);
