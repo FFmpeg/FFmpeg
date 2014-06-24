@@ -270,13 +270,13 @@ static void peak_write_chunk(AVFormatContext *s)
     if (wav->peak_block_pos)
         peak_write_frame(s);
 
-    memset(timestamp, 0, 28);
+    memset(timestamp, 0, sizeof(timestamp));
     if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
         av_log(s, AV_LOG_INFO, "Writing local time and date to Peak Envelope Chunk\n");
         now0 = av_gettime();
         now_secs = now0 / 1000000;
-        strftime(timestamp, 28, "%Y:%m:%d:%H:%M:%S:", localtime(&now_secs));
-        av_strlcatf(timestamp, 28, "%03d", (int)((now0 / 1000) % 1000));
+        strftime(timestamp, sizeof(timestamp), "%Y:%m:%d:%H:%M:%S:", localtime(&now_secs));
+        av_strlcatf(timestamp, sizeof(timestamp), "%03d", (int)((now0 / 1000) % 1000));
     }
 
     avio_wl32(pb, 1);                           /* version */
