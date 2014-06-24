@@ -55,7 +55,6 @@ typedef struct OutputStream {
     AVFrame *tmp_frame;
 
     float t, tincr, tincr2;
-    int audio_input_frame_size;
 } OutputStream;
 
 /**************************************************************/
@@ -100,6 +99,7 @@ static void add_audio_stream(OutputStream *ost, AVFormatContext *oc,
 static void open_audio(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
+    int ret;
 
     c = ost->st->codec;
 
@@ -115,10 +115,24 @@ static void open_audio(AVFormatContext *oc, OutputStream *ost)
     /* increment frequency by 110 Hz per second */
     ost->tincr2 = 2 * M_PI * 110.0 / c->sample_rate / c->sample_rate;
 
+    ost->frame = av_frame_alloc();
+    if (!ost->frame)
+        exit(1);
+
+    ost->frame->sample_rate    = c->sample_rate;
+    ost->frame->format         = AV_SAMPLE_FMT_S16;
+    ost->frame->channel_layout = c->channel_layout;
+
     if (c->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE)
-        ost->audio_input_frame_size = 10000;
+        ost->frame->nb_samples = 10000;
     else
-        ost->audio_input_frame_size = c->frame_size;
+        ost->frame->nb_samples = c->frame_size;
+
+    ret = av_frame_get_buffer(ost->frame, 0);
+    if (ret < 0) {
+        fprintf(stderr, "Could not allocate an audio frame.\n");
+        exit(1);
+    }
 }
 
 /* Prepare a 16 bit dummy audio frame of 'frame_size' samples and
@@ -149,25 +163,14 @@ static void write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
-    AVFrame *frame = av_frame_alloc();
     int got_packet, ret;
 
     av_init_packet(&pkt);
     c = ost->st->codec;
 
-    frame->sample_rate    = c->sample_rate;
-    frame->nb_samples     = ost->audio_input_frame_size;
-    frame->format         = AV_SAMPLE_FMT_S16;
-    frame->channel_layout = c->channel_layout;
-    ret = av_frame_get_buffer(frame, 0);
-    if (ret < 0) {
-        fprintf(stderr, "Could not allocate an audio frame.\n");
-        exit(1);
-    }
+    get_audio_frame(ost, ost->frame, c->channels);
 
-    get_audio_frame(ost, frame, c->channels);
-
-    avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+    avcodec_encode_audio2(c, &pkt, ost->frame, &got_packet);
     if (!got_packet)
         return;
 
@@ -178,12 +181,6 @@ static void write_audio_frame(AVFormatContext *oc, OutputStream *ost)
         fprintf(stderr, "Error while writing audio frame\n");
         exit(1);
     }
-    av_frame_free(&frame);
-}
-
-static void close_audio(AVFormatContext *oc, OutputStream *ost)
-{
-    avcodec_close(ost->st->codec);
 }
 
 /**************************************************************/
@@ -399,7 +396,7 @@ static void write_video_frame(AVFormatContext *oc, OutputStream *ost)
     frame_count++;
 }
 
-static void close_video(AVFormatContext *oc, OutputStream *ost)
+static void close_stream(AVFormatContext *oc, OutputStream *ost)
 {
     avcodec_close(ost->st->codec);
     av_frame_free(&ost->frame);
@@ -411,7 +408,7 @@ static void close_video(AVFormatContext *oc, OutputStream *ost)
 
 int main(int argc, char **argv)
 {
-    OutputStream video_st, audio_st;
+    OutputStream video_st = { 0 }, audio_st = { 0 };
     const char *filename;
     AVOutputFormat *fmt;
     AVFormatContext *oc;
@@ -517,9 +514,9 @@ int main(int argc, char **argv)
 
     /* Close each codec. */
     if (have_video)
-        close_video(oc, &video_st);
+        close_stream(oc, &video_st);
     if (have_audio)
-        close_audio(oc, &audio_st);
+        close_stream(oc, &audio_st);
 
     /* Free the streams. */
     for (i = 0; i < oc->nb_streams; i++) {
