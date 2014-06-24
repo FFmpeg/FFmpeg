@@ -170,7 +170,7 @@ static av_cold int peak_init_writer(AVFormatContext *s)
     if (wav->peak_bps == 1 && wav->peak_format == PEAK_FORMAT_UINT16) {
         av_log(s, AV_LOG_ERROR,
                "Writing 16 bit peak for 8 bit audio does not make sense\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     wav->peak_maxpos = av_mallocz(enc->channels * sizeof(*wav->peak_maxpos));
