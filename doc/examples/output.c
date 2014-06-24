@@ -549,18 +549,12 @@ int main(int argc, char **argv)
     if (have_audio)
         close_stream(oc, &audio_st);
 
-    /* Free the streams. */
-    for (i = 0; i < oc->nb_streams; i++) {
-        av_freep(&oc->streams[i]->codec);
-        av_freep(&oc->streams[i]);
-    }
-
     if (!(fmt->flags & AVFMT_NOFILE))
         /* Close the output file. */
         avio_close(oc->pb);
 
     /* free the stream */
-    av_free(oc);
+    avformat_free_context(oc);
 
     return 0;
 }
