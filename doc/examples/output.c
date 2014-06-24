@@ -53,21 +53,21 @@ typedef struct OutputStream {
 
     AVFrame *frame;
     AVFrame *tmp_frame;
+
+    float t, tincr, tincr2;
+    int audio_input_frame_size;
 } OutputStream;
 
 /**************************************************************/
 /* audio output */
 
-static float t, tincr, tincr2;
-static int audio_input_frame_size;
-
 /*
  * add an audio output stream
  */
-static AVStream *add_audio_stream(AVFormatContext *oc, enum AVCodecID codec_id)
+static void add_audio_stream(OutputStream *ost, AVFormatContext *oc,
+                             enum AVCodecID codec_id)
 {
     AVCodecContext *c;
-    AVStream *st;
     AVCodec *codec;
 
     /* find the audio encoder */
@@ -77,13 +77,13 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum AVCodecID codec_id)
         exit(1);
     }
 
-    st = avformat_new_stream(oc, codec);
-    if (!st) {
+    ost->st = avformat_new_stream(oc, codec);
+    if (!ost->st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
 
-    c = st->codec;
+    c = ost->st->codec;
 
     /* put sample parameters */
     c->sample_fmt  = AV_SAMPLE_FMT_S16;
@@ -95,15 +95,13 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum AVCodecID codec_id)
     // some formats want stream headers to be separate
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags |= CODEC_FLAG_GLOBAL_HEADER;
-
-    return st;
 }
 
-static void open_audio(AVFormatContext *oc, AVStream *st)
+static void open_audio(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
 
-    c = st->codec;
+    c = ost->st->codec;
 
     /* open it */
     if (avcodec_open2(c, NULL, NULL) < 0) {
@@ -112,20 +110,20 @@ static void open_audio(AVFormatContext *oc, AVStream *st)
     }
 
     /* init signal generator */
-    t     = 0;
-    tincr = 2 * M_PI * 110.0 / c->sample_rate;
+    ost->t     = 0;
+    ost->tincr = 2 * M_PI * 110.0 / c->sample_rate;
     /* increment frequency by 110 Hz per second */
-    tincr2 = 2 * M_PI * 110.0 / c->sample_rate / c->sample_rate;
+    ost->tincr2 = 2 * M_PI * 110.0 / c->sample_rate / c->sample_rate;
 
     if (c->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE)
-        audio_input_frame_size = 10000;
+        ost->audio_input_frame_size = 10000;
     else
-        audio_input_frame_size = c->frame_size;
+        ost->audio_input_frame_size = c->frame_size;
 }
 
 /* Prepare a 16 bit dummy audio frame of 'frame_size' samples and
  * 'nb_channels' channels. */
-static void get_audio_frame(AVFrame *frame, int nb_channels)
+static void get_audio_frame(OutputStream *ost, AVFrame *frame, int nb_channels)
 {
     int j, i, v, ret;
     int16_t *q = (int16_t*)frame->data[0];
@@ -139,15 +137,15 @@ static void get_audio_frame(AVFrame *frame, int nb_channels)
         exit(1);
 
     for (j = 0; j < frame->nb_samples; j++) {
-        v = (int)(sin(t) * 10000);
+        v = (int)(sin(ost->t) * 10000);
         for (i = 0; i < nb_channels; i++)
             *q++ = v;
-        t     += tincr;
-        tincr += tincr2;
+        ost->t     += ost->tincr;
+        ost->tincr += ost->tincr2;
     }
 }
 
-static void write_audio_frame(AVFormatContext *oc, AVStream *st)
+static void write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
@@ -155,10 +153,10 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     int got_packet, ret;
 
     av_init_packet(&pkt);
-    c = st->codec;
+    c = ost->st->codec;
 
     frame->sample_rate    = c->sample_rate;
-    frame->nb_samples     = audio_input_frame_size;
+    frame->nb_samples     = ost->audio_input_frame_size;
     frame->format         = AV_SAMPLE_FMT_S16;
     frame->channel_layout = c->channel_layout;
     ret = av_frame_get_buffer(frame, 0);
@@ -167,13 +165,13 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
         exit(1);
     }
 
-    get_audio_frame(frame, c->channels);
+    get_audio_frame(ost, frame, c->channels);
 
     avcodec_encode_audio2(c, &pkt, frame, &got_packet);
     if (!got_packet)
         return;
 
-    pkt.stream_index = st->index;
+    pkt.stream_index = ost->st->index;
 
     /* Write the compressed frame to the media file. */
     if (av_interleaved_write_frame(oc, &pkt) != 0) {
@@ -183,9 +181,9 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     av_frame_free(&frame);
 }
 
-static void close_audio(AVFormatContext *oc, AVStream *st)
+static void close_audio(AVFormatContext *oc, OutputStream *ost)
 {
-    avcodec_close(st->codec);
+    avcodec_close(ost->st->codec);
 }
 
 /**************************************************************/
@@ -413,13 +411,12 @@ static void close_video(AVFormatContext *oc, OutputStream *ost)
 
 int main(int argc, char **argv)
 {
-    OutputStream video_st;
+    OutputStream video_st, audio_st;
     const char *filename;
     AVOutputFormat *fmt;
     AVFormatContext *oc;
-    AVStream *audio_st;
     double audio_pts, video_pts;
-    int have_video = 0;
+    int have_video = 0, have_audio = 0;
     int i;
 
     /* Initialize libavcodec, and register all codecs and formats. */
@@ -458,21 +455,21 @@ int main(int argc, char **argv)
 
     /* Add the audio and video streams using the default format codecs
      * and initialize the codecs. */
-    audio_st = NULL;
     if (fmt->video_codec != AV_CODEC_ID_NONE) {
         add_video_stream(&video_st, oc, fmt->video_codec);
         have_video = 1;
     }
     if (fmt->audio_codec != AV_CODEC_ID_NONE) {
-        audio_st = add_audio_stream(oc, fmt->audio_codec);
+        add_audio_stream(&audio_st, oc, fmt->audio_codec);
+        have_audio = 1;
     }
 
     /* Now that all the parameters are set, we can open the audio and
      * video codecs and allocate the necessary encode buffers. */
     if (have_video)
         open_video(oc, &video_st);
-    if (audio_st)
-        open_audio(oc, audio_st);
+    if (have_audio)
+        open_audio(oc, &audio_st);
 
     av_dump_format(oc, 0, filename, 1);
 
@@ -489,8 +486,8 @@ int main(int argc, char **argv)
 
     for (;;) {
         /* Compute current audio and video time. */
-        if (audio_st)
-            audio_pts = (double)audio_st->pts.val * audio_st->time_base.num / audio_st->time_base.den;
+        if (have_audio)
+            audio_pts = (double)audio_st.st->pts.val * audio_st.st->time_base.num / audio_st.st->time_base.den;
         else
             audio_pts = 0.0;
 
@@ -500,13 +497,13 @@ int main(int argc, char **argv)
         else
             video_pts = 0.0;
 
-        if ((!audio_st || audio_pts >= STREAM_DURATION) &&
+        if ((!have_audio || audio_pts >= STREAM_DURATION) &&
             (!have_video || video_pts >= STREAM_DURATION))
             break;
 
         /* write interleaved audio and video frames */
-        if (!have_video || (have_video && audio_st && audio_pts < video_pts)) {
-            write_audio_frame(oc, audio_st);
+        if (!have_video || (have_video && have_audio && audio_pts < video_pts)) {
+            write_audio_frame(oc, &audio_st);
         } else {
             write_video_frame(oc, &video_st);
         }
@@ -521,8 +518,8 @@ int main(int argc, char **argv)
     /* Close each codec. */
     if (have_video)
         close_video(oc, &video_st);
-    if (audio_st)
-        close_audio(oc, audio_st);
+    if (have_audio)
+        close_audio(oc, &audio_st);
 
     /* Free the streams. */
     for (i = 0; i < oc->nb_streams; i++) {
