@@ -271,7 +271,7 @@ static void peak_write_chunk(AVFormatContext *s)
         peak_write_frame(s);
 
     memset(timestamp, 0, 28);
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+    if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
         av_log(s, AV_LOG_INFO, "Writing local time and date to Peak Envelope Chunk\n");
         now0 = av_gettime();
         now_secs = now0 / 1000000;
