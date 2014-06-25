@@ -68,7 +68,7 @@ cglobal pullup_filter_comb, 3, 5, 8, first, second, size
     sub        secondq, sizeq
 
 .loop:
-    movq       m0, [secondq]
+    movq       m0, [firstq]
     movq       m1, [secondq]
     punpcklbw  m0, m7
     movq       m2, [secondq+sizeq]
