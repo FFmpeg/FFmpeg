@@ -661,9 +661,18 @@ int ff_snow_frame_start(SnowContext *s){
             return -1;
         }
     }
-
+    s->current_picture->width  = s->avctx->width  + 2 * EDGE_WIDTH;
+    s->current_picture->height = s->avctx->height + 2 * EDGE_WIDTH;
     if ((ret = ff_get_buffer(s->avctx, s->current_picture, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
+    for (i = 0; s->current_picture->data[i]; i++) {
+        int offset = (EDGE_WIDTH >> (i ? s->chroma_v_shift : 0)) *
+                        s->current_picture->linesize[i] +
+                        (EDGE_WIDTH >> (i ? s->chroma_h_shift : 0));
+        s->current_picture->data[i] += offset;
+    }
+    s->current_picture->width  = s->avctx->width;
+    s->current_picture->height = s->avctx->height;
 
     s->current_picture->key_frame= s->keyframe;
 
