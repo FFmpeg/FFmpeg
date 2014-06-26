@@ -34,6 +34,7 @@
 #include <string.h>
 #include <math.h>
 
+#include <libavutil/channel_layout.h>
 #include <libavutil/opt.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/timestamp.h>
@@ -109,6 +110,7 @@ static AVStream *add_stream(OutputStream *ost, AVFormatContext *oc,
         c->bit_rate    = 64000;
         c->sample_rate = 44100;
         c->channels    = 2;
+        c->channel_layout = AV_CH_LAYOUT_STEREO;
         break;
 
     case AVMEDIA_TYPE_VIDEO:
