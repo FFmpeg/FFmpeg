@@ -1014,17 +1014,17 @@ static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, con
     mxf_write_local_tag(pb, 4, 0x3D07);
     if (mxf->channel_count == -1) {
         if (show_warnings && (s->oformat == &ff_mxf_d10_muxer) && (st->codec->channels != 4) && (st->codec->channels != 8))
-            av_log(s, AV_LOG_WARNING, "the number of audio channels shall be 4 or 8 : the output will not comply to MXF D-10 specs, use -mxf_channelcount to fix this\n");
+            av_log(s, AV_LOG_WARNING, "the number of audio channels shall be 4 or 8 : the output will not comply to MXF D-10 specs, use -d10_channelcount to fix this\n");
         avio_wb32(pb, st->codec->channels);
     } else if (s->oformat == &ff_mxf_d10_muxer) {
         if (show_warnings && (mxf->channel_count < st->codec->channels))
-            av_log(s, AV_LOG_WARNING, "mxf_channelcount < actual number of audio channels : some channels will be discarded\n");
+            av_log(s, AV_LOG_WARNING, "d10_channelcount < actual number of audio channels : some channels will be discarded\n");
         if (show_warnings && (mxf->channel_count != 4) && (mxf->channel_count != 8))
-            av_log(s, AV_LOG_WARNING, "mxf_channelcount shall be set to 4 or 8 : the output will not comply to MXF D-10 specs\n");
+            av_log(s, AV_LOG_WARNING, "d10_channelcount shall be set to 4 or 8 : the output will not comply to MXF D-10 specs\n");
         avio_wb32(pb, mxf->channel_count);
     } else {
         if (show_warnings)
-            av_log(s, AV_LOG_ERROR, "-mxf_channelcount requires MXF D-10 and will be ignored\n");
+            av_log(s, AV_LOG_ERROR, "-d10_channelcount requires MXF D-10 and will be ignored\n");
         avio_wb32(pb, st->codec->channels);
     }
 
@@ -2174,7 +2174,7 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
 }
 
 static const AVOption d10_options[] = {
-    { "mxf_channelcount", "Force/set channelcount in generic sound essence descriptor",
+    { "d10_channelcount", "Force/set channelcount in generic sound essence descriptor",
       offsetof(MXFContext, channel_count), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 8, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
