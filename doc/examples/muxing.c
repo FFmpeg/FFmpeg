@@ -59,6 +59,8 @@ typedef struct OutputStream {
     AVFrame *tmp_frame;
 
     float t, tincr, tincr2;
+
+    struct SwsContext *sws_ctx;
 } OutputStream;
 
 static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
@@ -413,25 +415,25 @@ static void fill_yuv_image(AVFrame *pict, int frame_index,
 static void write_video_frame(AVFormatContext *oc, OutputStream *ost, int flush)
 {
     int ret;
-    static struct SwsContext *sws_ctx;
     AVCodecContext *c = ost->st->codec;
 
     if (!flush) {
         if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
             /* as we only generate a YUV420P picture, we must convert it
              * to the codec pixel format if needed */
-            if (!sws_ctx) {
-                sws_ctx = sws_getContext(c->width, c->height, AV_PIX_FMT_YUV420P,
-                                         c->width, c->height, c->pix_fmt,
-                                         SCALE_FLAGS, NULL, NULL, NULL);
-                if (!sws_ctx) {
+            if (!ost->sws_ctx) {
+                ost->sws_ctx = sws_getContext(c->width, c->height, AV_PIX_FMT_YUV420P,
+                                              c->width, c->height,
+                                              c->pix_fmt,
+                                              SCALE_FLAGS, NULL, NULL, NULL);
+                if (!ost->sws_ctx) {
                     fprintf(stderr,
                             "Could not initialize the conversion context\n");
                     exit(1);
                 }
             }
             fill_yuv_image(ost->tmp_frame, frame_count, c->width, c->height);
-            sws_scale(sws_ctx,
+            sws_scale(ost->sws_ctx,
                       (const uint8_t * const *)ost->tmp_frame->data, ost->tmp_frame->linesize,
                       0, c->height, ost->frame->data, ost->frame->linesize);
         } else {
@@ -485,6 +487,7 @@ static void close_stream(AVFormatContext *oc, OutputStream *ost)
     avcodec_close(ost->st->codec);
     av_frame_free(&ost->frame);
     av_frame_free(&ost->tmp_frame);
+    sws_freeContext(ost->sws_ctx);
 }
 
 /**************************************************************/
