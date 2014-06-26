@@ -49,7 +49,7 @@ static int audio_is_eof, video_is_eof;
 #define STREAM_FRAME_RATE 25 /* 25 images/s */
 #define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P /* default pix_fmt */
 
-static int sws_flags = SWS_BICUBIC;
+#define SCALE_FLAGS SWS_BICUBIC
 
 // a wrapper around a single output AVStream
 typedef struct OutputStream {
@@ -423,7 +423,7 @@ static void write_video_frame(AVFormatContext *oc, OutputStream *ost, int flush)
             if (!sws_ctx) {
                 sws_ctx = sws_getContext(c->width, c->height, AV_PIX_FMT_YUV420P,
                                          c->width, c->height, c->pix_fmt,
-                                         sws_flags, NULL, NULL, NULL);
+                                         SCALE_FLAGS, NULL, NULL, NULL);
                 if (!sws_ctx) {
                     fprintf(stderr,
                             "Could not initialize the conversion context\n");
