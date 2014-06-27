@@ -1263,7 +1263,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         s1->save_width           != s->width                ||
         s1->save_height          != s->height               ||
         s1->save_aspect_info     != s->aspect_ratio_info    ||
-        (s1->save_progressive_seq != s->progressive_sequence && (s->height&31)) ||
+        (s1->save_progressive_seq != s->progressive_sequence && FFALIGN(s->height, 16) != FFALIGN(s->height, 32)) ||
         0) {
         if (s1->mpeg_enc_ctx_allocated) {
             ParseContext pc = s->parse_context;
