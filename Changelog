@@ -1,5 +1,13 @@
 Releases are sorted from youngest to oldest.
 
+version 9.14:
+- adpcm: Write the proper predictor in trellis mode in IMA QT
+- adpcm: Avoid reading out of bounds in the IMA QT trellis encoder
+- Check mp3 header before calling avpriv_mpegaudio_decode_header() (bug/705)
+- Check if an mp3 header is using a reserved sample rate
+- lzo: Handle integer overflow (bug/704)
+- avconv: make -shortest work with streamcopy
+
 Version 9.13:
 - swscale: Fix an undefined behaviour
 - matroska: add the Opus mapping
