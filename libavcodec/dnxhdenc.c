@@ -212,14 +212,14 @@ static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
             int j = ctx->m.dsp.idct_permutation[ff_zigzag_direct[i]];
             weight_matrix[j] = ctx->cid_table->luma_weight[i];
         }
-        ff_convert_matrix(&ctx->m.dsp, ctx->qmatrix_l, ctx->qmatrix_l16,
+        ff_convert_matrix(&ctx->m, ctx->qmatrix_l, ctx->qmatrix_l16,
                           weight_matrix, ctx->m.intra_quant_bias, 1,
                           ctx->m.avctx->qmax, 1);
         for (i = 1; i < 64; i++) {
             int j = ctx->m.dsp.idct_permutation[ff_zigzag_direct[i]];
             weight_matrix[j] = ctx->cid_table->chroma_weight[i];
         }
-        ff_convert_matrix(&ctx->m.dsp, ctx->qmatrix_c, ctx->qmatrix_c16,
+        ff_convert_matrix(&ctx->m, ctx->qmatrix_c, ctx->qmatrix_c16,
                           weight_matrix, ctx->m.intra_quant_bias, 1,
                           ctx->m.avctx->qmax, 1);
 

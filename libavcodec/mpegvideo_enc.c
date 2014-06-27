@@ -71,11 +71,12 @@ const AVOption ff_mpv_generic_options[] = {
     { NULL },
 };
 
-void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64],
+void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
                        uint16_t (*qmat16)[2][64],
                        const uint16_t *quant_matrix,
                        int bias, int qmin, int qmax, int intra)
 {
+    DSPContext *dsp = &s->dsp;
     int qscale;
     int shift = 0;
 
@@ -886,10 +887,10 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     /* precompute matrix */
     /* for mjpeg, we do include qscale in the matrix */
     if (s->out_format != FMT_MJPEG) {
-        ff_convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
+        ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
                           s->intra_matrix, s->intra_quant_bias, avctx->qmin,
                           31, 1);
-        ff_convert_matrix(&s->dsp, s->q_inter_matrix, s->q_inter_matrix16,
+        ff_convert_matrix(s, s->q_inter_matrix, s->q_inter_matrix16,
                           s->inter_matrix, s->inter_quant_bias, avctx->qmin,
                           31, 0);
     }
@@ -3560,9 +3561,9 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         s->c_dc_scale_table= ff_mpeg2_dc_scale_table[s->intra_dc_precision];
         s->chroma_intra_matrix[0] =
         s->intra_matrix[0] = ff_mpeg2_dc_scale_table[s->intra_dc_precision][8];
-        ff_convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
+        ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
                        s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
-        ff_convert_matrix(&s->dsp, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
+        ff_convert_matrix(s, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
                        s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
     }
@@ -3579,9 +3580,9 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         s->c_dc_scale_table= c;
         s->intra_matrix[0] = 13;
         s->chroma_intra_matrix[0] = 14;
-        ff_convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
+        ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
                        s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
-        ff_convert_matrix(&s->dsp, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
+        ff_convert_matrix(s, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
                        s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
     }
