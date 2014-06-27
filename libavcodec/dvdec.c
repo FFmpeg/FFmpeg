@@ -59,6 +59,32 @@ typedef struct BlockInfo {
 
 static const int dv_iweight_bits = 14;
 
+static av_cold int dvvideo_decode_init(AVCodecContext *avctx)
+{
+    DVVideoContext *s = avctx->priv_data;
+    DSPContext dsp;
+    int i;
+
+    memset(&dsp,0, sizeof(dsp));
+    ff_dsputil_init(&dsp, avctx);
+
+    for (i = 0; i < 64; i++)
+       s->dv_zigzag[0][i] = dsp.idct_permutation[ff_zigzag_direct[i]];
+
+    if (avctx->lowres){
+        for (i = 0; i < 64; i++){
+            int j = ff_dv_zigzag248_direct[i];
+            s->dv_zigzag[1][i] = dsp.idct_permutation[(j & 7) + (j & 8) * 4 + (j & 48) / 2];
+        }
+    }else
+        memcpy(s->dv_zigzag[1], ff_dv_zigzag248_direct, sizeof(s->dv_zigzag[1]));
+
+    s->idct_put[0] = dsp.idct_put;
+    s->idct_put[1] = ff_simple_idct248_put;
+
+    return ff_dvvideo_init(avctx);
+}
+
 /* decode AC coefficients */
 static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, int16_t *block)
 {
@@ -385,7 +411,7 @@ AVCodec ff_dvvideo_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DVVIDEO,
     .priv_data_size = sizeof(DVVideoContext),
-    .init           = ff_dvvideo_init,
+    .init           = dvvideo_decode_init,
     .decode         = dvvideo_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
     .max_lowres     = 3,
