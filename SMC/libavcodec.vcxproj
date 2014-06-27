@@ -92,8 +92,14 @@
     <ClCompile Include="..\libavcodec\audio_frame_queue.c">
       <ObjectFileName>$(IntDir)\libavcodec_audio_frame_queue.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\audiodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_audiodsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\blockdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_blockdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\bswapdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_bswapdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\cabac.c">
       <ObjectFileName>$(IntDir)\libavcodec_cabac.obj</ObjectFileName>
@@ -221,6 +227,9 @@
     <ClCompile Include="..\libavcodec\mdct_fixed_32.c">
       <ObjectFileName>$(IntDir)\libavcodec_mdct_fixed_32.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mpeg_er.c">
+      <ObjectFileName>$(IntDir)\libavcodec_mpeg_er.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mpegaudio.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpegaudio.obj</ObjectFileName>
     </ClCompile>
@@ -244,6 +253,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpegvideo.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpegvideo.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\mpegvideodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_mpegvideodsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpegvideo_motion.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpegvideo_motion.obj</ObjectFileName>
@@ -704,9 +716,6 @@
     <ClCompile Include="..\libavcodec\eatqi.c">
       <ObjectFileName>$(IntDir)\libavcodec_eatqi.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\mpeg12dec.c">
-      <ObjectFileName>$(IntDir)\libavcodec_mpeg12dec.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\8bps.c">
       <ObjectFileName>$(IntDir)\libavcodec_8bps.obj</ObjectFileName>
     </ClCompile>
@@ -1075,6 +1084,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpc8.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpc8.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\mpeg12dec.c">
+      <ObjectFileName>$(IntDir)\libavcodec_mpeg12dec.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg12enc.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpeg12enc.obj</ObjectFileName>
@@ -1964,8 +1976,14 @@
     <ClCompile Include="..\libavcodec\x86\ac3dsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_ac3dsp_init.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\audiodsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_audiodsp_init.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\blockdsp_mmx.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_blockdsp_mmx.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\bswapdsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_bswapdsp_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dct_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dct_init.obj</ObjectFileName>
@@ -2029,6 +2047,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\mpegvideo.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideo.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\mpegvideodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideodsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\mpegvideoenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideoenc.obj</ObjectFileName>
@@ -2136,7 +2157,9 @@
     <YASM Include="..\libavcodec\x86\deinterlace.asm" />
     <YASM Include="..\libavcodec\x86\fmtconvert.asm" />
     <YASM Include="..\libavcodec\x86\ac3dsp.asm" />
+    <YASM Include="..\libavcodec\x86\audiodsp.asm" />
     <YASM Include="..\libavcodec\x86\blockdsp.asm" />
+    <YASM Include="..\libavcodec\x86\bswapdsp.asm" />
     <YASM Include="..\libavcodec\x86\dct32.asm" />
     <YASM Include="..\libavcodec\x86\diracdsp_yasm.asm" />
     <YASM Include="..\libavcodec\x86\dwt_yasm.asm" />

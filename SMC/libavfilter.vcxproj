@@ -332,6 +332,9 @@
     <ClCompile Include="..\libavfilter\vf_hqdn3d.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_hqdn3d.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_hqx.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_hqx.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_hue.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_hue.obj</ObjectFileName>
     </ClCompile>

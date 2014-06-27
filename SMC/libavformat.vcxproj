@@ -347,6 +347,9 @@
     <ClCompile Include="..\libavformat\mov.c">
       <ObjectFileName>$(IntDir)\libavformat_mov.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\replaygain.c">
+      <ObjectFileName>$(IntDir)\libavformat_replaygain.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\cafenc.c">
       <ObjectFileName>$(IntDir)\libavformat_cafenc.obj</ObjectFileName>
     </ClCompile>
@@ -436,9 +439,6 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\oggparsevorbis.c">
       <ObjectFileName>$(IntDir)\libavformat_oggparsevorbis.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\replaygain.c">
-      <ObjectFileName>$(IntDir)\libavformat_replaygain.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavformat\vorbiscomment.c">
       <ObjectFileName>$(IntDir)\libavformat_vorbiscomment.obj</ObjectFileName>
