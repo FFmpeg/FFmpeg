@@ -1439,6 +1439,42 @@ equalizer=f=1000:width_type=q:width=1:g=2,equalizer=f=100:width_type=q:width=2:g
 @end example
 @end itemize
 
+@section flanger
+Apply a flanging effect to the audio.
+
+The filter accepts the following options:
+
+@table @option
+@item delay
+Set base delay in milliseconds. Range from 0 to 30. Default value is 0.
+
+@item depth
+Set added swep delay in milliseconds. Range from 0 to 10. Default value is 2.
+
+@item regen
+Set percentage regeneneration (delayed signal feedback). Range from -95 to 95.
+Default value is 0.
+
+@item width
+Set percentage of delayed signal mixed with original. Range from 0 to 100.
+Default valu is 71.
+
+@item speed
+Set sweeps per second (Hz). Range from 0.1 to 10. Default value is 0.5.
+
+@item shape
+Set swept wave shape, can be @var{triangular} or @var{sinusoidal}.
+Default value is @var{sinusoidal}.
+
+@item phase
+Set swept wave percentage-shift for multi channel. Range from 0 to 100.
+Default value is 25.
+
+@item interp
+Set delay-line interpolation, @var{linear} or @var{quadratic}.
+Default is @var{linear}.
+@end table
+
 @section highpass
 
 Apply a high-pass filter with 3dB point frequency.
