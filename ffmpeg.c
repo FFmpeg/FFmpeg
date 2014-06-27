@@ -3237,8 +3237,11 @@ static int init_input_threads(void)
         if (ret < 0)
             return ret;
 
-        if ((ret = pthread_create(&f->thread, NULL, input_thread, f)))
+        if ((ret = pthread_create(&f->thread, NULL, input_thread, f))) {
+            av_log(NULL, AV_LOG_ERROR, "pthread_create failed: %s. Try to increase `ulimit -v` or decrease `ulimit -s`.\n", strerror(ret));
+            av_thread_message_queue_free(&f->in_thread_queue);
             return AVERROR(ret);
+        }
     }
     return 0;
 }
