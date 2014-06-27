@@ -125,18 +125,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->input_picture = av_frame_alloc();
     if (!s->input_picture)
         return AVERROR(ENOMEM);
-    s->input_picture->width  = s->avctx->width  + 2 * EDGE_WIDTH;
-    s->input_picture->height = s->avctx->height + 2 * EDGE_WIDTH;
-    if ((ret = ff_get_buffer(s->avctx, s->input_picture, AV_GET_BUFFER_FLAG_REF)) < 0)
+
+    if ((ret = ff_snow_get_buffer(s, s->input_picture)) < 0)
         return ret;
-    for (i = 0; s->input_picture->data[i]; i++) {
-        int offset = (EDGE_WIDTH >> (i ? s->chroma_v_shift : 0)) *
-                        s->input_picture->linesize[i] +
-                        (EDGE_WIDTH >> (i ? s->chroma_h_shift : 0));
-        s->input_picture->data[i] += offset;
-    }
-    s->input_picture->width  = s->avctx->width;
-    s->input_picture->height = s->avctx->height;
 
     if(s->avctx->me_method == ME_ITER){
         int size= s->b_width * s->b_height << 2*s->block_max_depth;
