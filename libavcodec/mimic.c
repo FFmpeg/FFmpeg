@@ -28,6 +28,7 @@
 #include "internal.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "bswapdsp.h"
 #include "dsputil.h"
 #include "hpeldsp.h"
 #include "thread.h"
@@ -54,6 +55,7 @@ typedef struct {
     GetBitContext   gb;
     ScanTable       scantable;
     BlockDSPContext bdsp;
+    BswapDSPContext bbdsp;
     DSPContext      dsp;
     HpelDSPContext  hdsp;
     VLC             vlc;
@@ -149,6 +151,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
         return ret;
     }
     ff_blockdsp_init(&ctx->bdsp, avctx);
+    ff_bswapdsp_init(&ctx->bbdsp);
     ff_dsputil_init(&ctx->dsp, avctx);
     ff_hpeldsp_init(&ctx->hdsp, avctx->flags);
     ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, col_zag);
@@ -424,9 +427,9 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     if (!ctx->swap_buf)
         return AVERROR(ENOMEM);
 
-    ctx->dsp.bswap_buf(ctx->swap_buf,
-                       (const uint32_t*) (buf + MIMIC_HEADER_SIZE),
-                       swap_buf_size >> 2);
+    ctx->bbdsp.bswap_buf(ctx->swap_buf,
+                         (const uint32_t *) (buf + MIMIC_HEADER_SIZE),
+                         swap_buf_size >> 2);
     init_get_bits(&ctx->gb, ctx->swap_buf, swap_buf_size << 3);
 
     res = decode(ctx, quality, num_coeffs, !is_pframe);

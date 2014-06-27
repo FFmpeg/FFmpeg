@@ -67,9 +67,10 @@ const int program_birth_year = 2003;
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
 #define MIN_FRAMES 5
 
-/* SDL audio buffer size, in samples. Should be small to have precise
-   A/V sync as SDL does not have hardware buffer fullness info. */
-#define SDL_AUDIO_BUFFER_SIZE 1024
+/* Minimum SDL audio buffer size, in samples. */
+#define SDL_AUDIO_MIN_BUFFER_SIZE 512
+/* Calculate actual buffer size keeping in mind not cause too frequent audio callbacks */
+#define SDL_AUDIO_MAX_CALLBACKS_PER_SEC 30
 
 /* no AV sync correction is done if below the minimum AV sync threshold */
 #define AV_SYNC_THRESHOLD_MIN 0.04
@@ -202,7 +203,7 @@ typedef struct VideoState {
     AVStream *audio_st;
     PacketQueue audioq;
     int audio_hw_buf_size;
-    uint8_t silence_buf[SDL_AUDIO_BUFFER_SIZE];
+    uint8_t silence_buf[SDL_AUDIO_MIN_BUFFER_SIZE];
     uint8_t *audio_buf;
     uint8_t *audio_buf1;
     unsigned int audio_buf_size; /* in bytes */
@@ -255,7 +256,7 @@ typedef struct VideoState {
     int64_t video_current_pos;      // current displayed file pos
     double max_frame_duration;      // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
     VideoPicture pictq[VIDEO_PICTURE_QUEUE_SIZE];
-    int pictq_size, pictq_rindex, pictq_windex;
+    int pictq_size, pictq_rindex, pictq_windex, pictq_rindex_shown;
     SDL_mutex *pictq_mutex;
     SDL_cond *pictq_cond;
 #if !CONFIG_AVFILTER
@@ -807,19 +808,21 @@ static void free_subpicture(SubPicture *sp)
     avsubtitle_free(&sp->sub);
 }
 
-static void calculate_display_rect(SDL_Rect *rect, int scr_xleft, int scr_ytop, int scr_width, int scr_height, VideoPicture *vp)
+static void calculate_display_rect(SDL_Rect *rect,
+                                   int scr_xleft, int scr_ytop, int scr_width, int scr_height,
+                                   int pic_width, int pic_height, AVRational pic_sar)
 {
     float aspect_ratio;
     int width, height, x, y;
 
-    if (vp->sar.num == 0)
+    if (pic_sar.num == 0)
         aspect_ratio = 0;
     else
-        aspect_ratio = av_q2d(vp->sar);
+        aspect_ratio = av_q2d(pic_sar);
 
     if (aspect_ratio <= 0.0)
         aspect_ratio = 1.0;
-    aspect_ratio *= (float)vp->width / (float)vp->height;
+    aspect_ratio *= (float)pic_width / (float)pic_height;
 
     /* XXX: we suppose the screen has a 1.0 pixel ratio */
     height = scr_height;
@@ -844,7 +847,7 @@ static void video_image_display(VideoState *is)
     SDL_Rect rect;
     int i;
 
-    vp = &is->pictq[is->pictq_rindex];
+    vp = &is->pictq[(is->pictq_rindex + is->pictq_rindex_shown) % VIDEO_PICTURE_QUEUE_SIZE];
     if (vp->bmp) {
         if (is->subtitle_st) {
             if (is->subpq_size > 0) {
@@ -870,7 +873,7 @@ static void video_image_display(VideoState *is)
             }
         }
 
-        calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp);
+        calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
 
         SDL_DisplayYUVOverlay(vp->bmp, &rect);
 
@@ -1077,10 +1080,10 @@ static void sigterm_handler(int sig)
     exit(123);
 }
 
-static void set_default_window_size(VideoPicture *vp)
+static void set_default_window_size(int width, int height, AVRational sar)
 {
     SDL_Rect rect;
-    calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
+    calculate_display_rect(&rect, 0, 0, INT_MAX, height, width, height, sar);
     default_width  = rect.w;
     default_height = rect.h;
 }
@@ -1094,7 +1097,7 @@ static int video_open(VideoState *is, int force_set_video_mode, VideoPicture *vp
     else                flags |= SDL_RESIZABLE;
 
     if (vp && vp->width)
-        set_default_window_size(vp);
+        set_default_window_size(vp->width, vp->height, vp->sar);
 
     if (is_full_screen && fs_screen_width) {
         w = fs_screen_width;
@@ -1317,7 +1320,23 @@ static double vp_duration(VideoState *is, VideoPicture *vp, VideoPicture *nextvp
     }
 }
 
+/* return the number of undisplayed pictures in the queue */
+static int pictq_nb_remaining(VideoState *is) {
+    return is->pictq_size - is->pictq_rindex_shown;
+}
+
+/* jump back to the previous picture if available by resetting rindex_shown */
+static int pictq_prev_picture(VideoState *is) {
+    int ret = is->pictq_rindex_shown;
+    is->pictq_rindex_shown = 0;
+    return ret;
+}
+
 static void pictq_next_picture(VideoState *is) {
+    if (!is->pictq_rindex_shown) {
+        is->pictq_rindex_shown = 1;
+        return;
+    }
     /* update queue size and signal for next picture */
     if (++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
         is->pictq_rindex = 0;
@@ -1326,25 +1345,6 @@ static void pictq_next_picture(VideoState *is) {
     is->pictq_size--;
     SDL_CondSignal(is->pictq_cond);
     SDL_UnlockMutex(is->pictq_mutex);
-}
-
-static int pictq_prev_picture(VideoState *is) {
-    VideoPicture *prevvp;
-    int ret = 0;
-    /* update queue size and signal for the previous picture */
-    prevvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
-    if (prevvp->allocated && prevvp->serial == is->videoq.serial) {
-        SDL_LockMutex(is->pictq_mutex);
-        if (is->pictq_size < VIDEO_PICTURE_QUEUE_SIZE) {
-            if (--is->pictq_rindex == -1)
-                is->pictq_rindex = VIDEO_PICTURE_QUEUE_SIZE - 1;
-            is->pictq_size++;
-            ret = 1;
-        }
-        SDL_CondSignal(is->pictq_cond);
-        SDL_UnlockMutex(is->pictq_mutex);
-    }
-    return ret;
 }
 
 static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial) {
@@ -1379,15 +1379,15 @@ static void video_refresh(void *opaque, double *remaining_time)
         if (is->force_refresh)
             redisplay = pictq_prev_picture(is);
 retry:
-        if (is->pictq_size == 0) {
+        if (pictq_nb_remaining(is) == 0) {
             // nothing to do, no picture to display in the queue
         } else {
             double last_duration, duration, delay;
             VideoPicture *vp, *lastvp;
 
             /* dequeue the picture */
-            vp = &is->pictq[is->pictq_rindex];
-            lastvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
+            lastvp = &is->pictq[is->pictq_rindex];
+            vp = &is->pictq[(is->pictq_rindex + is->pictq_rindex_shown) % VIDEO_PICTURE_QUEUE_SIZE];
 
             if (vp->serial != is->videoq.serial) {
                 pictq_next_picture(is);
@@ -1424,8 +1424,8 @@ retry:
                 update_video_pts(is, vp->pts, vp->pos, vp->serial);
             SDL_UnlockMutex(is->pictq_mutex);
 
-            if (is->pictq_size > 1) {
-                VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + 1) % VIDEO_PICTURE_QUEUE_SIZE];
+            if (pictq_nb_remaining(is) > 1) {
+                VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + is->pictq_rindex_shown + 1) % VIDEO_PICTURE_QUEUE_SIZE];
                 duration = vp_duration(is, vp, nextvp);
                 if(!is->step && (redisplay || framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) && time > is->frame_timer + duration){
                     if (!redisplay)
@@ -1581,8 +1581,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
 
-    /* keep the last already displayed picture in the queue */
-    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE - 1 &&
+    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
            !is->videoq.abort_request) {
         SDL_CondWait(is->pictq_cond, is->pictq_mutex);
     }
@@ -2485,7 +2484,7 @@ static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb
         next_sample_rate_idx--;
     wanted_spec.format = AUDIO_S16SYS;
     wanted_spec.silence = 0;
-    wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
+    wanted_spec.samples = FFMAX(SDL_AUDIO_MIN_BUFFER_SIZE, 2 << av_log2(wanted_spec.freq / SDL_AUDIO_MAX_CALLBACKS_PER_SEC));
     wanted_spec.callback = sdl_audio_callback;
     wanted_spec.userdata = opaque;
     while (SDL_OpenAudio(&wanted_spec, &spec) < 0) {
@@ -2630,7 +2629,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->audio_diff_avg_count = 0;
         /* since we do not have a precise anough audio fifo fullness,
            we correct audio sync only if larger than this threshold */
-        is->audio_diff_threshold = 2.0 * is->audio_hw_buf_size / is->audio_tgt.bytes_per_sec;
+        is->audio_diff_threshold = (double)(is->audio_hw_buf_size) / is->audio_tgt.bytes_per_sec;
 
         memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
         memset(&is->audio_pkt_temp, 0, sizeof(is->audio_pkt_temp));
@@ -2880,12 +2879,9 @@ static int read_thread(void *arg)
     if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
         AVStream *st = ic->streams[st_index[AVMEDIA_TYPE_VIDEO]];
         AVCodecContext *avctx = st->codec;
-        VideoPicture vp = {0};
-        vp.width = avctx->width;
-        vp.height = avctx->height;
-        vp.sar = av_guess_sample_aspect_ratio(ic, st, NULL);
-        if (vp.width)
-            set_default_window_size(&vp);
+        AVRational sar = av_guess_sample_aspect_ratio(ic, st, NULL);
+        if (avctx->width)
+            set_default_window_size(avctx->width, avctx->height, sar);
     }
 
     /* open the streams */
@@ -2996,7 +2992,7 @@ static int read_thread(void *arg)
         }
         if (!is->paused &&
             (!is->audio_st || is->audio_finished == is->audioq.serial) &&
-            (!is->video_st || (is->video_finished == is->videoq.serial && is->pictq_size == 0))) {
+            (!is->video_st || (is->video_finished == is->videoq.serial && pictq_nb_remaining(is) == 0))) {
             if (loop != 1 && (!loop || --loop)) {
                 stream_seek(is, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
             } else if (autoexit) {

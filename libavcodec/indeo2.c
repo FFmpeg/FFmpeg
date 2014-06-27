@@ -49,7 +49,7 @@ static inline int ir2_get_code(GetBitContext *gb)
 }
 
 static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst,
-                            int stride, const uint8_t *table)
+                            int pitch, const uint8_t *table)
 {
     int i;
     int j;
@@ -74,7 +74,7 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
             dst[out++] = table[(c * 2) + 1];
         }
     }
-    dst += stride;
+    dst += pitch;
 
     for (j = 1; j < height; j++) {
         out = 0;
@@ -85,27 +85,27 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
                 if (out + c*2 > width)
                     return AVERROR_INVALIDDATA;
                 for (i = 0; i < c * 2; i++) {
-                    dst[out] = dst[out - stride];
+                    dst[out] = dst[out - pitch];
                     out++;
                 }
             } else { /* add two deltas from table */
-                t        = dst[out - stride] + (table[c * 2] - 128);
+                t        = dst[out - pitch] + (table[c * 2] - 128);
                 t        = av_clip_uint8(t);
                 dst[out] = t;
                 out++;
-                t        = dst[out - stride] + (table[(c * 2) + 1] - 128);
+                t        = dst[out - pitch] + (table[(c * 2) + 1] - 128);
                 t        = av_clip_uint8(t);
                 dst[out] = t;
                 out++;
             }
         }
-        dst += stride;
+        dst += pitch;
     }
     return 0;
 }
 
 static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_t *dst,
-                                  int stride, const uint8_t *table)
+                                  int pitch, const uint8_t *table)
 {
     int j;
     int out = 0;
@@ -133,7 +133,7 @@ static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_
                 out++;
             }
         }
-        dst += stride;
+        dst += pitch;
     }
     return 0;
 }

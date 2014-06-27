@@ -29,22 +29,38 @@
 #include "dsputil_x86.h"
 #include "idct_xvid.h"
 
-int32_t ff_scalarproduct_int16_mmxext(const int16_t *v1, const int16_t *v2,
-                                      int order);
-int32_t ff_scalarproduct_int16_sse2(const int16_t *v1, const int16_t *v2,
-                                    int order);
+/* Input permutation for the simple_idct_mmx */
+static const uint8_t simple_mmx_permutation[64] = {
+    0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D,
+    0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D,
+    0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D,
+    0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F,
+    0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F,
+    0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D,
+    0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F,
+    0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
+};
 
-void ff_bswap32_buf_ssse3(uint32_t *dst, const uint32_t *src, int w);
-void ff_bswap32_buf_sse2(uint32_t *dst, const uint32_t *src, int w);
+static const uint8_t idct_sse2_row_perm[8] = { 0, 4, 1, 5, 2, 6, 3, 7 };
 
-void ff_vector_clip_int32_mmx(int32_t *dst, const int32_t *src,
-                              int32_t min, int32_t max, unsigned int len);
-void ff_vector_clip_int32_sse2(int32_t *dst, const int32_t *src,
-                               int32_t min, int32_t max, unsigned int len);
-void ff_vector_clip_int32_int_sse2(int32_t *dst, const int32_t *src,
-                                   int32_t min, int32_t max, unsigned int len);
-void ff_vector_clip_int32_sse4(int32_t *dst, const int32_t *src,
-                               int32_t min, int32_t max, unsigned int len);
+av_cold int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
+                                              int idct_permutation_type)
+{
+    int i;
+
+    switch (idct_permutation_type) {
+    case FF_SIMPLE_IDCT_PERM:
+        for (i = 0; i < 64; i++)
+            idct_permutation[i] = simple_mmx_permutation[i];
+        return 1;
+    case FF_SSE2_IDCT_PERM:
+        for (i = 0; i < 64; i++)
+            idct_permutation[i] = (i & 0x38) | idct_sse2_row_perm[i & 7];
+        return 1;
+    }
+
+    return 0;
+}
 
 static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                      int cpu_flags, unsigned high_bit_depth)
@@ -75,13 +91,9 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
         }
     }
 
-#if CONFIG_VIDEODSP && (ARCH_X86_32 || !HAVE_YASM)
-    c->gmc = ff_gmc_mmx;
-#endif
 #endif /* HAVE_MMX_INLINE */
 
 #if HAVE_MMX_EXTERNAL
-    c->vector_clip_int32 = ff_vector_clip_int32_mmx;
     c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_mmx;
 #endif /* HAVE_MMX_EXTERNAL */
 }
@@ -96,23 +108,6 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
         c->idct     = ff_idct_xvid_mmxext;
     }
 #endif /* HAVE_MMXEXT_INLINE */
-
-#if HAVE_MMXEXT_EXTERNAL
-    c->scalarproduct_int16          = ff_scalarproduct_int16_mmxext;
-#endif /* HAVE_MMXEXT_EXTERNAL */
-}
-
-static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
-                                     int cpu_flags, unsigned high_bit_depth)
-{
-#if HAVE_YASM
-#if HAVE_SSE_EXTERNAL
-    c->vector_clipf = ff_vector_clipf_sse;
-#endif
-#if HAVE_INLINE_ASM && CONFIG_VIDEODSP
-    c->gmc = ff_gmc_sse;
-#endif
-#endif /* HAVE_YASM */
 }
 
 static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
@@ -128,31 +123,8 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_SSE2_INLINE */
 
 #if HAVE_SSE2_EXTERNAL
-    c->scalarproduct_int16          = ff_scalarproduct_int16_sse2;
-    if (cpu_flags & AV_CPU_FLAG_ATOM) {
-        c->vector_clip_int32 = ff_vector_clip_int32_int_sse2;
-    } else {
-        c->vector_clip_int32 = ff_vector_clip_int32_sse2;
-    }
-    c->bswap_buf = ff_bswap32_buf_sse2;
     c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_sse2;
 #endif /* HAVE_SSE2_EXTERNAL */
-}
-
-static av_cold void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
-                                       int cpu_flags, unsigned high_bit_depth)
-{
-#if HAVE_SSSE3_EXTERNAL
-    c->bswap_buf = ff_bswap32_buf_ssse3;
-#endif /* HAVE_SSSE3_EXTERNAL */
-}
-
-static av_cold void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
-                                      int cpu_flags, unsigned high_bit_depth)
-{
-#if HAVE_SSE4_EXTERNAL
-    c->vector_clip_int32 = ff_vector_clip_int32_sse4;
-#endif /* HAVE_SSE4_EXTERNAL */
 }
 
 av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
@@ -166,17 +138,8 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
     if (X86_MMXEXT(cpu_flags))
         dsputil_init_mmxext(c, avctx, cpu_flags, high_bit_depth);
 
-    if (X86_SSE(cpu_flags))
-        dsputil_init_sse(c, avctx, cpu_flags, high_bit_depth);
-
     if (X86_SSE2(cpu_flags))
         dsputil_init_sse2(c, avctx, cpu_flags, high_bit_depth);
-
-    if (EXTERNAL_SSSE3(cpu_flags))
-        dsputil_init_ssse3(c, avctx, cpu_flags, high_bit_depth);
-
-    if (EXTERNAL_SSE4(cpu_flags))
-        dsputil_init_sse4(c, avctx, cpu_flags, high_bit_depth);
 
     if (CONFIG_ENCODERS)
         ff_dsputilenc_init_mmx(c, avctx, high_bit_depth);

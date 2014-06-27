@@ -1065,7 +1065,7 @@ AVInputFormat ff_flv_demuxer = {
 };
 
 static const AVClass live_flv_class = {
-    .class_name = "flvdec",
+    .class_name = "live_flvdec",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,

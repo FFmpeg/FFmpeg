@@ -39,8 +39,7 @@ static av_always_inline void FUNC(intra_pred)(HEVCContext *s, int x0, int y0,
 #define IS_INTRA(x, y) \
     (MVF_PU(x, y).pred_flag == PF_INTRA)
 #define MIN_TB_ADDR_ZS(x, y) \
-    s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
-
+    s->pps->min_tb_addr_zs[(y) * (s->sps->tb_mask+2) + (x)]
 #define EXTEND(ptr, val, len)         \
 do {                                  \
     pixel4 pix = PIXEL_SPLAT_X4(val); \
@@ -82,8 +81,9 @@ do {                                  \
     int size_in_tbs_v  = size_in_luma_v >> s->sps->log2_min_tb_size;
     int x = x0 >> hshift;
     int y = y0 >> vshift;
-    int x_tb = x0 >> s->sps->log2_min_tb_size;
-    int y_tb = y0 >> s->sps->log2_min_tb_size;
+    int x_tb = (x0 >> s->sps->log2_min_tb_size) & s->sps->tb_mask;
+    int y_tb = (y0 >> s->sps->log2_min_tb_size) & s->sps->tb_mask;
+
     int cur_tb_addr = MIN_TB_ADDR_ZS(x_tb, y_tb);
 
     ptrdiff_t stride = s->frame->linesize[c_idx] / sizeof(pixel);
@@ -103,12 +103,11 @@ do {                                  \
     pixel  *top           = top_array  + 1;
     pixel  *filtered_left = filtered_left_array + 1;
     pixel  *filtered_top  = filtered_top_array  + 1;
-
-    int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs_v);
+    int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS( x_tb - 1, (y_tb + size_in_tbs_v) & s->sps->tb_mask);
     int cand_left        = lc->na.cand_left;
     int cand_up_left     = lc->na.cand_up_left;
     int cand_up          = lc->na.cand_up;
-    int cand_up_right    = lc->na.cand_up_right && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs_h, y_tb - 1);
+    int cand_up_right    = lc->na.cand_up_right    && cur_tb_addr > MIN_TB_ADDR_ZS((x_tb + size_in_tbs_h) & s->sps->tb_mask, y_tb - 1);
 
     int bottom_left_size = (FFMIN(y0 + 2 * size_in_luma_v, s->sps->height) -
                            (y0 + size_in_luma_v)) >> vshift;

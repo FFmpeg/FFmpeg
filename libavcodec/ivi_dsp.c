@@ -772,37 +772,64 @@ void ff_ivi_put_dc_pixel_8x8(const int32_t *in, int16_t *out, uint32_t pitch,
 }
 
 #define IVI_MC_TEMPLATE(size, suffix, OP) \
-void ff_ivi_mc_ ## size ##x## size ## suffix (int16_t *buf, const int16_t *ref_buf, \
-                                              uint32_t pitch, int mc_type) \
+static void ivi_mc_ ## size ##x## size ## suffix(int16_t *buf, \
+                                                 uint32_t dpitch, \
+                                                 const int16_t *ref_buf, \
+                                                 uint32_t pitch, int mc_type) \
 { \
     int     i, j; \
     const int16_t *wptr; \
 \
     switch (mc_type) { \
     case 0: /* fullpel (no interpolation) */ \
-        for (i = 0; i < size; i++, buf += pitch, ref_buf += pitch) { \
+        for (i = 0; i < size; i++, buf += dpitch, ref_buf += pitch) { \
             for (j = 0; j < size; j++) {\
                 OP(buf[j], ref_buf[j]); \
             } \
         } \
         break; \
     case 1: /* horizontal halfpel interpolation */ \
-        for (i = 0; i < size; i++, buf += pitch, ref_buf += pitch) \
+        for (i = 0; i < size; i++, buf += dpitch, ref_buf += pitch) \
             for (j = 0; j < size; j++) \
                 OP(buf[j], (ref_buf[j] + ref_buf[j+1]) >> 1); \
         break; \
     case 2: /* vertical halfpel interpolation */ \
         wptr = ref_buf + pitch; \
-        for (i = 0; i < size; i++, buf += pitch, wptr += pitch, ref_buf += pitch) \
+        for (i = 0; i < size; i++, buf += dpitch, wptr += pitch, ref_buf += pitch) \
             for (j = 0; j < size; j++) \
                 OP(buf[j], (ref_buf[j] + wptr[j]) >> 1); \
         break; \
     case 3: /* vertical and horizontal halfpel interpolation */ \
         wptr = ref_buf + pitch; \
-        for (i = 0; i < size; i++, buf += pitch, wptr += pitch, ref_buf += pitch) \
+        for (i = 0; i < size; i++, buf += dpitch, wptr += pitch, ref_buf += pitch) \
             for (j = 0; j < size; j++) \
                 OP(buf[j], (ref_buf[j] + ref_buf[j+1] + wptr[j] + wptr[j+1]) >> 2); \
         break; \
+    } \
+} \
+\
+void ff_ivi_mc_ ## size ##x## size ## suffix(int16_t *buf, const int16_t *ref_buf, \
+                                             uint32_t pitch, int mc_type) \
+{ \
+    ivi_mc_ ## size ##x## size ## suffix(buf, pitch, ref_buf, pitch, mc_type); \
+} \
+
+#define IVI_MC_AVG_TEMPLATE(size, suffix, OP) \
+void ff_ivi_mc_avg_ ## size ##x## size ## suffix(int16_t *buf, \
+                                                 const int16_t *ref_buf, \
+                                                 const int16_t *ref_buf2, \
+                                                 uint32_t pitch, \
+                                                 int mc_type, int mc_type2) \
+{ \
+    int16_t tmp[size * size]; \
+    int i, j; \
+\
+    ivi_mc_ ## size ##x## size ## _no_delta(tmp, size, ref_buf, pitch, mc_type); \
+    ivi_mc_ ## size ##x## size ## _delta(tmp, size, ref_buf2, pitch, mc_type2); \
+    for (i = 0; i < size; i++, buf += pitch) { \
+        for (j = 0; j < size; j++) {\
+            OP(buf[j], tmp[i * size + j] >> 1); \
+        } \
     } \
 } \
 
@@ -813,3 +840,7 @@ IVI_MC_TEMPLATE(8, _no_delta, OP_PUT)
 IVI_MC_TEMPLATE(8, _delta,    OP_ADD)
 IVI_MC_TEMPLATE(4, _no_delta, OP_PUT)
 IVI_MC_TEMPLATE(4, _delta,    OP_ADD)
+IVI_MC_AVG_TEMPLATE(8, _no_delta, OP_PUT)
+IVI_MC_AVG_TEMPLATE(8, _delta,    OP_ADD)
+IVI_MC_AVG_TEMPLATE(4, _no_delta, OP_PUT)
+IVI_MC_AVG_TEMPLATE(4, _delta,    OP_ADD)

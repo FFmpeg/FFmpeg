@@ -37,6 +37,7 @@
 #include "dsputil.h"
 #include "error_resilience.h"
 #include "internal.h"
+#include "mpeg_er.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "mpegutils.h"

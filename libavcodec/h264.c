@@ -1683,7 +1683,9 @@ again:
                 break;
             case NAL_SEI:
                 init_get_bits(&h->gb, ptr, bit_length);
-                ff_h264_decode_sei(h);
+                ret = ff_h264_decode_sei(h);
+                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+                    goto end;
                 break;
             case NAL_SPS:
                 init_get_bits(&h->gb, ptr, bit_length);
@@ -1702,7 +1704,9 @@ again:
                 break;
             case NAL_PPS:
                 init_get_bits(&h->gb, ptr, bit_length);
-                ff_h264_decode_picture_parameter_set(h, bit_length);
+                ret = ff_h264_decode_picture_parameter_set(h, bit_length);
+                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+                    goto end;
                 break;
             case NAL_AUD:
             case NAL_END_SEQUENCE:
@@ -1719,7 +1723,9 @@ again:
             }
 
             if (context_count == h->max_contexts) {
-                ff_h264_execute_decode_slices(h, context_count);
+                ret = ff_h264_execute_decode_slices(h, context_count);
+                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+                    goto end;
                 context_count = 0;
             }
 
@@ -1739,9 +1745,13 @@ again:
             }
         }
     }
-    if (context_count)
-        ff_h264_execute_decode_slices(h, context_count);
+    if (context_count) {
+        ret = ff_h264_execute_decode_slices(h, context_count);
+        if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+            goto end;
+    }
 
+    ret = 0;
 end:
     /* clean up */
     if (h->cur_pic_ptr && !h->droppable) {

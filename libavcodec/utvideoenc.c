@@ -28,9 +28,9 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "bswapdsp.h"
 #include "bytestream.h"
 #include "put_bits.h"
-#include "dsputil.h"
 #include "huffyuvencdsp.h"
 #include "mathops.h"
 #include "utvideo.h"
@@ -109,7 +109,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    ff_dsputil_init(&c->dsp, avctx);
+    ff_bswapdsp_init(&c->bdsp);
     ff_huffyuvencdsp_init(&c->hdsp);
 
     /* Check the prediction method, and error out if unsupported */
@@ -502,9 +502,9 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
         slice_len = offset - slice_len;
 
         /* Byteswap the written huffman codes */
-        c->dsp.bswap_buf((uint32_t *) c->slice_bits,
-                         (uint32_t *) c->slice_bits,
-                         slice_len >> 2);
+        c->bdsp.bswap_buf((uint32_t *) c->slice_bits,
+                          (uint32_t *) c->slice_bits,
+                          slice_len >> 2);
 
         /* Write the offset to the stream */
         bytestream2_put_le32(pb, offset);

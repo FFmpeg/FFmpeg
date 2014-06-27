@@ -28,7 +28,7 @@ SECTION_RODATA 32
 
 cextern pw_16
 cextern pw_1
-cextern pb_0
+pb_0: times 32 db 0 ; we do not use cextern here as old llvm-gcc fails to align it correctly
 
 pw_pixel_max: times 8 dw ((1 << 10)-1)
 

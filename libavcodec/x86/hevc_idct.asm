@@ -20,12 +20,12 @@
 ; */
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
-max_pixels_10:          times 8  dw ((1 << 10)-1)
+SECTION_RODATA 32
+max_pixels_10:          times 16  dw ((1 << 10)-1)
 dc_add_10:              times 4 dd ((1 << 14-10) + 1)
 
 
-SECTION .text
+SECTION_TEXT 32
 
 ;the idct_dc_add macros and functions were largely inspired by x264 project's code in the h264_idct.asm file
 
@@ -35,6 +35,18 @@ SECTION .text
     movd              m0, %1d
     lea               %1, [%2*3]
     SPLATW            m0, m0, 0
+    pxor              m1, m1
+    psubw             m1, m0
+    packuswb          m0, m0
+    packuswb          m1, m1
+%endmacro
+
+%macro DC_ADD_INIT_AVX2 2
+    add              %1w, ((1 << 14-8) + 1)
+    sar              %1w, (15-8)
+    movd             xm0, %1d
+    vpbroadcastw      m0, xm0    ;SPLATW
+    lea               %1, [%2*3]
     pxor              m1, m1
     psubw             m1, m0
     packuswb          m0, m0
@@ -99,8 +111,8 @@ cglobal hevc_idct8_dc_add_8, 2, 3, 0
 
 
 INIT_XMM sse2
-; void ff_hevc_idct16_dc_add_8_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
-cglobal hevc_idct16_dc_add_8, 3, 4, 0
+; void ff_hevc_idct16_dc_add_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+cglobal hevc_idct16_dc_add_8, 3, 4, 6
     movsx             r3, word [r1]
     DC_ADD_INIT       r3, r2
     DC_ADD_OP       mova, r0, r2, r3
@@ -112,6 +124,19 @@ cglobal hevc_idct16_dc_add_8, 3, 4, 0
     DC_ADD_OP       mova, r0, r2, r3
     RET
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+; void ff_hevc_idct32_dc_add_8_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+cglobal hevc_idct32_dc_add_8, 3, 4, 6
+    movsx             r3, word [r1]
+    DC_ADD_INIT_AVX2  r3, r2
+    DC_ADD_OP       mova, r0, r2, r3,
+ %rep 7
+    lea               r0, [r0+r2*4]
+    DC_ADD_OP       mova, r0, r2, r3
+%endrep
+    RET
+%endif ;HAVE_AVX2_EXTERNAL
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_idct_dc_add_10(pixel *dst, int16_t *block, int stride)
 ;-----------------------------------------------------------------------------
@@ -178,3 +203,23 @@ IDCT8_DC_ADD
 INIT_XMM avx
 IDCT8_DC_ADD
 %endif
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+cglobal hevc_idct16_dc_add_10,3,4,7
+    mov              r1w, [r1]
+    add              r1w, ((1 << 4) + 1)
+    sar              r1w, 5
+    movd             xm0, r1d
+    lea               r1, [r2*3]
+    vpbroadcastw      m0, xm0    ;SPLATW
+    mova              m6, [max_pixels_10]
+    IDCT_DC_ADD_OP_10 r0, r2, r1
+    lea               r0, [r0+r2*4]
+    IDCT_DC_ADD_OP_10 r0, r2, r1
+    lea               r0, [r0+r2*4]
+    IDCT_DC_ADD_OP_10 r0, r2, r1
+    lea               r0, [r0+r2*4]
+    IDCT_DC_ADD_OP_10 r0, r2, r1
+    RET
+%endif ;HAVE_AVX_EXTERNAL

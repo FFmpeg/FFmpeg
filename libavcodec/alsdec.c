@@ -33,7 +33,7 @@
 #include "mpeg4audio.h"
 #include "bytestream.h"
 #include "bgmc.h"
-#include "dsputil.h"
+#include "bswapdsp.h"
 #include "internal.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/crc.h"
@@ -192,7 +192,7 @@ typedef struct {
     AVCodecContext *avctx;
     ALSSpecificConfig sconf;
     GetBitContext gb;
-    DSPContext dsp;
+    BswapDSPContext bdsp;
     const AVCRC *crc_table;
     uint32_t crc_org;               ///< CRC value of the original input data
     uint32_t crc;                   ///< CRC value calculated from decoded data
@@ -1560,9 +1560,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
                          sample++)
                         *dest++ = av_bswap16(src[sample]);
                 } else {
-                    ctx->dsp.bswap_buf((uint32_t*)ctx->crc_buffer,
-                                       (uint32_t *)frame->data[0],
-                                       ctx->cur_frame_length * avctx->channels);
+                    ctx->bdsp.bswap_buf((uint32_t *) ctx->crc_buffer,
+                                        (uint32_t *) frame->data[0],
+                                        ctx->cur_frame_length * avctx->channels);
                 }
                 crc_source = ctx->crc_buffer;
             } else {
@@ -1780,7 +1780,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
-    ff_dsputil_init(&ctx->dsp, avctx);
+    ff_bswapdsp_init(&ctx->bdsp);
 
     return 0;
 

@@ -37,6 +37,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
     int plane_index, ret;
+    int i;
 
     if(avctx->prediction_method == DWT_97
        && (avctx->flags & CODEC_FLAG_QSCALE)
@@ -124,11 +125,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->input_picture = av_frame_alloc();
     if (!s->input_picture)
         return AVERROR(ENOMEM);
-    if ((ret = ff_get_buffer(s->avctx, s->input_picture, AV_GET_BUFFER_FLAG_REF)) < 0)
+
+    if ((ret = ff_snow_get_buffer(s, s->input_picture)) < 0)
         return ret;
 
     if(s->avctx->me_method == ME_ITER){
-        int i;
         int size= s->b_width * s->b_height << 2*s->block_max_depth;
         for(i=0; i<s->max_ref_frames; i++){
             s->ref_mvs[i]= av_mallocz_array(size, sizeof(int16_t[2]));

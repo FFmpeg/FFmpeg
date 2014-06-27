@@ -183,11 +183,11 @@ static int64_t find_startcode(AVIOContext *bc, uint64_t code, int64_t pos)
 static int nut_probe(AVProbeData *p)
 {
     int i;
-    uint64_t code = 0;
 
-    for (i = 0; i < p->buf_size; i++) {
-        code = (code << 8) | p->buf[i];
-        if (code == MAIN_STARTCODE)
+    for (i = 0; i < p->buf_size-8; i++) {
+        if (AV_RB32(p->buf+i) != MAIN_STARTCODE>>32)
+            continue;
+        if (AV_RB32(p->buf+i+4) == (MAIN_STARTCODE & 0xFFFFFFFF))
             return AVPROBE_SCORE_MAX;
     }
     return 0;

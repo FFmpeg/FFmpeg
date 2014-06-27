@@ -34,6 +34,7 @@
 #include "h263.h"
 #include "h263_parser.h"
 #include "internal.h"
+#include "mpeg_er.h"
 #include "mpeg4video.h"
 #include "mpeg4video_parser.h"
 #include "mpegvideo.h"

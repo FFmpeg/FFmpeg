@@ -25,7 +25,7 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "bswapdsp.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "raw.h"
@@ -46,7 +46,7 @@ typedef struct RawVideoContext {
     int is_lt_16bpp; // 16bpp pixfmt and bits_per_coded_sample < 16
     int tff;
 
-    DSPContext dsp;
+    BswapDSPContext bbdsp;
     void *bitstream_buf;
     unsigned int bitstream_buf_size;
 } RawVideoContext;
@@ -74,7 +74,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     RawVideoContext *context = avctx->priv_data;
     const AVPixFmtDescriptor *desc;
 
-    ff_dsputil_init(&context->dsp, avctx);
+    ff_bswapdsp_init(&context->bbdsp);
 
     if (   avctx->codec_tag == MKTAG('r','a','w',' ')
         || avctx->codec_tag == MKTAG('N','O','1','6'))
@@ -237,9 +237,9 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
             if (!context->bitstream_buf)
                 return AVERROR(ENOMEM);
             if (swap == 16)
-                context->dsp.bswap16_buf(context->bitstream_buf, (const uint16_t*)buf, buf_size / 2);
+                context->bbdsp.bswap16_buf(context->bitstream_buf, (const uint16_t*)buf, buf_size / 2);
             else if (swap == 32)
-                context->dsp.bswap_buf(context->bitstream_buf, (const uint32_t*)buf, buf_size / 4);
+                context->bbdsp.bswap_buf(context->bitstream_buf, (const uint32_t*)buf, buf_size / 4);
             else
                 return AVERROR_INVALIDDATA;
             buf = context->bitstream_buf;

@@ -61,9 +61,9 @@ typedef struct PullupContext {
     PullupBuffer buffers[10];
     PullupFrame frame;
 
-    int (*diff)(const uint8_t *a, const uint8_t *b, int s);
-    int (*comb)(const uint8_t *a, const uint8_t *b, int s);
-    int (*var )(const uint8_t *a, const uint8_t *b, int s);
+    int (*diff)(const uint8_t *a, const uint8_t *b, ptrdiff_t s);
+    int (*comb)(const uint8_t *a, const uint8_t *b, ptrdiff_t s);
+    int (*var )(const uint8_t *a, const uint8_t *b, ptrdiff_t s);
 } PullupContext;
 
 void ff_pullup_init_x86(PullupContext *s);

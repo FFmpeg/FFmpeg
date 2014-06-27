@@ -530,11 +530,6 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
 
         avcodec_align_dimensions2(avctx, &w, &h, pool->stride_align);
 
-        if (!(avctx->flags & CODEC_FLAG_EMU_EDGE)) {
-            w += EDGE_WIDTH * 2;
-            h += EDGE_WIDTH * 2;
-        }
-
         do {
             // NOTE: do not align linesizes individually, this breaks e.g. assumptions
             // that linesize[0] == 2*linesize[1] in the MPEG-encoder for 4:2:2
@@ -663,9 +658,6 @@ fail:
 static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
 {
     FramePool *pool = s->internal->pool;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pic->format);
-    int pixel_size = desc->comp[0].step_minus1 + 1;
-    int h_chroma_shift, v_chroma_shift;
     int i;
 
     if (pic->data[0] != NULL) {
@@ -676,27 +668,14 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
     memset(pic->data, 0, sizeof(pic->data));
     pic->extended_data = pic->data;
 
-    av_pix_fmt_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
-
     for (i = 0; i < 4 && pool->pools[i]; i++) {
-        const int h_shift = i == 0 ? 0 : h_chroma_shift;
-        const int v_shift = i == 0 ? 0 : v_chroma_shift;
-        int is_planar = pool->pools[2] || (i==0 && s->pix_fmt == AV_PIX_FMT_GRAY8);
-
         pic->linesize[i] = pool->linesize[i];
 
         pic->buf[i] = av_buffer_pool_get(pool->pools[i]);
         if (!pic->buf[i])
             goto fail;
 
-        // no edge if EDGE EMU or not planar YUV
-        if ((s->flags & CODEC_FLAG_EMU_EDGE) || !is_planar)
-            pic->data[i] = pic->buf[i]->data;
-        else {
-            pic->data[i] = pic->buf[i]->data +
-                FFALIGN((pic->linesize[i] * EDGE_WIDTH >> v_shift) +
-                        (pixel_size * EDGE_WIDTH >> h_shift), pool->stride_align[i]);
-        }
+        pic->data[i] = pic->buf[i]->data;
     }
     for (; i < AV_NUM_DATA_POINTERS; i++) {
         pic->data[i] = NULL;

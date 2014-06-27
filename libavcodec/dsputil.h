@@ -34,9 +34,6 @@
 
 extern uint32_t ff_square_tab[512];
 
-void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
-              int dxx, int dxy, int dyx, int dyy, int shift, int r,
-              int width, int height);
 
 /* minimum alignment rules ;)
  * If you notice errors in the align stuff, need more alignment for some ASM code
@@ -74,6 +71,8 @@ void ff_init_scantable(uint8_t *permutation, ScanTable *st,
                        const uint8_t *src_scantable);
 void ff_init_scantable_permutation(uint8_t *idct_permutation,
                                    int idct_permutation_type);
+int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
+                                      int idct_permutation_type);
 
 /**
  * DSPContext.
@@ -97,18 +96,6 @@ typedef struct DSPContext {
                                uint8_t *pixels /* align 8 */,
                                int line_size);
     int (*sum_abs_dctelem)(int16_t *block /* align 16 */);
-    /**
-     * translational global motion compensation.
-     */
-    void (*gmc1)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
-                 int srcStride, int h, int x16, int y16, int rounder);
-    /**
-     * global motion compensation.
-     */
-    void (*gmc)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
-                int stride, int h, int ox, int oy,
-                int dxx, int dxy, int dyx, int dyy,
-                int shift, int r, int width, int height);
 
     int (*pix_sum)(uint8_t *pix, int line_size);
     int (*pix_norm1)(uint8_t *pix, int line_size);
@@ -136,14 +123,6 @@ typedef struct DSPContext {
     me_cmp_func frame_skip_cmp[6]; // only width 8 used
 
     me_cmp_func pix_abs[2][4];
-
-    void (*bswap_buf)(uint32_t *dst, const uint32_t *src, int w);
-    void (*bswap16_buf)(uint16_t *dst, const uint16_t *src, int len);
-
-    /* assume len is a multiple of 8, and arrays are 16-byte aligned */
-    void (*vector_clipf)(float *dst /* align 16 */,
-                         const float *src /* align 16 */,
-                         float min, float max, int len /* align 16 */);
 
     /* (I)DCT */
     void (*fdct)(int16_t *block /* align 16 */);
@@ -204,30 +183,6 @@ typedef struct DSPContext {
 
     void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,
                       int src_wrap, int width, int height);
-
-    /**
-     * Calculate scalar product of two vectors.
-     * @param len length of vectors, should be multiple of 16
-     */
-    int32_t (*scalarproduct_int16)(const int16_t *v1,
-                                   const int16_t *v2 /* align 16 */, int len);
-
-    /**
-     * Clip each element in an array of int32_t to a given minimum and
-     * maximum value.
-     * @param dst  destination array
-     *             constraints: 16-byte aligned
-     * @param src  source array
-     *             constraints: 16-byte aligned
-     * @param min  minimum value
-     *             constraints: must be in the range [-(1 << 24), 1 << 24]
-     * @param max  maximum value
-     *             constraints: must be in the range [-(1 << 24), 1 << 24]
-     * @param len  number of elements in the array
-     *             constraints: multiple of 32 greater than zero
-     */
-    void (*vector_clip_int32)(int32_t *dst, const int32_t *src, int32_t min,
-                              int32_t max, unsigned int len);
 } DSPContext;
 
 void ff_dsputil_static_init(void);

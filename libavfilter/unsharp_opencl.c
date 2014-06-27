@@ -29,7 +29,7 @@
 #include "libavutil/opencl_internal.h"
 
 #define PLANE_NUM 3
-#define ROUND_TO_16(a) ((((a- 1)/16)+1)*16)
+#define ROUND_TO_16(a) (((((a) - 1)/16)+1)*16)
 
 static inline void add_mask_counter(uint32_t *dst, uint32_t *counter1, uint32_t *counter2, int len)
 {

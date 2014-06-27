@@ -260,7 +260,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     size= put_bits_count(&a->pb)/32;
 
     if(avctx->codec_id == AV_CODEC_ID_ASV1)
-        a->dsp.bswap_buf((uint32_t*)pkt->data, (uint32_t*)pkt->data, size);
+        a->bbdsp.bswap_buf((uint32_t *) pkt->data,
+                           (uint32_t *) pkt->data, size);
     else{
         int i;
         for(i=0; i<4*size; i++)

@@ -40,8 +40,8 @@
 #include "libavutil/internal.h"
 #include "libavutil/libm.h"
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "internal.h"
 #include "sinewin.h"
@@ -95,7 +95,7 @@ typedef struct {
     float sqrt_tab[30];
     GetBitContext gb;
 
-    DSPContext dsp;
+    BswapDSPContext bdsp;
     AVFloatDSPContext fdsp;
     FFTContext fft;
     DECLARE_ALIGNED(32, FFTComplex, samples)[COEFFS / 2];
@@ -247,7 +247,7 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_INFO, "FFT init failed\n");
         return ret;
     }
-    ff_dsputil_init(&q->dsp, avctx);
+    ff_bswapdsp_init(&q->bdsp);
     avpriv_float_dsp_init(&q->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
     avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO
@@ -1025,7 +1025,7 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
     for (i = 0; i < avctx->channels; i++) {
         q->out_samples = (float *)frame->extended_data[i];
 
-        q->dsp.bswap16_buf(buf16, (const uint16_t*)buf, IMC_BLOCK_SIZE / 2);
+        q->bdsp.bswap16_buf(buf16, (const uint16_t *) buf, IMC_BLOCK_SIZE / 2);
 
         init_get_bits(&q->gb, (const uint8_t*)buf16, IMC_BLOCK_SIZE * 8);
 

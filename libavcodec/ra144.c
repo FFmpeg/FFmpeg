@@ -1681,9 +1681,9 @@ unsigned int ff_rescale_rms(unsigned int rms, unsigned int energy)
 }
 
 /** inverse root mean square */
-int ff_irms(DSPContext *dsp, const int16_t *data)
+int ff_irms(AudioDSPContext *adsp, const int16_t *data)
 {
-    unsigned int sum = dsp->scalarproduct_int16(data, data, BLOCKSIZE);
+    unsigned int sum = adsp->scalarproduct_int16(data, data, BLOCKSIZE);
 
     if (sum == 0)
         return 0; /* OOPS - division by zero */
@@ -1701,7 +1701,7 @@ void ff_subblock_synthesis(RA144Context *ractx, const int16_t *lpc_coefs,
     if (cba_idx) {
         cba_idx += BLOCKSIZE/2 - 1;
         ff_copy_and_dup(ractx->buffer_a, ractx->adapt_cb, cba_idx);
-        m[0] = (ff_irms(&ractx->dsp, ractx->buffer_a) * gval) >> 12;
+        m[0] = (ff_irms(&ractx->adsp, ractx->buffer_a) * gval) >> 12;
     } else {
         m[0] = 0;
     }

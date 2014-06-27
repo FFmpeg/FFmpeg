@@ -34,6 +34,7 @@
 #include "golomb.h"
 #include "internal.h"
 #include "mathops.h"
+#include "mpeg_er.h"
 #include "qpeldsp.h"
 #include "rectangle.h"
 #include "thread.h"

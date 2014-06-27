@@ -118,6 +118,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     s->got_picture   = 0;
     s->org_height    = avctx->coded_height;
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
+    avctx->colorspace = AVCOL_SPC_BT470BG;
 
     build_basic_mjpeg_vlc(s);
 

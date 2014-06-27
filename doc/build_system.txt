@@ -25,6 +25,9 @@ fate-list
 install
     Install headers, libraries and programs.
 
+examples
+    Build all examples located in doc/examples.
+
 libavformat/output-example
     Build the libavformat basic example.
 
@@ -33,6 +36,9 @@ libavcodec/api-example
 
 libswscale/swscale-test
     Build the swscale self-test (useful also as example).
+
+config
+    Reconfigure the project with current configuration.
 
 
 Useful standard make commands:

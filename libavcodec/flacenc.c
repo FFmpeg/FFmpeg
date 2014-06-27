@@ -25,7 +25,7 @@
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
-#include "dsputil.h"
+#include "bswapdsp.h"
 #include "put_bits.h"
 #include "golomb.h"
 #include "internal.h"
@@ -113,7 +113,7 @@ typedef struct FlacEncodeContext {
     struct AVMD5 *md5ctx;
     uint8_t *md5_buffer;
     unsigned int md5_buffer_size;
-    DSPContext dsp;
+    BswapDSPContext bdsp;
     FLACDSPContext flac_dsp;
 
     int flushed;
@@ -427,7 +427,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size,
                       s->options.max_prediction_order, FF_LPC_TYPE_LEVINSON);
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_bswapdsp_init(&s->bdsp);
     ff_flacdsp_init(&s->flac_dsp, avctx->sample_fmt,
                     avctx->bits_per_raw_sample);
 
@@ -1206,8 +1206,8 @@ static int update_md5_sum(FlacEncodeContext *s, const void *samples)
     if (s->avctx->bits_per_raw_sample <= 16) {
         buf = (const uint8_t *)samples;
 #if HAVE_BIGENDIAN
-        s->dsp.bswap16_buf((uint16_t *)s->md5_buffer,
-                           (const uint16_t *)samples, buf_size / 2);
+        s->bdsp.bswap16_buf((uint16_t *) s->md5_buffer,
+                            (const uint16_t *) samples, buf_size / 2);
         buf = s->md5_buffer;
 #endif
     } else {

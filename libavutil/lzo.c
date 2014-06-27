@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "avutil.h"
+#include "avassert.h"
 #include "common.h"
 #include "intreadwrite.h"
 #include "lzo.h"
@@ -65,8 +66,13 @@ static inline int get_len(LZOContext *c, int x, int mask)
 {
     int cnt = x & mask;
     if (!cnt) {
-        while (!(x = get_byte(c)))
+        while (!(x = get_byte(c))) {
+            if (cnt >= INT_MAX - 1000) {
+                c->error |= AV_LZO_ERROR;
+                break;
+            }
             cnt += 255;
+        }
         cnt += mask + x;
     }
     return cnt;
@@ -80,6 +86,7 @@ static inline void copy(LZOContext *c, int cnt)
 {
     register const uint8_t *src = c->in;
     register uint8_t *dst       = c->out;
+    av_assert0(cnt >= 0);
     if (cnt > c->in_end - src) {
         cnt       = FFMAX(c->in_end - src, 0);
         c->error |= AV_LZO_INPUT_DEPLETED;
@@ -103,7 +110,7 @@ static inline void copy(LZOContext *c, int cnt)
 /**
  * @brief Copies previously decoded bytes to current position.
  * @param back how many bytes back we start, must be > 0
- * @param cnt number of bytes to copy, must be >= 0
+ * @param cnt number of bytes to copy, must be > 0
  *
  * cnt > back is valid, this will copy the bytes we just copied,
  * thus creating a repeating pattern with a period length of back.
@@ -111,6 +118,7 @@ static inline void copy(LZOContext *c, int cnt)
 static inline void copy_backptr(LZOContext *c, int back, int cnt)
 {
     register uint8_t *dst       = c->out;
+    av_assert0(cnt > 0);
     if (dst - c->out_start < back) {
         c->error |= AV_LZO_INVALID_BACKPTR;
         return;
@@ -209,6 +217,7 @@ int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen)
 
 int main(int argc, char *argv[]) {
     FILE *in = fopen(argv[1], "rb");
+    int comp_level = argc > 2 ? atoi(argv[2]) : 0;
     uint8_t *orig = av_malloc(MAXSZ + 16);
     uint8_t *comp = av_malloc(2*MAXSZ + 16);
     uint8_t *decomp = av_malloc(MAXSZ + 16);
@@ -218,7 +227,16 @@ int main(int argc, char *argv[]) {
     int inlen, outlen;
     int i;
     av_log_set_level(AV_LOG_DEBUG);
-    lzo1x_999_compress(orig, s, comp, &clen, tmp);
+    if (comp_level == 0) {
+        lzo1x_1_compress(orig, s, comp, &clen, tmp);
+    } else if (comp_level == 11) {
+        lzo1x_1_11_compress(orig, s, comp, &clen, tmp);
+    } else if (comp_level == 12) {
+        lzo1x_1_12_compress(orig, s, comp, &clen, tmp);
+    } else if (comp_level == 15) {
+        lzo1x_1_15_compress(orig, s, comp, &clen, tmp);
+    } else
+        lzo1x_999_compress(orig, s, comp, &clen, tmp);
     for (i = 0; i < 300; i++) {
 START_TIMER
         inlen = clen; outlen = MAXSZ;

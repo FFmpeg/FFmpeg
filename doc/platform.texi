@@ -53,11 +53,11 @@ unacelerated code.
 Mac OS X on PowerPC or ARM (iPhone) requires a preprocessor from
 @url{https://github.com/FFmpeg/gas-preprocessor} or
 @url{https://github.com/yuvi/gas-preprocessor}(currently outdated) to build the optimized
-assembler functions. Put the Perl script somewhere
+assembly functions. Put the Perl script somewhere
 in your PATH, FFmpeg's configure will pick it up automatically.
 
 Mac OS X on amd64 and x86 requires @command{yasm} to build most of the
-optimized assembler functions. @uref{http://www.finkproject.org/, Fink},
+optimized assembly functions. @uref{http://www.finkproject.org/, Fink},
 @uref{http://www.gentoo.org/proj/en/gentoo-alt/prefix/bootstrap-macos.xml, Gentoo Prefix},
 @uref{https://mxcl.github.com/homebrew/, Homebrew}
 or @uref{http://www.macports.org, MacPorts} can easily provide it.

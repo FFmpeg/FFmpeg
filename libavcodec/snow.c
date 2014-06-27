@@ -66,6 +66,26 @@ void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_
     }
 }
 
+int ff_snow_get_buffer(SnowContext *s, AVFrame *frame)
+{
+    int ret, i;
+
+    frame->width  = s->avctx->width  + 2 * EDGE_WIDTH;
+    frame->height = s->avctx->height + 2 * EDGE_WIDTH;
+    if ((ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+        return ret;
+    for (i = 0; frame->data[i]; i++) {
+        int offset = (EDGE_WIDTH >> (i ? s->chroma_v_shift : 0)) *
+                        frame->linesize[i] +
+                        (EDGE_WIDTH >> (i ? s->chroma_h_shift : 0));
+        frame->data[i] += offset;
+    }
+    frame->width  = s->avctx->width;
+    frame->height = s->avctx->height;
+
+    return 0;
+}
+
 void ff_snow_reset_contexts(SnowContext *s){ //FIXME better initial contexts
     int plane_index, level, orientation;
 
@@ -661,8 +681,7 @@ int ff_snow_frame_start(SnowContext *s){
             return -1;
         }
     }
-
-    if ((ret = ff_get_buffer(s->avctx, s->current_picture, AV_GET_BUFFER_FLAG_REF)) < 0)
+    if ((ret = ff_snow_get_buffer(s, s->current_picture)) < 0)
         return ret;
 
     s->current_picture->key_frame= s->keyframe;

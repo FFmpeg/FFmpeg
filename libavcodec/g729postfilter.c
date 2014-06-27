@@ -107,7 +107,7 @@ static void residual_filter(int16_t* out, const int16_t* filter_coeffs, const in
  *
  * \return 0 if long-term prediction gain is less than 3dB, 1 -  otherwise
  */
-static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
+static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
                                 const int16_t* residual, int16_t *residual_filt,
                                 int subframe_size)
 {
@@ -161,7 +161,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
     /* Start of best delay searching code */
     gain_num = 0;
 
-    ener = dsp->scalarproduct_int16(sig_scaled + RES_PREV_DATA_SIZE,
+    ener = adsp->scalarproduct_int16(sig_scaled + RES_PREV_DATA_SIZE,
                                     sig_scaled + RES_PREV_DATA_SIZE,
                                     subframe_size);
     if (ener) {
@@ -190,7 +190,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
         corr_int_num = 0;
         best_delay_int = pitch_delay_int - 1;
         for (i = pitch_delay_int - 1; i <= pitch_delay_int + 1; i++) {
-            sum = dsp->scalarproduct_int16(sig_scaled + RES_PREV_DATA_SIZE,
+            sum = adsp->scalarproduct_int16(sig_scaled + RES_PREV_DATA_SIZE,
                                            sig_scaled + RES_PREV_DATA_SIZE - i,
                                            subframe_size);
             if (sum > corr_int_num) {
@@ -200,7 +200,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
         }
         if (corr_int_num) {
             /* Compute denominator of pseudo-normalized correlation R'(0). */
-            corr_int_den = dsp->scalarproduct_int16(sig_scaled - best_delay_int + RES_PREV_DATA_SIZE,
+            corr_int_den = adsp->scalarproduct_int16(sig_scaled - best_delay_int + RES_PREV_DATA_SIZE,
                                                     sig_scaled - best_delay_int + RES_PREV_DATA_SIZE,
                                                     subframe_size);
 
@@ -227,7 +227,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
               Also compute maximum value of above denominators over all k. */
             tmp = corr_int_den;
             for (k = 0; k < ANALYZED_FRAC_DELAYS; k++) {
-                sum = dsp->scalarproduct_int16(&delayed_signal[k][1],
+                sum = adsp->scalarproduct_int16(&delayed_signal[k][1],
                                                &delayed_signal[k][1],
                                                subframe_size - 1);
                 corr_den[k][0] = sum + delayed_signal[k][0            ] * delayed_signal[k][0            ];
@@ -255,7 +255,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
                         int gain_num_short_square;
                         /* Compute numerator of pseudo-normalized
                            correlation R'(k). */
-                        sum = dsp->scalarproduct_int16(&delayed_signal[k][i],
+                        sum = adsp->scalarproduct_int16(&delayed_signal[k][i],
                                                        sig_scaled + RES_PREV_DATA_SIZE,
                                                        subframe_size);
                         gain_num_short = FFMAX(sum >> sh_gain_num, 0);
@@ -312,7 +312,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
                              LONG_INT_FILT_LEN,
                              subframe_size + 1);
         /* Compute R'(k) correlation's numerator. */
-        sum = dsp->scalarproduct_int16(residual_filt,
+        sum = adsp->scalarproduct_int16(residual_filt,
                                        sig_scaled + RES_PREV_DATA_SIZE,
                                        subframe_size);
 
@@ -327,7 +327,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
         }
 
         /* Compute R'(k) correlation's denominator. */
-        sum = dsp->scalarproduct_int16(residual_filt, residual_filt, subframe_size);
+        sum = adsp->scalarproduct_int16(residual_filt, residual_filt, subframe_size);
 
         tmp = FFMAX(av_log2(sum) - 14, 0);
         sum >>= tmp;
@@ -421,7 +421,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
  *
  * \note All members of lp_gn, except 10-19 must be equal to zero.
  */
-static int16_t get_tilt_comp(DSPContext *dsp, int16_t *lp_gn,
+static int16_t get_tilt_comp(AudioDSPContext *adsp, int16_t *lp_gn,
                              const int16_t *lp_gd, int16_t* speech,
                              int subframe_size)
 {
@@ -437,8 +437,8 @@ static int16_t get_tilt_comp(DSPContext *dsp, int16_t *lp_gn,
     /* Now lp_gn (starting with 10) contains impulse response
        of A(z/FORMANT_PP_FACTOR_NUM)/A(z/FORMANT_PP_FACTOR_DEN) filter. */
 
-    rh0 = dsp->scalarproduct_int16(lp_gn + 10, lp_gn + 10, 20);
-    rh1 = dsp->scalarproduct_int16(lp_gn + 10, lp_gn + 11, 20);
+    rh0 = adsp->scalarproduct_int16(lp_gn + 10, lp_gn + 10, 20);
+    rh1 = adsp->scalarproduct_int16(lp_gn + 10, lp_gn + 11, 20);
 
     /* downscale to avoid overflow */
     temp = av_log2(rh0) - 14;
@@ -511,7 +511,7 @@ static int16_t apply_tilt_comp(int16_t* out, int16_t* res_pst, int refl_coeff,
     return tmp;
 }
 
-void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int* voicing,
+void ff_g729_postfilter(AudioDSPContext *adsp, int16_t* ht_prev_data, int* voicing,
                      const int16_t *lp_filter_coeffs, int pitch_delay_int,
                      int16_t* residual, int16_t* res_filter_data,
                      int16_t* pos_filter_data, int16_t *speech, int subframe_size)
@@ -541,7 +541,7 @@ void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int* voicing,
 
     /* long-term filter. If long-term prediction gain is larger than 3dB (returned value is
        nonzero) then declare current subframe as periodic. */
-    *voicing = FFMAX(*voicing, long_term_filter(dsp, pitch_delay_int,
+    *voicing = FFMAX(*voicing, long_term_filter(adsp, pitch_delay_int,
                                                 residual, residual_filt_buf + 10,
                                                 subframe_size));
 
@@ -549,7 +549,7 @@ void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int* voicing,
     memmove(residual, residual + subframe_size, RES_PREV_DATA_SIZE * sizeof(int16_t));
 
     /* short-term filter tilt compensation */
-    tilt_comp_coeff = get_tilt_comp(dsp, lp_gn, lp_gd, residual_filt_buf + 10, subframe_size);
+    tilt_comp_coeff = get_tilt_comp(adsp, lp_gn, lp_gd, residual_filt_buf + 10, subframe_size);
 
     /* Apply second half of short-term postfilter: 1/A(z/FORMANT_PP_FACTOR_DEN) */
     ff_celp_lp_synthesis_filter(pos_filter_data + 10, lp_gd + 1,

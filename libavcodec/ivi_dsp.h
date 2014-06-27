@@ -295,4 +295,52 @@ void ff_ivi_mc_8x8_no_delta(int16_t *buf, const int16_t *ref_buf, uint32_t pitch
  */
 void ff_ivi_mc_4x4_no_delta(int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
 
+/**
+ *  8x8 block motion compensation with adding delta
+ *
+ *  @param[in,out]  buf      pointer to the block in the current frame buffer containing delta
+ *  @param[in]      ref_buf  pointer to the corresponding block in the backward reference frame
+ *  @param[in]      ref_buf2 pointer to the corresponding block in the forward reference frame
+ *  @param[in]      pitch    pitch for moving to the next y line
+ *  @param[in]      mc_type  interpolation type for backward reference
+ *  @param[in]      mc_type2 interpolation type for forward reference
+ */
+void ff_ivi_mc_avg_8x8_delta(int16_t *buf, const int16_t *ref_buf, const int16_t *ref_buf2, uint32_t pitch, int mc_type, int mc_type2);
+
+/**
+ *  4x4 block motion compensation with adding delta
+ *
+ *  @param[in,out]  buf      pointer to the block in the current frame buffer containing delta
+ *  @param[in]      ref_buf  pointer to the corresponding block in the backward reference frame
+ *  @param[in]      ref_buf2 pointer to the corresponding block in the forward reference frame
+ *  @param[in]      pitch    pitch for moving to the next y line
+ *  @param[in]      mc_type  interpolation type for backward reference
+ *  @param[in]      mc_type2 interpolation type for forward reference
+ */
+void ff_ivi_mc_avg_4x4_delta(int16_t *buf, const int16_t *ref_buf, const int16_t *ref_buf2, uint32_t pitch, int mc_type, int mc_type2);
+
+/**
+ *  motion compensation without adding delta for B-frames
+ *
+ *  @param[in,out]  buf      pointer to the block in the current frame receiving the result
+ *  @param[in]      ref_buf  pointer to the corresponding block in the backward reference frame
+ *  @param[in]      ref_buf2 pointer to the corresponding block in the forward reference frame
+ *  @param[in]      pitch    pitch for moving to the next y line
+ *  @param[in]      mc_type  interpolation type for backward reference
+ *  @param[in]      mc_type2 interpolation type for forward reference
+ */
+void ff_ivi_mc_avg_8x8_no_delta(int16_t *buf, const int16_t *ref_buf, const int16_t *ref_buf2, uint32_t pitch, int mc_type, int mc_type2);
+
+/**
+ *  4x4 block motion compensation without adding delta for B-frames
+ *
+ *  @param[in,out]  buf      pointer to the block in the current frame receiving the result
+ *  @param[in]      ref_buf  pointer to the corresponding block in the backward reference frame
+ *  @param[in]      ref_buf2 pointer to the corresponding block in the forward reference frame
+ *  @param[in]      pitch    pitch for moving to the next y line
+ *  @param[in]      mc_type  interpolation type for backward reference
+ *  @param[in]      mc_type2 interpolation type for forward reference
+ */
+void ff_ivi_mc_avg_4x4_no_delta(int16_t *buf, const int16_t *ref_buf, const int16_t *ref_buf2, uint32_t pitch, int mc_type, int mc_type2);
+
 #endif /* AVCODEC_IVI_DSP_H */

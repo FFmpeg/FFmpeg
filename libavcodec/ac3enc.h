@@ -39,6 +39,7 @@
 #include "fft.h"
 #include "mathops.h"
 #include "put_bits.h"
+#include "audiodsp.h"
 
 #ifndef CONFIG_AC3ENC_FLOAT
 #define CONFIG_AC3ENC_FLOAT 0
@@ -162,6 +163,7 @@ typedef struct AC3EncodeContext {
     AVCodecContext *avctx;                  ///< parent AVCodecContext
     PutBitContext pb;                       ///< bitstream writer context
     DSPContext dsp;
+    AudioDSPContext adsp;
     AVFloatDSPContext fdsp;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
     FFTContext mdct;                        ///< FFT context for MDCT calculation

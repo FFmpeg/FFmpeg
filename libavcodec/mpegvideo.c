@@ -383,6 +383,7 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     ff_dsputil_init(&s->dsp, s->avctx);
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
+    ff_mpegvideodsp_init(&s->mdsp);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
     if (s->avctx->debug & FF_DEBUG_NOMC) {
@@ -3235,44 +3236,3 @@ void ff_MPV_report_decode_progress(MpegEncContext *s)
     if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame && !s->er.error_occurred)
         ff_thread_report_progress(&s->current_picture_ptr->tf, s->mb_y, 0);
 }
-
-#if CONFIG_ERROR_RESILIENCE
-void ff_mpeg_set_erpic(ERPicture *dst, Picture *src)
-{
-    int i;
-
-    memset(dst, 0, sizeof(*dst));
-    if (!src) {
-        dst->f  = NULL;
-        dst->tf = NULL;
-        return;
-    }
-
-    dst->f = src->f;
-    dst->tf = &src->tf;
-
-    for (i = 0; i < 2; i++) {
-        dst->motion_val[i] = src->motion_val[i];
-        dst->ref_index[i] = src->ref_index[i];
-    }
-
-    dst->mb_type = src->mb_type;
-    dst->field_picture = src->field_picture;
-}
-
-void ff_mpeg_er_frame_start(MpegEncContext *s)
-{
-    ERContext *er = &s->er;
-
-    ff_mpeg_set_erpic(&er->cur_pic, s->current_picture_ptr);
-    ff_mpeg_set_erpic(&er->next_pic, s->next_picture_ptr);
-    ff_mpeg_set_erpic(&er->last_pic, s->last_picture_ptr);
-
-    er->pp_time           = s->pp_time;
-    er->pb_time           = s->pb_time;
-    er->quarter_sample    = s->quarter_sample;
-    er->partitioned_frame = s->partitioned_frame;
-
-    ff_er_frame_start(er);
-}
-#endif /* CONFIG_ERROR_RESILIENCE */

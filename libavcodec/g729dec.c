@@ -25,7 +25,7 @@
 #include "avcodec.h"
 #include "libavutil/avutil.h"
 #include "get_bits.h"
-#include "dsputil.h"
+#include "audiodsp.h"
 #include "internal.h"
 
 
@@ -100,7 +100,7 @@ typedef struct {
 } G729FormatDescription;
 
 typedef struct {
-    DSPContext dsp;
+    AudioDSPContext adsp;
 
     /// past excitation signal buffer
     int16_t exc_base[2*SUBFRAME_SIZE+PITCH_DELAY_MAX+INTERPOL_LEN];
@@ -381,8 +381,8 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     for(i=0; i<4; i++)
         ctx->quant_energy[i] = -14336; // -14 in (5.10)
 
-    ff_dsputil_init(&ctx->dsp, avctx);
-    ctx->dsp.scalarproduct_int16 = scalarproduct_int16_c;
+    ff_audiodsp_init(&ctx->adsp);
+    ctx->adsp.scalarproduct_int16 = scalarproduct_int16_c;
 
     return 0;
 }
@@ -578,7 +578,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             }
 
             /* Decode the fixed-codebook gain. */
-            ctx->past_gain_code[0] = ff_acelp_decode_gain_code(&ctx->dsp, gain_corr_factor,
+            ctx->past_gain_code[0] = ff_acelp_decode_gain_code(&ctx->adsp, gain_corr_factor,
                                                                fc, MR_ENERGY,
                                                                ctx->quant_energy,
                                                                ma_prediction_coeff,
@@ -668,7 +668,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         /* Call postfilter and also update voicing decision for use in next frame. */
         ff_g729_postfilter(
-                &ctx->dsp,
+                &ctx->adsp,
                 &ctx->ht_prev_data,
                 &is_periodic,
                 &lp[i][0],

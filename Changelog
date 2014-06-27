@@ -29,6 +29,7 @@ version <next>:
 - showcqt multimedia filter
 - zoompan filter
 - signalstats filter
+- hqx filter (hq2x, hq3x, hq4x)
 
 
 version 2.2:

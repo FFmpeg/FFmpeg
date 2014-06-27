@@ -22,7 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "dsputil.h"
+#include "bswapdsp.h"
 #include "get_bits.h"
 #include "internal.h"
 
@@ -36,7 +36,7 @@
  * TrueSpeech decoder context
  */
 typedef struct {
-    DSPContext dsp;
+    BswapDSPContext bdsp;
     /* input data */
     DECLARE_ALIGNED(16, uint8_t, buffer)[32];
     int16_t vector[8];  ///< input vector: 5/5/4/4/4/3/3/3
@@ -70,7 +70,7 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
-    ff_dsputil_init(&c->dsp, avctx);
+    ff_bswapdsp_init(&c->bdsp);
 
     return 0;
 }
@@ -79,7 +79,7 @@ static void truespeech_read_frame(TSContext *dec, const uint8_t *input)
 {
     GetBitContext gb;
 
-    dec->dsp.bswap_buf((uint32_t *)dec->buffer, (const uint32_t *)input, 8);
+    dec->bdsp.bswap_buf((uint32_t *) dec->buffer, (const uint32_t *) input, 8);
     init_get_bits(&gb, dec->buffer, 32 * 8);
 
     dec->vector[7] = ts_codebook[7][get_bits(&gb, 3)];

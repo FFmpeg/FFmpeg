@@ -65,20 +65,27 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
                               int xN, int yN)
 {
 #define MIN_TB_ADDR_ZS(x, y)                                            \
-    s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
-    int Curr = MIN_TB_ADDR_ZS(xCurr >> s->sps->log2_min_tb_size,
-                              yCurr >> s->sps->log2_min_tb_size);
-    int N;
+    s->pps->min_tb_addr_zs[(y) * (s->sps->tb_mask+2) + (x)]
+
+    int xCurr_ctb = xCurr >> s->sps->log2_ctb_size;
+    int yCurr_ctb = yCurr >> s->sps->log2_ctb_size;
+    int xN_ctb    = xN    >> s->sps->log2_ctb_size;
+    int yN_ctb    = yN    >> s->sps->log2_ctb_size;
 
     if (xN < 0 || yN < 0 ||
         xN >= s->sps->width ||
         yN >= s->sps->height)
         return 0;
 
-    N = MIN_TB_ADDR_ZS(xN >> s->sps->log2_min_tb_size,
-                       yN >> s->sps->log2_min_tb_size);
-
-    return N <= Curr;
+    if( yN_ctb < yCurr_ctb || xN_ctb < xCurr_ctb )
+        return 1;
+    else {
+        int Curr = MIN_TB_ADDR_ZS((xCurr >> s->sps->log2_min_tb_size) & s->sps->tb_mask,
+                (yCurr >> s->sps->log2_min_tb_size) & s->sps->tb_mask);
+        int N    = MIN_TB_ADDR_ZS((xN >> s->sps->log2_min_tb_size) & s->sps->tb_mask,
+                (yN >> s->sps->log2_min_tb_size) & s->sps->tb_mask);
+        return N <= Curr;
+    }
 }
 
 static int same_prediction_block(HEVCLocalContext *lc, int log2_cb_size,

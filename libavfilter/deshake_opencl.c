@@ -31,7 +31,7 @@
 #include "libavutil/opencl_internal.h"
 
 #define PLANE_NUM 3
-#define ROUND_TO_16(a) ((((a - 1)/16)+1)*16)
+#define ROUND_TO_16(a) (((((a) - 1)/16)+1)*16)
 
 int ff_opencl_transform(AVFilterContext *ctx,
                         int width, int height, int cw, int ch,

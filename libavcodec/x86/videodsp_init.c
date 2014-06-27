@@ -117,15 +117,34 @@ static emu_edge_hfix_func *hfixtbl_mmx[11] = {
 };
 #endif
 extern emu_edge_hvar_func ff_emu_edge_hvar_mmx;
+extern emu_edge_hfix_func ff_emu_edge_hfix4_mmxext;
+extern emu_edge_hfix_func ff_emu_edge_hfix6_mmxext;
+extern emu_edge_hfix_func ff_emu_edge_hfix8_mmxext;
+extern emu_edge_hfix_func ff_emu_edge_hfix10_mmxext;
+extern emu_edge_hfix_func ff_emu_edge_hfix12_mmxext;
+extern emu_edge_hfix_func ff_emu_edge_hfix14_mmxext;
+extern emu_edge_hfix_func ff_emu_edge_hfix16_mmxext;
+extern emu_edge_hfix_func ff_emu_edge_hfix18_mmxext;
+extern emu_edge_hfix_func ff_emu_edge_hfix20_mmxext;
+extern emu_edge_hfix_func ff_emu_edge_hfix22_mmxext;
+#if ARCH_X86_32
+static emu_edge_hfix_func *hfixtbl_mmxext[11] = {
+    ff_emu_edge_hfix2_mmx,     ff_emu_edge_hfix4_mmxext,  ff_emu_edge_hfix6_mmxext,
+    ff_emu_edge_hfix8_mmxext,  ff_emu_edge_hfix10_mmxext, ff_emu_edge_hfix12_mmxext,
+    ff_emu_edge_hfix14_mmxext, ff_emu_edge_hfix16_mmxext, ff_emu_edge_hfix18_mmxext,
+    ff_emu_edge_hfix20_mmxext, ff_emu_edge_hfix22_mmxext
+};
+#endif
+extern emu_edge_hvar_func ff_emu_edge_hvar_mmxext;
 extern emu_edge_hfix_func ff_emu_edge_hfix16_sse2;
 extern emu_edge_hfix_func ff_emu_edge_hfix18_sse2;
 extern emu_edge_hfix_func ff_emu_edge_hfix20_sse2;
 extern emu_edge_hfix_func ff_emu_edge_hfix22_sse2;
 static emu_edge_hfix_func *hfixtbl_sse2[11] = {
-    ff_emu_edge_hfix2_mmx,  ff_emu_edge_hfix4_mmx,  ff_emu_edge_hfix6_mmx,
-    ff_emu_edge_hfix8_mmx,  ff_emu_edge_hfix10_mmx, ff_emu_edge_hfix12_mmx,
-    ff_emu_edge_hfix14_mmx, ff_emu_edge_hfix16_sse2, ff_emu_edge_hfix18_sse2,
-    ff_emu_edge_hfix20_sse2, ff_emu_edge_hfix22_sse2
+    ff_emu_edge_hfix2_mmx,     ff_emu_edge_hfix4_mmxext,  ff_emu_edge_hfix6_mmxext,
+    ff_emu_edge_hfix8_mmxext,  ff_emu_edge_hfix10_mmxext, ff_emu_edge_hfix12_mmxext,
+    ff_emu_edge_hfix14_mmxext, ff_emu_edge_hfix16_sse2,   ff_emu_edge_hfix18_sse2,
+    ff_emu_edge_hfix20_sse2,   ff_emu_edge_hfix22_sse2
 };
 extern emu_edge_hvar_func ff_emu_edge_hvar_sse2;
 
@@ -215,6 +234,17 @@ static av_noinline void emulated_edge_mc_mmx(uint8_t *buf, const uint8_t *src,
                      hfixtbl_mmx, &ff_emu_edge_hvar_mmx);
 }
 
+static av_noinline void emulated_edge_mc_mmxext(uint8_t *buf, const uint8_t *src,
+                                                ptrdiff_t buf_stride,
+                                                ptrdiff_t src_stride,
+                                                int block_w, int block_h,
+                                                int src_x, int src_y, int w, int h)
+{
+    emulated_edge_mc(buf, src, buf_stride, src_stride, block_w, block_h,
+                     src_x, src_y, w, h, vfixtbl_mmx, &ff_emu_edge_vvar_mmx,
+                     hfixtbl_mmxext, &ff_emu_edge_hvar_mmxext);
+}
+
 static av_noinline void emulated_edge_mc_sse(uint8_t *buf, const uint8_t *src,
                                              ptrdiff_t buf_stride,
                                              ptrdiff_t src_stride,
@@ -223,7 +253,7 @@ static av_noinline void emulated_edge_mc_sse(uint8_t *buf, const uint8_t *src,
 {
     emulated_edge_mc(buf, src, buf_stride, src_stride, block_w, block_h,
                      src_x, src_y, w, h, vfixtbl_sse, &ff_emu_edge_vvar_sse,
-                     hfixtbl_mmx, &ff_emu_edge_hvar_mmx);
+                     hfixtbl_mmxext, &ff_emu_edge_hvar_mmxext);
 }
 #endif
 
@@ -258,6 +288,10 @@ av_cold void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
 #endif /* ARCH_X86_32 */
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         ctx->prefetch = ff_prefetch_mmxext;
+#if ARCH_X86_32
+        if (bpc <= 8)
+            ctx->emulated_edge_mc = emulated_edge_mc_mmxext;
+#endif /* ARCH_X86_32 */
     }
 #if ARCH_X86_32
     if (EXTERNAL_SSE(cpu_flags) && bpc <= 8) {

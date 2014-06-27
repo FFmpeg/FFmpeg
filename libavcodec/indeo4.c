@@ -195,7 +195,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* check if picture layout was changed and reallocate buffers */
     if (ivi_pic_config_cmp(&pic_conf, &ctx->pic_conf)) {
-        if (ff_ivi_init_planes(ctx->planes, &pic_conf)) {
+        if (ff_ivi_init_planes(ctx->planes, &pic_conf, 1)) {
             av_log(avctx, AV_LOG_ERROR, "Couldn't reallocate color planes!\n");
             ctx->pic_conf.luma_bands = 0;
             return AVERROR(ENOMEM);
@@ -494,6 +494,8 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
             mb->xpos     = x;
             mb->ypos     = y;
             mb->buf_offs = mb_offset;
+            mb->b_mv_x   =
+            mb->b_mv_y   = 0;
 
             if (get_bits1(&ctx->gb)) {
                 if (ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
@@ -571,6 +573,24 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
                         mv_x += IVI_TOSIGNED(mv_delta);
                         mb->mv_x = mv_x;
                         mb->mv_y = mv_y;
+                        if (mb->type == 3) {
+                            mv_delta = get_vlc2(&ctx->gb,
+                                                ctx->mb_vlc.tab->table,
+                                                IVI_VLC_BITS, 1);
+                            mv_y += IVI_TOSIGNED(mv_delta);
+                            mv_delta = get_vlc2(&ctx->gb,
+                                                ctx->mb_vlc.tab->table,
+                                                IVI_VLC_BITS, 1);
+                            mv_x += IVI_TOSIGNED(mv_delta);
+                            mb->b_mv_x = -mv_x;
+                            mb->b_mv_y = -mv_y;
+                        }
+                    }
+                    if (mb->type == 2) {
+                        mb->b_mv_x = -mb->mv_x;
+                        mb->b_mv_y = -mb->mv_y;
+                        mb->mv_x = 0;
+                        mb->mv_y = 0;
                     }
                 }
             }
@@ -606,31 +626,29 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
  */
 static void switch_buffers(IVI45DecContext *ctx)
 {
+    int is_prev_ref = 0, is_ref = 0;
+
     switch (ctx->prev_frame_type) {
     case IVI4_FRAMETYPE_INTRA:
     case IVI4_FRAMETYPE_INTRA1:
     case IVI4_FRAMETYPE_INTER:
-        ctx->buf_switch ^= 1;
-        ctx->dst_buf     = ctx->buf_switch;
-        ctx->ref_buf     = ctx->buf_switch ^ 1;
-        break;
-    case IVI4_FRAMETYPE_INTER_NOREF:
+        is_prev_ref = 1;
         break;
     }
 
     switch (ctx->frame_type) {
     case IVI4_FRAMETYPE_INTRA:
     case IVI4_FRAMETYPE_INTRA1:
-        ctx->buf_switch = 0;
-        /* FALLTHROUGH */
     case IVI4_FRAMETYPE_INTER:
-        ctx->dst_buf = ctx->buf_switch;
-        ctx->ref_buf = ctx->buf_switch ^ 1;
+        is_ref = 1;
         break;
-    case IVI4_FRAMETYPE_INTER_NOREF:
-    case IVI4_FRAMETYPE_NULL_FIRST:
-    case IVI4_FRAMETYPE_NULL_LAST:
-        break;
+    }
+
+    if (is_prev_ref && is_ref) {
+        FFSWAP(int, ctx->dst_buf, ctx->ref_buf);
+    } else if (is_prev_ref) {
+        FFSWAP(int, ctx->ref_buf, ctx->b_ref_buf);
+        FFSWAP(int, ctx->dst_buf, ctx->ref_buf);
     }
 }
 
@@ -663,6 +681,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->switch_buffers   = switch_buffers;
     ctx->is_nonnull_frame = is_nonnull_frame;
 
+    ctx->is_indeo4 = 1;
+
+    ctx->dst_buf   = 0;
+    ctx->ref_buf   = 1;
+    ctx->b_ref_buf = 3; /* buffer 2 is used for scalability mode */
     ctx->p_frame = av_frame_alloc();
     if (!ctx->p_frame)
         return AVERROR(ENOMEM);
