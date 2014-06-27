@@ -1,6 +1,19 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 10.2:
+- adpcm: Write the proper predictor in trellis mode in IMA QT
+- adpcm: Avoid reading out of bounds in the IMA QT trellis encoder
+- oggenc: Set the right AVOption size for the pref_duration option
+- avpacket: fix copying side data in av_packet_copy_props()
+- jpeg2000: fix dereferencing invalid pointers during cleanup
+- Check mp3 header before calling avpriv_mpegaudio_decode_header() (bug/705)
+- Check if an mp3 header is using a reserved sample rate
+- lzo: Handle integer overflow (bug/704)
+- avconv: make -shortest work with streamcopy
+- ppc: Fix compilation for ppc64le (ELFv2) (ubuntu/1263802)
+- aarch64: Use the correct syntax for relocations (debian/751856, ubuntu/1323144)
+
 version 10.1:
 - pcm-dvd: Fix 20bit decoding (bug/592)
 - avi: Improve non-interleaved detection (bug/666)
