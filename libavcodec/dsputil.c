@@ -49,20 +49,6 @@ uint32_t ff_square_tab[512] = { 0, };
 #define BIT_DEPTH 8
 #include "dsputilenc_template.c"
 
-/* Input permutation for the simple_idct_mmx */
-static const uint8_t simple_mmx_permutation[64] = {
-    0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D,
-    0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D,
-    0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D,
-    0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F,
-    0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F,
-    0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D,
-    0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F,
-    0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
-};
-
-static const uint8_t idct_sse2_row_perm[8] = { 0, 4, 1, 5, 2, 6, 3, 7 };
-
 av_cold void ff_init_scantable(uint8_t *permutation, ScanTable *st,
                                const uint8_t *src_scantable)
 {
@@ -89,6 +75,11 @@ av_cold void ff_init_scantable_permutation(uint8_t *idct_permutation,
 {
     int i;
 
+    if (ARCH_X86)
+        if (ff_init_scantable_permutation_x86(idct_permutation,
+                                              idct_permutation_type))
+            return;
+
     switch (idct_permutation_type) {
     case FF_NO_IDCT_PERM:
         for (i = 0; i < 64; i++)
@@ -98,10 +89,6 @@ av_cold void ff_init_scantable_permutation(uint8_t *idct_permutation,
         for (i = 0; i < 64; i++)
             idct_permutation[i] = (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
         break;
-    case FF_SIMPLE_IDCT_PERM:
-        for (i = 0; i < 64; i++)
-            idct_permutation[i] = simple_mmx_permutation[i];
-        break;
     case FF_TRANSPOSE_IDCT_PERM:
         for (i = 0; i < 64; i++)
             idct_permutation[i] = ((i & 7) << 3) | (i >> 3);
@@ -109,10 +96,6 @@ av_cold void ff_init_scantable_permutation(uint8_t *idct_permutation,
     case FF_PARTTRANS_IDCT_PERM:
         for (i = 0; i < 64; i++)
             idct_permutation[i] = (i & 0x24) | ((i & 3) << 3) | ((i >> 3) & 3);
-        break;
-    case FF_SSE2_IDCT_PERM:
-        for (i = 0; i < 64; i++)
-            idct_permutation[i] = (i & 0x38) | idct_sse2_row_perm[i & 7];
         break;
     default:
         av_log(NULL, AV_LOG_ERROR,

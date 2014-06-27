@@ -71,6 +71,8 @@ void ff_init_scantable(uint8_t *permutation, ScanTable *st,
                        const uint8_t *src_scantable);
 void ff_init_scantable_permutation(uint8_t *idct_permutation,
                                    int idct_permutation_type);
+int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
+                                      int idct_permutation_type);
 
 /**
  * DSPContext.

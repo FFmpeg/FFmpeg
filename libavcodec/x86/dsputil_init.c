@@ -29,6 +29,39 @@
 #include "dsputil_x86.h"
 #include "idct_xvid.h"
 
+/* Input permutation for the simple_idct_mmx */
+static const uint8_t simple_mmx_permutation[64] = {
+    0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D,
+    0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D,
+    0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D,
+    0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F,
+    0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F,
+    0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D,
+    0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F,
+    0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
+};
+
+static const uint8_t idct_sse2_row_perm[8] = { 0, 4, 1, 5, 2, 6, 3, 7 };
+
+av_cold int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
+                                              int idct_permutation_type)
+{
+    int i;
+
+    switch (idct_permutation_type) {
+    case FF_SIMPLE_IDCT_PERM:
+        for (i = 0; i < 64; i++)
+            idct_permutation[i] = simple_mmx_permutation[i];
+        return 1;
+    case FF_SSE2_IDCT_PERM:
+        for (i = 0; i < 64; i++)
+            idct_permutation[i] = (i & 0x38) | idct_sse2_row_perm[i & 7];
+        return 1;
+    }
+
+    return 0;
+}
+
 static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                      int cpu_flags, unsigned high_bit_depth)
 {
