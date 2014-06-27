@@ -1,6 +1,11 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.13:
+
+- lzo: Handle integer overflow
+- sgidec: fix an incorrect backport
+
 version 0.8.12:
 
 - h264: set parameters from SPS whenever it changes
