@@ -56,7 +56,7 @@ cglobal pullup_filter_diff, 3, 5, 8, first, second, size
     paddd      m3, m4
     movd      eax, m3
     psrlq      m3, 32
-    movd       r4, m3
+    movd      r4d, m3
     add       eax, r4d
     RET
 
@@ -135,7 +135,7 @@ cglobal pullup_filter_comb, 3, 5, 8, first, second, size
     paddd      m5, m6
     movd      eax, m5
     psrlq      m5, 32
-    movd       r4, m5
+    movd      r4d, m5
     add       eax, r4d
     RET
 
@@ -172,7 +172,7 @@ cglobal pullup_filter_var, 3, 5, 8, first, second, size
     paddd      m3, m4
     movd      eax, m3
     psrlq      m3, 32
-    movd       r4, m3
+    movd      r4d, m3
     add       eax, r4d
     shl       eax, 2
     RET
