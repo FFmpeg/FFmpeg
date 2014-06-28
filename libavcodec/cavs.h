@@ -242,6 +242,7 @@ typedef struct AVSContext {
     int16_t *block;
 } AVSContext;
 
+extern const uint8_t     ff_cavs_chroma_qp[64];
 extern const uint8_t     ff_cavs_partition_flags[30];
 extern const cavs_vector ff_cavs_intra_mv;
 extern const cavs_vector ff_cavs_dir_mv;
