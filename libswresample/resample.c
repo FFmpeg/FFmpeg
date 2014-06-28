@@ -297,10 +297,14 @@ static int swri_resample(ResampleContext *c,
         int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
 
         dst_size = FFMIN(dst_size, delta_n);
-        if (!c->linear) {
-            *consumed = c->dsp.resample_common[fn_idx](c, dst, src, dst_size, update_ctx);
+        if (dst_size > 0) {
+            if (!c->linear) {
+                *consumed = c->dsp.resample_common[fn_idx](c, dst, src, dst_size, update_ctx);
+            } else {
+                *consumed = c->dsp.resample_linear[fn_idx](c, dst, src, dst_size, update_ctx);
+            }
         } else {
-            *consumed = c->dsp.resample_linear[fn_idx](c, dst, src, dst_size, update_ctx);
+            *consumed = 0;
         }
     }
 
