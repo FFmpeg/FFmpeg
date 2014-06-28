@@ -73,15 +73,16 @@ static inline int get_bs(cavs_vector *mvP, cavs_vector *mvQ, int b)
 {
     if ((mvP->ref == REF_INTRA) || (mvQ->ref == REF_INTRA))
         return 2;
-    if ((abs(mvP->x - mvQ->x) >= 4) || (abs(mvP->y - mvQ->y) >= 4))
+    if((abs(mvP->x - mvQ->x) >= 4) ||
+       (abs(mvP->y - mvQ->y) >= 4) ||
+       (mvP->ref != mvQ->ref))
         return 1;
     if (b) {
         mvP += MV_BWD_OFFS;
         mvQ += MV_BWD_OFFS;
-        if ((abs(mvP->x - mvQ->x) >= 4) || (abs(mvP->y - mvQ->y) >= 4))
-            return 1;
-    } else {
-        if (mvP->ref != mvQ->ref)
+        if((abs(mvP->x - mvQ->x) >= 4) ||
+           (abs(mvP->y - mvQ->y) >= 4) ||
+           (mvP->ref != mvQ->ref))
             return 1;
     }
     return 0;
@@ -147,6 +148,8 @@ void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type)
                 qp_avg = (h->qp + h->left_qp + 1) >> 1;
                 SET_PARAMS;
                 h->cdsp.cavs_filter_lv(h->cy, h->l_stride, alpha, beta, tc, bs[0], bs[1]);
+                qp_avg = (ff_cavs_chroma_qp[h->qp] + ff_cavs_chroma_qp[h->left_qp] + 1) >> 1;
+                SET_PARAMS;
                 h->cdsp.cavs_filter_cv(h->cu, h->c_stride, alpha, beta, tc, bs[0], bs[1]);
                 h->cdsp.cavs_filter_cv(h->cv, h->c_stride, alpha, beta, tc, bs[0], bs[1]);
             }
@@ -159,6 +162,8 @@ void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type)
                 qp_avg = (h->qp + h->top_qp[h->mbx] + 1) >> 1;
                 SET_PARAMS;
                 h->cdsp.cavs_filter_lh(h->cy, h->l_stride, alpha, beta, tc, bs[4], bs[5]);
+                qp_avg = (ff_cavs_chroma_qp[h->qp] + ff_cavs_chroma_qp[h->top_qp[h->mbx]] + 1) >> 1;
+                SET_PARAMS;
                 h->cdsp.cavs_filter_ch(h->cu, h->c_stride, alpha, beta, tc, bs[4], bs[5]);
                 h->cdsp.cavs_filter_ch(h->cv, h->c_stride, alpha, beta, tc, bs[4], bs[5]);
             }
@@ -232,9 +237,14 @@ void ff_cavs_load_intra_pred_chroma(AVSContext *h)
     /* extend borders by one pixel */
     h->left_border_u[9]              = h->left_border_u[8];
     h->left_border_v[9]              = h->left_border_v[8];
-    h->top_border_u[h->mbx * 10 + 9] = h->top_border_u[h->mbx * 10 + 8];
-    h->top_border_v[h->mbx * 10 + 9] = h->top_border_v[h->mbx * 10 + 8];
-    if (h->mbx && h->mby) {
+    if(h->flags & C_AVAIL) {
+        h->top_border_u[h->mbx*10 + 9] = h->top_border_u[h->mbx*10 + 11];
+        h->top_border_v[h->mbx*10 + 9] = h->top_border_v[h->mbx*10 + 11];
+    } else {
+        h->top_border_u[h->mbx * 10 + 9] = h->top_border_u[h->mbx * 10 + 8];
+        h->top_border_v[h->mbx * 10 + 9] = h->top_border_v[h->mbx * 10 + 8];
+    }
+    if((h->flags & A_AVAIL) && (h->flags & B_AVAIL)) {
         h->top_border_u[h->mbx * 10] = h->left_border_u[0] = h->topleft_border_u;
         h->top_border_v[h->mbx * 10] = h->left_border_v[0] = h->topleft_border_v;
     } else {
