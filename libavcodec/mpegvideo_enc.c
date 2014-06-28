@@ -2032,18 +2032,18 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                                  16, 16, mb_x * 16, mb_y * 16,
                                  s->width, s->height);
         ptr_y = ebuf;
-        s->vdsp.emulated_edge_mc(ebuf + 18 * wrap_y, ptr_cb,
+        s->vdsp.emulated_edge_mc(ebuf + 16 * wrap_y, ptr_cb,
                                  wrap_c, wrap_c,
                                  mb_block_width, mb_block_height,
                                  mb_x * mb_block_width, mb_y * mb_block_height,
                                  cw, ch);
-        ptr_cb = ebuf + 18 * wrap_y;
-        s->vdsp.emulated_edge_mc(ebuf + 18 * wrap_y + 16, ptr_cr,
+        ptr_cb = ebuf + 16 * wrap_y;
+        s->vdsp.emulated_edge_mc(ebuf + 16 * wrap_y + 16, ptr_cr,
                                  wrap_c, wrap_c,
                                  mb_block_width, mb_block_height,
                                  mb_x * mb_block_width, mb_y * mb_block_height,
                                  cw, ch);
-        ptr_cr = ebuf + 18 * wrap_y + 16;
+        ptr_cr = ebuf + 16 * wrap_y + 16;
     }
 
     if (s->mb_intra) {
