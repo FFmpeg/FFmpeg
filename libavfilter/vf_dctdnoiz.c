@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Clément Bœsch
+ * Copyright (c) 2013-2014 Clément Bœsch
  *
  * This file is part of FFmpeg.
  *
@@ -20,10 +20,14 @@
 
 /**
  * A simple, relatively efficient and extremely slow DCT image denoiser.
+ *
  * @see http://www.ipol.im/pub/art/2011/ys-dct/
+ *
+ * The DCT factorization used is based on "Fast and numerically stable
+ * algorithms for discrete cosine transforms" from Gerlind Plonkaa & Manfred
+ * Tasche (DOI: 10.1016/j.laa.2004.07.015).
  */
 
-#include "libavcodec/avfft.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "drawutils.h"
@@ -35,7 +39,7 @@
 static const char *const var_names[] = { "c", NULL };
 enum { VAR_C, VAR_VARS_NB };
 
-typedef struct {
+typedef struct DCTdnoizContext {
     const AVClass *class;
 
     /* coefficient factor expression */
@@ -52,8 +56,9 @@ typedef struct {
     int p_linesize;             // line sizes for color and weights
     int overlap;                // number of block overlapping pixels
     int step;                   // block step increment (BSIZE - overlap)
-    DCTContext *dct, *idct;     // DCT and inverse DCT contexts
-    float *block, *tmp_block;   // two BSIZE x BSIZE block buffers
+    void (*filter_freq_func)(struct DCTdnoizContext *s,
+                             const float *src, int src_linesize,
+                             float *dst, int dst_linesize);
 } DCTdnoizContext;
 
 #define OFFSET(x) offsetof(DCTdnoizContext, x)
@@ -69,66 +74,230 @@ static const AVOption dctdnoiz_options[] = {
 
 AVFILTER_DEFINE_CLASS(dctdnoiz);
 
-static float *dct_block(DCTdnoizContext *ctx, const float *src, int src_linesize)
+static void av_always_inline fdct16_1d(float *dst, const float *src,
+                                       int dst_stridea, int dst_strideb,
+                                       int src_stridea, int src_strideb)
 {
-    int x, y;
-    float *column;
+    int i;
 
-    for (y = 0; y < BSIZE; y++) {
-        float *line = ctx->block;
+    for (i = 0; i < BSIZE; i++) {
+        const float x00 = src[ 0*src_stridea] + src[15*src_stridea];
+        const float x01 = src[ 1*src_stridea] + src[14*src_stridea];
+        const float x02 = src[ 2*src_stridea] + src[13*src_stridea];
+        const float x03 = src[ 3*src_stridea] + src[12*src_stridea];
+        const float x04 = src[ 4*src_stridea] + src[11*src_stridea];
+        const float x05 = src[ 5*src_stridea] + src[10*src_stridea];
+        const float x06 = src[ 6*src_stridea] + src[ 9*src_stridea];
+        const float x07 = src[ 7*src_stridea] + src[ 8*src_stridea];
+        const float x08 = src[ 0*src_stridea] - src[15*src_stridea];
+        const float x09 = src[ 1*src_stridea] - src[14*src_stridea];
+        const float x0a = src[ 2*src_stridea] - src[13*src_stridea];
+        const float x0b = src[ 3*src_stridea] - src[12*src_stridea];
+        const float x0c = src[ 4*src_stridea] - src[11*src_stridea];
+        const float x0d = src[ 5*src_stridea] - src[10*src_stridea];
+        const float x0e = src[ 6*src_stridea] - src[ 9*src_stridea];
+        const float x0f = src[ 7*src_stridea] - src[ 8*src_stridea];
+        const float x10 = x00 + x07;
+        const float x11 = x01 + x06;
+        const float x12 = x02 + x05;
+        const float x13 = x03 + x04;
+        const float x14 = x00 - x07;
+        const float x15 = x01 - x06;
+        const float x16 = x02 - x05;
+        const float x17 = x03 - x04;
+        const float x18 = x10 + x13;
+        const float x19 = x11 + x12;
+        const float x1a = x10 - x13;
+        const float x1b = x11 - x12;
+        const float x1c = 1.38703984532215*x14 + 0.275899379282943*x17;
+        const float x1d = 1.17587560241936*x15 + 0.785694958387102*x16;
+        const float x1e = -0.785694958387102*x15 + 1.17587560241936*x16;
+        const float x1f = 0.275899379282943*x14 - 1.38703984532215*x17;
+        const float x20 = 0.25 * (x1c - x1d);
+        const float x21 = 0.25 * (x1e - x1f);
+        const float x22 = 1.40740373752638*x08 + 0.138617169199091*x0f;
+        const float x23 = 1.35331800117435*x09 + 0.410524527522357*x0e;
+        const float x24 = 1.24722501298667*x0a + 0.666655658477747*x0d;
+        const float x25 = 1.09320186700176*x0b + 0.897167586342636*x0c;
+        const float x26 = -0.897167586342636*x0b + 1.09320186700176*x0c;
+        const float x27 = 0.666655658477747*x0a - 1.24722501298667*x0d;
+        const float x28 = -0.410524527522357*x09 + 1.35331800117435*x0e;
+        const float x29 = 0.138617169199091*x08 - 1.40740373752638*x0f;
+        const float x2a = x22 + x25;
+        const float x2b = x23 + x24;
+        const float x2c = x22 - x25;
+        const float x2d = x23 - x24;
+        const float x2e = 0.25 * (x2a - x2b);
+        const float x2f = 0.326640741219094*x2c + 0.135299025036549*x2d;
+        const float x30 = 0.135299025036549*x2c - 0.326640741219094*x2d;
+        const float x31 = x26 + x29;
+        const float x32 = x27 + x28;
+        const float x33 = x26 - x29;
+        const float x34 = x27 - x28;
+        const float x35 = 0.25 * (x31 - x32);
+        const float x36 = 0.326640741219094*x33 + 0.135299025036549*x34;
+        const float x37 = 0.135299025036549*x33 - 0.326640741219094*x34;
+        dst[ 0*dst_stridea] = 0.25 * (x18 + x19);
+        dst[ 1*dst_stridea] = 0.25 * (x2a + x2b);
+        dst[ 2*dst_stridea] = 0.25 * (x1c + x1d);
+        dst[ 3*dst_stridea] = 0.707106781186547 * (x2f - x37);
+        dst[ 4*dst_stridea] = 0.326640741219094*x1a + 0.135299025036549*x1b;
+        dst[ 5*dst_stridea] = 0.707106781186547 * (x2f + x37);
+        dst[ 6*dst_stridea] = 0.707106781186547 * (x20 - x21);
+        dst[ 7*dst_stridea] = 0.707106781186547 * (x2e + x35);
+        dst[ 8*dst_stridea] = 0.25 * (x18 - x19);
+        dst[ 9*dst_stridea] = 0.707106781186547 * (x2e - x35);
+        dst[10*dst_stridea] = 0.707106781186547 * (x20 + x21);
+        dst[11*dst_stridea] = 0.707106781186547 * (x30 - x36);
+        dst[12*dst_stridea] = 0.135299025036549*x1a - 0.326640741219094*x1b;
+        dst[13*dst_stridea] = 0.707106781186547 * (x30 + x36);
+        dst[14*dst_stridea] = 0.25 * (x1e + x1f);
+        dst[15*dst_stridea] = 0.25 * (x31 + x32);
+        dst += dst_strideb;
+        src += src_strideb;
+    }
+}
 
-        memcpy(line, src, BSIZE * sizeof(*line));
-        src += src_linesize;
-        av_dct_calc(ctx->dct, line);
+static void av_always_inline idct16_1d(float *dst, const float *src,
+                                       int dst_stridea, int dst_strideb,
+                                       int src_stridea, int src_strideb,
+                                       int add)
+{
+    int i;
 
-        column = ctx->tmp_block + y;
-        column[0] = line[0] * (1. / sqrt(BSIZE));
-        column += BSIZE;
-        for (x = 1; x < BSIZE; x++) {
-            *column = line[x] * sqrt(2. / BSIZE);
-            column += BSIZE;
+    for (i = 0; i < BSIZE; i++) {
+        const float x00 =  1.4142135623731  *src[ 0*src_stridea];
+        const float x01 =  1.40740373752638 *src[ 1*src_stridea] + 0.138617169199091*src[15*src_stridea];
+        const float x02 =  1.38703984532215 *src[ 2*src_stridea] + 0.275899379282943*src[14*src_stridea];
+        const float x03 =  1.35331800117435 *src[ 3*src_stridea] + 0.410524527522357*src[13*src_stridea];
+        const float x04 =  1.30656296487638 *src[ 4*src_stridea] + 0.541196100146197*src[12*src_stridea];
+        const float x05 =  1.24722501298667 *src[ 5*src_stridea] + 0.666655658477747*src[11*src_stridea];
+        const float x06 =  1.17587560241936 *src[ 6*src_stridea] + 0.785694958387102*src[10*src_stridea];
+        const float x07 =  1.09320186700176 *src[ 7*src_stridea] + 0.897167586342636*src[ 9*src_stridea];
+        const float x08 =  1.4142135623731  *src[ 8*src_stridea];
+        const float x09 = -0.897167586342636*src[ 7*src_stridea] + 1.09320186700176*src[ 9*src_stridea];
+        const float x0a =  0.785694958387102*src[ 6*src_stridea] - 1.17587560241936*src[10*src_stridea];
+        const float x0b = -0.666655658477747*src[ 5*src_stridea] + 1.24722501298667*src[11*src_stridea];
+        const float x0c =  0.541196100146197*src[ 4*src_stridea] - 1.30656296487638*src[12*src_stridea];
+        const float x0d = -0.410524527522357*src[ 3*src_stridea] + 1.35331800117435*src[13*src_stridea];
+        const float x0e =  0.275899379282943*src[ 2*src_stridea] - 1.38703984532215*src[14*src_stridea];
+        const float x0f = -0.138617169199091*src[ 1*src_stridea] + 1.40740373752638*src[15*src_stridea];
+        const float x12 = x00 + x08;
+        const float x13 = x01 + x07;
+        const float x14 = x02 + x06;
+        const float x15 = x03 + x05;
+        const float x16 = 1.4142135623731*x04;
+        const float x17 = x00 - x08;
+        const float x18 = x01 - x07;
+        const float x19 = x02 - x06;
+        const float x1a = x03 - x05;
+        const float x1d = x12 + x16;
+        const float x1e = x13 + x15;
+        const float x1f = 1.4142135623731*x14;
+        const float x20 = x12 - x16;
+        const float x21 = x13 - x15;
+        const float x22 = 0.25 * (x1d - x1f);
+        const float x23 = 0.25 * (x20 + x21);
+        const float x24 = 0.25 * (x20 - x21);
+        const float x25 = 1.4142135623731*x17;
+        const float x26 = 1.30656296487638*x18 + 0.541196100146197*x1a;
+        const float x27 = 1.4142135623731*x19;
+        const float x28 = -0.541196100146197*x18 + 1.30656296487638*x1a;
+        const float x29 = 0.176776695296637 * (x25 + x27) + 0.25*x26;
+        const float x2a = 0.25 * (x25 - x27);
+        const float x2b = 0.176776695296637 * (x25 + x27) - 0.25*x26;
+        const float x2c = 0.353553390593274*x28;
+        const float x1b = 0.707106781186547 * (x2a - x2c);
+        const float x1c = 0.707106781186547 * (x2a + x2c);
+        const float x2d = 1.4142135623731*x0c;
+        const float x2e = x0b + x0d;
+        const float x2f = x0a + x0e;
+        const float x30 = x09 + x0f;
+        const float x31 = x09 - x0f;
+        const float x32 = x0a - x0e;
+        const float x33 = x0b - x0d;
+        const float x37 = 1.4142135623731*x2d;
+        const float x38 = 1.30656296487638*x2e + 0.541196100146197*x30;
+        const float x39 = 1.4142135623731*x2f;
+        const float x3a = -0.541196100146197*x2e + 1.30656296487638*x30;
+        const float x3b = 0.176776695296637 * (x37 + x39) + 0.25*x38;
+        const float x3c = 0.25 * (x37 - x39);
+        const float x3d = 0.176776695296637 * (x37 + x39) - 0.25*x38;
+        const float x3e = 0.353553390593274*x3a;
+        const float x34 = 0.707106781186547 * (x3c - x3e);
+        const float x35 = 0.707106781186547 * (x3c + x3e);
+        const float x3f = 1.4142135623731*x32;
+        const float x40 = x31 + x33;
+        const float x41 = x31 - x33;
+        const float x42 = 0.25 * (x3f + x40);
+        const float x43 = 0.25 * (x3f - x40);
+        const float x44 = 0.353553390593274*x41;
+        const float x36 = -x43;
+        const float x10 = -x34;
+        const float x11 = -x3d;
+        dst[ 0*dst_stridea] = (add ? dst[ 0*dst_stridea] : 0) + 0.176776695296637 * (x1d + x1f) + 0.25*x1e;
+        dst[ 1*dst_stridea] = (add ? dst[ 1*dst_stridea] : 0) + 0.707106781186547 * (x29 - x11);
+        dst[ 2*dst_stridea] = (add ? dst[ 2*dst_stridea] : 0) + 0.707106781186547 * (x29 + x11);
+        dst[ 3*dst_stridea] = (add ? dst[ 3*dst_stridea] : 0) + 0.707106781186547 * (x23 + x36);
+        dst[ 4*dst_stridea] = (add ? dst[ 4*dst_stridea] : 0) + 0.707106781186547 * (x23 - x36);
+        dst[ 5*dst_stridea] = (add ? dst[ 5*dst_stridea] : 0) + 0.707106781186547 * (x1b - x35);
+        dst[ 6*dst_stridea] = (add ? dst[ 6*dst_stridea] : 0) + 0.707106781186547 * (x1b + x35);
+        dst[ 7*dst_stridea] = (add ? dst[ 7*dst_stridea] : 0) + 0.707106781186547 * (x22 + x44);
+        dst[ 8*dst_stridea] = (add ? dst[ 8*dst_stridea] : 0) + 0.707106781186547 * (x22 - x44);
+        dst[ 9*dst_stridea] = (add ? dst[ 9*dst_stridea] : 0) + 0.707106781186547 * (x1c - x10);
+        dst[10*dst_stridea] = (add ? dst[10*dst_stridea] : 0) + 0.707106781186547 * (x1c + x10);
+        dst[11*dst_stridea] = (add ? dst[11*dst_stridea] : 0) + 0.707106781186547 * (x24 + x42);
+        dst[12*dst_stridea] = (add ? dst[12*dst_stridea] : 0) + 0.707106781186547 * (x24 - x42);
+        dst[13*dst_stridea] = (add ? dst[13*dst_stridea] : 0) + 0.707106781186547 * (x2b - x3b);
+        dst[14*dst_stridea] = (add ? dst[14*dst_stridea] : 0) + 0.707106781186547 * (x2b + x3b);
+        dst[15*dst_stridea] = (add ? dst[15*dst_stridea] : 0) + 0.176776695296637 * (x1d + x1f) - 0.25*x1e;
+        dst += dst_strideb;
+        src += src_strideb;
+    }
+}
+
+static av_always_inline void filter_freq(const float *src, int src_linesize,
+                                         float *dst, int dst_linesize,
+                                         AVExpr *expr, double *var_values,
+                                         int sigma_th)
+{
+    unsigned i;
+    DECLARE_ALIGNED(32, float, tmp_block1)[BSIZE * BSIZE];
+    DECLARE_ALIGNED(32, float, tmp_block2)[BSIZE * BSIZE];
+
+    /* forward DCT */
+    fdct16_1d(tmp_block1, src, 1, BSIZE, 1, src_linesize);
+    fdct16_1d(tmp_block2, tmp_block1, BSIZE, 1, BSIZE, 1);
+
+    for (i = 0; i < BSIZE*BSIZE; i++) {
+        float *b = &tmp_block2[i];
+        /* frequency filtering */
+        if (expr) {
+            var_values[VAR_C] = FFABS(*b);
+            *b *= av_expr_eval(expr, var_values, NULL);
+        } else {
+            if (FFABS(*b) < sigma_th)
+                *b = 0;
         }
     }
 
-    column = ctx->tmp_block;
-    for (x = 0; x < BSIZE; x++) {
-        av_dct_calc(ctx->dct, column);
-        column[0] *= 1. / sqrt(BSIZE);
-        for (y = 1; y < BSIZE; y++)
-            column[y] *= sqrt(2. / BSIZE);
-        column += BSIZE;
-    }
-
-    for (y = 0; y < BSIZE; y++)
-        for (x = 0; x < BSIZE; x++)
-            ctx->block[y*BSIZE + x] = ctx->tmp_block[x*BSIZE + y];
-
-    return ctx->block;
+    /* inverse DCT */
+    idct16_1d(tmp_block1, tmp_block2, 1, BSIZE, 1, BSIZE, 0);
+    idct16_1d(dst, tmp_block1, dst_linesize, 1, BSIZE, 1, 1);
 }
 
-static void idct_block(DCTdnoizContext *ctx, float *dst, int dst_linesize)
+static void filter_freq_sigma(DCTdnoizContext *s,
+                              const float *src, int src_linesize,
+                              float *dst, int dst_linesize)
 {
-    int x, y;
-    float *block = ctx->block;
-    float *tmp = ctx->tmp_block;
+    filter_freq(src, src_linesize, dst, dst_linesize, NULL, NULL, s->th);
+}
 
-    for (y = 0; y < BSIZE; y++) {
-        block[0] *= sqrt(BSIZE);
-        for (x = 1; x < BSIZE; x++)
-            block[x] *= 1./sqrt(2. / BSIZE);
-        av_dct_calc(ctx->idct, block);
-        block += BSIZE;
-    }
-
-    block = ctx->block;
-    for (y = 0; y < BSIZE; y++) {
-        tmp[0] = block[y] * sqrt(BSIZE);
-        for (x = 1; x < BSIZE; x++)
-            tmp[x] = block[x*BSIZE + y] * (1./sqrt(2. / BSIZE));
-        av_dct_calc(ctx->idct, tmp);
-        for (x = 0; x < BSIZE; x++)
-            dst[x*dst_linesize + y] += tmp[x];
-    }
+static void filter_freq_expr(DCTdnoizContext *s,
+                             const float *src, int src_linesize,
+                             float *dst, int dst_linesize)
+{
+    filter_freq(src, src_linesize, dst, dst_linesize, s->expr, s->var_values, 0);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -194,18 +363,13 @@ static av_cold int init(AVFilterContext *ctx)
                                 NULL, NULL, NULL, NULL, 0, ctx);
         if (ret < 0)
             return ret;
+        s->filter_freq_func = filter_freq_expr;
+    } else {
+        s->filter_freq_func = filter_freq_sigma;
     }
 
     s->th   = s->sigma * 3.;
     s->step = BSIZE - s->overlap;
-    s->dct  = av_dct_init(NBITS, DCT_II);
-    s->idct = av_dct_init(NBITS, DCT_III);
-    s->block     = av_malloc(BSIZE * BSIZE * sizeof(*s->block));
-    s->tmp_block = av_malloc(BSIZE * BSIZE * sizeof(*s->tmp_block));
-
-    if (!s->dct || !s->idct || !s->tmp_block || !s->block)
-        return AVERROR(ENOMEM);
-
     return 0;
 }
 
@@ -272,7 +436,7 @@ static void filter_plane(AVFilterContext *ctx,
                          const float *src, int src_linesize,
                          int w, int h)
 {
-    int x, y, bx, by;
+    int x, y;
     DCTdnoizContext *s = ctx->priv;
     float *dst0 = dst;
     const float *weights = s->weights;
@@ -282,27 +446,9 @@ static void filter_plane(AVFilterContext *ctx,
 
     // block dct sums
     for (y = 0; y < h - BSIZE + 1; y += s->step) {
-        for (x = 0; x < w - BSIZE + 1; x += s->step) {
-            float *ftb = dct_block(s, src + x, src_linesize);
-
-            if (s->expr) {
-                for (by = 0; by < BSIZE; by++) {
-                    for (bx = 0; bx < BSIZE; bx++) {
-                        s->var_values[VAR_C] = FFABS(*ftb);
-                        *ftb++ *= av_expr_eval(s->expr, s->var_values, s);
-                    }
-                }
-            } else {
-                for (by = 0; by < BSIZE; by++) {
-                    for (bx = 0; bx < BSIZE; bx++) {
-                        if (FFABS(*ftb) < s->th)
-                            *ftb = 0;
-                        ftb++;
-                    }
-                }
-            }
-            idct_block(s, dst + x, dst_linesize);
-        }
+        for (x = 0; x < w - BSIZE + 1; x += s->step)
+            s->filter_freq_func(s, src + x, src_linesize,
+                                   dst + x, dst_linesize);
         src += s->step * src_linesize;
         dst += s->step * dst_linesize;
     }
@@ -388,10 +534,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
     DCTdnoizContext *s = ctx->priv;
 
-    av_dct_end(s->dct);
-    av_dct_end(s->idct);
-    av_free(s->block);
-    av_free(s->tmp_block);
     av_free(s->weights);
     for (i = 0; i < 2; i++) {
         av_free(s->cbuf[i][0]);
