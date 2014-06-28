@@ -1,6 +1,7 @@
 YASM-OBJS                       += x86/swresample_x86.o\
                                    x86/audio_convert.o\
                                    x86/rematrix.o\
+                                   x86/resample.o\
 
 OBJS                            += x86/resample_x86_dsp.o\
 

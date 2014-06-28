@@ -4460,8 +4460,7 @@ EOF
     check_inline_asm inline_asm_direct_symbol_refs '"movl '$extern_prefix'test, %eax"' ||
         check_inline_asm inline_asm_direct_symbol_refs '"movl '$extern_prefix'test(%rip), %eax"'
 
-    # check whether binutils is new enough to compile AVX/SSSE3/MMXEXT
-    enabled avx    && check_inline_asm avx_inline    '"vextractf128 $1, %ymm0, %xmm1"'
+    # check whether binutils is new enough to compile SSSE3/MMXEXT
     enabled ssse3  && check_inline_asm ssse3_inline  '"pabsw %xmm0, %xmm0"'
     enabled mmxext && check_inline_asm mmxext_inline '"pmaxub %mm0, %mm1"'
 

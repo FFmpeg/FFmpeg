@@ -43,9 +43,7 @@
 #        define RENAME(N) N ## _double_sse2
 #    endif
 
-#elif    defined(TEMPLATE_RESAMPLE_FLT)     \
-      || defined(TEMPLATE_RESAMPLE_FLT_SSE) \
-      || defined(TEMPLATE_RESAMPLE_FLT_AVX)
+#elif    defined(TEMPLATE_RESAMPLE_FLT)
 
 #    define FILTER_SHIFT 0
 #    define DELEM  float
@@ -56,14 +54,6 @@
 
 #    if defined(TEMPLATE_RESAMPLE_FLT)
 #        define RENAME(N) N ## _float
-#    elif defined(TEMPLATE_RESAMPLE_FLT_SSE)
-#        define COMMON_CORE COMMON_CORE_FLT_SSE
-#        define LINEAR_CORE LINEAR_CORE_FLT_SSE
-#        define RENAME(N) N ## _float_sse
-#    elif defined(TEMPLATE_RESAMPLE_FLT_AVX)
-#        define COMMON_CORE COMMON_CORE_FLT_AVX
-#        define LINEAR_CORE LINEAR_CORE_FLT_AVX
-#        define RENAME(N) N ## _float_avx
 #    endif
 
 #elif defined(TEMPLATE_RESAMPLE_S32)
