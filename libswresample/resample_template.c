@@ -32,7 +32,6 @@
 #    define DELEM  double
 #    define FELEM  double
 #    define FELEM2 double
-#    define FELEML double
 #    define OUT(d, v) d = v
 
 #    if defined(TEMPLATE_RESAMPLE_DBL)
@@ -49,7 +48,6 @@
 #    define DELEM  float
 #    define FELEM  float
 #    define FELEM2 float
-#    define FELEML float
 #    define OUT(d, v) d = v
 
 #    if defined(TEMPLATE_RESAMPLE_FLT)
@@ -158,6 +156,9 @@ int RENAME(swri_resample_linear)(ResampleContext *c,
     int index= c->index;
     int frac= c->frac;
     int sample_index = index >> c->phase_shift;
+#if FILTER_SHIFT == 0
+    double inv_src_incr = 1.0 / c->src_incr;
+#endif
 
     index &= c->phase_mask;
     for (dst_index = 0; dst_index < n; dst_index++) {
@@ -176,7 +177,11 @@ int RENAME(swri_resample_linear)(ResampleContext *c,
 #ifdef FELEML
         val += (v2 - val) * (FELEML) frac / c->src_incr;
 #else
+#    if FILTER_SHIFT == 0
+        val += (v2 - val) * inv_src_incr * frac;
+#    else
         val += (v2 - val) / c->src_incr * frac;
+#    endif
 #endif
         OUT(dst[dst_index], val);
 
