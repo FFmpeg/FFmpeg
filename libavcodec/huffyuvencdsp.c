@@ -30,7 +30,7 @@ static void diff_bytes_c(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
     long i;
 
 #if !HAVE_FAST_UNALIGNED
-    if ((long) src2 & (sizeof(long) - 1)) {
+    if (((long)src1 | (long)src2) & (sizeof(long) - 1)) {
         for (i = 0; i + 7 < w; i += 8) {
             dst[i + 0] = src1[i + 0] - src2[i + 0];
             dst[i + 1] = src1[i + 1] - src2[i + 1];
