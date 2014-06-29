@@ -641,11 +641,10 @@ cd $(ProjectDir)\n\
     {
         //Add to Additional Dependencies
         string asLibLink2[2] = { "<Lib>", "<Link>" };
-        string asExt[2] = { ".lib", ".dll.lib" };
         for( uint uiI=0; uiI<2; uiI++ )
         {
             //The additional dependency should be within the Link/Lib section
-            string sAdditional;
+            string sAdditional[2]; //debug, release
             //Add each dependency to the list
             for( StaticList::iterator vitLib=m_vLibs.begin(); vitLib<m_vLibs.end(); vitLib++ )
             {
@@ -667,25 +666,38 @@ cd $(ProjectDir)\n\
                     }
                 }
 
-                sAdditional += *vitLib;
-                sAdditional += asExt[uiI];
-                sAdditional += ";";
+                sAdditional[0] += *vitLib;
+                sAdditional[0] += "d.lib;";
+                sAdditional[1] += *vitLib;
+                sAdditional[1] += ".lib;";
             }
             //Add each additional lib to the list
             for( StaticList::iterator vitLib=vAddLibs.begin(); vitLib<vAddLibs.end(); vitLib++ )
             {
-                sAdditional += *vitLib;
-                sAdditional += ".lib;";
+                sAdditional[0] += *vitLib;
+                sAdditional[0] += ".lib;";
+                sAdditional[1] += *vitLib;
+                sAdditional[1] += ".lib;";
             }
             uiFindPos = sProjectFile.find( asLibLink2[uiI] );
-            while( uiFindPos != string::npos )
+            //loop over each debug/release sequence
+            for( uint uiJ = 0; uiJ < 2; uiJ++ )
             {
-                uiFindPos = sProjectFile.find( "%(AdditionalDependencies)", uiFindPos );
-                //Add to output
-                sProjectFile.insert( uiFindPos, sAdditional );
-                uiFindPos += sAdditional.length( );
-                //Get next
-                uiFindPos = sProjectFile.find( asLibLink2[uiI], uiFindPos+1 );
+                uint uiMax = ( ( uiJ == 0 ) && ( uiI == 0 ) )? 2 : 4; //No LTO option in debug
+                for( uint uiK = 0; uiK < uiMax; uiK++ )
+                {
+                    uiFindPos = sProjectFile.find( "%(AdditionalDependencies)", uiFindPos );
+                    if( uiFindPos == string::npos )
+                    {
+                        cout << "  Error: Failed finding dependencies in template." << endl;
+                        return false;
+                    }
+                    //Add to output
+                    sProjectFile.insert( uiFindPos, sAdditional[uiJ] );
+                    uiFindPos += sAdditional[uiJ].length( );
+                    //Get next
+                    uiFindPos = sProjectFile.find( asLibLink2[uiI], uiFindPos + 1 );
+                }
             }
         }
     }
@@ -1173,37 +1185,32 @@ bool projectGenerator::outputSolution()
             sProgramFiltersFile.insert( uiFindPosFilt, sHFilesFilt );
             uiFindPosFilt += sHFilesFilt.length( );
             //Add the required lib dependencies
-            string sDeps[4]; //staticd, sharedd, static, shared
+            string sDeps[2]; //debug, release
             map<string, StaticList>::iterator mitLibraries = m_mProjectLibs.begin( );
             while( mitLibraries != m_mProjectLibs.end( ) )
             {
                 sDeps[0] += mitLibraries->first;
                 sDeps[0] += "d.lib;";
                 sDeps[1] += mitLibraries->first;
-                sDeps[1] += "d.dll.lib;";
-                sDeps[2] += mitLibraries->first;
-                sDeps[2] += ".lib;";
-                sDeps[3] += mitLibraries->first;
-                sDeps[3] += ".dll.lib;";
+                sDeps[1] += ".lib;";
                 mitLibraries++;
             }
             for( vector<string>::iterator vitDeps = vLibs.begin( ); vitDeps < vLibs.end( ); vitDeps++ )
             {
                 sDeps[0] += *vitDeps + ";";
                 sDeps[1] += *vitDeps + ";";
-                sDeps[2] += *vitDeps + ";";
-                sDeps[3] += *vitDeps + ";";
             }
             const string sAddDeps = "%(AdditionalDependencies)";
             uiFindPos = sProgramFile.find( sAddDeps );
-            for( uint uDepPos = 0; uDepPos < 4; uDepPos++ )
+            //loop over debug, release
+            for( uint uDepPos = 0; uDepPos < 2; uDepPos++ )
             {
-                //Do each Win32/x64 project pair
-                for( uint uI = 0; uI < 2; uI++ )
+                //loop over static, shared in win32/x64
+                for( uint uI = 0; uI < 4; uI++ )
                 {
                     if( uiFindPos == string::npos )
                     {
-                        cout << "  Error: Failed finding dependencies in program filters template." << endl;
+                        cout << "  Error: Failed finding dependencies in program template." << endl;
                         return false;
                     }
                     //Add to output
@@ -1296,7 +1303,6 @@ bool projectGenerator::outputSolution()
             sProjectAdd += sProjectEnd;
 
             //Add the key to the used key list
-            vAddedKeys.push_back( mProgramKeys[mitPrograms->first] );
             vAddedPrograms.push_back( mProgramKeys[mitPrograms->first] );
 
             //Add the dependencies
@@ -1350,19 +1356,20 @@ bool projectGenerator::outputSolution()
     string sConfigPlatform = "\n		{";
     string sConfigPlatform2 = "}.";
     string sConfigPlatform3 = "|";
-    string sDebugWin32Build = "}.Debug|Win32.Build.0 = Debug|Win32";
-    string sDebugx64 = "}.Debug|x64.ActiveCfg = Debug|x64";
-    string sDebugx64Build = "}.Debug|x64.Build.0 = Debug|x64";
-    string aBuildConfigs[4] = { "Debug", "DebugDLL", "Release", "ReleaseDLL" };
+    string aBuildConfigs[7] = { "Debug", "DebugDLL", "DebugDLLSharedDeps", "Release", "ReleaseDLL", "ReleaseDLLSharedDeps", "ReleaseLTO" };
     string aBuildArchs[2] = { "Win32", "x64" };
     string aBuildTypes[2] = { ".ActiveCfg = ", ".Build.0 = " };
     string sAddPlatform;
+    //Add the lib keys
     for( vector<string>::iterator vitIt=vAddedKeys.begin(); vitIt<vAddedKeys.end(); vitIt++ )
     {
-        for( uint uiI=0; uiI<4; uiI++ )
+        //loop over build configs
+        for( uint uiI=0; uiI<7; uiI++ )
         {
+            //loop over build archs
             for( uint uiJ=0; uiJ<2; uiJ++ )
             {
+                //loop over build types
                 for( uint uiK=0; uiK<2; uiK++ )
                 {
                     sAddPlatform += sConfigPlatform;
@@ -1373,6 +1380,44 @@ bool projectGenerator::outputSolution()
                     sAddPlatform += aBuildArchs[uiJ];
                     sAddPlatform += aBuildTypes[uiK];
                     sAddPlatform += aBuildConfigs[uiI];
+                    sAddPlatform += sConfigPlatform3;
+                    sAddPlatform += aBuildArchs[uiJ];
+                }
+            }
+        }
+    }
+    //Add the program keys
+    for( vector<string>::iterator vitIt = vAddedPrograms.begin( ); vitIt < vAddedPrograms.end( ); vitIt++ )
+    {
+        //loop over build configs
+        for( uint uiI=0; uiI<7; uiI++ )
+        {
+            //loop over build archs
+            for( uint uiJ=0; uiJ<2; uiJ++ )
+            {
+                //loop over build types
+                for( uint uiK=0; uiK<2; uiK++ )
+                {
+                    sAddPlatform += sConfigPlatform;
+                    sAddPlatform += *vitIt;
+                    sAddPlatform += sConfigPlatform2;
+                    sAddPlatform += aBuildConfigs[uiI];
+                    sAddPlatform += sConfigPlatform3;
+                    sAddPlatform += aBuildArchs[uiJ];
+                    sAddPlatform += aBuildTypes[uiK];
+                    //there is no program lto build so use release instead
+                    if( uiI == 2 )
+                    {
+                        sAddPlatform += aBuildConfigs[1];
+                    }
+                    else if( uiI == 5 )
+                    {
+                        sAddPlatform += aBuildConfigs[4];
+                    }
+                    else
+                    {
+                        sAddPlatform += aBuildConfigs[uiI];
+                    }
                     sAddPlatform += sConfigPlatform3;
                     sAddPlatform += aBuildArchs[uiJ];
                 }
