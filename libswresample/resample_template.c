@@ -62,7 +62,6 @@
 #    define DELEM  int32_t
 #    define FELEM  int32_t
 #    define FELEM2 int64_t
-#    define FELEML int64_t
 #    define FELEM_MAX INT32_MAX
 #    define FELEM_MIN INT32_MIN
 #    define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
@@ -174,7 +173,11 @@ int RENAME(swri_resample_linear)(ResampleContext *c,
             v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_alloc];
         }
 #endif
+#ifdef FELEML
         val += (v2 - val) * (FELEML) frac / c->src_incr;
+#else
+        val += (v2 - val) / c->src_incr * frac;
+#endif
         OUT(dst[dst_index], val);
 
         frac += c->dst_incr_mod;
