@@ -3142,6 +3142,7 @@ icl_flags(){
             # on Windows, does enable remarks so disable them here.
             -Wall)                echo $flag -Qdiag-disable:remark ;;
             -std=c99)             echo -Qstd=c99 ;;
+            -flto)                echo -ipo ;;
         esac
     done
 }
