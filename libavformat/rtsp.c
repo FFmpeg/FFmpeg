@@ -658,7 +658,7 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
         av_free(s1->default_exclude_source_addrs[i]);
     av_freep(&s1->default_exclude_source_addrs);
 
-    rt->p = av_malloc(sizeof(struct pollfd)*2*(rt->nb_rtsp_streams+1));
+    rt->p = av_malloc_array(rt->nb_rtsp_streams + 1, sizeof(struct pollfd) * 2);
     if (!rt->p) return AVERROR(ENOMEM);
     return 0;
 }
