@@ -176,8 +176,7 @@ cglobal resample_common_%1, 1, 7, 2, ctx, phase_shift, dst, frac, \
 .inner_loop:
     movu                          m1, [srcq+min_filter_count_x4q*1]
 %ifidn %1, int16
-    pmaddwd                       m1, [filterq+min_filter_count_x4q*1]
-    paddd                         m0, m1
+    PMADCSWD                      m0, m1, [filterq+min_filter_count_x4q*1], m0, m1
 %else ; float/double
 %if cpuflag(fma4) || cpuflag(fma3)
     fmaddp%4                      m0, m1, [filterq+min_filter_count_x4q*1], m0
@@ -190,14 +189,7 @@ cglobal resample_common_%1, 1, 7, 2, ctx, phase_shift, dst, frac, \
     js .inner_loop
 
 %ifidn %1, int16
-%if mmsize == 16
-    pshufd                        m1, m0, q0032
-    paddd                         m0, m1
-    pshufd                        m1, m0, q0001
-%else ; mmsize == 8
-    pshufw                        m1, m0, q0032
-%endif
-    paddd                         m0, m1
+    HADDD                         m0, m1
     psrad                         m0, 15
     add                        fracd, dst_incr_modd
     packssdw                      m0, m0
@@ -427,10 +419,15 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
 .inner_loop:
     movu                          m1, [srcq+min_filter_count_x4q*1]
 %ifidn %1, int16
+%if cpuflag(xop)
+    vpmadcswd                     m2, m1, [filter2q+min_filter_count_x4q*1], m2
+    vpmadcswd                     m0, m1, [filter1q+min_filter_count_x4q*1], m0
+%else
     pmaddwd                       m3, m1, [filter2q+min_filter_count_x4q*1]
     pmaddwd                       m1, [filter1q+min_filter_count_x4q*1]
     paddd                         m2, m3
     paddd                         m0, m1
+%endif ; cpuflag
 %else ; float/double
 %if cpuflag(fma4) || cpuflag(fma3)
     fmaddp%4                      m2, m1, [filter2q+min_filter_count_x4q*1], m2
@@ -447,18 +444,21 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
 
 %ifidn %1, int16
 %if mmsize == 16
+%if cpuflag(xop)
+    vphadddq                      m2, m2
+    vphadddq                      m0, m0
+%endif
     pshufd                        m3, m2, q0032
     pshufd                        m1, m0, q0032
     paddd                         m2, m3
     paddd                         m0, m1
-    pshufd                        m3, m2, q0001
-    pshufd                        m1, m0, q0001
-%else ; mmsize == 8
-    pshufw                        m3, m2, q0032
-    pshufw                        m1, m0, q0032
 %endif
+%if notcpuflag(xop)
+    PSHUFLW                       m3, m2, q0032
+    PSHUFLW                       m1, m0, q0032
     paddd                         m2, m3
     paddd                         m0, m1
+%endif
     psubd                         m2, m0
     ; This is probably a really bad idea on atom and other machines with a
     ; long transfer latency between GPRs and XMMs (atom). However, it does
@@ -591,4 +591,10 @@ RESAMPLE_FNS int16, 2, 1
 
 INIT_XMM sse2
 RESAMPLE_FNS int16, 2, 1
+%if HAVE_XOP_EXTERNAL
+INIT_XMM xop
+RESAMPLE_FNS int16, 2, 1
+%endif
+
+INIT_XMM sse2
 RESAMPLE_FNS double, 8, 3, d, pdbl_1

@@ -35,6 +35,7 @@ int ff_resample_linear_##type##_##opt(ResampleContext *c, uint8_t *dst, \
 
 RESAMPLE_FUNCS(int16,  mmxext);
 RESAMPLE_FUNCS(int16,  sse2);
+RESAMPLE_FUNCS(int16,  xop);
 RESAMPLE_FUNCS(float,  sse);
 RESAMPLE_FUNCS(float,  avx);
 RESAMPLE_FUNCS(float,  fma3);
@@ -72,5 +73,9 @@ void swresample_dsp_x86_init(ResampleContext *c)
     if (HAVE_FMA4_EXTERNAL && mm_flags & AV_CPU_FLAG_FMA4) {
         c->dsp.resample_common[FNIDX(FLTP)] = ff_resample_common_float_fma4;
         c->dsp.resample_linear[FNIDX(FLTP)] = ff_resample_linear_float_fma4;
+    }
+    if (HAVE_XOP_EXTERNAL && mm_flags & AV_CPU_FLAG_XOP) {
+        c->dsp.resample_common[FNIDX(S16P)] = ff_resample_common_int16_xop;
+        c->dsp.resample_linear[FNIDX(S16P)] = ff_resample_linear_int16_xop;
     }
 }
