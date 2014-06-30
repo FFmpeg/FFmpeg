@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavcodec/avfft.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
@@ -30,6 +31,11 @@
 
 #include <math.h>
 #include <stdlib.h>
+
+#if CONFIG_LIBFREETYPE
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#endif
 
 /* this filter is designed to do 16 bins/semitones constant Q transform with Brown-Puckette algorithm
  * start from E0 to D#10 (10 octaves)
@@ -59,6 +65,8 @@ typedef struct {
     uint8_t *spectogram;
     SparseCoeff *coeff_sort;
     SparseCoeff *coeffs[VIDEO_WIDTH];
+    uint8_t *font_alpha;
+    char *fontfile;     /* using freetype */
     int coeffs_len[VIDEO_WIDTH];
     uint8_t font_color[VIDEO_WIDTH];
     int64_t frame_count;
@@ -87,6 +95,7 @@ static const AVOption showcqt_options[] = {
     { "fullhd", "set full HD resolution", OFFSET(fullhd), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS },
     { "fps", "set video fps", OFFSET(fps), AV_OPT_TYPE_INT, { .i64 = 25 }, 10, 100, FLAGS },
     { "count", "set number of transform per frame", OFFSET(count), AV_OPT_TYPE_INT, { .i64 = 6 }, 1, 30, FLAGS },
+    { "fontfile", "set font file", OFFSET(fontfile), AV_OPT_TYPE_STRING, { .str = NULL }, CHAR_MIN, CHAR_MAX, FLAGS },
     { NULL }
 };
 
@@ -106,6 +115,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->fft_result_right);
     av_freep(&s->coeff_sort);
     av_freep(&s->spectogram);
+    av_freep(&s->font_alpha);
     av_frame_free(&s->outpicref);
 }
 
@@ -144,6 +154,97 @@ static int query_formats(AVFilterContext *ctx)
 
     return 0;
 }
+
+#if CONFIG_LIBFREETYPE
+static void load_freetype_font(AVFilterContext *ctx)
+{
+    static const char str[] = "EF G A BC D ";
+    ShowCQTContext *s = ctx->priv;
+    FT_Library lib = NULL;
+    FT_Face face = NULL;
+    int video_scale = s->fullhd ? 2 : 1;
+    int video_width = (VIDEO_WIDTH/2) * video_scale;
+    int font_height = (FONT_HEIGHT/2) * video_scale;
+    int font_width = 8 * video_scale;
+    int font_repeat = font_width * 12;
+    int linear_hori_advance = font_width * 65536;
+    int non_monospace_warning = 0;
+    int x;
+
+    s->font_alpha = NULL;
+
+    if (!s->fontfile)
+        return;
+
+    if (FT_Init_FreeType(&lib))
+        goto fail;
+
+    if (FT_New_Face(lib, s->fontfile, 0, &face))
+        goto fail;
+
+    if (FT_Set_Char_Size(face, 16*64, 0, 0, 0))
+        goto fail;
+
+    if (FT_Load_Char(face, 'A', FT_LOAD_RENDER))
+        goto fail;
+
+    if (FT_Set_Char_Size(face, 16*64 * linear_hori_advance / face->glyph->linearHoriAdvance, 0, 0, 0))
+        goto fail;
+
+    s->font_alpha = av_malloc(font_height * video_width);
+    if (!s->font_alpha)
+        goto fail;
+
+    memset(s->font_alpha, 0, font_height * video_width);
+
+    for (x = 0; x < 12; x++) {
+        int sx, sy, rx, bx, by, dx, dy;
+
+        if (str[x] == ' ')
+            continue;
+
+        if (FT_Load_Char(face, str[x], FT_LOAD_RENDER))
+            goto fail;
+
+        if (face->glyph->advance.x != font_width*64 && !non_monospace_warning) {
+            av_log(ctx, AV_LOG_WARNING, "Font is not monospace\n");
+            non_monospace_warning = 1;
+        }
+
+        sy = font_height - 4*video_scale - face->glyph->bitmap_top;
+        for (rx = 0; rx < 10; rx++) {
+            sx = rx * font_repeat + x * font_width + face->glyph->bitmap_left;
+            for (by = 0; by < face->glyph->bitmap.rows; by++) {
+                dy = by + sy;
+                if (dy < 0)
+                    continue;
+                if (dy >= font_height)
+                    break;
+
+                for (bx = 0; bx < face->glyph->bitmap.width; bx++) {
+                    dx = bx + sx;
+                    if (dx < 0)
+                        continue;
+                    if (dx >= video_width)
+                        break;
+                    s->font_alpha[dy*video_width+dx] = face->glyph->bitmap.buffer[by*face->glyph->bitmap.width+bx];
+                }
+            }
+        }
+    }
+
+    FT_Done_Face(face);
+    FT_Done_FreeType(lib);
+    return;
+
+    fail:
+    av_log(ctx, AV_LOG_WARNING, "Error while loading freetype font, using default font instead\n");
+    FT_Done_Face(face);
+    FT_Done_FreeType(lib);
+    av_freep(&s->font_alpha);
+    return;
+}
+#endif
 
 static inline int qsort_sparsecoeff(const SparseCoeff *a, const SparseCoeff *b)
 {
@@ -195,6 +296,14 @@ static int config_output(AVFilterLink *outlink)
             s->font_color[x] = 0;
         }
     }
+
+#if CONFIG_LIBFREETYPE
+    load_freetype_font(ctx);
+#else
+    if (s->fontfile)
+        av_log(ctx, AV_LOG_WARNING, "Freetype is not available, ignoring fontfile option\n");
+    s->font_alpha = NULL;
+#endif
 
     av_log(ctx, AV_LOG_INFO, "Calculating spectral kernel, please wait\n");
     start_time = av_gettime_relative();
@@ -413,40 +522,53 @@ static int plot_cqt(AVFilterLink *inlink)
         }
 
         /* drawing font */
-        for (y = 0; y < font_height; y++) {
-            uint8_t *lineptr = data + (spectogram_height + y) * linesize;
-            memcpy(lineptr, s->spectogram + s->spectogram_index * linesize, video_width*3);
-        }
-        for (x = 0; x < video_width; x += video_width/10) {
-            int u;
-            static const char str[] = "EF G A BC D ";
-            uint8_t *startptr = data + spectogram_height * linesize + x * 3;
-            for (u = 0; str[u]; u++) {
-                int v;
-                for (v = 0; v < 16; v++) {
-                    uint8_t *p = startptr + v * linesize * video_scale + 8 * 3 * u * video_scale;
-                    int ux = x + 8 * u * video_scale;
-                    int mask;
-                    for (mask = 0x80; mask; mask >>= 1) {
-                        if (mask & avpriv_vga16_font[str[u] * 16 + v]) {
-                            p[0] = 255 - s->font_color[ux];
-                            p[1] = 0;
-                            p[2] = s->font_color[ux];
-                            if (video_scale == 2) {
-                                p[linesize] = p[0];
-                                p[linesize+1] = p[1];
-                                p[linesize+2] = p[2];
-                                p[3] = p[linesize+3] = 255 - s->font_color[ux+1];
-                                p[4] = p[linesize+4] = 0;
-                                p[5] = p[linesize+5] = s->font_color[ux+1];
+        if (s->font_alpha) {
+            for (y = 0; y < font_height; y++) {
+                uint8_t *lineptr = data + (spectogram_height + y) * linesize;
+                uint8_t *spectogram_src = s->spectogram + s->spectogram_index * linesize;
+                for (x = 0; x < video_width; x++) {
+                    uint8_t alpha = s->font_alpha[y*video_width+x];
+                    uint8_t color = s->font_color[x];
+                    lineptr[3*x] = (spectogram_src[3*x] * (255-alpha) + (255-color) * alpha + 255) >> 8;
+                    lineptr[3*x+1] = (spectogram_src[3*x+1] * (255-alpha) + 255) >> 8;
+                    lineptr[3*x+2] = (spectogram_src[3*x+2] * (255-alpha) + color * alpha + 255) >> 8;
+                }
+            }
+        } else {
+            for (y = 0; y < font_height; y++) {
+                uint8_t *lineptr = data + (spectogram_height + y) * linesize;
+                memcpy(lineptr, s->spectogram + s->spectogram_index * linesize, video_width*3);
+            }
+            for (x = 0; x < video_width; x += video_width/10) {
+                int u;
+                static const char str[] = "EF G A BC D ";
+                uint8_t *startptr = data + spectogram_height * linesize + x * 3;
+                for (u = 0; str[u]; u++) {
+                    int v;
+                    for (v = 0; v < 16; v++) {
+                        uint8_t *p = startptr + v * linesize * video_scale + 8 * 3 * u * video_scale;
+                        int ux = x + 8 * u * video_scale;
+                        int mask;
+                        for (mask = 0x80; mask; mask >>= 1) {
+                            if (mask & avpriv_vga16_font[str[u] * 16 + v]) {
+                                p[0] = 255 - s->font_color[ux];
+                                p[1] = 0;
+                                p[2] = s->font_color[ux];
+                                if (video_scale == 2) {
+                                    p[linesize] = p[0];
+                                    p[linesize+1] = p[1];
+                                    p[linesize+2] = p[2];
+                                    p[3] = p[linesize+3] = 255 - s->font_color[ux+1];
+                                    p[4] = p[linesize+4] = 0;
+                                    p[5] = p[linesize+5] = s->font_color[ux+1];
+                                }
                             }
+                            p  += 3 * video_scale;
+                            ux += video_scale;
                         }
-                        p  += 3 * video_scale;
-                        ux += video_scale;
                     }
                 }
             }
-
         }
 
         /* drawing spectogram/sonogram */

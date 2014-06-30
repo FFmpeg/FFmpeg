@@ -10430,6 +10430,9 @@ Specify gamma. Lower gamma makes the spectrum more contrast, higher gamma
 makes the spectrum having more range. Acceptable value is [1.0, 7.0].
 Default value is @code{3.0}.
 
+@item fontfile
+Specify font file for use with freetype. If not specified, use embedded font.
+
 @item fullhd
 If set to 1 (the default), the video size is 1920x1080 (full HD),
 if set to 0, the video size is 960x540. Use this option to make CPU usage lower.
