@@ -25,22 +25,14 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#if    defined(TEMPLATE_RESAMPLE_DBL)     \
-    || defined(TEMPLATE_RESAMPLE_DBL_SSE2)
+#if defined(TEMPLATE_RESAMPLE_DBL)
 
+#    define RENAME(N) N ## _double
 #    define FILTER_SHIFT 0
 #    define DELEM  double
 #    define FELEM  double
 #    define FELEM2 double
 #    define OUT(d, v) d = v
-
-#    if defined(TEMPLATE_RESAMPLE_DBL)
-#        define RENAME(N) N ## _double
-#    elif defined(TEMPLATE_RESAMPLE_DBL_SSE2)
-#        define COMMON_CORE COMMON_CORE_DBL_SSE2
-#        define LINEAR_CORE LINEAR_CORE_DBL_SSE2
-#        define RENAME(N) N ## _double_sse2
-#    endif
 
 #elif    defined(TEMPLATE_RESAMPLE_FLT)
 
@@ -104,16 +96,12 @@ int RENAME(swri_resample_common)(ResampleContext *c,
     for (dst_index = 0; dst_index < n; dst_index++) {
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
 
-#ifdef COMMON_CORE
-        COMMON_CORE
-#else
         FELEM2 val=0;
         int i;
         for (i = 0; i < c->filter_length; i++) {
             val += src[sample_index + i] * (FELEM2)filter[i];
         }
         OUT(dst[dst_index], val);
-#endif
 
         frac  += c->dst_incr_mod;
         index += c->dst_incr_div;
@@ -150,15 +138,11 @@ int RENAME(swri_resample_linear)(ResampleContext *c,
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
         FELEM2 val=0, v2 = 0;
 
-#ifdef LINEAR_CORE
-        LINEAR_CORE
-#else
         int i;
         for (i = 0; i < c->filter_length; i++) {
             val += src[sample_index + i] * (FELEM2)filter[i];
             v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_alloc];
         }
-#endif
 #ifdef FELEML
         val += (v2 - val) * (FELEML) frac / c->src_incr;
 #else
@@ -188,8 +172,6 @@ int RENAME(swri_resample_linear)(ResampleContext *c,
     return sample_index;
 }
 
-#undef COMMON_CORE
-#undef LINEAR_CORE
 #undef RENAME
 #undef FILTER_SHIFT
 #undef DELEM

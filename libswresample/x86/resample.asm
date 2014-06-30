@@ -50,11 +50,12 @@ endstruc
 SECTION_RODATA
 
 pf_1:      dd 1.0
+pdbl_1:    dq 1.0
 pd_0x4000: dd 0x4000
 
 SECTION .text
 
-%macro RESAMPLE_FNS 3 ; format [float or int16], bps, log2_bps
+%macro RESAMPLE_FNS 3-5 ; format [float or int16], bps, log2_bps, float op suffix [s or d], 1.0 constant
 ; int resample_common_$format(ResampleContext *ctx, $format *dst,
 ;                             const $format *src, int size, int update_ctx)
 %if ARCH_X86_64 ; unix64 and win64
@@ -165,21 +166,21 @@ cglobal resample_common_%1, 1, 7, 2, ctx, phase_shift, dst, frac, \
     lea                      filterq, [min_filter_count_x4q+filterq*%2]
     mov         min_filter_count_x4q, min_filter_length_x4q
 %endif
-%ifidn %1, float
-    xorps                         m0, m0, m0
-%else ; int16
+%ifidn %1, int16
     movd                          m0, [pd_0x4000]
+%else ; float/double
+    xorps                         m0, m0, m0
 %endif
 
     align 16
 .inner_loop:
     movu                          m1, [srcq+min_filter_count_x4q*1]
-%ifidn %1, float
-    mulps                         m1, m1, [filterq+min_filter_count_x4q*1]
-    addps                         m0, m0, m1
-%else ; int16
+%ifidn %1, int16
     pmaddwd                       m1, [filterq+min_filter_count_x4q*1]
     paddd                         m0, m1
+%else ; float/double
+    mulp%4                        m1, m1, [filterq+min_filter_count_x4q*1]
+    addp%4                        m0, m0, m1
 %endif
     add         min_filter_count_x4q, mmsize
     js .inner_loop
@@ -189,16 +190,7 @@ cglobal resample_common_%1, 1, 7, 2, ctx, phase_shift, dst, frac, \
     addps                        xm0, xm1
 %endif
 
-    ; horizontal sum & store
-%ifidn %1, float
-    movhlps                      xm1, xm0
-    addps                        xm0, xm1
-    shufps                       xm1, xm0, xm0, q0001
-    add                        fracd, dst_incr_modd
-    addps                        xm0, xm1
-    add                       indexd, dst_incr_divd
-    movss                     [dstq], xm0
-%else ; int16
+%ifidn %1, int16
 %if mmsize == 16
     pshufd                        m1, m0, q0032
     paddd                         m0, m1
@@ -212,6 +204,17 @@ cglobal resample_common_%1, 1, 7, 2, ctx, phase_shift, dst, frac, \
     packssdw                      m0, m0
     add                       indexd, dst_incr_divd
     movd                      [dstq], m0
+%else ; float/double
+    ; horizontal sum & store
+    movhlps                      xm1, xm0
+%ifidn %1, float
+    addps                        xm0, xm1
+    shufps                       xm1, xm0, xm0, q0001
+%endif
+    add                        fracd, dst_incr_modd
+    addp%4                       xm0, xm1
+    add                       indexd, dst_incr_divd
+    movs%4                    [dstq], xm0
 %endif
     cmp                        fracd, src_incrd
     jl .skip
@@ -307,12 +310,12 @@ cglobal resample_linear_%1, 0, 15, 5, ctx, phase_mask, src, phase_shift, index, 
     mov                   ctx_stackq, ctxq
     mov            phase_mask_stackd, phase_maskd
     mov           min_filter_len_x4d, [ctxq+ResampleContext.filter_length]
-%ifidn %1, float
-    cvtsi2ss                     xm0, src_incrd
-    movss                        xm4, [pf_1]
-    divss                        xm4, xm0
-%else ; int16
+%ifidn %1, int16
     movd                          m4, [pd_0x4000]
+%else ; float/double
+    cvtsi2s%4                    xm0, src_incrd
+    movs%4                       xm4, [%5]
+    divs%4                       xm4, xm0
 %endif
     mov                dst_incr_divd, [ctxq+ResampleContext.dst_incr_div]
     shl           min_filter_len_x4d, %3
@@ -360,12 +363,12 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
     mov                           r3, dword [ctxq+ResampleContext.src_incr]
     PUSH                              dword [ctxq+ResampleContext.phase_mask]
     PUSH                              r3d
-%ifidn %1, float
-    cvtsi2ss                     xm0, r3d
-    movss                        xm4, [pf_1]
-    divss                        xm4, xm0
-%else ; int16
+%ifidn %1, int16
     movd                          m4, [pd_0x4000]
+%else ; float/double
+    cvtsi2s%4                    xm0, r3d
+    movs%4                       xm4, [%5]
+    divs%4                       xm4, xm0
 %endif
     mov        min_filter_length_x4d, [ctxq+ResampleContext.filter_length]
     mov                       indexd, [ctxq+ResampleContext.index]
@@ -409,27 +412,27 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
     mov                     filter2q, filter1q
     add                     filter2q, filter_alloc_x4q
 %endif
-%ifidn %1, float
-    xorps                         m0, m0, m0
-    xorps                         m2, m2, m2
-%else ; int16
+%ifidn %1, int16
     mova                          m0, m4
     mova                          m2, m4
+%else ; float/double
+    xorps                         m0, m0, m0
+    xorps                         m2, m2, m2
 %endif
 
     align 16
 .inner_loop:
     movu                          m1, [srcq+min_filter_count_x4q*1]
-%ifidn %1, float
-    mulps                         m3, m1, [filter2q+min_filter_count_x4q*1]
-    mulps                         m1, m1, [filter1q+min_filter_count_x4q*1]
-    addps                         m2, m2, m3
-    addps                         m0, m0, m1
-%else ; int16
+%ifidn %1, int16
     pmaddwd                       m3, m1, [filter2q+min_filter_count_x4q*1]
     pmaddwd                       m1, [filter1q+min_filter_count_x4q*1]
     paddd                         m2, m3
     paddd                         m0, m1
+%else ; float/double
+    mulp%4                        m3, m1, [filter2q+min_filter_count_x4q*1]
+    mulp%4                        m1, m1, [filter1q+min_filter_count_x4q*1]
+    addp%4                        m2, m2, m3
+    addp%4                        m0, m0, m1
 %endif
     add         min_filter_count_x4q, mmsize
     js .inner_loop
@@ -441,24 +444,7 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
     addps                        xm2, xm3
 %endif
 
-%ifidn %1, float
-    ; val += (v2 - val) * (FELEML) frac / c->src_incr;
-    cvtsi2ss                     xm1, fracd
-    subps                        xm2, xm0
-    mulps                        xm1, xm4
-    shufps                       xm1, xm1, q0000
-    mulps                        xm2, xm1
-    addps                        xm0, xm2
-
-    ; horizontal sum & store
-    movhlps                      xm1, xm0
-    addps                        xm0, xm1
-    shufps                       xm1, xm0, xm0, q0001
-    add                        fracd, dst_incr_modd
-    addps                        xm0, xm1
-    add                       indexd, dst_incr_divd
-    movss                     [dstq], xm0
-%else ; int16
+%ifidn %1, int16
 %if mmsize == 16
     pshufd                        m3, m2, q0032
     pshufd                        m1, m0, q0032
@@ -491,6 +477,25 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
     ; - 32bit: eax=r0[filter1], edx=r2[filter2]
     ; - win64: eax=r6[filter1], edx=r1[todo]
     ; - unix64: eax=r6[filter1], edx=r2[todo]
+%else ; float/double
+    ; val += (v2 - val) * (FELEML) frac / c->src_incr;
+    cvtsi2s%4                    xm1, fracd
+    subp%4                       xm2, xm0
+    mulp%4                       xm1, xm4
+    shufp%4                      xm1, xm1, q0000
+    mulp%4                       xm2, xm1
+    addp%4                       xm0, xm2
+
+    ; horizontal sum & store
+    movhlps                      xm1, xm0
+%ifidn %1, float
+    addps                        xm0, xm1
+    shufps                       xm1, xm0, xm0, q0001
+%endif
+    add                        fracd, dst_incr_modd
+    addp%4                       xm0, xm1
+    add                       indexd, dst_incr_divd
+    movs%4                    [dstq], xm0
 %endif
     cmp                        fracd, src_incrd
     jl .skip
@@ -553,11 +558,11 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
 %endmacro
 
 INIT_XMM sse
-RESAMPLE_FNS float, 4, 2
+RESAMPLE_FNS float, 4, 2, s, pf_1
 
 %if HAVE_AVX_EXTERNAL
 INIT_YMM avx
-RESAMPLE_FNS float, 4, 2
+RESAMPLE_FNS float, 4, 2, s, pf_1
 %endif
 
 %if ARCH_X86_32
@@ -567,3 +572,4 @@ RESAMPLE_FNS int16, 2, 1
 
 INIT_XMM sse2
 RESAMPLE_FNS int16, 2, 1
+RESAMPLE_FNS double, 8, 3, d, pdbl_1

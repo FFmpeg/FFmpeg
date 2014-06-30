@@ -27,21 +27,6 @@
 
 #include "libswresample/resample.h"
 
-int swri_resample_common_double_sse2(ResampleContext *c,  double *dst, const  double *src, int n, int update_ctx);
-int swri_resample_linear_double_sse2(ResampleContext *c,  double *dst, const  double *src, int n, int update_ctx);
-
-#if HAVE_SSE2_INLINE
-#define DO_RESAMPLE_ONE 0
-
-#include "resample_mmx.h"
-
-#define TEMPLATE_RESAMPLE_DBL_SSE2
-#include "libswresample/resample_template.c"
-#undef TEMPLATE_RESAMPLE_DBL_SSE2
-#endif
-
-#undef DO_RESAMPLE_ONE
-
 int ff_resample_common_int16_mmxext(ResampleContext *c, uint8_t *dst,
                                     const uint8_t *src, int sz, int upd);
 int ff_resample_linear_int16_mmxext(ResampleContext *c, uint8_t *dst,
@@ -62,6 +47,11 @@ int ff_resample_common_float_avx(ResampleContext *c, uint8_t *dst,
 int ff_resample_linear_float_avx(ResampleContext *c, uint8_t *dst,
                                  const uint8_t *src, int sz, int upd);
 
+int ff_resample_common_double_sse2(ResampleContext *c, uint8_t *dst,
+                                   const uint8_t *src, int sz, int upd);
+int ff_resample_linear_double_sse2(ResampleContext *c, uint8_t *dst,
+                                   const uint8_t *src, int sz, int upd);
+
 void swresample_dsp_x86_init(ResampleContext *c)
 {
     int av_unused mm_flags = av_get_cpu_flags();
@@ -78,10 +68,9 @@ void swresample_dsp_x86_init(ResampleContext *c)
     if (HAVE_SSE2_EXTERNAL && mm_flags & AV_CPU_FLAG_SSE2) {
         c->dsp.resample_common[FNIDX(S16P)] = ff_resample_common_int16_sse2;
         c->dsp.resample_linear[FNIDX(S16P)] = ff_resample_linear_int16_sse2;
-    }
-    if (HAVE_SSE2_INLINE && mm_flags & AV_CPU_FLAG_SSE2) {
-        c->dsp.resample_common[FNIDX(DBLP)] = (resample_fn) swri_resample_common_double_sse2;
-        c->dsp.resample_linear[FNIDX(DBLP)] = (resample_fn) swri_resample_linear_double_sse2;
+
+        c->dsp.resample_common[FNIDX(DBLP)] = ff_resample_common_double_sse2;
+        c->dsp.resample_linear[FNIDX(DBLP)] = ff_resample_linear_double_sse2;
     }
     if (HAVE_AVX_EXTERNAL && mm_flags & AV_CPU_FLAG_AVX) {
         c->dsp.resample_common[FNIDX(FLTP)] = ff_resample_common_float_avx;
