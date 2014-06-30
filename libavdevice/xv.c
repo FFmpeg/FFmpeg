@@ -306,7 +306,7 @@ static int write_picture(AVFormatContext *s, AVPicture *pict)
         XEvent event;
         while (XPending(xv->display)) {
             XNextEvent(xv->display, &event);
-            if (event.type == ClientMessage && event.xclient.data.l[0] == xv->wm_delete_message)
+            if (event.type == ClientMessage && event.xclient.data.l[0] == xv->wm_delete_message) {
                 av_log(xv, AV_LOG_DEBUG, "Window close event.\n");
                 return AVERROR(EPIPE);
             }
