@@ -386,8 +386,6 @@ static int parse_presentation_segment(AVCodecContext *avctx,
     int w = bytestream_get_be16(&buf);
     int h = bytestream_get_be16(&buf);
 
-    uint16_t object_index;
-
     ctx->presentation.pts = pts;
 
     av_dlog(avctx, "Video Dimensions %dx%d\n",
@@ -596,7 +594,6 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    AVSubtitle *sub    = data;
 
     const uint8_t *buf_end;
     uint8_t       segment_type;
