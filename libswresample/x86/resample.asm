@@ -179,16 +179,15 @@ cglobal resample_common_%1, 1, 7, 2, ctx, phase_shift, dst, frac, \
     pmaddwd                       m1, [filterq+min_filter_count_x4q*1]
     paddd                         m0, m1
 %else ; float/double
+%if cpuflag(fma4) || cpuflag(fma3)
+    fmaddp%4                      m0, m1, [filterq+min_filter_count_x4q*1], m0
+%else
     mulp%4                        m1, m1, [filterq+min_filter_count_x4q*1]
     addp%4                        m0, m0, m1
+%endif ; cpuflag
 %endif
     add         min_filter_count_x4q, mmsize
     js .inner_loop
-
-%if cpuflag(avx)
-    vextractf128                 xm1, m0, 0x1
-    addps                        xm0, xm1
-%endif
 
 %ifidn %1, int16
 %if mmsize == 16
@@ -206,6 +205,10 @@ cglobal resample_common_%1, 1, 7, 2, ctx, phase_shift, dst, frac, \
     movd                      [dstq], m0
 %else ; float/double
     ; horizontal sum & store
+%if mmsize == 32
+    vextractf128                 xm1, m0, 0x1
+    addps                        xm0, xm1
+%endif
     movhlps                      xm1, xm0
 %ifidn %1, float
     addps                        xm0, xm1
@@ -429,20 +432,18 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
     paddd                         m2, m3
     paddd                         m0, m1
 %else ; float/double
+%if cpuflag(fma4) || cpuflag(fma3)
+    fmaddp%4                      m2, m1, [filter2q+min_filter_count_x4q*1], m2
+    fmaddp%4                      m0, m1, [filter1q+min_filter_count_x4q*1], m0
+%else
     mulp%4                        m3, m1, [filter2q+min_filter_count_x4q*1]
     mulp%4                        m1, m1, [filter1q+min_filter_count_x4q*1]
     addp%4                        m2, m2, m3
     addp%4                        m0, m0, m1
+%endif ; cpuflag
 %endif
     add         min_filter_count_x4q, mmsize
     js .inner_loop
-
-%if cpuflag(avx)
-    vextractf128                 xm1, m0, 0x1
-    vextractf128                 xm3, m2, 0x1
-    addps                        xm0, xm1
-    addps                        xm2, xm3
-%endif
 
 %ifidn %1, int16
 %if mmsize == 16
@@ -479,12 +480,22 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
     ; - unix64: eax=r6[filter1], edx=r2[todo]
 %else ; float/double
     ; val += (v2 - val) * (FELEML) frac / c->src_incr;
+%if mmsize == 32
+    vextractf128                 xm1, m0, 0x1
+    vextractf128                 xm3, m2, 0x1
+    addps                        xm0, xm1
+    addps                        xm2, xm3
+%endif
     cvtsi2s%4                    xm1, fracd
     subp%4                       xm2, xm0
     mulp%4                       xm1, xm4
     shufp%4                      xm1, xm1, q0000
+%if cpuflag(fma4) || cpuflag(fma3)
+    fmaddp%4                     xm0, xm2, xm1, xm0
+%else
     mulp%4                       xm2, xm1
     addp%4                       xm0, xm2
+%endif ; cpuflag
 
     ; horizontal sum & store
     movhlps                      xm1, xm0
@@ -562,6 +573,14 @@ RESAMPLE_FNS float, 4, 2, s, pf_1
 
 %if HAVE_AVX_EXTERNAL
 INIT_YMM avx
+RESAMPLE_FNS float, 4, 2, s, pf_1
+%endif
+%if HAVE_FMA3_EXTERNAL
+INIT_YMM fma3
+RESAMPLE_FNS float, 4, 2, s, pf_1
+%endif
+%if HAVE_FMA4_EXTERNAL
+INIT_XMM fma4
 RESAMPLE_FNS float, 4, 2, s, pf_1
 %endif
 
