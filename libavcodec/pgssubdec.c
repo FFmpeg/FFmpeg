@@ -380,6 +380,7 @@ static int parse_presentation_segment(AVCodecContext *avctx,
 {
     PGSSubContext *ctx = avctx->priv_data;
     int i, state, ret;
+    const uint8_t *buf_end = buf + buf_size;
 
     // Video descriptor
     int w = bytestream_get_be16(&buf);
@@ -433,6 +434,13 @@ static int parse_presentation_segment(AVCodecContext *avctx,
 
     for (i = 0; i < ctx->presentation.object_count; i++)
     {
+
+        if (buf_end - buf < 8) {
+            av_log(avctx, AV_LOG_ERROR, "Insufficent space for object\n");
+            ctx->presentation.object_count = i;
+            return AVERROR_INVALIDDATA;
+        }
+
         ctx->presentation.objects[i].id = bytestream_get_be16(&buf);
         ctx->presentation.objects[i].window_id = bytestream_get_byte(&buf);
         ctx->presentation.objects[i].composition_flag = bytestream_get_byte(&buf);
