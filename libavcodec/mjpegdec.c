@@ -388,6 +388,16 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     if (!(pix_fmt_id & 0x0D0D0D0D))
         pix_fmt_id -= (pix_fmt_id & 0x0F0F0F0F) >> 1;
 
+    for (i = 0; i < 8; i++) {
+        int j = 6 + (i&1) - (i&6);
+        int is = (pix_fmt_id >> (4*i)) & 0xF;
+        int js = (pix_fmt_id >> (4*j)) & 0xF;
+        if (is == 1 && js == 2) {
+            if (i & 1) s->upscale_h |= 1 << (j/2);
+            else       s->upscale_v |= 1 << (j/2);
+        }
+    }
+
     switch (pix_fmt_id) {
     case 0x11111100:
         if (s->rgb)
@@ -441,8 +451,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->upscale_v = 4;
-        s->upscale_h = 2*(pix_fmt_id == 0x22122100);
         s->chroma_height = s->height;
         break;
     case 0x21211100:
@@ -451,8 +459,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->upscale_v = 2*(pix_fmt_id == 0x22211200);
-        s->upscale_h = 4;
         s->chroma_height = s->height;
         break;
     case 0x22221100:
@@ -461,8 +467,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->upscale_v = 2<<(pix_fmt_id == 0x22221100);
-        s->upscale_h = 2<<(pix_fmt_id == 0x22221100);
         s->chroma_height = s->height / 2;
         break;
     case 0x11222200:
@@ -495,7 +499,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->upscale_h = 4 * (pix_fmt_id == 0x22211100) + 2 * (pix_fmt_id == 0x22112100);
         s->chroma_height = s->height / 2;
         break;
     case 0x21111100:
@@ -509,7 +512,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->upscale_v = 2 << (pix_fmt_id == 0x22121100);
         break;
     case 0x22111100:
     case 0x42111100:
@@ -530,6 +532,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     default:
 unk_pixfmt:
         av_log(s->avctx, AV_LOG_ERROR, "Unhandled pixel format 0x%x\n", pix_fmt_id);
+        s->upscale_h = s->upscale_v = 0;
         return AVERROR_PATCHWELCOME;
     }
     if ((s->upscale_h || s->upscale_v) && s->avctx->lowres) {
