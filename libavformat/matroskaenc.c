@@ -680,6 +680,20 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
     return ret;
 }
 
+static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb, int st_mode,
+                                  int mode)
+{
+    if ((mode == MODE_WEBM && st_mode > 3 && st_mode != 11)
+        || st_mode >= MATROSKA_VIDEO_STEREO_MODE_COUNT) {
+        av_log(s, AV_LOG_ERROR,
+               "The specified stereo mode is not valid.\n");
+        return AVERROR(EINVAL);
+    } else
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOSTEREOMODE, st_mode);
+
+    return 0;
+}
+
 static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                            int i, AVIOContext *pb, int default_stream_exists)
 {
@@ -820,8 +834,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
         if ((tag = av_dict_get(st->metadata, "stereo_mode", NULL, 0)) ||
             (tag = av_dict_get( s->metadata, "stereo_mode", NULL, 0))) {
-            // save stereo mode flag
-            uint64_t st_mode = MATROSKA_VIDEO_STEREO_MODE_COUNT;
+            int st_mode = MATROSKA_VIDEO_STEREO_MODE_COUNT;
 
             for (j=0; j<MATROSKA_VIDEO_STEREO_MODE_COUNT; j++)
                 if (!strcmp(tag->value, ff_matroska_video_stereo_mode[j])){
@@ -829,13 +842,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                     break;
                 }
 
-            if ((mkv->mode == MODE_WEBM && st_mode > 3 && st_mode != 11)
-                || st_mode >= MATROSKA_VIDEO_STEREO_MODE_COUNT) {
-                av_log(s, AV_LOG_ERROR,
-                       "The specified stereo mode is not valid.\n");
+            if (mkv_write_stereo_mode(s, pb, st_mode, mkv->mode) < 0)
                 return AVERROR(EINVAL);
-            } else
-                put_ebml_uint(pb, MATROSKA_ID_VIDEOSTEREOMODE, st_mode);
 
             switch (st_mode) {
             case 1:
