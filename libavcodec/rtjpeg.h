@@ -23,15 +23,16 @@
 #define AVCODEC_RTJPEG_H
 
 #include <stdint.h>
-#include "dsputil.h"
+
 #include "libavutil/mem.h"
+#include "idctdsp.h"
 
 #define RTJPEG_FILE_VERSION 0
 #define RTJPEG_HEADER_SIZE 12
 
 typedef struct RTJpegContext {
     int w, h;
-    DSPContext dsp;
+    IDCTDSPContext idsp;
     uint8_t scan[64];
     uint32_t lquant[64];
     uint32_t cquant[64];

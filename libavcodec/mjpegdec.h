@@ -36,8 +36,8 @@
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "hpeldsp.h"
+#include "idctdsp.h"
 
 #define MAX_COMPONENTS 4
 
@@ -106,8 +106,8 @@ typedef struct MJpegDecodeContext {
     int palette_index;
     ScanTable scantable;
     BlockDSPContext bdsp;
-    DSPContext dsp;
     HpelDSPContext hdsp;
+    IDCTDSPContext idsp;
 
     int restart_interval;
     int restart_count;

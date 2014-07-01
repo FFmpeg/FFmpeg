@@ -39,9 +39,8 @@ OBJS-$(CONFIG_BSWAPDSP)                += bswapdsp.o
 OBJS-$(CONFIG_CABAC)                   += cabac.o
 OBJS-$(CONFIG_CRYSTALHD)               += crystalhd.o
 OBJS-$(CONFIG_DCT)                     += dct.o dct32_fixed.o dct32_float.o
+OBJS-$(CONFIG_DSPUTIL)                 += dsputil.o
 OBJS-$(CONFIG_DXVA2)                   += dxva2.o
-OBJS-$(CONFIG_DSPUTIL)                 += dsputil.o faanidct.o          \
-                                          simple_idct.o jrevdct.o
 OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 OBJS-$(CONFIG_ERROR_RESILIENCE)        += error_resilience.o
 OBJS-$(CONFIG_EXIF)                    += exif.o tiff_common.o
@@ -59,6 +58,8 @@ OBJS-$(CONFIG_HPELDSP)                 += hpeldsp.o
 OBJS-$(CONFIG_HUFFMAN)                 += huffman.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += huffyuvdsp.o
 OBJS-$(CONFIG_HUFFYUVENCDSP)           += huffyuvencdsp.o
+OBJS-$(CONFIG_IDCTDSP)                 += idctdsp.o faanidct.o          \
+                                          simple_idct.o jrevdct.o
 OBJS-$(CONFIG_INTRAX8)                 += intrax8.o intrax8dsp.o
 OBJS-$(CONFIG_LIBXVID)                 += libxvid_rc.o
 OBJS-$(CONFIG_LLAUDDSP)                += lossless_audiodsp.o

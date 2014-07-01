@@ -29,8 +29,8 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "bswapdsp.h"
-#include "dsputil.h"
 #include "hpeldsp.h"
+#include "idctdsp.h"
 #include "thread.h"
 
 #define MIMIC_HEADER_SIZE   20
@@ -56,8 +56,8 @@ typedef struct {
     ScanTable       scantable;
     BlockDSPContext bdsp;
     BswapDSPContext bbdsp;
-    DSPContext      dsp;
     HpelDSPContext  hdsp;
+    IDCTDSPContext  idsp;
     VLC             vlc;
 
     /* Kept in the context so multithreading can have a constant to read from */
@@ -152,9 +152,9 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     }
     ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_bswapdsp_init(&ctx->bbdsp);
-    ff_dsputil_init(&ctx->dsp, avctx);
     ff_hpeldsp_init(&ctx->hdsp, avctx->flags);
-    ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, col_zag);
+    ff_idctdsp_init(&ctx->idsp, avctx);
+    ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable, col_zag);
 
     for (i = 0; i < FF_ARRAY_ELEMS(ctx->frames); i++) {
         ctx->frames[i].f = av_frame_alloc();
@@ -303,7 +303,7 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
                                    "block.\n");
                             return ret;
                         }
-                        ctx->dsp.idct_put(dst, stride, ctx->dct_block);
+                        ctx->idsp.idct_put(dst, stride, ctx->dct_block);
                     } else {
                         unsigned int backref = get_bits(&ctx->gb, 4);
                         int index            = (ctx->cur_index + backref) & 15;

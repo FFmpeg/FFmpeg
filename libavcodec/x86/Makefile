@@ -24,6 +24,7 @@ OBJS-$(CONFIG_LLAUDDSP)                += x86/lossless_audiodsp_init.o
 OBJS-$(CONFIG_LLVIDDSP)                += x86/lossless_videodsp_init.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += x86/huffyuvdsp_init.o
 OBJS-$(CONFIG_HUFFYUVENCDSP)           += x86/huffyuvencdsp_mmx.o
+OBJS-$(CONFIG_IDCTDSP)                 += x86/idctdsp_init.o
 OBJS-$(CONFIG_LPC)                     += x86/lpc.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += x86/mpegaudiodsp.o
 OBJS-$(CONFIG_MPEGVIDEO)               += x86/mpegvideo.o              \
@@ -57,12 +58,13 @@ OBJS-$(CONFIG_VP8_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 
-MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
+MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o
+MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
+MMX-OBJS-$(CONFIG_HUFFYUVDSP)          += x86/huffyuvdsp_mmx.o
+MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/idctdsp_mmx.o             \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
                                           x86/simple_idct.o
-MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
-MMX-OBJS-$(CONFIG_HUFFYUVDSP)          += x86/huffyuvdsp_mmx.o
 
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_SNOW_ENCODER)        += x86/snowdsp.o

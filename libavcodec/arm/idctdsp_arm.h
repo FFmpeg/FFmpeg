@@ -1,6 +1,5 @@
 /*
- * ARM optimized DSP utils
- * Copyright (c) 2001 Lionel Ulmer
+ * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
  *
  * This file is part of FFmpeg.
  *
@@ -19,20 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
+#ifndef AVCODEC_ARM_IDCTDSP_ARM_H
+#define AVCODEC_ARM_IDCTDSP_ARM_H
 
-#include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/arm/cpu.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#include "libavcodec/idctdsp.h"
 
-av_cold void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx,
-                                 unsigned high_bit_depth)
-{
-    int cpu_flags = av_get_cpu_flags();
+void ff_idctdsp_init_armv5te(IDCTDSPContext *c, AVCodecContext *avctx,
+                             unsigned high_bit_depth);
+void ff_idctdsp_init_armv6(IDCTDSPContext *c, AVCodecContext *avctx,
+                           unsigned high_bit_depth);
+void ff_idctdsp_init_neon(IDCTDSPContext *c, AVCodecContext *avctx,
+                          unsigned high_bit_depth);
 
-    if (have_armv6(cpu_flags))
-        ff_dsputil_init_armv6(c, avctx, high_bit_depth);
-}
+#endif /* AVCODEC_ARM_IDCTDSP_ARM_H */

@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "idctdsp.h"
 #include "mpegvideo.h"
 #include "put_bits.h"
 

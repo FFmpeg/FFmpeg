@@ -1,7 +1,4 @@
 /*
- * ARM optimized DSP utils
- * Copyright (c) 2001 Lionel Ulmer
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -19,20 +16,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_X86_IDCTDSP_H
+#define AVCODEC_X86_IDCTDSP_H
+
 #include <stdint.h>
 
-#include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/arm/cpu.h"
-#include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
+                               int line_size);
+void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
+                               int line_size);
+void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
+                                      int line_size);
+void ff_put_signed_pixels_clamped_sse2(const int16_t *block, uint8_t *pixels,
+                                       int line_size);
 
-av_cold void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx,
-                                 unsigned high_bit_depth)
-{
-    int cpu_flags = av_get_cpu_flags();
-
-    if (have_armv6(cpu_flags))
-        ff_dsputil_init_armv6(c, avctx, high_bit_depth);
-}
+#endif /* AVCODEC_X86_IDCTDSP_H */

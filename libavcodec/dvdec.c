@@ -40,6 +40,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
+#include "idctdsp.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -62,24 +63,24 @@ static const int dv_iweight_bits = 14;
 static av_cold int dvvideo_decode_init(AVCodecContext *avctx)
 {
     DVVideoContext *s = avctx->priv_data;
-    DSPContext dsp;
+    IDCTDSPContext idsp;
     int i;
 
-    memset(&dsp,0, sizeof(dsp));
-    ff_dsputil_init(&dsp, avctx);
+    memset(&idsp,0, sizeof(idsp));
+    ff_idctdsp_init(&idsp, avctx);
 
     for (i = 0; i < 64; i++)
-       s->dv_zigzag[0][i] = dsp.idct_permutation[ff_zigzag_direct[i]];
+       s->dv_zigzag[0][i] = idsp.idct_permutation[ff_zigzag_direct[i]];
 
     if (avctx->lowres){
         for (i = 0; i < 64; i++){
             int j = ff_dv_zigzag248_direct[i];
-            s->dv_zigzag[1][i] = dsp.idct_permutation[(j & 7) + (j & 8) * 4 + (j & 48) / 2];
+            s->dv_zigzag[1][i] = idsp.idct_permutation[(j & 7) + (j & 8) * 4 + (j & 48) / 2];
         }
     }else
         memcpy(s->dv_zigzag[1], ff_dv_zigzag248_direct, sizeof(s->dv_zigzag[1]));
 
-    s->idct_put[0] = dsp.idct_put;
+    s->idct_put[0] = idsp.idct_put;
     s->idct_put[1] = ff_simple_idct248_put;
 
     return ff_dvvideo_init(avctx);

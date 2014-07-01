@@ -121,7 +121,7 @@ int ff_rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
     if (res < 0) \
         return res; \
     if (res > 0) \
-        c->dsp.idct_put(dst, stride, block); \
+        c->idsp.idct_put(dst, stride, block); \
 } while (0)
             int16_t *block = c->block;
             BLOCK(c->lquant, y1, f->linesize[0]);
@@ -159,7 +159,7 @@ void ff_rtjpeg_decode_init(RTJpegContext *c, int width, int height,
                            const uint32_t *lquant, const uint32_t *cquant) {
     int i;
     for (i = 0; i < 64; i++) {
-        int p = c->dsp.idct_permutation[i];
+        int p = c->idsp.idct_permutation[i];
         c->lquant[p] = lquant[i];
         c->cquant[p] = cquant[i];
     }
@@ -171,13 +171,13 @@ void ff_rtjpeg_init(RTJpegContext *c, AVCodecContext *avctx)
 {
     int i;
 
-    ff_dsputil_init(&c->dsp, avctx);
+    ff_idctdsp_init(&c->idsp, avctx);
 
     for (i = 0; i < 64; i++) {
         int z = ff_zigzag_direct[i];
         z = ((z << 3) | (z >> 3)) & 63; // rtjpeg uses a transposed variant
 
         // permute the scan and quantization tables for the chosen idct
-        c->scan[i] = c->dsp.idct_permutation[z];
+        c->scan[i] = c->idsp.idct_permutation[z];
     }
 }

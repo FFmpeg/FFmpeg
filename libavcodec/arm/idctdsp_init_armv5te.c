@@ -22,14 +22,14 @@
 
 #include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#include "libavcodec/idctdsp.h"
+#include "idctdsp_arm.h"
 
 void ff_simple_idct_armv5te(int16_t *data);
 void ff_simple_idct_put_armv5te(uint8_t *dest, int line_size, int16_t *data);
 void ff_simple_idct_add_armv5te(uint8_t *dest, int line_size, int16_t *data);
 
-av_cold void ff_dsputil_init_armv5te(DSPContext *c, AVCodecContext *avctx,
+av_cold void ff_idctdsp_init_armv5te(IDCTDSPContext *c, AVCodecContext *avctx,
                                      unsigned high_bit_depth)
 {
     if (!avctx->lowres && !high_bit_depth &&

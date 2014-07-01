@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
+#include "idctdsp.h"
 #include "internal.h"
 #include "simple_idct.h"
 #include "proresdec.h"

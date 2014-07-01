@@ -24,6 +24,7 @@
 
 #include "libavutil/opt.h"
 #include "error_resilience.h"
+#include "idctdsp.h"
 #include "internal.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
@@ -74,11 +75,11 @@ void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n, int dir)
                 n == 1 || n == 3) {
                 /* same qscale */
                 for (i = 1; i < 8; i++)
-                    block[s->dsp.idct_permutation[i << 3]] += ac_val[i];
+                    block[s->idsp.idct_permutation[i << 3]] += ac_val[i];
             } else {
                 /* different qscale, we must rescale */
                 for (i = 1; i < 8; i++)
-                    block[s->dsp.idct_permutation[i << 3]] += ROUNDED_DIV(ac_val[i] * qscale_table[xy], s->qscale);
+                    block[s->idsp.idct_permutation[i << 3]] += ROUNDED_DIV(ac_val[i] * qscale_table[xy], s->qscale);
             }
         } else {
             const int xy = s->mb_x + s->mb_y * s->mb_stride - s->mb_stride;
@@ -89,21 +90,21 @@ void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n, int dir)
                 n == 2 || n == 3) {
                 /* same qscale */
                 for (i = 1; i < 8; i++)
-                    block[s->dsp.idct_permutation[i]] += ac_val[i + 8];
+                    block[s->idsp.idct_permutation[i]] += ac_val[i + 8];
             } else {
                 /* different qscale, we must rescale */
                 for (i = 1; i < 8; i++)
-                    block[s->dsp.idct_permutation[i]] += ROUNDED_DIV(ac_val[i + 8] * qscale_table[xy], s->qscale);
+                    block[s->idsp.idct_permutation[i]] += ROUNDED_DIV(ac_val[i + 8] * qscale_table[xy], s->qscale);
             }
         }
     }
     /* left copy */
     for (i = 1; i < 8; i++)
-        ac_val1[i] = block[s->dsp.idct_permutation[i << 3]];
+        ac_val1[i] = block[s->idsp.idct_permutation[i << 3]];
 
     /* top copy */
     for (i = 1; i < 8; i++)
-        ac_val1[8 + i] = block[s->dsp.idct_permutation[i]];
+        ac_val1[8 + i] = block[s->idsp.idct_permutation[i]];
 }
 
 /**
@@ -1856,7 +1857,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
             /* load default matrixes */
             for (i = 0; i < 64; i++) {
-                int j = s->dsp.idct_permutation[i];
+                int j = s->idsp.idct_permutation[i];
                 v = ff_mpeg4_default_intra_matrix[i];
                 s->intra_matrix[j]        = v;
                 s->chroma_intra_matrix[j] = v;
@@ -1876,14 +1877,14 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                         break;
 
                     last = v;
-                    j = s->dsp.idct_permutation[ff_zigzag_direct[i]];
+                    j = s->idsp.idct_permutation[ff_zigzag_direct[i]];
                     s->intra_matrix[j]        = last;
                     s->chroma_intra_matrix[j] = last;
                 }
 
                 /* replicate last value */
                 for (; i < 64; i++) {
-                    int j = s->dsp.idct_permutation[ff_zigzag_direct[i]];
+                    int j = s->idsp.idct_permutation[ff_zigzag_direct[i]];
                     s->intra_matrix[j]        = last;
                     s->chroma_intra_matrix[j] = last;
                 }
@@ -1899,14 +1900,14 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                         break;
 
                     last = v;
-                    j = s->dsp.idct_permutation[ff_zigzag_direct[i]];
+                    j = s->idsp.idct_permutation[ff_zigzag_direct[i]];
                     s->inter_matrix[j]        = v;
                     s->chroma_inter_matrix[j] = v;
                 }
 
                 /* replicate last value */
                 for (; i < 64; i++) {
-                    int j = s->dsp.idct_permutation[ff_zigzag_direct[i]];
+                    int j = s->idsp.idct_permutation[ff_zigzag_direct[i]];
                     s->inter_matrix[j]        = last;
                     s->chroma_inter_matrix[j] = last;
                 }
@@ -2382,15 +2383,15 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     }
 
     if (s->alternate_scan) {
-        ff_init_scantable(s->dsp.idct_permutation, &s->inter_scantable,   ff_alternate_vertical_scan);
-        ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable,   ff_alternate_vertical_scan);
-        ff_init_scantable(s->dsp.idct_permutation, &s->intra_h_scantable, ff_alternate_vertical_scan);
-        ff_init_scantable(s->dsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
+        ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,   ff_alternate_vertical_scan);
+        ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_alternate_vertical_scan);
+        ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable, ff_alternate_vertical_scan);
+        ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
     } else {
-        ff_init_scantable(s->dsp.idct_permutation, &s->inter_scantable,   ff_zigzag_direct);
-        ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable,   ff_zigzag_direct);
-        ff_init_scantable(s->dsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
-        ff_init_scantable(s->dsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
+        ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,   ff_zigzag_direct);
+        ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_zigzag_direct);
+        ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
+        ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_S &&

@@ -29,6 +29,7 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "h264chroma.h"
+#include "idctdsp.h"
 #include "mathops.h"
 #include "qpeldsp.h"
 #include "cavs.h"
@@ -772,13 +773,13 @@ av_cold int ff_cavs_init(AVCodecContext *avctx)
     AVSContext *h = avctx->priv_data;
 
     ff_blockdsp_init(&h->bdsp, avctx);
-    ff_dsputil_init(&h->dsp, avctx);
     ff_h264chroma_init(&h->h264chroma, 8);
+    ff_idctdsp_init(&h->idsp, avctx);
     ff_videodsp_init(&h->vdsp, 8);
     ff_cavsdsp_init(&h->cdsp, avctx);
-    ff_init_scantable_permutation(h->dsp.idct_permutation,
+    ff_init_scantable_permutation(h->idsp.idct_permutation,
                                   h->cdsp.idct_perm);
-    ff_init_scantable(h->dsp.idct_permutation, &h->scantable, ff_zigzag_direct);
+    ff_init_scantable(h->idsp.idct_permutation, &h->scantable, ff_zigzag_direct);
 
     h->avctx       = avctx;
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;

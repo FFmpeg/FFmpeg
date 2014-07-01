@@ -26,7 +26,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "idctdsp.h"
 #include "put_bits.h"
 #include "mjpegenc_common.h"
 #include "mjpeg.h"
