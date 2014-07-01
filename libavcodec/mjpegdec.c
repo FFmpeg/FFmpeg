@@ -465,6 +465,15 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->upscale_h = 2<<(pix_fmt_id == 0x22221100);
         s->chroma_height = s->height / 2;
         break;
+    case 0x11222200:
+        if (s->bits <= 8) s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV444P : AV_PIX_FMT_YUVJ444P;
+        else
+            goto unk_pixfmt;
+        s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+        s->upscale_v = 1;
+        s->upscale_h = 1;
+        s->chroma_height = s->height / 2;
+        break;
     case 0x11000000:
     case 0x13000000:
     case 0x14000000:
@@ -2080,7 +2089,7 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_GBRAP
                   );
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
-        for (p = 1; p<4; p++) {
+        for (p = 0; p<4; p++) {
             uint8_t *line = s->picture_ptr->data[p];
             int w = s->width;
             if (!(s->upscale_h & (1<<p)))
@@ -2104,7 +2113,7 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_GBRAP
                    );
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
-        for (p = 1; p < 4; p++) {
+        for (p = 0; p < 4; p++) {
             uint8_t *dst = &((uint8_t *)s->picture_ptr->data[p])[(s->height - 1) * s->linesize[p]];
             int w = s->width;
             if (!(s->upscale_v & (1<<p)))
