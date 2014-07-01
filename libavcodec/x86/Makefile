@@ -81,7 +81,6 @@ YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
 YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o\
                                           x86/dwt_yasm.o
 YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
-YASM-OBJS-$(CONFIG_DSPUTIL)            += x86/dsputil.o
 YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
 YASM-OBJS-$(CONFIG_FLAC_DECODER)       += x86/flacdsp.o
@@ -106,6 +105,7 @@ YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
 YASM-OBJS-$(CONFIG_HPELDSP)            += x86/fpel.o                    \
                                           x86/hpeldsp.o
 YASM-OBJS-$(CONFIG_HUFFYUVDSP)         += x86/huffyuvdsp.o
+YASM-OBJS-$(CONFIG_IDCTDSP)            += x86/idctdsp.o
 YASM-OBJS-$(CONFIG_LLAUDDSP)           += x86/lossless_audiodsp.o
 YASM-OBJS-$(CONFIG_LLVIDDSP)           += x86/lossless_videodsp.o
 YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36.o
