@@ -37,6 +37,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "internal.h"
+#include "mjpegenc_common.h"
 #include "mpegvideo.h"
 #include "mjpeg.h"
 #include "mjpegenc.h"
