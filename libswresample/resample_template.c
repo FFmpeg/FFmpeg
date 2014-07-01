@@ -70,7 +70,6 @@
 
 #endif
 
-#if DO_RESAMPLE_ONE
 static void RENAME(resample_one)(DELEM *dst, const DELEM *src,
                                  int dst_size, int64_t index2, int64_t incr)
 {
@@ -81,11 +80,10 @@ static void RENAME(resample_one)(DELEM *dst, const DELEM *src,
         index2 += incr;
     }
 }
-#endif
 
-int RENAME(swri_resample_common)(ResampleContext *c,
-                                 DELEM *dst, const DELEM *src,
-                                 int n, int update_ctx)
+static int RENAME(resample_common)(ResampleContext *c,
+                                   DELEM *dst, const DELEM *src,
+                                   int n, int update_ctx)
 {
     int dst_index;
     int index= c->index;
@@ -121,9 +119,9 @@ int RENAME(swri_resample_common)(ResampleContext *c,
     return sample_index;
 }
 
-int RENAME(swri_resample_linear)(ResampleContext *c,
-                                 DELEM *dst, const DELEM *src,
-                                 int n, int update_ctx)
+static int RENAME(resample_linear)(ResampleContext *c,
+                                   DELEM *dst, const DELEM *src,
+                                   int n, int update_ctx)
 {
     int dst_index;
     int index= c->index;
