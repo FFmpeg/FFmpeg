@@ -392,6 +392,12 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         int j = 6 + (i&1) - (i&6);
         int is = (pix_fmt_id >> (4*i)) & 0xF;
         int js = (pix_fmt_id >> (4*j)) & 0xF;
+
+        if (is == 1 && js != 2 && (i < 2 || i > 5))
+            js = (pix_fmt_id >> ( 8 + 4*(i&1))) & 0xF;
+        if (is == 1 && js != 2 && (i < 2 || i > 5))
+            js = (pix_fmt_id >> (16 + 4*(i&1))) & 0xF;
+
         if (is == 1 && js == 2) {
             if (i & 1) s->upscale_h |= 1 << (j/2);
             else       s->upscale_v |= 1 << (j/2);
@@ -474,8 +480,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->upscale_v = 1;
-        s->upscale_h = 1;
         s->chroma_height = s->height / 2;
         break;
     case 0x11000000:
