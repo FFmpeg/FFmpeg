@@ -2082,10 +2082,11 @@ the_end:
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
         for (p = 1; p<4; p++) {
             uint8_t *line = s->picture_ptr->data[p];
-            int w;
+            int w = s->width;
             if (!(s->upscale_h & (1<<p)))
                 continue;
-            w = s->width >> hshift;
+            if (p==1 || p==2)
+                w >>= hshift;
             for (i = 0; i < s->chroma_height; i++) {
                 for (index = w - 1; index; index--)
                     line[index] = (line[index / 2] + line[(index + 1) / 2]) >> 1;
@@ -2105,10 +2106,11 @@ the_end:
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
         for (p = 1; p < 4; p++) {
             uint8_t *dst = &((uint8_t *)s->picture_ptr->data[p])[(s->height - 1) * s->linesize[p]];
-            int w;
+            int w = s->width;
             if (!(s->upscale_v & (1<<p)))
                 continue;
-            w = s->width >> hshift;
+            if (p==1 || p==2)
+                w >>= hshift;
             for (i = s->height - 1; i; i--) {
                 uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[p])[i / 2 * s->linesize[p]];
                 uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[p])[(i + 1) / 2 * s->linesize[p]];
