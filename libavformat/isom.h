@@ -73,6 +73,7 @@ typedef struct MOVFragment {
     unsigned track_id;
     uint64_t base_data_offset;
     uint64_t moof_offset;
+    uint64_t implicit_offset;
     unsigned stsd_id;
     unsigned duration;
     unsigned size;
@@ -190,6 +191,7 @@ void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 #define MOV_TFHD_DEFAULT_SIZE           0x10
 #define MOV_TFHD_DEFAULT_FLAGS          0x20
 #define MOV_TFHD_DURATION_IS_EMPTY  0x010000
+#define MOV_TFHD_DEFAULT_BASE_IS_MOOF 0x020000
 
 #define MOV_TRUN_DATA_OFFSET            0x01
 #define MOV_TRUN_FIRST_SAMPLE_FLAGS     0x04
