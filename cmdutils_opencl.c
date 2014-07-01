@@ -224,7 +224,7 @@ int opt_opencl_bench(void *optctx, const char *opt, const char *arg)
         av_log(NULL, AV_LOG_ERROR, "No OpenCL device detected!\n");
         return AVERROR(EINVAL);
     }
-    if (!(devices = av_malloc(sizeof(OpenCLDeviceBenchmark) * nb_devices))) {
+    if (!(devices = av_malloc_array(nb_devices, sizeof(OpenCLDeviceBenchmark)))) {
         av_log(NULL, AV_LOG_ERROR, "Could not allocate buffer\n");
         return AVERROR(ENOMEM);
     }
