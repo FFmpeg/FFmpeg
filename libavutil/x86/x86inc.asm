@@ -5,7 +5,7 @@
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
-;*          Jason Garrett-Glaser <darkshikari@gmail.com>
+;*          Fiona Glaser <fiona@x264.com>
 ;*          Henrik Gramner <henrik@gramner.com>
 ;*
 ;* Permission to use, copy, modify, and/or distribute this software for any

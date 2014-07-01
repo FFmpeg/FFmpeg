@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010 Jason Garrett-Glaser
+ * Copyright (c) 2010 Fiona Glaser <fiona@x264.com>
  *
  * This file is part of FFmpeg.
  *

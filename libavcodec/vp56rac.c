@@ -1,6 +1,6 @@
 /*
  * VP5/6/8 decoder
- * Copyright (c) 2010 Jason Garrett-Glaser <darkshikari@gmail.com>
+ * Copyright (c) 2010 Fiona Glaser <fiona@x264.com>
  *
  * This file is part of FFmpeg.
  *

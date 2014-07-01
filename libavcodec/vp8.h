@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2010 David Conrad
  * Copyright (C) 2010 Ronald S. Bultje
- * Copyright (C) 2010 Jason Garrett-Glaser
+ * Copyright (C) 2010 Fiona Glaser
  * Copyright (C) 2012 Daniel Kang
  *
  * This file is part of FFmpeg.

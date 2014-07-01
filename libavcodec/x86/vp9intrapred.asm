@@ -5,7 +5,7 @@
 ;*
 ;* Parts based on:
 ;* H.264 intra prediction asm optimizations
-;* Copyright (c) 2010 Jason Garrett-Glaser
+;* Copyright (c) 2010 Fiona Glaser
 ;* Copyright (c) 2010 Holger Lubitz
 ;* Copyright (c) 2010 Loren Merritt
 ;* Copyright (c) 2010 Ronald S. Bultje
