@@ -13,6 +13,7 @@ version <next>:
 - added codecview filter to visualize information exported by some codecs
 - Matroska 3D support thorugh side data
 - HTML generation using texi2html is deprecated in favor of makeinfo/texi2any
+- silenceremove filter
 
 
 version 2.3:

@@ -42,6 +42,7 @@
     • ported lenscorrection filter from frei0r filter
     • large optimizations in dctdnoiz to make it usable
     • added codecview filter to visualize information exported by some codecs
+    • added silenceremove filter
 
    ┌────────────────────────────┐
    │ libavutil                  │
