@@ -7708,7 +7708,7 @@ ffprobe -f lavfi movie=example.mov,signalstats -show_entries frame_tags=lavfi.si
 @item
 Playback video while highlighting pixels that are outside of broadcast range in red.
 @example
-ffplay example.mov -vf values="out=brng:color=red"
+ffplay example.mov -vf signalstats="out=brng:color=red"
 @end example
 @end itemize
 
