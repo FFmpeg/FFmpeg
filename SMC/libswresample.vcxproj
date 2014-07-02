@@ -97,6 +97,7 @@
   <ItemGroup>
     <YASM Include="..\libswresample\x86\audio_convert.asm" />
     <YASM Include="..\libswresample\x86\rematrix.asm" />
+    <YASM Include="..\libswresample\x86\resample.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libswresample.def" />

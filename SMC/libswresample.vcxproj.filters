@@ -67,6 +67,9 @@
     <YASM Include="..\libswresample\x86\rematrix.asm">
       <Filter>Source Files\libswresample\x86</Filter>
     </YASM>
+    <YASM Include="..\libswresample\x86\resample.asm">
+      <Filter>Source Files\libswresample\x86</Filter>
+    </YASM>
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libswresample.def">
