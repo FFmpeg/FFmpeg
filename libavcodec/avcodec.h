@@ -4086,8 +4086,8 @@ int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
  * marked with CODEC_CAP_DELAY, then no subtitles will be returned.
  *
  * @param avctx the codec context
- * @param[out] sub The AVSubtitle in which the decoded subtitle will be stored, must be
-                   freed with avsubtitle_free if *got_sub_ptr is set.
+ * @param[out] sub The Preallocated AVSubtitle in which the decoded subtitle will be stored,
+ *                 must be freed with avsubtitle_free if *got_sub_ptr is set.
  * @param[in,out] got_sub_ptr Zero if no subtitle could be decompressed, otherwise, it is nonzero.
  * @param[in] avpkt The input AVPacket containing the input buffer.
  */
