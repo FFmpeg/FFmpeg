@@ -42,7 +42,7 @@ RESAMPLE_FUNCS(float,  fma3);
 RESAMPLE_FUNCS(float,  fma4);
 RESAMPLE_FUNCS(double, sse2);
 
-void swresample_dsp_x86_init(ResampleContext *c)
+void swri_resample_dsp_x86_init(ResampleContext *c)
 {
     int av_unused mm_flags = av_get_cpu_flags();
 

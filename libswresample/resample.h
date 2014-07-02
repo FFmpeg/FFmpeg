@@ -62,7 +62,7 @@ typedef struct ResampleContext {
     } dsp;
 } ResampleContext;
 
-void swresample_dsp_init(ResampleContext *c);
-void swresample_dsp_x86_init(ResampleContext *c);
+void swri_resample_dsp_init(ResampleContext *c);
+void swri_resample_dsp_x86_init(ResampleContext *c);
 
 #endif /* SWRESAMPLE_RESAMPLE_H */

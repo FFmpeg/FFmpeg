@@ -238,7 +238,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
     c->index= -phase_count*((c->filter_length-1)/2);
     c->frac= 0;
 
-    swresample_dsp_init(c);
+    swri_resample_dsp_init(c);
 
     return c;
 error:

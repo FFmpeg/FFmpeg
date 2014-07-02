@@ -43,7 +43,7 @@
 #include "resample_template.c"
 #undef TEMPLATE_RESAMPLE_DBL
 
-void swresample_dsp_init(ResampleContext *c)
+void swri_resample_dsp_init(ResampleContext *c)
 {
 #define FNIDX(fmt) (AV_SAMPLE_FMT_##fmt - AV_SAMPLE_FMT_S16P)
     c->dsp.resample_one[FNIDX(S16P)] = (resample_one_fn) resample_one_int16;
@@ -61,5 +61,5 @@ void swresample_dsp_init(ResampleContext *c)
     c->dsp.resample_linear[FNIDX(FLTP)] = (resample_fn) resample_linear_float;
     c->dsp.resample_linear[FNIDX(DBLP)] = (resample_fn) resample_linear_double;
 
-    if (ARCH_X86) swresample_dsp_x86_init(c);
+    if (ARCH_X86) swri_resample_dsp_x86_init(c);
 }
