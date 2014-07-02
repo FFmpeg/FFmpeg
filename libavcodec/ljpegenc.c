@@ -35,14 +35,15 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "idctdsp.h"
 #include "internal.h"
+#include "mjpegenc_common.h"
 #include "mpegvideo.h"
 #include "mjpeg.h"
 #include "mjpegenc.h"
 
 typedef struct LJpegEncContext {
-    DSPContext dsp;
+    IDCTDSPContext idsp;
     ScanTable scantable;
     uint16_t matrix[64];
 
@@ -293,8 +294,9 @@ static av_cold int ljpeg_encode_init(AVCodecContext *avctx)
 
     s->scratch = av_malloc_array(avctx->width + 1, sizeof(*s->scratch));
 
-    ff_dsputil_init(&s->dsp, avctx);
-    ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);
+    ff_idctdsp_init(&s->idsp, avctx);
+    ff_init_scantable(s->idsp.idct_permutation, &s->scantable,
+                      ff_zigzag_direct);
 
     ff_mjpeg_init_hvsample(avctx, s->hsample, s->vsample);
 

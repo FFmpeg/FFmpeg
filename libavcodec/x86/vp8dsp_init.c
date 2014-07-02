@@ -1,7 +1,7 @@
 /*
  * VP8 DSP functions x86-optimized
  * Copyright (c) 2010 Ronald S. Bultje <rsbultje@gmail.com>
- * Copyright (c) 2010 Jason Garrett-Glaser <darkshikari@gmail.com>
+ * Copyright (c) 2010 Fiona Glaser <fiona@x264.com>
  *
  * This file is part of FFmpeg.
  *

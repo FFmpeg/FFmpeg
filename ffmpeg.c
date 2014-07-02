@@ -2864,7 +2864,11 @@ static int transcode_init(void)
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                              " It takes bits/s as argument, not kbits/s\n");
         } else {
-            av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+            if (av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts) < 0) {
+                av_log(NULL, AV_LOG_FATAL,
+                    "Error setting up codec context options.\n");
+                exit_program(1);
+            }
         }
 
         ret = avcodec_copy_context(ost->st->codec, ost->enc_ctx);
@@ -3237,8 +3241,11 @@ static int init_input_threads(void)
         if (ret < 0)
             return ret;
 
-        if ((ret = pthread_create(&f->thread, NULL, input_thread, f)))
+        if ((ret = pthread_create(&f->thread, NULL, input_thread, f))) {
+            av_log(NULL, AV_LOG_ERROR, "pthread_create failed: %s. Try to increase `ulimit -v` or decrease `ulimit -s`.\n", strerror(ret));
+            av_thread_message_queue_free(&f->in_thread_queue);
             return AVERROR(ret);
+        }
     }
     return 0;
 }

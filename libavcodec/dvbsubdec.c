@@ -775,8 +775,6 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_o
     int i;
     int offset_x=0, offset_y=0;
 
-    if(ctx->compute_edt == 0)
-        sub->end_display_time = ctx->time_out * 1000;
 
     if (display_def) {
         offset_x = display_def->x;
@@ -794,13 +792,14 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_o
             sub->num_rects++;
     }
 
+    if(ctx->compute_edt == 0) {
+        sub->end_display_time = ctx->time_out * 1000;
+        *got_output = 1;
+    } else if (ctx->prev_start != AV_NOPTS_VALUE) {
+        sub->end_display_time = av_rescale_q((sub->pts - ctx->prev_start ), AV_TIME_BASE_Q, (AVRational){ 1, 1000 }) - 1;
+        *got_output = 1;
+    }
     if (sub->num_rects > 0) {
-        if(ctx->compute_edt == 1 && ctx->prev_start != AV_NOPTS_VALUE) {
-            sub->end_display_time = av_rescale_q((sub->pts - ctx->prev_start ), AV_TIME_BASE_Q, (AVRational){ 1, 1000 }) - 1;
-            *got_output = 1;
-        } else if (ctx->compute_edt == 0) {
-            *got_output = 1;
-        }
 
         sub->rects = av_mallocz_array(sizeof(*sub->rects), sub->num_rects);
         for(i=0; i<sub->num_rects; i++)

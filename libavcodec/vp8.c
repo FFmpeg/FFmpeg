@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2010 David Conrad
  * Copyright (C) 2010 Ronald S. Bultje
- * Copyright (C) 2010 Jason Garrett-Glaser
+ * Copyright (C) 2010 Fiona Glaser
  * Copyright (C) 2012 Daniel Kang
  * Copyright (C) 2014 Peter Ross
  *
@@ -2584,7 +2584,8 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     s->next_framep[VP56_FRAME_CURRENT] = curframe;
 
-    ff_thread_finish_setup(avctx);
+    if (avctx->codec->update_thread_context)
+        ff_thread_finish_setup(avctx);
 
     s->linesize   = curframe->tf.f->linesize[0];
     s->uvlinesize = curframe->tf.f->linesize[1];

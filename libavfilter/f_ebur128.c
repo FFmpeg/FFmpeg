@@ -412,7 +412,7 @@ static int config_audio_output(AVFilterLink *outlink)
     if (ebur128->peak_mode & PEAK_MODE_TRUE_PEAKS) {
         int ret;
 
-        ebur128->swr_buf    = av_malloc(19200 * nb_channels * sizeof(double));
+        ebur128->swr_buf    = av_malloc_array(nb_channels, 19200 * sizeof(double));
         ebur128->true_peaks = av_calloc(nb_channels, sizeof(*ebur128->true_peaks));
         ebur128->true_peaks_per_frame = av_calloc(nb_channels, sizeof(*ebur128->true_peaks_per_frame));
         ebur128->swr_ctx    = swr_alloc();

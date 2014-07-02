@@ -29,6 +29,7 @@
 #include "asv.h"
 #include "avcodec.h"
 #include "blockdsp.h"
+#include "idctdsp.h"
 #include "internal.h"
 #include "mathops.h"
 #include "mpeg12data.h"
@@ -189,14 +190,14 @@ static inline void idct_put(ASV1Context *a, AVFrame *frame, int mb_x, int mb_y)
     uint8_t *dest_cb = frame->data[1] + (mb_y * 8 * frame->linesize[1]) + mb_x * 8;
     uint8_t *dest_cr = frame->data[2] + (mb_y * 8 * frame->linesize[2]) + mb_x * 8;
 
-    a->dsp.idct_put(dest_y                 , linesize, block[0]);
-    a->dsp.idct_put(dest_y              + 8, linesize, block[1]);
-    a->dsp.idct_put(dest_y + 8*linesize    , linesize, block[2]);
-    a->dsp.idct_put(dest_y + 8*linesize + 8, linesize, block[3]);
+    a->idsp.idct_put(dest_y,                    linesize, block[0]);
+    a->idsp.idct_put(dest_y + 8,                linesize, block[1]);
+    a->idsp.idct_put(dest_y + 8 * linesize,     linesize, block[2]);
+    a->idsp.idct_put(dest_y + 8 * linesize + 8, linesize, block[3]);
 
     if (!(a->avctx->flags&CODEC_FLAG_GRAY)) {
-        a->dsp.idct_put(dest_cb, frame->linesize[1], block[4]);
-        a->dsp.idct_put(dest_cr, frame->linesize[2], block[5]);
+        a->idsp.idct_put(dest_cb, frame->linesize[1], block[4]);
+        a->idsp.idct_put(dest_cr, frame->linesize[2], block[5]);
     }
 }
 
@@ -279,8 +280,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     ff_asv_common_init(avctx);
     ff_blockdsp_init(&a->bdsp, avctx);
+    ff_idctdsp_init(&a->idsp, avctx);
     init_vlcs(a);
-    ff_init_scantable(a->dsp.idct_permutation, &a->scantable, ff_asv_scantab);
+    ff_init_scantable(a->idsp.idct_permutation, &a->scantable, ff_asv_scantab);
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if (avctx->extradata_size < 1 || (a->inv_qscale = avctx->extradata[0]) == 0) {

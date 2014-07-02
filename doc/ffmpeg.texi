@@ -534,7 +534,7 @@ filter the stream.
 This is an alias for @code{-filter:v}, see the @ref{filter_option,,-filter option}.
 @end table
 
-@section Advanced Video Options
+@section Advanced Video options
 
 @table @option
 @item -pix_fmt[:@var{stream_specifier}] @var{format} (@emph{input/output,per-stream})
@@ -717,7 +717,7 @@ filter the stream.
 This is an alias for @code{-filter:a}, see the @ref{filter_option,,-filter option}.
 @end table
 
-@section Advanced Audio options:
+@section Advanced Audio options
 
 @table @option
 @item -atag @var{fourcc/tag} (@emph{output})
@@ -732,7 +732,7 @@ stereo but not 6 channels as 5.1. The default is to always try to guess. Use
 0 to disable all guessing.
 @end table
 
-@section Subtitle options:
+@section Subtitle options
 
 @table @option
 @item -scodec @var{codec} (@emph{input/output})
@@ -743,7 +743,7 @@ Disable subtitle recording.
 Deprecated, see -bsf
 @end table
 
-@section Advanced Subtitle options:
+@section Advanced Subtitle options
 
 @table @option
 

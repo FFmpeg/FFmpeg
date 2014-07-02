@@ -54,6 +54,13 @@ const uint8_t ff_cavs_partition_flags[30] = {
                       SPLITH|SPLITV, //B_8X8 = 29
 };
 
+const uint8_t ff_cavs_chroma_qp[64] = {
+   0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 42, 43, 43, 44, 44,
+  45, 45, 46, 46, 47, 47, 48, 48, 48, 49, 49, 49, 50, 50, 50, 51
+};
+
 /** mark block as "no prediction from this direction"
     e.g. forward motion vector in BWD partition */
 const cavs_vector ff_cavs_dir_mv   = {0,0,1,REF_DIR};

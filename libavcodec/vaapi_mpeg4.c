@@ -109,7 +109,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
         iq_matrix->load_non_intra_quant_mat     = 1;
 
         for (i = 0; i < 64; i++) {
-            int n = s->dsp.idct_permutation[ff_zigzag_direct[i]];
+            int n = s->idsp.idct_permutation[ff_zigzag_direct[i]];
             iq_matrix->intra_quant_mat[i]       = s->intra_matrix[n];
             iq_matrix->non_intra_quant_mat[i]   = s->inter_matrix[n];
         }

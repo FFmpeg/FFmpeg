@@ -2400,7 +2400,11 @@ static int opt_old2new(void *optctx, const char *opt, const char *arg)
 static int opt_bitrate(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
-    if(!strcmp(opt, "b")){
+
+    if(!strcmp(opt, "ab")){
+        av_dict_set(&o->g->codec_opts, "b:a", arg, 0);
+        return 0;
+    } else if(!strcmp(opt, "b")){
         av_log(NULL, AV_LOG_WARNING, "Please use -b:a or -b:v, -b is ambiguous\n");
         av_dict_set(&o->g->codec_opts, "b:v", arg, 0);
         return 0;
@@ -2944,6 +2948,8 @@ const OptionDef options[] = {
     { "force_key_frames", OPT_VIDEO | OPT_STRING | HAS_ARG | OPT_EXPERT |
                           OPT_SPEC | OPT_OUTPUT,                                 { .off = OFFSET(forced_key_frames) },
         "force key frames at specified timestamps", "timestamps" },
+    { "ab",           OPT_VIDEO | HAS_ARG | OPT_PERFILE | OPT_OUTPUT,            { .func_arg = opt_bitrate },
+        "audio bitrate (please use -b:a)", "bitrate" },
     { "b",            OPT_VIDEO | HAS_ARG | OPT_PERFILE | OPT_OUTPUT,            { .func_arg = opt_bitrate },
         "video bitrate (please use -b:v)", "bitrate" },
     { "hwaccel",          OPT_VIDEO | OPT_STRING | HAS_ARG | OPT_EXPERT |

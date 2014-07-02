@@ -379,13 +379,13 @@ static av_cold int init_audio(AVFilterContext *ctx)
 
     if (s->channel_layout_str) {
         int n;
-        /* TODO reindent */
-    s->channel_layout = av_get_channel_layout(s->channel_layout_str);
-    if (!s->channel_layout) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
-               s->channel_layout_str);
-        return AVERROR(EINVAL);
-    }
+
+        s->channel_layout = av_get_channel_layout(s->channel_layout_str);
+        if (!s->channel_layout) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
+                   s->channel_layout_str);
+            return AVERROR(EINVAL);
+        }
         n = av_get_channel_layout_nb_channels(s->channel_layout);
         if (s->channels) {
             if (n != s->channels) {

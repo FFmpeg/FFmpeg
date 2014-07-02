@@ -31,15 +31,6 @@ void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
                             unsigned high_bit_depth);
 void ff_dsputil_init_pix_mmx(DSPContext *c, AVCodecContext *avctx);
 
-void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
-                               int line_size);
-void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
-                               int line_size);
-void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
-                                      int line_size);
-void ff_put_signed_pixels_clamped_sse2(const int16_t *block, uint8_t *pixels,
-                                       int line_size);
-
 void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
                        int w, int h, int sides);
 

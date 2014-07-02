@@ -234,8 +234,8 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                 const int index = x1 + y1*linesize;
                 p->dsp.get_pixels(block, p->src + index, linesize);
                 p->dsp.fdct(block);
-                p->requantize(block2, block, qp, p->dsp.idct_permutation);
-                p->dsp.idct(block2);
+                p->requantize(block2, block, qp, p->idsp.idct_permutation);
+                p->idsp.idct(block2);
                 add_block(p->temp + index, linesize, block2);
             }
         }
@@ -381,6 +381,7 @@ static av_cold int init(AVFilterContext *ctx)
     if (!spp->avctx)
         return AVERROR(ENOMEM);
     avpriv_dsputil_init(&spp->dsp, spp->avctx);
+    ff_idctdsp_init(&spp->idsp, spp->avctx);
     spp->store_slice = store_slice_c;
     switch (spp->mode) {
     case MODE_HARD: spp->requantize = hardthresh_c; break;

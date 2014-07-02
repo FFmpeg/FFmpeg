@@ -67,7 +67,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-#define ABS(a) (((a) ^ ((a) >> 31)) - ((a) >> 31))
+#define ABS(a) ((a) > 0 ? (a) : -(a))
 
 static int diff_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
 {

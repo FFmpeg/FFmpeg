@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* MMX optimized DSP utils
+;* SIMD-optimized IDCT-related routines
 ;* Copyright (c) 2008 Loren Merritt
 ;* Copyright (c) 2003-2013 Michael Niedermayer
 ;* Copyright (c) 2013 Daniel Kang

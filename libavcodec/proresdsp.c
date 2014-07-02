@@ -23,7 +23,7 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
-#include "dsputil.h"
+#include "idctdsp.h"
 #include "proresdsp.h"
 #include "simple_idct.h"
 

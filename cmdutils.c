@@ -555,6 +555,11 @@ int opt_default(void *optctx, const char *opt, const char *arg)
         }
         consumed = 1;
     }
+#else
+    if (!consumed && !strcmp(opt, "sws_flags")) {
+        av_log(NULL, AV_LOG_WARNING, "Ignoring %s %s, due to disabled swscale\n", opt, arg);
+        consumed = 1;
+    }
 #endif
 #if CONFIG_SWRESAMPLE
     swr_class = swr_get_class();

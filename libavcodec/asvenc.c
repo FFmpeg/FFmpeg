@@ -281,6 +281,7 @@ static av_cold int encode_init(AVCodecContext *avctx){
     const int scale= avctx->codec_id == AV_CODEC_ID_ASV1 ? 1 : 2;
 
     ff_asv_common_init(avctx);
+    ff_dsputil_init(&a->dsp, avctx);
 
     if(avctx->global_quality <= 0) avctx->global_quality= 4*FF_QUALITY_SCALE;
 

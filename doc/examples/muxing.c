@@ -535,7 +535,7 @@ int main(int argc, char **argv)
     AVOutputFormat *fmt;
     AVFormatContext *oc;
     AVCodec *audio_codec, *video_codec;
-    int flush, ret;
+    int ret;
     int have_video = 0, have_audio = 0;
     int encode_video = 0, encode_audio = 0;
 

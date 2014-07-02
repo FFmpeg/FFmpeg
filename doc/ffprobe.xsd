@@ -8,15 +8,15 @@
 
     <xsd:complexType name="ffprobeType">
         <xsd:sequence>
+            <xsd:element name="program_version"  type="ffprobe:programVersionType"  minOccurs="0" maxOccurs="1" />
+            <xsd:element name="library_versions" type="ffprobe:libraryVersionsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="packets"  type="ffprobe:packetsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="frames"   type="ffprobe:framesType"  minOccurs="0" maxOccurs="1" />
-            <xsd:element name="streams"  type="ffprobe:streamsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="programs" type="ffprobe:programsType" minOccurs="0" maxOccurs="1" />
+            <xsd:element name="streams"  type="ffprobe:streamsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="chapters" type="ffprobe:chaptersType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="format"   type="ffprobe:formatType"  minOccurs="0" maxOccurs="1" />
             <xsd:element name="error"    type="ffprobe:errorType"   minOccurs="0" maxOccurs="1" />
-            <xsd:element name="program_version"  type="ffprobe:programVersionType"  minOccurs="0" maxOccurs="1" />
-            <xsd:element name="library_versions" type="ffprobe:libraryVersionsType" minOccurs="0" maxOccurs="1" />
         </xsd:sequence>
     </xsd:complexType>
 
@@ -53,6 +53,10 @@
     </xsd:complexType>
 
     <xsd:complexType name="frameType">
+      <xsd:sequence>
+            <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
+
       <xsd:attribute name="media_type"    type="xsd:string" use="required"/>
       <xsd:attribute name="key_frame"     type="xsd:int"    use="required"/>
       <xsd:attribute name="pts"           type="xsd:long" />
@@ -222,8 +226,7 @@
       <xsd:attribute name="copyright"        type="xsd:string" use="required"/>
       <xsd:attribute name="build_date"       type="xsd:string" use="required"/>
       <xsd:attribute name="build_time"       type="xsd:string" use="required"/>
-      <xsd:attribute name="compiler_type"    type="xsd:string" use="required"/>
-      <xsd:attribute name="compiler_version" type="xsd:string" use="required"/>
+      <xsd:attribute name="compiler_ident"   type="xsd:string" use="required"/>
       <xsd:attribute name="configuration"    type="xsd:string" use="required"/>
     </xsd:complexType>
 

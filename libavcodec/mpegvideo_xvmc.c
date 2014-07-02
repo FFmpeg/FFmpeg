@@ -320,7 +320,7 @@ static void ff_xvmc_decode_mb(struct MpegEncContext *s)
             if (s->mb_intra && (render->idct || !render->unsigned_intra))
                 *s->pblocks[i][0] -= 1 << 10;
             if (!render->idct) {
-                s->dsp.idct(*s->pblocks[i]);
+                s->idsp.idct(*s->pblocks[i]);
                 /* It is unclear if MC hardware requires pixel diff values to be
                  * in the range [-255;255]. TODO: Clipping if such hardware is
                  * ever found. As of now it would only be an unnecessary
