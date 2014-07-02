@@ -229,7 +229,6 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             /* note: realloc has been done, so reload tables */
             table = (volatile VLC_TYPE (*)[2])&vlc->table[table_index];
             table[j][0] = index; //code
-            av_assert0(table[j][0] == index);
             i = k-1;
         }
     }
