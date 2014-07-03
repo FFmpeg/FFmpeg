@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "libavutil/x86/cpu.h"
 #include "libswresample/resample.h"
 
 #define RESAMPLE_FUNCS(type, opt) \
@@ -48,39 +49,39 @@ void swri_resample_dsp_x86_init(ResampleContext *c)
 
     switch(c->format){
     case AV_SAMPLE_FMT_S16P:
-        if (ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL && mm_flags & AV_CPU_FLAG_MMX2) {
+        if (ARCH_X86_32 && EXTERNAL_MMXEXT(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_int16_mmxext
                                         : ff_resample_common_int16_mmxext;
         }
-        if (HAVE_SSE2_EXTERNAL && mm_flags & AV_CPU_FLAG_SSE2) {
+        if (EXTERNAL_SSE2(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_int16_sse2
                                         : ff_resample_common_int16_sse2;
         }
-        if (HAVE_XOP_EXTERNAL && mm_flags & AV_CPU_FLAG_XOP) {
+        if (EXTERNAL_XOP(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_int16_xop
                                         : ff_resample_common_int16_xop;
         }
         break;
     case AV_SAMPLE_FMT_FLTP:
-        if (HAVE_SSE_EXTERNAL && mm_flags & AV_CPU_FLAG_SSE) {
+        if (EXTERNAL_SSE(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_float_sse
                                         : ff_resample_common_float_sse;
         }
-        if (HAVE_AVX_EXTERNAL && mm_flags & AV_CPU_FLAG_AVX) {
+        if (EXTERNAL_AVX(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_float_avx
                                         : ff_resample_common_float_avx;
         }
-        if (HAVE_FMA3_EXTERNAL && mm_flags & AV_CPU_FLAG_FMA3) {
+        if (EXTERNAL_FMA3(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_float_fma3
                                         : ff_resample_common_float_fma3;
         }
-        if (HAVE_FMA4_EXTERNAL && mm_flags & AV_CPU_FLAG_FMA4) {
+        if (EXTERNAL_FMA4(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_float_fma4
                                         : ff_resample_common_float_fma4;
         }
         break;
     case AV_SAMPLE_FMT_DBLP:
-        if (HAVE_SSE2_EXTERNAL && mm_flags & AV_CPU_FLAG_SSE2) {
+        if (EXTERNAL_SSE2(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_double_sse2
                                         : ff_resample_common_double_sse2;
         }

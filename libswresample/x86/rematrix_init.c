@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/x86/cpu.h"
 #include "libswresample/swresample_internal.h"
 
 #define D(type, simd) \
@@ -30,6 +31,7 @@ D(int16, mmx)
 D(int16, sse2)
 
 av_cold void swri_rematrix_init_x86(struct SwrContext *s){
+#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
     int nb_in  = av_get_channel_layout_nb_channels(s->in_ch_layout);
     int nb_out = av_get_channel_layout_nb_channels(s->out_ch_layout);
@@ -40,11 +42,11 @@ av_cold void swri_rematrix_init_x86(struct SwrContext *s){
     s->mix_2_1_simd = NULL;
 
     if (s->midbuf.fmt == AV_SAMPLE_FMT_S16P){
-        if(mm_flags & AV_CPU_FLAG_MMX) {
+        if(EXTERNAL_MMX(mm_flags)) {
             s->mix_1_1_simd = ff_mix_1_1_a_int16_mmx;
             s->mix_2_1_simd = ff_mix_2_1_a_int16_mmx;
         }
-        if(mm_flags & AV_CPU_FLAG_SSE2) {
+        if(EXTERNAL_SSE2(mm_flags)) {
             s->mix_1_1_simd = ff_mix_1_1_a_int16_sse2;
             s->mix_2_1_simd = ff_mix_2_1_a_int16_sse2;
         }
@@ -64,11 +66,11 @@ av_cold void swri_rematrix_init_x86(struct SwrContext *s){
         ((int16_t*)s->native_simd_one)[1] = 14;
         ((int16_t*)s->native_simd_one)[0] = 16384;
     } else if(s->midbuf.fmt == AV_SAMPLE_FMT_FLTP){
-        if(mm_flags & AV_CPU_FLAG_SSE) {
+        if(EXTERNAL_SSE(mm_flags)) {
             s->mix_1_1_simd = ff_mix_1_1_a_float_sse;
             s->mix_2_1_simd = ff_mix_2_1_a_float_sse;
         }
-        if(HAVE_AVX_EXTERNAL && mm_flags & AV_CPU_FLAG_AVX) {
+        if(EXTERNAL_AVX(mm_flags)) {
             s->mix_1_1_simd = ff_mix_1_1_a_float_avx;
             s->mix_2_1_simd = ff_mix_2_1_a_float_avx;
         }
@@ -77,4 +79,5 @@ av_cold void swri_rematrix_init_x86(struct SwrContext *s){
         s->native_simd_one = av_mallocz(sizeof(float));
         memcpy(s->native_simd_one, s->native_one, sizeof(float));
     }
+#endif
 }
