@@ -60,6 +60,9 @@ static av_cold int init(AVFilterContext *ctx)
     int i;
     int ret;
 
+    if (!s->pix_fmts)
+        return AVERROR(EINVAL);
+
     /* count the formats */
     cur = s->pix_fmts;
     while ((cur = strchr(cur, '|'))) {
@@ -71,9 +74,6 @@ static av_cold int init(AVFilterContext *ctx)
     s->formats = av_malloc_array(nb_formats + 1, sizeof(*s->formats));
     if (!s->formats)
         return AVERROR(ENOMEM);
-
-    if (!s->pix_fmts)
-        return AVERROR(EINVAL);
 
     /* parse the list of formats */
     cur = s->pix_fmts;
