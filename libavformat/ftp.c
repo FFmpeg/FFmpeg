@@ -434,6 +434,21 @@ static int ftp_restart(FTPContext *s, int64_t pos)
     return 0;
 }
 
+static int ftp_features(FTPContext *s)
+{
+    static const char *feat_command        = "FEAT\r\n";
+    static const char *enable_utf8_command = "OPTS UTF8 ON\r\n";
+    static const int feat_codes[] = {211, 500, 502, 0};   /* 500, 502 are incorrect codes */
+    static const int opts_codes[] = {200, 451, 500, 502}; /* 500, 451, 502 are incorrect codes */
+    char *feat;
+
+    if (ftp_send_command(s, feat_command, feat_codes, &feat) == 211) {
+        if (av_stristr(feat, "UTF8"))
+            ftp_send_command(s, enable_utf8_command, opts_codes, NULL);
+    }
+    return 0;
+}
+
 static int ftp_connect_control_connection(URLContext *h)
 {
     char buf[CONTROL_BUFFER_SIZE], opts_format[20], *response = NULL;
@@ -477,6 +492,8 @@ static int ftp_connect_control_connection(URLContext *h)
             av_log(h, AV_LOG_ERROR, "Set content type failed\n");
             return err;
         }
+
+        ftp_features(s);
     }
     return 0;
 }
