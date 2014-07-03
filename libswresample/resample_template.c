@@ -70,9 +70,11 @@
 
 #endif
 
-static void RENAME(resample_one)(DELEM *dst, const DELEM *src,
+static void RENAME(resample_one)(void *dest, const void *source,
                                  int dst_size, int64_t index2, int64_t incr)
 {
+    DELEM *dst = dest;
+    const DELEM *src = source;
     int dst_index;
 
     for (dst_index = 0; dst_index < dst_size; dst_index++) {
@@ -82,9 +84,11 @@ static void RENAME(resample_one)(DELEM *dst, const DELEM *src,
 }
 
 static int RENAME(resample_common)(ResampleContext *c,
-                                   DELEM *dst, const DELEM *src,
+                                   void *dest, const void *source,
                                    int n, int update_ctx)
 {
+    DELEM *dst = dest;
+    const DELEM *src = source;
     int dst_index;
     int index= c->index;
     int frac= c->frac;
@@ -120,9 +124,11 @@ static int RENAME(resample_common)(ResampleContext *c,
 }
 
 static int RENAME(resample_linear)(ResampleContext *c,
-                                   DELEM *dst, const DELEM *src,
+                                   void *dest, const void *source,
                                    int n, int update_ctx)
 {
+    DELEM *dst = dest;
+    const DELEM *src = source;
     int dst_index;
     int index= c->index;
     int frac= c->frac;
