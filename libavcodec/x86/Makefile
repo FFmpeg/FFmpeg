@@ -3,6 +3,7 @@ OBJS                                   += x86/constants.o               \
 
 OBJS-$(CONFIG_AC3DSP)                  += x86/ac3dsp_init.o
 OBJS-$(CONFIG_AUDIODSP)                += x86/audiodsp_init.o
+OBJS-$(CONFIG_BLOCKDSP)                += x86/blockdsp.o
 OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o
@@ -40,6 +41,7 @@ OBJS-$(CONFIG_PRORES_DECODER)          += x86/proresdsp_init.o
 OBJS-$(CONFIG_RV30_DECODER)            += x86/rv34dsp_init.o
 OBJS-$(CONFIG_RV40_DECODER)            += x86/rv34dsp_init.o            \
                                           x86/rv40dsp_init.o
+OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
 OBJS-$(CONFIG_VC1_DECODER)             += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
@@ -49,7 +51,6 @@ OBJS-$(CONFIG_VP8_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 
 MMX-OBJS-$(CONFIG_AUDIODSP)            += x86/audiodsp_mmx.o
-MMX-OBJS-$(CONFIG_BLOCKDSP)            += x86/blockdsp_mmx.o
 MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o
 MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o                \
                                           x86/hpeldsp_mmx.o
@@ -59,7 +60,6 @@ MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/idctdsp_mmx.o             \
                                           x86/simple_idct.o
 MMX-OBJS-$(CONFIG_QPELDSP)             += x86/fpel_mmx.o
 
-MMX-OBJS-$(CONFIG_SVQ1_ENCODER)        += x86/svq1enc_mmx.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 
 YASM-OBJS                              += x86/deinterlace.o             \
