@@ -25,6 +25,10 @@
  * This step creates foo.ism and foo.ismc that is required by IIS for
  * serving it.
  *
+ * By adding -path-prefix path/, the produced foo.ism will refer to the
+ * files foo.ismv as "path/foo.ismv" - the prefix for the generated ismc
+ * file can be set with the -ismc-prefix option similarly.
+ *
  * To pre-split files for serving as static files by a web server without
  * any extra server support, create the ismv file as above, and split it:
  * ismindex -split foo.ismv
@@ -44,7 +48,8 @@
 
 static int usage(const char *argv0, int ret)
 {
-    fprintf(stderr, "%s [-split] [-n basename] file1 [file2] ...\n", argv0);
+    fprintf(stderr, "%s [-split] [-n basename] [-path-prefix prefix] "
+                    "[-ismc-prefix prefix] file1 [file2] ...\n", argv0);
     return ret;
 }
 
@@ -384,7 +389,8 @@ fail:
 }
 
 static void output_server_manifest(struct Tracks *tracks,
-                                   const char *basename)
+                                   const char *basename, const char *path_prefix,
+                                   const char *ismc_prefix)
 {
     char filename[1000];
     FILE *out;
@@ -400,15 +406,15 @@ static void output_server_manifest(struct Tracks *tracks,
     fprintf(out, "<smil xmlns=\"http://www.w3.org/2001/SMIL20/Language\">\n");
     fprintf(out, "\t<head>\n");
     fprintf(out, "\t\t<meta name=\"clientManifestRelativePath\" "
-                 "content=\"%s.ismc\" />\n", basename);
+                 "content=\"%s%s.ismc\" />\n", ismc_prefix, basename);
     fprintf(out, "\t</head>\n");
     fprintf(out, "\t<body>\n");
     fprintf(out, "\t\t<switch>\n");
     for (i = 0; i < tracks->nb_tracks; i++) {
         struct Track *track = tracks->tracks[i];
         const char *type    = track->is_video ? "video" : "audio";
-        fprintf(out, "\t\t\t<%s src=\"%s\" systemBitrate=\"%d\">\n",
-                type, track->name, track->bitrate);
+        fprintf(out, "\t\t\t<%s src=\"%s%s\" systemBitrate=\"%d\">\n",
+                type, path_prefix, track->name, track->bitrate);
         fprintf(out, "\t\t\t\t<param name=\"trackID\" value=\"%d\" "
                      "valueType=\"data\" />\n", track->track_id);
         fprintf(out, "\t\t\t</%s>\n", type);
@@ -534,6 +540,7 @@ static void clean_tracks(struct Tracks *tracks)
 int main(int argc, char **argv)
 {
     const char *basename = NULL;
+    const char *path_prefix = "", *ismc_prefix = "";
     int split = 0, i;
     struct Tracks tracks = { 0, .video_track = -1, .audio_track = -1 };
 
@@ -542,6 +549,12 @@ int main(int argc, char **argv)
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-n")) {
             basename = argv[i + 1];
+            i++;
+        } else if (!strcmp(argv[i], "-path-prefix")) {
+            path_prefix = argv[i + 1];
+            i++;
+        } else if (!strcmp(argv[i], "-ismc-prefix")) {
+            ismc_prefix = argv[i + 1];
             i++;
         } else if (!strcmp(argv[i], "-split")) {
             split = 1;
@@ -556,7 +569,7 @@ int main(int argc, char **argv)
         return usage(argv[0], 1);
 
     if (!split)
-        output_server_manifest(&tracks, basename);
+        output_server_manifest(&tracks, basename, path_prefix, ismc_prefix);
     output_client_manifest(&tracks, basename, split);
 
     clean_tracks(&tracks);
