@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include "avassert.h"
 #include "avstring.h"
 #include "bprint.h"
@@ -301,6 +302,22 @@ void av_bprint_escape(AVBPrint *dstbuf, const char *src, const char *special_cha
             av_bprint_chars(dstbuf, *src, 1);
         }
         break;
+    }
+}
+
+int av_bprint_fd_contents(AVBPrint *pb, int fd)
+{
+    int ret;
+    char buf[1024];
+    while (1) {
+        ret = read(fd, buf, sizeof(buf));
+        if (!ret)
+            return 0;
+        else if (ret < 0)
+            return AVERROR(errno);
+        av_bprint_append_data(pb, buf, ret);
+        if (!av_bprint_is_complete(pb))
+            return AVERROR(ENOMEM);
     }
 }
 
