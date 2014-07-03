@@ -144,6 +144,7 @@ static av_cold int pulse_close(AVFormatContext *s)
 {
     PulseData *pd = s->priv_data;
     pa_simple_free(pd->s);
+    pd->s = NULL;
     return 0;
 }
 
