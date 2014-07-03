@@ -119,7 +119,7 @@ static int ftp_get_line(FTPContext *s, char *line, int line_size)
  */
 static int ftp_status(FTPContext *s, char **line, const int response_codes[])
 {
-    int err, i, dash = 0, result = 0, code_found = 0;
+    int err, i, dash = 0, result = 0, code_found = 0, linesize;
     char buf[CONTROL_BUFFER_SIZE];
     AVBPrint line_buffer;
 
@@ -135,25 +135,36 @@ static int ftp_status(FTPContext *s, char **line, const int response_codes[])
 
         av_log(s, AV_LOG_DEBUG, "%s\n", buf);
 
-        if (strlen(buf) < 4)
-            continue;
-
+        linesize = strlen(buf);
         err = 0;
-        for (i = 0; i < 3; ++i) {
-            if (buf[i] < '0' || buf[i] > '9')
-                continue;
-            err *= 10;
-            err += buf[i] - '0';
+        if (linesize >= 3) {
+            for (i = 0; i < 3; ++i) {
+                if (buf[i] < '0' || buf[i] > '9') {
+                    err = 0;
+                    break;
+                }
+                err *= 10;
+                err += buf[i] - '0';
+            }
         }
-        dash = !!(buf[3] == '-');
 
-        for (i = 0; response_codes[i]; ++i) {
-            if (err == response_codes[i]) {
-                if (line)
-                    av_bprintf(&line_buffer, "%s", buf);
-                code_found = 1;
-                result = err;
-                break;
+        if (!code_found) {
+            for (i = 0; response_codes[i]; ++i) {
+                if (err == response_codes[i]) {
+                    code_found = 1;
+                    result = err;
+                    break;
+                }
+            }
+        }
+        if (code_found) {
+            if (line)
+                av_bprintf(&line_buffer, "%s\r\n", buf);
+            if (linesize >= 4) {
+                if (!dash && buf[3] == '-')
+                    dash = err;
+                else if (err == dash && buf[3] == ' ')
+                    dash = 0;
             }
         }
     }
