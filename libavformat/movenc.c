@@ -1465,7 +1465,9 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     int64_t duration = av_rescale_rnd(track->track_duration, MOV_TIMESCALE,
                                       track->timescale, AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
+    int flags   = MOV_TKHD_FLAG_IN_MOVIE;
     int group   = 0;
+
 
     if (st) {
         if (mov->per_stream_grouping)
@@ -1474,15 +1476,16 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
             group = st->codec->codec_type;
     }
 
+    if (track->flags & MOV_TRACK_ENABLED)
+        flags |= MOV_TKHD_FLAG_ENABLED;
+
     if (track->mode == MODE_ISM)
         version = 1;
 
     (version == 1) ? avio_wb32(pb, 104) : avio_wb32(pb, 92); /* size */
     ffio_wfourcc(pb, "tkhd");
     avio_w8(pb, version);
-    avio_wb24(pb, (track->flags & MOV_TRACK_ENABLED) ?
-                  MOV_TKHD_FLAG_ENABLED | MOV_TKHD_FLAG_IN_MOVIE :
-                  MOV_TKHD_FLAG_IN_MOVIE);
+    avio_wb24(pb, flags);
     if (version == 1) {
         avio_wb64(pb, track->time);
         avio_wb64(pb, track->time);
