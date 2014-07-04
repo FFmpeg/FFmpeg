@@ -166,7 +166,7 @@ This protocol accepts the following options.
 
 @table @option
 @item timeout
-Set timeout of socket I/O operations used by the underlying low level
+Set timeout in microseconds of socket I/O operations used by the underlying low level
 operation. By default it is set to -1, which means that the timeout is
 not specified.
 
@@ -244,7 +244,7 @@ Override the User-Agent header. If not specified the protocol will use a
 string describing the libavformat build. ("Lavf/<version>")
 
 @item timeout
-Set timeout of socket I/O operations used by the underlying low level
+Set timeout in microseconds of socket I/O operations used by the underlying low level
 operation. By default it is set to -1, which means that the timeout is
 not specified.
 
