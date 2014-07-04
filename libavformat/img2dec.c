@@ -304,12 +304,21 @@ int ff_img_read_header(AVFormatContext *s1)
         s->split_planes       = str && !av_strcasecmp(str + 1, "y");
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         if (s1->pb) {
-            uint8_t probe_buffer[AVPROBE_PADDING_SIZE] = {0};
+            int probe_buffer_size = 8;
+            uint8_t *probe_buffer = av_realloc(NULL, probe_buffer_size + AVPROBE_PADDING_SIZE);
             AVInputFormat *fmt = NULL;
             AVProbeData pd;
-            int ret = avio_read(s1->pb, probe_buffer, 8);
-            if (ret < 8)
-                return AVERROR(EINVAL);
+            int ret;
+
+            if (!probe_buffer)
+                return AVERROR(ENOMEM);
+
+            probe_buffer_size = avio_read(s1->pb, probe_buffer, probe_buffer_size);
+            if (probe_buffer_size < 0) {
+                av_free(probe_buffer);
+                return probe_buffer_size;
+            }
+            memset(probe_buffer + probe_buffer_size, 0, AVPROBE_PADDING_SIZE);
             avio_seek(s1->pb, -8, SEEK_CUR);
 
             pd.buf = probe_buffer;
@@ -327,6 +336,7 @@ int ff_img_read_header(AVFormatContext *s1)
                     break;
                 }
             }
+            av_free(probe_buffer);
         }
         if (st->codec->codec_id == AV_CODEC_ID_NONE)
             st->codec->codec_id = ff_guess_image2_codec(s->path);
