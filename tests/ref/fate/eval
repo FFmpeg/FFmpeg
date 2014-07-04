@@ -268,5 +268,14 @@ Evaluating 'between(-4, -2, -1)'
 Evaluating 'between(1,2)'
 'between(1,2)' -> nan
 
+Evaluating 'clip(0, 2, 1)'
+'clip(0, 2, 1)' -> nan
+
+Evaluating 'clip(0/0, 1, 2)'
+'clip(0/0, 1, 2)' -> nan
+
+Evaluating 'clip(0, 0/0, 1)'
+'clip(0, 0/0, 1)' -> nan
+
 12.700000 == 12.7
 0.931323 == 0.931322575

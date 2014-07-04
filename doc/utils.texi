@@ -782,6 +782,9 @@ large numbers (usually 2^53 and larger).
 Round the value of expression @var{expr} upwards to the nearest
 integer. For example, "ceil(1.5)" is "2.0".
 
+@item clip(x, min, max)
+Return the value of @var{x} clipped between @var{min} and @var{max}.
+
 @item cos(x)
 Compute cosine of @var{x}.
 

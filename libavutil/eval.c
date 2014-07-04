@@ -147,7 +147,7 @@ struct AVExpr {
         e_pow, e_mul, e_div, e_add,
         e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
-        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between,
+        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip
     } type;
     double value; // is sign in other types
     union {
@@ -187,6 +187,13 @@ static double eval_expr(Parser *p, AVExpr *e)
                                           e->param[2] ? eval_expr(p, e->param[2]) : 0);
         case e_ifnot:  return e->value * (!eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) :
                                           e->param[2] ? eval_expr(p, e->param[2]) : 0);
+        case e_clip: {
+            double x = eval_expr(p, e->param[0]);
+            double min = eval_expr(p, e->param[1]), max = eval_expr(p, e->param[2]);
+            if (isnan(min) || isnan(max) || isnan(x) || min > max)
+                return NAN;
+            return e->value * av_clipd(eval_expr(p, e->param[0]), min, max);
+        }
         case e_between: {
             double d = eval_expr(p, e->param[0]);
             return e->value * (d >= eval_expr(p, e->param[1]) &&
@@ -436,6 +443,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "bitand")) d->type = e_bitand;
     else if (strmatch(next, "bitor" )) d->type = e_bitor;
     else if (strmatch(next, "between"))d->type = e_between;
+    else if (strmatch(next, "clip"  )) d->type = e_clip;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
@@ -632,6 +640,7 @@ static int verify_expr(AVExpr *e)
             return verify_expr(e->param[0]) && verify_expr(e->param[1])
                    && (!e->param[2] || verify_expr(e->param[2]));
         case e_between:
+        case e_clip:
             return verify_expr(e->param[0]) &&
                    verify_expr(e->param[1]) &&
                    verify_expr(e->param[2]);
@@ -831,6 +840,9 @@ int main(int argc, char **argv)
         "between(10, -3, 10)",
         "between(-4, -2, -1)",
         "between(1,2)",
+        "clip(0, 2, 1)",
+        "clip(0/0, 1, 2)",
+        "clip(0, 0/0, 1)",
         NULL
     };
 
