@@ -70,7 +70,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
 
     hsize  = bytestream_get_le32(&buf); /* header size */
     ihsize = bytestream_get_le32(&buf); /* more header size */
-    if (ihsize + 14 > hsize) {
+    if (ihsize + 14LL > hsize) {
         av_log(avctx, AV_LOG_ERROR, "invalid header size %u\n", hsize);
         return AVERROR_INVALIDDATA;
     }
