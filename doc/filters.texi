@@ -3698,6 +3698,11 @@ the "Color" section in the ffmpeg-utils manual.
 
 The default value of @var{fontcolor} is "black".
 
+@item fontcolor_expr
+String which is expanded the same way as @var{text} to obtain dynamic
+@var{fontcolor} value. By default this option has empty value and is not
+processed. When this option is set, it overrides @var{fontcolor} option.
+
 @item font
 The font family to be used for drawing text. By default Sans.
 
@@ -4017,6 +4022,17 @@ drawtext='fontfile=Linux Libertine O-40\:style=Semibold:text=FFmpeg'
 Print the date of a real-time encoding (see strftime(3)):
 @example
 drawtext='fontfile=FreeSans.ttf:text=%@{localtime:%a %b %d %Y@}'
+@end example
+
+@item
+Shwo text fading in and out (appearing/disappearing):
+@example
+#!/bin/sh
+DS=1.0 # display start
+DE=10.0 # display end
+FID=1.5 # fade in duration
+FOD=5 # fade out duration
+ffplay -f lavfi "color,drawtext=text=TEST:fontsize=50:fontfile=FreeSerif.ttf:fontcolor_expr=ff0000%@{eif\\\\: max(0\\, min(255\\, 255*(1*between(t\\, $DS + $FID\\, $DE - $FOD) + ((t - $DS)/$FID)*between(t\\, $DS\\, $DS + $FID) + (-(t - $DE)/$FOD)*between(t\\, $DE - $FOD\\, $DE) ) )) \\\\: x\\\\: 2 @}"
 @end example
 
 @end itemize

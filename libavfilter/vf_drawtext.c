@@ -143,6 +143,8 @@ typedef struct DrawTextContext {
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
     AVBPrint expanded_text;         ///< used to contain the expanded text
+    uint8_t *fontcolor_expr;        ///< fontcolor expression to evaluate
+    AVBPrint expanded_fontcolor;    ///< used to contain the expanded fontcolor spec
     int ft_load_flags;              ///< flags used for loading fonts, see FT_LOAD_*
     FT_Vector *positions;           ///< positions for each element in the text
     size_t nb_positions;            ///< number of elements of positions array
@@ -201,6 +203,7 @@ static const AVOption drawtext_options[]= {
     {"text",        "set text",             OFFSET(text),               AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX, FLAGS},
     {"textfile",    "set text file",        OFFSET(textfile),           AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX, FLAGS},
     {"fontcolor",   "set foreground color", OFFSET(fontcolor.rgba),     AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
+    {"fontcolor_expr", "set foreground color expression", OFFSET(fontcolor_expr), AV_OPT_TYPE_STRING, {.str=""}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"boxcolor",    "set box color",        OFFSET(boxcolor.rgba),      AV_OPT_TYPE_COLOR,  {.str="white"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"bordercolor", "set border color",     OFFSET(bordercolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"shadowcolor", "set shadow color",     OFFSET(shadowcolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
@@ -683,6 +686,7 @@ static av_cold int init(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_WARNING, "expansion=strftime is deprecated.\n");
 
     av_bprint_init(&s->expanded_text, 0, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprint_init(&s->expanded_fontcolor, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     return 0;
 }
@@ -726,6 +730,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     FT_Done_FreeType(s->library);
 
     av_bprint_finalize(&s->expanded_text, NULL);
+    av_bprint_finalize(&s->expanded_fontcolor, NULL);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -1054,11 +1059,8 @@ end:
     return ret;
 }
 
-static int expand_text(AVFilterContext *ctx)
+static int expand_text(AVFilterContext *ctx, char *text, AVBPrint *bp)
 {
-    DrawTextContext *s = ctx->priv;
-    char *text = s->text;
-    AVBPrint *bp = &s->expanded_text;
     int ret;
 
     av_bprint_clear(bp);
@@ -1154,7 +1156,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
         av_bprintf(bp, "%s", s->text);
         break;
     case EXP_NORMAL:
-        if ((ret = expand_text(ctx)) < 0)
+        if ((ret = expand_text(ctx, s->text, &s->expanded_text)) < 0)
             return ret;
         break;
     case EXP_STRFTIME:
@@ -1178,6 +1180,20 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
               av_realloc(s->positions, len*sizeof(*s->positions))))
             return AVERROR(ENOMEM);
         s->nb_positions = len;
+    }
+
+    if (s->fontcolor_expr[0]) {
+        /* If expression is set, evaluate and replace the static value */
+        av_bprint_clear(&s->expanded_fontcolor);
+        if ((ret = expand_text(ctx, s->fontcolor_expr, &s->expanded_fontcolor)) < 0)
+            return ret;
+        if (!av_bprint_is_complete(&s->expanded_fontcolor))
+            return AVERROR(ENOMEM);
+        av_log(s, AV_LOG_DEBUG, "Evaluated fontcolor is '%s'\n", s->expanded_fontcolor.str);
+        ret = av_parse_color(s->fontcolor.rgba, s->expanded_fontcolor.str, -1, s);
+        if (ret)
+            return ret;
+        ff_draw_color(&s->dc, &s->fontcolor, s->fontcolor.rgba);
     }
 
     x = 0;
