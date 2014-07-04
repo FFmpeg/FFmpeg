@@ -470,7 +470,7 @@ static int hls_slice_header(HEVCContext *s)
         if (IS_IDR(s))
             ff_hevc_clear_refs(s);
     }
-    if (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
+    if (IS_IRAP(s))
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
 
     sh->pps_id = get_ue_golomb_long(gb);
