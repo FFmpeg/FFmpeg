@@ -3264,7 +3264,6 @@ static int mov_probe(AVProbeData *p)
         /* check for obvious tags */
         case MKTAG('m','o','o','v'):
             moov_offset = offset + 4;
-        case MKTAG('j','P',' ',' '): /* jpeg 2000 signature */
         case MKTAG('m','d','a','t'):
         case MKTAG('p','n','o','t'): /* detect movs with preview pics like ew.mov and april.mov */
         case MKTAG('u','d','t','a'): /* Packet Video PVAuthor adds this and a lot of more junk */
@@ -3274,6 +3273,9 @@ static int mov_probe(AVProbeData *p)
                  offset + 12 > (unsigned int)p->buf_size ||
                  AV_RB64(p->buf+offset + 8) == 0)) {
                 score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
+            } else if (tag == MKTAG('f','t','y','p') &&
+                       AV_RL32(p->buf + offset + 8) == MKTAG('j','p','2',' ')) {
+                score = FFMAX(score, 5);
             } else {
                 score = AVPROBE_SCORE_MAX;
             }
