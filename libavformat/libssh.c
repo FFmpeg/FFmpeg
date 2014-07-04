@@ -71,6 +71,9 @@ static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user
     if (user)
         ssh_options_set(libssh->session, SSH_OPTIONS_USER, user);
 
+    if (ssh_userauth_none(libssh->session, NULL) == SSH_AUTH_SUCCESS)
+        return 0;
+
     auth_methods = ssh_userauth_list(libssh->session, NULL);
 
     if (auth_methods & SSH_AUTH_METHOD_PUBLICKEY) {
