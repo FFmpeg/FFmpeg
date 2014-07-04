@@ -230,6 +230,7 @@ static int mlp_parse(AVCodecParserContext *s,
     int sync_present;
     uint8_t parity_bits;
     int next;
+    int ret;
     int i, p = 0;
 
     *poutbuf_size = 0;
@@ -256,7 +257,10 @@ static int mlp_parse(AVCodecParserContext *s,
             return buf_size;
         }
 
-        ff_combine_frame(&mp->pc, i - 7, &buf, &buf_size);
+        if ((ret = ff_combine_frame(&mp->pc, i - 7, &buf, &buf_size)) < 0) {
+            av_log(avctx, AV_LOG_WARNING, "ff_combine_frame failed\n");
+            return ret;
+        }
 
         return i - 7;
     }
