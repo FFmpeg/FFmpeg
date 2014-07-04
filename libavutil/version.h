@@ -24,7 +24,7 @@
 #include "macros.h"
 
 /**
- * @defgroup version_utils Library Version Macros
+ * @addtogroup version_utils
  *
  * Useful to check and match library version in order to maintain
  * backward compatibility.
