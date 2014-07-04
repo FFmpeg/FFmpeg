@@ -128,6 +128,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         rgb[0] = bytestream_get_le32(&buf);
         rgb[1] = bytestream_get_le32(&buf);
         rgb[2] = bytestream_get_le32(&buf);
+        if (ihsize > 40)
         alpha = bytestream_get_le32(&buf);
     }
 
