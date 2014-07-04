@@ -583,6 +583,16 @@ static int exr_probe(AVProbeData *p)
     return 0;
 }
 
+static int j2k_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RB64(b) == 0x0000000c6a502020 ||
+        AV_RB32(b) == 0xff4fff51)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
 static int pictor_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -653,6 +663,7 @@ AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
 IMAGEAUTO_DEMUXER(bmp,     AV_CODEC_ID_BMP)
 IMAGEAUTO_DEMUXER(dpx,     AV_CODEC_ID_DPX)
 IMAGEAUTO_DEMUXER(exr,     AV_CODEC_ID_EXR)
+IMAGEAUTO_DEMUXER(j2k,     AV_CODEC_ID_JPEG2000)
 IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
 IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
 IMAGEAUTO_DEMUXER(sgi,     AV_CODEC_ID_SGI)
