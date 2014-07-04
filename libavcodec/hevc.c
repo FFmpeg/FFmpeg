@@ -2503,6 +2503,8 @@ static int hevc_frame_start(HEVCContext *s)
         goto fail;
     }
 
+    s->ref->frame->key_frame = IS_IRAP(s);
+
     ret = set_side_data(s);
     if (ret < 0)
         goto fail;
