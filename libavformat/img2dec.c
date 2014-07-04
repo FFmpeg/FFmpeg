@@ -564,13 +564,20 @@ AVInputFormat ff_image2pipe_demuxer = {
 static int bmp_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
+    int ihsize;
 
-    if (AV_RB16(b) == 0x424d)
-        if (!AV_RN32(b + 6)) {
-            return AVPROBE_SCORE_EXTENSION + 1;
-        } else {
-            return AVPROBE_SCORE_EXTENSION / 4;
-        }
+    if (AV_RB16(b) != 0x424d)
+        return 0;
+
+    ihsize = AV_RL32(b+14);
+    if (ihsize < 12 || ihsize > 255)
+        return 0;
+
+    if (!AV_RN32(b + 6)) {
+        return AVPROBE_SCORE_EXTENSION + 1;
+    } else {
+        return AVPROBE_SCORE_EXTENSION / 4;
+    }
     return 0;
 }
 
