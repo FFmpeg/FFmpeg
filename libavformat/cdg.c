@@ -26,6 +26,10 @@
 #define CDG_COMMAND        0x09
 #define CDG_MASK           0x3F
 
+typedef struct CDGContext {
+    int got_first_packet;
+} CDGContext;
+
 static int read_header(AVFormatContext *s)
 {
     AVStream *vst;
@@ -50,6 +54,7 @@ static int read_header(AVFormatContext *s)
 
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    CDGContext *priv = s->priv_data;
     int ret;
 
     while (1) {
@@ -59,6 +64,11 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         av_free_packet(pkt);
     }
 
+    if (!priv->got_first_packet) {
+        pkt->flags |= AV_PKT_FLAG_KEY;
+        priv->got_first_packet = 1;
+    }
+
     pkt->stream_index = 0;
     return ret;
 }
@@ -66,6 +76,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 AVInputFormat ff_cdg_demuxer = {
     .name           = "cdg",
     .long_name      = NULL_IF_CONFIG_SMALL("CD Graphics"),
+    .priv_data_size = sizeof(CDGContext),
     .read_header    = read_header,
     .read_packet    = read_packet,
     .extensions     = "cdg",
