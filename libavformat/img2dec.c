@@ -305,7 +305,7 @@ int ff_img_read_header(AVFormatContext *s1)
         s->split_planes       = str && !av_strcasecmp(str + 1, "y");
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         if (s1->pb) {
-            int probe_buffer_size = 8;
+            int probe_buffer_size = 2048;
             uint8_t *probe_buffer = av_realloc(NULL, probe_buffer_size + AVPROBE_PADDING_SIZE);
             AVInputFormat *fmt = NULL;
             AVProbeData pd;
