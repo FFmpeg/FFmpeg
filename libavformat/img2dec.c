@@ -321,7 +321,7 @@ int ff_img_read_header(AVFormatContext *s1)
             memset(probe_buffer + probe_buffer_size, 0, AVPROBE_PADDING_SIZE);
 
             pd.buf = probe_buffer;
-            pd.buf_size = 8;
+            pd.buf_size = probe_buffer_size;
             pd.filename = s1->filename;
 
             while ((fmt = av_iformat_next(fmt))) {
