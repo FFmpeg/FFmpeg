@@ -29,6 +29,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "img2.h"
 
@@ -308,7 +309,6 @@ int ff_img_read_header(AVFormatContext *s1)
             uint8_t *probe_buffer = av_realloc(NULL, probe_buffer_size + AVPROBE_PADDING_SIZE);
             AVInputFormat *fmt = NULL;
             AVProbeData pd;
-            int ret;
 
             if (!probe_buffer)
                 return AVERROR(ENOMEM);
@@ -319,7 +319,6 @@ int ff_img_read_header(AVFormatContext *s1)
                 return probe_buffer_size;
             }
             memset(probe_buffer + probe_buffer_size, 0, AVPROBE_PADDING_SIZE);
-            avio_seek(s1->pb, -8, SEEK_CUR);
 
             pd.buf = probe_buffer;
             pd.buf_size = 8;
@@ -336,7 +335,7 @@ int ff_img_read_header(AVFormatContext *s1)
                     break;
                 }
             }
-            av_free(probe_buffer);
+            ffio_rewind_with_probe_data(s1->pb, &probe_buffer, probe_buffer_size);
         }
         if (st->codec->codec_id == AV_CODEC_ID_NONE)
             st->codec->codec_id = ff_guess_image2_codec(s->path);
