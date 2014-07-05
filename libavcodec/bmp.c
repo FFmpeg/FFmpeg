@@ -128,6 +128,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         rgb[0] = bytestream_get_le32(&buf);
         rgb[1] = bytestream_get_le32(&buf);
         rgb[2] = bytestream_get_le32(&buf);
+        if (ihsize > 40)
         alpha = bytestream_get_le32(&buf);
     }
 
@@ -247,6 +248,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
             } else if (t) {
                 colors = t;
             }
+        } else {
+            colors = FFMIN(256, (hsize-ihsize-14) / 3);
         }
         buf = buf0 + 14 + ihsize; //palette location
         // OS/2 bitmap, 3 bytes per palette entry
