@@ -48,9 +48,11 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     if (aspectn == 0 && aspectd == 1)
         aspectd = 0;  // 0:0 means unknown
 
-    inter = 'p'; /* progressive is the default */
-    if (st->codec->coded_frame && st->codec->coded_frame->interlaced_frame)
-        inter = st->codec->coded_frame->top_field_first ? 't' : 'b';
+    switch (st->codec->field_order) {
+    case AV_FIELD_TT: inter = 't'; break;
+    case AV_FIELD_BB: inter = 'b'; break;
+    default:          inter = 'p'; break;
+    }
 
     switch (st->codec->pix_fmt) {
     case AV_PIX_FMT_GRAY8:
