@@ -654,7 +654,7 @@ static void update_clut(LUT3DContext *lut3d, const AVFrame *frame)
             for (i = 0; i < level; i++) {                               \
                 const uint##nbits##_t *src = (const uint##nbits##_t *)  \
                     (data + y*linesize + x*step);                       \
-                struct rgbvec *vec = &lut3d->lut[k][j][i];              \
+                struct rgbvec *vec = &lut3d->lut[i][j][k];              \
                 vec->r = src[rgba_map[0]] / (float)((1<<(nbits)) - 1);  \
                 vec->g = src[rgba_map[1]] / (float)((1<<(nbits)) - 1);  \
                 vec->b = src[rgba_map[2]] / (float)((1<<(nbits)) - 1);  \
