@@ -145,3 +145,19 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
     }
     av_strlcat(buf, rel, size);
 }
+
+AVIODirEntry *ff_alloc_dir_entry(void)
+{
+    AVIODirEntry *entry = av_mallocz(sizeof(AVIODirEntry));
+    if (entry) {
+        entry->type = AVIO_ENTRY_UNKNOWN;
+        entry->size = -1;
+        entry->modification_timestamp = -1;
+        entry->access_timestamp = -1;
+        entry->status_change_timestamp = -1;
+        entry->user_id = -1;
+        entry->group_id = -1;
+        entry->filemode = -1;
+    }
+    return entry;
+}
