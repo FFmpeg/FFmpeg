@@ -13,10 +13,12 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
-2015-xx-xx - xxxxxxx - lavc 57.11.0 - avcodec.h
+2015-xx-xx - xxxxxxx - lavc 57.11.0 - avcodec.h dirac.h
   xxxxxxx - Add av_packet_add_side_data().
   xxxxxxx - Add AVCodecContext.coded_side_data.
   xxxxxxx - Add AVCPBProperties API.
+  xxxxxxx - Add a new public header dirac.h containing
+            av_dirac_parse_sequence_header()
 
 2015-xx-xx - xxxxxxx - lavc 57.9.1 - avcodec.h
   Deprecate rtp_callback without replacement, i.e. it won't be possible to

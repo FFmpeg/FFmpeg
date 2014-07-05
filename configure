@@ -1646,6 +1646,7 @@ CONFIG_EXTRA="
     blockdsp
     bswapdsp
     cabac
+    dirac_parse
     dvprofile
     faandct
     faanidct
@@ -1850,6 +1851,7 @@ threads_if_any="$THREADS_LIST"
 
 # subsystems
 dct_select="rdft"
+dirac_parse_select="golomb"
 error_resilience_select="me_cmp"
 faandct_deps="faan fdctdsp"
 faanidct_deps="faan idctdsp"
@@ -2241,7 +2243,7 @@ mxf_d10_muxer_select="mxf_muxer"
 nut_muxer_select="riffenc"
 nuv_demuxer_select="riffdec"
 oga_muxer_select="ogg_muxer"
-ogg_demuxer_select="golomb"
+ogg_demuxer_select="dirac_parse"
 opus_muxer_select="ogg_muxer"
 psp_muxer_select="mov_muxer"
 rtp_demuxer_select="sdp_demuxer"

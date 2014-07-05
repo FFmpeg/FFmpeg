@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/get_bits.h"
+#include "libavutil/intreadwrite.h"
 #include "libavcodec/dirac.h"
 #include "avformat.h"
 #include "internal.h"
@@ -29,21 +29,34 @@ static int dirac_header(AVFormatContext *s, int idx)
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
-    dirac_source_params source;
-    GetBitContext gb;
+    AVDiracSeqHeader *dsh;
+    int ret;
 
     // already parsed the header
     if (st->codec->codec_id == AV_CODEC_ID_DIRAC)
         return 0;
 
-    init_get_bits(&gb, os->buf + os->pstart + 13, (os->psize - 13) * 8);
-    if (avpriv_dirac_parse_sequence_header(st->codec, &gb, &source) < 0)
-        return -1;
+    ret = av_dirac_parse_sequence_header(&dsh, os->buf + os->pstart + 13, (os->psize - 13) * 8, s);
+    if (ret < 0)
+        return ret;
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_DIRAC;
+    st->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
+    st->codec->codec_id        = AV_CODEC_ID_DIRAC;
+    st->codec->width           = dsh->width;
+    st->codec->height          = dsh->height;
+    st->codec->pix_fmt         = dsh->pix_fmt;
+    st->codec->color_range     = dsh->color_range;
+    st->codec->color_trc       = dsh->color_trc;
+    st->codec->color_primaries = dsh->color_primaries;
+    st->codec->colorspace      = dsh->colorspace;
+    st->codec->profile         = dsh->profile;
+    st->codec->level           = dsh->level;
+
     // dirac in ogg always stores timestamps as though the video were interlaced
-    avpriv_set_pts_info(st, 64, st->codec->time_base.num, 2*st->codec->time_base.den);
+    avpriv_set_pts_info(st, 64, dsh->framerate.den, 2 * dsh->framerate.num);
+
+    av_freep(&dsh);
+
     return 1;
 }
 
