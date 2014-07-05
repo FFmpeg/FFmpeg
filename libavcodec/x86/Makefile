@@ -60,7 +60,6 @@ OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 
 MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o
 MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
-MMX-OBJS-$(CONFIG_HUFFYUVDSP)          += x86/huffyuvdsp_mmx.o
 MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/idctdsp_mmx.o             \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
