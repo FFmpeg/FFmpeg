@@ -139,7 +139,8 @@ static int amr_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     return 0;
 }
 
-static int amr_parse_fmtp(AVStream *stream, PayloadContext *data,
+static int amr_parse_fmtp(AVFormatContext *s,
+                          AVStream *stream, PayloadContext *data,
                           char *attr, char *value)
 {
     /* Some AMR SDP configurations contain "octet-align", without
@@ -147,8 +148,8 @@ static int amr_parse_fmtp(AVStream *stream, PayloadContext *data,
      * interpret it as "1".
      */
     if (!strcmp(value, "")) {
-        av_log(NULL, AV_LOG_WARNING, "AMR fmtp attribute %s had "
-                                     "nonstandard empty value\n", attr);
+        av_log(s, AV_LOG_WARNING, "AMR fmtp attribute %s had "
+                                  "nonstandard empty value\n", attr);
         strcpy(value, "1");
     }
     if (!strcmp(attr, "octet-align"))
@@ -177,7 +178,7 @@ static int amr_parse_sdp_line(AVFormatContext *s, int st_index,
      * separated key/value pairs.
      */
     if (av_strstart(line, "fmtp:", &p)) {
-        ret = ff_parse_fmtp(s->streams[st_index], data, p, amr_parse_fmtp);
+        ret = ff_parse_fmtp(s, s->streams[st_index], data, p, amr_parse_fmtp);
         if (!data->octet_align || data->crc ||
             data->interleaving || data->channels != 1) {
             av_log(s, AV_LOG_ERROR, "Unsupported RTP/AMR configuration!\n");

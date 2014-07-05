@@ -210,7 +210,8 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
     return 0;
 }
 
-static int parse_fmtp(AVStream *stream, PayloadContext *data,
+static int parse_fmtp(AVFormatContext *s,
+                      AVStream *stream, PayloadContext *data,
                       char *attr, char *value)
 {
     AVCodecContext *codec = stream->codec;
@@ -248,7 +249,7 @@ static int parse_sdp_line(AVFormatContext *s, int st_index,
         return 0;
 
     if (av_strstart(line, "fmtp:", &p))
-        return ff_parse_fmtp(s->streams[st_index], data, p, parse_fmtp);
+        return ff_parse_fmtp(s, s->streams[st_index], data, p, parse_fmtp);
 
     return 0;
 }
