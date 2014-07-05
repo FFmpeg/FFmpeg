@@ -34,6 +34,7 @@
 #include "put_bits.h"
 #include "dv.h"
 #include "dv_tablegen.h"
+#include "dv_profile_internal.h"
 
 static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 {

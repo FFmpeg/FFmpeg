@@ -1534,6 +1534,7 @@ CONFIG_EXTRA="
     bswapdsp
     cabac
     dsputil
+    dvprofile
     fdctdsp
     gcrypt
     golomb
@@ -1749,8 +1750,8 @@ cscd_decoder_suggest="zlib"
 dca_decoder_select="mdct"
 dnxhd_decoder_select="blockdsp idctdsp"
 dnxhd_encoder_select="aandcttables blockdsp dsputil fdctdsp idctdsp mpegvideoenc"
-dvvideo_decoder_select="idctdsp"
-dvvideo_encoder_select="dsputil fdctdsp"
+dvvideo_decoder_select="dvprofile idctdsp"
+dvvideo_encoder_select="dsputil dvprofile fdctdsp"
 dxa_decoder_deps="zlib"
 eac3_decoder_select="ac3_decoder"
 eac3_encoder_select="ac3_encoder"
@@ -2007,6 +2008,8 @@ avisynth_demuxer_deps="avisynth"
 avisynth_demuxer_select="riffdec"
 caf_demuxer_select="riffdec"
 dirac_demuxer_select="dirac_parser"
+dv_demuxer_select="dvprofile"
+dv_muxer_select="dvprofile"
 dxa_demuxer_select="riffdec"
 eac3_demuxer_select="ac3_parser"
 f4v_muxer_select="mov_muxer"
