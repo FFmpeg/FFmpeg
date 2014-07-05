@@ -3,7 +3,7 @@ OBJS                                   += x86/constants.o               \
 
 OBJS-$(CONFIG_AC3DSP)                  += x86/ac3dsp_init.o
 OBJS-$(CONFIG_AUDIODSP)                += x86/audiodsp_init.o
-OBJS-$(CONFIG_BLOCKDSP)                += x86/blockdsp_mmx.o
+OBJS-$(CONFIG_BLOCKDSP)                += x86/blockdsp_init.o
 OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o
@@ -46,7 +46,7 @@ OBJS-$(CONFIG_PRORES_LGPL_DECODER)     += x86/proresdsp_init.o
 OBJS-$(CONFIG_RV30_DECODER)            += x86/rv34dsp_init.o
 OBJS-$(CONFIG_RV40_DECODER)            += x86/rv34dsp_init.o            \
                                           x86/rv40dsp_init.o
-OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc_mmx.o
+OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc.o
 OBJS-$(CONFIG_V210_DECODER)            += x86/v210-init.o
 OBJS-$(CONFIG_TTA_DECODER)             += x86/ttadsp_init.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
