@@ -193,6 +193,11 @@ typedef struct SwrContext SwrContext;
 const AVClass *swr_get_class(void);
 
 /**
+ * @name SwrContext constructor functions
+ * @{
+ */
+
+/**
  * Allocate SwrContext.
  *
  * If you use this function you will need to set the parameters (manually or
@@ -243,6 +248,13 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
                                       int log_offset, void *log_ctx);
 
 /**
+ * @}
+ *
+ * @name SwrContext destructor functions
+ * @{
+ */
+
+/**
  * Free the given SwrContext and set the pointer to NULL.
  */
 void swr_free(struct SwrContext **s);
@@ -258,7 +270,13 @@ void swr_free(struct SwrContext **s);
 void swr_close(struct SwrContext *s);
 
 /**
- * Convert audio.
+ * @}
+ *
+ * @name Core conversion functions
+ * @{
+ */
+
+/** Convert audio.
  *
  * in and in_count can be set to 0 to flush the last few samples out at the
  * end.
@@ -294,6 +312,15 @@ int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
 int64_t swr_next_pts(struct SwrContext *s, int64_t pts);
 
 /**
+ * @}
+ *
+ * @name Low-level option setting functions
+ * These functons provide a means to set low-level options that is not possible
+ * with the AVOption API.
+ * @{
+ */
+
+/**
  * Activate resampling compensation.
  */
 int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensation_distance);
@@ -318,6 +345,13 @@ int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
  * @return  AVERROR error code in case of failure.
  */
 int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride);
+
+/**
+ * @}
+ *
+ * @name Sample handling functions
+ * @{
+ */
 
 /**
  * Drops the specified number of output samples.
@@ -352,6 +386,13 @@ int swr_inject_silence(struct SwrContext *s, int count);
 int64_t swr_get_delay(struct SwrContext *s, int64_t base);
 
 /**
+ * @}
+ *
+ * @name Configuration accessors
+ * @{
+ */
+
+/**
  * Return the @ref LIBSWRESAMPLE_VERSION_INT constant.
  *
  * This is useful to check if the build-time libswresample has the same version
@@ -376,6 +417,7 @@ const char *swresample_configuration(void);
 const char *swresample_license(void);
 
 /**
+ * @}
  * @}
  */
 
