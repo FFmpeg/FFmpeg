@@ -1097,7 +1097,7 @@ AVCodec ff_roq_encoder = {
     .init                 = roq_encode_init,
     .encode2              = roq_encode_frame,
     .close                = roq_encode_end,
-    .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P,
+    .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVJ444P,
                                                         AV_PIX_FMT_NONE },
     .priv_class     = &roq_class,
 };
