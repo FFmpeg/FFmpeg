@@ -140,7 +140,7 @@ enum SwrFilterType {
 typedef struct SwrContext SwrContext;
 
 /**
- * Get the AVClass for swrContext. It can be used in combination with
+ * Get the AVClass for SwrContext. It can be used in combination with
  * AV_OPT_SEARCH_FAKE_OBJ for examining options.
  *
  * @see av_opt_find().
@@ -205,10 +205,10 @@ void swr_free(struct SwrContext **s);
 /**
  * Closes the context so that swr_is_initialized() returns 0.
  *
- * the context can be brougt back to life by running swr_init(),
+ * The context can be brought back to life by running swr_init(),
  * swr_init() can also be used without swr_close().
  * This function is mainly provided for simplifying the usecase
- * where one tries to support libavresample and libswresample
+ * where one tries to support libavresample and libswresample.
  */
 void swr_close(struct SwrContext *s);
 
