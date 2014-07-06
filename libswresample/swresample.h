@@ -102,6 +102,13 @@
 #define SWR_CH_MAX 32   ///< Maximum number of channels
 #endif
 
+/**
+ * @name Option constants
+ * These constants are used for the @ref avoptions interface for lswr.
+ * @{
+ *
+ */
+
 #define SWR_FLAG_RESAMPLE 1 ///< Force resampling even if equal sample rate
 //TODO use int resample ?
 //long term TODO can we enable this dynamically?
@@ -136,6 +143,10 @@ enum SwrFilterType {
     SWR_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
     SWR_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
 };
+
+/**
+ * @}
+ */
 
 typedef struct SwrContext SwrContext;
 
