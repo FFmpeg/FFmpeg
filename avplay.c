@@ -1323,6 +1323,8 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 
     vp = &is->pictq[is->pictq_windex];
 
+    vp->sar = src_frame->sample_aspect_ratio;
+
     /* alloc or resize hardware picture buffer */
     if (!vp->bmp || vp->reallocate ||
 #if CONFIG_AVFILTER
