@@ -34,6 +34,9 @@
 /**
  * @addtogroup lavu_audio
  * @{
+ *
+ * @defgroup lavu_audiofifo Audio FIFO Buffer
+ * @{
  */
 
 /**
@@ -140,6 +143,7 @@ int av_audio_fifo_size(AVAudioFifo *af);
 int av_audio_fifo_space(AVAudioFifo *af);
 
 /**
+ * @}
  * @}
  */
 
