@@ -81,4 +81,3 @@ EXPORTS
     avfilter_unref_buffer
     avfilter_unref_bufferp
     avfilter_version
-    ff_default_query_formats

@@ -432,9 +432,4 @@ EXPORTS
     avutil_configuration
     avutil_license
     avutil_version
-    ff_check_pixfmt_descriptors
-    ff_cpu_cpuid DATA
-    ;ff_cpu_cpuid_test DATA
-    ff_cpu_xgetbv DATA
-    ff_get_channel_layout
     ff_log2_tab ;DATA

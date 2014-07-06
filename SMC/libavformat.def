@@ -130,21 +130,3 @@ EXPORTS
     avpriv_new_chapter
     avpriv_set_pts_info
     ff_codec_get_id
-    ff_inet_aton
-    ff_mpegts_parse_close
-    ff_mpegts_parse_open
-    ff_mpegts_parse_packet
-    ff_rtp_get_local_rtcp_port
-    ff_rtp_get_local_rtp_port
-    ff_rtsp_parse_line
-    ff_socket_nonblock
-    ffio_open_dyn_packet_buf
-    ffio_set_buf_size
-    ffurl_close
-    ffurl_open
-    ffurl_protocol_next
-    ffurl_read_complete
-    ffurl_seek
-    ffurl_size
-    ffurl_write
-    url_feof
