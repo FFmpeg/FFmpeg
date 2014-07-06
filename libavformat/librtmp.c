@@ -47,6 +47,7 @@ typedef struct LibRTMPContext {
     char *pageurl;
     char *client_buffer_time;
     int live;
+    char *temp_filename;
 } LibRTMPContext;
 
 static void rtmp_log(int level, const char *fmt, va_list args)
@@ -71,6 +72,7 @@ static int rtmp_close(URLContext *s)
     RTMP *r = &ctx->rtmp;
 
     RTMP_Close(r);
+    av_freep(&ctx->temp_filename);
     return 0;
 }
 
@@ -149,7 +151,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
             len += strlen(ctx->swfurl);
     }
 
-    if (!(filename = av_malloc(len)))
+    if (!(ctx->temp_filename = filename = av_malloc(len)))
         return AVERROR(ENOMEM);
 
     av_strlcpy(filename, s->filename, len);
@@ -229,10 +231,9 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     }
 
     s->is_streamed = 1;
-    rc = 0;
+    return 0;
 fail:
-    if (filename != s->filename)
-        av_freep(&filename);
+    av_freep(&ctx->temp_filename);
     if (rc)
         RTMP_Close(r);
 
