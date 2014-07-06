@@ -25,6 +25,17 @@
 #include "attributes.h"
 
 /**
+ * @addtogroup lavu_audio
+ * @{
+ *
+ * @defgroup lavu_sampfmts Audio sample formats
+ *
+ * Audio sample format enumeration and related convenience functions.
+ * @{
+ *
+ */
+
+/**
  * Audio Sample Formats
  *
  * @par
@@ -40,6 +51,7 @@
  * The data layout as used in av_samples_fill_arrays() and elsewhere in Libav
  * (such as AVFrame in libavcodec) is as follows:
  *
+ * @par
  * For planar sample formats, each audio channel is in a separate data plane,
  * and linesize is the buffer size, in bytes, for a single plane. All data
  * planes must be the same size. For packed sample formats, only the first data
@@ -142,6 +154,15 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
                                enum AVSampleFormat sample_fmt, int align);
 
 /**
+ * @}
+ *
+ * @defgroup lavu_sampmanip Samples manipulation
+ *
+ * Functions that manipulate audio samples
+ * @{
+ */
+
+/**
  * Fill channel data pointers and linesize for samples with sample
  * format sample_fmt.
  *
@@ -217,4 +238,8 @@ int av_samples_copy(uint8_t **dst, uint8_t * const *src, int dst_offset,
 int av_samples_set_silence(uint8_t **audio_data, int offset, int nb_samples,
                            int nb_channels, enum AVSampleFormat sample_fmt);
 
+/**
+ * @}
+ * @}
+ */
 #endif /* AVUTIL_SAMPLEFMT_H */
