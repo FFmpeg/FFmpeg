@@ -352,17 +352,26 @@ int swr_inject_silence(struct SwrContext *s, int count);
 int64_t swr_get_delay(struct SwrContext *s, int64_t base);
 
 /**
- * Return the LIBSWRESAMPLE_VERSION_INT constant.
+ * Return the @ref LIBSWRESAMPLE_VERSION_INT constant.
+ *
+ * This is useful to check if the build-time libswresample has the same version
+ * as the run-time one.
+ *
+ * @returns     the unsigned int-typed version
  */
 unsigned swresample_version(void);
 
 /**
  * Return the swr build-time configuration.
+ *
+ * @returns     the build-time @c ./configure flags
  */
 const char *swresample_configuration(void);
 
 /**
  * Return the swr license.
+ *
+ * @returns     the license of libswresample, determined at build-time
  */
 const char *swresample_license(void);
 
