@@ -113,6 +113,7 @@
 //TODO use int resample ?
 //long term TODO can we enable this dynamically?
 
+/** Dithering algorithms */
 enum SwrDitherType {
     SWR_DITHER_NONE = 0,
     SWR_DITHER_RECTANGULAR,
