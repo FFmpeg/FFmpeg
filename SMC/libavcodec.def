@@ -229,6 +229,7 @@ EXPORTS
     ff_fft_init_fixed
     ff_fft_init_fixed_32
     ff_fft_lut_init
+    ff_idctdsp_init
     ff_jpeg_fdct_islow_10
     ff_jpeg_fdct_islow_8
     ff_mdct_calc_c

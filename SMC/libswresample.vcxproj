@@ -65,6 +65,9 @@
     <ClCompile Include="..\libswresample\dither.c">
       <ObjectFileName>$(IntDir)\libswresample_dither.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libswresample\options.c">
+      <ObjectFileName>$(IntDir)\libswresample_options.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libswresample\rematrix.c">
       <ObjectFileName>$(IntDir)\libswresample_rematrix.obj</ObjectFileName>
     </ClCompile>
@@ -83,11 +86,14 @@
     <ClCompile Include="..\libswresample\log2_tab.c">
       <ObjectFileName>$(IntDir)\libswresample_log2_tab.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libswresample\x86\swresample_x86.c">
-      <ObjectFileName>$(IntDir)\libswresample_x86_swresample_x86.obj</ObjectFileName>
+    <ClCompile Include="..\libswresample\x86\audio_convert_init.c">
+      <ObjectFileName>$(IntDir)\libswresample_x86_audio_convert_init.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libswresample\x86\resample_x86_dsp.c">
-      <ObjectFileName>$(IntDir)\libswresample_x86_resample_x86_dsp.obj</ObjectFileName>
+    <ClCompile Include="..\libswresample\x86\rematrix_init.c">
+      <ObjectFileName>$(IntDir)\libswresample_x86_rematrix_init.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libswresample\x86\resample_init.c">
+      <ObjectFileName>$(IntDir)\libswresample_x86_resample_init.obj</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -395,8 +395,11 @@
     <ClCompile Include="..\libavformat\crcenc.c">
       <ObjectFileName>$(IntDir)\libavformat_crcenc.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavformat\daud.c">
-      <ObjectFileName>$(IntDir)\libavformat_daud.obj</ObjectFileName>
+    <ClCompile Include="..\libavformat\dauddec.c">
+      <ObjectFileName>$(IntDir)\libavformat_dauddec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\daudenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_daudenc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavformat\dfa.c">
       <ObjectFileName>$(IntDir)\libavformat_dfa.obj</ObjectFileName>

@@ -458,6 +458,9 @@
     <ClCompile Include="..\libavcodec\mjpeg.c">
       <ObjectFileName>$(IntDir)\libavcodec_mjpeg.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mjpegenc_common.c">
+      <ObjectFileName>$(IntDir)\libavcodec_mjpegenc_common.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\anm.c">
       <ObjectFileName>$(IntDir)\libavcodec_anm.obj</ObjectFileName>
     </ClCompile>
@@ -1045,9 +1048,6 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\ljpegenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_ljpegenc.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\mjpegenc_common.c">
-      <ObjectFileName>$(IntDir)\libavcodec_mjpegenc_common.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\loco.c">
       <ObjectFileName>$(IntDir)\libavcodec_loco.obj</ObjectFileName>
@@ -2009,8 +2009,8 @@
     <ClCompile Include="..\libavcodec\x86\audiodsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_audiodsp_init.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\blockdsp_mmx.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_blockdsp_mmx.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\x86\blockdsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_blockdsp_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\bswapdsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_bswapdsp_init.obj</ObjectFileName>
@@ -2023,9 +2023,6 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dsputilenc_mmx.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dsputilenc_mmx.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\fdct.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_fdct.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\motion_est.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_motion_est.obj</ObjectFileName>
@@ -2123,8 +2120,8 @@
     <ClCompile Include="..\libavcodec\x86\rv40dsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_rv40dsp_init.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\svq1enc_mmx.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_svq1enc_mmx.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\x86\svq1enc_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_svq1enc_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\v210-init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_v210-init.obj</ObjectFileName>
@@ -2153,8 +2150,8 @@
     <ClCompile Include="..\libavcodec\x86\dirac_dwt.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dirac_dwt.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\huffyuvdsp_mmx.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_huffyuvdsp_mmx.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\x86\fdct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_fdct.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\idctdsp_mmx.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_idctdsp_mmx.obj</ObjectFileName>
@@ -2236,6 +2233,7 @@
     <YASM Include="..\libavcodec\x86\proresdsp.asm" />
     <YASM Include="..\libavcodec\x86\rv34dsp.asm" />
     <YASM Include="..\libavcodec\x86\rv40dsp.asm" />
+    <YASM Include="..\libavcodec\x86\svq1enc.asm" />
     <YASM Include="..\libavcodec\x86\ttadsp.asm" />
     <YASM Include="..\libavcodec\x86\v210.asm" />
     <YASM Include="..\libavcodec\x86\vc1dsp.asm" />

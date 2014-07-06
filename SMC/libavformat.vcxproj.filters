@@ -354,7 +354,10 @@
     <ClCompile Include="..\libavformat\crcenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\daud.c">
+    <ClCompile Include="..\libavformat\dauddec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\daudenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\dfa.c">

@@ -149,6 +149,9 @@
     <ClCompile Include="..\libavfilter\af_aphaser.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_aphaser.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\generate_wave_table.c">
+      <ObjectFileName>$(IntDir)\libavfilter_generate_wave_table.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_aresample.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_aresample.obj</ObjectFileName>
     </ClCompile>
@@ -202,6 +205,9 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\f_ebur128.c">
       <ObjectFileName>$(IntDir)\libavfilter_f_ebur128.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_flanger.c">
+      <ObjectFileName>$(IntDir)\libavfilter_af_flanger.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_join.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_join.obj</ObjectFileName>
