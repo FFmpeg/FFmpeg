@@ -289,8 +289,8 @@ OBJS-$(CONFIG_ON2AVC_DECODER)          += on2avc.o on2avcdata.o
 OBJS-$(CONFIG_OPUS_DECODER)            += opusdec.o opus.o opus_celt.o \
                                           opus_imdct.o opus_silk.o     \
                                           vorbis_data.o
-OBJS-$(CONFIG_PAF_VIDEO_DECODER)       += paf.o
-OBJS-$(CONFIG_PAF_AUDIO_DECODER)       += paf.o
+OBJS-$(CONFIG_PAF_AUDIO_DECODER)       += pafaudio.o
+OBJS-$(CONFIG_PAF_VIDEO_DECODER)       += pafvideo.o
 OBJS-$(CONFIG_PAM_DECODER)             += pnmdec.o pnm.o
 OBJS-$(CONFIG_PAM_ENCODER)             += pamenc.o
 OBJS-$(CONFIG_PBM_DECODER)             += pnmdec.o pnm.o
