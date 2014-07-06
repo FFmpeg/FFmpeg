@@ -304,7 +304,7 @@ static int config_props(AVFilterLink *inlink)
            s->xscale, s->yscale, s->dmax);
 
     s->fmap_linesize = FFALIGN(inlink->w, 32);
-    s->fmap = av_malloc(s->fmap_linesize * inlink->h * sizeof(*s->fmap));
+    s->fmap = av_malloc_array(s->fmap_linesize, inlink->h * sizeof(*s->fmap));
     if (!s->fmap)
         return AVERROR(ENOMEM);
 
