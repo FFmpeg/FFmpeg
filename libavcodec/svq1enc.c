@@ -77,7 +77,7 @@ static void svq1_write_header(SVQ1EncContext *s, int frame_type)
 #define THRESHOLD_MULTIPLIER 0.6
 
 static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
-                               int size)
+                               intptr_t size)
 {
     int score = 0, i;
 

@@ -2506,12 +2506,16 @@ void av_url_split(char *proto,         int proto_size,
                   char *path,          int path_size,
                   const char *url);
 
+
 /**
- * log a nice Dump of input format context or output format context
- * @param ic already initialized Format Context, must not be NULL.
- * @param index index of the stream to dump information about
- * @param url name of file or URL of stream to print information about
- * @param is_output Select whether specified context is of input(0) or output(1)
+ * Print detailed information about the input or output format, such as
+ * duration, bitrate, streams, container, programs, metadata, side data,
+ * codec and time base.
+ *
+ * @param ic        the context to analyze
+ * @param index     index of the stream to dump information about
+ * @param url       the URL to print, such as source or destination file
+ * @param is_output Select whether the specified context is an input(0) or output(1)
  */
 void av_dump_format(AVFormatContext *ic,
                     int index,

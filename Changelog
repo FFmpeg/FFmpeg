@@ -30,6 +30,8 @@ version <next>:
 - zoompan filter
 - signalstats filter
 - hqx filter (hq2x, hq3x, hq4x)
+- flanger filter
+- Image format auto-detection
 
 
 version 2.2:

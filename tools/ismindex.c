@@ -25,11 +25,20 @@
  * This step creates foo.ism and foo.ismc that is required by IIS for
  * serving it.
  *
+ * By adding -path-prefix path/, the produced foo.ism will refer to the
+ * files foo.ismv as "path/foo.ismv" - the prefix for the generated ismc
+ * file can be set with the -ismc-prefix option similarly.
+ *
  * To pre-split files for serving as static files by a web server without
  * any extra server support, create the ismv file as above, and split it:
  * ismindex -split foo.ismv
  * This step creates a file Manifest and directories QualityLevel(...),
  * that can be read directly by a smooth streaming player.
+ *
+ * The -output dir option can be used to request that output files
+ * (both .ism/.ismc, or Manifest/QualityLevels* when splitting)
+ * should be written to this directory instead of in the current directory.
+ * (The directory itself isn't created if it doesn't already exist.)
  */
 
 #include <stdio.h>
@@ -44,7 +53,8 @@
 
 static int usage(const char *argv0, int ret)
 {
-    fprintf(stderr, "%s [-split] [-n basename] file1 [file2] ...\n", argv0);
+    fprintf(stderr, "%s [-split] [-n basename] [-path-prefix prefix] "
+                    "[-ismc-prefix prefix] [-output dir] file1 [file2] ...\n", argv0);
     return ret;
 }
 
@@ -119,15 +129,15 @@ static int write_fragment(const char *filename, AVIOContext *in)
 }
 
 static int write_fragments(struct Tracks *tracks, int start_index,
-                           AVIOContext *in)
+                           AVIOContext *in, const char *output_prefix)
 {
-    char dirname[100], filename[500];
+    char dirname[2048], filename[2048];
     int i, j;
 
     for (i = start_index; i < tracks->nb_tracks; i++) {
         struct Track *track = tracks->tracks[i];
         const char *type    = track->is_video ? "video" : "audio";
-        snprintf(dirname, sizeof(dirname), "QualityLevels(%d)", track->bitrate);
+        snprintf(dirname, sizeof(dirname), "%sQualityLevels(%d)", output_prefix, track->bitrate);
         if (mkdir(dirname, 0777) == -1)
             return AVERROR(errno);
         for (j = 0; j < track->chunks; j++) {
@@ -197,7 +207,7 @@ fail:
 }
 
 static int read_mfra(struct Tracks *tracks, int start_index,
-                     const char *file, int split)
+                     const char *file, int split, const char *output_prefix)
 {
     int err = 0;
     AVIOContext *f = NULL;
@@ -221,7 +231,7 @@ static int read_mfra(struct Tracks *tracks, int start_index,
     }
 
     if (split)
-        err = write_fragments(tracks, start_index, f);
+        err = write_fragments(tracks, start_index, f, output_prefix);
 
 fail:
     if (f)
@@ -273,7 +283,8 @@ fail:
     return err;
 }
 
-static int handle_file(struct Tracks *tracks, const char *file, int split)
+static int handle_file(struct Tracks *tracks, const char *file, int split,
+                       const char *output_prefix)
 {
     AVFormatContext *ctx = NULL;
     int err = 0, i, orig_tracks = tracks->nb_tracks;
@@ -375,7 +386,7 @@ static int handle_file(struct Tracks *tracks, const char *file, int split)
 
     avformat_close_input(&ctx);
 
-    err = read_mfra(tracks, orig_tracks, file, split);
+    err = read_mfra(tracks, orig_tracks, file, split, output_prefix);
 
 fail:
     if (ctx)
@@ -383,14 +394,16 @@ fail:
     return err;
 }
 
-static void output_server_manifest(struct Tracks *tracks,
-                                   const char *basename)
+static void output_server_manifest(struct Tracks *tracks, const char *basename,
+                                   const char *output_prefix,
+                                   const char *path_prefix,
+                                   const char *ismc_prefix)
 {
     char filename[1000];
     FILE *out;
     int i;
 
-    snprintf(filename, sizeof(filename), "%s.ism", basename);
+    snprintf(filename, sizeof(filename), "%s%s.ism", output_prefix, basename);
     out = fopen(filename, "w");
     if (!out) {
         perror(filename);
@@ -400,15 +413,15 @@ static void output_server_manifest(struct Tracks *tracks,
     fprintf(out, "<smil xmlns=\"http://www.w3.org/2001/SMIL20/Language\">\n");
     fprintf(out, "\t<head>\n");
     fprintf(out, "\t\t<meta name=\"clientManifestRelativePath\" "
-                 "content=\"%s.ismc\" />\n", basename);
+                 "content=\"%s%s.ismc\" />\n", ismc_prefix, basename);
     fprintf(out, "\t</head>\n");
     fprintf(out, "\t<body>\n");
     fprintf(out, "\t\t<switch>\n");
     for (i = 0; i < tracks->nb_tracks; i++) {
         struct Track *track = tracks->tracks[i];
         const char *type    = track->is_video ? "video" : "audio";
-        fprintf(out, "\t\t\t<%s src=\"%s\" systemBitrate=\"%d\">\n",
-                type, track->name, track->bitrate);
+        fprintf(out, "\t\t\t<%s src=\"%s%s\" systemBitrate=\"%d\">\n",
+                type, path_prefix, track->name, track->bitrate);
         fprintf(out, "\t\t\t\t<param name=\"trackID\" value=\"%d\" "
                      "valueType=\"data\" />\n", track->track_id);
         fprintf(out, "\t\t\t</%s>\n", type);
@@ -436,17 +449,17 @@ static void print_track_chunks(FILE *out, struct Tracks *tracks, int main,
     }
 }
 
-static void output_client_manifest(struct Tracks *tracks,
-                                   const char *basename, int split)
+static void output_client_manifest(struct Tracks *tracks, const char *basename,
+                                   const char *output_prefix, int split)
 {
     char filename[1000];
     FILE *out;
     int i, j;
 
     if (split)
-        snprintf(filename, sizeof(filename), "Manifest");
+        snprintf(filename, sizeof(filename), "%sManifest", output_prefix);
     else
-        snprintf(filename, sizeof(filename), "%s.ismc", basename);
+        snprintf(filename, sizeof(filename), "%s%s.ismc", output_prefix, basename);
     out = fopen(filename, "w");
     if (!out) {
         perror(filename);
@@ -534,6 +547,9 @@ static void clean_tracks(struct Tracks *tracks)
 int main(int argc, char **argv)
 {
     const char *basename = NULL;
+    const char *path_prefix = "", *ismc_prefix = "";
+    const char *output_prefix = "";
+    char output_prefix_buf[2048];
     int split = 0, i;
     struct Tracks tracks = { 0, .video_track = -1, .audio_track = -1 };
 
@@ -543,12 +559,26 @@ int main(int argc, char **argv)
         if (!strcmp(argv[i], "-n")) {
             basename = argv[i + 1];
             i++;
+        } else if (!strcmp(argv[i], "-path-prefix")) {
+            path_prefix = argv[i + 1];
+            i++;
+        } else if (!strcmp(argv[i], "-ismc-prefix")) {
+            ismc_prefix = argv[i + 1];
+            i++;
+        } else if (!strcmp(argv[i], "-output")) {
+            output_prefix = argv[i + 1];
+            i++;
+            if (output_prefix[strlen(output_prefix) - 1] != '/') {
+                snprintf(output_prefix_buf, sizeof(output_prefix_buf),
+                         "%s/", output_prefix);
+                output_prefix = output_prefix_buf;
+            }
         } else if (!strcmp(argv[i], "-split")) {
             split = 1;
         } else if (argv[i][0] == '-') {
             return usage(argv[0], 1);
         } else {
-            if (handle_file(&tracks, argv[i], split))
+            if (handle_file(&tracks, argv[i], split, output_prefix))
                 return 1;
         }
     }
@@ -556,8 +586,9 @@ int main(int argc, char **argv)
         return usage(argv[0], 1);
 
     if (!split)
-        output_server_manifest(&tracks, basename);
-    output_client_manifest(&tracks, basename, split);
+        output_server_manifest(&tracks, basename, output_prefix,
+                               path_prefix, ismc_prefix);
+    output_client_manifest(&tracks, basename, output_prefix, split);
 
     clean_tracks(&tracks);
 

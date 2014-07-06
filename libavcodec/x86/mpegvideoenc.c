@@ -36,8 +36,8 @@ DECLARE_ALIGNED(16, static uint16_t, inv_zigzag_direct16)[64];
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define COMPILE_TEMPLATE_SSE2   0
 #define COMPILE_TEMPLATE_SSSE3  0
-#define RENAME(a) a ## _MMX
-#define RENAMEl(a) a ## _mmx
+#define RENAME(a)      a ## _mmx
+#define RENAME_FDCT(a) a ## _mmx
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_MMX_INLINE */
 
@@ -49,9 +49,9 @@ DECLARE_ALIGNED(16, static uint16_t, inv_zigzag_direct16)[64];
 #define COMPILE_TEMPLATE_SSE2   0
 #define COMPILE_TEMPLATE_SSSE3  0
 #undef RENAME
-#undef RENAMEl
-#define RENAME(a) a ## _MMXEXT
-#define RENAMEl(a) a ## _mmxext
+#undef RENAME_FDCT
+#define RENAME(a)      a ## _mmxext
+#define RENAME_FDCT(a) a ## _mmxext
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_MMXEXT_INLINE */
 
@@ -63,9 +63,9 @@ DECLARE_ALIGNED(16, static uint16_t, inv_zigzag_direct16)[64];
 #define COMPILE_TEMPLATE_SSE2   1
 #define COMPILE_TEMPLATE_SSSE3  0
 #undef RENAME
-#undef RENAMEl
-#define RENAME(a) a ## _SSE2
-#define RENAMEl(a) a ## _sse2
+#undef RENAME_FDCT
+#define RENAME(a)      a ## _sse2
+#define RENAME_FDCT(a) a ## _sse2
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_SSE2_INLINE */
 
@@ -77,9 +77,9 @@ DECLARE_ALIGNED(16, static uint16_t, inv_zigzag_direct16)[64];
 #define COMPILE_TEMPLATE_SSE2   1
 #define COMPILE_TEMPLATE_SSSE3  1
 #undef RENAME
-#undef RENAMEl
-#define RENAME(a) a ## _SSSE3
-#define RENAMEl(a) a ## _sse2
+#undef RENAME_FDCT
+#define RENAME(a)      a ## _ssse3
+#define RENAME_FDCT(a) a ## _sse2
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_SSSE3_INLINE */
 
@@ -210,26 +210,26 @@ av_cold void ff_dct_encode_init_x86(MpegEncContext *s)
         int cpu_flags = av_get_cpu_flags();
         if (INLINE_MMX(cpu_flags)) {
 #if HAVE_6REGS
-            s->dct_quantize = dct_quantize_MMX;
+            s->dct_quantize = dct_quantize_mmx;
 #endif
             s->denoise_dct  = denoise_dct_mmx;
         }
 #endif
 #if HAVE_6REGS && HAVE_MMXEXT_INLINE
         if (INLINE_MMXEXT(cpu_flags))
-            s->dct_quantize = dct_quantize_MMXEXT;
+            s->dct_quantize = dct_quantize_mmxext;
 #endif
 #if HAVE_SSE2_INLINE
         if (INLINE_SSE2(cpu_flags)) {
 #if HAVE_6REGS
-            s->dct_quantize = dct_quantize_SSE2;
+            s->dct_quantize = dct_quantize_sse2;
 #endif
             s->denoise_dct  = denoise_dct_sse2;
         }
 #endif
 #if HAVE_6REGS && HAVE_SSSE3_INLINE
         if (INLINE_SSSE3(cpu_flags))
-            s->dct_quantize = dct_quantize_SSSE3;
+            s->dct_quantize = dct_quantize_ssse3;
 #endif
     }
 }

@@ -16,13 +16,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_X86_HUFFYUVDSP_H
-#define AVCODEC_X86_HUFFYUVDSP_H
+#ifndef AVFILTER_GENERATE_WAVE_TABLE_H
+#define AVFILTER_GENERATE_WAVE_TABLE_H
 
-#include <stdint.h>
+enum WaveType {
+    WAVE_SIN,
+    WAVE_TRI,
+    WAVE_NB,
+};
 
-void ff_add_hfyu_median_pred_cmov(uint8_t *dst, const uint8_t *top,
-                                  const uint8_t *diff, intptr_t w,
-                                  int *left, int *left_top);
+void ff_generate_wave_table(enum WaveType wave_type,
+                            enum AVSampleFormat sample_fmt,
+                            void *table, int table_size,
+                            double min, double max, double phase);
 
-#endif /* AVCODEC_X86_HUFFYUVDSP_H */
+#endif /* AVFILTER_GENERATE_WAVE_TABLE_H */

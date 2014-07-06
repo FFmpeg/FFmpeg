@@ -26,7 +26,6 @@
 #include "internal.h"
 
 enum ConcealMethod {
-    CONCEAL_METHOD_DEFAULT              = -1,
     CONCEAL_METHOD_SPECTRAL_MUTING      =  0,
     CONCEAL_METHOD_NOISE_SUBSTITUTION   =  1,
     CONCEAL_METHOD_ENERGY_INTERPOLATION =  2,
@@ -43,8 +42,7 @@ typedef struct FDKAACDecContext {
 #define OFFSET(x) offsetof(FDKAACDecContext, x)
 #define AD AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption fdk_aac_dec_options[] = {
-    { "conceal", "Error concealment method", OFFSET(conceal_method), AV_OPT_TYPE_INT, { .i64 = CONCEAL_METHOD_DEFAULT }, CONCEAL_METHOD_DEFAULT, CONCEAL_METHOD_NB - 1, AD, "conceal" },
-    { "default",  "Default",              0, AV_OPT_TYPE_CONST, { .i64 = CONCEAL_METHOD_DEFAULT },              INT_MIN, INT_MAX, AD, "conceal" },
+    { "conceal", "Error concealment method", OFFSET(conceal_method), AV_OPT_TYPE_INT, { .i64 = CONCEAL_METHOD_NOISE_SUBSTITUTION }, CONCEAL_METHOD_SPECTRAL_MUTING, CONCEAL_METHOD_NB - 1, AD, "conceal" },
     { "spectral", "Spectral muting",      0, AV_OPT_TYPE_CONST, { .i64 = CONCEAL_METHOD_SPECTRAL_MUTING },      INT_MIN, INT_MAX, AD, "conceal" },
     { "noise",    "Noise Substitution",   0, AV_OPT_TYPE_CONST, { .i64 = CONCEAL_METHOD_NOISE_SUBSTITUTION },   INT_MIN, INT_MAX, AD, "conceal" },
     { "energy",   "Energy Interpolation", 0, AV_OPT_TYPE_CONST, { .i64 = CONCEAL_METHOD_ENERGY_INTERPOLATION }, INT_MIN, INT_MAX, AD, "conceal" },
@@ -195,12 +193,10 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
         }
     }
 
-    if (s->conceal_method != CONCEAL_METHOD_DEFAULT) {
-        if ((err = aacDecoder_SetParam(s->handle, AAC_CONCEAL_METHOD,
-                                       s->conceal_method)) != AAC_DEC_OK) {
-            av_log(avctx, AV_LOG_ERROR, "Unable to set error concealment method\n");
-            return AVERROR_UNKNOWN;
-        }
+    if ((err = aacDecoder_SetParam(s->handle, AAC_CONCEAL_METHOD,
+                                   s->conceal_method)) != AAC_DEC_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to set error concealment method\n");
+        return AVERROR_UNKNOWN;
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;

@@ -122,7 +122,7 @@ OBJS-$(CONFIG_AMRWB_DECODER)           += amrwbdec.o celp_filters.o   \
                                           celp_math.o acelp_filters.o \
                                           acelp_vectors.o             \
                                           acelp_pitch_delay.o
-OBJS-$(CONFIG_AMV_ENCODER)             += mjpegenc.o mjpeg.o           \
+OBJS-$(CONFIG_AMV_ENCODER)             += mjpegenc.o mjpeg.o mjpegenc_common.o \
                                           mpegvideo_enc.o motion_est.o \
                                           ratecontrol.o mpeg12data.o   \
                                           mpegvideo.o
@@ -835,6 +835,7 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
                                           aac_tablegen_decl.h           \
                                           fft-internal.h                \
+                                          libutvideo.h                  \
                                           old_codec_ids.h               \
                                           tableprint.h                  \
                                           $(ARCH)/vp56_arith.h          \

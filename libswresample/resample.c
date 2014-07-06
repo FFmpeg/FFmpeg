@@ -238,7 +238,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
     c->index= -phase_count*((c->filter_length-1)/2);
     c->frac= 0;
 
-    swresample_dsp_init(c);
+    swri_resample_dsp_init(c);
 
     return c;
 error:
@@ -271,8 +271,6 @@ static int swri_resample(ResampleContext *c,
                          uint8_t *dst, const uint8_t *src, int *consumed,
                          int src_size, int dst_size, int update_ctx)
 {
-    int fn_idx = c->format - AV_SAMPLE_FMT_S16P;
-
     if (c->filter_length == 1 && c->phase_shift == 0) {
         int index= c->index;
         int frac= c->frac;
@@ -281,7 +279,7 @@ static int swri_resample(ResampleContext *c,
         int new_size = (src_size * (int64_t)c->src_incr - frac + c->dst_incr - 1) / c->dst_incr;
 
         dst_size= FFMIN(dst_size, new_size);
-        c->dsp.resample_one[fn_idx](dst, src, dst_size, index2, incr);
+        c->dsp.resample_one(dst, src, dst_size, index2, incr);
 
         index += dst_size * c->dst_incr_div;
         index += (frac + dst_size * (int64_t)c->dst_incr_mod) / c->src_incr;
@@ -298,11 +296,7 @@ static int swri_resample(ResampleContext *c,
 
         dst_size = FFMIN(dst_size, delta_n);
         if (dst_size > 0) {
-            if (!c->linear) {
-                *consumed = c->dsp.resample_common[fn_idx](c, dst, src, dst_size, update_ctx);
-            } else {
-                *consumed = c->dsp.resample_linear[fn_idx](c, dst, src, dst_size, update_ctx);
-            }
+            *consumed = c->dsp.resample(c, dst, src, dst_size, update_ctx);
         } else {
             *consumed = 0;
         }

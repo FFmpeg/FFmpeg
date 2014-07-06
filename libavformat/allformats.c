@@ -318,6 +318,18 @@ void av_register_all(void)
     REGISTER_DEMUXER (YOP,              yop);
     REGISTER_MUXDEMUX(YUV4MPEGPIPE,     yuv4mpegpipe);
 
+    /* image demuxers */
+    REGISTER_DEMUXER (IMAGE_BMP_PIPE,        image_bmp_pipe);
+    REGISTER_DEMUXER (IMAGE_DPX_PIPE,        image_dpx_pipe);
+    REGISTER_DEMUXER (IMAGE_EXR_PIPE,        image_exr_pipe);
+    REGISTER_DEMUXER (IMAGE_J2K_PIPE,        image_j2k_pipe);
+    REGISTER_DEMUXER (IMAGE_PICTOR_PIPE,     image_pictor_pipe);
+    REGISTER_DEMUXER (IMAGE_PNG_PIPE,        image_png_pipe);
+    REGISTER_DEMUXER (IMAGE_SGI_PIPE,        image_sgi_pipe);
+    REGISTER_DEMUXER (IMAGE_SUNRAST_PIPE,    image_sunrast_pipe);
+    REGISTER_DEMUXER (IMAGE_TIFF_PIPE,       image_tiff_pipe);
+
+
     /* protocols */
     REGISTER_PROTOCOL(BLURAY,           bluray);
     REGISTER_PROTOCOL(CACHE,            cache);

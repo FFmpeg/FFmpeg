@@ -261,7 +261,8 @@ struct ft_error
 #define FT_ERRMSG(e) ft_errors[e].err_msg
 
 typedef struct Glyph {
-    FT_Glyph *glyph;
+    FT_Glyph glyph;
+    FT_Glyph border_glyph;
     uint32_t code;
     FT_Bitmap bitmap; ///< array holding bitmaps of font
     FT_Bitmap border_bitmap; ///< array holding bitmaps of font border
@@ -293,33 +294,32 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
     if (FT_Load_Char(s->face, code, s->ft_load_flags))
         return AVERROR(EINVAL);
 
-    /* save glyph */
-    if (!(glyph = av_mallocz(sizeof(*glyph))) ||
-        !(glyph->glyph = av_mallocz(sizeof(*glyph->glyph)))) {
+    glyph = av_mallocz(sizeof(*glyph));
+    if (!glyph) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
     glyph->code  = code;
 
-    if (FT_Get_Glyph(s->face->glyph, glyph->glyph)) {
+    if (FT_Get_Glyph(s->face->glyph, &glyph->glyph)) {
         ret = AVERROR(EINVAL);
         goto error;
     }
     if (s->borderw) {
-        FT_Glyph border_glyph = *glyph->glyph;
-        if (FT_Glyph_StrokeBorder(&border_glyph, s->stroker, 0, 0) ||
-            FT_Glyph_To_Bitmap(&border_glyph, FT_RENDER_MODE_NORMAL, 0, 1)) {
+        glyph->border_glyph = glyph->glyph;
+        if (FT_Glyph_StrokeBorder(&glyph->border_glyph, s->stroker, 0, 0) ||
+            FT_Glyph_To_Bitmap(&glyph->border_glyph, FT_RENDER_MODE_NORMAL, 0, 1)) {
             ret = AVERROR_EXTERNAL;
             goto error;
         }
-        bitmapglyph = (FT_BitmapGlyph) border_glyph;
+        bitmapglyph = (FT_BitmapGlyph) glyph->border_glyph;
         glyph->border_bitmap = bitmapglyph->bitmap;
     }
-    if (FT_Glyph_To_Bitmap(glyph->glyph, FT_RENDER_MODE_NORMAL, 0, 1)) {
+    if (FT_Glyph_To_Bitmap(&glyph->glyph, FT_RENDER_MODE_NORMAL, 0, 1)) {
         ret = AVERROR_EXTERNAL;
         goto error;
     }
-    bitmapglyph = (FT_BitmapGlyph) *glyph->glyph;
+    bitmapglyph = (FT_BitmapGlyph) glyph->glyph;
 
     glyph->bitmap      = bitmapglyph->bitmap;
     glyph->bitmap_left = bitmapglyph->left;
@@ -327,7 +327,7 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
     glyph->advance     = s->face->glyph->advance.x >> 6;
 
     /* measure text height to calculate text_height (or the maximum text height) */
-    FT_Glyph_Get_CBox(*glyph->glyph, ft_glyph_bbox_pixels, &glyph->bbox);
+    FT_Glyph_Get_CBox(glyph->glyph, ft_glyph_bbox_pixels, &glyph->bbox);
 
     /* cache the newly created glyph */
     if (!(node = av_tree_node_alloc())) {
@@ -343,6 +343,7 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
 error:
     if (glyph)
         av_freep(&glyph->glyph);
+
     av_freep(&glyph);
     av_freep(&node);
     return ret;
@@ -583,8 +584,8 @@ static int glyph_enu_free(void *opaque, void *elem)
 {
     Glyph *glyph = elem;
 
-    FT_Done_Glyph(*glyph->glyph);
-    av_freep(&glyph->glyph);
+    FT_Done_Glyph(glyph->glyph);
+    FT_Done_Glyph(glyph->border_glyph);
     av_free(elem);
     return 0;
 }

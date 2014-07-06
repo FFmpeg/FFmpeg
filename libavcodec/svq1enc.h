@@ -69,7 +69,7 @@ typedef struct SVQ1EncContext {
     uint8_t *scratchbuf;
 
     int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
-                             int size);
+                             intptr_t size);
 } SVQ1EncContext;
 
 void ff_svq1enc_init_ppc(SVQ1EncContext *c);

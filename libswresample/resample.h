@@ -27,11 +27,6 @@
 
 #include "swresample_internal.h"
 
-typedef void (*resample_one_fn)(uint8_t *dst, const uint8_t *src,
-                                int n, int64_t index, int64_t incr);
-typedef int (*resample_fn)(struct ResampleContext *c, uint8_t *dst,
-                           const uint8_t *src, int n, int update_ctx);
-
 typedef struct ResampleContext {
     const AVClass *av_class;
     uint8_t *filter_bank;
@@ -56,13 +51,14 @@ typedef struct ResampleContext {
     int filter_shift;
 
     struct {
-        resample_one_fn resample_one[AV_SAMPLE_FMT_NB - AV_SAMPLE_FMT_S16P];
-        resample_fn resample_common[AV_SAMPLE_FMT_NB - AV_SAMPLE_FMT_S16P];
-        resample_fn resample_linear[AV_SAMPLE_FMT_NB - AV_SAMPLE_FMT_S16P];
+        void (*resample_one)(void *dst, const void *src,
+                             int n, int64_t index, int64_t incr);
+        int (*resample)(struct ResampleContext *c, void *dst,
+                        const void *src, int n, int update_ctx);
     } dsp;
 } ResampleContext;
 
-void swresample_dsp_init(ResampleContext *c);
-void swresample_dsp_x86_init(ResampleContext *c);
+void swri_resample_dsp_init(ResampleContext *c);
+void swri_resample_dsp_x86_init(ResampleContext *c);
 
 #endif /* SWRESAMPLE_RESAMPLE_H */

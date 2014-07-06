@@ -27,7 +27,9 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "img2.h"
 
@@ -302,7 +304,41 @@ int ff_img_read_header(AVFormatContext *s1)
         const char *str = strrchr(s->path, '.');
         s->split_planes       = str && !av_strcasecmp(str + 1, "y");
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = ff_guess_image2_codec(s->path);
+        if (s1->pb) {
+            int probe_buffer_size = 2048;
+            uint8_t *probe_buffer = av_realloc(NULL, probe_buffer_size + AVPROBE_PADDING_SIZE);
+            AVInputFormat *fmt = NULL;
+            AVProbeData pd;
+
+            if (!probe_buffer)
+                return AVERROR(ENOMEM);
+
+            probe_buffer_size = avio_read(s1->pb, probe_buffer, probe_buffer_size);
+            if (probe_buffer_size < 0) {
+                av_free(probe_buffer);
+                return probe_buffer_size;
+            }
+            memset(probe_buffer + probe_buffer_size, 0, AVPROBE_PADDING_SIZE);
+
+            pd.buf = probe_buffer;
+            pd.buf_size = probe_buffer_size;
+            pd.filename = s1->filename;
+
+            while ((fmt = av_iformat_next(fmt))) {
+                if (fmt->read_header != ff_img_read_header ||
+                    !fmt->read_probe ||
+                    (fmt->flags & AVFMT_NOFILE) ||
+                    !fmt->raw_codec_id)
+                    continue;
+                if (fmt->read_probe(&pd) > 0) {
+                    st->codec->codec_id = fmt->raw_codec_id;
+                    break;
+                }
+            }
+            ffio_rewind_with_probe_data(s1->pb, &probe_buffer, probe_buffer_size);
+        }
+        if (st->codec->codec_id == AV_CODEC_ID_NONE)
+            st->codec->codec_id = ff_guess_image2_codec(s->path);
         if (st->codec->codec_id == AV_CODEC_ID_LJPEG)
             st->codec->codec_id = AV_CODEC_ID_MJPEG;
         if (st->codec->codec_id == AV_CODEC_ID_ALIAS_PIX) // we cannot distingiush this from BRENDER_PIX
@@ -387,6 +423,8 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             return AVERROR(EIO);
         if (s->frame_size > 0) {
             size[0] = s->frame_size;
+        } else if (!s1->streams[0]->parser) {
+            size[0] = avio_size(s1->pb);
         } else {
             size[0] = 4096;
         }
@@ -522,3 +560,126 @@ AVInputFormat ff_image2pipe_demuxer = {
     .priv_class     = &img2pipe_class,
 };
 #endif
+
+static int bmp_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+    int ihsize;
+
+    if (AV_RB16(b) != 0x424d)
+        return 0;
+
+    ihsize = AV_RL32(b+14);
+    if (ihsize < 12 || ihsize > 255)
+        return 0;
+
+    if (!AV_RN32(b + 6)) {
+        return AVPROBE_SCORE_EXTENSION + 1;
+    } else {
+        return AVPROBE_SCORE_EXTENSION / 4;
+    }
+    return 0;
+}
+
+static int dpx_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RN32(b) == AV_RN32("SDPX") || AV_RN32(b) == AV_RN32("XPDS"))
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
+static int exr_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RL32(b) == 20000630)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
+static int j2k_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RB64(b) == 0x0000000c6a502020 ||
+        AV_RB32(b) == 0xff4fff51)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
+static int pictor_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RL16(b) == 0x1234)
+        return AVPROBE_SCORE_EXTENSION / 4;
+    return 0;
+}
+
+static int png_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RB64(b) == 0x89504e470d0a1a0a)
+        return AVPROBE_SCORE_MAX - 1;
+    return 0;
+}
+
+static int sgi_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RB16(b) == 474 &&
+        (b[2] & ~1) == 0 &&
+        (b[3] & ~3) == 0 && b[3] &&
+        (AV_RB16(b + 4) & ~7) == 0 && AV_RB16(b + 4))
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
+static int sunrast_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RB32(b) == 0x59a66a95)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
+static int tiff_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RB32(b) == 0x49492a00)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
+#define IMAGEAUTO_DEMUXER(imgname, codecid)\
+static const AVClass imgname ## _class = {\
+    .class_name = AV_STRINGIFY(imgname) " demuxer",\
+    .item_name  = av_default_item_name,\
+    .option     = options,\
+    .version    = LIBAVUTIL_VERSION_INT,\
+};\
+AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
+    .name           = AV_STRINGIFY(imgname) "_pipe",\
+    .priv_data_size = sizeof(VideoDemuxData),\
+    .read_probe     = imgname ## _probe,\
+    .read_header    = ff_img_read_header,\
+    .read_packet    = ff_img_read_packet,\
+    .priv_class     = & imgname ## _class,\
+    .raw_codec_id   = codecid,\
+};
+
+IMAGEAUTO_DEMUXER(bmp,     AV_CODEC_ID_BMP)
+IMAGEAUTO_DEMUXER(dpx,     AV_CODEC_ID_DPX)
+IMAGEAUTO_DEMUXER(exr,     AV_CODEC_ID_EXR)
+IMAGEAUTO_DEMUXER(j2k,     AV_CODEC_ID_JPEG2000)
+IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
+IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
+IMAGEAUTO_DEMUXER(sgi,     AV_CODEC_ID_SGI)
+IMAGEAUTO_DEMUXER(sunrast, AV_CODEC_ID_SUNRAST)
+IMAGEAUTO_DEMUXER(tiff,    AV_CODEC_ID_TIFF)

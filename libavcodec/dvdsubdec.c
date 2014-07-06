@@ -345,7 +345,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             w = x2 - x1 + 1;
             if (w < 0)
                 w = 0;
-            h = y2 - y1;
+            h = y2 - y1 + 1;
             if (h < 0)
                 h = 0;
             if (w > 0 && h > 0) {
@@ -462,10 +462,13 @@ static int find_smallest_bounding_rectangle(AVSubtitle *s)
 }
 
 #ifdef DEBUG
+#define ALPHA_MIX(A,BACK,FORE) (((255-(A)) * (BACK) + (A) * (FORE)) / 255)
 static void ppm_save(const char *filename, uint8_t *bitmap, int w, int h,
                      uint32_t *rgba_palette)
 {
-    int x, y, v;
+    int x, y, alpha;
+    uint32_t v;
+    int back[3] = {0, 255, 0};  /* green background */
     FILE *f;
 
     f = fopen(filename, "w");
@@ -480,9 +483,10 @@ static void ppm_save(const char *filename, uint8_t *bitmap, int w, int h,
     for(y = 0; y < h; y++) {
         for(x = 0; x < w; x++) {
             v = rgba_palette[bitmap[y * w + x]];
-            putc((v >> 16) & 0xff, f);
-            putc((v >> 8) & 0xff, f);
-            putc((v >> 0) & 0xff, f);
+            alpha = v >> 24;
+            putc(ALPHA_MIX(alpha, back[0], (v >> 16) & 0xff), f);
+            putc(ALPHA_MIX(alpha, back[1], (v >> 8) & 0xff), f);
+            putc(ALPHA_MIX(alpha, back[2], (v >> 0) & 0xff), f);
         }
     }
     fclose(f);
@@ -552,7 +556,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
             sub->start_display_time,
             sub->end_display_time);
     ppm_save(ppm_name, sub->rects[0]->pict.data[0],
-             sub->rects[0]->w, sub->rects[0]->h, sub->rects[0]->pict.data[1]);
+             sub->rects[0]->w, sub->rects[0]->h, (uint32_t*) sub->rects[0]->pict.data[1]);
     }
 #endif
 

@@ -1567,7 +1567,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
     }
     // Some streams do not send a display segment but if we have all the other
     // segments then we need no further data.
-    if (got_segment == 15 && sub) {
+    if (got_segment == 15) {
         av_log(avctx, AV_LOG_DEBUG, "Missing display_end_segment, emulating\n");
         dvbsub_display_end_segment(avctx, p, 0, sub, data_size);
     }

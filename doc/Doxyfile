@@ -1056,7 +1056,7 @@ FORMULA_TRANSPARENT    = YES
 # typically be disabled. For large projects the javascript based search engine
 # can be slow, then enabling SERVER_BASED_SEARCH may provide a better solution.
 
-SEARCHENGINE           = NO
+SEARCHENGINE           = YES
 
 # When the SERVER_BASED_SEARCH tag is enabled the search engine will be
 # implemented using a PHP enabled web server instead of at the web client
@@ -1359,6 +1359,8 @@ PREDEFINED             = "__attribute__(x)=" \
                          "DECLARE_ALIGNED(a,t,n)=t n" \
                          "offsetof(x,y)=0x42" \
                          av_alloc_size \
+                         AV_GCC_VERSION_AT_LEAST(x,y)=1 \
+                         __GNUC__=1 \
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
 # this tag can be used to specify a list of macro names that should be expanded.
