@@ -38,10 +38,16 @@
  * allocated with swr_alloc() or swr_alloc_set_opts(). It is opaque, so all parameters
  * must be set with the @ref avoptions API.
  *
+ * The first thing you will need to do in order to use lswr is to allocate
+ * SwrContext. This can be done with swr_alloc() or swr_alloc_set_opts(). If you
+ * are using the former, you must set options through the @ref avoptions API.
+ * The latter function provides the same feature, but it allows you to set some
+ * common options in the same statement.
+ *
  * For example the following code will setup conversion from planar float sample
  * format to interleaved signed 16-bit integer, downsampling from 48kHz to
  * 44.1kHz and downmixing from 5.1 channels to stereo (using the default mixing
- * matrix):
+ * matrix). This is using the swr_alloc() function.
  * @code
  * SwrContext *swr = swr_alloc();
  * av_opt_set_channel_layout(swr, "in_channel_layout",  AV_CH_LAYOUT_5POINT1, 0);
@@ -52,10 +58,24 @@
  * av_opt_set_sample_fmt(swr, "out_sample_fmt", AV_SAMPLE_FMT_S16,  0);
  * @endcode
  *
+ * The same job can be done using swr_alloc_set_opts() as well:
+ * @code
+ * SwrContext *swr = swr_alloc_set_opts(NULL,  // we're allocating a new context
+ *                       AV_CH_LAYOUT_STEREO,  // out_ch_layout
+ *                       AV_SAMPLE_FMT_S16,    // out_sample_fmt
+ *                       44100,                // out_sample_rate
+ *                       AV_CH_LAYOUT_5POINT1, // in_ch_layout
+ *                       AV_SAMPLE_FMT_FLTP,   // in_sample_fmt
+ *                       48000,                // in_sample_rate
+ *                       0,                    // log_offset
+ *                       NULL);                // log_ctx
+ * @endcode
+ *
  * Once all values have been set, it must be initialized with swr_init(). If
  * you need to change the conversion parameters, you can change the parameters
- * as described above, or by using swr_alloc_set_opts(), then call swr_init()
- * again.
+ * using @ref AVOptions, as described above in the first example; or by using
+ * swr_alloc_set_opts(), but with the first argument the allocated context.
+ * You must then call swr_init() again.
  *
  * The conversion itself is done by repeatedly calling swr_convert().
  * Note that the samples may get buffered in swr if you provide insufficient
@@ -64,6 +84,10 @@
  * time by using swr_convert() (in_count can be set to 0).
  * At the end of conversion the resampling buffer can be flushed by calling
  * swr_convert() with NULL in and 0 in_count.
+ *
+ * The samples used in the conversion process can be managed with the libavutil
+ * @ref lavu_sampmanip "samples manipulation" API, including av_samples_alloc()
+ * function used in the following example.
  *
  * The delay between input and output, can at any time be found by using
  * swr_get_delay().
@@ -89,6 +113,9 @@
  *
  * When the conversion is finished, the conversion
  * context and everything associated with it must be freed with swr_free().
+ * A swr_close() function is also available, but it exists mainly for
+ * compatibility with libavresample, and is not required to be called.
+ *
  * There will be no memory leak if the data is not completely flushed before
  * swr_free().
  */
