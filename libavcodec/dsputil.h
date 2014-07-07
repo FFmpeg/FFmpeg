@@ -103,12 +103,6 @@ typedef struct DSPContext {
     void (*fdct)(int16_t *block /* align 16 */);
     void (*fdct248)(int16_t *block /* align 16 */);
 
-    int (*try_8x8basis)(int16_t rem[64], int16_t weight[64],
-                        int16_t basis[64], int scale);
-    void (*add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale);
-#define BASIS_SHIFT 16
-#define RECON_SHIFT 6
-
     void (*draw_edges)(uint8_t *buf, int wrap, int width, int height,
                        int w, int h, int sides);
 #define EDGE_WIDTH 16

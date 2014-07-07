@@ -352,72 +352,6 @@ static int vsad16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 #undef SUM
 
 
-#define PHADDD(a, t)                            \
-    "movq  " #a ", " #t "               \n\t"   \
-    "psrlq    $32, " #a "               \n\t"   \
-    "paddd " #t ", " #a "               \n\t"
-
-/*
- * pmulhw:   dst[0 - 15] = (src[0 - 15] * dst[0 - 15])[16 - 31]
- * pmulhrw:  dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x8000)[16 - 31]
- * pmulhrsw: dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x4000)[15 - 30]
- */
-#define PMULHRW(x, y, s, o)                     \
-    "pmulhw " #s ", " #x "              \n\t"   \
-    "pmulhw " #s ", " #y "              \n\t"   \
-    "paddw  " #o ", " #x "              \n\t"   \
-    "paddw  " #o ", " #y "              \n\t"   \
-    "psraw      $1, " #x "              \n\t"   \
-    "psraw      $1, " #y "              \n\t"
-#define DEF(x) x ## _mmx
-#define SET_RND MOVQ_WONE
-#define SCALE_OFFSET 1
-
-#include "dsputil_qns_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef SCALE_OFFSET
-#undef PMULHRW
-
-#define DEF(x) x ## _3dnow
-#define SET_RND(x)
-#define SCALE_OFFSET 0
-#define PMULHRW(x, y, s, o)                     \
-    "pmulhrw " #s ", " #x "             \n\t"   \
-    "pmulhrw " #s ", " #y "             \n\t"
-
-#include "dsputil_qns_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef SCALE_OFFSET
-#undef PMULHRW
-
-#if HAVE_SSSE3_INLINE
-#undef PHADDD
-#define DEF(x) x ## _ssse3
-#define SET_RND(x)
-#define SCALE_OFFSET -1
-
-#define PHADDD(a, t)                            \
-    "pshufw $0x0E, " #a ", " #t "       \n\t"   \
-    /* faster than phaddd on core2 */           \
-    "paddd " #t ", " #a "               \n\t"
-
-#define PMULHRW(x, y, s, o)                     \
-    "pmulhrsw " #s ", " #x "            \n\t"   \
-    "pmulhrsw " #s ", " #y "            \n\t"
-
-#include "dsputil_qns_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef SCALE_OFFSET
-#undef PMULHRW
-#undef PHADDD
-#endif /* HAVE_SSSE3_INLINE */
-
 #endif /* HAVE_INLINE_ASM */
 
 av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
@@ -448,16 +382,7 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
 
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
             c->vsad[0]      = vsad16_mmx;
-            c->try_8x8basis = try_8x8basis_mmx;
         }
-        c->add_8x8basis = add_8x8basis_mmx;
-    }
-
-    if (INLINE_AMD3DNOW(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
-            c->try_8x8basis = try_8x8basis_3dnow;
-        }
-        c->add_8x8basis = add_8x8basis_3dnow;
     }
 
     if (INLINE_MMXEXT(cpu_flags)) {
@@ -480,10 +405,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
 
 #if HAVE_SSSE3_INLINE
     if (INLINE_SSSE3(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
-            c->try_8x8basis = try_8x8basis_ssse3;
-        }
-        c->add_8x8basis    = add_8x8basis_ssse3;
     }
 #endif
 #endif /* HAVE_INLINE_ASM */

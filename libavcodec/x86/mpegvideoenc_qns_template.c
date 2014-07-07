@@ -1,5 +1,5 @@
 /*
- * DSP utils : QNS functions are compiled 3 times for mmx/3dnow/ssse3
+ * QNS functions are compiled 3 times for MMX/3DNOW/SSSE3
  * Copyright (c) 2004 Michael Niedermayer
  *
  * MMX optimization by Michael Niedermayer <michaelni@gmx.at>
@@ -22,9 +22,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <assert.h>
 #include <stdint.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/x86/asm.h"
 
