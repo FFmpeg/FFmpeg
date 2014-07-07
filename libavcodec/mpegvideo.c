@@ -2224,8 +2224,8 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                                 if (IS_INTERLACED(mbtype_table[mb_index]))
                                     my *= 2;
 
-                            draw_arrow(ptr, sx, sy, mx + sx, my + sy, width,
-                                       height, pict->linesize[0], 100);
+                                draw_arrow(ptr, sx, sy, mx + sx, my + sy, width,
+                                           height, pict->linesize[0], 100);
                             }
                         } else if (IS_8X16(mbtype_table[mb_index])) {
                             int i;
