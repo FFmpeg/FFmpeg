@@ -214,9 +214,10 @@ static int decode_main_header(NUTContext *nut)
     end += avio_tell(bc);
 
     nut->version = ffio_read_varlen(bc);
-    if (tmp < NUT_MIN_VERSION && tmp > NUT_MAX_VERSION) {
-        av_log(s, AV_LOG_ERROR, "Version %"PRId64" not supported.\n",
-               tmp);
+    if (nut->version < NUT_MIN_VERSION &&
+        nut->version > NUT_MAX_VERSION) {
+        av_log(s, AV_LOG_ERROR, "Version %d not supported.\n",
+               nut->version);
         return AVERROR(ENOSYS);
     }
 
