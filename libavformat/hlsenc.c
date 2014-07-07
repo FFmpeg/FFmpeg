@@ -141,7 +141,7 @@ static int hls_window(AVFormatContext *s, int last)
 
     for (en = hls->list; en; en = en->next) {
         if (target_duration < en->duration)
-            target_duration = (int) floor(en->duration + 0.5);
+            target_duration = ceil(en->duration);
     }
 
     avio_printf(hls->pb, "#EXTM3U\n");
