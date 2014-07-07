@@ -25,7 +25,7 @@
 /**
  * @file
  * API example for demuxing, decoding, filtering, encoding and muxing
- * @example doc/examples/transcoding.c
+ * @example transcoding.c
  */
 
 #include <libavcodec/avcodec.h>
