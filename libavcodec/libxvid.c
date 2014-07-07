@@ -26,7 +26,6 @@
  */
 
 #include <xvid.h>
-#include <unistd.h>
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/file.h"
@@ -35,6 +34,10 @@
 #include "libavutil/mathematics.h"
 #include "libxvid.h"
 #include "mpegvideo.h"
+
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 /**
  * Buffer management macros.
