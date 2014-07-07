@@ -1265,24 +1265,26 @@ static int estimate_best_b_count(MpegEncContext *s)
     for (i = 0; i < s->max_b_frames + 2; i++) {
         Picture pre_input, *pre_input_ptr = i ? s->input_picture[i - 1] :
                                                 s->next_picture_ptr;
+        uint8_t *data[4];
 
         if (pre_input_ptr && (!i || s->input_picture[i - 1])) {
             pre_input = *pre_input_ptr;
+            memcpy(data, pre_input_ptr->f->data, sizeof(data));
 
             if (!pre_input.shared && i) {
-                pre_input.f->data[0] += INPLACE_OFFSET;
-                pre_input.f->data[1] += INPLACE_OFFSET;
-                pre_input.f->data[2] += INPLACE_OFFSET;
+                data[0] += INPLACE_OFFSET;
+                data[1] += INPLACE_OFFSET;
+                data[2] += INPLACE_OFFSET;
             }
 
             s->dsp.shrink[scale](s->tmp_frames[i]->data[0], s->tmp_frames[i]->linesize[0],
-                                 pre_input.f->data[0], pre_input.f->linesize[0],
+                                 data[0], pre_input.f->linesize[0],
                                  c->width,      c->height);
             s->dsp.shrink[scale](s->tmp_frames[i]->data[1], s->tmp_frames[i]->linesize[1],
-                                 pre_input.f->data[1], pre_input.f->linesize[1],
+                                 data[1], pre_input.f->linesize[1],
                                  c->width >> 1, c->height >> 1);
             s->dsp.shrink[scale](s->tmp_frames[i]->data[2], s->tmp_frames[i]->linesize[2],
-                                 pre_input.f->data[2], pre_input.f->linesize[2],
+                                 data[2], pre_input.f->linesize[2],
                                  c->width >> 1, c->height >> 1);
         }
     }
