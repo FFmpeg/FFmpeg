@@ -25,7 +25,6 @@
  */
 
 #include "avcodec.h"
-#include "libavutil/opt.h"
 #include "get_bits.h"
 #include "internal.h"
 
