@@ -323,6 +323,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_idctdsp_init(&ctx->m.idsp, avctx);
+    ff_mpegvideoencdsp_init(&ctx->m.mpvencdsp, avctx);
     ff_dct_common_init(&ctx->m);
     ff_dct_encode_init(&ctx->m);
 
@@ -733,8 +734,8 @@ static int dnxhd_mb_var_thread(AVCodecContext *avctx, void *arg,
             int varc;
 
             if (!partial_last_row && mb_x * 16 <= avctx->width - 16) {
-                sum  = ctx->m.dsp.pix_sum(pix, ctx->m.linesize);
-                varc = ctx->m.dsp.pix_norm1(pix, ctx->m.linesize);
+                sum  = ctx->m.mpvencdsp.pix_sum(pix, ctx->m.linesize);
+                varc = ctx->m.mpvencdsp.pix_norm1(pix, ctx->m.linesize);
             } else {
                 int bw = FFMIN(avctx->width - 16 * mb_x, 16);
                 int bh = FFMIN((avctx->height >> ctx->interlaced) - 16 * mb_y, 16);

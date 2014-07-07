@@ -1010,7 +1010,7 @@ static int get_intra_count(MpegEncContext *s, uint8_t *src,
             int offset = x + y * stride;
             int sad  = s->dsp.sad[0](NULL, src + offset, ref + offset, stride,
                                      16);
-            int mean = (s->dsp.pix_sum(src + offset, stride) + 128) >> 8;
+            int mean = (s->mpvencdsp.pix_sum(src + offset, stride) + 128) >> 8;
             int sae  = get_sae(src + offset, mean, stride);
 
             acc += sae + 500 < sad;
@@ -1278,15 +1278,21 @@ static int estimate_best_b_count(MpegEncContext *s)
                 data[2] += INPLACE_OFFSET;
             }
 
-            s->dsp.shrink[scale](s->tmp_frames[i]->data[0], s->tmp_frames[i]->linesize[0],
-                                 data[0], pre_input.f->linesize[0],
-                                 c->width,      c->height);
-            s->dsp.shrink[scale](s->tmp_frames[i]->data[1], s->tmp_frames[i]->linesize[1],
-                                 data[1], pre_input.f->linesize[1],
-                                 c->width >> 1, c->height >> 1);
-            s->dsp.shrink[scale](s->tmp_frames[i]->data[2], s->tmp_frames[i]->linesize[2],
-                                 data[2], pre_input.f->linesize[2],
-                                 c->width >> 1, c->height >> 1);
+            s->mpvencdsp.shrink[scale](s->tmp_frames[i]->data[0],
+                                       s->tmp_frames[i]->linesize[0],
+                                       data[0],
+                                       pre_input.f->linesize[0],
+                                       c->width, c->height);
+            s->mpvencdsp.shrink[scale](s->tmp_frames[i]->data[1],
+                                       s->tmp_frames[i]->linesize[1],
+                                       data[1],
+                                       pre_input.f->linesize[1],
+                                       c->width >> 1, c->height >> 1);
+            s->mpvencdsp.shrink[scale](s->tmp_frames[i]->data[2],
+                                       s->tmp_frames[i]->linesize[2],
+                                       data[2],
+                                       pre_input.f->linesize[2],
+                                       c->width >> 1, c->height >> 1);
         }
     }
 
@@ -2585,9 +2591,10 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
             int yy = mb_y * 16;
             uint8_t *pix = s->new_picture.f->data[0] + (yy * s->linesize) + xx;
             int varc;
-            int sum = s->dsp.pix_sum(pix, s->linesize);
+            int sum = s->mpvencdsp.pix_sum(pix, s->linesize);
 
-            varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)sum*sum)>>8) + 500 + 128)>>8;
+            varc = (s->mpvencdsp.pix_norm1(pix, s->linesize) -
+                    (((unsigned) sum * sum) >> 8) + 500 + 128) >> 8;
 
             s->current_picture.mb_var [s->mb_stride * mb_y + mb_x] = varc;
             s->current_picture.mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;

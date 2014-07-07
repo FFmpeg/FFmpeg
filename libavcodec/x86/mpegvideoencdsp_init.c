@@ -22,6 +22,12 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpegvideoencdsp.h"
 
+int ff_pix_sum16_mmx(uint8_t *pix, int line_size);
+int ff_pix_sum16_sse2(uint8_t *pix, int line_size);
+int ff_pix_sum16_xop(uint8_t *pix, int line_size);
+int ff_pix_norm1_mmx(uint8_t *pix, int line_size);
+int ff_pix_norm1_sse2(uint8_t *pix, int line_size);
+
 #if HAVE_INLINE_ASM
 
 #define PHADDD(a, t)                            \
@@ -95,8 +101,23 @@
 av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
                                          AVCodecContext *avctx)
 {
-#if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();
+
+    if (EXTERNAL_MMX(cpu_flags)) {
+        c->pix_sum   = ff_pix_sum16_mmx;
+        c->pix_norm1 = ff_pix_norm1_mmx;
+    }
+
+    if (EXTERNAL_SSE2(cpu_flags)) {
+        c->pix_sum     = ff_pix_sum16_sse2;
+        c->pix_norm1   = ff_pix_norm1_sse2;
+    }
+
+    if (EXTERNAL_XOP(cpu_flags)) {
+        c->pix_sum     = ff_pix_sum16_xop;
+    }
+
+#if HAVE_INLINE_ASM
 
     if (INLINE_MMX(cpu_flags)) {
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {

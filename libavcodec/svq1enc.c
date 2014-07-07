@@ -517,6 +517,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     ff_dsputil_init(&s->dsp, avctx);
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
+    ff_mpegvideoencdsp_init(&s->m.mpvencdsp, avctx);
 
     avctx->coded_frame = av_frame_alloc();
     s->current_picture = av_frame_alloc();

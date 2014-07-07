@@ -109,6 +109,7 @@ YASM-OBJS-$(CONFIG_IDCTDSP)            += x86/idctdsp.o
 YASM-OBJS-$(CONFIG_LLAUDDSP)           += x86/lossless_audiodsp.o
 YASM-OBJS-$(CONFIG_LLVIDDSP)           += x86/lossless_videodsp.o
 YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36.o
+YASM-OBJS-$(CONFIG_MPEGVIDEOENC)       += x86/mpegvideoencdsp.o
 YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
                                           x86/fpel.o                    \
                                           x86/qpel.o
