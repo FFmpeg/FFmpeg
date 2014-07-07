@@ -35,7 +35,6 @@
 
 #include <string.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 
