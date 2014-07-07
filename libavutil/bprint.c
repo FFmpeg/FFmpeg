@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 #include "avassert.h"
 #include "avstring.h"
 #include "bprint.h"
@@ -30,6 +29,11 @@
 #include "compat/va_copy.h"
 #include "error.h"
 #include "mem.h"
+
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 
 #define av_bprint_room(buf) ((buf)->size - FFMIN((buf)->len, (buf)->size))
 #define av_bprint_is_allocated(buf) ((buf)->str != (buf)->reserved_internal_buffer)

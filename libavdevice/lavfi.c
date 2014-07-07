@@ -27,7 +27,6 @@
 
 #include <float.h>              /* DBL_MIN, DBL_MAX */
 #include <fcntl.h>              /* O_RDONLY */
-#include <unistd.h>             /* close() */
 
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
@@ -42,6 +41,10 @@
 #include "libavfilter/buffersink.h"
 #include "libavformat/internal.h"
 #include "avdevice.h"
+
+#if HAVE_UNISTD_H
+#include <unistd.h>             /* close() */
+#endif
 
 typedef struct {
     AVClass *class;          ///< class for private options
