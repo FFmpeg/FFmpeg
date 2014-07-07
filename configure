@@ -286,6 +286,7 @@ Toolchain options:
   --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
   --ranlib=RANLIB          use ranlib RANLIB [$ranlib_default]
+  --doxygen=DOXYGEN        use DOXYGEN to generate API doc [$doxygen_default]
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
   --host-cppflags=HCPPFLAGS use HCPPFLAGS when compiling for host
@@ -1877,6 +1878,7 @@ CMDLINE_SET="
     cross_prefix
     cxx
     dep_cc
+    doxygen
     extra_version
     gas
     host_cc
@@ -2618,6 +2620,7 @@ cc_default="gcc"
 cxx_default="g++"
 host_cc_default="gcc"
 cp_f="cp -f"
+doxygen_default="doxygen"
 install="install"
 ln_s="ln -s -f"
 nm_default="nm -g"
@@ -2994,13 +2997,19 @@ case "$toolchain" in
     ;;
 esac
 
-set_default arch cc cxx pkg_config ranlib strip sysinclude target_exec target_os yasmexe
+set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
+    target_exec target_os yasmexe
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
 if ! $pkg_config --version >/dev/null 2>&1; then
     warn "$pkg_config not found, library detection may fail."
     pkg_config=false
+fi
+
+if test $doxygen != $doxygen_default && \
+  ! $doxygen --version >/dev/null 2>&1; then
+    warn "Specified doxygen \"$doxygen\" not found, API documentation will fail to build."
 fi
 
 exesuf() {
@@ -5388,6 +5397,7 @@ LD_PATH=$LD_PATH
 DLLTOOL=$dlltool
 WINDRES=$windres
 DEPWINDRES=$dep_cc
+DOXYGEN=$doxygen
 LDFLAGS=$LDFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 ASMSTRIPFLAGS=$ASMSTRIPFLAGS
