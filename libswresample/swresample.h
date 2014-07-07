@@ -189,6 +189,7 @@ typedef struct SwrContext SwrContext;
  * AV_OPT_SEARCH_FAKE_OBJ for examining options.
  *
  * @see av_opt_find().
+ * @return the AVClass of SwrContext
  */
 const AVClass *swr_get_class(void);
 
@@ -211,6 +212,7 @@ struct SwrContext *swr_alloc(void);
 /**
  * Initialize context after user parameters have been set.
  *
+ * @param[in,out]   s Swr context to initialize
  * @return AVERROR error code in case of failure.
  */
 int swr_init(struct SwrContext *s);
@@ -218,6 +220,8 @@ int swr_init(struct SwrContext *s);
 /**
  * Check whether an swr context has been initialized or not.
  *
+ * @param[in]       s Swr context to check
+ * @see swr_init()
  * @return positive if it has been initialized, 0 if not initialized
  */
 int swr_is_initialized(struct SwrContext *s);
@@ -229,7 +233,7 @@ int swr_is_initialized(struct SwrContext *s);
  * other hand, swr_alloc() can use swr_alloc_set_opts() to set the parameters
  * on the allocated context.
  *
- * @param s               Swr context, can be NULL
+ * @param s               existing Swr context if available, or NULL if not
  * @param out_ch_layout   output channel layout (AV_CH_LAYOUT_*)
  * @param out_sample_fmt  output sample format (AV_SAMPLE_FMT_*).
  * @param out_sample_rate output sample rate (frequency in Hz)
@@ -256,6 +260,8 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
 
 /**
  * Free the given SwrContext and set the pointer to NULL.
+ *
+ * @param[in] s a pointer to a pointer to Swr context
  */
 void swr_free(struct SwrContext **s);
 
@@ -266,6 +272,8 @@ void swr_free(struct SwrContext **s);
  * swr_init() can also be used without swr_close().
  * This function is mainly provided for simplifying the usecase
  * where one tries to support libavresample and libswresample.
+ *
+ * @param[in,out] s Swr context to be closed
  */
 void swr_close(struct SwrContext *s);
 
@@ -301,12 +309,16 @@ int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
  * timestamps are in 1/(in_sample_rate * out_sample_rate) units.
  *
  * @note There are 2 slightly differently behaving modes.
- *       First is when automatic timestamp compensation is not used, (min_compensation >= FLT_MAX)
+ *       @li When automatic timestamp compensation is not used, (min_compensation >= FLT_MAX)
  *              in this case timestamps will be passed through with delays compensated
- *       Second is when automatic timestamp compensation is used, (min_compensation < FLT_MAX)
- *              in this case the output timestamps will match output sample numbers
+ *       @li When automatic timestamp compensation is used, (min_compensation < FLT_MAX)
+ *              in this case the output timestamps will match output sample numbers.
+ *              See ffmpeg-resampler(1) for the two modes of compensation.
  *
- * @param pts   timestamp for the next input sample, INT64_MIN if unknown
+ * @param s[in]     initialized Swr context
+ * @param pts[in]   timestamp for the next input sample, INT64_MIN if unknown
+ * @see swr_set_compensation(), swr_drop_output(), and swr_inject_silence() are
+ *      function used internally for timestamp compensation.
  * @return the output timestamp for the next output sample
  */
 int64_t swr_next_pts(struct SwrContext *s, int64_t pts);
@@ -321,17 +333,30 @@ int64_t swr_next_pts(struct SwrContext *s, int64_t pts);
  */
 
 /**
- * Activate resampling compensation.
+ * Activate resampling compensation ("soft" compensation). This function is
+ * internally called when needed in swr_next_pts().
+ *
+ * @param[in,out] s             allocated Swr context. If it is not initialized,
+ *                              or SWR_FLAG_RESAMPLE is not set, swr_init() is
+ *                              called with the flag set.
+ * @param[in]     sample_delta  delta in PTS per sample
+ * @param[in]     compensation_distance number of samples to compensate for
+ * @return    >= 0 on success, AVERROR error codes if:
+ *            @li @c s is NULL,
+ *            @li @c compensation_distance is less than 0,
+ *            @li @c compensation_distance is 0 but sample_delta is not,
+ *            @li compensation unsupported by resampler, or
+ *            @li swr_init() fails when called.
  */
 int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensation_distance);
 
 /**
  * Set a customized input channel mapping.
  *
- * @param s           allocated Swr context, not yet initialized
- * @param channel_map customized input channel mapping (array of channel
- *                    indexes, -1 for a muted channel)
- * @return AVERROR error code in case of failure.
+ * @param[in,out] s           allocated Swr context, not yet initialized
+ * @param[in]     channel_map customized input channel mapping (array of channel
+ *                            indexes, -1 for a muted channel)
+ * @return >= 0 on success, or AVERROR error code in case of failure.
  */
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
 
@@ -342,7 +367,7 @@ int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
  * @param matrix  remix coefficients; matrix[i + stride * o] is
  *                the weight of input channel i in output channel o
  * @param stride  offset between lines of the matrix
- * @return  AVERROR error code in case of failure.
+ * @return  >= 0 on success, or AVERROR error code in case of failure.
  */
 int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride);
 
@@ -355,11 +380,27 @@ int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride);
 
 /**
  * Drops the specified number of output samples.
+ *
+ * This function, along with swr_inject_silence(), is called by swr_next_pts()
+ * if needed for "hard" compensation.
+ *
+ * @param s     allocated Swr context
+ * @param count number of samples to be dropped
+ *
+ * @return >= 0 on success, or a negative AVERROR code on failure
  */
 int swr_drop_output(struct SwrContext *s, int count);
 
 /**
  * Injects the specified number of silence samples.
+ *
+ * This function, along with swr_drop_output(), is called by swr_next_pts()
+ * if needed for "hard" compensation.
+ *
+ * @param s     allocated Swr context
+ * @param count number of samples to be dropped
+ *
+ * @return >= 0 on success, or a negative AVERROR code on failure
  */
 int swr_inject_silence(struct SwrContext *s, int count);
 
@@ -375,13 +416,17 @@ int swr_inject_silence(struct SwrContext *s, int count);
  * for upsampling and the input sample rate.
  *
  * @param s     swr context
- * @param base  timebase in which the returned delay will be
- *              if its set to 1 the returned delay is in seconds
- *              if its set to 1000 the returned delay is in milli seconds
- *              if its set to the input sample rate then the returned delay is in input samples
- *              if its set to the output sample rate then the returned delay is in output samples
- *              an exact rounding free delay can be found by using LCM(in_sample_rate, out_sample_rate)
- * @returns     the delay in 1/base units.
+ * @param base  timebase in which the returned delay will be:
+ *              @li if it's set to 1 the returned delay is in seconds
+ *              @li if it's set to 1000 the returned delay is in milliseconds
+ *              @li if it's set to the input sample rate then the returned
+ *                  delay is in input samples
+ *              @li if it's set to the output sample rate then the returned
+ *                  delay is in output samples
+ *              @li if it's the least common multiple of in_sample_rate and
+ *                  out_sample_rate then an exact rounding-free delay will be
+ *                  returned
+ * @returns     the delay in 1 / @c base units.
  */
 int64_t swr_get_delay(struct SwrContext *s, int64_t base);
 
