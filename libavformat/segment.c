@@ -669,13 +669,6 @@ fail:
     return ret;
 }
 
-#if !HAVE_LOCALTIME_R
-static void localtime_r(const time_t *t, struct tm *tm)
-{
-    *tm = *localtime(t);
-}
-#endif
-
 static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SegmentContext *seg = s->priv_data;
@@ -697,7 +690,11 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         if (seg->use_clocktime) {
             gettimeofday(&now, NULL);
+#if HAVE_LOCALTIME_R
             localtime_r(&now.tv_sec, &ti);
+#else
+            ti = *localtime(&now.tv_sec);
+#endif
             usecs = (int64_t)(ti.tm_hour*3600 + ti.tm_min*60 + ti.tm_sec) * 1000000 + now.tv_usec;
             wrapped_val = usecs % seg->time;
             if (seg->last_cut != usecs && wrapped_val < seg->last_val) {
