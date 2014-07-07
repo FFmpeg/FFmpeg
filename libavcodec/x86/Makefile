@@ -58,7 +58,6 @@ OBJS-$(CONFIG_VP8_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 
-MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o
 MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/fdct.o
 MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/idctdsp_mmx.o             \

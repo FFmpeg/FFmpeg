@@ -26,6 +26,9 @@
 #define BASIS_SHIFT 16
 #define RECON_SHIFT 6
 
+#define EDGE_TOP    1
+#define EDGE_BOTTOM 2
+
 typedef struct MpegvideoEncDSPContext {
     int (*try_8x8basis)(int16_t rem[64], int16_t weight[64],
                         int16_t basis[64], int scale);
@@ -36,6 +39,9 @@ typedef struct MpegvideoEncDSPContext {
 
     void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,
                       int src_wrap, int width, int height);
+
+    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height,
+                       int w, int h, int sides);
 } MpegvideoEncDSPContext;
 
 void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,

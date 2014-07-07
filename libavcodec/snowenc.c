@@ -1568,10 +1568,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             memcpy(&s->input_picture->data[i][y * s->input_picture->linesize[i]],
                    &pict->data[i][y * pict->linesize[i]],
                    width>>hshift);
-        s->dsp.draw_edges(s->input_picture->data[i], s->input_picture->linesize[i],
-                            width >> hshift, height >> vshift,
-                            EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
-                            EDGE_TOP | EDGE_BOTTOM);
+        s->mpvencdsp.draw_edges(s->input_picture->data[i], s->input_picture->linesize[i],
+                                width >> hshift, height >> vshift,
+                                EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
+                                EDGE_TOP | EDGE_BOTTOM);
 
     }
     emms_c();

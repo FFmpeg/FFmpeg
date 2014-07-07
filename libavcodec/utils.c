@@ -43,6 +43,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
+#include "mpegvideo.h"
 #include "thread.h"
 #include "frame_thread_encoder.h"
 #include "internal.h"

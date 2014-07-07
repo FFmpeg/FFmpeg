@@ -18,6 +18,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "config.h"
 #include "libavutil/avassert.h"
@@ -125,6 +126,34 @@ static int pix_norm1_c(uint8_t *pix, int line_size)
     return s;
 }
 
+/* draw the edges of width 'w' of an image of size width, height */
+// FIXME: Check that this is OK for MPEG-4 interlaced.
+static void draw_edges_8_c(uint8_t *buf, int wrap, int width, int height,
+                           int w, int h, int sides)
+{
+    uint8_t *ptr = buf, *last_line;
+    int i;
+
+    /* left and right */
+    for (i = 0; i < height; i++) {
+        memset(ptr - w, ptr[0], w);
+        memset(ptr + width, ptr[width - 1], w);
+        ptr += wrap;
+    }
+
+    /* top and bottom + corners */
+    buf -= w;
+    last_line = buf + (height - 1) * wrap;
+    if (sides & EDGE_TOP)
+        for (i = 0; i < h; i++)
+            // top
+            memcpy(buf - (i + 1) * wrap, buf, width + w + w);
+    if (sides & EDGE_BOTTOM)
+        for (i = 0; i < h; i++)
+            // bottom
+            memcpy(last_line + (i + 1) * wrap, last_line, width + w + w);
+}
+
 av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
                                      AVCodecContext *avctx)
 {
@@ -138,6 +167,8 @@ av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
 
     c->pix_sum   = pix_sum_c;
     c->pix_norm1 = pix_norm1_c;
+
+    c->draw_edges = draw_edges_8_c;
 
     if (ARCH_ARM)
         ff_mpegvideoencdsp_init_arm(c, avctx);
