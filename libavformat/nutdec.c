@@ -29,6 +29,7 @@
 #include "libavutil/tree.h"
 #include "libavcodec/bytestream.h"
 #include "avio_internal.h"
+#include "isom.h"
 #include "nut.h"
 #include "riff.h"
 
@@ -386,6 +387,7 @@ static int decode_stream_header(NUTContext *nut)
         st->codec->codec_id   = av_codec_get_id((const AVCodecTag * const []) {
                                                     ff_nut_video_tags,
                                                     ff_codec_bmp_tags,
+                                                    ff_codec_movvideo_tags,
                                                     0
                                                 },
                                                 tmp);
