@@ -2641,7 +2641,7 @@ void avformat_close_input(AVFormatContext **ps)
     avio_close(pb);
 }
 
-AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
+AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 {
     AVStream *st;
     int i;

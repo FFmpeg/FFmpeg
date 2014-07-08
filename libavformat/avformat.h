@@ -1332,7 +1332,7 @@ const AVClass *avformat_get_class(void);
  *
  * @return newly created stream or NULL on error.
  */
-AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c);
+AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c);
 
 /**
  * Get side information from stream.
