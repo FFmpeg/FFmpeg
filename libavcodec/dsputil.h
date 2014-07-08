@@ -78,11 +78,8 @@ void ff_dsputil_init(DSPContext *p, AVCodecContext *avctx);
 
 void ff_set_cmp(DSPContext *c, me_cmp_func *cmp, int type);
 
-void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx,
-                         unsigned high_bit_depth);
-void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx,
-                         unsigned high_bit_depth);
-void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
-                         unsigned high_bit_depth);
+void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx);
+void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx);
+void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx);
 
 #endif /* AVCODEC_DSPUTIL_H */

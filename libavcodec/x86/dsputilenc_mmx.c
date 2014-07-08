@@ -813,8 +813,7 @@ hadamard_func(mmxext)
 hadamard_func(sse2)
 hadamard_func(ssse3)
 
-av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
-                                    unsigned high_bit_depth)
+av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
 

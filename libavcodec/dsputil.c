@@ -902,8 +902,6 @@ av_cold void ff_dsputil_static_init(void)
 
 av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
 {
-    const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
-
     c->sum_abs_dctelem = sum_abs_dctelem_c;
 
     /* TODO [0] 16  [1] 8 */
@@ -946,9 +944,9 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     c->nsse[1] = nsse8_c;
 
     if (ARCH_ARM)
-        ff_dsputil_init_arm(c, avctx, high_bit_depth);
+        ff_dsputil_init_arm(c, avctx);
     if (ARCH_PPC)
-        ff_dsputil_init_ppc(c, avctx, high_bit_depth);
+        ff_dsputil_init_ppc(c, avctx);
     if (ARCH_X86)
-        ff_dsputil_init_x86(c, avctx, high_bit_depth);
+        ff_dsputil_init_x86(c, avctx);
 }

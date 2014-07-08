@@ -741,8 +741,7 @@ static int hadamard8_diff16_altivec(MpegEncContext *s, uint8_t *dst,
     return score;
 }
 
-av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx,
-                                     unsigned high_bit_depth)
+av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx)
 {
     c->pix_abs[0][1] = sad16_x2_altivec;
     c->pix_abs[0][2] = sad16_y2_altivec;
