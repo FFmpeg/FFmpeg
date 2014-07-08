@@ -1,5 +1,5 @@
 /*
- * Alpha optimized DSP utils
+ * Alpha optimized IDCT-related routines
  * Copyright (c) 2002 Falk Hueffner <falk@debian.org>
  *
  * This file is part of FFmpeg.

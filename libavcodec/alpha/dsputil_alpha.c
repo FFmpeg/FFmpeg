@@ -24,11 +24,6 @@
 #include "dsputil_alpha.h"
 #include "asm.h"
 
-void (*put_pixels_clamped_axp_p)(const int16_t *block, uint8_t *pixels,
-                                 int line_size);
-void (*add_pixels_clamped_axp_p)(const int16_t *block, uint8_t *pixels,
-                                 int line_size);
-
 #if 0
 /* These functions were the base for the optimized assembler routines,
    and remain here for documentation purposes.  */
@@ -107,11 +102,6 @@ av_cold void ff_dsputil_init_alpha(DSPContext *c, AVCodecContext *avctx)
 
     /* amask clears all bits that correspond to present features.  */
     if (amask(AMASK_MVI) == 0) {
-//      Disabled as these have been moved to a different context
-//      Patch to update these is welcome!
-//         c->put_pixels_clamped = put_pixels_clamped_mvi_asm;
-//         c->add_pixels_clamped = add_pixels_clamped_mvi_asm;
-
         if (!high_bit_depth)
             c->get_pixels   = get_pixels_mvi;
         c->diff_pixels      = diff_pixels_mvi;
@@ -124,16 +114,4 @@ av_cold void ff_dsputil_init_alpha(DSPContext *c, AVCodecContext *avctx)
         c->pix_abs[0][3]    = pix_abs16x16_xy2_mvi;
     }
 
-//      Disabled as these have been moved to a different context
-//      Patch to update these is welcome!
-//     put_pixels_clamped_axp_p = c->put_pixels_clamped;
-//     add_pixels_clamped_axp_p = c->add_pixels_clamped;
-//
-//     if (!avctx->lowres && avctx->bits_per_raw_sample <= 8 &&
-//         (avctx->idct_algo == FF_IDCT_AUTO ||
-//          avctx->idct_algo == FF_IDCT_SIMPLEALPHA)) {
-//         c->idct_put = ff_simple_idct_put_axp;
-//         c->idct_add = ff_simple_idct_add_axp;
-//         c->idct =     ff_simple_idct_axp;
-//     }
 }

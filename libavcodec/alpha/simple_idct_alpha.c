@@ -26,7 +26,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dsputil_alpha.h"
+#include "idctdsp_alpha.h"
 #include "asm.h"
 
 // cos(i * M_PI / 16) * sqrt(2) * (1 << 14)

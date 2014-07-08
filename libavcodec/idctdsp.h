@@ -94,6 +94,8 @@ typedef struct IDCTDSPContext {
 
 void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx);
 
+void ff_idctdsp_init_alpha(IDCTDSPContext *c, AVCodecContext *avctx,
+                           unsigned high_bit_depth);
 void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,
                          unsigned high_bit_depth);
 void ff_idctdsp_init_ppc(IDCTDSPContext *c, AVCodecContext *avctx,
