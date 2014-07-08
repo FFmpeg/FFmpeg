@@ -26,7 +26,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dct.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_x86.h"
@@ -353,7 +352,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                     unsigned high_bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
-    const int dct_algo = avctx->dct_algo;
 
     if (EXTERNAL_MMX(cpu_flags)) {
         if (!high_bit_depth)
@@ -367,10 +365,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
 
 #if HAVE_INLINE_ASM
     if (INLINE_MMX(cpu_flags)) {
-        if (!high_bit_depth &&
-            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
-            c->fdct = ff_fdct_mmx;
-
         c->vsad[4] = vsad_intra16_mmx;
 
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
@@ -379,10 +373,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
     }
 
     if (INLINE_MMXEXT(cpu_flags)) {
-        if (!high_bit_depth &&
-            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
-            c->fdct = ff_fdct_mmxext;
-
         c->vsad[4]         = vsad_intra16_mmxext;
 
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
@@ -391,9 +381,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
     }
 
     if (INLINE_SSE2(cpu_flags)) {
-        if (!high_bit_depth &&
-            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
-            c->fdct = ff_fdct_sse2;
     }
 
 #if HAVE_SSSE3_INLINE

@@ -1,8 +1,4 @@
 /*
- * Copyright (c) 2002 Brian Foley
- * Copyright (c) 2002 Dieter Shirley
- * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -20,20 +16,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <string.h>
-
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
-#include "dsputil_altivec.h"
+#include "libavcodec/dct.h"
+#include "libavcodec/fdctdsp.h"
 
-av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx,
+av_cold void ff_fdctdsp_init_x86(FDCTDSPContext *c, AVCodecContext *avctx,
                                  unsigned high_bit_depth)
 {
-    int mm_flags = av_get_cpu_flags();
-    if (PPC_ALTIVEC(mm_flags)) {
-        ff_dsputil_init_altivec(c, avctx, high_bit_depth);
+    int cpu_flags = av_get_cpu_flags();
+    const int dct_algo = avctx->dct_algo;
+
+    if (!high_bit_depth) {
+        if ((dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX)) {
+            if (INLINE_MMX(cpu_flags))
+                c->fdct = ff_fdct_mmx;
+
+            if (INLINE_MMXEXT(cpu_flags))
+                c->fdct = ff_fdct_mmxext;
+
+            if (INLINE_SSE2(cpu_flags))
+                c->fdct = ff_fdct_sse2;
+        }
     }
 }

@@ -25,6 +25,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/idctdsp.h"
+#include "libavcodec/fdctdsp.h"
 #include "avfilter.h"
 
 #define MAX_LEVEL 6 /* quality levels */
@@ -42,6 +43,7 @@ typedef struct {
     AVCodecContext *avctx;
     DSPContext dsp;
     IDCTDSPContext idsp;
+    FDCTDSPContext fdsp;
     int8_t *non_b_qp_table;
     int non_b_qp_alloc_size;
     int use_bframe_qp;

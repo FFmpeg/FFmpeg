@@ -29,10 +29,8 @@
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "copy_block.h"
-#include "dct.h"
 #include "dsputil.h"
 #include "simple_idct.h"
-#include "faandct.h"
 #include "mpegvideo.h"
 #include "config.h"
 
@@ -589,7 +587,7 @@ static int dct_sad8x8_c(MpegEncContext *s, uint8_t *src1,
     av_assert2(h == 8);
 
     s->dsp.diff_pixels(temp, src1, src2, stride);
-    s->dsp.fdct(temp);
+    s->fdsp.fdct(temp);
     return s->dsp.sum_abs_dctelem(temp);
 }
 
@@ -656,7 +654,7 @@ static int dct_max8x8_c(MpegEncContext *s, uint8_t *src1,
     av_assert2(h == 8);
 
     s->dsp.diff_pixels(temp, src1, src2, stride);
-    s->dsp.fdct(temp);
+    s->fdsp.fdct(temp);
 
     for (i = 0; i < 64; i++)
         sum = FFMAX(sum, FFABS(temp[i]));
@@ -972,24 +970,6 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     ff_check_alignment();
-
-#if CONFIG_ENCODERS
-    if (avctx->bits_per_raw_sample == 10) {
-        c->fdct    = ff_jpeg_fdct_islow_10;
-        c->fdct248 = ff_fdct248_islow_10;
-    } else {
-        if (avctx->dct_algo == FF_DCT_FASTINT) {
-            c->fdct    = ff_fdct_ifast;
-            c->fdct248 = ff_fdct_ifast248;
-        } else if (avctx->dct_algo == FF_DCT_FAAN) {
-            c->fdct    = ff_faandct;
-            c->fdct248 = ff_faandct248;
-        } else {
-            c->fdct    = ff_jpeg_fdct_islow_8; // slow/accurate/default
-            c->fdct248 = ff_fdct248_islow_8;
-        }
-    }
-#endif /* CONFIG_ENCODERS */
 
     c->diff_pixels = diff_pixels_c;
 

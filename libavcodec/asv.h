@@ -34,6 +34,7 @@
 #include "blockdsp.h"
 #include "bswapdsp.h"
 #include "dsputil.h"
+#include "fdctdsp.h"
 #include "idctdsp.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -43,6 +44,7 @@ typedef struct ASV1Context{
     BlockDSPContext bdsp;
     BswapDSPContext bbdsp;
     DSPContext dsp;
+    FDCTDSPContext fdsp;
     IDCTDSPContext idsp;
     PutBitContext pb;
     GetBitContext gb;

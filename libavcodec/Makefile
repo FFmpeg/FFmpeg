@@ -41,9 +41,10 @@ OBJS-$(CONFIG_CRYSTALHD)               += crystalhd.o
 OBJS-$(CONFIG_DCT)                     += dct.o dct32_fixed.o dct32_float.o
 OBJS-$(CONFIG_DSPUTIL)                 += dsputil.o
 OBJS-$(CONFIG_DXVA2)                   += dxva2.o
-OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 OBJS-$(CONFIG_ERROR_RESILIENCE)        += error_resilience.o
 OBJS-$(CONFIG_EXIF)                    += exif.o tiff_common.o
+OBJS-$(CONFIG_FDCTDSP)                 += fdctdsp.o faandct.o           \
+                                          jfdctfst.o jfdctint.o
 FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o cos_fixed_tables.o
 OBJS-$(CONFIG_FFT)                     += avfft.o fft_fixed.o fft_float.o \
                                           fft_fixed_32.o fft_init_table.o \

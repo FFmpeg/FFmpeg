@@ -95,10 +95,6 @@ typedef struct DSPContext {
     me_cmp_func frame_skip_cmp[6]; // only width 8 used
 
     me_cmp_func pix_abs[2][4];
-
-    /* (I)DCT */
-    void (*fdct)(int16_t *block /* align 16 */);
-    void (*fdct248)(int16_t *block /* align 16 */);
 } DSPContext;
 
 void ff_dsputil_static_init(void);
