@@ -30,7 +30,9 @@
 #else
 #include <sys/soundcard.h>
 #endif
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
