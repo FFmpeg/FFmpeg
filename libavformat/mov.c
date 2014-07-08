@@ -227,7 +227,7 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     char language[4] = { 0 };
     char buf[100];
     uint16_t langcode = 0;
-    av_unused double longitude, latitude, altitude;
+    double longitude, latitude;
     const char *key = "location";
 
     if (len < 4 + 2 + 1 + 1 + 4 + 4 + 4)
@@ -248,7 +248,6 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
         return AVERROR_INVALIDDATA;
     longitude = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
     latitude  = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
-    altitude  = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
 
     // Try to output in the same format as the ?xyz field
     snprintf(buf, sizeof(buf), "%+08.4f%+09.4f/", latitude, longitude);
