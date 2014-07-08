@@ -77,7 +77,6 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include <libcrystalhd/bc_dts_types.h>
 #include <libcrystalhd/bc_dts_defs.h>
@@ -89,6 +88,10 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
+
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 /** Timeout parameter passed to DtsProcOutput() in us */
 #define OUTPUT_PROC_TIMEOUT 50
