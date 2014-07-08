@@ -30,17 +30,6 @@ pw_1: times 8 dw 1
 
 SECTION .text
 
-%macro PABS 2
-%if cpuflag(ssse3)
-    pabsw %1, %1
-%else
-    pxor    %2, %2
-    pcmpgtw %2, %1
-    pxor    %1, %2
-    psubw   %1, %2
-%endif
-%endmacro
-
 %macro PMAXUW 2
 %if cpuflag(sse4)
     pmaxuw %1, %2
@@ -131,13 +120,12 @@ SECTION .text
     mova   [rsp+16], m3
     mova   [rsp+32], m1
     psubw        m2, m4
-    PABS         m2, m4
+    ABS1         m2, m4
     LOAD         m3, [prevq+t1]
     LOAD         m4, [prevq+t0]
     psubw        m3, m0
     psubw        m4, m1
-    PABS         m3, m5
-    PABS         m4, m5
+    ABS2         m3, m4, m5, m6
     paddw        m3, m4
     psrlw        m2, 1
     psrlw        m3, 1
@@ -146,8 +134,7 @@ SECTION .text
     LOAD         m4, [nextq+t0]
     psubw        m3, m0
     psubw        m4, m1
-    PABS         m3, m5
-    PABS         m4, m5
+    ABS2         m3, m4, m5, m6
     paddw        m3, m4
     psrlw        m3, 1
     pmaxsw       m2, m3
@@ -157,7 +144,7 @@ SECTION .text
     paddw        m0, m0
     psubw        m0, m1
     psrlw        m1, 1
-    PABS         m0, m2
+    ABS1         m0, m2
 
     movu         m2, [curq+t1-1*2]
     movu         m3, [curq+t0-1*2]
