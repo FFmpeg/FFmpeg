@@ -881,7 +881,7 @@ static void generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
     av_free(results4);
 }
 
-static void roq_encode_video(RoqContext *enc)
+static int roq_encode_video(RoqContext *enc)
 {
     RoqTempdata *tempData = enc->tmpData;
     int i;
@@ -903,6 +903,10 @@ static void roq_encode_video(RoqContext *enc)
 
     /* Quake 3 can't handle chunks bigger than 65535 bytes */
     if (tempData->mainChunkSize/8 > 65535 && enc->quake3_compat) {
+        if (enc->lambda > 100000) {
+            av_log(enc->avctx, AV_LOG_ERROR, "Cannot encode video in Quake compatible form\n");
+            return AVERROR(EINVAL);
+        }
         av_log(enc->avctx, AV_LOG_ERROR,
                "Warning, generated a frame too big for Quake (%d > 65535), "
                "now switching to a bigger qscale value.\n",
@@ -936,6 +940,8 @@ static void roq_encode_video(RoqContext *enc)
     av_free(tempData->closest_cb2);
 
     enc->framesSinceKeyframe++;
+
+    return 0;
 }
 
 static av_cold int roq_encode_end(AVCodecContext *avctx)
@@ -1064,7 +1070,8 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     /* Encode the actual frame */
-    roq_encode_video(enc);
+    if ((ret = roq_encode_video(enc)) < 0)
+        return ret;
 
     pkt->size   = enc->out_buf - pkt->data;
     if (enc->framesSinceKeyframe == 1)
