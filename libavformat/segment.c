@@ -28,7 +28,6 @@
 
 #include <float.h>
 #include <time.h>
-#include <sys/time.h>
 
 #include "avformat.h"
 #include "internal.h"
@@ -39,6 +38,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/time.h"
 #include "libavutil/timestamp.h"
 
 typedef struct SegmentListEntry {
@@ -677,7 +677,6 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     int start_frame = INT_MAX;
     int ret;
     struct tm ti;
-    struct timeval now;
     int64_t usecs;
     int64_t wrapped_val;
 
@@ -689,13 +688,14 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
             seg->frames[seg->segment_count] : INT_MAX;
     } else {
         if (seg->use_clocktime) {
-            gettimeofday(&now, NULL);
+            int64_t avgt = av_gettime();
+            time_t sec = avgt / 1000000;
 #if HAVE_LOCALTIME_R
-            localtime_r(&now.tv_sec, &ti);
+            localtime_r(&sec, &ti);
 #else
-            ti = *localtime(&now.tv_sec);
+            ti = *localtime(&sec);
 #endif
-            usecs = (int64_t)(ti.tm_hour*3600 + ti.tm_min*60 + ti.tm_sec) * 1000000 + now.tv_usec;
+            usecs = (int64_t)(ti.tm_hour*3600 + ti.tm_min*60 + ti.tm_sec) * 1000000 + (avgt % 1000000);
             wrapped_val = usecs % seg->time;
             if (seg->last_cut != usecs && wrapped_val < seg->last_val) {
                 seg->cut_pending = 1;
