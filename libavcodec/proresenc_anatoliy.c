@@ -554,6 +554,12 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if (avctx->width > 65534 || avctx->height > 65535) {
+        av_log(avctx, AV_LOG_ERROR,
+                "The maximum dimensions are 65534x65535\n");
+        return AVERROR(EINVAL);
+    }
+
     if ((avctx->height & 0xf) || (avctx->width & 0xf)) {
         ctx->fill_y = av_malloc(4 * (DEFAULT_SLICE_MB_WIDTH << 8));
         if (!ctx->fill_y)
