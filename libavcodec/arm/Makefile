@@ -53,8 +53,7 @@ ARMV5TE-OBJS-$(CONFIG_VIDEODSP)        += arm/videodsp_init_armv5te.o   \
 ARMV5TE-OBJS-$(CONFIG_MLP_DECODER)     += arm/mlpdsp_armv5te.o
 
 ARMV6-OBJS-$(CONFIG_AC3DSP)            += arm/ac3dsp_armv6.o
-ARMV6-OBJS-$(CONFIG_DSPUTIL)           += arm/dsputil_init_armv6.o      \
-                                          arm/dsputil_armv6.o
+ARMV6-OBJS-$(CONFIG_DSPUTIL)           += arm/dsputil_armv6.o
 ARMV6-OBJS-$(CONFIG_H264DSP)           += arm/h264dsp_armv6.o
 ARMV6-OBJS-$(CONFIG_HPELDSP)           += arm/hpeldsp_init_armv6.o      \
                                           arm/hpeldsp_armv6.o
