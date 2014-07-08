@@ -972,6 +972,11 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    if (avctx->width > 65535 || avctx->height > 65535) {
+        av_log(avctx, AV_LOG_ERROR, "Dimensions are max 32768\n");
+        return AVERROR(EINVAL);
+    }
+
     if (((avctx->width)&(avctx->width-1))||((avctx->height)&(avctx->height-1)))
         av_log(avctx, AV_LOG_ERROR, "Warning: dimensions not power of two\n");
 
