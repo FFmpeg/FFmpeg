@@ -45,6 +45,9 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>             /* close() */
 #endif
+#if HAVE_IO_H
+#include <io.h>
+#endif
 
 typedef struct {
     AVClass *class;          ///< class for private options
