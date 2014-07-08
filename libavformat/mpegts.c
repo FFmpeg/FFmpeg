@@ -357,10 +357,9 @@ static int discard_pid(MpegTSContext *ts, unsigned int pid)
  *  Assemble PES packets out of TS packets, and then call the "section_cb"
  *  function when they are complete.
  */
-static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
+static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
                                const uint8_t *buf, int buf_size, int is_start)
 {
-    MpegTSContext *ts = s->priv_data;
     MpegTSSectionFilter *tss = &tss1->u.section_filter;
     int len;
 
@@ -2010,7 +2009,6 @@ static int parse_pcr(int64_t *ppcr_high, int *ppcr_low,
 /* handle one TS packet */
 static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 {
-    AVFormatContext *s = ts->stream;
     MpegTSFilter *tss;
     int len, pid, cc, expected_cc, cc_ok, afc, is_start, is_discontinuity,
         has_adaptation, has_payload;
@@ -2084,7 +2082,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
                 return 0;
             if (len && cc_ok) {
                 /* write remaining section bytes */
-                write_section_data(s, tss,
+                write_section_data(ts, tss,
                                    p, len, 0);
                 /* check whether filter has been closed */
                 if (!ts->pids[pid])
@@ -2092,12 +2090,12 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
             }
             p += len;
             if (p < p_end) {
-                write_section_data(s, tss,
+                write_section_data(ts, tss,
                                    p, p_end - p, 1);
             }
         } else {
             if (cc_ok) {
-                write_section_data(s, tss,
+                write_section_data(ts, tss,
                                    p, p_end - p, 0);
             }
         }
