@@ -37,7 +37,6 @@
 #include "libavutil/timer.h"
 #include "avcodec.h"
 #include "dct.h"
-#include "dsputil.h"
 #include "idctdsp.h"
 #include "mpeg12.h"
 #include "mpegvideo.h"
@@ -48,6 +47,7 @@
 #include "mpegutils.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"
+#include "pixblockdsp.h"
 #include "qpeldsp.h"
 #include "faandct.h"
 #include "thread.h"
@@ -820,6 +820,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 
     ff_fdctdsp_init(&s->fdsp, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
+    ff_pixblockdsp_init(&s->pdsp, avctx);
     ff_qpeldsp_init(&s->qdsp);
 
     s->avctx->coded_frame = s->current_picture.f;
@@ -2093,27 +2094,27 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             }
         }
 
-        s->dsp.get_pixels(s->block[0], ptr_y                  , wrap_y);
-        s->dsp.get_pixels(s->block[1], ptr_y              + 8 , wrap_y);
-        s->dsp.get_pixels(s->block[2], ptr_y + dct_offset     , wrap_y);
-        s->dsp.get_pixels(s->block[3], ptr_y + dct_offset + 8 , wrap_y);
+        s->pdsp.get_pixels(s->block[0], ptr_y,                  wrap_y);
+        s->pdsp.get_pixels(s->block[1], ptr_y + 8,              wrap_y);
+        s->pdsp.get_pixels(s->block[2], ptr_y + dct_offset,     wrap_y);
+        s->pdsp.get_pixels(s->block[3], ptr_y + dct_offset + 8, wrap_y);
 
         if (s->flags & CODEC_FLAG_GRAY) {
             skip_dct[4] = 1;
             skip_dct[5] = 1;
         } else {
-            s->dsp.get_pixels(s->block[4], ptr_cb, wrap_c);
-            s->dsp.get_pixels(s->block[5], ptr_cr, wrap_c);
+            s->pdsp.get_pixels(s->block[4], ptr_cb, wrap_c);
+            s->pdsp.get_pixels(s->block[5], ptr_cr, wrap_c);
             if (!s->chroma_y_shift && s->chroma_x_shift) { /* 422 */
-                s->dsp.get_pixels(s->block[6], ptr_cb + uv_dct_offset, wrap_c);
-                s->dsp.get_pixels(s->block[7], ptr_cr + uv_dct_offset, wrap_c);
+                s->pdsp.get_pixels(s->block[6], ptr_cb + uv_dct_offset, wrap_c);
+                s->pdsp.get_pixels(s->block[7], ptr_cr + uv_dct_offset, wrap_c);
             } else if (!s->chroma_y_shift && !s->chroma_x_shift) { /* 444 */
-                s->dsp.get_pixels(s->block[6], ptr_cb + 8, wrap_c);
-                s->dsp.get_pixels(s->block[7], ptr_cr + 8, wrap_c);
-                s->dsp.get_pixels(s->block[8], ptr_cb + uv_dct_offset, wrap_c);
-                s->dsp.get_pixels(s->block[9], ptr_cr + uv_dct_offset, wrap_c);
-                s->dsp.get_pixels(s->block[10], ptr_cb + uv_dct_offset + 8, wrap_c);
-                s->dsp.get_pixels(s->block[11], ptr_cr + uv_dct_offset + 8, wrap_c);
+                s->pdsp.get_pixels(s->block[ 6], ptr_cb + 8, wrap_c);
+                s->pdsp.get_pixels(s->block[ 7], ptr_cr + 8, wrap_c);
+                s->pdsp.get_pixels(s->block[ 8], ptr_cb + uv_dct_offset, wrap_c);
+                s->pdsp.get_pixels(s->block[ 9], ptr_cr + uv_dct_offset, wrap_c);
+                s->pdsp.get_pixels(s->block[10], ptr_cb + uv_dct_offset + 8, wrap_c);
+                s->pdsp.get_pixels(s->block[11], ptr_cr + uv_dct_offset + 8, wrap_c);
             }
         }
     } else {
@@ -2180,24 +2181,24 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             }
         }
 
-        s->dsp.diff_pixels(s->block[0], ptr_y, dest_y, wrap_y);
-        s->dsp.diff_pixels(s->block[1], ptr_y + 8, dest_y + 8, wrap_y);
-        s->dsp.diff_pixels(s->block[2], ptr_y + dct_offset,
-                           dest_y + dct_offset, wrap_y);
-        s->dsp.diff_pixels(s->block[3], ptr_y + dct_offset + 8,
-                           dest_y + dct_offset + 8, wrap_y);
+        s->pdsp.diff_pixels(s->block[0], ptr_y, dest_y, wrap_y);
+        s->pdsp.diff_pixels(s->block[1], ptr_y + 8, dest_y + 8, wrap_y);
+        s->pdsp.diff_pixels(s->block[2], ptr_y + dct_offset,
+                            dest_y + dct_offset, wrap_y);
+        s->pdsp.diff_pixels(s->block[3], ptr_y + dct_offset + 8,
+                            dest_y + dct_offset + 8, wrap_y);
 
         if (s->flags & CODEC_FLAG_GRAY) {
             skip_dct[4] = 1;
             skip_dct[5] = 1;
         } else {
-            s->dsp.diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
-            s->dsp.diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
+            s->pdsp.diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
+            s->pdsp.diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
             if (!s->chroma_y_shift) { /* 422 */
-                s->dsp.diff_pixels(s->block[6], ptr_cb + uv_dct_offset,
-                                   dest_cb + uv_dct_offset, wrap_c);
-                s->dsp.diff_pixels(s->block[7], ptr_cr + uv_dct_offset,
-                                   dest_cr + uv_dct_offset, wrap_c);
+                s->pdsp.diff_pixels(s->block[6], ptr_cb + uv_dct_offset,
+                                    dest_cb + uv_dct_offset, wrap_c);
+                s->pdsp.diff_pixels(s->block[7], ptr_cr + uv_dct_offset,
+                                    dest_cr + uv_dct_offset, wrap_c);
             }
         }
         /* pre quantization */

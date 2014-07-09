@@ -62,14 +62,6 @@ typedef int (*me_cmp_func)(struct MpegEncContext *c,
  * DSPContext.
  */
 typedef struct DSPContext {
-    /* pixel ops : interface with DCT */
-    void (*get_pixels)(int16_t *block /* align 16 */,
-                       const uint8_t *pixels /* align 8 */,
-                       int line_size);
-    void (*diff_pixels)(int16_t *block /* align 16 */,
-                        const uint8_t *s1 /* align 8 */,
-                        const uint8_t *s2 /* align 8 */,
-                        int stride);
     int (*sum_abs_dctelem)(int16_t *block /* align 16 */);
 
     me_cmp_func sad[6]; /* identical to pix_absAxA except additional void * */
