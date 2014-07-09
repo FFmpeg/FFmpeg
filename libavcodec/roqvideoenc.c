@@ -978,7 +978,7 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
     }
 
     if (((avctx->width)&(avctx->width-1))||((avctx->height)&(avctx->height-1)))
-        av_log(avctx, AV_LOG_ERROR, "Warning: dimensions not power of two\n");
+        av_log(avctx, AV_LOG_ERROR, "Warning: dimensions not power of two, this is not supported by quake\n");
 
     enc->width = avctx->width;
     enc->height = avctx->height;
