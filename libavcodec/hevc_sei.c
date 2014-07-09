@@ -74,6 +74,21 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
     skip_bits1(gb);             // upsampled_aspect_ratio_flag
 }
 
+static void decode_nal_sei_display_orientation(HEVCContext *s)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+
+    s->sei_display_orientation_present = !get_bits1(gb);
+
+    if (s->sei_display_orientation_present) {
+        s->sei_hflip = get_bits1(gb);     // hor_flip
+        s->sei_vflip = get_bits1(gb);     // ver_flip
+
+        s->sei_anticlockwise_rotation = get_bits(gb, 16);
+        skip_bits1(gb);     // display_orientation_persistence_flag
+    }
+}
+
 static int decode_pic_timing(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -148,6 +163,9 @@ static int decode_nal_sei_message(HEVCContext *s)
             return 1;
         } else if (payload_type == 45) {
             decode_nal_sei_frame_packing_arrangement(s);
+            return 1;
+        } else if (payload_type == 47) {
+            decode_nal_sei_display_orientation(s);
             return 1;
         } else if (payload_type == 1){
             int ret = decode_pic_timing(s);
