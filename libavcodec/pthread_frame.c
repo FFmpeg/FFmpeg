@@ -376,7 +376,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 p->result = ff_get_buffer(p->avctx, p->requested_frame, p->requested_flags);
                 break;
             case STATE_GET_FORMAT:
-                p->result_format = p->avctx->get_format(p->avctx, p->available_formats);
+                p->result_format = ff_get_format(p->avctx, p->available_formats);
                 break;
             default:
                 call_done = 0;
