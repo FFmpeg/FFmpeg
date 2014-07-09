@@ -38,7 +38,7 @@ typedef struct DVwork_chunk {
 } DVwork_chunk;
 
 typedef struct DVVideoContext {
-    const DVprofile *sys;
+    const AVDVProfile *sys;
     AVFrame         *frame;
     AVCodecContext  *avctx;
     uint8_t         *buf;
@@ -95,10 +95,10 @@ enum dv_pack_type {
 
 extern RL_VLC_ELEM ff_dv_rl_vlc[1184];
 
-int ff_dv_init_dynamic_tables(DVVideoContext *s, const DVprofile *d);
+int ff_dv_init_dynamic_tables(DVVideoContext *s, const AVDVProfile *d);
 int ff_dvvideo_init(AVCodecContext *avctx);
 
-static inline int dv_work_pool_size(const DVprofile *d)
+static inline int dv_work_pool_size(const AVDVProfile *d)
 {
     int size = d->n_difchan*d->difseg_size*27;
     if (DV_PROFILE_IS_1080i50(d))

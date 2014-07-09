@@ -30,12 +30,12 @@
 #define DV_PROFILE_BYTES (6*80) /* 6 DIF blocks */
 
 /*
- * DVprofile is used to express the differences between various
+ * AVDVProfile is used to express the differences between various
  * DV flavors. For now it's primarily used for differentiating
  * 525/60 and 625/50, but the plans are to use it for various
  * DV specs as well (e.g. SMPTE314M vs. IEC 61834).
  */
-typedef struct DVprofile {
+typedef struct AVDVProfile {
     int              dsf;                   /* value of the dsf in the DV header */
     int              video_stype;           /* stype for VAUX source pack */
     int              frame_size;            /* total size of one frame in bytes */
@@ -55,17 +55,30 @@ typedef struct DVprofile {
     int              audio_samples_dist[5]; /* how many samples are supposed to be */
                                             /* in each frame in a 5 frames window */
     const uint8_t  (*audio_shuffle)[9];     /* PCM shuffling table */
-} DVprofile;
+} AVDVProfile;
 
-const DVprofile* avpriv_dv_frame_profile(const DVprofile *sys,
-                                         const uint8_t* frame, unsigned buf_size);
-const DVprofile* avpriv_dv_frame_profile2(AVCodecContext* codec, const DVprofile *sys,
-                                  const uint8_t* frame, unsigned buf_size);
-const DVprofile* avpriv_dv_codec_profile(AVCodecContext* codec);
+const AVDVProfile* avpriv_dv_frame_profile2(AVCodecContext* codec, const AVDVProfile *sys,
+                                            const uint8_t* frame, unsigned buf_size);
+#if LIBAVCODEC_VERSION_MAJOR < 56
+const AVDVProfile *avpriv_dv_frame_profile(const AVDVProfile *sys,
+                                           const uint8_t* frame, unsigned buf_size);
+const AVDVProfile *avpriv_dv_codec_profile(AVCodecContext* codec);
+#endif
 
 /**
- *  Print all allowed DV profiles into logctx at specified logging level.
+ * Get a DV profile for the provided compressed frame.
+ *
+ * @param sys the profile used for the previous frame, may be NULL
+ * @param frame the compressed data buffer
+ * @param buf_size size of the buffer in bytes
+ * @return the DV profile for the supplied data or NULL on failure
  */
-void ff_dv_print_profiles(void *logctx, int loglevel);
+const AVDVProfile *av_dv_frame_profile(const AVDVProfile *sys,
+                                       const uint8_t *frame, unsigned buf_size);
+
+/**
+ * Get a DV profile for the provided stream parameters.
+ */
+const AVDVProfile *av_dv_codec_profile(int width, int height, enum AVPixelFormat pix_fmt);
 
 #endif /* AVCODEC_DV_PROFILE_H */

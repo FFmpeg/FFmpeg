@@ -51,7 +51,7 @@
 /* XXX: also include quantization */
 RL_VLC_ELEM ff_dv_rl_vlc[1184];
 
-static inline void dv_calc_mb_coordinates(const DVprofile *d, int chan, int seq, int slot,
+static inline void dv_calc_mb_coordinates(const AVDVProfile *d, int chan, int seq, int slot,
                                           uint16_t *tbl)
 {
     static const uint8_t off[] = { 2, 6, 8, 0, 4 };
@@ -175,7 +175,7 @@ static const uint8_t dv100_qstep[16] = {
 
 static const uint8_t dv_quant_areas[4]  = { 6, 21, 43, 64 };
 
-int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const DVprofile *d)
+int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
 {
     int j,i,c,s,p;
     uint32_t *factor1, *factor2;
