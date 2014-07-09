@@ -973,7 +973,7 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
     }
 
     if (avctx->width > 65535 || avctx->height > 65535) {
-        av_log(avctx, AV_LOG_ERROR, "Dimensions are max 32768\n");
+        av_log(avctx, AV_LOG_ERROR, "Dimensions are max %d\n", enc->quake3_compat ? 32768 : 65535);
         return AVERROR(EINVAL);
     }
 
