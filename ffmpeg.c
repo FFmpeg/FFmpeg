@@ -2879,7 +2879,8 @@ static int transcode_init(void)
         }
         ost->st->codec->codec= ost->enc_ctx->codec;
 
-        ost->st->time_base = ost->enc_ctx->time_base;
+        // copy timebase while removing common factors
+        ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0});
     }
 
     /* init input streams */
