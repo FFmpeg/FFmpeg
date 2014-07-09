@@ -35,8 +35,8 @@ void ff_adx_calculate_coeffs(int cutoff, int sample_rate, int bits, int *coeff)
     coeff[1] = lrintf(-(c * c) * (1 << bits));
 }
 
-int avpriv_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
-                             int bufsize, int *header_size, int *coeff)
+int ff_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
+                         int bufsize, int *header_size, int *coeff)
 {
     int offset, cutoff;
 
@@ -80,3 +80,11 @@ int avpriv_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
     *header_size = offset;
     return 0;
 }
+
+#if LIBAVCODEC_VERSION_MAJOR < 56
+int avpriv_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
+                             int bufsize, int *header_size, int *coeff)
+{
+    return ff_adx_decode_header(avctx, buf, bufsize, header_size, coeff);
+}
+#endif
