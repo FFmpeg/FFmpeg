@@ -1975,6 +1975,29 @@ void ff_MPV_frame_end(MpegEncContext *s)
         ff_thread_report_progress(&s->current_picture_ptr->tf, INT_MAX, 0);
 }
 
+
+static int clip_line(int *sx, int *sy, int *ex, int *ey, int maxx)
+{
+    if(*sx > *ex)
+        return clip_line(ex, ey, sx, sy, maxx);
+
+    if (*sx < 0) {
+        if (*ex < 0)
+            return 1;
+        *sy = *ey + (*sy - *ey) * (int64_t)*ex / (*ex - *sx);
+        *sx = 0;
+    }
+
+    if (*ex > maxx) {
+        if (*sx > maxx)
+            return 1;
+        *ey = *sy + (*ey - *sy) * (int64_t)(maxx - *sx) / (*ex - *sx);
+        *ex = maxx;
+    }
+    return 0;
+}
+
+
 /**
  * Draw a line from (ex, ey) -> (sx, sy).
  * @param w width of the image
@@ -1986,6 +2009,11 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey,
                       int w, int h, int stride, int color)
 {
     int x, y, fr, f;
+
+    if (clip_line(&sx, &sy, &ex, &ey, w - 1))
+        return;
+    if (clip_line(&sy, &sx, &ey, &ex, h - 1))
+        return;
 
     sx = av_clip(sx, 0, w - 1);
     sy = av_clip(sy, 0, h - 1);
