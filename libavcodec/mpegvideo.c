@@ -2036,9 +2036,14 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey,
  * @param color color of the arrow
  */
 static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
-                       int ey, int w, int h, int stride, int color)
+                       int ey, int w, int h, int stride, int color, int tail, int direction)
 {
     int dx,dy;
+
+    if (direction) {
+        FFSWAP(int, sx, ex);
+        FFSWAP(int, sy, ey);
+    }
 
     sx = av_clip(sx, -100, w + 100);
     sy = av_clip(sy, -100, h + 100);
@@ -2056,6 +2061,11 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
         // FIXME subpixel accuracy
         rx = ROUNDED_DIV(rx * 3 << 4, length);
         ry = ROUNDED_DIV(ry * 3 << 4, length);
+
+        if (tail) {
+            rx = -rx;
+            ry = -ry;
+        }
 
         draw_line(buf, sx, sy, sx + rx, sy + ry, w, h, stride, color);
         draw_line(buf, sx, sy, sx - ry, sy + rx, w, h, stride, color);
@@ -2210,7 +2220,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                                 int mx = (motion_val[direction][xy][0] >> shift) + sx;
                                 int my = (motion_val[direction][xy][1] >> shift) + sy;
                                 draw_arrow(ptr, sx, sy, mx, my, width,
-                                           height, pict->linesize[0], 100);
+                                           height, pict->linesize[0], 100, 0, direction);
                             }
                         } else if (IS_16X8(mbtype_table[mb_index])) {
                             int i;
@@ -2225,7 +2235,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                                     my *= 2;
 
                                 draw_arrow(ptr, sx, sy, mx + sx, my + sy, width,
-                                           height, pict->linesize[0], 100);
+                                           height, pict->linesize[0], 100, 0, direction);
                             }
                         } else if (IS_8X16(mbtype_table[mb_index])) {
                             int i;
@@ -2240,7 +2250,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                                     my *= 2;
 
                                 draw_arrow(ptr, sx, sy, mx + sx, my + sy, width,
-                                           height, pict->linesize[0], 100);
+                                           height, pict->linesize[0], 100, 0, direction);
                             }
                         } else {
                               int sx= mb_x * 16 + 8;
@@ -2248,7 +2258,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                               int xy= (mb_x + mb_y * mv_stride) << mv_sample_log2;
                               int mx= (motion_val[direction][xy][0]>>shift) + sx;
                               int my= (motion_val[direction][xy][1]>>shift) + sy;
-                              draw_arrow(ptr, sx, sy, mx, my, width, height, pict->linesize[0], 100);
+                              draw_arrow(ptr, sx, sy, mx, my, width, height, pict->linesize[0], 100, 0, direction);
                         }
                     }
                 }
