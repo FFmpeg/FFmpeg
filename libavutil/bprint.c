@@ -30,6 +30,9 @@
 #include "error.h"
 #include "mem.h"
 
+#if HAVE_IO_H
+#include <io.h>
+#endif
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
