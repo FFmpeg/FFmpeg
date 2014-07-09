@@ -43,6 +43,8 @@ typedef struct HLSSegment {
 typedef enum HLSFlags {
     // Generate a single media file and use byte ranges in the playlist.
     HLS_SINGLE_FILE = (1 << 0),
+    // Do not include the media filename in segment name (only the base url)
+    HLS_NO_FILENAME = (1 << 1),
 } HLSFlags;
 
 typedef struct HLSContext {
@@ -87,6 +89,12 @@ static int hls_mux_init(AVFormatContext *ctx)
     int i, video_ref, audio_ref;
 
     hls = ctx->priv_data;
+
+    if ((hls->flags & HLS_NO_FILENAME) && !hls->baseurl) {
+        av_log(ctx, AV_LOG_ERROR,
+               "HLS flag 'no_filename' cannot be used without -hls_base_url\n");
+        return AVERROR(EINVAL);
+    }
 
     hls->segment_duration = 0.0;
     hls->segment_size = 0;
@@ -261,7 +269,8 @@ static int hls_generate_playlist(AVFormatContext *ctx, int last)
         }
 
         avio_printf(hls->pb, "%s%s\n",
-                    (hls->baseurl ? hls->baseurl : ""), segment->filename);
+                    (hls->baseurl ? hls->baseurl : ""),
+                    ((hls->flags & HLS_NO_FILENAME) ? "" : segment->filename));
     }
 
     if (last)
@@ -490,6 +499,7 @@ static const AVOption options[] = {
 
     {"hls_flags",   "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file", "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
+    {"no_filename", "do not use the name of the media file in segment names", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_NO_FILENAME }, 0, UINT_MAX,   E, "flags"},
 
     { NULL },
 };
