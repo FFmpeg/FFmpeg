@@ -136,6 +136,7 @@ typedef enum {
     SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
     SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
     SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
+    SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
 } SEI_Type;
 
 /**
@@ -672,6 +673,13 @@ typedef struct H264Context {
     int frame_packing_arrangement_type;
     int content_interpretation_type;
     int quincunx_subsampling;
+
+    /**
+     * display orientation SEI message
+     */
+    int sei_display_orientation_present;
+    int sei_anticlockwise_rotation;
+    int sei_hflip, sei_vflip;
 
     /**
      * Bit set of clock types for fields/frames in picture timing SEI message.
