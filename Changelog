@@ -32,6 +32,7 @@ version <next>:
 - hqx filter (hq2x, hq3x, hq4x)
 - flanger filter
 - Image format auto-detection
+- LRC demuxer and muxer
 
 
 version 2.2:
