@@ -3477,12 +3477,8 @@ static int mov_read_close(AVFormatContext *s)
     }
 
     if (mov->dv_demux) {
-        for (i = 0; i < mov->dv_fctx->nb_streams; i++) {
-            av_freep(&mov->dv_fctx->streams[i]->codec);
-            av_freep(&mov->dv_fctx->streams[i]);
-        }
-        av_freep(&mov->dv_fctx);
-        av_freep(&mov->dv_demux);
+        avformat_free_context(mov->dv_fctx);
+        mov->dv_fctx = NULL;
     }
 
     av_freep(&mov->trex_data);
