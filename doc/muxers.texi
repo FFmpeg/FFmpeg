@@ -822,7 +822,7 @@ Select the listing format.
 @end table
 
 @item segment_list_size @var{size}
-Update the list file so that it contains at most the last @var{size}
+Update the list file so that it contains at most @var{size}
 segments. If 0 the list file will contain all the segments. Default
 value is 0.
 
