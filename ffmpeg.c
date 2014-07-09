@@ -2878,6 +2878,8 @@ static int transcode_init(void)
             exit_program(1);
         }
         ost->st->codec->codec= ost->enc_ctx->codec;
+
+        ost->st->time_base = ost->enc_ctx->time_base;
     }
 
     /* init input streams */
