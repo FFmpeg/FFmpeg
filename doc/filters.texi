@@ -7746,6 +7746,22 @@ Playback video while highlighting pixels that are outside of broadcast range in 
 @example
 ffplay example.mov -vf signalstats="out=brng:color=red"
 @end example
+
+@item
+Playback video with signalstats metadata drawn over the frame.
+@example
+ffplay example.mov -vf signalstats=stat=brng+vrep+tout,drawtext=fontfile=FreeSerif.ttf:textfile=signalstat_drawtext.txt
+@end example
+
+The contents of signalstat_drawtext.txt used in the command are:
+@example
+time %@{pts:hms@}
+Y (%@{metadata:lavfi.signalstats.YMIN@}-%@{metadata:lavfi.signalstats.YMAX@})
+U (%@{metadata:lavfi.signalstats.UMIN@}-%@{metadata:lavfi.signalstats.UMAX@})
+V (%@{metadata:lavfi.signalstats.VMIN@}-%@{metadata:lavfi.signalstats.VMAX@})
+saturation maximum: %@{metadata:lavfi.signalstats.SATMAX@}
+
+@end example
 @end itemize
 
 @anchor{smartblur}
