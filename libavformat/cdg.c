@@ -46,9 +46,10 @@ static int read_header(AVFormatContext *s)
     avpriv_set_pts_info(vst, 32, 1, 300);
 
     ret = avio_size(s->pb);
-    if (ret > 0)
-        vst->duration = (ret * vst->time_base.den) / (CDG_PACKET_SIZE * 300);
+    if (ret < 0)
+        return ret;
 
+    vst->duration = (ret * vst->time_base.den) / (CDG_PACKET_SIZE * 300);
     return 0;
 }
 
