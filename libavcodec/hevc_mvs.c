@@ -720,6 +720,11 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
             availableFlagLXA0 = MP_MX_LT(A1, pred_flag_index_l1, mxA);
     }
 
+    if(availableFlagLXA0 && !mvp_lx_flag) {
+        mv->mv[LX] = mxA;
+        return;
+    }
+
     // B candidates
     // above right spatial merge candidate
     xB0    = x0 + nPbW;
