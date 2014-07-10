@@ -8,3 +8,4 @@ OBJS-$(CONFIG_IDCTDSP)                  += alpha/idctdsp_alpha.o        \
                                            alpha/idctdsp_alpha_asm.o    \
                                            alpha/simple_idct_alpha.o
 OBJS-$(CONFIG_MPEGVIDEO)                += alpha/mpegvideo_alpha.o
+OBJS-$(CONFIG_PIXBLOCKDSP)              += alpha/pixblockdsp_alpha.o

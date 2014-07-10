@@ -22,10 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void get_pixels_mvi(int16_t *restrict block,
-                    const uint8_t *restrict pixels, int line_size);
-void diff_pixels_mvi(int16_t *block, const uint8_t *s1, const uint8_t *s2,
-                     int stride);
 int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 int pix_abs16x16_mvi_asm(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
