@@ -339,3 +339,119 @@ function ff_vector_fmul_reverse_vfp, export=1
         vpop            {d8-d15}
         bx              lr
 endfunc
+
+/**
+ * ARM VFP implementation of 'butterflies_float_c' function
+ * Assume that len is a positive non-zero number
+ */
+@ void ff_butterflies_float_vfp(float *restrict v1, float *restrict v2, int len)
+function ff_butterflies_float_vfp, export=1
+BASE1   .req    a1
+BASE2   .req    a2
+LEN     .req    a3
+OLDFPSCR .req   a4
+
+        vpush   {s16-s31}
+        fmrx    OLDFPSCR, FPSCR
+
+        tst     LEN, #7
+        beq     4f                          @ common case: len is a multiple of 8
+
+        ldr     ip, =0x03000000             @ RunFast mode, scalar mode
+        fmxr    FPSCR, ip
+
+        tst     LEN, #1
+        beq     1f
+        vldmia  BASE1!, {s0}
+        vldmia  BASE2!, {s8}
+        vadd.f  s16, s0, s8
+        vsub.f  s24, s0, s8
+        vstr    s16, [BASE1, #0-4*1]
+        vstr    s24, [BASE2, #0-4*1]
+1:
+        tst     LEN, #2
+        beq     2f
+        vldmia  BASE1!, {s0-s1}
+        vldmia  BASE2!, {s8-s9}
+        vadd.f  s16, s0, s8
+        vadd.f  s17, s1, s9
+        vsub.f  s24, s0, s8
+        vsub.f  s25, s1, s9
+        vstr    d8, [BASE1, #0-8*1]    @ s16,s17
+        vstr    d12, [BASE2, #0-8*1]   @ s24,s25
+2:
+        tst     LEN, #4
+        beq     3f
+        vldmia  BASE1!, {s0-s1}
+        vldmia  BASE2!, {s8-s9}
+        vldmia  BASE1!, {s2-s3}
+        vldmia  BASE2!, {s10-s11}
+        vadd.f  s16, s0, s8
+        vadd.f  s17, s1, s9
+        vsub.f  s24, s0, s8
+        vsub.f  s25, s1, s9
+        vadd.f  s18, s2, s10
+        vadd.f  s19, s3, s11
+        vsub.f  s26, s2, s10
+        vsub.f  s27, s3, s11
+        vstr    d8, [BASE1, #0-16*1]    @ s16,s17
+        vstr    d12, [BASE2, #0-16*1]   @ s24,s25
+        vstr    d9, [BASE1, #8-16*1]    @ s18,s19
+        vstr    d13, [BASE2, #8-16*1]   @ s26,s27
+3:
+        bics    LEN, LEN, #7
+        beq     7f
+4:
+        ldr     ip, =0x03030000             @ RunFast mode, short vectors of length 4, stride 1
+        fmxr    FPSCR, ip
+
+        vldmia  BASE1!, {s0-s1}
+        vldmia  BASE2!, {s8-s9}
+        vldmia  BASE1!, {s2-s3}
+        vldmia  BASE2!, {s10-s11}
+        vadd.f  s16, s0, s8
+            vldmia  BASE1!, {s4-s5}
+            vldmia  BASE2!, {s12-s13}
+            vldmia  BASE1!, {s6-s7}
+            vldmia  BASE2!, {s14-s15}
+        vsub.f  s24, s0, s8
+            vadd.f  s20, s4, s12
+        subs    LEN, LEN, #8
+        beq     6f
+5:              vldmia  BASE1!, {s0-s3}
+                vldmia  BASE2!, {s8-s11}
+            vsub.f  s28, s4, s12
+        vstr    d8, [BASE1, #0-16*3]    @ s16,s17
+        vstr    d9, [BASE1, #8-16*3]    @ s18,s19
+        vstr    d12, [BASE2, #0-16*3]   @ s24,s25
+        vstr    d13, [BASE2, #8-16*3]   @ s26,s27
+                vadd.f  s16, s0, s8
+                    vldmia  BASE1!, {s4-s7}
+                    vldmia  BASE2!, {s12-s15}
+                vsub.f  s24, s0, s8
+            vstr    d10, [BASE1, #0-16*3]   @ s20,s21
+            vstr    d11, [BASE1, #8-16*3]   @ s22,s23
+            vstr    d14, [BASE2, #0-16*3]   @ s28,s29
+            vstr    d15, [BASE2, #8-16*3]   @ s30,s31
+                    vadd.f  s20, s4, s12
+        subs    LEN, LEN, #8
+        bne     5b
+6:                   vsub.f  s28, s4, s12
+                vstr    d8, [BASE1, #0-16*2]    @ s16,s17
+                vstr    d9, [BASE1, #8-16*2]    @ s18,s19
+                vstr    d12, [BASE2, #0-16*2]   @ s24,s25
+                vstr    d13, [BASE2, #8-16*2]   @ s26,s27
+                    vstr    d10, [BASE1, #0-16*1]   @ s20,s21
+                    vstr    d11, [BASE1, #8-16*1]   @ s22,s23
+                    vstr    d14, [BASE2, #0-16*1]   @ s28,s29
+                    vstr    d15, [BASE2, #8-16*1]   @ s30,s31
+7:
+        fmxr    FPSCR, OLDFPSCR
+        vpop    {s16-s31}
+        bx      lr
+
+        .unreq  BASE1
+        .unreq  BASE2
+        .unreq  LEN
+        .unreq  OLDFPSCR
+endfunc
