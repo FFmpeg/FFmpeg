@@ -198,7 +198,7 @@ static void hls_free_segments(HLSContext *hls)
     }
 }
 
-static int hls_generate_playlist(AVFormatContext *ctx, int last)
+static int hls_generate_playlist(AVFormatContext *ctx)
 {
     HLSContext *hls;
     HLSSegment *segment;
@@ -233,8 +233,7 @@ static int hls_generate_playlist(AVFormatContext *ctx, int last)
                     (hls->baseurl ? hls->baseurl : ""), segment->filename);
     }
 
-    if (last)
-        avio_printf(hls->pb, "#EXT-X-ENDLIST\n");
+    avio_printf(hls->pb, "#EXT-X-ENDLIST\n");
 
     avio_closep(&hls->pb);
     return 0;
@@ -395,10 +394,6 @@ static int hls_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         ret = hls_create_file(ctx);
         if (ret)
             return ret;
-
-        ret = hls_generate_playlist(ctx, 0);
-        if (ret < 0)
-            return ret;
     }
 
     ret = ff_write_chained(hls->ctx, pkt->stream_index, pkt, ctx);
@@ -420,7 +415,7 @@ static int hls_write_trailer(struct AVFormatContext *ctx)
     av_free(hls->media_filename);
     hls_append_segment(hls);
 
-    hls_generate_playlist(ctx, 1);
+    hls_generate_playlist(ctx);
 
     hls_free_segments(hls);
     avio_close(hls->pb);
