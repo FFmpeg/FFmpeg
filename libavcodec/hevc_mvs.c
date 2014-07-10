@@ -275,8 +275,8 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
         (y0 >> s->sps->log2_ctb_size) == (y >> s->sps->log2_ctb_size) &&
         y < s->sps->height &&
         x < s->sps->width) {
-        x                  = ((x >> 4) << 4);
-        y                  = ((y >> 4) << 4);
+        x                 &= -16;
+        y                 &= -16;
         x_pu               = x >> s->sps->log2_min_pu_size;
         y_pu               = y >> s->sps->log2_min_pu_size;
         temp_col           = TAB_MVF(x_pu, y_pu);
@@ -287,8 +287,8 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     if (tab_mvf && !availableFlagLXCol) {
         x                  = x0 + (nPbW >> 1);
         y                  = y0 + (nPbH >> 1);
-        x                  = ((x >> 4) << 4);
-        y                  = ((y >> 4) << 4);
+        x                 &= -16;
+        y                 &= -16;
         x_pu               = x >> s->sps->log2_min_pu_size;
         y_pu               = y >> s->sps->log2_min_pu_size;
         temp_col           = TAB_MVF(x_pu, y_pu);
