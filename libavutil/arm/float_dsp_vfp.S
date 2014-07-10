@@ -68,6 +68,210 @@ function ff_vector_fmul_vfp, export=1
 endfunc
 
 /**
+ * ARM VFP implementation of 'vector_fmul_window_c' function
+ * Assume that len is a positive non-zero number
+ */
+@ void ff_vector_fmul_window_vfp(float *dst, const float *src0,
+@                                const float *src1, const float *win, int len)
+function ff_vector_fmul_window_vfp, export=1
+DST0    .req    a1
+SRC0    .req    a2
+SRC1    .req    a3
+WIN0    .req    a4
+LEN     .req    v1
+DST1    .req    v2
+WIN1    .req    v3
+OLDFPSCR .req   ip
+
+        push    {v1-v3,lr}
+        ldr     LEN, [sp, #4*4+0]
+        vpush   {s16-s31}
+        fmrx    OLDFPSCR, FPSCR
+        add     DST1, DST0, LEN, lsl #3
+        add     SRC1, SRC1, LEN, lsl #2
+        add     WIN1, WIN0, LEN, lsl #3
+
+        tst     LEN, #7
+        beq     4f                          @ common case: len is a multiple of 8
+
+        ldr     lr, =0x03000000             @ RunFast mode, scalar mode
+        fmxr    FPSCR, lr
+
+        tst     LEN, #1
+        beq     1f
+        vldmdb  WIN1!, {s0}
+        vldmia  SRC0!, {s8}
+        vldmia  WIN0!, {s16}
+        vmul.f  s24, s0, s8
+        vldmdb  SRC1!, {s20}
+        vmul.f  s8, s16, s8
+        vmls.f  s24, s16, s20
+        vmla.f  s8, s0, s20
+        vstmia  DST0!, {s24}
+        vstmdb  DST1!, {s8}
+1:
+        tst     LEN, #2
+        beq     2f
+        vldmdb  WIN1!, {s0}
+        vldmdb  WIN1!, {s1}
+        vldmia  SRC0!, {s8-s9}
+        vldmia  WIN0!, {s16-s17}
+        vmul.f  s24, s0, s8
+        vmul.f  s25, s1, s9
+        vldmdb  SRC1!, {s20}
+        vldmdb  SRC1!, {s21}
+        vmul.f  s8, s16, s8
+        vmul.f  s9, s17, s9
+        vmls.f  s24, s16, s20
+        vmls.f  s25, s17, s21
+        vmla.f  s8, s0, s20
+        vmla.f  s9, s1, s21
+        vstmia  DST0!, {s24-s25}
+        vstmdb  DST1!, {s8}
+        vstmdb  DST1!, {s9}
+2:
+        tst     LEN, #4
+        beq     3f
+        vldmdb  WIN1!, {s0}
+        vldmdb  WIN1!, {s1}
+        vldmdb  WIN1!, {s2}
+        vldmdb  WIN1!, {s3}
+        vldmia  SRC0!, {s8-s11}
+        vldmia  WIN0!, {s16-s19}
+        vmul.f  s24, s0, s8
+        vmul.f  s25, s1, s9
+        vmul.f  s26, s2, s10
+        vmul.f  s27, s3, s11
+        vldmdb  SRC1!, {s20}
+        vldmdb  SRC1!, {s21}
+        vldmdb  SRC1!, {s22}
+        vldmdb  SRC1!, {s23}
+        vmul.f  s8, s16, s8
+        vmul.f  s9, s17, s9
+        vmul.f  s10, s18, s10
+        vmul.f  s11, s19, s11
+        vmls.f  s24, s16, s20
+        vmls.f  s25, s17, s21
+        vmls.f  s26, s18, s22
+        vmls.f  s27, s19, s23
+        vmla.f  s8, s0, s20
+        vmla.f  s9, s1, s21
+        vmla.f  s10, s2, s22
+        vmla.f  s11, s3, s23
+        vstmia  DST0!, {s24-s27}
+        vstmdb  DST1!, {s8}
+        vstmdb  DST1!, {s9}
+        vstmdb  DST1!, {s10}
+        vstmdb  DST1!, {s11}
+3:
+        bics    LEN, LEN, #7
+        beq     7f
+4:
+        ldr     lr, =0x03030000             @ RunFast mode, short vectors of length 4, stride 1
+        fmxr    FPSCR, lr
+
+        vldmdb  WIN1!, {s0}
+        vldmdb  WIN1!, {s1}
+        vldmdb  WIN1!, {s2}
+        vldmdb  WIN1!, {s3}
+        vldmia  SRC0!, {s8-s11}
+        vldmia  WIN0!, {s16-s19}
+        vmul.f  s24, s0, s8                     @ vector * vector
+        vldmdb  SRC1!, {s20}
+        vldmdb  SRC1!, {s21}
+        vldmdb  SRC1!, {s22}
+        vldmdb  SRC1!, {s23}
+        vmul.f  s8, s16, s8                     @ vector * vector
+        vmls.f  s24, s16, s20                   @ vector * vector
+            vldmdb  WIN1!, {s4}
+            vldmdb  WIN1!, {s5}
+            vldmdb  WIN1!, {s6}
+            vldmdb  WIN1!, {s7}
+            vldmia  SRC0!, {s12-s13}
+        vmla.f  s8, s0, s20                     @ vector * vector
+            vldmia  SRC0!, {s14-s15}
+        subs    LEN, LEN, #8
+        beq     6f
+5:          vldmia  WIN0!, {s20-s23}
+            vmul.f  s28, s4, s12                @ vector * vector
+        vstmia  DST0!, {s24-s25}
+            vldmdb  SRC1!, {s16}
+            vldmdb  SRC1!, {s17}
+            vldmdb  SRC1!, {s18}
+            vldmdb  SRC1!, {s19}
+            vmul.f  s12, s20, s12               @ vector * vector
+        vstmia  DST0!, {s26-s27}
+        vstmdb  DST1!, {s8}
+        vstmdb  DST1!, {s9}
+        vstmdb  DST1!, {s10}
+        vstmdb  DST1!, {s11}
+            vmls.f  s28, s20, s16               @ vector * vector
+                vldmdb  WIN1!, {s0}
+                vldmdb  WIN1!, {s1}
+                vldmdb  WIN1!, {s2}
+                vldmdb  WIN1!, {s3}
+                vldmia  SRC0!, {s8-s9}
+            vmla.f  s12, s4, s16                @ vector * vector
+                vldmia  SRC0!, {s10-s11}
+        subs    LEN, LEN, #8
+                vldmia  WIN0!, {s16-s19}
+                vmul.f  s24, s0, s8             @ vector * vector
+            vstmia  DST0!, {s28-s29}
+                vldmdb  SRC1!, {s20}
+                vldmdb  SRC1!, {s21}
+                vldmdb  SRC1!, {s22}
+                vldmdb  SRC1!, {s23}
+                vmul.f  s8, s16, s8             @ vector * vector
+            vstmia  DST0!, {s30-s31}
+            vstmdb  DST1!, {s12}
+            vstmdb  DST1!, {s13}
+            vstmdb  DST1!, {s14}
+            vstmdb  DST1!, {s15}
+                vmls.f  s24, s16, s20           @ vector * vector
+                    vldmdb  WIN1!, {s4}
+                    vldmdb  WIN1!, {s5}
+                    vldmdb  WIN1!, {s6}
+                    vldmdb  WIN1!, {s7}
+                    vldmia  SRC0!, {s12-s13}
+                vmla.f  s8, s0, s20             @ vector * vector
+                    vldmia  SRC0!, {s14-s15}
+        bne     5b
+6:                  vldmia  WIN0!, {s20-s23}
+                    vmul.f  s28, s4, s12        @ vector * vector
+                vstmia  DST0!, {s24-s25}
+                    vldmdb  SRC1!, {s16}
+                    vldmdb  SRC1!, {s17}
+                    vldmdb  SRC1!, {s18}
+                    vldmdb  SRC1!, {s19}
+                    vmul.f  s12, s20, s12       @ vector * vector
+                vstmia  DST0!, {s26-s27}
+                vstmdb  DST1!, {s8}
+                vstmdb  DST1!, {s9}
+                vstmdb  DST1!, {s10}
+                vstmdb  DST1!, {s11}
+                    vmls.f  s28, s20, s16       @ vector * vector
+                    vmla.f  s12, s4, s16        @ vector * vector
+                    vstmia  DST0!, {s28-s31}
+                    vstmdb  DST1!, {s12}
+                    vstmdb  DST1!, {s13}
+                    vstmdb  DST1!, {s14}
+                    vstmdb  DST1!, {s15}
+7:
+        fmxr    FPSCR, OLDFPSCR
+        vpop    {s16-s31}
+        pop     {v1-v3,pc}
+
+        .unreq  DST0
+        .unreq  SRC0
+        .unreq  SRC1
+        .unreq  WIN0
+        .unreq  LEN
+        .unreq  OLDFPSCR
+        .unreq  DST1
+        .unreq  WIN1
+endfunc
+
+/**
  * ARM VFP optimized implementation of 'vector_fmul_reverse_c' function.
  * Assume that len is a positive number and is multiple of 8
  */
