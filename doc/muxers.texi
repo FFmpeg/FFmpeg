@@ -194,15 +194,19 @@ can not be smaller than one centi second.
 Apple HTTP Live Streaming muxer that segments MPEG-TS according to
 the HTTP Live Streaming (HLS) specification.
 
-It creates a playlist file and numbered segment files. The output
-filename specifies the playlist filename; the segment filenames
-receive the same basename as the playlist, a sequential number and
-a .ts extension.
+It creates a playlist file, and one or more segment files. The output filename
+specifies the playlist filename.
+
+By default, the muxer creates a file for each segment produced. These files
+have the same name as the playlist, followed by a sequential number and a
+.ts extension.
 
 For example, to convert an input file with @command{ffmpeg}:
 @example
 ffmpeg -i in.nut out.m3u8
 @end example
+This example will produce the playlist, @file{out.m3u8}, and segment files:
+@file{out0.ts}, @file{out1.ts}, @file{out2.ts}, etc.
 
 See also the @ref{segment} muxer, which provides a more generic and
 flexible implementation of a segmenter, and can be used to perform HLS
@@ -241,6 +245,17 @@ Note that the playlist sequence number must be unique for each segment
 and it is not to be confused with the segment filename sequence number
 which can be cyclic, for example if the @option{wrap} option is
 specified.
+
+@item hls_flags single_file
+If this flag is set, the muxer will store all segments in a single MPEG-TS
+file, and will use byte ranges in the playlist. HLS playlists generated with
+this way will have the version number 4.
+For example:
+@example
+ffmpeg -i in.nut -hls_flags single_file out.m3u8
+@end example
+Will produce the playlist, @file{out.m3u8}, and a single segment file,
+@file{out.ts}.
 @end table
 
 @anchor{ico}
