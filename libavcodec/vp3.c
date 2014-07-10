@@ -1032,7 +1032,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     if (blocks_ended > s->num_coded_frags[plane][coeff_index])
         av_log(s->avctx, AV_LOG_ERROR, "More blocks ended than coded!\n");
 
-    // decrement the number of blocks that have higher coeffecients for each
+    // decrement the number of blocks that have higher coefficients for each
     // EOB run at this level
     if (blocks_ended)
         for (i = coeff_index + 1; i < 64; i++)
