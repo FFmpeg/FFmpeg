@@ -41,23 +41,25 @@ typedef struct HLSSegment {
 typedef struct HLSContext {
     const AVClass *class;  // Class for private options.
 
-    unsigned number;
     int64_t sequence;
     int64_t start_sequence;
+    int nb_entries;
+    int max_nb_segments;
 
     AVOutputFormat *oformat;
     AVFormatContext *ctx;
 
     float target_duration;
-    int max_nb_segments;
     int wrap;
 
     int64_t recording_time;
     int has_video;
-    int64_t start_pts;
-    int64_t end_pts;
-    double duration;      // last segment duration computed so far, in seconds
-    int nb_entries;
+    int64_t first_pts; ///< first PTS found in the input file
+    int64_t last_pts;  ///< PTS of the last packet we splitted at
+
+    int ref_stream; ///< the index of the stream used as time reference
+
+    double segment_duration; // last segment duration computed so far, in seconds
 
     HLSSegment *segments;
     HLSSegment *last_segment;
@@ -71,9 +73,14 @@ typedef struct HLSContext {
 static int hls_mux_init(AVFormatContext *ctx)
 {
     HLSContext *hls;
-    int i;
+    int i, video_ref, audio_ref;
 
     hls = ctx->priv_data;
+
+    hls->segment_duration = 0.0;
+
+    hls->first_pts = AV_NOPTS_VALUE;
+    hls->last_pts = AV_NOPTS_VALUE;
 
     hls->ctx = avformat_alloc_context();
     if (!hls->ctx)
@@ -83,21 +90,61 @@ static int hls_mux_init(AVFormatContext *ctx)
     hls->ctx->interrupt_callback = ctx->interrupt_callback;
     av_dict_copy(&hls->ctx->metadata, ctx->metadata, 0);
 
-    for (i = 0; i < ctx->nb_streams; i++) {
-        AVStream *stream;
+    hls->ref_stream = -1;
+    video_ref = -1;
+    audio_ref = -1;
 
+    for (i = 0; i < ctx->nb_streams; i++) {
+        AVStream *stream, *input_stream;
+
+        input_stream = ctx->streams[i];
+
+        /* Create output stream */
         stream = avformat_new_stream(hls->ctx, NULL);
         if (!stream)
             return AVERROR(ENOMEM);
 
-        avcodec_copy_context(stream->codec, ctx->streams[i]->codec);
-        stream->sample_aspect_ratio = ctx->streams[i]->sample_aspect_ratio;
+        avcodec_copy_context(stream->codec, input_stream->codec);
+        stream->sample_aspect_ratio = input_stream->sample_aspect_ratio;
+
+        /* See if we can use this stream as a time reference. We use the first
+         * video stream found, or the first audio stream if there is no video
+         * stream. */
+        switch (input_stream->codec->codec_type) {
+        case AVMEDIA_TYPE_VIDEO:
+            hls->has_video++;
+            if (video_ref == -1)
+                video_ref = i;
+            break;
+
+        case AVMEDIA_TYPE_AUDIO:
+            if (audio_ref == -1)
+                audio_ref = i;
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    if (hls->has_video > 1) {
+        av_log(ctx, AV_LOG_WARNING,
+               "More than a single video stream present, "
+               "expect issues decoding it.\n");
+    }
+
+    if (video_ref >= 0) {
+        hls->ref_stream = video_ref;
+    } else if (audio_ref >= 0) {
+        hls->ref_stream = audio_ref;
+    } else {
+        return AVERROR_STREAM_NOT_FOUND;
     }
 
     return 0;
 }
 
-static int hls_append_segment(HLSContext *hls, double duration)
+static int hls_append_segment(HLSContext *hls)
 {
     const char *basename;
     HLSSegment *segment;
@@ -111,7 +158,8 @@ static int hls_append_segment(HLSContext *hls, double duration)
     basename = av_basename(hls->ctx->filename);
     av_strlcpy(segment->filename, basename, sizeof(segment->filename));
 
-    segment->duration = duration;
+    segment->duration = hls->segment_duration;
+
     segment->next = NULL;
 
     if (!hls->segments) {
@@ -214,7 +262,6 @@ static int hls_create_file(AVFormatContext *ctx)
                "Invalid segment filename template '%s'\n", hls->media_filename);
         return AVERROR(EINVAL);
     }
-    hls->number++;
 
     ret = avio_open2(&hls->ctx->pb, hls->ctx->filename, AVIO_FLAG_WRITE,
                      &ctx->interrupt_callback, NULL);
@@ -230,30 +277,15 @@ static int hls_create_file(AVFormatContext *ctx)
 static int hls_write_header(AVFormatContext *ctx)
 {
     HLSContext *hls;
-    int ret, i;
+    int ret;
     char *dot;
     size_t basename_size;
     char filename[1024];
 
     hls = ctx->priv_data;
 
-    hls->sequence       = hls->start_sequence;
+    hls->sequence  = hls->start_sequence;
     hls->recording_time = hls->target_duration * AV_TIME_BASE;
-    hls->start_pts      = AV_NOPTS_VALUE;
-
-    /* Findout if the input file contains a video stream */
-    for (i = 0; i < ctx->nb_streams; i++) {
-        AVStream *stream;
-
-        stream = ctx->streams[i];
-        hls->has_video += stream->codec->codec_type == AVMEDIA_TYPE_VIDEO;
-    }
-
-    if (hls->has_video > 1) {
-        av_log(ctx, AV_LOG_WARNING,
-               "More than a single video stream present, "
-               "expect issues decoding it.\n");
-    }
 
     /* HLS demands that media files use the MPEG-TS container */
     hls->oformat = av_guess_format("mpegts", NULL, NULL);
@@ -262,7 +294,7 @@ static int hls_write_header(AVFormatContext *ctx)
         goto fail;
     }
 
-    /* Generate the basename of all generated media files */
+    /* Generate the name of the media file(s) */
     av_strlcpy(filename, ctx->filename, sizeof(filename));
     dot = strrchr(filename, '.');
     if (dot)
@@ -289,7 +321,7 @@ static int hls_write_header(AVFormatContext *ctx)
 
     ret = avformat_write_header(hls->ctx, NULL);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     return 0;
 
@@ -307,52 +339,53 @@ static int hls_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
     HLSContext *hls;
     AVStream *stream;
-    int64_t end_pts;
-    int64_t pkt_ts;
-    int is_ref_pkt;
     int ret, can_split;
 
     hls = ctx->priv_data;
     stream = ctx->streams[pkt->stream_index];
 
-    is_ref_pkt = 1;
-    can_split = 1;
-
-    end_pts = hls->recording_time * hls->number;
-
-    if (hls->start_pts == AV_NOPTS_VALUE) {
-        hls->start_pts = pkt->pts;
-        hls->end_pts   = pkt->pts;
+    if (hls->first_pts == AV_NOPTS_VALUE) {
+        hls->first_pts = pkt->pts;
+        hls->last_pts = pkt->pts;
     }
 
-    if (hls->has_video) {
-        can_split = (pkt->flags & AV_PKT_FLAG_KEY)
-                 && (stream->codec->codec_type == AVMEDIA_TYPE_VIDEO);
-        is_ref_pkt = (stream->codec->codec_type == AVMEDIA_TYPE_VIDEO);
-    }
-
-    if (pkt->pts == AV_NOPTS_VALUE)
-        is_ref_pkt = can_split = 0;
-
-    if (is_ref_pkt) {
+    if (pkt->stream_index == hls->ref_stream
+     && pkt->pts != AV_NOPTS_VALUE) {
+        AVRational time_base;
         double pts_diff;
+        enum AVMediaType media;
 
-        pts_diff = pkt->pts - hls->end_pts;
+        media = stream->codec->codec_type;
 
-        hls->duration = pts_diff * stream->time_base.num
-                      / stream->time_base.den;
+        time_base = stream->time_base;
+        pts_diff = pkt->pts - hls->last_pts;
+
+        hls->segment_duration = pts_diff * time_base.num / time_base.den;
+
+        if (hls->segment_duration < hls->target_duration) {
+            can_split = 0;
+        } else if (hls->has_video) {
+            /* If there is a video stream, cut before video keyframes */
+            can_split = (media == AVMEDIA_TYPE_VIDEO)
+                     && (pkt->flags & AV_PKT_FLAG_KEY);
+        } else {
+            /* In there is no video stream, cut at every audio packet */
+            can_split = (media == AVMEDIA_TYPE_AUDIO);
+        }
+    } else {
+        can_split = 0;
     }
 
-    pkt_ts = pkt->pts - hls->start_pts;
-
-    if (can_split && av_compare_ts(pkt_ts, stream->time_base,
-                                   end_pts, AV_TIME_BASE_Q) >= 0) {
-        ret = hls_append_segment(hls, hls->duration);
+    if (can_split) {
+        /* Write a segment ending just before this packet */
+        ret = hls_append_segment(hls);
         if (ret)
             return ret;
 
-        hls->end_pts = pkt->pts;
-        hls->duration = 0;
+        hls->last_pts = pkt->pts;
+
+        /* Get ready for the next segment starting with this packet */
+        hls->segment_duration = 0.0;
 
         /* Flush any buffered data and close the current file */
         av_write_frame(hls->ctx, NULL);
@@ -369,7 +402,10 @@ static int hls_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     }
 
     ret = ff_write_chained(hls->ctx, pkt->stream_index, pkt, ctx);
-    return ret;
+    if (ret < 0)
+        return ret;
+
+    return 0;
 }
 
 static int hls_write_trailer(struct AVFormatContext *ctx)
@@ -382,7 +418,8 @@ static int hls_write_trailer(struct AVFormatContext *ctx)
     avio_closep(&hls->ctx->pb);
     avformat_free_context(hls->ctx);
     av_free(hls->media_filename);
-    hls_append_segment(hls, hls->duration);
+    hls_append_segment(hls);
+
     hls_generate_playlist(ctx, 1);
 
     hls_free_segments(hls);
