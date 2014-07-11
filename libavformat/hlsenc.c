@@ -76,6 +76,7 @@ typedef struct HLSContext {
     HLSSegment *segments;
     HLSSegment *last_segment;
 
+    char *media_filename_opt;
     char *media_filename;
     char *baseurl;
 
@@ -333,8 +334,6 @@ static int hls_write_header(AVFormatContext *ctx)
     HLSContext *hls;
     int ret;
     char *dot;
-    size_t basename_size;
-    char filename[1024];
 
     hls = ctx->priv_data;
 
@@ -349,22 +348,27 @@ static int hls_write_header(AVFormatContext *ctx)
     }
 
     /* Generate the name of the media file(s) */
-    av_strlcpy(filename, ctx->filename, sizeof(filename));
-    dot = strrchr(filename, '.');
-    if (dot)
-        *dot = '\0';
+    if (hls->media_filename_opt) {
+        hls->media_filename = av_strdup(hls->media_filename_opt);
+    } else {
+        char filename[1024];
 
-    basename_size = sizeof(filename);
-    hls->media_filename = av_malloc(basename_size);
+        av_strlcpy(filename, ctx->filename, sizeof(filename));
+        dot = strrchr(filename, '.');
+        if (dot)
+            *dot = '\0';
+
+        if (!(hls->flags & HLS_SINGLE_FILE))
+            av_strlcat(filename, "%d", sizeof(filename));
+        av_strlcat(filename, ".ts", sizeof(filename));
+
+        hls->media_filename = av_strdup(filename);
+    }
+
     if (!hls->media_filename) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-
-    av_strlcpy(hls->media_filename, filename, basename_size);
-    if (!(hls->flags & HLS_SINGLE_FILE))
-        av_strlcat(hls->media_filename, "%d", basename_size);
-    av_strlcat(hls->media_filename, ".ts", basename_size);
 
     /* Initialize the muxer and create the first file */
     ret = hls_mux_init(ctx);
@@ -505,6 +509,7 @@ static const AVOption options[] = {
     {"hls_list_size", "set maximum number of playlist entries",  OFFSET(max_nb_segments), AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_wrap",      "set number after which the index wraps",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
     {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
+    {"hls_media_filename",  "the name of generated media files", OFFSET(media_filename_opt), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, E},
 
     {"hls_flags",   "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file", "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},

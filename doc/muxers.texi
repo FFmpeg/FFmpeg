@@ -246,6 +246,17 @@ and it is not to be confused with the segment filename sequence number
 which can be cyclic, for example if the @option{wrap} option is
 specified.
 
+@item hls_media_filename @var{filename}
+Set the name used for generated MPEG-TS files. If the @option{single_file}
+flag is set, this is the name of the single file. If this flag was not set,
+this is the pattern used for generated files.
+For example:
+@example
+ffmpeg -i in.nut -hls_media_filename test-%d.ts out.m3u8
+@end example
+Will produce the playlist, @file{out.m3u8}, and segment files:
+@file{test-0.ts}, @file{test-1.ts}, @file{test-2.ts}, etc.
+
 @item hls_flags single_file
 If this flag is set, the muxer will store all segments in a single MPEG-TS
 file, and will use byte ranges in the playlist. HLS playlists generated with
