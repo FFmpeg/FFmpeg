@@ -989,7 +989,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc.gb;
     HEVCSPS      *sps = NULL;
-    int pic_area_in_ctbs, pic_area_in_min_cbs, pic_area_in_min_tbs;
+    int pic_area_in_ctbs, pic_area_in_min_tbs;
     int log2_diff_ctb_min_tb_size;
     int i, j, x, y, ctb_addr_rs, tile_id;
     int ret = 0;
@@ -1228,7 +1228,6 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
      * 6.5
      */
     pic_area_in_ctbs     = sps->ctb_width    * sps->ctb_height;
-    pic_area_in_min_cbs  = sps->min_cb_width * sps->min_cb_height;
     pic_area_in_min_tbs  = sps->min_tb_width * sps->min_tb_height;
 
     pps->ctb_addr_rs_to_ts = av_malloc_array(pic_area_in_ctbs,    sizeof(*pps->ctb_addr_rs_to_ts));
