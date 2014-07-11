@@ -256,6 +256,12 @@ ffmpeg -i in.nut -hls_flags single_file out.m3u8
 @end example
 Will produce the playlist, @file{out.m3u8}, and a single segment file,
 @file{out.ts}.
+
+@item hls_flags no_filename
+If this flag is set, the HLS playlist will not include the filename in each
+segment description, only the URL provided with the @option{baseurl} option.
+This option can only be used if the @option{single_file} flag is set, and if
+the @option{baseurl} option is provided.
 @end table
 
 @anchor{ico}
