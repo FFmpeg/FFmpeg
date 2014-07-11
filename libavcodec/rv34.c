@@ -1685,7 +1685,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
 
     /* first slice */
     if (si.start == 0) {
-        if (s->mb_num_left > 0) {
+        if (s->mb_num_left > 0 && s->current_picture_ptr) {
             av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.\n",
                    s->mb_num_left);
             ff_er_frame_end(&s->er);
