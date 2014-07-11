@@ -249,7 +249,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     int contrast;
 
     int pos;
-    double *angles = av_malloc(sizeof(*angles) * width * height / (16 * deshake->blocksize));
+    double *angles = av_malloc_array(width * height / (16 * deshake->blocksize), sizeof(*angles));
     int center_x = 0, center_y = 0;
     double p_x, p_y;
 
