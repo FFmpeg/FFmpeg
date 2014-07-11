@@ -2500,6 +2500,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
         }
     }
 
+    av_opt_set(ic, "skip_changes", "1", AV_OPT_SEARCH_CHILDREN);
     /* estimate the end time (duration) */
     /* XXX: may need to support wrapping */
     filesize = ic->pb ? avio_size(ic->pb) : 0;
@@ -2566,6 +2567,8 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
     } while (!is_end &&
              offset &&
              ++retry <= DURATION_MAX_RETRY);
+
+    av_opt_set(ic, "skip_changes", "0", AV_OPT_SEARCH_CHILDREN);
 
     /* warn about audio/video streams which duration could not be estimated */
     for (i = 0; i < ic->nb_streams; i++) {
