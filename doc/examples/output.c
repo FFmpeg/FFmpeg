@@ -457,7 +457,6 @@ int main(int argc, char **argv)
     AVFormatContext *oc;
     int have_video = 0, have_audio = 0;
     int encode_video = 0, encode_audio = 0;
-    int i;
 
     /* Initialize libavcodec, and register all codecs and formats. */
     av_register_all();
