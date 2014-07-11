@@ -1771,12 +1771,21 @@ static void write_matrix(AVIOContext *pb, int16_t a, int16_t b, int16_t c,
     avio_wb32(pb, 1 << 30);  /* w in 2.30 format */
 }
 
-static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
+static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track, AVStream *st)
 {
     int64_t duration = av_rescale_rnd(track->track_duration, MOV_TIMESCALE,
                                       track->timescale, AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
     int rotation = 0;
+    int group   = 0;
+
+    if (st) {
+        if (mov->per_stream_grouping)
+            group = st->index;
+        else
+            group = st->codec->codec_type;
+    }
 
     if (track->mode == MODE_ISM)
         version = 1;
@@ -1804,7 +1813,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     avio_wb32(pb, 0); /* reserved */
     avio_wb32(pb, 0); /* reserved */
     avio_wb16(pb, 0); /* layer */
-    avio_wb16(pb, st ? st->codec->codec_type : 0); /* alternate group) */
+    avio_wb16(pb, group); /* alternate group) */
     /* Volume, only for audio */
     if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         avio_wb16(pb, 0x0100);
@@ -1985,7 +1994,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
-    mov_write_tkhd_tag(pb, track, st);
+    mov_write_tkhd_tag(pb, mov, track, st);
     if (supports_edts(mov))
         mov_write_edts_tag(pb, track);  // PSP Movies and several other cases require edts box
     if (track->tref_tag)
@@ -3743,7 +3752,7 @@ static void enable_tracks(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     int i;
-    uint8_t enabled[AVMEDIA_TYPE_NB];
+    int enabled[AVMEDIA_TYPE_NB];
     int first[AVMEDIA_TYPE_NB];
 
     for (i = 0; i < AVMEDIA_TYPE_NB; i++) {
@@ -3762,7 +3771,7 @@ static void enable_tracks(AVFormatContext *s)
             first[st->codec->codec_type] = i;
         if (st->disposition & AV_DISPOSITION_DEFAULT) {
             mov->tracks[i].flags |= MOV_TRACK_ENABLED;
-            enabled[st->codec->codec_type] = 1;
+            enabled[st->codec->codec_type]++;
         }
     }
 
@@ -3771,6 +3780,8 @@ static void enable_tracks(AVFormatContext *s)
         case AVMEDIA_TYPE_VIDEO:
         case AVMEDIA_TYPE_AUDIO:
         case AVMEDIA_TYPE_SUBTITLE:
+            if (enabled[i] > 1)
+                mov->per_stream_grouping = 1;
             if (!enabled[i] && first[i] >= 0)
                 mov->tracks[first[i]].flags |= MOV_TRACK_ENABLED;
             break;
