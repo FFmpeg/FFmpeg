@@ -39,8 +39,7 @@ int ff_pix_abs8_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
 int ff_sse16_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                    int line_size, int h);
 
-av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx,
-                                   unsigned high_bit_depth)
+av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx)
 {
     c->pix_abs[0][0] = ff_pix_abs16_armv6;
     c->pix_abs[0][1] = ff_pix_abs16_x2_armv6;

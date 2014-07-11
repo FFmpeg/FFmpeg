@@ -939,8 +939,6 @@ int ff_check_alignment(void)
 
 av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
 {
-    const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
-
     ff_check_alignment();
 
     c->sum_abs_dctelem = sum_abs_dctelem_c;
@@ -992,11 +990,11 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
     if (ARCH_ALPHA)
         ff_dsputil_init_alpha(c, avctx);
     if (ARCH_ARM)
-        ff_dsputil_init_arm(c, avctx, high_bit_depth);
+        ff_dsputil_init_arm(c, avctx);
     if (ARCH_PPC)
-        ff_dsputil_init_ppc(c, avctx, high_bit_depth);
+        ff_dsputil_init_ppc(c, avctx);
     if (ARCH_X86)
-        ff_dsputil_init_x86(c, avctx, high_bit_depth);
+        ff_dsputil_init_x86(c, avctx);
 }
 
 av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)

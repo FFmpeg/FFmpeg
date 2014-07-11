@@ -29,11 +29,10 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
 
-av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx,
-                                 unsigned high_bit_depth)
+av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
     if (PPC_ALTIVEC(mm_flags)) {
-        ff_dsputil_init_altivec(c, avctx, high_bit_depth);
+        ff_dsputil_init_altivec(c, avctx);
     }
 }

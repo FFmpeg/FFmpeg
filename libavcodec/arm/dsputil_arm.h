@@ -24,7 +24,6 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 
-void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx,
-                           unsigned high_bit_depth);
+void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx);
 
 #endif /* AVCODEC_ARM_DSPUTIL_ARM_H */

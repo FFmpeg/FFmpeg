@@ -342,8 +342,7 @@ static int vsad16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 
 #endif /* HAVE_INLINE_ASM */
 
-av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
-                                    unsigned high_bit_depth)
+av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
 

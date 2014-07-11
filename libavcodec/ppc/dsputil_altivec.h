@@ -27,7 +27,6 @@
 
 #include "libavcodec/dsputil.h"
 
-void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx,
-                             unsigned high_bit_depth);
+void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx);
 
 #endif /* AVCODEC_PPC_DSPUTIL_ALTIVEC_H */
