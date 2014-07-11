@@ -166,7 +166,7 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
                *rows, *cols);
         return AVERROR_INVALIDDATA;
     }
-    if (!(*values = av_mallocz(sizeof(int) * *rows * *cols)))
+    if (!(*values = av_mallocz_array(sizeof(int) * *rows, *cols)))
         return AVERROR(ENOMEM);
 
     /* fill *values */
