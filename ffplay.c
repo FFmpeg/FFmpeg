@@ -120,7 +120,7 @@ typedef struct PacketQueue {
 } PacketQueue;
 
 #define VIDEO_PICTURE_QUEUE_SIZE 3
-#define SUBPICTURE_QUEUE_SIZE 4
+#define SUBPICTURE_QUEUE_SIZE 16
 
 typedef struct VideoPicture {
     double pts;             // presentation timestamp for this picture
