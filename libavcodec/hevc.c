@@ -2388,6 +2388,8 @@ static int hevc_frame_start(HEVCContext *s)
         goto fail;
     }
 
+    s->ref->frame->key_frame = IS_IRAP(s);
+
     ret = set_side_data(s);
     if (ret < 0)
         goto fail;
@@ -2879,7 +2881,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     s->is_md5 = 0;
 
     if (s->is_decoded) {
-        s->ref->frame->key_frame = IS_IRAP(s);
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         s->is_decoded = 0;
     }
