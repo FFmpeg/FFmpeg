@@ -48,7 +48,9 @@ static int get_scale_factor(H264Context * const h, int poc, int poc1, int i){
 }
 
 void ff_h264_direct_dist_scale_factor(H264Context * const h){
-    const int poc = h->cur_pic_ptr->field_poc[h->picture_structure == PICT_BOTTOM_FIELD];
+    const int poc = h->picture_structure == PICT_FRAME ?
+        h->cur_pic_ptr->poc :
+        h->cur_pic_ptr->field_poc[h->picture_structure == PICT_BOTTOM_FIELD];
     const int poc1 = h->ref_list[1][0].poc;
     int i, field;
 
