@@ -964,6 +964,10 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             if (s->pps_list[i] && ((HEVCPPS*)s->pps_list[i]->data)->sps_id == sps_id)
                 av_buffer_unref(&s->pps_list[i]);
         }
+        if (s->sps_list[sps_id] && s->sps == (HEVCSPS*)s->sps_list[sps_id]->data) {
+            av_buffer_unref(&s->current_sps);
+            s->current_sps = av_buffer_ref(s->sps_list[sps_id]);
+        }
         av_buffer_unref(&s->sps_list[sps_id]);
         s->sps_list[sps_id] = sps_buf;
     }
