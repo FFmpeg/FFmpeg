@@ -33,6 +33,7 @@ version <next>:
 - flanger filter
 - Image format auto-detection
 - LRC demuxer and muxer
+- Samba protocol (via libsmbclient)
 
 
 version 2.2:
