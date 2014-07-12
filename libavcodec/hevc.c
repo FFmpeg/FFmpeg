@@ -2700,6 +2700,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
         av_buffer_unref(&s->pps_list[i]);
 
+    av_buffer_unref(&s->current_sps);
+
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.offset);
     av_freep(&s->sh.size);
@@ -2812,6 +2814,10 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return AVERROR(ENOMEM);
         }
     }
+
+    if (s->current_sps && s->sps == (HEVCSPS*)s->current_sps->data)
+        s->sps = NULL;
+    av_buffer_unref(&s->current_sps);
 
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;
