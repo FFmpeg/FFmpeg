@@ -15,7 +15,7 @@ define FATE_OPUS_TEST
 FATE_OPUS     += fate-opus-$(1)
 FATE_OPUS$(2) += fate-opus-$(1)
 fate-opus-$(1): CMD = avconv -i $(TARGET_SAMPLES)/opus/$(1).mka -f f32le -
-fate-opus-$(1): REF = $(TARGET_SAMPLES)/opus/$(1).f32
+fate-opus-$(1): REF = $(SAMPLES)/opus/$(1).f32
 endef
 
 $(foreach N,$(OPUS_CELT_SAMPLES),  $(eval $(call FATE_OPUS_TEST,$(N),_CELT)))
