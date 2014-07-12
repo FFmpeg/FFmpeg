@@ -362,14 +362,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
             c->vsad[0] = vsad16_mmxext;
         }
     }
-
-    if (INLINE_SSE2(cpu_flags)) {
-    }
-
-#if HAVE_SSSE3_INLINE
-    if (INLINE_SSSE3(cpu_flags)) {
-    }
-#endif
 #endif /* HAVE_INLINE_ASM */
 
     if (EXTERNAL_MMX(cpu_flags)) {
