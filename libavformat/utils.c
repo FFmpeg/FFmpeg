@@ -1533,7 +1533,8 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
             }
 
             /* read packet from packet buffer, if there is data */
-            if (!(next_pkt->pts == AV_NOPTS_VALUE &&
+            st = s->streams[next_pkt->stream_index];
+            if (!(next_pkt->pts == AV_NOPTS_VALUE && st->discard < AVDISCARD_ALL &&
                   next_pkt->dts != AV_NOPTS_VALUE && !eof)) {
                 ret = read_from_packet_buffer(&s->packet_buffer,
                                                &s->packet_buffer_end, pkt);
