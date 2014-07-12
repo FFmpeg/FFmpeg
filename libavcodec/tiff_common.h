@@ -67,16 +67,16 @@ static const uint16_t ifd_tags[] = {
  */
 int ff_tis_ifd(unsigned tag);
 
-/** Reads a short from the bytestream using given endianess. */
+/** Reads a short from the bytestream using given endianness. */
 unsigned ff_tget_short(GetByteContext *gb, int le);
 
-/** Reads a long from the bytestream using given endianess. */
+/** Reads a long from the bytestream using given endianness. */
 unsigned ff_tget_long(GetByteContext *gb, int le);
 
-/** Reads a double from the bytestream using given endianess. */
+/** Reads a double from the bytestream using given endianness. */
 double   ff_tget_double(GetByteContext *gb, int le);
 
-/** Reads a byte from the bytestream using given endianess. */
+/** Reads a byte from the bytestream using given endianness. */
 unsigned ff_tget(GetByteContext *gb, int type, int le);
 
 /** Returns an allocated string containing count
@@ -136,7 +136,7 @@ int ff_tadd_string_metadata(int count, const char *name,
                             GetByteContext *gb, int le, AVDictionary **metadata);
 
 /** Decodes a TIFF header from the input bytestream
- *  and sets the endianess in *le and the offset to
+ *  and sets the endianness in *le and the offset to
  *  the first IFD in *ifd_offset accordingly.
  */
 int ff_tdecode_header(GetByteContext *gb, int *le, int *ifd_offset);

@@ -3324,7 +3324,7 @@ The option available in this filter is:
 @item cycle
 Specify the length of the window over which the judder repeats.
 
-Accepts any interger greater than 1. Useful values are:
+Accepts any integer greater than 1. Useful values are:
 @table @samp
 
 @item 4

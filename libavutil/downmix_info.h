@@ -100,7 +100,7 @@ typedef struct AVDownmixInfo {
  * @param frame the frame for which the side data is to be obtained or created
  *
  * @return the AVDownmixInfo structure to be edited by the caller, or NULL if
- *         the sturcture cannot be allocated.
+ *         the structure cannot be allocated.
  */
 AVDownmixInfo *av_downmix_info_update_side_data(AVFrame *frame);
 
