@@ -243,7 +243,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
         nb_sps = get_ue_golomb_long(gb);
     nb_sh = get_ue_golomb_long(gb);
 
-    if (nb_sh + nb_sps > FF_ARRAY_ELEMS(rps->poc))
+    if (nb_sh + (uint64_t)nb_sps > FF_ARRAY_ELEMS(rps->poc))
         return AVERROR_INVALIDDATA;
 
     rps->nb_refs = nb_sh + nb_sps;
