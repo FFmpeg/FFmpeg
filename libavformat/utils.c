@@ -3111,6 +3111,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     if (!max_analyze_duration)
         max_analyze_duration = ic->max_analyze_duration;
 
+    av_opt_set(ic, "skip_clear", "1", AV_OPT_SEARCH_CHILDREN);
+
     if (!max_analyze_duration) {
         if (!strcmp(ic->iformat->name, "flv") && !(ic->ctx_flags & AVFMTCTX_NOHEADER)) {
             max_analyze_duration = 10*AV_TIME_BASE;
@@ -3396,6 +3398,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             }
         }
     }
+    av_opt_set(ic, "skip_clear", "0", AV_OPT_SEARCH_CHILDREN);
 
     // close codecs which were opened in try_decode_frame()
     for (i = 0; i < ic->nb_streams; i++) {
