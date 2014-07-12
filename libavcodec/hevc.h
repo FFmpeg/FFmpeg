@@ -776,6 +776,8 @@ typedef struct HEVCContext {
     AVBufferRef *sps_list[MAX_SPS_COUNT];
     AVBufferRef *pps_list[MAX_PPS_COUNT];
 
+    AVBufferRef *current_sps;
+
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
 
