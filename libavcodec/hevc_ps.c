@@ -385,6 +385,11 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
 
     vps->vps_max_layer_id   = get_bits(gb, 6);
     vps->vps_num_layer_sets = get_ue_golomb_long(gb) + 1;
+    if ((vps->vps_num_layer_sets - 1LL) * (vps->vps_max_layer_id + 1LL) > get_bits_left(gb)) {
+        av_log(s->avctx, AV_LOG_ERROR, "too many layer_id_included_flags\n");
+        goto err;
+    }
+
     for (i = 1; i < vps->vps_num_layer_sets; i++)
         for (j = 0; j <= vps->vps_max_layer_id; j++)
             skip_bits(gb, 1);  // layer_id_included_flag[i][j]
