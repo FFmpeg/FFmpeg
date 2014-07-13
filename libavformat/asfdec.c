@@ -1128,8 +1128,8 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
         int ret;
         if (url_feof(pb))
             return AVERROR_EOF;
-
-        if (asf->packet_size_left < FRAME_HEADER_SIZE) {
+        if (asf->packet_size_left < FRAME_HEADER_SIZE ||
+            asf->packet_segments < 1 && asf->packet_time_start == 0) {
             int ret = asf->packet_size_left + asf->packet_padsize;
 
             assert(ret >= 0);
