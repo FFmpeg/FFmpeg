@@ -728,7 +728,7 @@ cglobal hevc_h_loop_filter_chroma_10, 3, 4, 7, pix, stride, tc, pix0
     RET
 
 %if ARCH_X86_64
-INIT_XMM ssse3
+%macro LOOP_FILTER_LUMA 0
 ;-----------------------------------------------------------------------------
 ;    void ff_hevc_v_loop_filter_luma(uint8_t *_pix, ptrdiff_t _stride, int *_beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
@@ -828,4 +828,10 @@ cglobal hevc_h_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc, count, pix
     movdqu    [pixq+2*strideq], m6;  q2
 .bypassluma:
     RET
+%endmacro
+
+INIT_XMM sse2
+LOOP_FILTER_LUMA
+INIT_XMM ssse3
+LOOP_FILTER_LUMA
 %endif
