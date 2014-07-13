@@ -35,7 +35,7 @@
  *                     the type of the size
  * @param av_elt_size  size of the elements in the array, in bytes
  * @param av_array     pointer to the array, must be a lvalue
- * @param av_size      size of the array, must be an interger lvalue
+ * @param av_size      size of the array, must be an integer lvalue
  * @param av_success   statement to execute on success; at this point, the
  *                     size variable is not yet incremented
  * @param av_failure   statement to execute on failure; if this happens, the

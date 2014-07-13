@@ -136,6 +136,7 @@ typedef enum {
     SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
     SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
     SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
+    SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
 } SEI_Type;
 
 /**
@@ -495,7 +496,7 @@ typedef struct H264Context {
     GetBitContext *inter_gb_ptr;
 
     const uint8_t *intra_pcm_ptr;
-    DECLARE_ALIGNED(16, int16_t, mb)[16 * 48 * 2]; ///< as a dct coeffecient is int32_t in high depth, we need to reserve twice the space.
+    DECLARE_ALIGNED(16, int16_t, mb)[16 * 48 * 2]; ///< as a dct coefficient is int32_t in high depth, we need to reserve twice the space.
     DECLARE_ALIGNED(16, int16_t, mb_luma_dc)[3][16 * 2];
     int16_t mb_padding[256 * 2];        ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either check that i is not too large or ensure that there is some unused stuff after mb
 
@@ -672,6 +673,13 @@ typedef struct H264Context {
     int frame_packing_arrangement_type;
     int content_interpretation_type;
     int quincunx_subsampling;
+
+    /**
+     * display orientation SEI message
+     */
+    int sei_display_orientation_present;
+    int sei_anticlockwise_rotation;
+    int sei_hflip, sei_vflip;
 
     /**
      * Bit set of clock types for fields/frames in picture timing SEI message.

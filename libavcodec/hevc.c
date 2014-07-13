@@ -26,6 +26,7 @@
 #include "libavutil/atomic.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
+#include "libavutil/display.h"
 #include "libavutil/internal.h"
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
@@ -242,7 +243,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
         nb_sps = get_ue_golomb_long(gb);
     nb_sh = get_ue_golomb_long(gb);
 
-    if (nb_sh + nb_sps > FF_ARRAY_ELEMS(rps->poc))
+    if (nb_sh + (uint64_t)nb_sps > FF_ARRAY_ELEMS(rps->poc))
         return AVERROR_INVALIDDATA;
 
     rps->nb_refs = nb_sh + nb_sps;
@@ -460,6 +461,7 @@ static int hls_slice_header(HEVCContext *s)
             return AVERROR_INVALIDDATA;
         }
 
+        // when flag is not present, picture is inferred to be output
         sh->pic_output_flag = 1;
         if (s->pps->output_flag_present_flag)
             sh->pic_output_flag = get_bits1(gb);
@@ -706,6 +708,10 @@ static int hls_slice_header(HEVCContext *s)
 
     if (s->pps->slice_header_extension_present_flag) {
         unsigned int length = get_ue_golomb_long(gb);
+        if (length*8LL > get_bits_left(gb)) {
+            av_log(s->avctx, AV_LOG_ERROR, "too many slice_header_extension_data_bytes\n");
+            return AVERROR_INVALIDDATA;
+        }
         for (i = 0; i < length; i++)
             skip_bits(gb, 8);  // slice_header_extension_data_byte
     }
@@ -1452,8 +1458,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         x_pu = x0 >> s->sps->log2_min_pu_size;
         y_pu = y0 >> s->sps->log2_min_pu_size;
 
-        for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-            for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+        for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+            for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
                 tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
     } else { /* MODE_INTER */
         lc->pu.merge_flag = ff_hevc_merge_flag_decode(s);
@@ -1468,8 +1474,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
 
-            for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-                for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+            for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+                for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
                     tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
         } else {
             enum InterPredIdc inter_pred_idc = PRED_L0;
@@ -1518,8 +1524,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
 
-            for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-                for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+            for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+                for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
                     tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
         }
     }
@@ -2339,6 +2345,20 @@ static int set_side_data(HEVCContext *s)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
     }
 
+    if (s->sei_display_orientation_present &&
+        (s->sei_anticlockwise_rotation || s->sei_hflip || s->sei_vflip)) {
+        double angle = s->sei_anticlockwise_rotation * 360 / (double) (1 << 16);
+        AVFrameSideData *rotation = av_frame_new_side_data(out,
+                                                           AV_FRAME_DATA_DISPLAYMATRIX,
+                                                           sizeof(int32_t) * 9);
+        if (!rotation)
+            return AVERROR(ENOMEM);
+
+        av_display_rotation_set((int32_t *)rotation->data, angle);
+        av_display_matrix_flip((int32_t *)rotation->data,
+                               s->sei_vflip, s->sei_hflip);
+    }
+
     return 0;
 }
 
@@ -2372,6 +2392,8 @@ static int hevc_frame_start(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS.\n");
         goto fail;
     }
+
+    s->ref->frame->key_frame = IS_IRAP(s);
 
     ret = set_side_data(s);
     if (ret < 0)
@@ -2864,7 +2886,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     s->is_md5 = 0;
 
     if (s->is_decoded) {
-        s->ref->frame->key_frame = IS_IRAP(s);
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         s->is_decoded = 0;
     }
@@ -2944,6 +2965,11 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_buffer_unref(&s->sps_list[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
         av_buffer_unref(&s->pps_list[i]);
+    s->sps = NULL;
+    s->pps = NULL;
+    s->vps = NULL;
+
+    av_buffer_unref(&s->current_sps);
 
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.offset);
@@ -3040,6 +3066,8 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         }
     }
 
+    if (s->sps != s0->sps)
+        s->sps = NULL;
     for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++) {
         av_buffer_unref(&s->vps_list[i]);
         if (s0->vps_list[i]) {
@@ -3066,6 +3094,10 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return AVERROR(ENOMEM);
         }
     }
+
+    if (s->current_sps && s->sps == (HEVCSPS*)s->current_sps->data)
+        s->sps = NULL;
+    av_buffer_unref(&s->current_sps);
 
     if (s->sps != s0->sps)
         ret = set_sps(s, s0->sps);

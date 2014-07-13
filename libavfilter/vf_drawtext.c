@@ -34,7 +34,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #if CONFIG_LIBFONTCONFIG
 #include <fontconfig/fontconfig.h>

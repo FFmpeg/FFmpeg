@@ -24,9 +24,12 @@
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 
 typedef struct {
+    AVClass *class;
     uint32_t global_palette[16];
+    int even_rows_fix;
 } DVDSubtitleContext;
 
 // ncnt is the nibble counter
@@ -345,6 +348,13 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
     dvd_encode_rle(&q, vrect.pict.data[0] + vrect.w, vrect.w * 2,
                    vrect.w, vrect.h >> 1, cmap);
 
+    if (dvdc->even_rows_fix && (vrect.h & 1)) {
+        // Work-around for some players that want the height to be even.
+        vrect.h++;
+        *q++ = 0x00; // 0x00 0x00 == empty row, i.e. fully transparent
+        *q++ = 0x00;
+    }
+
     // set data packet size
     qq = outbuf + 2;
     bytestream_put_be16(&qq, q - outbuf);
@@ -439,6 +449,20 @@ static int dvdsub_encode(AVCodecContext *avctx,
     return ret;
 }
 
+#define OFFSET(x) offsetof(DVDSubtitleContext, x)
+#define SE AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    {"even_rows_fix", "Make number of rows even (workaround for some players)", OFFSET(even_rows_fix), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, SE},
+    { NULL },
+};
+
+static const AVClass dvdsubenc_class = {
+    .class_name = "VOBSUB subtitle encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_dvdsub_encoder = {
     .name           = "dvdsub",
     .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
@@ -446,5 +470,6 @@ AVCodec ff_dvdsub_encoder = {
     .id             = AV_CODEC_ID_DVD_SUBTITLE,
     .init           = dvdsub_init,
     .encode_sub     = dvdsub_encode,
+    .priv_class     = &dvdsubenc_class,
     .priv_data_size = sizeof(DVDSubtitleContext),
 };

@@ -1634,7 +1634,8 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
             }
 
             /* read packet from packet buffer, if there is data */
-            if (!(next_pkt->pts == AV_NOPTS_VALUE &&
+            st = s->streams[next_pkt->stream_index];
+            if (!(next_pkt->pts == AV_NOPTS_VALUE && st->discard < AVDISCARD_ALL &&
                   next_pkt->dts != AV_NOPTS_VALUE && !eof)) {
                 ret = read_from_packet_buffer(&s->packet_buffer,
                                                &s->packet_buffer_end, pkt);
@@ -2500,6 +2501,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
         }
     }
 
+    av_opt_set(ic, "skip_changes", "1", AV_OPT_SEARCH_CHILDREN);
     /* estimate the end time (duration) */
     /* XXX: may need to support wrapping */
     filesize = ic->pb ? avio_size(ic->pb) : 0;
@@ -2566,6 +2568,8 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
     } while (!is_end &&
              offset &&
              ++retry <= DURATION_MAX_RETRY);
+
+    av_opt_set(ic, "skip_changes", "0", AV_OPT_SEARCH_CHILDREN);
 
     /* warn about audio/video streams which duration could not be estimated */
     for (i = 0; i < ic->nb_streams; i++) {
@@ -3108,6 +3112,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     if (!max_analyze_duration)
         max_analyze_duration = ic->max_analyze_duration;
 
+    av_opt_set(ic, "skip_clear", "1", AV_OPT_SEARCH_CHILDREN);
+
     if (!max_analyze_duration) {
         if (!strcmp(ic->iformat->name, "flv") && !(ic->ctx_flags & AVFMTCTX_NOHEADER)) {
             max_analyze_duration = 10*AV_TIME_BASE;
@@ -3393,6 +3399,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             }
         }
     }
+    av_opt_set(ic, "skip_clear", "0", AV_OPT_SEARCH_CHILDREN);
 
     // close codecs which were opened in try_decode_frame()
     for (i = 0; i < ic->nb_streams; i++) {

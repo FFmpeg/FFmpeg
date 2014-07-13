@@ -349,7 +349,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     DVVideoContext *s = avctx->priv_data;
     const uint8_t* vsc_pack;
     int apt, is16_9, ret;
-    const DVprofile *sys;
+    const AVDVProfile *sys;
 
     sys = avpriv_dv_frame_profile2(avctx, s->sys, buf, buf_size);
     if (!sys || buf_size < sys->frame_size) {

@@ -35,7 +35,7 @@
  * @addtogroup lavu_audio
  * @{
  *
- * @defgroup lavu_audiofifo Audio First-In-First-Out Buffer
+ * @defgroup lavu_audiofifo Audio FIFO Buffer
  * @{
  */
 

@@ -22,23 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void ff_simple_idct_axp(int16_t *block);
-void ff_simple_idct_put_axp(uint8_t *dest, int line_size, int16_t *block);
-void ff_simple_idct_add_axp(uint8_t *dest, int line_size, int16_t *block);
-
-void put_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
-                                int line_size);
-void add_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
-                                int line_size);
-extern void (*put_pixels_clamped_axp_p)(const int16_t *block, uint8_t *pixels,
-                                        int line_size);
-extern void (*add_pixels_clamped_axp_p)(const int16_t *block, uint8_t *pixels,
-                                        int line_size);
-
-void get_pixels_mvi(int16_t *restrict block,
-                    const uint8_t *restrict pixels, int line_size);
-void diff_pixels_mvi(int16_t *block, const uint8_t *s1, const uint8_t *s2,
-                     int stride);
 int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 int pix_abs16x16_mvi_asm(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);

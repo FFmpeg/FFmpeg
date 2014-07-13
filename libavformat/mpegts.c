@@ -137,6 +137,9 @@ struct MpegTSContext {
     /** to detect seek */
     int64_t last_pos;
 
+    int skip_changes;
+    int skip_clear;
+
     /******************************************/
     /* private mpegts data */
     /* scan context */
@@ -173,6 +176,10 @@ static const AVOption mpegts_options[] = {
      {.i64 = 1}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     {"ts_packetsize", "Output option carrying the raw packet size.", offsetof(MpegTSContext, raw_packet_size), AV_OPT_TYPE_INT,
      {.i64 = 0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
+    {"skip_changes", "Skip changing / adding streams / programs.", offsetof(MpegTSContext, skip_changes), AV_OPT_TYPE_INT,
+     {.i64 = 0}, 0, 1, 0 },
+    {"skip_clear", "Skip clearing programs.", offsetof(MpegTSContext, skip_clear), AV_OPT_TYPE_INT,
+     {.i64 = 0}, 0, 1, 0 },
     { NULL },
 };
 
@@ -237,6 +244,7 @@ static void clear_avprogram(MpegTSContext *ts, unsigned int programid)
 {
     AVProgram *prg = NULL;
     int i;
+
     for (i = 0; i < ts->stream->nb_programs; i++)
         if (ts->stream->programs[i]->id == programid) {
             prg = ts->stream->programs[i];
@@ -357,10 +365,9 @@ static int discard_pid(MpegTSContext *ts, unsigned int pid)
  *  Assemble PES packets out of TS packets, and then call the "section_cb"
  *  function when they are complete.
  */
-static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
+static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
                                const uint8_t *buf, int buf_size, int is_start)
 {
-    MpegTSContext *ts = s->priv_data;
     MpegTSSectionFilter *tss = &tss1->u.section_filter;
     int len;
 
@@ -953,6 +960,9 @@ static int mpegts_push_data(MpegTSFilter *filter,
 
                     /* stream not present in PMT */
                     if (!pes->st) {
+                        if (ts->skip_changes)
+                            goto skip;
+
                         pes->st = avformat_new_stream(ts->stream, NULL);
                         if (!pes->st)
                             return AVERROR(ENOMEM);
@@ -1722,6 +1732,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
     if (h->tid != PMT_TID)
         return;
+    if (ts->skip_changes)
+        return;
 
     clear_program(ts, h->id);
     pcr_pid = get16(&p, p_end);
@@ -1875,6 +1887,8 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     if (h->tid != PAT_TID)
         return;
+    if (ts->skip_changes)
+        return;
 
     ts->stream->ts_id = h->id;
 
@@ -1920,7 +1934,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             for (i = 0; i < ts->nb_prg; i++)
                 if (ts->prg[i].id == ts->stream->programs[j]->id)
                     break;
-            if (i==ts->nb_prg)
+            if (i==ts->nb_prg && !ts->skip_clear)
                 clear_avprogram(ts, ts->stream->programs[j]->id);
         }
     }
@@ -1942,6 +1956,8 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (parse_section_header(h, &p, p_end) < 0)
         return;
     if (h->tid != SDT_TID)
+        return;
+    if (ts->skip_changes)
         return;
     onid = get16(&p, p_end);
     if (onid < 0)
@@ -2010,7 +2026,6 @@ static int parse_pcr(int64_t *ppcr_high, int *ppcr_low,
 /* handle one TS packet */
 static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 {
-    AVFormatContext *s = ts->stream;
     MpegTSFilter *tss;
     int len, pid, cc, expected_cc, cc_ok, afc, is_start, is_discontinuity,
         has_adaptation, has_payload;
@@ -2084,7 +2099,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
                 return 0;
             if (len && cc_ok) {
                 /* write remaining section bytes */
-                write_section_data(s, tss,
+                write_section_data(ts, tss,
                                    p, len, 0);
                 /* check whether filter has been closed */
                 if (!ts->pids[pid])
@@ -2092,12 +2107,12 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
             }
             p += len;
             if (p < p_end) {
-                write_section_data(s, tss,
+                write_section_data(ts, tss,
                                    p, p_end - p, 1);
             }
         } else {
             if (cc_ok) {
-                write_section_data(s, tss,
+                write_section_data(ts, tss,
                                    p, p_end - p, 0);
             }
         }

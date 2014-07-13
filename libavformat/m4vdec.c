@@ -45,7 +45,7 @@ static int mpeg4video_probe(AVProbeData *probe_packet)
     }
 
     if (VOP >= VISO && VOP >= VOL && VO >= VOL && VOL > 0 && res==0)
-        return VOP+VO > 3 ? AVPROBE_SCORE_EXTENSION : AVPROBE_SCORE_EXTENSION/2;
+        return VOP+VO > 4 ? AVPROBE_SCORE_EXTENSION : AVPROBE_SCORE_EXTENSION/2;
     return 0;
 }
 

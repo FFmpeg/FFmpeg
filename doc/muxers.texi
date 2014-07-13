@@ -879,6 +879,16 @@ Note that splitting may not be accurate, unless you force the
 reference stream key-frames at the given time. See the introductory
 notice and the examples below.
 
+@item segment_atclocktime @var{1|0}
+If set to "1" split at regular clock time intervals starting from 00:00
+o'clock. The @var{time} value specified in @option{segment_time} is
+used for setting the length of the splitting interval.
+
+For example with @option{segment_time} set to "900" this makes it possible
+to create files at 12:00 o'clock, 12:15, 12:30, etc.
+
+Default value is "0".
+
 @item segment_time_delta @var{delta}
 Specify the accuracy time when selecting the start time for a
 segment, expressed as a duration specification. Default value is "0".

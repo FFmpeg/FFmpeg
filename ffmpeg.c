@@ -232,9 +232,9 @@ static void sub2video_update(InputStream *ist, AVSubtitle *sub)
     if (!frame)
         return;
     if (sub) {
-        pts       = av_rescale_q(sub->pts + sub->start_display_time * 1000,
+        pts       = av_rescale_q(sub->pts + sub->start_display_time * 1000LL,
                                  AV_TIME_BASE_Q, ist->st->time_base);
-        end_pts   = av_rescale_q(sub->pts + sub->end_display_time   * 1000,
+        end_pts   = av_rescale_q(sub->pts + sub->end_display_time   * 1000LL,
                                  AV_TIME_BASE_Q, ist->st->time_base);
         num_rects = sub->num_rects;
     } else {
@@ -2878,6 +2878,9 @@ static int transcode_init(void)
             exit_program(1);
         }
         ost->st->codec->codec= ost->enc_ctx->codec;
+
+        // copy timebase while removing common factors
+        ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0});
     }
 
     /* init input streams */

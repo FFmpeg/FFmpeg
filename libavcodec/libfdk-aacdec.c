@@ -294,6 +294,6 @@ AVCodec ff_libfdk_aac_decoder = {
     .decode         = fdk_aac_decode_frame,
     .close          = fdk_aac_decode_close,
     .flush          = fdk_aac_decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_CHANNEL_CONF,
     .priv_class     = &fdk_aac_dec_class,
 };

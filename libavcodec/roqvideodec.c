@@ -189,7 +189,8 @@ static av_cold int roq_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+    avctx->pix_fmt = AV_PIX_FMT_YUVJ444P;
+    avctx->color_range = AVCOL_RANGE_JPEG;
 
     return 0;
 }

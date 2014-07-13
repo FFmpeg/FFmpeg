@@ -213,4 +213,11 @@ int av_bprint_finalize(AVBPrint *buf, char **ret_str);
 void av_bprint_escape(AVBPrint *dstbuf, const char *src, const char *special_chars,
                       enum AVEscapeMode mode, int flags);
 
+/**
+ * Read contents of fd into print buffer up to EOF.
+ *
+ * @return 0 for success, error code otherwise
+ */
+int av_bprint_fd_contents(AVBPrint *pb, int fd);
+
 #endif /* AVUTIL_BPRINT_H */

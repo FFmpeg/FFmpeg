@@ -28,11 +28,10 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
-av_cold void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx,
-                                 unsigned high_bit_depth)
+av_cold void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
 
     if (have_armv6(cpu_flags))
-        ff_dsputil_init_armv6(c, avctx, high_bit_depth);
+        ff_dsputil_init_armv6(c, avctx);
 }

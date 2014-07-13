@@ -286,6 +286,7 @@ Toolchain options:
   --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
   --ranlib=RANLIB          use ranlib RANLIB [$ranlib_default]
+  --doxygen=DOXYGEN        use DOXYGEN to generate API doc [$doxygen_default]
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
   --host-cppflags=HCPPFLAGS use HCPPFLAGS when compiling for host
@@ -1800,7 +1801,9 @@ CONFIG_EXTRA="
     bswapdsp
     cabac
     dsputil
+    dvprofile
     exif
+    fdctdsp
     frame_thread_encoder
     gcrypt
     golomb
@@ -1826,6 +1829,7 @@ CONFIG_EXTRA="
     mpegvideo
     mpegvideoenc
     nettle
+    pixblockdsp
     qpeldsp
     rangecoder
     riffdec
@@ -1877,6 +1881,7 @@ CMDLINE_SET="
     cross_prefix
     cxx
     dep_cc
+    doxygen
     extra_version
     gas
     host_cc
@@ -1993,7 +1998,7 @@ threads_if_any="$THREADS_LIST"
 
 # subsystems
 dct_select="rdft"
-dsputil_select="idctdsp"
+dsputil_select="fdctdsp idctdsp pixblockdsp"
 error_resilience_select="dsputil"
 frame_thread_encoder_deps="encoders threads"
 intrax8_select="error_resilience"
@@ -2003,7 +2008,7 @@ mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideo_select="blockdsp dsputil h264chroma hpeldsp idctdsp videodsp"
-mpegvideoenc_select="dsputil mpegvideo qpeldsp"
+mpegvideoenc_select="dsputil mpegvideo pixblockdsp qpeldsp"
 
 # decoders / encoders
 aac_decoder_select="mdct sinewin"
@@ -2022,9 +2027,9 @@ amv_decoder_select="sp5x_decoder exif"
 amv_encoder_select="aandcttables mpegvideoenc"
 ape_decoder_select="bswapdsp llauddsp"
 asv1_decoder_select="blockdsp bswapdsp idctdsp"
-asv1_encoder_select="bswapdsp dsputil"
+asv1_encoder_select="bswapdsp fdctdsp pixblockdsp"
 asv2_decoder_select="blockdsp bswapdsp idctdsp"
-asv2_encoder_select="bswapdsp dsputil"
+asv2_encoder_select="bswapdsp fdctdsp pixblockdsp"
 atrac1_decoder_select="mdct sinewin"
 atrac3_decoder_select="mdct"
 atrac3p_decoder_select="mdct sinewin"
@@ -2041,9 +2046,9 @@ cscd_decoder_suggest="zlib"
 dca_decoder_select="mdct"
 dirac_decoder_select="dsputil dwt golomb videodsp"
 dnxhd_decoder_select="blockdsp idctdsp"
-dnxhd_encoder_select="aandcttables blockdsp dsputil idctdsp mpegvideoenc"
-dvvideo_decoder_select="idctdsp"
-dvvideo_encoder_select="dsputil"
+dnxhd_encoder_select="aandcttables blockdsp fdctdsp idctdsp mpegvideoenc pixblockdsp"
+dvvideo_decoder_select="dvprofile idctdsp"
+dvvideo_encoder_select="dsputil dvprofile fdctdsp pixblockdsp"
 dxa_decoder_select="zlib"
 eac3_decoder_select="ac3_decoder"
 eac3_encoder_select="ac3_encoder"
@@ -2132,13 +2137,13 @@ opus_decoder_deps="swresample"
 png_decoder_select="zlib"
 png_encoder_select="huffyuvencdsp zlib"
 prores_decoder_select="blockdsp idctdsp"
-prores_encoder_select="dsputil"
+prores_encoder_select="fdctdsp"
 qcelp_decoder_select="lsp"
 qdm2_decoder_select="mdct rdft mpegaudiodsp"
 ra_144_encoder_select="audio_frame_queue lpc audiodsp"
 ra_144_decoder_select="audiodsp"
 ralf_decoder_select="golomb"
-rawvideo_decoder_select="dsputil"
+rawvideo_decoder_select="dsputil bswapdsp"
 rtjpeg_decoder_select="dsputil"
 rv10_decoder_select="error_resilience h263_decoder h263dsp mpeg_er"
 rv10_encoder_select="h263_encoder"
@@ -2352,6 +2357,8 @@ caf_demuxer_select="riffdec"
 dirac_demuxer_select="dirac_parser"
 dts_demuxer_select="dca_parser"
 dtshd_demuxer_select="dca_parser"
+dv_demuxer_select="dvprofile"
+dv_muxer_select="dvprofile"
 dxa_demuxer_select="riffdec"
 eac3_demuxer_select="ac3_parser"
 f4v_muxer_select="mov_muxer"
@@ -2524,6 +2531,7 @@ mcdeint_filter_deps="avcodec gpl"
 movie_filter_deps="avcodec avformat"
 mp_filter_deps="gpl avcodec swscale inline_asm"
 mpdecimate_filter_deps="gpl avcodec"
+mpdecimate_filter_select="dsputil pixblockdsp"
 mptestsrc_filter_deps="gpl"
 negate_filter_deps="lut_filter"
 perspective_filter_deps="gpl"
@@ -2541,7 +2549,7 @@ smartblur_filter_deps="gpl swscale"
 showspectrum_filter_deps="avcodec"
 showspectrum_filter_select="rdft"
 spp_filter_deps="gpl avcodec"
-spp_filter_select="dsputil fft idctdsp"
+spp_filter_select="dsputil fft idctdsp fdctdsp pixblockdsp"
 stereo3d_filter_deps="gpl"
 subtitles_filter_deps="avformat avcodec libass"
 super2xsai_filter_deps="gpl"
@@ -2618,6 +2626,7 @@ cc_default="gcc"
 cxx_default="g++"
 host_cc_default="gcc"
 cp_f="cp -f"
+doxygen_default="doxygen"
 install="install"
 ln_s="ln -s -f"
 nm_default="nm -g"
@@ -2994,13 +3003,19 @@ case "$toolchain" in
     ;;
 esac
 
-set_default arch cc cxx pkg_config ranlib strip sysinclude target_exec target_os yasmexe
+set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
+    target_exec target_os yasmexe
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
 if ! $pkg_config --version >/dev/null 2>&1; then
     warn "$pkg_config not found, library detection may fail."
     pkg_config=false
+fi
+
+if test $doxygen != $doxygen_default && \
+  ! $doxygen --version >/dev/null 2>&1; then
+    warn "Specified doxygen \"$doxygen\" not found, API documentation will fail to build."
 fi
 
 exesuf() {
@@ -5051,10 +5066,12 @@ elif enabled ccc; then
     add_cflags -msg_disable unsupieee
 elif enabled gcc; then
     check_optflags -fno-tree-vectorize
+    check_cflags -Werror=format-security
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
     check_cflags -Werror=return-type
     check_cflags -Werror=vla
+    check_cflags -Wformat
     enabled extra_warnings || check_disable_warning -Wno-maybe-uninitialized
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
@@ -5388,6 +5405,7 @@ LD_PATH=$LD_PATH
 DLLTOOL=$dlltool
 WINDRES=$windres
 DEPWINDRES=$dep_cc
+DOXYGEN=$doxygen
 LDFLAGS=$LDFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 ASMSTRIPFLAGS=$ASMSTRIPFLAGS

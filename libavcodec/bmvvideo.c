@@ -1,5 +1,5 @@
 /*
- * Discworld II BMV video and audio decoder
+ * Discworld II BMV video decoder
  * Copyright (c) 2011 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
@@ -20,7 +20,8 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -285,59 +286,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static const int bmv_aud_mults[16] = {
-    16512, 8256, 4128, 2064, 1032, 516, 258, 192, 129, 88, 64, 56, 48, 40, 36, 32
-};
-
-static av_cold int bmv_aud_decode_init(AVCodecContext *avctx)
-{
-    avctx->channels       = 2;
-    avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
-
-    return 0;
-}
-
-static int bmv_aud_decode_frame(AVCodecContext *avctx, void *data,
-                                int *got_frame_ptr, AVPacket *avpkt)
-{
-    AVFrame *frame     = data;
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    int blocks = 0, total_blocks, i;
-    int ret;
-    int16_t *output_samples;
-    int scale[2];
-
-    total_blocks = *buf++;
-    if (buf_size < total_blocks * 65 + 1) {
-        av_log(avctx, AV_LOG_ERROR, "expected %d bytes, got %d\n",
-               total_blocks * 65 + 1, buf_size);
-        return AVERROR_INVALIDDATA;
-    }
-
-    /* get output buffer */
-    frame->nb_samples = total_blocks * 32;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-    output_samples = (int16_t *)frame->data[0];
-
-    for (blocks = 0; blocks < total_blocks; blocks++) {
-        uint8_t code = *buf++;
-        code = (code >> 1) | (code << 7);
-        scale[0] = bmv_aud_mults[code & 0xF];
-        scale[1] = bmv_aud_mults[code >> 4];
-        for (i = 0; i < 32; i++) {
-            *output_samples++ = av_clip_int16((scale[0] * (int8_t)*buf++) >> 5);
-            *output_samples++ = av_clip_int16((scale[1] * (int8_t)*buf++) >> 5);
-        }
-    }
-
-    *got_frame_ptr = 1;
-
-    return buf_size;
-}
-
 AVCodec ff_bmv_video_decoder = {
     .name           = "bmv_video",
     .long_name      = NULL_IF_CONFIG_SMALL("Discworld II BMV video"),
@@ -346,15 +294,5 @@ AVCodec ff_bmv_video_decoder = {
     .priv_data_size = sizeof(BMVDecContext),
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
-};
-
-AVCodec ff_bmv_audio_decoder = {
-    .name           = "bmv_audio",
-    .long_name      = NULL_IF_CONFIG_SMALL("Discworld II BMV audio"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_BMV_AUDIO,
-    .init           = bmv_aud_decode_init,
-    .decode         = bmv_aud_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
 };

@@ -26,22 +26,10 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dct.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_x86.h"
 
-void ff_get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size);
-void ff_get_pixels_sse2(int16_t *block, const uint8_t *pixels, int line_size);
-void ff_diff_pixels_mmx(int16_t *block, const uint8_t *s1, const uint8_t *s2,
-                        int stride);
-void ff_diff_pixels_sse2(int16_t *block, const uint8_t *s1, const uint8_t *s2,
-                         int stride);
-int ff_pix_sum16_mmx(uint8_t *pix, int line_size);
-int ff_pix_sum16_sse2(uint8_t *pix, int line_size);
-int ff_pix_sum16_xop(uint8_t *pix, int line_size);
-int ff_pix_norm1_mmx(uint8_t *pix, int line_size);
-int ff_pix_norm1_sse2(uint8_t *pix, int line_size);
 int ff_sum_abs_dctelem_mmx(int16_t *block);
 int ff_sum_abs_dctelem_mmxext(int16_t *block);
 int ff_sum_abs_dctelem_sse2(int16_t *block);
@@ -352,140 +340,28 @@ static int vsad16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 #undef SUM
 
 
-#define PHADDD(a, t)                            \
-    "movq  " #a ", " #t "               \n\t"   \
-    "psrlq    $32, " #a "               \n\t"   \
-    "paddd " #t ", " #a "               \n\t"
-
-/*
- * pmulhw:   dst[0 - 15] = (src[0 - 15] * dst[0 - 15])[16 - 31]
- * pmulhrw:  dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x8000)[16 - 31]
- * pmulhrsw: dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x4000)[15 - 30]
- */
-#define PMULHRW(x, y, s, o)                     \
-    "pmulhw " #s ", " #x "              \n\t"   \
-    "pmulhw " #s ", " #y "              \n\t"   \
-    "paddw  " #o ", " #x "              \n\t"   \
-    "paddw  " #o ", " #y "              \n\t"   \
-    "psraw      $1, " #x "              \n\t"   \
-    "psraw      $1, " #y "              \n\t"
-#define DEF(x) x ## _mmx
-#define SET_RND MOVQ_WONE
-#define SCALE_OFFSET 1
-
-#include "dsputil_qns_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef SCALE_OFFSET
-#undef PMULHRW
-
-#define DEF(x) x ## _3dnow
-#define SET_RND(x)
-#define SCALE_OFFSET 0
-#define PMULHRW(x, y, s, o)                     \
-    "pmulhrw " #s ", " #x "             \n\t"   \
-    "pmulhrw " #s ", " #y "             \n\t"
-
-#include "dsputil_qns_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef SCALE_OFFSET
-#undef PMULHRW
-
-#if HAVE_SSSE3_INLINE
-#undef PHADDD
-#define DEF(x) x ## _ssse3
-#define SET_RND(x)
-#define SCALE_OFFSET -1
-
-#define PHADDD(a, t)                            \
-    "pshufw $0x0E, " #a ", " #t "       \n\t"   \
-    /* faster than phaddd on core2 */           \
-    "paddd " #t ", " #a "               \n\t"
-
-#define PMULHRW(x, y, s, o)                     \
-    "pmulhrsw " #s ", " #x "            \n\t"   \
-    "pmulhrsw " #s ", " #y "            \n\t"
-
-#include "dsputil_qns_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef SCALE_OFFSET
-#undef PMULHRW
-#undef PHADDD
-#endif /* HAVE_SSSE3_INLINE */
-
 #endif /* HAVE_INLINE_ASM */
 
-av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
-                                    unsigned high_bit_depth)
+av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
-    const int dct_algo = avctx->dct_algo;
-
-    if (EXTERNAL_MMX(cpu_flags)) {
-        if (!high_bit_depth)
-            c->get_pixels = ff_get_pixels_mmx;
-        c->diff_pixels = ff_diff_pixels_mmx;
-        c->pix_sum     = ff_pix_sum16_mmx;
-        c->pix_norm1   = ff_pix_norm1_mmx;
-    }
-
-    if (EXTERNAL_SSE2(cpu_flags))
-        if (!high_bit_depth)
-            c->get_pixels = ff_get_pixels_sse2;
 
 #if HAVE_INLINE_ASM
     if (INLINE_MMX(cpu_flags)) {
-        if (!high_bit_depth &&
-            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
-            c->fdct = ff_fdct_mmx;
-
         c->vsad[4] = vsad_intra16_mmx;
 
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
             c->vsad[0]      = vsad16_mmx;
-            c->try_8x8basis = try_8x8basis_mmx;
         }
-        c->add_8x8basis = add_8x8basis_mmx;
-    }
-
-    if (INLINE_AMD3DNOW(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
-            c->try_8x8basis = try_8x8basis_3dnow;
-        }
-        c->add_8x8basis = add_8x8basis_3dnow;
     }
 
     if (INLINE_MMXEXT(cpu_flags)) {
-        if (!high_bit_depth &&
-            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
-            c->fdct = ff_fdct_mmxext;
-
         c->vsad[4]         = vsad_intra16_mmxext;
 
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
             c->vsad[0] = vsad16_mmxext;
         }
     }
-
-    if (INLINE_SSE2(cpu_flags)) {
-        if (!high_bit_depth &&
-            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
-            c->fdct = ff_fdct_sse2;
-    }
-
-#if HAVE_SSSE3_INLINE
-    if (INLINE_SSSE3(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
-            c->try_8x8basis = try_8x8basis_ssse3;
-        }
-        c->add_8x8basis    = add_8x8basis_ssse3;
-    }
-#endif
 #endif /* HAVE_INLINE_ASM */
 
     if (EXTERNAL_MMX(cpu_flags)) {
@@ -509,9 +385,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->sse[0] = ff_sse16_sse2;
         c->sum_abs_dctelem   = ff_sum_abs_dctelem_sse2;
-        c->diff_pixels = ff_diff_pixels_sse2;
-        c->pix_sum     = ff_pix_sum16_sse2;
-        c->pix_norm1   = ff_pix_norm1_sse2;
 
 #if HAVE_ALIGNED_STACK
         c->hadamard8_diff[0] = ff_hadamard8_diff16_sse2;
@@ -525,10 +398,6 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
         c->hadamard8_diff[0] = ff_hadamard8_diff16_ssse3;
         c->hadamard8_diff[1] = ff_hadamard8_diff_ssse3;
 #endif
-    }
-
-    if (EXTERNAL_XOP(cpu_flags)) {
-        c->pix_sum           = ff_pix_sum16_xop;
     }
 
     ff_dsputil_init_pix_mmx(c, avctx);

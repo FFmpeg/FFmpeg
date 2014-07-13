@@ -41,7 +41,7 @@
 #include "libavutil/avassert.h"
 
 struct DVDemuxContext {
-    const DVprofile*  sys;    /* Current DV profile. E.g.: 525/60, 625/50 */
+    const AVDVProfile*  sys;    /* Current DV profile. E.g.: 525/60, 625/50 */
     AVFormatContext*  fctx;
     AVStream*         vst;
     AVStream*         ast[4];
@@ -114,7 +114,7 @@ static const int dv_audio_frequency[3] = {
  *    are converted into 16bit linear ones.
  */
 static int dv_extract_audio(uint8_t *frame, uint8_t **ppcm,
-                            const DVprofile *sys)
+                            const AVDVProfile *sys)
 {
     int size, chan, i, j, d, of, smpls, freq, quant, half_ch;
     uint16_t lc, rc;
@@ -369,7 +369,7 @@ int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     uint8_t *ppcm[5] = { 0 };
 
     if (buf_size < DV_PROFILE_BYTES ||
-        !(c->sys = avpriv_dv_frame_profile(c->sys, buf, buf_size)) ||
+        !(c->sys = av_dv_frame_profile(c->sys, buf, buf_size)) ||
         buf_size < c->sys->frame_size) {
         return -1;   /* Broken frame, or not enough data */
     }
@@ -419,7 +419,8 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
                                int64_t timestamp, int flags)
 {
     // FIXME: sys may be wrong if last dv_read_packet() failed (buffer is junk)
-    const DVprofile *sys = avpriv_dv_codec_profile(c->vst->codec);
+    const AVDVProfile *sys = av_dv_codec_profile(c->vst->codec->width, c->vst->codec->height,
+                                                 c->vst->codec->pix_fmt);
     int64_t offset;
     int64_t size       = avio_size(s->pb) - s->data_offset;
     int64_t max_offset = ((size - 1) / sys->frame_size) * sys->frame_size;
@@ -519,9 +520,9 @@ static int dv_read_header(AVFormatContext *s)
         avio_seek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0)
         return AVERROR(EIO);
 
-    c->dv_demux->sys = avpriv_dv_frame_profile(c->dv_demux->sys,
-                                               c->buf,
-                                               DV_PROFILE_BYTES);
+    c->dv_demux->sys = av_dv_frame_profile(c->dv_demux->sys,
+                                           c->buf,
+                                           DV_PROFILE_BYTES);
     if (!c->dv_demux->sys) {
         av_log(s, AV_LOG_ERROR,
                "Can't determine profile of DV input stream.\n");

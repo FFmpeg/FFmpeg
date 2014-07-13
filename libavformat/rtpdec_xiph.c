@@ -306,7 +306,8 @@ parse_packed_headers(const uint8_t * packed_headers,
     return 0;
 }
 
-static int xiph_parse_fmtp_pair(AVStream* stream,
+static int xiph_parse_fmtp_pair(AVFormatContext *s,
+                                AVStream* stream,
                                 PayloadContext *xiph_data,
                                 char *attr, char *value)
 {
@@ -321,7 +322,7 @@ static int xiph_parse_fmtp_pair(AVStream* stream,
         } else if (!strcmp(value, "YCbCr-4:4:4")) {
             codec->pix_fmt = AV_PIX_FMT_YUV444P;
         } else {
-            av_log(codec, AV_LOG_ERROR,
+            av_log(s, AV_LOG_ERROR,
                    "Unsupported pixel format %s\n", attr);
             return AVERROR_INVALIDDATA;
         }
@@ -360,12 +361,12 @@ static int xiph_parse_fmtp_pair(AVStream* stream,
                     (decoded_packet, decoded_packet + packet_size, codec,
                     xiph_data);
             } else {
-                av_log(codec, AV_LOG_ERROR,
+                av_log(s, AV_LOG_ERROR,
                        "Out of memory while decoding SDP configuration.\n");
                 result = AVERROR(ENOMEM);
             }
         } else {
-            av_log(codec, AV_LOG_ERROR, "Packet too large\n");
+            av_log(s, AV_LOG_ERROR, "Packet too large\n");
             result = AVERROR_INVALIDDATA;
         }
         av_free(decoded_packet);
@@ -382,7 +383,7 @@ static int xiph_parse_sdp_line(AVFormatContext *s, int st_index,
         return 0;
 
     if (av_strstart(line, "fmtp:", &p)) {
-        return ff_parse_fmtp(s->streams[st_index], data, p,
+        return ff_parse_fmtp(s, s->streams[st_index], data, p,
                              xiph_parse_fmtp_pair);
     }
 

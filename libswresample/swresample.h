@@ -38,10 +38,16 @@
  * allocated with swr_alloc() or swr_alloc_set_opts(). It is opaque, so all parameters
  * must be set with the @ref avoptions API.
  *
+ * The first thing you will need to do in order to use lswr is to allocate
+ * SwrContext. This can be done with swr_alloc() or swr_alloc_set_opts(). If you
+ * are using the former, you must set options through the @ref avoptions API.
+ * The latter function provides the same feature, but it allows you to set some
+ * common options in the same statement.
+ *
  * For example the following code will setup conversion from planar float sample
  * format to interleaved signed 16-bit integer, downsampling from 48kHz to
  * 44.1kHz and downmixing from 5.1 channels to stereo (using the default mixing
- * matrix):
+ * matrix). This is using the swr_alloc() function.
  * @code
  * SwrContext *swr = swr_alloc();
  * av_opt_set_channel_layout(swr, "in_channel_layout",  AV_CH_LAYOUT_5POINT1, 0);
@@ -52,10 +58,24 @@
  * av_opt_set_sample_fmt(swr, "out_sample_fmt", AV_SAMPLE_FMT_S16,  0);
  * @endcode
  *
+ * The same job can be done using swr_alloc_set_opts() as well:
+ * @code
+ * SwrContext *swr = swr_alloc_set_opts(NULL,  // we're allocating a new context
+ *                       AV_CH_LAYOUT_STEREO,  // out_ch_layout
+ *                       AV_SAMPLE_FMT_S16,    // out_sample_fmt
+ *                       44100,                // out_sample_rate
+ *                       AV_CH_LAYOUT_5POINT1, // in_ch_layout
+ *                       AV_SAMPLE_FMT_FLTP,   // in_sample_fmt
+ *                       48000,                // in_sample_rate
+ *                       0,                    // log_offset
+ *                       NULL);                // log_ctx
+ * @endcode
+ *
  * Once all values have been set, it must be initialized with swr_init(). If
  * you need to change the conversion parameters, you can change the parameters
- * as described above, or by using swr_alloc_set_opts(), then call swr_init()
- * again.
+ * using @ref AVOptions, as described above in the first example; or by using
+ * swr_alloc_set_opts(), but with the first argument the allocated context.
+ * You must then call swr_init() again.
  *
  * The conversion itself is done by repeatedly calling swr_convert().
  * Note that the samples may get buffered in swr if you provide insufficient
@@ -64,6 +84,10 @@
  * time by using swr_convert() (in_count can be set to 0).
  * At the end of conversion the resampling buffer can be flushed by calling
  * swr_convert() with NULL in and 0 in_count.
+ *
+ * The samples used in the conversion process can be managed with the libavutil
+ * @ref lavu_sampmanip "samples manipulation" API, including av_samples_alloc()
+ * function used in the following example.
  *
  * The delay between input and output, can at any time be found by using
  * swr_get_delay().
@@ -89,6 +113,9 @@
  *
  * When the conversion is finished, the conversion
  * context and everything associated with it must be freed with swr_free().
+ * A swr_close() function is also available, but it exists mainly for
+ * compatibility with libavresample, and is not required to be called.
+ *
  * There will be no memory leak if the data is not completely flushed before
  * swr_free().
  */
@@ -102,10 +129,18 @@
 #define SWR_CH_MAX 32   ///< Maximum number of channels
 #endif
 
+/**
+ * @name Option constants
+ * These constants are used for the @ref avoptions interface for lswr.
+ * @{
+ *
+ */
+
 #define SWR_FLAG_RESAMPLE 1 ///< Force resampling even if equal sample rate
 //TODO use int resample ?
 //long term TODO can we enable this dynamically?
 
+/** Dithering algorithms */
 enum SwrDitherType {
     SWR_DITHER_NONE = 0,
     SWR_DITHER_RECTANGULAR,
@@ -137,15 +172,31 @@ enum SwrFilterType {
     SWR_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
 };
 
+/**
+ * @}
+ */
+
+/**
+ * The libswresample context. Unlike libavcodec and libavformat, this structure
+ * is opaque. This means that if you would like to set options, you must use
+ * the @ref avoptions API and cannot directly set values to members of the
+ * structure.
+ */
 typedef struct SwrContext SwrContext;
 
 /**
- * Get the AVClass for swrContext. It can be used in combination with
+ * Get the AVClass for SwrContext. It can be used in combination with
  * AV_OPT_SEARCH_FAKE_OBJ for examining options.
  *
  * @see av_opt_find().
+ * @return the AVClass of SwrContext
  */
 const AVClass *swr_get_class(void);
+
+/**
+ * @name SwrContext constructor functions
+ * @{
+ */
 
 /**
  * Allocate SwrContext.
@@ -161,6 +212,7 @@ struct SwrContext *swr_alloc(void);
 /**
  * Initialize context after user parameters have been set.
  *
+ * @param[in,out]   s Swr context to initialize
  * @return AVERROR error code in case of failure.
  */
 int swr_init(struct SwrContext *s);
@@ -168,6 +220,8 @@ int swr_init(struct SwrContext *s);
 /**
  * Check whether an swr context has been initialized or not.
  *
+ * @param[in]       s Swr context to check
+ * @see swr_init()
  * @return positive if it has been initialized, 0 if not initialized
  */
 int swr_is_initialized(struct SwrContext *s);
@@ -179,7 +233,7 @@ int swr_is_initialized(struct SwrContext *s);
  * other hand, swr_alloc() can use swr_alloc_set_opts() to set the parameters
  * on the allocated context.
  *
- * @param s               Swr context, can be NULL
+ * @param s               existing Swr context if available, or NULL if not
  * @param out_ch_layout   output channel layout (AV_CH_LAYOUT_*)
  * @param out_sample_fmt  output sample format (AV_SAMPLE_FMT_*).
  * @param out_sample_rate output sample rate (frequency in Hz)
@@ -198,22 +252,39 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
                                       int log_offset, void *log_ctx);
 
 /**
+ * @}
+ *
+ * @name SwrContext destructor functions
+ * @{
+ */
+
+/**
  * Free the given SwrContext and set the pointer to NULL.
+ *
+ * @param[in] s a pointer to a pointer to Swr context
  */
 void swr_free(struct SwrContext **s);
 
 /**
  * Closes the context so that swr_is_initialized() returns 0.
  *
- * the context can be brougt back to life by running swr_init(),
+ * The context can be brought back to life by running swr_init(),
  * swr_init() can also be used without swr_close().
  * This function is mainly provided for simplifying the usecase
- * where one tries to support libavresample and libswresample
+ * where one tries to support libavresample and libswresample.
+ *
+ * @param[in,out] s Swr context to be closed
  */
 void swr_close(struct SwrContext *s);
 
 /**
- * Convert audio.
+ * @}
+ *
+ * @name Core conversion functions
+ * @{
+ */
+
+/** Convert audio.
  *
  * in and in_count can be set to 0 to flush the last few samples out at the
  * end.
@@ -238,28 +309,54 @@ int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
  * timestamps are in 1/(in_sample_rate * out_sample_rate) units.
  *
  * @note There are 2 slightly differently behaving modes.
- *       First is when automatic timestamp compensation is not used, (min_compensation >= FLT_MAX)
+ *       @li When automatic timestamp compensation is not used, (min_compensation >= FLT_MAX)
  *              in this case timestamps will be passed through with delays compensated
- *       Second is when automatic timestamp compensation is used, (min_compensation < FLT_MAX)
- *              in this case the output timestamps will match output sample numbers
+ *       @li When automatic timestamp compensation is used, (min_compensation < FLT_MAX)
+ *              in this case the output timestamps will match output sample numbers.
+ *              See ffmpeg-resampler(1) for the two modes of compensation.
  *
- * @param pts   timestamp for the next input sample, INT64_MIN if unknown
+ * @param s[in]     initialized Swr context
+ * @param pts[in]   timestamp for the next input sample, INT64_MIN if unknown
+ * @see swr_set_compensation(), swr_drop_output(), and swr_inject_silence() are
+ *      function used internally for timestamp compensation.
  * @return the output timestamp for the next output sample
  */
 int64_t swr_next_pts(struct SwrContext *s, int64_t pts);
 
 /**
- * Activate resampling compensation.
+ * @}
+ *
+ * @name Low-level option setting functions
+ * These functons provide a means to set low-level options that is not possible
+ * with the AVOption API.
+ * @{
+ */
+
+/**
+ * Activate resampling compensation ("soft" compensation). This function is
+ * internally called when needed in swr_next_pts().
+ *
+ * @param[in,out] s             allocated Swr context. If it is not initialized,
+ *                              or SWR_FLAG_RESAMPLE is not set, swr_init() is
+ *                              called with the flag set.
+ * @param[in]     sample_delta  delta in PTS per sample
+ * @param[in]     compensation_distance number of samples to compensate for
+ * @return    >= 0 on success, AVERROR error codes if:
+ *            @li @c s is NULL,
+ *            @li @c compensation_distance is less than 0,
+ *            @li @c compensation_distance is 0 but sample_delta is not,
+ *            @li compensation unsupported by resampler, or
+ *            @li swr_init() fails when called.
  */
 int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensation_distance);
 
 /**
  * Set a customized input channel mapping.
  *
- * @param s           allocated Swr context, not yet initialized
- * @param channel_map customized input channel mapping (array of channel
- *                    indexes, -1 for a muted channel)
- * @return AVERROR error code in case of failure.
+ * @param[in,out] s           allocated Swr context, not yet initialized
+ * @param[in]     channel_map customized input channel mapping (array of channel
+ *                            indexes, -1 for a muted channel)
+ * @return >= 0 on success, or AVERROR error code in case of failure.
  */
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
 
@@ -270,17 +367,40 @@ int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
  * @param matrix  remix coefficients; matrix[i + stride * o] is
  *                the weight of input channel i in output channel o
  * @param stride  offset between lines of the matrix
- * @return  AVERROR error code in case of failure.
+ * @return  >= 0 on success, or AVERROR error code in case of failure.
  */
 int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride);
 
 /**
+ * @}
+ *
+ * @name Sample handling functions
+ * @{
+ */
+
+/**
  * Drops the specified number of output samples.
+ *
+ * This function, along with swr_inject_silence(), is called by swr_next_pts()
+ * if needed for "hard" compensation.
+ *
+ * @param s     allocated Swr context
+ * @param count number of samples to be dropped
+ *
+ * @return >= 0 on success, or a negative AVERROR code on failure
  */
 int swr_drop_output(struct SwrContext *s, int count);
 
 /**
  * Injects the specified number of silence samples.
+ *
+ * This function, along with swr_drop_output(), is called by swr_next_pts()
+ * if needed for "hard" compensation.
+ *
+ * @param s     allocated Swr context
+ * @param count number of samples to be dropped
+ *
+ * @return >= 0 on success, or a negative AVERROR code on failure
  */
 int swr_inject_silence(struct SwrContext *s, int count);
 
@@ -296,32 +416,53 @@ int swr_inject_silence(struct SwrContext *s, int count);
  * for upsampling and the input sample rate.
  *
  * @param s     swr context
- * @param base  timebase in which the returned delay will be
- *              if its set to 1 the returned delay is in seconds
- *              if its set to 1000 the returned delay is in milli seconds
- *              if its set to the input sample rate then the returned delay is in input samples
- *              if its set to the output sample rate then the returned delay is in output samples
- *              an exact rounding free delay can be found by using LCM(in_sample_rate, out_sample_rate)
- * @returns     the delay in 1/base units.
+ * @param base  timebase in which the returned delay will be:
+ *              @li if it's set to 1 the returned delay is in seconds
+ *              @li if it's set to 1000 the returned delay is in milliseconds
+ *              @li if it's set to the input sample rate then the returned
+ *                  delay is in input samples
+ *              @li if it's set to the output sample rate then the returned
+ *                  delay is in output samples
+ *              @li if it's the least common multiple of in_sample_rate and
+ *                  out_sample_rate then an exact rounding-free delay will be
+ *                  returned
+ * @returns     the delay in 1 / @c base units.
  */
 int64_t swr_get_delay(struct SwrContext *s, int64_t base);
 
 /**
- * Return the LIBSWRESAMPLE_VERSION_INT constant.
+ * @}
+ *
+ * @name Configuration accessors
+ * @{
+ */
+
+/**
+ * Return the @ref LIBSWRESAMPLE_VERSION_INT constant.
+ *
+ * This is useful to check if the build-time libswresample has the same version
+ * as the run-time one.
+ *
+ * @returns     the unsigned int-typed version
  */
 unsigned swresample_version(void);
 
 /**
  * Return the swr build-time configuration.
+ *
+ * @returns     the build-time @c ./configure flags
  */
 const char *swresample_configuration(void);
 
 /**
  * Return the swr license.
+ *
+ * @returns     the license of libswresample, determined at build-time
  */
 const char *swresample_license(void);
 
 /**
+ * @}
  * @}
  */
 

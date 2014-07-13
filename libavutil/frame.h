@@ -214,7 +214,7 @@ typedef struct AVFrame {
     int64_t pkt_pts;
 
     /**
-     * DTS copied from the AVPacket that triggered returning this frame. (if frame threading isnt used)
+     * DTS copied from the AVPacket that triggered returning this frame. (if frame threading isn't used)
      * This is also the Presentation time of this AVFrame calculated from
      * only AVPacket.dts values without pts values.
      */

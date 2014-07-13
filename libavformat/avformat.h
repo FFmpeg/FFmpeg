@@ -194,7 +194,7 @@
  *   the @ref AVStream.codec "stream codec context" information, such as the
  *   codec @ref AVCodecContext.codec_type "type", @ref AVCodecContext.codec_id
  *   "id" and other parameters (e.g. width / height, the pixel or sample format,
- *   etc.) as known. The @ref AVCodecContext.time_base "codec timebase" should
+ *   etc.) as known. The @ref AVStream.time_base "stream timebase" should
  *   be set to the timebase that the caller desires to use for this stream (note
  *   that the timebase actually used by the muxer can be different, as will be
  *   described later).
@@ -218,8 +218,8 @@
  * a single muxing context, they should not be mixed). Do note that the timing
  * information on the packets sent to the muxer must be in the corresponding
  * AVStream's timebase. That timebase is set by the muxer (in the
- * avformat_write_header() step) and may be different from the timebase the
- * caller set on the codec context.
+ * avformat_write_header() step) and may be different from the timebase
+ * requested by the caller.
  *
  * Once all the data has been written, the caller must call av_write_trailer()
  * to flush any buffered packets and finalize the output file, then close the IO

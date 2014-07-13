@@ -18,12 +18,17 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "dv_profile.h"
+#include "dv_profile_internal.h"
+
+#if CONFIG_DVPROFILE
 
 static const uint8_t dv_audio_shuffle525[10][9] = {
   {  0, 30, 60, 20, 50, 80, 10, 40, 70 }, /* 1st channel */
@@ -64,7 +69,7 @@ static const uint8_t block_sizes_dv100[8] = {
     80, 80, 80, 80, 80, 80, 64, 64,
 };
 
-static const DVprofile dv_profiles[] = {
+static const AVDVProfile dv_profiles[] = {
     { .dsf = 0,
       .video_stype = 0x0,
       .frame_size = 120000,        /* IEC 61834, SMPTE-314M - 525/60 (NTSC) */
@@ -247,9 +252,23 @@ static const DVprofile dv_profiles[] = {
     }
 };
 
-const DVprofile* avpriv_dv_frame_profile2(AVCodecContext* codec, const DVprofile *sys,
-                                  const uint8_t* frame, unsigned buf_size)
+void ff_dv_print_profiles(void *logctx, int loglevel)
 {
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(dv_profiles); i++) {
+        const AVDVProfile *p = &dv_profiles[i];
+        av_log(logctx, loglevel, "Frame size: %dx%d; pixel format: %s, "
+               "framerate: %d/%d\n", p->width, p->height, av_get_pix_fmt_name(p->pix_fmt),
+               p->time_base.den, p->time_base.num);
+    }
+}
+
+#endif /* CONFIG_DVPROFILE */
+
+const AVDVProfile* avpriv_dv_frame_profile2(AVCodecContext* codec, const AVDVProfile *sys,
+                                       const uint8_t* frame, unsigned buf_size)
+{
+#if CONFIG_DVPROFILE
     int i, dsf, stype;
 
     if(buf_size < DV_PROFILE_BYTES)
@@ -282,45 +301,45 @@ const DVprofile* avpriv_dv_frame_profile2(AVCodecContext* codec, const DVprofile
     /* hack for trac issue #217, dv files created with QuickTime 3 */
     if ((frame[3] & 0x7f) == 0x3f && frame[80 * 5 + 48 + 3] == 0xff)
         return &dv_profiles[dsf];
+#endif
 
     return NULL;
 }
 
-const DVprofile* avpriv_dv_frame_profile(const DVprofile *sys,
-                                  const uint8_t* frame, unsigned buf_size)
+const AVDVProfile *av_dv_frame_profile(const AVDVProfile *sys,
+                                       const uint8_t* frame, unsigned buf_size)
 {
     return avpriv_dv_frame_profile2(NULL, sys, frame, buf_size);
 }
 
-const DVprofile* avpriv_dv_codec_profile(AVCodecContext* codec)
+const AVDVProfile *av_dv_codec_profile(int width, int height,
+                                       enum AVPixelFormat pix_fmt)
 {
+#if CONFIG_DVPROFILE
     int i;
-    int w, h;
-
-    if (codec->coded_width || codec->coded_height) {
-        w = codec->coded_width;
-        h = codec->coded_height;
-    } else {
-        w = codec->width;
-        h = codec->height;
-    }
 
     for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
-       if (h == dv_profiles[i].height  &&
-           codec->pix_fmt == dv_profiles[i].pix_fmt &&
-           w == dv_profiles[i].width)
-               return &dv_profiles[i];
+       if (height  == dv_profiles[i].height  &&
+           pix_fmt == dv_profiles[i].pix_fmt &&
+           width   == dv_profiles[i].width)
+           return &dv_profiles[i];
+#endif
 
     return NULL;
 }
 
-void ff_dv_print_profiles(void *logctx, int loglevel)
+#if LIBAVCODEC_VERSION_MAJOR < 56
+const AVDVProfile *avpriv_dv_frame_profile(const AVDVProfile *sys,
+                                         const uint8_t* frame, unsigned buf_size)
 {
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(dv_profiles); i++) {
-        const DVprofile *p = &dv_profiles[i];
-        av_log(logctx, loglevel, "Frame size: %dx%d; pixel format: %s, "
-               "framerate: %d/%d\n", p->width, p->height, av_get_pix_fmt_name(p->pix_fmt),
-               p->time_base.den, p->time_base.num);
-    }
+    return av_dv_frame_profile(sys, frame, buf_size);
 }
+
+const AVDVProfile *avpriv_dv_codec_profile(AVCodecContext *codec)
+{
+    if (codec->coded_width || codec->coded_height) {
+        return av_dv_codec_profile(codec->coded_width, codec->coded_height, codec->pix_fmt);
+    } else
+        return av_dv_codec_profile(codec->width, codec->height, codec->pix_fmt);
+}
+#endif

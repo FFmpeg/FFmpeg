@@ -27,12 +27,8 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 
-void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx,
-                            unsigned high_bit_depth);
+void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx);
 void ff_dsputil_init_pix_mmx(DSPContext *c, AVCodecContext *avctx);
-
-void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
-                       int w, int h, int sides);
 
 
 void ff_mmx_idct(int16_t *block);

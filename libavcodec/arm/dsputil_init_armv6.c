@@ -26,10 +26,6 @@
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_arm.h"
 
-void ff_get_pixels_armv6(int16_t *block, const uint8_t *pixels, int stride);
-void ff_diff_pixels_armv6(int16_t *block, const uint8_t *s1,
-                          const uint8_t *s2, int stride);
-
 int ff_pix_abs16_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                        int line_size, int h);
 int ff_pix_abs16_x2_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
@@ -43,16 +39,8 @@ int ff_pix_abs8_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
 int ff_sse16_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                    int line_size, int h);
 
-int ff_pix_norm1_armv6(uint8_t *pix, int line_size);
-int ff_pix_sum_armv6(uint8_t *pix, int line_size);
-
-av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx,
-                                   unsigned high_bit_depth)
+av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx)
 {
-    if (!high_bit_depth)
-        c->get_pixels = ff_get_pixels_armv6;
-    c->diff_pixels = ff_diff_pixels_armv6;
-
     c->pix_abs[0][0] = ff_pix_abs16_armv6;
     c->pix_abs[0][1] = ff_pix_abs16_x2_armv6;
     c->pix_abs[0][2] = ff_pix_abs16_y2_armv6;
@@ -63,7 +51,4 @@ av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx,
     c->sad[1] = ff_pix_abs8_armv6;
 
     c->sse[0] = ff_sse16_armv6;
-
-    c->pix_norm1 = ff_pix_norm1_armv6;
-    c->pix_sum   = ff_pix_sum_armv6;
 }

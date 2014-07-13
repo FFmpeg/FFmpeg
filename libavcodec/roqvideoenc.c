@@ -881,7 +881,7 @@ static void generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
     av_free(results4);
 }
 
-static void roq_encode_video(RoqContext *enc)
+static int roq_encode_video(RoqContext *enc)
 {
     RoqTempdata *tempData = enc->tmpData;
     int i;
@@ -903,6 +903,10 @@ static void roq_encode_video(RoqContext *enc)
 
     /* Quake 3 can't handle chunks bigger than 65535 bytes */
     if (tempData->mainChunkSize/8 > 65535 && enc->quake3_compat) {
+        if (enc->lambda > 100000) {
+            av_log(enc->avctx, AV_LOG_ERROR, "Cannot encode video in Quake compatible form\n");
+            return AVERROR(EINVAL);
+        }
         av_log(enc->avctx, AV_LOG_ERROR,
                "Warning, generated a frame too big for Quake (%d > 65535), "
                "now switching to a bigger qscale value.\n",
@@ -936,6 +940,8 @@ static void roq_encode_video(RoqContext *enc)
     av_free(tempData->closest_cb2);
 
     enc->framesSinceKeyframe++;
+
+    return 0;
 }
 
 static av_cold int roq_encode_end(AVCodecContext *avctx)
@@ -966,8 +972,13 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    if (avctx->width > 65535 || avctx->height > 65535) {
+        av_log(avctx, AV_LOG_ERROR, "Dimensions are max %d\n", enc->quake3_compat ? 32768 : 65535);
+        return AVERROR(EINVAL);
+    }
+
     if (((avctx->width)&(avctx->width-1))||((avctx->height)&(avctx->height-1)))
-        av_log(avctx, AV_LOG_ERROR, "Warning: dimensions not power of two\n");
+        av_log(avctx, AV_LOG_ERROR, "Warning: dimensions not power of two, this is not supported by quake\n");
 
     enc->width = avctx->width;
     enc->height = avctx->height;
@@ -1064,7 +1075,8 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     /* Encode the actual frame */
-    roq_encode_video(enc);
+    if ((ret = roq_encode_video(enc)) < 0)
+        return ret;
 
     pkt->size   = enc->out_buf - pkt->data;
     if (enc->framesSinceKeyframe == 1)
@@ -1097,7 +1109,7 @@ AVCodec ff_roq_encoder = {
     .init                 = roq_encode_init,
     .encode2              = roq_encode_frame,
     .close                = roq_encode_end,
-    .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P,
+    .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVJ444P,
                                                         AV_PIX_FMT_NONE },
     .priv_class     = &roq_class,
 };

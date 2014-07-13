@@ -788,6 +788,8 @@ typedef struct HEVCContext {
     AVBufferRef *sps_list[MAX_SPS_COUNT];
     AVBufferRef *pps_list[MAX_PPS_COUNT];
 
+    AVBufferRef *current_sps;
+
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
 
@@ -884,6 +886,11 @@ typedef struct HEVCContext {
     int frame_packing_arrangement_type;
     int content_interpretation_type;
     int quincunx_subsampling;
+
+    /** display orientation */
+    int sei_display_orientation_present;
+    int sei_anticlockwise_rotation;
+    int sei_hflip, sei_vflip;
 
     int picture_struct;
 } HEVCContext;

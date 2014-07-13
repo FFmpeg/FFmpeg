@@ -28,5 +28,7 @@ LIBAVCODEC_$MAJOR {
                 ff_dnxhd_get_cid_table;
                 ff_dnxhd_cid_table;
                 ff_idctdsp_init;
+                ff_fdctdsp_init;
+                ff_pixblockdsp_init;
         local:  *;
 };

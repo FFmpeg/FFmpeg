@@ -32,6 +32,7 @@
 #include "put_bits.h"
 #include "bytestream.h"
 #include "dsputil.h"
+#include "fdctdsp.h"
 
 #define DEFAULT_SLICE_MB_WIDTH 8
 
@@ -145,7 +146,7 @@ static const uint8_t QMAT_CHROMA[4][64] = {
 
 
 typedef struct {
-    DSPContext dsp;
+    FDCTDSPContext fdsp;
     uint8_t* fill_y;
     uint8_t* fill_u;
     uint8_t* fill_v;
@@ -274,10 +275,10 @@ static void get(uint8_t *pixels, int stride, int16_t* block)
     }
 }
 
-static void fdct_get(DSPContext *dsp, uint8_t *pixels, int stride, int16_t* block)
+static void fdct_get(FDCTDSPContext *fdsp, uint8_t *pixels, int stride, int16_t* block)
 {
     get(pixels, stride, block);
-    dsp->fdct(block);
+    fdsp->fdct(block);
 }
 
 static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
@@ -285,18 +286,18 @@ static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
         int *qmat, int chroma)
 {
     ProresContext* ctx = avctx->priv_data;
-    DSPContext *dsp = &ctx->dsp;
+    FDCTDSPContext *fdsp = &ctx->fdsp;
     DECLARE_ALIGNED(16, int16_t, blocks)[DEFAULT_SLICE_MB_WIDTH << 8], *block;
     int i, blocks_per_slice;
     PutBitContext pb;
 
     block = blocks;
     for (i = 0; i < mb_count; i++) {
-        fdct_get(dsp, src,                  src_stride, block + (0 << 6));
-        fdct_get(dsp, src + 8 * src_stride, src_stride, block + ((2 - chroma) << 6));
+        fdct_get(fdsp, src,                  src_stride, block + (0 << 6));
+        fdct_get(fdsp, src + 8 * src_stride, src_stride, block + ((2 - chroma) << 6));
         if (!chroma) {
-            fdct_get(dsp, src + 16,                  src_stride, block + (1 << 6));
-            fdct_get(dsp, src + 16 + 8 * src_stride, src_stride, block + (3 << 6));
+            fdct_get(fdsp, src + 16,                  src_stride, block + (1 << 6));
+            fdct_get(fdsp, src + 16 + 8 * src_stride, src_stride, block + (3 << 6));
         }
 
         block += (256 >> chroma);
@@ -553,6 +554,12 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if (avctx->width > 65534 || avctx->height > 65535) {
+        av_log(avctx, AV_LOG_ERROR,
+                "The maximum dimensions are 65534x65535\n");
+        return AVERROR(EINVAL);
+    }
+
     if ((avctx->height & 0xf) || (avctx->width & 0xf)) {
         ctx->fill_y = av_malloc(4 * (DEFAULT_SLICE_MB_WIDTH << 8));
         if (!ctx->fill_y)
@@ -576,7 +583,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    ff_dsputil_init(&ctx->dsp, avctx);
+    ff_fdctdsp_init(&ctx->fdsp, avctx);
 
     avctx->codec_tag = AV_RL32((const uint8_t*)profiles[avctx->profile].name);
 

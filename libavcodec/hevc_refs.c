@@ -144,10 +144,12 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     *frame = ref->frame;
     s->ref = ref;
 
+    if (s->sh.pic_output_flag)
+        ref->flags = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
+    else
+        ref->flags = HEVC_FRAME_FLAG_SHORT_REF;
+
     ref->poc      = poc;
-    ref->flags    = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
-    if (s->sh.pic_output_flag == 0)
-        ref->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
     ref->sequence = s->seq_decode;
     ref->window   = s->sps->output_window;
 

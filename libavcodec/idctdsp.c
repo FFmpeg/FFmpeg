@@ -299,6 +299,8 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
     c->put_signed_pixels_clamped = put_signed_pixels_clamped_c;
     c->add_pixels_clamped        = add_pixels_clamped_c;
 
+    if (ARCH_ALPHA)
+        ff_idctdsp_init_alpha(c, avctx, high_bit_depth);
     if (ARCH_ARM)
         ff_idctdsp_init_arm(c, avctx, high_bit_depth);
     if (ARCH_PPC)

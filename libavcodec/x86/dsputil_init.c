@@ -27,25 +27,8 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_x86.h"
 
-static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
-                                     int cpu_flags, unsigned high_bit_depth)
+av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
 {
-#if HAVE_MMX_INLINE
-    if (!high_bit_depth) {
-        c->draw_edges   = ff_draw_edges_mmx;
-    }
-
-#endif /* HAVE_MMX_INLINE */
-}
-
-av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx,
-                                 unsigned high_bit_depth)
-{
-    int cpu_flags = av_get_cpu_flags();
-
-    if (X86_MMX(cpu_flags))
-        dsputil_init_mmx(c, avctx, cpu_flags, high_bit_depth);
-
     if (CONFIG_ENCODERS)
-        ff_dsputilenc_init_mmx(c, avctx, high_bit_depth);
+        ff_dsputilenc_init_mmx(c, avctx);
 }

@@ -246,7 +246,7 @@ static int config_input(AVFilterLink *inlink)
     dm->nxblocks  = (w + dm->blockx/2 - 1) / (dm->blockx/2);
     dm->nyblocks  = (h + dm->blocky/2 - 1) / (dm->blocky/2);
     dm->bdiffsize = dm->nxblocks * dm->nyblocks;
-    dm->bdiffs    = av_malloc(dm->bdiffsize * sizeof(*dm->bdiffs));
+    dm->bdiffs    = av_malloc_array(dm->bdiffsize, sizeof(*dm->bdiffs));
     dm->queue     = av_calloc(dm->cycle, sizeof(*dm->queue));
 
     if (!dm->bdiffs || !dm->queue)

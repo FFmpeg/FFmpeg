@@ -115,6 +115,7 @@ typedef struct SnowContext{
     QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H264QpelContext h264qpel;
+    MpegvideoEncDSPContext mpvencdsp;
     SnowDWTContext dwt;
     AVFrame *new_picture;
     AVFrame *input_picture;              ///< new_picture with the internal linesizes

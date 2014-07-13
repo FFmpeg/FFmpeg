@@ -139,7 +139,7 @@ SECTION .text
 
 ; This version of CHECK2 has 3 fewer instructions on sets older than SSE4 but I
 ; am not sure whether it is any faster.  A rewrite or refactor of the filter
-; code should make it possible to eliminate the move intruction at the end.  It
+; code should make it possible to eliminate the move instruction at the end.  It
 ; exists to satisfy the expectation that the "score" values are in m1.
 
 ; %macro CHECK2 0

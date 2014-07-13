@@ -308,34 +308,6 @@ static int sad8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
     return s;
 }
 
-static int pix_norm1_altivec(uint8_t *pix, int line_size)
-{
-    int i, s = 0;
-    const vector unsigned int zero =
-        (const vector unsigned int) vec_splat_u32(0);
-    vector unsigned char perm = vec_lvsl(0, pix);
-    vector unsigned int sv = (vector unsigned int) vec_splat_u32(0);
-    vector signed int sum;
-
-    for (i = 0; i < 16; i++) {
-        /* Read the potentially unaligned pixels. */
-        vector unsigned char pixl = vec_ld(0,  pix);
-        vector unsigned char pixr = vec_ld(15, pix);
-        vector unsigned char pixv = vec_perm(pixl, pixr, perm);
-
-        /* Square the values, and add them to our sum. */
-        sv = vec_msum(pixv, pixv, sv);
-
-        pix += line_size;
-    }
-    /* Sum up the four partial sums, and put the result into s. */
-    sum = vec_sums((vector signed int) sv, (vector signed int) zero);
-    sum = vec_splat(sum, 3);
-    vec_ste(sum, 0, &s);
-
-    return s;
-}
-
 /* Sum of Squared Errors for an 8x8 block, AltiVec-enhanced.
  * It's the sad8_altivec code above w/ squaring added. */
 static int sse8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
@@ -428,134 +400,6 @@ static int sse16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
     vec_ste(sumsqr, 0, &s);
 
     return s;
-}
-
-static int pix_sum_altivec(uint8_t *pix, int line_size)
-{
-    int i, s;
-    const vector unsigned int zero =
-        (const vector unsigned int) vec_splat_u32(0);
-    vector unsigned char perm = vec_lvsl(0, pix);
-    vector unsigned int sad = (vector unsigned int) vec_splat_u32(0);
-    vector signed int sumdiffs;
-
-    for (i = 0; i < 16; i++) {
-        /* Read the potentially unaligned 16 pixels into t1. */
-        vector unsigned char pixl = vec_ld(0,  pix);
-        vector unsigned char pixr = vec_ld(15, pix);
-        vector unsigned char t1   = vec_perm(pixl, pixr, perm);
-
-        /* Add each 4 pixel group together and put 4 results into sad. */
-        sad = vec_sum4s(t1, sad);
-
-        pix += line_size;
-    }
-
-    /* Sum up the four partial sums, and put the result into s. */
-    sumdiffs = vec_sums((vector signed int) sad, (vector signed int) zero);
-    sumdiffs = vec_splat(sumdiffs, 3);
-    vec_ste(sumdiffs, 0, &s);
-
-    return s;
-}
-
-static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
-                               int line_size)
-{
-    int i;
-    vector unsigned char perm = vec_lvsl(0, pixels);
-    const vector unsigned char zero =
-        (const vector unsigned char) vec_splat_u8(0);
-
-    for (i = 0; i < 8; i++) {
-        /* Read potentially unaligned pixels.
-         * We're reading 16 pixels, and actually only want 8,
-         * but we simply ignore the extras. */
-        vector unsigned char pixl = vec_ld(0, pixels);
-        vector unsigned char pixr = vec_ld(7, pixels);
-        vector unsigned char bytes = vec_perm(pixl, pixr, perm);
-
-        // Convert the bytes into shorts.
-        vector signed short shorts = (vector signed short) vec_mergeh(zero,
-                                                                      bytes);
-
-        // Save the data to the block, we assume the block is 16-byte aligned.
-        vec_st(shorts, i * 16, (vector signed short *) block);
-
-        pixels += line_size;
-    }
-}
-
-static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
-                                const uint8_t *s2, int stride)
-{
-    int i;
-    vector unsigned char perm1 = vec_lvsl(0, s1);
-    vector unsigned char perm2 = vec_lvsl(0, s2);
-    const vector unsigned char zero =
-        (const vector unsigned char) vec_splat_u8(0);
-    vector signed short shorts1, shorts2;
-
-    for (i = 0; i < 4; i++) {
-        /* Read potentially unaligned pixels.
-         * We're reading 16 pixels, and actually only want 8,
-         * but we simply ignore the extras. */
-        vector unsigned char pixl  = vec_ld(0,  s1);
-        vector unsigned char pixr  = vec_ld(15, s1);
-        vector unsigned char bytes = vec_perm(pixl, pixr, perm1);
-
-        // Convert the bytes into shorts.
-        shorts1 = (vector signed short) vec_mergeh(zero, bytes);
-
-        // Do the same for the second block of pixels.
-        pixl  = vec_ld(0,  s2);
-        pixr  = vec_ld(15, s2);
-        bytes = vec_perm(pixl, pixr, perm2);
-
-        // Convert the bytes into shorts.
-        shorts2 = (vector signed short) vec_mergeh(zero, bytes);
-
-        // Do the subtraction.
-        shorts1 = vec_sub(shorts1, shorts2);
-
-        // Save the data to the block, we assume the block is 16-byte aligned.
-        vec_st(shorts1, 0, (vector signed short *) block);
-
-        s1    += stride;
-        s2    += stride;
-        block += 8;
-
-        /* The code below is a copy of the code above...
-         * This is a manual unroll. */
-
-        /* Read potentially unaligned pixels.
-         * We're reading 16 pixels, and actually only want 8,
-         * but we simply ignore the extras. */
-        pixl  = vec_ld(0,  s1);
-        pixr  = vec_ld(15, s1);
-        bytes = vec_perm(pixl, pixr, perm1);
-
-        // Convert the bytes into shorts.
-        shorts1 = (vector signed short) vec_mergeh(zero, bytes);
-
-        // Do the same for the second block of pixels.
-        pixl  = vec_ld(0,  s2);
-        pixr  = vec_ld(15, s2);
-        bytes = vec_perm(pixl, pixr, perm2);
-
-        // Convert the bytes into shorts.
-        shorts2 = (vector signed short) vec_mergeh(zero, bytes);
-
-        // Do the subtraction.
-        shorts1 = vec_sub(shorts1, shorts2);
-
-        // Save the data to the block, we assume the block is 16-byte aligned.
-        vec_st(shorts1, 0, (vector signed short *) block);
-
-        s1    += stride;
-        s2    += stride;
-        block += 8;
-    }
 }
 
 static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
@@ -897,8 +741,7 @@ static int hadamard8_diff16_altivec(MpegEncContext *s, uint8_t *dst,
     return score;
 }
 
-av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx,
-                                     unsigned high_bit_depth)
+av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx)
 {
     c->pix_abs[0][1] = sad16_x2_altivec;
     c->pix_abs[0][2] = sad16_y2_altivec;
@@ -910,15 +753,6 @@ av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx,
     c->sad[1] = sad8_altivec;
     c->sse[0] = sse16_altivec;
     c->sse[1] = sse8_altivec;
-
-    c->pix_norm1 = pix_norm1_altivec;
-    c->pix_sum   = pix_sum_altivec;
-
-    c->diff_pixels = diff_pixels_altivec;
-
-    if (!high_bit_depth) {
-        c->get_pixels = get_pixels_altivec;
-    }
 
     c->hadamard8_diff[0] = hadamard8_diff16_altivec;
     c->hadamard8_diff[1] = hadamard8_diff8x8_altivec;

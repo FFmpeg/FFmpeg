@@ -32,12 +32,15 @@
 #include "blockdsp.h"
 #include "dsputil.h"
 #include "error_resilience.h"
+#include "fdctdsp.h"
 #include "get_bits.h"
 #include "h264chroma.h"
 #include "h263dsp.h"
 #include "hpeldsp.h"
 #include "idctdsp.h"
 #include "mpegvideodsp.h"
+#include "mpegvideoencdsp.h"
+#include "pixblockdsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
 #include "parser.h"
@@ -79,6 +82,8 @@ enum OutputFormat {
 #define MAX_MB_BYTES (30*16*16*3/8 + 120)
 
 #define INPLACE_OFFSET 16
+
+#define EDGE_WIDTH 16
 
 /* Start codes. */
 #define SEQ_END_CODE            0x000001b7
@@ -361,10 +366,13 @@ typedef struct MpegEncContext {
 
     BlockDSPContext bdsp;
     DSPContext dsp;             ///< pointers for accelerated dsp functions
+    FDCTDSPContext fdsp;
     H264ChromaContext h264chroma;
     HpelDSPContext hdsp;
     IDCTDSPContext idsp;
     MpegVideoDSPContext mdsp;
+    MpegvideoEncDSPContext mpvencdsp;
+    PixblockDSPContext pdsp;
     QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H263DSPContext h263dsp;

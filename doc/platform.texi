@@ -24,6 +24,17 @@ If not, then you should install a different compiler that has no
 hard-coded path to gas. In the worst case pass @code{--disable-asm}
 to configure.
 
+@section Advanced linking configuration
+
+If you compiled FFmpeg libraries statically and you want to use them to
+build your own shared library, you may need to force PIC support (with
+@code{--enable-pic} during FFmpeg configure) and add the following option
+to your project LDFLAGS:
+
+@example
+-Wl,-Bsymbolic
+@end example
+
 @section BSD
 
 BSD make will not build FFmpeg, you need to install and use GNU Make

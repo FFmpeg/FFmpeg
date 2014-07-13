@@ -2147,3 +2147,27 @@ For the fastest encoding speed set the @option{qscale} parameter (4 is the
 recommended value) and do not set a size constraint.
 
 @c man end VIDEO ENCODERS
+
+@chapter Subtitles Encoders
+@c man begin SUBTITLES ENCODERS
+
+@section dvdsub
+
+This codec encodes the bitmap subtitle format that is used in DVDs.
+Typically they are stored in VOBSUB file pairs (*.idx + *.sub),
+and they can also be used in Matroska files.
+
+@subsection Options
+
+@table @option
+@item even_rows_fix
+When set to 1, enable a work-around that makes the number of pixel rows
+even in all subtitles.  This fixes a problem with some players that
+cut off the bottom row if the number is odd.  The work-around just adds
+a fully transparent row if needed.  The overhead is low, typically
+one byte per subtitle on average.
+
+By default, this work-around is disabled.
+@end table
+
+@c man end SUBTITLES ENCODERS

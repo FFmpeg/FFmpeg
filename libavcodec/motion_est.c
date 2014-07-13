@@ -903,8 +903,9 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
     /* intra / predictive decision */
     pix = c->src[0][0];
-    sum = s->dsp.pix_sum(pix, s->linesize);
-    varc = s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)sum*sum)>>8) + 500;
+    sum  = s->mpvencdsp.pix_sum(pix, s->linesize);
+    varc = s->mpvencdsp.pix_norm1(pix, s->linesize) -
+           (((unsigned) sum * sum) >> 8) + 500;
 
     pic->mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
     pic->mb_var [s->mb_stride * mb_y + mb_x] = (varc+128)>>8;

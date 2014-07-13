@@ -27,6 +27,7 @@
 /* #define DEBUG */
 
 #include <float.h>
+#include <time.h>
 
 #include "avformat.h"
 #include "internal.h"
@@ -37,6 +38,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/time.h"
 #include "libavutil/timestamp.h"
 
 typedef struct SegmentListEntry {
@@ -73,6 +75,12 @@ typedef struct {
     char *list;            ///< filename for the segment list file
     int   list_flags;      ///< flags affecting list generation
     int   list_size;       ///< number of entries for the segment list file
+
+    int use_clocktime;    ///< flag to cut segments at regular clock time
+    int64_t last_val;      ///< remember last time for wrap around detection
+    int64_t last_cut;      ///< remember last cut
+    int cut_pending;
+
     char *entry_prefix;    ///< prefix to add to list entry filenames
     ListType list_type;    ///< set the list type
     AVIOContext *list_pb;  ///< list file put-byte context
@@ -668,6 +676,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t end_pts = INT64_MAX, offset;
     int start_frame = INT_MAX;
     int ret;
+    struct tm ti;
+    int64_t usecs;
+    int64_t wrapped_val;
 
     if (seg->times) {
         end_pts = seg->segment_count < seg->nb_times ?
@@ -676,7 +687,24 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         start_frame = seg->segment_count <= seg->nb_frames ?
             seg->frames[seg->segment_count] : INT_MAX;
     } else {
-        end_pts = seg->time * (seg->segment_count+1);
+        if (seg->use_clocktime) {
+            int64_t avgt = av_gettime();
+            time_t sec = avgt / 1000000;
+#if HAVE_LOCALTIME_R
+            localtime_r(&sec, &ti);
+#else
+            ti = *localtime(&sec);
+#endif
+            usecs = (int64_t)(ti.tm_hour*3600 + ti.tm_min*60 + ti.tm_sec) * 1000000 + (avgt % 1000000);
+            wrapped_val = usecs % seg->time;
+            if (seg->last_cut != usecs && wrapped_val < seg->last_val) {
+                seg->cut_pending = 1;
+                seg->last_cut = usecs;
+            }
+            seg->last_val = wrapped_val;
+        } else {
+            end_pts = seg->time * (seg->segment_count+1);
+        }
     }
 
     av_dlog(s, "packet stream:%d pts:%s pts_time:%s is_key:%d frame:%d\n",
@@ -686,7 +714,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (pkt->stream_index == seg->reference_stream_index &&
         pkt->flags & AV_PKT_FLAG_KEY &&
-        (seg->frame_count >= start_frame ||
+        (seg->cut_pending || seg->frame_count >= start_frame ||
          (pkt->pts != AV_NOPTS_VALUE &&
           av_compare_ts(pkt->pts, st->time_base,
                         end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0))) {
@@ -696,6 +724,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         if ((ret = segment_start(s, seg->individual_header_trailer)) < 0)
             goto fail;
 
+        seg->cut_pending = 0;
         seg->cur_entry.index = seg->segment_idx + seg->segment_idx_wrap*seg->segment_idx_wrap_nb;
         seg->cur_entry.start_time = (double)pkt->pts * av_q2d(st->time_base);
         seg->cur_entry.start_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
@@ -795,6 +824,7 @@ static const AVOption options[] = {
     { "m3u8", "M3U8 format",     0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, E, "list_type" },
     { "hls", "Apple HTTP Live Streaming compatible", 0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, E, "list_type" },
 
+    { "segment_atclocktime",      "set segment to be cut at clocktime",  OFFSET(use_clocktime), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E},
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },

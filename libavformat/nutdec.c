@@ -29,6 +29,7 @@
 #include "libavutil/tree.h"
 #include "libavcodec/bytestream.h"
 #include "avio_internal.h"
+#include "isom.h"
 #include "nut.h"
 #include "riff.h"
 
@@ -228,13 +229,13 @@ static int decode_main_header(NUTContext *nut)
     end  = get_packetheader(nut, bc, 1, MAIN_STARTCODE);
     end += avio_tell(bc);
 
-    tmp = ffio_read_varlen(bc);
-    if (tmp < NUT_MIN_VERSION && tmp > NUT_MAX_VERSION) {
-        av_log(s, AV_LOG_ERROR, "Version %"PRId64" not supported.\n",
-               tmp);
+    nut->version = ffio_read_varlen(bc);
+    if (nut->version < NUT_MIN_VERSION &&
+        nut->version > NUT_MAX_VERSION) {
+        av_log(s, AV_LOG_ERROR, "Version %d not supported.\n",
+               nut->version);
         return AVERROR(ENOSYS);
     }
-    nut->version = tmp;
     if (nut->version > 3)
         nut->minor_version = ffio_read_varlen(bc);
 
@@ -386,6 +387,7 @@ static int decode_stream_header(NUTContext *nut)
         st->codec->codec_id   = av_codec_get_id((const AVCodecTag * const []) {
                                                     ff_nut_video_tags,
                                                     ff_codec_bmp_tags,
+                                                    ff_codec_movvideo_tags,
                                                     0
                                                 },
                                                 tmp);

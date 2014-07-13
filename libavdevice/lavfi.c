@@ -26,6 +26,7 @@
 /* #define DEBUG */
 
 #include <float.h>              /* DBL_MIN, DBL_MAX */
+#include <fcntl.h>              /* O_RDONLY */
 
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
@@ -40,6 +41,13 @@
 #include "libavfilter/buffersink.h"
 #include "libavformat/internal.h"
 #include "avdevice.h"
+
+#if HAVE_UNISTD_H
+#include <unistd.h>             /* close() */
+#endif
+#if HAVE_IO_H
+#include <io.h>
+#endif
 
 typedef struct {
     AVClass *class;          ///< class for private options
@@ -115,23 +123,22 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     }
 
     if (lavfi->graph_filename) {
-        uint8_t *file_buf, *graph_buf;
-        size_t file_bufsize;
-        ret = av_file_map(lavfi->graph_filename,
-                          &file_buf, &file_bufsize, 0, avctx);
-        if (ret < 0)
-            goto end;
-
-        /* create a 0-terminated string based on the read file */
-        graph_buf = av_malloc(file_bufsize + 1);
-        if (!graph_buf) {
-            av_file_unmap(file_buf, file_bufsize);
-            FAIL(AVERROR(ENOMEM));
+        AVBPrint graph_file_pb;
+        int fd = avpriv_open(lavfi->graph_filename, O_RDONLY);
+        if (fd == -1)
+            FAIL(AVERROR(EINVAL));
+        av_bprint_init(&graph_file_pb, 0, AV_BPRINT_SIZE_UNLIMITED);
+        ret = av_bprint_fd_contents(&graph_file_pb, fd);
+        av_bprint_chars(&graph_file_pb, '\0', 1);
+        close(fd);
+        if (!ret && !av_bprint_is_complete(&graph_file_pb))
+            ret = AVERROR(ENOMEM);
+        if (ret) {
+            av_bprint_finalize(&graph_file_pb, NULL);
+            FAIL(ret);
         }
-        memcpy(graph_buf, file_buf, file_bufsize);
-        graph_buf[file_bufsize] = 0;
-        av_file_unmap(file_buf, file_bufsize);
-        lavfi->graph_str = graph_buf;
+        if ((ret = av_bprint_finalize(&graph_file_pb, &lavfi->graph_str)))
+            FAIL(ret);
     }
 
     if (!lavfi->graph_str)

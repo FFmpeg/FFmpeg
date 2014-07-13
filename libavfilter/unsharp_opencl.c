@@ -54,7 +54,7 @@ static int compute_mask(int step, uint32_t *mask)
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    counter = av_mallocz(sizeof(uint32_t *) * (2 * step + 1));
+    counter = av_mallocz_array(2 * step + 1, sizeof(uint32_t *));
     if (!counter) {
         ret = AVERROR(ENOMEM);
         goto end;
@@ -92,12 +92,12 @@ static int compute_mask_matrix(cl_mem cl_mask_matrix, int step_x, int step_y)
     int i, j, ret = 0;
     uint32_t *mask_matrix, *mask_x, *mask_y;
     size_t size_matrix = sizeof(uint32_t) * (2 * step_x + 1) * (2 * step_y + 1);
-    mask_x = av_mallocz(sizeof(uint32_t) * (2 * step_x + 1));
+    mask_x = av_mallocz_array(2 * step_x + 1, sizeof(uint32_t));
     if (!mask_x) {
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    mask_y = av_mallocz(sizeof(uint32_t) * (2 * step_y + 1));
+    mask_y = av_mallocz_array(2 * step_y + 1, sizeof(uint32_t));
     if (!mask_y) {
         ret = AVERROR(ENOMEM);
         goto end;

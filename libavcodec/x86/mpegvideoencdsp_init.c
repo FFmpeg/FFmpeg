@@ -1,8 +1,4 @@
 /*
- * MMX optimized DSP utils
- * Copyright (c) 2000, 2001 Fabrice Bellard
- * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,25 +14,93 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
-#include "config.h"
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
-#include "libavutil/x86/asm.h"
-#include "libavcodec/pixels.h"
-#include "libavcodec/videodsp.h"
-#include "dsputil_x86.h"
-#include "inline_asm.h"
+#include "libavutil/x86/cpu.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/mpegvideoencdsp.h"
+
+int ff_pix_sum16_mmx(uint8_t *pix, int line_size);
+int ff_pix_sum16_sse2(uint8_t *pix, int line_size);
+int ff_pix_sum16_xop(uint8_t *pix, int line_size);
+int ff_pix_norm1_mmx(uint8_t *pix, int line_size);
+int ff_pix_norm1_sse2(uint8_t *pix, int line_size);
 
 #if HAVE_INLINE_ASM
 
+#define PHADDD(a, t)                            \
+    "movq  " #a ", " #t "               \n\t"   \
+    "psrlq    $32, " #a "               \n\t"   \
+    "paddd " #t ", " #a "               \n\t"
+
+/*
+ * pmulhw:   dst[0 - 15] = (src[0 - 15] * dst[0 - 15])[16 - 31]
+ * pmulhrw:  dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x8000)[16 - 31]
+ * pmulhrsw: dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x4000)[15 - 30]
+ */
+#define PMULHRW(x, y, s, o)                     \
+    "pmulhw " #s ", " #x "              \n\t"   \
+    "pmulhw " #s ", " #y "              \n\t"   \
+    "paddw  " #o ", " #x "              \n\t"   \
+    "paddw  " #o ", " #y "              \n\t"   \
+    "psraw      $1, " #x "              \n\t"   \
+    "psraw      $1, " #y "              \n\t"
+#define DEF(x) x ## _mmx
+#define SET_RND MOVQ_WONE
+#define SCALE_OFFSET 1
+
+#include "mpegvideoenc_qns_template.c"
+
+#undef DEF
+#undef SET_RND
+#undef SCALE_OFFSET
+#undef PMULHRW
+
+#define DEF(x) x ## _3dnow
+#define SET_RND(x)
+#define SCALE_OFFSET 0
+#define PMULHRW(x, y, s, o)                     \
+    "pmulhrw " #s ", " #x "             \n\t"   \
+    "pmulhrw " #s ", " #y "             \n\t"
+
+#include "mpegvideoenc_qns_template.c"
+
+#undef DEF
+#undef SET_RND
+#undef SCALE_OFFSET
+#undef PMULHRW
+
+#if HAVE_SSSE3_INLINE
+#undef PHADDD
+#define DEF(x) x ## _ssse3
+#define SET_RND(x)
+#define SCALE_OFFSET -1
+
+#define PHADDD(a, t)                            \
+    "pshufw $0x0E, " #a ", " #t "       \n\t"   \
+    /* faster than phaddd on core2 */           \
+    "paddd " #t ", " #a "               \n\t"
+
+#define PMULHRW(x, y, s, o)                     \
+    "pmulhrsw " #s ", " #x "            \n\t"   \
+    "pmulhrsw " #s ", " #y "            \n\t"
+
+#include "mpegvideoenc_qns_template.c"
+
+#undef DEF
+#undef SET_RND
+#undef SCALE_OFFSET
+#undef PMULHRW
+#undef PHADDD
+#endif /* HAVE_SSSE3_INLINE */
+
 /* Draw the edges of width 'w' of an image of size width, height
  * this MMX version can only handle w == 8 || w == 16. */
-void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
-                       int w, int h, int sides)
+static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
+                           int w, int h, int sides)
 {
     uint8_t *ptr, *last_line;
     int i;
@@ -148,3 +212,54 @@ void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
 }
 
 #endif /* HAVE_INLINE_ASM */
+
+av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
+                                         AVCodecContext *avctx)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (EXTERNAL_MMX(cpu_flags)) {
+        c->pix_sum   = ff_pix_sum16_mmx;
+        c->pix_norm1 = ff_pix_norm1_mmx;
+    }
+
+    if (EXTERNAL_SSE2(cpu_flags)) {
+        c->pix_sum     = ff_pix_sum16_sse2;
+        c->pix_norm1   = ff_pix_norm1_sse2;
+    }
+
+    if (EXTERNAL_XOP(cpu_flags)) {
+        c->pix_sum     = ff_pix_sum16_xop;
+    }
+
+#if HAVE_INLINE_ASM
+
+    if (INLINE_MMX(cpu_flags)) {
+        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+            c->try_8x8basis = try_8x8basis_mmx;
+        }
+        c->add_8x8basis = add_8x8basis_mmx;
+
+        if (avctx->bits_per_raw_sample <= 8) {
+            c->draw_edges = draw_edges_mmx;
+        }
+    }
+
+    if (INLINE_AMD3DNOW(cpu_flags)) {
+        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+            c->try_8x8basis = try_8x8basis_3dnow;
+        }
+        c->add_8x8basis = add_8x8basis_3dnow;
+    }
+
+#if HAVE_SSSE3_INLINE
+    if (INLINE_SSSE3(cpu_flags)) {
+        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+            c->try_8x8basis = try_8x8basis_ssse3;
+        }
+        c->add_8x8basis = add_8x8basis_ssse3;
+    }
+#endif /* HAVE_SSSE3_INLINE */
+
+#endif /* HAVE_INLINE_ASM */
+}

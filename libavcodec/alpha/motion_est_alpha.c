@@ -22,51 +22,6 @@
 #include "dsputil_alpha.h"
 #include "asm.h"
 
-void get_pixels_mvi(int16_t *restrict block,
-                    const uint8_t *restrict pixels, int line_size)
-{
-    int h = 8;
-
-    do {
-        uint64_t p;
-
-        p = ldq(pixels);
-        stq(unpkbw(p),       block);
-        stq(unpkbw(p >> 32), block + 4);
-
-        pixels += line_size;
-        block += 8;
-    } while (--h);
-}
-
-void diff_pixels_mvi(int16_t *block, const uint8_t *s1, const uint8_t *s2,
-                     int stride) {
-    int h = 8;
-    uint64_t mask = 0x4040;
-
-    mask |= mask << 16;
-    mask |= mask << 32;
-    do {
-        uint64_t x, y, c, d, a;
-        uint64_t signs;
-
-        x = ldq(s1);
-        y = ldq(s2);
-        c = cmpbge(x, y);
-        d = x - y;
-        a = zap(mask, c);       /* We use 0x4040404040404040 here...  */
-        d += 4 * a;             /* ...so we can use s4addq here.      */
-        signs = zap(-1, c);
-
-        stq(unpkbw(d)       | (unpkbw(signs)       << 8), block);
-        stq(unpkbw(d >> 32) | (unpkbw(signs >> 32) << 8), block + 4);
-
-        s1 += stride;
-        s2 += stride;
-        block += 8;
-    } while (--h);
-}
-
 static inline uint64_t avg2(uint64_t a, uint64_t b)
 {
     return (a | b) - (((a ^ b) & BYTE_VEC(0xfe)) >> 1);

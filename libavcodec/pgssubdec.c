@@ -638,7 +638,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
             ret = parse_object_segment(avctx, buf, segment_length);
             break;
         case PRESENTATION_SEGMENT:
-            ret = parse_presentation_segment(avctx, buf, segment_length, avpkt->pts);
+            ret = parse_presentation_segment(avctx, buf, segment_length, ((AVSubtitle*)(data))->pts);
             break;
         case WINDOW_SEGMENT:
             /*

@@ -167,13 +167,18 @@ static av_cold void libssh_stat_file(LIBSSHContext *libssh)
 static av_cold int libssh_close(URLContext *h)
 {
     LIBSSHContext *libssh = h->priv_data;
-    if (libssh->file)
+    if (libssh->file) {
         sftp_close(libssh->file);
-    if (libssh->sftp)
+        libssh->file = NULL;
+    }
+    if (libssh->sftp) {
         sftp_free(libssh->sftp);
+        libssh->sftp = NULL;
+    }
     if (libssh->session) {
         ssh_disconnect(libssh->session);
         ssh_free(libssh->session);
+        libssh->session = NULL;
     }
     return 0;
 }

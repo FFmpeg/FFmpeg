@@ -3324,7 +3324,7 @@ The option available in this filter is:
 @item cycle
 Specify the length of the window over which the judder repeats.
 
-Accepts any interger greater than 1. Useful values are:
+Accepts any integer greater than 1. Useful values are:
 @table @samp
 
 @item 4
@@ -7745,6 +7745,22 @@ ffprobe -f lavfi movie=example.mov,signalstats -show_entries frame_tags=lavfi.si
 Playback video while highlighting pixels that are outside of broadcast range in red.
 @example
 ffplay example.mov -vf signalstats="out=brng:color=red"
+@end example
+
+@item
+Playback video with signalstats metadata drawn over the frame.
+@example
+ffplay example.mov -vf signalstats=stat=brng+vrep+tout,drawtext=fontfile=FreeSerif.ttf:textfile=signalstat_drawtext.txt
+@end example
+
+The contents of signalstat_drawtext.txt used in the command are:
+@example
+time %@{pts:hms@}
+Y (%@{metadata:lavfi.signalstats.YMIN@}-%@{metadata:lavfi.signalstats.YMAX@})
+U (%@{metadata:lavfi.signalstats.UMIN@}-%@{metadata:lavfi.signalstats.UMAX@})
+V (%@{metadata:lavfi.signalstats.VMIN@}-%@{metadata:lavfi.signalstats.VMAX@})
+saturation maximum: %@{metadata:lavfi.signalstats.SATMAX@}
+
 @end example
 @end itemize
 

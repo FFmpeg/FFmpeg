@@ -170,7 +170,6 @@ static int mtv_read_header(AVFormatContext *s)
     st->codec->pix_fmt         = AV_PIX_FMT_RGB565BE;
     st->codec->width           = mtv->img_width;
     st->codec->height          = mtv->img_height;
-    st->codec->sample_rate     = mtv->video_fps;
     st->codec->extradata       = av_strdup("BottomUp");
     st->codec->extradata_size  = 9;
 

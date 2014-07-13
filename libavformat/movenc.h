@@ -176,6 +176,8 @@ typedef struct MOVMuxContext {
     int64_t reserved_moov_pos;
 
     char *major_brand;
+
+    int per_stream_grouping;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1
