@@ -69,6 +69,7 @@ typedef struct {
     unsigned int packet_frag_offset;
     unsigned int packet_frag_size;
     int64_t packet_frag_timestamp;
+    int ts_is_pts;
     int packet_multi_size;
     int packet_time_delta;
     int packet_time_start;
@@ -1053,6 +1054,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb)
                 ts1 = avio_rl64(pb);
                 if (ts0!= -1) asf->packet_frag_timestamp = ts0/10000;
                 else          asf->packet_frag_timestamp = AV_NOPTS_VALUE;
+                asf->ts_is_pts = 1;
                 break;
             case 0x5B:
             case 0xB7:
@@ -1203,7 +1205,10 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
             /* new packet */
             av_new_packet(&asf_st->pkt, asf_st->packet_obj_size);
             asf_st->seq              = asf->packet_seq;
-            asf_st->pkt.dts          = asf->packet_frag_timestamp - asf->hdr.preroll;
+            if (asf->ts_is_pts) {
+                asf_st->pkt.pts          = asf->packet_frag_timestamp - asf->hdr.preroll;
+            } else
+                asf_st->pkt.dts          = asf->packet_frag_timestamp - asf->hdr.preroll;
             asf_st->pkt.stream_index = asf->stream_index;
             asf_st->pkt.pos          = asf_st->packet_pos = asf->packet_pos;
             asf_st->pkt_clean        = 0;
