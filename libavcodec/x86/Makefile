@@ -6,8 +6,7 @@ OBJS-$(CONFIG_AUDIODSP)                += x86/audiodsp_init.o
 OBJS-$(CONFIG_BLOCKDSP)                += x86/blockdsp_init.o
 OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
-OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o
-OBJS-$(CONFIG_ENCODERS)                += x86/dsputilenc_mmx.o          \
+OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o            \
                                           x86/motion_est.o
 OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
@@ -82,7 +81,7 @@ YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
 YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o\
                                           x86/dwt_yasm.o
 YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
-YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
+YASM-OBJS-$(CONFIG_DSPUTIL)            += x86/dsputilenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
 YASM-OBJS-$(CONFIG_FLAC_DECODER)       += x86/flacdsp.o
 YASM-OBJS-$(CONFIG_H263DSP)            += x86/h263_loopfilter.o
