@@ -30,14 +30,6 @@
 #include "error.h"
 #include "mem.h"
 
-#if HAVE_IO_H
-#include <io.h>
-#endif
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-
 #define av_bprint_room(buf) ((buf)->size - FFMIN((buf)->len, (buf)->size))
 #define av_bprint_is_allocated(buf) ((buf)->str != (buf)->reserved_internal_buffer)
 
@@ -309,22 +301,6 @@ void av_bprint_escape(AVBPrint *dstbuf, const char *src, const char *special_cha
             av_bprint_chars(dstbuf, *src, 1);
         }
         break;
-    }
-}
-
-int av_bprint_fd_contents(AVBPrint *pb, int fd)
-{
-    int ret;
-    char buf[1024];
-    while (1) {
-        ret = read(fd, buf, sizeof(buf));
-        if (!ret)
-            return 0;
-        else if (ret < 0)
-            return AVERROR(errno);
-        av_bprint_append_data(pb, buf, ret);
-        if (!av_bprint_is_complete(pb))
-            return AVERROR(ENOMEM);
     }
 }
 
