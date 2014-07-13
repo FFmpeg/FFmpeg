@@ -28,6 +28,7 @@ EXPORTS
     av_bprint_chars
     av_bprint_clear
     av_bprint_escape
+    av_bprint_fd_contents
     av_bprint_finalize
     av_bprint_get_buffer
     av_bprint_init
@@ -73,7 +74,9 @@ EXPORTS
     av_dict_parse_string
     av_dict_set
     av_dirname
+    av_display_matrix_flip
     av_display_rotation_get
+    av_display_rotation_set
     av_div_q
     av_downmix_info_update_side_data
     av_dynarray2_add

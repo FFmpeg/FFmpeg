@@ -296,6 +296,9 @@
     <ClInclude Include="..\libavutil\frame.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavutil\hash.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavutil\hmac.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>

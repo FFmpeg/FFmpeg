@@ -80,6 +80,9 @@
     <ClCompile Include="..\libavcodec\codec_desc.c">
       <ObjectFileName>$(IntDir)\libavcodec_codec_desc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dv_profile.c">
+      <ObjectFileName>$(IntDir)\libavcodec_dv_profile.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\fmtconvert.c">
       <ObjectFileName>$(IntDir)\libavcodec_fmtconvert.obj</ObjectFileName>
     </ClCompile>
@@ -143,15 +146,6 @@
     <ClCompile Include="..\libavcodec\dxva2.c">
       <ObjectFileName>$(IntDir)\libavcodec_dxva2.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\faandct.c">
-      <ObjectFileName>$(IntDir)\libavcodec_faandct.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\jfdctfst.c">
-      <ObjectFileName>$(IntDir)\libavcodec_jfdctfst.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\jfdctint.c">
-      <ObjectFileName>$(IntDir)\libavcodec_jfdctint.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\error_resilience.c">
       <ObjectFileName>$(IntDir)\libavcodec_error_resilience.obj</ObjectFileName>
     </ClCompile>
@@ -160,6 +154,18 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\tiff_common.c">
       <ObjectFileName>$(IntDir)\libavcodec_tiff_common.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\fdctdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_fdctdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\faandct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_faandct.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\jfdctfst.c">
+      <ObjectFileName>$(IntDir)\libavcodec_jfdctfst.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\jfdctint.c">
+      <ObjectFileName>$(IntDir)\libavcodec_jfdctint.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\avfft.c">
       <ObjectFileName>$(IntDir)\libavcodec_avfft.obj</ObjectFileName>
@@ -301,6 +307,12 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\ratecontrol.c">
       <ObjectFileName>$(IntDir)\libavcodec_ratecontrol.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\mpegvideoencdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_mpegvideoencdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\pixblockdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_pixblockdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\qpeldsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_qpeldsp.obj</ObjectFileName>
@@ -575,8 +587,11 @@
     <ClCompile Include="..\libavcodec\bmpenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_bmpenc.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\bmv.c">
-      <ObjectFileName>$(IntDir)\libavcodec_bmv.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\bmvaudio.c">
+      <ObjectFileName>$(IntDir)\libavcodec_bmvaudio.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\bmvvideo.c">
+      <ObjectFileName>$(IntDir)\libavcodec_bmvvideo.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\brenderpix.c">
       <ObjectFileName>$(IntDir)\libavcodec_brenderpix.obj</ObjectFileName>
@@ -608,8 +623,11 @@
     <ClCompile Include="..\libavcodec\cinepakenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_cinepakenc.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\cljr.c">
-      <ObjectFileName>$(IntDir)\libavcodec_cljr.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\cljrdec.c">
+      <ObjectFileName>$(IntDir)\libavcodec_cljrdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\cljrenc.c">
+      <ObjectFileName>$(IntDir)\libavcodec_cljrenc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\cllc.c">
       <ObjectFileName>$(IntDir)\libavcodec_cllc.obj</ObjectFileName>
@@ -680,8 +698,11 @@
     <ClCompile Include="..\libavcodec\dsddec.c">
       <ObjectFileName>$(IntDir)\libavcodec_dsddec.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\dsicinav.c">
-      <ObjectFileName>$(IntDir)\libavcodec_dsicinav.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\dsicinaudio.c">
+      <ObjectFileName>$(IntDir)\libavcodec_dsicinaudio.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\dsicinvideo.c">
+      <ObjectFileName>$(IntDir)\libavcodec_dsicinvideo.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\dvbsubdec.c">
       <ObjectFileName>$(IntDir)\libavcodec_dvbsubdec.obj</ObjectFileName>
@@ -703,9 +724,6 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\dvdata.c">
       <ObjectFileName>$(IntDir)\libavcodec_dvdata.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\dv_profile.c">
-      <ObjectFileName>$(IntDir)\libavcodec_dv_profile.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\dvenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_dvenc.obj</ObjectFileName>
@@ -1211,8 +1229,11 @@
     <ClCompile Include="..\libavcodec\opus_silk.c">
       <ObjectFileName>$(IntDir)\libavcodec_opus_silk.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\paf.c">
-      <ObjectFileName>$(IntDir)\libavcodec_paf.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\pafaudio.c">
+      <ObjectFileName>$(IntDir)\libavcodec_pafaudio.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\pafvideo.c">
+      <ObjectFileName>$(IntDir)\libavcodec_pafvideo.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\pnmdec.c">
       <ObjectFileName>$(IntDir)\libavcodec_pnmdec.obj</ObjectFileName>
@@ -1580,8 +1601,11 @@
     <ClCompile Include="..\libavcodec\vcr1.c">
       <ObjectFileName>$(IntDir)\libavcodec_vcr1.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\vmdav.c">
-      <ObjectFileName>$(IntDir)\libavcodec_vmdav.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\vmdaudio.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vmdaudio.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vmdvideo.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vmdvideo.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\vmnc.c">
       <ObjectFileName>$(IntDir)\libavcodec_vmnc.obj</ObjectFileName>
@@ -2027,6 +2051,9 @@
     <ClCompile Include="..\libavcodec\x86\motion_est.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_motion_est.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\fdctdsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_fdctdsp_init.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\fft_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_fft_init.obj</ObjectFileName>
     </ClCompile>
@@ -2083,6 +2110,12 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\mpegvideoenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideoenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\mpegvideoencdsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideoencdsp_init.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\pixblockdsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_pixblockdsp_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\qpeldsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_qpeldsp_init.obj</ObjectFileName>
@@ -2144,9 +2177,6 @@
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_vp9dsp_init.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\dsputil_mmx.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_dsputil_mmx.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dirac_dwt.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dirac_dwt.obj</ObjectFileName>
     </ClCompile>
@@ -2178,6 +2208,7 @@
   <ItemGroup>
     <ClInclude Include="..\libavcodec\avcodec.h" />
     <ClInclude Include="..\libavcodec\avfft.h" />
+    <ClInclude Include="..\libavcodec\dv_profile.h" />
     <ClInclude Include="..\libavcodec\dxva2.h" />
     <ClInclude Include="..\libavcodec\old_codec_ids.h" />
     <ClInclude Include="..\libavcodec\vaapi.h" />
@@ -2224,6 +2255,8 @@
     <YASM Include="..\libavcodec\x86\lossless_audiodsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_videodsp.asm" />
     <YASM Include="..\libavcodec\x86\imdct36.asm" />
+    <YASM Include="..\libavcodec\x86\mpegvideoencdsp.asm" />
+    <YASM Include="..\libavcodec\x86\pixblockdsp.asm" />
     <YASM Include="..\libavcodec\x86\qpeldsp.asm" />
     <YASM Include="..\libavcodec\x86\videodsp.asm" />
     <YASM Include="..\libavcodec\x86\vp3dsp.asm" />
@@ -2490,6 +2523,7 @@
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2558,6 +2592,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2629,6 +2664,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2700,6 +2736,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2771,6 +2808,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2842,6 +2880,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2917,6 +2956,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -2992,6 +3032,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -3072,6 +3113,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -3152,6 +3194,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -3232,6 +3275,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -3312,6 +3356,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -3386,6 +3431,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
@@ -3460,6 +3506,7 @@ cd $(ProjectDir)
 mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\old_codec_ids.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec

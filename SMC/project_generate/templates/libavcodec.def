@@ -31,6 +31,8 @@ EXPORTS
 ;endif
     av_destruct_packet
     av_dup_packet
+    av_dv_codec_profile
+    av_dv_frame_profile
     av_fast_padded_malloc
     av_fast_padded_mallocz
 ;if fft
@@ -214,5 +216,7 @@ EXPORTS
     dsputil_init
 ;if idctdsp
     ff_idctdsp_init
+    ff_fdctdsp_init
+    ff_pixblockdsp_init
 ;endif
     ff_raw_pix_fmt_tags DATA
