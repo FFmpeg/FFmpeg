@@ -66,65 +66,77 @@ av_unused static const int8_t num_bins_in_se[] = {
      2, // cbf_luma
      4, // cbf_cb, cbf_cr
      2, // transform_skip_flag[][]
+     2, // explicit_rdpcm_flag[][]
+     2, // explicit_rdpcm_dir_flag[][]
     18, // last_significant_coeff_x_prefix
     18, // last_significant_coeff_y_prefix
      0, // last_significant_coeff_x_suffix
      0, // last_significant_coeff_y_suffix
      4, // significant_coeff_group_flag
-    42, // significant_coeff_flag
+    44, // significant_coeff_flag
     24, // coeff_abs_level_greater1_flag
      6, // coeff_abs_level_greater2_flag
      0, // coeff_abs_level_remaining
      0, // coeff_sign_flag
+     8, // log2_res_scale_abs
+     2, // res_scale_sign_flag
+     1, // cu_chroma_qp_offset_flag
+     1, // cu_chroma_qp_offset_idx
 };
 
 /**
  * Offset to ctxIdx 0 in init_values and states, indexed by SyntaxElement.
  */
 static const int elem_offset[sizeof(num_bins_in_se)] = {
-      0,
-      1,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      5,
-      6,
-      9,
-     12,
-     13,
-     17,
-     17,
-     18,
-     18,
-     18,
-     20,
-     21,
-     22,
-     27,
-     29,
-     31,
-     33,
-     35,
-     35,
-     35,
-     36,
-     37,
-     40,
-     42,
-     46,
-     48,
-     66,
-     84,
-     84,
-     84,
-     88,
-    130,
-    154,
-    160,
-    160,
+    0, // sao_merge_flag
+    1, // sao_type_idx
+    2, // sao_eo_class
+    2, // sao_band_position
+    2, // sao_offset_abs
+    2, // sao_offset_sign
+    2, // end_of_slice_flag
+    2, // split_coding_unit_flag
+    5, // cu_transquant_bypass_flag
+    6, // skip_flag
+    9, // cu_qp_delta
+    12, // pred_mode
+    13, // part_mode
+    17, // pcm_flag
+    17, // prev_intra_luma_pred_mode
+    18, // mpm_idx
+    18, // rem_intra_luma_pred_mode
+    18, // intra_chroma_pred_mode
+    20, // merge_flag
+    21, // merge_idx
+    22, // inter_pred_idc
+    27, // ref_idx_l0
+    29, // ref_idx_l1
+    31, // abs_mvd_greater0_flag
+    33, // abs_mvd_greater1_flag
+    35, // abs_mvd_minus2
+    35, // mvd_sign_flag
+    35, // mvp_lx_flag
+    36, // no_residual_data_flag
+    37, // split_transform_flag
+    40, // cbf_luma
+    42, // cbf_cb, cbf_cr
+    46, // transform_skip_flag[][]
+    48, // explicit_rdpcm_flag[][]
+    50, // explicit_rdpcm_dir_flag[][]
+    52, // last_significant_coeff_x_prefix
+    70, // last_significant_coeff_y_prefix
+    88, // last_significant_coeff_x_suffix
+    88, // last_significant_coeff_y_suffix
+    88, // significant_coeff_group_flag
+    92, // significant_coeff_flag
+    136, // coeff_abs_level_greater1_flag
+    160, // coeff_abs_level_greater2_flag
+    166, // coeff_abs_level_remaining
+    166, // coeff_sign_flag
+    166, // log2_res_scale_abs
+    174, // res_scale_sign_flag
+    176, // cu_chroma_qp_offset_flag
+    177, // cu_chroma_qp_offset_idx
 };
 
 #define CNU 154
@@ -178,6 +190,10 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       94, 138, 182, 154,
       // transform_skip_flag
       139, 139,
+      // explicit_rdpcm_flag
+      139, 139,
+      // explicit_rdpcm_dir_flag
+      139, 139,
       // last_significant_coeff_x_prefix
       110, 110, 124, 125, 140, 153, 125, 127, 140, 109, 111, 143, 127, 111,
        79, 108, 123,  63,
@@ -190,11 +206,21 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       111, 111, 125, 110, 110,  94, 124, 108, 124, 107, 125, 141, 179, 153,
       125, 107, 125, 141, 179, 153, 125, 107, 125, 141, 179, 153, 125, 140,
       139, 182, 182, 152, 136, 152, 136, 153, 136, 139, 111, 136, 139, 111,
+      141, 111,
       // coeff_abs_level_greater1_flag
       140,  92, 137, 138, 140, 152, 138, 139, 153,  74, 149,  92, 139, 107,
       122, 152, 140, 179, 166, 182, 140, 227, 122, 197,
       // coeff_abs_level_greater2_flag
-      138, 153, 136, 167, 152, 152, },
+      138, 153, 136, 167, 152, 152,
+      // log2_res_scale_abs
+      154, 154, 154, 154, 154, 154, 154, 154,
+      // res_scale_sign_flag
+      154, 154,
+      // cu_chroma_qp_offset_flag
+      154,
+      // cu_chroma_qp_offset_idx
+      154,
+    },
     { // sao_merge_flag
       153,
       // sao_type_idx
@@ -241,6 +267,10 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       149, 107, 167, 154,
       // transform_skip_flag
       139, 139,
+      // explicit_rdpcm_flag
+      139, 139,
+      // explicit_rdpcm_dir_flag
+      139, 139,
       // last_significant_coeff_x_prefix
       125, 110,  94, 110,  95,  79, 125, 111, 110,  78, 110, 111, 111,  95,
        94, 108, 123, 108,
@@ -253,11 +283,21 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       155, 154, 139, 153, 139, 123, 123,  63, 153, 166, 183, 140, 136, 153,
       154, 166, 183, 140, 136, 153, 154, 166, 183, 140, 136, 153, 154, 170,
       153, 123, 123, 107, 121, 107, 121, 167, 151, 183, 140, 151, 183, 140,
+      140, 140,
       // coeff_abs_level_greater1_flag
       154, 196, 196, 167, 154, 152, 167, 182, 182, 134, 149, 136, 153, 121,
       136, 137, 169, 194, 166, 167, 154, 167, 137, 182,
       // coeff_abs_level_greater2_flag
-      107, 167, 91, 122, 107, 167, },
+      107, 167, 91, 122, 107, 167,
+      // log2_res_scale_abs
+      154, 154, 154, 154, 154, 154, 154, 154,
+      // res_scale_sign_flag
+      154, 154,
+      // cu_chroma_qp_offset_flag
+      154,
+      // cu_chroma_qp_offset_idx
+      154,
+    },
     { // sao_merge_flag
       153,
       // sao_type_idx
@@ -304,6 +344,10 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       149, 92, 167, 154,
       // transform_skip_flag
       139, 139,
+      // explicit_rdpcm_flag
+      139, 139,
+      // explicit_rdpcm_dir_flag
+      139, 139,
       // last_significant_coeff_x_prefix
       125, 110, 124, 110,  95,  94, 125, 111, 111,  79, 125, 126, 111, 111,
        79, 108, 123,  93,
@@ -316,11 +360,21 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       170, 154, 139, 153, 139, 123, 123,  63, 124, 166, 183, 140, 136, 153,
       154, 166, 183, 140, 136, 153, 154, 166, 183, 140, 136, 153, 154, 170,
       153, 138, 138, 122, 121, 122, 121, 167, 151, 183, 140, 151, 183, 140,
+      140, 140,
       // coeff_abs_level_greater1_flag
       154, 196, 167, 167, 154, 152, 167, 182, 182, 134, 149, 136, 153, 121,
       136, 122, 169, 208, 166, 167, 154, 152, 167, 182,
       // coeff_abs_level_greater2_flag
-      107, 167, 91, 107, 107, 167, },
+      107, 167, 91, 107, 107, 167,
+      // log2_res_scale_abs
+      154, 154, 154, 154, 154, 154, 154, 154,
+      // res_scale_sign_flag
+      154, 154,
+      // cu_chroma_qp_offset_flag
+      154,
+      // cu_chroma_qp_offset_idx
+      154,
+    },
 };
 
 static const uint8_t scan_1x1[1] = {
