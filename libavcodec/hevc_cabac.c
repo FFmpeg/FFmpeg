@@ -360,14 +360,6 @@ static const uint8_t horiz_scan8x8_inv[8][8] = {
     { 44, 45, 46, 47, 60, 61, 62, 63, },
 };
 
-static const uint8_t diag_scan4x1_x[4] = {
-    0, 1, 2, 3,
-};
-
-static const uint8_t diag_scan1x4_y[4] = {
-    0, 1, 2, 3,
-};
-
 static const uint8_t diag_scan2x2_x[4] = {
     0, 0, 1, 1,
 };
@@ -379,50 +371,6 @@ static const uint8_t diag_scan2x2_y[4] = {
 static const uint8_t diag_scan2x2_inv[2][2] = {
     { 0, 2, },
     { 1, 3, },
-};
-
-static const uint8_t diag_scan8x2_x[16] = {
-    0, 0, 1, 1,
-    2, 2, 3, 3,
-    4, 4, 5, 5,
-    6, 6, 7, 7,
-};
-
-static const uint8_t diag_scan8x2_y[16] = {
-    0, 1, 0, 1,
-    0, 1, 0, 1,
-    0, 1, 0, 1,
-    0, 1, 0, 1,
-};
-
-static const uint8_t diag_scan8x2_inv[2][8] = {
-    { 0, 2, 4, 6, 8, 10, 12, 14, },
-    { 1, 3, 5, 7, 9, 11, 13, 15, },
-};
-
-static const uint8_t diag_scan2x8_x[16] = {
-    0, 0, 1, 0,
-    1, 0, 1, 0,
-    1, 0, 1, 0,
-    1, 0, 1, 1,
-};
-
-static const uint8_t diag_scan2x8_y[16] = {
-    0, 1, 0, 2,
-    1, 3, 2, 4,
-    3, 5, 4, 6,
-    5, 7, 6, 7,
-};
-
-static const uint8_t diag_scan2x8_inv[8][2] = {
-    {  0,  2, },
-    {  1,  4, },
-    {  3,  6, },
-    {  5,  8, },
-    {  7, 10, },
-    {  9, 12, },
-    { 11, 14, },
-    { 13, 15, },
 };
 
 const uint8_t ff_hevc_diag_scan4x4_x[16] = {
