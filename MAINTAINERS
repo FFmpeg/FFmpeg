@@ -132,6 +132,7 @@ Generic Parts:
     tableprint.c, tableprint.h          Reimar Doeffinger
   fixed point FFT:
     fft*                                Zeljko Lukac
+  Text Subtitles                        Clément Bœsch
 
 Codecs:
   4xm.c                                 Michael Niedermayer
