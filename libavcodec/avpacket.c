@@ -507,7 +507,6 @@ int av_packet_copy_props(AVPacket *dst, const AVPacket *src)
     dst->convergence_duration = src->convergence_duration;
     dst->flags                = src->flags;
     dst->stream_index         = src->stream_index;
-    dst->side_data_elems      = src->side_data_elems;
 
     for (i = 0; i < src->side_data_elems; i++) {
          enum AVPacketSideDataType type = src->side_data[i].type;
