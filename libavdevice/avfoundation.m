@@ -70,7 +70,9 @@ static const struct AVFPixelFormatSpec avf_pixel_formats[] = {
     { AV_PIX_FMT_YUV420P,      kCVPixelFormatType_420YpCbCr8Planar },
     { AV_PIX_FMT_NV12,         kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange },
     { AV_PIX_FMT_YUYV422,      kCVPixelFormatType_422YpCbCr8_yuvs },
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
     { AV_PIX_FMT_GRAY8,        kCVPixelFormatType_OneComponent8 },
+#endif
     { AV_PIX_FMT_NONE, 0 }
 };
 
