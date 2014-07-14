@@ -602,6 +602,8 @@ typedef struct SliceHeader {
     int slice_cb_qp_offset;
     int slice_cr_qp_offset;
 
+    uint8_t cu_chroma_qp_offset_enabled_flag;
+
     int beta_offset;    ///< beta_offset_div2 * 2
     int tc_offset;      ///< tc_offset_div2 * 2
 
@@ -692,13 +694,20 @@ typedef struct TransformTree {
 } TransformTree;
 
 typedef struct TransformUnit {
+    DECLARE_ALIGNED(32, int16_t, coeffs[2][MAX_TB_SIZE * MAX_TB_SIZE]);
     int cu_qp_delta;
+
+    int res_scale_val;
 
     // Inferred parameters;
     int intra_pred_mode;
     int intra_pred_mode_c;
     int chroma_mode_c;
     uint8_t is_cu_qp_delta_coded;
+    uint8_t is_cu_chroma_qp_offset_coded;
+    int8_t  cu_qp_offset_cb;
+    int8_t  cu_qp_offset_cr;
+    uint8_t cross_pf;
 } TransformUnit;
 
 typedef struct DBParams {
@@ -749,6 +758,8 @@ typedef struct HEVCNAL {
 typedef struct HEVCLocalContext {
     DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
     uint8_t cabac_state[HEVC_CONTEXTS];
+
+    uint8_t stat_coeff[4];
 
     uint8_t first_qp_group;
 
@@ -988,6 +999,8 @@ int ff_hevc_no_residual_syntax_flag_decode(HEVCContext *s);
 int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size);
 int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth);
 int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth);
+int ff_hevc_log2_res_scale_abs(HEVCContext *s, int idx);
+int ff_hevc_res_scale_sign_flag(HEVCContext *s, int idx);
 
 /**
  * Get the number of candidate references for the current frame.
@@ -1019,6 +1032,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                                            int log2_trafo_size);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
+int ff_hevc_cu_chroma_qp_offset_flag(HEVCContext *s);
+int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,

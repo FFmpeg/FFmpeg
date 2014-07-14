@@ -200,6 +200,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->transform_add[2]       = FUNC(transform_add16x16, depth);      \
     hevcdsp->transform_add[3]       = FUNC(transform_add32x32, depth);      \
     hevcdsp->transform_skip         = FUNC(transform_skip, depth);          \
+    hevcdsp->transform_rdpcm        = FUNC(transform_rdpcm, depth);         \
     hevcdsp->idct_4x4_luma          = FUNC(transform_4x4_luma, depth);      \
     hevcdsp->idct[0]                = FUNC(idct_4x4, depth);                \
     hevcdsp->idct[1]                = FUNC(idct_8x8, depth);                \

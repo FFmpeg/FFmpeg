@@ -110,6 +110,29 @@ static void FUNC(transform_add32x32)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
+
+static void FUNC(transform_rdpcm)(int16_t *_coeffs, int16_t log2_size, int mode)
+{
+    int16_t *coeffs = (int16_t *) _coeffs;
+    int x, y;
+    int size = 1 << log2_size;
+
+    if (mode) {
+        coeffs += size;
+        for (y = 0; y < size - 1; y++) {
+            for (x = 0; x < size; x++)
+                coeffs[x] += coeffs[x - size];
+            coeffs += size;
+        }
+    } else {
+        for (y = 0; y < size; y++) {
+            for (x = 1; x < size; x++)
+                coeffs[x] += coeffs[x - 1];
+            coeffs += size;
+        }
+    }
+}
+
 static void FUNC(transform_skip)(int16_t *_coeffs, int16_t log2_size)
 {
     int shift  = 15 - BIT_DEPTH - log2_size;
