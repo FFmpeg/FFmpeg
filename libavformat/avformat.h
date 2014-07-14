@@ -1069,6 +1069,7 @@ typedef struct AVStream {
 
 AVRational av_stream_get_r_frame_rate(const AVStream *s);
 void       av_stream_set_r_frame_rate(AVStream *s, AVRational r);
+struct AVCodecParserContext *av_stream_get_parser(const AVStream *s);
 
 /**
  * Returns the pts of the last muxed packet + its duration
