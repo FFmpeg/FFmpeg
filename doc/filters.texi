@@ -10454,7 +10454,7 @@ settb=AVTB
 @end itemize
 
 @section showcqt
-+Convert input audio to a video output representing
+Convert input audio to a video output representing
 frequency spectrum logarithmically (using constant Q transform with
 Brown-Puckette algorithm), with musical tone scale, from E0 to D#10 (10 octaves).
 
@@ -10494,7 +10494,7 @@ Specify video fps. Default value is @code{25}.
 
 @item count
 Specify number of transform per frame, so there are fps*count transforms
-per second. Note tha audio data rate must be divisible by fps*count.
+per second. Note that audio data rate must be divisible by fps*count.
 Default value is @code{6}.
 
 @end table
