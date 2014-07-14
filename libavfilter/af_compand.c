@@ -278,7 +278,13 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
     s->delay_index = dindex;
 
     av_frame_free(&frame);
-    return out_frame ? ff_filter_frame(ctx->outputs[0], out_frame) : 0;
+
+    if (out_frame) {
+        err = ff_filter_frame(ctx->outputs[0], out_frame);
+        return err;
+    }
+
+    return 0;
 }
 
 static int compand_drain(AVFilterLink *outlink)
@@ -533,7 +539,7 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     CompandContext *s    = ctx->priv;
-    int ret;
+    int ret = 0;
 
     ret = ff_request_frame(ctx->inputs[0]);
 
