@@ -151,6 +151,7 @@
     • Image format auto-detection
     • LRC lyric file demuxer and muxer
     • Samba protocol (via libsmbclient)
+    • WebM DASH Manifest muxer
 
    ┌────────────────────────────┐
    │ libavfilter                │

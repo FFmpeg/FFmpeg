@@ -34,6 +34,7 @@ version <next>:
 - Image format auto-detection
 - LRC demuxer and muxer
 - Samba protocol (via libsmbclient)
+- WebM DASH Manifest muxer
 
 
 version 2.2:
