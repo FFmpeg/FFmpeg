@@ -149,6 +149,37 @@ static void copy_CTB(uint8_t *dst, uint8_t *src,
     }
 }
 
+static void restore_tqb_pixels(HEVCContext *s, int x0, int y0, int width, int height, int c_idx)
+{
+    if ( s->pps->transquant_bypass_enable_flag ||
+            (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) {
+        int x, y;
+        ptrdiff_t stride = s->frame->linesize[c_idx];
+        int min_pu_size  = 1 << s->sps->log2_min_pu_size;
+        int hshift       = s->sps->hshift[c_idx];
+        int vshift       = s->sps->vshift[c_idx];
+        int x_min        = ((x0         ) >> s->sps->log2_min_pu_size);
+        int y_min        = ((y0         ) >> s->sps->log2_min_pu_size);
+        int x_max        = ((x0 + width ) >> s->sps->log2_min_pu_size);
+        int y_max        = ((y0 + height) >> s->sps->log2_min_pu_size);
+        int len          = min_pu_size >> hshift;
+        for (y = y_min; y < y_max; y++) {
+            for (x = x_min; x < x_max; x++) {
+                if (s->is_pcm[y * s->sps->min_pu_width + x]) {
+                    int n;
+                    uint8_t *src = &s->frame->data[c_idx][    ((y << s->sps->log2_min_pu_size) >> vshift) * stride + (((x << s->sps->log2_min_pu_size) >> hshift) << s->sps->pixel_shift)];
+                    uint8_t *dst = &s->sao_frame->data[c_idx][((y << s->sps->log2_min_pu_size) >> vshift) * stride + (((x << s->sps->log2_min_pu_size) >> hshift) << s->sps->pixel_shift)];
+                    for (n = 0; n < (min_pu_size >> vshift); n++) {
+                        memcpy(dst, src, len);
+                        src += stride;
+                        dst += stride;
+                    }
+                }
+            }
+        }
+    }
+}
+
 #define CTB(tab, x, y) ((tab)[(y) * s->sps->ctb_width + (x)])
 
 static void sao_filter_CTB(HEVCContext *s, int x, int y)
@@ -230,6 +261,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                                        sao,
                                        edges, width,
                                        height, c_idx);
+            restore_tqb_pixels(s, x, y, width, height, c_idx);
             break;
         case SAO_EDGE:
             s->hevcdsp.sao_edge_filter[restore](dst, src,
@@ -240,6 +272,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                                                 vert_edge,
                                                 horiz_edge,
                                                 diag_edge);
+            restore_tqb_pixels(s, x, y, width, height, c_idx);
             break;
         default :
             copy_CTB(dst, src, width << s->sps->pixel_shift, height, stride);
