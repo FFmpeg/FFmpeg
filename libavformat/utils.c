@@ -103,6 +103,11 @@ static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
 
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
 
+struct AVCodecParserContext *av_stream_get_parser(const AVStream *st)
+{
+    return st->parser;
+}
+
 /* an arbitrarily chosen "sane" max packet size -- 50M */
 #define SANE_CHUNK_SIZE (50000000)
 
