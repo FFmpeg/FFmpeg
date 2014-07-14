@@ -894,7 +894,7 @@ int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth)
     return GET_CABAC(elem_offset[CBF_LUMA] + !trafo_depth);
 }
 
-int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
+static int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
 {
     return GET_CABAC(elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
 }
@@ -1093,16 +1093,18 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     // Derive QP for dequant
     if (!lc->cu.cu_transquant_bypass_flag) {
         static const int qp_c[] = { 29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37 };
-        static const uint8_t rem6[51 + 2 * 6 + 1] = {
+        static const uint8_t rem6[51 + 4 * 6 + 1] = {
             0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2,
             3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5,
             0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
+            4, 5, 0, 1, 2, 3, 4, 5, 0, 1
         };
 
-        static const uint8_t div6[51 + 2 * 6 + 1] = {
+        static const uint8_t div6[51 + 4 * 6 + 1] = {
             0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3,  3,  3,
             3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6,  6,  6,
             7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10,
+            10, 10, 11, 11, 11, 11, 11, 11, 12, 12
         };
         int qp_y = lc->qp_y;
 

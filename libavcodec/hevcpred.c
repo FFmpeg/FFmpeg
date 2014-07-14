@@ -36,6 +36,10 @@
 #include "hevcpred_template.c"
 #undef BIT_DEPTH
 
+#define BIT_DEPTH 12
+#include "hevcpred_template.c"
+#undef BIT_DEPTH
+
 void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth)
 {
 #undef FUNC
@@ -62,6 +66,9 @@ void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth)
         break;
     case 10:
         HEVC_PRED(10);
+        break;
+    case 12:
+        HEVC_PRED(12);
         break;
     default:
         HEVC_PRED(8);

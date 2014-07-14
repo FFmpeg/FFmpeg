@@ -91,8 +91,8 @@ do {                                  \
 
     int min_pu_width = s->sps->min_pu_width;
 
-    enum IntraPredMode mode = c_idx ? lc->pu.intra_pred_mode_c :
-                              lc->tu.cur_intra_pred_mode;
+    enum IntraPredMode mode = c_idx ? lc->tu.intra_pred_mode_c :
+                              lc->tu.intra_pred_mode;
     pixel4 a;
     pixel  left_array[2 * MAX_TB_SIZE + 1];
     pixel  filtered_left_array[2 * MAX_TB_SIZE + 1];
@@ -207,7 +207,6 @@ do {                                  \
                         j++;
                     EXTEND_LEFT_CIP(top, j, j + 1);
                     left[-1] = top[-1];
-                    j        = 0;
                 }
             } else {
                 j = 0;
@@ -221,7 +220,6 @@ do {                                  \
                         top[-1] = top[0];
                     }
                 left[-1] = top[-1];
-                j        = 0;
             }
             left[-1] = top[-1];
             if (cand_bottom_left || cand_left) {
@@ -238,7 +236,6 @@ do {                                  \
                 if (!IS_INTRA(-1, - 1))
                     left[-1] = left[0];
             } else if (x0 == 0) {
-                a = PIXEL_SPLAT_X4(left[size_max_y - 1]);
                 EXTEND(left, 0, size_max_y);
             } else {
                 a = PIXEL_SPLAT_X4(left[size_max_y - 1]);
@@ -290,7 +287,7 @@ do {                                  \
     top[-1] = left[-1];
 
     // Filtering process
-    if (c_idx == 0) {
+    if (!s->sps->intra_smoothing_disabled_flag && (c_idx == 0  || s->sps->chroma_format_idc == 3)) {
         if (mode != INTRA_DC && size != 4){
             int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
             int min_dist_vert_hor = FFMIN(FFABS((int)(mode - 26U)),
