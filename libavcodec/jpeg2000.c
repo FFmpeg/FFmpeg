@@ -224,7 +224,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         if (!comp->i_data)
             return AVERROR(ENOMEM);
     }
-    comp->reslevel = av_calloc(codsty->nreslevels, sizeof(*comp->reslevel));
+    comp->reslevel = av_mallocz_array(codsty->nreslevels, sizeof(*comp->reslevel));
     if (!comp->reslevel)
         return AVERROR(ENOMEM);
     /* LOOP on resolution levels */
@@ -272,7 +272,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                                         reslevel->log2_prec_height) -
                 (reslevel->coord[1][0] >> reslevel->log2_prec_height);
 
-        reslevel->band = av_calloc(reslevel->nbands, sizeof(*reslevel->band));
+        reslevel->band = av_mallocz_array(reslevel->nbands, sizeof(*reslevel->band));
         if (!reslevel->band)
             return AVERROR(ENOMEM);
 
@@ -368,9 +368,9 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
             for (j = 0; j < 2; j++)
                 band->coord[1][j] = ff_jpeg2000_ceildiv(band->coord[1][j], dy);
 
-            band->prec = av_calloc(reslevel->num_precincts_x *
-                                         (uint64_t)reslevel->num_precincts_y,
-                                         sizeof(*band->prec));
+            band->prec = av_mallocz_array(reslevel->num_precincts_x *
+                                          (uint64_t)reslevel->num_precincts_y,
+                                          sizeof(*band->prec));
             if (!band->prec)
                 return AVERROR(ENOMEM);
 
@@ -504,22 +504,29 @@ void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
     for (reslevelno = 0;
          comp->reslevel && reslevelno < codsty->nreslevels;
          reslevelno++) {
-        Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
+        Jpeg2000ResLevel *reslevel;
 
+        if (!comp->reslevel)
+            continue;
+
+        reslevel = comp->reslevel + reslevelno;
         for (bandno = 0; bandno < reslevel->nbands; bandno++) {
-            if (reslevel->band) {
-                Jpeg2000Band *band = reslevel->band + bandno;
-                for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++) {
-                    if (band->prec) {
-                        Jpeg2000Prec *prec = band->prec + precno;
-                        av_freep(&prec->zerobits);
-                        av_freep(&prec->cblkincl);
-                        av_freep(&prec->cblk);
-                    }
-                }
+            Jpeg2000Band *band;
 
-                av_freep(&band->prec);
+            if (!reslevel->band)
+                continue;
+
+            band = reslevel->band + bandno;
+            for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++) {
+                if (band->prec) {
+                    Jpeg2000Prec *prec = band->prec + precno;
+                    av_freep(&prec->zerobits);
+                    av_freep(&prec->cblkincl);
+                    av_freep(&prec->cblk);
+                }
             }
+
+            av_freep(&band->prec);
         }
         av_freep(&reslevel->band);
     }
