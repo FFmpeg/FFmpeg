@@ -183,6 +183,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     MPADecodeHeader hdr;
     int len, ret, ch;
     int lame_result;
+    uint32_t h;
 
     if (frame) {
         switch (avctx->sample_fmt) {
@@ -238,7 +239,12 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
        determine the frame size. */
     if (s->buffer_index < 4)
         return 0;
-    if (avpriv_mpegaudio_decode_header(&hdr, AV_RB32(s->buffer))) {
+    h = AV_RB32(s->buffer);
+    if (ff_mpa_check_header(h) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid mp3 header at start of buffer\n");
+        return AVERROR_BUG;
+    }
+    if (avpriv_mpegaudio_decode_header(&hdr, h)) {
         av_log(avctx, AV_LOG_ERROR, "free format output not supported\n");
         return -1;
     }
