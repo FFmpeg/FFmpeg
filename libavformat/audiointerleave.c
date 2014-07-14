@@ -99,7 +99,7 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
                         int (*get_packet)(AVFormatContext *, AVPacket *, AVPacket *, int),
                         int (*compare_ts)(AVFormatContext *, AVPacket *, AVPacket *))
 {
-    int i;
+    int i, ret;
 
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
@@ -116,7 +116,8 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
             // rewrite pts and dts to be decoded time line position
             pkt->pts = pkt->dts = aic->dts;
             aic->dts += pkt->duration;
-            ff_interleave_add_packet(s, pkt, compare_ts);
+            if ((ret = ff_interleave_add_packet(s, pkt, compare_ts)) < 0)
+                return ret;
         }
         pkt = NULL;
     }
@@ -126,7 +127,8 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             AVPacket new_pkt;
             while (interleave_new_audio_packet(s, &new_pkt, i, flush))
-                ff_interleave_add_packet(s, &new_pkt, compare_ts);
+                if ((ret = ff_interleave_add_packet(s, &new_pkt, compare_ts)) < 0)
+                    return ret;
         }
     }
 
