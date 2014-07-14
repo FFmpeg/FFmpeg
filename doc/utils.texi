@@ -1031,7 +1031,7 @@ indication of the corresponding powers of 10 and of 2.
 10^24 / 2^70
 @end table
 
-@c man end
+@c man end EXPRESSION EVALUATION
 
 @chapter OpenCL Options
 @c man begin OPENCL OPTIONS
