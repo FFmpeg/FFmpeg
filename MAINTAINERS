@@ -166,6 +166,7 @@ Codecs:
   dnxhd*                                Baptiste Coudurier
   dpcm.c                                Mike Melanson
   dv.c                                  Roman Shaposhnik
+  dvbsubdec.c                           Anshul Maheshwari
   dxa.c                                 Kostya Shishkov
   eacmv*, eaidct*, eat*                 Peter Ross
   exif.c, exif.h                        Thilo Borgmann
