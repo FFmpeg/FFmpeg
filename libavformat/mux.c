@@ -477,12 +477,15 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
-                              int (*compare)(AVFormatContext *, AVPacket *, AVPacket *))
+int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
+                             int (*compare)(AVFormatContext *, AVPacket *, AVPacket *))
 {
+    int ret;
     AVPacketList **next_point, *this_pktl;
 
     this_pktl      = av_mallocz(sizeof(AVPacketList));
+    if (!this_pktl)
+        return AVERROR(ENOMEM);
     this_pktl->pkt = *pkt;
 #if FF_API_DESTRUCT_PACKET
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -490,7 +493,11 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     pkt->buf       = NULL;
-    av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-alloced memory
+    // Duplicate the packet if it uses non-allocated memory
+    if ((ret = av_dup_packet(&this_pktl->pkt)) < 0) {
+        av_free(this_pktl);
+        return ret;
+    }
 
     if (s->streams[pkt->stream_index]->last_in_packet_buffer) {
         next_point = &(s->streams[pkt->stream_index]->last_in_packet_buffer->next);
@@ -515,6 +522,8 @@ next_non_null:
 
     s->streams[pkt->stream_index]->last_in_packet_buffer =
         *next_point                                      = this_pktl;
+
+    return 0;
 }
 
 static int interleave_compare_dts(AVFormatContext *s, AVPacket *next,
@@ -535,10 +544,11 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 {
     AVPacketList *pktl;
     int stream_count = 0;
-    int i;
+    int i, ret;
 
     if (pkt) {
-        ff_interleave_add_packet(s, pkt, interleave_compare_dts);
+        if ((ret = ff_interleave_add_packet(s, pkt, interleave_compare_dts)) < 0)
+            return ret;
     }
 
     if (s->max_interleave_delta > 0 && s->packet_buffer && !flush) {
