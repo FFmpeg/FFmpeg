@@ -1,15 +1,15 @@
- ┌─────────────────────────────────┐
- │ RELEASE NOTES for FFmpeg 2.3    │
- └─────────────────────────────────┘
+ ┌───────────────────────────────────────────┐
+ │ RELEASE NOTES for FFmpeg 2.3 "Mandelbrot" │
+ └───────────────────────────────────────────┘
 
-   The FFmpeg Project proudly presents FFmpeg 2.3, a major release with all
-   the great features committed during the three-month period since the
-   release of FFmpeg 2.2.
+   The FFmpeg Project proudly presents FFmpeg 2.3 "Mandelbrot", a major
+   release with all the great features committed during the three-month period
+   since the release of FFmpeg 2.2.
 
    In this release, there are lots of internal overhauls that make FFmpeg a
    more accessible project for new developers. Many important new features
-   like native Opus decoder and QTKit and AVFoundation input devices are also
-   committed.
+   like QTKit and AVFoundation input devices are committed. Contributions done
+   by Libav such as a new native Opus decoder are also merged.
 
    Because of the increasing difficulty to maintain and lack of maintainers,
    we are very sorry to say that we have removed all Blackfin and SPARC
@@ -57,8 +57,9 @@
 
      Another major feature in this release is the introduction of AArch64
      (ARMv8) assembly optimization. AArch64 is another name for the first
-     64-bit ARM architecture, used by Apple A7 SoC inside iPhone 5S. We have
-     already ported some 32-bit ARM to AArch64, but more work is underway.
+     64-bit ARM architecture, used by Apple A7 SoC inside iPhone 5S. Some
+     32-bit ARM assembly has already been ported to AArch64, but more work is
+     underway.
 
    ┌────────────────────────────┐
    │ Native Opus decoder        │
