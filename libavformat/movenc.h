@@ -100,6 +100,7 @@ typedef struct MOVTrack {
     int         tag; ///< stsd fourcc
     AVStream        *st;
     AVCodecContext *enc;
+    int multichannel_as_mono;
 
     int         vos_len;
     uint8_t     *vos_data;
