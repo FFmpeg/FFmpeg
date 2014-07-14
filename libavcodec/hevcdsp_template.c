@@ -42,7 +42,7 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int size,
     }
 }
 
-static void FUNC(transquant_bypass4x4)(uint8_t *_dst, int16_t *coeffs,
+static void FUNC(transform_add4x4)(uint8_t *_dst, int16_t *coeffs,
                                        ptrdiff_t stride)
 {
     int x, y;
@@ -59,7 +59,7 @@ static void FUNC(transquant_bypass4x4)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
-static void FUNC(transquant_bypass8x8)(uint8_t *_dst, int16_t *coeffs,
+static void FUNC(transform_add8x8)(uint8_t *_dst, int16_t *coeffs,
                                        ptrdiff_t stride)
 {
     int x, y;
@@ -76,7 +76,7 @@ static void FUNC(transquant_bypass8x8)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
-static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs,
+static void FUNC(transform_add16x16)(uint8_t *_dst, int16_t *coeffs,
                                          ptrdiff_t stride)
 {
     int x, y;
@@ -93,7 +93,7 @@ static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
-static void FUNC(transquant_bypass32x32)(uint8_t *_dst, int16_t *coeffs,
+static void FUNC(transform_add32x32)(uint8_t *_dst, int16_t *coeffs,
                                          ptrdiff_t stride)
 {
     int x, y;
@@ -110,24 +110,29 @@ static void FUNC(transquant_bypass32x32)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
-static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs,
-                                 ptrdiff_t stride)
+static void FUNC(transform_skip)(int16_t *_coeffs, int16_t log2_size)
 {
-    pixel *dst = (pixel *)_dst;
-    int shift  = 13 - BIT_DEPTH;
-#if BIT_DEPTH <= 13
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
+    int shift  = 15 - BIT_DEPTH - log2_size;
     int x, y;
+    int size = 1 << log2_size;
+    int16_t *coeffs = _coeffs;
 
-    stride /= sizeof(pixel);
 
-    for (y = 0; y < 4 * 4; y += 4) {
-        for (x = 0; x < 4; x++)
-            dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
-        dst += stride;
+    if (shift > 0) {
+        int offset = 1 << (shift - 1);
+        for (y = 0; y < size; y++) {
+            for (x = 0; x < size; x++) {
+                *coeffs = (*coeffs + offset) >> shift;
+                coeffs++;
+            }
+        }
+    } else {
+        for (y = 0; y < size; y++) {
+            for (x = 0; x < size; x++) {
+                *coeffs = *coeffs << -shift;
+                coeffs++;
+            }
+        }
     }
 }
 
@@ -151,16 +156,12 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs,
         assign(dst[3 * step], 55 * c0 + 29 * c2 - c3);                  \
     } while (0)
 
-static void FUNC(transform_4x4_luma_add)(uint8_t *_dst, int16_t *coeffs,
-                                         ptrdiff_t stride)
+static void FUNC(transform_4x4_luma)(int16_t *coeffs)
 {
     int i;
-    pixel *dst   = (pixel *)_dst;
     int shift    = 7;
     int add      = 1 << (shift - 1);
     int16_t *src = coeffs;
-
-    stride /= sizeof(pixel);
 
     for (i = 0; i < 4; i++) {
         TR_4x4_LUMA(src, src, 4, SCALE);
@@ -170,9 +171,8 @@ static void FUNC(transform_4x4_luma_add)(uint8_t *_dst, int16_t *coeffs,
     shift = 20 - BIT_DEPTH;
     add   = 1 << (shift - 1);
     for (i = 0; i < 4; i++) {
-        TR_4x4_LUMA(dst, coeffs, 1, ADD_AND_SCALE);
+        TR_4x4_LUMA(coeffs, coeffs, 1, SCALE);
         coeffs += 4;
-        dst    += stride;
     }
 }
 
@@ -239,60 +239,71 @@ static void FUNC(transform_4x4_luma_add)(uint8_t *_dst, int16_t *coeffs,
         }                                                                      \
     } while (0)
 
-#define TRANSFORM_ADD(H)                                                       \
-static void FUNC(transform_##H ##x ##H ##_add)(                                \
-    uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit) {        \
-    int i;                                                                     \
-    pixel    *dst    = (pixel *)_dst;                                          \
-    int      stride  = _stride/sizeof(pixel);                                  \
-    int      shift   = 7;                                                      \
-    int      add     = 1 << (shift - 1);                                       \
-    int16_t *src     = coeffs;                                                 \
-    int      limit   = FFMIN(col_limit + 4, H);                                \
-                                                                               \
-    for (i = 0; i < H; i++) {                                                  \
-        TR_ ## H(src, src, H, H, SCALE, limit);                                \
-        if (limit < H && i%4 == 0 && !!i)                                      \
-            limit -= 4;                                                        \
-        src++;                                                                 \
-    }                                                                          \
-    limit   = FFMIN(col_limit, H);                                             \
-                                                                               \
-    shift   = 20 - BIT_DEPTH;                                                  \
-    add     = 1 << (shift - 1);                                                \
-    for (i = 0; i < H; i++) {                                                  \
-        TR_ ## H(dst, coeffs, 1, 1, ADD_AND_SCALE, limit);                     \
-        coeffs += H;                                                           \
-        dst    += stride;                                                      \
-    }                                                                          \
+#define IDCT_VAR4(H)                                                          \
+    int      limit2   = FFMIN(col_limit + 4, H)
+#define IDCT_VAR8(H)                                                          \
+        int      limit   = FFMIN(col_limit, H);                               \
+        int      limit2   = FFMIN(col_limit + 4, H)
+#define IDCT_VAR16(H)   IDCT_VAR8(H)
+#define IDCT_VAR32(H)   IDCT_VAR8(H)
+
+#define IDCT(H)                                                              \
+static void FUNC(idct_##H ##x ##H )(                                         \
+                   int16_t *coeffs, int col_limit) {                         \
+    int i;                                                                   \
+    int      shift   = 7;                                                    \
+    int      add     = 1 << (shift - 1);                                     \
+    int16_t *src     = coeffs;                                               \
+    IDCT_VAR ##H(H);                                                         \
+                                                                             \
+    for (i = 0; i < H; i++) {                                                \
+        TR_ ## H(src, src, H, H, SCALE, limit2);                             \
+        if (limit2 < H && i%4 == 0 && !!i)                                   \
+            limit2 -= 4;                                                     \
+        src++;                                                               \
+    }                                                                        \
+                                                                             \
+    shift   = 20 - BIT_DEPTH;                                                \
+    add     = 1 << (shift - 1);                                              \
+    for (i = 0; i < H; i++) {                                                \
+        TR_ ## H(coeffs, coeffs, 1, 1, SCALE, limit);                        \
+        coeffs += H;                                                         \
+    }                                                                        \
 }
 
-#define TRANSFORM_DC_ADD(H)                                                    \
-static void FUNC(transform_##H ##x ##H ##_dc_add)(                             \
-    uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride) {                       \
-    int i, j;                                                                  \
-    pixel    *dst    = (pixel *)_dst;                                          \
-    int      stride  = _stride/sizeof(pixel);                                  \
-    int      shift   = 14 - BIT_DEPTH;                                         \
-    int      add     = 1 << (shift - 1);                                       \
-    int      coeff   = (((coeffs[0] + 1) >> 1) + add) >> shift;                \
-                                                                               \
-    for (j = 0; j < H; j++) {                                                  \
-        for (i = 0; i < H; i++) {                                              \
-            dst[i+j*stride] = av_clip_pixel(dst[i+j*stride] + coeff);          \
-        }                                                                      \
-    }                                                                          \
+#define IDCT_DC(H)                                                           \
+static void FUNC(idct_##H ##x ##H ##_dc)(                                    \
+                   int16_t *coeffs) {                                        \
+    int i, j;                                                                \
+    int      shift   = 14 - BIT_DEPTH;                                       \
+    int      add     = 1 << (shift - 1);                                     \
+    int      coeff   = (((coeffs[0] + 1) >> 1) + add) >> shift;              \
+                                                                             \
+    for (j = 0; j < H; j++) {                                                \
+        for (i = 0; i < H; i++) {                                            \
+            coeffs[i+j*H] = coeff;                                           \
+        }                                                                    \
+    }                                                                        \
 }
 
-TRANSFORM_ADD( 4)
-TRANSFORM_ADD( 8)
-TRANSFORM_ADD(16)
-TRANSFORM_ADD(32)
+IDCT( 4)
+IDCT( 8)
+IDCT(16)
+IDCT(32)
 
-TRANSFORM_DC_ADD( 4)
-TRANSFORM_DC_ADD( 8)
-TRANSFORM_DC_ADD(16)
-TRANSFORM_DC_ADD(32)
+IDCT_DC( 4)
+IDCT_DC( 8)
+IDCT_DC(16)
+IDCT_DC(32)
+
+#undef TR_4
+#undef TR_8
+#undef TR_16
+#undef TR_32
+
+#undef SET
+#undef SCALE
+#undef ADD_AND_SCALE
 
 static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride, SAOParams *sao,
@@ -504,15 +515,6 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
 }
 
 #undef CMP
-
-#undef SET
-#undef SCALE
-#undef ADD_AND_SCALE
-#undef TR_4
-#undef TR_8
-#undef TR_16
-#undef TR_32
-
 
 ////////////////////////////////////////////////////////////////////////////////
 //

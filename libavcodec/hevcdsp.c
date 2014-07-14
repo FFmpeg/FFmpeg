@@ -191,21 +191,21 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 
 #define HEVC_DSP(depth)                                                     \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                 \
-    hevcdsp->transquant_bypass[0]   = FUNC(transquant_bypass4x4, depth);    \
-    hevcdsp->transquant_bypass[1]   = FUNC(transquant_bypass8x8, depth);    \
-    hevcdsp->transquant_bypass[2]   = FUNC(transquant_bypass16x16, depth);  \
-    hevcdsp->transquant_bypass[3]   = FUNC(transquant_bypass32x32, depth);  \
+    hevcdsp->transform_add[0]       = FUNC(transform_add4x4, depth);        \
+    hevcdsp->transform_add[1]       = FUNC(transform_add8x8, depth);        \
+    hevcdsp->transform_add[2]       = FUNC(transform_add16x16, depth);      \
+    hevcdsp->transform_add[3]       = FUNC(transform_add32x32, depth);      \
     hevcdsp->transform_skip         = FUNC(transform_skip, depth);          \
-    hevcdsp->transform_4x4_luma_add = FUNC(transform_4x4_luma_add, depth);  \
-    hevcdsp->transform_add[0]       = FUNC(transform_4x4_add, depth);       \
-    hevcdsp->transform_add[1]       = FUNC(transform_8x8_add, depth);       \
-    hevcdsp->transform_add[2]       = FUNC(transform_16x16_add, depth);     \
-    hevcdsp->transform_add[3]       = FUNC(transform_32x32_add, depth);     \
+    hevcdsp->idct_4x4_luma          = FUNC(transform_4x4_luma, depth);      \
+    hevcdsp->idct[0]                = FUNC(idct_4x4, depth);                \
+    hevcdsp->idct[1]                = FUNC(idct_8x8, depth);                \
+    hevcdsp->idct[2]                = FUNC(idct_16x16, depth);              \
+    hevcdsp->idct[3]                = FUNC(idct_32x32, depth);              \
                                                                             \
-    hevcdsp->transform_dc_add[0]    = FUNC(transform_4x4_dc_add, depth);    \
-    hevcdsp->transform_dc_add[1]    = FUNC(transform_8x8_dc_add, depth);    \
-    hevcdsp->transform_dc_add[2]    = FUNC(transform_16x16_dc_add, depth);  \
-    hevcdsp->transform_dc_add[3]    = FUNC(transform_32x32_dc_add, depth);  \
+    hevcdsp->idct_dc[0]             = FUNC(idct_4x4_dc, depth);             \
+    hevcdsp->idct_dc[1]             = FUNC(idct_8x8_dc, depth);             \
+    hevcdsp->idct_dc[2]             = FUNC(idct_16x16_dc, depth);           \
+    hevcdsp->idct_dc[3]             = FUNC(idct_32x32_dc, depth);           \
                                                                             \
     hevcdsp->sao_band_filter    = FUNC(sao_band_filter_0, depth);              \
     hevcdsp->sao_edge_filter[0] = FUNC(sao_edge_filter_0, depth);              \

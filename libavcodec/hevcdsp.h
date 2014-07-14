@@ -44,13 +44,15 @@ typedef struct HEVCDSPContext {
     void (*put_pcm)(uint8_t *dst, ptrdiff_t stride, int size,
                     GetBitContext *gb, int pcm_bit_depth);
 
-    void (*transquant_bypass[4])(uint8_t *dst, int16_t *coeffs,
-                                 ptrdiff_t stride);
+    void (*transform_add[4])(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
-    void (*transform_skip)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-    void (*transform_4x4_luma_add)(uint8_t *dst, int16_t *coeffs,
-                                   ptrdiff_t stride);
-    void (*transform_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit);
+    void (*transform_skip)(int16_t *coeffs, int16_t log2_size);
+
+    void (*idct_4x4_luma)(int16_t *coeffs);
+
+    void (*idct[4])(int16_t *coeffs, int col_limit);
+
+    void (*idct_dc[4])(int16_t *coeffs);
 
     void (*transform_dc_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
