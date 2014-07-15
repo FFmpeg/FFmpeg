@@ -483,6 +483,7 @@ extern const AVFilter ff_vf_threshold;
 extern const AVFilter ff_vf_thumbnail;
 extern const AVFilter ff_vf_thumbnail_cuda;
 extern const AVFilter ff_vf_tile;
+extern const AVFilter ff_vf_tiltandshift;
 extern const AVFilter ff_vf_tinterlace;
 extern const AVFilter ff_vf_tlut2;
 extern const AVFilter ff_vf_tmedian;
