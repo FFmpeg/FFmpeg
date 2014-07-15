@@ -166,7 +166,7 @@ x11grab_read_header(AVFormatContext *s1)
     int x_off = 0;
     int y_off = 0;
     int screen;
-    int use_shm;
+    int use_shm = 0;
     char *dpyname, *offset;
     int ret = 0;
     Colormap color_map;
@@ -223,8 +223,10 @@ x11grab_read_header(AVFormatContext *s1)
         av_log(s1, AV_LOG_INFO, "followmouse is enabled, resetting grabbing region to x: %d y: %d\n", x_off, y_off);
     }
 
+    if (x11grab->use_shm) {
     use_shm = XShmQueryExtension(dpy);
     av_log(s1, AV_LOG_INFO, "shared memory extension%s found\n", use_shm ? "" : " not");
+    }
 
     if(use_shm) {
         int scr = XDefaultScreen(dpy);
@@ -641,6 +643,7 @@ static const AVOption options[] = {
     { "framerate",  "set video frame rate",      OFFSET(framerate),   AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, 0, DEC },
     { "show_region", "show the grabbing region", OFFSET(show_region), AV_OPT_TYPE_INT,        {.i64 = 0}, 0, 1, DEC },
     { "video_size",  "set video frame size",     OFFSET(width),       AV_OPT_TYPE_IMAGE_SIZE, {.str = "vga"}, 0, 0, DEC },
+    { "use_shm",     "use MIT-SHM extension",    OFFSET(use_shm),     AV_OPT_TYPE_INT,        {.i64 = 1}, 0, 1, DEC },
     { NULL },
 };
 
