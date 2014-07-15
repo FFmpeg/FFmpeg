@@ -2427,7 +2427,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
         for (i = 1; i < s->threads_number; i++) {
             s->sList[i] = av_malloc(sizeof(HEVCContext));
             memcpy(s->sList[i], s, sizeof(HEVCContext));
-            s->HEVClcList[i] = av_malloc(sizeof(HEVCLocalContext));
+            s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
             s->sList[i]->HEVClc = s->HEVClcList[i];
         }
     }
