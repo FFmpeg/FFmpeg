@@ -2092,7 +2092,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
     if (x_ctb + ctb_size >= s->sps->width &&
         y_ctb + ctb_size >= s->sps->height)
-        ff_hevc_hls_filter(s, x_ctb, y_ctb);
+        ff_hevc_hls_filter(s, x_ctb, y_ctb, ctb_size);
 
     return ctb_addr_ts;
 }
@@ -2167,7 +2167,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         }
 
         if ((x_ctb+ctb_size) >= s->sps->width && (y_ctb+ctb_size) >= s->sps->height ) {
-            ff_hevc_hls_filter(s, x_ctb, y_ctb);
+            ff_hevc_hls_filter(s, x_ctb, y_ctb, ctb_size);
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
             return ctb_addr_ts;
         }
