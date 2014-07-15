@@ -3233,7 +3233,9 @@ static int64_t webm_dash_manifest_compute_bandwidth(AVFormatContext *s, int64_t 
     MatroskaDemuxContext *matroska = s->priv_data;
     AVStream *st = s->streams[0];
     double bandwidth = 0.0;
-    for (int i = 0; i < st->nb_index_entries; i++) {
+    int i;
+
+    for (i = 0; i < st->nb_index_entries; i++) {
         int64_t prebuffer_ns = 1000000000;
         int64_t time_ns = st->index_entries[i].timestamp * matroska->time_scale;
         double nano_seconds_per_second = 1000000000.0;
