@@ -308,7 +308,16 @@ x11grab_read_header(AVFormatContext *s1)
         }
         break;
     case 32:
-        input_pixfmt = AV_PIX_FMT_0RGB32;
+        if (        image->red_mask   == 0xff0000 &&
+                    image->green_mask == 0x00ff00 &&
+                    image->blue_mask  == 0x0000ff ) {
+            input_pixfmt = AV_PIX_FMT_0RGB32;
+        } else {
+            av_log(s1, AV_LOG_ERROR,"rgb ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
+            av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
+            ret = AVERROR_PATCHWELCOME;
+            goto out;
+        }
         break;
     default:
         av_log(s1, AV_LOG_ERROR, "image depth %i not supported ... aborting\n", image->bits_per_pixel);
