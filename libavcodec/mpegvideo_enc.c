@@ -342,6 +342,17 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     } else if (s->intra_dc_precision >= 8)
         s->intra_dc_precision -= 8;
 
+    if (s->intra_dc_precision < 0) {
+        av_log(avctx, AV_LOG_ERROR,
+                "intra dc precision must be positive, note some applications use"
+                " 0 and some 8 as base meaning 8bit, the value must not be smaller than that\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (s->intra_dc_precision > (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO ? 3 : 0)) {
+        av_log(avctx, AV_LOG_ERROR, "intra dc precision too large\n");
+        return AVERROR(EINVAL);
+    }
     s->user_specified_pts = AV_NOPTS_VALUE;
 
     if (s->gop_size <= 1) {
