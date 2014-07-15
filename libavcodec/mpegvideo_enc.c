@@ -1146,7 +1146,8 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                     int vpad = 16;
 
                     if (   s->codec_id == AV_CODEC_ID_MPEG2VIDEO
-                        && !s->progressive_sequence)
+                        && !s->progressive_sequence
+                        && FFALIGN(s->height, 32) - s->height > 16)
                         vpad = 32;
 
                     if (!s->avctx->rc_buffer_size)
