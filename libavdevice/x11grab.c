@@ -346,8 +346,9 @@ out:
  *          coordinates
  */
 static void
-paint_mouse_pointer(XImage *image, struct x11grab *s)
+paint_mouse_pointer(XImage *image, AVFormatContext *s1)
 {
+    struct x11grab *s = s1->priv_data;
     int x_off = s->x_off;
     int y_off = s->y_off;
     int width = s->width;
@@ -377,6 +378,12 @@ paint_mouse_pointer(XImage *image, struct x11grab *s)
     XChangeWindowAttributes(dpy, w, CWCursor, &attr);
 
     xcim = XFixesGetCursorImage(dpy);
+    if (!xcim) {
+        av_log(s1, AV_LOG_WARNING,
+               "XFixes extension not available, impossible to draw cursor\n");
+        s->draw_mouse = 0;
+        return;
+    }
 
     x = xcim->x - xcim->xhot;
     y = xcim->y - xcim->yhot;
@@ -573,7 +580,7 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 
     if (s->draw_mouse) {
-        paint_mouse_pointer(image, s);
+        paint_mouse_pointer(image, s1);
     }
 
     return s->frame_size;
