@@ -335,6 +335,13 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     s->mpeg_quant         = avctx->mpeg_quant;
     s->rtp_mode           = !!avctx->rtp_payload_size;
     s->intra_dc_precision = avctx->intra_dc_precision;
+
+    // workaround some differences between how applications specify dc precission
+    if (s->intra_dc_precision < 0) {
+        s->intra_dc_precision += 8;
+    } else if (s->intra_dc_precision >= 8)
+        s->intra_dc_precision -= 8;
+
     s->user_specified_pts = AV_NOPTS_VALUE;
 
     if (s->gop_size <= 1) {
