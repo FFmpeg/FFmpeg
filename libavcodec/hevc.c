@@ -2941,9 +2941,12 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         }
     }
 
-    if (s->current_sps && s->sps == (HEVCSPS*)s->current_sps->data)
-        s->sps = NULL;
     av_buffer_unref(&s->current_sps);
+    if (s0->current_sps) {
+        s->current_sps = av_buffer_ref(s0->current_sps);
+        if (!s->current_sps)
+            return AVERROR(ENOMEM);
+    }
 
     if (s->sps != s0->sps)
         ret = set_sps(s, s0->sps);
