@@ -767,6 +767,7 @@ typedef struct RcOverride{
 
 #define CODEC_FLAG2_CHUNKS        0x00008000 ///< Input bitstream might be truncated at a packet boundaries instead of only at frame boundaries.
 #define CODEC_FLAG2_SHOW_ALL      0x00400000 ///< Show all frames before the first keyframe
+#define CODEC_FLAG2_EXPORT_MVS    0x10000000 ///< Export motion vectors through frame side data
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)

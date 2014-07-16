@@ -38,6 +38,7 @@ HEADERS = adler32.h                                                     \
           mathematics.h                                                 \
           md5.h                                                         \
           mem.h                                                         \
+          motion_vector.h                                               \
           murmur3.h                                                     \
           dict.h                                                        \
           old_pix_fmts.h                                                \
