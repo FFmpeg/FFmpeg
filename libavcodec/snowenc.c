@@ -64,6 +64,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         ff_snow_common_end(avctx->priv_data);
         return ret;
     }
+    ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
+
     ff_snow_alloc_blocks(s);
 
     s->version=0;
@@ -1601,6 +1603,23 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->qlog= LOSSLESS_QLOG;
         s->lambda = 0;
     }//else keep previous frame's qlog until after motion estimation
+
+    if (s->current_picture->data[0] && !(s->avctx->flags&CODEC_FLAG_EMU_EDGE)) {
+        int w = s->avctx->width;
+        int h = s->avctx->height;
+
+        s->mpvencdsp.draw_edges(s->current_picture->data[0],
+                                s->current_picture->linesize[0], w   , h   ,
+                                EDGE_WIDTH  , EDGE_WIDTH  , EDGE_TOP | EDGE_BOTTOM);
+        if (s->current_picture->data[2]) {
+            s->mpvencdsp.draw_edges(s->current_picture->data[1],
+                                    s->current_picture->linesize[1], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
+                                    EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
+            s->mpvencdsp.draw_edges(s->current_picture->data[2],
+                                    s->current_picture->linesize[2], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
+                                    EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
+        }
+    }
 
     ff_snow_frame_start(s);
     avctx->coded_frame= s->current_picture;
