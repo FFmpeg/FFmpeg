@@ -2479,7 +2479,6 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
     }
 
     // U/V
-    h4 >>= 1;
     w4 >>= 1;
     end_x >>= 1;
     end_y >>= 1;
@@ -2760,8 +2759,6 @@ static void inter_recon(AVCodecContext *ctx)
         }
 
         // uv itxfm add
-        h4 >>= 1;
-        w4 >>= 1;
         end_x >>= 1;
         end_y >>= 1;
         step = 1 << (b->uvtx * 2);
