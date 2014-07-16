@@ -30,6 +30,7 @@ struct MD5Context {
     const AVClass *avclass;
     struct AVHashContext *hash;
     char *hash_name;
+    int format_version;
 };
 
 static void md5_finish(struct AVFormatContext *s, char *buf)
@@ -55,6 +56,7 @@ static void md5_finish(struct AVFormatContext *s, char *buf)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption hash_options[] = {
     { "hash", "set hash to use", OFFSET(hash_name), AV_OPT_TYPE_STRING, {.str = "md5"}, 0, 0, ENC },
+    { "format_version", "file format version", OFFSET(format_version), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 1, ENC },
     { NULL },
 };
 
@@ -118,7 +120,7 @@ static int framemd5_write_header(struct AVFormatContext *s)
     if (res < 0)
         return res;
     avio_printf(s->pb, "#format: frame checksums\n");
-    avio_printf(s->pb, "#version: 1\n");
+    avio_printf(s->pb, "#version: %d\n", c->format_version);
     avio_printf(s->pb, "#hash: %s\n", av_hash_get_name(c->hash));
     ff_framehash_write_header(s);
     avio_printf(s->pb, "#stream#, dts,        pts, duration,     size, hash\n");
