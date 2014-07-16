@@ -104,7 +104,7 @@ FF_DEP_LIBS  := $(DEP_LIBS)
 all: $(AVPROGS)
 
 $(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
-	$(LD) $(LDFLAGS) $(LD_O) $^ $(ELIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS)
 
 tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 
@@ -149,7 +149,7 @@ endef
 $(foreach P,$(PROGS),$(eval $(call DOPROG,$(P:$(EXESUF)=))))
 
 $(PROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
-	$(LD) $(LDFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
 OBJDIRS += tools
 
