@@ -500,7 +500,7 @@ single_col:
             map_col_to_list0[1] = h->map_col_to_list0_field[h->mb_y&1][1];
             dist_scale_factor   =h->dist_scale_factor_field[h->mb_y&1];
         }
-        ref_offset = (h->ref_list[1][0].mbaff<<4) & (mb_type_col[0]>>3); //if(h->ref_list[1][0].mbaff && IS_INTERLACED(mb_type_col[0])) ref_offset=16 else 0
+        ref_offset = (h->ref_list[1][0].mbaff<<4) & (mb_type_col[0]>>3);
 
         if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
             int y_shift  = 2*!IS_INTERLACED(*mb_type);
