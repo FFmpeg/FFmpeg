@@ -7,9 +7,10 @@
    since the release of FFmpeg 2.2.
 
    In this release, there are lots of internal overhauls that make FFmpeg a
-   more accessible project for new developers. Many important new features
-   like QTKit and AVFoundation input devices are committed. Contributions done
-   by Libav such as a new native Opus decoder are also merged.
+   more accessible project for new developers. Many important new
+   optimizations and features like QTKit and AVFoundation input devices are
+   committed. Contributions done by Libav such as a new native Opus decoder
+   are also merged.
 
    Because of the increasing difficulty to maintain and lack of maintainers,
    we are very sorry to say that we have removed all Blackfin and SPARC
@@ -17,8 +18,9 @@
    interested in maintaining optimization for these two architecture, feel
    free to contact us and we will restore the code!
 
-   Since this release, the traditional Changelog file is upgraded to this
-   modern-looking release note. Old changelogs are moved to doc/Changelog.old.
+   Oh, and since this release, this modern-looking release note is provided in
+   addition to the old-style Changelog file, to make it easier for you to
+   focus on the most important features in this release.
 
    Enjoy!
 
