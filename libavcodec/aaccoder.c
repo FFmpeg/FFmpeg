@@ -776,7 +776,6 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         do {
             int prev = -1;
             tbits = 0;
-            fflag = 0;
             for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
                 start = w*128;
                 for (g = 0;  g < sce->ics.num_swb; g++) {
@@ -953,7 +952,6 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
             }
             sce->zeroes[w*16+g] = 0;
             scf  = prev_scf = av_clip(SCALE_ONE_POS - SCALE_DIV_512 - log2f(1/maxq[w*16+g])*16/3, 60, 218);
-            step = 16;
             for (;;) {
                 float dist = 0.0f;
                 int quant_max;
