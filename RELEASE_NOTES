@@ -33,9 +33,9 @@
 
        • libavutil      52.92.100
        • libavcodec     55.69.100
-       • libavformat    55.47.100
+       • libavformat    55.48.100
        • libavdevice    55.13.102
-       • libavfilter     4.10.100
+       • libavfilter     4.11.100
        • libswscale      2. 6.100
        • libswresample   0.19.100
        • libpostproc    52. 3.100
