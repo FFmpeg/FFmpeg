@@ -58,11 +58,11 @@ typedef struct HEVCDSPContext {
 
     void (*transform_dc_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
-    void (*sao_band_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride,
+    void (*sao_band_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                             struct SAOParams *sao, int *borders,
                             int width, int height, int c_idx);
 
-    void (*sao_edge_filter[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride,
+    void (*sao_edge_filter[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                struct SAOParams *sao, int *borders, int _width,
                                int _height, int c_idx, uint8_t *vert_edge,
                                uint8_t *horiz_edge, uint8_t *diag_edge);

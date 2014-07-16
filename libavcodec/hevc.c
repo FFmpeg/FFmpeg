@@ -276,6 +276,24 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
+static int get_buffer_sao(HEVCContext *s, AVFrame *frame)
+{
+    int ret, i;
+
+    frame->width  = s->avctx->width  + 2;
+    frame->height = s->avctx->height + 2;
+    if ((ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+        return ret;
+    for (i = 0; frame->data[i]; i++) {
+        int offset = frame->linesize[i] + 1;
+        frame->data[i] += offset;
+    }
+    frame->width  = s->avctx->width;
+    frame->height = s->avctx->height;
+
+    return 0;
+}
+
 static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 {
     int ret;
@@ -317,10 +335,8 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     if (sps->sao_enabled) {
         av_frame_unref(s->tmp_frame);
-        ret = ff_get_buffer(s->avctx, s->tmp_frame, AV_GET_BUFFER_FLAG_REF);
-        if (ret < 0)
-            goto fail;
-        s->frame = s->tmp_frame;
+        ret = get_buffer_sao(s, s->tmp_frame);
+        s->sao_frame = s->tmp_frame;
     }
 
     s->sps = sps;
@@ -2582,8 +2598,7 @@ static int hevc_frame_start(HEVCContext *s)
     if (s->pps->tiles_enabled_flag)
         lc->end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
 
-    ret = ff_hevc_set_new_ref(s, s->sps->sao_enabled ? &s->sao_frame : &s->frame,
-                              s->poc);
+    ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
     if (ret < 0)
         goto fail;
 
