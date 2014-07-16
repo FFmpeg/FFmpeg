@@ -501,8 +501,10 @@ int ff_h264_context_init(H264Context *h)
         er->mb_stride   = h->mb_stride;
         er->b8_stride   = h->mb_width * 2 + 1;
 
-        FF_ALLOCZ_OR_GOTO(h->avctx, er->mb_index2xy, (h->mb_num + 1) * sizeof(int),
-                          fail); // error ressilience code looks cleaner with this
+        // error resilience code looks cleaner with this
+        FF_ALLOCZ_OR_GOTO(h->avctx, er->mb_index2xy,
+                          (h->mb_num + 1) * sizeof(int), fail);
+
         for (y = 0; y < h->mb_height; y++)
             for (x = 0; x < h->mb_width; x++)
                 er->mb_index2xy[x + y * h->mb_width] = x + y * h->mb_stride;
@@ -518,10 +520,11 @@ int ff_h264_context_init(H264Context *h)
 
         FF_ALLOCZ_OR_GOTO(h->avctx, er->mbskip_table, mb_array_size + 2, fail);
 
-        FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer, h->mb_height * h->mb_stride,
-                         fail);
+        FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer,
+                         h->mb_height * h->mb_stride, fail);
 
-        FF_ALLOCZ_OR_GOTO(h->avctx, h->dc_val_base, yc_size * sizeof(int16_t), fail);
+        FF_ALLOCZ_OR_GOTO(h->avctx, h->dc_val_base,
+                          yc_size * sizeof(int16_t), fail);
         er->dc_val[0] = h->dc_val_base + h->mb_width * 2 + 2;
         er->dc_val[1] = h->dc_val_base + y_size + h->mb_stride + 1;
         er->dc_val[2] = er->dc_val[1] + c_size;
@@ -586,7 +589,7 @@ int ff_h264_decode_extradata(H264Context *h)
             }
             p += nalsize;
         }
-        // Now store right nal length size, that will be used to parse all other nals
+        // Store right nal length size that will be used to parse all other nals
         h->nal_length_size = (avctx->extradata[4] & 0x03) + 1;
     } else {
         h->is_avc = 0;
@@ -1037,8 +1040,8 @@ int ff_pred_weight_table(H264Context *h)
 static void idr(H264Context *h)
 {
     ff_h264_remove_all_refs(h);
-    h->prev_frame_num        = 0;
-    h->prev_frame_num_offset = 0;
+    h->prev_frame_num        =
+    h->prev_frame_num_offset =
     h->prev_poc_msb          =
     h->prev_poc_lsb          = 0;
 }
@@ -1692,9 +1695,9 @@ end:
 static int get_consumed_bytes(int pos, int buf_size)
 {
     if (pos == 0)
-        pos = 1;          // avoid infinite loops (i doubt that is needed but ...)
+        pos = 1;        // avoid infinite loops (I doubt that is needed but...)
     if (pos + 10 > buf_size)
-        pos = buf_size;                   // oops ;)
+        pos = buf_size; // oops ;)
 
     return pos;
 }
