@@ -645,8 +645,6 @@ void ff_snow_release_buffer(AVCodecContext *avctx)
 int ff_snow_frame_start(SnowContext *s){
    AVFrame *tmp;
    int i, ret;
-   int w= s->avctx->width; //FIXME round up to x16 ?
-   int h= s->avctx->height;
 
     ff_snow_release_buffer(s->avctx);
 
