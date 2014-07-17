@@ -28,7 +28,7 @@
 #include <string.h>
 
 #include "config.h"
-#include "dsputil.h"
+#include "me_cmp.h"
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/mem.h"
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 {
     AVCodecContext *ctx;
     int c;
-    DSPContext cctx, mmxctx;
+    MECmpContext cctx, mmxctx;
     int flags[2] = { AV_CPU_FLAG_MMX, AV_CPU_FLAG_MMXEXT };
     int flags_size = HAVE_MMXEXT ? 2 : 1;
 
@@ -130,12 +130,12 @@ int main(int argc, char **argv)
     ctx->flags |= CODEC_FLAG_BITEXACT;
     av_force_cpu_flags(0);
     memset(&cctx, 0, sizeof(cctx));
-    ff_dsputil_init(&cctx, ctx);
+    ff_me_cmp_init(&cctx, ctx);
     for (c = 0; c < flags_size; c++) {
         int x;
         av_force_cpu_flags(flags[c]);
         memset(&mmxctx, 0, sizeof(mmxctx));
-        ff_dsputil_init(&mmxctx, ctx);
+        ff_me_cmp_init(&mmxctx, ctx);
 
         for (x = 0; x < 2; x++) {
             printf("%s for %dx%d pixels\n", c ? "mmx2" : "mmx",

@@ -22,7 +22,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/me_cmp.h"
 #include "libavcodec/mpegvideo.h"
 
 int ff_pix_abs16_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
@@ -38,8 +38,7 @@ int ff_pix_abs8_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
 int ff_sse16_armv6(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                    int line_size, int h);
 
-
-av_cold void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_me_cmp_init_arm(MECmpContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
 

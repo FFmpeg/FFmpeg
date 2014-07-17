@@ -24,7 +24,7 @@
 
 #include "config.h"
 #include "avfilter.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/me_cmp.h"
 #include "transform.h"
 #if CONFIG_OPENCL
 #include "libavutil/opencl.h"
@@ -81,7 +81,7 @@ typedef struct {
     int contrast;              ///< Contrast threshold
     int search;                ///< Motion search method
     AVCodecContext *avctx;
-    DSPContext c;              ///< Context providing optimized SAD methods
+    MECmpContext c;            ///< Context providing optimized SAD methods
     Transform last;            ///< Transform from last frame
     int refcount;              ///< Number of reference frames (defines averaging window)
     FILE *fp;

@@ -36,7 +36,6 @@
 #include "internal.h"
 #include "cabac.h"
 #include "cabac_functions.h"
-#include "dsputil.h"
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264.h"
@@ -45,6 +44,7 @@
 #include "h264_mvpred.h"
 #include "golomb.h"
 #include "mathops.h"
+#include "me_cmp.h"
 #include "mpegutils.h"
 #include "rectangle.h"
 #include "svq3.h"
@@ -515,7 +515,7 @@ int ff_h264_context_init(H264Context *h)
     if (CONFIG_ERROR_RESILIENCE) {
         /* init ER */
         er->avctx          = h->avctx;
-        er->dsp            = &h->dsp;
+        er->mecc           = &h->mecc;
         er->decode_mb      = h264_er_decode_mb;
         er->opaque         = h;
         er->quarter_sample = 1;
@@ -653,7 +653,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     /* needed so that IDCT permutation is known early */
     if (CONFIG_ERROR_RESILIENCE)
-        ff_dsputil_init(&h->dsp, h->avctx);
+        ff_me_cmp_init(&h->mecc, h->avctx);
     ff_videodsp_init(&h->vdsp, 8);
 
     memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
@@ -1266,7 +1266,7 @@ int ff_h264_set_parameter_from_sps(H264Context *h)
                               h->sps.chroma_format_idc);
 
             if (CONFIG_ERROR_RESILIENCE)
-                ff_dsputil_init(&h->dsp, h->avctx);
+                ff_me_cmp_init(&h->mecc, h->avctx);
             ff_videodsp_init(&h->vdsp, h->sps.bit_depth_luma);
         } else {
             av_log(h->avctx, AV_LOG_ERROR, "Unsupported bit depth %d\n",

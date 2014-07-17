@@ -1,5 +1,5 @@
 /*
- * MMX optimized DSP utils
+ * SIMD-optimized motion estimation
  * Copyright (c) 2000, 2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -26,7 +26,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/me_cmp.h"
 #include "libavcodec/mpegvideo.h"
 
 int ff_sum_abs_dctelem_mmx(int16_t *block);
@@ -60,7 +60,7 @@ static int nsse16_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
     int score1, score2;
 
     if (c)
-        score1 = c->dsp.sse[0](c, pix1, pix2, line_size, h);
+        score1 = c->mecc.sse[0](c, pix1, pix2, line_size, h);
     else
         score1 = ff_sse16_mmx(c, pix1, pix2, line_size, h);
     score2 = ff_hf_noise16_mmx(pix1, line_size, h) + ff_hf_noise8_mmx(pix1+8, line_size, h)
@@ -754,7 +754,7 @@ PIX_SAD(mmxext)
 
 #endif /* HAVE_INLINE_ASM */
 
-av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
 

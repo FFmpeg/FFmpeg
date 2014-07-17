@@ -27,8 +27,8 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "hpeldsp.h"
+#include "me_cmp.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "internal.h"
@@ -314,7 +314,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.current_picture.motion_val[0]   = s->motion_val8[plane] + 2;
         s->m.p_mv_table                      = s->motion_val16[plane] +
                                                s->m.mb_stride + 1;
-        s->m.dsp                             = s->dsp; // move
+        s->m.mecc                            = s->mecc; // move
         ff_init_me(&s->m);
 
         s->m.me.dia_size      = s->avctx->dia_size;
@@ -437,8 +437,8 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                     best      = score[1] <= score[0];
 
                     vlc       = ff_svq1_block_type_vlc[SVQ1_BLOCK_SKIP];
-                    score[2]  = s->dsp.sse[0](NULL, src + 16 * x, ref,
-                                              stride, 16);
+                    score[2]  = s->mecc.sse[0](NULL, src + 16 * x, ref,
+                                               stride, 16);
                     score[2] += vlc[1] * lambda;
                     if (score[2] < score[best] && mx == 0 && my == 0) {
                         best = 2;
@@ -515,8 +515,8 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     SVQ1EncContext *const s = avctx->priv_data;
     int ret;
 
-    ff_dsputil_init(&s->dsp, avctx);
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
+    ff_me_cmp_init(&s->mecc, avctx);
     ff_mpegvideoencdsp_init(&s->m.mpvencdsp, avctx);
 
     avctx->coded_frame = av_frame_alloc();

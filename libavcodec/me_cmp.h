@@ -1,8 +1,4 @@
 /*
- * DSP utils
- * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
- * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -20,15 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * DSP utils.
- * Note, many functions in here may use MMX which trashes the FPU state, it is
- * absolutely necessary to call emms_c() between DSP & float/double code.
- */
+#ifndef AVCODEC_ME_CMP_H
+#define AVCODEC_ME_CMP_H
 
-#ifndef AVCODEC_DSPUTIL_H
-#define AVCODEC_DSPUTIL_H
+#include <stdint.h>
 
 #include "avcodec.h"
 
@@ -58,10 +49,7 @@ typedef int (*me_cmp_func)(struct MpegEncContext *c,
                            uint8_t *blk1 /* align width (8 or 16) */,
                            uint8_t *blk2 /* align 1 */, int line_size, int h);
 
-/**
- * DSPContext.
- */
-typedef struct DSPContext {
+typedef struct MECmpContext {
     int (*sum_abs_dctelem)(int16_t *block /* align 16 */);
 
     me_cmp_func sad[6]; /* identical to pix_absAxA except additional void * */
@@ -87,22 +75,20 @@ typedef struct DSPContext {
     me_cmp_func frame_skip_cmp[6]; // only width 8 used
 
     me_cmp_func pix_abs[2][4];
-} DSPContext;
+} MECmpContext;
 
-void ff_dsputil_static_init(void);
-void ff_dsputil_init(DSPContext *p, AVCodecContext *avctx);
-void avpriv_dsputil_init(DSPContext* p, AVCodecContext *avctx);
-attribute_deprecated void dsputil_init(DSPContext* c, AVCodecContext *avctx);
+void ff_me_cmp_init_static(void);
 
 int ff_check_alignment(void);
 
-void ff_set_cmp(DSPContext *c, me_cmp_func *cmp, int type);
+void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx);
+void ff_me_cmp_init_alpha(MECmpContext *c, AVCodecContext *avctx);
+void ff_me_cmp_init_arm(MECmpContext *c, AVCodecContext *avctx);
+void ff_me_cmp_init_ppc(MECmpContext *c, AVCodecContext *avctx);
+void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx);
 
-void ff_dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
-void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx);
-void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx);
-void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx);
+void ff_set_cmp(MECmpContext *c, me_cmp_func *cmp, int type);
 
-void ff_dsputil_init_dwt(DSPContext *c);
+void ff_dsputil_init_dwt(MECmpContext *c);
 
-#endif /* AVCODEC_DSPUTIL_H */
+#endif /* AVCODEC_ME_CMP_H */

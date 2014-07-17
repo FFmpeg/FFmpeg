@@ -380,10 +380,10 @@ static void gray8(uint8_t *dst, const uint8_t *src, ptrdiff_t linesize, int h)
 av_cold int ff_dct_common_init(MpegEncContext *s)
 {
     ff_blockdsp_init(&s->bdsp, s->avctx);
-    ff_dsputil_init(&s->dsp, s->avctx);
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
     ff_idctdsp_init(&s->idsp, s->avctx);
+    ff_me_cmp_init(&s->mecc, s->avctx);
     ff_mpegvideodsp_init(&s->mdsp);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
@@ -1106,7 +1106,7 @@ static int init_er(MpegEncContext *s)
     int i;
 
     er->avctx       = s->avctx;
-    er->dsp         = &s->dsp;
+    er->mecc        = &s->mecc;
 
     er->mb_index2xy = s->mb_index2xy;
     er->mb_num      = s->mb_num;

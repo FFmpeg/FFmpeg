@@ -22,7 +22,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
-#include "dsputil.h"
+#include "me_cmp.h"
 #include "snow_dwt.h"
 
 int ff_slice_buffer_init(slice_buffer *buf, int line_count,
@@ -844,7 +844,7 @@ int ff_w97_32_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, int line
     return w_c(v, pix1, pix2, line_size, 32, h, 0);
 }
 
-void ff_dsputil_init_dwt(DSPContext *c)
+void ff_dsputil_init_dwt(MECmpContext *c)
 {
     c->w53[0] = w53_16_c;
     c->w53[1] = w53_8_c;

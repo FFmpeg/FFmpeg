@@ -50,7 +50,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->bits_per_raw_sample = 10;
 
-    ff_dsputil_init(&ctx->dsp, avctx);
     ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_proresdsp_init(&ctx->prodsp, avctx);
 

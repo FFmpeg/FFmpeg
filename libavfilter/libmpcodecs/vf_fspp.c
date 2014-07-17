@@ -53,7 +53,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
 
 #undef free
 #undef malloc
