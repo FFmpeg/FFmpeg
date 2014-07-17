@@ -76,7 +76,7 @@ static enum AVPixelFormat get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *v
     return AV_PIX_FMT_NONE;
 }
 
-typedef struct {
+typedef struct FBDevContext {
     AVClass *class;          ///< class for private options
     int frame_size;          ///< size in bytes of a grabbed frame
     AVRational framerate_q;  ///< framerate

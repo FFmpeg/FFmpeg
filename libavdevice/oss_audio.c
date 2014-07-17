@@ -44,7 +44,7 @@
 
 #define AUDIO_BLOCK_SIZE 4096
 
-typedef struct {
+typedef struct AudioData {
     AVClass *class;
     int fd;
     int sample_rate;

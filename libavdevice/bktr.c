@@ -51,7 +51,7 @@
 #include <signal.h>
 #include <stdint.h>
 
-typedef struct {
+typedef struct VideoData {
     AVClass *class;
     int video_fd;
     int tuner_fd;
