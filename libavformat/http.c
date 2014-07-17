@@ -114,16 +114,6 @@ static const AVOption options[] = {
 {"method", "Override the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E, },
 {NULL}
 };
-#define HTTP_CLASS(flavor)\
-static const AVClass flavor ## _context_class = {\
-    .class_name     = #flavor,\
-    .item_name      = av_default_item_name,\
-    .option         = options,\
-    .version        = LIBAVUTIL_VERSION_INT,\
-}
-
-HTTP_CLASS(http);
-HTTP_CLASS(https);
 
 static int http_connect(URLContext *h, const char *path, const char *local_path,
                         const char *hoststr, const char *auth,
@@ -956,7 +946,17 @@ http_get_file_handle(URLContext *h)
     return ffurl_get_file_handle(s->hd);
 }
 
+#define HTTP_CLASS(flavor)\
+static const AVClass flavor ## _context_class = {\
+    .class_name     = #flavor,\
+    .item_name      = av_default_item_name,\
+    .option         = options,\
+    .version        = LIBAVUTIL_VERSION_INT,\
+}
+
 #if CONFIG_HTTP_PROTOCOL
+HTTP_CLASS(http);
+
 URLProtocol ff_http_protocol = {
     .name                = "http",
     .url_open2           = http_open,
@@ -972,6 +972,8 @@ URLProtocol ff_http_protocol = {
 };
 #endif
 #if CONFIG_HTTPS_PROTOCOL
+HTTP_CLASS(https);
+
 URLProtocol ff_https_protocol = {
     .name                = "https",
     .url_open2           = http_open,
