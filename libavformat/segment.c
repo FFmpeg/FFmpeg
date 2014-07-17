@@ -707,8 +707,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    av_dlog(s, "packet stream:%d pts:%s pts_time:%s is_key:%d frame:%d\n",
+    av_dlog(s, "packet stream:%d pts:%s pts_time:%s duration_time:%s is_key:%d frame:%d\n",
            pkt->stream_index, av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           av_ts2timestr(pkt->duration, &st->time_base),
            pkt->flags & AV_PKT_FLAG_KEY,
            pkt->stream_index == seg->reference_stream_index ? seg->frame_count : -1);
 
