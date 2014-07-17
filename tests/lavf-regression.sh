@@ -274,6 +274,15 @@ if [ -n "$do_wav" ] ; then
 do_audio_only wav
 fi
 
+if [ -n "$do_wav_peak" ] ; then
+do_audio_only peak.wav "" "-write_peak on"
+fi
+
+if [ -n "$do_wav_peak_only" ] ; then
+file=${outfile}lavf.peak_only.wav
+do_avconv $file $DEC_OPTS -ar 44100 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 -write_peak only
+fi
+
 if [ -n "$do_alaw" ] ; then
 do_audio_only al "" "" "-ar 44100"
 fi
