@@ -69,7 +69,9 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 
     dv_vlc_map_tableinit();
 
+    memset(&fdsp,0, sizeof(fdsp));
     memset(&mecc,0, sizeof(mecc));
+    memset(&pdsp,0, sizeof(pdsp));
     ff_fdctdsp_init(&fdsp, avctx);
     ff_me_cmp_init(&mecc, avctx);
     ff_pixblockdsp_init(&pdsp, avctx);
