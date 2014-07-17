@@ -24,7 +24,6 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/snow.h"
 #include "libavcodec/snow_dwt.h"
-#include "dsputil_x86.h"
 
 #if HAVE_INLINE_ASM
 

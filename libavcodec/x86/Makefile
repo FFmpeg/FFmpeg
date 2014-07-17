@@ -6,8 +6,7 @@ OBJS-$(CONFIG_AUDIODSP)                += x86/audiodsp_init.o
 OBJS-$(CONFIG_BLOCKDSP)                += x86/blockdsp_init.o
 OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
-OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o            \
-                                          x86/motion_est.o
+OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o
 OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
 OBJS-$(CONFIG_FLAC_DECODER)            += x86/flacdsp_init.o
