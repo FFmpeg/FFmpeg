@@ -94,7 +94,8 @@ typedef struct {
     char *frames_str;      ///< segment frame numbers specification string
     int *frames;           ///< list of frame number specification
     int nb_frames;         ///< number of elments in the frames array
-    int frame_count;
+    int frame_count;       ///< total number of reference frames
+    int segment_frame_count; ///< number of reference frames in the segment
 
     int64_t time_delta;
     int  individual_header_trailer; /**< Set by a private option. */
@@ -108,8 +109,6 @@ typedef struct {
     SegmentListEntry cur_entry;
     SegmentListEntry *segment_list_entries;
     SegmentListEntry *segment_list_entries_end;
-
-    int is_first_pkt;      ///< tells if it is the first packet in the segment
 } SegmentContext;
 
 static void print_csv_escaped_str(AVIOContext *ctx, const char *str)
@@ -228,7 +227,7 @@ static int segment_start(AVFormatContext *s, int write_header)
             return err;
     }
 
-    seg->is_first_pkt = 1;
+    seg->segment_frame_count = 0;
     return 0;
 }
 
@@ -647,7 +646,7 @@ static int seg_write_header(AVFormatContext *s)
         avio_close(oc->pb);
         goto fail;
     }
-    seg->is_first_pkt = 1;
+    seg->segment_frame_count = 0;
 
     if (oc->avoid_negative_ts > 0 && s->avoid_negative_ts < 0)
         s->avoid_negative_ts = 1;
@@ -715,6 +714,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (pkt->stream_index == seg->reference_stream_index &&
         pkt->flags & AV_PKT_FLAG_KEY &&
+        seg->segment_frame_count > 0 &&
         (seg->cut_pending || seg->frame_count >= start_frame ||
          (pkt->pts != AV_NOPTS_VALUE &&
           av_compare_ts(pkt->pts, st->time_base,
@@ -736,11 +736,10 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
             FFMAX(seg->cur_entry.end_time, (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
     }
 
-    if (seg->is_first_pkt) {
+    if (seg->segment_frame_count == 0) {
         av_log(s, AV_LOG_VERBOSE, "segment:'%s' starts with packet stream:%d pts:%s pts_time:%s frame:%d\n",
                seg->avf->filename, pkt->stream_index,
                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base), seg->frame_count);
-        seg->is_first_pkt = 0;
     }
 
     av_log(s, AV_LOG_DEBUG, "stream:%d start_pts_time:%s pts:%s pts_time:%s dts:%s dts_time:%s",
@@ -764,8 +763,10 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     ret = ff_write_chained(seg->avf, pkt->stream_index, pkt, s);
 
 fail:
-    if (pkt->stream_index == seg->reference_stream_index)
+    if (pkt->stream_index == seg->reference_stream_index) {
         seg->frame_count++;
+        seg->segment_frame_count++;
+    }
 
     return ret;
 }
