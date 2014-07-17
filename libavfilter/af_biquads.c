@@ -161,7 +161,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-#define BIQUAD_FILTER(name, type, min, max)                                   \
+#define BIQUAD_FILTER(name, type, min, max, need_clipping)                    \
 static void biquad_## name (const void *input, void *output, int len,         \
                             double *in1, double *in2,                         \
                             double *out1, double *out2,                       \
@@ -181,10 +181,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
     for (i = 0; i+1 < len; i++) {                                             \
         o2 = i2 * b2 + i1 * b1 + ibuf[i] * b0 + o2 * a2 + o1 * a1;            \
         i2 = ibuf[i];                                                         \
-        if (o2 < min) {                                                       \
+        if (need_clipping && o2 < min) {                                      \
             av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
             obuf[i] = min;                                                    \
-        } else if (o2 > max) {                                                \
+        } else if (need_clipping && o2 > max) {                               \
             av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
             obuf[i] = max;                                                    \
         } else {                                                              \
@@ -193,10 +193,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
         i++;                                                                  \
         o1 = i1 * b2 + i2 * b1 + ibuf[i] * b0 + o1 * a2 + o2 * a1;            \
         i1 = ibuf[i];                                                         \
-        if (o1 < min) {                                                       \
+        if (need_clipping && o1 < min) {                                      \
             av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
             obuf[i] = min;                                                    \
-        } else if (o1 > max) {                                                \
+        } else if (need_clipping && o1 > max) {                               \
             av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
             obuf[i] = max;                                                    \
         } else {                                                              \
@@ -209,10 +209,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
         i1 = ibuf[i];                                                         \
         o2 = o1;                                                              \
         o1 = o0;                                                              \
-        if (o0 < min) {                                                       \
+        if (need_clipping && o0 < min) {                                      \
             av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
             obuf[i] = min;                                                    \
-        } else if (o0 > max) {                                                \
+        } else if (need_clipping && o0 > max) {                               \
             av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
             obuf[i] = max;                                                    \
         } else {                                                              \
@@ -225,10 +225,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
     *out2 = o2;                                                               \
 }
 
-BIQUAD_FILTER(s16, int16_t, INT16_MIN, INT16_MAX)
-BIQUAD_FILTER(s32, int32_t, INT32_MIN, INT32_MAX)
-BIQUAD_FILTER(flt, float,   -1., 1.)
-BIQUAD_FILTER(dbl, double,  -1., 1.)
+BIQUAD_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
+BIQUAD_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
+BIQUAD_FILTER(flt, float,   -1., 1., 0)
+BIQUAD_FILTER(dbl, double,  -1., 1., 0)
 
 static int config_output(AVFilterLink *outlink)
 {
