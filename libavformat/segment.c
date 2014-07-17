@@ -48,6 +48,7 @@ typedef struct SegmentListEntry {
     int64_t offset_pts;
     char *filename;
     struct SegmentListEntry *next;
+    int64_t last_duration;
 } SegmentListEntry;
 
 typedef enum {
@@ -719,6 +720,10 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
          (pkt->pts != AV_NOPTS_VALUE &&
           av_compare_ts(pkt->pts, st->time_base,
                         end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0))) {
+        /* sanitize end time in case last packet didn't have a defined duration */
+        if (seg->cur_entry.last_duration == 0)
+            seg->cur_entry.end_time = (double)pkt->pts * av_q2d(st->time_base);
+
         if ((ret = segment_end(s, seg->individual_header_trailer, 0)) < 0)
             goto fail;
 
@@ -734,6 +739,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else if (pkt->pts != AV_NOPTS_VALUE && pkt->stream_index == seg->reference_stream_index) {
         seg->cur_entry.end_time =
             FFMAX(seg->cur_entry.end_time, (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
+        seg->cur_entry.last_duration = pkt->duration;
     }
 
     if (seg->segment_frame_count == 0) {
