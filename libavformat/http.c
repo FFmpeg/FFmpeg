@@ -85,6 +85,7 @@ typedef struct {
 #endif
     AVDictionary *chained_options;
     int send_expect_100;
+    char *method;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -110,6 +111,7 @@ static const AVOption options[] = {
 {"location", "The actual location of the data received", OFFSET(location), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {"offset", "initial byte offset", OFFSET(off), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX, D },
 {"end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX, D },
+{"method", "Override the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E, },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
@@ -555,7 +557,11 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
         s->chunked_post = 0;
     }
 
-    method = post ? "POST" : "GET";
+    if (s->method)
+        method = s->method;
+    else
+        method = post ? "POST" : "GET";
+
     authstr = ff_http_auth_create_response(&s->auth_state, auth, local_path,
                                            method);
     proxyauthstr = ff_http_auth_create_response(&s->proxy_auth_state, proxyauth,
