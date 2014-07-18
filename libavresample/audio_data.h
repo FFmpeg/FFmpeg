@@ -29,6 +29,8 @@
 #include "avresample.h"
 #include "internal.h"
 
+int ff_sample_fmt_is_planar(enum AVSampleFormat sample_fmt, int channels);
+
 /**
  * Audio buffer used for intermediate storage between conversion phases.
  */
