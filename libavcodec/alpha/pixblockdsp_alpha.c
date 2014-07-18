@@ -19,7 +19,6 @@
  */
 
 #include "libavutil/attributes.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/pixblockdsp.h"
 #include "asm.h"
 

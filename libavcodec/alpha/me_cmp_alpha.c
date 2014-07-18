@@ -19,8 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dsputil_alpha.h"
+#include "libavutil/attributes.h"
+#include "libavcodec/me_cmp.h"
 #include "asm.h"
+
+int pix_abs16x16_mvi_asm(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 
 static inline uint64_t avg2(uint64_t a, uint64_t b)
 {
@@ -41,7 +44,7 @@ static inline uint64_t avg4(uint64_t l1, uint64_t l2, uint64_t l3, uint64_t l4)
     return r1 + r2;
 }
 
-int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
+static int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
 
@@ -116,7 +119,7 @@ int pix_abs16x16_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
 }
 #endif
 
-int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
+static int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
     uint64_t disalign = (size_t) pix2 & 0x7;
@@ -189,7 +192,7 @@ int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, in
     return result;
 }
 
-int pix_abs16x16_y2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
+static int pix_abs16x16_y2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
 
@@ -242,7 +245,7 @@ int pix_abs16x16_y2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, in
     return result;
 }
 
-int pix_abs16x16_xy2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
+static int pix_abs16x16_xy2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
 
@@ -297,4 +300,18 @@ int pix_abs16x16_xy2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, i
     } while (--h);
 
     return result;
+}
+
+av_cold void ff_me_cmp_init_alpha(MECmpContext *c, AVCodecContext *avctx)
+{
+    /* amask clears all bits that correspond to present features.  */
+    if (amask(AMASK_MVI) == 0) {
+        c->sad[0]           = pix_abs16x16_mvi_asm;
+        c->sad[1]           = pix_abs8x8_mvi;
+        c->pix_abs[0][0]    = pix_abs16x16_mvi_asm;
+        c->pix_abs[1][0]    = pix_abs8x8_mvi;
+        c->pix_abs[0][1]    = pix_abs16x16_x2_mvi;
+        c->pix_abs[0][2]    = pix_abs16x16_y2_mvi;
+        c->pix_abs[0][3]    = pix_abs16x16_xy2_mvi;
+    }
 }
