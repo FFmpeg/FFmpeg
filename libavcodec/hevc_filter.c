@@ -158,7 +158,8 @@ static void restore_tqb_pixels(HEVCContext *s, int x0, int y0, int width, int he
     if ( s->pps->transquant_bypass_enable_flag ||
             (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) {
         int x, y;
-        ptrdiff_t stride = s->frame->linesize[c_idx];
+        ptrdiff_t stride_dst = s->sao_frame->linesize[c_idx];
+        ptrdiff_t stride_src = s->frame->linesize[c_idx];
         int min_pu_size  = 1 << s->sps->log2_min_pu_size;
         int hshift       = s->sps->hshift[c_idx];
         int vshift       = s->sps->vshift[c_idx];
@@ -171,12 +172,12 @@ static void restore_tqb_pixels(HEVCContext *s, int x0, int y0, int width, int he
             for (x = x_min; x < x_max; x++) {
                 if (s->is_pcm[y * s->sps->min_pu_width + x]) {
                     int n;
-                    uint8_t *src = &s->frame->data[c_idx][    ((y << s->sps->log2_min_pu_size) >> vshift) * stride + (((x << s->sps->log2_min_pu_size) >> hshift) << s->sps->pixel_shift)];
-                    uint8_t *dst = &s->sao_frame->data[c_idx][((y << s->sps->log2_min_pu_size) >> vshift) * stride + (((x << s->sps->log2_min_pu_size) >> hshift) << s->sps->pixel_shift)];
+                    uint8_t *src = &s->frame->data[c_idx][    ((y << s->sps->log2_min_pu_size) >> vshift) * stride_src + (((x << s->sps->log2_min_pu_size) >> hshift) << s->sps->pixel_shift)];
+                    uint8_t *dst = &s->sao_frame->data[c_idx][((y << s->sps->log2_min_pu_size) >> vshift) * stride_dst + (((x << s->sps->log2_min_pu_size) >> hshift) << s->sps->pixel_shift)];
                     for (n = 0; n < (min_pu_size >> vshift); n++) {
                         memcpy(src, dst, len);
-                        src += stride;
-                        dst += stride;
+                        src += stride_src;
+                        dst += stride_dst;
                     }
                 }
             }
