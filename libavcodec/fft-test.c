@@ -183,7 +183,7 @@ static void dct_ref(float *output, float *input, int nbits)
     }
 }
 #endif /* CONFIG_DCT */
-#endif
+#endif /* FFT_FLOAT */
 
 
 static FFTSample frandom(AVLFG *prng)
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
     RDFTContext r1, *r = &r1;
     DCTContext d1, *d = &d1;
     int fft_size_2;
-#endif
+#endif /* FFT_FLOAT */
     int fft_nbits, fft_size;
     double scale = 1.0;
     AVLFG prng;
@@ -344,7 +344,7 @@ int main(int argc, char **argv)
         ff_dct_init(d, fft_nbits, do_inverse ? DCT_III : DCT_II);
         break;
 #endif /* CONFIG_DCT */
-#endif
+#endif /* FFT_FLOAT */
     default:
         av_log(NULL, AV_LOG_ERROR, "Requested transform not supported\n");
         return 1;
@@ -431,7 +431,7 @@ int main(int argc, char **argv)
         err = check_diff((float *)tab_ref, (float *)tab, fft_size, 1.0);
         break;
 #endif /* CONFIG_DCT */
-#endif
+#endif /* FFT_FLOAT */
     }
 
     /* do a speed test */
@@ -467,7 +467,7 @@ int main(int argc, char **argv)
                     memcpy(tab2, tab1, fft_size * sizeof(FFTSample));
                     d->dct_calc(d, tab2);
                     break;
-#endif
+#endif /* FFT_FLOAT */
                 }
             }
             duration = av_gettime() - time_start;
@@ -501,7 +501,7 @@ int main(int argc, char **argv)
         ff_dct_end(d);
         break;
 #endif /* CONFIG_DCT */
-#endif
+#endif /* FFT_FLOAT */
     }
 
     av_free(tab);
