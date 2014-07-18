@@ -52,8 +52,7 @@ void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
             ((x0b + nPbW) == (1 << s->sps->log2_ctb_size)) ?
                     lc->ctb_up_right_flag && !y0b : lc->na.cand_up;
     lc->na.cand_up_right =
-            ((x0b + nPbW) == (1 << s->sps->log2_ctb_size) ?
-                    lc->ctb_up_right_flag && !y0b : lc->na.cand_up )
+            lc->na.cand_up_right_sap
                      && (x0 + nPbW) < lc->end_of_tiles_x;
     lc->na.cand_bottom_left = ((y0 + nPbH) >= lc->end_of_tiles_y) ? 0 : lc->na.cand_left;
 }
@@ -71,12 +70,6 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
     int yCurr_ctb = yCurr >> s->sps->log2_ctb_size;
     int xN_ctb    = xN    >> s->sps->log2_ctb_size;
     int yN_ctb    = yN    >> s->sps->log2_ctb_size;
-
-    if (xN < 0 || yN < 0 ||
-        xN >= s->sps->width ||
-        yN >= s->sps->height)
-        return 0;
-
     if( yN_ctb < yCurr_ctb || xN_ctb < xCurr_ctb )
         return 1;
     else {
