@@ -33,7 +33,7 @@
 
 typedef struct ListEntry {
     char  name[1024];
-    double   duration;
+    double duration; /* in seconds */
     struct ListEntry *next;
 } ListEntry;
 
@@ -85,6 +85,7 @@ static int hls_mux_init(AVFormatContext *s)
     return 0;
 }
 
+/* Create a new segment and append it to the segment list */
 static int append_entry(HLSContext *hls, double duration)
 {
     ListEntry *en = av_malloc(sizeof(*en));
