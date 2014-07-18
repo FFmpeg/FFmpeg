@@ -29,10 +29,8 @@
 #include "libavutil/log.h"
 #include "libavutil/time.h"
 #include "fft.h"
-#if FFT_FLOAT
 #include "dct.h"
 #include "rdft.h"
-#endif
 #include <math.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>
