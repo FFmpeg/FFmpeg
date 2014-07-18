@@ -209,20 +209,21 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
         return CHECK_MVSET(0);
     else if (temp_col.pred_flag == PF_BI) {
         int check_diffpicount = 0;
-        int i = 0;
-        for (i = 0; i < refPicList[0].nb_refs; i++) {
-            if (refPicList[0].list[i] > s->poc)
-                check_diffpicount++;
+        int i, j;
+        for (j = 0; j < 2; j++) {
+            for (i = 0; i < refPicList[j].nb_refs; i++) {
+                if (refPicList[j].list[i] > s->poc) {
+                    check_diffpicount++;
+                    break;
+                }
+            }
         }
-        for (i = 0; i < refPicList[1].nb_refs; i++) {
-            if (refPicList[1].list[i] > s->poc)
-                check_diffpicount++;
-        }
-        if (check_diffpicount == 0 && X == 0)
-            return CHECK_MVSET(0);
-        else if (check_diffpicount == 0 && X == 1)
-            return CHECK_MVSET(1);
-        else {
+        if (!check_diffpicount) {
+            if (X==0)
+                return CHECK_MVSET(0);
+            else
+                return CHECK_MVSET(1);
+        } else {
             if (s->sh.collocated_list == L1)
                 return CHECK_MVSET(0);
             else
