@@ -438,7 +438,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     bw = avctx->width >> 2;
     bh = avctx->height >> 2;
     blocks = bw * bh;
-    out = smk->pic->data[0];
     stride = smk->pic->linesize[0];
     while(blk < blocks) {
         int type, run, mode;
@@ -499,7 +498,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     out += stride;
                     out[0] = out[1] = pix & 0xFF;
                     out[2] = out[3] = pix >> 8;
-                    out += stride;
                     break;
                 case 2:
                     for(i = 0; i < 2; i++) {
