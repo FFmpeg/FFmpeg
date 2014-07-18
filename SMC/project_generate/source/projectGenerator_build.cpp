@@ -206,6 +206,10 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             {
                 vIncludeDirs.push_back("$(OutDir)\\include\\freetype2");
             }
+            else if( vitLib->compare( "libfribidi" ) == 0 )
+            {
+                vIncludeDirs.push_back( "$(OutDir)\\include\\fribidi" );
+            }
             else if( vitLib->compare("sdl") == 0 )
             {
                 vIncludeDirs.push_back("$(OutDir)\\include\\SDL");
@@ -279,7 +283,8 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["libfaac"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libfdk_aac"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libflite"] = ( sProjectName.compare("libavfilter") == 0 );//??
-    mProjectDeps["libfreetype"] = ( sProjectName.compare("libavfilter") == 0 );
+    mProjectDeps["libfreetype"] = ( sProjectName.compare( "libavfilter" ) == 0 );
+    mProjectDeps["libfribidi"] = ( sProjectName.compare( "libavfilter" ) == 0 );
     mProjectDeps["libgme"] = ( sProjectName.compare("libavformat") == 0 );//??
     mProjectDeps["libgsm"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libiec61883"] = ( sProjectName.compare("libavdevice") == 0 );//?

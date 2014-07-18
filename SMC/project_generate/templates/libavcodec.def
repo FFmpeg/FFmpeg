@@ -177,7 +177,6 @@ EXPORTS
     avpriv_dirac_parse_sequence_header
     avpriv_dnxhd_get_frame_size
     avpriv_do_elbg
-    avpriv_dsputil_init
     avpriv_dv_codec_profile
     avpriv_dv_frame_profile
     avpriv_dv_frame_profile2
@@ -213,10 +212,10 @@ EXPORTS
     avpriv_vorbis_parse_frame_flags
     avpriv_vorbis_parse_reset
     avsubtitle_free
-    dsputil_init
 ;if idctdsp
     ff_idctdsp_init
     ff_fdctdsp_init
     ff_pixblockdsp_init
 ;endif
+    ff_me_cmp_init
     ff_raw_pix_fmt_tags DATA
