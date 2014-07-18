@@ -28,7 +28,7 @@
 
 #include "rdft.h"
 
-struct DCTContext {
+typedef struct DCTContext {
     int nbits;
     int inverse;
     RDFTContext rdft;
@@ -36,7 +36,7 @@ struct DCTContext {
     FFTSample *csc2;
     void (*dct_calc)(struct DCTContext *s, FFTSample *data);
     void (*dct32)(FFTSample *out, const FFTSample *in);
-};
+} DCTContext;
 
 /**
  * Set up DCT.
