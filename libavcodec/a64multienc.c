@@ -351,7 +351,6 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
             /* advance pointers */
             buf      += charset_size;
-            charset  += charset_size;
         }
 
         /* write x frames to buf */
