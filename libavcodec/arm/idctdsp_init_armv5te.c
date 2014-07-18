@@ -39,6 +39,6 @@ av_cold void ff_idctdsp_init_armv5te(IDCTDSPContext *c, AVCodecContext *avctx,
         c->idct_put              = ff_simple_idct_put_armv5te;
         c->idct_add              = ff_simple_idct_add_armv5te;
         c->idct                  = ff_simple_idct_armv5te;
-        c->idct_permutation_type = FF_NO_IDCT_PERM;
+        c->perm_type             = FF_IDCT_PERM_NONE;
     }
 }

@@ -58,7 +58,7 @@ static void prores_idct_put_c(uint16_t *out, int linesize, int16_t *block, const
 av_cold void ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
 {
     dsp->idct_put = prores_idct_put_c;
-    dsp->idct_permutation_type = FF_NO_IDCT_PERM;
+    dsp->idct_permutation_type = FF_IDCT_PERM_NONE;
 
     if (ARCH_X86)
         ff_proresdsp_init_x86(dsp, avctx);

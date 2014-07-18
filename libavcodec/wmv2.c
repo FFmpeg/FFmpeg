@@ -31,7 +31,7 @@ av_cold void ff_wmv2_common_init(Wmv2Context * w){
 
     ff_blockdsp_init(&s->bdsp, s->avctx);
     ff_wmv2dsp_init(&w->wdsp);
-    s->idsp.idct_permutation_type = w->wdsp.idct_perm;
+    s->idsp.perm_type = w->wdsp.idct_perm;
     ff_init_scantable_permutation(s->idsp.idct_permutation,
                                   w->wdsp.idct_perm);
     ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[0],

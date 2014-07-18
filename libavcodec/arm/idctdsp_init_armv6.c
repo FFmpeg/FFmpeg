@@ -41,7 +41,7 @@ av_cold void ff_idctdsp_init_armv6(IDCTDSPContext *c, AVCodecContext *avctx,
             c->idct_put              = ff_simple_idct_put_armv6;
             c->idct_add              = ff_simple_idct_add_armv6;
             c->idct                  = ff_simple_idct_armv6;
-            c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
+            c->perm_type             = FF_IDCT_PERM_LIBMPEG2;
         }
     }
     c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
