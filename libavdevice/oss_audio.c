@@ -87,7 +87,16 @@ static int audio_open(AVFormatContext *s1, int is_output, const char *audio_devi
 
     s->frame_size = AUDIO_BLOCK_SIZE;
 
-    /* select format : favour native format */
+#define CHECK_IOCTL_ERROR(event)                                              \
+    if (err < 0) {                                                            \
+        av_log(s1, AV_LOG_ERROR, #event ": %s\n", strerror(errno));         \
+        goto fail;                                                            \
+    }
+
+    /* select format : favour native format
+     * We don't CHECK_IOCTL_ERROR here because even if failed OSS still may be
+     * usable. If OSS is not usable the SNDCTL_DSP_SETFMTS later is going to
+     * fail anyway. `err =` kept to eliminate compiler warning. */
     err = ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &tmp);
 
 #if HAVE_BIGENDIAN
@@ -121,24 +130,15 @@ static int audio_open(AVFormatContext *s1, int is_output, const char *audio_devi
         return AVERROR(EIO);
     }
     err=ioctl(audio_fd, SNDCTL_DSP_SETFMT, &tmp);
-    if (err < 0) {
-        av_log(s1, AV_LOG_ERROR, "SNDCTL_DSP_SETFMT: %s\n", strerror(errno));
-        goto fail;
-    }
+    CHECK_IOCTL_ERROR(SNDCTL_DSP_SETFMTS)
 
     tmp = (s->channels == 2);
     err = ioctl(audio_fd, SNDCTL_DSP_STEREO, &tmp);
-    if (err < 0) {
-        av_log(s1, AV_LOG_ERROR, "SNDCTL_DSP_STEREO: %s\n", strerror(errno));
-        goto fail;
-    }
+    CHECK_IOCTL_ERROR(SNDCTL_DSP_STEREO)
 
     tmp = s->sample_rate;
     err = ioctl(audio_fd, SNDCTL_DSP_SPEED, &tmp);
-    if (err < 0) {
-        av_log(s1, AV_LOG_ERROR, "SNDCTL_DSP_SPEED: %s\n", strerror(errno));
-        goto fail;
-    }
+    CHECK_IOCTL_ERROR(SNDCTL_DSP_SPEED)
     s->sample_rate = tmp; /* store real sample rate */
     s->fd = audio_fd;
 
@@ -146,6 +146,7 @@ static int audio_open(AVFormatContext *s1, int is_output, const char *audio_devi
  fail:
     close(audio_fd);
     return AVERROR(EIO);
+#undef CHECK_IOCTL_ERROR
 }
 
 static int audio_close(AudioData *s)
