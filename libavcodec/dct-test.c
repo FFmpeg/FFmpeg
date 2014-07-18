@@ -62,7 +62,7 @@ struct algo {
     void (*func)(int16_t *block);
     enum formattag { NO_PERM, MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM,
                      SSE2_PERM, PARTTRANS_PERM, TRANSPOSE_PERM } format;
-    int mm_support;
+    int cpu_flag;
     int nonspec;
 };
 
@@ -572,7 +572,7 @@ int main(int argc, char **argv)
         const int cpu_flags = av_get_cpu_flags();
         const struct algo *algos = test_idct ? idct_tab : fdct_tab;
         for (i = 0; algos[i].name; i++)
-            if (!(~cpu_flags & algos[i].mm_support)) {
+            if (!(~cpu_flags & algos[i].cpu_flag)) {
                 err |= dct_error(&algos[i], test, test_idct, speed, bits);
             }
     }
