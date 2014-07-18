@@ -66,8 +66,6 @@ struct algo {
     int nonspec;
 };
 
-static int cpu_flags;
-
 static const struct algo fdct_tab[] = {
     { "REF-DBL",        ff_ref_fdct,           NO_PERM    },
     { "FAAN",           ff_faandct,            NO_PERM    },
@@ -538,8 +536,6 @@ int main(int argc, char **argv)
     int err = 0;
     int bits=8;
 
-    cpu_flags = av_get_cpu_flags();
-
     ff_ref_dct_init();
     idct_mmx_init();
 
@@ -573,6 +569,7 @@ int main(int argc, char **argv)
     if (test_248_dct) {
         idct248_error("SIMPLE-C", ff_simple_idct248_put, speed);
     } else {
+        const int cpu_flags = av_get_cpu_flags();
         const struct algo *algos = test_idct ? idct_tab : fdct_tab;
         for (i = 0; algos[i].name; i++)
             if (!(~cpu_flags & algos[i].mm_support)) {
