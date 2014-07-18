@@ -34,6 +34,7 @@
 typedef struct HLSSegment {
     char filename[1024];
     double duration; /* in seconds */
+
     struct HLSSegment *next;
 } HLSSegment;
 
@@ -43,20 +44,26 @@ typedef struct HLSContext {
     int64_t sequence;
     int64_t start_sequence;
     AVOutputFormat *oformat;
+
     AVFormatContext *avf;
+
     float time;            // Set by a private option.
     int max_nb_segments;   // Set by a private option.
     int  wrap;             // Set by a private option.
+
     int64_t recording_time;
     int has_video;
     int64_t start_pts;
     int64_t end_pts;
     double duration;      // last segment duration computed so far, in seconds
     int nb_entries;
+
     HLSSegment *segments;
     HLSSegment *last_segment;
+
     char *basename;
     char *baseurl;
+
     AVIOContext *pb;
 } HLSContext;
 
