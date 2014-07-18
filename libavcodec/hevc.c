@@ -3311,7 +3311,8 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     }
 
     if (s->sps != s0->sps)
-        ret = set_sps(s, s0->sps);
+        if ((ret = set_sps(s, s0->sps)) < 0)
+            return ret;
 
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;
