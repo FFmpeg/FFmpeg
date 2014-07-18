@@ -28,7 +28,6 @@ EXPORTS
     av_bprint_chars
     av_bprint_clear
     av_bprint_escape
-    av_bprint_fd_contents
     av_bprint_finalize
     av_bprint_get_buffer
     av_bprint_init

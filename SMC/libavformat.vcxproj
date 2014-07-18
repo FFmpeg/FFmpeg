@@ -626,6 +626,15 @@
     <ClCompile Include="..\libavformat\loasdec.c">
       <ObjectFileName>$(IntDir)\libavformat_loasdec.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\lrcdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_lrcdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\lrc.c">
+      <ObjectFileName>$(IntDir)\libavformat_lrc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\lrcenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_lrcenc.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\lvfdec.c">
       <ObjectFileName>$(IntDir)\libavformat_lvfdec.obj</ObjectFileName>
     </ClCompile>
@@ -652,6 +661,9 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\wv.c">
       <ObjectFileName>$(IntDir)\libavformat_wv.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\webmdashenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_webmdashenc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavformat\mgsts.c">
       <ObjectFileName>$(IntDir)\libavformat_mgsts.obj</ObjectFileName>

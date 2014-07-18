@@ -140,9 +140,6 @@
     <ClCompile Include="..\libavcodec\dct32_float.c">
       <ObjectFileName>$(IntDir)\libavcodec_dct32_float.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\dsputil.c">
-      <ObjectFileName>$(IntDir)\libavcodec_dsputil.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2.c">
       <ObjectFileName>$(IntDir)\libavcodec_dxva2.obj</ObjectFileName>
     </ClCompile>
@@ -259,6 +256,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\mdct_fixed_32.c">
       <ObjectFileName>$(IntDir)\libavcodec_mdct_fixed_32.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\me_cmp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_me_cmp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg_er.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpeg_er.obj</ObjectFileName>
@@ -2042,15 +2042,6 @@
     <ClCompile Include="..\libavcodec\x86\dct_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_dct_init.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\dsputil_init.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_dsputil_init.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\dsputilenc_mmx.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_dsputilenc_mmx.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\motion_est.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_motion_est.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\fdctdsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_fdctdsp_init.obj</ObjectFileName>
     </ClCompile>
@@ -2098,6 +2089,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\lpc.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_lpc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\me_cmp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_me_cmp_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\mpegaudiodsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_mpegaudiodsp.obj</ObjectFileName>
@@ -2228,7 +2222,6 @@
     <YASM Include="..\libavcodec\x86\diracdsp_yasm.asm" />
     <YASM Include="..\libavcodec\x86\dwt_yasm.asm" />
     <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
-    <YASM Include="..\libavcodec\x86\dsputilenc.asm" />
     <YASM Include="..\libavcodec\x86\fft.asm" />
     <YASM Include="..\libavcodec\x86\flacdsp.asm" />
     <YASM Include="..\libavcodec\x86\h263_loopfilter.asm" />
@@ -2254,6 +2247,7 @@
     <YASM Include="..\libavcodec\x86\idctdsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_audiodsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_videodsp.asm" />
+    <YASM Include="..\libavcodec\x86\me_cmp.asm" />
     <YASM Include="..\libavcodec\x86\imdct36.asm" />
     <YASM Include="..\libavcodec\x86\mpegvideoencdsp.asm" />
     <YASM Include="..\libavcodec\x86\pixblockdsp.asm" />
