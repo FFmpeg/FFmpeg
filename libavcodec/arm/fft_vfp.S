@@ -21,8 +21,39 @@
 
 #include "libavutil/arm/asm.S"
 
-@ TODO: * FFTs wider than 16
-@       * dispatch code
+@ The fftx_internal_vfp versions of the functions obey a modified AAPCS:
+@ VFP is in RunFast mode, vector length 4, stride 1 thoroughout, and
+@ all single-precision VFP registers may be corrupted on exit. The a2
+@ register may not be clobbered in these functions, as it holds the
+@ stored original FPSCR.
+
+function ff_fft_calc_vfp, export=1
+        ldr     ip, [a1, #0]    @ nbits
+        mov     a1, a2
+A       ldr     pc, [pc, ip, lsl #2]
+A       .word   0
+A       .word   0
+A       .word   0
+T       movrel  a2, (fft_tab_vfp - 8)
+T       ldr     pc, [a2, ip, lsl #2]
+T endfunc
+T const fft_tab_vfp
+        .word   fft4_vfp
+        .word   fft8_vfp
+        .word   X(ff_fft16_vfp)     @ this one alone is exported
+        .word   fft32_vfp
+        .word   fft64_vfp
+        .word   fft128_vfp
+        .word   fft256_vfp
+        .word   fft512_vfp
+        .word   fft1024_vfp
+        .word   fft2048_vfp
+        .word   fft4096_vfp
+        .word   fft8192_vfp
+        .word   fft16384_vfp
+        .word   fft32768_vfp
+        .word   fft65536_vfp
+A endfunc
 
 function fft4_vfp
         vldr    d0, [a1, #0*2*4]   @ s0,s1   = z[0]
@@ -131,18 +162,22 @@ endfunc
              vstr    d9, [a1, #3 * 2*4]
 .endm
 
+function .Lfft8_internal_vfp
+        macro_fft8_head
+        macro_fft8_tail
+        bx      lr
+endfunc
+
 function fft8_vfp
         ldr     a3, =0x03030000     @ RunFast mode, vector length 4, stride 1
         fmrx    a2, FPSCR
         fmxr    FPSCR, a3
         vpush   {s16-s31}
-
-        macro_fft8_head
-        macro_fft8_tail
-
+        mov     ip, lr
+        bl      .Lfft8_internal_vfp
         vpop    {s16-s31}
         fmxr    FPSCR, a2
-        bx      lr
+        bx      ip
 endfunc
 
 .align 3
@@ -153,12 +188,7 @@ cos1pi8:    @ cos(1*pi/8) = sqrt(2+sqrt(2))/2
 cos3pi8:    @ cos(2*pi/8) = sqrt(2-sqrt(2))/2
         .float  0.3826834261417388916015625
 
-function ff_fft16_vfp, export=1
-        ldr     a3, =0x03030000     @ RunFast mode, vector length 4, stride 1
-        fmrx    a2, FPSCR
-        fmxr    FPSCR, a3
-        vpush   {s16-s31}
-
+function .Lfft16_internal_vfp
         macro_fft8_head
         @ FFT4(z+8)
         vldr    d10, [a1, #8 * 2*4]
@@ -292,7 +322,213 @@ function ff_fft16_vfp, export=1
               vstr    d8, [a1, #0 * 2*4]
               vstr    d9, [a1, #4 * 2*4]
 
-        vpop    {s16-s31}
-        fmxr    FPSCR, a2
         bx      lr
 endfunc
+
+function ff_fft16_vfp, export=1
+        ldr     a3, =0x03030000     @ RunFast mode, vector length 4, stride 1
+        fmrx    a2, FPSCR
+        fmxr    FPSCR, a3
+        vpush   {s16-s31}
+        mov     ip, lr
+        bl      .Lfft16_internal_vfp
+        vpop    {s16-s31}
+        fmxr    FPSCR, a2
+        bx      ip
+endfunc
+
+.macro pass n, z0, z1, z2, z3
+        add     v6, v5, #4*2*\n
+        @ TRANSFORM_ZERO(z[0],z[o1],z[o2],z[o3])
+            @ TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1])
+                @ TRANSFORM(z[0],z[o1],z[o2],z[o3],wre[0],wim[0])
+                    @ TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1])
+            vldr    d8, [\z2, #8*(o2+1)]        @ s16,s17
+            vldmdb  v6!, {s2}
+            vldr    d9, [\z3, #8*(o3+1)]        @ s18,s19
+            vldmia  v5!, {s0,s1}                @ s0 is unused
+        vldr    s7, [\z2, #8*o2]            @ t1
+            vmul.f  s20, s16, s2                @ vector * scalar
+        vldr    s0, [\z3, #8*o3]            @ t5
+        vldr    s6, [\z2, #8*o2+4]          @ t2
+        vldr    s3, [\z3, #8*o3+4]          @ t6
+            vmul.f  s16, s16, s1                @ vector * scalar
+        ldr     a4, =\n-1
+1:      add     \z0, \z0, #8*2
+ .if \n*4*2 >= 512
+        add     \z1, \z1, #8*2
+ .endif
+ .if \n*4*2 >= 256
+        add     \z2, \z2, #8*2
+ .endif
+ .if \n*4*2 >= 512
+        add     \z3, \z3, #8*2
+ .endif
+        @ up to 2 stalls (VFP vector issuing / waiting for s0)
+        @ depending upon whether this is the first iteration and
+        @ how many add instructions are inserted above
+        vadd.f  s4, s0, s7                  @ t5
+        vadd.f  s5, s6, s3                  @ t6
+        vsub.f  s6, s6, s3                  @ t4
+        vsub.f  s7, s0, s7                  @ t3
+        vldr    d6, [\z0, #8*0-8*2]         @ s12,s13
+            vadd.f  s0, s16, s21                @ t1
+        vldr    d7, [\z1, #8*o1-8*2]        @ s14,s15
+            vsub.f  s1, s18, s23                @ t5
+        vadd.f  s8, s4, s12                 @ vector + vector
+        @ stall (VFP vector issuing)
+        @ stall (VFP vector issuing)
+        @ stall (VFP vector issuing)
+        vsub.f  s4, s12, s4
+        vsub.f  s5, s13, s5
+        vsub.f  s6, s14, s6
+        vsub.f  s7, s15, s7
+            vsub.f  s2, s17, s20                @ t2
+            vadd.f  s3, s19, s22                @ t6
+        vstr    d4, [\z0, #8*0-8*2]         @ s8,s9
+        vstr    d5, [\z1, #8*o1-8*2]        @ s10,s11
+        @ stall (waiting for s5)
+        vstr    d2, [\z2, #8*o2-8*2]        @ s4,s5
+            vadd.f  s4, s1, s0                  @ t5
+        vstr    d3, [\z3, #8*o3-8*2]        @ s6,s7
+            vsub.f  s7, s1, s0                  @ t3
+            vadd.f  s5, s2, s3                  @ t6
+            vsub.f  s6, s2, s3                  @ t4
+            vldr    d6, [\z0, #8*1-8*2]         @ s12,s13
+            vldr    d7, [\z1, #8*(o1+1)-8*2]    @ s14,s15
+                vldr    d4, [\z2, #8*o2]            @ s8,s9
+                vldmdb  v6!, {s2,s3}
+                vldr    d5, [\z3, #8*o3]            @ s10,s11
+            vadd.f  s20, s4, s12                @ vector + vector
+                vldmia  v5!, {s0,s1}
+                    vldr    d8, [\z2, #8*(o2+1)]        @ s16,s17
+            @ stall (VFP vector issuing)
+            vsub.f  s4, s12, s4
+            vsub.f  s5, s13, s5
+            vsub.f  s6, s14, s6
+            vsub.f  s7, s15, s7
+                vmul.f  s12, s8, s3                 @ vector * scalar
+            vstr    d10, [\z0, #8*1-8*2]        @ s20,s21
+                    vldr    d9, [\z3, #8*(o3+1)]        @ s18,s19
+            vstr    d11, [\z1, #8*(o1+1)-8*2]   @ s22,s23
+                vmul.f  s8, s8, s0                  @ vector * scalar
+            vstr    d2, [\z2, #8*(o2+1)-8*2]    @ s4,s5
+            @ stall (waiting for s7)
+            vstr    d3, [\z3, #8*(o3+1)-8*2]    @ s6,s7
+                    vmul.f  s20, s16, s2                @ vector * scalar
+                @ stall (VFP vector issuing)
+                @ stall (VFP vector issuing)
+                @ stall (VFP vector issuing)
+                vadd.f  s7, s8, s13                 @ t1
+                vsub.f  s6, s9, s12                 @ t2
+                vsub.f  s0, s10, s15                @ t5
+                vadd.f  s3, s11, s14                @ t6
+                    vmul.f  s16, s16, s1                @ vector * scalar
+        subs    a4, a4, #1
+        bne     1b
+        @ What remains is identical to the first two indentations of
+        @ the above, but without the increment of z
+        vadd.f  s4, s0, s7                  @ t5
+        vadd.f  s5, s6, s3                  @ t6
+        vsub.f  s6, s6, s3                  @ t4
+        vsub.f  s7, s0, s7                  @ t3
+        vldr    d6, [\z0, #8*0]             @ s12,s13
+            vadd.f  s0, s16, s21                @ t1
+        vldr    d7, [\z1, #8*o1]            @ s14,s15
+            vsub.f  s1, s18, s23                @ t5
+        vadd.f  s8, s4, s12                 @ vector + vector
+        vsub.f  s4, s12, s4
+        vsub.f  s5, s13, s5
+        vsub.f  s6, s14, s6
+        vsub.f  s7, s15, s7
+            vsub.f  s2, s17, s20                @ t2
+            vadd.f  s3, s19, s22                @ t6
+        vstr    d4, [\z0, #8*0]             @ s8,s9
+        vstr    d5, [\z1, #8*o1]            @ s10,s11
+        vstr    d2, [\z2, #8*o2]            @ s4,s5
+            vadd.f  s4, s1, s0                  @ t5
+        vstr    d3, [\z3, #8*o3]            @ s6,s7
+            vsub.f  s7, s1, s0                  @ t3
+            vadd.f  s5, s2, s3                  @ t6
+            vsub.f  s6, s2, s3                  @ t4
+            vldr    d6, [\z0, #8*1]             @ s12,s13
+            vldr    d7, [\z1, #8*(o1+1)]        @ s14,s15
+            vadd.f  s20, s4, s12                @ vector + vector
+            vsub.f  s4, s12, s4
+            vsub.f  s5, s13, s5
+            vsub.f  s6, s14, s6
+            vsub.f  s7, s15, s7
+            vstr    d10, [\z0, #8*1]            @ s20,s21
+            vstr    d11, [\z1, #8*(o1+1)]       @ s22,s23
+            vstr    d2, [\z2, #8*(o2+1)]        @ s4,s5
+            vstr    d3, [\z3, #8*(o3+1)]        @ s6,s7
+.endm
+
+.macro  def_fft n, n2, n4
+function .Lfft\n\()_internal_vfp
+ .if \n >= 512
+        push    {v1-v6,lr}
+ .elseif \n >= 256
+        push    {v1-v2,v5-v6,lr}
+ .else
+        push    {v1,v5-v6,lr}
+ .endif
+        mov     v1, a1
+        bl      .Lfft\n2\()_internal_vfp
+        add     a1, v1, #8*(\n/4)*2
+        bl      .Lfft\n4\()_internal_vfp
+        movrelx v5, X(ff_cos_\n), a1
+        add     a1, v1, #8*(\n/4)*3
+        bl      .Lfft\n4\()_internal_vfp
+ .if \n >= 512
+  .set o1, 0*(\n/4/2)
+  .set o2, 0*(\n/4/2)
+  .set o3, 0*(\n/4/2)
+        add     v2, v1, #8*2*(\n/4/2)
+        add     v3, v1, #8*4*(\n/4/2)
+        add     v4, v1, #8*6*(\n/4/2)
+        pass    (\n/4/2), v1, v2, v3, v4
+        pop     {v1-v6,pc}
+ .elseif \n >= 256
+  .set o1, 2*(\n/4/2)
+  .set o2, 0*(\n/4/2)
+  .set o3, 2*(\n/4/2)
+        add     v2, v1, #8*4*(\n/4/2)
+        pass    (\n/4/2), v1, v1, v2, v2
+        pop     {v1-v2,v5-v6,pc}
+ .else
+  .set o1, 2*(\n/4/2)
+  .set o2, 4*(\n/4/2)
+  .set o3, 6*(\n/4/2)
+        pass    (\n/4/2), v1, v1, v1, v1
+        pop     {v1,v5-v6,pc}
+ .endif
+endfunc
+
+function fft\n\()_vfp
+        ldr     a3, =0x03030000 /* RunFast mode, vector length 4, stride 1 */
+        fmrx    a2, FPSCR
+        fmxr    FPSCR, a3
+        vpush   {s16-s31}
+        mov     ip, lr
+        bl      .Lfft\n\()_internal_vfp
+        vpop    {s16-s31}
+        fmxr    FPSCR, a2
+        bx      ip
+endfunc
+
+.ltorg
+.endm
+
+        def_fft    32,    16,     8
+        def_fft    64,    32,    16
+        def_fft   128,    64,    32
+        def_fft   256,   128,    64
+        def_fft   512,   256,   128
+        def_fft  1024,   512,   256
+        def_fft  2048,  1024,   512
+        def_fft  4096,  2048,  1024
+        def_fft  8192,  4096,  2048
+        def_fft 16384,  8192,  4096
+        def_fft 32768, 16384,  8192
+        def_fft 65536, 32768, 16384
