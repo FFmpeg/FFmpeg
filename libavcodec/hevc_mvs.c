@@ -88,34 +88,6 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
     }
 }
 
-static int same_prediction_block(HEVCLocalContext *lc, int log2_cb_size,
-                                 int x0, int y0, int nPbW, int nPbH,
-                                 int xA1, int yA1, int partIdx)
-{
-    return !(nPbW << 1 == 1 << log2_cb_size &&
-             nPbH << 1 == 1 << log2_cb_size && partIdx == 1 &&
-             lc->cu.x + nPbW > xA1 &&
-             lc->cu.y + nPbH <= yA1);
-}
-
-/*
- * 6.4.2 Derivation process for prediction block availability
- */
-static int check_prediction_block_available(HEVCContext *s, int log2_cb_size,
-                                            int x0, int y0, int nPbW, int nPbH,
-                                            int xA1, int yA1, int partIdx)
-{
-    HEVCLocalContext *lc = s->HEVClc;
-
-    if (lc->cu.x < xA1 && lc->cu.y < yA1 &&
-        (lc->cu.x + (1 << log2_cb_size)) > xA1 &&
-        (lc->cu.y + (1 << log2_cb_size)) > yA1)
-        return same_prediction_block(lc, log2_cb_size, x0, y0,
-                                     nPbW, nPbH, xA1, yA1, partIdx);
-    else
-        return z_scan_block_avail(s, x0, y0, xA1, yA1);
-}
-
 //check if the two luma locations belong to the same mostion estimation region
 static int isDiffMER(HEVCContext *s, int xN, int yN, int xP, int yP)
 {
@@ -303,9 +275,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     (cand && !(TAB_MVF_PU(v).pred_flag == PF_INTRA))
 
 #define PRED_BLOCK_AVAILABLE(v)                                 \
-    check_prediction_block_available(s, log2_cb_size,           \
-                                     x0, y0, nPbW, nPbH,        \
-                                     x ## v, y ## v, part_idx)
+    z_scan_block_avail(s, x0, y0, x ## v, y ## v)
 
 #define COMPARE_MV_REFIDX(a, b)                                 \
     compareMVrefidx(TAB_MVF_PU(a), TAB_MVF_PU(b))
@@ -372,8 +342,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     int is_available_b0;
     int is_available_b1;
     int is_available_b2;
-    int check_B0;
-    int check_A0;
 
     //first left spatial merge candidate
     is_available_a1 = AVAILABLE(cand_left, A1);
@@ -411,9 +379,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     // above right spatial merge candidate
     check_MER = 1;
-    check_B0  = PRED_BLOCK_AVAILABLE(B0);
 
-    is_available_b0 = check_B0 && AVAILABLE(cand_up_right, B0);
+    is_available_b0 = AVAILABLE(cand_up_right, B0) &&
+                      xB0 < s->sps->width &&
+                      PRED_BLOCK_AVAILABLE(B0);
 
     if (isDiffMER(s, xB0, yB0, x0, y0))
         is_available_b0 = 0;
@@ -429,9 +398,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     // left bottom spatial merge candidate
     check_MER = 1;
-    check_A0  = PRED_BLOCK_AVAILABLE(A0);
 
-    is_available_a0 = check_A0 && AVAILABLE(cand_bottom_left, A0);
+    is_available_a0 = AVAILABLE(cand_bottom_left, A0) &&
+                      yA0 < s->sps->height &&
+                      PRED_BLOCK_AVAILABLE(A0);
 
     if (isDiffMER(s, xA0, yA0, x0, y0))
         is_available_a0 = 0;
@@ -698,7 +668,9 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     xA0_pu = xA0 >> s->sps->log2_min_pu_size;
     yA0_pu = yA0 >> s->sps->log2_min_pu_size;
 
-    is_available_a0 = PRED_BLOCK_AVAILABLE(A0) && AVAILABLE(cand_bottom_left, A0);
+    is_available_a0 = AVAILABLE(cand_bottom_left, A0) &&
+                      yA0 < s->sps->height &&
+                      PRED_BLOCK_AVAILABLE(A0);
 
     //left spatial merge candidate
     xA1    = x0 - 1;
