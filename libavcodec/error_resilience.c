@@ -739,12 +739,12 @@ static int is_intra_more_likely(ERContext *s)
                 } else {
                     ff_thread_await_progress(s->last_pic.tf, mb_y, 0);
                 }
-                is_intra_likely += s->dsp->sad[0](NULL, last_mb_ptr, mb_ptr,
-                                                 linesize[0], 16);
+                is_intra_likely += s->mecc->sad[0](NULL, last_mb_ptr, mb_ptr,
+                                                   linesize[0], 16);
                 // FIXME need await_progress() here
-                is_intra_likely -= s->dsp->sad[0](NULL, last_mb_ptr,
-                                                 last_mb_ptr + linesize[0] * 16,
-                                                 linesize[0], 16);
+                is_intra_likely -= s->mecc->sad[0](NULL, last_mb_ptr,
+                                                   last_mb_ptr + linesize[0] * 16,
+                                                   linesize[0], 16);
             } else {
                 if (IS_INTRA(s->cur_pic.mb_type[mb_xy]))
                    is_intra_likely++;

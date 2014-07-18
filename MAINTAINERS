@@ -132,6 +132,7 @@ Generic Parts:
     tableprint.c, tableprint.h          Reimar Doeffinger
   fixed point FFT:
     fft*                                Zeljko Lukac
+  Text Subtitles                        Clément Bœsch
 
 Codecs:
   4xm.c                                 Michael Niedermayer
@@ -165,6 +166,7 @@ Codecs:
   dnxhd*                                Baptiste Coudurier
   dpcm.c                                Mike Melanson
   dv.c                                  Roman Shaposhnik
+  dvbsubdec.c                           Anshul Maheshwari
   dxa.c                                 Kostya Shishkov
   eacmv*, eaidct*, eat*                 Peter Ross
   exif.c, exif.h                        Thilo Borgmann

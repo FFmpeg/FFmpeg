@@ -57,7 +57,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/me_cmp.h"
 
 #include "deshake.h"
 #include "deshake_opencl.h"
@@ -414,7 +414,7 @@ static int config_props(AVFilterLink *link)
     deshake->last.zoom = 0;
 
     deshake->avctx = avcodec_alloc_context3(NULL);
-    avpriv_dsputil_init(&deshake->c, deshake->avctx);
+    ff_me_cmp_init(&deshake->c, deshake->avctx);
 
     return 0;
 }

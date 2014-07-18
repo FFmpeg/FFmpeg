@@ -537,6 +537,35 @@ The Real-Time Messaging Protocol tunneled through HTTPS (RTMPTS) is used
 for streaming multimedia content within HTTPS requests to traverse
 firewalls.
 
+@section libsmbclient
+
+libsmbclient permits to manipulate CIFS/SMB network resources.
+
+Following syntax is required.
+
+@example
+smb://[[domain:]user[:password@@]]server[/share[/path[/file]]]
+@end example
+
+This protocol accepts the following options.
+
+@table @option
+@item timeout
+Set timeout in miliseconds of socket I/O operations used by the underlying
+low level operation. By default it is set to -1, which means that the timeout
+is not specified.
+
+@item truncate
+Truncate existing files on write, if set to 1. A value of 0 prevents
+truncating. Default value is 1.
+
+@item workgroup
+Set the workgroup used for making connections. By default workgroup is not specified.
+
+@end table
+
+For more information see: @url{http://www.samba.org/}.
+
 @section libssh
 
 Secure File Transfer Protocol via libssh

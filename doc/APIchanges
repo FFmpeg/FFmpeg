@@ -15,10 +15,13 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
-2014-07-xx - xxxxxxx - lavu 53.18.0 - display.h
+2014-07-14 - 62227a7 - lavf 55.47.100 - avformat.h
+  Add av_stream_get_parser()
+
+2014-07-09 - c67690f / a54f03b - lavu 52.92.100 / 53.18.0 - display.h
   Add av_display_matrix_flip() to flip the transformation matrix.
 
-2014-07-xx - xxxxxxx - lavc 55.56.0 - dv_profile.h
+2014-07-09 - 1b58f13 / f6ee61f - lavc 55.69.100 / 55.56.0 - dv_profile.h
   Add a public API for DV profile handling.
 
 2014-06-20 - 0dceefc / 9e500ef - lavu 52.90.100 / 53.17.0 - imgutils.h
@@ -39,7 +42,7 @@ API changes, most recent first:
 2014-05-30 - 00759d7 - lavu 52.89.100 - opt.h
   Add av_opt_copy()
 
-2014-04-xx - 03bb99a / 0957b27 - lavc 55.66.100 / 55.54.0 - avcodec.h
+2014-06-01 - 03bb99a / 0957b27 - lavc 55.66.100 / 55.54.0 - avcodec.h
   Add AVCodecContext.side_data_only_packets to allow encoders to output packets
   with only side data. This option may become mandatory in the future, so all
   users are recommended to update their code and enable this option.
@@ -49,7 +52,7 @@ API changes, most recent first:
   AVColorTransferCharacteristic, and AVChromaLocation) inside lavu.
   And add AVFrame fields for them.
 
-2014-04-xx - bdb2e80 / b2d4565 - lavr 1.3.0 - avresample.h
+2014-05-29 - bdb2e80 / b2d4565 - lavr 1.3.0 - avresample.h
   Add avresample_max_output_samples
 
 2014-05-24 - d858ee7 / 6d21259 - lavf 55.42.100 / 55.19.0 - avformat.h

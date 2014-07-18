@@ -163,6 +163,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(LATM,             latm);
     REGISTER_DEMUXER (LMLM4,            lmlm4);
     REGISTER_DEMUXER (LOAS,             loas);
+    REGISTER_MUXDEMUX(LRC,              lrc);
     REGISTER_DEMUXER (LVF,              lvf);
     REGISTER_DEMUXER (LXF,              lxf);
     REGISTER_MUXDEMUX(M4V,              m4v);
@@ -306,6 +307,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(WAV,              wav);
     REGISTER_DEMUXER (WC3,              wc3);
     REGISTER_MUXER   (WEBM,             webm);
+    REGISTER_MUXDEMUX(WEBM_DASH_MANIFEST, webm_dash_manifest);
     REGISTER_MUXDEMUX(WEBVTT,           webvtt);
     REGISTER_DEMUXER (WSAUD,            wsaud);
     REGISTER_DEMUXER (WSVQA,            wsvqa);
@@ -375,4 +377,5 @@ void av_register_all(void)
     REGISTER_PROTOCOL(LIBRTMPT,         librtmpt);
     REGISTER_PROTOCOL(LIBRTMPTE,        librtmpte);
     REGISTER_PROTOCOL(LIBSSH,           libssh);
+    REGISTER_PROTOCOL(LIBSMBCLIENT,     libsmbclient);
 }

@@ -1,7 +1,7 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version <next>:
+version 2.3:
 - AC3 fixed-point decoding
 - shuffleplanes filter
 - subfile protocol
@@ -32,6 +32,10 @@ version <next>:
 - hqx filter (hq2x, hq3x, hq4x)
 - flanger filter
 - Image format auto-detection
+- LRC demuxer and muxer
+- Samba protocol (via libsmbclient)
+- WebM DASH Manifest muxer
+- libfribidi support in drawtext
 
 
 version 2.2:

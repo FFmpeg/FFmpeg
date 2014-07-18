@@ -31,7 +31,6 @@
 #include "internal.h"
 #include "put_bits.h"
 #include "bytestream.h"
-#include "dsputil.h"
 #include "fdctdsp.h"
 
 #define DEFAULT_SLICE_MB_WIDTH 8

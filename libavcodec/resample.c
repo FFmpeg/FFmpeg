@@ -347,10 +347,10 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
 
     /* XXX: move those malloc to resample init code */
     for (i = 0; i < s->filter_channels; i++) {
-        bufin[i] = av_malloc((nb_samples + s->temp_len) * sizeof(short));
+        bufin[i] = av_malloc_array((nb_samples + s->temp_len), sizeof(short));
         memcpy(bufin[i], s->temp[i], s->temp_len * sizeof(short));
         buftmp2[i] = bufin[i] + s->temp_len;
-        bufout[i] = av_malloc(lenout * sizeof(short));
+        bufout[i] = av_malloc_array(lenout, sizeof(short));
     }
 
     if (s->input_channels == 2 && s->output_channels == 1) {
@@ -384,7 +384,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         nb_samples1 = av_resample(s->resample_context, buftmp3[i], bufin[i],
                                   &consumed, nb_samples, lenout, is_last);
         s->temp_len = nb_samples - consumed;
-        s->temp[i] = av_realloc(s->temp[i], s->temp_len * sizeof(short));
+        s->temp[i] = av_realloc_array(s->temp[i], s->temp_len, sizeof(short));
         memcpy(s->temp[i], bufin[i] + consumed, s->temp_len * sizeof(short));
     }
 

@@ -26,13 +26,15 @@
 #endif
 
 #include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
-#include "dsputil_altivec.h"
+#include "libavcodec/me_cmp.h"
 
+#if HAVE_ALTIVEC
 static int sad16_x2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                             int line_size, int h)
 {
@@ -740,9 +742,14 @@ static int hadamard8_diff16_altivec(MpegEncContext *s, uint8_t *dst,
     }
     return score;
 }
+#endif /* HAVE_ALTIVEC */
 
-av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_me_cmp_init_ppc(MECmpContext *c, AVCodecContext *avctx)
 {
+#if HAVE_ALTIVEC
+    if (!PPC_ALTIVEC(av_get_cpu_flags()))
+        return;
+
     c->pix_abs[0][1] = sad16_x2_altivec;
     c->pix_abs[0][2] = sad16_y2_altivec;
     c->pix_abs[0][3] = sad16_xy2_altivec;
@@ -756,4 +763,5 @@ av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx)
 
     c->hadamard8_diff[0] = hadamard8_diff16_altivec;
     c->hadamard8_diff[1] = hadamard8_diff8x8_altivec;
+#endif /* HAVE_ALTIVEC */
 }

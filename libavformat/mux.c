@@ -658,12 +658,12 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 #define CHUNK_START 0x1000
 
 int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
-                              int (*compare)(AVFormatContext *, AVPacket *, AVPacket *))
+                             int (*compare)(AVFormatContext *, AVPacket *, AVPacket *))
 {
+    int ret;
     AVPacketList **next_point, *this_pktl;
     AVStream *st   = s->streams[pkt->stream_index];
     int chunked    = s->max_chunk_size || s->max_chunk_duration;
-    int ret;
 
     this_pktl      = av_mallocz(sizeof(AVPacketList));
     if (!this_pktl)
@@ -681,7 +681,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
         av_assert0(((AVFrame *)pkt->data)->buf);
     } else {
-        // duplicate the packet if it uses non-allocated memory
+        // Duplicate the packet if it uses non-allocated memory
         if ((ret = av_dup_packet(&this_pktl->pkt)) < 0) {
             av_free(this_pktl);
             return ret;
@@ -735,6 +735,7 @@ next_non_null:
 
     s->streams[pkt->stream_index]->last_in_packet_buffer =
         *next_point                                      = this_pktl;
+
     return 0;
 }
 
@@ -765,12 +766,12 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
                                  AVPacket *pkt, int flush)
 {
     AVPacketList *pktl;
-    int stream_count = 0, noninterleaved_count = 0;
+    int stream_count = 0;
+    int noninterleaved_count = 0;
     int i, ret;
 
     if (pkt) {
-        ret = ff_interleave_add_packet(s, pkt, interleave_compare_dts);
-        if (ret < 0)
+        if ((ret = ff_interleave_add_packet(s, pkt, interleave_compare_dts)) < 0)
             return ret;
     }
 

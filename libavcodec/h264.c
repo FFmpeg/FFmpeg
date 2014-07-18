@@ -36,7 +36,6 @@
 #include "internal.h"
 #include "cabac.h"
 #include "cabac_functions.h"
-#include "dsputil.h"
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264.h"
@@ -45,6 +44,7 @@
 #include "h264_mvpred.h"
 #include "golomb.h"
 #include "mathops.h"
+#include "me_cmp.h"
 #include "mpegutils.h"
 #include "rectangle.h"
 #include "svq3.h"
@@ -515,7 +515,7 @@ int ff_h264_context_init(H264Context *h)
     if (CONFIG_ERROR_RESILIENCE) {
         /* init ER */
         er->avctx          = h->avctx;
-        er->dsp            = &h->dsp;
+        er->mecc           = &h->mecc;
         er->decode_mb      = h264_er_decode_mb;
         er->opaque         = h;
         er->quarter_sample = 1;
@@ -526,8 +526,10 @@ int ff_h264_context_init(H264Context *h)
         er->mb_stride   = h->mb_stride;
         er->b8_stride   = h->mb_width * 2 + 1;
 
-        FF_ALLOCZ_OR_GOTO(h->avctx, er->mb_index2xy, (h->mb_num + 1) * sizeof(int),
-                          fail); // error ressilience code looks cleaner with this
+        // error resilience code looks cleaner with this
+        FF_ALLOCZ_OR_GOTO(h->avctx, er->mb_index2xy,
+                          (h->mb_num + 1) * sizeof(int), fail);
+
         for (y = 0; y < h->mb_height; y++)
             for (x = 0; x < h->mb_width; x++)
                 er->mb_index2xy[x + y * h->mb_width] = x + y * h->mb_stride;
@@ -543,10 +545,11 @@ int ff_h264_context_init(H264Context *h)
 
         FF_ALLOCZ_OR_GOTO(h->avctx, er->mbskip_table, mb_array_size + 2, fail);
 
-        FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer, h->mb_height * h->mb_stride,
-                         fail);
+        FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer,
+                         h->mb_height * h->mb_stride, fail);
 
-        FF_ALLOCZ_OR_GOTO(h->avctx, h->dc_val_base, yc_size * sizeof(int16_t), fail);
+        FF_ALLOCZ_OR_GOTO(h->avctx, h->dc_val_base,
+                          yc_size * sizeof(int16_t), fail);
         er->dc_val[0] = h->dc_val_base + h->mb_width * 2 + 2;
         er->dc_val[1] = h->dc_val_base + y_size + h->mb_stride + 1;
         er->dc_val[2] = er->dc_val[1] + c_size;
@@ -614,7 +617,7 @@ int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
             }
             p += nalsize;
         }
-        // Now store right nal length size, that will be used to parse all other nals
+        // Store right nal length size that will be used to parse all other nals
         h->nal_length_size = (buf[4] & 0x03) + 1;
     } else {
         h->is_avc = 0;
@@ -650,7 +653,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     /* needed so that IDCT permutation is known early */
     if (CONFIG_ERROR_RESILIENCE)
-        ff_dsputil_init(&h->dsp, h->avctx);
+        ff_me_cmp_init(&h->mecc, h->avctx);
     ff_videodsp_init(&h->vdsp, 8);
 
     memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
@@ -1049,7 +1052,7 @@ static void idr(H264Context *h)
 {
     int i;
     ff_h264_remove_all_refs(h);
-    h->prev_frame_num        = 0;
+    h->prev_frame_num        =
     h->prev_frame_num_offset = 0;
     h->prev_poc_msb          = 1<<16;
     h->prev_poc_lsb          = 0;
@@ -1263,7 +1266,7 @@ int ff_h264_set_parameter_from_sps(H264Context *h)
                               h->sps.chroma_format_idc);
 
             if (CONFIG_ERROR_RESILIENCE)
-                ff_dsputil_init(&h->dsp, h->avctx);
+                ff_me_cmp_init(&h->mecc, h->avctx);
             ff_videodsp_init(&h->vdsp, h->sps.bit_depth_luma);
         } else {
             av_log(h->avctx, AV_LOG_ERROR, "Unsupported bit depth %d\n",
@@ -1783,9 +1786,9 @@ end:
 static int get_consumed_bytes(int pos, int buf_size)
 {
     if (pos == 0)
-        pos = 1;          // avoid infinite loops (i doubt that is needed but ...)
+        pos = 1;        // avoid infinite loops (I doubt that is needed but...)
     if (pos + 10 > buf_size)
-        pos = buf_size;                   // oops ;)
+        pos = buf_size; // oops ;)
 
     return pos;
 }

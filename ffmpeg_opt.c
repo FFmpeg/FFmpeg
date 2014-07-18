@@ -104,7 +104,6 @@ float max_error_rate  = 2.0/3;
 static int intra_only         = 0;
 static int file_overwrite     = 0;
 static int no_file_overwrite  = 0;
-static int intra_dc_precision = 8;
 static int do_psnr            = 0;
 static int input_sync;
 static int override_ffserver  = 0;
@@ -1378,7 +1377,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
             if (p) p++;
         }
         video_enc->rc_override_count = i;
-        video_enc->intra_dc_precision = intra_dc_precision - 8;
 
         if (do_psnr)
             video_enc->flags|= CODEC_FLAG_PSNR;
@@ -2932,8 +2930,6 @@ const OptionDef options[] = {
     { "top",          OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_INT| OPT_SPEC |
                       OPT_INPUT | OPT_OUTPUT,                                    { .off = OFFSET(top_field_first) },
         "top=1/bottom=0/auto=-1 field first", "" },
-    { "dc",           OPT_VIDEO | OPT_INT | HAS_ARG | OPT_EXPERT ,               { &intra_dc_precision },
-        "intra_dc_precision", "precision" },
     { "vtag",         OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_PERFILE |
                       OPT_OUTPUT,                                                { .func_arg = opt_old2new },
         "force video tag/fourcc", "fourcc/tag" },

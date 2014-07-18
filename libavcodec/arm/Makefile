@@ -6,7 +6,6 @@ OBJS-$(CONFIG_AC3DSP)                  += arm/ac3dsp_init_arm.o         \
                                           arm/ac3dsp_arm.o
 OBJS-$(CONFIG_AUDIODSP)                += arm/audiodsp_init_arm.o
 OBJS-$(CONFIG_BLOCKDSP)                += arm/blockdsp_init_arm.o
-OBJS-$(CONFIG_DSPUTIL)                 += arm/dsputil_init_arm.o
 OBJS-$(CONFIG_FFT)                     += arm/fft_init_arm.o            \
                                           arm/fft_fixed_init_arm.o
 OBJS-$(CONFIG_H264CHROMA)              += arm/h264chroma_init_arm.o
@@ -20,6 +19,7 @@ OBJS-$(CONFIG_IDCTDSP)                 += arm/idctdsp_init_arm.o        \
                                           arm/jrevdct_arm.o             \
                                           arm/simple_idct_arm.o
 OBJS-$(CONFIG_LLAUDDSP)                += arm/lossless_audiodsp_init_arm.o
+OBJS-$(CONFIG_ME_CMP)                  += arm/me_cmp_init_arm.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += arm/mpegaudiodsp_init_arm.o
 OBJS-$(CONFIG_MPEGVIDEO)               += arm/mpegvideo_arm.o
 OBJS-$(CONFIG_MPEGVIDEOENC)            += arm/mpegvideoencdsp_init_arm.o
@@ -54,14 +54,13 @@ ARMV5TE-OBJS-$(CONFIG_VIDEODSP)        += arm/videodsp_init_armv5te.o   \
 ARMV5TE-OBJS-$(CONFIG_MLP_DECODER)     += arm/mlpdsp_armv5te.o
 
 ARMV6-OBJS-$(CONFIG_AC3DSP)            += arm/ac3dsp_armv6.o
-ARMV6-OBJS-$(CONFIG_DSPUTIL)           += arm/dsputil_init_armv6.o      \
-                                          arm/dsputil_armv6.o
 ARMV6-OBJS-$(CONFIG_H264DSP)           += arm/startcode_armv6.o
 ARMV6-OBJS-$(CONFIG_HPELDSP)           += arm/hpeldsp_init_armv6.o      \
                                           arm/hpeldsp_armv6.o
 ARMV6-OBJS-$(CONFIG_IDCTDSP)           += arm/idctdsp_init_armv6.o      \
                                           arm/idctdsp_armv6.o           \
                                           arm/simple_idct_armv6.o
+ARMV6-OBJS-$(CONFIG_ME_CMP)            += arm/me_cmp_armv6.o
 ARMV6-OBJS-$(CONFIG_MPEGAUDIODSP)      += arm/mpegaudiodsp_fixed_armv6.o
 ARMV6-OBJS-$(CONFIG_MPEGVIDEOENC)      += arm/mpegvideoencdsp_armv6.o
 ARMV6-OBJS-$(CONFIG_PIXBLOCKDSP)       += arm/pixblockdsp_armv6.o

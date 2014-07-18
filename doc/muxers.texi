@@ -822,7 +822,7 @@ Select the listing format.
 @end table
 
 @item segment_list_size @var{size}
-Update the list file so that it contains at most the last @var{size}
+Update the list file so that it contains at most @var{size}
 segments. If 0 the list file will contain all the segments. Default
 value is 0.
 
@@ -1099,5 +1099,35 @@ ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac -strict experim
 Note: some codecs may need different options depending on the output format;
 the auto-detection of this can not work with the tee muxer. The main example
 is the @option{global_header} flag.
+
+@section webm_dash_manifest
+
+WebM DASH Manifest muxer.
+
+This muxer implements the WebM DASH Manifest specification to generate the DASH manifest XML.
+
+@subsection Options
+
+This muxer supports the following options:
+
+@table @option
+@item adaptation_sets
+This option has the following syntax: "id=x,streams=a,b,c id=y,streams=d,e" where x and y are the
+unique identifiers of the adaptation sets and a,b,c,d and e are the indices of the corresponding
+audio and video streams. Any number of adaptation sets can be added using this option.
+@end table
+
+@subsection Example
+@example
+ffmpeg -f webm_dash_manifest -i video1.webm \
+       -f webm_dash_manifest -i video2.webm \
+       -f webm_dash_manifest -i audio1.webm \
+       -f webm_dash_manifest -i audio2.webm \
+       -map 0 -map 1 -map 2 -map 3 \
+       -c copy \
+       -f webm_dash_manifest \
+       -adaptation_sets "id=0,streams=0,1 id=1,streams=2,3" \
+       manifest.xml
+@end example
 
 @c man end MUXERS

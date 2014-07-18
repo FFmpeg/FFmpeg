@@ -22,7 +22,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
-#include "dsputil.h"
 #include "dirac_dwt.h"
 #include "libavcodec/x86/dirac_dwt.h"
 

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
+ * LRC lyrics file format decoder
+ * Copyright (c) 2014 StarBrilliant <m13253@hotmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -18,12 +19,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ARM_DSPUTIL_ARM_H
-#define AVCODEC_ARM_DSPUTIL_ARM_H
+#include "metadata.h"
+#include "lrc.h"
 
-#include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
-
-void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx);
-
-#endif /* AVCODEC_ARM_DSPUTIL_ARM_H */
+const AVMetadataConv ff_lrc_metadata_conv[] = {
+    {"ti", "title"},
+    {"al", "album"},
+    {"ar", "artist"},
+    {"au", "author"},
+    {"by", "creator"},
+    {"re", "encoder"},
+    {"ve", "encoder_version"},
+    {0, 0}
+};

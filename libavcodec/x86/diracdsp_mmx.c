@@ -19,7 +19,6 @@
  */
 
 #include "libavutil/x86/cpu.h"
-#include "dsputil_x86.h"
 #include "diracdsp_mmx.h"
 #include "fpel.h"
 

@@ -93,7 +93,7 @@ void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
  * @return 0, or < 0 on error
  */
 int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
-                              int (*compare)(AVFormatContext *, AVPacket *, AVPacket *));
+                             int (*compare)(AVFormatContext *, AVPacket *, AVPacket *));
 
 void ff_read_frame_flush(AVFormatContext *s);
 

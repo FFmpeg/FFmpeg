@@ -1559,7 +1559,9 @@ int av_opt_copy(void *dst, void *src)
         uint8_t **field_src8 = (uint8_t**)field_src;
 
         if (o->type == AV_OPT_TYPE_STRING) {
-            set_string(dst, o, *field_src8, field_dst8);
+            if (*field_dst8 != *field_src8)
+                av_freep(field_dst8);
+            *field_dst8 = av_strdup(*field_src8);
             if (*field_src8 && !*field_dst8)
                 ret = AVERROR(ENOMEM);
         } else if (o->type == AV_OPT_TYPE_BINARY) {

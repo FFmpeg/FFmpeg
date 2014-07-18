@@ -20,17 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * DSP utils
- */
-
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "copy_block.h"
-#include "dsputil.h"
 #include "simple_idct.h"
+#include "me_cmp.h"
 #include "mpegvideo.h"
 #include "config.h"
 
@@ -370,7 +365,7 @@ static int zero_cmp(MpegEncContext *s, uint8_t *a, uint8_t *b,
     return 0;
 }
 
-void ff_set_cmp(DSPContext *c, me_cmp_func *cmp, int type)
+void ff_set_cmp(MECmpContext *c, me_cmp_func *cmp, int type)
 {
     int i;
 
@@ -560,7 +555,7 @@ static int dct_sad8x8_c(MpegEncContext *s, uint8_t *src1,
 
     s->pdsp.diff_pixels(temp, src1, src2, stride);
     s->fdsp.fdct(temp);
-    return s->dsp.sum_abs_dctelem(temp);
+    return s->mecc.sum_abs_dctelem(temp);
 }
 
 #if CONFIG_GPL
@@ -731,7 +726,7 @@ static int rd8x8_c(MpegEncContext *s, uint8_t *src1, uint8_t *src2,
 
     s->idsp.idct_add(lsrc2, 8, temp);
 
-    distortion = s->dsp.sse[1](NULL, lsrc2, lsrc1, 8, 8);
+    distortion = s->mecc.sse[1](NULL, lsrc2, lsrc1, 8, 8);
 
     return distortion + ((bits * s->qscale * s->qscale * 109 + 64) >> 7);
 }
@@ -907,8 +902,7 @@ WRAPPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WRAPPER8_16_SQ(rd8x8_c, rd16_c)
 WRAPPER8_16_SQ(bit8x8_c, bit16_c)
 
-/* init static data */
-av_cold void ff_dsputil_static_init(void)
+av_cold void ff_me_cmp_init_static(void)
 {
     int i;
 
@@ -937,7 +931,7 @@ int ff_check_alignment(void)
     return 0;
 }
 
-av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx)
 {
     ff_check_alignment();
 
@@ -988,21 +982,11 @@ av_cold void ff_dsputil_init(DSPContext *c, AVCodecContext *avctx)
 #endif
 
     if (ARCH_ALPHA)
-        ff_dsputil_init_alpha(c, avctx);
+        ff_me_cmp_init_alpha(c, avctx);
     if (ARCH_ARM)
-        ff_dsputil_init_arm(c, avctx);
+        ff_me_cmp_init_arm(c, avctx);
     if (ARCH_PPC)
-        ff_dsputil_init_ppc(c, avctx);
+        ff_me_cmp_init_ppc(c, avctx);
     if (ARCH_X86)
-        ff_dsputil_init_x86(c, avctx);
-}
-
-av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
-{
-    ff_dsputil_init(c, avctx);
-}
-
-av_cold void avpriv_dsputil_init(DSPContext *c, AVCodecContext *avctx)
-{
-    ff_dsputil_init(c, avctx);
+        ff_me_cmp_init_x86(c, avctx);
 }

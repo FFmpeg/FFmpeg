@@ -22,7 +22,6 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "snow_dwt.h"
 #include "snow.h"
@@ -64,6 +63,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         ff_snow_common_end(avctx->priv_data);
         return ret;
     }
+    ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
+
     ff_snow_alloc_blocks(s);
 
     s->version=0;
@@ -119,8 +120,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
 
-    ff_set_cmp(&s->dsp, s->dsp.me_cmp, s->avctx->me_cmp);
-    ff_set_cmp(&s->dsp, s->dsp.me_sub_cmp, s->avctx->me_sub_cmp);
+    ff_set_cmp(&s->mecc, s->mecc.me_cmp, s->avctx->me_cmp);
+    ff_set_cmp(&s->mecc, s->mecc.me_sub_cmp, s->avctx->me_sub_cmp);
 
     s->input_picture = av_frame_alloc();
     if (!s->input_picture)
@@ -667,12 +668,12 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, uin
             distortion = 0;
             for(i=0; i<4; i++){
                 int off = sx+16*(i&1) + (sy+16*(i>>1))*ref_stride;
-                distortion += s->dsp.me_cmp[0](&s->m, src + off, dst + off, ref_stride, 16);
+                distortion += s->mecc.me_cmp[0](&s->m, src + off, dst + off, ref_stride, 16);
             }
         }
     }else{
         av_assert2(block_w==8);
-        distortion = s->dsp.me_cmp[0](&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, block_w*2);
+        distortion = s->mecc.me_cmp[0](&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, block_w*2);
     }
 
     if(plane_index==0){
@@ -736,7 +737,7 @@ static int get_4block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index){
         }
 
         av_assert1(block_w== 8 || block_w==16);
-        distortion += s->dsp.me_cmp[block_w==8](&s->m, src + x + y*ref_stride, dst + x + y*ref_stride, ref_stride, block_h);
+        distortion += s->mecc.me_cmp[block_w==8](&s->m, src + x + y*ref_stride, dst + x + y*ref_stride, ref_stride, block_h);
     }
 
     if(plane_index==0){
@@ -1602,6 +1603,23 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->lambda = 0;
     }//else keep previous frame's qlog until after motion estimation
 
+    if (s->current_picture->data[0] && !(s->avctx->flags&CODEC_FLAG_EMU_EDGE)) {
+        int w = s->avctx->width;
+        int h = s->avctx->height;
+
+        s->mpvencdsp.draw_edges(s->current_picture->data[0],
+                                s->current_picture->linesize[0], w   , h   ,
+                                EDGE_WIDTH  , EDGE_WIDTH  , EDGE_TOP | EDGE_BOTTOM);
+        if (s->current_picture->data[2]) {
+            s->mpvencdsp.draw_edges(s->current_picture->data[1],
+                                    s->current_picture->linesize[1], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
+                                    EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
+            s->mpvencdsp.draw_edges(s->current_picture->data[2],
+                                    s->current_picture->linesize[2], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
+                                    EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
+        }
+    }
+
     ff_snow_frame_start(s);
     avctx->coded_frame= s->current_picture;
 
@@ -1641,12 +1659,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->m.qscale= (s->m.lambda*139 + FF_LAMBDA_SCALE*64) >> (FF_LAMBDA_SHIFT + 7);
         s->lambda2= s->m.lambda2= (s->m.lambda*s->m.lambda + FF_LAMBDA_SCALE/2) >> FF_LAMBDA_SHIFT;
 
-        s->m.dsp= s->dsp; //move
+        s->m.mecc= s->mecc; //move
         s->m.qdsp= s->qdsp; //move
         s->m.hdsp = s->hdsp;
         ff_init_me(&s->m);
         s->hdsp = s->m.hdsp;
-        s->dsp= s->m.dsp;
+        s->mecc= s->m.mecc;
     }
 
     if(s->pass1_rc){

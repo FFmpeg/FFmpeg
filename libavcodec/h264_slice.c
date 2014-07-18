@@ -31,7 +31,6 @@
 #include "internal.h"
 #include "cabac.h"
 #include "cabac_functions.h"
-#include "dsputil.h"
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264.h"
@@ -230,9 +229,9 @@ static int init_table_pools(H264Context *h)
                                                av_buffer_allocz);
     h->mb_type_pool      = av_buffer_pool_init((big_mb_num + h->mb_stride) *
                                                sizeof(uint32_t), av_buffer_allocz);
-    h->motion_val_pool = av_buffer_pool_init(2 * (b4_array_size + 4) *
-                                             sizeof(int16_t), av_buffer_allocz);
-    h->ref_index_pool  = av_buffer_pool_init(4 * mb_array_size, av_buffer_allocz);
+    h->motion_val_pool   = av_buffer_pool_init(2 * (b4_array_size + 4) *
+                                               sizeof(int16_t), av_buffer_allocz);
+    h->ref_index_pool    = av_buffer_pool_init(4 * mb_array_size, av_buffer_allocz);
 
     if (!h->qscale_table_pool || !h->mb_type_pool || !h->motion_val_pool ||
         !h->ref_index_pool) {
@@ -1128,7 +1127,10 @@ static int init_dimensions(H264Context *h)
             return AVERROR_INVALIDDATA;
 
         av_log(h->avctx, AV_LOG_WARNING, "Ignoring cropping information.\n");
-        h->sps.crop_bottom = h->sps.crop_top = h->sps.crop_right = h->sps.crop_left = 0;
+        h->sps.crop_bottom =
+        h->sps.crop_top    =
+        h->sps.crop_right  =
+        h->sps.crop_left   =
         h->sps.crop        = 0;
 
         width  = h->width;
@@ -1200,7 +1202,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
                 return AVERROR(ENOMEM);
             c->avctx             = h->avctx;
             if (CONFIG_ERROR_RESILIENCE) {
-                c->dsp               = h->dsp;
+                c->mecc              = h->mecc;
             }
             c->vdsp              = h->vdsp;
             c->h264dsp           = h->h264dsp;
@@ -2491,14 +2493,12 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                     if (   get_bits_left(&h->gb) == 0
                         || get_bits_left(&h->gb) > 0 && !(h->avctx->err_recognition & AV_EF_AGGRESSIVE)) {
                         er_add_slice(h, h->resync_mb_x, h->resync_mb_y,
-                                     h->mb_x - 1, h->mb_y,
-                                     ER_MB_END);
+                                     h->mb_x - 1, h->mb_y, ER_MB_END);
 
                         return 0;
                     } else {
                         er_add_slice(h, h->resync_mb_x, h->resync_mb_y,
-                                     h->mb_x, h->mb_y,
-                                     ER_MB_END);
+                                     h->mb_x, h->mb_y, ER_MB_END);
 
                         return AVERROR_INVALIDDATA;
                     }
@@ -2511,8 +2511,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
                 if (get_bits_left(&h->gb) == 0) {
                     er_add_slice(h, h->resync_mb_x, h->resync_mb_y,
-                                 h->mb_x - 1, h->mb_y,
-                                 ER_MB_END);
+                                 h->mb_x - 1, h->mb_y, ER_MB_END);
                     if (h->mb_x > lf_x_start)
                         loop_filter(h, lf_x_start, h->mb_x);
 

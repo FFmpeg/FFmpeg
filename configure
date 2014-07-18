@@ -209,6 +209,7 @@ External library support:
   --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
   --enable-libflite        enable flite (voice synthesis) support via libflite [no]
   --enable-libfreetype     enable libfreetype [no]
+  --enable-libfribidi      enable libfribidi [no]
   --enable-libgme          enable Game Music Emu via libgme [no]
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
@@ -227,6 +228,7 @@ External library support:
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
   --enable-libshine        enable fixed-point MP3 encoding via libshine [no]
+  --enable-libsmbclient    enable Samba protocol via libsmbclient [no]
   --enable-libsoxr         enable Include libsoxr resampling [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
   --enable-libssh          enable SFTP protocol via libssh [no]
@@ -1332,6 +1334,7 @@ EXTERNAL_LIBRARY_LIST="
     libflite
     libfontconfig
     libfreetype
+    libfribidi
     libgme
     libgsm
     libiec61883
@@ -1349,6 +1352,7 @@ EXTERNAL_LIBRARY_LIST="
     librtmp
     libschroedinger
     libshine
+    libsmbclient
     libsoxr
     libspeex
     libssh
@@ -1800,7 +1804,6 @@ CONFIG_EXTRA="
     blockdsp
     bswapdsp
     cabac
-    dsputil
     dvprofile
     exif
     fdctdsp
@@ -1823,6 +1826,7 @@ CONFIG_EXTRA="
     llauddsp
     llviddsp
     lpc
+    me_cmp
     mpeg_er
     mpegaudio
     mpegaudiodsp
@@ -1998,17 +2002,17 @@ threads_if_any="$THREADS_LIST"
 
 # subsystems
 dct_select="rdft"
-dsputil_select="fdctdsp idctdsp pixblockdsp"
-error_resilience_select="dsputil"
+error_resilience_select="me_cmp"
 frame_thread_encoder_deps="encoders threads"
 intrax8_select="error_resilience"
 mdct_select="fft"
 rdft_select="fft"
+me_cmp_select="fdctdsp idctdsp pixblockdsp"
 mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
-mpegvideo_select="blockdsp dsputil h264chroma hpeldsp idctdsp videodsp"
-mpegvideoenc_select="dsputil mpegvideo pixblockdsp qpeldsp"
+mpegvideo_select="blockdsp h264chroma hpeldsp idctdsp me_cmp videodsp"
+mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 
 # decoders / encoders
 aac_decoder_select="mdct sinewin"
@@ -2016,8 +2020,8 @@ aac_encoder_select="audio_frame_queue mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
 ac3_fixed_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
-ac3_encoder_select="ac3dsp audiodsp dsputil mdct"
-ac3_fixed_encoder_select="ac3dsp audiodsp dsputil mdct"
+ac3_encoder_select="ac3dsp audiodsp mdct me_cmp"
+ac3_fixed_encoder_select="ac3dsp audiodsp mdct me_cmp"
 aic_decoder_select="golomb idctdsp"
 alac_encoder_select="lpc"
 als_decoder_select="bswapdsp"
@@ -2044,11 +2048,11 @@ cook_decoder_select="audiodsp mdct sinewin"
 cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
 dca_decoder_select="mdct"
-dirac_decoder_select="dsputil dwt golomb videodsp"
+dirac_decoder_select="dwt golomb videodsp mpegvideoenc"
 dnxhd_decoder_select="blockdsp idctdsp"
 dnxhd_encoder_select="aandcttables blockdsp fdctdsp idctdsp mpegvideoenc pixblockdsp"
 dvvideo_decoder_select="dvprofile idctdsp"
-dvvideo_encoder_select="dsputil dvprofile fdctdsp pixblockdsp"
+dvvideo_encoder_select="dvprofile fdctdsp me_cmp pixblockdsp"
 dxa_decoder_select="zlib"
 eac3_decoder_select="ac3_decoder"
 eac3_encoder_select="ac3_encoder"
@@ -2143,8 +2147,8 @@ qdm2_decoder_select="mdct rdft mpegaudiodsp"
 ra_144_encoder_select="audio_frame_queue lpc audiodsp"
 ra_144_decoder_select="audiodsp"
 ralf_decoder_select="golomb"
-rawvideo_decoder_select="dsputil bswapdsp"
-rtjpeg_decoder_select="dsputil"
+rawvideo_decoder_select="bswapdsp"
+rtjpeg_decoder_select="me_cmp"
 rv10_decoder_select="error_resilience h263_decoder h263dsp mpeg_er"
 rv10_encoder_select="h263_encoder"
 rv20_decoder_select="error_resilience h263_decoder h263dsp mpeg_er"
@@ -2153,14 +2157,14 @@ rv30_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_e
 rv40_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo videodsp"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
-snow_decoder_select="dsputil dwt h264qpel hpeldsp rangecoder"
-snow_encoder_select="aandcttables dsputil dwt h264qpel hpeldsp mpegvideoenc rangecoder"
+snow_decoder_select="dwt h264qpel hpeldsp rangecoder"
+snow_encoder_select="aandcttables dwt h264qpel hpeldsp me_cmp mpegvideoenc rangecoder"
 sonic_decoder_select="golomb rangecoder"
 sonic_encoder_select="golomb rangecoder"
 sonic_ls_encoder_select="golomb rangecoder"
 sp5x_decoder_select="mjpeg_decoder"
 svq1_decoder_select="hpeldsp"
-svq1_encoder_select="aandcttables dsputil hpeldsp mpegvideoenc"
+svq1_encoder_select="aandcttables hpeldsp me_cmp mpegvideoenc"
 svq3_decoder_select="h264_decoder hpeldsp tpeldsp"
 svq3_decoder_suggest="zlib"
 tak_decoder_select="audiodsp"
@@ -2472,6 +2476,7 @@ librtmpe_protocol_deps="librtmp"
 librtmps_protocol_deps="librtmp"
 librtmpt_protocol_deps="librtmp"
 librtmpte_protocol_deps="librtmp"
+libsmbclient_protocol_deps="libsmbclient gplv3"
 libssh_protocol_deps="libssh"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
@@ -2512,7 +2517,7 @@ dctdnoiz_filter_deps="avcodec"
 dctdnoiz_filter_select="dct"
 delogo_filter_deps="gpl"
 deshake_filter_deps="avcodec"
-deshake_filter_select="dsputil"
+deshake_filter_select="me_cmp"
 drawtext_filter_deps="libfreetype"
 ebur128_filter_deps="gpl"
 flite_filter_deps="libflite"
@@ -2531,7 +2536,7 @@ mcdeint_filter_deps="avcodec gpl"
 movie_filter_deps="avcodec avformat"
 mp_filter_deps="gpl avcodec swscale inline_asm"
 mpdecimate_filter_deps="gpl avcodec"
-mpdecimate_filter_select="dsputil pixblockdsp"
+mpdecimate_filter_select="me_cmp pixblockdsp"
 mptestsrc_filter_deps="gpl"
 negate_filter_deps="lut_filter"
 perspective_filter_deps="gpl"
@@ -2549,7 +2554,7 @@ smartblur_filter_deps="gpl swscale"
 showspectrum_filter_deps="avcodec"
 showspectrum_filter_select="rdft"
 spp_filter_deps="gpl avcodec"
-spp_filter_select="dsputil fft idctdsp fdctdsp pixblockdsp"
+spp_filter_select="fft idctdsp fdctdsp me_cmp pixblockdsp"
 stereo3d_filter_deps="gpl"
 subtitles_filter_deps="avformat avcodec libass"
 super2xsai_filter_deps="gpl"
@@ -4240,6 +4245,7 @@ die_license_disabled_gpl() {
 
 die_license_disabled gpl frei0r
 die_license_disabled gpl libcdio
+die_license_disabled gpl libsmbclient
 die_license_disabled gpl libutvideo
 die_license_disabled gpl libvidstab
 die_license_disabled gpl libx264
@@ -4256,6 +4262,7 @@ enabled gpl && die_license_disabled_gpl nonfree openssl
 
 die_license_disabled version3 libopencore_amrnb
 die_license_disabled version3 libopencore_amrwb
+die_license_disabled version3 libsmbclient
 die_license_disabled version3 libvo_aacenc
 die_license_disabled version3 libvo_amrwbenc
 
@@ -4386,7 +4393,7 @@ EOF
     enabled vfp     && check_insn vfp     'fadds s0, s0, s0'
     enabled vfpv3   && check_insn vfpv3   'vmov.f32 s0, #1.0'
 
-    [ $target_os = linux ] ||
+    [ $target_os = linux ] || [ $target_os = android ] ||
         map 'enabled_any ${v}_external ${v}_inline || disable $v' \
             $ARCH_EXT_LIST_ARM
 
@@ -4724,6 +4731,7 @@ enabled libflite          && require2 libflite "flite/flite.h" flite_init $flite
 enabled fontconfig        && enable libfontconfig
 enabled libfontconfig     && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
 enabled libfreetype       && require_libfreetype
+enabled libfribidi        && require_pkg_config fribidi fribidi.h fribidi_version_info
 enabled libgme            && require  libgme gme/gme.h gme_new_emu -lgme -lstdc++
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib "${gsm_hdr}" gsm_create -lgsm && break;
@@ -4744,6 +4752,9 @@ enabled libquvi           && require_pkg_config libquvi quvi/quvi.h quvi_init
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libshine          && require_pkg_config shine shine/layer3.h shine_encode_buffer
+enabled libsmbclient      && { { check_pkg_config smbclient libsmbclient.h smbc_init &&
+                                 require_pkg_config smbclient libsmbclient.h smbc_init; } ||
+                                 require smbclient libsmbclient.h smbc_init -lsmbclient; }
 enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
 enabled libssh            && require_pkg_config libssh libssh/sftp.h sftp_init
 enabled libspeex          && require libspeex speex/speex.h speex_decoder_init -lspeex

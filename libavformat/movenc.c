@@ -432,6 +432,9 @@ static int mov_write_chan_tag(AVIOContext *pb, MOVTrack *track)
         return 0;
     }
 
+    if (track->multichannel_as_mono)
+        return 0;
+
     avio_wb32(pb, 0);           // Size
     ffio_wfourcc(pb, "chan");   // Type
     avio_w8(pb, 0);             // Version
@@ -4117,6 +4120,31 @@ static int mov_write_header(AVFormatContext *s)
                 track->vos_data = av_malloc(track->vos_len);
                 memcpy(track->vos_data, st->codec->extradata, track->vos_len);
             }
+        }
+    }
+
+    for (i = 0; i < s->nb_streams; i++) {
+        int j;
+        AVStream *st= s->streams[i];
+        MOVTrack *track= &mov->tracks[i];
+
+        if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO ||
+            track->enc->channel_layout != AV_CH_LAYOUT_MONO)
+            continue;
+
+        for (j = 0; j < s->nb_streams; j++) {
+            AVStream *stj= s->streams[j];
+            MOVTrack *trackj= &mov->tracks[j];
+            if (j == i)
+                continue;
+
+            if (stj->codec->codec_type != AVMEDIA_TYPE_AUDIO ||
+                trackj->enc->channel_layout != AV_CH_LAYOUT_MONO ||
+                trackj->language != track->language ||
+                trackj->tag != track->tag
+            )
+                continue;
+            track->multichannel_as_mono++;
         }
     }
 

@@ -35,7 +35,7 @@
 #include "video.h"
 
 #if CONFIG_AVCODEC
-#include "libavcodec/dsputil.h"
+#include "libavcodec/me_cmp.h"
 #endif
 
 static const char *const var_names[] = {
@@ -146,7 +146,7 @@ typedef struct SelectContext {
     int do_scene_detect;            ///< 1 if the expression requires scene detection variables, 0 otherwise
 #if CONFIG_AVCODEC
     AVCodecContext *avctx;          ///< codec context required for the DSPContext (scene detect only)
-    DSPContext c;                   ///< context providing optimized SAD methods   (scene detect only)
+    MECmpContext c;                 ///< context providing optimized SAD methods   (scene detect only)
     double prev_mafd;               ///< previous MAFD                             (scene detect only)
 #endif
     AVFrame *prev_picref; ///< previous frame                            (scene detect only)
@@ -245,7 +245,7 @@ static int config_input(AVFilterLink *inlink)
         select->avctx = avcodec_alloc_context3(NULL);
         if (!select->avctx)
             return AVERROR(ENOMEM);
-        avpriv_dsputil_init(&select->c, select->avctx);
+        ff_me_cmp_init(&select->c, select->avctx);
     }
 #endif
     return 0;

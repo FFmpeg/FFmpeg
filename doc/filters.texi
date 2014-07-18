@@ -3653,6 +3653,8 @@ To enable compilation of this filter, you need to configure FFmpeg with
 @code{--enable-libfreetype}.
 To enable default font fallback and the @var{font} option you need to
 configure FFmpeg with @code{--enable-libfontconfig}.
+To enable the @var{text_shaping} option, you need to configure FFmpeg with
+@code{--enable-libfribidi}.
 
 @subsection Syntax
 
@@ -3696,6 +3698,11 @@ the "Color" section in the ffmpeg-utils manual.
 
 The default value of @var{fontcolor} is "black".
 
+@item fontcolor_expr
+String which is expanded the same way as @var{text} to obtain dynamic
+@var{fontcolor} value. By default this option has empty value and is not
+processed. When this option is set, it overrides @var{fontcolor} option.
+
 @item font
 The font family to be used for drawing text. By default Sans.
 
@@ -3706,6 +3713,12 @@ This parameter is mandatory if the fontconfig support is disabled.
 @item fontsize
 The font size to be used for drawing text.
 The default value of @var{fontsize} is 16.
+
+@item text_shaping
+If set to 1, attempt to shape the text (for example, reverse the order of
+right-to-left text and join Arabic characters) before drawing it.
+Otherwise, just draw the text exactly as given.
+By default 1 (if supported).
 
 @item ft_load_flags
 The flags to be used for loading the fonts.
@@ -3903,6 +3916,15 @@ example the text size is not known when evaluating the expression, so
 the constants @var{text_w} and @var{text_h} will have an undefined
 value.
 
+@item eif
+Evaluate the expression's value and output as formatted integer.
+
+First argument is expression to be evaluated, same as for @var{expr} function.
+Second argument specifies output format. Allowed values are 'x', 'X', 'd' and
+'u', they are treated exactly as in printf function.
+Third parameter is optional and sets the number of positions taken by output.
+Effectively this allows to add padding with zeros from the left.
+
 @item gmtime
 The time at which the filter is running, expressed in UTC.
 It can accept an argument: a strftime() format string.
@@ -4002,6 +4024,17 @@ Print the date of a real-time encoding (see strftime(3)):
 drawtext='fontfile=FreeSans.ttf:text=%@{localtime:%a %b %d %Y@}'
 @end example
 
+@item
+Shwo text fading in and out (appearing/disappearing):
+@example
+#!/bin/sh
+DS=1.0 # display start
+DE=10.0 # display end
+FID=1.5 # fade in duration
+FOD=5 # fade out duration
+ffplay -f lavfi "color,drawtext=text=TEST:fontsize=50:fontfile=FreeSerif.ttf:fontcolor_expr=ff0000%@{eif\\\\: clip(255*(1*between(t\\, $DS + $FID\\, $DE - $FOD) + ((t - $DS)/$FID)*between(t\\, $DS\\, $DS + $FID) + (-(t - $DE)/$FOD)*between(t\\, $DE - $FOD\\, $DE) )\\, 0\\, 255) \\\\: x\\\\: 2 @}"
+@end example
+
 @end itemize
 
 For more information about libfreetype, check:
@@ -4009,6 +4042,9 @@ For more information about libfreetype, check:
 
 For more information about fontconfig, check:
 @url{http://freedesktop.org/software/fontconfig/fontconfig-user.html}.
+
+For more information about libfribidi, check:
+@url{http://fribidi.org/}.
 
 @section edgedetect
 
@@ -10454,7 +10490,7 @@ settb=AVTB
 @end itemize
 
 @section showcqt
-+Convert input audio to a video output representing
+Convert input audio to a video output representing
 frequency spectrum logarithmically (using constant Q transform with
 Brown-Puckette algorithm), with musical tone scale, from E0 to D#10 (10 octaves).
 
@@ -10494,7 +10530,7 @@ Specify video fps. Default value is @code{25}.
 
 @item count
 Specify number of transform per frame, so there are fps*count transforms
-per second. Note tha audio data rate must be divisible by fps*count.
+per second. Note that audio data rate must be divisible by fps*count.
 Default value is @code{6}.
 
 @end table

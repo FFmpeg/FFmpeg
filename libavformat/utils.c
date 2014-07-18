@@ -115,6 +115,11 @@ int64_t av_stream_get_end_pts(const AVStream *st)
     return st->pts.val;
 }
 
+struct AVCodecParserContext *av_stream_get_parser(const AVStream *st)
+{
+    return st->parser;
+}
+
 void av_format_inject_global_side_data(AVFormatContext *s)
 {
     int i;

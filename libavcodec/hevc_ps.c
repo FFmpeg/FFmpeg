@@ -207,6 +207,8 @@ static void decode_profile_tier_level(HEVCContext *s, PTLCommon *ptl)
         av_log(s->avctx, AV_LOG_DEBUG, "Main 10 profile bitstream\n");
     else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_STILL_PICTURE)
         av_log(s->avctx, AV_LOG_DEBUG, "Main Still Picture profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_REXT)
+        av_log(s->avctx, AV_LOG_DEBUG, "Range Extension profile bitstream\n");
     else
         av_log(s->avctx, AV_LOG_WARNING, "Unknown HEVC profile: %d\n", ptl->profile_idc);
 
@@ -668,14 +670,17 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps->chroma_format_idc = get_ue_golomb_long(gb);
-    if (sps->chroma_format_idc != 1) {
-        avpriv_report_missing_feature(s->avctx, "chroma_format_idc != 1\n");
+    if (!(sps->chroma_format_idc == 1 || sps->chroma_format_idc == 2 || sps->chroma_format_idc == 3)) {
+        avpriv_report_missing_feature(s->avctx, "chroma_format_idc != {1, 2, 3}\n");
         ret = AVERROR_PATCHWELCOME;
         goto err;
     }
 
     if (sps->chroma_format_idc == 3)
         sps->separate_colour_plane_flag = get_bits1(gb);
+
+    if (sps->separate_colour_plane_flag)
+        sps->chroma_format_idc = 0;
 
     sps->width  = get_ue_golomb_long(gb);
     sps->height = get_ue_golomb_long(gb);
@@ -718,20 +723,30 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         goto err;
     }
 
-    if (sps->chroma_format_idc == 1) {
-        switch (sps->bit_depth) {
-        case 8:  sps->pix_fmt = AV_PIX_FMT_YUV420P;   break;
-        case 9:  sps->pix_fmt = AV_PIX_FMT_YUV420P9;  break;
-        case 10: sps->pix_fmt = AV_PIX_FMT_YUV420P10; break;
-        default:
-            av_log(s->avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n",
-                   sps->bit_depth);
-            ret = AVERROR_PATCHWELCOME;
-            goto err;
-        }
-    } else {
+    switch (sps->bit_depth) {
+    case 8:
+        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P;
+        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P;
+        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P;
+       break;
+    case 9:
+        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P9;
+        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P9;
+        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P9;
+        break;
+    case 10:
+        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P10;
+        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P10;
+        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P10;
+        break;
+    case 12:
+        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P12;
+        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P12;
+        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P12;
+        break;
+    default:
         av_log(s->avctx, AV_LOG_ERROR,
-               "non-4:2:0 support is currently unspecified.\n");
+               "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10 and 12 bits.\n");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -862,8 +877,42 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     vui_present = get_bits1(gb);
     if (vui_present)
         decode_vui(s, sps);
-    skip_bits1(gb); // sps_extension_flag
 
+    if (get_bits1(gb)) { // sps_extension_flag
+        int sps_extension_flag[1];
+        for (i = 0; i < 1; i++)
+            sps_extension_flag[i] = get_bits1(gb);
+        skip_bits(gb, 7); //sps_extension_7bits = get_bits(gb, 7);
+        if (sps_extension_flag[0]) {
+            int extended_precision_processing_flag;
+            int high_precision_offsets_enabled_flag;
+            int cabac_bypass_alignment_enabled_flag;
+
+            sps->transform_skip_rotation_enabled_flag = get_bits1(gb);
+            sps->transform_skip_context_enabled_flag  = get_bits1(gb);
+            sps->implicit_rdpcm_enabled_flag = get_bits1(gb);
+
+            sps->explicit_rdpcm_enabled_flag = get_bits1(gb);
+
+            extended_precision_processing_flag = get_bits1(gb);
+            if (extended_precision_processing_flag)
+                av_log(s->avctx, AV_LOG_WARNING,
+                   "extended_precision_processing_flag not yet implemented\n");
+
+            sps->intra_smoothing_disabled_flag       = get_bits1(gb);
+            high_precision_offsets_enabled_flag  = get_bits1(gb);
+            if (high_precision_offsets_enabled_flag)
+                av_log(s->avctx, AV_LOG_WARNING,
+                   "high_precision_offsets_enabled_flag not yet implemented\n");
+
+            sps->persistent_rice_adaptation_enabled_flag = get_bits1(gb);
+
+            cabac_bypass_alignment_enabled_flag  = get_bits1(gb);
+            if (cabac_bypass_alignment_enabled_flag)
+                av_log(s->avctx, AV_LOG_WARNING,
+                   "cabac_bypass_alignment_enabled_flag not yet implemented\n");
+        }
+    }
     if (s->apply_defdispwin) {
         sps->output_window.left_offset   += sps->vui.def_disp_win.left_offset;
         sps->output_window.right_offset  += sps->vui.def_disp_win.right_offset;
@@ -967,6 +1016,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         if (s->sps_list[sps_id] && s->sps == (HEVCSPS*)s->sps_list[sps_id]->data) {
             av_buffer_unref(&s->current_sps);
             s->current_sps = av_buffer_ref(s->sps_list[sps_id]);
+            if (!s->current_sps)
+                s->sps = NULL;
         }
         av_buffer_unref(&s->sps_list[sps_id]);
         s->sps_list[sps_id] = sps_buf;
@@ -995,6 +1046,46 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
     av_freep(&pps->min_tb_addr_zs_tab);
 
     av_freep(&pps);
+}
+
+static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
+    GetBitContext *gb = &s->HEVClc->gb;
+    int i;
+
+    if (pps->transform_skip_enabled_flag) {
+        pps->log2_max_transform_skip_block_size = get_ue_golomb_long(gb) + 2;
+    }
+    pps->cross_component_prediction_enabled_flag = get_bits1(gb);
+    if (pps->cross_component_prediction_enabled_flag) {
+        av_log(s->avctx, AV_LOG_WARNING,
+               "cross_component_prediction_enabled_flag is not yet implemented.\n");
+    }
+    pps->chroma_qp_offset_list_enabled_flag = get_bits1(gb);
+    if (pps->chroma_qp_offset_list_enabled_flag) {
+        pps->diff_cu_chroma_qp_offset_depth = get_ue_golomb_long(gb);
+        pps->chroma_qp_offset_list_len_minus1 = get_ue_golomb_long(gb);
+        if (pps->chroma_qp_offset_list_len_minus1 && pps->chroma_qp_offset_list_len_minus1 >= 5) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "chroma_qp_offset_list_len_minus1 shall be in the range [0, 5].\n");
+            return AVERROR_INVALIDDATA;
+        }
+        for (i = 0; i <= pps->chroma_qp_offset_list_len_minus1; i++) {
+            pps->cb_qp_offset_list[i] = get_se_golomb_long(gb);
+            if (pps->cb_qp_offset_list[i]) {
+                av_log(s->avctx, AV_LOG_WARNING,
+                       "cb_qp_offset_list not tested yet.\n");
+            }
+            pps->cr_qp_offset_list[i] = get_se_golomb_long(gb);
+            if (pps->cr_qp_offset_list[i]) {
+                av_log(s->avctx, AV_LOG_WARNING,
+                       "cb_qp_offset_list not tested yet.\n");
+            }
+        }
+    }
+    pps->log2_sao_offset_scale_luma = get_ue_golomb_long(gb);
+    pps->log2_sao_offset_scale_chroma = get_ue_golomb_long(gb);
+
+    return(0);
 }
 
 int ff_hevc_decode_nal_pps(HEVCContext *s)
@@ -1030,6 +1121,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->disable_dbf                           = 0;
     pps->beta_offset                           = 0;
     pps->tc_offset                             = 0;
+    pps->log2_max_transform_skip_block_size    = 2;
 
     // Coded parameters
     pps_id = get_ue_golomb_long(gb);
@@ -1190,7 +1282,16 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     }
 
     pps->slice_header_extension_present_flag = get_bits1(gb);
-    skip_bits1(gb);     // pps_extension_flag
+
+    if (get_bits1(gb)) { // pps_extension_present_flag
+        int pps_range_extensions_flag = get_bits1(gb);
+        /* int pps_extension_7bits = */ get_bits(gb, 7);
+        if (sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "PPS extension flag is partially implemented.\n");
+            pps_range_extensions(s, pps, sps);
+        }
+    }
 
     // Inferred parameters
     pps->col_bd   = av_malloc_array(pps->num_tile_columns + 1, sizeof(*pps->col_bd));

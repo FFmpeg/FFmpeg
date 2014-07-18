@@ -31,7 +31,6 @@
  * ported by Clément Bœsch for FFmpeg.
  */
 
-#include "libavcodec/dsputil.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"

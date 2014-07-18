@@ -166,7 +166,7 @@ x11grab_read_header(AVFormatContext *s1)
     int x_off = 0;
     int y_off = 0;
     int screen;
-    int use_shm;
+    int use_shm = 0;
     char *dpyname, *offset;
     int ret = 0;
     Colormap color_map;
@@ -223,8 +223,10 @@ x11grab_read_header(AVFormatContext *s1)
         av_log(s1, AV_LOG_INFO, "followmouse is enabled, resetting grabbing region to x: %d y: %d\n", x_off, y_off);
     }
 
-    use_shm = XShmQueryExtension(dpy);
-    av_log(s1, AV_LOG_INFO, "shared memory extension%s found\n", use_shm ? "" : " not");
+    if (x11grab->use_shm) {
+        use_shm = XShmQueryExtension(dpy);
+        av_log(s1, AV_LOG_INFO, "shared memory extension%s found\n", use_shm ? "" : " not");
+    }
 
     if(use_shm) {
         int scr = XDefaultScreen(dpy);
@@ -287,7 +289,7 @@ x11grab_read_header(AVFormatContext *s1)
         } else {
             av_log(s1, AV_LOG_ERROR, "RGB ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
             av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
-            ret = AVERROR(EIO);
+            ret = AVERROR_PATCHWELCOME;
             goto out;
         }
         break;
@@ -303,16 +305,25 @@ x11grab_read_header(AVFormatContext *s1)
         } else {
             av_log(s1, AV_LOG_ERROR,"rgb ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
             av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
-            ret = AVERROR(EIO);
+            ret = AVERROR_PATCHWELCOME;
             goto out;
         }
         break;
     case 32:
-        input_pixfmt = AV_PIX_FMT_0RGB32;
+        if (        image->red_mask   == 0xff0000 &&
+                    image->green_mask == 0x00ff00 &&
+                    image->blue_mask  == 0x0000ff ) {
+            input_pixfmt = AV_PIX_FMT_0RGB32;
+        } else {
+            av_log(s1, AV_LOG_ERROR,"rgb ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
+            av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
+            ret = AVERROR_PATCHWELCOME;
+            goto out;
+        }
         break;
     default:
         av_log(s1, AV_LOG_ERROR, "image depth %i not supported ... aborting\n", image->bits_per_pixel);
-        ret = AVERROR(EINVAL);
+        ret = AVERROR_PATCHWELCOME;
         goto out;
     }
 
@@ -346,8 +357,9 @@ out:
  *          coordinates
  */
 static void
-paint_mouse_pointer(XImage *image, struct x11grab *s)
+paint_mouse_pointer(XImage *image, AVFormatContext *s1)
 {
+    struct x11grab *s = s1->priv_data;
     int x_off = s->x_off;
     int y_off = s->y_off;
     int width = s->width;
@@ -377,6 +389,12 @@ paint_mouse_pointer(XImage *image, struct x11grab *s)
     XChangeWindowAttributes(dpy, w, CWCursor, &attr);
 
     xcim = XFixesGetCursorImage(dpy);
+    if (!xcim) {
+        av_log(s1, AV_LOG_WARNING,
+               "XFixes extension not available, impossible to draw cursor\n");
+        s->draw_mouse = 0;
+        return;
+    }
 
     x = xcim->x - xcim->xhot;
     y = xcim->y - xcim->yhot;
@@ -573,7 +591,7 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 
     if (s->draw_mouse) {
-        paint_mouse_pointer(image, s);
+        paint_mouse_pointer(image, s1);
     }
 
     return s->frame_size;
@@ -625,6 +643,7 @@ static const AVOption options[] = {
     { "framerate",  "set video frame rate",      OFFSET(framerate),   AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, 0, DEC },
     { "show_region", "show the grabbing region", OFFSET(show_region), AV_OPT_TYPE_INT,        {.i64 = 0}, 0, 1, DEC },
     { "video_size",  "set video frame size",     OFFSET(width),       AV_OPT_TYPE_IMAGE_SIZE, {.str = "vga"}, 0, 0, DEC },
+    { "use_shm",     "use MIT-SHM extension",    OFFSET(use_shm),     AV_OPT_TYPE_INT,        {.i64 = 1}, 0, 1, DEC },
     { NULL },
 };
 

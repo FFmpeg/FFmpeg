@@ -41,26 +41,31 @@ typedef struct SAOParams {
 } SAOParams;
 
 typedef struct HEVCDSPContext {
-    void (*put_pcm)(uint8_t *dst, ptrdiff_t stride, int size,
-                    GetBitContext *gb, int pcm_bit_depth);
+    void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int width, int height,
+                    struct GetBitContext *gb, int pcm_bit_depth);
 
-    void (*transquant_bypass[4])(uint8_t *dst, int16_t *coeffs,
-                                 ptrdiff_t stride);
+    void (*transform_add[4])(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
-    void (*transform_skip)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-    void (*transform_4x4_luma_add)(uint8_t *dst, int16_t *coeffs,
-                                   ptrdiff_t stride);
-    void (*transform_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit);
+    void (*transform_skip)(int16_t *coeffs, int16_t log2_size);
+
+    void (*transform_rdpcm)(int16_t *coeffs, int16_t log2_size, int mode);
+
+    void (*idct_4x4_luma)(int16_t *coeffs);
+
+    void (*idct[4])(int16_t *coeffs, int col_limit);
+
+    void (*idct_dc[4])(int16_t *coeffs);
 
     void (*transform_dc_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
-    void (*sao_band_filter[4])(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
-                               struct SAOParams *sao, int *borders,
-                               int width, int height, int c_idx);
-    void (*sao_edge_filter[4])(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
-                               struct SAOParams *sao, int *borders, int width,
-                               int height, int c_idx, uint8_t vert_edge,
-                               uint8_t horiz_edge, uint8_t diag_edge);
+    void (*sao_band_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride,
+                            struct SAOParams *sao, int *borders,
+                            int width, int height, int c_idx);
+
+    void (*sao_edge_filter[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride,
+                               struct SAOParams *sao, int *borders, int _width,
+                               int _height, int c_idx, uint8_t *vert_edge,
+                               uint8_t *horiz_edge, uint8_t *diag_edge);
 
     void (*put_hevc_qpel[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                     int height, intptr_t mx, intptr_t my, int width);

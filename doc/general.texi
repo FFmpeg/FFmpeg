@@ -310,6 +310,7 @@ library:
     @tab Used by Linux Media Labs MPEG-4 PCI boards
 @item LOAS                      @tab   @tab X
     @tab contains LATM multiplexed AAC audio
+@item LRC                       @tab X @tab X
 @item LVF                       @tab   @tab X
 @item LXF                       @tab   @tab X
     @tab VR native stream format, used by Leitch/Harris' video servers.
@@ -1064,6 +1065,7 @@ performance on systems without hardware floating point support).
 @item RTMPTE       @tab X
 @item RTMPTS       @tab X
 @item RTP          @tab X
+@item SAMBA        @tab E
 @item SCTP         @tab X
 @item SFTP         @tab E
 @item TCP          @tab X

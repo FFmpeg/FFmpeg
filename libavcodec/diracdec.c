@@ -27,7 +27,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "get_bits.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -39,7 +38,7 @@
 #include "dirac_dwt.h"
 #include "dirac.h"
 #include "diracdsp.h"
-#include "videodsp.h" // for ff_emulated_edge_mc_8
+#include "videodsp.h"
 
 /**
  * The spec limits the number of wavelet decompositions to 4 for both
@@ -73,8 +72,6 @@
  * is held for delayed output.
  */
 #define DELAYED_PIC_REF 4
-
-#define ff_emulated_edge_mc ff_emulated_edge_mc_8 /* Fix: change the calls to this function regarding bit depth */
 
 #define CALC_PADDING(size, depth)                       \
     (((size + (1 << depth) - 1) >> depth) << depth)
@@ -138,8 +135,8 @@ typedef struct Plane {
 
 typedef struct DiracContext {
     AVCodecContext *avctx;
-    DSPContext dsp;
     MpegvideoEncDSPContext mpvencdsp;
+    VideoDSPContext vdsp;
     DiracDSPContext diracdsp;
     GetBitContext gb;
     dirac_source_params source;
@@ -425,9 +422,9 @@ static av_cold int dirac_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->frame_number = -1;
 
-    ff_dsputil_init(&s->dsp, avctx);
     ff_diracdsp_init(&s->diracdsp);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
+    ff_videodsp_init(&s->vdsp, 8);
 
     for (i = 0; i < MAX_FRAMES; i++) {
         s->all_frames[i].avframe = av_frame_alloc();
@@ -1454,10 +1451,10 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
         y + p->yblen > p->height+EDGE_WIDTH/2 ||
         x < 0 || y < 0) {
         for (i = 0; i < nplanes; i++) {
-            ff_emulated_edge_mc(s->edge_emu_buffer[i], src[i],
-                                p->stride, p->stride,
-                                p->xblen, p->yblen, x, y,
-                                p->width+EDGE_WIDTH/2, p->height+EDGE_WIDTH/2);
+            s->vdsp.emulated_edge_mc(s->edge_emu_buffer[i], src[i],
+                                     p->stride, p->stride,
+                                     p->xblen, p->yblen, x, y,
+                                     p->width+EDGE_WIDTH/2, p->height+EDGE_WIDTH/2);
             src[i] = s->edge_emu_buffer[i];
         }
     }

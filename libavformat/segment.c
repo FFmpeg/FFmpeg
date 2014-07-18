@@ -333,7 +333,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
             seg->segment_list_entries_end = entry;
 
             /* drop first item */
-            if (seg->list_size && seg->segment_count > seg->list_size) {
+            if (seg->list_size && seg->segment_count >= seg->list_size) {
                 entry = seg->segment_list_entries;
                 seg->segment_list_entries = seg->segment_list_entries->next;
                 av_free(entry->filename);
@@ -707,10 +707,11 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    av_dlog(s, "packet stream:%d pts:%s pts_time:%s is_key:%d frame:%d\n",
-           pkt->stream_index, av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
-           pkt->flags & AV_PKT_FLAG_KEY,
-           pkt->stream_index == seg->reference_stream_index ? seg->frame_count : -1);
+    av_dlog(s, "packet stream:%d pts:%s pts_time:%s duration_time:%s is_key:%d frame:%d\n",
+            pkt->stream_index, av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+            av_ts2timestr(pkt->duration, &st->time_base),
+            pkt->flags & AV_PKT_FLAG_KEY,
+            pkt->stream_index == seg->reference_stream_index ? seg->frame_count : -1);
 
     if (pkt->stream_index == seg->reference_stream_index &&
         pkt->flags & AV_PKT_FLAG_KEY &&
@@ -728,7 +729,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         seg->cur_entry.index = seg->segment_idx + seg->segment_idx_wrap*seg->segment_idx_wrap_nb;
         seg->cur_entry.start_time = (double)pkt->pts * av_q2d(st->time_base);
         seg->cur_entry.start_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
-    } else if (pkt->pts != AV_NOPTS_VALUE) {
+        seg->cur_entry.end_time = seg->cur_entry.start_time +
+            pkt->pts != AV_NOPTS_VALUE ? (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base) : 0;
+    } else if (pkt->pts != AV_NOPTS_VALUE && pkt->stream_index == seg->reference_stream_index) {
         seg->cur_entry.end_time =
             FFMAX(seg->cur_entry.end_time, (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
     }
