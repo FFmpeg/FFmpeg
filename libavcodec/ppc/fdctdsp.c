@@ -27,7 +27,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/ppc/cpu.h"
 #include "libavcodec/fdctdsp.h"
-#include "fdctdsp.h"
+#include "fdct.h"
 
 #if HAVE_ALTIVEC
 
