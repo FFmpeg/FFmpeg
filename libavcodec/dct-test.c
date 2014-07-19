@@ -47,6 +47,7 @@
 #include "faanidct.h"
 #include "x86/fdct.h"
 #include "x86/idct_xvid.h"
+#include "x86/simple_idct.h"
 #include "dctref.h"
 
 // ALTIVEC

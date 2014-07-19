@@ -19,10 +19,11 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "libavcodec/simple_idct.h"
+
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "idctdsp.h"
+#include "simple_idct.h"
 
 #if HAVE_INLINE_ASM
 
