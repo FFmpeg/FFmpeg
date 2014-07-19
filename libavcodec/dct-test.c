@@ -45,6 +45,7 @@
 #include "aandcttab.h"
 #include "faandct.h"
 #include "faanidct.h"
+#include "x86/fdct.h"
 #include "x86/idct_xvid.h"
 #include "dctref.h"
 
