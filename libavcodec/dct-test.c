@@ -40,6 +40,7 @@
 #include "libavutil/time.h"
 
 #include "dct.h"
+#include "idctdsp.h"
 #include "simple_idct.h"
 #include "aandcttab.h"
 #include "faandct.h"
@@ -60,30 +61,29 @@ void ff_simple_idct_neon(int16_t *data);
 struct algo {
     const char *name;
     void (*func)(int16_t *block);
-    enum formattag { NO_PERM, MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM,
-                     SSE2_PERM, PARTTRANS_PERM, TRANSPOSE_PERM } format;
+    enum idct_permutation_type perm_type;
     int cpu_flag;
     int nonspec;
 };
 
 static const struct algo fdct_tab[] = {
-    { "REF-DBL",        ff_ref_fdct,           NO_PERM    },
-    { "FAAN",           ff_faandct,            NO_PERM    },
-    { "IJG-AAN-INT",    ff_fdct_ifast,         SCALE_PERM },
-    { "IJG-LLM-INT",    ff_jpeg_fdct_islow_8,  NO_PERM    },
+    { "REF-DBL",     ff_ref_fdct,          FF_IDCT_PERM_NONE },
+    { "FAAN",        ff_faandct,           FF_IDCT_PERM_NONE },
+    { "IJG-AAN-INT", ff_fdct_ifast,        FF_IDCT_PERM_NONE },
+    { "IJG-LLM-INT", ff_jpeg_fdct_islow_8, FF_IDCT_PERM_NONE },
 
 #if HAVE_MMX_INLINE
-    { "MMX",            ff_fdct_mmx,           NO_PERM,   AV_CPU_FLAG_MMX     },
+    { "MMX",         ff_fdct_mmx,          FF_IDCT_PERM_NONE, AV_CPU_FLAG_MMX },
 #endif
 #if HAVE_MMXEXT_INLINE
-    { "MMXEXT",         ff_fdct_mmxext,        NO_PERM,   AV_CPU_FLAG_MMXEXT  },
+    { "MMXEXT",      ff_fdct_mmxext,       FF_IDCT_PERM_NONE, AV_CPU_FLAG_MMXEXT },
 #endif
 #if HAVE_SSE2_INLINE
-    { "SSE2",           ff_fdct_sse2,          NO_PERM,   AV_CPU_FLAG_SSE2    },
+    { "SSE2",        ff_fdct_sse2,         FF_IDCT_PERM_NONE, AV_CPU_FLAG_SSE2 },
 #endif
 
 #if HAVE_ALTIVEC
-    { "altivecfdct",    ff_fdct_altivec,       NO_PERM,   AV_CPU_FLAG_ALTIVEC },
+    { "altivecfdct", ff_fdct_altivec,      FF_IDCT_PERM_NONE, AV_CPU_FLAG_ALTIVEC },
 #endif
 
     { 0 }
@@ -123,38 +123,38 @@ static void ff_prores_idct_put_10_sse2_wrap(int16_t *dst){
 #endif
 
 static const struct algo idct_tab[] = {
-    { "FAANI",          ff_faanidct,           NO_PERM  },
-    { "REF-DBL",        ff_ref_idct,           NO_PERM  },
-    { "INT",            ff_j_rev_dct,          MMX_PERM },
-    { "SIMPLE-C",       ff_simple_idct_8,      NO_PERM  },
-    { "PR-C",           ff_prores_idct_wrap,   NO_PERM, 0, 1 },
+    { "FAANI",       ff_faanidct,          FF_IDCT_PERM_NONE },
+    { "REF-DBL",     ff_ref_idct,          FF_IDCT_PERM_NONE },
+    { "INT",         ff_j_rev_dct,         FF_IDCT_PERM_LIBMPEG2 },
+    { "SIMPLE-C",    ff_simple_idct_8,     FF_IDCT_PERM_NONE },
+    { "PR-C",        ff_prores_idct_wrap,  FF_IDCT_PERM_NONE, 0, 1 },
 
 #if HAVE_MMX_INLINE
-    { "SIMPLE-MMX",     ff_simple_idct_mmx,  MMX_SIMPLE_PERM, AV_CPU_FLAG_MMX },
-    { "XVID-MMX",       ff_idct_xvid_mmx,      NO_PERM,   AV_CPU_FLAG_MMX,  1 },
+    { "SIMPLE-MMX",     ff_simple_idct_mmx,     FF_IDCT_PERM_SIMPLE,    AV_CPU_FLAG_MMX },
+    { "XVID-MMX",       ff_idct_xvid_mmx,       FF_IDCT_PERM_NONE,      AV_CPU_FLAG_MMX,    1 },
 #endif
 #if HAVE_MMXEXT_INLINE
-    { "XVID-MMXEXT",    ff_idct_xvid_mmxext,   NO_PERM,   AV_CPU_FLAG_MMXEXT, 1 },
+    { "XVID-MMXEXT",    ff_idct_xvid_mmxext,    FF_IDCT_PERM_NONE,      AV_CPU_FLAG_MMXEXT, 1 },
 #endif
 #if HAVE_SSE2_INLINE
-    { "XVID-SSE2",      ff_idct_xvid_sse2,     SSE2_PERM, AV_CPU_FLAG_SSE2, 1 },
+    { "XVID-SSE2",      ff_idct_xvid_sse2,      FF_IDCT_PERM_SSE2,      AV_CPU_FLAG_SSE2,   1 },
 #if ARCH_X86_64 && HAVE_YASM
-    { "PR-SSE2",        ff_prores_idct_put_10_sse2_wrap,     TRANSPOSE_PERM, AV_CPU_FLAG_SSE2, 1 },
+    { "PR-SSE2",        ff_prores_idct_put_10_sse2_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
 #endif
 #endif
 
 #if ARCH_ARM
-    { "SIMPLE-ARM",     ff_simple_idct_arm,    NO_PERM  },
-    { "INT-ARM",        ff_j_rev_dct_arm,      MMX_PERM },
+    { "SIMPLE-ARM",     ff_simple_idct_arm,     FF_IDCT_PERM_NONE },
+    { "INT-ARM",        ff_j_rev_dct_arm,       FF_IDCT_PERM_LIBMPEG2 },
 #endif
 #if HAVE_ARMV5TE
-    { "SIMPLE-ARMV5TE", ff_simple_idct_armv5te,NO_PERM,   AV_CPU_FLAG_ARMV5TE },
+    { "SIMPLE-ARMV5TE", ff_simple_idct_armv5te, FF_IDCT_PERM_NONE,      AV_CPU_FLAG_ARMV5TE },
 #endif
 #if HAVE_ARMV6
-    { "SIMPLE-ARMV6",   ff_simple_idct_armv6,  MMX_PERM,  AV_CPU_FLAG_ARMV6   },
+    { "SIMPLE-ARMV6",   ff_simple_idct_armv6,   FF_IDCT_PERM_LIBMPEG2,  AV_CPU_FLAG_ARMV6 },
 #endif
 #if HAVE_NEON && ARCH_ARM
-    { "SIMPLE-NEON",    ff_simple_idct_neon, PARTTRANS_PERM, AV_CPU_FLAG_NEON },
+    { "SIMPLE-NEON",    ff_simple_idct_neon,    FF_IDCT_PERM_PARTTRANS, AV_CPU_FLAG_NEON },
 #endif
 
     { 0 }
@@ -211,28 +211,36 @@ static void init_block(int16_t block[64], int test, int is_idct, AVLFG *prng, in
     }
 }
 
-static void permute(int16_t dst[64], const int16_t src[64], int perm)
+static void permute(int16_t dst[64], const int16_t src[64],
+                    enum idct_permutation_type perm_type)
 {
     int i;
 
-    if (perm == MMX_PERM) {
+    switch (perm_type) {
+    case FF_IDCT_PERM_LIBMPEG2:
         for (i = 0; i < 64; i++)
             dst[(i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2)] = src[i];
-    } else if (perm == MMX_SIMPLE_PERM) {
+        break;
+    case FF_IDCT_PERM_SIMPLE:
         for (i = 0; i < 64; i++)
             dst[idct_simple_mmx_perm[i]] = src[i];
-    } else if (perm == SSE2_PERM) {
+        break;
+    case FF_IDCT_PERM_SSE2:
         for (i = 0; i < 64; i++)
             dst[(i & 0x38) | idct_sse2_row_perm[i & 7]] = src[i];
-    } else if (perm == PARTTRANS_PERM) {
+        break;
+    case FF_IDCT_PERM_PARTTRANS:
         for (i = 0; i < 64; i++)
             dst[(i & 0x24) | ((i & 3) << 3) | ((i >> 3) & 3)] = src[i];
-    } else if (perm == TRANSPOSE_PERM) {
+        break;
+    case FF_IDCT_PERM_TRANSPOSE:
         for (i = 0; i < 64; i++)
             dst[(i>>3) | ((i<<3)&0x38)] = src[i];
-    } else {
+        break;
+    default:
         for (i = 0; i < 64; i++)
             dst[i] = src[i];
+        break;
     }
 }
 
@@ -258,12 +266,12 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
         sysErr[i] = 0;
     for (it = 0; it < NB_ITS; it++) {
         init_block(block1, test, is_idct, &prng, vals);
-        permute(block, block1, dct->format);
+        permute(block, block1, dct->perm_type);
 
         dct->func(block);
         emms_c();
 
-        if (dct->format == SCALE_PERM) {
+        if (!strcmp(dct->name, "IJG-AAN-INT")) {
             for (i = 0; i < 64; i++) {
                 scale = 8 * (1 << (AANSCALE_BITS + 11)) / ff_aanscales[i];
                 block[i] = (block[i] * scale) >> AANSCALE_BITS;
@@ -320,7 +328,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
     /* speed test */
 
     init_block(block, test, is_idct, &prng, vals);
-    permute(block1, block, dct->format);
+    permute(block1, block, dct->perm_type);
 
     ti = av_gettime_relative();
     it1 = 0;
