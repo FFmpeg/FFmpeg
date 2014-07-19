@@ -353,12 +353,16 @@ ALIGN 16
 
     ;beta calculations
     mov             r11, [betaq];
+%if %1 > 8
     shl             r11, %1 - 8
+%endif
     movd            m13, r11d; beta0
     add           betaq, 4;
     punpcklwd       m13, m13
     mov             r12, [betaq];
+%if %1 > 8
     shl             r12, %1 - 8
+%endif
     movd            m14, r12d; beta1
     punpcklwd       m14, m14
     pshufd          m13, m14, 0; beta0, beta1
