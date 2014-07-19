@@ -280,7 +280,7 @@ int64_t ff_gen_syncpoint_search(AVFormatContext *s,
     }
 
     // Initialize syncpoint structures for each stream.
-    sync = av_malloc(s->nb_streams * sizeof(AVSyncPoint));
+    sync = av_malloc_array(s->nb_streams, sizeof(AVSyncPoint));
     if (!sync)
         // cannot allocate helper structure
         return -1;
@@ -402,7 +402,7 @@ AVParserState *ff_store_parser_state(AVFormatContext *s)
     if (!state)
         return NULL;
 
-    state->stream_states = av_malloc(sizeof(AVParserStreamState) * s->nb_streams);
+    state->stream_states = av_malloc_array(s->nb_streams, sizeof(AVParserStreamState));
     if (!state->stream_states) {
         av_free(state);
         return NULL;
