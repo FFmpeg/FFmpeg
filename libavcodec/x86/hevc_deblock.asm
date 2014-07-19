@@ -379,7 +379,7 @@ ALIGN 16
     paddw           m14, m9; 0d0+0d3, 1d0+1d3
 
     ;compare
-    pcmpgtw         m15, m13, m14; beta0, beta1
+    pcmpgtw         m15, m13, m14
     movmskps        r13, m15 ;filtering mask 0d0 + 0d3 < beta0 (bit 2 or 3) , 1d0 + 1d3 < beta1 (bit 0 or 1)
     test            r13, r13
     je              .bypassluma
