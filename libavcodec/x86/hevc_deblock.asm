@@ -479,7 +479,7 @@ ALIGN 16
     and             r14, r2; strong mask, bits 2 and 0
 
     pmullw          m14, m9, [pw_m2]; -tc * 2
-    psllw            m9, 1;  tc * 2
+    paddw            m9, m9
 
     and             r14, 5; 0b101
     mov              r2, r14; strong mask
@@ -499,7 +499,7 @@ ALIGN 16
     paddw           m12, m2, m3;          p1 +   p0
     paddw           m12, m4;          p1 +   p0 +   q0
     mova            m10, m12; copy
-    psllw           m12, 1;         2*p1 + 2*p0 + 2*q0
+    paddw           m12, m12;       2*p1 + 2*p0 + 2*q0
     paddw           m12, m1;   p2 + 2*p1 + 2*p0 + 2*q0
     paddw           m12, m5;   p2 + 2*p1 + 2*p0 + 2*q0 + q1
     paddw           m12, m13;  p2 + 2*p1 + 2*p0 + 2*q0 + q1 + 4
@@ -519,10 +519,10 @@ ALIGN 16
     paddw           m15, m2; p1'
 
     paddw            m8, m1, m0;     p3 +   p2
-    psllw            m8, 1;    2*p3 + 2*p2
+    paddw            m8, m8;   2*p3 + 2*p2
     paddw            m8, m1;   2*p3 + 3*p2
     paddw            m8, m10;  2*p3 + 3*p2 + p1 + p0 + q0
-    psllw           m13, 1; 4 in every cell
+    paddw           m13, m13
     paddw            m8, m13;  2*p3 + 3*p2 + p1 + p0 + q0 + 4
     psraw            m8, 3;   (2*p3 + 3*p2 + p1 + p0 + q0 + 4) >> 3
     psubw            m8, m1; ((2*p3 + 3*p2 + p1 + p0 + q0 + 4) >> 3) - p2
@@ -533,7 +533,7 @@ ALIGN 16
 
     paddw            m8, m3, m4;         p0 +   q0
     paddw            m8, m5;         p0 +   q0 +   q1
-    psllw            m8, 1;        2*p0 + 2*q0 + 2*q1
+    paddw            m8, m8;       2*p0 + 2*q0 + 2*q1
     paddw            m8, m2;  p1 + 2*p0 + 2*q0 + 2*q1
     paddw            m8, m6;  p1 + 2*p0 + 2*q0 + 2*q1 + q2
     paddw            m8, m13; p1 + 2*p0 + 2*q0 + 2*q1 + q2 + 4
@@ -558,8 +558,8 @@ ALIGN 16
 
     paddw           m13, m7;      q3 + 2
     paddw           m13, m6;      q3 +  q2 + 2
-    psllw           m13, 1;     2*q3 + 2*q2 + 4
-    paddw          m13, m6;     2*q3 + 3*q2 + 4
+    paddw           m13, m13;   2*q3 + 2*q2 + 4
+    paddw           m13, m6;    2*q3 + 3*q2 + 4
     paddw           m13, m10;   2*q3 + 3*q2 + q1 + q0 + p0 + 4
     psraw           m13, 3;    (2*q3 + 3*q2 + q1 + q0 + p0 + 4) >> 3
     psubw           m13, m6;  ((2*q3 + 3*q2 + q1 + q0 + p0 + 4) >> 3) - q2
