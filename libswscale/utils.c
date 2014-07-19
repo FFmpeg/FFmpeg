@@ -72,8 +72,6 @@ const char *swscale_license(void)
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
-#define RET 0xC3 // near return opcode for x86
-
 typedef struct FormatEntry {
     uint8_t is_supported_in         :1;
     uint8_t is_supported_out        :1;
