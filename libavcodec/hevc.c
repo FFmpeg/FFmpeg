@@ -276,7 +276,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
-static int get_buffer_sao(HEVCContext *s, AVFrame *frame)
+static int get_buffer_sao(HEVCContext *s, AVFrame *frame, HEVCSPS *sps)
 {
     int ret, i;
 
@@ -285,7 +285,7 @@ static int get_buffer_sao(HEVCContext *s, AVFrame *frame)
     if ((ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
     for (i = 0; frame->data[i]; i++) {
-        int offset = frame->linesize[i] + 1;
+        int offset = frame->linesize[i] + (1 << sps->pixel_shift);
         frame->data[i] += offset;
     }
     frame->width  = s->avctx->width;
@@ -335,7 +335,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     if (sps->sao_enabled) {
         av_frame_unref(s->tmp_frame);
-        ret = get_buffer_sao(s, s->tmp_frame);
+        ret = get_buffer_sao(s, s->tmp_frame, sps);
         s->sao_frame = s->tmp_frame;
     }
 
