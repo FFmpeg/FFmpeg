@@ -381,7 +381,7 @@ ALIGN 16
     ;compare
     pcmpgtw         m15, m13, m14; beta0, beta1
     movmskps        r13, m15 ;filtering mask 0d0 + 0d3 < beta0 (bit 2 or 3) , 1d0 + 1d3 < beta1 (bit 0 or 1)
-    cmp             r13, 0
+    test            r13, r13
     je              .bypassluma
 
     ;weak / strong decision compare to beta_2
