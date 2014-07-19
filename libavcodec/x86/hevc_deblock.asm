@@ -310,7 +310,7 @@ INIT_XMM sse2
 %endmacro
 
 ALIGN 16
-; input in m0 ... m3 and tcs in tc (r2). Output in m1 and m2
+; input in m0 ... m3 and tcs in r2. Output in m1 and m2
 %macro CHROMA_DEBLOCK_BODY 1
     psubw            m4, m2, m1; q0 - p0
     psubw            m5, m0, m3; p1 - q1
@@ -339,7 +339,7 @@ ALIGN 16
     psubw            m2, m5; q0 - delta0
 %endmacro
 
-; input in m0 ... m7, betas in r2 tcs in r3. Output in m1...m6
+; input in m0 ... m7, beta in r2 tcs in r3. Output in m1...m6
 %macro LUMA_DEBLOCK_BODY 2
     psllw            m9, m2, 1; *2
     psubw           m10, m1, m9
@@ -352,20 +352,11 @@ ALIGN 16
     ABS1            m11, m13 ; 0dq0, 0dq3 , 1dq0, 1dq3
 
     ;beta calculations
-    mov             r11, [betaq];
 %if %1 > 8
-    shl             r11, %1 - 8
+    shl             betaq, %1 - 8
 %endif
-    movd            m13, r11d; beta0
-    add           betaq, 4;
-    punpcklwd       m13, m13
-    mov             r12, [betaq];
-%if %1 > 8
-    shl             r12, %1 - 8
-%endif
-    movd            m14, r12d; beta1
-    punpcklwd       m14, m14
-    pshufd          m13, m14, 0; beta0, beta1
+    movd            m13, betaq
+    SPLATW          m13, m13, 0
     ;end beta calculations
 
     paddw            m9, m10, m11;   0d0, 0d3  ,  1d0, 1d3
@@ -412,31 +403,31 @@ ALIGN 16
     ; end calc for weak filter
 
     ; filtering mask
-    mov              r2, r13
-    shr              r2, 3
-    movd            m15, r2d
+    mov             r11, r13
+    shr             r11, 3
+    movd            m15, r11d
     and             r13, 1
     movd            m11, r13d
     shufps          m11, m15, 0
-    shl              r2, 1
-    or              r13, r2
+    shl             r11, 1
+    or              r13, r11
 
     pcmpeqd         m11, [pd_1]; filtering mask
 
     ;decide between strong and weak filtering
     ;tc25 calculations
-    mov             r2d, [tcq];
+    mov            r11d, [tcq];
 %if %1 > 8
-    shl              r2, %1 - 8
+    shl             r11, %1 - 8
 %endif
-    movd             m8, r2d; tc0
+    movd             m8, r11d; tc0
     add             tcq, 4;
     mov             r3d, [tcq];
 %if %1 > 8
     shl              r3, %1 - 8
 %endif
     movd             m9, r3d; tc1
-    add             r2d, r3d; tc0 + tc1
+    add            r11d, r3d; tc0 + tc1
     jz             .bypassluma
     punpcklwd        m8, m8
     punpcklwd        m9, m9
@@ -460,8 +451,8 @@ ALIGN 16
 
     psraw           m13, 3; beta >> 3
     pcmpgtw         m13, m12;
-    movmskps         r2, m13;
-    and             r14, r2; strong mask , beta_2 and beta_3 comparisons
+    movmskps        r11, m13;
+    and             r14, r11; strong mask , beta_2 and beta_3 comparisons
     ;----beta_3 comparison end-----
     ;----tc25 comparison---
     psubw           m12, m3, m4;      p0 - q0
@@ -471,24 +462,24 @@ ALIGN 16
     pshuflw         m12, m12, 0xf0 ;0b11110000;
 
     pcmpgtw          m8, m12; tc25 comparisons
-    movmskps         r2, m8;
-    and             r14, r2; strong mask, beta_2, beta_3 and tc25 comparisons
+    movmskps        r11, m8;
+    and             r14, r11; strong mask, beta_2, beta_3 and tc25 comparisons
     ;----tc25 comparison end---
-    mov              r2, r14;
-    shr              r2, 1;
-    and             r14, r2; strong mask, bits 2 and 0
+    mov             r11, r14;
+    shr             r11, 1;
+    and             r14, r11; strong mask, bits 2 and 0
 
     pmullw          m14, m9, [pw_m2]; -tc * 2
     paddw            m9, m9
 
     and             r14, 5; 0b101
-    mov              r2, r14; strong mask
+    mov             r11, r14; strong mask
     shr             r14, 2;
     movd            m12, r14d; store to xmm for mask generation
     shl             r14, 1
-    and              r2, 1
-    movd            m10, r2d; store to xmm for mask generation
-    or              r14, r2; final strong mask, bits 1 and 0
+    and             r11, 1
+    movd            m10, r11d; store to xmm for mask generation
+    or              r14, r11; final strong mask, bits 1 and 0
     jz      .weakfilter
 
     shufps          m10, m12, 0
@@ -578,23 +569,18 @@ ALIGN 16
     jz             .store
 
     ; weak filtering mask
-    mov              r2, r14
-    shr              r2, 1
-    movd            m12, r2d
+    mov             r11, r14
+    shr             r11, 1
+    movd            m12, r11d
     and             r14, 1
     movd            m11, r14d
     shufps          m11, m12, 0
     pcmpeqd         m11, [pd_1]; filtering mask
 
-    mov             r13, r11; beta0
+    mov             r13, betaq
     shr             r13, 1;
-    add             r11, r13
-    shr             r11, 3; ((beta0+(beta0>>1))>>3))
-
-    mov             r13, r12; beta1
-    shr             r13, 1;
-    add             r12, r13
-    shr             r12, 3; ((beta1+(beta1>>1))>>3))
+    add             betaq, r13
+    shr             betaq, 3; ((beta + (beta >> 1)) >> 3))
 
     mova            m13, [pw_8]
     psubw           m12, m4, m3 ; q0 - p0
@@ -633,11 +619,8 @@ ALIGN 16
     paddw           m15, m2; p1'
 
     ;beta calculations
-    movd            m10, r11d; beta0
-    punpcklwd       m10, m10
-    movd            m13, r12d; beta1
-    punpcklwd       m13, m13
-    shufps          m10, m13, 0; betax0, betax1
+    movd            m10, betaq
+    SPLATW          m10, m10, 0
 
     movd            m13, r7d; 1dp0 + 1dp3
     movd             m8, r8d; 0dp0 + 0dp3
