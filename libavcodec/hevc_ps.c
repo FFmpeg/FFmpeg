@@ -87,7 +87,8 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 
     if (rps_predict) {
         const ShortTermRPS *rps_ridx;
-        int delta_rps, abs_delta_rps;
+        int delta_rps;
+        unsigned abs_delta_rps;
         uint8_t use_delta_flag = 0;
         uint8_t delta_rps_sign;
 
@@ -105,6 +106,12 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 
         delta_rps_sign = get_bits1(gb);
         abs_delta_rps  = get_ue_golomb_long(gb) + 1;
+        if (abs_delta_rps < 1 || abs_delta_rps > 32768) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Invalid value of abs_delta_rps: %d\n",
+                   abs_delta_rps);
+            return AVERROR_INVALIDDATA;
+        }
         delta_rps      = (1 - (delta_rps_sign << 1)) * abs_delta_rps;
         for (i = 0; i <= rps_ridx->num_delta_pocs; i++) {
             int used = rps->used[k] = get_bits1(gb);
