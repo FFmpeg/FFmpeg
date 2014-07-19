@@ -715,10 +715,9 @@ cglobal hevc_h_loop_filter_chroma_8, 3, 4, 7, pix, stride, tc, pix0
     punpcklbw        m2, m5
     punpcklbw        m3, m5
     CHROMA_DEBLOCK_BODY  8
-    packuswb         m1, m1 ; p0' packed in bytes on low quadword
-    packuswb         m2, m2 ; q0' packed in bytes on low quadword
-    movq [pix0q+strideq], m1
-    movq         [pixq], m2
+    packuswb         m1, m2
+    movh[pix0q+strideq], m1
+    movhps       [pixq], m1
     RET
 
 cglobal hevc_h_loop_filter_chroma_10, 3, 4, 7, pix, stride, tc, pix0
@@ -793,18 +792,15 @@ cglobal hevc_h_loop_filter_luma_8, 4, 15, 16, pix, stride, beta, tc, count, pix0
     punpcklbw        m7, m8
     LUMA_DEBLOCK_BODY 8, h
 .store:
-    packuswb         m1, m1; p2
-    packuswb         m2, m2; p1
-    packuswb         m3, m3; p0
-    packuswb         m4, m4; q0
-    packuswb         m5, m5; q1
-    packuswb         m6, m6; q2
-    movq        [r5+r1], m1;  p2
-    movq      [r5+2*r1], m2;  p1
-    movq        [r5+r6], m3;  p0
-    movq           [r0], m4;  q0
-    movq        [r0+r1], m5;  q1
-    movq      [r0+2*r1], m6;  q2
+    packuswb          m1, m2
+    packuswb          m3, m4
+    packuswb          m5, m6
+    movh   [r5 +     r1], m1
+    movhps [r5 + 2 * r1], m1
+    movh   [r5 +     r6], m3
+    movhps [r0         ], m3
+    movh   [r0 +     r1], m5
+    movhps [r0 + 2 * r1], m5
 .bypassluma:
     RET
 
