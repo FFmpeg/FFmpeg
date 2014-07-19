@@ -27,6 +27,8 @@
 #include <altivec.h>
 #endif
 
+#include "version.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
 #include "libavutil/common.h"
