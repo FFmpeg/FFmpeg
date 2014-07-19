@@ -705,9 +705,9 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
 {
+    int x_end = x >= s->sps->width  - ctb_size;
     deblocking_filter_CTB(s, x, y);
     if (s->sps->sao_enabled) {
-        int x_end = x >= s->sps->width  - ctb_size;
         int y_end = y >= s->sps->height - ctb_size;
         if (y && x)
             sao_filter_CTB(s, x - ctb_size, y - ctb_size);
@@ -716,18 +716,15 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
         if (y && x_end) {
             sao_filter_CTB(s, x, y - ctb_size);
             if (s->threads_type & FF_THREAD_FRAME )
-                ff_thread_report_progress(&s->ref->tf, y - ctb_size, 0);
+                ff_thread_report_progress(&s->ref->tf, y, 0);
         }
         if (x_end && y_end) {
             sao_filter_CTB(s, x , y);
             if (s->threads_type & FF_THREAD_FRAME )
-                ff_thread_report_progress(&s->ref->tf, y, 0);
+                ff_thread_report_progress(&s->ref->tf, y + ctb_size, 0);
         }
-    } else {
-        if (y && x >= s->sps->width - ctb_size)
-            if (s->threads_type & FF_THREAD_FRAME )
-                ff_thread_report_progress(&s->ref->tf, y, 0);
-    }
+    } else if (s->threads_type & FF_THREAD_FRAME && x_end)
+        ff_thread_report_progress(&s->ref->tf, y + ctb_size - 4, 0);
 }
 
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
