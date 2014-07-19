@@ -859,6 +859,12 @@ void ff_sws_init_output_funcs(SwsContext *c,
 void ff_sws_init_swscale_ppc(SwsContext *c);
 void ff_sws_init_swscale_x86(SwsContext *c);
 
+void ff_hyscale_fast_c(SwsContext *c, int16_t *dst, int dstWidth,
+                       const uint8_t *src, int srcW, int xInc);
+void ff_hcscale_fast_c(SwsContext *c, int16_t *dst1, int16_t *dst2,
+                       int dstWidth, const uint8_t *src1,
+                       const uint8_t *src2, int srcW, int xInc);
+
 static inline void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
                                int alpha, int bits, const int big_endian)
 {
