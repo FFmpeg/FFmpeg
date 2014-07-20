@@ -2442,10 +2442,39 @@ int av_read_pause(AVFormatContext *s)
     return AVERROR(ENOSYS);
 }
 
+static void free_stream(AVStream **pst)
+{
+    AVStream *st = *pst;
+    int i;
+
+    if (!st)
+        return;
+
+    for (i = 0; i < st->nb_side_data; i++)
+        av_freep(&st->side_data[i].data);
+    av_freep(&st->side_data);
+
+    if (st->parser)
+        av_parser_close(st->parser);
+
+    if (st->attached_pic.data)
+        av_packet_unref(&st->attached_pic);
+
+    av_dict_free(&st->metadata);
+    av_freep(&st->probe_data.buf);
+    av_free(st->index_entries);
+    av_free(st->codec->extradata);
+    av_free(st->codec->subtitle_header);
+    av_free(st->codec);
+    av_free(st->priv_data);
+    av_free(st->info);
+
+    av_freep(pst);
+}
+
 void avformat_free_context(AVFormatContext *s)
 {
-    int i, j;
-    AVStream *st;
+    int i;
 
     if (!s)
         return;
@@ -2454,30 +2483,9 @@ void avformat_free_context(AVFormatContext *s)
     if (s->iformat && s->iformat->priv_class && s->priv_data)
         av_opt_free(s->priv_data);
 
-    for (i = 0; i < s->nb_streams; i++) {
-        /* free all data in a stream component */
-        st = s->streams[i];
+    for (i = 0; i < s->nb_streams; i++)
+        free_stream(&s->streams[i]);
 
-        for (j = 0; j < st->nb_side_data; j++)
-            av_freep(&st->side_data[j].data);
-        av_freep(&st->side_data);
-        st->nb_side_data = 0;
-
-        if (st->parser) {
-            av_parser_close(st->parser);
-        }
-        if (st->attached_pic.data)
-            av_packet_unref(&st->attached_pic);
-        av_dict_free(&st->metadata);
-        av_freep(&st->probe_data.buf);
-        av_free(st->index_entries);
-        av_free(st->codec->extradata);
-        av_free(st->codec->subtitle_header);
-        av_free(st->codec);
-        av_free(st->priv_data);
-        av_free(st->info);
-        av_free(st);
-    }
     for (i = s->nb_programs - 1; i >= 0; i--) {
         av_dict_free(&s->programs[i]->metadata);
         av_freep(&s->programs[i]->stream_index);
