@@ -36,7 +36,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_MPEG2VIDEO,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "mpeg2video",
-        .long_name = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
+        .long_name = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
 #if FF_API_XVMC
@@ -73,7 +73,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_RV20,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "rv20",
-        .long_name = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
+        .long_name = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
