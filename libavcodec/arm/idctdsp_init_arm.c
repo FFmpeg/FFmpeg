@@ -75,15 +75,15 @@ av_cold void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,
     if (!avctx->lowres && !high_bit_depth) {
         if (avctx->idct_algo == FF_IDCT_AUTO ||
             avctx->idct_algo == FF_IDCT_ARM) {
-            c->idct_put              = j_rev_dct_arm_put;
-            c->idct_add              = j_rev_dct_arm_add;
-            c->idct                  = ff_j_rev_dct_arm;
-            c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
+            c->idct_put  = j_rev_dct_arm_put;
+            c->idct_add  = j_rev_dct_arm_add;
+            c->idct      = ff_j_rev_dct_arm;
+            c->perm_type = FF_IDCT_PERM_LIBMPEG2;
         } else if (avctx->idct_algo == FF_IDCT_SIMPLEARM) {
-            c->idct_put              = simple_idct_arm_put;
-            c->idct_add              = simple_idct_arm_add;
-            c->idct                  = ff_simple_idct_arm;
-            c->idct_permutation_type = FF_NO_IDCT_PERM;
+            c->idct_put  = simple_idct_arm_put;
+            c->idct_add  = simple_idct_arm_add;
+            c->idct      = ff_simple_idct_arm;
+            c->perm_type = FF_IDCT_PERM_NONE;
         }
     }
 

@@ -154,10 +154,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
         h = plane == 0 ? inlink->h : FF_CEIL_RSHIFT(inlink->h, kerndeint->vsub);
         bwidth = kerndeint->tmp_bwidth[plane];
 
-        srcp = srcp_saved = inpic->data[plane];
+        srcp_saved        = inpic->data[plane];
         src_linesize      = inpic->linesize[plane];
         psrc_linesize     = kerndeint->tmp_linesize[plane];
-        dstp = dstp_saved = outpic->data[plane];
+        dstp_saved        = outpic->data[plane];
         dst_linesize      = outpic->linesize[plane];
         srcp              = srcp_saved + (1 - order) * src_linesize;
         dstp              = dstp_saved + (1 - order) * dst_linesize;

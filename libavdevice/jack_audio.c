@@ -39,7 +39,7 @@
  */
 #define FIFO_PACKETS_NUM 16
 
-typedef struct {
+typedef struct JackData {
     AVClass        *class;
     jack_client_t * client;
     int             activated;

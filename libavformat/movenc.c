@@ -4398,8 +4398,7 @@ static int mov_write_trailer(AVFormatContext *s)
             }
             avio_wb32(pb, size);
             ffio_wfourcc(pb, "free");
-            for (i = 0; i < size; i++)
-                avio_w8(pb, 0);
+            ffio_fill(pb, 0, size - 8);
             avio_seek(pb, moov_pos, SEEK_SET);
         } else {
             mov_write_moov_tag(pb, mov, s);

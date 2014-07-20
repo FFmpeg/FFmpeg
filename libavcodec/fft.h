@@ -74,6 +74,17 @@ typedef struct FFTDComplex {
 
 /* FFT computation */
 
+enum fft_permutation_type {
+    FF_FFT_PERM_DEFAULT,
+    FF_FFT_PERM_SWAP_LSBS,
+    FF_FFT_PERM_AVX,
+};
+
+enum mdct_permutation_type {
+    FF_MDCT_PERM_NONE,
+    FF_MDCT_PERM_INTERLEAVE,
+};
+
 struct FFTContext {
     int nbits;
     int inverse;
@@ -97,13 +108,8 @@ struct FFTContext {
     void (*imdct_half)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*mdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*mdct_calcw)(struct FFTContext *s, FFTDouble *output, const FFTSample *input);
-    int fft_permutation;
-#define FF_FFT_PERM_DEFAULT   0
-#define FF_FFT_PERM_SWAP_LSBS 1
-#define FF_FFT_PERM_AVX       2
-    int mdct_permutation;
-#define FF_MDCT_PERM_NONE       0
-#define FF_MDCT_PERM_INTERLEAVE 1
+    enum fft_permutation_type fft_permutation;
+    enum mdct_permutation_type mdct_permutation;
 };
 
 #if CONFIG_HARDCODED_TABLES

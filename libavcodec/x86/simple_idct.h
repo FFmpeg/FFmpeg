@@ -16,17 +16,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ALPHA_DSPUTIL_ALPHA_H
-#define AVCODEC_ALPHA_DSPUTIL_ALPHA_H
+#ifndef AVCODEC_X86_SIMPLE_IDCT_H
+#define AVCODEC_X86_SIMPLE_IDCT_H
 
-#include <stddef.h>
 #include <stdint.h>
 
-int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
-int pix_abs16x16_mvi_asm(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
-int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
-int pix_abs16x16_y2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
-int pix_abs16x16_xy2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+void ff_simple_idct_mmx(int16_t *block);
+void ff_simple_idct_add_mmx(uint8_t *dest, int line_size, int16_t *block);
+void ff_simple_idct_put_mmx(uint8_t *dest, int line_size, int16_t *block);
 
-
-#endif /* AVCODEC_ALPHA_DSPUTIL_ALPHA_H */
+#endif /* AVCODEC_X86_SIMPLE_IDCT_H */

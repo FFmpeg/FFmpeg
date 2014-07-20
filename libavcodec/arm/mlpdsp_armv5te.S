@@ -338,7 +338,7 @@ T       orr     AC0, AC0, AC1
 .endm
 
 .macro switch_on_fir_taps  mask_minus1, shift_0, shift_8, iir_taps
-A       ldr     pc, [pc, a3, LSL #2] // firorder is in range 0-(8-iir_taps)
+A       ldr     pc, [pc, a3, lsl #2] // firorder is in range 0-(8-iir_taps)
 T       tbh     [pc, a3, lsl #1]
 0:
 A       .word   0, 70f, 71f, 72f, 73f, 74f
@@ -379,8 +379,8 @@ T       .hword  (78f - 0b) / 2
 .endm
 
 .macro switch_on_iir_taps  mask_minus1, shift_0, shift_8
-A       ldr     pc, [pc, a4, LSL #2] // irorder is in range 0-4
-T       tbh    [pc, a4, lsl #1]
+A       ldr     pc, [pc, a4, lsl #2] // irorder is in range 0-4
+T       tbh     [pc, a4, lsl #1]
 0:
 A       .word   0, 60f, 61f, 62f, 63f, 64f
 T       .hword  (60f - 0b) / 2, (61f - 0b) / 2, (62f - 0b) / 2, (63f - 0b) / 2, (64f - 0b) / 2

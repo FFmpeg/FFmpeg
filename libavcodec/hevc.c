@@ -276,6 +276,24 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
+static int get_buffer_sao(HEVCContext *s, AVFrame *frame, HEVCSPS *sps)
+{
+    int ret, i;
+
+    frame->width  = s->avctx->width  + 2;
+    frame->height = s->avctx->height + 2;
+    if ((ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+        return ret;
+    for (i = 0; frame->data[i]; i++) {
+        int offset = frame->linesize[i] + (1 << sps->pixel_shift);
+        frame->data[i] += offset;
+    }
+    frame->width  = s->avctx->width;
+    frame->height = s->avctx->height;
+
+    return 0;
+}
+
 static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 {
     int ret;
@@ -317,10 +335,8 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     if (sps->sao_enabled) {
         av_frame_unref(s->tmp_frame);
-        ret = ff_get_buffer(s->avctx, s->tmp_frame, AV_GET_BUFFER_FLAG_REF);
-        if (ret < 0)
-            goto fail;
-        s->frame = s->tmp_frame;
+        ret = get_buffer_sao(s, s->tmp_frame, sps);
+        s->sao_frame = s->tmp_frame;
     }
 
     s->sps = sps;
@@ -1696,8 +1712,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                 }
 
                 if (s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == PRED_BI) {
-                    lc->pu.mvd.x = 0;
-                    lc->pu.mvd.y = 0;
+                    AV_ZERO32(&lc->pu.mvd);
                 } else {
                     ff_hevc_hls_mvd_coding(s, x0, y0, 1);
                 }
@@ -2568,7 +2583,6 @@ static int hevc_frame_start(HEVCContext *s)
     int pic_size_in_ctb  = ((s->sps->width  >> s->sps->log2_min_cb_size) + 1) *
                            ((s->sps->height >> s->sps->log2_min_cb_size) + 1);
     int ret;
-    AVFrame *cur_frame;
 
     memset(s->horizontal_bs, 0, 2 * s->bs_width * (s->bs_height + 1));
     memset(s->vertical_bs,   0, 2 * s->bs_width * (s->bs_height + 1));
@@ -2582,8 +2596,7 @@ static int hevc_frame_start(HEVCContext *s)
     if (s->pps->tiles_enabled_flag)
         lc->end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
 
-    ret = ff_hevc_set_new_ref(s, s->sps->sao_enabled ? &s->sao_frame : &s->frame,
-                              s->poc);
+    ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
     if (ret < 0)
         goto fail;
 
@@ -2599,8 +2612,7 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
 
-    cur_frame = s->sps->sao_enabled ? s->sao_frame : s->frame;
-    cur_frame->pict_type = 3 - s->sh.slice_type;
+    s->frame->pict_type = 3 - s->sh.slice_type;
 
     av_frame_unref(s->output_frame);
     ret = ff_hevc_output_frame(s, s->output_frame, 0);

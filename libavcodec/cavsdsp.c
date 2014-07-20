@@ -561,7 +561,7 @@ av_cold void ff_cavsdsp_init(CAVSDSPContext* c, AVCodecContext *avctx) {
     c->cavs_filter_cv = cavs_filter_cv_c;
     c->cavs_filter_ch = cavs_filter_ch_c;
     c->cavs_idct8_add = cavs_idct8_add_c;
-    c->idct_perm = FF_NO_IDCT_PERM;
+    c->idct_perm = FF_IDCT_PERM_NONE;
 
     if (ARCH_X86)
         ff_cavsdsp_init_x86(c, avctx);

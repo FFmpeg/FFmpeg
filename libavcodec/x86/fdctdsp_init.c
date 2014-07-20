@@ -20,8 +20,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dct.h"
 #include "libavcodec/fdctdsp.h"
+#include "fdct.h"
 
 av_cold void ff_fdctdsp_init_x86(FDCTDSPContext *c, AVCodecContext *avctx,
                                  unsigned high_bit_depth)

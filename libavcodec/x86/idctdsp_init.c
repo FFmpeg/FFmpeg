@@ -22,9 +22,9 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/idctdsp.h"
-#include "libavcodec/simple_idct.h"
 #include "idct_xvid.h"
 #include "idctdsp.h"
+#include "simple_idct.h"
 
 /* Input permutation for the simple_idct_mmx */
 static const uint8_t simple_mmx_permutation[64] = {
@@ -41,16 +41,16 @@ static const uint8_t simple_mmx_permutation[64] = {
 static const uint8_t idct_sse2_row_perm[8] = { 0, 4, 1, 5, 2, 6, 3, 7 };
 
 av_cold int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
-                                              int idct_permutation_type)
+                                              enum idct_permutation_type perm_type)
 {
     int i;
 
-    switch (idct_permutation_type) {
-    case FF_SIMPLE_IDCT_PERM:
+    switch (perm_type) {
+    case FF_IDCT_PERM_SIMPLE:
         for (i = 0; i < 64; i++)
             idct_permutation[i] = simple_mmx_permutation[i];
         return 1;
-    case FF_SSE2_IDCT_PERM:
+    case FF_IDCT_PERM_SSE2:
         for (i = 0; i < 64; i++)
             idct_permutation[i] = (i & 0x38) | idct_sse2_row_perm[i & 7];
         return 1;
@@ -73,15 +73,15 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
             case FF_IDCT_AUTO:
             case FF_IDCT_SIMPLEAUTO:
             case FF_IDCT_SIMPLEMMX:
-                c->idct_put              = ff_simple_idct_put_mmx;
-                c->idct_add              = ff_simple_idct_add_mmx;
-                c->idct                  = ff_simple_idct_mmx;
-                c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
+                c->idct_put  = ff_simple_idct_put_mmx;
+                c->idct_add  = ff_simple_idct_add_mmx;
+                c->idct      = ff_simple_idct_mmx;
+                c->perm_type = FF_IDCT_PERM_SIMPLE;
                 break;
             case FF_IDCT_XVIDMMX:
-                c->idct_put              = ff_idct_xvid_mmx_put;
-                c->idct_add              = ff_idct_xvid_mmx_add;
-                c->idct                  = ff_idct_xvid_mmx;
+                c->idct_put  = ff_idct_xvid_mmx_put;
+                c->idct_add  = ff_idct_xvid_mmx_add;
+                c->idct      = ff_idct_xvid_mmx;
                 break;
             }
         }
@@ -100,10 +100,10 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
 
     if (INLINE_SSE2(cpu_flags)) {
         if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX && avctx->lowres == 0) {
-            c->idct_put              = ff_idct_xvid_sse2_put;
-            c->idct_add              = ff_idct_xvid_sse2_add;
-            c->idct                  = ff_idct_xvid_sse2;
-            c->idct_permutation_type = FF_SSE2_IDCT_PERM;
+            c->idct_put  = ff_idct_xvid_sse2_put;
+            c->idct_add  = ff_idct_xvid_sse2_add;
+            c->idct      = ff_idct_xvid_sse2;
+            c->perm_type = FF_IDCT_PERM_SSE2;
         }
     }
     if (EXTERNAL_SSE2(cpu_flags)) {

@@ -87,7 +87,8 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 
     if (rps_predict) {
         const ShortTermRPS *rps_ridx;
-        int delta_rps, abs_delta_rps;
+        int delta_rps;
+        unsigned abs_delta_rps;
         uint8_t use_delta_flag = 0;
         uint8_t delta_rps_sign;
 
@@ -105,6 +106,12 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 
         delta_rps_sign = get_bits1(gb);
         abs_delta_rps  = get_ue_golomb_long(gb) + 1;
+        if (abs_delta_rps < 1 || abs_delta_rps > 32768) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Invalid value of abs_delta_rps: %d\n",
+                   abs_delta_rps);
+            return AVERROR_INVALIDDATA;
+        }
         delta_rps      = (1 - (delta_rps_sign << 1)) * abs_delta_rps;
         for (i = 0; i <= rps_ridx->num_delta_pocs; i++) {
             int used = rps->used[k] = get_bits1(gb);
@@ -265,7 +272,7 @@ static void decode_sublayer_hrd(HEVCContext *s, unsigned int nb_cpb,
     }
 }
 
-static void decode_hrd(HEVCContext *s, int common_inf_present,
+static int decode_hrd(HEVCContext *s, int common_inf_present,
                        int max_sublayers)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -312,14 +319,20 @@ static void decode_hrd(HEVCContext *s, int common_inf_present,
         else
             low_delay = get_bits1(gb);
 
-        if (!low_delay)
+        if (!low_delay) {
             nb_cpb = get_ue_golomb_long(gb) + 1;
+            if (nb_cpb < 1 || nb_cpb > 32) {
+                av_log(s->avctx, AV_LOG_ERROR, "nb_cpb %d invalid\n", nb_cpb);
+                return AVERROR_INVALIDDATA;
+            }
+        }
 
         if (nal_params_present)
             decode_sublayer_hrd(s, nb_cpb, subpic_params_present);
         if (vcl_params_present)
             decode_sublayer_hrd(s, nb_cpb, subpic_params_present);
     }
+    return 0;
 }
 
 int ff_hevc_decode_nal_vps(HEVCContext *s)
@@ -1287,7 +1300,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         int pps_range_extensions_flag = get_bits1(gb);
         /* int pps_extension_7bits = */ get_bits(gb, 7);
         if (sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
-            av_log(s->avctx, AV_LOG_ERROR,
+            av_log(s->avctx, AV_LOG_WARNING,
                    "PPS extension flag is partially implemented.\n");
             pps_range_extensions(s, pps, sps);
         }

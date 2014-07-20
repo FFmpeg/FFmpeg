@@ -32,7 +32,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/x86/asm.h"
-#include "libavcodec/dct.h"
+#include "fdct.h"
 
 #if HAVE_MMX_INLINE
 

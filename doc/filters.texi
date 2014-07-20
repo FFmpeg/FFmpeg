@@ -3916,7 +3916,7 @@ example the text size is not known when evaluating the expression, so
 the constants @var{text_w} and @var{text_h} will have an undefined
 value.
 
-@item eif
+@item expr_int_format, eif
 Evaluate the expression's value and output as formatted integer.
 
 First argument is expression to be evaluated, same as for @var{expr} function.

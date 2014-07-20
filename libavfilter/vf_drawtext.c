@@ -949,7 +949,7 @@ static int func_eval_expr_int_format(AVFilterContext *ctx, AVBPrint *bp,
     if (argc == 3) {
         ret = sscanf(argv[2], "%u", &positions);
         if (ret != 1) {
-            av_log(ctx, AV_LOG_ERROR, "eif(): Invalid number of positions"
+            av_log(ctx, AV_LOG_ERROR, "expr_int_format(): Invalid number of positions"
                     " to print: '%s'\n", argv[2]);
             return AVERROR(EINVAL);
         }
@@ -982,6 +982,7 @@ static const struct drawtext_function {
 } functions[] = {
     { "expr",      1, 1, 0,   func_eval_expr },
     { "e",         1, 1, 0,   func_eval_expr },
+    { "expr_int_format", 2, 3, 0, func_eval_expr_int_format },
     { "eif",       2, 3, 0,   func_eval_expr_int_format },
     { "pict_type", 0, 0, 0,   func_pict_type },
     { "pts",       0, 2, 0,   func_pts      },

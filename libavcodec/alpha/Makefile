@@ -1,7 +1,6 @@
 OBJS-$(CONFIG_BLOCKDSP)                 += alpha/blockdsp_alpha.o
-OBJS-$(CONFIG_DSPUTIL)                  += alpha/dsputil_alpha.o        \
-                                           alpha/motion_est_alpha.o     \
-                                           alpha/motion_est_mvi_asm.o
+OBJS-$(CONFIG_ME_CMP)                   += alpha/me_cmp_alpha.o         \
+                                           alpha/me_cmp_mvi_asm.o
 OBJS-$(CONFIG_HPELDSP)                  += alpha/hpeldsp_alpha.o        \
                                            alpha/hpeldsp_alpha_asm.o
 OBJS-$(CONFIG_IDCTDSP)                  += alpha/idctdsp_alpha.o        \

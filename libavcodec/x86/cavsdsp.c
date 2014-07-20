@@ -524,7 +524,7 @@ static av_cold void cavsdsp_init_mmx(CAVSDSPContext *c,
 
 #if HAVE_MMX_INLINE
     c->cavs_idct8_add = cavs_idct8_add_mmx;
-    c->idct_perm      = FF_TRANSPOSE_IDCT_PERM;
+    c->idct_perm      = FF_IDCT_PERM_TRANSPOSE;
 #endif /* HAVE_MMX_INLINE */
 }
 

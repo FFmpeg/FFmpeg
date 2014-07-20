@@ -50,6 +50,14 @@ typedef union {
  * AV_[RW][BLN](16|24|32|48|64) and AV_(COPY|SWAP|ZERO)(64|128) macros.
  * Preprocessor symbols must be defined, even if these are implemented
  * as inline functions.
+ *
+ * R/W means read/write, B/L/N means big/little/native endianness.
+ * The following macros require aligned access, compared to their
+ * unaligned variants: AV_(COPY|SWAP|ZERO)(64|128), AV_[RW]N[8-64]A.
+ * Incorrect usage may range from abysmal performance to crash
+ * depending on the platform.
+ *
+ * The unaligned variants are AV_[RW][BLN][8-64] and AV_COPY*U.
  */
 
 #ifdef HAVE_AV_CONFIG_H

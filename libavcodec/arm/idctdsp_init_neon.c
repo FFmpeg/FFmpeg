@@ -41,10 +41,10 @@ av_cold void ff_idctdsp_init_neon(IDCTDSPContext *c, AVCodecContext *avctx,
         if (avctx->idct_algo == FF_IDCT_AUTO ||
             avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
             avctx->idct_algo == FF_IDCT_SIMPLENEON) {
-            c->idct_put              = ff_simple_idct_put_neon;
-            c->idct_add              = ff_simple_idct_add_neon;
-            c->idct                  = ff_simple_idct_neon;
-            c->idct_permutation_type = FF_PARTTRANS_IDCT_PERM;
+            c->idct_put  = ff_simple_idct_put_neon;
+            c->idct_add  = ff_simple_idct_add_neon;
+            c->idct      = ff_simple_idct_neon;
+            c->perm_type = FF_IDCT_PERM_PARTTRANS;
         }
     }
 

@@ -45,7 +45,7 @@
 #include "avdevice.h"
 #include "fbdev_common.h"
 
-typedef struct {
+typedef struct FBDevContext {
     AVClass *class;          ///< class for private options
     int frame_size;          ///< size in bytes of a grabbed frame
     AVRational framerate_q;  ///< framerate

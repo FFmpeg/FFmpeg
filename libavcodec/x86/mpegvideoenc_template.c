@@ -25,6 +25,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/mpegvideo.h"
+#include "fdct.h"
 
 #undef MMREG_WIDTH
 #undef MM
@@ -232,7 +233,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     if(s->mb_intra) block[0]= level;
     else            block[0]= temp_block[0];
 
-    if (s->idsp.idct_permutation_type == FF_SIMPLE_IDCT_PERM) {
+    if (s->idsp.perm_type == FF_IDCT_PERM_SIMPLE) {
         if(last_non_zero_p1 <= 1) goto end;
         block[0x08] = temp_block[0x01]; block[0x10] = temp_block[0x08];
         block[0x20] = temp_block[0x10];
@@ -276,7 +277,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         block[0x3E] = temp_block[0x3D]; block[0x27] = temp_block[0x36];
         block[0x3D] = temp_block[0x2F]; block[0x2F] = temp_block[0x37];
         block[0x37] = temp_block[0x3E]; block[0x3F] = temp_block[0x3F];
-    }else if(s->idsp.idct_permutation_type == FF_LIBMPEG2_IDCT_PERM){
+    }else if(s->idsp.perm_type == FF_IDCT_PERM_LIBMPEG2){
         if(last_non_zero_p1 <= 1) goto end;
         block[0x04] = temp_block[0x01];
         block[0x08] = temp_block[0x08]; block[0x10] = temp_block[0x10];
