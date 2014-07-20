@@ -267,13 +267,13 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     x = x0 + nPbW;
     y = y0 + nPbH;
 
-    ff_thread_await_progress(&ref->tf, y, 0);
     if (tab_mvf &&
         (y0 >> s->sps->log2_ctb_size) == (y >> s->sps->log2_ctb_size) &&
         y < s->sps->height &&
         x < s->sps->width) {
         x                 &= ~15;
         y                 &= ~15;
+        ff_thread_await_progress(&ref->tf, y, 0);
         x_pu               = x >> s->sps->log2_min_pu_size;
         y_pu               = y >> s->sps->log2_min_pu_size;
         temp_col           = TAB_MVF(x_pu, y_pu);
@@ -286,6 +286,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
         y                  = y0 + (nPbH >> 1);
         x                 &= ~15;
         y                 &= ~15;
+        ff_thread_await_progress(&ref->tf, y, 0);
         x_pu               = x >> s->sps->log2_min_pu_size;
         y_pu               = y >> s->sps->log2_min_pu_size;
         temp_col           = TAB_MVF(x_pu, y_pu);
