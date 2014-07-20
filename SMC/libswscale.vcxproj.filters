@@ -21,6 +21,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libswscale\hscale_fast_bilinear.c">
+      <Filter>Source Files\libswscale</Filter>
+    </ClCompile>
     <ClCompile Include="..\libswscale\input.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
@@ -52,6 +55,9 @@
       <Filter>Source Files\libswscale\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libswscale\x86\yuv2rgb.c">
+      <Filter>Source Files\libswscale\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libswscale\x86\hscale_fast_bilinear_simd.c">
       <Filter>Source Files\libswscale\x86</Filter>
     </ClCompile>
   </ItemGroup>
