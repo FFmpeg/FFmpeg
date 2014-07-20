@@ -29,6 +29,7 @@
  */
 
 #include "avcodec.h"
+#include "bytestream.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "aandcttab.h"
@@ -236,29 +237,31 @@ static int decode_frame(AVCodecContext *avctx,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    const uint8_t *buf_end = buf+buf_size;
     MadContext *t     = avctx->priv_data;
+    GetByteContext gb;
     MpegEncContext *s = &t->s;
     int chunk_type;
     int inter;
 
-    if (buf_size < 17) {
-        av_log(avctx, AV_LOG_ERROR, "Input buffer too small\n");
-        *data_size = 0;
-        return -1;
-    }
+    bytestream2_init(&gb, buf, buf_size);
 
-    chunk_type = AV_RL32(&buf[0]);
+    chunk_type = bytestream2_get_le32(&gb);
     inter = (chunk_type == MADm_TAG || chunk_type == MADe_TAG);
-    buf += 8;
+    bytestream2_skip(&gb, 10);
 
     av_reduce(&avctx->time_base.num, &avctx->time_base.den,
-              AV_RL16(&buf[6]), 1000, 1<<30);
+              bytestream2_get_le16(&gb), 1000, 1<<30);
 
-    s->width  = AV_RL16(&buf[8]);
-    s->height = AV_RL16(&buf[10]);
-    calc_intra_matrix(t, buf[13]);
-    buf += 16;
+    s->width  = bytestream2_get_le16(&gb);
+    s->height = bytestream2_get_le16(&gb);
+    bytestream2_skip(&gb, 1);
+    calc_intra_matrix(t, bytestream2_get_byte(&gb));
+    bytestream2_skip(&gb, 2);
+
+    if (bytestream2_get_bytes_left(&gb) < 2) {
+        av_log(avctx, AV_LOG_ERROR, "Input data too small\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (avctx->width != s->width || avctx->height != s->height) {
         if (av_image_check_size(s->width, s->height, 0, avctx) < 0)
@@ -276,12 +279,13 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    av_fast_malloc(&t->bitstream_buf, &t->bitstream_buf_size, (buf_end-buf) + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(&t->bitstream_buf, &t->bitstream_buf_size,
+                   bytestream2_get_bytes_left(&gb) + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!t->bitstream_buf)
         return AVERROR(ENOMEM);
-    bswap16_buf(t->bitstream_buf, (const uint16_t*)buf, (buf_end-buf)/2);
-    init_get_bits(&s->gb, t->bitstream_buf, 8*(buf_end-buf));
-
+    bswap16_buf(t->bitstream_buf, (const uint16_t *)(buf + bytestream2_tell(&gb)),
+                bytestream2_get_bytes_left(&gb) / 2);
+    init_get_bits(&s->gb, t->bitstream_buf, 8*(bytestream2_get_bytes_left(&gb)));
     for (s->mb_y=0; s->mb_y < (avctx->height+15)/16; s->mb_y++)
         for (s->mb_x=0; s->mb_x < (avctx->width +15)/16; s->mb_x++)
             decode_mb(t, inter);
