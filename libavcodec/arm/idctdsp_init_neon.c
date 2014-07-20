@@ -24,11 +24,8 @@
 #include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/idctdsp.h"
+#include "idct.h"
 #include "idctdsp_arm.h"
-
-void ff_simple_idct_neon(int16_t *data);
-void ff_simple_idct_put_neon(uint8_t *dest, int line_size, int16_t *data);
-void ff_simple_idct_add_neon(uint8_t *dest, int line_size, int16_t *data);
 
 void ff_add_pixels_clamped_neon(const int16_t *, uint8_t *, int);
 void ff_put_pixels_clamped_neon(const int16_t *, uint8_t *, int);

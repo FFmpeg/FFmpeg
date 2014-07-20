@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,24 +16,25 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_ARM_IDCT_H
+#define AVCODEC_ARM_IDCT_H
+
 #include <stdint.h>
 
-#include "libavutil/attributes.h"
-#include "libavcodec/avcodec.h"
-#include "libavcodec/idctdsp.h"
-#include "idct.h"
-#include "idctdsp_arm.h"
+void ff_j_rev_dct_arm(int16_t *data);
 
-av_cold void ff_idctdsp_init_armv5te(IDCTDSPContext *c, AVCodecContext *avctx,
-                                     unsigned high_bit_depth)
-{
-    if (!avctx->lowres && !high_bit_depth &&
-        (avctx->idct_algo == FF_IDCT_AUTO ||
-         avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
-         avctx->idct_algo == FF_IDCT_SIMPLEARMV5TE)) {
-        c->idct_put  = ff_simple_idct_put_armv5te;
-        c->idct_add  = ff_simple_idct_add_armv5te;
-        c->idct      = ff_simple_idct_armv5te;
-        c->perm_type = FF_IDCT_PERM_NONE;
-    }
-}
+void ff_simple_idct_arm(int16_t *data);
+
+void ff_simple_idct_armv5te(int16_t *data);
+void ff_simple_idct_put_armv5te(uint8_t *dest, int line_size, int16_t *data);
+void ff_simple_idct_add_armv5te(uint8_t *dest, int line_size, int16_t *data);
+
+void ff_simple_idct_armv6(int16_t *data);
+void ff_simple_idct_put_armv6(uint8_t *dest, int line_size, int16_t *data);
+void ff_simple_idct_add_armv6(uint8_t *dest, int line_size, int16_t *data);
+
+void ff_simple_idct_neon(int16_t *data);
+void ff_simple_idct_put_neon(uint8_t *dest, int line_size, int16_t *data);
+void ff_simple_idct_add_neon(uint8_t *dest, int line_size, int16_t *data);
+
+#endif /* AVCODEC_ARM_IDCT_H */
