@@ -46,6 +46,7 @@
 typedef struct RVDecContext {
     MpegEncContext m;
     int sub_id;
+    int orig_width, orig_height;
 } RVDecContext;
 
 static const uint16_t rv_lum_code[256] = {
@@ -369,8 +370,8 @@ static int rv20_decode_picture_header(RVDecContext *rv)
             new_w = 4 * ((uint8_t *) s->avctx->extradata)[6 + 2 * f];
             new_h = 4 * ((uint8_t *) s->avctx->extradata)[7 + 2 * f];
         } else {
-            new_w = s->orig_width;
-            new_h = s->orig_height;
+            new_w = rv->orig_width;
+            new_h = rv->orig_height;
         }
         if (new_w != s->width || new_h != s->height) {
             AVRational old_aspect = s->avctx->sample_aspect_ratio;
@@ -479,10 +480,10 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     s->out_format  = FMT_H263;
     s->codec_id    = avctx->codec_id;
 
-    s->orig_width  =
-    s->width       = avctx->coded_width;
-    s->orig_height =
-    s->height      = avctx->coded_height;
+    rv->orig_width  =
+    s->width        = avctx->coded_width;
+    rv->orig_height =
+    s->height       = avctx->coded_height;
 
     s->h263_long_vectors = ((uint8_t *) avctx->extradata)[3] & 1;
     rv->sub_id           = AV_RB32((uint8_t *) avctx->extradata + 4);
