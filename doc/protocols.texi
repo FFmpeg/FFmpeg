@@ -539,7 +539,7 @@ firewalls.
 
 @section libsmbclient
 
-libsmbclient permits to manipulate CIFS/SMB network resources.
+libsmbclient permits one to manipulate CIFS/SMB network resources.
 
 Following syntax is required.
 
