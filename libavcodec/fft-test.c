@@ -63,11 +63,13 @@ static struct {
     float re, im;
 } *exptab;
 
-static void fft_ref_init(int nbits, int inverse)
+static int fft_ref_init(int nbits, int inverse)
 {
     int i, n = 1 << nbits;
 
     exptab = av_malloc((n / 2) * sizeof(*exptab));
+    if (!exptab)
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < (n/2); i++) {
         double alpha = 2 * M_PI * (float)i / (float)n;
@@ -77,6 +79,7 @@ static void fft_ref_init(int nbits, int inverse)
         exptab[i].re = c1;
         exptab[i].im = s1;
     }
+    return 0;
 }
 
 static void fft_ref(FFTComplex *tabr, FFTComplex *tab, int nbits)
@@ -287,6 +290,9 @@ int main(int argc, char **argv)
     tab_ref = av_malloc(fft_size * sizeof(FFTComplex));
     tab2 = av_malloc(fft_size * sizeof(FFTSample));
 
+    if (!(tab && tab1 && tab_ref && tab2))
+        goto cleanup;
+
     switch (transform) {
 #if CONFIG_MDCT
     case TRANSFORM_MDCT:
@@ -304,7 +310,8 @@ int main(int argc, char **argv)
         else
             av_log(NULL, AV_LOG_INFO,"FFT");
         ff_fft_init(&s, fft_nbits, do_inverse);
-        fft_ref_init(fft_nbits, do_inverse);
+        if (err = fft_ref_init(fft_nbits, do_inverse) < 0)
+            goto cleanup;
         break;
 #if FFT_FLOAT
 #if CONFIG_RDFT
@@ -314,7 +321,8 @@ int main(int argc, char **argv)
         else
             av_log(NULL, AV_LOG_INFO,"DFT_R2C");
         ff_rdft_init(&r, fft_nbits, do_inverse ? IDFT_C2R : DFT_R2C);
-        fft_ref_init(fft_nbits, do_inverse);
+        if (err = fft_ref_init(fft_nbits, do_inverse) < 0)
+            goto cleanup;
         break;
 #endif /* CONFIG_RDFT */
 #if CONFIG_DCT
@@ -329,7 +337,7 @@ int main(int argc, char **argv)
 #endif /* FFT_FLOAT */
     default:
         av_log(NULL, AV_LOG_ERROR, "Requested transform not supported\n");
-        return 1;
+        goto cleanup;
     }
     av_log(NULL, AV_LOG_INFO," %d test\n", fft_size);
 
@@ -488,6 +496,7 @@ int main(int argc, char **argv)
 #endif /* FFT_FLOAT */
     }
 
+cleanup:
     av_free(tab);
     av_free(tab1);
     av_free(tab2);
