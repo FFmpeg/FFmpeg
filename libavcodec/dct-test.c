@@ -443,7 +443,9 @@ int main(int argc, char **argv)
             for (i = 0; idct_tab_arch[i].name; i++)
                 if (!(~cpu_flags & idct_tab_arch[i].cpu_flag))
                     err |= dct_error(&idct_tab_arch[i], test, test_idct, speed);
-        } else {
+        }
+#if CONFIG_FDCTDSP
+        else {
             for (i = 0; i < FF_ARRAY_ELEMS(fdct_tab); i++)
                 err |= dct_error(&fdct_tab[i], test, test_idct, speed);
 
@@ -451,6 +453,7 @@ int main(int argc, char **argv)
                 if (!(~cpu_flags & fdct_tab_arch[i].cpu_flag))
                     err |= dct_error(&fdct_tab_arch[i], test, test_idct, speed);
         }
+#endif /* CONFIG_FDCTDSP */
     }
 
     if (err)
