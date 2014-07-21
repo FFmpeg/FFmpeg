@@ -851,18 +851,16 @@ SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h vda_internal.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 
-TESTPROGS = cabac                                                       \
-            fft                                                         \
-            fft-fixed                                                   \
-            fft-fixed32                                                 \
-            golomb                                                      \
-            imgconvert                                                  \
-            rangecoder                                                  \
-            snowenc                                                     \
+TESTPROGS = imgconvert                                                  \
 
+TESTPROGS-$(CONFIG_CABAC)                 += cabac
+TESTPROGS-$(CONFIG_FFT)                   += fft fft-fixed fft-fixed32
 TESTPROGS-$(CONFIG_IDCTDSP)               += dct
 TESTPROGS-$(CONFIG_IIRFILTER)             += iirfilter
 TESTPROGS-$(HAVE_MMX)                     += motion
+TESTPROGS-$(CONFIG_GOLOMB)                += golomb
+TESTPROGS-$(CONFIG_RANGECODER)            += rangecoder
+TESTPROGS-$(CONFIG_SNOW_ENCODER)          += snowenc
 
 TESTOBJS = dctref.o
 
