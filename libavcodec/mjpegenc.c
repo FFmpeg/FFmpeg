@@ -46,7 +46,7 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 
     m = av_malloc(sizeof(MJpegContext));
     if (!m)
-        return -1;
+        return AVERROR(ENOMEM);
 
     s->min_qcoeff=-1023;
     s->max_qcoeff= 1023;
