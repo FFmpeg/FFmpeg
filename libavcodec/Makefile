@@ -54,6 +54,7 @@ OBJS-$(CONFIG_HUFFYUVDSP)              += huffyuvdsp.o
 OBJS-$(CONFIG_HUFFYUVENCDSP)           += huffyuvencdsp.o
 OBJS-$(CONFIG_IDCTDSP)                 += idctdsp.o faanidct.o          \
                                           simple_idct.o jrevdct.o
+OBJS-$(CONFIG_IIRFILTER)               += iirfilter.o
 OBJS-$(CONFIG_INTRAX8)                 += intrax8.o intrax8dsp.o
 OBJS-$(CONFIG_LIBXVID)                 += libxvid_rc.o
 OBJS-$(CONFIG_LPC)                     += lpc.o
@@ -93,8 +94,7 @@ OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o aacsbr.o aacps.o \
                                           sbrdsp.o aacpsdsp.o
 OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o    \
                                           aacpsy.o aactab.o      \
-                                          psymodel.o iirfilter.o \
-                                          mpeg4audio.o kbdwin.o
+                                          psymodel.o mpeg4audio.o kbdwin.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3dec_data.o ac3.o kbdwin.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc_float.o ac3enc.o ac3tab.o \
@@ -715,8 +715,9 @@ TESTPROGS = dct                                                         \
             fft                                                         \
             fft-fixed                                                   \
             golomb                                                      \
-            iirfilter                                                   \
             rangecoder                                                  \
+
+TESTPROGS-$(CONFIG_IIRFILTER)             += iirfilter
 
 TESTOBJS = dctref.o
 
