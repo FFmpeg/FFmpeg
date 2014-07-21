@@ -194,7 +194,7 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
 
 static int set_string_number(void *obj, void *target_obj, const AVOption *o, const char *val, void *dst)
 {
-    int ret = 0, notfirst = 0;
+    int ret = 0;
     int num, den;
     char c;
 
@@ -215,8 +215,6 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
         if (*val == '+' || *val == '-') {
             if (o->type == AV_OPT_TYPE_FLAGS)
                 cmd = *(val++);
-            else if (!notfirst)
-                buf[i++] = *val;
         }
 
         for (; i < sizeof(buf) - 1 && val[i] && (o->type != AV_OPT_TYPE_FLAGS || val[i] != '+' && val[i] != '-'); i++)
@@ -244,10 +242,6 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
             read_number(o, dst, NULL, NULL, &intnum);
             if      (cmd == '+') d = intnum | (int64_t)d;
             else if (cmd == '-') d = intnum &~(int64_t)d;
-        } else {
-            read_number(o, dst, &num, &den, &intnum);
-            if      (cmd == '+') d = notfirst*num*intnum/den + d;
-            else if (cmd == '-') d = notfirst*num*intnum/den - d;
         }
 
         if ((ret = write_number(obj, o, dst, d, 1, 1)) < 0)
@@ -255,7 +249,6 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
         val += i;
         if (!*val)
             return 0;
-        notfirst = 1;
     }
 
     return 0;
