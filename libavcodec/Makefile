@@ -711,13 +711,11 @@ SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h vda_internal.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 
-TESTPROGS = fft                                                         \
-            fft-fixed                                                   \
-            golomb                                                      \
-            rangecoder                                                  \
-
+TESTPROGS-$(CONFIG_FFT)                   += fft fft-fixed
 TESTPROGS-$(CONFIG_IDCTDSP)               += dct
 TESTPROGS-$(CONFIG_IIRFILTER)             += iirfilter
+TESTPROGS-$(CONFIG_GOLOMB)                += golomb
+TESTPROGS-$(CONFIG_RANGECODER)            += rangecoder
 
 TESTOBJS = dctref.o
 
