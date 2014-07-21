@@ -219,7 +219,7 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
                 buf[i++] = *val;
         }
 
-        for (; i < sizeof(buf) - 1 && val[i] && val[i] != '+' && val[i] != '-'; i++)
+        for (; i < sizeof(buf) - 1 && val[i] && (o->type != AV_OPT_TYPE_FLAGS || val[i] != '+' && val[i] != '-'); i++)
             buf[i] = val[i];
         buf[i] = 0;
 
