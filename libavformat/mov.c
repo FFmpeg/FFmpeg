@@ -2534,8 +2534,8 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int size)
                 if(priming>0 && priming<16384)
                     sc->start_pad = priming;
             }
-        } else if (strcmp(key, "cdec") == 0) {
-        } else {
+        }
+        if (strcmp(key, "cdec") != 0) {
             av_dict_set(&c->fc->metadata, key, val,
                         AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
             key = val = NULL;
