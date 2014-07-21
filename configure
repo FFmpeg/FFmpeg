@@ -1340,6 +1340,7 @@ ARCH_FEATURES="
     fast_cmov
     local_aligned_8
     local_aligned_16
+    simd_align_16
 "
 
 BUILTIN_LIST="
@@ -1701,8 +1702,7 @@ aligned_stack_if_any="aarch64 ppc x86"
 fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
-
-need_memalign="altivec neon sse"
+simd_align_16_if_any="altivec neon sse"
 
 # system capabilities
 log2_deps="!libc_msvcrt"
@@ -4430,7 +4430,7 @@ enabled_all dxva2 CoTaskMemFree &&
     enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
-    enabled_any $need_memalign && enable memalign_hack
+    enabled $simd_align_16 && enable memalign_hack
 
 map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
 
