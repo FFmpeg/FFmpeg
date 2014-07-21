@@ -28,6 +28,7 @@
 #include "mpeg4video.h"
 #include "h263.h"
 #include "thread.h"
+#include "xvididct.h"
 
 /* The defines below define the number of bits that are read at once for
  * reading vlc values. Changing these may improve speed and data cache needs
@@ -2066,14 +2067,8 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
         ctx->divx_build   = -1;
     }
 
-#if HAVE_MMX
-    if (ctx->xvid_build >= 0                &&
-        s->avctx->idct_algo == FF_IDCT_AUTO &&
-        (av_get_cpu_flags() & AV_CPU_FLAG_MMX)) {
-        s->avctx->idct_algo = FF_IDCT_XVIDMMX;
-        ff_dct_common_init(s);
-    }
-#endif
+    if (CONFIG_MPEG4_DECODER && ctx->xvid_build >= 0)
+        ff_xvididct_init(&s->idsp, s->avctx);
 
     return 0;
 }

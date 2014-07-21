@@ -38,6 +38,9 @@ static const struct algo fdct_tab_arch[] = {
 static const struct algo idct_tab_arch[] = {
 #if HAVE_MMX_INLINE
     { "SIMPLE-MMX",  ff_simple_idct_mmx,  FF_IDCT_PERM_SIMPLE, AV_CPU_FLAG_MMX },
+#endif
+#if CONFIG_MPEG4_DECODER
+#if HAVE_MMX_INLINE
     { "XVID-MMX",    ff_idct_xvid_mmx,    FF_IDCT_PERM_NONE,   AV_CPU_FLAG_MMX,    1 },
 #endif
 #if HAVE_MMXEXT_INLINE
@@ -46,6 +49,7 @@ static const struct algo idct_tab_arch[] = {
 #if HAVE_SSE2_INLINE
     { "XVID-SSE2",   ff_idct_xvid_sse2,   FF_IDCT_PERM_SSE2,   AV_CPU_FLAG_SSE2,   1 },
 #endif
+#endif /* CONFIG_MPEG4_DECODER */
     { 0 }
 };
 
