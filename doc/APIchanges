@@ -35,6 +35,10 @@ API changes, most recent first:
   is now setting AVStream.time_base, instead of AVStream.codec.time_base as was
   done previously. The old method is now deprecated.
 
+2014-06-11 - 67d29da - lavc 55.66.101 - avcodec.h
+  Increase FF_INPUT_BUFFER_PADDING_SIZE to 32 due to some corner cases needing
+  it
+
 2014-06-10 - xxxxxxx - lavf 55.43.100 - avformat.h
   New field int64_t max_analyze_duration2 instead of deprecated
   int max_analyze_duration.
