@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "apetag.h"
+#include "id3v2.h"
 
 #define ADTS_HEADER_SIZE 7
 
@@ -38,6 +39,7 @@ typedef struct {
     int channel_conf;
     int pce_size;
     int apetag;
+    int id3v2tag;
     uint8_t pce_data[MAX_PCE_SIZE];
 } ADTSContext;
 
@@ -97,6 +99,8 @@ static int adts_write_header(AVFormatContext *s)
     ADTSContext *adts = s->priv_data;
     AVCodecContext *avc = s->streams[0]->codec;
 
+    if (adts->id3v2tag)
+        ff_id3v2_write_simple(s, 4, ID3v2_DEFAULT_MAGIC);
     if (avc->extradata_size > 0 &&
             adts_decode_extradata(s, adts, avc->extradata, avc->extradata_size) < 0)
         return -1;
@@ -179,6 +183,7 @@ static int adts_write_trailer(AVFormatContext *s)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 #define OFFSET(obj) offsetof(ADTSContext, obj)
 static const AVOption options[] = {
+    { "write_id3v2", "Enable ID3v2 tag writing", OFFSET(id3v2tag), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, ENC},
     { "write_apetag", "Enable APE tag writing", OFFSET(apetag), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, ENC},
     { NULL },
 };
