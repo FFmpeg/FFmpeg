@@ -69,8 +69,8 @@ TMP3    .req    lr
         andseq  TMP3, TMP3, PATTERN
 .endm
 
-/* int ff_h264_find_start_code_candidate_armv6(const uint8_t *buf, int size) */
-function ff_h264_find_start_code_candidate_armv6, export=1
+/* int ff_startcode_find_candidate_armv6(const uint8_t *buf, int size) */
+function ff_startcode_find_candidate_armv6, export=1
         push    {v1-v6,lr}
         mov     PTR, BUF
         @ Ensure there are at least (PRELOAD_DISTANCE+2) complete cachelines to go

@@ -113,7 +113,7 @@ typedef struct H264DSPContext {
      * one or more further zero bytes and a one byte. Better still, filter
      * out any bytes that form the trailing_zero_8bits syntax element too.
      */
-    int (*h264_find_start_code_candidate)(const uint8_t *buf, int size);
+    int (*startcode_find_candidate)(const uint8_t *buf, int size);
 } H264DSPContext;
 
 void ff_h264dsp_init(H264DSPContext *c, const int bit_depth,
