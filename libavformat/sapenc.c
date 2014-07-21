@@ -134,7 +134,7 @@ static int sap_write_header(AVFormatContext *s)
         freeaddrinfo(ai);
     }
 
-    contexts = av_mallocz(sizeof(AVFormatContext*) * s->nb_streams);
+    contexts = av_mallocz_array(s->nb_streams, sizeof(AVFormatContext*));
     if (!contexts) {
         ret = AVERROR(ENOMEM);
         goto fail;
