@@ -55,7 +55,7 @@ struct algo {
     int nonspec;
 };
 
-static const struct algo fdct_tab[4] = {
+static const struct algo fdct_tab[] = {
     { "REF-DBL",     ff_ref_fdct,          FF_IDCT_PERM_NONE },
     { "FAAN",        ff_faandct,           FF_IDCT_PERM_NONE },
     { "IJG-AAN-INT", ff_fdct_ifast,        FF_IDCT_PERM_NONE },
@@ -75,7 +75,7 @@ static void ff_prores_idct_wrap(int16_t *dst){
     }
 }
 
-static const struct algo idct_tab[5] = {
+static const struct algo idct_tab[] = {
     { "FAANI",       ff_faanidct,          FF_IDCT_PERM_NONE },
     { "REF-DBL",     ff_ref_idct,          FF_IDCT_PERM_NONE },
     { "INT",         ff_j_rev_dct,         FF_IDCT_PERM_LIBMPEG2 },
