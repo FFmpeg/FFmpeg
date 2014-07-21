@@ -132,14 +132,12 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
 static const double const_values[] = {
     M_PI,
     M_E,
-    FF_QP2LAMBDA,
     0
 };
 
 static const char * const const_names[] = {
     "PI",
     "E",
-    "QP2LAMBDA",
     0
 };
 

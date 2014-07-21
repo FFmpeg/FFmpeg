@@ -86,6 +86,7 @@ static const struct {
     { "E",   M_E   },
     { "PI",  M_PI  },
     { "PHI", M_PHI },
+    { "QP2LAMBDA", FF_QP2LAMBDA },
 };
 
 double av_strtod(const char *numstr, char **tail)
