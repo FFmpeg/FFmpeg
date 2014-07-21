@@ -262,9 +262,6 @@ static int init_image(TiffContext *s, AVFrame *frame)
     case 161:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GRAY16LE : AV_PIX_FMT_GRAY16BE;
         break;
-    case 162:
-        s->avctx->pix_fmt = AV_PIX_FMT_GRAY8A;
-        break;
     case 324:
         s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
