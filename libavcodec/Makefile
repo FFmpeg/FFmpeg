@@ -860,7 +860,7 @@ TESTPROGS = cabac                                                       \
             rangecoder                                                  \
             snowenc                                                     \
 
-TESTPROGS-$(CONFIG_DCT)                   += dct
+TESTPROGS-$(CONFIG_IDCTDSP)               += dct
 TESTPROGS-$(CONFIG_IIRFILTER)             += iirfilter
 TESTPROGS-$(HAVE_MMX)                     += motion
 
