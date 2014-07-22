@@ -1113,6 +1113,11 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         };
         int qp_y = lc->qp_y;
 
+        if (s->pps->transform_skip_enabled_flag &&
+            log2_trafo_size <= s->pps->log2_max_transform_skip_block_size) {
+            transform_skip_flag = ff_hevc_transform_skip_flag_decode(s, c_idx);
+        }
+
         if (c_idx == 0) {
             qp = qp_y + s->sps->qp_bd_offset;
         } else {
@@ -1149,13 +1154,12 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         scale_m  = 16; // default when no custom scaling lists.
         dc_scale = 16;
 
-        if (s->sps->scaling_list_enable_flag) {
+        if (s->sps->scaling_list_enable_flag && !(transform_skip_flag && log2_trafo_size > 2)) {
             const ScalingList *sl = s->pps->scaling_list_data_present_flag ?
             &s->pps->scaling_list : &s->sps->scaling_list;
             int matrix_id = lc->cu.pred_mode != MODE_INTRA;
 
-            if (log2_trafo_size != 5)
-                matrix_id = 3 * matrix_id + c_idx;
+            matrix_id = 3 * matrix_id + c_idx;
 
             scale_matrix = sl->sl[log2_trafo_size - 2][matrix_id];
             if (log2_trafo_size >= 4)
@@ -1166,11 +1170,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         add          = 0;
         scale        = 0;
         dc_scale     = 0;
-    }
-
-    if (s->pps->transform_skip_enabled_flag && !lc->cu.cu_transquant_bypass_flag &&
-        log2_trafo_size <= s->pps->log2_max_transform_skip_block_size) {
-        transform_skip_flag = ff_hevc_transform_skip_flag_decode(s, c_idx);
     }
 
     if (lc->cu.pred_mode == MODE_INTER && s->sps->explicit_rdpcm_enabled_flag &&
@@ -1481,7 +1480,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     trans_coeff_level = -trans_coeff_level;
                 coeff_sign_flag <<= 1;
                 if(!lc->cu.cu_transquant_bypass_flag) {
-                    if(s->sps->scaling_list_enable_flag) {
+                    if (s->sps->scaling_list_enable_flag && !(transform_skip_flag && log2_trafo_size > 2)) {
                         if(y_c || x_c || log2_trafo_size < 4) {
                             switch(log2_trafo_size) {
                                 case 3: pos = (y_c << 3) + x_c; break;
@@ -1518,10 +1517,11 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     } else {
         if (transform_skip_flag) {
             int rot = s->sps->transform_skip_rotation_enabled_flag &&
+                      log2_trafo_size == 2 &&
                       lc->cu.pred_mode == MODE_INTRA;
             if (rot) {
-                for (i = 0; i < (trafo_size * trafo_size  >> 1); i++)
-                    FFSWAP(int16_t, coeffs[i], coeffs[trafo_size * trafo_size - i - 1]);
+                for (i = 0; i < 8; i++)
+                    FFSWAP(int16_t, coeffs[i], coeffs[16 - i - 1]);
             }
 
             s->hevcdsp.transform_skip(coeffs, log2_trafo_size);
@@ -1529,7 +1529,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             if (explicit_rdpcm_flag || (s->sps->implicit_rdpcm_enabled_flag &&
                                         lc->cu.pred_mode == MODE_INTRA &&
                                         (pred_mode_intra == 10 || pred_mode_intra == 26))) {
-                int mode = s->sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : explicit_rdpcm_dir_flag;
+                int mode = explicit_rdpcm_flag ? explicit_rdpcm_dir_flag : (pred_mode_intra == 26);
 
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
             }
