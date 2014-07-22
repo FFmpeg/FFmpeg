@@ -5627,6 +5627,6 @@ pkgconfig_generate libavformat   "FFmpeg container format library"      "$LIBAVF
 pkgconfig_generate libavdevice   "FFmpeg device handling library"       "$LIBAVDEVICE_VERSION"   "$extralibs"
 pkgconfig_generate libavfilter   "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION"   "$extralibs"
 pkgconfig_generate libpostproc   "FFmpeg postprocessing library"        "$LIBPOSTPROC_VERSION"   ""
-pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$extralibs"
+pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$LIBM"
 pkgconfig_generate libswscale    "FFmpeg image rescaling library"       "$LIBSWSCALE_VERSION"    "$LIBM"
 pkgconfig_generate libswresample "FFmpeg audio resampling library"      "$LIBSWRESAMPLE_VERSION" "$LIBM"
