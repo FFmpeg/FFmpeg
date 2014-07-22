@@ -1674,7 +1674,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 break;
             }
         }
-        if (i) {
+        if (i && language[0]) {
             language[i - 1] = 0;
             av_dict_set(&st->metadata, "language", language, 0);
         }
