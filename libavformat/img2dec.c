@@ -666,6 +666,7 @@ static const AVClass imgname ## _class = {\
 };\
 AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
     .name           = AV_STRINGIFY(imgname) "_pipe",\
+    .long_name      = NULL_IF_CONFIG_SMALL("piped " AV_STRINGIFY(imgname) " sequence"),\
     .priv_data_size = sizeof(VideoDemuxData),\
     .read_probe     = imgname ## _probe,\
     .read_header    = ff_img_read_header,\
