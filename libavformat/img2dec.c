@@ -652,7 +652,8 @@ static int tiff_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
-    if (AV_RB32(b) == 0x49492a00)
+    if (AV_RB32(b) == 0x49492a00 ||
+        AV_RB32(b) == 0x4D4D002a)
         return AVPROBE_SCORE_EXTENSION + 1;
     return 0;
 }
