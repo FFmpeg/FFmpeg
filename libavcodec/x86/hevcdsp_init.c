@@ -424,24 +424,23 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
     if (bit_depth == 8) {
         if (EXTERNAL_MMXEXT(mm_flags)) {
-                c->transform_dc_add[0]    =  ff_hevc_idct4_dc_add_8_mmxext;
-                c->transform_dc_add[1]    =  ff_hevc_idct8_dc_add_8_mmxext;
-
+            c->transform_dc_add[0]    =  ff_hevc_idct4_dc_add_8_mmxext;
+            c->transform_dc_add[1]    =  ff_hevc_idct8_dc_add_8_mmxext;
         }
         if (EXTERNAL_SSE2(mm_flags)) {
-                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
-                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
-                    if (ARCH_X86_64) {
-                        c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_sse2;
-                        c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_sse2;
-                    }
+            c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
+            c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
+            if (ARCH_X86_64) {
+                c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_sse2;
+                c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_sse2;
+            }
 
-                    c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_8_sse2;
-                    c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_8_sse2;
+            c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_8_sse2;
+            c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_8_sse2;
         }
         if (EXTERNAL_SSSE3(mm_flags) && ARCH_X86_64) {
-                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
-                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
+            c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
+            c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
         }
         if (EXTERNAL_SSE4(mm_flags) && ARCH_X86_64) {
 
@@ -460,27 +459,26 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(mm_flags)) {
-                c->transform_dc_add[0]    =  ff_hevc_idct4_dc_add_10_mmxext;
+            c->transform_dc_add[0]    =  ff_hevc_idct4_dc_add_10_mmxext;
 
         }
         if (EXTERNAL_SSE2(mm_flags)) {
-                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
-                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
-                    if (ARCH_X86_64) {
-                        c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_sse2;
-                        c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_sse2;
-                    }
+            c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
+            c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
+            if (ARCH_X86_64) {
+                c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_sse2;
+                c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_sse2;
+            }
 
-                    c->transform_dc_add[1]    =  ff_hevc_idct8_dc_add_10_sse2;
-                    c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_10_sse2;
-                    c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_10_sse2;
-                }
+            c->transform_dc_add[1]    =  ff_hevc_idct8_dc_add_10_sse2;
+            c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_10_sse2;
+            c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_10_sse2;
+        }
         if (EXTERNAL_SSSE3(mm_flags) && ARCH_X86_64) {
-                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
-                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
+            c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
+            c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
         }
         if (EXTERNAL_SSE4(mm_flags) && ARCH_X86_64) {
-
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 10, sse4);
             EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     10, sse4);
             EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     10, sse4);
