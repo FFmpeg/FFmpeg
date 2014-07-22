@@ -35,6 +35,9 @@ to your project LDFLAGS:
 -Wl,-Bsymbolic
 @end example
 
+If your target platform requires position independent binaries, you should
+pass the correct linking flag (e.g. @code{-pie}) to @code{--extra-ldexeflags}.
+
 @section BSD
 
 BSD make will not build FFmpeg, you need to install and use GNU Make

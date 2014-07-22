@@ -299,6 +299,7 @@ Toolchain options:
   --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]
   --extra-cxxflags=ECFLAGS add ECFLAGS to CXXFLAGS [$CXXFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
+  --extra-ldexeflags=ELDFLAGS add ELDFLAGS to LDEXEFLAGS [$LDEXEFLAGS]
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --optflags=OPTFLAGS      override optimization-related compiler flags
@@ -756,6 +757,10 @@ add_asflags(){
 
 add_ldflags(){
     append LDFLAGS $($ldflags_filter "$@")
+}
+
+add_ldexeflags(){
+    append LDEXEFLAGS $($ldflags_filter "$@")
 }
 
 add_stripflags(){
@@ -2828,6 +2833,9 @@ for opt do
     case "$opt" in
         --extra-ldflags=*)
             add_ldflags $optval
+        ;;
+        --extra-ldexeflags=*)
+            add_ldexeflags $optval
         ;;
         --extra-libs=*)
             add_extralibs $optval
@@ -5419,6 +5427,7 @@ WINDRES=$windres
 DEPWINDRES=$dep_cc
 DOXYGEN=$doxygen
 LDFLAGS=$LDFLAGS
+LDEXEFLAGS=$LDEXEFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 ASMSTRIPFLAGS=$ASMSTRIPFLAGS
 YASMFLAGS=$YASMFLAGS
