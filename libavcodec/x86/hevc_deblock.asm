@@ -355,7 +355,7 @@ ALIGN 16
 %if %1 > 8
     shl             betaq, %1 - 8
 %endif
-    movd            m13, betaq
+    movd            m13, betad
     SPLATW          m13, m13, 0
     ;end beta calculations
 
@@ -619,7 +619,7 @@ ALIGN 16
     paddw           m15, m2; p1'
 
     ;beta calculations
-    movd            m10, betaq
+    movd            m10, betad
     SPLATW          m10, m10, 0
 
     movd            m13, r7d; 1dp0 + 1dp3
