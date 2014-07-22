@@ -40,14 +40,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 
-#if HAVE_MMX_EXTERNAL
-#define deinterlace_line_inplace ff_deinterlace_line_inplace_mmx
-#define deinterlace_line         ff_deinterlace_line_mmx
-#else
-#define deinterlace_line_inplace deinterlace_line_inplace_c
-#define deinterlace_line         deinterlace_line_c
-#endif
-
 void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
@@ -297,7 +289,13 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
 
 #if FF_API_DEINTERLACE
 
-#if !HAVE_MMX_EXTERNAL
+#if HAVE_MMX_EXTERNAL
+#define deinterlace_line_inplace ff_deinterlace_line_inplace_mmx
+#define deinterlace_line         ff_deinterlace_line_mmx
+#else
+#define deinterlace_line_inplace deinterlace_line_inplace_c
+#define deinterlace_line         deinterlace_line_c
+
 /* filter parameters: [-1 4 2 4 -1] // 8 */
 static void deinterlace_line_c(uint8_t *dst,
                              const uint8_t *lum_m4, const uint8_t *lum_m3,
