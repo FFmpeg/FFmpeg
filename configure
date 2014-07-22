@@ -1647,6 +1647,10 @@ HEADERS_LIST="
     winsock2_h
 "
 
+INTRINSICS_LIST="
+    intrinsics_neon
+"
+
 MATH_FUNCS="
     atanf
     atan2f
@@ -1778,6 +1782,7 @@ HAVE_LIST="
     $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
     $HEADERS_LIST
+    $INTRINSICS_LIST
     $MATH_FUNCS
     $SYSTEM_FUNCS
     $THREADS_LIST
@@ -1941,6 +1946,7 @@ armv6_deps="arm"
 armv6t2_deps="arm"
 armv8_deps="aarch64"
 neon_deps_any="aarch64 arm"
+intrinsics_neon_deps="neon"
 vfp_deps_any="aarch64 arm"
 vfpv3_deps="vfp"
 
@@ -2662,6 +2668,7 @@ else
     arch_default=$(uname -m)
 fi
 cpu="generic"
+intrinsics="none"
 
 # configurable options
 enable $PROGRAM_LIST
@@ -4536,6 +4543,8 @@ EOF
 
 fi
 
+check_code cc arm_neon.h "int64x2_t test" && enable intrinsics_neon
+
 check_ldflags -Wl,--as-needed
 
 if check_func dlopen; then
@@ -5211,6 +5220,8 @@ merge_deps() {
 
 merge_deps libavfilter $FILTER_LIST
 
+map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
+
 for thread in $THREADS_LIST; do
     if enabled $thread; then
         test -n "$thread_type" &&
@@ -5391,6 +5402,7 @@ SRC_PATH:=\$(SRC_PATH:.%=..%)
 endif
 CC_IDENT=$cc_ident
 ARCH=$arch
+INTRINSICS=$intrinsics
 CC=$cc
 CXX=$cxx
 AS=$as
