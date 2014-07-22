@@ -445,19 +445,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
 
     xvid_gbl_init.version = XVID_VERSION;
     xvid_gbl_init.debug = 0;
-
-#if ARCH_PPC
-    /* Xvid's PPC support is borked, use libavcodec to detect */
-#if HAVE_ALTIVEC
-    if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
-        xvid_gbl_init.cpu_flags = XVID_CPU_FORCE | XVID_CPU_ALTIVEC;
-    } else
-#endif
-        xvid_gbl_init.cpu_flags = XVID_CPU_FORCE;
-#else
-    /* Xvid can detect on x86 */
     xvid_gbl_init.cpu_flags = 0;
-#endif
 
     /* Initialize */
     xvid_global(NULL, XVID_GBL_INIT, &xvid_gbl_init, NULL);
