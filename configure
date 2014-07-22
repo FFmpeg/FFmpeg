@@ -4543,7 +4543,7 @@ EOF
 
 fi
 
-check_code cc arm_neon.h "int64x2_t test" && enable intrinsics_neon
+check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_neon
 
 check_ldflags -Wl,--as-needed
 
