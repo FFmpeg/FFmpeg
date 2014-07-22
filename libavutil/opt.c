@@ -191,21 +191,19 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
     }
 
     for (;;) {
-        int i, den = 1;
+        int i = 0;
         char buf[256];
         int cmd = 0;
-        double d, num = 1;
+        double d;
         int64_t intnum = 1;
 
-        i = 0;
-        if (*val == '+' || *val == '-') {
-            if (o->type == AV_OPT_TYPE_FLAGS)
+        if (o->type == AV_OPT_TYPE_FLAGS) {
+            if (*val == '+' || *val == '-')
                 cmd = *(val++);
+            for (; i < sizeof(buf) - 1 && val[i] && val[i] != '+' && val[i] != '-'; i++)
+                buf[i] = val[i];
+            buf[i] = 0;
         }
-
-        for (; i < sizeof(buf) - 1 && val[i] && (o->type != AV_OPT_TYPE_FLAGS || val[i] != '+' && val[i] != '-'); i++)
-            buf[i] = val[i];
-        buf[i] = 0;
 
         {
             const AVOption *o_named;
@@ -241,7 +239,8 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
             const_names [ci] = NULL;
             const_values[ci] = 0;
 
-            res = av_expr_parse_and_eval(&d, buf, const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, obj);
+            res = av_expr_parse_and_eval(&d, (o->type == AV_OPT_TYPE_FLAGS) ? buf : val, const_names,
+                                         const_values, NULL, NULL, NULL, NULL, NULL, 0, obj);
             if (res < 0) {
                 av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\"\n", val);
                 return res;
@@ -256,7 +255,7 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
         if ((ret = write_number(obj, o, dst, d, 1, 1)) < 0)
             return ret;
         val += i;
-        if (!*val)
+        if (o->type != AV_OPT_TYPE_FLAGS || !*val)
             return 0;
     }
 
