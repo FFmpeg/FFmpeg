@@ -111,6 +111,7 @@ typedef struct {
     UID *structural_components_refs;
     int structural_components_count;
     int64_t duration;
+    uint8_t origin;
 } MXFSequence;
 
 typedef struct {
@@ -685,6 +686,9 @@ static int mxf_read_sequence(void *arg, AVIOContext *pb, int tag, int size, UID 
         break;
     case 0x0201:
         avio_read(pb, sequence->data_definition_ul, 16);
+        break;
+        case 0x4b02:
+        sequence->origin = avio_r8(pb);
         break;
     case 0x1001:
         sequence->structural_components_count = avio_rb32(pb);
@@ -1589,6 +1593,16 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 }
             }
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
+            if (material_track->sequence->origin) {
+                char material_origin[3];
+                snprintf(material_origin, sizeof(material_origin), "%d", material_track->sequence->origin);
+                av_dict_set(&st->metadata, "material_track_origin", material_origin, 0);
+            }
+            if (source_track->sequence->origin) {
+                char source_origin[3];
+                snprintf(source_origin, sizeof(source_origin), "%d", source_track->sequence->origin);
+                av_dict_set(&st->metadata, "source_track_origin", source_origin, 0);
+            }
         } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, essence_container_ul);
             if (st->codec->codec_id == AV_CODEC_ID_NONE)
