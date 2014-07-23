@@ -355,19 +355,15 @@ ALIGN 16
     psrld            m8, 16
     paddw            m8, m10
     movd            r7d, m8
-    and              r7, 0xffff; 1dp0 + 1dp3
     pshufd           m8, m8, 0x4E
     movd            r8d, m8
-    and              r8, 0xffff; 0dp0 + 0dp3
 
     pshufd           m8, m11, 0x31
     psrld            m8, 16
     paddw            m8, m11
     movd            r9d, m8
-    and              r9, 0xffff; 1dq0 + 1dq3
     pshufd           m8, m8, 0x4E
     movd           r10d, m8
-    and             r10, 0xffff; 0dq0 + 0dq3
     ; end calc for weak filter
 
     ; filtering mask
