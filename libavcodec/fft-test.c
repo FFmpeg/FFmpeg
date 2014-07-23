@@ -316,7 +316,7 @@ int main(int argc, char **argv)
         else
             av_log(NULL, AV_LOG_INFO,"FFT");
         ff_fft_init(&s, fft_nbits, do_inverse);
-        if (err = fft_ref_init(fft_nbits, do_inverse) < 0)
+        if ((err = fft_ref_init(fft_nbits, do_inverse)) < 0)
             goto cleanup;
         break;
 #if FFT_FLOAT
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
         else
             av_log(NULL, AV_LOG_INFO,"DFT_R2C");
         ff_rdft_init(&r, fft_nbits, do_inverse ? IDFT_C2R : DFT_R2C);
-        if (err = fft_ref_init(fft_nbits, do_inverse) < 0)
+        if ((err = fft_ref_init(fft_nbits, do_inverse)) < 0)
             goto cleanup;
         break;
 #    endif /* CONFIG_RDFT */
