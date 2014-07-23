@@ -31,11 +31,11 @@ typedef struct SAOParams {
     int offset_abs[3][4];   ///< sao_offset_abs
     int offset_sign[3][4];  ///< sao_offset_sign
 
-    int band_position[3];   ///< sao_band_position
+    uint8_t band_position[3];   ///< sao_band_position
 
     int eo_class[3];        ///< sao_eo_class
 
-    int offset_val[3][5];   ///<SaoOffsetVal
+    int16_t offset_val[3][5];   ///<SaoOffsetVal
 
     uint8_t type_idx[3];    ///< sao_type_idx
 } SAOParams;
