@@ -2601,6 +2601,7 @@ static int matroska_read_close(AVFormatContext *s)
 AVInputFormat ff_matroska_demuxer = {
     .name           = "matroska,webm",
     .long_name      = NULL_IF_CONFIG_SMALL("Matroska / WebM"),
+    .extensions     = "mkv,mk3d,mka,mks",
     .priv_data_size = sizeof(MatroskaDemuxContext),
     .read_probe     = matroska_probe,
     .read_header    = matroska_read_header,
