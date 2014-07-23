@@ -420,11 +420,11 @@ int main(int argc, char **argv)
 #if CONFIG_DCT
     case TRANSFORM_DCT:
         memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
-        d.dct_calc(&d, tab);
+        d.dct_calc(&d, &tab->re);
         if (do_inverse)
-            idct_ref(tab_ref, tab1, fft_nbits);
+            idct_ref(&tab_ref->re, &tab1->re, fft_nbits);
         else
-            dct_ref(tab_ref, tab1, fft_nbits);
+            dct_ref(&tab_ref->re, &tab1->re, fft_nbits);
         err = check_diff((float *) tab_ref, (float *) tab, fft_size, 1.0);
         break;
 #endif /* CONFIG_DCT */
