@@ -73,8 +73,6 @@ enum OutputFormat {
 #define MAX_B_FRAMES 16
 
 #define ME_MAP_SIZE 64
-#define ME_MAP_SHIFT 3
-#define ME_MAP_MV_BITS 11
 
 #define MAX_MB_BYTES (30*16*16*3/8 + 120)
 
