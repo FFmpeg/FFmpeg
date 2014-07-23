@@ -245,6 +245,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 0, 1, 0, 7 },        /* Y */
         },
         .flags = AV_PIX_FMT_FLAG_PSEUDOPAL,
+        .alias = "gray8,y8",
     },
     [AV_PIX_FMT_MONOWHITE] = {
         .name = "monow",
@@ -501,6 +502,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 1, 1, 0, 15 },       /* Y */
         },
         .flags = AV_PIX_FMT_FLAG_BE,
+        .alias = "y16be",
     },
     [AV_PIX_FMT_GRAY16LE] = {
         .name = "gray16le",
@@ -510,6 +512,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .comp = {
             { 0, 1, 1, 0, 15 },       /* Y */
         },
+        .alias = "y16le",
     },
     [AV_PIX_FMT_YUV440P] = {
         .name = "yuv440p",
