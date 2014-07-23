@@ -951,7 +951,8 @@ retry_duration:
                 dts = pts = AV_NOPTS_VALUE;
             }
         }
-        if (type == 0 && (!st->codec->extradata || st->codec->codec_id == AV_CODEC_ID_AAC)) {
+        if (type == 0 && (!st->codec->extradata || st->codec->codec_id == AV_CODEC_ID_AAC ||
+            st->codec->codec_id == AV_CODEC_ID_H264)) {
             AVDictionaryEntry *t;
 
             if (st->codec->extradata) {
