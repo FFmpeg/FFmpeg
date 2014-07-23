@@ -751,7 +751,8 @@ scalef:
         mvpcand_list[numMVPCandLX++] = mxB;
 
     //temporal motion vector prediction candidate
-    if (numMVPCandLX < 2 && s->sh.slice_temporal_mvp_enabled_flag) {
+    if (numMVPCandLX < 2 && s->sh.slice_temporal_mvp_enabled_flag &&
+        mvp_lx_flag == numMVPCandLX) {
         Mv mv_col;
         int available_col = temporal_luma_motion_vector(s, x0, y0, nPbW,
                                                         nPbH, ref_idx,
