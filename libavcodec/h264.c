@@ -1891,6 +1891,12 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
         return buf_index;
     }
+    if (h->is_avc && av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, NULL)) {
+        int side_size;
+        uint8_t *side = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
+        if (is_extra(side, side_size))
+            ff_h264_decode_extradata(h, side, side_size);
+    }
     if(h->is_avc && buf_size >= 9 && buf[0]==1 && buf[2]==0 && (buf[4]&0xFC)==0xFC && (buf[5]&0x1F) && buf[8]==0x67){
         if (is_extra(buf, buf_size))
             return ff_h264_decode_extradata(h, buf, buf_size);
