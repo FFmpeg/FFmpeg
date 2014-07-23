@@ -87,6 +87,7 @@ typedef struct G2MContext {
 
     int        compression;
     int        width, height, bpp;
+    int        orig_width, orig_height;
     int        tile_width, tile_height;
     int        tiles_x, tiles_y, tile_x, tile_y;
 
@@ -700,8 +701,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             }
             c->width  = bytestream2_get_be32(&bc);
             c->height = bytestream2_get_be32(&bc);
-            if (c->width  < 16 || c->width  > avctx->width ||
-                c->height < 16 || c->height > avctx->height) {
+            if (c->width  < 16 || c->width  > c->orig_width ||
+                c->height < 16 || c->height > c->orig_height) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid frame dimensions %dx%d\n",
                        c->width, c->height);
@@ -866,6 +867,10 @@ static av_cold int g2m_decode_init(AVCodecContext *avctx)
     }
 
     avctx->pix_fmt = AV_PIX_FMT_RGB24;
+
+    // store original sizes and check against those if resize happens
+    c->orig_width  = avctx->width;
+    c->orig_height = avctx->height;
 
     return 0;
 }
