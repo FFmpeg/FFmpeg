@@ -63,7 +63,7 @@
 #   define FMT "%6d"
 #endif
 
-struct {
+static struct {
     float re, im;
 } *exptab;
 
