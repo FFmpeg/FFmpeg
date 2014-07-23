@@ -60,8 +60,6 @@ enum OutputFormat {
     FMT_MJPEG,
 };
 
-#define MPEG_BUF_SIZE (16 * 1024)
-
 #define QMAT_SHIFT_MMX 16
 #define QMAT_SHIFT 22
 
@@ -589,7 +587,6 @@ typedef struct MpegEncContext {
     int chroma_format;
 #define CHROMA_420 1
 #define CHROMA_422 2
-#define CHROMA_444 3
     int chroma_x_shift;//depend on pix_format, that depend on chroma_format
     int chroma_y_shift;
 
