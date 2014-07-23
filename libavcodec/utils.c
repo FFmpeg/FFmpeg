@@ -596,6 +596,15 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 
         memcpy(frame_sd->data, packet_sd, size);
     }
+    /* copy the stereo3d format to the output frame */
+    packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_STEREO3D, &size);
+    if (packet_sd) {
+        frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_STEREO3D, size);
+        if (!frame_sd)
+            return AVERROR(ENOMEM);
+
+        memcpy(frame_sd->data, packet_sd, size);
+    }
 
     return 0;
 }

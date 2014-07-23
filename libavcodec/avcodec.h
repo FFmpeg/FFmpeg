@@ -911,6 +911,12 @@ enum AVPacketSideDataType {
      * See libavutil/display.h for a detailed description of the data.
      */
     AV_PKT_DATA_DISPLAYMATRIX,
+
+    /*
+     * This side data should be associated with a video stream and contains
+     * Stereoscopic 3D information in form of the AVStereo3D struct.
+     */
+    AV_PKT_DATA_STEREO3D,
 };
 
 typedef struct AVPacketSideData {
