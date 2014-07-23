@@ -48,7 +48,7 @@ extern SINTABLE(16384);
 extern SINTABLE(32768);
 extern SINTABLE(65536);
 
-typedef struct RDFTContext {
+struct RDFTContext {
     int nbits;
     int inverse;
     int sign_convention;
@@ -58,7 +58,7 @@ typedef struct RDFTContext {
     SINTABLE_CONST FFTSample *tsin;
     FFTContext fft;
     void (*rdft_calc)(struct RDFTContext *s, FFTSample *z);
-} RDFTContext;
+};
 
 /**
  * Set up a real FFT.

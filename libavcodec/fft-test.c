@@ -39,9 +39,11 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/time.h"
 
-#include "dct.h"
 #include "fft.h"
+#if FFT_FLOAT
+#include "dct.h"
 #include "rdft.h"
+#endif
 
 /* reference fft */
 
