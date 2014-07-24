@@ -960,7 +960,7 @@ int av_get_output_timestamp(struct AVFormatContext *s, int stream,
 }
 
 int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
-                     AVFormatContext *src)
+                     AVFormatContext *src, int interleave)
 {
     AVPacket local_pkt;
     int ret;
@@ -980,7 +980,8 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
                                           src->streams[pkt->stream_index]->time_base,
                                           dst->streams[dst_stream]->time_base);
 
-    ret = av_write_frame(dst, &local_pkt);
+    if (interleave) ret = av_interleaved_write_frame(dst, &local_pkt);
+    else            ret = av_write_frame(dst, &local_pkt);
     pkt->buf = local_pkt.buf;
     pkt->destruct = local_pkt.destruct;
     return ret;

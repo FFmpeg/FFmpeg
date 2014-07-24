@@ -256,7 +256,7 @@ static int sap_write_packet(AVFormatContext *s, AVPacket *pkt)
         sap->last_time = now;
     }
     rtpctx = s->streams[pkt->stream_index]->priv_data;
-    return ff_write_chained(rtpctx, 0, pkt, s);
+    return ff_write_chained(rtpctx, 0, pkt, s, 0);
 }
 
 AVOutputFormat ff_sap_muxer = {
