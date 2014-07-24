@@ -682,6 +682,19 @@ PUT_VC1_MSPEL(1, 3)
 PUT_VC1_MSPEL(2, 3)
 PUT_VC1_MSPEL(3, 3)
 
+
+static void put_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride, int rnd)
+{
+    ff_put_pixels8x8_c(dst, src, stride);
+}
+
+static void avg_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride, int rnd)
+{
+    ff_avg_pixels8x8_c(dst, src, stride);
+}
+
 #define chroma_mc(a) \
     ((A * src[a] + B * src[a + 1] + \
       C * src[stride + a] + D * src[stride + a + 1] + 32 - 4) >> 6)
@@ -888,7 +901,7 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
     dsp->vc1_v_loop_filter16  = vc1_v_loop_filter16_c;
     dsp->vc1_h_loop_filter16  = vc1_h_loop_filter16_c;
 
-    dsp->put_vc1_mspel_pixels_tab[0]  = ff_put_pixels8x8_c;
+    dsp->put_vc1_mspel_pixels_tab[0]  = put_vc1_mspel_mc00_c;
     dsp->put_vc1_mspel_pixels_tab[1]  = put_vc1_mspel_mc10_c;
     dsp->put_vc1_mspel_pixels_tab[2]  = put_vc1_mspel_mc20_c;
     dsp->put_vc1_mspel_pixels_tab[3]  = put_vc1_mspel_mc30_c;
@@ -905,7 +918,7 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
     dsp->put_vc1_mspel_pixels_tab[14] = put_vc1_mspel_mc23_c;
     dsp->put_vc1_mspel_pixels_tab[15] = put_vc1_mspel_mc33_c;
 
-    dsp->avg_vc1_mspel_pixels_tab[0]  = ff_avg_pixels8x8_c;
+    dsp->avg_vc1_mspel_pixels_tab[0]  = avg_vc1_mspel_mc00_c;
     dsp->avg_vc1_mspel_pixels_tab[1]  = avg_vc1_mspel_mc10_c;
     dsp->avg_vc1_mspel_pixels_tab[2]  = avg_vc1_mspel_mc20_c;
     dsp->avg_vc1_mspel_pixels_tab[3]  = avg_vc1_mspel_mc30_c;
