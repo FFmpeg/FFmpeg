@@ -36,7 +36,9 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavformat/avformat.h"
+#include "libavresample/avresample.h"
 #include "libswscale/swscale.h"
 
 /* 5 seconds stream duration */
@@ -60,6 +62,7 @@ typedef struct OutputStream {
     float t, tincr, tincr2;
 
     struct SwsContext *sws_ctx;
+    AVAudioResampleContext *avr;
 } OutputStream;
 
 /**************************************************************/
@@ -73,6 +76,7 @@ static void add_audio_stream(OutputStream *ost, AVFormatContext *oc,
 {
     AVCodecContext *c;
     AVCodec *codec;
+    int ret;
 
     /* find the audio encoder */
     codec = avcodec_find_encoder(codec_id);
@@ -90,23 +94,75 @@ static void add_audio_stream(OutputStream *ost, AVFormatContext *oc,
     c = ost->st->codec;
 
     /* put sample parameters */
-    c->sample_fmt  = AV_SAMPLE_FMT_S16;
-    c->bit_rate    = 64000;
-    c->sample_rate = 44100;
-    c->channels    = 2;
-    c->channel_layout = AV_CH_LAYOUT_STEREO;
+    c->sample_fmt     = codec->sample_fmts           ? codec->sample_fmts[0]           : AV_SAMPLE_FMT_S16;
+    c->sample_rate    = codec->supported_samplerates ? codec->supported_samplerates[0] : 44100;
+    c->channel_layout = codec->channel_layouts       ? codec->channel_layouts[0]       : AV_CH_LAYOUT_STEREO;
+    c->channels       = av_get_channel_layout_nb_channels(c->channel_layout);
+    c->bit_rate       = 64000;
 
     ost->st->time_base = (AVRational){ 1, c->sample_rate };
 
     // some formats want stream headers to be separate
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
+    /* initialize sample format conversion;
+     * to simplify the code, we always pass the data through lavr, even
+     * if the encoder supports the generated format directly -- the price is
+     * some extra data copying;
+     */
+    ost->avr = avresample_alloc_context();
+    if (!ost->avr) {
+        fprintf(stderr, "Error allocating the resampling context\n");
+        exit(1);
+    }
+
+    av_opt_set_int(ost->avr, "in_sample_fmt",      AV_SAMPLE_FMT_S16,   0);
+    av_opt_set_int(ost->avr, "in_sample_rate",     44100,               0);
+    av_opt_set_int(ost->avr, "in_channel_layout",  AV_CH_LAYOUT_STEREO, 0);
+    av_opt_set_int(ost->avr, "out_sample_fmt",     c->sample_fmt,       0);
+    av_opt_set_int(ost->avr, "out_sample_rate",    c->sample_rate,      0);
+    av_opt_set_int(ost->avr, "out_channel_layout", c->channel_layout,   0);
+
+    ret = avresample_open(ost->avr);
+    if (ret < 0) {
+        fprintf(stderr, "Error opening the resampling context\n");
+        exit(1);
+    }
+}
+
+static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt,
+                                  uint64_t channel_layout,
+                                  int sample_rate, int nb_samples)
+{
+    AVFrame *frame = av_frame_alloc();
+    int ret;
+
+    if (!frame) {
+        fprintf(stderr, "Error allocating an audio frame\n");
+        exit(1);
+    }
+
+    frame->format = sample_fmt;
+    frame->channel_layout = channel_layout;
+    frame->sample_rate = sample_rate;
+    frame->nb_samples = nb_samples;
+
+    if (nb_samples) {
+        ret = av_frame_get_buffer(frame, 0);
+        if (ret < 0) {
+            fprintf(stderr, "Error allocating an audio buffer\n");
+            exit(1);
+        }
+    }
+
+    return frame;
 }
 
 static void open_audio(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
-    int ret;
+    int nb_samples;
 
     c = ost->st->codec;
 
@@ -122,47 +178,32 @@ static void open_audio(AVFormatContext *oc, OutputStream *ost)
     /* increment frequency by 110 Hz per second */
     ost->tincr2 = 2 * M_PI * 110.0 / c->sample_rate / c->sample_rate;
 
-    ost->frame = av_frame_alloc();
-    if (!ost->frame)
-        exit(1);
-
-    ost->frame->sample_rate    = c->sample_rate;
-    ost->frame->format         = AV_SAMPLE_FMT_S16;
-    ost->frame->channel_layout = c->channel_layout;
-
     if (c->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE)
-        ost->frame->nb_samples = 10000;
+        nb_samples = 10000;
     else
-        ost->frame->nb_samples = c->frame_size;
+        nb_samples = c->frame_size;
 
-    ret = av_frame_get_buffer(ost->frame, 0);
-    if (ret < 0) {
-        fprintf(stderr, "Could not allocate an audio frame.\n");
-        exit(1);
-    }
+    ost->frame     = alloc_audio_frame(c->sample_fmt, c->channel_layout,
+                                       c->sample_rate, nb_samples);
+    ost->tmp_frame = alloc_audio_frame(AV_SAMPLE_FMT_S16, AV_CH_LAYOUT_STEREO,
+                                       44100, nb_samples);
 }
 
 /* Prepare a 16 bit dummy audio frame of 'frame_size' samples and
  * 'nb_channels' channels. */
 static AVFrame *get_audio_frame(OutputStream *ost)
 {
-    int j, i, v, ret;
-    int16_t *q = (int16_t*)ost->frame->data[0];
+    AVFrame *frame = ost->tmp_frame;
+    int j, i, v;
+    int16_t *q = (int16_t*)frame->data[0];
 
     /* check if we want to generate more frames */
     if (av_compare_ts(ost->next_pts, ost->st->codec->time_base,
                       STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
         return NULL;
 
-    /* when we pass a frame to the encoder, it may keep a reference to it
-     * internally;
-     * make sure we do not overwrite it here
-     */
-    ret = av_frame_make_writable(ost->frame);
-    if (ret < 0)
-        exit(1);
 
-    for (j = 0; j < ost->frame->nb_samples; j++) {
+    for (j = 0; j < frame->nb_samples; j++) {
         v = (int)(sin(ost->t) * 10000);
         for (i = 0; i < ost->st->codec->channels; i++)
             *q++ = v;
@@ -170,32 +211,25 @@ static AVFrame *get_audio_frame(OutputStream *ost)
         ost->tincr += ost->tincr2;
     }
 
-    ost->frame->pts = ost->next_pts;
-    ost->next_pts  += ost->frame->nb_samples;
-
-    return ost->frame;
+    return frame;
 }
 
-/*
- * encode one audio frame and send it to the muxer
+/* if a frame is provided, send it to the encoder, otherwise flush the encoder;
  * return 1 when encoding is finished, 0 otherwise
  */
-static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
+static int encode_audio_frame(AVFormatContext *oc, OutputStream *ost,
+                              AVFrame *frame)
 {
-    AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
-    AVFrame *frame;
     int got_packet;
 
     av_init_packet(&pkt);
-    c = ost->st->codec;
-
-    frame = get_audio_frame(ost);
-
-    avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+    avcodec_encode_audio2(ost->st->codec, &pkt, frame, &got_packet);
 
     if (got_packet) {
         pkt.stream_index = ost->st->index;
+
+        av_packet_rescale_ts(&pkt, ost->st->codec->time_base, ost->st->time_base);
 
         /* Write the compressed frame to the media file. */
         if (av_interleaved_write_frame(oc, &pkt) != 0) {
@@ -205,6 +239,72 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
     }
 
     return (frame || got_packet) ? 0 : 1;
+}
+
+/*
+ * encode one audio frame and send it to the muxer
+ * return 1 when encoding is finished, 0 otherwise
+ */
+static int process_audio_stream(AVFormatContext *oc, OutputStream *ost)
+{
+    AVFrame *frame;
+    int got_output = 0;
+    int ret;
+
+    frame = get_audio_frame(ost);
+    got_output |= !!frame;
+
+    /* feed the data to lavr */
+    if (frame) {
+        ret = avresample_convert(ost->avr, NULL, 0, 0,
+                                 frame->extended_data, frame->linesize[0],
+                                 frame->nb_samples);
+        if (ret < 0) {
+            fprintf(stderr, "Error feeding audio data to the resampler\n");
+            exit(1);
+        }
+    }
+
+    while ((frame && avresample_available(ost->avr) >= ost->frame->nb_samples) ||
+           (!frame && avresample_get_out_samples(ost->avr, 0))) {
+        /* when we pass a frame to the encoder, it may keep a reference to it
+         * internally;
+         * make sure we do not overwrite it here
+         */
+        ret = av_frame_make_writable(ost->frame);
+        if (ret < 0)
+            exit(1);
+
+        /* the difference between the two avresample calls here is that the
+         * first one just reads the already converted data that is buffered in
+         * the lavr output buffer, while the second one also flushes the
+         * resampler */
+        if (frame) {
+            ret = avresample_read(ost->avr, ost->frame->extended_data,
+                                  ost->frame->nb_samples);
+        } else {
+            ret = avresample_convert(ost->avr, ost->frame->extended_data,
+                                     ost->frame->linesize[0], ost->frame->nb_samples,
+                                     NULL, 0, 0);
+        }
+
+        if (ret < 0) {
+            fprintf(stderr, "Error while resampling\n");
+            exit(1);
+        } else if (frame && ret != ost->frame->nb_samples) {
+            fprintf(stderr, "Too few samples returned from lavr\n");
+            exit(1);
+        }
+
+        ost->frame->nb_samples = ret;
+
+        ost->frame->pts        = ost->next_pts;
+        ost->next_pts         += ost->frame->nb_samples;
+
+        got_output |= encode_audio_frame(oc, ost, ret ? ost->frame : NULL);
+    }
+
+    return !got_output;
 }
 
 /**************************************************************/
@@ -447,6 +547,7 @@ static void close_stream(AVFormatContext *oc, OutputStream *ost)
     av_frame_free(&ost->frame);
     av_frame_free(&ost->tmp_frame);
     sws_freeContext(ost->sws_ctx);
+    avresample_free(&ost->avr);
 }
 
 /**************************************************************/
@@ -535,7 +636,7 @@ int main(int argc, char **argv)
                                             audio_st.next_pts, audio_st.st->codec->time_base) <= 0)) {
             encode_video = !write_video_frame(oc, &video_st);
         } else {
-            encode_audio = !write_audio_frame(oc, &audio_st);
+            encode_audio = !process_audio_stream(oc, &audio_st);
         }
     }
 
