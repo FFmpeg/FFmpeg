@@ -31,7 +31,6 @@
 #include "libavutil/common.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
-#include "libavutil/bprint.h"
 
 #include "libavformat/version.h"
 
@@ -507,6 +506,6 @@ int64_t avio_seek_time(AVIOContext *h, int stream_index,
  * @return 0 for success (max_size bytes read or EOF reached), negative error
  * code otherwise
  */
-int avio_read_to_bprint(AVIOContext *h, AVBPrint *pb, size_t max_size);
+int avio_read_to_bprint(AVIOContext *h, struct AVBPrint *pb, size_t max_size);
 
 #endif /* AVFORMAT_AVIO_H */
