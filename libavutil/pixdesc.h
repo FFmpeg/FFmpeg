@@ -95,6 +95,11 @@ typedef struct AVPixFmtDescriptor {
      * comp[2].
      */
     AVComponentDescriptor comp[4];
+
+    /**
+     * Alternative comma-separated names.
+     */
+    const char *alias;
 } AVPixFmtDescriptor;
 
 /**

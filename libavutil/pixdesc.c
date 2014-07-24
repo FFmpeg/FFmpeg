@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "avstring.h"
 #include "common.h"
 #include "pixfmt.h"
 #include "pixdesc.h"
@@ -1507,7 +1508,8 @@ static enum AVPixelFormat get_pix_fmt_internal(const char *name)
 
     for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
         if (av_pix_fmt_descriptors[pix_fmt].name &&
-            !strcmp(av_pix_fmt_descriptors[pix_fmt].name, name))
+            (!strcmp(av_pix_fmt_descriptors[pix_fmt].name, name) ||
+             av_match_name(name, av_pix_fmt_descriptors[pix_fmt].alias)))
             return pix_fmt;
 
     return AV_PIX_FMT_NONE;
