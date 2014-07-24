@@ -139,7 +139,7 @@ static void wmv2_idct_put_c(uint8_t *dest, int line_size, int16_t *block)
     }
 }
 
-static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src,
+static void wmv2_mspel8_h_lowpass(uint8_t *dst, const uint8_t *src,
                                   int dstStride, int srcStride, int h)
 {
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
@@ -159,7 +159,7 @@ static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src,
     }
 }
 
-static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src,
+static void wmv2_mspel8_v_lowpass(uint8_t *dst, const uint8_t *src,
                                   int dstStride, int srcStride, int w)
 {
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
@@ -190,7 +190,7 @@ static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src,
     }
 }
 
-static void put_mspel8_mc10_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void put_mspel8_mc10_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     uint8_t half[64];
 
@@ -198,12 +198,12 @@ static void put_mspel8_mc10_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
     ff_put_pixels8_l2_8(dst, src, half, stride, stride, 8, 8);
 }
 
-static void put_mspel8_mc20_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void put_mspel8_mc20_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     wmv2_mspel8_h_lowpass(dst, src, stride, stride, 8);
 }
 
-static void put_mspel8_mc30_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void put_mspel8_mc30_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     uint8_t half[64];
 
@@ -211,12 +211,12 @@ static void put_mspel8_mc30_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
     ff_put_pixels8_l2_8(dst, src + 1, half, stride, stride, 8, 8);
 }
 
-static void put_mspel8_mc02_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void put_mspel8_mc02_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     wmv2_mspel8_v_lowpass(dst, src, stride, stride, 8);
 }
 
-static void put_mspel8_mc12_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void put_mspel8_mc12_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     uint8_t halfH[88];
     uint8_t halfV[64];
@@ -228,7 +228,7 @@ static void put_mspel8_mc12_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
     ff_put_pixels8_l2_8(dst, halfV, halfHV, stride, 8, 8, 8);
 }
 
-static void put_mspel8_mc32_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void put_mspel8_mc32_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     uint8_t halfH[88];
     uint8_t halfV[64];
@@ -240,7 +240,7 @@ static void put_mspel8_mc32_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
     ff_put_pixels8_l2_8(dst, halfV, halfHV, stride, 8, 8, 8);
 }
 
-static void put_mspel8_mc22_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void put_mspel8_mc22_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     uint8_t halfH[88];
 

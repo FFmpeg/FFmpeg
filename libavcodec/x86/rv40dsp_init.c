@@ -70,7 +70,7 @@ DECLARE_WEIGHT(ssse3)
  */
 #define QPEL_FUNC_DECL(OP, SIZE, PH, PV, OPT)                           \
 static void OP ## rv40_qpel ##SIZE ##_mc ##PH ##PV ##OPT(uint8_t *dst,  \
-                                                         uint8_t *src,  \
+                                                         const uint8_t *src, \
                                                          ptrdiff_t stride)  \
 {                                                                       \
     int i;                                                              \
@@ -189,22 +189,22 @@ QPEL_FUNCS_SET (OP, 3, 2, OPT)
 #endif /* HAVE_YASM */
 
 #if HAVE_MMX_INLINE
-static void put_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src,
+static void put_rv40_qpel8_mc33_mmx(uint8_t *dst, const uint8_t *src,
                                     ptrdiff_t stride)
 {
     ff_put_pixels8_xy2_mmx(dst, src, stride, 8);
 }
-static void put_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src,
+static void put_rv40_qpel16_mc33_mmx(uint8_t *dst, const uint8_t *src,
                                      ptrdiff_t stride)
 {
     ff_put_pixels16_xy2_mmx(dst, src, stride, 16);
 }
-static void avg_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src,
+static void avg_rv40_qpel8_mc33_mmx(uint8_t *dst, const uint8_t *src,
                                     ptrdiff_t stride)
 {
     ff_avg_pixels8_xy2_mmx(dst, src, stride, 8);
 }
-static void avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src,
+static void avg_rv40_qpel16_mc33_mmx(uint8_t *dst, const uint8_t *src,
                                      ptrdiff_t stride)
 {
     ff_avg_pixels16_xy2_mmx(dst, src, stride, 16);

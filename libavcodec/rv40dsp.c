@@ -34,7 +34,7 @@
 #include "rv34dsp.h"
 
 #define RV40_LOWPASS(OPNAME, OP) \
-static av_unused void OPNAME ## rv40_qpel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride,\
+static av_unused void OPNAME ## rv40_qpel8_h_lowpass(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride,\
                                                      const int h, const int C1, const int C2, const int SHIFT){\
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;\
     int i;\
@@ -53,7 +53,7 @@ static av_unused void OPNAME ## rv40_qpel8_h_lowpass(uint8_t *dst, uint8_t *src,
     }\
 }\
 \
-static void OPNAME ## rv40_qpel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride,\
+static void OPNAME ## rv40_qpel8_v_lowpass(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride,\
                                            const int w, const int C1, const int C2, const int SHIFT){\
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;\
     int i;\
@@ -85,7 +85,7 @@ static void OPNAME ## rv40_qpel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstSt
     }\
 }\
 \
-static void OPNAME ## rv40_qpel16_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride,\
+static void OPNAME ## rv40_qpel16_v_lowpass(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride,\
                                             const int w, const int C1, const int C2, const int SHIFT){\
     OPNAME ## rv40_qpel8_v_lowpass(dst  , src  , dstStride, srcStride, 8, C1, C2, SHIFT);\
     OPNAME ## rv40_qpel8_v_lowpass(dst+8, src+8, dstStride, srcStride, 8, C1, C2, SHIFT);\
@@ -95,7 +95,7 @@ static void OPNAME ## rv40_qpel16_v_lowpass(uint8_t *dst, uint8_t *src, int dstS
     OPNAME ## rv40_qpel8_v_lowpass(dst+8, src+8, dstStride, srcStride, w-8, C1, C2, SHIFT);\
 }\
 \
-static void OPNAME ## rv40_qpel16_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride,\
+static void OPNAME ## rv40_qpel16_h_lowpass(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride,\
                                             const int h, const int C1, const int C2, const int SHIFT){\
     OPNAME ## rv40_qpel8_h_lowpass(dst  , src  , dstStride, srcStride, 8, C1, C2, SHIFT);\
     OPNAME ## rv40_qpel8_h_lowpass(dst+8, src+8, dstStride, srcStride, 8, C1, C2, SHIFT);\
@@ -107,22 +107,22 @@ static void OPNAME ## rv40_qpel16_h_lowpass(uint8_t *dst, uint8_t *src, int dstS
 \
 
 #define RV40_MC(OPNAME, SIZE) \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc10_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc10_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     OPNAME ## rv40_qpel ## SIZE ## _h_lowpass(dst, src, stride, stride, SIZE, 52, 20, 6);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc30_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc30_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     OPNAME ## rv40_qpel ## SIZE ## _h_lowpass(dst, src, stride, stride, SIZE, 20, 52, 6);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc01_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc01_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, src, stride, stride, SIZE, 52, 20, 6);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc11_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc11_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     uint8_t full[SIZE*(SIZE+5)];\
     uint8_t * const full_mid = full + SIZE*2;\
@@ -130,7 +130,7 @@ static void OPNAME ## rv40_qpel ## SIZE ## _mc11_c(uint8_t *dst, uint8_t *src, p
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, full_mid, stride, SIZE, SIZE, 52, 20, 6);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc21_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc21_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     uint8_t full[SIZE*(SIZE+5)];\
     uint8_t * const full_mid = full + SIZE*2;\
@@ -138,7 +138,7 @@ static void OPNAME ## rv40_qpel ## SIZE ## _mc21_c(uint8_t *dst, uint8_t *src, p
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, full_mid, stride, SIZE, SIZE, 52, 20, 6);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc31_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc31_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     uint8_t full[SIZE*(SIZE+5)];\
     uint8_t * const full_mid = full + SIZE*2;\
@@ -146,7 +146,7 @@ static void OPNAME ## rv40_qpel ## SIZE ## _mc31_c(uint8_t *dst, uint8_t *src, p
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, full_mid, stride, SIZE, SIZE, 52, 20, 6);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc12_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc12_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     uint8_t full[SIZE*(SIZE+5)];\
     uint8_t * const full_mid = full + SIZE*2;\
@@ -154,7 +154,7 @@ static void OPNAME ## rv40_qpel ## SIZE ## _mc12_c(uint8_t *dst, uint8_t *src, p
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, full_mid, stride, SIZE, SIZE, 20, 20, 5);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc22_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc22_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     uint8_t full[SIZE*(SIZE+5)];\
     uint8_t * const full_mid = full + SIZE*2;\
@@ -162,7 +162,7 @@ static void OPNAME ## rv40_qpel ## SIZE ## _mc22_c(uint8_t *dst, uint8_t *src, p
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, full_mid, stride, SIZE, SIZE, 20, 20, 5);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc32_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc32_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     uint8_t full[SIZE*(SIZE+5)];\
     uint8_t * const full_mid = full + SIZE*2;\
@@ -170,12 +170,12 @@ static void OPNAME ## rv40_qpel ## SIZE ## _mc32_c(uint8_t *dst, uint8_t *src, p
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, full_mid, stride, SIZE, SIZE, 20, 20, 5);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc03_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc03_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, src, stride, stride, SIZE, 20, 52, 6);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc13_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc13_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     uint8_t full[SIZE*(SIZE+5)];\
     uint8_t * const full_mid = full + SIZE*2;\
@@ -183,7 +183,7 @@ static void OPNAME ## rv40_qpel ## SIZE ## _mc13_c(uint8_t *dst, uint8_t *src, p
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, full_mid, stride, SIZE, SIZE, 20, 52, 6);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc23_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## rv40_qpel ## SIZE ## _mc23_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     uint8_t full[SIZE*(SIZE+5)];\
     uint8_t * const full_mid = full + SIZE*2;\
@@ -266,19 +266,19 @@ PIXOP2(put, op_put)
 #undef op_avg
 #undef op_put
 
-static void put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void put_rv40_qpel16_mc33_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     put_pixels16_xy2_8_c(dst, src, stride, 16);
 }
-static void avg_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void avg_rv40_qpel16_mc33_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     avg_pixels16_xy2_8_c(dst, src, stride, 16);
 }
-static void put_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void put_rv40_qpel8_mc33_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     put_pixels8_xy2_8_c(dst, src, stride, 8);
 }
-static void avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+static void avg_rv40_qpel8_mc33_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     avg_pixels8_xy2_8_c(dst, src, stride, 8);
 }
