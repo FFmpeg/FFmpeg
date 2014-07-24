@@ -457,8 +457,6 @@ typedef struct MpegEncContext {
     int dct_count[2];
     uint16_t (*dct_offset)[64];
 
-    void *opaque;              ///< private data for the user
-
     /* bit rate control */
     int64_t total_bits;
     int frame_bits;                ///< bits used for the current frame
