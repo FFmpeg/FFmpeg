@@ -138,6 +138,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
 
     MP3DecContext *mp3 = s->priv_data;
     static const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
+    uint64_t fsize = avio_size(s->pb);
 
     /* Check for Xing / Info tag */
     avio_skip(s->pb, xing_offtbl[c->lsf == 1][c->nb_channels == 1]);
@@ -151,6 +152,17 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
         mp3->frames = avio_rb32(s->pb);
     if (v & XING_FLAG_SIZE)
         mp3->header_filesize = avio_rb32(s->pb);
+    if (fsize && mp3->header_filesize) {
+        uint64_t min, delta;
+        min = FFMIN(fsize, mp3->header_filesize);
+        delta = FFMAX(fsize, mp3->header_filesize) - min;
+        if (fsize > mp3->header_filesize && delta > min >> 4) {
+            mp3->frames = 0;
+        } else if (delta > min >> 4) {
+            av_log(s, AV_LOG_WARNING,
+                   "filesize and duration do not match (growing file?)\n");
+        }
+    }
     if (v & XING_FLAG_TOC)
         read_xing_toc(s, mp3->header_filesize, av_rescale_q(mp3->frames,
                                        (AVRational){spf, c->sample_rate},
@@ -399,7 +411,10 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     int i, j;
     int dir = (flags&AVSEEK_FLAG_BACKWARD) ? -1 : 1;
 
-    if (mp3->is_cbr && st->duration > 0 && mp3->header_filesize > s->data_offset) {
+    if (   mp3->is_cbr
+        && st->duration > 0
+        && mp3->header_filesize > s->data_offset
+        && mp3->frames) {
         int64_t filesize = avio_size(s->pb);
         int64_t duration;
         if (filesize <= s->data_offset)
