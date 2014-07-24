@@ -1668,6 +1668,28 @@ static void mkv_flush_dynbuf(AVFormatContext *s)
     mkv->dyn_bc = NULL;
 }
 
+static void mkv_start_new_cluster(AVFormatContext *s, AVPacket *pkt)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    AVIOContext *pb;
+
+    if (s->pb->seekable) {
+        pb = s->pb;
+    } else {
+        pb = mkv->dyn_bc;
+    }
+
+    av_log(s, AV_LOG_DEBUG,
+            "Starting new cluster at offset %" PRIu64 " bytes, "
+            "pts %" PRIu64 "dts %" PRIu64 "\n",
+            avio_tell(pb), pkt->pts, pkt->dts);
+    end_ebml_master(pb, mkv->cluster);
+    mkv->cluster_pos = -1;
+    if (mkv->dyn_bc)
+        mkv_flush_dynbuf(s);
+    avio_flush(s->pb);
+}
+
 static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_cue)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -1755,7 +1777,6 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int keyframe            = !!(pkt->flags & AV_PKT_FLAG_KEY);
     int cluster_size;
     int64_t cluster_time;
-    AVIOContext *pb;
     int ret;
     int start_new_cluster;
 
@@ -1768,11 +1789,9 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
     if (s->pb->seekable) {
-        pb = s->pb;
-        cluster_size = avio_tell(pb) - mkv->cluster_pos;
+        cluster_size = avio_tell(s->pb) - mkv->cluster_pos;
     } else {
-        pb = mkv->dyn_bc;
-        cluster_size = avio_tell(pb);
+        cluster_size = avio_tell(mkv->dyn_bc);
     }
 
     if (mkv->is_dash && codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -1795,15 +1814,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (mkv->cluster_pos != -1 && start_new_cluster) {
-        av_log(s, AV_LOG_DEBUG,
-               "Starting new cluster at offset %" PRIu64 " bytes, "
-               "pts %" PRIu64 "dts %" PRIu64 "\n",
-               avio_tell(pb), pkt->pts, pkt->dts);
-        end_ebml_master(pb, mkv->cluster);
-        mkv->cluster_pos = -1;
-        if (mkv->dyn_bc)
-            mkv_flush_dynbuf(s);
-        avio_flush(s->pb);
+        mkv_start_new_cluster(s, pkt);
     }
 
     // check if we have an audio packet cached
