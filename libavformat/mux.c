@@ -963,6 +963,7 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
                      AVFormatContext *src)
 {
     AVPacket local_pkt;
+    int ret;
 
     local_pkt = *pkt;
     local_pkt.stream_index = dst_stream;
@@ -978,7 +979,11 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
         local_pkt.duration = av_rescale_q(pkt->duration,
                                           src->streams[pkt->stream_index]->time_base,
                                           dst->streams[dst_stream]->time_base);
-    return av_write_frame(dst, &local_pkt);
+
+    ret = av_write_frame(dst, &local_pkt);
+    pkt->buf = local_pkt.buf;
+    pkt->destruct = local_pkt.destruct;
+    return ret;
 }
 
 static int av_write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
