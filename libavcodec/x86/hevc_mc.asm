@@ -176,15 +176,23 @@ QPEL_TABLE 12, 4, w, sse4
 %else
     %define rfilterq %2
 %endif
-    movdqu            m0, [rfilterq ]            ;load 128bit of x
-%ifnum %3
-    movdqu            m1, [rfilterq+  %3]        ;load 128bit of x+stride
-    movdqu            m2, [rfilterq+2*%3]        ;load 128bit of x+2*stride
-    movdqu            m3, [rfilterq+3*%3]        ;load 128bit of x+3*stride
+%if (%1 == 8 && %4 <= 4)
+%define %%load movd
+%elif (%1 == 8 && %4 <= 8) || (%1 > 8 && %4 <= 4)
+%define %%load movq
 %else
-    movdqu            m1, [rfilterq+  %3q]       ;load 128bit of x+stride
-    movdqu            m2, [rfilterq+2*%3q]       ;load 128bit of x+2*stride
-    movdqu            m3, [rfilterq+r3srcq]      ;load 128bit of x+2*stride
+%define %%load movdqu
+%endif
+
+    %%load            m0, [rfilterq ]
+%ifnum %3
+    %%load            m1, [rfilterq+  %3]
+    %%load            m2, [rfilterq+2*%3]
+    %%load            m3, [rfilterq+3*%3]
+%else
+    %%load            m1, [rfilterq+  %3q]
+    %%load            m2, [rfilterq+2*%3q]
+    %%load            m3, [rfilterq+r3srcq]
 %endif
 
 %if %1 == 8
