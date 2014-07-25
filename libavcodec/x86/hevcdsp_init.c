@@ -167,13 +167,18 @@ mc_rep_funcs(pel_pixels, 8, 16, 64, sse4);
 mc_rep_funcs(pel_pixels, 8, 16, 48, sse4);
 mc_rep_funcs(pel_pixels, 8, 16, 32, sse4);
 mc_rep_funcs(pel_pixels, 8,  8, 24, sse4);
-
 mc_rep_funcs(pel_pixels,10,  8, 64, sse4);
 mc_rep_funcs(pel_pixels,10,  8, 48, sse4);
 mc_rep_funcs(pel_pixels,10,  8, 32, sse4);
 mc_rep_funcs(pel_pixels,10,  8, 24, sse4);
 mc_rep_funcs(pel_pixels,10,  8, 16, sse4);
 mc_rep_funcs(pel_pixels,10,  4, 12, sse4);
+mc_rep_funcs(pel_pixels,12,  8, 64, sse4);
+mc_rep_funcs(pel_pixels,12,  8, 48, sse4);
+mc_rep_funcs(pel_pixels,12,  8, 32, sse4);
+mc_rep_funcs(pel_pixels,12,  8, 24, sse4);
+mc_rep_funcs(pel_pixels,12,  8, 16, sse4);
+mc_rep_funcs(pel_pixels,12,  4, 12, sse4);
 
 mc_rep_funcs(epel_h, 8, 16, 64, sse4);
 mc_rep_funcs(epel_h, 8, 16, 48, sse4);
@@ -185,6 +190,12 @@ mc_rep_funcs(epel_h,10,  8, 32, sse4);
 mc_rep_funcs(epel_h,10,  8, 24, sse4);
 mc_rep_funcs(epel_h,10,  8, 16, sse4);
 mc_rep_funcs(epel_h,10,  4, 12, sse4);
+mc_rep_funcs(epel_h,12,  8, 64, sse4);
+mc_rep_funcs(epel_h,12,  8, 48, sse4);
+mc_rep_funcs(epel_h,12,  8, 32, sse4);
+mc_rep_funcs(epel_h,12,  8, 24, sse4);
+mc_rep_funcs(epel_h,12,  8, 16, sse4);
+mc_rep_funcs(epel_h,12,  4, 12, sse4);
 mc_rep_funcs(epel_v, 8, 16, 64, sse4);
 mc_rep_funcs(epel_v, 8, 16, 48, sse4);
 mc_rep_funcs(epel_v, 8, 16, 32, sse4);
@@ -195,6 +206,12 @@ mc_rep_funcs(epel_v,10,  8, 32, sse4);
 mc_rep_funcs(epel_v,10,  8, 24, sse4);
 mc_rep_funcs(epel_v,10,  8, 16, sse4);
 mc_rep_funcs(epel_v,10,  4, 12, sse4);
+mc_rep_funcs(epel_v,12,  8, 64, sse4);
+mc_rep_funcs(epel_v,12,  8, 48, sse4);
+mc_rep_funcs(epel_v,12,  8, 32, sse4);
+mc_rep_funcs(epel_v,12,  8, 24, sse4);
+mc_rep_funcs(epel_v,12,  8, 16, sse4);
+mc_rep_funcs(epel_v,12,  4, 12, sse4);
 mc_rep_funcs(epel_hv, 8,  8, 64, sse4);
 mc_rep_funcs(epel_hv, 8,  8, 48, sse4);
 mc_rep_funcs(epel_hv, 8,  8, 32, sse4);
@@ -207,6 +224,12 @@ mc_rep_funcs(epel_hv,10,  8, 32, sse4);
 mc_rep_funcs(epel_hv,10,  8, 24, sse4);
 mc_rep_funcs(epel_hv,10,  8, 16, sse4);
 mc_rep_funcs(epel_hv,10,  4, 12, sse4);
+mc_rep_funcs(epel_hv,12,  8, 64, sse4);
+mc_rep_funcs(epel_hv,12,  8, 48, sse4);
+mc_rep_funcs(epel_hv,12,  8, 32, sse4);
+mc_rep_funcs(epel_hv,12,  8, 24, sse4);
+mc_rep_funcs(epel_hv,12,  8, 16, sse4);
+mc_rep_funcs(epel_hv,12,  4, 12, sse4);
 
 mc_rep_funcs(qpel_h, 8, 16, 64, sse4);
 mc_rep_funcs(qpel_h, 8, 16, 48, sse4);
@@ -218,6 +241,12 @@ mc_rep_funcs(qpel_h,10,  8, 32, sse4);
 mc_rep_funcs(qpel_h,10,  8, 24, sse4);
 mc_rep_funcs(qpel_h,10,  8, 16, sse4);
 mc_rep_funcs(qpel_h,10,  4, 12, sse4);
+mc_rep_funcs(qpel_h,12,  8, 64, sse4);
+mc_rep_funcs(qpel_h,12,  8, 48, sse4);
+mc_rep_funcs(qpel_h,12,  8, 32, sse4);
+mc_rep_funcs(qpel_h,12,  8, 24, sse4);
+mc_rep_funcs(qpel_h,12,  8, 16, sse4);
+mc_rep_funcs(qpel_h,12,  4, 12, sse4);
 mc_rep_funcs(qpel_v, 8, 16, 64, sse4);
 mc_rep_funcs(qpel_v, 8, 16, 48, sse4);
 mc_rep_funcs(qpel_v, 8, 16, 32, sse4);
@@ -228,6 +257,12 @@ mc_rep_funcs(qpel_v,10,  8, 32, sse4);
 mc_rep_funcs(qpel_v,10,  8, 24, sse4);
 mc_rep_funcs(qpel_v,10,  8, 16, sse4);
 mc_rep_funcs(qpel_v,10,  4, 12, sse4);
+mc_rep_funcs(qpel_v,12,  8, 64, sse4);
+mc_rep_funcs(qpel_v,12,  8, 48, sse4);
+mc_rep_funcs(qpel_v,12,  8, 32, sse4);
+mc_rep_funcs(qpel_v,12,  8, 24, sse4);
+mc_rep_funcs(qpel_v,12,  8, 16, sse4);
+mc_rep_funcs(qpel_v,12,  4, 12, sse4);
 mc_rep_funcs(qpel_hv, 8,  8, 64, sse4);
 mc_rep_funcs(qpel_hv, 8,  8, 48, sse4);
 mc_rep_funcs(qpel_hv, 8,  8, 32, sse4);
@@ -240,6 +275,12 @@ mc_rep_funcs(qpel_hv,10,  8, 32, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 24, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 16, sse4);
 mc_rep_funcs(qpel_hv,10,  4, 12, sse4);
+mc_rep_funcs(qpel_hv,12,  8, 64, sse4);
+mc_rep_funcs(qpel_hv,12,  8, 48, sse4);
+mc_rep_funcs(qpel_hv,12,  8, 32, sse4);
+mc_rep_funcs(qpel_hv,12,  8, 24, sse4);
+mc_rep_funcs(qpel_hv,12,  8, 16, sse4);
+mc_rep_funcs(qpel_hv,12,  4, 12, sse4);
 
 #define mc_rep_uni_w(bitd, step, W, opt) \
 void ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,\
@@ -269,6 +310,13 @@ mc_rep_uni_w(10, 8, 24, sse4);
 mc_rep_uni_w(10, 8, 32, sse4);
 mc_rep_uni_w(10, 8, 48, sse4);
 mc_rep_uni_w(10, 8, 64, sse4);
+
+mc_rep_uni_w(12, 6, 12, sse4);
+mc_rep_uni_w(12, 8, 16, sse4);
+mc_rep_uni_w(12, 8, 24, sse4);
+mc_rep_uni_w(12, 8, 32, sse4);
+mc_rep_uni_w(12, 8, 48, sse4);
+mc_rep_uni_w(12, 8, 64, sse4);
 
 #define mc_rep_bi_w(bitd, step, W, opt) \
 void ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, \
@@ -301,6 +349,13 @@ mc_rep_bi_w(10, 8, 24, sse4);
 mc_rep_bi_w(10, 8, 32, sse4);
 mc_rep_bi_w(10, 8, 48, sse4);
 mc_rep_bi_w(10, 8, 64, sse4);
+
+mc_rep_bi_w(12, 6, 12, sse4);
+mc_rep_bi_w(12, 8, 16, sse4);
+mc_rep_bi_w(12, 8, 24, sse4);
+mc_rep_bi_w(12, 8, 32, sse4);
+mc_rep_bi_w(12, 8, 48, sse4);
+mc_rep_bi_w(12, 8, 64, sse4);
 
 #define mc_uni_w_func(name, bitd, W, opt) \
 void ff_hevc_put_hevc_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,         \
@@ -348,6 +403,17 @@ mc_uni_w_funcs(qpel_h, 10, sse4);
 mc_uni_w_funcs(qpel_v, 10, sse4);
 mc_uni_w_funcs(qpel_hv, 10, sse4);
 
+mc_uni_w_funcs(pel_pixels, 12, sse4);
+mc_uni_w_func(pel_pixels, 12, 6, sse4);
+mc_uni_w_funcs(epel_h, 12, sse4);
+mc_uni_w_func(epel_h, 12, 6, sse4);
+mc_uni_w_funcs(epel_v, 12, sse4);
+mc_uni_w_func(epel_v, 12, 6, sse4);
+mc_uni_w_funcs(epel_hv, 12, sse4);
+mc_uni_w_func(epel_hv, 12, 6, sse4);
+mc_uni_w_funcs(qpel_h, 12, sse4);
+mc_uni_w_funcs(qpel_v, 12, sse4);
+mc_uni_w_funcs(qpel_hv, 12, sse4);
 
 #define mc_bi_w_func(name, bitd, W, opt) \
 void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,           \
@@ -397,6 +463,17 @@ mc_bi_w_funcs(qpel_h, 10, sse4);
 mc_bi_w_funcs(qpel_v, 10, sse4);
 mc_bi_w_funcs(qpel_hv, 10, sse4);
 
+mc_bi_w_funcs(pel_pixels, 12, sse4);
+mc_bi_w_func(pel_pixels, 12, 6, sse4);
+mc_bi_w_funcs(epel_h, 12, sse4);
+mc_bi_w_func(epel_h, 12, 6, sse4);
+mc_bi_w_funcs(epel_v, 12, sse4);
+mc_bi_w_func(epel_v, 12, 6, sse4);
+mc_bi_w_funcs(epel_hv, 12, sse4);
+mc_bi_w_func(epel_hv, 12, 6, sse4);
+mc_bi_w_funcs(qpel_h, 12, sse4);
+mc_bi_w_funcs(qpel_v, 12, sse4);
+mc_bi_w_funcs(qpel_hv, 12, sse4);
 #endif //ARCH_X86_64 && HAVE_SSE4_EXTERNAL
 
 
@@ -514,6 +591,17 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         if (EXTERNAL_SSSE3(mm_flags) && ARCH_X86_64) {
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_12_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_12_ssse3;
+        }
+        if (EXTERNAL_SSE4(mm_flags) && ARCH_X86_64) {
+            EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 12, sse4);
+            EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     12, sse4);
+            EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     12, sse4);
+            EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv,    12, sse4);
+
+            QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 12, sse4);
+            QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     12, sse4);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     12, sse4);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    12, sse4);
         }
     }
 }
