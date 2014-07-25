@@ -1704,12 +1704,14 @@ typedef struct AVCodecContext {
      */
     int chromaoffset;
 
+#if FF_API_UNUSED_MEMBERS
     /**
      * Multiplied by qscale for each frame and added to scene_change_score.
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int scenechange_factor;
+    attribute_deprecated int scenechange_factor;
+#endif
 
     /**
      *
@@ -2156,7 +2158,9 @@ typedef struct AVCodecContext {
 #define FF_CODER_TYPE_AC        1
 #define FF_CODER_TYPE_RAW       2
 #define FF_CODER_TYPE_RLE       3
+#if FF_API_UNUSED_MEMBERS
 #define FF_CODER_TYPE_DEFLATE   4
+#endif /* FF_API_UNUSED_MEMBERS */
     /**
      * coder type
      * - encoding: Set by user.
@@ -2361,7 +2365,9 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_DCT_COEFF   0x00000040
 #define FF_DEBUG_SKIP        0x00000080
 #define FF_DEBUG_STARTCODE   0x00000100
+#if FF_API_UNUSED_MEMBERS
 #define FF_DEBUG_PTS         0x00000200
+#endif /* FF_API_UNUSED_MEMBERS */
 #define FF_DEBUG_ER          0x00000400
 #define FF_DEBUG_MMCO        0x00000800
 #define FF_DEBUG_BUGS        0x00001000
@@ -2444,7 +2450,9 @@ typedef struct AVCodecContext {
     int dct_algo;
 #define FF_DCT_AUTO    0
 #define FF_DCT_FASTINT 1
+#if FF_API_UNUSED_MEMBERS
 #define FF_DCT_INT     2
+#endif /* FF_API_UNUSED_MEMBERS */
 #define FF_DCT_MMX     3
 #define FF_DCT_ALTIVEC 5
 #define FF_DCT_FAAN    6
@@ -2465,7 +2473,9 @@ typedef struct AVCodecContext {
 #define FF_IDCT_SH4           9
 #endif
 #define FF_IDCT_SIMPLEARM     10
+#if FF_API_UNUSED_MEMBERS
 #define FF_IDCT_IPP           13
+#endif /* FF_API_UNUSED_MEMBERS */
 #define FF_IDCT_XVIDMMX       14
 #define FF_IDCT_SIMPLEARMV5TE 16
 #define FF_IDCT_SIMPLEARMV6   17

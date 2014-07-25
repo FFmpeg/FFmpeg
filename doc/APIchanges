@@ -13,6 +13,13 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-08-xx - xxxxxxx - lavc 55.57.1 - avcodec.h
+  Deprecate unused FF_IDCT_IPP define and ipp avcodec option.
+  Deprecate unused FF_DEBUG_PTS define and pts avcodec option.
+  Deprecate unused FF_CODER_TYPE_DEFLATE define and deflate avcodec option.
+  Deprecate unused FF_DCT_INT define and int avcodec option.
+  Deprecate unused avcodec option scenechange_factor.
+
 2014-07-xx - xxxxxxx - lavu 53.19.0 - avstring.h
   Make name matching function from lavf public as av_match_name().
 
