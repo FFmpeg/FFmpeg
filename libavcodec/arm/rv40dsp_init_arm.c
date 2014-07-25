@@ -26,8 +26,10 @@
 #include "libavutil/arm/cpu.h"
 
 #define DECL_QPEL3(type, w, pos) \
-    void ff_##type##_rv40_qpel##w##_mc##pos##_neon(uint8_t *dst, uint8_t *src,\
-                                                   ptrdiff_t stride)
+void ff_ ## type ## _rv40_qpel ## w ## _mc ## pos ## _neon(uint8_t *dst,       \
+                                                           const uint8_t *src, \
+                                                           ptrdiff_t stride)
+
 #define DECL_QPEL2(w, pos)                      \
     DECL_QPEL3(put, w, pos);                    \
     DECL_QPEL3(avg, w, pos)
