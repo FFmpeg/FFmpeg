@@ -367,15 +367,13 @@ int main(int argc, char **argv)
 #if CONFIG_MDCT
     case TRANSFORM_MDCT:
         if (do_inverse) {
-            imdct_ref((FFTSample *) tab_ref, (FFTSample *) tab1, fft_nbits);
-            m.imdct_calc(&m, tab2, (FFTSample *) tab1);
-            err = check_diff((FFTSample *) tab_ref, tab2, fft_size, scale);
+            imdct_ref(&tab_ref->re, &tab1->re, fft_nbits);
+            m.imdct_calc(&m, tab2, &tab1->re);
+            err = check_diff(&tab_ref->re, tab2, fft_size, scale);
         } else {
-            mdct_ref((FFTSample *) tab_ref, (FFTSample *) tab1, fft_nbits);
-
-            m.mdct_calc(&m, tab2, (FFTSample *) tab1);
-
-            err = check_diff((FFTSample *) tab_ref, tab2, fft_size / 2, scale);
+            mdct_ref(&tab_ref->re, &tab1->re, fft_nbits);
+            m.mdct_calc(&m, tab2, &tab1->re);
+            err = check_diff(&tab_ref->re, tab2, fft_size / 2, scale);
         }
         break;
 #endif /* CONFIG_MDCT */
@@ -385,8 +383,7 @@ int main(int argc, char **argv)
         s.fft_calc(&s, tab);
 
         fft_ref(tab_ref, tab1, fft_nbits);
-        err = check_diff((FFTSample *) tab_ref, (FFTSample *) tab,
-                         fft_size * 2, 1.0);
+        err = check_diff(&tab_ref->re, &tab->re, fft_size * 2, 1.0);
         break;
 #if FFT_FLOAT
 #if CONFIG_RDFT
@@ -410,8 +407,7 @@ int main(int argc, char **argv)
                 tab[i].re = tab2[i];
                 tab[i].im = 0;
             }
-            err = check_diff((float *) tab_ref, (float *) tab,
-                             fft_size * 2, 0.5);
+            err = check_diff(&tab_ref->re, &tab->re, fft_size * 2, 0.5);
         } else {
             for (i = 0; i < fft_size; i++) {
                 tab2[i]    = tab1[i].re;
@@ -420,7 +416,7 @@ int main(int argc, char **argv)
             r.rdft_calc(&r, tab2);
             fft_ref(tab_ref, tab1, fft_nbits);
             tab_ref[0].im = tab_ref[fft_size_2].re;
-            err = check_diff((float *) tab_ref, (float *) tab2, fft_size, 1.0);
+            err = check_diff(&tab_ref->re, tab2, fft_size, 1.0);
         }
         break;
     }
@@ -433,7 +429,7 @@ int main(int argc, char **argv)
             idct_ref(&tab_ref->re, &tab1->re, fft_nbits);
         else
             dct_ref(&tab_ref->re, &tab1->re, fft_nbits);
-        err = check_diff((float *) tab_ref, (float *) tab, fft_size, 1.0);
+        err = check_diff(&tab_ref->re, &tab->re, fft_size, 1.0);
         break;
 #endif /* CONFIG_DCT */
 #endif /* FFT_FLOAT */
@@ -454,9 +450,9 @@ int main(int argc, char **argv)
                 switch (transform) {
                 case TRANSFORM_MDCT:
                     if (do_inverse)
-                        m.imdct_calc(&m, (FFTSample *) tab, (FFTSample *) tab1);
+                        m.imdct_calc(&m, &tab->re, &tab1->re);
                     else
-                        m.mdct_calc(&m, (FFTSample *) tab, (FFTSample *) tab1);
+                        m.mdct_calc(&m, &tab->re, &tab1->re);
                     break;
                 case TRANSFORM_FFT:
                     memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
