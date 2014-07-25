@@ -165,6 +165,7 @@ HEVC_SAMPLES_444_12BIT =        \
 # AMP_E_Hisilicon_3 -- AMP_E_Hisilicon
 # MVDL1ZERO_A_docomo_4 -- MVDL1ZERO_A_docomo_3
 # RAP_A_docomo_5 -- RAP_A_docomo_4
+# RAP_B_bossen_2 -- RAP_B_bossen_1
 # RPS_A_docomo_5 -- RPS_A_docomo_4
 # RPS_F_docomo_2 -- RPS_F_docomo_1
 
