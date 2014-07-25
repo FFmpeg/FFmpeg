@@ -206,7 +206,7 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
         }
 
         {
-            const AVOption *o_named = av_opt_find(target_obj, buf, o->unit, 0, 0);
+            const AVOption *o_named = av_opt_find(target_obj, i ? buf : val, o->unit, 0, 0);
             int res;
             int ci = 0;
             double const_values[64];
