@@ -26,10 +26,12 @@
 
 SECTION_RODATA
 
-pw_pixel_max: times 8 dw ((1 << 10)-1)
-pw_m1:        times 8 dw -1
-pw_m2:        times 8 dw -2
-pd_1 :        times 4 dd  1
+pw_pixel_max_12: times 8 dw ((1 << 12)-1)
+pw_pixel_max_10: times 8 dw ((1 << 10)-1)
+pw_pixel_max:    times 8 dw ((1 << 10)-1)
+pw_m1:           times 8 dw -1
+pw_m2:           times 8 dw -2
+pd_1 :           times 4 dd  1
 
 cextern pw_4
 cextern pw_8
@@ -136,12 +138,12 @@ INIT_XMM sse2
 
 ; in: 4 rows of 8 words in m0..m3
 ; out: 8 rows of 4 words in %1..%8
-%macro TRANSPOSE8x4W_STORE 8
+%macro TRANSPOSE8x4W_STORE 9
     pxor             m5, m5; zeros reg
-    CLIPW            m0, m5, [pw_pixel_max]
-    CLIPW            m1, m5, [pw_pixel_max]
-    CLIPW            m2, m5, [pw_pixel_max]
-    CLIPW            m3, m5, [pw_pixel_max]
+    CLIPW            m0, m5, %9
+    CLIPW            m1, m5, %9
+    CLIPW            m2, m5, %9
+    CLIPW            m3, m5, %9
 
     punpckhwd        m4, m0, m1
     punpcklwd        m0, m1
@@ -264,18 +266,18 @@ INIT_XMM sse2
 
 ; in: 8 rows of 8 words in m0..m8
 ; out: 8 rows of 8 words in %1..%8
-%macro TRANSPOSE8x8W_STORE 8
+%macro TRANSPOSE8x8W_STORE 9
     TRANSPOSE8x8W     0, 1, 2, 3, 4, 5, 6, 7, 8
 
     pxor             m8, m8
-    CLIPW            m0, m8, [pw_pixel_max]
-    CLIPW            m1, m8, [pw_pixel_max]
-    CLIPW            m2, m8, [pw_pixel_max]
-    CLIPW            m3, m8, [pw_pixel_max]
-    CLIPW            m4, m8, [pw_pixel_max]
-    CLIPW            m5, m8, [pw_pixel_max]
-    CLIPW            m6, m8, [pw_pixel_max]
-    CLIPW            m7, m8, [pw_pixel_max]
+    CLIPW            m0, m8, %9
+    CLIPW            m1, m8, %9
+    CLIPW            m2, m8, %9
+    CLIPW            m3, m8, %9
+    CLIPW            m4, m8, %9
+    CLIPW            m5, m8, %9
+    CLIPW            m6, m8, %9
+    CLIPW            m7, m8, %9
 
     movdqu           %1, m0
     movdqu           %2, m1
@@ -678,7 +680,17 @@ cglobal hevc_v_loop_filter_chroma_10, 3, 5, 7, pix, stride, tc, pix0, r3stride
     add            pixq, r3strideq
     TRANSPOSE4x8W_LOAD  PASS8ROWS(pix0q, pixq, strideq, r3strideq)
     CHROMA_DEBLOCK_BODY 10
-    TRANSPOSE8x4W_STORE PASS8ROWS(pix0q, pixq, strideq, r3strideq)
+    TRANSPOSE8x4W_STORE PASS8ROWS(pix0q, pixq, strideq, r3strideq), [pw_pixel_max_10]
+    RET
+
+cglobal hevc_v_loop_filter_chroma_12, 3, 5, 7, pix, stride, tc, pix0, r3stride
+    sub            pixq, 4
+    lea       r3strideq, [3*strideq]
+    mov           pix0q, pixq
+    add            pixq, r3strideq
+    TRANSPOSE4x8W_LOAD  PASS8ROWS(pix0q, pixq, strideq, r3strideq)
+    CHROMA_DEBLOCK_BODY 12
+    TRANSPOSE8x4W_STORE PASS8ROWS(pix0q, pixq, strideq, r3strideq), [pw_pixel_max_12]
     RET
 
 ;-----------------------------------------------------------------------------
@@ -713,8 +725,24 @@ cglobal hevc_h_loop_filter_chroma_10, 3, 4, 7, pix, stride, tc, pix0
     movu            m3, [pixq+strideq]; q1
     CHROMA_DEBLOCK_BODY 10
     pxor            m5, m5; zeros reg
-    CLIPW           m1, m5, [pw_pixel_max]
-    CLIPW           m2, m5, [pw_pixel_max]
+    CLIPW           m1, m5, [pw_pixel_max_10]
+    CLIPW           m2, m5, [pw_pixel_max_10]
+    movu [pix0q+strideq], m1
+    movu        [pixq], m2
+    RET
+
+cglobal hevc_h_loop_filter_chroma_12, 3, 4, 7, pix, stride, tc, pix0
+    mov          pix0q, pixq
+    sub          pix0q, strideq
+    sub          pix0q, strideq
+    movu            m0, [pix0q];    p1
+    movu            m1, [pix0q+strideq]; p0
+    movu            m2, [pixq];    q0
+    movu            m3, [pixq+strideq]; q1
+    CHROMA_DEBLOCK_BODY 12
+    pxor            m5, m5; zeros reg
+    CLIPW           m1, m5, [pw_pixel_max_12]
+    CLIPW           m2, m5, [pw_pixel_max_12]
     movu [pix0q+strideq], m1
     movu        [pixq], m2
     RET
@@ -744,7 +772,19 @@ cglobal hevc_v_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc
     TRANSPOSE8x8W_LOAD  PASS8ROWS(r6, pixq, strideq, r5)
     LUMA_DEBLOCK_BODY 10, v
 .store:
-    TRANSPOSE8x8W_STORE PASS8ROWS(r6, r0, r1, r5)
+    TRANSPOSE8x8W_STORE PASS8ROWS(r6, r0, r1, r5), [pw_pixel_max_10]
+.bypassluma:
+    RET
+
+cglobal hevc_v_loop_filter_luma_12, 4, 15, 16, pix, stride, beta, tc
+    sub            pixq, 8
+    lea              r5, [3 * strideq]
+    mov              r6, pixq
+    add            pixq, r5
+    TRANSPOSE8x8W_LOAD  PASS8ROWS(r6, pixq, strideq, r5)
+    LUMA_DEBLOCK_BODY 12, v
+.store:
+    TRANSPOSE8x8W_STORE PASS8ROWS(r6, r0, r1, r5), [pw_pixel_max_12]
 .bypassluma:
     RET
 
@@ -803,12 +843,12 @@ cglobal hevc_h_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc, count, pix
     LUMA_DEBLOCK_BODY             10, h
 .store:
     pxor                          m8, m8; zeros reg
-    CLIPW                         m1, m8, [pw_pixel_max]
-    CLIPW                         m2, m8, [pw_pixel_max]
-    CLIPW                         m3, m8, [pw_pixel_max]
-    CLIPW                         m4, m8, [pw_pixel_max]
-    CLIPW                         m5, m8, [pw_pixel_max]
-    CLIPW                         m6, m8, [pw_pixel_max]
+    CLIPW                         m1, m8, [pw_pixel_max_10]
+    CLIPW                         m2, m8, [pw_pixel_max_10]
+    CLIPW                         m3, m8, [pw_pixel_max_10]
+    CLIPW                         m4, m8, [pw_pixel_max_10]
+    CLIPW                         m5, m8, [pw_pixel_max_10]
+    CLIPW                         m6, m8, [pw_pixel_max_10]
     movdqu     [pix0q +     strideq], m1;  p2
     movdqu     [pix0q + 2 * strideq], m2;  p1
     movdqu     [pix0q + src3strideq], m3;  p0
@@ -817,6 +857,38 @@ cglobal hevc_h_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc, count, pix
     movdqu     [pixq  + 2 * strideq], m6;  q2
 .bypassluma:
     RET
+
+cglobal hevc_h_loop_filter_luma_12, 4, 15, 16, pix, stride, beta, tc, count, pix0, src3stride
+    lea                  src3strideq, [3 * strideq]
+    mov                        pix0q, pixq
+    sub                        pix0q, src3strideq
+    sub                        pix0q, strideq
+    movdqu                        m0, [pix0q];               p3
+    movdqu                        m1, [pix0q +     strideq]; p2
+    movdqu                        m2, [pix0q + 2 * strideq]; p1
+    movdqu                        m3, [pix0q + src3strideq]; p0
+    movdqu                        m4, [pixq];                q0
+    movdqu                        m5, [pixq  +     strideq]; q1
+    movdqu                        m6, [pixq  + 2 * strideq]; q2
+    movdqu                        m7, [pixq  + src3strideq]; q3
+    LUMA_DEBLOCK_BODY             12, h
+.store:
+    pxor                          m8, m8; zeros reg
+    CLIPW                         m1, m8, [pw_pixel_max_12]
+    CLIPW                         m2, m8, [pw_pixel_max_12]
+    CLIPW                         m3, m8, [pw_pixel_max_12]
+    CLIPW                         m4, m8, [pw_pixel_max_12]
+    CLIPW                         m5, m8, [pw_pixel_max_12]
+    CLIPW                         m6, m8, [pw_pixel_max_12]
+    movdqu     [pix0q +     strideq], m1;  p2
+    movdqu     [pix0q + 2 * strideq], m2;  p1
+    movdqu     [pix0q + src3strideq], m3;  p0
+    movdqu     [pixq               ], m4;  q0
+    movdqu     [pixq  +     strideq], m5;  q1
+    movdqu     [pixq  + 2 * strideq], m6;  q2
+.bypassluma:
+    RET
+
 %endmacro
 
 INIT_XMM sse2
