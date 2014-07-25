@@ -7,6 +7,7 @@ HEVC_SAMPLES =                  \
     AMVP_A_MTK_4                \
     AMVP_B_MTK_4                \
     AMVP_C_Samsung_4            \
+    BUMPING_A_ericsson_1        \
     CAINIT_A_SHARP_4            \
     CAINIT_B_SHARP_4            \
     CAINIT_C_SHARP_3            \
