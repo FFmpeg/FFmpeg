@@ -232,9 +232,9 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                 const int y1 = y + offset[i + count - 1][1];
                 const int index = x1 + y1*linesize;
                 p->pdsp.get_pixels(block, p->src + index, linesize);
-                p->fdsp.fdct(block);
-                p->requantize(block2, block, qp, p->idsp.idct_permutation);
-                p->idsp.idct(block2);
+                p->dct->fdct(block);
+                p->requantize(block2, block, qp, p->dct->idct_permutation);
+                p->dct->idct(block2);
                 add_block(p->temp + index, linesize, block2);
             }
         }
@@ -377,11 +377,11 @@ static av_cold int init(AVFilterContext *ctx)
     SPPContext *spp = ctx->priv;
 
     spp->avctx = avcodec_alloc_context3(NULL);
-    if (!spp->avctx)
+    spp->dct = avcodec_dct_alloc();
+    if (!spp->avctx || !spp->dct)
         return AVERROR(ENOMEM);
-    ff_idctdsp_init(&spp->idsp, spp->avctx);
-    ff_fdctdsp_init(&spp->fdsp, spp->avctx);
     ff_pixblockdsp_init(&spp->pdsp, spp->avctx);
+    avcodec_dct_init(spp->dct);
     spp->store_slice = store_slice_c;
     switch (spp->mode) {
     case MODE_HARD: spp->requantize = hardthresh_c; break;
@@ -402,6 +402,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         avcodec_close(spp->avctx);
         av_freep(&spp->avctx);
     }
+    av_freep(&spp->dct);
     av_freep(&spp->non_b_qp_table);
 }
 
