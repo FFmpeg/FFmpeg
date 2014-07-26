@@ -104,3 +104,19 @@ INIT_YMM avx2
 IDCT_DC    16,  2, 10
 IDCT_DC    32,  8, 10
 %endif ;HAVE_AVX2_EXTERNAL
+
+; 12-bit
+INIT_MMX mmxext
+IDCT_DC_NL  4,     12
+IDCT_DC     8,  2, 12
+
+INIT_XMM sse2
+IDCT_DC_NL  8,     12
+IDCT_DC    16,  4, 12
+IDCT_DC    32, 16, 12
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+IDCT_DC    16,  2, 12
+IDCT_DC    32,  8, 12
+%endif ;HAVE_AVX2_EXTERNAL
