@@ -62,8 +62,6 @@ enum OutputFormat {
     FMT_MJPEG,
 };
 
-#define MPEG_BUF_SIZE (16 * 1024)
-
 #define QMAT_SHIFT_MMX 16
 #define QMAT_SHIFT 21
 
