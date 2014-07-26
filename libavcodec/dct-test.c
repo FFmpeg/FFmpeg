@@ -45,18 +45,7 @@
 #include "aandcttab.h"
 #include "faandct.h"
 #include "faanidct.h"
-#include "ppc/fdct.h"
-#include "x86/fdct.h"
-#include "x86/idct_xvid.h"
-#include "x86/simple_idct.h"
 #include "dctref.h"
-
-// ARM
-void ff_j_rev_dct_arm(int16_t *data);
-void ff_simple_idct_arm(int16_t *data);
-void ff_simple_idct_armv5te(int16_t *data);
-void ff_simple_idct_armv6(int16_t *data);
-void ff_simple_idct_neon(int16_t *data);
 
 struct algo {
     const char *name;
@@ -71,22 +60,6 @@ static const struct algo fdct_tab[] = {
     { "FAAN",        ff_faandct,           FF_IDCT_PERM_NONE },
     { "IJG-AAN-INT", ff_fdct_ifast,        FF_IDCT_PERM_NONE },
     { "IJG-LLM-INT", ff_jpeg_fdct_islow_8, FF_IDCT_PERM_NONE },
-
-#if HAVE_MMX_INLINE
-    { "MMX",         ff_fdct_mmx,          FF_IDCT_PERM_NONE, AV_CPU_FLAG_MMX },
-#endif
-#if HAVE_MMXEXT_INLINE
-    { "MMXEXT",      ff_fdct_mmxext,       FF_IDCT_PERM_NONE, AV_CPU_FLAG_MMXEXT },
-#endif
-#if HAVE_SSE2_INLINE
-    { "SSE2",        ff_fdct_sse2,         FF_IDCT_PERM_NONE, AV_CPU_FLAG_SSE2 },
-#endif
-
-#if HAVE_ALTIVEC
-    { "altivecfdct", ff_fdct_altivec,      FF_IDCT_PERM_NONE, AV_CPU_FLAG_ALTIVEC },
-#endif
-
-    { 0 }
 };
 
 static void ff_prores_idct_wrap(int16_t *dst){
@@ -101,26 +74,6 @@ static void ff_prores_idct_wrap(int16_t *dst){
          dst[i] -= 512;
     }
 }
-#if ARCH_X86_64 && HAVE_MMX && HAVE_YASM
-void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
-                                int16_t *block, int16_t *qmat);
-
-static void ff_prores_idct_put_10_sse2_wrap(int16_t *dst){
-    DECLARE_ALIGNED(16, static int16_t, qmat)[64];
-    DECLARE_ALIGNED(16, static int16_t, tmp)[64];
-    int i;
-
-    for(i=0; i<64; i++){
-        qmat[i]=4;
-        tmp[i]= dst[i];
-    }
-    ff_prores_idct_put_10_sse2(dst, 16, tmp, qmat);
-
-    for(i=0; i<64; i++) {
-         dst[i] -= 512;
-    }
-}
-#endif
 
 static const struct algo idct_tab[] = {
     { "FAANI",       ff_faanidct,          FF_IDCT_PERM_NONE },
@@ -128,55 +81,23 @@ static const struct algo idct_tab[] = {
     { "INT",         ff_j_rev_dct,         FF_IDCT_PERM_LIBMPEG2 },
     { "SIMPLE-C",    ff_simple_idct_8,     FF_IDCT_PERM_NONE },
     { "PR-C",        ff_prores_idct_wrap,  FF_IDCT_PERM_NONE, 0, 1 },
-
-#if HAVE_MMX_INLINE
-    { "SIMPLE-MMX",     ff_simple_idct_mmx,     FF_IDCT_PERM_SIMPLE,    AV_CPU_FLAG_MMX },
-    { "XVID-MMX",       ff_idct_xvid_mmx,       FF_IDCT_PERM_NONE,      AV_CPU_FLAG_MMX,    1 },
-#endif
-#if HAVE_MMXEXT_INLINE
-    { "XVID-MMXEXT",    ff_idct_xvid_mmxext,    FF_IDCT_PERM_NONE,      AV_CPU_FLAG_MMXEXT, 1 },
-#endif
-#if HAVE_SSE2_INLINE
-    { "XVID-SSE2",      ff_idct_xvid_sse2,      FF_IDCT_PERM_SSE2,      AV_CPU_FLAG_SSE2,   1 },
-#if ARCH_X86_64 && HAVE_YASM
-    { "PR-SSE2",        ff_prores_idct_put_10_sse2_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
-#endif
-#endif
+};
 
 #if ARCH_ARM
-    { "SIMPLE-ARM",     ff_simple_idct_arm,     FF_IDCT_PERM_NONE },
-    { "INT-ARM",        ff_j_rev_dct_arm,       FF_IDCT_PERM_LIBMPEG2 },
+#include "arm/dct-test.c"
+#elif ARCH_PPC
+#include "ppc/dct-test.c"
+#elif ARCH_X86
+#include "x86/dct-test.c"
+#else
+static const struct algo fdct_tab_arch[] = { 0 };
+static const struct algo idct_tab_arch[] = { 0 };
 #endif
-#if HAVE_ARMV5TE
-    { "SIMPLE-ARMV5TE", ff_simple_idct_armv5te, FF_IDCT_PERM_NONE,      AV_CPU_FLAG_ARMV5TE },
-#endif
-#if HAVE_ARMV6
-    { "SIMPLE-ARMV6",   ff_simple_idct_armv6,   FF_IDCT_PERM_LIBMPEG2,  AV_CPU_FLAG_ARMV6 },
-#endif
-#if HAVE_NEON && ARCH_ARM
-    { "SIMPLE-NEON",    ff_simple_idct_neon,    FF_IDCT_PERM_PARTTRANS, AV_CPU_FLAG_NEON },
-#endif
-
-    { 0 }
-};
 
 #define AANSCALE_BITS 12
 
 #define NB_ITS 20000
 #define NB_ITS_SPEED 50000
-
-static short idct_simple_mmx_perm[64] = {
-    0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D,
-    0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D,
-    0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D,
-    0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F,
-    0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F,
-    0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D,
-    0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F,
-    0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
-};
-
-static const uint8_t idct_sse2_row_perm[8] = { 0, 4, 1, 5, 2, 6, 3, 7 };
 
 DECLARE_ALIGNED(16, static int16_t, block)[64];
 DECLARE_ALIGNED(8,  static int16_t, block1)[64];
@@ -216,18 +137,15 @@ static void permute(int16_t dst[64], const int16_t src[64],
 {
     int i;
 
+#if ARCH_X86
+    if (permute_x86(dst, src, perm_type))
+        return;
+#endif
+
     switch (perm_type) {
     case FF_IDCT_PERM_LIBMPEG2:
         for (i = 0; i < 64; i++)
             dst[(i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2)] = src[i];
-        break;
-    case FF_IDCT_PERM_SIMPLE:
-        for (i = 0; i < 64; i++)
-            dst[idct_simple_mmx_perm[i]] = src[i];
-        break;
-    case FF_IDCT_PERM_SSE2:
-        for (i = 0; i < 64; i++)
-            dst[(i & 0x38) | idct_sse2_row_perm[i & 7]] = src[i];
         break;
     case FF_IDCT_PERM_PARTTRANS:
         for (i = 0; i < 64; i++)
@@ -565,11 +483,24 @@ int main(int argc, char **argv)
         idct248_error("SIMPLE-C", ff_simple_idct248_put, speed);
     } else {
         const int cpu_flags = av_get_cpu_flags();
-        const struct algo *algos = test_idct ? idct_tab : fdct_tab;
-        for (i = 0; algos[i].name; i++)
-            if (!(~cpu_flags & algos[i].cpu_flag)) {
-                err |= dct_error(&algos[i], test, test_idct, speed, bits);
-            }
+        if (test_idct) {
+            for (i = 0; i < FF_ARRAY_ELEMS(idct_tab); i++)
+                err |= dct_error(&idct_tab[i], test, test_idct, speed, bits);
+
+            for (i = 0; idct_tab_arch[i].name; i++)
+                if (!(~cpu_flags & idct_tab_arch[i].cpu_flag))
+                    err |= dct_error(&idct_tab_arch[i], test, test_idct, speed, bits);
+        }
+#if CONFIG_FDCTDSP
+        else {
+            for (i = 0; i < FF_ARRAY_ELEMS(fdct_tab); i++)
+                err |= dct_error(&fdct_tab[i], test, test_idct, speed, bits);
+
+            for (i = 0; fdct_tab_arch[i].name; i++)
+                if (!(~cpu_flags & fdct_tab_arch[i].cpu_flag))
+                    err |= dct_error(&fdct_tab_arch[i], test, test_idct, speed, bits);
+        }
+#endif /* CONFIG_FDCTDSP */
     }
 
     if (err)

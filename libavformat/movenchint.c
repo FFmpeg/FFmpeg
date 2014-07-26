@@ -422,7 +422,7 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
         sample_queue_push(&trk->sample_queue, pkt->data, pkt->size, sample);
 
     /* Feed the packet to the RTP muxer */
-    ff_write_chained(rtp_ctx, 0, pkt, s);
+    ff_write_chained(rtp_ctx, 0, pkt, s, 0);
 
     /* Fetch the output from the RTP muxer, open a new output buffer
      * for next time. */

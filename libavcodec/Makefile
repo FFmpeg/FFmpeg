@@ -62,6 +62,7 @@ OBJS-$(CONFIG_HUFFYUVDSP)              += huffyuvdsp.o
 OBJS-$(CONFIG_HUFFYUVENCDSP)           += huffyuvencdsp.o
 OBJS-$(CONFIG_IDCTDSP)                 += idctdsp.o faanidct.o          \
                                           simple_idct.o jrevdct.o
+OBJS-$(CONFIG_IIRFILTER)               += iirfilter.o
 OBJS-$(CONFIG_INTRAX8)                 += intrax8.o intrax8dsp.o
 OBJS-$(CONFIG_LIBXVID)                 += libxvid_rc.o
 OBJS-$(CONFIG_LLAUDDSP)                += lossless_audiodsp.o
@@ -105,8 +106,7 @@ OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o aacsbr.o aacps.o \
                                           sbrdsp.o aacpsdsp.o
 OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o    \
                                           aacpsy.o aactab.o      \
-                                          psymodel.o iirfilter.o \
-                                          mpeg4audio.o kbdwin.o
+                                          psymodel.o mpeg4audio.o kbdwin.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o kbdwin.o
 OBJS-$(CONFIG_AC3_FIXED_DECODER)       += ac3dec_fixed.o ac3dec_data.o ac3.o kbdwin.o
@@ -851,18 +851,17 @@ SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h vda_internal.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 
-TESTPROGS = cabac                                                       \
-            fft                                                         \
-            fft-fixed                                                   \
-            fft-fixed32                                                 \
-            golomb                                                      \
-            iirfilter                                                   \
-            imgconvert                                                  \
-            rangecoder                                                  \
-            snowenc                                                     \
+TESTPROGS = imgconvert                                                  \
 
-TESTPROGS-$(CONFIG_DCT) += dct
-TESTPROGS-$(HAVE_MMX) += motion
+TESTPROGS-$(CONFIG_CABAC)                 += cabac
+TESTPROGS-$(CONFIG_FFT)                   += fft fft-fixed fft-fixed32
+TESTPROGS-$(CONFIG_IDCTDSP)               += dct
+TESTPROGS-$(CONFIG_IIRFILTER)             += iirfilter
+TESTPROGS-$(HAVE_MMX)                     += motion
+TESTPROGS-$(CONFIG_GOLOMB)                += golomb
+TESTPROGS-$(CONFIG_RANGECODER)            += rangecoder
+TESTPROGS-$(CONFIG_SNOW_ENCODER)          += snowenc
+
 TESTOBJS = dctref.o
 
 TOOLS = fourcc2pixfmt

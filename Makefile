@@ -63,7 +63,7 @@ FF_DEP_LIBS  := $(DEP_LIBS)
 all: $(AVPROGS)
 
 $(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
-	$(LD) $(LDFLAGS) $(LD_O) $^ $(ELIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS)
 
 tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 tools/uncoded_frame$(EXESUF): $(FF_DEP_LIBS)
@@ -92,6 +92,7 @@ $(foreach V,$(SUBDIR_VARS),$(eval $(call RESET,$(V))))
 SUBDIR := $(1)/
 include $(SRC_PATH)/$(1)/Makefile
 -include $(SRC_PATH)/$(1)/$(ARCH)/Makefile
+-include $(SRC_PATH)/$(1)/$(INTRINSICS)/Makefile
 include $(SRC_PATH)/library.mak
 endef
 
@@ -117,7 +118,7 @@ $(PROGS): %$(PROGSSUF)$(EXESUF): %$(PROGSSUF)_g$(EXESUF)
 	$(STRIP) $@
 
 %$(PROGSSUF)_g$(EXESUF): %.o $(FF_DEP_LIBS)
-	$(LD) $(LDFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
 OBJDIRS += tools
 

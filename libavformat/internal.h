@@ -134,10 +134,11 @@ void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
  * @param dst_stream the stream index within dst to write the packet to
  * @param pkt the packet to be written
  * @param src the muxer the packet originally was intended for
+ * @param interleave 0->use av_write_frame, 1->av_write_interleaved_frame
  * @return the value av_write_frame returned
  */
 int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
-                     AVFormatContext *src);
+                     AVFormatContext *src, int interleave);
 
 /**
  * Get the length in bytes which is needed to store val as v.

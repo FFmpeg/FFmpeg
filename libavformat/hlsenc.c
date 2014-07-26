@@ -302,7 +302,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
     }
 
-    ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
+    ret = ff_write_chained(oc, pkt->stream_index, pkt, s, 0);
 
     return ret;
 }

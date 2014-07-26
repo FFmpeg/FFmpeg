@@ -778,7 +778,9 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     for (i = 0; i < s->nb_streams; i++) {
         if (s->streams[i]->last_in_packet_buffer) {
             ++stream_count;
-        } else if (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+        } else if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_ATTACHMENT &&
+                   s->streams[i]->codec->codec_id != AV_CODEC_ID_VP8 &&
+                   s->streams[i]->codec->codec_id != AV_CODEC_ID_VP9) {
             ++noninterleaved_count;
         }
     }
@@ -786,7 +788,11 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     if (s->internal->nb_interleaved_streams == stream_count)
         flush = 1;
 
-    if (s->max_interleave_delta > 0 && s->packet_buffer && !flush) {
+    if (s->max_interleave_delta > 0 &&
+        s->packet_buffer &&
+        !flush &&
+        s->internal->nb_interleaved_streams == stream_count+noninterleaved_count
+    ) {
         AVPacket *top_pkt = &s->packet_buffer->pkt;
         int64_t delta_dts = INT64_MIN;
         int64_t top_dts = av_rescale_q(top_pkt->dts,
@@ -960,9 +966,10 @@ int av_get_output_timestamp(struct AVFormatContext *s, int stream,
 }
 
 int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
-                     AVFormatContext *src)
+                     AVFormatContext *src, int interleave)
 {
     AVPacket local_pkt;
+    int ret;
 
     local_pkt = *pkt;
     local_pkt.stream_index = dst_stream;
@@ -978,7 +985,12 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
         local_pkt.duration = av_rescale_q(pkt->duration,
                                           src->streams[pkt->stream_index]->time_base,
                                           dst->streams[dst_stream]->time_base);
-    return av_write_frame(dst, &local_pkt);
+
+    if (interleave) ret = av_interleaved_write_frame(dst, &local_pkt);
+    else            ret = av_write_frame(dst, &local_pkt);
+    pkt->buf = local_pkt.buf;
+    pkt->destruct = local_pkt.destruct;
+    return ret;
 }
 
 static int av_write_uncoded_frame_internal(AVFormatContext *s, int stream_index,

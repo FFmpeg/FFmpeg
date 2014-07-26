@@ -59,6 +59,8 @@
 #include <limits.h>
 #include "sp5x.h"
 
+#define QUANT_BIAS_SHIFT 8
+
 static int encode_picture(MpegEncContext *s, int picture_number);
 static int dct_quantize_refine(MpegEncContext *s, int16_t *block, int16_t *weight, int16_t *orig, int n, int qscale);
 static int sse_mb(MpegEncContext *s);

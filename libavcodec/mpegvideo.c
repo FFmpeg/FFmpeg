@@ -409,6 +409,9 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
         s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_bitexact;
     s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
 
+    if (HAVE_INTRINSICS_NEON)
+        ff_MPV_common_init_neon(s);
+
     if (ARCH_ALPHA)
         ff_MPV_common_init_axp(s);
     if (ARCH_ARM)

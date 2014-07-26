@@ -26,10 +26,8 @@
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/idctdsp.h"
+#include "idct.h"
 #include "idctdsp_arm.h"
-
-void ff_j_rev_dct_arm(int16_t *data);
-void ff_simple_idct_arm(int16_t *data);
 
 /* XXX: local hack */
 static void (*ff_put_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);

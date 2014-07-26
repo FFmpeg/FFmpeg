@@ -212,7 +212,7 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
     rtsp_st = rt->rtsp_streams[pkt->stream_index];
     rtpctx = rtsp_st->transport_priv;
 
-    ret = ff_write_chained(rtpctx, 0, pkt, s);
+    ret = ff_write_chained(rtpctx, 0, pkt, s, 0);
     /* ff_write_chained does all the RTP packetization. If using TCP as
      * transport, rtpctx->pb is only a dyn_packet_buf that queues up the
      * packets, so we need to send them out on the TCP connection separately.

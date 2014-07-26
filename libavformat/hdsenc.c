@@ -549,7 +549,7 @@ static int hds_write_packet(AVFormatContext *s, AVPacket *pkt)
     os->last_ts = pkt->dts;
 
     os->packets_written++;
-    return ff_write_chained(os->ctx, pkt->stream_index - os->first_stream, pkt, s);
+    return ff_write_chained(os->ctx, pkt->stream_index - os->first_stream, pkt, s, 0);
 }
 
 static int hds_write_trailer(AVFormatContext *s)

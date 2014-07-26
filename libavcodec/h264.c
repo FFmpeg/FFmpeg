@@ -1819,6 +1819,28 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
     return 0;
 }
 
+static int is_extra(const uint8_t *buf, int buf_size)
+{
+    int cnt= buf[5]&0x1f;
+    const uint8_t *p= buf+6;
+    while(cnt--){
+        int nalsize= AV_RB16(p) + 2;
+        if(nalsize > buf_size - (p-buf) || p[2]!=0x67)
+            return 0;
+        p += nalsize;
+    }
+    cnt = *(p++);
+    if(!cnt)
+        return 0;
+    while(cnt--){
+        int nalsize= AV_RB16(p) + 2;
+        if(nalsize > buf_size - (p-buf) || p[2]!=0x68)
+            return 0;
+        p += nalsize;
+    }
+    return 1;
+}
+
 static int h264_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
@@ -1869,28 +1891,16 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
         return buf_index;
     }
-    if(h->is_avc && buf_size >= 9 && buf[0]==1 && buf[2]==0 && (buf[4]&0xFC)==0xFC && (buf[5]&0x1F) && buf[8]==0x67){
-        int cnt= buf[5]&0x1f;
-        const uint8_t *p= buf+6;
-        while(cnt--){
-            int nalsize= AV_RB16(p) + 2;
-            if(nalsize > buf_size - (p-buf) || p[2]!=0x67)
-                goto not_extra;
-            p += nalsize;
-        }
-        cnt = *(p++);
-        if(!cnt)
-            goto not_extra;
-        while(cnt--){
-            int nalsize= AV_RB16(p) + 2;
-            if(nalsize > buf_size - (p-buf) || p[2]!=0x68)
-                goto not_extra;
-            p += nalsize;
-        }
-
-        return ff_h264_decode_extradata(h, buf, buf_size);
+    if (h->is_avc && av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, NULL)) {
+        int side_size;
+        uint8_t *side = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
+        if (is_extra(side, side_size))
+            ff_h264_decode_extradata(h, side, side_size);
     }
-not_extra:
+    if(h->is_avc && buf_size >= 9 && buf[0]==1 && buf[2]==0 && (buf[4]&0xFC)==0xFC && (buf[5]&0x1F) && buf[8]==0x67){
+        if (is_extra(buf, buf_size))
+            return ff_h264_decode_extradata(h, buf, buf_size);
+    }
 
     buf_index = decode_nal_units(h, buf, buf_size, 0);
     if (buf_index < 0)

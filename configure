@@ -299,6 +299,7 @@ Toolchain options:
   --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]
   --extra-cxxflags=ECFLAGS add ECFLAGS to CXXFLAGS [$CXXFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
+  --extra-ldexeflags=ELDFLAGS add ELDFLAGS to LDEXEFLAGS [$LDEXEFLAGS]
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --optflags=OPTFLAGS      override optimization-related compiler flags
@@ -756,6 +757,10 @@ add_asflags(){
 
 add_ldflags(){
     append LDFLAGS $($ldflags_filter "$@")
+}
+
+add_ldexeflags(){
+    append LDEXEFLAGS $($ldflags_filter "$@")
 }
 
 add_stripflags(){
@@ -1577,6 +1582,7 @@ ARCH_FEATURES="
     local_aligned_8
     local_aligned_16
     local_aligned_32
+    simd_align_16
 "
 
 BUILTIN_LIST="
@@ -1640,6 +1646,10 @@ HEADERS_LIST="
     unistd_h
     windows_h
     winsock2_h
+"
+
+INTRINSICS_LIST="
+    intrinsics_neon
 "
 
 MATH_FUNCS="
@@ -1773,6 +1783,7 @@ HAVE_LIST="
     $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
     $HEADERS_LIST
+    $INTRINSICS_LIST
     $MATH_FUNCS
     $SYSTEM_FUNCS
     $THREADS_LIST
@@ -1821,6 +1832,7 @@ CONFIG_EXTRA="
     huffyuvdsp
     huffyuvencdsp
     idctdsp
+    iirfilter
     intrax8
     lgplv3
     llauddsp
@@ -1935,6 +1947,7 @@ armv6_deps="arm"
 armv6t2_deps="arm"
 armv8_deps="aarch64"
 neon_deps_any="aarch64 arm"
+intrinsics_neon_deps="neon"
 vfp_deps_any="aarch64 arm"
 vfpv3_deps="vfp"
 
@@ -1985,8 +1998,7 @@ aligned_stack_if_any="aarch64 ppc x86"
 fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
-
-need_memalign="altivec neon sse"
+simd_align_16_if_any="altivec neon sse"
 
 # system capabilities
 
@@ -2016,7 +2028,7 @@ mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 
 # decoders / encoders
 aac_decoder_select="mdct sinewin"
-aac_encoder_select="audio_frame_queue mdct sinewin"
+aac_encoder_select="audio_frame_queue iirfilter mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
 ac3_fixed_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
@@ -2656,6 +2668,7 @@ else
     arch_default=$(uname -m)
 fi
 cpu="generic"
+intrinsics="none"
 
 # configurable options
 enable $PROGRAM_LIST
@@ -2827,6 +2840,9 @@ for opt do
     case "$opt" in
         --extra-ldflags=*)
             add_ldflags $optval
+        ;;
+        --extra-ldexeflags=*)
+            add_ldexeflags $optval
         ;;
         --extra-libs=*)
             add_extralibs $optval
@@ -4527,6 +4543,8 @@ EOF
 
 fi
 
+check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_neon
+
 check_ldflags -Wl,--as-needed
 
 if check_func dlopen; then
@@ -5173,7 +5191,7 @@ enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
-    enabled_any $need_memalign && enable memalign_hack
+    enabled $simd_align_16 && enable memalign_hack
 
 # add_dep lib dep
 # -> enable ${lib}_deps_${dep}
@@ -5201,6 +5219,8 @@ merge_deps() {
 }
 
 merge_deps libavfilter $FILTER_LIST
+
+map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
 
 for thread in $THREADS_LIST; do
     if enabled $thread; then
@@ -5382,6 +5402,7 @@ SRC_PATH:=\$(SRC_PATH:.%=..%)
 endif
 CC_IDENT=$cc_ident
 ARCH=$arch
+INTRINSICS=$intrinsics
 CC=$cc
 CXX=$cxx
 AS=$as
@@ -5418,6 +5439,7 @@ WINDRES=$windres
 DEPWINDRES=$dep_cc
 DOXYGEN=$doxygen
 LDFLAGS=$LDFLAGS
+LDEXEFLAGS=$LDEXEFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 ASMSTRIPFLAGS=$ASMSTRIPFLAGS
 YASMFLAGS=$YASMFLAGS
@@ -5626,6 +5648,6 @@ pkgconfig_generate libavformat   "FFmpeg container format library"      "$LIBAVF
 pkgconfig_generate libavdevice   "FFmpeg device handling library"       "$LIBAVDEVICE_VERSION"   "$extralibs"
 pkgconfig_generate libavfilter   "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION"   "$extralibs"
 pkgconfig_generate libpostproc   "FFmpeg postprocessing library"        "$LIBPOSTPROC_VERSION"   ""
-pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$extralibs"
+pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$LIBM"
 pkgconfig_generate libswscale    "FFmpeg image rescaling library"       "$LIBSWSCALE_VERSION"    "$LIBM"
 pkgconfig_generate libswresample "FFmpeg audio resampling library"      "$LIBSWRESAMPLE_VERSION" "$LIBM"

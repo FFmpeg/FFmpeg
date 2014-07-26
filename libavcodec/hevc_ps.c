@@ -568,20 +568,25 @@ static void set_default_scaling_list_data(ScalingList *sl)
     memcpy(sl->sl[2][4], default_scaling_list_inter, 64);
     memcpy(sl->sl[2][5], default_scaling_list_inter, 64);
     memcpy(sl->sl[3][0], default_scaling_list_intra, 64);
-    memcpy(sl->sl[3][1], default_scaling_list_inter, 64);
+    memcpy(sl->sl[3][1], default_scaling_list_intra, 64);
+    memcpy(sl->sl[3][2], default_scaling_list_intra, 64);
+    memcpy(sl->sl[3][3], default_scaling_list_inter, 64);
+    memcpy(sl->sl[3][4], default_scaling_list_inter, 64);
+    memcpy(sl->sl[3][5], default_scaling_list_inter, 64);
 }
 
-static int scaling_list_data(HEVCContext *s, ScalingList *sl)
+static int scaling_list_data(HEVCContext *s, ScalingList *sl, HEVCSPS *sps)
 {
     GetBitContext *gb = &s->HEVClc->gb;
-    uint8_t scaling_list_pred_mode_flag[4][6];
+    uint8_t scaling_list_pred_mode_flag;
     int32_t scaling_list_dc_coef[2][6];
-    int size_id, matrix_id, i, pos;
+    int size_id, matrix_id, pos;
+    int i;
 
     for (size_id = 0; size_id < 4; size_id++)
-        for (matrix_id = 0; matrix_id < (size_id == 3 ? 2 : 6); matrix_id++) {
-            scaling_list_pred_mode_flag[size_id][matrix_id] = get_bits1(gb);
-            if (!scaling_list_pred_mode_flag[size_id][matrix_id]) {
+        for (matrix_id = 0; matrix_id < 6; matrix_id += ((size_id == 3) ? 3 : 1)) {
+            scaling_list_pred_mode_flag = get_bits1(gb);
+            if (!scaling_list_pred_mode_flag) {
                 unsigned int delta = get_ue_golomb_long(gb);
                 /* Only need to handle non-zero delta. Zero means default,
                  * which should already be in the arrays. */
@@ -624,6 +629,20 @@ static int scaling_list_data(HEVCContext *s, ScalingList *sl)
                 }
             }
         }
+
+    if (sps->chroma_format_idc == 3) {
+        for (i = 0; i < 64; i++) {
+            sl->sl[3][1][i] = sl->sl[2][1][i];
+            sl->sl[3][2][i] = sl->sl[2][2][i];
+            sl->sl[3][4][i] = sl->sl[2][4][i];
+            sl->sl[3][5][i] = sl->sl[2][5][i];
+        }
+        sl->sl_dc[1][1] = sl->sl_dc[0][1];
+        sl->sl_dc[1][2] = sl->sl_dc[0][2];
+        sl->sl_dc[1][4] = sl->sl_dc[0][4];
+        sl->sl_dc[1][5] = sl->sl_dc[0][5];
+    }
+
 
     return 0;
 }
@@ -835,7 +854,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         set_default_scaling_list_data(&sps->scaling_list);
 
         if (get_bits1(gb)) {
-            ret = scaling_list_data(s, &sps->scaling_list);
+            ret = scaling_list_data(s, &sps->scaling_list, sps);
             if (ret < 0)
                 goto err;
         }
@@ -1069,10 +1088,6 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
         pps->log2_max_transform_skip_block_size = get_ue_golomb_long(gb) + 2;
     }
     pps->cross_component_prediction_enabled_flag = get_bits1(gb);
-    if (pps->cross_component_prediction_enabled_flag) {
-        av_log(s->avctx, AV_LOG_WARNING,
-               "cross_component_prediction_enabled_flag is not yet implemented.\n");
-    }
     pps->chroma_qp_offset_list_enabled_flag = get_bits1(gb);
     if (pps->chroma_qp_offset_list_enabled_flag) {
         pps->diff_cu_chroma_qp_offset_depth = get_ue_golomb_long(gb);
@@ -1281,7 +1296,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->scaling_list_data_present_flag = get_bits1(gb);
     if (pps->scaling_list_data_present_flag) {
         set_default_scaling_list_data(&pps->scaling_list);
-        ret = scaling_list_data(s, &pps->scaling_list);
+        ret = scaling_list_data(s, &pps->scaling_list, sps);
         if (ret < 0)
             goto err;
     }
@@ -1300,8 +1315,6 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         int pps_range_extensions_flag = get_bits1(gb);
         /* int pps_extension_7bits = */ get_bits(gb, 7);
         if (sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
-            av_log(s->avctx, AV_LOG_WARNING,
-                   "PPS extension flag is partially implemented.\n");
             pps_range_extensions(s, pps, sps);
         }
     }

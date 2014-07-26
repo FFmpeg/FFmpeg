@@ -593,7 +593,7 @@ static int ism_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     os->packets_written++;
-    return ff_write_chained(os->ctx, 0, pkt, s);
+    return ff_write_chained(os->ctx, 0, pkt, s, 0);
 }
 
 static int ism_write_trailer(AVFormatContext *s)

@@ -293,7 +293,7 @@ static int config_input(AVFilterLink *inlink)
     s->linesize = FFALIGN(inlink->w, 16);
     for (j = 0; j < 4; j++) {
         for (i = 0; i <= s->depth; i++) {
-            s->plane[i][j] = av_malloc(s->linesize * h * sizeof(s->plane[0][0][0]));
+            s->plane[i][j] = av_malloc_array(s->linesize, h * sizeof(s->plane[0][0][0]));
             if (!s->plane[i][j])
                 return AVERROR(ENOMEM);
         }

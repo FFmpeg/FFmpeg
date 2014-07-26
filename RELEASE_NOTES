@@ -103,7 +103,7 @@
      Other interesting new features including hqx video filter, a pixel art
      scaling filter; a fixed-point AC-3 decoder contributed by Imagination
      Technologies; an On2 TrueMotion VP7 video decoder; an HTML5 WebVTT
-     subtitle decoder that allows creation of WebVTT from any text-based
+     subtitle encoder that allows creation of WebVTT from any text-based
      subtitles; and an 1-bit Direct Stream Digital audio decoder.
 
  ┌────────────────────────────┐

@@ -31,11 +31,11 @@ typedef struct SAOParams {
     int offset_abs[3][4];   ///< sao_offset_abs
     int offset_sign[3][4];  ///< sao_offset_sign
 
-    int band_position[3];   ///< sao_band_position
+    uint8_t band_position[3];   ///< sao_band_position
 
     int eo_class[3];        ///< sao_eo_class
 
-    int offset_val[3][5];   ///<SaoOffsetVal
+    int16_t offset_val[3][5];   ///<SaoOffsetVal
 
     uint8_t type_idx[3];    ///< sao_type_idx
 } SAOParams;
@@ -97,20 +97,20 @@ typedef struct HEVCDSPContext {
                                          int ox1, intptr_t mx, intptr_t my, int width);
 
     void (*hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                    int *beta, int *tc,
+                                    int beta, int *tc,
                                     uint8_t *no_p, uint8_t *no_q);
     void (*hevc_v_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                    int *beta, int *tc,
+                                    int beta, int *tc,
                                     uint8_t *no_p, uint8_t *no_q);
     void (*hevc_h_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
                                       int *tc, uint8_t *no_p, uint8_t *no_q);
     void (*hevc_v_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
                                       int *tc, uint8_t *no_p, uint8_t *no_q);
     void (*hevc_h_loop_filter_luma_c)(uint8_t *pix, ptrdiff_t stride,
-                                      int *beta, int *tc,
+                                      int beta, int *tc,
                                       uint8_t *no_p, uint8_t *no_q);
     void (*hevc_v_loop_filter_luma_c)(uint8_t *pix, ptrdiff_t stride,
-                                      int *beta, int *tc,
+                                      int beta, int *tc,
                                       uint8_t *no_p, uint8_t *no_q);
     void (*hevc_h_loop_filter_chroma_c)(uint8_t *pix, ptrdiff_t stride,
                                         int *tc, uint8_t *no_p,

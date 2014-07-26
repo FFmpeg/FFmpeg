@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-07-23 - XXXXXXX - lavf 55.49.100 - avio.h
+  Add avio_read_to_bprint()
+
 2014-07-14 - 62227a7 - lavf 55.47.100 - avformat.h
   Add av_stream_get_parser()
 
@@ -34,6 +37,10 @@ API changes, most recent first:
   The proper way for providing a hint about the desired timebase to the muxers
   is now setting AVStream.time_base, instead of AVStream.codec.time_base as was
   done previously. The old method is now deprecated.
+
+2014-06-11 - 67d29da - lavc 55.66.101 - avcodec.h
+  Increase FF_INPUT_BUFFER_PADDING_SIZE to 32 due to some corner cases needing
+  it
 
 2014-06-10 - xxxxxxx - lavf 55.43.100 - avformat.h
   New field int64_t max_analyze_duration2 instead of deprecated

@@ -129,20 +129,6 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
     return 0;
 }
 
-static const double const_values[] = {
-    M_PI,
-    M_E,
-    FF_QP2LAMBDA,
-    0
-};
-
-static const char * const const_names[] = {
-    "PI",
-    "E",
-    "QP2LAMBDA",
-    0
-};
-
 static int hexchar2int(char c) {
     if (c >= '0' && c <= '9') return c - '0';
     if (c >= 'a' && c <= 'f') return c - 'a' + 10;
@@ -194,7 +180,7 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
 
 static int set_string_number(void *obj, void *target_obj, const AVOption *o, const char *val, void *dst)
 {
-    int ret = 0, notfirst = 0;
+    int ret = 0;
     int num, den;
     char c;
 
@@ -205,35 +191,58 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
     }
 
     for (;;) {
-        int i, den = 1;
+        int i = 0;
         char buf[256];
         int cmd = 0;
-        double d, num = 1;
+        double d;
         int64_t intnum = 1;
 
-        i = 0;
-        if (*val == '+' || *val == '-') {
-            if (o->type == AV_OPT_TYPE_FLAGS)
+        if (o->type == AV_OPT_TYPE_FLAGS) {
+            if (*val == '+' || *val == '-')
                 cmd = *(val++);
-            else if (!notfirst)
-                buf[i++] = *val;
+            for (; i < sizeof(buf) - 1 && val[i] && val[i] != '+' && val[i] != '-'; i++)
+                buf[i] = val[i];
+            buf[i] = 0;
         }
 
-        for (; i < sizeof(buf) - 1 && val[i] && val[i] != '+' && val[i] != '-'; i++)
-            buf[i] = val[i];
-        buf[i] = 0;
-
         {
-            const AVOption *o_named = av_opt_find(target_obj, buf, o->unit, 0, 0);
+            const AVOption *o_named = av_opt_find(target_obj, i ? buf : val, o->unit, 0, 0);
+            int res;
+            int ci = 0;
+            double const_values[64];
+            const char * const_names[64];
             if (o_named && o_named->type == AV_OPT_TYPE_CONST)
                 d = DEFAULT_NUMVAL(o_named);
-            else if (!strcmp(buf, "default")) d = DEFAULT_NUMVAL(o);
-            else if (!strcmp(buf, "max"    )) d = o->max;
-            else if (!strcmp(buf, "min"    )) d = o->min;
-            else if (!strcmp(buf, "none"   )) d = 0;
-            else if (!strcmp(buf, "all"    )) d = ~0;
             else {
-                int res = av_expr_parse_and_eval(&d, buf, const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, obj);
+                if (o->unit) {
+                    for (o_named = NULL; o_named = av_opt_next(target_obj, o_named); ) {
+                        if (o_named->type == AV_OPT_TYPE_CONST &&
+                            o_named->unit &&
+                            !strcmp(o_named->unit, o->unit)) {
+                            if (ci + 6 >= FF_ARRAY_ELEMS(const_values)) {
+                                av_log(obj, AV_LOG_ERROR, "const_values array too small for %s\n", o->unit);
+                                return AVERROR_PATCHWELCOME;
+                            }
+                            const_names [ci  ] = o_named->name;
+                            const_values[ci++] = DEFAULT_NUMVAL(o_named);
+                        }
+                    }
+                }
+                const_names [ci  ] = "default";
+                const_values[ci++] = DEFAULT_NUMVAL(o);
+                const_names [ci  ] = "max";
+                const_values[ci++] = o->max;
+                const_names [ci  ] = "min";
+                const_values[ci++] = o->min;
+                const_names [ci  ] = "none";
+                const_values[ci++] = 0;
+                const_names [ci  ] = "all";
+                const_values[ci++] = ~0;
+                const_names [ci] = NULL;
+                const_values[ci] = 0;
+
+                res = av_expr_parse_and_eval(&d, i ? buf : val, const_names,
+                                            const_values, NULL, NULL, NULL, NULL, NULL, 0, obj);
                 if (res < 0) {
                     av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\"\n", val);
                     return res;
@@ -244,18 +253,13 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
             read_number(o, dst, NULL, NULL, &intnum);
             if      (cmd == '+') d = intnum | (int64_t)d;
             else if (cmd == '-') d = intnum &~(int64_t)d;
-        } else {
-            read_number(o, dst, &num, &den, &intnum);
-            if      (cmd == '+') d = notfirst*num*intnum/den + d;
-            else if (cmd == '-') d = notfirst*num*intnum/den - d;
         }
 
         if ((ret = write_number(obj, o, dst, d, 1, 1)) < 0)
             return ret;
         val += i;
-        if (!*val)
+        if (!i || !*val)
             return 0;
-        notfirst = 1;
     }
 
     return 0;

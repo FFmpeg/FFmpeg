@@ -47,6 +47,11 @@ static int exif_add_metadata(AVCodecContext *avctx, int count, int type,
                              AVDictionary **metadata)
 {
     switch(type) {
+    case 0:
+        av_log(avctx, AV_LOG_WARNING,
+               "Invalid TIFF tag type 0 found for %s with size %d\n",
+               name, count);
+        return 0;
     case TIFF_DOUBLE   : return ff_tadd_doubles_metadata(count, name, sep, gb, le, metadata);
     case TIFF_SSHORT   : return ff_tadd_shorts_metadata(count, name, sep, gb, le, 1, metadata);
     case TIFF_SHORT    : return ff_tadd_shorts_metadata(count, name, sep, gb, le, 0, metadata);

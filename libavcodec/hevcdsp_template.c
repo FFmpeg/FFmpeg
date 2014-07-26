@@ -338,7 +338,7 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
     int offset_table[32] = { 0 };
     int k, y, x;
     int shift  = BIT_DEPTH - 5;
-    int *sao_offset_val = sao->offset_val[c_idx];
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
     int sao_left_class  = sao->band_position[c_idx];
 
     stride_dst /= sizeof(pixel);
@@ -368,7 +368,7 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
         { { -1, -1 }, {  1, 1 } }, // 45 degree
         { {  1, -1 }, { -1, 1 } }, // 135 degree
     };
-    int *sao_offset_val = sao->offset_val[c_idx];
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class    = sao->eo_class[c_idx];
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
@@ -406,7 +406,7 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     int x, y;
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
-    int *sao_offset_val = sao->offset_val[c_idx];
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class    = sao->eo_class[c_idx];
     int init_x = 0, init_y = 0, width = _width, height = _height;
 
@@ -459,7 +459,7 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
     int x, y;
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
-    int *sao_offset_val = sao->offset_val[c_idx];
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class    = sao->eo_class[c_idx];
     int init_x = 0, init_y = 0, width = _width, height = _height;
 
@@ -1564,13 +1564,15 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
 
 static void FUNC(hevc_loop_filter_luma)(uint8_t *_pix,
                                         ptrdiff_t _xstride, ptrdiff_t _ystride,
-                                        int *_beta, int *_tc,
+                                        int beta, int *_tc,
                                         uint8_t *_no_p, uint8_t *_no_q)
 {
     int d, j;
     pixel *pix        = (pixel *)_pix;
     ptrdiff_t xstride = _xstride / sizeof(pixel);
     ptrdiff_t ystride = _ystride / sizeof(pixel);
+
+    beta <<= BIT_DEPTH - 8;
 
     for (j = 0; j < 2; j++) {
         const int dp0  = abs(P2  - 2 * P1  + P0);
@@ -1579,7 +1581,6 @@ static void FUNC(hevc_loop_filter_luma)(uint8_t *_pix,
         const int dq3  = abs(TQ2 - 2 * TQ1 + TQ0);
         const int d0   = dp0 + dq0;
         const int d3   = dp3 + dq3;
-        const int beta = _beta[j] << (BIT_DEPTH - 8);
         const int tc   = _tc[j]   << (BIT_DEPTH - 8);
         const int no_p = _no_p[j];
         const int no_q = _no_q[j];
@@ -1706,7 +1707,7 @@ static void FUNC(hevc_v_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
 }
 
 static void FUNC(hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int *beta, int *tc, uint8_t *no_p,
+                                          int beta, int *tc, uint8_t *no_p,
                                           uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, stride, sizeof(pixel),
@@ -1714,7 +1715,7 @@ static void FUNC(hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
 }
 
 static void FUNC(hevc_v_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int *beta, int *tc, uint8_t *no_p,
+                                          int beta, int *tc, uint8_t *no_p,
                                           uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, sizeof(pixel), stride,

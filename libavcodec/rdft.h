@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_RDFT_H
+#if !defined(AVCODEC_RDFT_H) && (!defined(FFT_FLOAT) || FFT_FLOAT)
 #define AVCODEC_RDFT_H
 
 #include "config.h"
