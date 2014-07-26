@@ -2601,6 +2601,9 @@ static int hevc_frame_start(HEVCContext *s)
 
     s->frame->pict_type = 3 - s->sh.slice_type;
 
+    if (!IS_IRAP(s))
+        ff_hevc_bump_frame(s);
+
     av_frame_unref(s->output_frame);
     ret = ff_hevc_output_frame(s, s->output_frame, 0);
     if (ret < 0)

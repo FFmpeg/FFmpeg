@@ -719,6 +719,7 @@ typedef struct DBParams {
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
 #define HEVC_FRAME_FLAG_LONG_REF  (1 << 2)
+#define HEVC_FRAME_FLAG_BUMPING   (1 << 3)
 
 typedef struct HEVCFrame {
     AVFrame *frame;
@@ -1015,6 +1016,8 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
  * @return 1 if a frame was output, 0 otherwise
  */
 int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush);
+
+void ff_hevc_bump_frame(HEVCContext *s);
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags);
 
