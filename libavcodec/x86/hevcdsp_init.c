@@ -28,21 +28,19 @@
 #include "libavcodec/hevcdsp.h"
 #include "libavcodec/x86/hevcdsp.h"
 
+#define LFC_FUNC(DIR, DEPTH, OPT) \
+void ff_hevc_ ## DIR ## _loop_filter_chroma_ ## DEPTH ## _ ## OPT(uint8_t *pix, ptrdiff_t stride, int *tc, uint8_t *no_p, uint8_t *no_q);
 
-#define LFC_FUNC(DIR, DEPTH, OPT)                                        \
-void ff_hevc_ ## DIR ## _loop_filter_chroma_ ## DEPTH ## _ ## OPT(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
-
-#define LFL_FUNC(DIR, DEPTH, OPT)                                        \
-void ff_hevc_ ## DIR ## _loop_filter_luma_ ## DEPTH ## _ ## OPT(uint8_t *_pix, ptrdiff_t stride, int _beta, int *_tc, \
-uint8_t *_no_p, uint8_t *_no_q);
+#define LFL_FUNC(DIR, DEPTH, OPT) \
+void ff_hevc_ ## DIR ## _loop_filter_luma_ ## DEPTH ## _ ## OPT(uint8_t *pix, ptrdiff_t stride, int beta, int *tc, uint8_t *no_p, uint8_t *no_q);
 
 #define LFC_FUNCS(type, depth, opt) \
-LFC_FUNC(h, depth, opt)  \
-LFC_FUNC(v, depth, opt)
+    LFC_FUNC(h, depth, opt)  \
+    LFC_FUNC(v, depth, opt)
 
 #define LFL_FUNCS(type, depth, opt) \
-LFL_FUNC(h, depth, opt)  \
-LFL_FUNC(v, depth, opt)
+    LFL_FUNC(h, depth, opt)  \
+    LFL_FUNC(v, depth, opt)
 
 LFC_FUNCS(uint8_t,   8, sse2)
 LFC_FUNCS(uint8_t,  10, sse2)
@@ -456,16 +454,16 @@ mc_bi_w_funcs(qpel_hv, 12, sse4);
         PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
 
 
-void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
+void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
     if (bit_depth == 8) {
-        if (EXTERNAL_MMXEXT(mm_flags)) {
+        if (EXTERNAL_MMXEXT(cpu_flags)) {
             c->idct_dc[0] = ff_hevc_idct4x4_dc_8_mmxext;
             c->idct_dc[1] = ff_hevc_idct8x8_dc_8_mmxext;
         }
-        if (EXTERNAL_SSE2(mm_flags)) {
+        if (EXTERNAL_SSE2(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
             c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
             if (ARCH_X86_64) {
@@ -477,11 +475,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_sse2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_sse2;
         }
-        if (EXTERNAL_SSSE3(mm_flags) && ARCH_X86_64) {
+        if (EXTERNAL_SSSE3(cpu_flags) && ARCH_X86_64) {
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
         }
-        if (EXTERNAL_SSE4(mm_flags) && ARCH_X86_64) {
+        if (EXTERNAL_SSE4(cpu_flags) && ARCH_X86_64) {
 
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels,  8, sse4);
             EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,      8, sse4);
@@ -493,16 +491,16 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
             QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
         }
-        if (EXTERNAL_AVX2(mm_flags)) {
+        if (EXTERNAL_AVX2(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_avx2;
         }
     } else if (bit_depth == 10) {
-        if (EXTERNAL_MMXEXT(mm_flags)) {
+        if (EXTERNAL_MMXEXT(cpu_flags)) {
             c->idct_dc[0] = ff_hevc_idct4x4_dc_10_mmxext;
             c->idct_dc[1] = ff_hevc_idct8x8_dc_10_mmxext;
         }
-        if (EXTERNAL_SSE2(mm_flags)) {
+        if (EXTERNAL_SSE2(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
             c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
             if (ARCH_X86_64) {
@@ -514,11 +512,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct16x16_dc_10_sse2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_10_sse2;
         }
-        if (EXTERNAL_SSSE3(mm_flags) && ARCH_X86_64) {
+        if (EXTERNAL_SSSE3(cpu_flags) && ARCH_X86_64) {
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
         }
-        if (EXTERNAL_SSE4(mm_flags) && ARCH_X86_64) {
+        if (EXTERNAL_SSE4(cpu_flags) && ARCH_X86_64) {
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 10, sse4);
             EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     10, sse4);
             EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     10, sse4);
@@ -529,13 +527,13 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10, sse4);
             QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10, sse4);
         }
-        if (EXTERNAL_AVX2(mm_flags)) {
+        if (EXTERNAL_AVX2(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct16x16_dc_10_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_10_avx2;
 
         }
     } else if (bit_depth == 12) {
-        if (EXTERNAL_SSE2(mm_flags)) {
+        if (EXTERNAL_SSE2(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_12_sse2;
             c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_12_sse2;
             if (ARCH_X86_64) {
@@ -543,11 +541,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_12_sse2;
             }
         }
-        if (EXTERNAL_SSSE3(mm_flags) && ARCH_X86_64) {
+        if (EXTERNAL_SSSE3(cpu_flags) && ARCH_X86_64) {
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_12_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_12_ssse3;
         }
-        if (EXTERNAL_SSE4(mm_flags) && ARCH_X86_64) {
+        if (EXTERNAL_SSE4(cpu_flags) && ARCH_X86_64) {
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 12, sse4);
             EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     12, sse4);
             EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     12, sse4);
