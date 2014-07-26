@@ -117,6 +117,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         c->sample_rate = 44100;
         c->channels    = 2;
         c->channel_layout = AV_CH_LAYOUT_STEREO;
+        ost->st->time_base = (AVRational){ 1, c->sample_rate };
         break;
 
     case AVMEDIA_TYPE_VIDEO:
@@ -130,8 +131,9 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
          * of which frame timestamps are represented. For fixed-fps content,
          * timebase should be 1/framerate and timestamp increments should be
          * identical to 1. */
-        c->time_base.den = STREAM_FRAME_RATE;
-        c->time_base.num = 1;
+        ost->st->time_base = (AVRational){ 1, STREAM_FRAME_RATE };
+        c->time_base       = ost->st->time_base;
+
         c->gop_size      = 12; /* emit one intra frame every twelve frames at most */
         c->pix_fmt       = STREAM_PIX_FMT;
         if (c->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
