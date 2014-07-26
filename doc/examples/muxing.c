@@ -241,7 +241,6 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
                                        c->sample_rate, ost->frame->nb_samples);
 
     /* create resampler context */
-    if (c->sample_fmt != AV_SAMPLE_FMT_S16) {
         ost->swr_ctx = swr_alloc();
         if (!ost->swr_ctx) {
             fprintf(stderr, "Could not allocate resampler context\n");
@@ -261,7 +260,6 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
             fprintf(stderr, "Failed to initialize the resampling context\n");
             exit(1);
         }
-    }
 }
 
 /* Prepare a 16 bit dummy audio frame of 'frame_size' samples and
@@ -318,7 +316,6 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 
     if (frame) {
         /* convert samples from native format to destination codec format, using the resampler */
-        if (ost->swr_ctx) {
             /* compute destination number of samples */
             dst_nb_samples = av_rescale_rnd(swr_get_delay(ost->swr_ctx, c->sample_rate) + frame->nb_samples,
                                             c->sample_rate, c->sample_rate, AV_ROUND_UP);
@@ -333,9 +330,6 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
                 exit(1);
             }
             frame = ost->tmp_frame;
-        } else {
-            dst_nb_samples = frame->nb_samples;
-        }
 
         frame->pts = av_rescale_q(ost->samples_count, (AVRational){1, c->sample_rate}, c->time_base);
         ost->samples_count += dst_nb_samples;
