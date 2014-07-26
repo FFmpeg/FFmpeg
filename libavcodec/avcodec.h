@@ -3800,7 +3800,7 @@ typedef struct AVCodecParser {
     struct AVCodecParser *next;
 } AVCodecParser;
 
-AVCodecParser *av_parser_next(AVCodecParser *c);
+AVCodecParser *av_parser_next(const AVCodecParser *c);
 
 void av_register_codec_parser(AVCodecParser *parser);
 AVCodecParserContext *av_parser_init(int codec_id);
@@ -4281,7 +4281,7 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                const uint8_t *buf, int buf_size, int keyframe);
 void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
 
-AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f);
+AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f);
 
 /* memory */
 
@@ -4343,7 +4343,7 @@ void av_register_hwaccel(AVHWAccel *hwaccel);
  * if hwaccel is non-NULL, returns the next registered hardware accelerator
  * after hwaccel, or NULL if hwaccel is the last one.
  */
-AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel);
+AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel);
 
 
 /**

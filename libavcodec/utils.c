@@ -2279,7 +2279,7 @@ void av_register_hwaccel(AVHWAccel *hwaccel)
     hwaccel->next = NULL;
 }
 
-AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel)
+AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel)
 {
     return hwaccel ? hwaccel->next : first_hwaccel;
 }
