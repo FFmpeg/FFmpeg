@@ -179,15 +179,18 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
 int samples_count;
 
-static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost)
+static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
 {
     AVCodecContext *c;
     int ret;
+    AVDictionary *opt = NULL;
 
     c = ost->st->codec;
 
     /* open it */
-    ret = avcodec_open2(c, codec, NULL);
+    av_dict_copy(&opt, opt_arg, 0);
+    ret = avcodec_open2(c, codec, &opt);
+    av_dict_free(&opt);
     if (ret < 0) {
         fprintf(stderr, "Could not open audio codec: %s\n", av_err2str(ret));
         exit(1);
@@ -377,13 +380,17 @@ static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
     return picture;
 }
 
-static void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost)
+static void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
 {
     int ret;
     AVCodecContext *c = ost->st->codec;
+    AVDictionary *opt = NULL;
+
+    av_dict_copy(&opt, opt_arg, 0);
 
     /* open the codec */
-    ret = avcodec_open2(c, codec, NULL);
+    ret = avcodec_open2(c, codec, &opt);
+    av_dict_free(&opt);
     if (ret < 0) {
         fprintf(stderr, "Could not open video codec: %s\n", av_err2str(ret));
         exit(1);
@@ -555,11 +562,12 @@ int main(int argc, char **argv)
     int ret;
     int have_video = 0, have_audio = 0;
     int encode_video = 0, encode_audio = 0;
+    AVDictionary *opt = NULL;
 
     /* Initialize libavcodec, and register all codecs and formats. */
     av_register_all();
 
-    if (argc != 2) {
+    if (argc < 2) {
         printf("usage: %s output_file\n"
                "API example program to output a media file with libavformat.\n"
                "This program generates a synthetic audio and video stream, encodes and\n"
@@ -571,6 +579,9 @@ int main(int argc, char **argv)
     }
 
     filename = argv[1];
+    if (argc > 3 && !strcmp(argv[2], "-flags")) {
+        av_dict_set(&opt, argv[2], argv[3], 0);
+    }
 
     /* allocate the output media context */
     avformat_alloc_output_context2(&oc, NULL, NULL, filename);
@@ -599,10 +610,10 @@ int main(int argc, char **argv)
     /* Now that all the parameters are set, we can open the audio and
      * video codecs and allocate the necessary encode buffers. */
     if (have_video)
-        open_video(oc, video_codec, &video_st);
+        open_video(oc, video_codec, &video_st, opt);
 
     if (have_audio)
-        open_audio(oc, audio_codec, &audio_st);
+        open_audio(oc, audio_codec, &audio_st, opt);
 
     av_dump_format(oc, 0, filename, 1);
 
@@ -617,7 +628,7 @@ int main(int argc, char **argv)
     }
 
     /* Write the stream header, if any. */
-    ret = avformat_write_header(oc, NULL);
+    ret = avformat_write_header(oc, &opt);
     if (ret < 0) {
         fprintf(stderr, "Error occurred when opening output file: %s\n",
                 av_err2str(ret));
