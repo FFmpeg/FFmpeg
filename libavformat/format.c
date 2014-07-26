@@ -32,7 +32,7 @@ static AVInputFormat *first_iformat = NULL;
 /** head of registered output format linked list */
 static AVOutputFormat *first_oformat = NULL;
 
-AVInputFormat *av_iformat_next(AVInputFormat *f)
+AVInputFormat *av_iformat_next(const AVInputFormat *f)
 {
     if (f)
         return f->next;
@@ -40,7 +40,7 @@ AVInputFormat *av_iformat_next(AVInputFormat *f)
         return first_iformat;
 }
 
-AVOutputFormat *av_oformat_next(AVOutputFormat *f)
+AVOutputFormat *av_oformat_next(const AVOutputFormat *f)
 {
     if (f)
         return f->next;
