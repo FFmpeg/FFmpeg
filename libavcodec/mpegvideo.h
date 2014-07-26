@@ -62,9 +62,6 @@ enum OutputFormat {
     FMT_MJPEG,
 };
 
-#define QMAT_SHIFT_MMX 16
-#define QMAT_SHIFT 21
-
 #define MAX_FCODE 7
 #define MAX_MV 4096
 
