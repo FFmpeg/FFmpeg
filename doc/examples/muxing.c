@@ -178,9 +178,38 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 /**************************************************************/
 /* audio output */
 
+static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt,
+                                  uint64_t channel_layout,
+                                  int sample_rate, int nb_samples)
+{
+    AVFrame *frame = av_frame_alloc();
+    int ret;
+
+    if (!frame) {
+        fprintf(stderr, "Error allocating an audio frame\n");
+        exit(1);
+    }
+
+    frame->format = sample_fmt;
+    frame->channel_layout = channel_layout;
+    frame->sample_rate = sample_rate;
+    frame->nb_samples = nb_samples;
+
+    if (nb_samples) {
+        ret = av_frame_get_buffer(frame, 0);
+        if (ret < 0) {
+            fprintf(stderr, "Error allocating an audio buffer\n");
+            exit(1);
+        }
+    }
+
+    return frame;
+}
+
 static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
 {
     AVCodecContext *c;
+    int nb_samples;
     int ret;
     AVDictionary *opt = NULL;
 
@@ -201,27 +230,15 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
     /* increment frequency by 110 Hz per second */
     ost->tincr2 = 2 * M_PI * 110.0 / c->sample_rate / c->sample_rate;
 
-    ost->frame = av_frame_alloc();
-    if (!ost->frame)
-        exit(1);
-
-    ost->frame->sample_rate    = c->sample_rate;
-    ost->frame->format         = AV_SAMPLE_FMT_S16;
-    ost->frame->channel_layout = c->channel_layout;
-
     if (c->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE)
-        ost->frame->nb_samples = 10000;
+        nb_samples = 10000;
     else
-        ost->frame->nb_samples = c->frame_size;
+        nb_samples = c->frame_size;
 
-    ost->tmp_frame = av_frame_alloc();
-    if (!ost->frame)
-        exit(1);
-
-    ost->tmp_frame->sample_rate    = c->sample_rate;
-    ost->tmp_frame->format         = c->sample_fmt;
-    ost->tmp_frame->channel_layout = c->channel_layout;
-    ost->tmp_frame->nb_samples     = ost->frame->nb_samples;
+    ost->frame     = alloc_audio_frame(AV_SAMPLE_FMT_S16, c->channel_layout,
+                                       c->sample_rate, nb_samples);
+    ost->tmp_frame = alloc_audio_frame(c->sample_fmt, c->channel_layout,
+                                       c->sample_rate, ost->frame->nb_samples);
 
     /* create resampler context */
     if (c->sample_fmt != AV_SAMPLE_FMT_S16) {
@@ -244,17 +261,6 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
             fprintf(stderr, "Failed to initialize the resampling context\n");
             exit(1);
         }
-    }
-
-    ret = av_frame_get_buffer(ost->frame, 0);
-    if (ret < 0) {
-        fprintf(stderr, "Could not allocate an audio frame.\n");
-        exit(1);
-    }
-    ret = av_frame_get_buffer(ost->tmp_frame, 0);
-    if (ret < 0) {
-        fprintf(stderr, "Could not allocate an audio frame.\n");
-        exit(1);
     }
 }
 
