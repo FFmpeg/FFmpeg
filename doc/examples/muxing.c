@@ -266,21 +266,13 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
  * 'nb_channels' channels. */
 static AVFrame *get_audio_frame(OutputStream *ost)
 {
-    int j, i, v, ret;
+    int j, i, v;
     int16_t *q = (int16_t*)ost->frame->data[0];
 
     /* check if we want to generate more frames */
     if (av_compare_ts(ost->next_pts, ost->st->codec->time_base,
                       STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
         return NULL;
-
-    /* when we pass a frame to the encoder, it may keep a reference to it
-     * internally;
-     * make sure we do not overwrite it here
-     */
-    ret = av_frame_make_writable(ost->frame);
-    if (ret < 0)
-        exit(1);
 
     for (j = 0; j < ost->frame->nb_samples; j++) {
         v = (int)(sin(ost->t) * 10000);
@@ -320,6 +312,14 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
             dst_nb_samples = av_rescale_rnd(swr_get_delay(ost->swr_ctx, c->sample_rate) + frame->nb_samples,
                                             c->sample_rate, c->sample_rate, AV_ROUND_UP);
             av_assert0(dst_nb_samples == frame->nb_samples);
+
+        /* when we pass a frame to the encoder, it may keep a reference to it
+         * internally;
+         * make sure we do not overwrite it here
+         */
+        ret = av_frame_make_writable(ost->tmp_frame);
+        if (ret < 0)
+            exit(1);
 
             /* convert to destination format */
             ret = swr_convert(ost->swr_ctx,
