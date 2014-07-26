@@ -383,7 +383,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
             if (bs0 || bs1) {
                 const int qp = (get_qPy(s, x - 1, y)     + get_qPy(s, x, y)     + 1) >> 1;
 
-                beta    = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
+                beta = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
+
                 tc[0]   = bs0 ? TC_CALC(qp, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp, bs1) : 0;
                 src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift)];
@@ -450,7 +451,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 tc_offset   = x >= x0 ? cur_tc_offset : left_tc_offset;
                 beta_offset = x >= x0 ? cur_beta_offset : left_beta_offset;
 
-                beta    = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
+                beta = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
                 tc[0]   = bs0 ? TC_CALC(qp, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp, bs1) : 0;
                 src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift)];
