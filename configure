@@ -4765,7 +4765,7 @@ enabled libopenjpeg       && { check_lib openjpeg-1.5/openjpeg.h opj_version -lo
                                check_lib openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
                                die "ERROR: libopenjpeg not found"; }
 enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
-enabled libpulse          && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
+enabled libpulse          && require_pkg_config libpulse pulse/pulseaudio.h pa_context_new
 enabled libquvi           && require_pkg_config libquvi quvi/quvi.h quvi_init
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
