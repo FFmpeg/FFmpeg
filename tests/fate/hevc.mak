@@ -19,6 +19,7 @@ HEVC_SAMPLES =                  \
     CIP_A_Panasonic_3           \
     cip_B_NEC_3                 \
     CIP_C_Panasonic_2           \
+    CONFWIN_A_Sony_1            \
     DBLK_A_SONY_3               \
     DBLK_B_SONY_3               \
     DBLK_C_SONY_3               \
