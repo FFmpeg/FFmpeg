@@ -227,6 +227,9 @@
     <ClCompile Include="..\libavcodec\jrevdct.c">
       <ObjectFileName>$(IntDir)\libavcodec_jrevdct.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\iirfilter.c">
+      <ObjectFileName>$(IntDir)\libavcodec_iirfilter.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\intrax8.c">
       <ObjectFileName>$(IntDir)\libavcodec_intrax8.obj</ObjectFileName>
     </ClCompile>
@@ -385,9 +388,6 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\psymodel.c">
       <ObjectFileName>$(IntDir)\libavcodec_psymodel.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\iirfilter.c">
-      <ObjectFileName>$(IntDir)\libavcodec_iirfilter.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\aasc.c">
       <ObjectFileName>$(IntDir)\libavcodec_aasc.obj</ObjectFileName>

@@ -107,6 +107,7 @@ EXPORTS
     avio_rb32
     avio_rb64
     avio_read
+    avio_read_to_bprint
     avio_rl16
     avio_rl24
     avio_rl32
