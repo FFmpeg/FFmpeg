@@ -55,6 +55,7 @@ typedef struct OutputStream {
 
     /* pts of the next frame that will be generated */
     int64_t next_pts;
+    int samples_count;
 
     AVFrame *frame;
     AVFrame *tmp_frame;
@@ -176,8 +177,6 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
 /**************************************************************/
 /* audio output */
-
-int samples_count;
 
 static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
 {
@@ -332,8 +331,8 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
             dst_nb_samples = frame->nb_samples;
         }
 
-        frame->pts = av_rescale_q(samples_count, (AVRational){1, c->sample_rate}, c->time_base);
-        samples_count += dst_nb_samples;
+        frame->pts = av_rescale_q(ost->samples_count, (AVRational){1, c->sample_rate}, c->time_base);
+        ost->samples_count += dst_nb_samples;
     }
 
     ret = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
