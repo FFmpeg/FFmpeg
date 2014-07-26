@@ -1,12 +1,15 @@
 HEVC_SAMPLES =                  \
     AMP_A_Samsung_4             \
+    AMP_A_Samsung_6             \
     AMP_B_Samsung_4             \
+    AMP_B_Samsung_6             \
     AMP_D_Hisilicon             \
     AMP_E_Hisilicon             \
     AMP_F_Hisilicon_3           \
     AMVP_A_MTK_4                \
     AMVP_B_MTK_4                \
     AMVP_C_Samsung_4            \
+    AMVP_C_Samsung_6            \
     BUMPING_A_ericsson_1        \
     CAINIT_A_SHARP_4            \
     CAINIT_B_SHARP_4            \
@@ -39,6 +42,7 @@ HEVC_SAMPLES =                  \
     EXT_A_ericsson_4            \
     FILLER_A_Sony_1             \
     HRD_A_Fujitsu_2             \
+    HRD_A_Fujitsu_3             \
     INITQP_A_Sony_1             \
     ipcm_A_NEC_3                \
     ipcm_B_NEC_3                \
@@ -103,7 +107,9 @@ HEVC_SAMPLES =                  \
     SAO_A_MediaTek_4            \
     SAO_B_MediaTek_5            \
     SAO_C_Samsung_4             \
+    SAO_C_Samsung_5             \
     SAO_D_Samsung_4             \
+    SAO_D_Samsung_5             \
     SAO_E_Canon_4               \
     SAO_F_Canon_3               \
     SAO_G_Canon_3               \
@@ -114,8 +120,10 @@ HEVC_SAMPLES =                  \
     SLIST_C_Sony_3              \
     SLIST_D_Sony_9              \
     SLPPLP_A_VIDYO_1            \
+    SLPPLP_A_VIDYO_2            \
     STRUCT_A_Samsung_5          \
     STRUCT_B_Samsung_4          \
+    STRUCT_B_Samsung_6          \
     TILES_A_Cisco_2             \
     TILES_B_Cisco_1             \
     TMVP_A_MS_3                 \
@@ -124,6 +132,7 @@ HEVC_SAMPLES =                  \
     TSKIP_A_MS_3                \
     TUSIZE_A_Samsung_1          \
     VPSID_A_VIDYO_1             \
+    VPSID_A_VIDYO_2             \
     WP_A_Toshiba_3              \
     WP_B_Toshiba_3              \
     WPP_A_ericsson_MAIN_2       \
