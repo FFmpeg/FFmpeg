@@ -26,7 +26,7 @@
 
 static AVBitStreamFilter *first_bitstream_filter = NULL;
 
-AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f)
+AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f)
 {
     if (f)
         return f->next;

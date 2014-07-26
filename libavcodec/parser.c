@@ -30,7 +30,7 @@
 
 static AVCodecParser *av_first_parser = NULL;
 
-AVCodecParser *av_parser_next(AVCodecParser *p)
+AVCodecParser *av_parser_next(const AVCodecParser *p)
 {
     if (p)
         return p->next;
