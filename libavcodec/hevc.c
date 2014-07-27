@@ -905,7 +905,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 return AVERROR_INVALIDDATA;
             }
 
-            ff_hevc_set_qPy(s, x0, y0, cb_xBase, cb_yBase, log2_cb_size);
+            ff_hevc_set_qPy(s, cb_xBase, cb_yBase, log2_cb_size);
         }
 
         if (s->sh.cu_chroma_qp_offset_enabled_flag && cbf_chroma &&
@@ -2115,7 +2115,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     }
 
     if (s->pps->cu_qp_delta_enabled_flag && lc->tu.is_cu_qp_delta_coded == 0)
-        ff_hevc_set_qPy(s, x0, y0, x0, y0, log2_cb_size);
+        ff_hevc_set_qPy(s, x0, y0, log2_cb_size);
 
     x = y_cb * min_cb_width + x_cb;
     for (y = 0; y < length; y++) {
