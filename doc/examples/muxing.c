@@ -581,7 +581,7 @@ int main(int argc, char **argv)
 
     filename = argv[1];
     if (argc > 3 && !strcmp(argv[2], "-flags")) {
-        av_dict_set(&opt, argv[2], argv[3], 0);
+        av_dict_set(&opt, argv[2]+1, argv[3], 0);
     }
 
     /* allocate the output media context */
