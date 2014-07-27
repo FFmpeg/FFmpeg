@@ -240,7 +240,7 @@ int ff_check_interrupt(AVIOInterruptCB *cb);
  *
  * @param prev result of the previous call to this functions or NULL.
  */
-URLProtocol *ffurl_protocol_next(URLProtocol *prev);
+URLProtocol *ffurl_protocol_next(const URLProtocol *prev);
 
 /* udp.c */
 int ff_udp_set_remote_url(URLContext *h, const char *uri);
