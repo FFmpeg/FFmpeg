@@ -1420,9 +1420,7 @@ do {                                                                            
                 }
         }
         if (!s->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size,
-                                                  lc->slice_or_tiles_up_boundary,
-                                                  lc->slice_or_tiles_left_boundary);
+            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
             if (s->pps->transquant_bypass_enable_flag &&
                 lc->cu.cu_transquant_bypass_flag)
                 set_deblocking_bypass(s, x0, y0, log2_trafo_size);
@@ -1448,11 +1446,8 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     const uint8_t *pcm = skip_bytes(&lc->cc, (length + 7) >> 3);
     int ret;
 
-    if (!s->sh.disable_deblocking_filter_flag) {
-        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                              lc->slice_or_tiles_up_boundary,
-                                              lc->slice_or_tiles_left_boundary);
-    }
+    if (!s->sh.disable_deblocking_filter_flag)
+        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
 
     ret = init_get_bits(&gb, pcm, length);
     if (ret < 0)
@@ -2100,9 +2095,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
 
         if (!s->sh.disable_deblocking_filter_flag)
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                                  lc->slice_or_tiles_up_boundary,
-                                                  lc->slice_or_tiles_left_boundary);
+            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
     } else {
         if (s->sh.slice_type != I_SLICE)
             lc->cu.pred_mode = ff_hevc_pred_mode_decode(s);
@@ -2185,9 +2178,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                     return ret;
             } else {
                 if (!s->sh.disable_deblocking_filter_flag)
-                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                                          lc->slice_or_tiles_up_boundary,
-                                                          lc->slice_or_tiles_left_boundary);
+                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
             }
         }
     }
@@ -2265,9 +2256,6 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
     int ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
     int ctb_addr_in_slice = ctb_addr_rs - s->sh.slice_addr;
 
-    int tile_left_boundary, tile_up_boundary;
-    int slice_left_boundary, slice_up_boundary;
-
     s->tab_slice_address[ctb_addr_rs] = s->sh.slice_addr;
 
     if (s->pps->entropy_coding_sync_enabled_flag) {
@@ -2287,25 +2275,25 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
 
     lc->end_of_tiles_y = FFMIN(y_ctb + ctb_size, s->sps->height);
 
+    lc->boundary_flags = 0;
     if (s->pps->tiles_enabled_flag) {
-        tile_left_boundary  = x_ctb > 0 &&
-                              s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - 1]];
-        slice_left_boundary = x_ctb > 0 &&
-                              s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1];
-        tile_up_boundary  = y_ctb > 0 &&
-                            s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]];
-        slice_up_boundary = y_ctb > 0 &&
-                            s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width];
+        if (x_ctb > 0 && s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - 1]])
+            lc->boundary_flags |= BOUNDARY_LEFT_TILE;
+        if (x_ctb > 0 && s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - 1])
+            lc->boundary_flags |= BOUNDARY_LEFT_SLICE;
+        if (y_ctb > 0 && s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]])
+            lc->boundary_flags |= BOUNDARY_UPPER_TILE;
+        if (y_ctb > 0 && s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width])
+            lc->boundary_flags |= BOUNDARY_UPPER_SLICE;
     } else {
-        tile_left_boundary  =
-        tile_up_boundary    = 1;
-        slice_left_boundary = ctb_addr_in_slice > 0;
-        slice_up_boundary   = ctb_addr_in_slice >= s->sps->ctb_width;
+        if (!ctb_addr_in_slice > 0)
+            lc->boundary_flags |= BOUNDARY_LEFT_SLICE;
+        if (ctb_addr_in_slice < s->sps->ctb_width)
+            lc->boundary_flags |= BOUNDARY_UPPER_SLICE;
     }
-    lc->slice_or_tiles_left_boundary = (!slice_left_boundary) + (!tile_left_boundary << 1);
-    lc->slice_or_tiles_up_boundary   = (!slice_up_boundary + (!tile_up_boundary << 1));
-    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) && tile_left_boundary);
-    lc->ctb_up_flag   = ((y_ctb > 0) && (ctb_addr_in_slice >= s->sps->ctb_width) && tile_up_boundary);
+
+    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) && !(lc->boundary_flags & BOUNDARY_LEFT_TILE));
+    lc->ctb_up_flag   = ((y_ctb > 0) && (ctb_addr_in_slice >= s->sps->ctb_width) && !(lc->boundary_flags & BOUNDARY_UPPER_TILE));
     lc->ctb_up_right_flag = ((y_ctb > 0)  && (ctb_addr_in_slice+1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1 - s->sps->ctb_width]]));
     lc->ctb_up_left_flag = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - s->sps->ctb_width]]));
 }

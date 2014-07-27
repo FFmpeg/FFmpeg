@@ -584,10 +584,9 @@ static int boundary_strength(HEVCContext *s, MvField *curr,
 }
 
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
-                                           int log2_trafo_size,
-                                           int slice_or_tiles_up_boundary,
-                                           int slice_or_tiles_left_boundary)
+                                           int log2_trafo_size)
 {
+    HEVCLocalContext *lc = &s->HEVClc;
     MvField *tab_mvf     = s->ref->tab_mvf;
     int log2_min_pu_size = s->sps->log2_min_pu_size;
     int log2_min_tu_size = s->sps->log2_min_tb_size;
@@ -616,11 +615,11 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
             bs = boundary_strength(s, curr, curr_cbf_luma,
                                    top, top_cbf_luma, top_refPicList, 1);
             if (!s->sh.slice_loop_filter_across_slices_enabled_flag &&
-                (slice_or_tiles_up_boundary & 1) &&
+                lc->boundary_flags & BOUNDARY_UPPER_SLICE &&
                 (y0 % (1 << s->sps->log2_ctb_size)) == 0)
                 bs = 0;
             else if (!s->pps->loop_filter_across_tiles_enabled_flag &&
-                     (slice_or_tiles_up_boundary & 2) &&
+                     lc->boundary_flags & BOUNDARY_UPPER_TILE &&
                      (y0 % (1 << s->sps->log2_ctb_size)) == 0)
                 bs = 0;
             if (bs)
@@ -675,11 +674,11 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
             bs = boundary_strength(s, curr, curr_cbf_luma,
                                    left, left_cbf_luma, left_refPicList, 1);
             if (!s->sh.slice_loop_filter_across_slices_enabled_flag &&
-                (slice_or_tiles_left_boundary & 1) &&
+                lc->boundary_flags & BOUNDARY_LEFT_SLICE &&
                 (x0 % (1 << s->sps->log2_ctb_size)) == 0)
                 bs = 0;
             else if (!s->pps->loop_filter_across_tiles_enabled_flag &&
-                     (slice_or_tiles_left_boundary & 2) &&
+                     lc->boundary_flags & BOUNDARY_LEFT_TILE &&
                      (x0 % (1 << s->sps->log2_ctb_size)) == 0)
                 bs = 0;
             if (bs)
