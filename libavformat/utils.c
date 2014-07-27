@@ -4171,7 +4171,7 @@ int64_t ff_iso8601_to_unix_time(const char *datestr)
         return av_timegm(&time1);
 }
 
-int avformat_query_codec(AVOutputFormat *ofmt, enum AVCodecID codec_id,
+int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
                          int std_compliance)
 {
     if (ofmt) {

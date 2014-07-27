@@ -2584,7 +2584,8 @@ int av_match_ext(const char *filename, const char *extensions);
  * @return 1 if codec with ID codec_id can be stored in ofmt, 0 if it cannot.
  *         A negative number if this information is not available.
  */
-int avformat_query_codec(AVOutputFormat *ofmt, enum AVCodecID codec_id, int std_compliance);
+int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
+                         int std_compliance);
 
 /**
  * @defgroup riff_fourcc RIFF FourCCs
