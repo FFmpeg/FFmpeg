@@ -1448,9 +1448,11 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     const uint8_t *pcm = skip_bytes(&lc->cc, (length + 7) >> 3);
     int ret;
 
-    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                          lc->slice_or_tiles_up_boundary,
-                                          lc->slice_or_tiles_left_boundary);
+    if (!s->sh.disable_deblocking_filter_flag) {
+        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
+                                              lc->slice_or_tiles_up_boundary,
+                                              lc->slice_or_tiles_left_boundary);
+    }
 
     ret = init_get_bits(&gb, pcm, length);
     if (ret < 0)
