@@ -5191,7 +5191,7 @@ enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
-    enabled $simd_align_16 && enable memalign_hack
+    enabled simd_align_16 && enable memalign_hack
 
 # add_dep lib dep
 # -> enable ${lib}_deps_${dep}
