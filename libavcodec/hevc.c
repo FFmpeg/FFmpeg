@@ -166,7 +166,6 @@ static void pic_arrays_free(HEVCContext *s)
 {
     av_freep(&s->sao);
     av_freep(&s->deblock);
-    av_freep(&s->split_cu_flag);
 
     av_freep(&s->skip_flag);
     av_freep(&s->tab_ct_depth);
@@ -192,7 +191,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     int log2_min_cb_size = sps->log2_min_cb_size;
     int width            = sps->width;
     int height           = sps->height;
-    int pic_size         = width * height;
     int pic_size_in_ctb  = ((width  >> log2_min_cb_size) + 1) *
                            ((height >> log2_min_cb_size) + 1);
     int ctb_count        = sps->ctb_width * sps->ctb_height;
@@ -203,8 +201,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->sao           = av_mallocz_array(ctb_count, sizeof(*s->sao));
     s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
-    s->split_cu_flag = av_malloc(pic_size);
-    if (!s->sao || !s->deblock || !s->split_cu_flag)
+    if (!s->sao || !s->deblock)
         goto fail;
 
     s->skip_flag    = av_malloc(pic_size_in_ctb);
@@ -2234,16 +2231,15 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
 {
     HEVCLocalContext *lc = &s->HEVClc;
     const int cb_size    = 1 << log2_cb_size;
+    int split_cu;
 
     lc->ct.depth = cb_depth;
     if (x0 + cb_size <= s->sps->width  &&
         y0 + cb_size <= s->sps->height &&
         log2_cb_size > s->sps->log2_min_cb_size) {
-        SAMPLE(s->split_cu_flag, x0, y0) =
-            ff_hevc_split_coding_unit_flag_decode(s, cb_depth, x0, y0);
+        split_cu = ff_hevc_split_coding_unit_flag_decode(s, cb_depth, x0, y0);
     } else {
-        SAMPLE(s->split_cu_flag, x0, y0) =
-            (log2_cb_size > s->sps->log2_min_cb_size);
+        split_cu = (log2_cb_size > s->sps->log2_min_cb_size);
     }
     if (s->pps->cu_qp_delta_enabled_flag &&
         log2_cb_size >= s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth) {
@@ -2251,7 +2247,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
         lc->tu.cu_qp_delta          = 0;
     }
 
-    if (SAMPLE(s->split_cu_flag, x0, y0)) {
+    if (split_cu) {
         const int cb_size_split = cb_size >> 1;
         const int x1 = x0 + cb_size_split;
         const int y1 = y0 + cb_size_split;
