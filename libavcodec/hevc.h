@@ -650,9 +650,6 @@ typedef struct TransformTree {
     uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cbf_luma;
-
-    // Inferred parameters
-    uint8_t inter_split_flag;
 } TransformTree;
 
 typedef struct TransformUnit {
