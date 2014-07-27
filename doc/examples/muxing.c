@@ -235,10 +235,10 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
     else
         nb_samples = c->frame_size;
 
-    ost->frame     = alloc_audio_frame(AV_SAMPLE_FMT_S16, c->channel_layout,
+    ost->frame     = alloc_audio_frame(c->sample_fmt, c->channel_layout,
                                        c->sample_rate, nb_samples);
-    ost->tmp_frame = alloc_audio_frame(c->sample_fmt, c->channel_layout,
-                                       c->sample_rate, ost->frame->nb_samples);
+    ost->tmp_frame = alloc_audio_frame(AV_SAMPLE_FMT_S16, c->channel_layout,
+                                       c->sample_rate, nb_samples);
 
     /* create resampler context */
         ost->swr_ctx = swr_alloc();
@@ -266,15 +266,16 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
  * 'nb_channels' channels. */
 static AVFrame *get_audio_frame(OutputStream *ost)
 {
+    AVFrame *frame = ost->tmp_frame;
     int j, i, v;
-    int16_t *q = (int16_t*)ost->frame->data[0];
+    int16_t *q = (int16_t*)frame->data[0];
 
     /* check if we want to generate more frames */
     if (av_compare_ts(ost->next_pts, ost->st->codec->time_base,
                       STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
         return NULL;
 
-    for (j = 0; j < ost->frame->nb_samples; j++) {
+    for (j = 0; j <frame->nb_samples; j++) {
         v = (int)(sin(ost->t) * 10000);
         for (i = 0; i < ost->st->codec->channels; i++)
             *q++ = v;
@@ -282,10 +283,10 @@ static AVFrame *get_audio_frame(OutputStream *ost)
         ost->tincr += ost->tincr2;
     }
 
-    ost->frame->pts = ost->next_pts;
-    ost->next_pts  += ost->frame->nb_samples;
+    frame->pts = ost->next_pts;
+    ost->next_pts  += frame->nb_samples;
 
-    return ost->frame;
+    return frame;
 }
 
 /*
@@ -317,19 +318,19 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
          * internally;
          * make sure we do not overwrite it here
          */
-        ret = av_frame_make_writable(ost->tmp_frame);
+        ret = av_frame_make_writable(ost->frame);
         if (ret < 0)
             exit(1);
 
             /* convert to destination format */
             ret = swr_convert(ost->swr_ctx,
-                              ost->tmp_frame->data, dst_nb_samples,
+                              ost->frame->data, dst_nb_samples,
                               (const uint8_t **)frame->data, frame->nb_samples);
             if (ret < 0) {
                 fprintf(stderr, "Error while converting\n");
                 exit(1);
             }
-            frame = ost->tmp_frame;
+            frame = ost->frame;
 
         frame->pts = av_rescale_q(ost->samples_count, (AVRational){1, c->sample_rate}, c->time_base);
         ost->samples_count += dst_nb_samples;
