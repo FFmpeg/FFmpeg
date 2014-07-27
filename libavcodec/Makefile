@@ -705,6 +705,7 @@ OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
 OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o mpegaudiodata.o  \
                                           xiph.o flac.o flacdata.o \
                                           vorbis_data.o
+OBJS-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += vorbis_parser.o xiph.o
 OBJS-$(CONFIG_WTV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 
 # libavfilter dependencies
