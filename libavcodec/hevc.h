@@ -645,10 +645,6 @@ typedef struct PredictionUnit {
     uint8_t intra_pred_mode_c;
 } PredictionUnit;
 
-typedef struct TransformTree {
-    uint8_t cbf_luma;
-} TransformTree;
-
 typedef struct TransformUnit {
     int cu_qp_delta;
 
@@ -724,7 +720,6 @@ typedef struct HEVCLocalContext {
 
     GetBitContext gb;
     CABACContext cc;
-    TransformTree tt;
 
     int8_t qp_y;
     int8_t curr_qp_y;
