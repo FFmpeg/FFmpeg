@@ -779,8 +779,13 @@ typedef struct HEVCLocalContext {
     PredictionUnit pu;
     NeighbourAvailable na;
 
-    uint8_t slice_or_tiles_left_boundary;
-    uint8_t slice_or_tiles_up_boundary;
+#define BOUNDARY_LEFT_SLICE     (1 << 0)
+#define BOUNDARY_LEFT_TILE      (1 << 1)
+#define BOUNDARY_UPPER_SLICE    (1 << 2)
+#define BOUNDARY_UPPER_TILE     (1 << 3)
+    /* properties of the boundary of the current CTB for the purposes
+     * of the deblocking filter */
+    int boundary_flags;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
