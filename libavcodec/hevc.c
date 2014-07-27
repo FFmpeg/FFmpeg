@@ -1233,7 +1233,8 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
 static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
                               int log2_cb_size, int log2_trafo_size,
-                              int trafo_depth, int blk_idx)
+                              int trafo_depth, int blk_idx,
+                              int cbf_cb, int cbf_cr)
 {
     HEVCLocalContext *lc = &s->HEVClc;
 
@@ -1256,9 +1257,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
         }
     }
 
-    if (lc->tt.cbf_luma ||
-        SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) ||
-        SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0)) {
+    if (lc->tt.cbf_luma || cbf_cb || cbf_cr) {
         int scan_idx   = SCAN_DIAG;
         int scan_idx_c = SCAN_DIAG;
 
@@ -1304,14 +1303,14 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
         if (lc->tt.cbf_luma)
             hls_residual_coding(s, x0, y0, log2_trafo_size, scan_idx, 0);
         if (log2_trafo_size > 2) {
-            if (SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0))
+            if (cbf_cb)
                 hls_residual_coding(s, x0, y0, log2_trafo_size - 1, scan_idx_c, 1);
-            if (SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0))
+            if (cbf_cr)
                 hls_residual_coding(s, x0, y0, log2_trafo_size - 1, scan_idx_c, 2);
         } else if (blk_idx == 3) {
-            if (SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], xBase, yBase))
+            if (cbf_cb)
                 hls_residual_coding(s, xBase, yBase, log2_trafo_size, scan_idx_c, 1);
-            if (SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], xBase, yBase))
+            if (cbf_cr)
                 hls_residual_coding(s, xBase, yBase, log2_trafo_size, scan_idx_c, 2);
         }
     }
@@ -1336,21 +1335,12 @@ static void set_deblocking_bypass(HEVCContext *s, int x0, int y0, int log2_cb_si
 static int hls_transform_tree(HEVCContext *s, int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
                               int log2_cb_size, int log2_trafo_size,
-                              int trafo_depth, int blk_idx)
+                              int trafo_depth, int blk_idx,
+                              int cbf_cb, int cbf_cr)
 {
     HEVCLocalContext *lc = &s->HEVClc;
     uint8_t split_transform_flag;
     int ret;
-
-    if (trafo_depth > 0 && log2_trafo_size == 2) {
-        SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) =
-            SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth - 1], xBase, yBase);
-        SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0) =
-            SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth - 1], xBase, yBase);
-    } else {
-        SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) =
-        SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0) = 0;
-    }
 
     if (lc->cu.intra_split_flag) {
         if (trafo_depth == 1)
@@ -1377,19 +1367,14 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
                                inter_split;
     }
 
-    if (log2_trafo_size > 2) {
-        if (trafo_depth == 0 ||
-            SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth - 1], xBase, yBase)) {
-            SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) =
-                ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
-        }
-
-        if (trafo_depth == 0 ||
-            SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth - 1], xBase, yBase)) {
-            SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0) =
-                ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
-        }
-    }
+    if (log2_trafo_size > 2 && (trafo_depth == 0 || cbf_cb))
+        cbf_cb = ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
+    else if (log2_trafo_size > 2 || trafo_depth == 0)
+        cbf_cb = 0;
+    if (log2_trafo_size > 2 && (trafo_depth == 0 || cbf_cr))
+        cbf_cr = ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
+    else if (log2_trafo_size > 2 || trafo_depth == 0)
+        cbf_cr = 0;
 
     if (split_transform_flag) {
         const int trafo_size_split = 1 << (log2_trafo_size - 1);
@@ -1399,7 +1384,8 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
 #define SUBDIVIDE(x, y, idx)                                                    \
 do {                                                                            \
     ret = hls_transform_tree(s, x, y, x0, y0, cb_xBase, cb_yBase, log2_cb_size, \
-                             log2_trafo_size - 1, trafo_depth + 1, idx);        \
+                             log2_trafo_size - 1, trafo_depth + 1, idx,         \
+                             cbf_cb, cbf_cr);                                   \
     if (ret < 0)                                                                \
         return ret;                                                             \
 } while (0)
@@ -1416,14 +1402,12 @@ do {                                                                            
         int min_tu_width     = s->sps->min_tb_width;
 
         if (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
-            SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) ||
-            SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0)) {
+            cbf_cb || cbf_cr)
             lc->tt.cbf_luma = ff_hevc_cbf_luma_decode(s, trafo_depth);
-        }
 
         ret = hls_transform_unit(s, x0, y0, xBase, yBase, cb_xBase, cb_yBase,
                                  log2_cb_size, log2_trafo_size, trafo_depth,
-                                 blk_idx);
+                                 blk_idx, cbf_cb, cbf_cr);
         if (ret < 0)
             return ret;
         // TODO: store cbf_luma somewhere else
@@ -2195,7 +2179,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                                          s->sps->max_transform_hierarchy_depth_inter;
                 ret = hls_transform_tree(s, x0, y0, x0, y0, x0, y0,
                                          log2_cb_size,
-                                         log2_cb_size, 0, 0);
+                                         log2_cb_size, 0, 0, 0, 0);
                 if (ret < 0)
                     return ret;
             } else {
