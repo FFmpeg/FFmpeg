@@ -594,9 +594,20 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
     int min_tu_width     = s->sps->min_tb_width;
     int is_intra = tab_mvf[(y0 >> log2_min_pu_size) * min_pu_width +
                            (x0 >> log2_min_pu_size)].is_intra;
+    int boundary_upper, boundary_left;
     int i, j, bs;
 
-    if (y0 > 0 && (y0 & 7) == 0) {
+    boundary_upper = y0 > 0 && !(y0 & 7);
+    if (boundary_upper &&
+        ((!s->sh.slice_loop_filter_across_slices_enabled_flag &&
+          lc->boundary_flags & BOUNDARY_UPPER_SLICE &&
+          (y0 % (1 << s->sps->log2_ctb_size)) == 0) ||
+         (!s->pps->loop_filter_across_tiles_enabled_flag &&
+          lc->boundary_flags & BOUNDARY_UPPER_TILE &&
+          (y0 % (1 << s->sps->log2_ctb_size)) == 0)))
+        boundary_upper = 0;
+
+    if (boundary_upper) {
         int yp_pu = (y0 - 1) >> log2_min_pu_size;
         int yq_pu =  y0      >> log2_min_pu_size;
         int yp_tu = (y0 - 1) >> log2_min_tu_size;
@@ -614,14 +625,6 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 
             bs = boundary_strength(s, curr, curr_cbf_luma,
                                    top, top_cbf_luma, top_refPicList, 1);
-            if (!s->sh.slice_loop_filter_across_slices_enabled_flag &&
-                lc->boundary_flags & BOUNDARY_UPPER_SLICE &&
-                (y0 % (1 << s->sps->log2_ctb_size)) == 0)
-                bs = 0;
-            else if (!s->pps->loop_filter_across_tiles_enabled_flag &&
-                     lc->boundary_flags & BOUNDARY_UPPER_TILE &&
-                     (y0 % (1 << s->sps->log2_ctb_size)) == 0)
-                bs = 0;
             if (bs)
                 s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
         }
@@ -654,7 +657,17 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
         }
 
     // bs for vertical TU boundaries
-    if (x0 > 0 && (x0 & 7) == 0) {
+    boundary_left = x0 > 0 && !(x0 & 7);
+    if (boundary_left &&
+        ((!s->sh.slice_loop_filter_across_slices_enabled_flag &&
+          lc->boundary_flags & BOUNDARY_LEFT_SLICE &&
+          (x0 % (1 << s->sps->log2_ctb_size)) == 0) ||
+         (!s->pps->loop_filter_across_tiles_enabled_flag &&
+          lc->boundary_flags & BOUNDARY_LEFT_TILE &&
+          (x0 % (1 << s->sps->log2_ctb_size)) == 0)))
+        boundary_left = 0;
+
+    if (boundary_left) {
         int xp_pu = (x0 - 1) >> log2_min_pu_size;
         int xq_pu =  x0      >> log2_min_pu_size;
         int xp_tu = (x0 - 1) >> log2_min_tu_size;
@@ -673,14 +686,6 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 
             bs = boundary_strength(s, curr, curr_cbf_luma,
                                    left, left_cbf_luma, left_refPicList, 1);
-            if (!s->sh.slice_loop_filter_across_slices_enabled_flag &&
-                lc->boundary_flags & BOUNDARY_LEFT_SLICE &&
-                (x0 % (1 << s->sps->log2_ctb_size)) == 0)
-                bs = 0;
-            else if (!s->pps->loop_filter_across_tiles_enabled_flag &&
-                     lc->boundary_flags & BOUNDARY_LEFT_TILE &&
-                     (x0 % (1 << s->sps->log2_ctb_size)) == 0)
-                bs = 0;
             if (bs)
                 s->vertical_bs[(x0 >> 3) + ((y0 + i) >> 2) * s->bs_width] = bs;
         }
