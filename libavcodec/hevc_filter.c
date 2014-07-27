@@ -623,8 +623,6 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                      (slice_or_tiles_up_boundary & 2) &&
                      (y0 % (1 << s->sps->log2_ctb_size)) == 0)
                 bs = 0;
-            if (y0 == 0)
-                bs = 0;
             if (bs)
                 s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
         }
@@ -683,8 +681,6 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
             else if (!s->pps->loop_filter_across_tiles_enabled_flag &&
                      (slice_or_tiles_left_boundary & 2) &&
                      (x0 % (1 << s->sps->log2_ctb_size)) == 0)
-                bs = 0;
-            if (x0 == 0)
                 bs = 0;
             if (bs)
                 s->vertical_bs[(x0 >> 3) + ((y0 + i) >> 2) * s->bs_width] = bs;
