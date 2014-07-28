@@ -596,6 +596,16 @@ typedef struct AVCodecDescriptor {
  */
 #define AV_CODEC_PROP_LOSSLESS      (1 << 2)
 /**
+ * Codec supports frame reordering. That is, the coded order (the order in which
+ * the encoded packets are output by the encoders / stored / input to the
+ * decoders) may be different from the presentation order of the corresponding
+ * frames.
+ *
+ * For codecs that do not have this property set, PTS and DTS should always be
+ * equal.
+ */
+#define AV_CODEC_PROP_REORDER       (1 << 3)
+/**
  * Subtitle codec is bitmap based
  * Decoded AVSubtitle data can be read from the AVSubtitleRect->pict field.
  */
