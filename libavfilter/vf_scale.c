@@ -573,6 +573,7 @@ static const AVClass scale_class = {
     .item_name        = av_default_item_name,
     .option           = scale_options,
     .version          = LIBAVUTIL_VERSION_INT,
+    .category         = AV_CLASS_CATEGORY_FILTER,
     .child_class_next = child_class_next,
 };
 
