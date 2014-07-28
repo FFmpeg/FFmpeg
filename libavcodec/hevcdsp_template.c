@@ -543,7 +543,7 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-static void FUNC(put_hevc_pel_pixels)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_pel_pixels)(int16_t *dst,
                                       uint8_t *_src, ptrdiff_t _srcstride,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
@@ -555,7 +555,7 @@ static void FUNC(put_hevc_pel_pixels)(int16_t *dst, ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = src[x] << (14 - BIT_DEPTH);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -664,7 +664,7 @@ static void FUNC(put_hevc_pel_bi_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, 
      filter[6] * src[x + 3 * stride] +                                         \
      filter[7] * src[x + 4 * stride])
 
-static void FUNC(put_hevc_qpel_h)(int16_t *dst,  ptrdiff_t dststride,
+static void FUNC(put_hevc_qpel_h)(int16_t *dst,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
@@ -676,11 +676,11 @@ static void FUNC(put_hevc_qpel_h)(int16_t *dst,  ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = QPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
-static void FUNC(put_hevc_qpel_v)(int16_t *dst,  ptrdiff_t dststride,
+static void FUNC(put_hevc_qpel_v)(int16_t *dst,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
@@ -692,12 +692,11 @@ static void FUNC(put_hevc_qpel_v)(int16_t *dst,  ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = QPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
 static void FUNC(put_hevc_qpel_hv)(int16_t *dst,
-                                   ptrdiff_t dststride,
                                    uint8_t *_src,
                                    ptrdiff_t _srcstride,
                                    int height, intptr_t mx,
@@ -725,7 +724,7 @@ static void FUNC(put_hevc_qpel_hv)(int16_t *dst,
         for (x = 0; x < width; x++)
             dst[x] = QPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
         tmp += MAX_PB_SIZE;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -1118,7 +1117,7 @@ static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
      filter[2] * src[x + stride] +                                             \
      filter[3] * src[x + 2 * stride])
 
-static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_epel_h)(int16_t *dst,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
@@ -1130,11 +1129,11 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
-static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_epel_v)(int16_t *dst,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
@@ -1147,11 +1146,11 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
-static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_epel_hv)(int16_t *dst,
                                    uint8_t *_src, ptrdiff_t _srcstride,
                                    int height, intptr_t mx, intptr_t my, int width)
 {
@@ -1178,7 +1177,7 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
         tmp += MAX_PB_SIZE;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
