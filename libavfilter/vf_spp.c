@@ -44,6 +44,17 @@ enum mode {
     NB_MODES
 };
 
+static const AVClass *child_class_next(const AVClass *prev)
+{
+    return prev ? NULL : avcodec_dct_get_class();
+}
+
+static void *child_next(void *obj, void *prev)
+{
+    SPPContext *s = obj;
+    return prev ? NULL : s->dct;
+}
+
 #define OFFSET(x) offsetof(SPPContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption spp_options[] = {
@@ -56,7 +67,15 @@ static const AVOption spp_options[] = {
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(spp);
+static const AVClass spp_class = {
+    .class_name       = "spp",
+    .item_name        = av_default_item_name,
+    .option           = spp_options,
+    .version          = LIBAVUTIL_VERSION_INT,
+    .category         = AV_CLASS_CATEGORY_FILTER,
+    .child_class_next = child_class_next,
+    .child_next       = child_next,
+};
 
 // XXX: share between filters?
 DECLARE_ALIGNED(8, static const uint8_t, ldither)[8][8] = {
@@ -372,15 +391,27 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return AVERROR(ENOSYS);
 }
 
-static av_cold int init(AVFilterContext *ctx)
+static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
 {
     SPPContext *spp = ctx->priv;
+    int ret;
 
     spp->avctx = avcodec_alloc_context3(NULL);
     spp->dct = avcodec_dct_alloc();
     if (!spp->avctx || !spp->dct)
         return AVERROR(ENOMEM);
     ff_pixblockdsp_init(&spp->pdsp, spp->avctx);
+
+    if (opts) {
+        AVDictionaryEntry *e = NULL;
+
+        while ((e = av_dict_get(*opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+            if ((ret = av_opt_set(spp->dct, e->key, e->value, 0)) < 0)
+                return ret;
+        }
+        av_dict_free(opts);
+    }
+
     avcodec_dct_init(spp->dct);
     spp->store_slice = store_slice_c;
     switch (spp->mode) {
@@ -428,7 +459,7 @@ AVFilter ff_vf_spp = {
     .name            = "spp",
     .description     = NULL_IF_CONFIG_SMALL("Apply a simple post processing filter."),
     .priv_size       = sizeof(SPPContext),
-    .init            = init,
+    .init_dict       = init_dict,
     .uninit          = uninit,
     .query_formats   = query_formats,
     .inputs          = spp_inputs,
