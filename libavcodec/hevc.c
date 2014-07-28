@@ -276,7 +276,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
-static int get_buffer_sao(HEVCContext *s, AVFrame *frame, HEVCSPS *sps)
+static int get_buffer_sao(HEVCContext *s, AVFrame *frame, const HEVCSPS *sps)
 {
     int ret, i;
 
