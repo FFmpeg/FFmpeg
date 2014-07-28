@@ -4,7 +4,11 @@
 
 # check for git short hash
 if ! test "$revision"; then
-    revision=$(cd "$1" && git describe --tags --match N 2> /dev/null)
+    if (cd "$1" && grep git RELEASE 2> /dev/null >/dev/null) ; then
+        revision=$(cd "$1" && git describe --tags --match N 2> /dev/null)
+    else
+        revision=$(cd "$1" && git describe --tags --always 2> /dev/null)
+    fi
 fi
 
 # Shallow Git clones (--depth) do not have the N tag:
