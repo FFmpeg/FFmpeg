@@ -685,9 +685,6 @@ typedef struct PredictionUnit {
 
 typedef struct TransformTree {
     uint8_t cbf_luma;
-
-    // Inferred parameters
-    uint8_t inter_split_flag;
 } TransformTree;
 
 typedef struct TransformUnit {
