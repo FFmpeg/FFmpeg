@@ -860,7 +860,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
                               int log2_cb_size, int log2_trafo_size,
                               int trafo_depth, int blk_idx,
-                              int *cbf_cb, int *cbf_cr)
+                              int cbf_luma, int *cbf_cb, int *cbf_cr)
 {
     HEVCLocalContext *lc = s->HEVClc;
     const int log2_trafo_size_c = log2_trafo_size - s->sps->hshift[1];
@@ -873,11 +873,10 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
         s->hpc.intra_pred[log2_trafo_size - 2](s, x0, y0, 0);
     }
 
-    if (lc->tt.cbf_luma || cbf_cb[0] || cbf_cr[0] ||
+    if (cbf_luma || cbf_cb[0] || cbf_cr[0] ||
         (s->sps->chroma_format_idc == 2 && (cbf_cb[1] || cbf_cr[1]))) {
         int scan_idx   = SCAN_DIAG;
         int scan_idx_c = SCAN_DIAG;
-        int cbf_luma = lc->tt.cbf_luma;
         int cbf_chroma = cbf_cb[0] || cbf_cr[0] ||
                          (s->sps->chroma_format_idc == 2 &&
                          (cbf_cb[1] || cbf_cr[1]));
@@ -1113,8 +1112,6 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
         lc->tu.chroma_mode_c     = lc->pu.chroma_mode_c[0];
     }
 
-    lc->tt.cbf_luma = 1;
-
     if (log2_trafo_size <= s->sps->log2_max_trafo_size &&
         log2_trafo_size >  s->sps->log2_min_tb_size    &&
         trafo_depth     < lc->cu.max_trafo_depth       &&
@@ -1177,20 +1174,21 @@ do {                                                                            
         int min_tu_size      = 1 << s->sps->log2_min_tb_size;
         int log2_min_tu_size = s->sps->log2_min_tb_size;
         int min_tu_width     = s->sps->min_tb_width;
+        int cbf_luma         = 1;
 
         if (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
             cbf_cb[0] || cbf_cr[0] ||
             (s->sps->chroma_format_idc == 2 && (cbf_cb[1] || cbf_cr[1]))) {
-            lc->tt.cbf_luma = ff_hevc_cbf_luma_decode(s, trafo_depth);
+            cbf_luma = ff_hevc_cbf_luma_decode(s, trafo_depth);
         }
 
         ret = hls_transform_unit(s, x0, y0, xBase, yBase, cb_xBase, cb_yBase,
                                  log2_cb_size, log2_trafo_size, trafo_depth,
-                                 blk_idx, cbf_cb, cbf_cr);
+                                 blk_idx, cbf_luma, cbf_cb, cbf_cr);
         if (ret < 0)
             return ret;
         // TODO: store cbf_luma somewhere else
-        if (lc->tt.cbf_luma) {
+        if (cbf_luma) {
             int i, j;
             for (i = 0; i < (1 << log2_trafo_size); i += min_tu_size)
                 for (j = 0; j < (1 << log2_trafo_size); j += min_tu_size) {
