@@ -1082,7 +1082,7 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
                               int log2_cb_size, int log2_trafo_size,
                               int trafo_depth, int blk_idx,
-                              int *base_cbf_cb, int *base_cbf_cr)
+                              const int *base_cbf_cb, const int *base_cbf_cr)
 {
     HEVCLocalContext *lc = s->HEVClc;
     uint8_t split_transform_flag;
@@ -2076,7 +2076,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                 lc->cu.rqt_root_cbf = ff_hevc_no_residual_syntax_flag_decode(s);
             }
             if (lc->cu.rqt_root_cbf) {
-                int cbf[2] = { 0 };
+                const static int cbf[2] = { 0 };
                 lc->cu.max_trafo_depth = lc->cu.pred_mode == MODE_INTRA ?
                                          s->sps->max_transform_hierarchy_depth_intra + lc->cu.intra_split_flag :
                                          s->sps->max_transform_hierarchy_depth_inter;
