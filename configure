@@ -2823,7 +2823,7 @@ probe_cc(){
     elif $_cc --vsn 2>/dev/null | grep -Eq "ARM (C/C\+\+ )?Compiler"; then
         test -d "$sysroot" || die "No valid sysroot specified."
         _type=armcc
-        _ident=$($_cc --vsn | head -n1 | sed 's/.*: //')
+        _ident=$($_cc --vsn | grep -i build | head -n1 | sed 's/.*: //')
         armcc_conf="$PWD/armcc.conf"
         $_cc --arm_linux_configure                 \
              --arm_linux_config_file="$armcc_conf" \
