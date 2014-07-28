@@ -859,7 +859,8 @@ static int hls_cross_component_pred(HEVCContext *s, int idx) {
 static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
                               int log2_cb_size, int log2_trafo_size,
-                              int trafo_depth, int blk_idx, int *cbf_cb, int *cbf_cr)
+                              int trafo_depth, int blk_idx,
+                              int *cbf_cb, int *cbf_cr)
 {
     HEVCLocalContext *lc = s->HEVClc;
     const int log2_trafo_size_c = log2_trafo_size - s->sps->hshift[1];
@@ -1081,7 +1082,8 @@ static void set_deblocking_bypass(HEVCContext *s, int x0, int y0, int log2_cb_si
 static int hls_transform_tree(HEVCContext *s, int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
                               int log2_cb_size, int log2_trafo_size,
-                              int trafo_depth, int blk_idx, int *base_cbf_cb, int *base_cbf_cr)
+                              int trafo_depth, int blk_idx,
+                              int *base_cbf_cb, int *base_cbf_cr)
 {
     HEVCLocalContext *lc = s->HEVClc;
     uint8_t split_transform_flag;
