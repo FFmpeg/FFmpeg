@@ -75,10 +75,10 @@ typedef struct HEVCDSPContext {
                                           int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
 
     void (*put_hevc_qpel_bi[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
+                                       int16_t *src2,
                                        int height, intptr_t mx, intptr_t my, int width);
     void (*put_hevc_qpel_bi_w[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                         int16_t *src2, ptrdiff_t src2stride,
+                                         int16_t *src2,
                                          int height, int denom, int wx0, int wx1,
                                          int ox0, int ox1, intptr_t mx, intptr_t my, int width);
     void (*put_hevc_epel[10][2][2])(int16_t *dst, uint8_t *src, ptrdiff_t srcstride,
@@ -89,10 +89,10 @@ typedef struct HEVCDSPContext {
     void (*put_hevc_epel_uni_w[10][2][2])(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                           int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
     void (*put_hevc_epel_bi[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
+                                       int16_t *src2,
                                        int height, intptr_t mx, intptr_t my, int width);
     void (*put_hevc_epel_bi_w[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                         int16_t *src2, ptrdiff_t src2stride,
+                                         int16_t *src2,
                                          int height, int denom, int wx0, int ox0, int wx1,
                                          int ox1, intptr_t mx, intptr_t my, int width);
 
