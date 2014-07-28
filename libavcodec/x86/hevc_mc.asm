@@ -75,6 +75,8 @@ QPEL_TABLE  8, 8, b, sse4
 QPEL_TABLE 10, 4, w, sse4
 QPEL_TABLE 12, 4, w, sse4
 
+%define MAX_PB_SIZE  64
+
 %define hevc_qpel_filters_sse4_14 hevc_qpel_filters_sse4_10
 
 %if ARCH_X86_64
@@ -377,7 +379,11 @@ QPEL_TABLE 12, 4, w, sse4
 %endmacro
 
 %macro LOOP_END 4
+%ifnum %2
+    add              %1q, 2*%2                   ; dst += dststride
+%else
     lea              %1q, [%1q+2*%2q]            ; dst += dststride
+%endif
     add              %3q, %4q                    ; src += srcstride
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
@@ -548,7 +554,7 @@ cglobal hevc_put_hevc_pel_pixels%1_%2, 5, 5, 3, dst, dststride, src, srcstride,h
     SIMPLE_LOAD       %1, %2, srcq, m0
     MC_PIXEL_COMPUTE  %1, %2
     PEL_10STORE%1     dstq, m0, m1
-    LOOP_END         dst, dststride, src, srcstride
+    LOOP_END         dst, MAX_PB_SIZE, src, srcstride
     RET
 
 cglobal hevc_put_hevc_uni_pel_pixels%1_%2, 5, 5, 2, dst, dststride, src, srcstride,height
@@ -572,7 +578,7 @@ cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 7, 7, 6, dst, dststride, src, srcstrid
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
     add             srcq, srcstrideq             ; src += srcstride
-    lea            src2q, [src2q+2*src2strideq]  ; src += srcstride
+    add            src2q, 2*MAX_PB_SIZE          ; src += srcstride
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
@@ -596,7 +602,7 @@ cglobal hevc_put_hevc_epel_h%1_%2, 6, 7, 6, dst, dststride, src, srcstride, heig
     EPEL_LOAD         %2, srcq-%%stride, %%stride, %1
     EPEL_COMPUTE      %2, %1, m4, m5
     PEL_10STORE%1      dstq, m0, m1
-    LOOP_END         dst, dststride, src, srcstride
+    LOOP_END         dst, MAX_PB_SIZE, src, srcstride
     RET
 
 cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 7, dst, dststride, src, srcstride, height, mx, rfilter
@@ -625,7 +631,7 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 8, 9, 7, dst, dststride, src, srcstride, s
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
     add             srcq, srcstrideq             ; src += srcstride
-    lea            src2q, [src2q+2*src2strideq]  ; src += srcstride
+    add            src2q, 2*MAX_PB_SIZE          ; src += srcstride
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
@@ -645,7 +651,7 @@ cglobal hevc_put_hevc_epel_v%1_%2, 7, 8, 6, dst, dststride, src, srcstride, heig
     EPEL_LOAD         %2, srcq, srcstride, %1
     EPEL_COMPUTE      %2, %1, m4, m5
     PEL_10STORE%1     dstq, m0, m1
-    LOOP_END          dst, dststride, src, srcstride
+    LOOP_END          dst, MAX_PB_SIZE, src, srcstride
     RET
 
 cglobal hevc_put_hevc_uni_epel_v%1_%2, 7, 8, 7, dst, dststride, src, srcstride, height, r3src, my, rfilter
@@ -678,7 +684,7 @@ cglobal hevc_put_hevc_bi_epel_v%1_%2, 9, 10, 7, dst, dststride, src, srcstride, 
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
     add             srcq, srcstrideq             ; src += srcstride
-    lea            src2q, [src2q+2*src2strideq]  ; src += srcstride
+    add            src2q, 2*MAX_PB_SIZE          ; src += srcstride
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
@@ -723,7 +729,7 @@ cglobal hevc_put_hevc_epel_hv%1_%2, 7, 9, 12 , dst, dststride, src, srcstride, h
     movdqa            m4, m5
     movdqa            m5, m6
     movdqa            m6, m7
-    LOOP_END         dst, dststride, src, srcstride
+    LOOP_END         dst, MAX_PB_SIZE, src, srcstride
     RET
 
 cglobal hevc_put_hevc_uni_epel_hv%1_%2, 7, 9, 12 , dst, dststride, src, srcstride, height, mx, my, r3src, rfilter
@@ -800,7 +806,7 @@ cglobal hevc_put_hevc_bi_epel_hv%1_%2, 9, 11, 16, dst, dststride, src, srcstride
     movdqa            m6, m7
     add             dstq, dststrideq             ; dst += dststride
     add             srcq, srcstrideq             ; src += srcstride
-    lea            src2q, [src2q+2*src2strideq]  ; src += srcstride
+    add            src2q, 2*MAX_PB_SIZE          ; src += srcstride
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
@@ -822,7 +828,7 @@ cglobal hevc_put_hevc_qpel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride, he
     packssdw          m0, m1
 %endif
     PEL_10STORE%1     dstq, m0, m1
-    LOOP_END          dst, dststride, src, srcstride
+    LOOP_END          dst, MAX_PB_SIZE, src, srcstride
     RET
 
 cglobal hevc_put_hevc_uni_qpel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride, height, mx, rfilter
@@ -856,7 +862,7 @@ cglobal hevc_put_hevc_bi_qpel_h%1_%2, 8, 9, 16 , dst, dststride, src, srcstride,
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
     add             srcq, srcstrideq             ; src += srcstride
-    lea            src2q, [src2q+2*src2strideq]  ; src += srcstride
+    add            src2q, 2*MAX_PB_SIZE          ; src += srcstride
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
@@ -878,7 +884,7 @@ cglobal hevc_put_hevc_qpel_v%1_%2, 7, 9, 15, dst, dststride, src, srcstride, hei
     packssdw          m0, m1
 %endif
     PEL_10STORE%1     dstq, m0, m1
-    LOOP_END         dst, dststride, src, srcstride
+    LOOP_END         dst, MAX_PB_SIZE, src, srcstride
     RET
 
 cglobal hevc_put_hevc_uni_qpel_v%1_%2, 7, 9, 15, dst, dststride, src, srcstride, height, r3src, my, rfilter
@@ -914,7 +920,7 @@ cglobal hevc_put_hevc_bi_qpel_v%1_%2, 9, 11, 16, dst, dststride, src, srcstride,
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
     add             srcq, srcstrideq             ; src += srcstride
-    lea            src2q, [src2q+2*src2strideq]  ; src += srcstride
+    add            src2q, 2*MAX_PB_SIZE          ; src += srcstride
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
@@ -993,7 +999,7 @@ cglobal hevc_put_hevc_qpel_hv%1_%2, 7, 9, 12 , dst, dststride, src, srcstride, h
     movdqa           m13, m14
     movdqa           m14, m15
 %endif
-    LOOP_END         dst, dststride, src, srcstride
+    LOOP_END         dst, MAX_PB_SIZE, src, srcstride
     RET
 
 cglobal hevc_put_hevc_uni_qpel_hv%1_%2, 7, 9, 12 , dst, dststride, src, srcstride, height, mx, my, r3src, rfilter
@@ -1141,7 +1147,7 @@ cglobal hevc_put_hevc_bi_qpel_hv%1_%2, 9, 11, 16, dst, dststride, src, srcstride
 %endif
     add             dstq, dststrideq             ; dst += dststride
     add             srcq, srcstrideq             ; src += srcstride
-    lea            src2q, [src2q+2*src2strideq]  ; src += srcstride
+    add            src2q, 2*MAX_PB_SIZE          ; src += srcstride
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
@@ -1281,7 +1287,7 @@ cglobal hevc_put_hevc_bi_w%1_%2, 6, 7, 10, dst, dststride, src, srcstride, src2,
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
     lea             srcq, [srcq+2*srcstrideq]      ; src += srcstride
-    lea            src2q, [src2q+2*src2strideq]      ; src2 += srcstride
+    add            src2q, 2*MAX_PB_SIZE          ; src2 += srcstride
     dec              r6d                         ; cmp height
     jnz               .loop                      ; height loop
     RET
