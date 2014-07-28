@@ -70,6 +70,11 @@ static const AVClass avdct_class = {
     .version                 = LIBAVUTIL_VERSION_INT,
 };
 
+const AVClass *avcodec_dct_get_class(void)
+{
+    return &avdct_class;
+}
+
 AVDCT *avcodec_dct_alloc(void)
 {
     AVDCT *dsp = av_mallocz(sizeof(AVDCT));

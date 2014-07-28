@@ -73,4 +73,6 @@ typedef struct AVDCT {
 AVDCT *avcodec_dct_alloc(void);
 int avcodec_dct_init(AVDCT *);
 
+const AVClass *avcodec_dct_get_class(void);
+
 #endif /* AVCODEC_AVDCT_H */
