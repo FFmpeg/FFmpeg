@@ -138,6 +138,46 @@ Set initial byte offset.
 Try to limit the request to bytes preceding this offset.
 @end table
 
+@section Icecast
+
+Icecast (stream to Icecast servers)
+
+This protocol accepts the following options:
+
+@table @option
+@item ice_genre
+Set the stream genre.
+
+@item ice_name
+Set the stream name.
+
+@item ice_description
+Set the stream description.
+
+@item ice_url
+Set the stream website URL.
+
+@item ice_public
+Set if the stream should be public or not.
+The default is 0 (not public).
+
+@item user_agent
+Override the User-Agent header. If not specified a string of the form
+"Lavf/<version>" will be used.
+
+@item password
+Set the Icecast mountpoint password.
+
+@item content_type
+Set the stream content type. This must be set if it is different from
+audio/mpeg.
+
+@item legacy_icecast
+This enables support for Icecast versions < 2.4.0, that do not support the
+HTTP PUT method but the SOURCE method.
+
+@end table
+
 @section mmst
 
 MMS (Microsoft Media Server) protocol over TCP.
