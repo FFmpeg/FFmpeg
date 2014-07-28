@@ -1152,29 +1152,25 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
     }
 
     if (split_transform_flag) {
-        int x1 = x0 + ((1 << log2_trafo_size) >> 1);
-        int y1 = y0 + ((1 << log2_trafo_size) >> 1);
+        const int trafo_size_split = 1 << (log2_trafo_size - 1);
+        const int x1 = x0 + trafo_size_split;
+        const int y1 = y0 + trafo_size_split;
 
-        ret = hls_transform_tree(s, x0, y0, x0, y0, cb_xBase, cb_yBase,
-                                 log2_cb_size, log2_trafo_size - 1,
-                                 trafo_depth + 1, 0, cbf_cb, cbf_cr);
-        if (ret < 0)
-            return ret;
-        ret = hls_transform_tree(s, x1, y0, x0, y0, cb_xBase, cb_yBase,
-                                 log2_cb_size, log2_trafo_size - 1,
-                                 trafo_depth + 1, 1, cbf_cb, cbf_cr);
-        if (ret < 0)
-            return ret;
-        ret = hls_transform_tree(s, x0, y1, x0, y0, cb_xBase, cb_yBase,
-                                 log2_cb_size, log2_trafo_size - 1,
-                                 trafo_depth + 1, 2, cbf_cb, cbf_cr);
-        if (ret < 0)
-            return ret;
-        ret = hls_transform_tree(s, x1, y1, x0, y0, cb_xBase, cb_yBase,
-                                 log2_cb_size, log2_trafo_size - 1,
-                                 trafo_depth + 1, 3, cbf_cb, cbf_cr);
-        if (ret < 0)
-            return ret;
+#define SUBDIVIDE(x, y, idx)                                                    \
+do {                                                                            \
+    ret = hls_transform_tree(s, x, y, x0, y0, cb_xBase, cb_yBase, log2_cb_size, \
+                             log2_trafo_size - 1, trafo_depth + 1, idx,         \
+                             cbf_cb, cbf_cr);                                   \
+    if (ret < 0)                                                                \
+        return ret;                                                             \
+} while (0)
+
+        SUBDIVIDE(x0, y0, 0);
+        SUBDIVIDE(x1, y0, 1);
+        SUBDIVIDE(x0, y1, 2);
+        SUBDIVIDE(x1, y1, 3);
+
+#undef SUBDIVIDE
     } else {
         int min_tu_size      = 1 << s->sps->log2_min_tb_size;
         int log2_min_tu_size = s->sps->log2_min_tb_size;
