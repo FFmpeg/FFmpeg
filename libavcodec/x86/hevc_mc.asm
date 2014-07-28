@@ -270,12 +270,12 @@ QPEL_TABLE 12, 4, w, sse4
 %endif
 %endmacro
 
-%macro QPEL_V_LOAD 4
-    lea             r12q, [%2]
-    sub             r12q, r3srcq
-    movdqu            m0, [r12            ]      ;load x- 3*srcstride
-    movdqu            m1, [r12+   %3q     ]      ;load x- 2*srcstride
-    movdqu            m2, [r12+ 2*%3q     ]      ;load x-srcstride
+%macro QPEL_V_LOAD 5
+    lea              %5q, [%2]
+    sub              %5q, r3srcq
+    movdqu            m0, [%5q            ]      ;load x- 3*srcstride
+    movdqu            m1, [%5q+   %3q     ]      ;load x- 2*srcstride
+    movdqu            m2, [%5q+ 2*%3q     ]      ;load x-srcstride
     movdqu            m3, [%2       ]      ;load x
     movdqu            m4, [%2+   %3q]      ;load x+stride
     movdqu            m5, [%2+ 2*%3q]      ;load x+2*stride
@@ -869,11 +869,11 @@ cglobal hevc_put_hevc_bi_qpel_h%1_%2, 8, 9, 16 , dst, dststride, src, srcstride,
 ;                       int width, int height, int mx, int my)
 ; ******************************
 
-cglobal hevc_put_hevc_qpel_v%1_%2, 7, 14, 15 , dst, dststride, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_qpel_v%1_%2, 7, 9, 15, dst, dststride, src, srcstride, height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
     QPEL_FILTER       %2, my
 .loop
-    QPEL_V_LOAD       %2, srcq, srcstride, %1
+    QPEL_V_LOAD       %2, srcq, srcstride, %1, r8
     QPEL_COMPUTE      %1, %2
 %if %2 > 8
     packssdw          m0, m1
@@ -882,12 +882,12 @@ cglobal hevc_put_hevc_qpel_v%1_%2, 7, 14, 15 , dst, dststride, src, srcstride, h
     LOOP_END         dst, dststride, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_qpel_v%1_%2, 7, 14, 15 , dst, dststride, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_uni_qpel_v%1_%2, 7, 9, 15, dst, dststride, src, srcstride, height, r3src, my, rfilter
     movdqa            m9, [pw_%2]
     lea           r3srcq, [srcstrideq*3]
     QPEL_FILTER       %2, my
 .loop
-    QPEL_V_LOAD       %2, srcq, srcstride, %1
+    QPEL_V_LOAD       %2, srcq, srcstride, %1, r8
     QPEL_COMPUTE      %1, %2
 %if %2 > 8
     packusdw          m0, m1
@@ -900,13 +900,13 @@ cglobal hevc_put_hevc_uni_qpel_v%1_%2, 7, 14, 15 , dst, dststride, src, srcstrid
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_hevc_bi_qpel_v%1_%2, 9, 14, 16 , dst, dststride, src, srcstride, src2, src2stride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_bi_qpel_v%1_%2, 9, 11, 16, dst, dststride, src, srcstride, src2, src2stride, height, r3src, my, rfilter
     movdqa            m9, [pw_bi_%2]
     lea           r3srcq, [srcstrideq*3]
     QPEL_FILTER       %2, my
 .loop
     SIMPLE_BILOAD     %1, src2q, m10, m11
-    QPEL_V_LOAD       %2, srcq, srcstride, %1
+    QPEL_V_LOAD       %2, srcq, srcstride, %1, r10
     QPEL_COMPUTE      %1, %2
 %if %2 > 8
     packssdw          m0, m1
