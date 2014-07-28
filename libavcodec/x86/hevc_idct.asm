@@ -36,7 +36,7 @@ cglobal hevc_idct%1x%1_dc_%3, 1, 2, 1, coeff, tmp
     SPLATW              m0, xm0
     DEFINE_ARGS coeff, cnt
     mov               cntd, %2
-.loop
+.loop:
     mova [coeffq+mmsize*0], m0
     mova [coeffq+mmsize*1], m0
     mova [coeffq+mmsize*2], m0
