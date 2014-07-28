@@ -799,14 +799,14 @@ cglobal hevc_h_loop_filter_luma_8, 4, 15, 16, pix, stride, beta, tc, count, pix0
     mov           pix0q, pixq
     sub           pix0q, src3strideq
     sub           pix0q, strideq
-    movdqu           m0, [pix0q];               p3
-    movdqu           m1, [pix0q +     strideq]; p2
-    movdqu           m2, [pix0q + 2 * strideq]; p1
-    movdqu           m3, [pix0q + src3strideq]; p0
-    movdqu           m4, [pixq];                q0
-    movdqu           m5, [pixq +     strideq];  q1
-    movdqu           m6, [pixq + 2 * strideq];  q2
-    movdqu           m7, [pixq + src3strideq];  q3
+    movq             m0, [pix0q];               p3
+    movq             m1, [pix0q +     strideq]; p2
+    movq             m2, [pix0q + 2 * strideq]; p1
+    movq             m3, [pix0q + src3strideq]; p0
+    movq             m4, [pixq];                q0
+    movq             m5, [pixq +     strideq];  q1
+    movq             m6, [pixq + 2 * strideq];  q2
+    movq             m7, [pixq + src3strideq];  q3
     pxor             m8, m8
     punpcklbw        m0, m8
     punpcklbw        m1, m8
