@@ -1407,14 +1407,14 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             pos  = bytestream2_tell(&ctx->gb);
 
             if (bytestream2_get_bytes_left(&ctx->gb) < size) {
-                av_log(avctx, AV_LOG_ERROR, "Incorrect chunk size %d.\n", size);
+                av_log(avctx, AV_LOG_ERROR, "Incorrect chunk size %"PRIu32".\n", size);
                 break;
             }
             switch (sig) {
             case MKBETAG('N', 'P', 'A', 'L'):
                 if (size != PALETTE_SIZE * 3) {
                     av_log(avctx, AV_LOG_ERROR,
-                           "Incorrect palette block size %d.\n", size);
+                           "Incorrect palette block size %"PRIu32".\n", size);
                     return AVERROR_INVALIDDATA;
                 }
                 for (i = 0; i < PALETTE_SIZE; i++)
@@ -1440,7 +1440,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                     }
                 } else {
                     if (size < PALETTE_DELTA * 2 + 4) {
-                        av_log(avctx, AV_LOG_ERROR, "Incorrect palette change block size %d.\n",
+                        av_log(avctx, AV_LOG_ERROR,
+                               "Incorrect palette change block size %"PRIu32".\n",
                                size);
                         return AVERROR_INVALIDDATA;
                     }
@@ -1463,7 +1464,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 break;
             default:
                 bytestream2_skip(&ctx->gb, size);
-                av_log(avctx, AV_LOG_DEBUG, "Unknown/unsupported chunk %x.\n", sig);
+                av_log(avctx, AV_LOG_DEBUG,
+                       "Unknown/unsupported chunk %"PRIx32".\n", sig);
                 break;
             }
 
