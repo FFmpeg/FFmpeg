@@ -382,7 +382,7 @@ ALIGN 16
     psraw           m15, m13, 2;   beta >> 2
     psllw            m8, m9, 1;
     pcmpgtw         m15, m8; (d0 << 1) < beta_2, (d3 << 1) < beta_2
-    movmskps        r14, m15;
+    movmskps        r6, m15;
     ;end weak / strong decision
 
     ; weak filter nd_p/q calculation
@@ -454,7 +454,7 @@ ALIGN 16
     psraw           m13, 3; beta >> 3
     pcmpgtw         m13, m12;
     movmskps        r11, m13;
-    and             r14, r11; strong mask , beta_2 and beta_3 comparisons
+    and             r6, r11; strong mask , beta_2 and beta_3 comparisons
     ;----beta_3 comparison end-----
     ;----tc25 comparison---
     psubw           m12, m3, m4;      p0 - q0
@@ -465,23 +465,23 @@ ALIGN 16
 
     pcmpgtw          m8, m12; tc25 comparisons
     movmskps        r11, m8;
-    and             r14, r11; strong mask, beta_2, beta_3 and tc25 comparisons
+    and             r6, r11; strong mask, beta_2, beta_3 and tc25 comparisons
     ;----tc25 comparison end---
-    mov             r11, r14;
+    mov             r11, r6;
     shr             r11, 1;
-    and             r14, r11; strong mask, bits 2 and 0
+    and             r6, r11; strong mask, bits 2 and 0
 
     pmullw          m14, m9, [pw_m2]; -tc * 2
     paddw            m9, m9
 
-    and             r14, 5; 0b101
-    mov             r11, r14; strong mask
-    shr             r14, 2;
-    movd            m12, r14d; store to xmm for mask generation
-    shl             r14, 1
+    and             r6, 5; 0b101
+    mov             r11, r6; strong mask
+    shr             r6, 2;
+    movd            m12, r6d; store to xmm for mask generation
+    shl             r6, 1
     and             r11, 1
     movd            m10, r11d; store to xmm for mask generation
-    or              r14, r11; final strong mask, bits 1 and 0
+    or              r6, r11; final strong mask, bits 1 and 0
     jz      .weakfilter
 
     shufps          m10, m12, 0
@@ -566,16 +566,16 @@ ALIGN 16
     MASKED_COPY      m3, m12
 
 .weakfilter:
-    not             r14; strong mask -> weak mask
-    and             r14, r13; final weak filtering mask, bits 0 and 1
+    not             r6; strong mask -> weak mask
+    and             r6, r13; final weak filtering mask, bits 0 and 1
     jz             .store
 
     ; weak filtering mask
-    mov             r11, r14
+    mov             r11, r6
     shr             r11, 1
     movd            m12, r11d
-    and             r14, 1
-    movd            m11, r14d
+    and             r6, 1
+    movd            m11, r6d
     shufps          m11, m12, 0
     pcmpeqd         m11, [pd_1]; filtering mask
 
@@ -759,39 +759,39 @@ cglobal hevc_h_loop_filter_chroma_12, 3, 4, 7, pix, stride, tc, pix0
 ; void ff_hevc_v_loop_filter_luma(uint8_t *_pix, ptrdiff_t _stride, int beta,
 ;                                 int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
-cglobal hevc_v_loop_filter_luma_8, 4, 15, 16, pix, stride, beta, tc
-    sub              r0, 4
-    lea              r5, [3 * r1]
-    mov              r6, r0
-    add              r0, r5
-    TRANSPOSE8x8B_LOAD  PASS8ROWS(r6, r0, r1, r5)
+cglobal hevc_v_loop_filter_luma_8, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
+    sub            pixq, 4
+    lea           pix0q, [3 * r1]
+    mov     src3strideq, pixq
+    add            pixq, pix0q
+    TRANSPOSE8x8B_LOAD  PASS8ROWS(src3strideq, pixq, r1, pix0q)
     LUMA_DEBLOCK_BODY 8, v
 .store:
-    TRANSPOSE8x8B_STORE PASS8ROWS(r6, r0, r1, r5)
+    TRANSPOSE8x8B_STORE PASS8ROWS(src3strideq, pixq, r1, pix0q)
 .bypassluma:
     RET
 
-cglobal hevc_v_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc
+cglobal hevc_v_loop_filter_luma_10, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     sub            pixq, 8
-    lea              r5, [3 * strideq]
-    mov              r6, pixq
-    add            pixq, r5
-    TRANSPOSE8x8W_LOAD  PASS8ROWS(r6, pixq, strideq, r5)
+    lea           pix0q, [3 * strideq]
+    mov     src3strideq, pixq
+    add            pixq, pix0q
+    TRANSPOSE8x8W_LOAD  PASS8ROWS(src3strideq, pixq, strideq, pix0q)
     LUMA_DEBLOCK_BODY 10, v
 .store:
-    TRANSPOSE8x8W_STORE PASS8ROWS(r6, r0, r1, r5), [pw_pixel_max_10]
+    TRANSPOSE8x8W_STORE PASS8ROWS(src3strideq, pixq, r1, pix0q), [pw_pixel_max_10]
 .bypassluma:
     RET
 
-cglobal hevc_v_loop_filter_luma_12, 4, 15, 16, pix, stride, beta, tc
+cglobal hevc_v_loop_filter_luma_12, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     sub            pixq, 8
-    lea              r5, [3 * strideq]
-    mov              r6, pixq
-    add            pixq, r5
-    TRANSPOSE8x8W_LOAD  PASS8ROWS(r6, pixq, strideq, r5)
+    lea           pix0q, [3 * strideq]
+    mov     src3strideq, pixq
+    add            pixq, pix0q
+    TRANSPOSE8x8W_LOAD  PASS8ROWS(src3strideq, pixq, strideq, pix0q)
     LUMA_DEBLOCK_BODY 12, v
 .store:
-    TRANSPOSE8x8W_STORE PASS8ROWS(r6, r0, r1, r5), [pw_pixel_max_12]
+    TRANSPOSE8x8W_STORE PASS8ROWS(src3strideq, pixq, r1, pix0q), [pw_pixel_max_12]
 .bypassluma:
     RET
 
@@ -799,7 +799,7 @@ cglobal hevc_v_loop_filter_luma_12, 4, 15, 16, pix, stride, beta, tc
 ; void ff_hevc_h_loop_filter_luma(uint8_t *_pix, ptrdiff_t _stride, int beta,
 ;                                 int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
-cglobal hevc_h_loop_filter_luma_8, 4, 15, 16, pix, stride, beta, tc, count, pix0, src3stride
+cglobal hevc_h_loop_filter_luma_8, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     lea     src3strideq, [3 * strideq]
     mov           pix0q, pixq
     sub           pix0q, src3strideq
@@ -826,16 +826,16 @@ cglobal hevc_h_loop_filter_luma_8, 4, 15, 16, pix, stride, beta, tc, count, pix0
     packuswb          m1, m2
     packuswb          m3, m4
     packuswb          m5, m6
-    movh   [r5 +     r1], m1
-    movhps [r5 + 2 * r1], m1
-    movh   [r5 +     r6], m3
-    movhps [r0         ], m3
-    movh   [r0 +     r1], m5
-    movhps [r0 + 2 * r1], m5
+    movh   [pix0q +     strideq], m1
+    movhps [pix0q + 2 * strideq], m1
+    movh   [pix0q + src3strideq], m3
+    movhps [pixq               ], m3
+    movh   [pixq  +     strideq], m5
+    movhps [pixq  + 2 * strideq], m5
 .bypassluma:
     RET
 
-cglobal hevc_h_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc, count, pix0, src3stride
+cglobal hevc_h_loop_filter_luma_10, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     lea                  src3strideq, [3 * strideq]
     mov                        pix0q, pixq
     sub                        pix0q, src3strideq
@@ -866,7 +866,7 @@ cglobal hevc_h_loop_filter_luma_10, 4, 15, 16, pix, stride, beta, tc, count, pix
 .bypassluma:
     RET
 
-cglobal hevc_h_loop_filter_luma_12, 4, 15, 16, pix, stride, beta, tc, count, pix0, src3stride
+cglobal hevc_h_loop_filter_luma_12, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     lea                  src3strideq, [3 * strideq]
     mov                        pix0q, pixq
     sub                        pix0q, src3strideq
