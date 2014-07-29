@@ -257,6 +257,7 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
     uint8_t *mime_type;
     int ret = 0, probe_size, buf_offset = 0;
     int score = 0;
+    int ret2;
 
     if (!max_probe_size)
         max_probe_size = PROBE_BUF_MAX;
@@ -331,8 +332,9 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
 
 fail:
     /* Rewind. Reuse probe buffer to avoid seeking. */
+    ret2 = ffio_rewind_with_probe_data(pb, &buf, buf_offset);
     if (ret >= 0)
-        ret = ffio_rewind_with_probe_data(pb, &buf, buf_offset);
+        ret = ret2;
 
 #if FF_API_PROBE_MIME
     av_free(pd.mime_type);
