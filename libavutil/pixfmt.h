@@ -202,6 +202,10 @@ enum AVPixelFormat {
     AV_PIX_FMT_YVYU422,   ///< packed YUV 4:2:2, 16bpp, Y0 Cr Y1 Cb
 
     AV_PIX_FMT_VDA,          ///< HW acceleration through VDA, data[3] contains a CVPixelBufferRef
+
+    AV_PIX_FMT_YA16BE,       ///< 16bit gray, 16bit alpha (big-endian)
+    AV_PIX_FMT_YA16LE,       ///< 16bit gray, 16bit alpha (little-endian)
+
     AV_PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 
 #if FF_API_PIX_FMT
@@ -221,6 +225,7 @@ enum AVPixelFormat {
 #define AV_PIX_FMT_BGR32_1 AV_PIX_FMT_NE(BGRA, ARGB)
 
 #define AV_PIX_FMT_GRAY16 AV_PIX_FMT_NE(GRAY16BE, GRAY16LE)
+#define AV_PIX_FMT_YA16   AV_PIX_FMT_NE(YA16BE,   YA16LE)
 #define AV_PIX_FMT_RGB48  AV_PIX_FMT_NE(RGB48BE,  RGB48LE)
 #define AV_PIX_FMT_RGB565 AV_PIX_FMT_NE(RGB565BE, RGB565LE)
 #define AV_PIX_FMT_RGB555 AV_PIX_FMT_NE(RGB555BE, RGB555LE)
