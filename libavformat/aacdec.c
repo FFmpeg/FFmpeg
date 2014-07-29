@@ -110,5 +110,6 @@ AVInputFormat ff_aac_demuxer = {
     .read_packet  = ff_raw_read_partial_packet,
     .flags        = AVFMT_GENERIC_INDEX,
     .extensions   = "aac",
+    .mime_type    = "audio/aac,audio/aacp,audio/x-aac",
     .raw_codec_id = AV_CODEC_ID_AAC,
 };
