@@ -138,31 +138,22 @@ INIT_XMM sse2
 ; in: 4 rows of 8 words in m0..m3
 ; out: 8 rows of 4 words in %1..%8
 %macro TRANSPOSE8x4W_STORE 9
+    TRANSPOSE4x4W     0, 1, 2, 3, 4
+
     pxor             m5, m5; zeros reg
     CLIPW            m0, m5, %9
     CLIPW            m1, m5, %9
     CLIPW            m2, m5, %9
     CLIPW            m3, m5, %9
 
-    punpckhwd        m4, m0, m1
-    punpcklwd        m0, m1
-    punpckhwd        m5, m2, m3
-    punpcklwd        m2, m3
-    punpckhdq        m6, m0, m2
-    punpckldq        m0, m2
-
     movq             %1, m0
     movhps           %2, m0
-    movq             %3, m6
-    movhps           %4, m6
-
-    punpckhdq        m6, m4, m5
-    punpckldq        m4, m5
-
-    movq             %5, m4
-    movhps           %6, m4
-    movq             %7, m6
-    movhps           %8, m6
+    movq             %3, m1
+    movhps           %4, m1
+    movq             %5, m2
+    movhps           %6, m2
+    movq             %7, m3
+    movhps           %8, m3
 %endmacro
 
 ; in: 8 rows of 8 bytes in %1..%8
