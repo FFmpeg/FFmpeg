@@ -15,6 +15,11 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2014-08-23 - xxxxxxx - lavu 54.7.100 - dict.h
+  AV_DICT_DONT_STRDUP_KEY and AV_DICT_DONT_STRDUP_VAL arguments are now
+  freed even on error. This is consistent with the behaviour all users
+  of it we could find expect.
+
 2014-08-21 - 980a5b0 - lavu 54.6.100 - frame.h motion_vector.h
   Add AV_FRAME_DATA_MOTION_VECTORS side data and AVMotionVector structure
 
