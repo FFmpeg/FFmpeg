@@ -393,7 +393,7 @@ typedef struct AVProbeData {
     const char *filename;
     unsigned char *buf; /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
     int buf_size;       /**< Size of buf except extra allocated bytes */
-#ifdef FF_API_PROBE_MIME
+#if FF_API_PROBE_MIME
     uint8_t *mime_type; /**< mime_type, when known. */
 #endif
 } AVProbeData;

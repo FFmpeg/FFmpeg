@@ -214,7 +214,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
             if (av_match_ext(lpd.filename, fmt1->extensions))
                 score = AVPROBE_SCORE_EXTENSION;
         }
-#ifdef FF_API_PROBE_MIME
+#if FF_API_PROBE_MIME
         if (av_match_name(lpd.mime_type, fmt1->mime_type))
             score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
 #endif
@@ -269,7 +269,7 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
     if (offset >= max_probe_size)
         return AVERROR(EINVAL);
 
-#ifdef FF_API_PROBE_MIME
+#if FF_API_PROBE_MIME
     if (pb->av_class)
         av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &pd.mime_type);
 #endif
@@ -336,7 +336,7 @@ fail:
     if (ret >= 0)
         ret = ffio_rewind_with_probe_data(pb, &buf, buf_offset);
 
-#ifdef FF_API_PROBE_MIME
+#if FF_API_PROBE_MIME
     av_free(pd.mime_type);
 #endif
     return ret < 0 ? ret : score;
