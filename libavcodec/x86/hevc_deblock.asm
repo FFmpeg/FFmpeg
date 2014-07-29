@@ -663,11 +663,11 @@ ALIGN 16
     MASKED_COPY      m4, m8
 %endmacro
 
-INIT_XMM sse2
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_v_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int *_tc,
 ;                                   uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
+%macro LOOP_FILTER_CHROMA 0
 cglobal hevc_v_loop_filter_chroma_8, 3, 5, 7, pix, stride, tc, pix0, r3stride
     sub            pixq, 2
     lea       r3strideq, [3*strideq]
@@ -752,6 +752,12 @@ cglobal hevc_h_loop_filter_chroma_12, 3, 4, 7, pix, stride, tc, pix0
     movu [pix0q+strideq], m1
     movu        [pixq], m2
     RET
+%endmacro
+
+INIT_XMM sse2
+LOOP_FILTER_CHROMA
+INIT_XMM avx
+LOOP_FILTER_CHROMA
 
 %if ARCH_X86_64
 %macro LOOP_FILTER_LUMA 0
@@ -902,5 +908,7 @@ cglobal hevc_h_loop_filter_luma_12, 4, 14, 16, pix, stride, beta, tc, pix0, src3
 INIT_XMM sse2
 LOOP_FILTER_LUMA
 INIT_XMM ssse3
+LOOP_FILTER_LUMA
+INIT_XMM avx
 LOOP_FILTER_LUMA
 %endif
