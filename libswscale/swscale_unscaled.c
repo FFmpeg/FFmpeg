@@ -351,7 +351,7 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
     uint8_t *dstPtr = dst[0] + dstStride[0] * srcSliceY;
     const uint8_t *srcPtr = src[0];
 
-    if (srcFormat == AV_PIX_FMT_Y400A) {
+    if (srcFormat == AV_PIX_FMT_YA8) {
         switch (dstFormat) {
         case AV_PIX_FMT_RGB32  : conv = gray8aToPacked32; break;
         case AV_PIX_FMT_BGR32  : conv = gray8aToPacked32; break;
@@ -1204,7 +1204,7 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
                 g = ((i >> 1) & 3) * 85;
                 b = ( i       & 1) * 255;
             } else if (c->srcFormat == AV_PIX_FMT_GRAY8 ||
-                      c->srcFormat == AV_PIX_FMT_Y400A) {
+                       c->srcFormat == AV_PIX_FMT_YA8) {
                 r = g = b = i;
             } else {
                 assert(c->srcFormat == AV_PIX_FMT_BGR4_BYTE);

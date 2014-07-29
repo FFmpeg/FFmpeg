@@ -1339,14 +1339,15 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_h = 1,
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
-    [AV_PIX_FMT_Y400A] = {
-        .name = "y400a",
+    [AV_PIX_FMT_YA8] = {
+        .name = "ya8",
         .nb_components = 2,
         .comp = {
             { 0, 1, 1, 0, 7 },        /* Y */
             { 0, 1, 2, 0, 7 },        /* A */
         },
         .flags = AV_PIX_FMT_FLAG_ALPHA,
+        .alias = "gray8a",
     },
     [AV_PIX_FMT_GBRP] = {
         .name = "gbrp",

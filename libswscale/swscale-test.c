@@ -37,7 +37,7 @@
  * Should be removed when a cleaner pixel format system exists. */
 #define isGray(x)                      \
     ((x) == AV_PIX_FMT_GRAY8       ||     \
-     (x) == AV_PIX_FMT_Y400A       ||     \
+     (x) == AV_PIX_FMT_YA8         ||     \
      (x) == AV_PIX_FMT_GRAY16BE    ||     \
      (x) == AV_PIX_FMT_GRAY16LE)
 #define hasChroma(x)                   \

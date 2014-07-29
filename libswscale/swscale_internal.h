@@ -606,7 +606,7 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
 #else
 #define isGray(x)                      \
     ((x) == AV_PIX_FMT_GRAY8       ||  \
-     (x) == AV_PIX_FMT_Y400A       ||  \
+     (x) == AV_PIX_FMT_YA8         ||  \
      (x) == AV_PIX_FMT_GRAY16BE    ||  \
      (x) == AV_PIX_FMT_GRAY16LE)
 #endif
@@ -697,7 +697,7 @@ static av_always_inline int usePal(enum AVPixelFormat pix_fmt)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
     return ((desc->flags & AV_PIX_FMT_FLAG_PAL) || (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) ||
-            pix_fmt == AV_PIX_FMT_Y400A);
+            pix_fmt == AV_PIX_FMT_YA8);
 }
 
 extern const uint64_t ff_dither4[2];

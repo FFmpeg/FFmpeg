@@ -13,6 +13,10 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-08-xx - xxxxxxx - lavu 53.21.1 - avstring.h
+  Rename AV_PIX_FMT_Y400A to AV_PIX_FMT_YA8 to better identify the format.
+  An alias pixel format and color space name are provided for compatibility.
+
 2014-08-xx - xxxxxxx - lavu 53.21.0 - pixdesc.h
   Support name aliases for pixel formats.
 

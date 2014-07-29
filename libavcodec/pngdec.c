@@ -499,7 +499,7 @@ static int decode_frame(AVCodecContext *avctx,
                     avctx->pix_fmt = AV_PIX_FMT_PAL8;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
-                    avctx->pix_fmt = AV_PIX_FMT_Y400A;
+                    avctx->pix_fmt = AV_PIX_FMT_YA8;
                 } else {
                     goto fail;
                 }
