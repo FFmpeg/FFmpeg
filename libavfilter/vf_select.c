@@ -205,18 +205,6 @@ static int select_frame(AVFilterContext *ctx, AVFrame *frame)
     select->var_values[VAR_PICT_TYPE] = frame->pict_type;
 
     res = av_expr_eval(select->expr, select->var_values, NULL);
-    av_log(inlink->dst, AV_LOG_DEBUG,
-           "n:%d pts:%d t:%f interlace_type:%c key:%d pict_type:%c "
-           "-> select:%f\n",
-           (int)select->var_values[VAR_N],
-           (int)select->var_values[VAR_PTS],
-           select->var_values[VAR_T],
-           select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_P ? 'P' :
-           select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_T ? 'T' :
-           select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_B ? 'B' : '?',
-           (int)select->var_values[VAR_KEY],
-           av_get_picture_type_char(select->var_values[VAR_PICT_TYPE]),
-           res);
 
     select->var_values[VAR_N] += 1.0;
 
