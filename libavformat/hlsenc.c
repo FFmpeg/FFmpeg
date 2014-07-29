@@ -241,7 +241,7 @@ static int hls_write_header(AVFormatContext *s)
         goto fail;
 
     if ((ret = avformat_write_header(hls->avf, NULL)) < 0)
-        return ret;
+        goto fail;
 
 
 fail:
