@@ -483,6 +483,21 @@ ffplay -f lavfi "movie=test.avi[out0];amovie=test.wav[out1]"
 
 @end itemize
 
+@section libcdio
+
+Audio-CD input device based on cdio.
+
+To enable this input device during configuration you need libcdio
+installed on your system.
+
+This device allows playing and grabbing from an Audio-CD.
+
+For example to copy with @command{ffmpeg} the entire Audio-CD in /dev/sr0,
+you may run the command:
+@example
+ffmpeg -f libcdio -i /dev/sr0 cd.wav
+@end example
+
 @section libdc1394
 
 IIDC1394 input device, based on libdc1394 and libraw1394.
