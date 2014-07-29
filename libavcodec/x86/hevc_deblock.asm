@@ -324,7 +324,11 @@ ALIGN 16
     movd             m4, [tcq+4]; tc1
     punpcklwd        m4, m4
     shufps           m6, m4, 0; tc0, tc1
+%if cpuflag(ssse3)
+    psignw           m4, m6, [pw_m1]; -tc0, -tc1
+%else
     pmullw           m4, m6, [pw_m1]; -tc0, -tc1
+%endif
     ;end tc calculations
 
     paddw            m5, [pw_4]; +4
@@ -609,7 +613,11 @@ ALIGN 16
     pminsw          m12, m9;  av_clip(delta0, -tc, tc)
 
     psraw            m9, 1;   tc -> tc / 2
+%if cpuflag(ssse3)
+    psignw          m14, m9, [pw_m1]; -tc / 2
+%else
     pmullw          m14, m9, [pw_m1]; -tc / 2
+%endif
 
     pavgw           m15, m1, m3;   (p2 + p0 + 1) >> 1
     psubw           m15, m2;  ((p2 + p0 + 1) >> 1) - p1
