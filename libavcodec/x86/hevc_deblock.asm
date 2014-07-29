@@ -319,11 +319,9 @@ ALIGN 16
     paddw            m5, m4;
 
     ;tc calculations
-    movd             m6, [tcq]; tc0
+    movq             m6, [tcq]; tc0
     punpcklwd        m6, m6
-    movd             m4, [tcq+4]; tc1
-    punpcklwd        m4, m4
-    shufps           m6, m4, 0; tc0, tc1
+    pshufd           m6, m6, 0xA0; tc0, tc1
 %if cpuflag(ssse3)
     psignw           m4, m6, [pw_m1]; -tc0, -tc1
 %else
@@ -426,14 +424,13 @@ ALIGN 16
     shl             r11, %1 - 8
 %endif
     movd             m8, r11d; tc0
-    add             tcq, 4;
-    mov             r3d, [tcq];
+    mov             r3d, [tcq+4];
 %if %1 > 8
     shl              r3, %1 - 8
 %endif
-    movd             m9, r3d; tc1
     add            r11d, r3d; tc0 + tc1
     jz             .bypassluma
+    movd             m9, r3d; tc1
     punpcklwd        m8, m8
     punpcklwd        m9, m9
     shufps           m8, m9, 0; tc0, tc1
