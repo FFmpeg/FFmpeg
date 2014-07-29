@@ -272,9 +272,7 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
 #if FF_API_PROBE_MIME
     if (pb->av_class)
         av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &pd.mime_type);
-#endif
-
-#if !FF_API_PROBE_MIME
+#else
     if (!*fmt && pb->av_class && av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type) >= 0 && mime_type) {
         if (!av_strcasecmp(mime_type, "audio/aacp")) {
             *fmt = av_find_input_format("aac");
