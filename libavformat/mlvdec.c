@@ -95,30 +95,22 @@ static void read_string(AVFormatContext *avctx, AVIOContext *pb, const char *tag
 
 static void read_uint8(AVFormatContext *avctx, AVIOContext *pb, const char *tag, const char *fmt)
 {
-    char value[4];
-    snprintf(value, sizeof(value), "%i", avio_r8(pb));
-    av_dict_set(&avctx->metadata, tag, value, 0);
+    av_dict_set_int(&avctx->metadata, tag, avio_r8(pb), 0);
 }
 
 static void read_uint16(AVFormatContext *avctx, AVIOContext *pb, const char *tag, const char *fmt)
 {
-    char value[8];
-    snprintf(value, sizeof(value), "%i", avio_rl16(pb));
-    av_dict_set(&avctx->metadata, tag, value, 0);
+    av_dict_set_int(&avctx->metadata, tag, avio_rl16(pb), 0);
 }
 
 static void read_uint32(AVFormatContext *avctx, AVIOContext *pb, const char *tag, const char *fmt)
 {
-    char value[16];
-    snprintf(value, sizeof(value), fmt, avio_rl32(pb));
-    av_dict_set(&avctx->metadata, tag, value, 0);
+    av_dict_set_int(&avctx->metadata, tag, avio_rl32(pb), 0);
 }
 
 static void read_uint64(AVFormatContext *avctx, AVIOContext *pb, const char *tag, const char *fmt)
 {
-    char value[32];
-    snprintf(value, sizeof(value), fmt, avio_rl64(pb));
-    av_dict_set(&avctx->metadata, tag, value, 0);
+    av_dict_set_int(&avctx->metadata, tag, avio_rl64(pb), 0);
 }
 
 static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int file)

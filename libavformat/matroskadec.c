@@ -3345,30 +3345,18 @@ static int webm_dash_manifest_cues(AVFormatContext *s)
     matroska_parse_cues(matroska);
 
     // cues start
-    buf = av_asprintf("%" PRId64, cues_start);
-    if (!buf) return AVERROR(ENOMEM);
-    av_dict_set(&s->streams[0]->metadata, CUES_START, buf, 0);
-    av_free(buf);
+    av_dict_set_int(&s->streams[0]->metadata, CUES_START, cues_start, 0);
 
     // cues end
-    buf = av_asprintf("%" PRId64, cues_end);
-    if (!buf) return AVERROR(ENOMEM);
-    av_dict_set(&s->streams[0]->metadata, CUES_END, buf, 0);
-    av_free(buf);
+    av_dict_set_int(&s->streams[0]->metadata, CUES_END, cues_end, 0);
 
     // bandwidth
     bandwidth = webm_dash_manifest_compute_bandwidth(s, cues_start);
     if (bandwidth < 0) return -1;
-    buf = av_asprintf("%" PRId64, bandwidth);
-    if (!buf) return AVERROR(ENOMEM);
-    av_dict_set(&s->streams[0]->metadata, BANDWIDTH, buf, 0);
-    av_free(buf);
+    av_dict_set_int(&s->streams[0]->metadata, BANDWIDTH, bandwidth, 0);
 
     // check if all clusters start with key frames
-    buf = av_asprintf("%d", webm_clusters_start_with_keyframe(s));
-    if (!buf) return AVERROR(ENOMEM);
-    av_dict_set(&s->streams[0]->metadata, CLUSTER_KEYFRAME, buf, 0);
-    av_free(buf);
+    av_dict_set_int(&s->streams[0]->metadata, CLUSTER_KEYFRAME, webm_clusters_start_with_keyframe(s), 0);
 
     // store cue point timestamps as a comma separated list for checking subsegment alignment in
     // the muxer. assumes that each timestamp cannot be more than 20 characters long.
@@ -3399,10 +3387,8 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
     }
 
     // initialization range
-    buf = av_asprintf("%" PRId64, avio_tell(s->pb) - 5); // 5 is the offset of Cluster ID.
-    if (!buf) return AVERROR(ENOMEM);
-    av_dict_set(&s->streams[0]->metadata, INITIALIZATION_RANGE, buf, 0);
-    av_free(buf);
+    // 5 is the offset of Cluster ID.
+    av_dict_set_int(&s->streams[0]->metadata, INITIALIZATION_RANGE, avio_tell(s->pb) - 5, 0);
 
     // basename of the file
     buf = strrchr(s->filename, '/');
@@ -3417,10 +3403,7 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
 
     // track number
     tracks = matroska->tracks.elem;
-    buf = av_asprintf("%" PRId64, tracks[0].num);
-    if (!buf) return AVERROR(ENOMEM);
-    av_dict_set(&s->streams[0]->metadata, TRACK_NUMBER, buf, 0);
-    av_free(buf);
+    av_dict_set_int(&s->streams[0]->metadata, TRACK_NUMBER, tracks[0].num, 0);
 
     // parse the cues and populate Cue related fields
     return webm_dash_manifest_cues(s);

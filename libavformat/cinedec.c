@@ -73,9 +73,7 @@ static int cine_read_probe(AVProbeData *p)
 static int set_metadata_int(AVDictionary **dict, const char *key, int value)
 {
     if (value) {
-        char buf[64];
-        snprintf(buf, sizeof(buf), "%i", value);
-        return av_dict_set(dict, key, buf, 0);
+        return av_dict_set_int(dict, key, value, 0);
     }
     return 0;
 }

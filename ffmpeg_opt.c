@@ -785,7 +785,6 @@ static int open_input_file(OptionsContext *o, const char *filename)
     AVInputFormat *file_iformat = NULL;
     int err, i, ret;
     int64_t timestamp;
-    uint8_t buf[128];
     AVDictionary **opts;
     AVDictionary *unused_opts = NULL;
     AVDictionaryEntry *e = NULL;
@@ -814,8 +813,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
         exit_program(1);
     }
     if (o->nb_audio_sample_rate) {
-        snprintf(buf, sizeof(buf), "%d", o->audio_sample_rate[o->nb_audio_sample_rate - 1].u.i);
-        av_dict_set(&o->g->format_opts, "sample_rate", buf, 0);
+        av_dict_set_int(&o->g->format_opts, "sample_rate", o->audio_sample_rate[o->nb_audio_sample_rate - 1].u.i, 0);
     }
     if (o->nb_audio_channels) {
         /* because we set audio_channels based on both the "ac" and
@@ -824,9 +822,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
         if (file_iformat && file_iformat->priv_class &&
             av_opt_find(&file_iformat->priv_class, "channels", NULL, 0,
                         AV_OPT_SEARCH_FAKE_OBJ)) {
-            snprintf(buf, sizeof(buf), "%d",
-                     o->audio_channels[o->nb_audio_channels - 1].u.i);
-            av_dict_set(&o->g->format_opts, "channels", buf, 0);
+            av_dict_set_int(&o->g->format_opts, "channels", o->audio_channels[o->nb_audio_channels - 1].u.i, 0);
         }
     }
     if (o->nb_frame_rates) {
@@ -2065,9 +2061,7 @@ loop_end:
         assert_file_overwrite(filename);
 
     if (o->mux_preload) {
-        uint8_t buf[64];
-        snprintf(buf, sizeof(buf), "%d", (int)(o->mux_preload*AV_TIME_BASE));
-        av_dict_set(&of->opts, "preload", buf, 0);
+        av_dict_set_int(&of->opts, "preload", o->mux_preload*AV_TIME_BASE, 0);
     }
     oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
 

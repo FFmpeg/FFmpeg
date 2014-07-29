@@ -919,14 +919,8 @@ static int open_input(HLSContext *c, struct playlist *pls)
     if (seg->size >= 0) {
         /* try to restrict the HTTP request to the part we want
          * (if this is in fact a HTTP request) */
-        char offset[24] = { 0 };
-        char end_offset[24] = { 0 };
-        snprintf(offset, sizeof(offset) - 1, "%"PRId64,
-                 seg->url_offset);
-        snprintf(end_offset, sizeof(end_offset) - 1, "%"PRId64,
-                 seg->url_offset + seg->size);
-        av_dict_set(&opts, "offset", offset, 0);
-        av_dict_set(&opts, "end_offset", end_offset, 0);
+        av_dict_set_int(&opts, "offset", seg->url_offset, 0);
+        av_dict_set_int(&opts, "end_offset", seg->url_offset + seg->size, 0);
     }
 
     av_log(pls->parent, AV_LOG_VERBOSE, "HLS request for url '%s', offset %"PRId64", playlist %d\n",
@@ -1397,15 +1391,12 @@ static int hls_read_header(AVFormatContext *s)
     /* Create a program for each variant */
     for (i = 0; i < c->n_variants; i++) {
         struct variant *v = c->variants[i];
-        char bitrate_str[20];
         AVProgram *program;
-
-        snprintf(bitrate_str, sizeof(bitrate_str), "%d", v->bandwidth);
 
         program = av_new_program(s, i);
         if (!program)
             goto fail;
-        av_dict_set(&program->metadata, "variant_bitrate", bitrate_str, 0);
+        av_dict_set_int(&program->metadata, "variant_bitrate", v->bandwidth, 0);
 
         for (j = 0; j < v->n_playlists; j++) {
             struct playlist *pls = v->playlists[j];
@@ -1419,7 +1410,7 @@ static int hls_read_header(AVFormatContext *s)
 
                 /* Set variant_bitrate for streams unique to this variant */
                 if (!is_shared && v->bandwidth)
-                    av_dict_set(&st->metadata, "variant_bitrate", bitrate_str, 0);
+                    av_dict_set_int(&st->metadata, "variant_bitrate", v->bandwidth, 0);
             }
         }
     }
