@@ -19,16 +19,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/atomic.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 
 #include "avio_internal.h"
 #include "avformat.h"
 #include "id3v2.h"
 #include "internal.h"
-#include "libavutil/atomic.h"
-#include "libavutil/bprint.h"
-#include "libavutil/opt.h"
+
 
 /**
  * @file
