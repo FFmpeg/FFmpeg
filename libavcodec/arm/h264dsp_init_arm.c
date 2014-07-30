@@ -108,8 +108,12 @@ av_cold void ff_h264dsp_init_arm(H264DSPContext *c, const int bit_depth,
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (have_armv6(cpu_flags))
+    if (have_armv6(cpu_flags) && !(have_vfpv3(cpu_flags) || have_neon(cpu_flags))) {
+        // This function uses the 'setend' instruction which is deprecated
+        // on ARMv8. This instruction is serializing on some ARMv7 cores as
+        // well. Therefore, only use the function on ARMv6.
         c->h264_find_start_code_candidate = ff_h264_find_start_code_candidate_armv6;
+    }
     if (have_neon(cpu_flags))
         h264dsp_init_neon(c, bit_depth, chroma_format_idc);
 }
