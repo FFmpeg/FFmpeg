@@ -5231,6 +5231,8 @@ for thread in $THREADS_LIST; do
     fi
 done
 
+enabled zlib && add_cppflags -DZLIB_CONST
+
 # conditional library dependencies, in linking order
 enabled aconvert_filter     && prepend avfilter_deps "swresample"
 enabled amovie_filter       && prepend avfilter_deps "avformat avcodec"
