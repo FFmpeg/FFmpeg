@@ -342,10 +342,9 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO:
         av_log(inlink->dst, AV_LOG_DEBUG, " interlace_type:%c pict_type:%c scene:%f",
-               select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_P ? 'P' :
-               select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_T ? 'T' :
-               select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_B ? 'B' : '?',
-               av_get_picture_type_char(select->var_values[VAR_PICT_TYPE]),
+               (!frame->interlaced_frame) ? 'P' :
+               frame->top_field_first     ? 'T' : 'B',
+               av_get_picture_type_char(frame->pict_type),
                select->var_values[VAR_SCENE]);
         break;
     case AVMEDIA_TYPE_AUDIO:
