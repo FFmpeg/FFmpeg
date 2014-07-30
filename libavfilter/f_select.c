@@ -338,7 +338,7 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
            select->var_values[VAR_N],
            select->var_values[VAR_PTS],
            select->var_values[VAR_T],
-           (int)select->var_values[VAR_KEY]);
+           frame->key_frame);
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -349,9 +349,9 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
                select->var_values[VAR_SCENE]);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        av_log(inlink->dst, AV_LOG_DEBUG, " samples_n:%d consumed_samples_n:%d",
-               (int)select->var_values[VAR_SAMPLES_N],
-               (int)select->var_values[VAR_CONSUMED_SAMPLES_N]);
+        av_log(inlink->dst, AV_LOG_DEBUG, " samples_n:%d consumed_samples_n:%f",
+               frame->nb_samples,
+               select->var_values[VAR_CONSUMED_SAMPLES_N]);
         break;
     }
 
