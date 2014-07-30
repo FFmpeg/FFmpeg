@@ -2242,12 +2242,13 @@ static void finished_reading_packet(AVFormatContext *s, int raw_packet_size)
         avio_skip(pb, skip);
 }
 
-static int handle_packets(MpegTSContext *ts, int nb_packets)
+static int handle_packets(MpegTSContext *ts, int64_t nb_packets)
 {
     AVFormatContext *s = ts->stream;
     uint8_t packet[TS_PACKET_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
     const uint8_t *data;
-    int packet_num, ret = 0;
+    int64_t packet_num;
+    int ret = 0;
 
     if (avio_tell(s->pb) != ts->last_pos) {
         int i;
@@ -2369,9 +2370,9 @@ static int mpegts_read_header(AVFormatContext *s)
     AVIOContext *pb   = s->pb;
     uint8_t buf[8 * 1024] = {0};
     int len;
-    int64_t pos;
+    int64_t pos, probesize = s->probesize ? s->probesize : s->probesize2;
 
-    ffio_ensure_seekback(pb, s->probesize);
+    ffio_ensure_seekback(pb, probesize);
 
     /* read the first 8192 bytes to get packet size */
     pos = avio_tell(pb);
@@ -2394,7 +2395,7 @@ static int mpegts_read_header(AVFormatContext *s)
 
         mpegts_open_section_filter(ts, PAT_PID, pat_cb, ts, 1);
 
-        handle_packets(ts, s->probesize / ts->raw_packet_size);
+        handle_packets(ts, probesize / ts->raw_packet_size);
         /* if could not find service, enable auto_guess */
 
         ts->auto_guess = 1;

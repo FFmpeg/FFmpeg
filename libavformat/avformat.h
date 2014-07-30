@@ -1296,9 +1296,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Don't merge side data but keep it separate.
 
     /**
-     * Maximum size of the data read from input for determining
-     * the input container format.
-     * Demuxing only, set by the caller before avformat_open_input().
+     * @deprecated deprecated in favor of probesize2
      */
     unsigned int probesize;
 
@@ -1671,6 +1669,14 @@ typedef struct AVFormatContext {
      * Can be set to 0 to let avformat choose using a heuristic.
      */
     int64_t max_analyze_duration2;
+
+    /**
+     * Maximum size of the data read from input for determining
+     * the input container format.
+     * Demuxing only, set by the caller before avformat_open_input()
+     * via AVOptions (NO direct access).
+     */
+    int64_t probesize2;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);

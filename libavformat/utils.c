@@ -2950,10 +2950,15 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int64_t old_offset  = avio_tell(ic->pb);
     // new streams might appear, no options for those
     int orig_nb_streams = ic->nb_streams;
-    int flush_codecs    = ic->probesize > 0;
+    int flush_codecs;
     int64_t max_analyze_duration = ic->max_analyze_duration2;
+    int64_t probesize = ic->probesize2;
+
     if (!max_analyze_duration)
         max_analyze_duration = ic->max_analyze_duration;
+    if (ic->probesize)
+        probesize = ic->probesize;
+    flush_codecs = probesize > 0;
 
     av_opt_set(ic, "skip_clear", "1", AV_OPT_SEARCH_CHILDREN);
 
@@ -3081,10 +3086,10 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             }
         }
         /* We did not get all the codec info, but we read too much data. */
-        if (read_size >= ic->probesize) {
+        if (read_size >= probesize) {
             ret = count;
             av_log(ic, AV_LOG_DEBUG,
-                   "Probe buffer size limit of %d bytes reached\n", ic->probesize);
+                   "Probe buffer size limit of %"PRId64" bytes reached\n", probesize);
             for (i = 0; i < ic->nb_streams; i++)
                 if (!ic->streams[i]->r_frame_rate.num &&
                     ic->streams[i]->info->duration_count <= 1 &&
@@ -3328,7 +3333,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
     }
 
-    if (ic->probesize)
+    if (probesize)
     estimate_timings(ic, old_offset);
 
     if (ret >= 0 && ic->nb_streams)
