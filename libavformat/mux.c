@@ -291,7 +291,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             ) {
                 if (st->sample_aspect_ratio.num != 0 &&
                     st->sample_aspect_ratio.den != 0 &&
-                    codec->sample_aspect_ratio.den != 0 &&
+                    codec->sample_aspect_ratio.num != 0 &&
                     codec->sample_aspect_ratio.den != 0) {
                     av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between muxer "
                            "(%d/%d) and encoder layer (%d/%d)\n",
