@@ -205,14 +205,20 @@ int ff_h264_decode_sei(H264Context *h)
         int size = 0;
         int type = 0;
         int ret  = 0;
+        int last = 0;
 
-        do
-            type += show_bits(&h->gb, 8);
-        while (get_bits(&h->gb, 8) == 255);
+        while (get_bits_left(&h->gb) >= 8 &&
+               (last = get_bits(&h->gb, 8)) == 255) {
+            type += 255;
+        }
+        type += last;
 
-        do
-            size += show_bits(&h->gb, 8);
-        while (get_bits(&h->gb, 8) == 255);
+        last = 0;
+        while (get_bits_left(&h->gb) >= 8 &&
+               (last = get_bits(&h->gb, 8)) == 255) {
+            size += 255;
+        }
+        size += last;
 
         if (size > get_bits_left(&h->gb) / 8) {
             av_log(h->avctx, AV_LOG_ERROR, "SEI type %d truncated at %d\n",
