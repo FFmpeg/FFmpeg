@@ -308,6 +308,7 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     select->var_values[VAR_PTS] = TS2D(frame->pts);
     select->var_values[VAR_T  ] = TS2D(frame->pts) * av_q2d(inlink->time_base);
     select->var_values[VAR_POS] = av_frame_get_pkt_pos(frame) == -1 ? NAN : av_frame_get_pkt_pos(frame);
+    select->var_values[VAR_KEY] = frame->key_frame;
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_AUDIO:
