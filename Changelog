@@ -1,6 +1,11 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.3.1:
+- public AVDCT API/ABI for DCT functions
+- g2meet: allow size changes within original sizes
+- dv: improved error resilience, fixing Ticket2340 and Ticket2341
+
 version 2.3:
 - AC3 fixed-point decoding
 - shuffleplanes filter
