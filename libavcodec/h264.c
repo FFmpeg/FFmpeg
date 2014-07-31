@@ -296,7 +296,6 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
     // use second escape buffer for inter data
     bufidx = h->nal_unit_type == NAL_DPC ? 1 : 0;
 
-    si = h->rbsp_buffer_size[bufidx];
     av_fast_padded_malloc(&h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length+MAX_MBPAIR_SIZE);
     dst = h->rbsp_buffer[bufidx];
 
