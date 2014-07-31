@@ -83,6 +83,9 @@ int ff_oss_audio_open(AVFormatContext *s1, int is_output,
      * usable. If OSS is not usable the SNDCTL_DSP_SETFMTS later is going to
      * fail anyway. `err =` kept to eliminate compiler warning. */
     err = ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &tmp);
+    if (err < 0) {
+        av_log(s1, AV_LOG_WARNING, "SNDCTL_DSP_GETFMTS: %s\n", strerror(errno));
+    }
 
 #if HAVE_BIGENDIAN
     if (tmp & AFMT_S16_BE) {
