@@ -91,7 +91,7 @@ static int h264_find_frame_end(H264Context *h, const uint8_t *buf,
             state = 7;
         } else {
             h->parse_history[h->parse_history_count++]= buf[i];
-            if (h->parse_history_count>3) {
+            if (h->parse_history_count>5) {
                 unsigned int mb, last_mb= h->parse_last_mb;
                 GetBitContext gb;
 
@@ -119,7 +119,7 @@ found:
     pc->frame_start_found = 0;
     if (h->is_avc)
         return next_avc;
-    return i - (state & 5) - 3 * (state > 7);
+    return i - (state & 5) - 5 * (state > 7);
 }
 
 static int scan_mmco_reset(AVCodecParserContext *s)
