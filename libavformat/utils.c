@@ -892,6 +892,7 @@ static int read_from_packet_buffer(AVPacketList **pkt_buffer,
 static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     int ret = 0, i, got_packet = 0;
+    AVDictionary *metadata = NULL;
 
     av_init_packet(pkt);
 
@@ -966,6 +967,14 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
     if (!got_packet && s->parse_queue)
         ret = read_from_packet_buffer(&s->parse_queue, &s->parse_queue_end, pkt);
+
+    av_opt_get_dict_val(s, "metadata", AV_OPT_SEARCH_CHILDREN, &metadata);
+    if (metadata) {
+        s->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
+        av_dict_copy(&s->metadata, metadata, 0);
+        av_dict_free(&metadata);
+        av_opt_set_dict_val(s, "metadata", NULL, AV_OPT_SEARCH_CHILDREN);
+    }
 
     if (s->debug & FF_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG,
