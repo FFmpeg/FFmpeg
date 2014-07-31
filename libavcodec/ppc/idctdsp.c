@@ -231,14 +231,15 @@ av_cold void ff_idctdsp_init_ppc(IDCTDSPContext *c, AVCodecContext *avctx,
                                  unsigned high_bit_depth)
 {
 #if HAVE_ALTIVEC
-    if (PPC_ALTIVEC(av_get_cpu_flags())) {
-        if (!high_bit_depth) {
-            if ((avctx->idct_algo == FF_IDCT_AUTO) ||
-                (avctx->idct_algo == FF_IDCT_ALTIVEC)) {
-                c->idct_add  = idct_add_altivec;
-                c->idct_put  = idct_put_altivec;
-                c->perm_type = FF_IDCT_PERM_TRANSPOSE;
-            }
+    if (!PPC_ALTIVEC(av_get_cpu_flags()))
+        return;
+
+    if (!high_bit_depth) {
+        if ((avctx->idct_algo == FF_IDCT_AUTO) ||
+            (avctx->idct_algo == FF_IDCT_ALTIVEC)) {
+            c->idct_add  = idct_add_altivec;
+            c->idct_put  = idct_put_altivec;
+            c->perm_type = FF_IDCT_PERM_TRANSPOSE;
         }
     }
 #endif /* HAVE_ALTIVEC */
