@@ -848,7 +848,6 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         rcc->mv_bits_sum[pict_type] += rce->mv_bits;
         rcc->frame_count[pict_type]++;
 
-        bits        = rce->i_tex_bits + rce->p_tex_bits;
         rate_factor = rcc->pass1_wanted_bits /
                       rcc->pass1_rc_eq_output_sum * br_compensation;
 
