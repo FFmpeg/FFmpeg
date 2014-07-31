@@ -196,6 +196,13 @@ static int parse_picture_segment(AVCodecContext *avctx,
     /* Decode rle bitmap length, stored size includes width/height data */
     rle_bitmap_len = bytestream_get_be24(&buf) - 2*2;
 
+    if (buf_size > rle_bitmap_len) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Buffer dimension %d larger than the expected RLE data %d\n",
+               buf_size, rle_bitmap_len);
+        return AVERROR_INVALIDDATA;
+    }
+
     /* Get bitmap dimensions from data */
     width  = bytestream_get_be16(&buf);
     height = bytestream_get_be16(&buf);
