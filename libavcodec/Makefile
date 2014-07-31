@@ -26,7 +26,7 @@ OBJS = allcodecs.o                                                      \
        raw.o                                                            \
        utils.o                                                          \
 
-# parts needed for many different codecs
+# subsystems
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o
 OBJS-$(CONFIG_AUDIO_FRAME_QUEUE)       += audio_frame_queue.o
