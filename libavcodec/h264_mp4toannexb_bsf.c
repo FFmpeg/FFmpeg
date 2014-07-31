@@ -179,6 +179,11 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         if (ctx->first_idr && (unit_type == 7 || unit_type == 8))
             ctx->idr_sps_pps_seen = 1;
 
+        /* if this is a new IDR picture following an IDR picture, reset the idr flag.
+         * Just check first_mb_in_slice to be 0 as this is the simplest solution.
+         * This could be checking idr_pic_id instead, but would complexify the parsing. */
+        if (!ctx->first_idr && unit_type == 5 && (buf[1] & 0x80))
+            ctx->first_idr = 1;
 
         /* prepend only to the first type 5 NAL unit of an IDR picture, if no sps/pps are already present */
         if (ctx->first_idr && unit_type == 5 && !ctx->idr_sps_pps_seen) {
