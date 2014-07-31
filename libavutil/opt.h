@@ -224,6 +224,7 @@ enum AVOptionType{
     AV_OPT_TYPE_STRING,
     AV_OPT_TYPE_RATIONAL,
     AV_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
+    AV_OPT_TYPE_DICT,
     AV_OPT_TYPE_CONST = 128,
 };
 
@@ -325,7 +326,7 @@ int av_set_options_string(void *ctx, const char *opts,
                           const char *key_val_sep, const char *pairs_sep);
 
 /**
- * Free all string and binary options in obj.
+ * Free all allocated objects in obj.
  */
 void av_opt_free(void *obj);
 
@@ -491,11 +492,16 @@ const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *pre
  * AVERROR(ERANGE) if the value is out of range
  * AVERROR(EINVAL) if the value is not valid
  */
-int av_opt_set       (void *obj, const char *name, const char *val, int search_flags);
-int av_opt_set_int   (void *obj, const char *name, int64_t     val, int search_flags);
-int av_opt_set_double(void *obj, const char *name, double      val, int search_flags);
-int av_opt_set_q     (void *obj, const char *name, AVRational  val, int search_flags);
-int av_opt_set_bin   (void *obj, const char *name, const uint8_t *val, int size, int search_flags);
+int av_opt_set         (void *obj, const char *name, const char *val, int search_flags);
+int av_opt_set_int     (void *obj, const char *name, int64_t     val, int search_flags);
+int av_opt_set_double  (void *obj, const char *name, double      val, int search_flags);
+int av_opt_set_q       (void *obj, const char *name, AVRational  val, int search_flags);
+int av_opt_set_bin     (void *obj, const char *name, const uint8_t *val, int size, int search_flags);
+/**
+ * @note Any old dictionary present is discarded and replaced with a copy of the new one. The
+ * caller still owns val is and responsible for freeing it.
+ */
+int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, int search_flags);
 /**
  * @}
  */
@@ -515,10 +521,15 @@ int av_opt_set_bin   (void *obj, const char *name, const uint8_t *val, int size,
 /**
  * @note the returned string will av_malloc()ed and must be av_free()ed by the caller
  */
-int av_opt_get       (void *obj, const char *name, int search_flags, uint8_t   **out_val);
-int av_opt_get_int   (void *obj, const char *name, int search_flags, int64_t    *out_val);
-int av_opt_get_double(void *obj, const char *name, int search_flags, double     *out_val);
-int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational *out_val);
+int av_opt_get         (void *obj, const char *name, int search_flags, uint8_t   **out_val);
+int av_opt_get_int     (void *obj, const char *name, int search_flags, int64_t    *out_val);
+int av_opt_get_double  (void *obj, const char *name, int search_flags, double     *out_val);
+int av_opt_get_q       (void *obj, const char *name, int search_flags, AVRational *out_val);
+/**
+ * @param[out] out_val The returned dictionary is a copy of the actual value and must
+ * be freed with av_dict_free() by the caller
+ */
+int av_opt_get_dict_val(void *obj, const char *name, int search_flags, AVDictionary **out_val);
 /**
  * @}
  * @}

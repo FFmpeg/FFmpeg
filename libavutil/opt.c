@@ -307,6 +307,24 @@ int av_opt_set_bin(void *obj, const char *name, const uint8_t *val, int len, int
     return 0;
 }
 
+int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, int search_flags)
+{
+    void *target_obj;
+    AVDictionary **dst;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (o->flags & AV_OPT_FLAG_READONLY)
+        return AVERROR(EINVAL);
+
+    dst = (AVDictionary **)(((uint8_t *)target_obj) + o->offset);
+    av_dict_free(dst);
+    av_dict_copy(dst, val, 0);
+
+    return 0;
+}
+
 int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
 {
     void *dst, *target_obj;
@@ -407,6 +425,23 @@ int av_opt_get_q(void *obj, const char *name, int search_flags, AVRational *out_
         *out_val = (AVRational){intnum, den};
     else
         *out_val = av_d2q(num*intnum/den, 1<<24);
+    return 0;
+}
+
+int av_opt_get_dict_val(void *obj, const char *name, int search_flags, AVDictionary **out_val)
+{
+    void *target_obj;
+    AVDictionary *src;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (o->type != AV_OPT_TYPE_DICT)
+        return AVERROR(EINVAL);
+
+    src = *(AVDictionary **)(((uint8_t *)target_obj) + o->offset);
+    av_dict_copy(out_val, src, 0);
+
     return 0;
 }
 
@@ -539,7 +574,8 @@ void av_opt_set_defaults(void *s)
                 av_opt_set(s, opt->name, opt->default_val.str, 0);
                 break;
             case AV_OPT_TYPE_BINARY:
-                /* Cannot set default for binary */
+            case AV_OPT_TYPE_DICT:
+                /* Cannot set defaults for these types */
             break;
             default:
                 av_log(s, AV_LOG_DEBUG, "AVOption type %d of option %s not implemented yet\n", opt->type, opt->name);
@@ -621,9 +657,21 @@ int av_set_options_string(void *ctx, const char *opts,
 void av_opt_free(void *obj)
 {
     const AVOption *o = NULL;
-    while ((o = av_opt_next(obj, o)))
-        if (o->type == AV_OPT_TYPE_STRING || o->type == AV_OPT_TYPE_BINARY)
+    while ((o = av_opt_next(obj, o))) {
+        switch (o->type) {
+        case AV_OPT_TYPE_STRING:
+        case AV_OPT_TYPE_BINARY:
             av_freep((uint8_t *)obj + o->offset);
+            break;
+
+        case AV_OPT_TYPE_DICT:
+            av_dict_free((AVDictionary **)(((uint8_t *)obj) + o->offset));
+            break;
+
+        default:
+            break;
+        }
+    }
 }
 
 int av_opt_set_dict(void *obj, AVDictionary **options)
