@@ -176,7 +176,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         if (buf + nal_size > buf_end || nal_size < 0)
             goto fail;
 
-        if (ctx->first_idr && (unit_type == 7 || unit_type == 8))
+        if (unit_type == 7 || unit_type == 8)
             ctx->idr_sps_pps_seen = 1;
 
         /* if this is a new IDR picture following an IDR picture, reset the idr flag.
