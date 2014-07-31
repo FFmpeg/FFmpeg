@@ -29,6 +29,7 @@ version <next>:
 - display matrix export and rotation api
 - drop avserver, it was unmaintained for years and largely broken
 - Icecast protocol
+- request icecast metadata by default
 
 
 version 10:
