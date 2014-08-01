@@ -1957,7 +1957,8 @@ int av_get_padded_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
     return bits >> log2_pixels;
 }
 
-char *av_get_pix_fmt_string (char *buf, int buf_size, enum AVPixelFormat pix_fmt)
+char *av_get_pix_fmt_string(char *buf, int buf_size,
+                            enum AVPixelFormat pix_fmt)
 {
     /* print header */
     if (pix_fmt < 0) {
