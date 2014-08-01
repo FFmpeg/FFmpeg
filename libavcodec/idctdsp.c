@@ -24,6 +24,7 @@
 #include "faanidct.h"
 #include "idctdsp.h"
 #include "simple_idct.h"
+#include "xvididct.h"
 
 av_cold void ff_init_scantable(uint8_t *permutation, ScanTable *st,
                                const uint8_t *src_scantable)
@@ -298,6 +299,9 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
     c->put_pixels_clamped        = put_pixels_clamped_c;
     c->put_signed_pixels_clamped = put_signed_pixels_clamped_c;
     c->add_pixels_clamped        = add_pixels_clamped_c;
+
+    if (CONFIG_MPEG4_DECODER && avctx->idct_algo == FF_IDCT_XVIDMMX)
+        ff_xvididct_init(c, avctx);
 
     if (ARCH_ALPHA)
         ff_idctdsp_init_alpha(c, avctx, high_bit_depth);

@@ -22,7 +22,6 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/idctdsp.h"
-#include "idct_xvid.h"
 #include "idctdsp.h"
 #include "simple_idct.h"
 
@@ -38,8 +37,6 @@ static const uint8_t simple_mmx_permutation[64] = {
     0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
 };
 
-static const uint8_t idct_sse2_row_perm[8] = { 0, 4, 1, 5, 2, 6, 3, 7 };
-
 av_cold int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
                                               enum idct_permutation_type perm_type)
 {
@@ -49,10 +46,6 @@ av_cold int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
     case FF_IDCT_PERM_SIMPLE:
         for (i = 0; i < 64; i++)
             idct_permutation[i] = simple_mmx_permutation[i];
-        return 1;
-    case FF_IDCT_PERM_SSE2:
-        for (i = 0; i < 64; i++)
-            idct_permutation[i] = (i & 0x38) | idct_sse2_row_perm[i & 7];
         return 1;
     }
 
@@ -68,43 +61,19 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
         c->put_pixels_clamped        = ff_put_pixels_clamped_mmx;
         c->add_pixels_clamped        = ff_add_pixels_clamped_mmx;
 
-        if (avctx->lowres == 0 && !high_bit_depth) {
-            switch (avctx->idct_algo) {
-            case FF_IDCT_AUTO:
-            case FF_IDCT_SIMPLEAUTO:
-            case FF_IDCT_SIMPLEMMX:
+        if (!high_bit_depth &&
+            avctx->lowres == 0 &&
+            (avctx->idct_algo == FF_IDCT_AUTO ||
+             avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
+             avctx->idct_algo == FF_IDCT_SIMPLEMMX)) {
                 c->idct_put  = ff_simple_idct_put_mmx;
                 c->idct_add  = ff_simple_idct_add_mmx;
                 c->idct      = ff_simple_idct_mmx;
                 c->perm_type = FF_IDCT_PERM_SIMPLE;
-                break;
-            case FF_IDCT_XVIDMMX:
-                c->idct_put  = ff_idct_xvid_mmx_put;
-                c->idct_add  = ff_idct_xvid_mmx_add;
-                c->idct      = ff_idct_xvid_mmx;
-                break;
-            }
         }
     }
     if (EXTERNAL_MMX(cpu_flags)) {
         c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_mmx;
-    }
-
-    if (INLINE_MMXEXT(cpu_flags)) {
-        if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX && avctx->lowres == 0) {
-            c->idct_put = ff_idct_xvid_mmxext_put;
-            c->idct_add = ff_idct_xvid_mmxext_add;
-            c->idct     = ff_idct_xvid_mmxext;
-        }
-    }
-
-    if (INLINE_SSE2(cpu_flags)) {
-        if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX && avctx->lowres == 0) {
-            c->idct_put  = ff_idct_xvid_sse2_put;
-            c->idct_add  = ff_idct_xvid_sse2_add;
-            c->idct      = ff_idct_xvid_sse2;
-            c->perm_type = FF_IDCT_PERM_SSE2;
-        }
     }
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_sse2;
