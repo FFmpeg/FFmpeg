@@ -62,11 +62,6 @@ enum OutputFormat {
     FMT_MJPEG,
 };
 
-#define MPEG_BUF_SIZE (16 * 1024)
-
-#define QMAT_SHIFT_MMX 16
-#define QMAT_SHIFT 21
-
 #define MAX_FCODE 7
 #define MAX_MV 4096
 
@@ -76,8 +71,6 @@ enum OutputFormat {
 #define MAX_B_FRAMES 16
 
 #define ME_MAP_SIZE 64
-#define ME_MAP_SHIFT 3
-#define ME_MAP_MV_BITS 11
 
 #define MAX_MB_BYTES (30*16*16*3/8 + 120)
 
@@ -539,7 +532,6 @@ typedef struct MpegEncContext {
     int partitioned_frame;           ///< is current frame partitioned
     int low_delay;                   ///< no reordering needed / has no b-frames
     int vo_type;
-    int vol_control_parameters;      ///< does the stream contain the low_delay flag, used to workaround buggy encoders
     PutBitContext tex_pb;            ///< used for data partitioned VOPs
     PutBitContext pb2;               ///< used for data partitioned VOPs
     int mpeg_quant;

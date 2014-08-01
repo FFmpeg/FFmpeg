@@ -171,7 +171,7 @@ static void dump_paramchange(void *ctx, AVPacketSideData *sd)
         channels = AV_RL32(data);
         data += 4;
         size -= 4;
-        av_log(ctx, AV_LOG_INFO, "channel count %d, ", channels);
+        av_log(ctx, AV_LOG_INFO, "channel count %"PRIu32", ", channels);
     }
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT) {
         if (size < 8)
@@ -188,7 +188,7 @@ static void dump_paramchange(void *ctx, AVPacketSideData *sd)
         sample_rate = AV_RL32(data);
         data += 4;
         size -= 4;
-        av_log(ctx, AV_LOG_INFO, "sample_rate %d, ", sample_rate);
+        av_log(ctx, AV_LOG_INFO, "sample_rate %"PRIu32", ", sample_rate);
     }
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS) {
         if (size < 8)
@@ -199,7 +199,7 @@ static void dump_paramchange(void *ctx, AVPacketSideData *sd)
         height = AV_RL32(data);
         data += 4;
         size -= 4;
-        av_log(ctx, AV_LOG_INFO, "width %d height %d", width, height);
+        av_log(ctx, AV_LOG_INFO, "width %"PRIu32" height %"PRIu32, width, height);
     }
 
     return;

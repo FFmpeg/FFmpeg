@@ -44,6 +44,17 @@ enum mode {
     NB_MODES
 };
 
+static const AVClass *child_class_next(const AVClass *prev)
+{
+    return prev ? NULL : avcodec_dct_get_class();
+}
+
+static void *child_next(void *obj, void *prev)
+{
+    SPPContext *s = obj;
+    return prev ? NULL : s->dct;
+}
+
 #define OFFSET(x) offsetof(SPPContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption spp_options[] = {
@@ -56,7 +67,15 @@ static const AVOption spp_options[] = {
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(spp);
+static const AVClass spp_class = {
+    .class_name       = "spp",
+    .item_name        = av_default_item_name,
+    .option           = spp_options,
+    .version          = LIBAVUTIL_VERSION_INT,
+    .category         = AV_CLASS_CATEGORY_FILTER,
+    .child_class_next = child_class_next,
+    .child_next       = child_next,
+};
 
 // XXX: share between filters?
 DECLARE_ALIGNED(8, static const uint8_t, ldither)[8][8] = {
@@ -232,9 +251,9 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                 const int y1 = y + offset[i + count - 1][1];
                 const int index = x1 + y1*linesize;
                 p->pdsp.get_pixels(block, p->src + index, linesize);
-                p->fdsp.fdct(block);
-                p->requantize(block2, block, qp, p->idsp.idct_permutation);
-                p->idsp.idct(block2);
+                p->dct->fdct(block);
+                p->requantize(block2, block, qp, p->dct->idct_permutation);
+                p->dct->idct(block2);
                 add_block(p->temp + index, linesize, block2);
             }
         }
@@ -372,16 +391,28 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return AVERROR(ENOSYS);
 }
 
-static av_cold int init(AVFilterContext *ctx)
+static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
 {
     SPPContext *spp = ctx->priv;
+    int ret;
 
     spp->avctx = avcodec_alloc_context3(NULL);
-    if (!spp->avctx)
+    spp->dct = avcodec_dct_alloc();
+    if (!spp->avctx || !spp->dct)
         return AVERROR(ENOMEM);
-    ff_idctdsp_init(&spp->idsp, spp->avctx);
-    ff_fdctdsp_init(&spp->fdsp, spp->avctx);
     ff_pixblockdsp_init(&spp->pdsp, spp->avctx);
+
+    if (opts) {
+        AVDictionaryEntry *e = NULL;
+
+        while ((e = av_dict_get(*opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+            if ((ret = av_opt_set(spp->dct, e->key, e->value, 0)) < 0)
+                return ret;
+        }
+        av_dict_free(opts);
+    }
+
+    avcodec_dct_init(spp->dct);
     spp->store_slice = store_slice_c;
     switch (spp->mode) {
     case MODE_HARD: spp->requantize = hardthresh_c; break;
@@ -402,6 +433,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         avcodec_close(spp->avctx);
         av_freep(&spp->avctx);
     }
+    av_freep(&spp->dct);
     av_freep(&spp->non_b_qp_table);
 }
 
@@ -427,7 +459,7 @@ AVFilter ff_vf_spp = {
     .name            = "spp",
     .description     = NULL_IF_CONFIG_SMALL("Apply a simple post processing filter."),
     .priv_size       = sizeof(SPPContext),
-    .init            = init,
+    .init_dict       = init_dict,
     .uninit          = uninit,
     .query_formats   = query_formats,
     .inputs          = spp_inputs,

@@ -245,74 +245,6 @@ int av_filename_number_test(const char *filename)
            (av_get_frame_filename(buf, sizeof(buf), filename, 1) >= 0);
 }
 
-AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
-                                      int *score_ret)
-{
-    AVProbeData lpd = *pd;
-    AVInputFormat *fmt1 = NULL, *fmt;
-    int score, nodat = 0, score_max = 0;
-    const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
-
-    if (!lpd.buf)
-        lpd.buf = zerobuffer;
-
-    if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
-        int id3len = ff_id3v2_tag_len(lpd.buf);
-        if (lpd.buf_size > id3len + 16) {
-            lpd.buf      += id3len;
-            lpd.buf_size -= id3len;
-        } else if (id3len >= PROBE_BUF_MAX) {
-            nodat = 2;
-        } else
-            nodat = 1;
-    }
-
-    fmt = NULL;
-    while ((fmt1 = av_iformat_next(fmt1))) {
-        if (!is_opened == !(fmt1->flags & AVFMT_NOFILE))
-            continue;
-        score = 0;
-        if (fmt1->read_probe) {
-            score = fmt1->read_probe(&lpd);
-            if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) {
-                if      (nodat == 0) score = FFMAX(score, 1);
-                else if (nodat == 1) score = FFMAX(score, AVPROBE_SCORE_EXTENSION / 2 - 1);
-                else                 score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
-            }
-        } else if (fmt1->extensions) {
-            if (av_match_ext(lpd.filename, fmt1->extensions))
-                score = AVPROBE_SCORE_EXTENSION;
-        }
-        if (score > score_max) {
-            score_max = score;
-            fmt       = fmt1;
-        } else if (score == score_max)
-            fmt = NULL;
-    }
-    if (nodat == 1)
-        score_max = FFMIN(AVPROBE_SCORE_EXTENSION / 2 - 1, score_max);
-    *score_ret = score_max;
-
-    return fmt;
-}
-
-AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
-{
-    int score_ret;
-    AVInputFormat *fmt = av_probe_input_format3(pd, is_opened, &score_ret);
-    if (score_ret > *score_max) {
-        *score_max = score_ret;
-        return fmt;
-    } else
-        return NULL;
-}
-
-AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
-{
-    int score = 0;
-    return av_probe_input_format2(pd, is_opened, &score);
-}
-
 static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
                                      AVProbeData *pd)
 {
@@ -369,100 +301,6 @@ int av_demuxer_open(AVFormatContext *ic) {
         ic->data_offset = avio_tell(ic->pb);
 
     return 0;
-}
-
-
-int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
-                          const char *filename, void *logctx,
-                          unsigned int offset, unsigned int max_probe_size)
-{
-    AVProbeData pd = { filename ? filename : "" };
-    uint8_t *buf = NULL;
-    uint8_t *mime_type;
-    int ret = 0, probe_size, buf_offset = 0;
-    int score = 0;
-
-    if (!max_probe_size)
-        max_probe_size = PROBE_BUF_MAX;
-    else if (max_probe_size < PROBE_BUF_MIN) {
-        av_log(logctx, AV_LOG_ERROR,
-               "Specified probe size value %u cannot be < %u\n", max_probe_size, PROBE_BUF_MIN);
-        return AVERROR(EINVAL);
-    }
-
-    if (offset >= max_probe_size)
-        return AVERROR(EINVAL);
-
-    if (!*fmt && pb->av_class && av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type) >= 0 && mime_type) {
-        if (!av_strcasecmp(mime_type, "audio/aacp")) {
-            *fmt = av_find_input_format("aac");
-        }
-        av_freep(&mime_type);
-    }
-
-    for (probe_size = PROBE_BUF_MIN; probe_size <= max_probe_size && !*fmt;
-         probe_size = FFMIN(probe_size << 1,
-                            FFMAX(max_probe_size, probe_size + 1))) {
-        score = probe_size < max_probe_size ? AVPROBE_SCORE_RETRY : 0;
-
-        /* Read probe data. */
-        if ((ret = av_reallocp(&buf, probe_size + AVPROBE_PADDING_SIZE)) < 0)
-            return ret;
-        if ((ret = avio_read(pb, buf + buf_offset,
-                             probe_size - buf_offset)) < 0) {
-            /* Fail if error was not end of file, otherwise, lower score. */
-            if (ret != AVERROR_EOF) {
-                av_free(buf);
-                return ret;
-            }
-            score = 0;
-            ret   = 0;          /* error was end of file, nothing read */
-        }
-        buf_offset += ret;
-        if (buf_offset < offset)
-            continue;
-        pd.buf_size = buf_offset - offset;
-        pd.buf = &buf[offset];
-
-        memset(pd.buf + pd.buf_size, 0, AVPROBE_PADDING_SIZE);
-
-        /* Guess file format. */
-        *fmt = av_probe_input_format2(&pd, 1, &score);
-        if (*fmt) {
-            /* This can only be true in the last iteration. */
-            if (score <= AVPROBE_SCORE_RETRY) {
-                av_log(logctx, AV_LOG_WARNING,
-                       "Format %s detected only with low score of %d, "
-                       "misdetection possible!\n", (*fmt)->name, score);
-            } else
-                av_log(logctx, AV_LOG_DEBUG,
-                       "Format %s probed with size=%d and score=%d\n",
-                       (*fmt)->name, probe_size, score);
-#if 0
-            FILE *f = fopen("probestat.tmp", "ab");
-            fprintf(f, "probe_size:%d format:%s score:%d filename:%s\n", probe_size, (*fmt)->name, score, filename);
-            fclose(f);
-#endif
-        }
-    }
-
-    if (!*fmt) {
-        av_free(buf);
-        return AVERROR_INVALIDDATA;
-    }
-
-    /* Rewind. Reuse probe buffer to avoid seeking. */
-    ret = ffio_rewind_with_probe_data(pb, &buf, buf_offset);
-
-    return ret < 0 ? ret : score;
-}
-
-int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
-                          const char *filename, void *logctx,
-                          unsigned int offset, unsigned int max_probe_size)
-{
-    int ret = av_probe_input_buffer2(pb, fmt, filename, logctx, offset, max_probe_size);
-    return ret < 0 ? ret : 0;
 }
 
 /* Open input file and probe the format if necessary. */
@@ -3112,10 +2950,15 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int64_t old_offset  = avio_tell(ic->pb);
     // new streams might appear, no options for those
     int orig_nb_streams = ic->nb_streams;
-    int flush_codecs    = ic->probesize > 0;
+    int flush_codecs;
     int64_t max_analyze_duration = ic->max_analyze_duration2;
+    int64_t probesize = ic->probesize2;
+
     if (!max_analyze_duration)
         max_analyze_duration = ic->max_analyze_duration;
+    if (ic->probesize)
+        probesize = ic->probesize;
+    flush_codecs = probesize > 0;
 
     av_opt_set(ic, "skip_clear", "1", AV_OPT_SEARCH_CHILDREN);
 
@@ -3243,10 +3086,10 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             }
         }
         /* We did not get all the codec info, but we read too much data. */
-        if (read_size >= ic->probesize) {
+        if (read_size >= probesize) {
             ret = count;
             av_log(ic, AV_LOG_DEBUG,
-                   "Probe buffer size limit of %d bytes reached\n", ic->probesize);
+                   "Probe buffer size limit of %"PRId64" bytes reached\n", probesize);
             for (i = 0; i < ic->nb_streams; i++)
                 if (!ic->streams[i]->r_frame_rate.num &&
                     ic->streams[i]->info->duration_count <= 1 &&
@@ -3490,7 +3333,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
     }
 
-    if (ic->probesize)
+    if (probesize)
     estimate_timings(ic, old_offset);
 
     if (ret >= 0 && ic->nb_streams)
@@ -4171,7 +4014,7 @@ int64_t ff_iso8601_to_unix_time(const char *datestr)
         return av_timegm(&time1);
 }
 
-int avformat_query_codec(AVOutputFormat *ofmt, enum AVCodecID codec_id,
+int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
                          int std_compliance)
 {
     if (ofmt) {

@@ -268,6 +268,14 @@ const char *av_basename(const char *path);
  */
 const char *av_dirname(char *path);
 
+/**
+ * Match instances of a name in a comma-separated list of names.
+ * @param name  Name to look for.
+ * @param names List of names.
+ * @return 1 on match, 0 otherwise.
+ */
+int av_match_name(const char *name, const char *names);
+
 enum AVEscapeMode {
     AV_ESCAPE_MODE_AUTO,      ///< Use auto-selected escaping mode.
     AV_ESCAPE_MODE_BACKSLASH, ///< Use backslash escaping.

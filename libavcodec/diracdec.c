@@ -1959,7 +1959,6 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             int min_num = s->delay_frames[0]->avframe->display_picture_number;
             /* Too many delayed frames, so we display the frame with the lowest pts */
             av_log(avctx, AV_LOG_ERROR, "Delay frame overflow\n");
-            delayed_frame = s->delay_frames[0];
 
             for (i = 1; s->delay_frames[i]; i++)
                 if (s->delay_frames[i]->avframe->display_picture_number < min_num)

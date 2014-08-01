@@ -728,6 +728,11 @@ AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
 void av_frame_remove_side_data(AVFrame *frame, enum AVFrameSideDataType type);
 
 /**
+ * @return a string identifying the side data type
+ */
+const char *av_frame_side_data_name(enum AVFrameSideDataType type);
+
+/**
  * @}
  */
 

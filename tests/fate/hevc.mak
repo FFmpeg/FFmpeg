@@ -1,12 +1,16 @@
 HEVC_SAMPLES =                  \
     AMP_A_Samsung_4             \
+    AMP_A_Samsung_6             \
     AMP_B_Samsung_4             \
+    AMP_B_Samsung_6             \
     AMP_D_Hisilicon             \
     AMP_E_Hisilicon             \
     AMP_F_Hisilicon_3           \
     AMVP_A_MTK_4                \
     AMVP_B_MTK_4                \
     AMVP_C_Samsung_4            \
+    AMVP_C_Samsung_6            \
+    BUMPING_A_ericsson_1        \
     CAINIT_A_SHARP_4            \
     CAINIT_B_SHARP_4            \
     CAINIT_C_SHARP_3            \
@@ -18,6 +22,7 @@ HEVC_SAMPLES =                  \
     CIP_A_Panasonic_3           \
     cip_B_NEC_3                 \
     CIP_C_Panasonic_2           \
+    CONFWIN_A_Sony_1            \
     DBLK_A_SONY_3               \
     DBLK_B_SONY_3               \
     DBLK_C_SONY_3               \
@@ -37,6 +42,7 @@ HEVC_SAMPLES =                  \
     EXT_A_ericsson_4            \
     FILLER_A_Sony_1             \
     HRD_A_Fujitsu_2             \
+    HRD_A_Fujitsu_3             \
     INITQP_A_Sony_1             \
     ipcm_A_NEC_3                \
     ipcm_B_NEC_3                \
@@ -101,7 +107,9 @@ HEVC_SAMPLES =                  \
     SAO_A_MediaTek_4            \
     SAO_B_MediaTek_5            \
     SAO_C_Samsung_4             \
+    SAO_C_Samsung_5             \
     SAO_D_Samsung_4             \
+    SAO_D_Samsung_5             \
     SAO_E_Canon_4               \
     SAO_F_Canon_3               \
     SAO_G_Canon_3               \
@@ -112,8 +120,10 @@ HEVC_SAMPLES =                  \
     SLIST_C_Sony_3              \
     SLIST_D_Sony_9              \
     SLPPLP_A_VIDYO_1            \
+    SLPPLP_A_VIDYO_2            \
     STRUCT_A_Samsung_5          \
     STRUCT_B_Samsung_4          \
+    STRUCT_B_Samsung_6          \
     TILES_A_Cisco_2             \
     TILES_B_Cisco_1             \
     TMVP_A_MS_3                 \
@@ -122,6 +132,7 @@ HEVC_SAMPLES =                  \
     TSKIP_A_MS_3                \
     TUSIZE_A_Samsung_1          \
     VPSID_A_VIDYO_1             \
+    VPSID_A_VIDYO_2             \
     WP_A_Toshiba_3              \
     WP_B_Toshiba_3              \
     WPP_A_ericsson_MAIN_2       \
@@ -176,32 +187,32 @@ HEVC_SAMPLES_444_12BIT =        \
 
 define FATE_HEVC_TEST
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit
 endef
 
 define FATE_HEVC_TEST_10BIT
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv420p10le
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv420p10le
 endef
 
 define FATE_HEVC_TEST_422_10BIT
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv422p10le
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv422p10le
 endef
 
 define FATE_HEVC_TEST_422_10BIN
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bin -pix_fmt yuv422p10le
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bin -pix_fmt yuv422p10le
 endef
 
 define FATE_HEVC_TEST_444_8BIT
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit
 endef
 
 define FATE_HEVC_TEST_444_12BIT
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv444p12le
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv444p12le
 endef
 
 $(foreach N,$(HEVC_SAMPLES),$(eval $(call FATE_HEVC_TEST,$(N))))

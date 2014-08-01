@@ -2132,6 +2132,7 @@ mpc7_decoder_select="bswapdsp mpegaudiodsp"
 mpc8_decoder_select="mpegaudiodsp"
 mpeg_xvmc_decoder_deps="X11_extensions_XvMClib_h"
 mpeg_xvmc_decoder_select="mpeg2video_decoder"
+mpegvideo_decoder_select="error_resilience mpeg_er mpegvideo"
 mpeg1video_decoder_select="error_resilience mpeg_er mpegvideo"
 mpeg1video_encoder_select="aandcttables mpegvideoenc h263dsp"
 mpeg2video_decoder_select="error_resilience mpeg_er mpegvideo"
@@ -4765,7 +4766,7 @@ enabled libopenjpeg       && { check_lib openjpeg-1.5/openjpeg.h opj_version -lo
                                check_lib openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
                                die "ERROR: libopenjpeg not found"; }
 enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
-enabled libpulse          && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
+enabled libpulse          && require_pkg_config libpulse pulse/pulseaudio.h pa_context_new
 enabled libquvi           && require_pkg_config libquvi quvi/quvi.h quvi_init
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
@@ -4775,7 +4776,7 @@ enabled libsmbclient      && { { check_pkg_config smbclient libsmbclient.h smbc_
                                  require smbclient libsmbclient.h smbc_init -lsmbclient; }
 enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
 enabled libssh            && require_pkg_config libssh libssh/sftp.h sftp_init
-enabled libspeex          && require libspeex speex/speex.h speex_decoder_init -lspeex
+enabled libspeex          && require_pkg_config speex speex/speex.h speex_decoder_init -lspeex
 enabled libstagefright_h264 && require_cpp libstagefright_h264 "binder/ProcessState.h media/stagefright/MetaData.h
     media/stagefright/MediaBufferGroup.h media/stagefright/MediaDebug.h media/stagefright/MediaDefs.h
     media/stagefright/OMXClient.h media/stagefright/OMXCodec.h" android::OMXClient -lstagefright -lmedia -lutils -lbinder -lgnustl_static
@@ -5191,7 +5192,7 @@ enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
-    enabled $simd_align_16 && enable memalign_hack
+    enabled simd_align_16 && enable memalign_hack
 
 # add_dep lib dep
 # -> enable ${lib}_deps_${dep}
@@ -5229,6 +5230,8 @@ for thread in $THREADS_LIST; do
             thread_type="$thread"
     fi
 done
+
+enabled zlib && add_cppflags -DZLIB_CONST
 
 # conditional library dependencies, in linking order
 enabled aconvert_filter     && prepend avfilter_deps "swresample"

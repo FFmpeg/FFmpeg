@@ -90,10 +90,9 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
     } else {
         AVDictionaryEntry *tmp = av_realloc(m->elems,
                                             (m->count + 1) * sizeof(*m->elems));
-        if (tmp)
-            m->elems = tmp;
-        else
+        if (!tmp)
             return AVERROR(ENOMEM);
+        m->elems = tmp;
     }
     if (value) {
         if (flags & AV_DICT_DONT_STRDUP_KEY)

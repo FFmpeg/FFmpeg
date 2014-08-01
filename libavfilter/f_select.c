@@ -35,7 +35,7 @@
 #include "video.h"
 
 #if CONFIG_AVCODEC
-#include "libavcodec/me_cmp.h"
+#include "libavcodec/dsputil.h"
 #endif
 
 static const char *const var_names[] = {
@@ -146,7 +146,7 @@ typedef struct SelectContext {
     int do_scene_detect;            ///< 1 if the expression requires scene detection variables, 0 otherwise
 #if CONFIG_AVCODEC
     AVCodecContext *avctx;          ///< codec context required for the DSPContext (scene detect only)
-    MECmpContext c;                 ///< context providing optimized SAD methods   (scene detect only)
+    DSPContext c;                   ///< context providing optimized SAD methods   (scene detect only)
     double prev_mafd;               ///< previous MAFD                             (scene detect only)
 #endif
     AVFrame *prev_picref; ///< previous frame                            (scene detect only)
@@ -245,7 +245,7 @@ static int config_input(AVFilterLink *inlink)
         select->avctx = avcodec_alloc_context3(NULL);
         if (!select->avctx)
             return AVERROR(ENOMEM);
-        ff_me_cmp_init(&select->c, select->avctx);
+        avpriv_dsputil_init(&select->c, select->avctx);
     }
 #endif
     return 0;
@@ -308,6 +308,7 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     select->var_values[VAR_PTS] = TS2D(frame->pts);
     select->var_values[VAR_T  ] = TS2D(frame->pts) * av_q2d(inlink->time_base);
     select->var_values[VAR_POS] = av_frame_get_pkt_pos(frame) == -1 ? NAN : av_frame_get_pkt_pos(frame);
+    select->var_values[VAR_KEY] = frame->key_frame;
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_AUDIO:
@@ -337,21 +338,20 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
            select->var_values[VAR_N],
            select->var_values[VAR_PTS],
            select->var_values[VAR_T],
-           (int)select->var_values[VAR_KEY]);
+           frame->key_frame);
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO:
         av_log(inlink->dst, AV_LOG_DEBUG, " interlace_type:%c pict_type:%c scene:%f",
-               select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_P ? 'P' :
-               select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_T ? 'T' :
-               select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_B ? 'B' : '?',
-               av_get_picture_type_char(select->var_values[VAR_PICT_TYPE]),
+               (!frame->interlaced_frame) ? 'P' :
+               frame->top_field_first     ? 'T' : 'B',
+               av_get_picture_type_char(frame->pict_type),
                select->var_values[VAR_SCENE]);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        av_log(inlink->dst, AV_LOG_DEBUG, " samples_n:%d consumed_samples_n:%d",
-               (int)select->var_values[VAR_SAMPLES_N],
-               (int)select->var_values[VAR_CONSUMED_SAMPLES_N]);
+        av_log(inlink->dst, AV_LOG_DEBUG, " samples_n:%d consumed_samples_n:%f",
+               frame->nb_samples,
+               select->var_values[VAR_CONSUMED_SAMPLES_N]);
         break;
     }
 

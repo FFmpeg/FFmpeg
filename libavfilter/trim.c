@@ -244,7 +244,7 @@ static int atrim_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     TrimContext       *s = ctx->priv;
-    int64_t start_sample, end_sample = frame->nb_samples;
+    int64_t start_sample, end_sample;
     int64_t pts;
     int drop;
 

@@ -45,6 +45,9 @@
 #define P_MEDIAN P[4]
 #define P_MV1 P[9]
 
+#define ME_MAP_SHIFT 3
+#define ME_MAP_MV_BITS 11
+
 static int sad_hpel_motion_search(MpegEncContext * s,
                                   int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,

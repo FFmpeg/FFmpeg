@@ -56,8 +56,6 @@ typedef struct HEVCDSPContext {
 
     void (*idct_dc[4])(int16_t *coeffs);
 
-    void (*transform_dc_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-
     void (*sao_band_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                             struct SAOParams *sao, int *borders,
                             int width, int height, int c_idx);
@@ -125,6 +123,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
 extern const int8_t ff_hevc_epel_filters[7][4];
 extern const int8_t ff_hevc_qpel_filters[3][16];
 
-void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth);
+void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth);
 
 #endif /* AVCODEC_HEVCDSP_H */

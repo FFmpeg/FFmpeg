@@ -667,7 +667,6 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         }
     }
 
-    curr = fpc->headers;
     for (curr = fpc->headers; curr; curr = curr->next) {
         if (curr->max_score > 0 &&
             (!fpc->best_header || curr->max_score > fpc->best_header->max_score)) {

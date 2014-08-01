@@ -348,9 +348,16 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
     /* XXX: move those malloc to resample init code */
     for (i = 0; i < s->filter_channels; i++) {
         bufin[i] = av_malloc_array((nb_samples + s->temp_len), sizeof(short));
+        bufout[i] = av_malloc_array(lenout, sizeof(short));
+
+        if (!bufin[i] || !bufout[i]) {
+            av_log(s->resample_context, AV_LOG_ERROR, "Could not allocate buffer\n");
+            nb_samples1 = 0;
+            goto fail;
+        }
+
         memcpy(bufin[i], s->temp[i], s->temp_len * sizeof(short));
         buftmp2[i] = bufin[i] + s->temp_len;
-        bufout[i] = av_malloc_array(lenout, sizeof(short));
     }
 
     if (s->input_channels == 2 && s->output_channels == 1) {
@@ -411,6 +418,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         }
     }
 
+fail:
     for (i = 0; i < s->filter_channels; i++) {
         av_free(bufin[i]);
         av_free(bufout[i]);

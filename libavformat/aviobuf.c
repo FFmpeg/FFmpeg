@@ -767,7 +767,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     return 0;
 }
 
-int ffio_ensure_seekback(AVIOContext *s, int buf_size)
+int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
 {
     uint8_t *buffer;
     int max_buffer_size = s->max_packet_size ?

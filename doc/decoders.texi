@@ -163,6 +163,9 @@ Requires the presence of the libopus headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libopus}.
 
+An FFmpeg native decoder for Opus exists, so users can decode Opus
+without this library.
+
 @c man end AUDIO DECODERS
 
 @chapter Subtitles Decoders

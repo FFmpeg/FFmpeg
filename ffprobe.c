@@ -123,6 +123,8 @@ typedef enum {
     SECTION_ID_FRAME,
     SECTION_ID_FRAMES,
     SECTION_ID_FRAME_TAGS,
+    SECTION_ID_FRAME_SIDE_DATA_LIST,
+    SECTION_ID_FRAME_SIDE_DATA,
     SECTION_ID_LIBRARY_VERSION,
     SECTION_ID_LIBRARY_VERSIONS,
     SECTION_ID_PACKET,
@@ -152,8 +154,10 @@ static struct section sections[] = {
     [SECTION_ID_FORMAT] =             { SECTION_ID_FORMAT, "format", 0, { SECTION_ID_FORMAT_TAGS, -1 } },
     [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "format_tags" },
     [SECTION_ID_FRAMES] =             { SECTION_ID_FRAMES, "frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME, SECTION_ID_SUBTITLE, -1 } },
-    [SECTION_ID_FRAME] =              { SECTION_ID_FRAME, "frame", 0, { SECTION_ID_FRAME_TAGS, -1 } },
+    [SECTION_ID_FRAME] =              { SECTION_ID_FRAME, "frame", 0, { SECTION_ID_FRAME_TAGS, SECTION_ID_FRAME_SIDE_DATA_LIST, -1 } },
     [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "frame_tags" },
+    [SECTION_ID_FRAME_SIDE_DATA_LIST] ={ SECTION_ID_FRAME_SIDE_DATA_LIST, "side_data_list", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_SIDE_DATA, -1 } },
+    [SECTION_ID_FRAME_SIDE_DATA] =     { SECTION_ID_FRAME_SIDE_DATA, "side_data", 0, { -1 } },
     [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS, "library_versions", SECTION_FLAG_IS_ARRAY, { SECTION_ID_LIBRARY_VERSION, -1 } },
     [SECTION_ID_LIBRARY_VERSION] =    { SECTION_ID_LIBRARY_VERSION, "library_version", 0, { -1 } },
     [SECTION_ID_PACKETS] =            { SECTION_ID_PACKETS, "packets", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
@@ -1722,6 +1726,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
 {
     AVBPrint pbuf;
     const char *s;
+    int i;
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -1784,6 +1789,20 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     }
     if (do_show_frame_tags)
         show_tags(w, av_frame_get_metadata(frame), SECTION_ID_FRAME_TAGS);
+    if (frame->nb_side_data) {
+        writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_LIST);
+        for (i = 0; i < frame->nb_side_data; i++) {
+            AVFrameSideData *sd = frame->side_data[i];
+            const char *name;
+
+            writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA);
+            name = av_frame_side_data_name(sd->type);
+            print_str("side_data_type", name ? name : "unknown");
+            print_int("side_data_size", sd->size);
+            writer_print_section_footer(w);
+        }
+        writer_print_section_footer(w);
+    }
 
     writer_print_section_footer(w);
 
