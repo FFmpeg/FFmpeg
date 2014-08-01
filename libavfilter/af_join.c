@@ -480,6 +480,7 @@ static int join_request_frame(AVFilterLink *outlink)
     frame->nb_samples     = nb_samples;
     frame->channel_layout = outlink->channel_layout;
     frame->sample_rate    = outlink->sample_rate;
+    frame->format         = outlink->format;
     frame->pts            = s->input_frames[0]->pts;
     frame->linesize[0]    = linesize;
     if (frame->data != frame->extended_data) {
