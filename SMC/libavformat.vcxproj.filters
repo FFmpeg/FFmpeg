@@ -192,6 +192,9 @@
     <ClCompile Include="..\libavformat\adtsenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\id3v2enc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\aea.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -211,9 +214,6 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\aiffenc.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\id3v2enc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\amr.c">

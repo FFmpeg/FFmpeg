@@ -233,6 +233,9 @@
     <ClCompile Include="..\libavformat\adtsenc.c">
       <ObjectFileName>$(IntDir)\libavformat_adtsenc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\id3v2enc.c">
+      <ObjectFileName>$(IntDir)\libavformat_id3v2enc.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\aea.c">
       <ObjectFileName>$(IntDir)\libavformat_aea.obj</ObjectFileName>
     </ClCompile>
@@ -253,9 +256,6 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\aiffenc.c">
       <ObjectFileName>$(IntDir)\libavformat_aiffenc.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\id3v2enc.c">
-      <ObjectFileName>$(IntDir)\libavformat_id3v2enc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavformat\amr.c">
       <ObjectFileName>$(IntDir)\libavformat_amr.obj</ObjectFileName>

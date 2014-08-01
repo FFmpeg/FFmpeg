@@ -233,6 +233,7 @@ EXPORTS
     av_log_set_flags
     av_log_set_level
     av_lzo1x_decode
+    av_match_name
     av_malloc
     av_mallocz
     av_max_alloc

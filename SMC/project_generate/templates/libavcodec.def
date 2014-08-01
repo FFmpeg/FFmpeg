@@ -107,6 +107,9 @@ EXPORTS
     avcodec_close
     avcodec_configuration
     avcodec_copy_context
+    avcodec_dct_alloc
+    avcodec_dct_init
+    avcodec_dct_get_class
     avcodec_decode_audio3
     avcodec_decode_audio4
     avcodec_decode_subtitle2
@@ -177,6 +180,7 @@ EXPORTS
     avpriv_dirac_parse_sequence_header
     avpriv_dnxhd_get_frame_size
     avpriv_do_elbg
+    avpriv_dsputil_init
     avpriv_dv_codec_profile
     avpriv_dv_frame_profile
     avpriv_dv_frame_profile2
