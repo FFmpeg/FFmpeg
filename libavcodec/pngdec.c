@@ -185,7 +185,8 @@ void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top,
     }
 }
 
-#define UNROLL1(bpp, op) {                                                    \
+#define UNROLL1(bpp, op)                                                      \
+    {                                                                         \
         r = dst[0];                                                           \
         if (bpp >= 2)                                                         \
             g = dst[1];                                                       \
@@ -205,16 +206,21 @@ void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top,
                 continue;                                                     \
             dst[i + 3] = a = op(a, src[i + 3], last[i + 3]);                  \
         }                                                                     \
-}
+    }
 
-#define UNROLL_FILTER(op)\
-         if (bpp == 1) UNROLL1(1, op)\
-    else if (bpp == 2) UNROLL1(2, op)\
-    else if (bpp == 3) UNROLL1(3, op)\
-    else if (bpp == 4) UNROLL1(4, op)\
-    for (; i < size; i++) {\
-        dst[i] = op(dst[i - bpp], src[i], last[i]);\
-    }\
+#define UNROLL_FILTER(op)                                                     \
+    if (bpp == 1) {                                                           \
+        UNROLL1(1, op)                                                        \
+    } else if (bpp == 2) {                                                    \
+        UNROLL1(2, op)                                                        \
+    } else if (bpp == 3) {                                                    \
+        UNROLL1(3, op)                                                        \
+    } else if (bpp == 4) {                                                    \
+        UNROLL1(4, op)                                                        \
+    }                                                                         \
+    for (; i < size; i++) {                                                   \
+        dst[i] = op(dst[i - bpp], src[i], last[i]);                           \
+    }
 
 /* NOTE: 'dst' can be equal to 'last' */
 static void png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
