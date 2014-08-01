@@ -862,6 +862,11 @@ skip:
 
         }
         av_dlog(s, "%d %X %d \n", stream_type, flags, st->discard);
+
+        if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
+            stream_type == FLV_STREAM_TYPE_AUDIO)
+            av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
+
         if (  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || (stream_type == FLV_STREAM_TYPE_AUDIO)))
             ||(st->discard >= AVDISCARD_BIDIR  &&  ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_DISP_INTER && (stream_type == FLV_STREAM_TYPE_VIDEO)))
             || st->discard >= AVDISCARD_ALL
@@ -869,8 +874,6 @@ skip:
             avio_seek(s->pb, next, SEEK_SET);
             continue;
         }
-        if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || stream_type == FLV_STREAM_TYPE_AUDIO)
-            av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
         break;
     }
 
