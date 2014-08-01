@@ -202,6 +202,7 @@ static int request_frame(AVFilterLink *outlink)
             return (ret == 0) ? AVERROR_EOF : ret;
         }
 
+        frame->nb_samples = ret;
         frame->pts = s->next_pts;
         return ff_filter_frame(outlink, frame);
     }
