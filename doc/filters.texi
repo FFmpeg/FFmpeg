@@ -5454,8 +5454,7 @@ Swap luma/chroma/alpha fields. Exchange even & odd lines. Default value is @code
 
 Simple interlacing filter from progressive contents. This interleaves upper (or
 lower) lines from odd frames with lower (or upper) lines from even frames,
-halving the frame rate and preserving image height. A vertical lowpass filter
-is always applied in order to avoid twitter effects and reduce moiré patterns.
+halving the frame rate and preserving image height.
 
 @example
    Original        Original             New Frame
@@ -5475,6 +5474,10 @@ It accepts the following optional parameters:
 @item scan
 This determines whether the interlaced frame is taken from the even
 (tff - default) or odd (bff) lines of the progressive frame.
+
+@item lowpass
+Enable (default) or disable the vertical lowpass filter to avoid twitter
+interlacing and reduce moire patterns.
 @end table
 
 @section kerndeint
