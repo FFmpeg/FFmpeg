@@ -50,8 +50,10 @@ tests/data/filtergraphs/%: TAG = COPY
 tests/data/filtergraphs/%: $(SRC_PATH)/tests/filtergraphs/% | tests/data/filtergraphs
 	$(M)cp $< $@
 
+RUNNING_FATE := $(filter check fate%,$(filter-out fate-rsync,$(MAKECMDGOALS)))
+
 # Check sanity of dependencies when running FATE tests.
-ifneq (,$(filter check fate%,$(filter-out fate-rsync,$(MAKECMDGOALS))))
+ifneq (,$(RUNNING_FATE))
 CHKCFG  = $(if $($(1))$(!$(1)),$($(1)), $(error No such config: $(1)))
 endif
 
@@ -209,6 +211,7 @@ testclean:
 	$(RM) -r tests/vsynth1 tests/data tools/lavfi-showfiltfmts$(EXESUF)
 	$(RM) $(CLEANSUFFIXES:%=tests/%)
 	$(RM) $(TESTTOOLS:%=tests/%$(HOSTEXESUF))
+	$(RM) tests/pixfmts.mak
 
 -include $(wildcard tests/*.d)
 
