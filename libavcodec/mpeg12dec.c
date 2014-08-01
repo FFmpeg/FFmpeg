@@ -1878,6 +1878,14 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                 } else
                     goto eos;
             }
+            if (s->mb_y >= ((s->height + 15) >> 4) &&
+                s->progressive_frame &&
+                !s->progressive_sequence &&
+                get_bits_left(&s->gb) <= 8 &&
+                get_bits_left(&s->gb) >= 0 &&
+                s->mb_skip_run == -1 &&
+                show_bits(&s->gb, 8) == 0)
+                goto eos;
 
             ff_init_block_index(s);
         }
