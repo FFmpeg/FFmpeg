@@ -131,6 +131,10 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             {
                 sLib = "libz";
             }
+            else if( vitLib->compare( "libcdio" ) == 0 )
+            {
+                sLib = "libcdio_paranoia";
+            }
             else if( vitLib->compare("libfdk_aac") == 0 )
             {
                 sLib = "libfdk-aac";
@@ -277,7 +281,7 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["libbluray"] = ( sProjectName.compare("libavformat") == 0 );//?
     mProjectDeps["libbs2b"] = ( sProjectName.compare( "libavfilter" ) == 0 );//?
     mProjectDeps["libcaca"] = ( sProjectName.compare("libavdevice") == 0 );//????
-    mProjectDeps["libcdio"] = ( sProjectName.compare("libavdevice") == 0 );//??
+    mProjectDeps["libcdio"] = ( sProjectName.compare("libavdevice") == 0 );
     mProjectDeps["libcelt"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libdc1394"] = ( sProjectName.compare("libavdevice") == 0 );//?
     mProjectDeps["libfaac"] = ( sProjectName.compare("libavcodec") == 0 );

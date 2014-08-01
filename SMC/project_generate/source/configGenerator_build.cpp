@@ -415,6 +415,10 @@ void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & 
     {
         vForceEnable.push_back( "dxva2_lib" );
     }
+    else if( sOptionLower.compare( "libcdio" ) == 0 )
+    {
+        vForceEnable.push_back( "cdio_paranoia_paranoia_h" );
+    }
 }
 
 void configGenerator::buildForcedDisables( string sOptionLower, vector<string> & vForceDisable )
@@ -426,6 +430,10 @@ void configGenerator::buildForcedDisables( string sOptionLower, vector<string> &
     else if( sOptionLower.compare( "dxva2" ) == 0 )
     {
         vForceDisable.push_back( "dxva2_lib" );
+    }
+    else if( sOptionLower.compare( "libcdio" ) == 0 )
+    {
+        vForceDisable.push_back( "cdio_paranoia_paranoia_h" );
     }
 }
 
