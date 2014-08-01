@@ -1531,23 +1531,36 @@ static void flush_packet_queue(AVFormatContext *s)
 
 int av_find_default_stream_index(AVFormatContext *s)
 {
-    int first_audio_index = -1;
     int i;
     AVStream *st;
+    int best_stream = 0;
+    int best_score = -1;
 
     if (s->nb_streams <= 0)
         return -1;
     for (i = 0; i < s->nb_streams; i++) {
+        int score = 0;
         st = s->streams[i];
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
             !(st->disposition & AV_DISPOSITION_ATTACHED_PIC)) {
-            return i;
+            if (!st->codec->width && !st->codec->height && !st->codec_info_nb_frames)
+                score += 25;
+            else
+                score += 100;
         }
-        if (first_audio_index < 0 &&
-            st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-            first_audio_index = i;
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (!st->codec->sample_rate && !st->codec_info_nb_frames)
+                score += 12;
+            else
+                score += 50;
+        }
+
+        if (score > best_score) {
+            best_score = score;
+            best_stream = i;
+        }
     }
-    return first_audio_index >= 0 ? first_audio_index : 0;
+    return best_stream;
 }
 
 /** Flush the frame reader. */
