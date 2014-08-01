@@ -45,8 +45,9 @@ static int dvdsub_parse(AVCodecParserContext *s,
     DVDSubParseContext *pc = s->priv_data;
 
     if (pc->packet_index == 0) {
-        if (buf_size < 2)
+        if (buf_size < 2 || AV_RB16(buf) && buf_size < 6) {
             return buf_size;
+        }
         pc->packet_len = AV_RB16(buf);
         if (pc->packet_len == 0) /* HD-DVD subpicture packet */
             pc->packet_len = AV_RB32(buf+2);
