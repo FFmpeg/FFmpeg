@@ -818,6 +818,11 @@ skip:
             st = create_stream(s, is_audio ? AVMEDIA_TYPE_AUDIO
                                            : AVMEDIA_TYPE_VIDEO);
         av_dlog(s, "%d %X %d \n", is_audio, flags, st->discard);
+
+        if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
+            is_audio)
+            av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
+
         if ((st->discard >= AVDISCARD_NONKEY &&
              !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || is_audio)) ||
             (st->discard >= AVDISCARD_BIDIR &&
@@ -826,8 +831,6 @@ skip:
             avio_seek(s->pb, next, SEEK_SET);
             continue;
         }
-        if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY)
-            av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
         break;
     }
 
