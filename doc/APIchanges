@@ -15,19 +15,23 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
-2014-07-30 - xxxxxxx - lavu 52.94.100 - frame.h
+2014-07-30 - ba3e331 - lavu 52.94.100 - frame.h
   Add av_frame_side_data_name()
 
-2014-07-xx - xxxxxxx - lavu 53.19.0 - avstring.h
+2014-07-29 - 31e0b5d / 69e7336 - lavu 52.92.100 / 53.19.0 - avstring.h
   Make name matching function from lavf public as av_match_name().
 
-2014-xx-xx - xxxxxxx - lavc 55.57.0 - avcodec.h
+2014-07-28 - 2e5c8b0 / c5fca01 - lavc 55.71.100 / 55.57.0 - avcodec.h
   Add AV_CODEC_PROP_REORDER to mark codecs supporting frame reordering.
 
-2014-07-27 - XXXXXXX - lavc 55.70.100 - avdct.h
+2014-07-27 - ff9a154 - lavf 55.50.100 - avformat.h
+  New field int64_t probesize2 instead of deprecated
+  field int probesize.
+
+2014-07-27 - 932ff70 - lavc 55.70.100 - avdct.h
   Add AVDCT / avcodec_dct_alloc() / avcodec_dct_init().
 
-2014-07-23 - XXXXXXX - lavf 55.49.100 - avio.h
+2014-07-23 - 8a4c086 - lavf 55.49.100 - avio.h
   Add avio_read_to_bprint()
 
 2014-07-14 - 62227a7 - lavf 55.47.100 - avformat.h
