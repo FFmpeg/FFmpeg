@@ -67,7 +67,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-#define ABS(a) ((a) > 0 ? (a) : -(a))
+#define ABS(a) (((a) ^ ((a) >> 31)) - ((a) >> 31))
 
 static int diff_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
 {
@@ -389,8 +389,8 @@ static void compute_affinity(PullupContext *s, PullupField *f)
         int v  = f->vars[i];
         int lv = f->prev->vars[i];
         int rv = f->next->vars[i];
-        int lc = f->combs[i] - (v + lv) + ABS(v - lv);
-        int rc = f->next->combs[i] - (v + rv) + ABS(v - rv);
+        int lc = f->      combs[i] - 2*(v < lv ? v : lv);
+        int rc = f->next->combs[i] - 2*(v < rv ? v : rv);
 
         lc = FFMAX(lc, 0);
         rc = FFMAX(rc, 0);
