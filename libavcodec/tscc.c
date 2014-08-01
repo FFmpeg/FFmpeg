@@ -68,32 +68,30 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     CamtasiaContext * const c = avctx->priv_data;
-    const unsigned char *encoded = buf;
     AVFrame *frame = c->frame;
-    int zret; // Zlib return code
-    int ret, len = buf_size;
+    int ret;
 
     if ((ret = ff_reget_buffer(avctx, frame)) < 0)
         return ret;
 
-    zret = inflateReset(&c->zstream);
-    if (zret != Z_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
+    ret = inflateReset(&c->zstream);
+    if (ret != Z_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", ret);
         return AVERROR_UNKNOWN;
     }
-    c->zstream.next_in = (uint8_t*)encoded;
-    c->zstream.avail_in = len;
+    c->zstream.next_in   = buf;
+    c->zstream.avail_in  = buf_size;
     c->zstream.next_out = c->decomp_buf;
     c->zstream.avail_out = c->decomp_size;
-    zret = inflate(&c->zstream, Z_FINISH);
+    ret = inflate(&c->zstream, Z_FINISH);
     // Z_DATA_ERROR means empty picture
-    if ((zret != Z_OK) && (zret != Z_STREAM_END) && (zret != Z_DATA_ERROR)) {
-        av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", zret);
+    if ((ret != Z_OK) && (ret != Z_STREAM_END) && (ret != Z_DATA_ERROR)) {
+        av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", ret);
         return AVERROR_UNKNOWN;
     }
 
 
-    if (zret != Z_DATA_ERROR) {
+    if (ret != Z_DATA_ERROR) {
         bytestream2_init(&c->gb, c->decomp_buf,
                          c->decomp_size - c->zstream.avail_out);
         ff_msrle_decode(avctx, (AVPicture*)frame, c->bpp, &c->gb);
