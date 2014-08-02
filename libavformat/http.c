@@ -132,21 +132,16 @@ void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
            sizeof(HTTPAuthState));
 }
 
-/* return non zero if error */
-static int http_open_cnx(URLContext *h, AVDictionary **options)
+static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
 {
     const char *path, *proxy_path, *lower_proto = "tcp", *local_path;
     char hostname[1024], hoststr[1024], proto[10];
     char auth[1024], proxyauth[1024] = "";
     char path1[MAX_URL_SIZE];
     char buf[1024], urlbuf[MAX_URL_SIZE];
-    int port, use_proxy, err, location_changed = 0, redirects = 0, attempts = 0;
-    HTTPAuthType cur_auth_type, cur_proxy_auth_type;
+    int port, use_proxy, err, location_changed = 0;
     HTTPContext *s = h->priv_data;
 
-    /* fill the dest addr */
-redo:
-    /* needed in any case to build the host string */
     av_url_split(proto, sizeof(proto), auth, sizeof(auth),
                  hostname, sizeof(hostname), &port,
                  path1, sizeof(path1), s->location);
@@ -186,15 +181,32 @@ redo:
         err = ffurl_open(&s->hd, buf, AVIO_FLAG_READ_WRITE,
                          &h->interrupt_callback, options);
         if (err < 0)
-            goto fail;
+            return err;
     }
 
+    err = http_connect(h, path, local_path, hoststr,
+                       auth, proxyauth, &location_changed);
+    if (err < 0)
+        return err;
+
+    return location_changed;
+}
+
+/* return non zero if error */
+static int http_open_cnx(URLContext *h, AVDictionary **options)
+{
+    HTTPAuthType cur_auth_type, cur_proxy_auth_type;
+    HTTPContext *s = h->priv_data;
+    int location_changed, attempts = 0, redirects = 0;
+redo:
+    location_changed = http_open_cnx_internal(h, options);
+    if (location_changed < 0)
+        goto fail;
+
+    attempts++;
     cur_auth_type       = s->auth_state.auth_type;
     cur_proxy_auth_type = s->auth_state.auth_type;
-    if (http_connect(h, path, local_path, hoststr,
-                     auth, proxyauth, &location_changed) < 0)
-        goto fail;
-    attempts++;
+
     if (s->http_code == 401) {
         if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
             s->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
