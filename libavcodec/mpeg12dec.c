@@ -1884,6 +1884,10 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                 } else
                     goto eos;
             }
+            // There are some files out there which are missing the last slice
+            // in cases where the slice is completely outside the vissible
+            // area, we detect this here instead of running into the end expecting
+            // more data
             if (s->mb_y >= ((s->height + 15) >> 4) &&
                 s->progressive_frame &&
                 !s->progressive_sequence &&
