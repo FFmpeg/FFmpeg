@@ -538,6 +538,13 @@ s->bgr32=1;
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->predictor == MEDIAN && avctx->pix_fmt == PIX_FMT_YUV422P &&
+        avctx->width % 4) {
+        av_log(avctx, AV_LOG_ERROR, "width must be multiple of 4 "
+               "for this combination of colorspace and predictor type.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     alloc_temp(s);
 
 //    av_log(NULL, AV_LOG_DEBUG, "pred:%d bpp:%d hbpp:%d il:%d\n", s->predictor, s->bitstream_bpp, avctx->bits_per_coded_sample, s->interlaced);
