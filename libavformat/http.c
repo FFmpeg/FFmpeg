@@ -229,6 +229,7 @@ redo:
         memset(&s->auth_state, 0, sizeof(s->auth_state));
         attempts         = 0;
         location_changed = 0;
+        lower_proto      = "tcp";
         goto redo;
     }
     return 0;
