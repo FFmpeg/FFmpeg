@@ -32,6 +32,10 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_IO_H
+#include <io.h>
+#endif
+
 #undef NDEBUG
 #include <assert.h>
 

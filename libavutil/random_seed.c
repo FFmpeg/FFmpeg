@@ -23,6 +23,9 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if HAVE_IO_H
+#include <io.h>
+#endif
 #if HAVE_CRYPTGENRANDOM
 #include <windows.h>
 #include <wincrypt.h>
