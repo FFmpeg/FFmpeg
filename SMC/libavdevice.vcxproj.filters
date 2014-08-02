@@ -54,6 +54,9 @@
     <ClCompile Include="..\libavdevice\vfwcap.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavdevice\libcdio.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavdevice\file_open.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
