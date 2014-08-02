@@ -448,7 +448,6 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
     x = 1 << (32 - (15 - filter_quant));
     y = 1 << ((15 - filter_quant) - 1);
     for (i = 0, j = filter_order - 1; i < filter_order / 2; i++, j--) {
-        int tmp = y + tfilter[j];
         s->filter[j] = x - ((tfilter[i] + y) >> (15 - filter_quant));
         s->filter[i] = x - ((tfilter[j] + y) >> (15 - filter_quant));
     }
