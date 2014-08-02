@@ -32,8 +32,8 @@ static int dts_probe(AVProbeData *p)
 {
     const uint8_t *buf, *bufp;
     uint32_t state = -1;
-    int markers[3] = {0};
-    int sum, max;
+    int markers[4] = {0};
+    int sum, max, i;
     int64_t diff = 0;
 
     buf = p->buf;
@@ -43,25 +43,29 @@ static int dts_probe(AVProbeData *p)
         state = (state << 16) | bytestream_get_be16(&bufp);
 
         /* regular bitstream */
-        if (state == DCA_MARKER_RAW_BE || state == DCA_MARKER_RAW_LE)
+        if (state == DCA_MARKER_RAW_BE)
             markers[0]++;
+        if (state == DCA_MARKER_RAW_LE)
+            markers[1]++;
 
         /* 14 bits big-endian bitstream */
         if (state == DCA_MARKER_14B_BE)
             if ((bytestream_get_be16(&bufp) & 0xFFF0) == 0x07F0)
-                markers[1]++;
+                markers[2]++;
 
         /* 14 bits little-endian bitstream */
         if (state == DCA_MARKER_14B_LE)
             if ((bytestream_get_be16(&bufp) & 0xF0FF) == 0xF007)
-                markers[2]++;
+                markers[3]++;
 
         if (buf - p->buf >= 4)
             diff += FFABS(AV_RL16(buf) - AV_RL16(buf-4));
     }
-    sum = markers[0] + markers[1] + markers[2];
-    max = markers[1] > markers[0];
-    max = markers[2] > markers[max] ? 2 : max;
+    sum = markers[0] + markers[1] + markers[2] + markers[3];
+    max = 0;
+    for (i=1; i<4; i++)
+        if (markers[max] < markers[i])
+            max = i;
     if (markers[max] > 3 && p->buf_size / markers[max] < 32*1024 &&
         markers[max] * 4 > sum * 3 &&
         diff / p->buf_size > 200)
