@@ -203,11 +203,9 @@ WARNING: trying to stream test1.mpg doesn't work with WMP as it tries to
 transfer the entire file before starting to play.
 The same is true of AVI files.
 
-@section What happens next?
-
-You should edit the ffserver.conf file to suit your needs (in terms of
-frame rates etc). Then install ffserver and ffmpeg, write a script to start
-them up, and off you go.
+You should edit the @file{ffserver.conf} file to suit your needs (in
+terms of frame rates etc). Then install @command{ffserver} and
+@command{ffmpeg}, write a script to start them up, and off you go.
 
 @section What else can it do?
 
