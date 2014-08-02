@@ -66,7 +66,7 @@ http://@var{ffserver_ip_address}:@var{http_port}/@var{feed_name}
 
 where @var{ffserver_ip_address} is the IP address of the machine where
 @command{ffserver} is installed, @var{http_port} is the port number of
-the HTTP server (configured through the @option{Port} option), and
+the HTTP server (configured through the @option{HTTPPort} option), and
 @var{feed_name} is the name of the corresponding feed defined in the
 configuration file.
 
@@ -101,7 +101,7 @@ http://@var{ffserver_ip_address}:@var{rtsp_port}/@var{stream_name}[@var{options}
 the configuration file. @var{options} is a list of options specified
 after the URL which affects how the stream is served by
 @command{ffserver}. @var{http_port} and @var{rtsp_port} are the HTTP
-and RTSP ports configured with the options @var{Port} and
+and RTSP ports configured with the options @var{HTTPPort} and
 @var{RTSPPort} respectively.
 
 In case the stream is associated to a feed, the encoding parameters
@@ -352,19 +352,28 @@ allow everybody else.
 
 @section Global options
 @table @option
+@item HTTPPort @var{port_number}
 @item Port @var{port_number}
 @item RTSPPort @var{port_number}
 
-Set TCP port number on which the HTTP/RTSP server is listening. You
-must select a different port from your standard HTTP web server if it
-is running on the same computer.
+@var{HTTPPort} sets the HTTP server listening TCP port number,
+@var{RTSPPort} sets the RTSP server listening TCP port number.
+
+@var{Port} is the equivalent of @var{HTTPPort} and is deprecated.
+
+You must select a different port from your standard HTTP web server if
+it is running on the same computer.
 
 If not specified, no corresponding server will be created.
 
+@item HTTPBindAddress @var{ip_address}
 @item BindAddress @var{ip_address}
 @item RTSPBindAddress @var{ip_address}
 Set address on which the HTTP/RTSP server is bound. Only useful if you
 have several network interfaces.
+
+@var{BindAddress} is the equivalent of @var{HTTPBindAddress} and is
+deprecated.
 
 @item MaxHTTPConnections @var{n}
 Set number of simultaneous HTTP connections that can be handled. It

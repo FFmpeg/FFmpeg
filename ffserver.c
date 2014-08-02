@@ -4081,14 +4081,18 @@ static int parse_ffconfig(const char *filename)
 
         get_arg(cmd, sizeof(cmd), &p);
 
-        if (!av_strcasecmp(cmd, "Port")) {
+        if (!av_strcasecmp(cmd, "Port") || !av_strcasecmp(cmd, "HTTPPort")) {
+            if (!av_strcasecmp(cmd, "Port"))
+                WARNING("Port option is deprecated, use HTTPPort instead\n");
             get_arg(arg, sizeof(arg), &p);
             val = atoi(arg);
             if (val < 1 || val > 65536) {
-                ERROR("Invalid_port: %s\n", arg);
+                ERROR("Invalid port: %s\n", arg);
             }
             my_http_addr.sin_port = htons(val);
-        } else if (!av_strcasecmp(cmd, "BindAddress")) {
+        } else if (!av_strcasecmp(cmd, "HTTPBindAddress") || !av_strcasecmp(cmd, "BindAddress")) {
+            if (!av_strcasecmp(cmd, "BindAddress"))
+                WARNING("BindAddress option is deprecated, use HTTPBindAddress instead\n");
             get_arg(arg, sizeof(arg), &p);
             if (resolve_host(&my_http_addr.sin_addr, arg) != 0) {
                 ERROR("%s:%d: Invalid host/IP address: %s\n", arg);
