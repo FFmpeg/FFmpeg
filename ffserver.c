@@ -2989,6 +2989,8 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     AVDictionaryEntry *entry = av_dict_get(stream->metadata, "title", NULL, 0);
     int i;
 
+    *pbuffer = NULL;
+
     avc =  avformat_alloc_context();
     if (avc == NULL || !rtp_format) {
         return -1;
@@ -3025,7 +3027,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     av_free(avc);
     av_free(avs);
 
-    return strlen(*pbuffer);
+    return *pbuffer ? strlen(*pbuffer) : AVERROR(ENOMEM);
 }
 
 static void rtsp_cmd_options(HTTPContext *c, const char *url)
