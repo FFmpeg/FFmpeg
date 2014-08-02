@@ -468,7 +468,7 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
         if ((ret = av_copy_packet(&pkt2, pkt)) < 0 ||
             (ret = av_dup_packet(&pkt2))< 0)
             if (!ret_all) {
-                ret = ret_all;
+                ret_all = ret;
                 continue;
             }
         tb  = avf ->streams[s ]->time_base;
