@@ -73,6 +73,10 @@ FATE_LIBAVUTIL += fate-parseutils
 fate-parseutils: libavutil/parseutils-test$(EXESUF)
 fate-parseutils: CMD = run libavutil/parseutils-test
 
+FATE_LIBAVUTIL-$(CONFIG_PIXELUTILS) += fate-pixelutils
+fate-pixelutils: libavutil/pixelutils-test$(EXESUF)
+fate-pixelutils: CMD = run libavutil/pixelutils-test
+
 FATE_LIBAVUTIL += fate-random_seed
 fate-random_seed: libavutil/random_seed-test$(EXESUF)
 fate-random_seed: CMD = run libavutil/random_seed-test
@@ -98,5 +102,6 @@ FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/xtea-test$(EXESUF)
 fate-xtea: CMD = run libavutil/xtea-test
 
+FATE_LIBAVUTIL += $(FATE_LIBAVUTIL-yes)
 FATE-$(CONFIG_AVUTIL) += $(FATE_LIBAVUTIL)
 fate-libavutil: $(FATE_LIBAVUTIL)

@@ -144,6 +144,7 @@ Component options:
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
+  --disable-pixelutils     disable pixel utils in libavutil
 
 Hardware accelerators:
   --disable-dxva2          disable DXVA2 code [autodetect]
@@ -1451,6 +1452,7 @@ SUBSYSTEM_LIST="
     lsp
     lzo
     mdct
+    pixelutils
     network
     rdft
 "
