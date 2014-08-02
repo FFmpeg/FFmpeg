@@ -1885,7 +1885,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                     goto eos;
             }
             // There are some files out there which are missing the last slice
-            // in cases where the slice is completely outside the vissible
+            // in cases where the slice is completely outside the visible
             // area, we detect this here instead of running into the end expecting
             // more data
             if (s->mb_y >= ((s->height + 15) >> 4) &&
