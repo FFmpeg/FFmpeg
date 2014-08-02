@@ -144,7 +144,7 @@ enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
                               const char *filename, const char *mime_type,
                               enum AVMediaType type)
 {
-    if (!strcmp(fmt->name, "segment") || !strcmp(fmt->name, "ssegment")) {
+    if (av_match_name("segment", fmt->name) || av_match_name("ssegment", fmt->name)) {
         fmt = av_guess_format(NULL, filename, NULL);
     }
 
