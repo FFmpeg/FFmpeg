@@ -99,7 +99,6 @@ static int h264_find_frame_end(H264Context *h, const uint8_t *buf,
                 init_get_bits(&gb, h->parse_history, 8*h->parse_history_count);
                 h->parse_history_count=0;
                 mb= get_ue_golomb_long(&gb);
-                last_mb= h->parse_last_mb;
                 h->parse_last_mb= mb;
                 if (pc->frame_start_found) {
                     if (mb <= last_mb)
