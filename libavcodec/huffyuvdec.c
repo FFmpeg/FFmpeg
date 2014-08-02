@@ -339,6 +339,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->predictor == MEDIAN && avctx->pix_fmt == AV_PIX_FMT_YUV422P &&
+        avctx->width % 4) {
+        av_log(avctx, AV_LOG_ERROR, "width must be multiple of 4 "
+               "for this combination of colorspace and predictor type.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((ret = ff_huffyuv_alloc_temp(s)) < 0)
         return ret;
 
