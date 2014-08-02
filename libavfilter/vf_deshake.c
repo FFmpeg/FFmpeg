@@ -57,7 +57,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavcodec/dsputil.h"
 
 #include "deshake.h"
 #include "deshake_opencl.h"
@@ -132,9 +131,8 @@ static void find_block_motion(DeshakeContext *deshake, uint8_t *src1,
     int smallest = INT_MAX;
     int tmp, tmp2;
 
-    #define CMP(i, j) deshake->c.sad[0](NULL, src1 + cy * stride + cx, \
-                                        src2 + (j) * stride + (i), stride, \
-                                        deshake->blocksize)
+    #define CMP(i, j) deshake->sad(src1 + cy  * stride + cx,  stride,\
+                                   src2 + (j) * stride + (i), stride)
 
     if (deshake->search == EXHAUSTIVE) {
         // Compare every possible position - this is sloooow!
@@ -201,7 +199,7 @@ static int block_contrast(uint8_t *src, int x, int y, int stride, int blocksize)
     int i, j, pos;
 
     for (i = 0; i <= blocksize * 2; i++) {
-        // We use a width of 16 here to match the libavcodec sad functions
+        // We use a width of 16 here to match the sad function
         for (j = 0; j <= 15; j++) {
             pos = (y - i) * stride + (x - j);
             if (src[pos] < lowest)
@@ -263,7 +261,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     pos = 0;
     // Find motion for every block and store the motion vector in the counts
     for (y = deshake->ry; y < height - deshake->ry - (deshake->blocksize * 2); y += deshake->blocksize * 2) {
-        // We use a width of 16 here to match the libavcodec sad functions
+        // We use a width of 16 here to match the sad function
         for (x = deshake->rx; x < width - deshake->rx - 16; x += 16) {
             // If the contrast is too low, just skip this block as it probably
             // won't be very useful to us.
@@ -351,6 +349,10 @@ static av_cold int init(AVFilterContext *ctx)
     int ret;
     DeshakeContext *deshake = ctx->priv;
 
+    deshake->sad = av_pixelutils_get_sad_fn(4, 4, 1, deshake); // 16x16, 2nd source unaligned
+    if (!deshake->sad)
+        return AVERROR(EINVAL);
+
     deshake->refcount = 20; // XXX: add to options?
     deshake->blocksize /= 2;
     deshake->blocksize = av_clip(deshake->blocksize, 4, 128);
@@ -413,9 +415,6 @@ static int config_props(AVFilterLink *link)
     deshake->last.angle = 0;
     deshake->last.zoom = 0;
 
-    deshake->avctx = avcodec_alloc_context3(NULL);
-    avpriv_dsputil_init(&deshake->c, deshake->avctx);
-
     return 0;
 }
 
@@ -428,9 +427,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&deshake->ref);
     if (deshake->fp)
         fclose(deshake->fp);
-    if (deshake->avctx)
-        avcodec_close(deshake->avctx);
-    av_freep(&deshake->avctx);
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
