@@ -39,6 +39,9 @@
  */
 
 #include "config.h"
+
+#if HAVE_GNU_AS && HAVE_ALTIVEC
+
 #include "asm.S"
 
 .text
@@ -447,3 +450,5 @@ fft_dispatch_tab\suffix\()_altivec:
 
 DECL_FFTS 0
 DECL_FFTS 1, _interleave
+
+#endif /* HAVE_GNU_AS && HAVE_ALTIVEC */
