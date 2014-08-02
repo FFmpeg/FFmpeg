@@ -3107,7 +3107,6 @@ fail:
 static av_cold int hevc_decode_free(AVCodecContext *avctx)
 {
     HEVCContext       *s = avctx->priv_data;
-    HEVCLocalContext *lc = s->HEVClc;
     int i;
 
     pic_arrays_free(s);
@@ -3148,7 +3147,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->sh.size);
 
     for (i = 1; i < s->threads_number; i++) {
-        lc = s->HEVClcList[i];
+        HEVCLocalContext *lc = s->HEVClcList[i];
         if (lc) {
             av_freep(&s->HEVClcList[i]);
             av_freep(&s->sList[i]);
