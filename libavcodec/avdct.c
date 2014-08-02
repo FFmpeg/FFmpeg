@@ -21,6 +21,7 @@
 #include "avcodec.h"
 #include "idctdsp.h"
 #include "fdctdsp.h"
+#include "pixblockdsp.h"
 #include "avdct.h"
 
 #define OFFSET(x) offsetof(AVDCT,x)
@@ -114,6 +115,14 @@ int avcodec_dct_init(AVDCT *dsp)
         FDCTDSPContext fdsp;
         ff_fdctdsp_init(&fdsp, avctx);
         COPY(fdsp, fdct);
+    }
+#endif
+
+#if CONFIG_PIXBLOCKDSP
+    {
+        PixblockDSPContext pdsp;
+        ff_pixblockdsp_init(&pdsp, avctx);
+        COPY(pdsp, get_pixels);
     }
 #endif
 
