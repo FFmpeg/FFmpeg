@@ -20,7 +20,9 @@
 
 #include <stdio.h>
 
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
+
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
 
@@ -72,12 +74,12 @@ int main(int argc, char **argv)
     /* create a link for each of the input pads */
     for (i = 0; i < filter_ctx->nb_inputs; i++) {
         AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
-        link->type = filter_ctx->filter->inputs[i].type;
+        link->type = avfilter_pad_get_type(filter_ctx->filter->inputs, i);
         filter_ctx->inputs[i] = link;
     }
     for (i = 0; i < filter_ctx->nb_outputs; i++) {
         AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
-        link->type = filter_ctx->filter->outputs[i].type;
+        link->type = avfilter_pad_get_type(filter_ctx->filter->outputs, i);
         filter_ctx->outputs[i] = link;
     }
 
@@ -91,7 +93,7 @@ int main(int argc, char **argv)
         AVFilterFormats *fmts = filter_ctx->inputs[i]->out_formats;
         for (j = 0; j < fmts->nb_formats; j++)
             printf("INPUT[%d] %s: %s\n",
-                   i, filter_ctx->filter->inputs[i].name,
+                   i, avfilter_pad_get_name(filter_ctx->filter->inputs, i),
                    av_get_pix_fmt_name(fmts->formats[j]));
     }
 
@@ -100,7 +102,7 @@ int main(int argc, char **argv)
         AVFilterFormats *fmts = filter_ctx->outputs[i]->in_formats;
         for (j = 0; j < fmts->nb_formats; j++)
             printf("OUTPUT[%d] %s: %s\n",
-                   i, filter_ctx->filter->outputs[i].name,
+                   i, avfilter_pad_get_name(filter_ctx->filter->outputs, i),
                    av_get_pix_fmt_name(fmts->formats[j]));
     }
 
