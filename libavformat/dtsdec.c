@@ -59,7 +59,7 @@ static int dts_probe(AVProbeData *p)
                 markers[3]++;
 
         if (buf - p->buf >= 4)
-            diff += FFABS(AV_RL16(buf) - AV_RL16(buf-4));
+            diff += FFABS(((int16_t)AV_RL16(buf)) - (int16_t)AV_RL16(buf-4));
     }
     sum = markers[0] + markers[1] + markers[2] + markers[3];
     max = 0;
