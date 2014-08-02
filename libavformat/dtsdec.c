@@ -36,7 +36,7 @@ static int dts_probe(AVProbeData *p)
     int sum, max, i;
     int64_t diff = 0;
 
-    buf = p->buf;
+    buf = p->buf + FFMIN(4096, p->buf_size);
 
     for(; buf < (p->buf+p->buf_size)-2; buf+=2) {
         bufp = buf;
