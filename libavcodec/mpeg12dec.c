@@ -54,6 +54,8 @@ typedef struct Mpeg1Context {
     int has_stereo3d;
     uint8_t *a53_caption;
     int a53_caption_size;
+    uint8_t afd;
+    int has_afd;
     int slice_count;
     int save_aspect_info;
     int save_width, save_height, save_progressive_seq;
@@ -1631,6 +1633,18 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             *stereo = s1->stereo3d;
             s1->has_stereo3d = 0;
         }
+
+        if (s1->has_afd) {
+            AVFrameSideData *sd =
+                av_frame_new_side_data(s->current_picture_ptr->f,
+                                       AV_FRAME_DATA_AFD, 1);
+            if (!sd)
+                return AVERROR(ENOMEM);
+
+            *sd->data   = s1->afd;
+            s1->has_afd = 0;
+        }
+
         if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_finish_setup(avctx);
     } else { // second field
@@ -2221,6 +2235,7 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
                                   const uint8_t *p, int buf_size)
 {
     const uint8_t *buf_end = p + buf_size;
+    Mpeg1Context *s1 = avctx->priv_data;
 
     /* we parse the DTG active format information */
     if (buf_end - p >= 5 &&
@@ -2234,7 +2249,11 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
         if (flags & 0x40) {
             if (buf_end - p < 1)
                 return;
+#if FF_API_AFD
             avctx->dtg_active_format = p[0] & 0x0f;
+#endif /* FF_API_AFD */
+            s1->has_afd = 1;
+            s1->afd     = p[0] & 0x0f;
         }
     } else if (buf_end - p >= 6 &&
                p[0] == 'J' && p[1] == 'P' && p[2] == '3' && p[3] == 'D' &&
@@ -2246,7 +2265,6 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
             S3D_video_format_type == 0x04 ||
             S3D_video_format_type == 0x08 ||
             S3D_video_format_type == 0x23) {
-            Mpeg1Context *s1   = avctx->priv_data;
 
             s1->has_stereo3d = 1;
 
