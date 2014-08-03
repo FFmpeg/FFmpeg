@@ -677,7 +677,7 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
         if (dstStride[0] * srcBpp == srcStride[0] * dstBpp && srcStride[0] > 0 &&
             !(srcStride[0] % srcBpp))
             conv(srcPtr, dstPtr + dstStride[0] * srcSliceY,
-                 srcSliceH * srcStride[0]);
+                 (srcSliceH - 1) * srcStride[0] + c->srcW * srcBpp);
         else {
             int i;
             dstPtr += dstStride[0] * srcSliceY;
