@@ -177,6 +177,11 @@ static int config_output(AVFilterLink *outlink)
 
         av_rdft_end(s->rdft);
         s->rdft = av_rdft_init(rdft_bits, DFT_R2C);
+        if (!s->rdft) {
+            av_log(ctx, AV_LOG_ERROR, "Unable to create RDFT context. "
+                   "The window size might be too high.\n");
+            return AVERROR(EINVAL);
+        }
         s->rdft_bits = rdft_bits;
 
         /* RDFT buffers: x2 for each (display) channel buffer.
