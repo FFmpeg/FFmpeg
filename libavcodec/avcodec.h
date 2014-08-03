@@ -1690,6 +1690,7 @@ typedef struct AVCodecContext {
      */
     int me_subpel_quality;
 
+#if FF_API_AFD
     /**
      * DTG active format information (additional aspect ratio
      * information only used in DVB MPEG-2 transport streams)
@@ -1697,8 +1698,9 @@ typedef struct AVCodecContext {
      *
      * - encoding: unused
      * - decoding: Set by decoder.
+     * @deprecated Deprecated in favour of AVSideData
      */
-    int dtg_active_format;
+    attribute_deprecated int dtg_active_format;
 #define FF_DTG_AFD_SAME         8
 #define FF_DTG_AFD_4_3          9
 #define FF_DTG_AFD_16_9         10
@@ -1706,6 +1708,7 @@ typedef struct AVCodecContext {
 #define FF_DTG_AFD_4_3_SP_14_9  13
 #define FF_DTG_AFD_16_9_SP_14_9 14
 #define FF_DTG_AFD_SP_4_3       15
+#endif
 
     /**
      * maximum motion estimation search range in subpel units
