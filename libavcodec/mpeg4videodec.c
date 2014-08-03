@@ -2539,14 +2539,19 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
 {
     Mpeg4DecContext *s = dst->priv_data;
     const Mpeg4DecContext *s1 = src->priv_data;
+    int init = s->m.context_initialized;
 
     int ret = ff_mpeg_update_thread_context(dst, src);
 
     if (ret < 0)
         return ret;
 
+    if (CONFIG_MPEG4_DECODER && !init && s1->xvid_build >= 0)
+        ff_xvididct_init(&s->m.idsp, dst);
+
     s->shape               = s1->shape;
     s->time_increment_bits = s1->time_increment_bits;
+    s->xvid_build          = s1->xvid_build;
 
     return 0;
 }
