@@ -250,7 +250,7 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                 const int x1 = x + offset[i + count - 1][0];
                 const int y1 = y + offset[i + count - 1][1];
                 const int index = x1 + y1*linesize;
-                p->pdsp.get_pixels(block, p->src + index, linesize);
+                p->dct->get_pixels(block, p->src + index, linesize);
                 p->dct->fdct(block);
                 p->requantize(block2, block, qp, p->dct->idct_permutation);
                 p->dct->idct(block2);
@@ -400,7 +400,6 @@ static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
     spp->dct = avcodec_dct_alloc();
     if (!spp->avctx || !spp->dct)
         return AVERROR(ENOMEM);
-    ff_pixblockdsp_init(&spp->pdsp, spp->avctx);
 
     if (opts) {
         AVDictionaryEntry *e = NULL;
