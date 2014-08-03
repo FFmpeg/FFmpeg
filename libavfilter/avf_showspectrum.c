@@ -38,6 +38,7 @@ enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, NB_SCALES };
 enum ColorMode    { CHANNEL, INTENSITY, NB_CLMODES };
 enum WindowFunc   { WFUNC_NONE, WFUNC_HANN, WFUNC_HAMMING, WFUNC_BLACKMAN, NB_WFUNC };
+enum SlideMode    { REPLACE, SCROLL, FULLFRAME, NB_SLIDES };
 
 typedef struct {
     const AVClass *class;
@@ -66,7 +67,10 @@ typedef struct {
 static const AVOption showspectrum_options[] = {
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x512"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x512"}, 0, 0, FLAGS },
-    { "slide", "set sliding mode", OFFSET(sliding), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, FLAGS },
+    { "slide", "set sliding mode", OFFSET(sliding), AV_OPT_TYPE_INT, {.i64 = 0}, 0, NB_SLIDES, FLAGS, "slide" },
+        { "replace", "replace old colums with new", 0, AV_OPT_TYPE_CONST, {.i64=REPLACE}, 0, 0, FLAGS, "slide" },
+        { "scroll", "scroll from right to left", 0, AV_OPT_TYPE_CONST, {.i64=SCROLL}, 0, 0, FLAGS, "slide" },
+        { "fullframe", "return full frames", 0, AV_OPT_TYPE_CONST, {.i64=FULLFRAME}, 0, 0, FLAGS, "slide" },
     { "mode", "set channel display mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=COMBINED}, COMBINED, NB_MODES-1, FLAGS, "mode" },
         { "combined", "combined mode", 0, AV_OPT_TYPE_CONST, {.i64=COMBINED}, 0, 0, FLAGS, "mode" },
         { "separate", "separate mode", 0, AV_OPT_TYPE_CONST, {.i64=SEPARATE}, 0, 0, FLAGS, "mode" },
@@ -244,6 +248,8 @@ static int config_output(AVFilterLink *outlink)
         s->xpos = 0;
 
     outlink->frame_rate = av_make_q(inlink->sample_rate, win_size);
+    if (s->sliding == FULLFRAME)
+        outlink->frame_rate.den *= outlink->w;
 
     inlink->min_samples = inlink->max_samples = inlink->partial_buf_size =
         win_size;
@@ -257,27 +263,27 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-inline static int push_frame(AVFilterLink *outlink)
-{
-    ShowSpectrumContext *s = outlink->src->priv;
-
-    s->xpos++;
-    if (s->xpos >= outlink->w)
-        s->xpos = 0;
-    s->req_fullfilled = 1;
-
-    return ff_filter_frame(outlink, av_frame_clone(s->outpicref));
-}
-
 static int request_frame(AVFilterLink *outlink)
 {
     ShowSpectrumContext *s = outlink->src->priv;
     AVFilterLink *inlink = outlink->src->inputs[0];
+    unsigned i;
     int ret;
 
     s->req_fullfilled = 0;
     do {
         ret = ff_request_frame(inlink);
+        if (ret == AVERROR_EOF && s->sliding == FULLFRAME && s->xpos > 0 &&
+            s->outpicref) {
+            for (i = 0; i < outlink->h; i++) {
+                memset(s->outpicref->data[0] + i * s->outpicref->linesize[0] + s->xpos,   0, outlink->w - s->xpos);
+                memset(s->outpicref->data[1] + i * s->outpicref->linesize[1] + s->xpos, 128, outlink->w - s->xpos);
+                memset(s->outpicref->data[2] + i * s->outpicref->linesize[2] + s->xpos, 128, outlink->w - s->xpos);
+            }
+            ret = ff_filter_frame(outlink, s->outpicref);
+            s->outpicref = NULL;
+            s->req_fullfilled = 1;
+        }
     } while (!s->req_fullfilled && ret >= 0);
 
     return ret;
@@ -439,7 +445,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         }
 
         /* copy to output */
-        if (s->sliding) {
+        if (s->sliding == SCROLL) {
             for (plane = 0; plane < 3; plane++) {
                 for (y = 0; y < outlink->h; y++) {
                     uint8_t *p = outpicref->data[plane] +
@@ -459,10 +465,18 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
             }
         }
 
-        outpicref->pts = insamples->pts;
-        ret = push_frame(outlink);
-        if (ret < 0)
-            return ret;
+        if (s->sliding != FULLFRAME || s->xpos == 0)
+            outpicref->pts = insamples->pts;
+
+        s->xpos++;
+        if (s->xpos >= outlink->w)
+            s->xpos = 0;
+        if (s->sliding != FULLFRAME || s->xpos == 0) {
+            s->req_fullfilled = 1;
+            ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
+            if (ret < 0)
+                return ret;
+        }
 
     return win_size;
 }
