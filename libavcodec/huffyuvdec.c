@@ -530,9 +530,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             p->data[0][1] = get_bits(&s->gb, 8);
             p->data[0][0] = get_bits(&s->gb, 8);
 
-            av_log(avctx, AV_LOG_ERROR,
-                   "YUY2 output is not implemented yet\n");
-            return -1;
+            avpriv_report_missing_feature(avctx, "YUY2 output");
+            return AVERROR_PATCHWELCOME;
         } else {
             leftv         =
             p->data[2][0] = get_bits(&s->gb, 8);
@@ -735,9 +734,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                        "prediction type not supported!\n");
             }
         } else {
-            av_log(avctx, AV_LOG_ERROR,
-                   "BGR24 output is not implemented yet\n");
-            return -1;
+            avpriv_report_missing_feature(avctx, "BGR24 output");
+            return AVERROR_PATCHWELCOME;
         }
     }
     emms_c();
