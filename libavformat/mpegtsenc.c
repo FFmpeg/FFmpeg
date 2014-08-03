@@ -746,8 +746,6 @@ static int mpegts_write_header(AVFormatContext *s)
         }
     }
 
-    avio_flush(s->pb);
-
     return 0;
 
  fail:
@@ -1139,7 +1137,6 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         mpegts_prefix_m2ts_header(s);
         avio_write(s->pb, buf, TS_PACKET_SIZE);
     }
-    avio_flush(s->pb);
     ts_st->prev_payload_key = key;
 }
 
@@ -1312,7 +1309,6 @@ static void mpegts_write_flush(AVFormatContext *s)
             ts_st->payload_size = 0;
         }
     }
-    avio_flush(s->pb);
 }
 
 static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
