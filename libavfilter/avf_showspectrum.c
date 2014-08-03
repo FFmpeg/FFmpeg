@@ -468,7 +468,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples, int nb
         }
 
         outpicref->pts = insamples->pts +
-            av_rescale_q(s->consumed,
+            av_rescale_q(s->consumed + add_samples - win_size,
                          (AVRational){ 1, inlink->sample_rate },
                          outlink->time_base);
         ret = push_frame(outlink);
