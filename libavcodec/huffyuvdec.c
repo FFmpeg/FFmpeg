@@ -105,11 +105,13 @@ static int read_len_table(uint8_t *dst, GetBitContext *gb)
     return 0;
 }
 
-static void generate_joint_tables(HYuvContext *s)
+static int generate_joint_tables(HYuvContext *s)
 {
     uint16_t symbols[1 << VLC_BITS];
     uint16_t bits[1 << VLC_BITS];
     uint8_t len[1 << VLC_BITS];
+    int ret;
+
     if (s->bitstream_bpp < 24) {
         int p, i, y, u;
         for (p = 0; p < 3; p++) {
@@ -130,8 +132,9 @@ static void generate_joint_tables(HYuvContext *s)
                 }
             }
             ff_free_vlc(&s->vlc[3 + p]);
-            ff_init_vlc_sparse(&s->vlc[3 + p], VLC_BITS, i, len, 1, 1,
-                               bits, 2, 2, symbols, 2, 2, 0);
+            if ((ret = ff_init_vlc_sparse(&s->vlc[3 + p], VLC_BITS, i, len, 1, 1,
+                                          bits, 2, 2, symbols, 2, 2, 0)) < 0)
+                return ret;
         }
     } else {
         uint8_t (*map)[4] = (uint8_t(*)[4])s->pix_bgr_map;
@@ -172,29 +175,34 @@ static void generate_joint_tables(HYuvContext *s)
             }
         }
         ff_free_vlc(&s->vlc[3]);
-        init_vlc(&s->vlc[3], VLC_BITS, i, len, 1, 1, bits, 2, 2, 0);
+        if ((ret = init_vlc(&s->vlc[3], VLC_BITS, i, len, 1, 1,
+                            bits, 2, 2, 0)) < 0)
+            return ret;
     }
+    return 0;
 }
 
 static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length)
 {
     GetBitContext gb;
-    int i;
+    int i, ret;
 
-    init_get_bits(&gb, src, length * 8);
+    if ((ret = init_get_bits(&gb, src, length * 8)) < 0)
+        return ret;
 
     for (i = 0; i < 3; i++) {
-        if (read_len_table(s->len[i], &gb) < 0)
-            return -1;
-        if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i]) < 0) {
-            return -1;
-        }
+        if ((ret = read_len_table(s->len[i], &gb)) < 0)
+            return ret;
+        if ((ret = ff_huffyuv_generate_bits_table(s->bits[i], s->len[i])) < 0)
+            return ret;
         ff_free_vlc(&s->vlc[i]);
-        init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1,
-                 s->bits[i], 4, 4, 0);
+        if ((ret = init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1,
+                            s->bits[i], 4, 4, 0)) < 0)
+            return ret;
     }
 
-    generate_joint_tables(s);
+    if ((ret = generate_joint_tables(s)) < 0)
+        return ret;
 
     return (get_bits_count(&gb) + 7) / 8;
 }
@@ -202,17 +210,19 @@ static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length)
 static int read_old_huffman_tables(HYuvContext *s)
 {
     GetBitContext gb;
-    int i;
+    int i, ret;
 
-    init_get_bits(&gb, classic_shift_luma,
-                  classic_shift_luma_table_size * 8);
-    if (read_len_table(s->len[0], &gb) < 0)
-        return -1;
+    if ((ret = init_get_bits(&gb, classic_shift_luma,
+                             classic_shift_luma_table_size * 8)) < 0)
+        return ret;
+    if ((ret = read_len_table(s->len[0], &gb)) < 0)
+        return ret;
 
-    init_get_bits(&gb, classic_shift_chroma,
-                  classic_shift_chroma_table_size * 8);
-    if (read_len_table(s->len[1], &gb) < 0)
-        return -1;
+    if ((ret = init_get_bits(&gb, classic_shift_chroma,
+                             classic_shift_chroma_table_size * 8)) < 0)
+        return ret;
+    if ((ret = read_len_table(s->len[1], &gb)) < 0)
+        return ret;
 
     for(i=0; i<256; i++) s->bits[0][i] = classic_add_luma  [i];
     for(i=0; i<256; i++) s->bits[1][i] = classic_add_chroma[i];
@@ -226,11 +236,13 @@ static int read_old_huffman_tables(HYuvContext *s)
 
     for (i = 0; i < 3; i++) {
         ff_free_vlc(&s->vlc[i]);
-        init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1,
-                 s->bits[i], 4, 4, 0);
+        if ((ret = init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1,
+                            s->bits[i], 4, 4, 0)) < 0)
+            return ret;
     }
 
-    generate_joint_tables(s);
+    if ((ret = generate_joint_tables(s)) < 0)
+        return ret;
 
     return 0;
 }
@@ -238,6 +250,7 @@ static int read_old_huffman_tables(HYuvContext *s)
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
+    int ret;
 
     ff_huffyuv_common_init(avctx);
     memset(s->vlc, 0, 3 * sizeof(VLC));
@@ -272,9 +285,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->interlaced = (interlace == 1) ? 1 : (interlace == 2) ? 0 : s->interlaced;
         s->context = ((uint8_t*)avctx->extradata)[2] & 0x40 ? 1 : 0;
 
-        if ( read_huffman_tables(s, ((uint8_t*)avctx->extradata) + 4,
-                                 avctx->extradata_size - 4) < 0)
-            return -1;
+        if ((ret = read_huffman_tables(s, ((uint8_t*)avctx->extradata) + 4,
+                                       avctx->extradata_size - 4)) < 0)
+            return ret;
     }else{
         switch (avctx->bits_per_coded_sample & 7) {
         case 1:
@@ -301,8 +314,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->bitstream_bpp = avctx->bits_per_coded_sample & ~7;
         s->context = 0;
 
-        if (read_old_huffman_tables(s) < 0)
-            return -1;
+        if ((ret = read_old_huffman_tables(s)) < 0)
+            return ret;
     }
 
     switch (s->bitstream_bpp) {
@@ -328,7 +341,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    ff_huffyuv_alloc_temp(s);
+    if ((ret = ff_huffyuv_alloc_temp(s)) < 0)
+        return ret;
 
     return 0;
 }
@@ -336,21 +350,22 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
-    int i;
+    int i, ret;
 
     avctx->coded_frame= &s->picture;
-    ff_huffyuv_alloc_temp(s);
+    if ((ret = ff_huffyuv_alloc_temp(s)) < 0)
+        return ret;
 
     for (i = 0; i < 6; i++)
         s->vlc[i].table = NULL;
 
     if (s->version == 2) {
-        if (read_huffman_tables(s, ((uint8_t*)avctx->extradata) + 4,
-                                avctx->extradata_size) < 0)
-            return -1;
+        if ((ret = read_huffman_tables(s, ((uint8_t*)avctx->extradata) + 4,
+                                       avctx->extradata_size)) < 0)
+            return ret;
     } else {
-        if (read_old_huffman_tables(s) < 0)
-            return -1;
+        if ((ret = read_old_huffman_tables(s)) < 0)
+            return ret;
     }
 
     return 0;
@@ -484,7 +499,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const int height = s->height;
     int fake_ystride, fake_ustride, fake_vstride;
     AVFrame * const p = &s->picture;
-    int table_size = 0;
+    int table_size = 0, ret;
 
     AVFrame *picture = data;
 
@@ -502,22 +517,23 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         ff_thread_release_buffer(avctx, p);
 
     p->reference = 0;
-    if (ff_thread_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_thread_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (s->context) {
         table_size = read_huffman_tables(s, s->bitstream_buffer, buf_size);
         if (table_size < 0)
-            return -1;
+            return table_size;
     }
 
     if ((unsigned)(buf_size-table_size) >= INT_MAX / 8)
         return -1;
 
-    init_get_bits(&s->gb, s->bitstream_buffer+table_size,
-                  (buf_size-table_size) * 8);
+    if ((ret = init_get_bits(&s->gb, s->bitstream_buffer + table_size,
+                             (buf_size - table_size) * 8)) < 0)
+        return ret;
 
     fake_ystride = s->interlaced ? p->linesize[0] * 2  : p->linesize[0];
     fake_ustride = s->interlaced ? p->linesize[1] * 2  : p->linesize[1];
