@@ -246,6 +246,8 @@ static int config_output(AVFilterLink *outlink)
     if (s->xpos >= outlink->w)
         s->xpos = 0;
 
+    outlink->frame_rate = av_make_q(inlink->sample_rate, win_size);
+
     s->combine_buffer =
         av_realloc_f(s->combine_buffer, outlink->h * 3,
                      sizeof(*s->combine_buffer));
