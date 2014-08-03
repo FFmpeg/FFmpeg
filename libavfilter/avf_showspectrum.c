@@ -55,8 +55,6 @@ typedef struct {
     RDFTContext *rdft;          ///< Real Discrete Fourier Transform context
     int rdft_bits;              ///< number of bits (RDFT window size = 1<<rdft_bits)
     FFTSample **rdft_data;      ///< bins holder for each (displayed) channels
-    int filled;                 ///< number of samples (per channel) filled in current rdft_buffer
-    int consumed;               ///< number of samples (per channel) consumed from the input frame
     float *window_func_lut;     ///< Window function LUT
     enum WindowFunc win_func;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
@@ -199,7 +197,6 @@ static int config_output(AVFilterLink *outlink)
             if (!s->rdft_data[i])
                 return AVERROR(ENOMEM);
         }
-        s->filled = 0;
 
         /* pre-calc windowing function */
         s->window_func_lut =
@@ -248,6 +245,9 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->frame_rate = av_make_q(inlink->sample_rate, win_size);
 
+    inlink->min_samples = inlink->max_samples = inlink->partial_buf_size =
+        win_size;
+
     s->combine_buffer =
         av_realloc_f(s->combine_buffer, outlink->h * 3,
                      sizeof(*s->combine_buffer));
@@ -264,7 +264,6 @@ inline static int push_frame(AVFilterLink *outlink)
     s->xpos++;
     if (s->xpos >= outlink->w)
         s->xpos = 0;
-    s->filled = 0;
     s->req_fullfilled = 1;
 
     return ff_filter_frame(outlink, av_frame_clone(s->outpicref));
@@ -284,7 +283,7 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples, int nb_samples)
+static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
 {
     int ret;
     AVFilterContext *ctx = inlink->dst;
@@ -297,26 +296,21 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples, int nb
     const int nb_freq = 1 << (s->rdft_bits - 1);
     const int win_size = nb_freq << 1;
     const double w = 1. / (sqrt(nb_freq) * 32768.);
+    int h = s->channel_height;
 
     int ch, plane, n, y;
-    const int start = s->filled;
-    const int add_samples = FFMIN(win_size - start, nb_samples);
+
+    av_assert0(insamples->nb_samples == win_size);
 
     /* fill RDFT input with the number of samples available */
     for (ch = 0; ch < s->nb_display_channels; ch++) {
         const int16_t *p = (int16_t *)insamples->extended_data[ch];
 
-        p += s->consumed;
-        for (n = 0; n < add_samples; n++)
-            s->rdft_data[ch][start + n] = p[n] * s->window_func_lut[start + n];
+        for (n = 0; n < win_size; n++)
+            s->rdft_data[ch][n] = p[n] * s->window_func_lut[n];
     }
-    s->filled += add_samples;
 
-    /* complete RDFT window size? */
-    if (s->filled == win_size) {
-
-        /* channel height */
-        int h = s->channel_height;
+    /* TODO reindent */
 
         /* run RDFT on each samples set */
         for (ch = 0; ch < s->nb_display_channels; ch++)
@@ -465,32 +459,24 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples, int nb
             }
         }
 
-        outpicref->pts = insamples->pts +
-            av_rescale_q(s->consumed + add_samples - win_size,
-                         (AVRational){ 1, inlink->sample_rate },
-                         outlink->time_base);
+        outpicref->pts = insamples->pts;
         ret = push_frame(outlink);
         if (ret < 0)
             return ret;
-    }
 
-    return add_samples;
+    return win_size;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     ShowSpectrumContext *s = ctx->priv;
-    int ret = 0, left_samples = insamples->nb_samples;
+    unsigned win_size = 1 << s->rdft_bits;
+    int ret = 0;
 
-    s->consumed = 0;
-    while (left_samples) {
-        int ret = plot_spectrum_column(inlink, insamples, left_samples);
-        if (ret < 0)
-            break;
-        s->consumed += ret;
-        left_samples -= ret;
-    }
+    av_assert0(insamples->nb_samples <= win_size);
+    if (insamples->nb_samples == win_size)
+        ret = plot_spectrum_column(inlink, insamples);
 
     av_frame_free(&insamples);
     return ret;
