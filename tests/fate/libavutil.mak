@@ -27,7 +27,7 @@ fate-blowfish: CMD = run libavutil/blowfish-test
 
 FATE_LIBAVUTIL += fate-cpu
 fate-cpu: libavutil/cpu-test$(EXESUF)
-fate-cpu: CMD = run libavutil/cpu-test $(CPUFLAGS:%=-c%)
+fate-cpu: CMD = run libavutil/cpu-test $(CPUFLAGS:%=-c%) $(THREADS:%=-t%)
 fate-cpu: REF = /dev/null
 
 FATE_LIBAVUTIL += fate-crc

@@ -180,6 +180,7 @@ int av_cpu_count(void)
 #ifdef TEST
 
 #include <stdio.h>
+#include "avstring.h"
 
 #if !HAVE_GETOPT
 #include "compat/getopt.c"
@@ -245,12 +246,14 @@ int main(int argc, char **argv)
 {
     int cpu_flags_raw = av_get_cpu_flags();
     int cpu_flags_eff;
+    int cpu_count = av_cpu_count();
+    char threads[5] = "auto";
 
     if (cpu_flags_raw < 0)
         return 1;
 
     for (;;) {
-        int c = getopt(argc, argv, "c:");
+        int c = getopt(argc, argv, "c:t:");
         if (c == -1)
             break;
         switch (c) {
@@ -262,6 +265,14 @@ int main(int argc, char **argv)
             av_set_cpu_flags_mask(cpuflags);
             break;
         }
+        case 't':
+        {
+            int len = av_strlcpy(threads, optarg, sizeof(threads));
+            if (len >= sizeof(threads)) {
+                fprintf(stderr, "Invalid thread count '%s'\n", optarg);
+                return 2;
+            }
+        }
         }
     }
 
@@ -272,6 +283,7 @@ int main(int argc, char **argv)
 
     print_cpu_flags(cpu_flags_raw, "raw");
     print_cpu_flags(cpu_flags_eff, "effective");
+    fprintf(stderr, "threads = %s (cpu_count = %d)\n", threads, cpu_count);
 
     return 0;
 }
