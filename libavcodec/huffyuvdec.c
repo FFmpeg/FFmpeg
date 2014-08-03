@@ -263,17 +263,17 @@ static av_cold int decode_init(AVCodecContext *avctx)
         if (avctx->extradata_size < 4)
             return -1;
 
-        method           = ((uint8_t *) avctx->extradata)[0];
+        method           = avctx->extradata[0];
         s->decorrelate   = method & 64 ? 1 : 0;
         s->predictor     = method & 63;
-        s->bitstream_bpp = ((uint8_t *) avctx->extradata)[1];
+        s->bitstream_bpp = avctx->extradata[1];
         if (s->bitstream_bpp == 0)
             s->bitstream_bpp = avctx->bits_per_coded_sample & ~7;
-        interlace     = (((uint8_t *) avctx->extradata)[2] & 0x30) >> 4;
+        interlace     = (avctx->extradata[2] & 0x30) >> 4;
         s->interlaced = (interlace == 1) ? 1 : (interlace == 2) ? 0 : s->interlaced;
-        s->context    = ((uint8_t *) avctx->extradata)[2] & 0x40 ? 1 : 0;
+        s->context    = avctx->extradata[2] & 0x40 ? 1 : 0;
 
-        if (read_huffman_tables(s, ((uint8_t *) avctx->extradata) + 4,
+        if (read_huffman_tables(s, avctx->extradata + 4,
                                 avctx->extradata_size - 4) < 0)
             return -1;
     } else {
@@ -343,7 +343,7 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
         s->vlc[i].table = NULL;
 
     if (s->version == 2) {
-        if (read_huffman_tables(s, ((uint8_t *) avctx->extradata) + 4,
+        if (read_huffman_tables(s, avctx->extradata + 4,
                                 avctx->extradata_size) < 0)
             return -1;
     } else {
