@@ -281,8 +281,6 @@ static int request_frame(AVFilterLink *outlink)
         ret = ff_request_frame(inlink);
     } while (!s->req_fullfilled && ret >= 0);
 
-    if (ret == AVERROR_EOF && s->outpicref)
-        push_frame(outlink);
     return ret;
 }
 
