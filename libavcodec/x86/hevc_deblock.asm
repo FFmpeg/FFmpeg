@@ -77,16 +77,10 @@ INIT_XMM sse2
 ; in: 4 rows of 8 words in m0..m3
 ; out: 8 rows of 4 bytes in %1..%8
 %macro TRANSPOSE8x4B_STORE 8
-    packuswb         m0, m0
-    packuswb         m1, m1
-    packuswb         m2, m2
-    packuswb         m3, m3
-
-    punpcklbw        m0, m1
-    punpcklbw        m2, m3
-
-    punpckhwd        m6, m0, m2
-    punpcklwd        m0, m2
+    packuswb         m0, m2
+    packuswb         m1, m3
+    SBUTTERFLY bw, 0, 1, 2
+    SBUTTERFLY wd, 0, 1, 2
 
     movd             %1, m0
     pshufd           m0, m0, 0x39
@@ -96,13 +90,13 @@ INIT_XMM sse2
     pshufd           m0, m0, 0x39
     movd             %4, m0
 
-    movd             %5, m6
-    pshufd           m6, m6, 0x39
-    movd             %6, m6
-    pshufd           m6, m6, 0x39
-    movd             %7, m6
-    pshufd           m6, m6, 0x39
-    movd             %8, m6
+    movd             %5, m1
+    pshufd           m1, m1, 0x39
+    movd             %6, m1
+    pshufd           m1, m1, 0x39
+    movd             %7, m1
+    pshufd           m1, m1, 0x39
+    movd             %8, m1
 %endmacro
 
 ; in: 8 rows of 4 words in %4..%11
@@ -204,40 +198,20 @@ INIT_XMM sse2
 ; in: 8 rows of 8 words in m0..m8
 ; out: 8 rows of 8 bytes in %1..%8
 %macro TRANSPOSE8x8B_STORE 8
-    packuswb         m0, m0
-    packuswb         m1, m1
-    packuswb         m2, m2
-    packuswb         m3, m3
-    packuswb         m4, m4
-    packuswb         m5, m5
-    packuswb         m6, m6
-    packuswb         m7, m7
+    packuswb         m0, m4
+    packuswb         m1, m5
+    packuswb         m2, m6
+    packuswb         m3, m7
+    TRANSPOSE2x4x4B   0, 1, 2, 3, 4
 
-    punpcklbw        m0, m1
-    punpcklbw        m2, m3
-
-    punpckhwd        m8, m0, m2
-    punpcklwd        m0, m2
-
-    punpcklbw        m4, m5
-    punpcklbw        m6, m7
-
-    punpckhwd        m9, m4, m6
-    punpcklwd        m4, m6
-
-    punpckhdq       m10, m0, m4; 2, 3
-    punpckldq        m0, m4;   0, 1
-
-    punpckldq       m11, m8, m9;  4, 5
-    punpckhdq        m8, m9;   6, 7
     movq             %1, m0
     movhps           %2, m0
-    movq             %3, m10
-    movhps           %4, m10
-    movq             %5, m11
-    movhps           %6, m11
-    movq             %7, m8
-    movhps           %8, m8
+    movq             %3, m1
+    movhps           %4, m1
+    movq             %5, m2
+    movhps           %6, m2
+    movq             %7, m3
+    movhps           %8, m3
 %endmacro
 
 ; in: 8 rows of 8 words in %1..%8
