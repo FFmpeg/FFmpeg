@@ -302,9 +302,8 @@ SECTION .text
     pshufb     %1, %2
 %else
     punpcklbw  %1, %1
-    punpcklqdq %1, %1
-    pshuflw    %1, %1, 0
-    pshufhw    %1, %1, 0x55
+    punpcklwd  %1, %1
+    punpckldq  %1, %1
 %endif
 %endmacro
 
