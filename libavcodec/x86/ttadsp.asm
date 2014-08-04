@@ -72,7 +72,7 @@ cglobal ttafilter_process_dec, 5,5,%2, qm, dx, dl, error, in, shift, round
     ; Using horizontal add (phaddd) seems to be slower than shuffling stuff around
     paddd      m2, m3               ; int sum = filter->round +
                                     ;           filter->dl[0] * filter->qm[0] +
-    punpckhqdq m3, m2, m2           ;           filter->dl[1] * filter->qm[1] +
+    pshufd     m3, m2, 0xe          ;           filter->dl[1] * filter->qm[1] +
     paddd      m2, m3               ;           filter->dl[2] * filter->qm[2] +
                                     ;           filter->dl[3] * filter->qm[3] +
     movd       m6, roundm           ;           filter->dl[4] * filter->qm[4] +
