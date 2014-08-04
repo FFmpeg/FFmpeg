@@ -105,7 +105,7 @@ static int read_len_table(uint8_t *dst, GetBitContext *gb, int n)
             repeat = get_bits(gb, 8);
         if (i + repeat > n || get_bits_left(gb) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error reading huffman table\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         while (repeat--)
             dst[i++] = val;
@@ -294,7 +294,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         int method, interlace;
 
         if (avctx->extradata_size < 4)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         method           = avctx->extradata[0];
         s->decorrelate   = method & 64 ? 1 : 0;
