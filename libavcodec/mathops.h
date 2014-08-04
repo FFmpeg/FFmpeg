@@ -39,8 +39,6 @@ extern const uint8_t ff_zigzag_direct[64];
 #   include "arm/mathops.h"
 #elif ARCH_AVR32
 #   include "avr32/mathops.h"
-#elif ARCH_BFIN
-#   include "bfin/mathops.h"
 #elif ARCH_MIPS
 #   include "mips/mathops.h"
 #elif ARCH_PPC
