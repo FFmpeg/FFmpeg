@@ -465,6 +465,8 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 {
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
+        if (av_image_check_size(avctx->width, avctx->height, 0, avctx))
+             return AVERROR_INVALIDDATA;
         frame->width               = avctx->width;
         frame->height              = avctx->height;
         frame->format              = avctx->pix_fmt;
