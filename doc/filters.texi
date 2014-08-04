@@ -10701,6 +10701,9 @@ Draw a point for each sample.
 
 @item line
 Draw a vertical line for each sample.
+
+@item p2p
+Draw a point for each sample and a line between them.
 @end table
 
 Default value is @code{point}.
