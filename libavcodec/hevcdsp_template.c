@@ -1693,21 +1693,21 @@ static void FUNC(hevc_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _xstride,
 }
 
 static void FUNC(hevc_h_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
-                                            int *tc, uint8_t *no_p,
+                                            int32_t *tc, uint8_t *no_p,
                                             uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_chroma)(pix, stride, sizeof(pixel), tc, no_p, no_q);
 }
 
 static void FUNC(hevc_v_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
-                                            int *tc, uint8_t *no_p,
+                                            int32_t *tc, uint8_t *no_p,
                                             uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_chroma)(pix, sizeof(pixel), stride, tc, no_p, no_q);
 }
 
 static void FUNC(hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int beta, int *tc, uint8_t *no_p,
+                                          int beta, int32_t *tc, uint8_t *no_p,
                                           uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, stride, sizeof(pixel),
@@ -1715,7 +1715,7 @@ static void FUNC(hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
 }
 
 static void FUNC(hevc_v_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int beta, int *tc, uint8_t *no_p,
+                                          int beta, int32_t *tc, uint8_t *no_p,
                                           uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, sizeof(pixel), stride,

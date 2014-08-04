@@ -625,7 +625,7 @@ ALIGN 16
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void ff_hevc_v_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int *_tc,
+; void ff_hevc_v_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int32_t *tc,
 ;                                   uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 %macro LOOP_FILTER_CHROMA 0
@@ -660,7 +660,7 @@ cglobal hevc_v_loop_filter_chroma_12, 3, 5, 7, pix, stride, tc, pix0, r3stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void ff_hevc_h_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int *_tc,
+; void ff_hevc_h_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int32_t *tc,
 ;                                   uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 cglobal hevc_h_loop_filter_chroma_8, 3, 4, 7, pix, stride, tc, pix0
@@ -724,7 +724,7 @@ LOOP_FILTER_CHROMA
 %macro LOOP_FILTER_LUMA 0
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_v_loop_filter_luma(uint8_t *_pix, ptrdiff_t _stride, int beta,
-;                                 int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+;                                 int32_t *tc, uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 cglobal hevc_v_loop_filter_luma_8, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     sub            pixq, 4
@@ -764,7 +764,7 @@ cglobal hevc_v_loop_filter_luma_12, 4, 14, 16, pix, stride, beta, tc, pix0, src3
 
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_h_loop_filter_luma(uint8_t *_pix, ptrdiff_t _stride, int beta,
-;                                 int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+;                                 int32_t *tc, uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 cglobal hevc_h_loop_filter_luma_8, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     lea     src3strideq, [3 * strideq]
