@@ -174,7 +174,6 @@ int sws_init_context(struct SwsContext *sws_context, SwsFilter *srcFilter, SwsFi
  */
 void sws_freeContext(struct SwsContext *swsContext);
 
-#if FF_API_SWS_GETCONTEXT
 /**
  * Allocate and return an SwsContext. You need it to perform
  * scaling/conversion operations using sws_scale().
@@ -189,13 +188,11 @@ void sws_freeContext(struct SwsContext *swsContext);
  * @return a pointer to an allocated context, or NULL in case of error
  * @note this function is to be removed after a saner alternative is
  *       written
- * @deprecated Use sws_getCachedContext() instead.
  */
 struct SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
                                   int dstW, int dstH, enum AVPixelFormat dstFormat,
                                   int flags, SwsFilter *srcFilter,
                                   SwsFilter *dstFilter, const double *param);
-#endif
 
 /**
  * Scale the image slice in srcSlice and put the resulting scaled
