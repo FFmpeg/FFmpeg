@@ -502,6 +502,7 @@ void show_usage(void);
 
 void opt_output_file(void *optctx, const char *filename);
 
+void remove_avoptions(AVDictionary **a, AVDictionary *b);
 void assert_avoptions(AVDictionary *m);
 
 int guess_input_channel_layout(InputStream *ist);

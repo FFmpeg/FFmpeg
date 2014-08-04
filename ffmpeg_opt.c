@@ -872,6 +872,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
         print_error(filename, err);
         exit_program(1);
     }
+    remove_avoptions(&o->g->format_opts, o->g->codec_opts);
     assert_avoptions(o->g->format_opts);
 
     /* apply forced codec ids */
