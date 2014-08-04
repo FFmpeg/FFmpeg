@@ -228,6 +228,7 @@ External library support:
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
   --enable-libshine        enable fixed-point MP3 encoding via libshine [no]
+  --enable-libsixel        enable SIXEL terminal support using libsixel
   --enable-libsmbclient    enable Samba protocol via libsmbclient [no]
   --enable-libsoxr         enable Include libsoxr resampling [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
@@ -1357,6 +1358,7 @@ EXTERNAL_LIBRARY_LIST="
     librtmp
     libschroedinger
     libshine
+    libsixel
     libsmbclient
     libsoxr
     libspeex
@@ -2460,6 +2462,7 @@ pulse_indev_deps="libpulse"
 pulse_outdev_deps="libpulse"
 qtkit_indev_extralibs="-framework QTKit -framework Foundation -framework QuartzCore"
 qtkit_indev_select="qtkit"
+sixel_outdev_deps="libsixel"
 sdl_outdev_deps="sdl"
 sndio_indev_deps="sndio_h"
 sndio_outdev_deps="sndio_h"
@@ -4771,6 +4774,7 @@ enabled libquvi           && require_pkg_config libquvi quvi/quvi.h quvi_init
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libshine          && require_pkg_config shine shine/layer3.h shine_encode_buffer
+enabled libsixel          && require_pkg_config libsixel sixel.h LibSixel_LSImageToSixel
 enabled libsmbclient      && { { check_pkg_config smbclient libsmbclient.h smbc_init &&
                                  require_pkg_config smbclient libsmbclient.h smbc_init; } ||
                                  require smbclient libsmbclient.h smbc_init -lsmbclient; }
