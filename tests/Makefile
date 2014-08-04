@@ -1,5 +1,6 @@
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
 
+THREADS = 1
 VREF = tests/vsynth1/00.pgm
 AREF = tests/data/asynth1.sw
 
