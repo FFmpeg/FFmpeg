@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2014-08-xx - xxxxxxx - lavu 53.21.0 - pixdesc.h
+  Support name aliases for pixel formats.
+
 2014-08-04 - xxxxxxx - lavc 55.72.101 / 55.57.2 - avcodec.h
 2014-08-04 - xxxxxxx - lavu 52.95.100 / 53.20.0 - frame.h
   Deprecate AVCodecContext.dtg_active_format and use side-data instead.

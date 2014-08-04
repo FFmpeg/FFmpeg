@@ -98,6 +98,11 @@ typedef struct AVPixFmtDescriptor {
      * otherwise 0 is luma, 1 is chroma-U and 2 is chroma-V.
      */
     AVComponentDescriptor comp[4];
+
+    /**
+     * Alternative comma-separated names.
+     */
+    const char *alias;
 } AVPixFmtDescriptor;
 
 /**
