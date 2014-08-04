@@ -13,6 +13,9 @@ libavutil:     2013-12-xx
 
 API changes, most recent first:
 
+2014-08-xx - xxxxxxx - lavc 55.57.3 - avcodec.h
+  reordered_opaque is not going to be removed in the future.
+
 2014-08-xx - xxxxxxx - lavu 53.22.0 - pixfmt.h
   Add AV_PIX_FMT_YA16 pixel format for 16 bit packed gray with alpha.
 

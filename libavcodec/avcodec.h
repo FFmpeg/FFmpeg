@@ -2413,7 +2413,6 @@ typedef struct AVCodecContext {
     /**
      * opaque 64bit number (generally a PTS) that will be reordered and
      * output in AVFrame.reordered_opaque
-     * @deprecated in favor of pkt_pts
      * - encoding: unused
      * - decoding: Set by user.
      */
