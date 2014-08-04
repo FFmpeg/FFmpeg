@@ -330,6 +330,11 @@ This option is implicitly set when writing ismv (Smooth Streaming) files.
 Run a second pass moving the index (moov atom) to the beginning of the file.
 This operation can take a while, and will not work in various situations such
 as fragmented output, thus it is not enabled by default.
+@item -movflags disable_chpl
+Disable Nero chapter markers (chpl atom).  Normally, both Nero chapters
+and a QuickTime chapter track are written to the file. With this option
+set, only the QuickTime chapter track will be written. Nero chapters can
+cause failures when the file is reprocessed with certain tagging programs.
 @end table
 
 Smooth Streaming content can be pushed in real time to a publishing
