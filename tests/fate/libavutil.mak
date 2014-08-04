@@ -31,9 +31,8 @@ fate-bprint: CMD = run libavutil/bprint-test
 
 FATE_LIBAVUTIL += fate-cpu
 fate-cpu: libavutil/cpu-test$(EXESUF)
-fate-cpu: CMD = runecho libavutil/cpu-test
+fate-cpu: CMD = run libavutil/cpu-test $(CPUFLAGS:%=-c%)
 fate-cpu: REF = /dev/null
-fate-cpu: CMP = null
 
 FATE_LIBAVUTIL += fate-crc
 fate-crc: libavutil/crc-test$(EXESUF)
