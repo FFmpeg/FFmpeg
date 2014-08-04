@@ -72,6 +72,14 @@ static void cat_header(AVBPrint *bp, const char key[], const char value[])
         av_bprintf(bp, "%s: %s\r\n", key, value);
 }
 
+static int icecast_close(URLContext *h)
+{
+    IcecastContext *s = h->priv_data;
+    if (s->hd)
+        ffurl_close(s->hd);
+    return 0;
+}
+
 static int icecast_open(URLContext *h, const char *uri, int flags)
 {
     IcecastContext *s = h->priv_data;
@@ -81,9 +89,12 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
 
     // URI part variables
     char h_url[1024], host[1024], auth[1024], path[1024];
-    char *user = NULL, *headers = NULL;
+    char *headers = NULL, *user = NULL;
     int port, ret;
     AVBPrint bp;
+
+    if (flags & AVIO_FLAG_READ)
+        return AVERROR(ENOSYS);
 
     av_bprint_init(&bp, 0, 1);
 
@@ -122,9 +133,15 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
                 av_free(s->pass);
                 av_log(h, AV_LOG_WARNING, "Overwriting -password <pass> with URI password!\n");
             }
-            s->pass = av_strdup(sep);
+            if (!(s->pass = av_strdup(sep))) {
+                ret = AVERROR(ENOMEM);
+                goto cleanup;
+            }
         }
-        user = av_strdup(auth);
+        if (!(user = av_strdup(auth))) {
+            ret = AVERROR(ENOMEM);
+            goto cleanup;
+        }
     }
 
     // Build new authstring
@@ -163,13 +180,13 @@ static int icecast_write(URLContext *h, const uint8_t *buf, int size)
             static const uint8_t webm[4] = { 0x1A, 0x45, 0xDF, 0xA3 };
             static const uint8_t opus[8] = { 0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64 };
             if (memcmp(buf, oggs, sizeof(oggs)) == 0) {
-                av_log(h, AV_LOG_WARNING, "Streaming ogg but appropriate content type NOT set!\n");
+                av_log(h, AV_LOG_WARNING, "Streaming Ogg but appropriate content type NOT set!\n");
                 av_log(h, AV_LOG_WARNING, "Set it with -content_type application/ogg\n");
             } else if (memcmp(buf, opus, sizeof(opus)) == 0) {
-                av_log(h, AV_LOG_WARNING, "Streaming opus but appropriate content type NOT set!\n");
+                av_log(h, AV_LOG_WARNING, "Streaming Opus but appropriate content type NOT set!\n");
                 av_log(h, AV_LOG_WARNING, "Set it with -content_type audio/ogg\n");
             } else if (memcmp(buf, webm, sizeof(webm)) == 0) {
-                av_log(h, AV_LOG_WARNING, "Streaming webm but appropriate content type NOT set!\n");
+                av_log(h, AV_LOG_WARNING, "Streaming WebM but appropriate content type NOT set!\n");
                 av_log(h, AV_LOG_WARNING, "Set it with -content_type video/webm\n");
             } else {
                 av_log(h, AV_LOG_WARNING, "It seems you are streaming an unsupported format.\n");
@@ -178,14 +195,6 @@ static int icecast_write(URLContext *h, const uint8_t *buf, int size)
         }
     }
     return ffurl_write(s->hd, buf, size);
-}
-
-static int icecast_close(URLContext *h)
-{
-    IcecastContext *s = h->priv_data;
-    if (s->hd)
-        ffurl_close(s->hd);
-    return 0;
 }
 
 static const AVClass icecast_context_class = {
