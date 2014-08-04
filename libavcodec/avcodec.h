@@ -1698,7 +1698,7 @@ typedef struct AVCodecContext {
      *
      * - encoding: unused
      * - decoding: Set by decoder.
-     * @deprecated Deprecated in favour of AVSideData
+     * @deprecated Deprecated in favor of AVSideData
      */
     attribute_deprecated int dtg_active_format;
 #define FF_DTG_AFD_SAME         8
@@ -1708,7 +1708,7 @@ typedef struct AVCodecContext {
 #define FF_DTG_AFD_4_3_SP_14_9  13
 #define FF_DTG_AFD_16_9_SP_14_9 14
 #define FF_DTG_AFD_SP_4_3       15
-#endif
+#endif /* FF_API_AFD */
 
     /**
      * maximum motion estimation search range in subpel units

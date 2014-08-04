@@ -1663,13 +1663,13 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         }
 
         if (s1->has_afd) {
-            AVFrameSideData *sd = av_frame_new_side_data(
-                s->current_picture_ptr->f, AV_FRAME_DATA_AFD,
-                1);
+            AVFrameSideData *sd =
+                av_frame_new_side_data(s->current_picture_ptr->f,
+                                       AV_FRAME_DATA_AFD, 1);
             if (!sd)
                 return AVERROR(ENOMEM);
 
-            *sd->data = s1->afd;
+            *sd->data   = s1->afd;
             s1->has_afd = 0;
         }
 
@@ -2278,7 +2278,7 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
 {
     Mpeg1Context *s = avctx->priv_data;
     const uint8_t *buf_end = p + buf_size;
-    Mpeg1Context *s1   = avctx->priv_data;
+    Mpeg1Context *s1 = avctx->priv_data;
 
     if (buf_size > 29){
         int i;
@@ -2307,9 +2307,9 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
                 return;
 #if FF_API_AFD
             avctx->dtg_active_format = p[0] & 0x0f;
-#endif
+#endif /* FF_API_AFD */
             s1->has_afd = 1;
-            s1->afd = p[0] & 0x0f;
+            s1->afd     = p[0] & 0x0f;
         }
     } else if (buf_end - p >= 6 &&
                p[0] == 'J' && p[1] == 'P' && p[2] == '3' && p[3] == 'D' &&
