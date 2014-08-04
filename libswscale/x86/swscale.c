@@ -448,7 +448,7 @@ switch(c->dstBpc){ \
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmxext, cpu_flags & AV_CPU_FLAG_MMXEXT);
 
         switch (c->srcFormat) {
-        case AV_PIX_FMT_Y400A:
+        case AV_PIX_FMT_YA8:
             c->lumToYV12 = ff_yuyvToY_mmx;
             if (c->alpPixBuf)
                 c->alpToYV12 = ff_uyvyToY_mmx;
@@ -497,7 +497,7 @@ switch(c->dstBpc){ \
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, sse2, sse2, 1);
 
         switch (c->srcFormat) {
-        case AV_PIX_FMT_Y400A:
+        case AV_PIX_FMT_YA8:
             c->lumToYV12 = ff_yuyvToY_sse2;
             if (c->alpPixBuf)
                 c->alpToYV12 = ff_uyvyToY_sse2;

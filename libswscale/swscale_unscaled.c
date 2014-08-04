@@ -376,7 +376,7 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
     uint8_t *dstPtr = dst[0] + dstStride[0] * srcSliceY;
     const uint8_t *srcPtr = src[0];
 
-    if (srcFormat == AV_PIX_FMT_GRAY8A) {
+    if (srcFormat == AV_PIX_FMT_YA8) {
         switch (dstFormat) {
         case AV_PIX_FMT_RGB32  : conv = gray8aToPacked32; break;
         case AV_PIX_FMT_BGR32  : conv = gray8aToPacked32; break;
@@ -1729,7 +1729,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
     if (srcFormat == AV_PIX_FMT_UYVY422 && dstFormat == AV_PIX_FMT_YUV422P)
         c->swscale = uyvyToYuv422Wrapper;
 
-#define isPlanarGray(x) (isGray(x) && (x) != AV_PIX_FMT_GRAY8A)
+#define isPlanarGray(x) (isGray(x) && (x) != AV_PIX_FMT_YA8)
     /* simple copy */
     if ( srcFormat == dstFormat ||
         (srcFormat == AV_PIX_FMT_YUVA420P && dstFormat == AV_PIX_FMT_YUV420P) ||
