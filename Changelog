@@ -1,6 +1,19 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 10.3:
+- huffyuv: Check and propagate function return values (CVE-2013-0868)
+- h264: prevent theoretical infinite loop in SEI parsing (CVE-2011-3946)
+- pgssubdec: Check RLE size before copying (CVE-2013-0852)
+- video4linux2: Avoid a floating point exception
+- vf_select: Drop a debug av_log with an unchecked double to enum conversion
+- librtmp: Don't free the temp url at the end of rtmp_open
+- arm: Avoid using the 'setend' instruction on ARMv7 and newer
+- avplay: Handle pixel aspect ratio properly
+- eamad: use the bytestream2 API instead of AV_RL (CVE-2013-0851)
+- pg2meet: allow size changes within original sizes
+- af_compand: make sure request_frame always outputs at least one frame
+
 version 10.2:
 - adpcm: Write the proper predictor in trellis mode in IMA QT
 - adpcm: Avoid reading out of bounds in the IMA QT trellis encoder
