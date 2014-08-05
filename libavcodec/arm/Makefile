@@ -66,8 +66,6 @@ ARMV6-OBJS-$(CONFIG_PIXBLOCKDSP)       += arm/pixblockdsp_armv6.o
 
 ARMV6-OBJS-$(CONFIG_MLP_DECODER)       += arm/mlpdsp_armv6.o
 ARMV6-OBJS-$(CONFIG_STARTCODE)         += arm/startcode_armv6.o
-ARMV6-OBJS-$(CONFIG_VC1_DECODER)       += arm/startcode_armv6.o
-ARMV6-OBJS-$(CONFIG_VC1_PARSER)        += arm/startcode_armv6.o
 ARMV6-OBJS-$(CONFIG_VP7_DECODER)       += arm/vp8_armv6.o               \
                                           arm/vp8dsp_init_armv6.o       \
                                           arm/vp8dsp_armv6.o
