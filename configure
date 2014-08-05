@@ -4345,22 +4345,32 @@ if  [ "$cpu" = "power7" ] || [ "$cpu" = "power8" ] ;then
     fi
 fi
 
-
-if enabled asm; then
-    enabled     arm         && nogas=die
-    enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
-    as=${gas:=$as}
-    check_as <<EOF && enable gnu_as || \
-        $nogas "GNU assembler not found, install gas-preprocessor"
-.macro m n
-\n: .int 0
+check_gas() {
+    log "check_gas using '$as' as AS"
+    # :vararg is used on aarch64, arm and ppc altivec
+    check_as <<EOF || return 1
+.macro m n, y:vararg=0
+\n: .int \y
 .endm
 m x
 EOF
-
-    check_as <<EOF || $nogas "GNU assembler not found, install gas-preprocessor"
+    # .altmacro is only used in arm asm
+    ! enabled arm || check_as <<EOF || return 1
 .altmacro
 EOF
+    enable gnu_as
+    return 0
+}
+
+if enabled asm; then
+    enabled     arm aarch64 && nogas=die
+    enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
+
+    if ! check_gas ; then
+        as=${gas:=$as}
+        check_gas || \
+            $nogas "GNU assembler not found, install gas-preprocessor"
+    fi
 
     check_as <<EOF && enable as_func
 .func test
