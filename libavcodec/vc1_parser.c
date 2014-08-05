@@ -228,8 +228,6 @@ static int vc1_parse(AVCodecParserContext *s,
         }
     }
 
-    vpc->v.first_pic_header_flag = 1;
-
     /* If we return with a valid pointer to a combined frame buffer
      * then on the next call then we'll have been unhelpfully rewound
      * by up to 4 bytes (depending upon whether the start code
