@@ -62,8 +62,8 @@ typedef struct {
     FilterParams param[4];
     int rand_shift[MAX_RES];
     int rand_shift_init;
-    void (*line_noise)(uint8_t *dst, const uint8_t *src, int8_t *noise, int len, int shift);
-    void (*line_noise_avg)(uint8_t *dst, const uint8_t *src, int len, int8_t **shift);
+    void (*line_noise)(uint8_t *dst, const uint8_t *src, const int8_t *noise, int len, int shift);
+    void (*line_noise_avg)(uint8_t *dst, const uint8_t *src, int len, const int8_t * const *shift);
 } NoiseContext;
 
 typedef struct ThreadData {
@@ -199,7 +199,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static inline void line_noise_c(uint8_t *dst, const uint8_t *src, int8_t *noise,
+static inline void line_noise_c(uint8_t *dst, const uint8_t *src, const int8_t *noise,
                        int len, int shift)
 {
     int i;
@@ -215,7 +215,7 @@ static inline void line_noise_c(uint8_t *dst, const uint8_t *src, int8_t *noise,
 #define ASMALIGN(ZEROBITS) ".p2align " #ZEROBITS "\n\t"
 
 static void line_noise_mmx(uint8_t *dst, const uint8_t *src,
-                           int8_t *noise, int len, int shift)
+                           const int8_t *noise, int len, int shift)
 {
 #if HAVE_MMX_INLINE
     x86_reg mmx_len= len&(~7);
@@ -245,7 +245,7 @@ static void line_noise_mmx(uint8_t *dst, const uint8_t *src,
 }
 
 static void line_noise_mmxext(uint8_t *dst, const uint8_t *src,
-                              int8_t *noise, int len, int shift)
+                              const int8_t *noise, int len, int shift)
 {
 #if HAVE_MMXEXT_INLINE
     x86_reg mmx_len= len&(~7);
@@ -275,10 +275,10 @@ static void line_noise_mmxext(uint8_t *dst, const uint8_t *src,
 }
 
 static inline void line_noise_avg_c(uint8_t *dst, const uint8_t *src,
-                           int len, int8_t **shift)
+                           int len, const int8_t * const *shift)
 {
     int i;
-    int8_t *src2 = (int8_t*)src;
+    const int8_t *src2 = (const int8_t*)src;
 
     for (i = 0; i < len; i++) {
         const int n = shift[0][i] + shift[1][i] + shift[2][i];
@@ -287,7 +287,7 @@ static inline void line_noise_avg_c(uint8_t *dst, const uint8_t *src,
 }
 
 static inline void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
-                                      int len, int8_t **shift)
+                                      int len, const int8_t * const *shift)
 {
 #if HAVE_MMX_INLINE && HAVE_6REGS
     x86_reg mmx_len= len&(~7);
@@ -324,7 +324,7 @@ static inline void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
         );
 
     if (mmx_len != len){
-        int8_t *shift2[3]={shift[0]+mmx_len, shift[1]+mmx_len, shift[2]+mmx_len};
+        const int8_t *shift2[3]={shift[0]+mmx_len, shift[1]+mmx_len, shift[2]+mmx_len};
         line_noise_avg_c(dst+mmx_len, src+mmx_len, len-mmx_len, shift2);
     }
 #endif
@@ -354,7 +354,7 @@ static void noise(uint8_t *dst, const uint8_t *src,
             shift = n->rand_shift[ix];
 
         if (flags & NOISE_AVERAGED) {
-            n->line_noise_avg(dst, src, width, p->prev_shift[ix]);
+            n->line_noise_avg(dst, src, width, (const int8_t**)p->prev_shift[ix]);
             p->prev_shift[ix][shift & 3] = noise + shift;
         } else {
             n->line_noise(dst, src, noise, width, shift);
