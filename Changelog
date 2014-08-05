@@ -7,7 +7,7 @@ version 2.2.6
 - fix decoding issues in dv (Ticket2340, 2341)
 - fix v4l2 and v4l2enc crashes
 - fix theoretical librtmp crash
-- fix theorectical eamad crash
+- fix theoretical eamad crash
 - support dimension change in g2meet
 
 
