@@ -16,7 +16,6 @@ OBJS-$(CONFIG_ALSA_OUTDEV)               += alsa-audio-common.o \
 OBJS-$(CONFIG_AVFOUNDATION_INDEV)        += avfoundation.o
 OBJS-$(CONFIG_BKTR_INDEV)                += bktr.o
 OBJS-$(CONFIG_CACA_OUTDEV)               += caca.o
-OBJS-$(CONFIG_SIXEL_OUTDEV)              += sixel.o
 OBJS-$(CONFIG_DECKLINK_OUTDEV)           += decklink_enc.o decklink_enc_c.o
 OBJS-$(CONFIG_DSHOW_INDEV)               += dshow.o dshow_enummediatypes.o \
                                             dshow_enumpins.o dshow_filter.o \
@@ -40,6 +39,7 @@ OBJS-$(CONFIG_PULSE_OUTDEV)              += pulse_audio_enc.o \
                                             pulse_audio_common.o
 OBJS-$(CONFIG_QTKIT_INDEV)               += qtkit.o
 OBJS-$(CONFIG_SDL_OUTDEV)                += sdl.o
+OBJS-$(CONFIG_SIXEL_OUTDEV)              += sixel.o
 OBJS-$(CONFIG_SNDIO_INDEV)               += sndio_common.o sndio_dec.o
 OBJS-$(CONFIG_SNDIO_OUTDEV)              += sndio_common.o sndio_enc.o
 OBJS-$(CONFIG_V4L2_INDEV)                += v4l2.o v4l2-common.o timefilter.o
