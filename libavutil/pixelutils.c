@@ -128,6 +128,12 @@ int main(void)
     uint8_t *buf2 = av_malloc(W2*H2);
     uint32_t state = 0;
 
+    if (!buf1 || !buf2) {
+        fprintf(stderr, "malloc failure\n");
+        ret = 1;
+        goto end;
+    }
+
     for (i = 0; i < W1*H1; i++) {
         state = state * 1664525 + 1013904223;
         buf1[i] = state>>24;
