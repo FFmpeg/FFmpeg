@@ -1,6 +1,16 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.2.6
+- fix infinite loop in dvbsub parser
+- fix some interlaced MPEG-2 videos
+- fix decoding issues in dv (Ticket2340, 2341)
+- fix v4l2 and v4l2enc crashes
+- fix theoretical librtmp crash
+- fix theorectical eamad crash
+- support dimension change in g2meet
+
+
 version 2.2:
 - HNM version 4 demuxer and video decoder
 - Live HDS muxer
