@@ -1853,6 +1853,7 @@ CONFIG_EXTRA="
     rtpdec
     rtpenc_chain
     sinewin
+    startcode
     tpeldsp
     videodsp
     vp3dsp
@@ -2095,7 +2096,7 @@ h263_decoder_select="error_resilience h263_parser h263dsp mpeg_er mpegvideo qpel
 h263_encoder_select="aandcttables h263dsp mpegvideoenc"
 h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
-h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel videodsp"
+h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel startcode videodsp"
 h264_decoder_suggest="error_resilience"
 hevc_decoder_select="bswapdsp cabac golomb videodsp"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"

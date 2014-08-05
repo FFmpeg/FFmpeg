@@ -16,17 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * Accelerated start code search function for start codes common to
- * MPEG-1/2/4 video, VC-1, H.264/5
- */
-
-#ifndef AVCODEC_STARTCODE_H
-#define AVCODEC_STARTCODE_H
+#ifndef AVCODEC_ARM_STARTCODE_H
+#define AVCODEC_ARM_STARTCODE_H
 
 #include <stdint.h>
 
-int ff_startcode_find_candidate_c(const uint8_t *buf, int size);
+int ff_startcode_find_candidate_armv6(const uint8_t *buf, int size);
 
-#endif /* AVCODEC_STARTCODE_H */
+#endif /* AVCODEC_ARM_STARTCODE_H */
