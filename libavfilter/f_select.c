@@ -43,7 +43,7 @@ static const char *const var_names[] = {
     "prev_pts",          ///< previous frame PTS
     "prev_selected_pts", ///< previous selected frame PTS
 
-    "t",                 ///< first PTS in seconds
+    "t",                 ///< timestamp expressed in seconds
     "start_t",           ///< first PTS in the stream, expressed in seconds
     "prev_t",            ///< previous frame time
     "prev_selected_t",   ///< previously selected time
