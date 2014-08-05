@@ -357,10 +357,11 @@ int main(int argc, char **argv)
         switch (c) {
         case 'c':
         {
-            int cpuflags = av_parse_cpu_flags(optarg);
-            if (cpuflags < 0)
+            unsigned flags = av_get_cpu_flags();
+            if (av_parse_cpu_caps(&flags, optarg) < 0)
                 return 2;
-            av_set_cpu_flags_mask(cpuflags);
+
+            av_force_cpu_flags(flags);
             break;
         }
         case 't':
