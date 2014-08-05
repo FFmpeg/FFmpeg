@@ -331,12 +331,12 @@ static void print_cpu_flags(int cpu_flags, const char *type)
 {
     int i;
 
-    fprintf(stderr, "cpu_flags(%s) = 0x%08X\n", type, cpu_flags);
-    fprintf(stderr, "cpu_flags_str(%s) =", type);
+    printf("cpu_flags(%s) = 0x%08X\n", type, cpu_flags);
+    printf("cpu_flags_str(%s) =", type);
     for (i = 0; cpu_flag_tab[i].flag; i++)
         if (cpu_flags & cpu_flag_tab[i].flag)
-            fprintf(stderr, " %s", cpu_flag_tab[i].name);
-    fprintf(stderr, "\n");
+            printf(" %s", cpu_flag_tab[i].name);
+    printf("\n");
 }
 
 
@@ -382,7 +382,7 @@ int main(int argc, char **argv)
 
     print_cpu_flags(cpu_flags_raw, "raw");
     print_cpu_flags(cpu_flags_eff, "effective");
-    fprintf(stderr, "threads = %s (cpu_count = %d)\n", threads, cpu_count);
+    printf("threads = %s (cpu_count = %d)\n", threads, cpu_count);
 
     return 0;
 }
