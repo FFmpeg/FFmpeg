@@ -92,13 +92,13 @@ av_pixelutils_sad_fn av_pixelutils_get_sad_fn(int w_bits, int h_bits, int aligne
 #define H2 480
 
 static int run_test(const char *test,
-                    const uint32_t *b1, const uint32_t *b2)
+                    const uint8_t *b1, const uint8_t *b2)
 {
     int i, a, ret = 0;
 
     for (a = 0; a < 3; a++) {
-        const uint8_t *block1 = (const uint8_t *)b1;
-        const uint8_t *block2 = (const uint8_t *)b2;
+        const uint8_t *block1 = b1;
+        const uint8_t *block2 = b2;
 
         switch (a) {
         case 0: block1++; block2++; break;
@@ -124,30 +124,34 @@ static int run_test(const char *test,
 int main(void)
 {
     int i, ret;
-    DECLARE_ALIGNED(32, uint32_t, buf1)[W1*H1];
-    DECLARE_ALIGNED(32, uint32_t, buf2)[W2*H2];
+    uint8_t *buf1 = av_malloc(W1*H1);
+    uint8_t *buf2 = av_malloc(W2*H2);
     uint32_t state = 0;
 
     for (i = 0; i < W1*H1; i++) {
         state = state * 1664525 + 1013904223;
-        buf1[i] = state;
+        buf1[i] = state>>24;
     }
     for (i = 0; i < W2*H2; i++) {
         state = state * 1664525 + 1013904223;
-        buf2[i] = state;
+        buf2[i] = state>>24;
     }
     ret = run_test("random", buf1, buf2);
     if (ret < 0)
-        return ret;
+        goto end;
 
-    memset(buf1, 0xff, sizeof(buf1));
-    memset(buf2, 0x00, sizeof(buf2));
+    memset(buf1, 0xff, W1*H1);
+    memset(buf2, 0x00, W2*H2);
     ret = run_test("max", buf1, buf2);
     if (ret < 0)
-        return ret;
+        goto end;
 
-    memset(buf1, 0x90, sizeof(buf1));
-    memset(buf2, 0x90, sizeof(buf2));
-    return run_test("min", buf1, buf2);
+    memset(buf1, 0x90, W1*H1);
+    memset(buf2, 0x90, W2*H2);
+    ret = run_test("min", buf1, buf2);
+end:
+    av_free(buf1);
+    av_free(buf2);
+    return ret;
 }
 #endif /* TEST */
