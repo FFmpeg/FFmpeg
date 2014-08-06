@@ -3778,7 +3778,7 @@ EOF
 }
 
 if enabled asm; then
-    enabled     arm aarch64 && nogas=die
+    enabled_any arm aarch64 && nogas=die
     enabled_all ppc altivec && nogas=warn
 
     if ! check_gas ; then
