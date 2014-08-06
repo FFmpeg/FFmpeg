@@ -36,7 +36,7 @@
 #if HAVE_ALTIVEC
 
 static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
-                               int line_size)
+                               ptrdiff_t line_size)
 {
     int i;
     vector unsigned char perm = vec_lvsl(0, pixels);
