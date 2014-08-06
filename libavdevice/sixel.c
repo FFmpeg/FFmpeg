@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Paul B Mahol
+ * Copyright (c) 2014 Hayaki Saito
  *
  * This file is part of FFmpeg.
  *
@@ -32,15 +32,14 @@ typedef struct SIXELContext {
     unsigned char *palette;
 } SIXELContext;
 
-
 static int sixel_write_header(AVFormatContext *s)
 {
     SIXELContext *c = s->priv_data;
     AVCodecContext *encctx = s->streams[0]->codec;
+
     c->palette = NULL;
     c->window_size = NULL;
     c->colors = 16;
-
     c->ctx = s;
     c->output = LSOutputContext_create(putchar, printf);
 
