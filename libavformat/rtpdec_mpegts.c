@@ -40,14 +40,14 @@ static void mpegts_free_context(PayloadContext *data)
     if (!data)
         return;
     if (data->ts)
-        ff_mpegts_parse_close(data->ts);
+        avpriv_mpegts_parse_close(data->ts);
     av_free(data);
 }
 
 static av_cold int mpegts_init(AVFormatContext *ctx, int st_index,
                                PayloadContext *data)
 {
-    data->ts = ff_mpegts_parse_open(ctx);
+    data->ts = avpriv_mpegts_parse_open(ctx);
     if (!data->ts)
         return AVERROR(ENOMEM);
     return 0;
@@ -72,8 +72,8 @@ static int mpegts_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     if (!buf) {
         if (data->read_buf_index >= data->read_buf_size)
             return AVERROR(EAGAIN);
-        ret = ff_mpegts_parse_packet(data->ts, pkt, data->buf + data->read_buf_index,
-                                     data->read_buf_size - data->read_buf_index);
+        ret = avpriv_mpegts_parse_packet(data->ts, pkt, data->buf + data->read_buf_index,
+                                         data->read_buf_size - data->read_buf_index);
         if (ret < 0)
             return AVERROR(EAGAIN);
         data->read_buf_index += ret;
@@ -83,8 +83,8 @@ static int mpegts_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             return 0;
     }
 
-    ret = ff_mpegts_parse_packet(data->ts, pkt, buf, len);
-    /* The only error that can be returned from ff_mpegts_parse_packet
+    ret = avpriv_mpegts_parse_packet(data->ts, pkt, buf, len);
+    /* The only error that can be returned from avpriv_mpegts_parse_packet
      * is "no more data to return from the provided buffer", so return
      * AVERROR(EAGAIN) for all errors */
     if (ret < 0)

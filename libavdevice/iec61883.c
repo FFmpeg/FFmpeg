@@ -216,8 +216,8 @@ static int iec61883_parse_queue_hdv(struct iec61883_data *dv, AVPacket *pkt)
 
     while (dv->queue_first) {
         packet = dv->queue_first;
-        size = ff_mpegts_parse_packet(dv->mpeg_demux, pkt, packet->buf,
-                                      packet->len);
+        size = avpriv_mpegts_parse_packet(dv->mpeg_demux, pkt, packet->buf,
+                                          packet->len);
         dv->queue_first = packet->next;
         av_free(packet->buf);
         av_free(packet);
@@ -356,7 +356,7 @@ static int iec61883_read_header(AVFormatContext *context)
 
         avformat_new_stream(context, NULL);
 
-        dv->mpeg_demux = ff_mpegts_parse_open(context);
+        dv->mpeg_demux = avpriv_mpegts_parse_open(context);
         if (!dv->mpeg_demux)
             goto fail;
 
@@ -447,7 +447,7 @@ static int iec61883_close(AVFormatContext *context)
     if (dv->type == IEC61883_HDV) {
         iec61883_mpeg2_recv_stop(dv->iec61883_mpeg2);
         iec61883_mpeg2_close(dv->iec61883_mpeg2);
-        ff_mpegts_parse_close(dv->mpeg_demux);
+        avpriv_mpegts_parse_close(dv->mpeg_demux);
     } else {
         iec61883_dv_fb_stop(dv->iec61883_dv);
         iec61883_dv_fb_close(dv->iec61883_dv);
