@@ -2395,6 +2395,26 @@ static int mov_write_meta_tag(AVIOContext *pb, MOVMuxContext *mov,
     return size;
 }
 
+static int mov_write_raw_metadata_tag(AVFormatContext *s, AVIOContext *pb,
+                                      const char *name, const char *key)
+{
+    int len;
+    AVDictionaryEntry *t;
+
+    if (!(t = av_dict_get(s->metadata, key, NULL, 0)))
+        return 0;
+
+    len = strlen(t->value);
+    if (len > 0) {
+        int size = len + 8;
+        avio_wb32(pb, size);
+        ffio_wfourcc(pb, name);
+        avio_write(pb, t->value, len);
+        return size;
+    }
+    return 0;
+}
+
 static int ascii_to_wc(AVIOContext *pb, const uint8_t *b)
 {
     int val;
@@ -2494,6 +2514,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_string_metadata(s, pb_buf, "\251cmt", "comment",     0);
         mov_write_string_metadata(s, pb_buf, "\251gen", "genre",       0);
         mov_write_string_metadata(s, pb_buf, "\251cpy", "copyright",   0);
+        mov_write_raw_metadata_tag(s, pb_buf, "XMP_", "xmp");
     } else {
         /* iTunes meta data */
         mov_write_meta_tag(pb_buf, mov, s);
