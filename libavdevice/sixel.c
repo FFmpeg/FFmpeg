@@ -82,7 +82,7 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (c->palette == NULL) {
         c->palette = LSQ_MakePalette(pixels, sx, sy, 3,
                                      c->colors, &c->colors, NULL,
-                                     LARGE_NORM, REP_CENTER_BOX, QUALITY_LOW);
+                                     LARGE_NORM, REP_CENTER_BOX, QUALITY_HIGH);
         for (i = 0; i < c->colors; i++) {
             LSImage_setpalette(c->im, i,
                                c->palette[i * 3],
@@ -146,6 +146,6 @@ AVOutputFormat ff_sixel_muxer = {
     .write_header   = sixel_write_header,
     .write_packet   = sixel_write_packet,
     .write_trailer  = sixel_write_trailer,
-    .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
+    .flags          = AVFMT_NOFILE | AVFMT_NOTIMESTAMPS,
     .priv_class     = &sixel_class,
 };
