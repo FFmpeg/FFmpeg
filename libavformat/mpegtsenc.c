@@ -635,7 +635,6 @@ static int mpegts_write_header(AVFormatContext *s)
 fail:
     av_free(pids);
     for (i = 0; i < s->nb_streams; i++) {
-        MpegTSWriteStream *ts_st;
         st    = s->streams[i];
         ts_st = st->priv_data;
         if (ts_st) {
