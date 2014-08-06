@@ -29,8 +29,10 @@ typedef struct SIXELContext {
     char *window_size;
     int colors;
     LSOutputContextPtr output;
+    LSImagePtr im;
     unsigned char *palette;
 } SIXELContext;
+
 
 static int sixel_write_header(AVFormatContext *s)
 {
@@ -70,25 +72,26 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     unsigned char *pixels = pkt->data;
     unsigned char *data = NULL;
 
+    if (c->im == NULL) {
+        c->im = LSImage_create(sx, sy, 1, c->colors);
+    }
     if (c->palette == NULL) {
         c->palette = LSQ_MakePalette(pixels, sx, sy, 3,
                                      c->colors, &c->colors, NULL,
                                      LARGE_NORM, REP_CENTER_BOX, QUALITY_LOW);
-    }
-    LSImagePtr im = LSImage_create(sx, sy, 1, c->colors);
-    for (i = 0; i < c->colors; i++) {
-        LSImage_setpalette(im, i,
-                           c->palette[i * 3],
-                           c->palette[i * 3 + 1],
-                           c->palette[i * 3 + 2]);
+        for (i = 0; i < c->colors; i++) {
+            LSImage_setpalette(c->im, i,
+                               c->palette[i * 3],
+                               c->palette[i * 3 + 1],
+                               c->palette[i * 3 + 2]);
+        }
     }
     data = LSQ_ApplyPalette(pixels, sx, sy, 3, c->palette, c->colors,
                             DIFFUSE_FS, /* foptimize */ 1);
-    LSImage_setpixels(im, data);
+    LSImage_setpixels(c->im, data);
     printf("\033[H");
+    LibSixel_LSImageToSixel(c->im, c->output);
     fflush(stdout);
-    LibSixel_LSImageToSixel(im, c->output);
-    LSImage_destroy(im);
     return 0;
 }
 
@@ -96,7 +99,14 @@ static int sixel_write_trailer(AVFormatContext *s)
 {
     SIXELContext *c = s->priv_data;
 
-    LSOutputContext_destroy(c->output);
+    if (c->output) {
+        LSOutputContext_destroy(c->output);
+        c->output = NULL;
+    }
+    if (c->im) {
+        LSImage_destroy(c->im);
+        c->im = NULL;
+    }
     return 0;
 }
 
