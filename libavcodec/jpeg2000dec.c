@@ -181,7 +181,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (ncomponents > 3) {
+    if (ncomponents > 4) {
         avpriv_request_sample(s->avctx, "Support for %d components",
                               s->ncomponents);
         return AVERROR_PATCHWELCOME;
