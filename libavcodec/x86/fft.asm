@@ -68,8 +68,9 @@ perm1: dd 0x00, 0x02, 0x03, 0x01, 0x03, 0x00, 0x02, 0x01
 perm2: dd 0x00, 0x01, 0x02, 0x03, 0x01, 0x00, 0x02, 0x03
 ps_p1p1m1p1root2: dd 1.0, 1.0, -1.0, 1.0, M_SQRT1_2, M_SQRT1_2, M_SQRT1_2, M_SQRT1_2
 ps_m1m1p1m1p1m1m1m1: dd 1<<31, 1<<31, 0, 1<<31, 0, 1<<31, 1<<31, 1<<31
-ps_m1m1m1m1: times 4 dd 1<<31
 ps_m1p1: dd 1<<31, 0
+
+cextern ps_neg
 
 %assign i 16
 %rep 13
@@ -685,7 +686,7 @@ cglobal imdct_calc, 3,5,3
     mov     r2, r3
     sub     r3, mmsize
     neg     r2
-    mova    m2, [ps_m1m1m1m1]
+    mova    m2, [ps_neg]
 .loop:
 %if mmsize == 8
     PSWAPD  m0, [r1 + r3]
@@ -998,7 +999,7 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     sub   r4, r3
 %endif
 %if notcpuflag(3dnowext) && mmsize == 8
-    movd  m7, [ps_m1m1m1m1]
+    movd  m7, [ps_neg]
 %endif
 .pre:
 %if ARCH_X86_64 == 0
