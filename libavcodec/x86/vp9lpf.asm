@@ -36,8 +36,8 @@ pb_81:  times 16 db 0x81
 pb_f8:  times 16 db 0xf8
 pb_fe:  times 16 db 0xfe
 
-pw_4:   times  8 dw 4
-pw_8:   times  8 dw 8
+cextern pw_4
+cextern pw_8
 
 ; with mix functions, two 8-bit thresholds are stored in a 16-bit storage,
 ; the following mask is used to splat both in the same register

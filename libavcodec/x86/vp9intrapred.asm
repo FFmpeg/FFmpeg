@@ -33,11 +33,7 @@ SECTION_RODATA 32
 
 pw_m256: times 16 dw -256
 pw_m255: times 16 dw -255
-pw_512:  times 8 dw  512
-pw_1024: times 8 dw 1024
-pw_2048: times 8 dw 2048
 pw_4096: times 8 dw 4096
-pw_8192: times 8 dw 8192
 
 pb_4x3_4x2_4x1_4x0: times 4 db 3
                     times 4 db 2
@@ -77,6 +73,10 @@ pb_15: times 16 db 15
 
 cextern pb_1
 cextern pb_3
+cextern pw_512
+cextern pw_1024
+cextern pw_2048
+cextern pw_8192
 
 SECTION .text
 

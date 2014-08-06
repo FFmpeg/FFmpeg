@@ -43,6 +43,11 @@ extern const xmm_reg  ff_pw_64;
 extern const uint64_t ff_pw_96;
 extern const uint64_t ff_pw_128;
 extern const uint64_t ff_pw_255;
+extern const xmm_reg  ff_pw_512;
+extern const xmm_reg  ff_pw_1024;
+extern const xmm_reg  ff_pw_2048;
+extern const xmm_reg  ff_pw_8192;
+extern const xmm_reg  ff_pw_m1;
 
 extern const ymm_reg  ff_pb_1;
 extern const ymm_reg  ff_pb_3;
