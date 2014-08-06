@@ -2041,13 +2041,11 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
     AVIOContext *pb_buf;
-    int i, ret, size;
+    int ret, size;
     uint8_t *buf;
 
-    for (i = 0; i < s->nb_streams; i++)
-        if (s->flags & AVFMT_FLAG_BITEXACT) {
-            return 0;
-        }
+    if (s->flags & AVFMT_FLAG_BITEXACT)
+        return 0;
 
     ret = avio_open_dyn_buf(&pb_buf);
     if (ret < 0)
