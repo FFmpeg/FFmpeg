@@ -308,16 +308,3 @@ const AVDVProfile *av_dv_codec_profile(int width, int height,
 
     return NULL;
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 56
-const AVDVProfile *avpriv_dv_frame_profile(const AVDVProfile *sys,
-                                         const uint8_t* frame, unsigned buf_size)
-{
-    return av_dv_frame_profile(sys, frame, buf_size);
-}
-
-const AVDVProfile *avpriv_dv_codec_profile(AVCodecContext *codec)
-{
-    return av_dv_codec_profile(codec->width, codec->height, codec->pix_fmt);
-}
-#endif
