@@ -19,6 +19,7 @@
  */
 
 #include <sixel.h>
+#include <stdio.h>
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avdevice.h"
@@ -31,6 +32,7 @@ typedef struct SIXELContext {
     LSOutputContextPtr output;
     LSImagePtr im;
     unsigned char *palette;
+    unsigned short *cachetable;
 } SIXELContext;
 
 
@@ -44,6 +46,8 @@ static int sixel_write_header(AVFormatContext *s)
     c->colors = 16;
     c->ctx = s;
     c->output = LSOutputContext_create(putchar, printf);
+    c->cachetable = malloc((1 << 3 * 5) * sizeof(unsigned short));
+    memset(c->cachetable, 0, (1 << 3 * 5) * sizeof(unsigned short));
 
     if (s->nb_streams > 1
         || encctx->codec_type != AVMEDIA_TYPE_VIDEO
@@ -64,13 +68,13 @@ static int sixel_write_header(AVFormatContext *s)
 
 static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    SIXELContext *c = s->priv_data;
-    AVCodecContext *encctx = s->streams[0]->codec;
+    SIXELContext * const c = s->priv_data;
+    AVCodecContext * const encctx = s->streams[0]->codec;
     int sx = encctx->width;
     int sy = encctx->height;
     int i;
     unsigned char *pixels = pkt->data;
-    unsigned char *data = NULL;
+    int ret = 0;
 
     if (c->im == NULL) {
         c->im = LSImage_create(sx, sy, 1, c->colors);
@@ -86,9 +90,12 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
                                c->palette[i * 3 + 2]);
         }
     }
-    data = LSQ_ApplyPalette(pixels, sx, sy, 3, c->palette, c->colors,
-                            DIFFUSE_FS, /* foptimize */ 1);
-    LSImage_setpixels(c->im, data);
+    ret = LSQ_ApplyPalette(pixels, sx, sy, 3, c->palette, c->colors,
+                           DIFFUSE_FS, /* foptimize */ 1, c->cachetable,
+                           c->im->pixels);
+    if (ret != 0) {
+        return ret;
+    }
     printf("\033[H");
     LibSixel_LSImageToSixel(c->im, c->output);
     fflush(stdout);
@@ -97,7 +104,7 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int sixel_write_trailer(AVFormatContext *s)
 {
-    SIXELContext *c = s->priv_data;
+    SIXELContext * const c = s->priv_data;
 
     if (c->output) {
         LSOutputContext_destroy(c->output);
@@ -107,7 +114,14 @@ static int sixel_write_trailer(AVFormatContext *s)
         LSImage_destroy(c->im);
         c->im = NULL;
     }
-    free(c->palette);
+    if (c->palette) {
+        free(c->palette);
+        c->palette = NULL;
+    }
+    if (c->cachetable) {
+        free(c->cachetable);
+        c->cachetable = NULL;
+    }
     return 0;
 }
 
@@ -120,6 +134,7 @@ static const AVClass sixel_class = {
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
 AVOutputFormat ff_sixel_muxer = {
@@ -131,6 +146,6 @@ AVOutputFormat ff_sixel_muxer = {
     .write_header   = sixel_write_header,
     .write_packet   = sixel_write_packet,
     .write_trailer  = sixel_write_trailer,
-    .flags          = AVFMT_NOFILE,
+    .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
     .priv_class     = &sixel_class,
 };
