@@ -82,7 +82,7 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (c->palette == NULL) {
         c->palette = LSQ_MakePalette(pixels, sx, sy, 3,
                                      c->colors, &c->colors, NULL,
-                                     LARGE_NORM, REP_CENTER_BOX, QUALITY_HIGH);
+                                     LARGE_NORM, REP_CENTER_BOX, QUALITY_LOW);
         for (i = 0; i < c->colors; i++) {
             LSImage_setpalette(c->im, i,
                                c->palette[i * 3],
@@ -91,7 +91,7 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
     ret = LSQ_ApplyPalette(pixels, sx, sy, 3, c->palette, c->colors,
-                           DIFFUSE_FS, /* foptimize */ 1, c->cachetable,
+                           DIFFUSE_ATKINSON, /* foptimize */ 1, c->cachetable,
                            c->im->pixels);
     if (ret != 0) {
         return ret;
