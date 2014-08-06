@@ -41,14 +41,6 @@ static int sixel_write_header(AVFormatContext *s)
     SIXELContext *c = s->priv_data;
     AVCodecContext *encctx = s->streams[0]->codec;
 
-    c->palette = NULL;
-    c->window_size = NULL;
-    c->colors = 16;
-    c->ctx = s;
-    c->output = LSOutputContext_create(putchar, printf);
-    c->cachetable = malloc((1 << 3 * 5) * sizeof(unsigned short));
-    memset(c->cachetable, 0, (1 << 3 * 5) * sizeof(unsigned short));
-
     if (s->nb_streams > 1
         || encctx->codec_type != AVMEDIA_TYPE_VIDEO
         || encctx->codec_id   != CODEC_ID_RAWVIDEO) {
@@ -62,6 +54,19 @@ static int sixel_write_header(AVFormatContext *s)
                av_get_pix_fmt_name(encctx->pix_fmt));
         return AVERROR(EINVAL);
     }
+
+    c->palette = NULL;
+    c->window_size = NULL;
+    c->colors = 16;
+    c->ctx = s;
+    c->output = LSOutputContext_create(putchar, printf);
+    c->cachetable = malloc((1 << 3 * 5) * sizeof(unsigned short));
+    if (c->cachetable == 0) {
+        return AVERROR(ENOMEM);
+    }
+    memset(c->cachetable, 0, (1 << 3 * 5) * sizeof(unsigned short));
+
+    printf("\033[?25l\0337");
 
     return 0;
 }
@@ -82,7 +87,7 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (c->palette == NULL) {
         c->palette = LSQ_MakePalette(pixels, sx, sy, 3,
                                      c->colors, &c->colors, NULL,
-                                     LARGE_NORM, REP_CENTER_BOX, QUALITY_LOW);
+                                     LARGE_NORM, REP_CENTER_BOX, QUALITY_HIGH);
         for (i = 0; i < c->colors; i++) {
             LSImage_setpalette(c->im, i,
                                c->palette[i * 3],
@@ -122,6 +127,9 @@ static int sixel_write_trailer(AVFormatContext *s)
         free(c->cachetable);
         c->cachetable = NULL;
     }
+
+    printf("\0338\033[?25h");
+    fflush(stdout);
     return 0;
 }
 
