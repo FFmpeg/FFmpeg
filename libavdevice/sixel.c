@@ -107,6 +107,7 @@ static int sixel_write_trailer(AVFormatContext *s)
         LSImage_destroy(c->im);
         c->im = NULL;
     }
+    free(c->palette);
     return 0;
 }
 
