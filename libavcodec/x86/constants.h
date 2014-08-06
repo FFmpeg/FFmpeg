@@ -25,6 +25,7 @@
 
 #include "libavutil/x86/asm.h"
 
+extern const xmm_reg  ff_pw_1;
 extern const xmm_reg  ff_pw_2;
 extern const xmm_reg  ff_pw_3;
 extern const xmm_reg  ff_pw_4;
