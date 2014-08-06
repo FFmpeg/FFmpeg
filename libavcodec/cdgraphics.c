@@ -361,11 +361,10 @@ static int cdg_decode_frame(AVCodecContext *avctx,
         *got_frame = 1;
     } else {
         *got_frame = 0;
-        buf_size   = 0;
     }
 
     *(AVFrame *) data = cc->frame;
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int cdg_decode_end(AVCodecContext *avctx)
