@@ -61,8 +61,4 @@
 #define FF_API_LAVF_CODEC_TB            (LIBAVFORMAT_VERSION_MAJOR < 57)
 #endif
 
-#ifndef FF_API_PROBE_MIME
-#define FF_API_PROBE_MIME               (LIBAVFORMAT_VERSION_MAJOR > 55)
-#endif
-
 #endif /* AVFORMAT_VERSION_H */
