@@ -3,7 +3,6 @@ LIBAVCODEC_$MAJOR {
                 #deprecated, remove after next bump
                 audio_resample;
                 audio_resample_close;
-                ff_find_pix_fmt;
                 ff_framenum_to_drop_timecode;
                 ff_framenum_to_smtpe_timecode;
                 ff_raw_pix_fmt_tags;

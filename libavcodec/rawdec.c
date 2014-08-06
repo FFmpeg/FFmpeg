@@ -62,13 +62,6 @@ static const AVClass rawdec_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-#if LIBAVCODEC_VERSION_MAJOR < 55
-enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
-{
-    return avpriv_find_pix_fmt(tags, fourcc);
-}
-#endif
-
 static av_cold int raw_init_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
