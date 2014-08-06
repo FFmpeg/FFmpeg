@@ -2055,3 +2055,184 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
     }
     return array;
 }
+
+#if CONFIG_AVDEVICE
+static int print_device_sources(AVInputFormat *fmt, AVDictionary *opts)
+{
+    int ret, i;
+    AVFormatContext *dev = NULL;
+    AVDeviceInfoList *device_list = NULL;
+    AVDictionary *tmp_opts = NULL;
+
+    if (!fmt || !fmt->priv_class  || !AV_IS_INPUT_DEVICE(fmt->priv_class->category))
+        return AVERROR(EINVAL);
+
+    printf("Audo-detected sources for %s:\n", fmt->name);
+    if (!fmt->get_device_list) {
+        ret = AVERROR(ENOSYS);
+        printf("Cannot list sources. Not implemented.\n");
+        goto fail;
+    }
+
+    /* TODO: avformat_open_input calls read_header callback which is not necessary.
+             Function like avformat_alloc_output_context2 for input could be helpful here. */
+    av_dict_copy(&tmp_opts, opts, 0);
+    if ((ret = avformat_open_input(&dev, NULL, fmt, &tmp_opts)) < 0) {
+        printf("Cannot open device: %s.\n", fmt->name);
+        goto fail;
+    }
+
+    if ((ret = avdevice_list_devices(dev, &device_list)) < 0) {
+        printf("Cannot list sources.\n");
+        goto fail;
+    }
+
+    for (i = 0; i < device_list->nb_devices; i++) {
+        printf("%s %s [%s]\n", device_list->default_device == i ? "*" : " ",
+               device_list->devices[i]->device_name, device_list->devices[i]->device_description);
+    }
+
+  fail:
+    av_dict_free(&tmp_opts);
+    avdevice_free_list_devices(&device_list);
+    avformat_close_input(&dev);
+    return ret;
+}
+
+static int print_device_sinks(AVOutputFormat *fmt, AVDictionary *opts)
+{
+    int ret, i;
+    AVFormatContext *dev = NULL;
+    AVDeviceInfoList *device_list = NULL;
+    AVDictionary *tmp_opts = NULL;
+
+    if (!fmt || !fmt->priv_class  || !AV_IS_OUTPUT_DEVICE(fmt->priv_class->category))
+        return AVERROR(EINVAL);
+
+    printf("Audo-detected sinks for %s:\n", fmt->name);
+    if (!fmt->get_device_list) {
+        ret = AVERROR(ENOSYS);
+        printf("Cannot list sinks. Not implemented.\n");
+        goto fail;
+    }
+
+    if ((ret = avformat_alloc_output_context2(&dev, fmt, NULL, NULL)) < 0) {
+        printf("Cannot open device: %s.\n", fmt->name);
+        goto fail;
+    }
+    av_dict_copy(&tmp_opts, opts, 0);
+    av_opt_set_dict2(dev, &tmp_opts, AV_OPT_SEARCH_CHILDREN);
+
+    if ((ret = avdevice_list_devices(dev, &device_list)) < 0) {
+        printf("Cannot list sinks.\n");
+        goto fail;
+    }
+
+    for (i = 0; i < device_list->nb_devices; i++) {
+        printf("%s %s [%s]\n", device_list->default_device == i ? "*" : " ",
+               device_list->devices[i]->device_name, device_list->devices[i]->device_description);
+    }
+
+  fail:
+    av_dict_free(&tmp_opts);
+    avdevice_free_list_devices(&device_list);
+    avformat_free_context(dev);
+    return ret;
+}
+
+static int show_sinks_sources_parse_arg(const char *arg, char **dev, AVDictionary **opts)
+{
+    int ret;
+    if (arg) {
+        char *opts_str = NULL;
+        av_assert0(dev && opts);
+        *dev = av_strdup(arg);
+        if (!*dev)
+            return AVERROR(ENOMEM);
+        if ((opts_str = strchr(*dev, ','))) {
+            *(opts_str++) = '\0';
+            if (opts_str[0] && ((ret = av_dict_parse_string(opts, opts_str, "=", ":", 0)) < 0)) {
+                av_freep(dev);
+                return ret;
+            }
+        }
+    } else
+        printf("\nDevice name is not provided.\n"
+                "You can pass devicename[,opt1=val1[,opt2=val2...]] as an argument.\n\n");
+    return 0;
+}
+
+int show_sources(void *optctx, const char *opt, const char *arg)
+{
+    AVInputFormat *fmt = NULL;
+    char *dev = NULL;
+    AVDictionary *opts = NULL;
+    int ret = 0;
+    int error_level = av_log_get_level();
+
+    av_log_set_level(AV_LOG_ERROR);
+
+    if ((ret = show_sinks_sources_parse_arg(arg, &dev, &opts)) < 0)
+        goto fail;
+
+    do {
+        fmt = av_input_audio_device_next(fmt);
+        if (fmt) {
+            if (!strcmp(fmt->name, "lavfi"))
+                continue; //it's pointless to probe lavfi
+            if (dev && strcmp(fmt->name, dev))
+                continue;
+            print_device_sources(fmt, opts);
+        }
+    } while (fmt);
+    do {
+        fmt = av_input_video_device_next(fmt);
+        if (fmt) {
+            if (dev && strcmp(fmt->name, dev))
+                continue;
+            print_device_sources(fmt, opts);
+        }
+    } while (fmt);
+  fail:
+    av_dict_free(&opts);
+    av_free(dev);
+    av_log_set_level(error_level);
+    return ret;
+}
+
+int show_sinks(void *optctx, const char *opt, const char *arg)
+{
+    AVOutputFormat *fmt = NULL;
+    char *dev = NULL;
+    AVDictionary *opts = NULL;
+    int ret = 0;
+    int error_level = av_log_get_level();
+
+    av_log_set_level(AV_LOG_ERROR);
+
+    if ((ret = show_sinks_sources_parse_arg(arg, &dev, &opts)) < 0)
+        goto fail;
+
+    do {
+        fmt = av_output_audio_device_next(fmt);
+        if (fmt) {
+            if (dev && strcmp(fmt->name, dev))
+                continue;
+            print_device_sinks(fmt, opts);
+        }
+    } while (fmt);
+    do {
+        fmt = av_output_video_device_next(fmt);
+        if (fmt) {
+            if (dev && strcmp(fmt->name, dev))
+                continue;
+            print_device_sinks(fmt, opts);
+        }
+    } while (fmt);
+  fail:
+    av_dict_free(&opts);
+    av_free(dev);
+    av_log_set_level(error_level);
+    return ret;
+}
+#endif
