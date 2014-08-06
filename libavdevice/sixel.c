@@ -24,25 +24,27 @@
 #include "avdevice.h"
 
 typedef struct SIXELContext {
-    AVClass         *class;
+    AVClass *class;
     AVFormatContext *ctx;
-    char            *window_size;
-    char            *colors;
+    char *window_size;
+    int colors;
+    LSOutputContextPtr output;
+    unsigned char *palette;
 } SIXELContext;
 
-static int sixel_write_trailer(AVFormatContext *s)
-{
-    return 0;
-}
 
 static int sixel_write_header(AVFormatContext *s)
 {
     SIXELContext *c = s->priv_data;
     AVCodecContext *encctx = s->streams[0]->codec;
+    c->palette = NULL;
+    c->window_size = NULL;
+    c->colors = 16;
 
     c->ctx = s;
+    c->output = LSOutputContext_create(putchar, printf);
 
-    if (   s->nb_streams > 1
+    if (s->nb_streams > 1
         || encctx->codec_type != AVMEDIA_TYPE_VIDEO
         || encctx->codec_id   != CODEC_ID_RAWVIDEO) {
         av_log(s, AV_LOG_ERROR, "Only supports one rawvideo stream\n");
@@ -65,43 +67,39 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *encctx = s->streams[0]->codec;
     int sx = encctx->width;
     int sy = encctx->height;
-    int reqcolors = 16;
-    int ncolors;
-    int origcolors;
     int i;
     unsigned char *pixels = pkt->data;
-    unsigned char *palette = NULL;
     unsigned char *data = NULL;
 
-    LSOutputContextPtr context = LSOutputContext_create(putchar, printf);
-    palette = LSQ_MakePalette(pixels, sx, sy, 3,
-                              reqcolors,
-                              &ncolors,
-                              &origcolors,
-                              LARGE_NORM,
-                              REP_CENTER_BOX,
-                              QUALITY_LOW);
-    data = LSQ_ApplyPalette(pixels, sx, sy, 3,
-                            palette, ncolors,
-                            DIFFUSE_FS,
-                            /* foptimize */ 1);
-    LSImagePtr im = LSImage_create(sx, sy, 1, ncolors);
-    for (i = 0; i < ncolors; i++) {
-        LSImage_setpalette(im, i,
-                           palette[i * 3],
-                           palette[i * 3 + 1],
-                           palette[i * 3 + 2]);
+    if (c->palette == NULL) {
+        c->palette = LSQ_MakePalette(pixels, sx, sy, 3,
+                                     c->colors, &c->colors, NULL,
+                                     LARGE_NORM, REP_CENTER_BOX, QUALITY_LOW);
     }
+    LSImagePtr im = LSImage_create(sx, sy, 1, c->colors);
+    for (i = 0; i < c->colors; i++) {
+        LSImage_setpalette(im, i,
+                           c->palette[i * 3],
+                           c->palette[i * 3 + 1],
+                           c->palette[i * 3 + 2]);
+    }
+    data = LSQ_ApplyPalette(pixels, sx, sy, 3, c->palette, c->colors,
+                            DIFFUSE_FS, /* foptimize */ 1);
     LSImage_setpixels(im, data);
     printf("\033[H");
-    LibSixel_LSImageToSixel(im, context);
-    LSImage_destroy(im);
     fflush(stdout);
+    LibSixel_LSImageToSixel(im, c->output);
+    LSImage_destroy(im);
     return 0;
 }
 
-#define OFFSET(x) offsetof(SIXELContext,x)
-#define ENC AV_OPT_FLAG_ENCODING_PARAM
+static int sixel_write_trailer(AVFormatContext *s)
+{
+    SIXELContext *c = s->priv_data;
+
+    LSOutputContext_destroy(c->output);
+    return 0;
+}
 
 static const AVOption options[] = {
     { NULL },
