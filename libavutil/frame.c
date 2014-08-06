@@ -38,13 +38,11 @@ static void get_frame_defaults(AVFrame *frame)
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
     frame->extended_data       = frame->data;
-#if FF_API_AVFRAME_COLORSPACE
     frame->color_primaries     = AVCOL_PRI_UNSPECIFIED;
     frame->color_trc           = AVCOL_TRC_UNSPECIFIED;
     frame->colorspace          = AVCOL_SPC_UNSPECIFIED;
     frame->color_range         = AVCOL_RANGE_UNSPECIFIED;
     frame->chroma_location     = AVCHROMA_LOC_UNSPECIFIED;
-#endif
 }
 
 static void free_side_data(AVFrameSideData **ptr_sd)

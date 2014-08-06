@@ -433,7 +433,6 @@ typedef struct AVFrame {
      */
     int flags;
 
-#if FF_API_AVFRAME_COLORSPACE
     enum AVColorRange color_range;
 
     enum AVColorPrimaries color_primaries;
@@ -443,7 +442,6 @@ typedef struct AVFrame {
     enum AVColorSpace colorspace;
 
     enum AVChromaLocation chroma_location;
-#endif
 } AVFrame;
 
 /**
