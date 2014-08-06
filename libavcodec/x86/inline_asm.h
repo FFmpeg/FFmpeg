@@ -37,7 +37,7 @@
         "paddb   %%"#regd", %%"#regd"   \n\t" ::)
 
 #ifndef PIC
-#define MOVQ_WTWO(regd) __asm__ volatile ("movq %0, %%"#regd" \n\t" :: "m"(ff_wtwo))
+#define MOVQ_WTWO(regd) __asm__ volatile ("movq %0, %%"#regd" \n\t" :: "m"(ff_pw_2))
 #else
 // for shared library it's better to use this way for accessing constants
 // pcmpeqd -> -1

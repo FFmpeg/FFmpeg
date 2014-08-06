@@ -23,10 +23,11 @@
 
 SECTION_RODATA
 pw_1: times 8 dw 1
-pw_2: times 8 dw 2
 pw_8: times 8 dw 8
 pw_16: times 8 dw 16
 pw_1991: times 4 dw 9,-1
+
+cextern pw_2
 
 section .text
 
