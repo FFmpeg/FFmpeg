@@ -24,8 +24,7 @@
 
 SECTION_RODATA
 
-; FIXME share with vp8dsp.asm
-pw_256:   times 8 dw 256
+cextern pw_256
 
 %macro F8_TAPS 8
 times 8 db %1, %2

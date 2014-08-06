@@ -27,12 +27,12 @@
 SECTION_RODATA
 
 pw_pixel_max: times 8 dw ((1 << 10)-1)
-pw_m1:        times 8 dw -1
 pw_m2:        times 8 dw -2
 pd_1 :        times 4 dd  1
 
 cextern pw_4
 cextern pw_8
+cextern pw_m1
 
 SECTION .text
 INIT_XMM sse2
