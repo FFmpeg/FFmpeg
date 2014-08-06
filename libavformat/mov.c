@@ -318,6 +318,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return mov_metadata_raw(c, pb, atom.size, "quicktime_version");
     case MKTAG( 'l','o','c','i'):
         return mov_metadata_loci(c, pb, atom.size);
+    case MKTAG( 'X','M','P','_'):
+        return mov_metadata_raw(c, pb, atom.size, "xmp");
     }
 
     if (c->itunes_metadata && atom.size > 8) {
