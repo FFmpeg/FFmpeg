@@ -350,6 +350,15 @@ int main(int argc, char **argv)
     int cpu_flags_eff;
     int cpu_count = av_cpu_count();
     char threads[5] = "auto";
+    int i;
+
+    for(i = 0; cpu_flag_tab[i].flag; i++) {
+        unsigned tmp = 0;
+        if (av_parse_cpu_caps(&tmp, cpu_flag_tab[i].name) < 0) {
+            fprintf(stderr, "Table missing %s\n", cpu_flag_tab[i].name);
+            return 4;
+        }
+    }
 
     if (cpu_flags_raw < 0)
         return 1;
