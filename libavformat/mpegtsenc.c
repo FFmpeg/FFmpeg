@@ -778,7 +778,6 @@ static int mpegts_write_header(AVFormatContext *s)
     return 0;
 
 fail:
-    av_free(service);
     av_free(pids);
     for (i = 0; i < s->nb_streams; i++) {
         st    = s->streams[i];
@@ -792,6 +791,14 @@ fail:
         }
         av_freep(&st->priv_data);
     }
+
+    for (i = 0; i < ts->nb_services; i++) {
+        service = ts->services[i];
+        av_freep(&service->provider_name);
+        av_freep(&service->name);
+        av_free(service);
+    }
+    av_free(ts->services);
     return ret;
 }
 
