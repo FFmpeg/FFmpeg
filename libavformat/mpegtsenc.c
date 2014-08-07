@@ -710,7 +710,7 @@ static int mpegts_write_header(AVFormatContext *s)
         }
     }
 
-    av_free(pids);
+    av_freep(&pids);
 
     /* if no video stream, use the first stream as PCR */
     if (service->pcr_pid == 0x1fff && s->nb_streams > 0) {
@@ -778,7 +778,7 @@ static int mpegts_write_header(AVFormatContext *s)
     return 0;
 
 fail:
-    av_free(pids);
+    av_freep(&pids);
     for (i = 0; i < s->nb_streams; i++) {
         st    = s->streams[i];
         ts_st = st->priv_data;
