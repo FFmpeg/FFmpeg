@@ -19,7 +19,7 @@ LIBAVFORMAT_$MAJOR {
                 ffurl_write;
                 ffurl_protocol_next;
                 #those are deprecated, remove on next bump
-                url_*;
+                url_feof;
                 get_*;
                 ff_codec_get_id;
         local: *;

@@ -292,7 +292,7 @@ int64_t avio_size(AVIOContext *s)
     return size;
 }
 
-int url_feof(AVIOContext *s)
+int avio_feof(AVIOContext *s)
 {
     if(!s)
         return 0;
@@ -302,6 +302,13 @@ int url_feof(AVIOContext *s)
     }
     return s->eof_reached;
 }
+
+#if FF_API_URL_FEOF
+int url_feof(AVIOContext *s)
+{
+    return avio_feof(s);
+}
+#endif
 
 void avio_wl32(AVIOContext *s, unsigned int val)
 {
