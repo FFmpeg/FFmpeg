@@ -623,8 +623,8 @@ static int mpegts_write_header(AVFormatContext *s)
 
     pids = av_malloc_array(s->nb_streams, sizeof(*pids));
     if (!pids) {
-        av_free(service);
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
     /* assign pids to each stream */
