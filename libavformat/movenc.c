@@ -3909,9 +3909,8 @@ static int mov_write_header(AVFormatContext *s)
         else if (!strcmp("f4v", s->oformat->name)) mov->mode = MODE_F4V;
     }
 
-    for (i = 0; i < s->nb_streams; i++)
-        if (s->flags & AVFMT_FLAG_BITEXACT)
-            mov->exact = 1;
+    if (s->flags & AVFMT_FLAG_BITEXACT)
+        mov->exact = 1;
 
     /* Set the FRAGMENT flag if any of the fragmentation methods are
      * enabled. */
