@@ -60,11 +60,10 @@ static int sixel_write_header(AVFormatContext *s)
     c->colors = 16;
     c->ctx = s;
     c->output = LSOutputContext_create(putchar, printf);
-    c->cachetable = malloc((1 << 3 * 5) * sizeof(unsigned short));
+    c->cachetable = av_calloc(1 << 3 * 5, sizeof(unsigned short));
     if (c->cachetable == 0) {
         return AVERROR(ENOMEM);
     }
-    memset(c->cachetable, 0, (1 << 3 * 5) * sizeof(unsigned short));
 
     printf("\033[?25l\0337");
 
@@ -87,7 +86,7 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (c->palette == NULL) {
         c->palette = LSQ_MakePalette(pixels, sx, sy, 3,
                                      c->colors, &c->colors, NULL,
-                                     LARGE_NORM, REP_CENTER_BOX, QUALITY_HIGH);
+                                     LARGE_NORM, REP_CENTER_BOX, QUALITY_LOW);
         for (i = 0; i < c->colors; i++) {
             LSImage_setpalette(c->im, i,
                                c->palette[i * 3],
