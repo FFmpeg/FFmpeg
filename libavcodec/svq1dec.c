@@ -652,7 +652,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
 
-        av_fast_malloc(s->pkt_swapped, &s->pkt_swapped_allocated,
+        av_fast_padded_malloc(&s->pkt_swapped, &s->pkt_swapped_allocated,
                        buf_size);
         if (!s->pkt_swapped)
             return AVERROR(ENOMEM);
@@ -821,6 +821,7 @@ static av_cold int svq1_decode_end(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
 
     av_freep(&s->pkt_swapped);
+    s->pkt_swapped_allocated = 0;
 
     MPV_common_end(s);
     return 0;
