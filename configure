@@ -1525,6 +1525,7 @@ ARCH_EXT_LIST_ARM="
     neon
     vfp
     vfpv3
+    setend
 "
 
 ARCH_EXT_LIST_MIPS="
@@ -1951,6 +1952,7 @@ neon_deps_any="aarch64 arm"
 intrinsics_neon_deps="neon"
 vfp_deps_any="aarch64 arm"
 vfpv3_deps="vfp"
+setend_deps="arm"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
@@ -4447,6 +4449,7 @@ EOF
     enabled neon    && check_insn neon    'vadd.i16 q0, q0, q0'
     enabled vfp     && check_insn vfp     'fadds s0, s0, s0'
     enabled vfpv3   && check_insn vfpv3   'vmov.f32 s0, #1.0'
+    enabled setend  && check_insn setend  'setend be'
 
     [ $target_os = linux ] || [ $target_os = android ] ||
         map 'enabled_any ${v}_external ${v}_inline || disable $v' \

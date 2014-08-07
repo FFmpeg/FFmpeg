@@ -29,11 +29,6 @@
 #define have_vfp(flags)     CPUEXT(flags, VFP)
 #define have_vfpv3(flags)   CPUEXT(flags, VFPV3)
 #define have_neon(flags)    CPUEXT(flags, NEON)
-
-/* Some functions use the 'setend' instruction which is deprecated on ARMv8
- * and serializing on some ARMv7 cores. This macro ensures such functions
- * are only enabled on ARMv6. */
-#define have_setend(flags)                                              \
-    (have_armv6(flags) && !(have_vfpv3(flags) || have_neon(flags)))
+#define have_setend(flags)  CPUEXT(flags, SETEND)
 
 #endif /* AVUTIL_ARM_CPU_H */
