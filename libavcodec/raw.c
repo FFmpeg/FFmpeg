@@ -224,6 +224,11 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_NONE, 0 },
 };
 
+const struct PixelFormatTag *avpriv_get_raw_pix_fmt_tags(void)
+{
+    return ff_raw_pix_fmt_tags;
+}
+
 unsigned int avcodec_pix_fmt_to_codec_tag(enum AVPixelFormat fmt)
 {
     const PixelFormatTag *tags = ff_raw_pix_fmt_tags;
