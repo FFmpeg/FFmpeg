@@ -841,10 +841,10 @@ static void decode_postinit(H264Context *h, int setup_finished)
             stereo->type = AV_STEREO3D_CHECKERBOARD;
             break;
         case 1:
-            stereo->type = AV_STEREO3D_LINES;
+            stereo->type = AV_STEREO3D_COLUMNS;
             break;
         case 2:
-            stereo->type = AV_STEREO3D_COLUMNS;
+            stereo->type = AV_STEREO3D_LINES;
             break;
         case 3:
             if (h->quincunx_subsampling)
