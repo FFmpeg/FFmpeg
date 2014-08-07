@@ -19,7 +19,7 @@
  */
 
 /**
- * A simple, relatively efficient and extremely slow DCT image denoiser.
+ * A simple, relatively efficient and slow DCT image denoiser.
  *
  * @see http://www.ipol.im/pub/art/2011/ys-dct/
  *
@@ -28,13 +28,11 @@
  * Tasche (DOI: 10.1016/j.laa.2004.07.015).
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "drawutils.h"
 #include "internal.h"
-
-#define NBITS 4
-#define BSIZE (1<<(NBITS))
 
 static const char *const var_names[] = { "c", NULL };
 enum { VAR_C, VAR_VARS_NB };
@@ -55,24 +53,114 @@ typedef struct DCTdnoizContext {
     float *weights;             // dct coeff are cumulated with overlapping; these values are used for averaging
     int p_linesize;             // line sizes for color and weights
     int overlap;                // number of block overlapping pixels
-    int step;                   // block step increment (BSIZE - overlap)
+    int step;                   // block step increment (blocksize - overlap)
+    int n;                      // 1<<n is the block size
+    int bsize;                  // block size, 1<<n
     void (*filter_freq_func)(struct DCTdnoizContext *s,
                              const float *src, int src_linesize,
                              float *dst, int dst_linesize);
 } DCTdnoizContext;
+
+#define MIN_NBITS 3 /* blocksize = 1<<3 =  8 */
+#define MAX_NBITS 4 /* blocksize = 1<<4 = 16 */
+#define DEFAULT_NBITS 3
 
 #define OFFSET(x) offsetof(DCTdnoizContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption dctdnoiz_options[] = {
     { "sigma",   "set noise sigma constant",               OFFSET(sigma),    AV_OPT_TYPE_FLOAT,  {.dbl=0},            0, 999,          .flags = FLAGS },
     { "s",       "set noise sigma constant",               OFFSET(sigma),    AV_OPT_TYPE_FLOAT,  {.dbl=0},            0, 999,          .flags = FLAGS },
-    { "overlap", "set number of block overlapping pixels", OFFSET(overlap),  AV_OPT_TYPE_INT,    {.i64=(1<<NBITS)-1}, 0, (1<<NBITS)-1, .flags = FLAGS },
+    { "overlap", "set number of block overlapping pixels", OFFSET(overlap),  AV_OPT_TYPE_INT,    {.i64=-1}, -1, (1<<MAX_NBITS)-1, .flags = FLAGS },
     { "expr",    "set coefficient factor expression",      OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str=NULL},                          .flags = FLAGS },
     { "e",       "set coefficient factor expression",      OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str=NULL},                          .flags = FLAGS },
+    { "n",       "set the block size, expressed in bits",  OFFSET(n),        AV_OPT_TYPE_INT,    {.i64=DEFAULT_NBITS}, MIN_NBITS, MAX_NBITS, .flags = FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(dctdnoiz);
+
+static void av_always_inline fdct8_1d(float *dst, const float *src,
+                                      int dst_stridea, int dst_strideb,
+                                      int src_stridea, int src_strideb)
+{
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        const float x00 = src[0*src_stridea] + src[7*src_stridea];
+        const float x01 = src[1*src_stridea] + src[6*src_stridea];
+        const float x02 = src[2*src_stridea] + src[5*src_stridea];
+        const float x03 = src[3*src_stridea] + src[4*src_stridea];
+        const float x04 = src[0*src_stridea] - src[7*src_stridea];
+        const float x05 = src[1*src_stridea] - src[6*src_stridea];
+        const float x06 = src[2*src_stridea] - src[5*src_stridea];
+        const float x07 = src[3*src_stridea] - src[4*src_stridea];
+        const float x08 = x00 + x03;
+        const float x09 = x01 + x02;
+        const float x0a = x00 - x03;
+        const float x0b = x01 - x02;
+        const float x0c = 1.38703984532215*x04 + 0.275899379282943*x07;
+        const float x0d = 1.17587560241936*x05 + 0.785694958387102*x06;
+        const float x0e = -0.785694958387102*x05 + 1.17587560241936*x06;
+        const float x0f = 0.275899379282943*x04 - 1.38703984532215*x07;
+        const float x10 = 0.353553390593274 * (x0c - x0d);
+        const float x11 = 0.353553390593274 * (x0e - x0f);
+        dst[0*dst_stridea] = 0.353553390593274 * (x08 + x09);
+        dst[1*dst_stridea] = 0.353553390593274 * (x0c + x0d);
+        dst[2*dst_stridea] = 0.461939766255643*x0a + 0.191341716182545*x0b;
+        dst[3*dst_stridea] = 0.707106781186547 * (x10 - x11);
+        dst[4*dst_stridea] = 0.353553390593274 * (x08 - x09);
+        dst[5*dst_stridea] = 0.707106781186547 * (x10 + x11);
+        dst[6*dst_stridea] = 0.191341716182545*x0a - 0.461939766255643*x0b;
+        dst[7*dst_stridea] = 0.353553390593274 * (x0e + x0f);
+        dst += dst_strideb;
+        src += src_strideb;
+    }
+}
+
+static void av_always_inline idct8_1d(float *dst, const float *src,
+                                      int dst_stridea, int dst_strideb,
+                                      int src_stridea, int src_strideb,
+                                      int add)
+{
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        const float x00 = 1.4142135623731*src[0*src_stridea];
+        const float x01 = 1.38703984532215*src[1*src_stridea] + 0.275899379282943*src[7*src_stridea];
+        const float x02 = 1.30656296487638*src[2*src_stridea] + 0.541196100146197*src[6*src_stridea];
+        const float x03 = 1.17587560241936*src[3*src_stridea] + 0.785694958387102*src[5*src_stridea];
+        const float x04 = 1.4142135623731*src[4*src_stridea];
+        const float x05 = -0.785694958387102*src[3*src_stridea] + 1.17587560241936*src[5*src_stridea];
+        const float x06 = 0.541196100146197*src[2*src_stridea] - 1.30656296487638*src[6*src_stridea];
+        const float x07 = -0.275899379282943*src[1*src_stridea] + 1.38703984532215*src[7*src_stridea];
+        const float x09 = x00 + x04;
+        const float x0a = x01 + x03;
+        const float x0b = 1.4142135623731*x02;
+        const float x0c = x00 - x04;
+        const float x0d = x01 - x03;
+        const float x0e = 0.353553390593274 * (x09 - x0b);
+        const float x0f = 0.353553390593274 * (x0c + x0d);
+        const float x10 = 0.353553390593274 * (x0c - x0d);
+        const float x11 = 1.4142135623731*x06;
+        const float x12 = x05 + x07;
+        const float x13 = x05 - x07;
+        const float x14 = 0.353553390593274 * (x11 + x12);
+        const float x15 = 0.353553390593274 * (x11 - x12);
+        const float x16 = 0.5*x13;
+        const float x08 = -x15;
+        dst[0*dst_stridea] = (add ? dst[ 0*dst_stridea] : 0) + 0.25 * (x09 + x0b) + 0.353553390593274*x0a;
+        dst[1*dst_stridea] = (add ? dst[ 1*dst_stridea] : 0) + 0.707106781186547 * (x0f - x08);
+        dst[2*dst_stridea] = (add ? dst[ 2*dst_stridea] : 0) + 0.707106781186547 * (x0f + x08);
+        dst[3*dst_stridea] = (add ? dst[ 3*dst_stridea] : 0) + 0.707106781186547 * (x0e + x16);
+        dst[4*dst_stridea] = (add ? dst[ 4*dst_stridea] : 0) + 0.707106781186547 * (x0e - x16);
+        dst[5*dst_stridea] = (add ? dst[ 5*dst_stridea] : 0) + 0.707106781186547 * (x10 - x14);
+        dst[6*dst_stridea] = (add ? dst[ 6*dst_stridea] : 0) + 0.707106781186547 * (x10 + x14);
+        dst[7*dst_stridea] = (add ? dst[ 7*dst_stridea] : 0) + 0.25 * (x09 + x0b) - 0.353553390593274*x0a;
+        dst += dst_strideb;
+        src += src_strideb;
+    }
+}
+
 
 static void av_always_inline fdct16_1d(float *dst, const float *src,
                                        int dst_stridea, int dst_strideb,
@@ -80,7 +168,7 @@ static void av_always_inline fdct16_1d(float *dst, const float *src,
 {
     int i;
 
-    for (i = 0; i < BSIZE; i++) {
+    for (i = 0; i < 16; i++) {
         const float x00 = src[ 0*src_stridea] + src[15*src_stridea];
         const float x01 = src[ 1*src_stridea] + src[14*src_stridea];
         const float x02 = src[ 2*src_stridea] + src[13*src_stridea];
@@ -165,7 +253,7 @@ static void av_always_inline idct16_1d(float *dst, const float *src,
 {
     int i;
 
-    for (i = 0; i < BSIZE; i++) {
+    for (i = 0; i < 16; i++) {
         const float x00 =  1.4142135623731  *src[ 0*src_stridea];
         const float x01 =  1.40740373752638 *src[ 1*src_stridea] + 0.138617169199091*src[15*src_stridea];
         const float x02 =  1.38703984532215 *src[ 2*src_stridea] + 0.275899379282943*src[14*src_stridea];
@@ -256,55 +344,60 @@ static void av_always_inline idct16_1d(float *dst, const float *src,
     }
 }
 
-static av_always_inline void filter_freq(const float *src, int src_linesize,
-                                         float *dst, int dst_linesize,
-                                         AVExpr *expr, double *var_values,
-                                         int sigma_th)
-{
-    unsigned i;
-    DECLARE_ALIGNED(32, float, tmp_block1)[BSIZE * BSIZE];
-    DECLARE_ALIGNED(32, float, tmp_block2)[BSIZE * BSIZE];
-
-    /* forward DCT */
-    fdct16_1d(tmp_block1, src, 1, BSIZE, 1, src_linesize);
-    fdct16_1d(tmp_block2, tmp_block1, BSIZE, 1, BSIZE, 1);
-
-    for (i = 0; i < BSIZE*BSIZE; i++) {
-        float *b = &tmp_block2[i];
-        /* frequency filtering */
-        if (expr) {
-            var_values[VAR_C] = FFABS(*b);
-            *b *= av_expr_eval(expr, var_values, NULL);
-        } else {
-            if (FFABS(*b) < sigma_th)
-                *b = 0;
-        }
-    }
-
-    /* inverse DCT */
-    idct16_1d(tmp_block1, tmp_block2, 1, BSIZE, 1, BSIZE, 0);
-    idct16_1d(dst, tmp_block1, dst_linesize, 1, BSIZE, 1, 1);
+#define DEF_FILTER_FREQ_FUNCS(bsize)                                                        \
+static av_always_inline void filter_freq_##bsize(const float *src, int src_linesize,        \
+                                                 float *dst, int dst_linesize,              \
+                                                 AVExpr *expr, double *var_values,          \
+                                                 int sigma_th)                              \
+{                                                                                           \
+    unsigned i;                                                                             \
+    DECLARE_ALIGNED(32, float, tmp_block1)[bsize * bsize];                                  \
+    DECLARE_ALIGNED(32, float, tmp_block2)[bsize * bsize];                                  \
+                                                                                            \
+    /* forward DCT */                                                                       \
+    fdct##bsize##_1d(tmp_block1, src, 1, bsize, 1, src_linesize);                           \
+    fdct##bsize##_1d(tmp_block2, tmp_block1, bsize, 1, bsize, 1);                           \
+                                                                                            \
+    for (i = 0; i < bsize*bsize; i++) {                                                     \
+        float *b = &tmp_block2[i];                                                          \
+        /* frequency filtering */                                                           \
+        if (expr) {                                                                         \
+            var_values[VAR_C] = FFABS(*b);                                                  \
+            *b *= av_expr_eval(expr, var_values, NULL);                                     \
+        } else {                                                                            \
+            if (FFABS(*b) < sigma_th)                                                       \
+                *b = 0;                                                                     \
+        }                                                                                   \
+    }                                                                                       \
+                                                                                            \
+    /* inverse DCT */                                                                       \
+    idct##bsize##_1d(tmp_block1, tmp_block2, 1, bsize, 1, bsize, 0);                        \
+    idct##bsize##_1d(dst, tmp_block1, dst_linesize, 1, bsize, 1, 1);                        \
+}                                                                                           \
+                                                                                            \
+static void filter_freq_sigma_##bsize(DCTdnoizContext *s,                                   \
+                                      const float *src, int src_linesize,                   \
+                                      float *dst, int dst_linesize)                         \
+{                                                                                           \
+    filter_freq_##bsize(src, src_linesize, dst, dst_linesize, NULL, NULL, s->th);           \
+}                                                                                           \
+                                                                                            \
+static void filter_freq_expr_##bsize(DCTdnoizContext *s,                                    \
+                                     const float *src, int src_linesize,                    \
+                                     float *dst, int dst_linesize)                          \
+{                                                                                           \
+    filter_freq_##bsize(src, src_linesize, dst, dst_linesize, s->expr, s->var_values, 0);   \
 }
 
-static void filter_freq_sigma(DCTdnoizContext *s,
-                              const float *src, int src_linesize,
-                              float *dst, int dst_linesize)
-{
-    filter_freq(src, src_linesize, dst, dst_linesize, NULL, NULL, s->th);
-}
-
-static void filter_freq_expr(DCTdnoizContext *s,
-                             const float *src, int src_linesize,
-                             float *dst, int dst_linesize)
-{
-    filter_freq(src, src_linesize, dst, dst_linesize, s->expr, s->var_values, 0);
-}
+DEF_FILTER_FREQ_FUNCS(8)
+DEF_FILTER_FREQ_FUNCS(16)
 
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     DCTdnoizContext *s = ctx->priv;
     int i, x, y, bx, by, linesize, *iweights;
+    const int bsize = 1 << s->n;
     const float dct_3x3[3][3] = {
         { 1./sqrt(3),  1./sqrt(3),  1./sqrt(3) },
         { 1./sqrt(2),           0, -1./sqrt(2) },
@@ -317,8 +410,8 @@ static int config_input(AVFilterLink *inlink)
         for (x = 0; x < 3; x++)
             s->color_dct[y][x] = dct_3x3[rgba_map[y]][rgba_map[x]];
 
-    s->pr_width  = inlink->w - (inlink->w - BSIZE) % s->step;
-    s->pr_height = inlink->h - (inlink->h - BSIZE) % s->step;
+    s->pr_width  = inlink->w - (inlink->w - bsize) % s->step;
+    s->pr_height = inlink->h - (inlink->h - bsize) % s->step;
     if (s->pr_width != inlink->w)
         av_log(ctx, AV_LOG_WARNING, "The last %d horizontal pixels won't be denoised\n",
                inlink->w - s->pr_width);
@@ -341,10 +434,10 @@ static int config_input(AVFilterLink *inlink)
     iweights = av_calloc(s->pr_height, linesize * sizeof(*iweights));
     if (!iweights)
         return AVERROR(ENOMEM);
-    for (y = 0; y < s->pr_height - BSIZE + 1; y += s->step)
-        for (x = 0; x < s->pr_width - BSIZE + 1; x += s->step)
-            for (by = 0; by < BSIZE; by++)
-                for (bx = 0; bx < BSIZE; bx++)
+    for (y = 0; y < s->pr_height - bsize + 1; y += s->step)
+        for (x = 0; x < s->pr_width - bsize + 1; x += s->step)
+            for (by = 0; by < bsize; by++)
+                for (bx = 0; bx < bsize; bx++)
                     iweights[(y + by)*linesize + x + bx]++;
     for (y = 0; y < s->pr_height; y++)
         for (x = 0; x < s->pr_width; x++)
@@ -358,18 +451,37 @@ static av_cold int init(AVFilterContext *ctx)
 {
     DCTdnoizContext *s = ctx->priv;
 
+    s->bsize = 1 << s->n;
+    if (s->overlap == -1)
+        s->overlap = s->bsize - 1;
+
+    if (s->overlap > s->bsize - 1) {
+        av_log(s, AV_LOG_ERROR, "Overlap value can not except %d "
+               "with a block size of %dx%d\n",
+               s->bsize - 1, s->bsize, s->bsize);
+        return AVERROR(EINVAL);
+    }
+
     if (s->expr_str) {
         int ret = av_expr_parse(&s->expr, s->expr_str, var_names,
                                 NULL, NULL, NULL, NULL, 0, ctx);
         if (ret < 0)
             return ret;
-        s->filter_freq_func = filter_freq_expr;
+        switch (s->n) {
+        case 3: s->filter_freq_func = filter_freq_expr_8;  break;
+        case 4: s->filter_freq_func = filter_freq_expr_16; break;
+        default: av_assert0(0);
+        }
     } else {
-        s->filter_freq_func = filter_freq_sigma;
+        switch (s->n) {
+        case 3: s->filter_freq_func = filter_freq_sigma_8;  break;
+        case 4: s->filter_freq_func = filter_freq_sigma_16; break;
+        default: av_assert0(0);
+        }
     }
 
     s->th   = s->sigma * 3.;
-    s->step = BSIZE - s->overlap;
+    s->step = s->bsize - s->overlap;
     return 0;
 }
 
@@ -445,8 +557,8 @@ static void filter_plane(AVFilterContext *ctx,
     memset(dst, 0, h * dst_linesize * sizeof(*dst));
 
     // block dct sums
-    for (y = 0; y < h - BSIZE + 1; y += s->step) {
-        for (x = 0; x < w - BSIZE + 1; x += s->step)
+    for (y = 0; y < h - s->bsize + 1; y += s->step) {
+        for (x = 0; x < w - s->bsize + 1; x += s->step)
             s->filter_freq_func(s, src + x, src_linesize,
                                    dst + x, dst_linesize);
         src += s->step * src_linesize;
