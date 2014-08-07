@@ -530,9 +530,15 @@ static MpegTSService *mpegts_add_service(MpegTSWrite *ts, int sid,
         return NULL;
     service->pmt.pid       = ts->pmt_start_pid + ts->nb_services;
     service->sid           = sid;
+    service->pcr_pid       = 0x1fff;
     service->provider_name = av_strdup(provider_name);
     service->name          = av_strdup(name);
-    service->pcr_pid       = 0x1fff;
+    if (!service->provider_name || !service->name) {
+        free(service->provider_name);
+        free(service->name);
+        free(service);
+        return NULL;
+    }
     dynarray_add(&ts->services, &ts->nb_services, service);
     return service;
 }
@@ -593,6 +599,9 @@ static int mpegts_write_header(AVFormatContext *s)
     service       = mpegts_add_service(ts, ts->service_id,
                                        provider_name, service_name);
 
+    if (!service)
+        return AVERROR(ENOMEM);
+
     service->pmt.write_packet = section_write_packet;
     service->pmt.opaque       = s;
     service->pmt.cc           = 15;
@@ -610,8 +619,10 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->sdt.opaque       = s;
 
     pids = av_malloc_array(s->nb_streams, sizeof(*pids));
-    if (!pids)
+    if (!pids) {
+        av_free(service);
         return AVERROR(ENOMEM);
+    }
 
     /* assign pids to each stream */
     for (i = 0; i < s->nb_streams; i++) {
@@ -683,8 +694,7 @@ static int mpegts_write_header(AVFormatContext *s)
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            ast = avformat_new_stream(ts_st->amux, NULL);
-            if (!ast) {
+            if (!(ast = avformat_new_stream(ts_st->amux, NULL))) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
@@ -765,6 +775,7 @@ static int mpegts_write_header(AVFormatContext *s)
     return 0;
 
 fail:
+    av_free(service);
     av_free(pids);
     for (i = 0; i < s->nb_streams; i++) {
         st    = s->streams[i];
