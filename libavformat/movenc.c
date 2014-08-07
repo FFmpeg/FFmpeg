@@ -3745,13 +3745,18 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
         pkt.duration = end - pkt.dts;
 
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
+            const char encd[12] = {
+                0x00, 0x00, 0x00, 0x0C,
+                'e',  'n',  'c',  'd',
+                0x00, 0x00, 0x01, 0x00 };
             len      = strlen(t->value);
-            pkt.size = len + 2;
+            pkt.size = len + 2 + 12;
             pkt.data = av_malloc(pkt.size);
             if (!pkt.data)
                 return AVERROR(ENOMEM);
             AV_WB16(pkt.data, len);
             memcpy(pkt.data + 2, t->value, len);
+            memcpy(pkt.data + len + 2, encd, sizeof(encd));
             ff_mov_write_packet(s, &pkt);
             av_freep(&pkt.data);
         }
