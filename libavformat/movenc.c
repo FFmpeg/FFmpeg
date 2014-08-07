@@ -85,6 +85,17 @@ static const AVClass flavor ## _muxer_class = {\
 
 static int get_moov_size(AVFormatContext *s);
 
+static int utf8len(const uint8_t *b)
+{
+    int len = 0;
+    int val;
+    while (*b) {
+        GET_UTF8(val, *b++, return -1;)
+        len++;
+    }
+    return len;
+}
+
 //FIXME support 64 bit variant with wide placeholders
 static int64_t update_size(AVIOContext *pb, int64_t pos)
 {
@@ -1652,6 +1663,15 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
                    "Unknown hldr_type for %s / 0x%04X, writing dummy values\n",
                    tag_buf, track->enc->codec_tag);
         }
+        if (track->st) {
+            // hdlr.name is used by some players to identify the content title
+            // of the track. So if an alternate handler description is
+            // specified, use it.
+            AVDictionaryEntry *t;
+            t = av_dict_get(track->st->metadata, "handler", NULL, 0);
+            if (t && utf8len(t->value))
+                descr = t->value;
+        }
     }
 
     avio_wb32(pb, 0); /* size */
@@ -1997,6 +2017,47 @@ static int mov_write_udta_sdp(AVIOContext *pb, MOVTrack *track)
     return len + 24;
 }
 
+static int mov_write_track_metadata(AVIOContext *pb, AVStream *st,
+                                    const char *tag, const char *str)
+{
+    int64_t pos = avio_tell(pb);
+    AVDictionaryEntry *t = av_dict_get(st->metadata, str, NULL, 0);
+    if (!t || !utf8len(t->value))
+        return 0;
+
+    avio_wb32(pb, 0);   /* size */
+    ffio_wfourcc(pb, tag); /* type */
+    avio_write(pb, t->value, strlen(t->value)); /* UTF8 string value */
+    return update_size(pb, pos);
+}
+
+static int mov_write_track_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
+                                    AVStream *st)
+{
+    AVIOContext *pb_buf;
+    int ret, size;
+    uint8_t *buf;
+
+    if (st == NULL || mov->fc->flags & AVFMT_FLAG_BITEXACT)
+        return 0;
+
+    ret = avio_open_dyn_buf(&pb_buf);
+    if (ret < 0)
+        return ret;
+
+    if (mov->mode & MODE_MP4)
+        mov_write_track_metadata(pb_buf, st, "name", "title");
+
+    if ((size = avio_close_dyn_buf(pb_buf, &buf)) > 0) {
+        avio_wb32(pb, size + 8);
+        ffio_wfourcc(pb, "udta");
+        avio_write(pb, buf, size);
+    }
+    av_free(buf);
+
+    return 0;
+}
+
 static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track, AVStream *st)
 {
@@ -2024,6 +2085,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
             mov_write_tapt_tag(pb, track);
         }
     }
+    mov_write_track_udta_tag(pb, mov, st);
     return update_size(pb, pos);
 }
 
@@ -2331,17 +2393,6 @@ static int mov_write_meta_tag(AVIOContext *pb, MOVMuxContext *mov,
     mov_write_ilst_tag(pb, mov, s);
     size = update_size(pb, pos);
     return size;
-}
-
-static int utf8len(const uint8_t *b)
-{
-    int len = 0;
-    int val;
-    while (*b) {
-        GET_UTF8(val, *b++, return -1;)
-        len++;
-    }
-    return len;
 }
 
 static int ascii_to_wc(AVIOContext *pb, const uint8_t *b)
@@ -3895,6 +3946,8 @@ static int mov_write_header(AVFormatContext *s)
     MOVMuxContext *mov = s->priv_data;
     AVDictionaryEntry *t, *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
     int i, ret, hint_track = 0, tmcd_track = 0;
+
+    mov->fc = s;
 
     /* Default mode == MP4 */
     mov->mode = MODE_MP4;

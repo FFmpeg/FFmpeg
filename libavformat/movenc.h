@@ -179,6 +179,7 @@ typedef struct MOVMuxContext {
     char *major_brand;
 
     int per_stream_grouping;
+    AVFormatContext *fc;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1
