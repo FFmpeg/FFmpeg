@@ -278,11 +278,11 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
             if (!strcmp(fmt->name, fmt_id_type[i].name)) {
                 st->codec->codec_id   = fmt_id_type[i].id;
                 st->codec->codec_type = fmt_id_type[i].type;
-                break;
+                return score;
             }
         }
     }
-    return score;
+    return 0;
 }
 
 /************************************************************/
