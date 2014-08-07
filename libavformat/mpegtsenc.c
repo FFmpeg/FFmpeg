@@ -533,14 +533,17 @@ static MpegTSService *mpegts_add_service(MpegTSWrite *ts, int sid,
     service->pcr_pid       = 0x1fff;
     service->provider_name = av_strdup(provider_name);
     service->name          = av_strdup(name);
-    if (!service->provider_name || !service->name) {
-        av_freep(&service->provider_name);
-        av_freep(&service->name);
-        av_free(service);
-        return NULL;
-    }
-    dynarray_add(&ts->services, &ts->nb_services, service);
+    if (!service->provider_name || !service->name)
+        goto fail;
+    if (av_dynarray_add_nofree(&ts->services, &ts->nb_services, service) < 0)
+        goto fail;
+
     return service;
+fail:
+    av_freep(&service->provider_name);
+    av_freep(&service->name);
+    av_free(service);
+    return NULL;
 }
 
 static int64_t get_pcr(const MpegTSWrite *ts, AVIOContext *pb)
