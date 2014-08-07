@@ -2161,8 +2161,10 @@ static int matroska_read_header(AVFormatContext *s)
                                    (AVRational) { 1, 1000000000 },
                                    chapters[i].start, chapters[i].end,
                                    chapters[i].title);
-            av_dict_set(&chapters[i].chapter->metadata,
-                        "title", chapters[i].title, 0);
+            if (chapters[i].chapter) {
+                av_dict_set(&chapters[i].chapter->metadata,
+                            "title", chapters[i].title, 0);
+            }
             max_start = chapters[i].start;
         }
 
