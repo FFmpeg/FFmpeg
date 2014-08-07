@@ -2689,7 +2689,7 @@ int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
 
 void ff_mpegts_parse_close(MpegTSContext *ts)
 {
-    return avpriv_mpegts_parse_close(ts);
+    avpriv_mpegts_parse_close(ts);
 }
 #endif
 
