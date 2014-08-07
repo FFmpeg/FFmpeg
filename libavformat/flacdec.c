@@ -49,7 +49,7 @@ static int flac_read_header(AVFormatContext *s)
     }
 
     /* process metadata blocks */
-    while (!url_feof(s->pb) && !metadata_last) {
+    while (!avio_feof(s->pb) && !metadata_last) {
         avio_read(s->pb, header, 4);
         flac_parse_block_header(header, &metadata_last, &metadata_type,
                                    &metadata_size);

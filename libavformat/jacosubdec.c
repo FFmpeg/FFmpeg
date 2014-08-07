@@ -174,7 +174,7 @@ static int jacosub_read_header(AVFormatContext *s)
 
     av_bprint_init(&header, 1024+FF_INPUT_BUFFER_PADDING_SIZE, 4096);
 
-    while (!url_feof(pb)) {
+    while (!avio_feof(pb)) {
         int cmd_len;
         const char *p = line;
         int64_t pos = avio_tell(pb);

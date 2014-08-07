@@ -113,7 +113,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     TtyDemuxContext *s = avctx->priv_data;
     int n;
 
-    if (url_feof(avctx->pb))
+    if (avio_feof(avctx->pb))
         return AVERROR_EOF;
 
     n = s->chars_per_frame;

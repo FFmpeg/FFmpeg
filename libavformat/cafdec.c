@@ -241,7 +241,7 @@ static int read_header(AVFormatContext *s)
 
     /* parse each chunk */
     found_data = 0;
-    while (!url_feof(pb)) {
+    while (!avio_feof(pb)) {
 
         /* stop at data chunk if seeking is not supported or
            data chunk size is unknown */
@@ -251,7 +251,7 @@ static int read_header(AVFormatContext *s)
         tag  = avio_rb32(pb);
         size = avio_rb64(pb);
         pos  = avio_tell(pb);
-        if (url_feof(pb))
+        if (avio_feof(pb))
             break;
 
         switch (tag) {
@@ -339,7 +339,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     int res, pkt_size = 0, pkt_frames = 0;
     int64_t left      = CAF_MAX_PKT_SIZE;
 
-    if (url_feof(pb))
+    if (avio_feof(pb))
         return AVERROR_EOF;
 
     /* don't read past end of data chunk */

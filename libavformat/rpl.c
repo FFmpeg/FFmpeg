@@ -60,7 +60,7 @@ static int read_line(AVIOContext * pb, char* line, int bufsize)
             break;
         if (b == '\n') {
             line[i] = '\0';
-            return url_feof(pb) ? -1 : 0;
+            return avio_feof(pb) ? -1 : 0;
         }
         line[i] = b;
     }

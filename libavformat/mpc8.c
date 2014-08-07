@@ -220,7 +220,7 @@ static int mpc8_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    while(!url_feof(pb)){
+    while(!avio_feof(pb)){
         pos = avio_tell(pb);
         mpc8_get_chunk_header(pb, &tag, &size);
         if(tag == TAG_STREAMHDR)
@@ -275,7 +275,7 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
     int tag;
     int64_t pos, size;
 
-    while(!url_feof(s->pb)){
+    while(!avio_feof(s->pb)){
         pos = avio_tell(s->pb);
 
         /* don't return bogus packets with the ape tag data */

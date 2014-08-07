@@ -168,7 +168,7 @@ static int find_next_start_code(AVIOContext *pb, int *size_ptr,
     state = *header_state;
     n     = *size_ptr;
     while (n > 0) {
-        if (url_feof(pb))
+        if (avio_feof(pb))
             break;
         v = avio_r8(pb);
         n--;
@@ -246,7 +246,7 @@ redo:
     startcode = find_next_start_code(s->pb, &size, &m->header_state);
     last_sync = avio_tell(s->pb);
     if (startcode < 0) {
-        if (url_feof(s->pb))
+        if (avio_feof(s->pb))
             return AVERROR_EOF;
         // FIXME we should remember header_state
         return AVERROR(EAGAIN);
@@ -702,7 +702,7 @@ static int vobsub_read_header(AVFormatContext *s)
     }
 
     av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         char line[MAX_LINE_SIZE];
         int len = ff_get_line(s->pb, line, sizeof(line));
 

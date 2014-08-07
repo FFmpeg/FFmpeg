@@ -64,7 +64,7 @@ static int dtshd_read_header(AVFormatContext *s)
     st->codec->codec_id   = AV_CODEC_ID_DTS;
     st->need_parsing      = AVSTREAM_PARSE_FULL_RAW;
 
-    while (!url_feof(pb)) {
+    while (!avio_feof(pb)) {
         chunk_type = avio_rb64(pb);
         chunk_size = avio_rb64(pb);
 

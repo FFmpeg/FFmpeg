@@ -146,7 +146,7 @@ static uint64_t find_any_startcode(AVIOContext *bc, int64_t pos)
         /* Note, this may fail if the stream is not seekable, but that should
          * not matter, as in this case we simply start where we currently are */
         avio_seek(bc, pos, SEEK_SET);
-    while (!url_feof(bc)) {
+    while (!avio_feof(bc)) {
         state = (state << 8) | avio_r8(bc);
         if ((state >> 56) != 'N')
             continue;
@@ -1056,7 +1056,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
             pos -= 8;
         } else {
             frame_code = avio_r8(bc);
-            if (url_feof(bc))
+            if (avio_feof(bc))
                 return AVERROR_EOF;
             if (frame_code == 'N') {
                 tmp = frame_code;

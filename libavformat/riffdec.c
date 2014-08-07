@@ -191,7 +191,7 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
         chunk_code = avio_rl32(pb);
         chunk_size = avio_rl32(pb);
-        if (url_feof(pb)) {
+        if (avio_feof(pb)) {
             if (chunk_code || chunk_size) {
                 av_log(s, AV_LOG_WARNING, "INFO subchunk truncated\n");
                 return AVERROR_INVALIDDATA;

@@ -419,7 +419,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             infer_size(&codec->width, &codec->height, size[0]);
     } else {
         f[0] = s1->pb;
-        if (url_feof(f[0]))
+        if (avio_feof(f[0]))
             return AVERROR(EIO);
         if (s->frame_size > 0) {
             size[0] = s->frame_size;

@@ -363,7 +363,7 @@ static int iff_read_header(AVFormatContext *s)
     iff->maud_bits = -1;
     iff->maud_compression = -1;
 
-    while(!url_feof(pb)) {
+    while(!avio_feof(pb)) {
         uint64_t orig_pos;
         int res;
         const char *metadata_tag = NULL;

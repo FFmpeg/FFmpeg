@@ -213,7 +213,7 @@ static int vid_read_packet(AVFormatContext *s,
     int audio_length;
     int ret_value;
 
-    if(vid->is_finished || url_feof(pb))
+    if(vid->is_finished || avio_feof(pb))
         return AVERROR_EOF;
 
     block_type = avio_r8(pb);

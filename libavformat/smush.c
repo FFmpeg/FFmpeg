@@ -102,7 +102,7 @@ static int smush_read_header(AVFormatContext *ctx)
         while (!got_audio && ((read + 8) < size)) {
             uint32_t sig, chunk_size;
 
-            if (url_feof(pb))
+            if (avio_feof(pb))
                 return AVERROR_EOF;
 
             sig        = avio_rb32(pb);
@@ -196,7 +196,7 @@ static int smush_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     while (!done) {
         uint32_t sig, size;
 
-        if (url_feof(pb))
+        if (avio_feof(pb))
             return AVERROR_EOF;
 
         sig  = avio_rb32(pb);

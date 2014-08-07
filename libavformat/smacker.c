@@ -257,7 +257,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
     int frame_size = 0;
     int palchange = 0;
 
-    if (url_feof(s->pb) || smk->cur_frame >= smk->frames)
+    if (avio_feof(s->pb) || smk->cur_frame >= smk->frames)
         return AVERROR_EOF;
 
     /* if we demuxed all streams, pass another frame */

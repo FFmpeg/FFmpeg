@@ -72,7 +72,7 @@ static int realtext_read_header(AVFormatContext *s)
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         AVPacket *sub;
         const int64_t pos = avio_tell(s->pb) - (c != 0);
         int n = ff_smil_extract_next_chunk(s->pb, &buf, &c);

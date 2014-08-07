@@ -262,7 +262,7 @@ static int idcin_read_packet(AVFormatContext *s,
     unsigned char palette_buffer[768];
     uint32_t palette[256];
 
-    if (url_feof(s->pb))
+    if (avio_feof(s->pb))
         return s->pb->error ? s->pb->error : AVERROR_EOF;
 
     if (idcin->next_chunk_is_video) {
