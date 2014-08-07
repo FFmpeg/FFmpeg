@@ -1007,7 +1007,10 @@ static int mov_read_jp2h(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_avid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    return mov_read_extradata(c, pb, atom, AV_CODEC_ID_AVUI);
+    int ret = mov_read_extradata(c, pb, atom, AV_CODEC_ID_AVUI);
+    if(ret == 0)
+        ret = mov_read_extradata(c, pb, atom, AV_CODEC_ID_DNXHD);
+    return ret;
 }
 
 static int mov_read_targa_y216(MOVContext *c, AVIOContext *pb, MOVAtom atom)
