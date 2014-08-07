@@ -16,7 +16,7 @@ libavutil:     2012-10-22
 API changes, most recent first:
 
 2014-08-xx - xxxxxxx - lsws 2.1.3 - swscale.h
-  sws_getCachedContext is not going to be removed in the future.
+  sws_getContext is not going to be removed in the future.
 
 2014-08-xx - xxxxxxx - lavc 55.57.3 - avcodec.h
   reordered_opaque is not going to be removed in the future.
