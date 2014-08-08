@@ -296,6 +296,11 @@ struct AVFormatContext;
  *    -  sorting  -- a modified version of a tag that should be used for
  *       sorting will have '-sort' appended. E.g. artist="The Beatles",
  *       artist-sort="Beatles, The".
+ * - Some protocols and demuxers support metadata updates. After a successful
+ *   call to av_read_packet(), AVFormatContext.event_flags or AVStream.event_flags
+ *   will be updated to indicate if metadata changed. In order to detect metadata
+ *   changes on a stream, you need to loop through all streams in the AVFormatContext
+ *   and check their individual event_flags.
  *
  * -  Demuxers attempt to export metadata in a generic format, however tags
  *    with no generic equivalents are left as they are stored in the container.
@@ -798,6 +803,14 @@ typedef struct AVStream {
      */
     int            nb_side_data;
 
+    /**
+     * Flags for the user to detect events happening on the stream. Flags must
+     * be cleared by the user once the event has been handled.
+     * A combination of AVSTREAM_EVENT_FLAG_*.
+     */
+    int event_flags;
+#define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
@@ -1170,6 +1183,15 @@ typedef struct AVFormatContext {
      * @see AVCodecContext.strict_std_compliance
      */
     int strict_std_compliance;
+
+    /**
+     * Flags for the user to detect events happening on the file. Flags must
+     * be cleared by the user once the event has been handled.
+     * A combination of AVFMT_EVENT_FLAG_*.
+     */
+    int event_flags;
+#define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
