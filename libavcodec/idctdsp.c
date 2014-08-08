@@ -277,22 +277,22 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
             c->idct                  = ff_simple_idct_12;
             c->perm_type             = FF_IDCT_PERM_NONE;
         } else {
-        if (avctx->idct_algo == FF_IDCT_INT) {
-            c->idct_put  = jref_idct_put;
-            c->idct_add  = jref_idct_add;
-            c->idct      = ff_j_rev_dct;
-            c->perm_type = FF_IDCT_PERM_LIBMPEG2;
-        } else if (avctx->idct_algo == FF_IDCT_FAAN) {
-            c->idct_put  = ff_faanidct_put;
-            c->idct_add  = ff_faanidct_add;
-            c->idct      = ff_faanidct;
-            c->perm_type = FF_IDCT_PERM_NONE;
-        } else { // accurate/default
-            c->idct_put  = ff_simple_idct_put_8;
-            c->idct_add  = ff_simple_idct_add_8;
-            c->idct      = ff_simple_idct_8;
-            c->perm_type = FF_IDCT_PERM_NONE;
-        }
+            if (avctx->idct_algo == FF_IDCT_INT) {
+                c->idct_put  = jref_idct_put;
+                c->idct_add  = jref_idct_add;
+                c->idct      = ff_j_rev_dct;
+                c->perm_type = FF_IDCT_PERM_LIBMPEG2;
+            } else if (avctx->idct_algo == FF_IDCT_FAAN) {
+                c->idct_put  = ff_faanidct_put;
+                c->idct_add  = ff_faanidct_add;
+                c->idct      = ff_faanidct;
+                c->perm_type = FF_IDCT_PERM_NONE;
+            } else { // accurate/default
+                c->idct_put  = ff_simple_idct_put_8;
+                c->idct_add  = ff_simple_idct_add_8;
+                c->idct      = ff_simple_idct_8;
+                c->perm_type = FF_IDCT_PERM_NONE;
+            }
         }
     }
 
