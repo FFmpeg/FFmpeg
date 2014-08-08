@@ -4362,7 +4362,7 @@ EOF
     return 0
 }
 
-if enabled asm; then
+if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
     enabled_any arm aarch64 && nogas=die
     enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
 
