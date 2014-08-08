@@ -10515,8 +10515,34 @@ The filter accepts the following options:
 
 @table @option
 @item volume
-Specify the transform volume (multiplier). Acceptable value is [1.0, 100.0].
-Default value is @code{16.0}.
+Specify transform volume (multiplier) expression. The expression can contain
+variables:
+@table @option
+@item frequency, freq, f
+the frequency where transform is evaluated
+@item timeclamp, tc
+value of timeclamp option
+@end table
+and functions:
+@table @option
+@item a_weighting(f)
+A-weighting of equal loudness
+@item b_weighting(f)
+B-weighting of equal loudness
+@item c_weighting(f)
+C-weighting of equal loudness
+@end table
+Default value is @code{16}.
+
+@item tlength
+Specify transform length expression. The expression can contain variables:
+@table @option
+@item frequency, freq, f
+the frequency where transform is evaluated
+@item timeclamp, tc
+value of timeclamp option
+@end table
+Default value is @code{384/f*tc/(384/f+tc)}.
 
 @item timeclamp
 Specify the transform timeclamp. At low frequency, there is trade-off between
@@ -10585,6 +10611,18 @@ Same as above, but with more accuracy in frequency domain (and slower):
 @example
 ffplay -f lavfi 'aevalsrc=0.1*sin(2*PI*55*t)+0.1*sin(4*PI*55*t)+0.1*sin(6*PI*55*t)+0.1*sin(8*PI*55*t),
                  asplit[a][out1]; [a] showcqt=timeclamp=0.5 [out0]'
+@end example
+
+@item
+B-weighting of equal loudness
+@example
+volume=16*b_weighting(f)
+@end example
+
+@item
+Lower Q factor
+@example
+tlength=100/f*tc/(100/f+tc)
 @end example
 
 @end itemize
