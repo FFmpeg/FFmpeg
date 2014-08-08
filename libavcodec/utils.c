@@ -540,6 +540,11 @@ void ff_init_buffer_info(AVCodecContext *s, AVFrame *frame)
 
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 {
+    if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
+        if (av_image_check_size(avctx->width, avctx->height, 0, avctx))
+            return AVERROR_INVALIDDATA;
+    }
+
     ff_init_buffer_info(avctx, frame);
 
     return avctx->get_buffer(avctx, frame);
