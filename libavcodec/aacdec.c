@@ -2246,7 +2246,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     if (samples) {
         /* get output buffer */
         ac->frame.nb_samples = samples;
-        if ((err = avctx->get_buffer(avctx, &ac->frame)) < 0) {
+        if ((err = ff_get_buffer(avctx, &ac->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return err;
         }

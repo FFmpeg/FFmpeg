@@ -37,6 +37,7 @@
 #include <stdio.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "bytestream.h"
@@ -852,7 +853,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     q->frame.nb_samples = SAMPLES_PER_FRAME;
-    if ((result = avctx->get_buffer(avctx, &q->frame)) < 0) {
+    if ((result = ff_get_buffer(avctx, &q->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return result;
     }

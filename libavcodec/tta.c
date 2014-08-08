@@ -31,6 +31,7 @@
 //#define DEBUG
 #include <limits.h>
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "libavutil/crc.h"
 
@@ -343,7 +344,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame.nb_samples = framelen;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

@@ -28,6 +28,7 @@
 #include "libavutil/imgutils.h"
 #include "bytestream.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 
 typedef struct {
@@ -260,7 +261,7 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return res;
         }
-    } else if ((res = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    } else if ((res = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     } else if (avctx->bits_per_coded_sample <= 8 && avctx->pix_fmt != PIX_FMT_GRAY8) {
@@ -317,7 +318,7 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return res;
         }
-    } else if ((res = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    } else if ((res = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     } else if (avctx->bits_per_coded_sample <= 8 && avctx->pix_fmt != PIX_FMT_GRAY8) {

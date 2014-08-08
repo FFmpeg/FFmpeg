@@ -44,6 +44,7 @@
 
 #include "libavutil/lfg.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "bytestream.h"
@@ -991,7 +992,7 @@ static int cook_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     if (q->discarded_packets >= 2) {
         q->frame.nb_samples = q->samples_per_channel;
-        if ((ret = avctx->get_buffer(avctx, &q->frame)) < 0) {
+        if ((ret = ff_get_buffer(avctx, &q->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }

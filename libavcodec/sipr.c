@@ -27,6 +27,7 @@
 
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
+#include "internal.h"
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "dsputil.h"
@@ -541,7 +542,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     ctx->frame.nb_samples = mode_par->frames_per_packet * subframe_size *
                             mode_par->subframe_count;
-    if ((ret = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &ctx->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

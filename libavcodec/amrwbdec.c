@@ -27,6 +27,7 @@
 #include "libavutil/lfg.h"
 
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "lsp.h"
 #include "celp_math.h"
@@ -1087,7 +1088,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     ctx->avframe.nb_samples = 4 * AMRWB_SFR_SIZE_16k;
-    if ((ret = avctx->get_buffer(avctx, &ctx->avframe)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &ctx->avframe)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

@@ -26,6 +26,7 @@
 
 #include "libavutil/audioconvert.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "mathops.h"
 #include "mpegaudiodsp.h"
@@ -1604,7 +1605,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT *samples,
     /* get output buffer */
     if (!samples) {
         s->frame.nb_samples = s->avctx->frame_size;
-        if ((ret = s->avctx->get_buffer(s->avctx, &s->frame)) < 0) {
+        if ((ret = ff_get_buffer(s->avctx, &s->frame)) < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
@@ -1910,7 +1911,7 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame->nb_samples = MPA_FRAME_SIZE;
-    if ((ret = avctx->get_buffer(avctx, s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

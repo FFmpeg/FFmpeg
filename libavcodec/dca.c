@@ -32,6 +32,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/audioconvert.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "dsputil.h"
 #include "fft.h"
 #include "get_bits.h"
@@ -1902,7 +1903,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame.nb_samples = 256 * (s->sample_blocks / 8);
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

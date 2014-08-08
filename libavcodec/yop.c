@@ -26,6 +26,7 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 
 typedef struct YopDecContext {
@@ -198,7 +199,7 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
 
-    ret = avctx->get_buffer(avctx, &s->frame);
+    ret = ff_get_buffer(avctx, &s->frame);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;

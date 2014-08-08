@@ -22,6 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 #define AES3_HEADER_LEN 4
 
@@ -94,7 +95,7 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     block_size = (avctx->bits_per_coded_sample + 4) / 4;
     s->frame.nb_samples = 2 * (buf_size / block_size) / avctx->channels;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

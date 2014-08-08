@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "adx.h"
 #include "get_bits.h"
 
@@ -140,7 +141,7 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     c->frame.nb_samples = num_blocks * BLOCK_SAMPLES;
-    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

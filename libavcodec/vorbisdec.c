@@ -27,6 +27,7 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
@@ -1668,7 +1669,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext, void *data,
 
     /* get output buffer */
     vc->frame.nb_samples = len;
-    if ((ret = avccontext->get_buffer(avccontext, &vc->frame)) < 0) {
+    if ((ret = ff_get_buffer(avccontext, &vc->frame)) < 0) {
         av_log(avccontext, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

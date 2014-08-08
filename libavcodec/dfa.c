@@ -21,6 +21,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "bytestream.h"
 
 #include "libavutil/imgutils.h"
@@ -325,7 +326,7 @@ static int dfa_decode_frame(AVCodecContext *avctx,
     if (s->pic.data[0])
         avctx->release_buffer(avctx, &s->pic);
 
-    if ((ret = avctx->get_buffer(avctx, &s->pic))) {
+    if ((ret = ff_get_buffer(avctx, &s->pic))) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

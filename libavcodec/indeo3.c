@@ -32,6 +32,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "dsputil.h"
 #include "bytestream.h"
 #include "get_bits.h"
@@ -1095,7 +1096,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         avctx->release_buffer(avctx, &ctx->frame);
 
     ctx->frame.reference = 0;
-    if ((res = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+    if ((res = ff_get_buffer(avctx, &ctx->frame)) < 0) {
         av_log(ctx->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     }

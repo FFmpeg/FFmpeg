@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "dsputil.h"
 #include "libavutil/intreadwrite.h"
 #include "get_bits.h"
@@ -932,7 +933,7 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
 
     /* get output buffer */
     m->frame.nb_samples = s->blockpos;
-    if ((ret = avctx->get_buffer(avctx, &m->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &m->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

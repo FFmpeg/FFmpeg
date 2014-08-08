@@ -37,6 +37,7 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "rdft.h"
@@ -2003,7 +2004,7 @@ static int qdm2_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame.nb_samples = 16 * s->frame_size;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

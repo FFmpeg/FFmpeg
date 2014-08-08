@@ -44,6 +44,7 @@
 #include <math.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "libavutil/common.h"
 #include "celp_math.h"
@@ -944,7 +945,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     p->avframe.nb_samples = AMR_BLOCK_SIZE;
-    if ((ret = avctx->get_buffer(avctx, &p->avframe)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &p->avframe)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
