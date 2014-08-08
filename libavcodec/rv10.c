@@ -498,6 +498,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
+    ff_mpv_idct_init(s);
     if ((ret = ff_MPV_common_init(s)) < 0)
         return ret;
 

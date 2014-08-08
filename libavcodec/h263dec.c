@@ -113,9 +113,11 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 
     /* for h263, we allocate the images after having read the header */
     if (avctx->codec->id != AV_CODEC_ID_H263 &&
-        avctx->codec->id != AV_CODEC_ID_MPEG4)
+        avctx->codec->id != AV_CODEC_ID_MPEG4) {
+        ff_mpv_idct_init(s);
         if ((ret = ff_MPV_common_init(s)) < 0)
             return ret;
+    }
 
     ff_h263dsp_init(&s->h263dsp);
     ff_qpeldsp_init(&s->qdsp);
@@ -414,10 +416,12 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (ret < 0)
         return ret;
 
-    if (!s->context_initialized)
+    if (!s->context_initialized) {
         // we need the idct permutaton for reading a custom matrix
+        ff_mpv_idct_init(s);
         if ((ret = ff_MPV_common_init(s)) < 0)
             return ret;
+    }
 
     /* We need to set current_picture_ptr before reading the header,
      * otherwise we cannot store anyting in there */
