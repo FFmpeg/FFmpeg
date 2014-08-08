@@ -1714,8 +1714,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                 }
 
                 if (s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == PRED_BI) {
-                    lc->pu.mvd.x = 0;
-                    lc->pu.mvd.y = 0;
+                    AV_ZERO32(&lc->pu.mvd);
                 } else {
                     hls_mvd_coding(s, x0, y0, 1);
                 }

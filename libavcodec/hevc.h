@@ -621,7 +621,7 @@ typedef struct Mv {
 } Mv;
 
 typedef struct MvField {
-    Mv mv[2];
+    DECLARE_ALIGNED(4, Mv, mv)[2];
     int8_t ref_idx[2];
     int8_t pred_flag[2];
     uint8_t is_intra;

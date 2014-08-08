@@ -118,20 +118,21 @@ static int isDiffMER(HEVCContext *s, int xN, int yN, int xP, int yP)
            yN >> plevel == yP >> plevel;
 }
 
+#define MATCH_MV(x) (AV_RN32A(&A.x) == AV_RN32A(&B.x))
 #define MATCH(x) (A.x == B.x)
 
 // check if the mv's and refidx are the same between A and B
 static int compareMVrefidx(struct MvField A, struct MvField B)
 {
     if (A.pred_flag[0] && A.pred_flag[1] && B.pred_flag[0] && B.pred_flag[1])
-        return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y) &&
-               MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
+        return MATCH(ref_idx[0]) && MATCH_MV(mv[0]) &&
+               MATCH(ref_idx[1]) && MATCH_MV(mv[1]);
 
     if (A.pred_flag[0] && !A.pred_flag[1] && B.pred_flag[0] && !B.pred_flag[1])
-        return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y);
+        return MATCH(ref_idx[0]) && MATCH_MV(mv[0]);
 
     if (!A.pred_flag[0] && A.pred_flag[1] && !B.pred_flag[0] && B.pred_flag[1])
-        return MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
+        return MATCH(ref_idx[1]) && MATCH_MV(mv[1]);
 
     return 0;
 }
@@ -508,16 +509,13 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
             if (l0_cand.pred_flag[0] && l1_cand.pred_flag[1] &&
                 (refPicList[0].list[l0_cand.ref_idx[0]] !=
                  refPicList[1].list[l1_cand.ref_idx[1]] ||
-                 l0_cand.mv[0].x != l1_cand.mv[1].x ||
-                 l0_cand.mv[0].y != l1_cand.mv[1].y)) {
+                 AV_RN32A(&l0_cand.mv[0]) != AV_RN32A(&l1_cand.mv[1]))) {
                 mergecandlist[nb_merge_cand].ref_idx[0]   = l0_cand.ref_idx[0];
                 mergecandlist[nb_merge_cand].ref_idx[1]   = l1_cand.ref_idx[1];
                 mergecandlist[nb_merge_cand].pred_flag[0] = 1;
                 mergecandlist[nb_merge_cand].pred_flag[1] = 1;
-                mergecandlist[nb_merge_cand].mv[0].x      = l0_cand.mv[0].x;
-                mergecandlist[nb_merge_cand].mv[0].y      = l0_cand.mv[0].y;
-                mergecandlist[nb_merge_cand].mv[1].x      = l1_cand.mv[1].x;
-                mergecandlist[nb_merge_cand].mv[1].y      = l1_cand.mv[1].y;
+                AV_COPY32(&mergecandlist[nb_merge_cand].mv[0], &l0_cand.mv[0]);
+                AV_COPY32(&mergecandlist[nb_merge_cand].mv[1], &l1_cand.mv[1]);
                 mergecandlist[nb_merge_cand].is_intra     = 0;
                 if (merge_idx == nb_merge_cand)
                     return;
@@ -530,10 +528,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     while (nb_merge_cand < s->sh.max_num_merge_cand) {
         mergecandlist[nb_merge_cand].pred_flag[0] = 1;
         mergecandlist[nb_merge_cand].pred_flag[1] = s->sh.slice_type == B_SLICE;
-        mergecandlist[nb_merge_cand].mv[0].x      = 0;
-        mergecandlist[nb_merge_cand].mv[0].y      = 0;
-        mergecandlist[nb_merge_cand].mv[1].x      = 0;
-        mergecandlist[nb_merge_cand].mv[1].y      = 0;
+        AV_ZERO32(mergecandlist[nb_merge_cand].mv + 0);
+        AV_ZERO32(mergecandlist[nb_merge_cand].mv + 1);
         mergecandlist[nb_merge_cand].is_intra     = 0;
         mergecandlist[nb_merge_cand].ref_idx[0]   = zero_idx < nb_refs ? zero_idx : 0;
         mergecandlist[nb_merge_cand].ref_idx[1]   = zero_idx < nb_refs ? zero_idx : 0;
@@ -554,7 +550,7 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
 {
     int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
-    struct MvField mergecand_list[MRG_MAX_NUM_CANDS] = { { { { 0 } } } };
+    LOCAL_ALIGNED(4, MvField, mergecand_list, [MRG_MAX_NUM_CANDS]);
     int nPbW2 = nPbW;
     int nPbH2 = nPbH;
     HEVCLocalContext *lc = &s->HEVClc;
