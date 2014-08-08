@@ -37,6 +37,8 @@ static const uint8_t simple_mmx_permutation[64] = {
     0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
 };
 
+static const uint8_t idct_sse2_row_perm[8] = { 0, 4, 1, 5, 2, 6, 3, 7 };
+
 av_cold int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
                                               enum idct_permutation_type perm_type)
 {
@@ -46,6 +48,10 @@ av_cold int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
     case FF_IDCT_PERM_SIMPLE:
         for (i = 0; i < 64; i++)
             idct_permutation[i] = simple_mmx_permutation[i];
+        return 1;
+    case FF_IDCT_PERM_SSE2:
+        for (i = 0; i < 64; i++)
+            idct_permutation[i] = (i & 0x38) | idct_sse2_row_perm[i & 7];
         return 1;
     }
 
