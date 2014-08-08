@@ -396,19 +396,84 @@ static void filter_freq_expr_##bsize(DCTdnoizContext *s,                        
 DEF_FILTER_FREQ_FUNCS(8)
 DEF_FILTER_FREQ_FUNCS(16)
 
-// TODO: remove
-static void color_decorrelation_rgb(float **dst, int dst_linesize,
-                                    const uint8_t *src, int src_linesize,
-                                    int w, int h);
-static void color_correlation_rgb(uint8_t *dst, int dst_linesize,
-                                  float **src, int src_linesize,
-                                  int w, int h);
-static void color_decorrelation_bgr(float **dst, int dst_linesize,
-                                    const uint8_t *src, int src_linesize,
-                                    int w, int h);
-static void color_correlation_bgr(uint8_t *dst, int dst_linesize,
-                                  float **src, int src_linesize,
-                                  int w, int h);
+#define DCT3X3_0_0  0.5773502691896258f /*  1/sqrt(3) */
+#define DCT3X3_0_1  0.5773502691896258f /*  1/sqrt(3) */
+#define DCT3X3_0_2  0.5773502691896258f /*  1/sqrt(3) */
+#define DCT3X3_1_0  0.7071067811865475f /*  1/sqrt(2) */
+#define DCT3X3_1_2 -0.7071067811865475f /* -1/sqrt(2) */
+#define DCT3X3_2_0  0.4082482904638631f /*  1/sqrt(6) */
+#define DCT3X3_2_1 -0.8164965809277261f /* -2/sqrt(6) */
+#define DCT3X3_2_2  0.4082482904638631f /*  1/sqrt(6) */
+
+static av_always_inline void color_decorrelation(float **dst, int dst_linesize,
+                                                 const uint8_t *src, int src_linesize,
+                                                 int w, int h,
+                                                 int r, int g, int b)
+{
+    int x, y;
+    float *dstp_r = dst[0];
+    float *dstp_g = dst[1];
+    float *dstp_b = dst[2];
+
+    for (y = 0; y < h; y++) {
+        const uint8_t *srcp = src;
+
+        for (x = 0; x < w; x++) {
+            dstp_r[x] = srcp[r] * DCT3X3_0_0 + srcp[g] * DCT3X3_0_1 + srcp[b] * DCT3X3_0_2;
+            dstp_g[x] = srcp[r] * DCT3X3_1_0 +                        srcp[b] * DCT3X3_1_2;
+            dstp_b[x] = srcp[r] * DCT3X3_2_0 + srcp[g] * DCT3X3_2_1 + srcp[b] * DCT3X3_2_2;
+            srcp += 3;
+        }
+        src += src_linesize;
+        dstp_r += dst_linesize;
+        dstp_g += dst_linesize;
+        dstp_b += dst_linesize;
+    }
+}
+
+static av_always_inline void color_correlation(uint8_t *dst, int dst_linesize,
+                                               float **src, int src_linesize,
+                                               int w, int h,
+                                               int r, int g, int b)
+{
+    int x, y;
+    const float *src_r = src[0];
+    const float *src_g = src[1];
+    const float *src_b = src[2];
+
+    for (y = 0; y < h; y++) {
+        uint8_t *dstp = dst;
+
+        for (x = 0; x < w; x++) {
+            dstp[r] = av_clip_uint8(src_r[x] * DCT3X3_0_0 + src_g[x] * DCT3X3_1_0 + src_b[x] * DCT3X3_2_0);
+            dstp[g] = av_clip_uint8(src_r[x] * DCT3X3_0_1 +                         src_b[x] * DCT3X3_2_1);
+            dstp[b] = av_clip_uint8(src_r[x] * DCT3X3_0_2 + src_g[x] * DCT3X3_1_2 + src_b[x] * DCT3X3_2_2);
+            dstp += 3;
+        }
+        dst += dst_linesize;
+        src_r += src_linesize;
+        src_g += src_linesize;
+        src_b += src_linesize;
+    }
+}
+
+#define DECLARE_COLOR_FUNCS(name, r, g, b)                                          \
+static void color_decorrelation_##name(float **dst, int dst_linesize,               \
+                                       const uint8_t *src, int src_linesize,        \
+                                       int w, int h)                                \
+{                                                                                   \
+    color_decorrelation(dst, dst_linesize, src, src_linesize, w, h, r, g, b);       \
+}                                                                                   \
+                                                                                    \
+static void color_correlation_##name(uint8_t *dst, int dst_linesize,                \
+                                     float **src, int src_linesize,                 \
+                                     int w, int h)                                  \
+{                                                                                   \
+    color_correlation(dst, dst_linesize, src, src_linesize, w, h, r, g, b);         \
+}
+
+DECLARE_COLOR_FUNCS(rgb, 0, 1, 2)
+DECLARE_COLOR_FUNCS(bgr, 2, 1, 0)
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -514,85 +579,6 @@ static int query_formats(AVFilterContext *ctx)
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
-
-#define DCT3X3_0_0  0.5773502691896258f /*  1/sqrt(3) */
-#define DCT3X3_0_1  0.5773502691896258f /*  1/sqrt(3) */
-#define DCT3X3_0_2  0.5773502691896258f /*  1/sqrt(3) */
-#define DCT3X3_1_0  0.7071067811865475f /*  1/sqrt(2) */
-#define DCT3X3_1_2 -0.7071067811865475f /* -1/sqrt(2) */
-#define DCT3X3_2_0  0.4082482904638631f /*  1/sqrt(6) */
-#define DCT3X3_2_1 -0.8164965809277261f /* -2/sqrt(6) */
-#define DCT3X3_2_2  0.4082482904638631f /*  1/sqrt(6) */
-
-static av_always_inline void color_decorrelation(float **dst, int dst_linesize,
-                                                 const uint8_t *src, int src_linesize,
-                                                 int w, int h,
-                                                 int r, int g, int b)
-{
-    int x, y;
-    float *dstp_r = dst[0];
-    float *dstp_g = dst[1];
-    float *dstp_b = dst[2];
-
-    for (y = 0; y < h; y++) {
-        const uint8_t *srcp = src;
-
-        for (x = 0; x < w; x++) {
-            dstp_r[x] = srcp[r] * DCT3X3_0_0 + srcp[g] * DCT3X3_0_1 + srcp[b] * DCT3X3_0_2;
-            dstp_g[x] = srcp[r] * DCT3X3_1_0 +                        srcp[b] * DCT3X3_1_2;
-            dstp_b[x] = srcp[r] * DCT3X3_2_0 + srcp[g] * DCT3X3_2_1 + srcp[b] * DCT3X3_2_2;
-            srcp += 3;
-        }
-        src += src_linesize;
-        dstp_r += dst_linesize;
-        dstp_g += dst_linesize;
-        dstp_b += dst_linesize;
-    }
-}
-
-static av_always_inline void color_correlation(uint8_t *dst, int dst_linesize,
-                                               float **src, int src_linesize,
-                                               int w, int h,
-                                               int r, int g, int b)
-{
-    int x, y;
-    const float *src_r = src[0];
-    const float *src_g = src[1];
-    const float *src_b = src[2];
-
-    for (y = 0; y < h; y++) {
-        uint8_t *dstp = dst;
-
-        for (x = 0; x < w; x++) {
-            dstp[r] = av_clip_uint8(src_r[x] * DCT3X3_0_0 + src_g[x] * DCT3X3_1_0 + src_b[x] * DCT3X3_2_0);
-            dstp[g] = av_clip_uint8(src_r[x] * DCT3X3_0_1 +                         src_b[x] * DCT3X3_2_1);
-            dstp[b] = av_clip_uint8(src_r[x] * DCT3X3_0_2 + src_g[x] * DCT3X3_1_2 + src_b[x] * DCT3X3_2_2);
-            dstp += 3;
-        }
-        dst += dst_linesize;
-        src_r += src_linesize;
-        src_g += src_linesize;
-        src_b += src_linesize;
-    }
-}
-
-#define DECLARE_COLOR_FUNCS(name, r, g, b)                                          \
-static void color_decorrelation_##name(float **dst, int dst_linesize,               \
-                                       const uint8_t *src, int src_linesize,        \
-                                       int w, int h)                                \
-{                                                                                   \
-    color_decorrelation(dst, dst_linesize, src, src_linesize, w, h, r, g, b);       \
-}                                                                                   \
-                                                                                    \
-static void color_correlation_##name(uint8_t *dst, int dst_linesize,                \
-                                     float **src, int src_linesize,                 \
-                                     int w, int h)                                  \
-{                                                                                   \
-    color_correlation(dst, dst_linesize, src, src_linesize, w, h, r, g, b);         \
-}
-
-DECLARE_COLOR_FUNCS(rgb, 0, 1, 2)
-DECLARE_COLOR_FUNCS(bgr, 2, 1, 0)
 
 static void filter_plane(AVFilterContext *ctx,
                          float *dst, int dst_linesize,
