@@ -269,7 +269,7 @@ static void cdg_scroll(CDGraphicsContext *cc, uint8_t *data,
 static int cdg_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_frame, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
+    GetByteContext gb;
     int buf_size       = avpkt->size;
     int ret;
     uint8_t command, inst;
@@ -286,19 +286,19 @@ static int cdg_decode_frame(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
+    bytestream2_init(&gb, avpkt->data, avpkt->size);
+
     ret = avctx->reget_buffer(avctx, &cc->frame);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
 
-    command = bytestream_get_byte(&buf);
-    inst    = bytestream_get_byte(&buf);
+    command = bytestream2_get_byte(&gb);
+    inst    = bytestream2_get_byte(&gb);
     inst    &= CDG_MASK;
-    buf += 2;  /// skipping 2 unneeded bytes
-
-    if (buf_size > CDG_HEADER_SIZE)
-        bytestream_get_buffer(&buf, cdg_data, buf_size - CDG_HEADER_SIZE);
+    bytestream2_skip(&gb, 2);
+    bytestream2_get_buffer(&gb, cdg_data, sizeof(cdg_data));
 
     if ((command & CDG_MASK) == CDG_COMMAND) {
         switch (inst) {
