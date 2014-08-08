@@ -330,6 +330,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (IMAGE_SGI_PIPE,        image_sgi_pipe);
     REGISTER_DEMUXER (IMAGE_SUNRAST_PIPE,    image_sunrast_pipe);
     REGISTER_DEMUXER (IMAGE_TIFF_PIPE,       image_tiff_pipe);
+    REGISTER_DEMUXER (IMAGE_WEBP_PIPE,       image_webp_pipe);
 
 
     /* protocols */
