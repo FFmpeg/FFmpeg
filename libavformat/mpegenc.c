@@ -301,7 +301,7 @@ static int get_system_header_size(AVFormatContext *ctx)
 static av_cold int mpeg_mux_init(AVFormatContext *ctx)
 {
     MpegMuxContext *s = ctx->priv_data;
-    int bitrate, i, mpa_id, mpv_id, mps_id, ac3_id, dts_id, lpcm_id, j;
+    int bitrate, i, mpa_id, mpv_id, h264_id, mps_id, ac3_id, dts_id, lpcm_id, j;
     AVStream *st;
     StreamInfo *stream;
     int audio_bitrate;
@@ -337,6 +337,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
     ac3_id  = AC3_ID;
     dts_id  = DTS_ID;
     mpv_id  = VIDEO_ID;
+    h264_id = H264_ID;
     mps_id  = SUB_ID;
     lpcm_id = LPCM_ID;
 
@@ -379,7 +380,10 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
             s->audio_bound++;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            stream->id = mpv_id++;
+            if (st->codec->codec_id == AV_CODEC_ID_H264)
+                stream->id = h264_id++;
+            else
+                stream->id = mpv_id++;
             if (st->codec->rc_buffer_size)
                 stream->max_buffer_size = 6 * 1024 + st->codec->rc_buffer_size / 8;
             else {
@@ -409,7 +413,8 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
         st     = ctx->streams[i];
         stream = (StreamInfo *)st->priv_data;
 
-        if (st->codec->rc_max_rate || stream->id == VIDEO_ID)
+        if (st->codec->rc_max_rate ||
+            st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
             codec_rate = st->codec->rc_max_rate;
         else
             codec_rate = st->codec->bit_rate;
@@ -421,7 +426,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
 
         if ((stream->id & 0xe0) == AUDIO_ID)
             audio_bitrate += codec_rate;
-        else if (stream->id == VIDEO_ID)
+        else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
             video_bitrate += codec_rate;
     }
 
