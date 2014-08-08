@@ -434,9 +434,9 @@ static MpegTSService *mpegts_add_service(MpegTSWrite *ts, int sid,
     service->provider_name = av_strdup(provider_name);
     service->name          = av_strdup(name);
     if (!service->provider_name || !service->name) {
-        free(service->provider_name);
-        free(service->name);
-        free(service);
+        av_free(service->provider_name);
+        av_free(service->name);
+        av_free(service);
         return NULL;
     }
     dynarray_add(&ts->services, &ts->nb_services, service);
