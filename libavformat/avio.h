@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/bprint.h"
 #include "libavutil/common.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
