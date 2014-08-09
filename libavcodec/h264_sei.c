@@ -184,6 +184,12 @@ int ff_h264_decode_sei(H264Context *h){
         if(s->avctx->debug&FF_DEBUG_STARTCODE)
             av_log(h->s.avctx, AV_LOG_DEBUG, "SEI %d len:%d\n", type, size);
 
+        if (size > get_bits_left(&s->gb) / 8) {
+            av_log(s->avctx, AV_LOG_ERROR, "SEI type %d truncated at %d\n",
+                   type, get_bits_left(&s->gb));
+            return AVERROR_INVALIDDATA;
+        }
+
         switch(type){
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
             if(decode_picture_timing(h) < 0)
