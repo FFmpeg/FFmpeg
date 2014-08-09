@@ -47,7 +47,7 @@
 
 /**
  * @file
- * @brief SSE2 idct compatible with xvidmmx
+ * @brief SSE2 IDCT compatible with the Xvid IDCT
  */
 
 #define X8(x)     x,x,x,x,x,x,x,x
