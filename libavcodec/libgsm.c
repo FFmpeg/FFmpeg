@@ -30,6 +30,7 @@
 #include <gsm/gsm.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "gsm.h"
 
 static av_cold int libgsm_encode_init(AVCodecContext *avctx) {
