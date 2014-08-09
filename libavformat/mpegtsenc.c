@@ -165,7 +165,7 @@ static int mpegts_write_section1(MpegTSSection *s, int tid, int id,
     tot_len = 3 + 5 + len + 4;
     /* check if not too big */
     if (tot_len > 1024)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     q    = section;
     *q++ = tid;
@@ -1006,7 +1006,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
     if (ts_st->first_pts_check && pts == AV_NOPTS_VALUE) {
         av_log(s, AV_LOG_ERROR, "first pts value must set\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
     ts_st->first_pts_check = 0;
 
@@ -1017,7 +1017,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
             av_log(s, AV_LOG_ERROR, "H.264 bitstream malformed, "
                    "no startcode found, use -bsf h264_mp4toannexb\n");
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         }
 
         do {
@@ -1040,7 +1040,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     } else if (st->codec->codec_id == AV_CODEC_ID_AAC) {
         if (pkt->size < 2) {
             av_log(s, AV_LOG_ERROR, "AAC packet too short\n");
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         }
         if ((AV_RB16(pkt->data) & 0xfff0) != 0xfff0) {
             int ret;
@@ -1049,7 +1049,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             if (!ts_st->amux) {
                 av_log(s, AV_LOG_ERROR, "AAC bitstream not in ADTS format "
                                         "and extradata missing\n");
-                return AVERROR(EINVAL);
+                return AVERROR_INVALIDDATA;
             }
 
             av_init_packet(&pkt2);
