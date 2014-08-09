@@ -87,7 +87,7 @@
 #define FF_API_FIND_OPT                 (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_OLD_AVOPTIONS
-#define FF_API_OLD_AVOPTIONS            (LIBAVUTIL_VERSION_MAJOR < 54)
+#define FF_API_OLD_AVOPTIONS            (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
 #ifndef FF_API_PIX_FMT
 #define FF_API_PIX_FMT                  (LIBAVUTIL_VERSION_MAJOR < 55)
