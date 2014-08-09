@@ -197,9 +197,6 @@
     <ClCompile Include="..\libavcodec\h264idct.c">
       <ObjectFileName>$(IntDir)\libavcodec_h264idct.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\startcode.c">
-      <ObjectFileName>$(IntDir)\libavcodec_startcode.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\h264pred.c">
       <ObjectFileName>$(IntDir)\libavcodec_h264pred.obj</ObjectFileName>
     </ClCompile>
@@ -337,6 +334,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\sinewin.c">
       <ObjectFileName>$(IntDir)\libavcodec_sinewin.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\startcode.c">
+      <ObjectFileName>$(IntDir)\libavcodec_startcode.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\tpeldsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_tpeldsp.obj</ObjectFileName>
@@ -1144,6 +1144,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg12enc.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpeg12enc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\xvididct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_xvididct.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpl2dec.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpl2dec.obj</ObjectFileName>
@@ -2141,6 +2144,9 @@
     <ClCompile Include="..\libavcodec\x86\mlpdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_mlpdsp.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\xvididct_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_xvididct_init.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\pngdsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_pngdsp_init.obj</ObjectFileName>
     </ClCompile>
@@ -2186,14 +2192,14 @@
     <ClCompile Include="..\libavcodec\x86\idctdsp_mmx.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_idctdsp_mmx.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\simple_idct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\idct_mmx_xvid.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_idct_mmx_xvid.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\idct_sse2_xvid.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_idct_sse2_xvid.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\simple_idct.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_snowdsp.obj</ObjectFileName>

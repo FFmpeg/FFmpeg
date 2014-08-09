@@ -159,9 +159,6 @@
     <ClCompile Include="..\libavcodec\h264idct.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\startcode.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\h264pred.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -298,6 +295,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\sinewin.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\startcode.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\tpeldsp.c">
@@ -1105,6 +1105,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg12enc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\xvididct.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpl2dec.c">
@@ -2103,6 +2106,9 @@
     <ClCompile Include="..\libavcodec\x86\mlpdsp.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\xvididct_init.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\pngdsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
@@ -2148,13 +2154,13 @@
     <ClCompile Include="..\libavcodec\x86\idctdsp_mmx.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\simple_idct.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\idct_mmx_xvid.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\idct_sse2_xvid.c">
-      <Filter>Source Files\libavcodec\x86</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\simple_idct.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c">

@@ -191,6 +191,9 @@
     <ClCompile Include="..\libavutil\pixdesc.c">
       <ObjectFileName>$(IntDir)\libavutil_pixdesc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavutil\pixelutils.c">
+      <ObjectFileName>$(IntDir)\libavutil_pixelutils.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavutil\random_seed.c">
       <ObjectFileName>$(IntDir)\libavutil_random_seed.obj</ObjectFileName>
     </ClCompile>
@@ -254,6 +257,9 @@
     <ClCompile Include="..\libavutil\x86\lls_init.c">
       <ObjectFileName>$(IntDir)\libavutil_x86_lls_init.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavutil\x86\pixelutils_init.c">
+      <ObjectFileName>$(IntDir)\libavutil_x86_pixelutils_init.obj</ObjectFileName>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavutil\adler32.h" />
@@ -298,6 +304,7 @@
     <ClInclude Include="..\libavutil\opt.h" />
     <ClInclude Include="..\libavutil\parseutils.h" />
     <ClInclude Include="..\libavutil\pixdesc.h" />
+    <ClInclude Include="..\libavutil\pixelutils.h" />
     <ClInclude Include="..\libavutil\pixfmt.h" />
     <ClInclude Include="..\libavutil\random_seed.h" />
     <ClInclude Include="..\libavutil\replaygain.h" />
@@ -321,6 +328,7 @@
     <YASM Include="..\libavutil\x86\emms.asm" />
     <YASM Include="..\libavutil\x86\float_dsp.asm" />
     <YASM Include="..\libavutil\x86\lls.asm" />
+    <YASM Include="..\libavutil\x86\pixelutils.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libavutil.def" />
@@ -606,6 +614,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -724,6 +733,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -845,6 +855,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -966,6 +977,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -1087,6 +1099,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -1208,6 +1221,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -1333,6 +1347,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -1458,6 +1473,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -1588,6 +1604,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -1718,6 +1735,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -1848,6 +1866,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -1978,6 +1997,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -2102,6 +2122,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
@@ -2226,6 +2247,7 @@ copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
+copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil

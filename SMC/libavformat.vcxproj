@@ -1154,6 +1154,9 @@
     <ClCompile Include="..\libavformat\http.c">
       <ObjectFileName>$(IntDir)\libavformat_http.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\icecast.c">
+      <ObjectFileName>$(IntDir)\libavformat_icecast.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mmsh.c">
       <ObjectFileName>$(IntDir)\libavformat_mmsh.obj</ObjectFileName>
     </ClCompile>

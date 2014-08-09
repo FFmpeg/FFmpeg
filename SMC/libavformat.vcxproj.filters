@@ -1113,6 +1113,9 @@
     <ClCompile Include="..\libavformat\http.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\icecast.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mmsh.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

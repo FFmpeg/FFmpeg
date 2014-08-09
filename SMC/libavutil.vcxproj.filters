@@ -159,6 +159,9 @@
     <ClCompile Include="..\libavutil\pixdesc.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavutil\pixelutils.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\random_seed.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
@@ -220,6 +223,9 @@
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\x86\lls_init.c">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\x86\pixelutils_init.c">
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
   </ItemGroup>
@@ -350,6 +356,9 @@
     <ClInclude Include="..\libavutil\pixdesc.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavutil\pixelutils.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavutil\pixfmt.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
@@ -413,6 +422,9 @@
       <Filter>Source Files\libavutil\x86</Filter>
     </YASM>
     <YASM Include="..\libavutil\x86\lls.asm">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavutil\x86\pixelutils.asm">
       <Filter>Source Files\libavutil\x86</Filter>
     </YASM>
   </ItemGroup>
