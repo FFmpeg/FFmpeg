@@ -594,12 +594,14 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
         boundary_upper = 0;
 
     if (boundary_upper) {
-            int yp_pu = (y0 - 1) >> log2_min_pu_size;
-            int yq_pu =  y0      >> log2_min_pu_size;
-            int yp_tu = (y0 - 1) >> log2_min_tu_size;
-            int yq_tu =  y0      >> log2_min_tu_size;
-            RefPicList *top_refPicList = ff_hevc_get_ref_list(s, s->ref,
-                                                              x0, y0 - 1);
+        RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
+                              ff_hevc_get_ref_list(s, s->ref, x0, y0 - 1) :
+                              s->ref->refPicList;
+        int yp_pu = (y0 - 1) >> log2_min_pu_size;
+        int yq_pu =  y0      >> log2_min_pu_size;
+        int yp_tu = (y0 - 1) >> log2_min_tu_size;
+        int yq_tu =  y0      >> log2_min_tu_size;
+
             for (i = 0; i < (1 << log2_trafo_size); i += 4) {
                 int x_pu = (x0 + i) >> log2_min_pu_size;
                 int x_tu = (x0 + i) >> log2_min_tu_size;
@@ -613,7 +615,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 else if (curr_cbf_luma || top_cbf_luma)
                     bs = 1;
                 else
-                    bs = boundary_strength(s, curr, top, top_refPicList);
+                    bs = boundary_strength(s, curr, top, rpl_top);
                 s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
             }
     }
@@ -630,12 +632,13 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
         boundary_left = 0;
 
     if (boundary_left) {
-            int xp_pu = (x0 - 1) >> log2_min_pu_size;
-            int xq_pu =  x0      >> log2_min_pu_size;
-            int xp_tu = (x0 - 1) >> log2_min_tu_size;
-            int xq_tu =  x0      >> log2_min_tu_size;
-            RefPicList *left_refPicList = ff_hevc_get_ref_list(s, s->ref,
-                                                               x0 - 1, y0);
+        RefPicList *rpl_left = (lc->boundary_flags & BOUNDARY_LEFT_SLICE) ?
+                               ff_hevc_get_ref_list(s, s->ref, x0 - 1, y0) :
+                               s->ref->refPicList;
+        int xp_pu = (x0 - 1) >> log2_min_pu_size;
+        int xq_pu =  x0      >> log2_min_pu_size;
+        int xp_tu = (x0 - 1) >> log2_min_tu_size;
+        int xq_tu =  x0      >> log2_min_tu_size;
 
             for (i = 0; i < (1 << log2_trafo_size); i += 4) {
                 int y_pu      = (y0 + i) >> log2_min_pu_size;
@@ -650,15 +653,14 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 else if (curr_cbf_luma || left_cbf_luma)
                     bs = 1;
                 else
-                    bs = boundary_strength(s, curr, left, left_refPicList);
+                    bs = boundary_strength(s, curr, left, rpl_left);
                 s->vertical_bs[(x0 + (y0 + i) * s->bs_width) >> 2] = bs;
             }
     }
 
     if (log2_trafo_size > log2_min_pu_size && !is_intra) {
-        RefPicList *refPicList = ff_hevc_get_ref_list(s, s->ref,
-                                                           x0,
-                                                           y0);
+        RefPicList *rpl = s->ref->refPicList;
+
         // bs for TU internal horizontal PU boundaries
         for (j = 8; j < (1 << log2_trafo_size); j += 8) {
             int yp_pu = (y0 + j - 1) >> log2_min_pu_size;
@@ -669,7 +671,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
                 MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
 
-                bs = boundary_strength(s, curr, top, refPicList);
+                bs = boundary_strength(s, curr, top, rpl);
                 s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
             }
         }
@@ -684,7 +686,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
                 MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
 
-                bs = boundary_strength(s, curr, left, refPicList);
+                bs = boundary_strength(s, curr, left, rpl);
                 s->vertical_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
             }
         }
