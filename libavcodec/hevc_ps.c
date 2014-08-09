@@ -199,11 +199,14 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 }
 
 
-static void decode_profile_tier_level(HEVCContext *s, PTLCommon *ptl)
+static int decode_profile_tier_level(HEVCContext *s, PTLCommon *ptl)
 {
     int i;
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb = &lc->gb;
+
+    if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 16 + 16 + 12)
+        return -1;
 
     ptl->profile_space = get_bits(gb, 2);
     ptl->tier_flag     = get_bits1(gb);
@@ -229,29 +232,49 @@ static void decode_profile_tier_level(HEVCContext *s, PTLCommon *ptl)
     skip_bits(gb, 16); // XXX_reserved_zero_44bits[0..15]
     skip_bits(gb, 16); // XXX_reserved_zero_44bits[16..31]
     skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
+
+    return 0;
 }
 
-static void parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
+static int parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
 {
     int i;
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb = &lc->gb;
-    decode_profile_tier_level(s, &ptl->general_ptl);
+    if (decode_profile_tier_level(s, &ptl->general_ptl) < 0 ||
+        get_bits_left(gb) < 8 + 8*2) {
+        av_log(s->avctx, AV_LOG_ERROR, "PTL information too short\n");
+        return -1;
+    }
+
     ptl->general_ptl.level_idc = get_bits(gb, 8);
 
     for (i = 0; i < max_num_sub_layers - 1; i++) {
         ptl->sub_layer_profile_present_flag[i] = get_bits1(gb);
         ptl->sub_layer_level_present_flag[i]   = get_bits1(gb);
     }
+
     if (max_num_sub_layers - 1> 0)
         for (i = max_num_sub_layers - 1; i < 8; i++)
             skip_bits(gb, 2); // reserved_zero_2bits[i]
     for (i = 0; i < max_num_sub_layers - 1; i++) {
-        if (ptl->sub_layer_profile_present_flag[i])
-            decode_profile_tier_level(s, &ptl->sub_layer_ptl[i]);
-        if (ptl->sub_layer_level_present_flag[i])
-            ptl->sub_layer_ptl[i].level_idc = get_bits(gb, 8);
+        if (ptl->sub_layer_profile_present_flag[i] &&
+            decode_profile_tier_level(s, &ptl->sub_layer_ptl[i]) < 0) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "PTL information for sublayer %i too short\n", i);
+            return -1;
+        }
+        if (ptl->sub_layer_level_present_flag[i]) {
+            if (get_bits_left(gb) < 8) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Not enough data for sublayer %i level_idc\n", i);
+                return -1;
+            } else
+                ptl->sub_layer_ptl[i].level_idc = get_bits(gb, 8);
+        }
     }
+
+    return 0;
 }
 
 static void decode_sublayer_hrd(HEVCContext *s, unsigned int nb_cpb,
@@ -375,7 +398,8 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         goto err;
     }
 
-    parse_ptl(s, &vps->ptl, vps->vps_max_sub_layers);
+    if (parse_ptl(s, &vps->ptl, vps->vps_max_sub_layers) < 0)
+        goto err;
 
     vps->vps_sub_layer_ordering_info_present_flag = get_bits1(gb);
 
@@ -692,7 +716,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     skip_bits1(gb); // temporal_id_nesting_flag
 
-    parse_ptl(s, &sps->ptl, sps->max_sub_layers);
+    if (parse_ptl(s, &sps->ptl, sps->max_sub_layers) < 0)
+        goto err;
 
     sps_id = get_ue_golomb_long(gb);
     if (sps_id >= MAX_SPS_COUNT) {
