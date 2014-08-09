@@ -2883,6 +2883,11 @@ probe_cc(){
         _cflags_size="-O2 -Munroll=c:1 $opt_common"
         _cflags_noopt="-O1"
         _flags_filter=pgi_flags
+    elif $_cc 2>&1 | grep -q 'Microsoft.*ARM.*Assembler'; then
+        _type=armasm
+        _ident=$($_cc | head -n1)
+        # 4509: "This form of conditional instruction is deprecated"
+        _flags="-nologo -ignore 4509"
     elif $_cc 2>&1 | grep -q Microsoft; then
         _type=msvc
         _ident=$($cc 2>&1 | head -n1)
