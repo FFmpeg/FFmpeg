@@ -780,7 +780,6 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
     }
     frame->reordered_opaque = avctx->reordered_opaque;
 
-#if FF_API_AVFRAME_COLORSPACE
     if (frame->color_primaries == AVCOL_PRI_UNSPECIFIED)
         frame->color_primaries = avctx->color_primaries;
     if (frame->color_trc == AVCOL_TRC_UNSPECIFIED)
@@ -791,7 +790,6 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
         av_frame_set_color_range(frame, avctx->color_range);
     if (frame->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
         frame->chroma_location = avctx->chroma_sample_location;
-#endif
 
     switch (avctx->codec->type) {
     case AVMEDIA_TYPE_VIDEO:
