@@ -286,10 +286,14 @@ static int config_props(AVFilterLink *link)
                                   0, ctx);
     if (!pan->swr)
         return AVERROR(ENOMEM);
-    if (!link->channel_layout)
-        av_opt_set_int(pan->swr, "ich", link->channels, 0);
-    if (!pan->out_channel_layout)
-        av_opt_set_int(pan->swr, "och", pan->nb_output_channels, 0);
+    if (!link->channel_layout) {
+        if (av_opt_set_int(pan->swr, "ich", link->channels, 0) < 0)
+            return AVERROR(EINVAL);
+    }
+    if (!pan->out_channel_layout) {
+        if (av_opt_set_int(pan->swr, "och", pan->nb_output_channels, 0) < 0)
+            return AVERROR(EINVAL);
+    }
 
     // gains are pure, init the channel mapping
     if (pan->pure_gains) {
