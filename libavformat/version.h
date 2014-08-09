@@ -88,8 +88,4 @@
 #ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1
 #endif
-#ifndef FF_API_PROBE_MIME
-#define FF_API_PROBE_MIME               (LIBAVFORMAT_VERSION_MAJOR > 55)
-#endif
-
 #endif /* AVFORMAT_VERSION_H */
