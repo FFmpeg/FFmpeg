@@ -60,6 +60,7 @@
 #include "bytestream.h"
 #include "elbg.h"
 #include "mathops.h"
+#include "internal.h"
 
 #define CHROMA_BIAS 1
 

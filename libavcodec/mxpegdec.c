@@ -27,6 +27,7 @@
 
 #include "mjpeg.h"
 #include "mjpegdec.h"
+#include "internal.h"
 
 typedef struct MXpegDecodeContext {
     MJpegDecodeContext jpg;
