@@ -80,6 +80,7 @@ EXPORTS
     av_downmix_info_update_side_data
     av_dynarray2_add
     av_dynarray_add
+    av_dynarray_add_nofree
     av_escape
     av_evaluate_lls
     av_expr_eval
@@ -329,6 +330,9 @@ EXPORTS
     av_pix_fmt_descriptors DATA
     av_pix_fmt_get_chroma_sub_sample
     av_pix_fmt_swap_endianness
+;if pixelutils
+    av_pixelutils_get_sad_fn
+;endif
     av_rc4_crypt
     av_rc4_init
     av_read_image_line

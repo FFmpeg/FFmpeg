@@ -176,6 +176,7 @@ EXPORTS
     avpriv_color_frame
     avpriv_copy_bits
     avpriv_copy_pce_data
+    avpriv_dca_convert_bitstream
     avpriv_dca_sample_rates DATA
     avpriv_dirac_parse_sequence_header
     avpriv_dnxhd_get_frame_size
@@ -190,6 +191,7 @@ EXPORTS
     avpriv_flac_is_extradata_valid
     avpriv_flac_parse_block_header
     avpriv_flac_parse_streaminfo
+    avpriv_get_raw_pix_fmt_tags
     avpriv_h264_has_num_reorder_frames
     avpriv_init_elbg
     avpriv_lock_avformat

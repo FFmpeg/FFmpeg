@@ -53,8 +53,6 @@ void projectGenerator::buildInterDependencies( const string & sProjectName, Stat
         buildInterDependenciesHelper( { "aresample_filter" }, { "swresample" }, vLibs );
         buildInterDependenciesHelper( { "asyncts_filter" }, { "avresample" }, vLibs );
         buildInterDependenciesHelper( { "atempo_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "decimate_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "deshake_filter" }, { "avcodec" }, vLibs );
         buildInterDependenciesHelper( { "ebur128_filter", "swresample" }, { "swresample" }, vLibs );
         buildInterDependenciesHelper( { "elbg_filter" }, { "avcodec" }, vLibs );
         buildInterDependenciesHelper( { "mcdeint_filter" }, { "avcodec" }, vLibs );
