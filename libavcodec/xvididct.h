@@ -26,4 +26,6 @@ void ff_xvididct_init(IDCTDSPContext *c, AVCodecContext *avctx);
 
 void ff_xvididct_init_x86(IDCTDSPContext *c);
 
+void ff_idct_xvid(int16_t *const In);
+
 #endif /* AVCODEC_XVIDIDCT_H */
