@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/common.h"
-#include "libavutil/lls2.h"
+#include "libavutil/lls.h"
 
 #define LPC_USE_DOUBLE
 #include "lpc.h"
@@ -208,7 +208,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
     }
 
     if (lpc_type == FF_LPC_TYPE_CHOLESKY) {
-        LLSModel2 m[2];
+        LLSModel m[2];
         LOCAL_ALIGNED(32, double, var, [FFALIGN(MAX_LPC_ORDER+1,4)]);
         double av_uninit(weight);
         memset(var, 0, FFALIGN(MAX_LPC_ORDER+1,4)*sizeof(*var));
@@ -217,7 +217,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
             m[0].coeff[max_order-1][j] = -lpc[max_order-1][j];
 
         for(; pass<lpc_passes; pass++){
-            avpriv_init_lls2(&m[pass&1], max_order);
+            avpriv_init_lls(&m[pass&1], max_order);
 
             weight=0;
             for(i=max_order; i<blocksize; i++){
@@ -238,7 +238,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
 
                 m[pass&1].update_lls(&m[pass&1], var);
             }
-            avpriv_solve_lls2(&m[pass&1], 0.001, 0);
+            avpriv_solve_lls(&m[pass&1], 0.001, 0);
         }
 
         for(i=0; i<max_order; i++){

@@ -102,8 +102,7 @@ OBJS = adler32.o                                                        \
        intfloat_readwrite.o                                             \
        intmath.o                                                        \
        lfg.o                                                            \
-       lls1.o                                                           \
-       lls2.o                                                           \
+       lls.o                                                            \
        log.o                                                            \
        log2_tab.o                                                       \
        mathematics.o                                                    \
@@ -163,8 +162,7 @@ TESTPROGS = adler32                                                     \
             float_dsp                                                   \
             hmac                                                        \
             lfg                                                         \
-            lls1                                                        \
-            lls2                                                        \
+            lls                                                         \
             log                                                         \
             md5                                                         \
             murmur3                                                     \
