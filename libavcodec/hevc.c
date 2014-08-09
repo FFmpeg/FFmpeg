@@ -2224,7 +2224,7 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
 
     lc->boundary_flags = 0;
     if (s->pps->tiles_enabled_flag) {
-        if (x_ctb > 0 && s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]])
+        if (x_ctb > 0 && s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - 1]])
             lc->boundary_flags |= BOUNDARY_LEFT_TILE;
         if (x_ctb > 0 && s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - 1])
             lc->boundary_flags |= BOUNDARY_LEFT_SLICE;
@@ -2238,10 +2238,11 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
         if (ctb_addr_in_slice < s->sps->ctb_width)
             lc->boundary_flags |= BOUNDARY_UPPER_SLICE;
     }
-    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0)                  && !(lc->boundary_flags & BOUNDARY_LEFT_TILE));
+
+    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) && !(lc->boundary_flags & BOUNDARY_LEFT_TILE));
     lc->ctb_up_flag   = ((y_ctb > 0) && (ctb_addr_in_slice >= s->sps->ctb_width) && !(lc->boundary_flags & BOUNDARY_UPPER_TILE));
-    lc->ctb_up_right_flag = ((y_ctb > 0)                 && (ctb_addr_in_slice+1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1 - s->sps->ctb_width]]));
-    lc->ctb_up_left_flag  = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - s->sps->ctb_width]]));
+    lc->ctb_up_right_flag = ((y_ctb > 0)  && (ctb_addr_in_slice+1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1 - s->sps->ctb_width]]));
+    lc->ctb_up_left_flag = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - s->sps->ctb_width]]));
 }
 
 static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
