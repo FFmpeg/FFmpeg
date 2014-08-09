@@ -338,6 +338,8 @@ static int channelmap_filter_frame(AVFilterLink *inlink, AVFrame *buf)
         memcpy(buf->data, buf->extended_data,
            FFMIN(FF_ARRAY_ELEMS(buf->data), nch_out) * sizeof(buf->data[0]));
 
+    buf->channel_layout = outlink->channel_layout;
+
     return ff_filter_frame(outlink, buf);
 }
 

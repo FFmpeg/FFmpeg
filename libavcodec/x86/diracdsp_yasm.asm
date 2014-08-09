@@ -21,11 +21,12 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
-pw_3: times 8 dw 3
 pw_7: times 8 dw 7
-pw_16: times 8 dw 16
-pw_32: times 8 dw 32
-pb_128: times 16 db 128
+
+cextern pw_3
+cextern pw_16
+cextern pw_32
+cextern pb_80
 
 section .text
 
@@ -131,7 +132,7 @@ cglobal dirac_hpel_filter_h_%1, 3,3,8, dst, src, width
 %macro PUT_RECT 1
 ; void put_rect_clamped(uint8_t *dst, int dst_stride, int16_t *src, int src_stride, int width, int height)
 cglobal put_signed_rect_clamped_%1, 5,9,3, dst, dst_stride, src, src_stride, w, dst2, src2
-    mova    m0, [pb_128]
+    mova    m0, [pb_80]
     add     wd, (mmsize-1)
     and     wd, ~(mmsize-1)
 

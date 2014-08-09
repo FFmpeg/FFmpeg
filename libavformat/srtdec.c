@@ -88,7 +88,7 @@ static int srt_read_header(AVFormatContext *s)
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         ff_subtitles_read_chunk(s->pb, &buf);
 
         if (buf.len) {

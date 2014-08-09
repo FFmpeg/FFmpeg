@@ -371,7 +371,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
                            int subframe_size, int prev_subframe_size)
 {
     GetBitContext *gb = &s->gb;
-    int tmp, x, y, i, j, ret = 0;
+    int x, y, i, j, ret = 0;
     int dshift, size, filter_quant, filter_order;
     int tfilter[MAX_PREDICTORS];
 
@@ -421,7 +421,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
     s->predictors[2] = get_sbits(gb, size) << (10 - size);
     s->predictors[3] = get_sbits(gb, size) << (10 - size);
     if (filter_order > 4) {
-        tmp = size - get_bits1(gb);
+        int tmp = size - get_bits1(gb);
 
         for (i = 4; i < filter_order; i++) {
             if (!(i & 3))
@@ -448,7 +448,6 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
     x = 1 << (32 - (15 - filter_quant));
     y = 1 << ((15 - filter_quant) - 1);
     for (i = 0, j = filter_order - 1; i < filter_order / 2; i++, j--) {
-        tmp = y + tfilter[j];
         s->filter[j] = x - ((tfilter[i] + y) >> (15 - filter_quant));
         s->filter[i] = x - ((tfilter[j] + y) >> (15 - filter_quant));
     }
@@ -463,7 +462,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
     y    = FF_ARRAY_ELEMS(s->residues) - filter_order;
     x    = subframe_size - filter_order;
     while (x > 0) {
-        tmp = FFMIN(y, x);
+        int tmp = FFMIN(y, x);
 
         for (i = 0; i < tmp; i++) {
             int v = 1 << (filter_quant - 1);

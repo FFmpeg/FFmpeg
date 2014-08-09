@@ -147,6 +147,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             av_log(ctx, AV_LOG_INFO, "displaymatrix: rotation of %.2f degrees",
                    av_display_rotation_get((int32_t *)sd->data));
             break;
+        case AV_FRAME_DATA_AFD:
+            av_log(ctx, AV_LOG_INFO, "afd: value of %"PRIu8, sd->data[0]);
+            break;
         default:
             av_log(ctx, AV_LOG_WARNING, "unknown side data type %d (%d bytes)",
                    sd->type, sd->size);

@@ -39,6 +39,7 @@
 #include "timer.h"
 #include "cpu.h"
 #include "dict.h"
+#include "pixfmt.h"
 #include "version.h"
 
 #if ARCH_X86
@@ -255,6 +256,8 @@ void avpriv_request_sample(void *avc,
  * A wrapper for open() setting O_CLOEXEC.
  */
 int avpriv_open(const char *filename, int flags, ...);
+
+int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
 
 #if FF_API_GET_CHANNEL_LAYOUT_COMPAT
 uint64_t ff_get_channel_layout(const char *name, int compat);

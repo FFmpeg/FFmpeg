@@ -253,6 +253,7 @@ void *av_memdup(const void *p, size_t size);
  * av_realloc() and set the pointer pointing to it to NULL.
  * @param ptr Pointer to the pointer to the memory block which should
  * be freed.
+ * @note passing a pointer to a NULL pointer is safe and leads to no action.
  * @see av_free()
  */
 void av_freep(void *ptr);

@@ -51,7 +51,7 @@ static int nist_read_header(AVFormatContext *s)
     if (header_size <= 0)
         return AVERROR_INVALIDDATA;
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         ff_get_line(s->pb, buffer, sizeof(buffer));
 
         if (avio_tell(s->pb) >= header_size)

@@ -488,7 +488,8 @@ ffplay -f lavfi "movie=test.avi[out0];amovie=test.wav[out1]"
 Audio-CD input device based on cdio.
 
 To enable this input device during configuration you need libcdio
-installed on your system.
+installed on your system. Requires the configure option
+@code{--enable-libcdio}.
 
 This device allows playing and grabbing from an Audio-CD.
 
@@ -501,6 +502,8 @@ ffmpeg -f libcdio -i /dev/sr0 cd.wav
 @section libdc1394
 
 IIDC1394 input device, based on libdc1394 and libraw1394.
+
+Requires the configure option @code{--enable-libdc1394}.
 
 @section openal
 
@@ -829,6 +832,9 @@ other filename will be interpreted as device number 0.
 @section x11grab
 
 X11 video input device.
+
+Depends on X11, Xext, and Xfixes. Requires the configure option
+@code{--enable-x11grab}.
 
 This device allows one to capture a region of an X11 display.
 

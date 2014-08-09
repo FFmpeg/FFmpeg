@@ -292,7 +292,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         }
 
-        if (url_feof(pb))
+        if (avio_feof(pb))
             return AVERROR(EIO);
     }
 }

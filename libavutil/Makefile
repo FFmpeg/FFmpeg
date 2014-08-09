@@ -44,6 +44,7 @@ HEADERS = adler32.h                                                     \
           opt.h                                                         \
           parseutils.h                                                  \
           pixdesc.h                                                     \
+          pixelutils.h                                                  \
           pixfmt.h                                                      \
           random_seed.h                                                 \
           replaygain.h                                                  \
@@ -113,6 +114,7 @@ OBJS = adler32.o                                                        \
        opt.o                                                            \
        parseutils.o                                                     \
        pixdesc.o                                                        \
+       pixelutils.o                                                     \
        random_seed.o                                                    \
        rational.o                                                       \
        rc4.o                                                            \
@@ -170,6 +172,7 @@ TESTPROGS = adler32                                                     \
             pca                                                         \
             parseutils                                                  \
             pixdesc                                                     \
+            pixelutils                                                  \
             random_seed                                                 \
             rational                                                    \
             ripemd                                                      \

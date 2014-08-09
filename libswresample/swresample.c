@@ -79,6 +79,8 @@ static void set_audiodata_fmt(AudioData *a, enum AVSampleFormat fmt){
     a->fmt   = fmt;
     a->bps   = av_get_bytes_per_sample(fmt);
     a->planar= av_sample_fmt_is_planar(fmt);
+    if (a->ch_count == 1)
+        a->planar = 1;
 }
 
 static void free_temp(AudioData *a){

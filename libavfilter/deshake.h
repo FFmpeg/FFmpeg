@@ -24,8 +24,8 @@
 
 #include "config.h"
 #include "avfilter.h"
-#include "libavcodec/dsputil.h"
 #include "transform.h"
+#include "libavutil/pixelutils.h"
 #if CONFIG_OPENCL
 #include "libavutil/opencl.h"
 #endif
@@ -80,8 +80,7 @@ typedef struct {
     int blocksize;             ///< Size of blocks to compare
     int contrast;              ///< Contrast threshold
     int search;                ///< Motion search method
-    AVCodecContext *avctx;
-    DSPContext c;              ///< Context providing optimized SAD methods
+    av_pixelutils_sad_fn sad;  ///< Sum of the absolute difference function
     Transform last;            ///< Transform from last frame
     int refcount;              ///< Number of reference frames (defines averaging window)
     FILE *fp;

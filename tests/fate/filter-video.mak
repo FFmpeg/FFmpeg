@@ -283,8 +283,27 @@ FATE_FILTER_VSYNTH-$(CONFIG_TILE_FILTER) += fate-filter-tile
 fate-filter-tile: CMD = video_filter "tile=3x3:nb_frames=5:padding=7:margin=2"
 
 
-FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += fate-filter-pixdesc
-fate-filter-pixdesc: CMD = pixdesc
+tests/pixfmts.mak: TAG = GEN
+tests/pixfmts.mak: ffmpeg$(EXESUF)
+	$(M)printf "PIXFMTS = " > $@
+	$(Q)$(TARGET_EXEC) $(TARGET_PATH)/$< -pix_fmts list 2> /dev/null | awk 'NR > 8 && /^IO/ { printf $$2 " " }' >> $@
+	$(Q)printf "\n" >> $@
+
+RUNNING_PIXFMTS_TESTS := $(filter check fate fate-list fate-filter fate-vfilter fate-filter-pixdesc%,$(MAKECMDGOALS))
+
+ifneq (,$(RUNNING_PIXFMTS_TESTS))
+-include tests/pixfmts.mak
+endif
+
+define PIXDESC_TEST
+FATE_FILTER_PIXDESC-$(CONFIG_FORMAT_FILTER) += fate-filter-pixdesc-$(1)
+fate-filter-pixdesc-$(1): CMD = video_filter "format=$(1),pixdesctest" -pix_fmt $(1)
+endef
+
+$(foreach fmt, $(PIXFMTS), $(eval $(call PIXDESC_TEST,$(fmt))))
+
+fate-filter-pixdesc: $(FATE_FILTER_PIXDESC-yes)
+FATE_FILTER_VSYNTH-yes += $(FATE_FILTER_PIXDESC-yes)
 
 
 FATE_FILTER_PIXFMTS-$(CONFIG_COPY_FILTER) += fate-filter-pixfmts-copy

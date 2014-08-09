@@ -106,7 +106,7 @@ static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
     if (buf_size < 12)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_dca_convert_bitstream(buf, 12, hdr, 12)) < 0)
+    if ((ret = avpriv_dca_convert_bitstream(buf, 12, hdr, 12)) < 0)
         return ret;
 
     init_get_bits(&gb, hdr, 96);

@@ -363,7 +363,7 @@ static int iff_read_header(AVFormatContext *s)
     iff->maud_bits = -1;
     iff->maud_compression = -1;
 
-    while(!url_feof(pb)) {
+    while(!avio_feof(pb)) {
         uint64_t orig_pos;
         int res;
         const char *metadata_tag = NULL;
@@ -584,7 +584,7 @@ static int iff_read_header(AVFormatContext *s)
                     }
                     break;
                 case 2:
-                    tag = ref < FF_ARRAY_ELEMS(dsd_source_comment) ? dsd_history_comment[ref] : "source_comment";
+                    tag = ref < FF_ARRAY_ELEMS(dsd_source_comment) ? dsd_source_comment[ref] : "source_comment";
                     break;
                 case 3:
                     tag = ref < FF_ARRAY_ELEMS(dsd_history_comment) ? dsd_history_comment[ref] : "file_history";

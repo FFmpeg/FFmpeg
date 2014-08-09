@@ -25,8 +25,8 @@
 
 #include "libavutil/x86/asm.h"
 
-extern const uint64_t ff_wtwo;
-
+extern const xmm_reg  ff_pw_1;
+extern const xmm_reg  ff_pw_2;
 extern const xmm_reg  ff_pw_3;
 extern const xmm_reg  ff_pw_4;
 extern const xmm_reg  ff_pw_5;
@@ -43,11 +43,18 @@ extern const xmm_reg  ff_pw_64;
 extern const uint64_t ff_pw_96;
 extern const uint64_t ff_pw_128;
 extern const uint64_t ff_pw_255;
+extern const xmm_reg  ff_pw_512;
+extern const xmm_reg  ff_pw_1024;
+extern const xmm_reg  ff_pw_2048;
+extern const xmm_reg  ff_pw_8192;
+extern const xmm_reg  ff_pw_m1;
 
 extern const ymm_reg  ff_pb_1;
 extern const ymm_reg  ff_pb_3;
 extern const xmm_reg  ff_pb_80;
 extern const xmm_reg  ff_pb_F8;
 extern const uint64_t ff_pb_FC;
+
+extern const xmm_reg  ff_ps_neg;
 
 #endif /* AVCODEC_X86_CONSTANTS_H */

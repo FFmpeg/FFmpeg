@@ -76,7 +76,7 @@ static int read_packet(AVFormatContext *s,
     int i, j, ret;
     int64_t pos= avio_tell(pb);
 
-    if(url_feof(pb))
+    if(avio_feof(pb))
         return AVERROR_EOF;
 
     avio_rl16(pb); // sync word

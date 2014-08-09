@@ -144,6 +144,7 @@ Component options:
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
+  --disable-pixelutils     disable pixel utils in libavutil
 
 Hardware accelerators:
   --disable-dxva2          disable DXVA2 code [autodetect]
@@ -1451,6 +1452,7 @@ SUBSYSTEM_LIST="
     lsp
     lzo
     mdct
+    pixelutils
     network
     rdft
 "
@@ -1853,6 +1855,7 @@ CONFIG_EXTRA="
     rtpdec
     rtpenc_chain
     sinewin
+    startcode
     tpeldsp
     videodsp
     vp3dsp
@@ -2095,7 +2098,7 @@ h263_decoder_select="error_resilience h263_parser h263dsp mpeg_er mpegvideo qpel
 h263_encoder_select="aandcttables h263dsp mpegvideoenc"
 h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
-h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel videodsp"
+h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel startcode videodsp"
 h264_decoder_suggest="error_resilience"
 hevc_decoder_select="bswapdsp cabac golomb videodsp"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"
@@ -2193,7 +2196,7 @@ twinvq_decoder_select="mdct lsp sinewin"
 utvideo_decoder_select="bswapdsp"
 utvideo_encoder_select="bswapdsp huffman huffyuvencdsp"
 vble_decoder_select="huffyuvdsp"
-vc1_decoder_select="blockdsp error_resilience h263_decoder h264chroma h264qpel intrax8 mpeg_er qpeldsp"
+vc1_decoder_select="blockdsp error_resilience h263_decoder h264chroma h264qpel intrax8 mpeg_er qpeldsp startcode"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
@@ -2300,7 +2303,7 @@ h264_parser_select="h264_decoder"
 hevc_parser_select="hevc_decoder"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="error_resilience h263dsp mpeg_er mpegvideo qpeldsp"
-vc1_parser_select="mpegvideo vc1_decoder"
+vc1_parser_select="mpegvideo startcode vc1_decoder"
 
 # external libraries
 libaacplus_encoder_deps="libaacplus"
@@ -2484,6 +2487,7 @@ gopher_protocol_select="network"
 http_protocol_select="tcp_protocol"
 httpproxy_protocol_select="tcp_protocol"
 https_protocol_select="tls_protocol"
+icecast_protocol_select="http_protocol"
 librtmp_protocol_deps="librtmp"
 librtmpe_protocol_deps="librtmp"
 librtmps_protocol_deps="librtmp"
@@ -2526,11 +2530,8 @@ boxblur_filter_deps="gpl"
 bs2b_filter_deps="libbs2b"
 colormatrix_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
-dctdnoiz_filter_deps="avcodec"
-dctdnoiz_filter_select="dct"
 delogo_filter_deps="gpl"
-deshake_filter_deps="avcodec"
-deshake_filter_select="me_cmp"
+deshake_filter_select="pixelutils"
 drawtext_filter_deps="libfreetype"
 ebur128_filter_deps="gpl"
 flite_filter_deps="libflite"
@@ -2548,8 +2549,8 @@ ladspa_filter_extralibs='$ldl'
 mcdeint_filter_deps="avcodec gpl"
 movie_filter_deps="avcodec avformat"
 mp_filter_deps="gpl avcodec swscale inline_asm"
-mpdecimate_filter_deps="gpl avcodec"
-mpdecimate_filter_select="me_cmp pixblockdsp"
+mpdecimate_filter_deps="gpl"
+mpdecimate_filter_select="pixelutils"
 mptestsrc_filter_deps="gpl"
 negate_filter_deps="lut_filter"
 perspective_filter_deps="gpl"
@@ -2563,6 +2564,7 @@ removelogo_filter_deps="avcodec avformat swscale"
 resample_filter_deps="avresample"
 sab_filter_deps="gpl swscale"
 scale_filter_deps="swscale"
+select_filter_select="pixelutils"
 smartblur_filter_deps="gpl swscale"
 showspectrum_filter_deps="avcodec"
 showspectrum_filter_select="rdft"
@@ -3332,7 +3334,7 @@ probe_cc(){
     elif $_cc --vsn 2>/dev/null | grep -Eq "ARM (C/C\+\+ )?Compiler"; then
         test -d "$sysroot" || die "No valid sysroot specified."
         _type=armcc
-        _ident=$($_cc --vsn | head -n1 | sed 's/.*: //')
+        _ident=$($_cc --vsn | grep -i build | head -n1 | sed 's/.*: //')
         armcc_conf="$PWD/armcc.conf"
         $_cc --arm_linux_configure                 \
              --arm_linux_config_file="$armcc_conf" \
@@ -4343,22 +4345,32 @@ if  [ "$cpu" = "power7" ] || [ "$cpu" = "power8" ] ;then
     fi
 fi
 
-
-if enabled asm; then
-    enabled     arm         && nogas=die
-    enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
-    as=${gas:=$as}
-    check_as <<EOF && enable gnu_as || \
-        $nogas "GNU assembler not found, install gas-preprocessor"
-.macro m n
-\n: .int 0
+check_gas() {
+    log "check_gas using '$as' as AS"
+    # :vararg is used on aarch64, arm and ppc altivec
+    check_as <<EOF || return 1
+.macro m n, y:vararg=0
+\n: .int \y
 .endm
 m x
 EOF
-
-    check_as <<EOF || $nogas "GNU assembler not found, install gas-preprocessor"
+    # .altmacro is only used in arm asm
+    ! enabled arm || check_as <<EOF || return 1
 .altmacro
 EOF
+    enable gnu_as
+    return 0
+}
+
+if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
+    enabled_any arm aarch64 && nogas=die
+    enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
+
+    if ! check_gas ; then
+        as=${gas:=$as}
+        check_gas || \
+            $nogas "GNU assembler not found, install gas-preprocessor"
+    fi
 
     check_as <<EOF && enable as_func
 .func test
@@ -4798,7 +4810,9 @@ enabled libvpx            && {
     enabled libvpx_vp9_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx || disable libvpx_vp9_decoder; }
     enabled libvpx_vp9_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_SVC" -lvpx || disable libvpx_vp9_encoder; } }
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
-enabled libwebp           && require_pkg_config libwebp webp/encode.h WebPGetEncoderVersion
+enabled libwebp           && require_pkg_config libwebp webp/encode.h WebPGetEncoderVersion &&
+                             { check_code cc webp/encode.h "WebPPicture wp; wp.use_argb++" ||
+                               die "ERROR: libwebp too old."; }
 enabled libx264           && require libx264 x264.h x264_encoder_encode -lx264 &&
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
                                die "ERROR: libx264 must be installed and version must be >= 0.118."; }
@@ -5239,8 +5253,6 @@ enabled amovie_filter       && prepend avfilter_deps "avformat avcodec"
 enabled aresample_filter    && prepend avfilter_deps "swresample"
 enabled asyncts_filter      && prepend avfilter_deps "avresample"
 enabled atempo_filter       && prepend avfilter_deps "avcodec"
-enabled decimate_filter     && prepend avfilter_deps "avcodec"
-enabled deshake_filter      && prepend avfilter_deps "avcodec"
 enabled ebur128_filter && enabled swresample && prepend avfilter_deps "swresample"
 enabled elbg_filter         && prepend avfilter_deps "avcodec"
 enabled mcdeint_filter      && prepend avfilter_deps "avcodec"

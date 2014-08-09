@@ -565,6 +565,38 @@ static void bswap16UV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, 
     }
 }
 
+static void read_ya16le_gray_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
+                               uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        AV_WN16(dst + i * 2, AV_RL16(src + i * 4));
+}
+
+static void read_ya16le_alpha_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
+                                uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        AV_WN16(dst + i * 2, AV_RL16(src + i * 4 + 2));
+}
+
+static void read_ya16be_gray_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
+                               uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        AV_WN16(dst + i * 2, AV_RB16(src + i * 4));
+}
+
+static void read_ya16be_alpha_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
+                                uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        AV_WN16(dst + i * 2, AV_RB16(src + i * 4 + 2));
+}
+
 /* This is almost identical to the previous, end exists only because
  * yuy2ToY/UV)(dst, src + 1, ...) would have 100% unaligned accesses. */
 static void uyvyToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,  int width,
@@ -1215,9 +1247,17 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         c->alpToYV12 = bswap16Y_c;
         break;
 #endif
+    case AV_PIX_FMT_YA16LE:
+        c->lumToYV12 = read_ya16le_gray_c;
+        c->alpToYV12 = read_ya16le_alpha_c;
+        break;
+    case AV_PIX_FMT_YA16BE:
+        c->lumToYV12 = read_ya16be_gray_c;
+        c->alpToYV12 = read_ya16be_alpha_c;
+        break;
     case AV_PIX_FMT_YUYV422:
     case AV_PIX_FMT_YVYU422:
-    case AV_PIX_FMT_Y400A:
+    case AV_PIX_FMT_YA8:
         c->lumToYV12 = yuy2ToY_c;
         break;
     case AV_PIX_FMT_UYVY422:
@@ -1332,7 +1372,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         case AV_PIX_FMT_ARGB:
             c->alpToYV12 = abgrToA_c;
             break;
-        case AV_PIX_FMT_Y400A:
+        case AV_PIX_FMT_YA8:
             c->alpToYV12 = uyvyToY_c;
             break;
         case AV_PIX_FMT_PAL8 :

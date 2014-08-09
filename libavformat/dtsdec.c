@@ -20,6 +20,8 @@
  */
 
 #include "libavcodec/bytestream.h"
+#include "libavcodec/get_bits.h"
+#include "libavcodec/dca.h"
 #include "avformat.h"
 #include "rawdec.h"
 
@@ -32,36 +34,68 @@ static int dts_probe(AVProbeData *p)
 {
     const uint8_t *buf, *bufp;
     uint32_t state = -1;
-    int markers[3] = {0};
-    int sum, max;
+    int markers[4] = {0};
+    int sum, max, i;
     int64_t diff = 0;
+    uint8_t hdr[12 + FF_INPUT_BUFFER_PADDING_SIZE] = { 0 };
 
-    buf = p->buf;
+    buf = p->buf + FFMIN(4096, p->buf_size);
 
     for(; buf < (p->buf+p->buf_size)-2; buf+=2) {
+        int marker, sample_blocks, sample_rate, sr_code, framesize;
+        GetBitContext gb;
+
         bufp = buf;
         state = (state << 16) | bytestream_get_be16(&bufp);
 
+        if (buf - p->buf >= 4)
+            diff += FFABS(((int16_t)AV_RL16(buf)) - (int16_t)AV_RL16(buf-4));
+
         /* regular bitstream */
-        if (state == DCA_MARKER_RAW_BE || state == DCA_MARKER_RAW_LE)
-            markers[0]++;
+        if (state == DCA_MARKER_RAW_BE)
+            marker = 0;
+        else if (state == DCA_MARKER_RAW_LE)
+            marker = 1;
 
         /* 14 bits big-endian bitstream */
-        if (state == DCA_MARKER_14B_BE)
-            if ((bytestream_get_be16(&bufp) & 0xFFF0) == 0x07F0)
-                markers[1]++;
+        else if (state == DCA_MARKER_14B_BE &&
+                 (bytestream_get_be16(&bufp) & 0xFFF0) == 0x07F0)
+            marker = 2;
 
         /* 14 bits little-endian bitstream */
-        if (state == DCA_MARKER_14B_LE)
-            if ((bytestream_get_be16(&bufp) & 0xF0FF) == 0xF007)
-                markers[2]++;
+        else if (state == DCA_MARKER_14B_LE &&
+                 (bytestream_get_be16(&bufp) & 0xF0FF) == 0xF007)
+            marker = 3;
+        else
+            continue;
 
-        if (buf - p->buf >= 4)
-            diff += FFABS(AV_RL16(buf) - AV_RL16(buf-4));
+        if (avpriv_dca_convert_bitstream(buf-2, 12, hdr, 12) < 0)
+            continue;
+
+        init_get_bits(&gb, hdr, 96);
+        skip_bits_long(&gb, 39);
+
+        sample_blocks = get_bits(&gb, 7) + 1;
+        if (sample_blocks < 8)
+            continue;
+
+        framesize = get_bits(&gb, 14) + 1;
+        if (framesize < 95)
+            continue;
+
+        skip_bits(&gb, 6);
+        sr_code = get_bits(&gb, 4);
+        sample_rate = avpriv_dca_sample_rates[sr_code];
+        if (sample_rate == 0)
+            continue;
+
+        markers[marker] ++;
     }
-    sum = markers[0] + markers[1] + markers[2];
-    max = markers[1] > markers[0];
-    max = markers[2] > markers[max] ? 2 : max;
+    sum = markers[0] + markers[1] + markers[2] + markers[3];
+    max = 0;
+    for (i=1; i<4; i++)
+        if (markers[max] < markers[i])
+            max = i;
     if (markers[max] > 3 && p->buf_size / markers[max] < 32*1024 &&
         markers[max] * 4 > sum * 3 &&
         diff / p->buf_size > 200)

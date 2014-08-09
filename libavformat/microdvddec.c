@@ -88,7 +88,7 @@ static int microdvd_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         char *p;
         AVPacket *sub;
         int64_t pos = avio_tell(s->pb);

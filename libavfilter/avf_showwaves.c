@@ -35,6 +35,7 @@
 enum ShowWavesMode {
     MODE_POINT,
     MODE_LINE,
+    MODE_P2P,
     MODE_NB,
 };
 
@@ -43,6 +44,7 @@ typedef struct {
     int w, h;
     AVRational rate;
     int buf_idx;
+    int16_t *buf_idy;    /* y coordinate of previous sample for each channel */
     AVFrame *outpicref;
     int req_fullfilled;
     int n;
@@ -59,6 +61,7 @@ static const AVOption showwaves_options[] = {
     { "mode", "select display mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=MODE_POINT}, 0, MODE_NB-1, FLAGS, "mode"},
         { "point", "draw a point for each sample", 0, AV_OPT_TYPE_CONST, {.i64=MODE_POINT}, .flags=FLAGS, .unit="mode"},
         { "line",  "draw a line for each sample",  0, AV_OPT_TYPE_CONST, {.i64=MODE_LINE},  .flags=FLAGS, .unit="mode"},
+        { "p2p", "draw a line between samples", 0, AV_OPT_TYPE_CONST, {.i64=MODE_P2P}, .flags=FLAGS, .unit="mode"},
     { "n",    "set how many samples to show in the same point", OFFSET(n), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     { "rate", "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
     { "r",    "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
@@ -72,6 +75,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     ShowWavesContext *showwaves = ctx->priv;
 
     av_frame_free(&showwaves->outpicref);
+    av_freep(&showwaves->buf_idy);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -113,11 +117,16 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowWavesContext *showwaves = ctx->priv;
+    int nb_channels = inlink->channels;
 
     if (!showwaves->n)
         showwaves->n = FFMAX(1, ((double)inlink->sample_rate / (showwaves->w * av_q2d(showwaves->rate))) + 0.5);
 
     showwaves->buf_idx = 0;
+    if (!(showwaves->buf_idy = av_mallocz_array(nb_channels, sizeof(*showwaves->buf_idy)))) {
+        av_log(ctx, AV_LOG_ERROR, "Could not allocate showwaves buffer\n");
+        return AVERROR(ENOMEM);
+    }
     outlink->w = showwaves->w;
     outlink->h = showwaves->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
@@ -132,13 +141,18 @@ static int config_output(AVFilterLink *outlink)
 
 inline static int push_frame(AVFilterLink *outlink)
 {
+    AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
     ShowWavesContext *showwaves = outlink->src->priv;
-    int ret;
+    int nb_channels = inlink->channels;
+    int ret, i;
 
     if ((ret = ff_filter_frame(outlink, showwaves->outpicref)) >= 0)
         showwaves->req_fullfilled = 1;
     showwaves->outpicref = NULL;
     showwaves->buf_idx = 0;
+    for (i = 0; i <= nb_channels; i++)
+        showwaves->buf_idy[i] = 0;
     return ret;
 }
 
@@ -207,7 +221,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     *(outpicref->data[0] + showwaves->buf_idx + k * linesize) += x;
                 break;
             }
+            case MODE_P2P:
+                if (h >= 0 && h < outlink->h) {
+                    *(outpicref->data[0] + showwaves->buf_idx + h * linesize) += x;
+                    if (showwaves->buf_idy[j] && h != showwaves->buf_idy[j]) {
+                        int start = showwaves->buf_idy[j], end = av_clip(h, 0, outlink->h-1);
+                        if (start > end)
+                            FFSWAP(int16_t, start, end);
+                        for (k = start + 1; k < end; k++)
+                            *(outpicref->data[0] + showwaves->buf_idx + k * linesize) += x;
+                    }
+                }
+                break;
             }
+            /* store current y coordinate for this channel */
+            showwaves->buf_idy[j] = h;
         }
 
         showwaves->sample_count_mod++;

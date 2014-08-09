@@ -3219,7 +3219,7 @@ curves=psfile='MyCurvesPresets/purple.asv':green='0.45/0.53'
 
 Denoise frames using 2D DCT (frequency domain filtering).
 
-This filter is not designed for real time and can be extremely slow.
+This filter is not designed for real time.
 
 The filter accepts the following options:
 
@@ -3235,14 +3235,14 @@ If you need a more advanced filtering, see @option{expr}.
 Default is @code{0}.
 
 @item overlap
-Set number overlapping pixels for each block. Each block is of size
-@code{16x16}. Since the filter can be slow, you may want to reduce this value,
-at the cost of a less effective filter and the risk of various artefacts.
+Set number overlapping pixels for each block. Since the filter can be slow, you
+may want to reduce this value, at the cost of a less effective filter and the
+risk of various artefacts.
 
 If the overlapping value doesn't allow to process the whole input width or
 height, a warning will be displayed and according borders won't be denoised.
 
-Default value is @code{15}.
+Default value is @var{blocksize}-1, which is the best possible setting.
 
 @item expr, e
 Set the coefficient factor expression.
@@ -3254,6 +3254,15 @@ If this is option is set, the @option{sigma} option will be ignored.
 
 The absolute value of the coefficient can be accessed through the @var{c}
 variable.
+
+@item n
+Set the @var{blocksize} using the number of bits. @code{1<<@var{n}} defines the
+@var{blocksize}, which is the width and height of the processed blocks.
+
+The default value is @var{3} (8x8) and can be raised to @var{4} for a
+@var{blocksize} of 16x16. Note that changing this setting has huge consequences
+on the speed processing. Also, a larger block size does not necessarily means a
+better de-noising.
 @end table
 
 @subsection Examples
@@ -3266,6 +3275,11 @@ dctdnoiz=4.5
 The same operation can be achieved using the expression system:
 @example
 dctdnoiz=e='gte(c, 4.5*3)'
+@end example
+
+Violent denoise using a block size of @code{16x16}:
+@example
+dctdnoiz=15:n=4
 @end example
 
 @anchor{decimate}
@@ -5454,8 +5468,7 @@ Swap luma/chroma/alpha fields. Exchange even & odd lines. Default value is @code
 
 Simple interlacing filter from progressive contents. This interleaves upper (or
 lower) lines from odd frames with lower (or upper) lines from even frames,
-halving the frame rate and preserving image height. A vertical lowpass filter
-is always applied in order to avoid twitter effects and reduce moiré patterns.
+halving the frame rate and preserving image height.
 
 @example
    Original        Original             New Frame
@@ -5475,6 +5488,10 @@ It accepts the following optional parameters:
 @item scan
 This determines whether the interlaced frame is taken from the even
 (tff - default) or odd (bff) lines of the progressive frame.
+
+@item lowpass
+Enable (default) or disable the vertical lowpass filter to avoid twitter
+interlacing and reduce moire patterns.
 @end table
 
 @section kerndeint
@@ -10498,8 +10515,34 @@ The filter accepts the following options:
 
 @table @option
 @item volume
-Specify the transform volume (multiplier). Acceptable value is [1.0, 100.0].
-Default value is @code{16.0}.
+Specify transform volume (multiplier) expression. The expression can contain
+variables:
+@table @option
+@item frequency, freq, f
+the frequency where transform is evaluated
+@item timeclamp, tc
+value of timeclamp option
+@end table
+and functions:
+@table @option
+@item a_weighting(f)
+A-weighting of equal loudness
+@item b_weighting(f)
+B-weighting of equal loudness
+@item c_weighting(f)
+C-weighting of equal loudness
+@end table
+Default value is @code{16}.
+
+@item tlength
+Specify transform length expression. The expression can contain variables:
+@table @option
+@item frequency, freq, f
+the frequency where transform is evaluated
+@item timeclamp, tc
+value of timeclamp option
+@end table
+Default value is @code{384/f*tc/(384/f+tc)}.
 
 @item timeclamp
 Specify the transform timeclamp. At low frequency, there is trade-off between
@@ -10568,6 +10611,18 @@ Same as above, but with more accuracy in frequency domain (and slower):
 @example
 ffplay -f lavfi 'aevalsrc=0.1*sin(2*PI*55*t)+0.1*sin(4*PI*55*t)+0.1*sin(6*PI*55*t)+0.1*sin(8*PI*55*t),
                  asplit[a][out1]; [a] showcqt=timeclamp=0.5 [out0]'
+@end example
+
+@item
+B-weighting of equal loudness
+@example
+volume=16*b_weighting(f)
+@end example
+
+@item
+Lower Q factor
+@example
+tlength=100/f*tc/(100/f+tc)
 @end example
 
 @end itemize
@@ -10698,6 +10753,9 @@ Draw a point for each sample.
 
 @item line
 Draw a vertical line for each sample.
+
+@item p2p
+Draw a point for each sample and a line between them.
 @end table
 
 Default value is @code{point}.

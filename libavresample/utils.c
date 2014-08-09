@@ -101,16 +101,10 @@ int avresample_open(AVAudioResampleContext *avr)
                av_get_sample_fmt_name(avr->internal_sample_fmt));
     }
 
-    /* treat all mono as planar for easier comparison */
-    if (avr->in_channels == 1)
-        avr->in_sample_fmt = av_get_planar_sample_fmt(avr->in_sample_fmt);
-    if (avr->out_channels == 1)
-        avr->out_sample_fmt = av_get_planar_sample_fmt(avr->out_sample_fmt);
-
     /* we may need to add an extra conversion in order to remap channels if
        the output format is not planar */
     if (avr->use_channel_map && !avr->mixing_needed && !avr->resample_needed &&
-        !av_sample_fmt_is_planar(avr->out_sample_fmt)) {
+        !ff_sample_fmt_is_planar(avr->out_sample_fmt, avr->out_channels)) {
         avr->internal_sample_fmt = av_get_planar_sample_fmt(avr->out_sample_fmt);
     }
 
@@ -119,7 +113,7 @@ int avresample_open(AVAudioResampleContext *avr)
         avr->in_convert_needed = avr->in_sample_fmt != avr->internal_sample_fmt;
     else
         avr->in_convert_needed = avr->use_channel_map &&
-                                 !av_sample_fmt_is_planar(avr->out_sample_fmt);
+                                 !ff_sample_fmt_is_planar(avr->out_sample_fmt, avr->out_channels);
 
     if (avr->resample_needed || avr->mixing_needed || avr->in_convert_needed)
         avr->out_convert_needed = avr->internal_sample_fmt != avr->out_sample_fmt;

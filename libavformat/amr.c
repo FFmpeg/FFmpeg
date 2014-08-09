@@ -117,7 +117,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t pos = avio_tell(s->pb);
     AMRContext *amr = s->priv_data;
 
-    if (url_feof(s->pb)) {
+    if (avio_feof(s->pb)) {
         return AVERROR(EIO);
     }
 

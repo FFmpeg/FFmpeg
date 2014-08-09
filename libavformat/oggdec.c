@@ -331,7 +331,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
 
         c = avio_r8(bc);
 
-        if (url_feof(bc))
+        if (avio_feof(bc))
             return AVERROR_EOF;
 
         sync[sp++ & 3] = c;

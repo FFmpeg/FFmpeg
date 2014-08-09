@@ -126,7 +126,7 @@ static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int f
     MlvContext *mlv = avctx->priv_data;
     AVIOContext *pb = mlv->pb[file];
     int ret;
-    while (!url_feof(pb)) {
+    while (!avio_feof(pb)) {
         int type;
         unsigned int size;
         type = avio_rl32(pb);

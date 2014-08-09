@@ -1055,6 +1055,7 @@ performance on systems without hardware floating point support).
 @item HLS          @tab X
 @item HTTP         @tab X
 @item HTTPS        @tab X
+@item Icecast      @tab X
 @item MMSH         @tab X
 @item MMST         @tab X
 @item pipe         @tab X

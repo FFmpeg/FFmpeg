@@ -181,7 +181,7 @@ static int read_header(AVFormatContext *s)
     }
     avio_skip(s->pb, size - (avio_tell(s->pb) - pos));
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         chunk = avio_rl32(s->pb);
         size  = avio_rb32(s->pb);
         if (size < 8) {
@@ -244,7 +244,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t samples, size;
     int ret;
 
-    if (url_feof(s->pb))
+    if (avio_feof(s->pb))
         return AVERROR_EOF;
     b->current_block++;
     if (b->current_block == b->block_count) {

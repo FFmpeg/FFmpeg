@@ -3,11 +3,7 @@ LIBAVCODEC_$MAJOR {
                 #deprecated, remove after next bump
                 audio_resample;
                 audio_resample_close;
-                ff_find_pix_fmt;
-                ff_framenum_to_drop_timecode;
-                ff_framenum_to_smtpe_timecode;
                 ff_raw_pix_fmt_tags;
-                ff_init_smtpe_timecode;
                 ff_fft*;
                 ff_mdct*;
                 ff_dct*;
@@ -16,11 +12,7 @@ LIBAVCODEC_$MAJOR {
                 ff_simple_idct*;
                 ff_aanscales;
                 ff_faan*;
-                ff_mmx_idct;
                 ff_fdct*;
-                fdct_ifast;
-                j_rev_dct;
-                ff_mmxext_idct;
                 ff_idct_xvid*;
                 ff_jpeg_fdct*;
                 ff_dnxhd_get_cid_table;

@@ -293,6 +293,50 @@ The required syntax to play a stream specifying a cookie is:
 ffplay -cookies "nlqptid=nltid=tsn; path=/; domain=somedomain.com;" http://somedomain.com/somestream.m3u8
 @end example
 
+@section Icecast
+
+Icecast protocol (stream to Icecast servers)
+
+This protocol accepts the following options:
+
+@table @option
+@item ice_genre
+Set the stream genre.
+
+@item ice_name
+Set the stream name.
+
+@item ice_description
+Set the stream description.
+
+@item ice_url
+Set the stream website URL.
+
+@item ice_public
+Set if the stream should be public.
+The default is 0 (not public).
+
+@item user_agent
+Override the User-Agent header. If not specified a string of the form
+"Lavf/<version>" will be used.
+
+@item password
+Set the Icecast mountpoint password.
+
+@item content_type
+Set the stream content type. This must be set if it is different from
+audio/mpeg.
+
+@item legacy_icecast
+This enables support for Icecast versions < 2.4.0, that do not support the
+HTTP PUT method but the SOURCE method.
+
+@end table
+
+@example
+icecast://[@var{username}[:@var{password}]@@]@var{server}:@var{port}/@var{mountpoint}
+@end example
+
 @section mmst
 
 MMS (Microsoft Media Server) protocol over TCP.

@@ -80,7 +80,7 @@ typedef struct VC1DSPContext {
      * to filter out any zero bytes that are known to not be followed by
      * one or more further zero bytes and a one byte.
      */
-    int (*vc1_find_start_code_candidate)(const uint8_t *buf, int size);
+    int (*startcode_find_candidate)(const uint8_t *buf, int size);
 } VC1DSPContext;
 
 void ff_vc1dsp_init(VC1DSPContext* c);

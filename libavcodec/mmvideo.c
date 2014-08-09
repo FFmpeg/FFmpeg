@@ -68,7 +68,7 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int mm_decode_pal(MmContext *s)
+static void mm_decode_pal(MmContext *s)
 {
     int i;
 
@@ -77,8 +77,6 @@ static int mm_decode_pal(MmContext *s)
         s->palette[i] = 0xFFU << 24 | bytestream2_get_be24(&s->gb);
         s->palette[i+128] = s->palette[i]<<2;
     }
-
-    return 0;
 }
 
 /**
@@ -200,7 +198,7 @@ static int mm_decode_frame(AVCodecContext *avctx,
         return res;
 
     switch(type) {
-    case MM_TYPE_PALETTE   : res = mm_decode_pal(s); return avpkt->size;
+    case MM_TYPE_PALETTE   : mm_decode_pal(s); return avpkt->size;
     case MM_TYPE_INTRA     : res = mm_decode_intra(s, 0, 0); break;
     case MM_TYPE_INTRA_HH  : res = mm_decode_intra(s, 1, 0); break;
     case MM_TYPE_INTRA_HHV : res = mm_decode_intra(s, 1, 1); break;

@@ -66,10 +66,11 @@ pw_m5283_m15212: times 4 dw -5283, -15212
 pw_13377x2: times 8 dw 13377*2
 
 pd_8192: times 4 dd 8192
-pw_2048: times 8 dw 2048
-pw_1024: times 8 dw 1024
-pw_512:  times 8 dw 512
-pw_m1:   times 8 dw -1
+
+cextern pw_512
+cextern pw_1024
+cextern pw_2048
+cextern pw_m1
 
 SECTION .text
 

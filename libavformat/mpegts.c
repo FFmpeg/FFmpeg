@@ -2192,7 +2192,7 @@ static int mpegts_resync(AVFormatContext *s)
 
     for (i = 0; i < MAX_RESYNC_SIZE; i++) {
         c = avio_r8(pb);
-        if (url_feof(pb))
+        if (avio_feof(pb))
             return AVERROR_EOF;
         if (c == 0x47) {
             avio_seek(pb, -1, SEEK_CUR);
@@ -2625,7 +2625,7 @@ static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
 /**************************************************************/
 /* parsing functions - called from other demuxers such as RTP */
 
-MpegTSContext *ff_mpegts_parse_open(AVFormatContext *s)
+MpegTSContext *avpriv_mpegts_parse_open(AVFormatContext *s)
 {
     MpegTSContext *ts;
 
@@ -2644,8 +2644,8 @@ MpegTSContext *ff_mpegts_parse_open(AVFormatContext *s)
 
 /* return the consumed length if a packet was output, or -1 if no
  * packet is output */
-int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
-                           const uint8_t *buf, int len)
+int avpriv_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
+                               const uint8_t *buf, int len)
 {
     int len1;
 
@@ -2669,11 +2669,29 @@ int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
     return len1 - len;
 }
 
-void ff_mpegts_parse_close(MpegTSContext *ts)
+void avpriv_mpegts_parse_close(MpegTSContext *ts)
 {
     mpegts_free(ts);
     av_free(ts);
 }
+
+#if LIBAVFORMAT_VERSION_MAJOR < 56
+MpegTSContext *ff_mpegts_parse_open(AVFormatContext *s)
+{
+    return avpriv_mpegts_parse_open(s);
+}
+
+int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
+                               const uint8_t *buf, int len)
+{
+    return avpriv_mpegts_parse_packet(ts, pkt, buf, len);
+}
+
+void ff_mpegts_parse_close(MpegTSContext *ts)
+{
+    avpriv_mpegts_parse_close(ts);
+}
+#endif
 
 AVInputFormat ff_mpegts_demuxer = {
     .name           = "mpegts",

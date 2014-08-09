@@ -260,7 +260,7 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t pos;
     uint32_t block_samples;
 
-    if (url_feof(s->pb))
+    if (avio_feof(s->pb))
         return AVERROR_EOF;
     if (wc->block_parsed) {
         if ((ret = wv_read_block_header(s, s->pb)) < 0)

@@ -84,7 +84,7 @@ static int resync(AVIOContext *pb)
         int b = avio_r8(pb);
         if (b != gif87a_sig[i] && b != gif89a_sig[i])
             i = -(b != 'G');
-        if (url_feof(pb))
+        if (avio_feof(pb))
             return AVERROR_EOF;
     }
     return 0;
@@ -234,7 +234,7 @@ parse_keyframe:
         ret = AVERROR_EOF;
     }
 
-    while (GIF_TRAILER != (block_label = avio_r8(pb)) && !url_feof(pb)) {
+    while (GIF_TRAILER != (block_label = avio_r8(pb)) && !avio_feof(pb)) {
         if (block_label == GIF_EXTENSION_INTRODUCER) {
             if ((ret = gif_read_ext (s)) < 0 )
                 goto resync;
@@ -299,7 +299,7 @@ resync:
     if ((ret >= 0 && !frame_parsed) || ret == AVERROR_EOF) {
         /* This might happen when there is no image block
          * between extension blocks and GIF_TRAILER or EOF */
-        if (!gdc->ignore_loop && (block_label == GIF_TRAILER || url_feof(pb))
+        if (!gdc->ignore_loop && (block_label == GIF_TRAILER || avio_feof(pb))
             && (gdc->total_iter < 0 || ++gdc->iter_count < gdc->total_iter))
             return avio_seek(pb, 0, SEEK_SET);
         return AVERROR_EOF;

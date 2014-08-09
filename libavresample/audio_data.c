@@ -48,6 +48,14 @@ static void calc_ptr_alignment(AudioData *a)
     a->ptr_align = min_align;
 }
 
+int ff_sample_fmt_is_planar(enum AVSampleFormat sample_fmt, int channels)
+{
+    if (channels == 1)
+        return 1;
+    else
+        return av_sample_fmt_is_planar(sample_fmt);
+}
+
 int ff_audio_data_set_channels(AudioData *a, int channels)
 {
     if (channels < 1 || channels > AVRESAMPLE_MAX_CHANNELS ||
@@ -81,7 +89,7 @@ int ff_audio_data_init(AudioData *a, uint8_t **src, int plane_size, int channels
         av_log(a, AV_LOG_ERROR, "invalid sample format\n");
         return AVERROR(EINVAL);
     }
-    a->is_planar = av_sample_fmt_is_planar(sample_fmt);
+    a->is_planar = ff_sample_fmt_is_planar(sample_fmt, channels);
     a->planes    = a->is_planar ? channels : 1;
     a->stride    = a->sample_size * (a->is_planar ? 1 : channels);
 
@@ -125,7 +133,7 @@ AudioData *ff_audio_data_alloc(int channels, int nb_samples,
         av_free(a);
         return NULL;
     }
-    a->is_planar = av_sample_fmt_is_planar(sample_fmt);
+    a->is_planar = ff_sample_fmt_is_planar(sample_fmt, channels);
     a->planes    = a->is_planar ? channels : 1;
     a->stride    = a->sample_size * (a->is_planar ? 1 : channels);
 

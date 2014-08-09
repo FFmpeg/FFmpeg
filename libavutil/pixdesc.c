@@ -23,12 +23,12 @@
 #include <string.h>
 
 #include "avassert.h"
+#include "avstring.h"
 #include "common.h"
 #include "pixfmt.h"
 #include "pixdesc.h"
 #include "internal.h"
 #include "intreadwrite.h"
-#include "avstring.h"
 #include "version.h"
 
 void av_read_image_line(uint16_t *dst,
@@ -258,6 +258,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 0, 1, 0, 7 },        /* Y */
         },
         .flags = AV_PIX_FMT_FLAG_PSEUDOPAL,
+        .alias = "gray8,y8",
     },
     [AV_PIX_FMT_MONOWHITE] = {
         .name = "monow",
@@ -568,6 +569,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 1, 1, 0, 15 },       /* Y */
         },
         .flags = AV_PIX_FMT_FLAG_BE,
+        .alias = "y16be",
     },
     [AV_PIX_FMT_GRAY16LE] = {
         .name = "gray16le",
@@ -577,6 +579,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .comp = {
             { 0, 1, 1, 0, 15 },       /* Y */
         },
+        .alias = "y16le",
     },
     [AV_PIX_FMT_YUV440P] = {
         .name = "yuv440p",
@@ -1547,14 +1550,33 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_h = 1,
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
-    [AV_PIX_FMT_GRAY8A] = {
-        .name = "gray8a",
+    [AV_PIX_FMT_YA8] = {
+        .name = "ya8",
         .nb_components = 2,
         .comp = {
             { 0, 1, 1, 0, 7 },        /* Y */
             { 0, 1, 2, 0, 7 },        /* A */
         },
         .flags = AV_PIX_FMT_FLAG_ALPHA,
+        .alias = "gray8a",
+    },
+    [AV_PIX_FMT_YA16LE] = {
+        .name = "ya16le",
+        .nb_components = 2,
+        .comp = {
+            { 0, 3, 1, 0, 15 },        /* Y */
+            { 0, 3, 3, 0, 15 },        /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_ALPHA,
+    },
+    [AV_PIX_FMT_YA16BE] = {
+        .name = "ya16be",
+        .nb_components = 2,
+        .comp = {
+            { 0, 3, 1, 0, 15 },        /* Y */
+            { 0, 3, 3, 0, 15 },        /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_ALPHA,
     },
     [AV_PIX_FMT_GBRP] = {
         .name = "gbrp",
@@ -1887,7 +1909,8 @@ static enum AVPixelFormat get_pix_fmt_internal(const char *name)
 
     for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
         if (av_pix_fmt_descriptors[pix_fmt].name &&
-            !strcmp(av_pix_fmt_descriptors[pix_fmt].name, name))
+            (!strcmp(av_pix_fmt_descriptors[pix_fmt].name, name) ||
+             av_match_name(name, av_pix_fmt_descriptors[pix_fmt].alias)))
             return pix_fmt;
 
     return AV_PIX_FMT_NONE;
@@ -1957,7 +1980,8 @@ int av_get_padded_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
     return bits >> log2_pixels;
 }
 
-char *av_get_pix_fmt_string (char *buf, int buf_size, enum AVPixelFormat pix_fmt)
+char *av_get_pix_fmt_string(char *buf, int buf_size,
+                            enum AVPixelFormat pix_fmt)
 {
     /* print header */
     if (pix_fmt < 0) {

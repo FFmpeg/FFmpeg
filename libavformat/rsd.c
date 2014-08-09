@@ -137,7 +137,7 @@ static int rsd_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *codec = s->streams[0]->codec;
     int ret, size = 1024;
 
-    if (url_feof(s->pb))
+    if (avio_feof(s->pb))
         return AVERROR_EOF;
 
     if (codec->codec_id == AV_CODEC_ID_ADPCM_IMA_RAD)

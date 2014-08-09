@@ -52,7 +52,7 @@ static av_cold int avui_encode_init(AVCodecContext *avctx)
 static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pic, int *got_packet)
 {
-    uint8_t *dst, *src = pic->data[0];
+    uint8_t *dst;
     int i, j, skip, ret, size, interlaced;
 
     interlaced = avctx->field_order > AV_FIELD_PROGRESSIVE;
@@ -74,6 +74,7 @@ static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     for (i = 0; i <= interlaced; i++) {
+        uint8_t *src;
         if (interlaced && avctx->height == 486) {
             src = pic->data[0] + (1 - i) * pic->linesize[0];
         } else {

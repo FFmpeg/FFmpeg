@@ -286,7 +286,7 @@ static int mmf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     left = mmf->data_end - avio_tell(s->pb);
     size = FFMIN(left, MAX_SIZE);
-    if (url_feof(s->pb) || size <= 0)
+    if (avio_feof(s->pb) || size <= 0)
         return AVERROR_EOF;
 
     ret = av_get_packet(s->pb, pkt, size);

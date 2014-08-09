@@ -28,12 +28,12 @@ SECTION_RODATA
 
 pw_pixel_max_12: times 8 dw ((1 << 12)-1)
 pw_pixel_max_10: times 8 dw ((1 << 10)-1)
-pw_m1:           times 8 dw -1
 pw_m2:           times 8 dw -2
 pd_1 :           times 4 dd  1
 
 cextern pw_4
 cextern pw_8
+cextern pw_m1
 
 SECTION .text
 INIT_XMM sse2
@@ -77,16 +77,10 @@ INIT_XMM sse2
 ; in: 4 rows of 8 words in m0..m3
 ; out: 8 rows of 4 bytes in %1..%8
 %macro TRANSPOSE8x4B_STORE 8
-    packuswb         m0, m0
-    packuswb         m1, m1
-    packuswb         m2, m2
-    packuswb         m3, m3
-
-    punpcklbw        m0, m1
-    punpcklbw        m2, m3
-
-    punpckhwd        m6, m0, m2
-    punpcklwd        m0, m2
+    packuswb         m0, m2
+    packuswb         m1, m3
+    SBUTTERFLY bw, 0, 1, 2
+    SBUTTERFLY wd, 0, 1, 2
 
     movd             %1, m0
     pshufd           m0, m0, 0x39
@@ -96,13 +90,13 @@ INIT_XMM sse2
     pshufd           m0, m0, 0x39
     movd             %4, m0
 
-    movd             %5, m6
-    pshufd           m6, m6, 0x39
-    movd             %6, m6
-    pshufd           m6, m6, 0x39
-    movd             %7, m6
-    pshufd           m6, m6, 0x39
-    movd             %8, m6
+    movd             %5, m1
+    pshufd           m1, m1, 0x39
+    movd             %6, m1
+    pshufd           m1, m1, 0x39
+    movd             %7, m1
+    pshufd           m1, m1, 0x39
+    movd             %8, m1
 %endmacro
 
 ; in: 8 rows of 4 words in %4..%11
@@ -204,40 +198,20 @@ INIT_XMM sse2
 ; in: 8 rows of 8 words in m0..m8
 ; out: 8 rows of 8 bytes in %1..%8
 %macro TRANSPOSE8x8B_STORE 8
-    packuswb         m0, m0
-    packuswb         m1, m1
-    packuswb         m2, m2
-    packuswb         m3, m3
-    packuswb         m4, m4
-    packuswb         m5, m5
-    packuswb         m6, m6
-    packuswb         m7, m7
+    packuswb         m0, m4
+    packuswb         m1, m5
+    packuswb         m2, m6
+    packuswb         m3, m7
+    TRANSPOSE2x4x4B   0, 1, 2, 3, 4
 
-    punpcklbw        m0, m1
-    punpcklbw        m2, m3
-
-    punpckhwd        m8, m0, m2
-    punpcklwd        m0, m2
-
-    punpcklbw        m4, m5
-    punpcklbw        m6, m7
-
-    punpckhwd        m9, m4, m6
-    punpcklwd        m4, m6
-
-    punpckhdq       m10, m0, m4; 2, 3
-    punpckldq        m0, m4;   0, 1
-
-    punpckldq       m11, m8, m9;  4, 5
-    punpckhdq        m8, m9;   6, 7
     movq             %1, m0
     movhps           %2, m0
-    movq             %3, m10
-    movhps           %4, m10
-    movq             %5, m11
-    movhps           %6, m11
-    movq             %7, m8
-    movhps           %8, m8
+    movq             %3, m1
+    movhps           %4, m1
+    movq             %5, m2
+    movhps           %6, m2
+    movq             %7, m3
+    movhps           %8, m3
 %endmacro
 
 ; in: 8 rows of 8 words in %1..%8
@@ -381,19 +355,15 @@ ALIGN 16
     psrld            m8, 16
     paddw            m8, m10
     movd            r7d, m8
-    and              r7, 0xffff; 1dp0 + 1dp3
     pshufd           m8, m8, 0x4E
     movd            r8d, m8
-    and              r8, 0xffff; 0dp0 + 0dp3
 
     pshufd           m8, m11, 0x31
     psrld            m8, 16
     paddw            m8, m11
     movd            r9d, m8
-    and              r9, 0xffff; 1dq0 + 1dq3
     pshufd           m8, m8, 0x4E
     movd           r10d, m8
-    and             r10, 0xffff; 0dq0 + 0dq3
     ; end calc for weak filter
 
     ; filtering mask
@@ -655,7 +625,7 @@ ALIGN 16
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void ff_hevc_v_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int *_tc,
+; void ff_hevc_v_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int32_t *tc,
 ;                                   uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 %macro LOOP_FILTER_CHROMA 0
@@ -690,7 +660,7 @@ cglobal hevc_v_loop_filter_chroma_12, 3, 5, 7, pix, stride, tc, pix0, r3stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void ff_hevc_h_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int *_tc,
+; void ff_hevc_h_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int32_t *tc,
 ;                                   uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 cglobal hevc_h_loop_filter_chroma_8, 3, 4, 7, pix, stride, tc, pix0
@@ -754,7 +724,7 @@ LOOP_FILTER_CHROMA
 %macro LOOP_FILTER_LUMA 0
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_v_loop_filter_luma(uint8_t *_pix, ptrdiff_t _stride, int beta,
-;                                 int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+;                                 int32_t *tc, uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 cglobal hevc_v_loop_filter_luma_8, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     sub            pixq, 4
@@ -794,7 +764,7 @@ cglobal hevc_v_loop_filter_luma_12, 4, 14, 16, pix, stride, beta, tc, pix0, src3
 
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_h_loop_filter_luma(uint8_t *_pix, ptrdiff_t _stride, int beta,
-;                                 int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+;                                 int32_t *tc, uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 cglobal hevc_h_loop_filter_luma_8, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     lea     src3strideq, [3 * strideq]

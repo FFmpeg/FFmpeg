@@ -79,7 +79,6 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
         av_log(log_ctx, AV_LOG_ERROR, "Failed to decode image from file\n");
         goto end;
     }
-    ret = 0;
 
     *w       = frame->width;
     *h       = frame->height;

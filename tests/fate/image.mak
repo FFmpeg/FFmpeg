@@ -59,6 +59,18 @@ fate-pictor: CMD = framecrc -i $(TARGET_SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24
 FATE_IMAGE-$(call PARSERDEMDEC, PNG, IMAGE2PIPE, PNG) += fate-pngparser
 fate-pngparser: CMD = framecrc -f image2pipe -i $(TARGET_SAMPLES)/png1/feed_4x_concat.png -pix_fmt rgba
 
+define FATE_IMGSUITE_PNG
+FATE_PNG += fate-png-$(1)
+fate-png-$(1): CMD = framecrc -i $(TARGET_SAMPLES)/png1/lena-$(1).png -sws_flags +accurate_rnd+bitexact -pix_fmt rgb24
+endef
+
+PNG_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba ya8 ya16
+$(foreach CLSP,$(PNG_COLORSPACES),$(eval $(call FATE_IMGSUITE_PNG,$(CLSP))))
+
+FATE_PNG-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG)
+FATE_IMAGE += $(FATE_PNG-yes)
+fate-png: $(FATE_PNG-yes)
+
 FATE_IMAGE-$(call DEMDEC, IMAGE2, PTX) += fate-ptx
 fate-ptx: CMD = framecrc -i $(TARGET_SAMPLES)/ptx/_113kw_pic.ptx -pix_fmt rgb24
 

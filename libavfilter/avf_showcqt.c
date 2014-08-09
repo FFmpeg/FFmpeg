@@ -26,6 +26,7 @@
 #include "libavutil/xga_font_data.h"
 #include "libavutil/qsort.h"
 #include "libavutil/time.h"
+#include "libavutil/eval.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -49,6 +50,10 @@
 #define SPECTOGRAM_START (VIDEO_HEIGHT-SPECTOGRAM_HEIGHT)
 #define BASE_FREQ 20.051392800492
 #define COEFF_CLAMP 1.0e-4
+#define TLENGTH_MIN 0.001
+#define TLENGTH_DEFAULT "384/f*tc/(384/f+tc)"
+#define VOLUME_MIN 1e-10
+#define VOLUME_MAX 100.0
 
 typedef struct {
     FFTSample value;
@@ -75,7 +80,8 @@ typedef struct {
     int fft_bits;
     int req_fullfilled;
     int remaining_fill;
-    double volume;
+    char *tlength;
+    char *volume;
     double timeclamp;   /* lower timeclamp, time-accurate, higher timeclamp, freq-accurate (at low freq)*/
     float coeffclamp;   /* lower coeffclamp, more precise, higher coeffclamp, faster */
     int fullhd;         /* if true, output video is at full HD resolution, otherwise it will be halved */
@@ -88,7 +94,8 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption showcqt_options[] = {
-    { "volume", "set volume", OFFSET(volume), AV_OPT_TYPE_DOUBLE, { .dbl = 16 }, 0.1, 100, FLAGS },
+    { "volume", "set volume", OFFSET(volume), AV_OPT_TYPE_STRING, { .str = "16" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "tlength", "set transform length", OFFSET(tlength), AV_OPT_TYPE_STRING, { .str = TLENGTH_DEFAULT }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "timeclamp", "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 }, 0.1, 1.0, FLAGS },
     { "coeffclamp", "set coeffclamp", OFFSET(coeffclamp), AV_OPT_TYPE_FLOAT, { .dbl = 1 }, 0.1, 10, FLAGS },
     { "gamma", "set gamma", OFFSET(gamma), AV_OPT_TYPE_FLOAT, { .dbl = 3 }, 1, 7, FLAGS },
@@ -246,6 +253,28 @@ static void load_freetype_font(AVFilterContext *ctx)
 }
 #endif
 
+static double a_weighting(void *p, double f)
+{
+    double ret = 12200.0*12200.0 * (f*f*f*f);
+    ret /= (f*f + 20.6*20.6) * (f*f + 12200.0*12200.0) *
+           sqrt((f*f + 107.7*107.7) * (f*f + 737.9*737.9));
+    return ret;
+}
+
+static double b_weighting(void *p, double f)
+{
+    double ret = 12200.0*12200.0 * (f*f*f);
+    ret /= (f*f + 20.6*20.6) * (f*f + 12200.0*12200.0) * sqrt(f*f + 158.5*158.5);
+    return ret;
+}
+
+static double c_weighting(void *p, double f)
+{
+    double ret = 12200.0*12200.0 * (f*f);
+    ret /= (f*f + 20.6*20.6) * (f*f + 12200.0*12200.0);
+    return ret;
+}
+
 static inline int qsort_sparsecoeff(const SparseCoeff *a, const SparseCoeff *b)
 {
     if (fabsf(a->value) >= fabsf(b->value))
@@ -259,7 +288,11 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowCQTContext *s = ctx->priv;
-    int fft_len, k, x, y;
+    AVExpr *tlength_expr, *volume_expr;
+    static const char * const expr_vars[] = { "timeclamp", "tc", "frequency", "freq", "f", NULL };
+    static const char * const expr_func_names[] = { "a_weighting", "b_weighting", "c_weighting", NULL };
+    static double (* const expr_funcs[])(void *, double) = { a_weighting, b_weighting, c_weighting, NULL };
+    int fft_len, k, x, y, ret;
     int num_coeffs = 0;
     int rate = inlink->sample_rate;
     double max_len = rate * (double) s->timeclamp;
@@ -307,12 +340,22 @@ static int config_output(AVFilterLink *outlink)
 
     av_log(ctx, AV_LOG_INFO, "Calculating spectral kernel, please wait\n");
     start_time = av_gettime_relative();
+    ret = av_expr_parse(&tlength_expr, s->tlength, expr_vars, NULL, NULL, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        return ret;
+    ret = av_expr_parse(&volume_expr, s->volume, expr_vars, expr_func_names,
+                        expr_funcs, NULL, NULL, 0, ctx);
+    if (ret < 0) {
+        av_expr_free(tlength_expr);
+        return ret;
+    }
     for (k = 0; k < VIDEO_WIDTH; k++) {
         int hlen = fft_len >> 1;
         float total = 0;
         float partial = 0;
         double freq = BASE_FREQ * exp2(k * (1.0/192.0));
-        double tlen = rate * (24.0 * 16.0) /freq;
+        double tlen, tlength, volume;
+        double expr_vars_val[] = { s->timeclamp, s->timeclamp, freq, freq, freq, 0 };
         /* a window function from Albert H. Nuttall,
          * "Some Windows with Very Good Sidelobe Behavior"
          * -93.32 dB peak sidelobe and 18 dB/octave asymptotic decay
@@ -324,10 +367,33 @@ static int config_output(AVFilterLink *outlink)
         double sv_step, cv_step, sv, cv;
         double sw_step, cw_step, sw, cw, w;
 
-        tlen = tlen * max_len / (tlen + max_len);
+        tlength = av_expr_eval(tlength_expr, expr_vars_val, NULL);
+        if (isnan(tlength)) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: tlength is nan, setting it to %g\n", freq, s->timeclamp);
+            tlength = s->timeclamp;
+        } else if (tlength < TLENGTH_MIN) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: tlength is %g, setting it to %g\n", freq, tlength, TLENGTH_MIN);
+            tlength = TLENGTH_MIN;
+        } else if (tlength > s->timeclamp) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: tlength is %g, setting it to %g\n", freq, tlength, s->timeclamp);
+            tlength = s->timeclamp;
+        }
+
+        volume = FFABS(av_expr_eval(volume_expr, expr_vars_val, NULL));
+        if (isnan(volume)) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: volume is nan, setting it to 0\n", freq);
+            volume = VOLUME_MIN;
+        } else if (volume < VOLUME_MIN) {
+            volume = VOLUME_MIN;
+        } else if (volume > VOLUME_MAX) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: volume is %g, setting it to %g\n", freq, volume, VOLUME_MAX);
+            volume = VOLUME_MAX;
+        }
+
+        tlen = tlength * rate;
         s->fft_data[0].re = 0;
         s->fft_data[0].im = 0;
-        s->fft_data[hlen].re = (1.0 + a1 + a2 + a3) * (1.0/tlen) * s->volume * (1.0/fft_len);
+        s->fft_data[hlen].re = (1.0 + a1 + a2 + a3) * (1.0/tlen) * volume * (1.0/fft_len);
         s->fft_data[hlen].im = 0;
         sv_step = sv = sin(2.0*M_PI*freq*(1.0/rate));
         cv_step = cv = cos(2.0*M_PI*freq*(1.0/rate));
@@ -341,7 +407,7 @@ static int config_output(AVFilterLink *outlink)
             cw2 = cw * cw - sw * sw;
             sw2 = cw * sw + sw * cw;
             cw3 = cw * cw2 - sw * sw2;
-            w = (1.0 + a1 * cw + a2 * cw2 + a3 * cw3) * (1.0/tlen) * s->volume * (1.0/fft_len);
+            w = (1.0 + a1 * cw + a2 * cw2 + a3 * cw3) * (1.0/tlen) * volume * (1.0/fft_len);
             s->fft_data[hlen + x].re = w * cv;
             s->fft_data[hlen + x].im = w * sv;
             s->fft_data[hlen - x].re = s->fft_data[hlen + x].re;
@@ -378,14 +444,19 @@ static int config_output(AVFilterLink *outlink)
                 s->coeffs_len[k] = fft_len - x;
                 num_coeffs += s->coeffs_len[k];
                 s->coeffs[k] = av_malloc_array(s->coeffs_len[k], sizeof(*s->coeffs[k]));
-                if (!s->coeffs[k])
+                if (!s->coeffs[k]) {
+                    av_expr_free(volume_expr);
+                    av_expr_free(tlength_expr);
                     return AVERROR(ENOMEM);
+                }
                 for (y = 0; y < s->coeffs_len[k]; y++)
                     s->coeffs[k][y] = s->coeff_sort[x+y];
                 break;
             }
         }
     }
+    av_expr_free(volume_expr);
+    av_expr_free(tlength_expr);
     end_time = av_gettime_relative();
     av_log(ctx, AV_LOG_INFO, "Elapsed time %.6f s (fft_len=%u, num_coeffs=%u)\n", 1e-6 * (end_time-start_time), fft_len, num_coeffs);
 

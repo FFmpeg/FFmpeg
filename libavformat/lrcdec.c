@@ -104,7 +104,7 @@ static int64_t read_line(AVBPrint *buf, AVIOContext *pb)
     int64_t pos = avio_tell(pb);
 
     av_bprint_clear(buf);
-    while(!url_feof(pb)) {
+    while(!avio_feof(pb)) {
         int c = avio_r8(pb);
         if(c != '\r') {
             av_bprint_chars(buf, c, 1);
@@ -169,7 +169,7 @@ static int lrc_read_header(AVFormatContext *s)
     st->codec->codec_id   = AV_CODEC_ID_TEXT;
     av_bprint_init(&line, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    while(!url_feof(s->pb)) {
+    while(!avio_feof(s->pb)) {
         int64_t pos = read_line(&line, s->pb);
         int64_t header_offset = find_header(line.str);
         if(header_offset >= 0) {

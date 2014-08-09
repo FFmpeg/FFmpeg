@@ -215,7 +215,7 @@ static int png_write_row(PNGEncContext *s, const uint8_t *data, int size)
     int ret;
 
     s->zstream.avail_in = size;
-    s->zstream.next_in  = (uint8_t *)data;
+    s->zstream.next_in  = data;
     while (s->zstream.avail_in > 0) {
         ret = deflate(&s->zstream, Z_NO_FLUSH);
         if (ret != Z_OK)

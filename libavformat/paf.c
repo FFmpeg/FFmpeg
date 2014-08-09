@@ -199,7 +199,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     if (p->current_frame >= p->nb_frames)
         return AVERROR_EOF;
 
-    if (url_feof(pb))
+    if (avio_feof(pb))
         return AVERROR_EOF;
 
     if (p->got_audio) {

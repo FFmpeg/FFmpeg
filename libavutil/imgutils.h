@@ -205,8 +205,6 @@ int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *lo
  */
 int av_image_check_sar(unsigned int w, unsigned int h, AVRational sar);
 
-int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
-
 /**
  * @}
  */

@@ -109,7 +109,7 @@ static int process_audio_header_elements(AVFormatContext *s)
     ea->sample_rate  = -1;
     ea->num_channels = 1;
 
-    while (!url_feof(pb) && in_header) {
+    while (!avio_feof(pb) && in_header) {
         int in_subheader;
         uint8_t byte;
         byte = avio_r8(pb);
@@ -118,7 +118,7 @@ static int process_audio_header_elements(AVFormatContext *s)
         case 0xFD:
             av_log(s, AV_LOG_DEBUG, "entered audio subheader\n");
             in_subheader = 1;
-            while (!url_feof(pb) && in_subheader) {
+            while (!avio_feof(pb) && in_subheader) {
                 uint8_t subbyte;
                 subbyte = avio_r8(pb);
 

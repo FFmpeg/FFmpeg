@@ -74,7 +74,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t chunk_size, payload_size;
     int ret;
 
-    if (url_feof(pb))
+    if (avio_feof(pb))
         return AVERROR_EOF;
 
     avio_skip(pb, 4);

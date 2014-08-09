@@ -69,6 +69,15 @@
     SWAP %2, %3
 %endmacro
 
+%macro TRANSPOSE2x4x4B 5
+    SBUTTERFLY bw,  %1, %2, %5
+    SBUTTERFLY bw,  %3, %4, %5
+    SBUTTERFLY wd,  %1, %3, %5
+    SBUTTERFLY wd,  %2, %4, %5
+    SBUTTERFLY dq,  %1, %2, %5
+    SBUTTERFLY dq,  %3, %4, %5
+%endmacro
+
 %macro TRANSPOSE2x4x4W 5
     SBUTTERFLY wd,  %1, %2, %5
     SBUTTERFLY wd,  %3, %4, %5

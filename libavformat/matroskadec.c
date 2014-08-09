@@ -654,7 +654,7 @@ static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
     id = avio_rb32(pb);
 
     // try to find a toplevel element
-    while (!url_feof(pb)) {
+    while (!avio_feof(pb)) {
         if (id == MATROSKA_ID_INFO     || id == MATROSKA_ID_TRACKS      ||
             id == MATROSKA_ID_CUES     || id == MATROSKA_ID_TAGS        ||
             id == MATROSKA_ID_SEEKHEAD || id == MATROSKA_ID_ATTACHMENTS ||
@@ -707,7 +707,7 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, AVIOContext *pb,
      * use it safely here to catch EOS. */
     if (!(total = avio_r8(pb))) {
         /* we might encounter EOS here */
-        if (!url_feof(pb)) {
+        if (!avio_feof(pb)) {
             int64_t pos = avio_tell(pb);
             av_log(matroska->ctx, AV_LOG_ERROR,
                    "Read error at pos. %"PRIu64" (0x%"PRIx64")\n",
@@ -2161,8 +2161,10 @@ static int matroska_read_header(AVFormatContext *s)
                                    (AVRational) { 1, 1000000000 },
                                    chapters[i].start, chapters[i].end,
                                    chapters[i].title);
-            av_dict_set(&chapters[i].chapter->metadata,
-                        "title", chapters[i].title, 0);
+            if (chapters[i].chapter) {
+                av_dict_set(&chapters[i].chapter->metadata,
+                            "title", chapters[i].title, 0);
+            }
             max_start = chapters[i].start;
         }
 

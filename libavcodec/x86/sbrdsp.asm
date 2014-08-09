@@ -25,13 +25,13 @@ SECTION_RODATA
 ; mask equivalent for multiply by -1.0 1.0
 ps_mask         times 2 dd 1<<31, 0
 ps_mask2        times 2 dd 0, 1<<31
-ps_neg          times 4 dd 1<<31
 ps_noise0       times 2 dd  1.0,  0.0,
 ps_noise2       times 2 dd -1.0,  0.0
 ps_noise13      dd  0.0,  1.0, 0.0, -1.0
                 dd  0.0, -1.0, 0.0,  1.0
                 dd  0.0,  1.0, 0.0, -1.0
 cextern         sbr_noise_table
+cextern         ps_neg
 
 SECTION_TEXT
 

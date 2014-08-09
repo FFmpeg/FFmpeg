@@ -284,7 +284,7 @@ static int64_t klv_decode_ber_length(AVIOContext *pb)
 static int mxf_read_sync(AVIOContext *pb, const uint8_t *key, unsigned size)
 {
     int i, b;
-    for (i = 0; i < size && !url_feof(pb); i++) {
+    for (i = 0; i < size && !avio_feof(pb); i++) {
         b = avio_r8(pb);
         if (b == key[0])
             i = 0;
@@ -1874,7 +1874,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
 
     if (!ctx)
         return AVERROR(ENOMEM);
-    while (avio_tell(pb) + 4 < klv_end && !url_feof(pb)) {
+    while (avio_tell(pb) + 4 < klv_end && !avio_feof(pb)) {
         int ret;
         int tag = avio_rb16(pb);
         int size = avio_rb16(pb); /* KLV specified by 0x53 */
@@ -2122,7 +2122,7 @@ static int mxf_read_header(AVFormatContext *s)
 
     mxf_read_random_index_pack(s);
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         const MXFMetadataReadTableEntry *metadata;
         if (avio_tell(s->pb) == last_pos) {
             av_log(mxf->fc, AV_LOG_ERROR, "MXF structure loop detected\n");
@@ -2450,7 +2450,7 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
         skip:
             avio_skip(s->pb, klv.length);
     }
-    return url_feof(s->pb) ? AVERROR_EOF : ret;
+    return avio_feof(s->pb) ? AVERROR_EOF : ret;
 }
 
 static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
