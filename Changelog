@@ -3,6 +3,9 @@ releases are sorted from youngest to oldest.
 
 version 0.8.14:
 
+- vp3: Copy all 3 frames for thread updates (CVE-2011-3934)
+- mpegts: Do not try to write a PMT larger than SECTION_SIZE (CVE-2014-2263)
+- mpegts: Define the section length with a constant
 - error_concealment: avoid using the picture if not fully setup (CVE-2013-0860)
 - svq1: do not modify the input packet
 - cdgraphics: do not return 0 from the decode function
