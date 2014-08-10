@@ -2675,24 +2675,6 @@ void avpriv_mpegts_parse_close(MpegTSContext *ts)
     av_free(ts);
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 56
-MpegTSContext *ff_mpegts_parse_open(AVFormatContext *s)
-{
-    return avpriv_mpegts_parse_open(s);
-}
-
-int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
-                               const uint8_t *buf, int len)
-{
-    return avpriv_mpegts_parse_packet(ts, pkt, buf, len);
-}
-
-void ff_mpegts_parse_close(MpegTSContext *ts)
-{
-    avpriv_mpegts_parse_close(ts);
-}
-#endif
-
 AVInputFormat ff_mpegts_demuxer = {
     .name           = "mpegts",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-TS (MPEG-2 Transport Stream)"),
