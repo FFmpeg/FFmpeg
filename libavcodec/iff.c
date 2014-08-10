@@ -847,9 +847,9 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 4:
         bytestream2_init(&gb, buf, buf_size);
-        if (avctx->codec_tag == MKTAG('R', 'G', 'B', '8'))
+        if (avctx->codec_tag == MKTAG('R', 'G', 'B', '8') && avctx->pix_fmt == AV_PIX_FMT_RGB32)
             decode_rgb8(&gb, s->frame->data[0], avctx->width, avctx->height, s->frame->linesize[0]);
-        else if (avctx->codec_tag == MKTAG('R', 'G', 'B', 'N'))
+        else if (avctx->codec_tag == MKTAG('R', 'G', 'B', 'N') && avctx->pix_fmt == AV_PIX_FMT_RGB444)
             decode_rgbn(&gb, s->frame->data[0], avctx->width, avctx->height, s->frame->linesize[0]);
         else
             return unsupported(avctx);
