@@ -2657,8 +2657,6 @@ strip_default="strip"
 yasmexe_default="yasm"
 windres_default="windres"
 
-nogas=":"
-
 # OS
 target_os_default=$(tolower $(uname -s))
 host_os=$target_os_default
@@ -3975,7 +3973,6 @@ case $target_os in
         strip="strip -d"
         ;;
     darwin)
-        test "${as#*gas-preprocessor.pl}" != "$as" || gas="${gas:=gas-preprocessor.pl} ${as:=$cc}"
         enabled ppc && add_asflags -force_cpusubtype_ALL
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR)'
         enabled x86_32 && append SHFLAGS -Wl,-read_only_relocs,suppress
@@ -4368,8 +4365,22 @@ EOF
 }
 
 if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
+    nogas=:
     enabled_any arm aarch64 && nogas=die
     enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
+    as_noop=-v
+
+    case $as_type in
+        arm*) gaspp_as_type=armasm; as_noop=-h ;;
+        gcc)  gaspp_as_type=gas ;;
+        *)    gaspp_as_type=$as_type ;;
+    esac
+
+    [ $target_os = "darwin" ] && gaspp_as_type="apple-$gaspp_as_type"
+
+    test "${as#*gas-preprocessor.pl}" != "$as" ||
+    check_cmd gas-preprocessor.pl -arch $arch -as-type $gaspp_as_type -- ${as:=$cc} $as_noop &&
+        gas="${gas:=gas-preprocessor.pl} -arch $arch -as-type $gaspp_as_type -- ${as:=$cc}"
 
     if ! check_gas ; then
         as=${gas:=$as}
