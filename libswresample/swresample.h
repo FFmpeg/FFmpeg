@@ -211,6 +211,10 @@ struct SwrContext *swr_alloc(void);
 
 /**
  * Initialize context after user parameters have been set.
+ * @note The context must be configured using the AVOption API.
+ *
+ * @see av_opt_set_int()
+ * @see av_opt_set_dict()
  *
  * @param[in,out]   s Swr context to initialize
  * @return AVERROR error code in case of failure.
