@@ -52,7 +52,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->workaround_bugs = avctx->workaround_bugs;
 
     // set defaults
-    ff_MPV_decode_defaults(s);
+    ff_mpv_decode_defaults(s);
     s->quant_precision = 5;
     s->decode_mb       = ff_h263_decode_mb;
     s->low_delay       = 1;
@@ -115,7 +115,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     if (avctx->codec->id != AV_CODEC_ID_H263 &&
         avctx->codec->id != AV_CODEC_ID_MPEG4) {
         ff_mpv_idct_init(s);
-        if ((ret = ff_MPV_common_init(s)) < 0)
+        if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
     }
 
@@ -130,7 +130,7 @@ av_cold int ff_h263_decode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
-    ff_MPV_common_end(s);
+    ff_mpv_common_end(s);
     return 0;
 }
 
@@ -239,7 +239,7 @@ static int decode_slice(MpegEncContext *s)
             if (ret < 0) {
                 const int xy = s->mb_x + s->mb_y * s->mb_stride;
                 if (ret == SLICE_END) {
-                    ff_MPV_decode_mb(s, s->block);
+                    ff_mpv_decode_mb(s, s->block);
                     if (s->loop_filter)
                         ff_h263_loop_filter(s);
 
@@ -251,7 +251,7 @@ static int decode_slice(MpegEncContext *s)
                     if (++s->mb_x >= s->mb_width) {
                         s->mb_x = 0;
                         ff_mpeg_draw_horiz_band(s, s->mb_y * mb_size, mb_size);
-                        ff_MPV_report_decode_progress(s);
+                        ff_mpv_report_decode_progress(s);
                         s->mb_y++;
                     }
                     return 0;
@@ -270,13 +270,13 @@ static int decode_slice(MpegEncContext *s)
                 return AVERROR_INVALIDDATA;
             }
 
-            ff_MPV_decode_mb(s, s->block);
+            ff_mpv_decode_mb(s, s->block);
             if (s->loop_filter)
                 ff_h263_loop_filter(s);
         }
 
         ff_mpeg_draw_horiz_band(s, s->mb_y * mb_size, mb_size);
-        ff_MPV_report_decode_progress(s);
+        ff_mpv_report_decode_progress(s);
 
         s->mb_x = 0;
     }
@@ -454,7 +454,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if (!s->context_initialized)
-        if ((ret = ff_MPV_common_init(s)) < 0)
+        if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
 
     if (s->current_picture_ptr == NULL || s->current_picture_ptr->f->data[0]) {
@@ -503,7 +503,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
         ff_set_sar(avctx, avctx->sample_aspect_ratio);
 
-        if ((ret = ff_MPV_common_frame_size_change(s)))
+        if ((ret = ff_mpv_common_frame_size_change(s)))
             return ret;
     }
 
@@ -542,7 +542,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
     }
 
-    if ((ret = ff_MPV_frame_start(s, avctx)) < 0)
+    if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
         return ret;
 
     if (!s->divx_packed && !avctx->hwaccel)
@@ -559,7 +559,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     /* the second part of the wmv2 header contains the MB skip bits which
      * are stored in current_picture->mb_type which is not available before
-     * ff_MPV_frame_start() */
+     * ff_mpv_frame_start() */
     if (CONFIG_WMV2_DECODER && s->msmpeg4_version == 5) {
         ret = ff_wmv2_decode_secondary_picture_header(s);
         if (ret < 0)
@@ -613,7 +613,7 @@ intrax8_decoded:
             return ret;
     }
 
-    ff_MPV_frame_end(s);
+    ff_mpv_frame_end(s);
 
     if (!s->divx_packed && avctx->hwaccel)
         ff_thread_finish_setup(avctx);

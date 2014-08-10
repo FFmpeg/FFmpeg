@@ -733,7 +733,7 @@ static int h264_frame_start(H264Context *h)
 
     /* We mark the current picture as non-reference after allocating it, so
      * that if we break out due to an error it can be released automatically
-     * in the next ff_MPV_frame_start().
+     * in the next ff_mpv_frame_start().
      */
     h->cur_pic_ptr->reference = 0;
 

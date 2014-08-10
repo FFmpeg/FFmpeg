@@ -218,10 +218,10 @@ static void update_duplicate_context_after_me(MpegEncContext *dst,
  * Set the given MpegEncContext to defaults for encoding.
  * the changed fields will not depend upon the prior state of the MpegEncContext.
  */
-static void MPV_encode_defaults(MpegEncContext *s)
+static void mpv_encode_defaults(MpegEncContext *s)
 {
     int i;
-    ff_MPV_common_defaults(s);
+    ff_mpv_common_defaults(s);
 
     for (i = -16; i < 16; i++) {
         default_fcode_tab[i + MAX_MV] = 1;
@@ -234,12 +234,12 @@ static void MPV_encode_defaults(MpegEncContext *s)
 }
 
 /* init video encoder */
-av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
+av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     int i, ret, format_supported;
 
-    MPV_encode_defaults(s);
+    mpv_encode_defaults(s);
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MPEG2VIDEO:
@@ -701,11 +701,11 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 
     /* init */
     ff_mpv_idct_init(s);
-    if (ff_MPV_common_init(s) < 0)
+    if (ff_mpv_common_init(s) < 0)
         return -1;
 
     if (ARCH_X86)
-        ff_MPV_encode_init_x86(s);
+        ff_mpv_encode_init_x86(s);
 
     ff_fdctdsp_init(&s->fdsp, avctx);
     ff_me_cmp_init(&s->mecc, avctx);
@@ -838,18 +838,18 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 
     return 0;
 fail:
-    ff_MPV_encode_end(avctx);
+    ff_mpv_encode_end(avctx);
     return AVERROR_UNKNOWN;
 }
 
-av_cold int ff_MPV_encode_end(AVCodecContext *avctx)
+av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     int i;
 
     ff_rate_control_uninit(s);
 
-    ff_MPV_common_end(s);
+    ff_mpv_common_end(s);
     if (CONFIG_MJPEG_ENCODER &&
         s->out_format == FMT_MJPEG)
         ff_mjpeg_encode_close(s);
@@ -1530,7 +1530,7 @@ static int frame_start(MpegEncContext *s)
     return 0;
 }
 
-int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
+int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
                           const AVFrame *pic_arg, int *got_packet)
 {
     MpegEncContext *s = avctx->priv_data;
@@ -1986,14 +1986,14 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         }
 
         if (s->mv_dir & MV_DIR_FORWARD) {
-            ff_MPV_motion(s, dest_y, dest_cb, dest_cr, 0,
+            ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 0,
                           s->last_picture.f->data,
                           op_pix, op_qpix);
             op_pix  = s->hdsp.avg_pixels_tab;
             op_qpix = s->qdsp.avg_qpel_pixels_tab;
         }
         if (s->mv_dir & MV_DIR_BACKWARD) {
-            ff_MPV_motion(s, dest_y, dest_cb, dest_cr, 1,
+            ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 1,
                           s->next_picture.f->data,
                           op_pix, op_qpix);
         }
@@ -2314,7 +2314,7 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
     }
 
     if(s->avctx->mb_decision == FF_MB_DECISION_RD){
-        ff_MPV_decode_mb(s, s->block);
+        ff_mpv_decode_mb(s, s->block);
 
         score *= s->lambda2;
         score += sse_mb(s) << FF_LAMBDA_SHIFT;
@@ -2959,7 +2959,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 }
 
                 if(s->avctx->mb_decision == FF_MB_DECISION_BITS)
-                    ff_MPV_decode_mb(s, s->block);
+                    ff_mpv_decode_mb(s, s->block);
             } else {
                 int motion_x = 0, motion_y = 0;
                 s->mv_type=MV_TYPE_16X16;
@@ -3078,7 +3078,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     s->out_format == FMT_H263 && s->pict_type!=AV_PICTURE_TYPE_B)
                     ff_h263_update_motion_val(s);
 
-                ff_MPV_decode_mb(s, s->block);
+                ff_mpv_decode_mb(s, s->block);
             }
 
             /* clean the MV table in IPS frames for direct mode in B frames */
@@ -4259,9 +4259,9 @@ AVCodec ff_h263_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H263,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = ff_MPV_encode_init,
-    .encode2        = ff_MPV_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .init           = ff_mpv_encode_init,
+    .encode2        = ff_mpv_encode_picture,
+    .close          = ff_mpv_encode_end,
     .pix_fmts= (const enum AVPixelFormat[]){AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE},
     .priv_class     = &h263_class,
 };
@@ -4287,9 +4287,9 @@ AVCodec ff_h263p_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H263P,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = ff_MPV_encode_init,
-    .encode2        = ff_MPV_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .init           = ff_mpv_encode_init,
+    .encode2        = ff_mpv_encode_picture,
+    .close          = ff_mpv_encode_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &h263p_class,
@@ -4303,9 +4303,9 @@ AVCodec ff_msmpeg4v2_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MSMPEG4V2,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = ff_MPV_encode_init,
-    .encode2        = ff_MPV_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .init           = ff_mpv_encode_init,
+    .encode2        = ff_mpv_encode_picture,
+    .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &msmpeg4v2_class,
 };
@@ -4318,9 +4318,9 @@ AVCodec ff_msmpeg4v3_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MSMPEG4V3,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = ff_MPV_encode_init,
-    .encode2        = ff_MPV_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .init           = ff_mpv_encode_init,
+    .encode2        = ff_mpv_encode_picture,
+    .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &msmpeg4v3_class,
 };
@@ -4333,9 +4333,9 @@ AVCodec ff_wmv1_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV1,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = ff_MPV_encode_init,
-    .encode2        = ff_MPV_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .init           = ff_mpv_encode_init,
+    .encode2        = ff_mpv_encode_picture,
+    .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &wmv1_class,
 };

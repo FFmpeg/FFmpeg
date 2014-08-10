@@ -193,7 +193,7 @@ static void  denoise_dct_sse2(MpegEncContext *s, int16_t *block){
 }
 #endif /* HAVE_INLINE_ASM */
 
-av_cold void ff_MPV_encode_init_x86(MpegEncContext *s)
+av_cold void ff_mpv_encode_init_x86(MpegEncContext *s)
 {
     const int dct_algo = s->avctx->dct_algo;
     int i;

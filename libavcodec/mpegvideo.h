@@ -689,24 +689,33 @@ static const AVClass name ## _class = {\
  * and decoding).  The changed fields will not depend upon the prior
  * state of the MpegEncContext.
  */
-void ff_MPV_common_defaults(MpegEncContext *s);
+void ff_mpv_common_defaults(MpegEncContext *s);
 
-void ff_MPV_decode_defaults(MpegEncContext *s);
-int ff_MPV_common_init(MpegEncContext *s);
-int ff_MPV_common_frame_size_change(MpegEncContext *s);
-void ff_MPV_common_end(MpegEncContext *s);
-void ff_MPV_decode_mb(MpegEncContext *s, int16_t block[12][64]);
-int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx);
-void ff_MPV_frame_end(MpegEncContext *s);
-int ff_MPV_encode_init(AVCodecContext *avctx);
-int ff_MPV_encode_end(AVCodecContext *avctx);
-int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
+int ff_mpv_common_init(MpegEncContext *s);
+void ff_mpv_common_init_arm(MpegEncContext *s);
+void ff_mpv_common_init_neon(MpegEncContext *s);
+void ff_mpv_common_init_ppc(MpegEncContext *s);
+void ff_mpv_common_init_x86(MpegEncContext *s);
+
+int ff_mpv_common_frame_size_change(MpegEncContext *s);
+void ff_mpv_common_end(MpegEncContext *s);
+
+void ff_mpv_decode_defaults(MpegEncContext *s);
+void ff_mpv_decode_mb(MpegEncContext *s, int16_t block[12][64]);
+void ff_mpv_report_decode_progress(MpegEncContext *s);
+
+int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx);
+void ff_mpv_frame_end(MpegEncContext *s);
+
+int ff_mpv_lowest_referenced_row(MpegEncContext *s, int dir);
+
+int ff_mpv_encode_init(AVCodecContext *avctx);
+void ff_mpv_encode_init_x86(MpegEncContext *s);
+
+int ff_mpv_encode_end(AVCodecContext *avctx);
+int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
                           const AVFrame *frame, int *got_packet);
-void ff_MPV_encode_init_x86(MpegEncContext *s);
-void ff_MPV_common_init_x86(MpegEncContext *s);
-void ff_MPV_common_init_arm(MpegEncContext *s);
-void ff_MPV_common_init_neon(MpegEncContext *s);
-void ff_MPV_common_init_ppc(MpegEncContext *s);
+
 void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
@@ -715,8 +724,6 @@ void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 int ff_find_unused_picture(MpegEncContext *s, int shared);
 void ff_denoise_dct(MpegEncContext *s, int16_t *block);
 int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
-int ff_MPV_lowest_referenced_row(MpegEncContext *s, int dir);
-void ff_MPV_report_decode_progress(MpegEncContext *s);
 int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 void ff_set_qscale(MpegEncContext * s, int qscale);
 
@@ -727,7 +734,7 @@ int ff_dct_quantize_c(MpegEncContext *s, int16_t *block, int n, int qscale, int 
 
 void ff_init_block_index(MpegEncContext *s);
 
-void ff_MPV_motion(MpegEncContext *s,
+void ff_mpv_motion(MpegEncContext *s,
                    uint8_t *dest_y, uint8_t *dest_cb,
                    uint8_t *dest_cr, int dir,
                    uint8_t **ref_picture,
