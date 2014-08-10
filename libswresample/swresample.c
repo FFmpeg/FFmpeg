@@ -62,17 +62,39 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     s->log_level_offset= log_offset;
     s->log_ctx= log_ctx;
 
-    av_opt_set_int(s, "ocl", out_ch_layout,   0);
-    av_opt_set_int(s, "osf", out_sample_fmt,  0);
-    av_opt_set_int(s, "osr", out_sample_rate, 0);
-    av_opt_set_int(s, "icl", in_ch_layout,    0);
-    av_opt_set_int(s, "isf", in_sample_fmt,   0);
-    av_opt_set_int(s, "isr", in_sample_rate,  0);
-    av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_NONE,   0);
-    av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> in_ch_layout), 0);
-    av_opt_set_int(s, "och", av_get_channel_layout_nb_channels(s->out_ch_layout), 0);
+    if (av_opt_set_int(s, "ocl", out_ch_layout,   0) < 0)
+        goto fail;
+
+    if (av_opt_set_int(s, "osf", out_sample_fmt,  0) < 0)
+        goto fail;
+
+    if (av_opt_set_int(s, "osr", out_sample_rate, 0) < 0)
+        goto fail;
+
+    if (av_opt_set_int(s, "icl", in_ch_layout,    0) < 0)
+        goto fail;
+
+    if (av_opt_set_int(s, "isf", in_sample_fmt,   0) < 0)
+        goto fail;
+
+    if (av_opt_set_int(s, "isr", in_sample_rate,  0) < 0)
+        goto fail;
+
+    if (av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_NONE,   0) < 0)
+        goto fail;
+
+    if (av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> in_ch_layout), 0) < 0)
+        goto fail;
+
+    if (av_opt_set_int(s, "och", av_get_channel_layout_nb_channels(s->out_ch_layout), 0) < 0)
+        goto fail;
+
     av_opt_set_int(s, "uch", 0, 0);
     return s;
+fail:
+    av_log(s, AV_LOG_ERROR, "Failed to set option\n");
+    swr_free(&s);
+    return NULL;
 }
 
 static void set_audiodata_fmt(AudioData *a, enum AVSampleFormat fmt){
