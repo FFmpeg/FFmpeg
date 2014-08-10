@@ -395,7 +395,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
 
         if (codec->codec_id == AV_CODEC_ID_NONE) {
-            AVProbeData pd;
+            AVProbeData pd = { 0 };
             AVInputFormat *ifmt;
             uint8_t header[PROBE_BUF_MIN + AVPROBE_PADDING_SIZE];
             int ret;
