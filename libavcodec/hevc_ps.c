@@ -452,6 +452,12 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     }
     get_bits1(gb); /* vps_extension_flag */
 
+    if (get_bits_left(gb) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Overread VPS by %d bits\n", -get_bits_left(gb));
+        goto err;
+    }
+
     av_buffer_unref(&s->vps_list[vps_id]);
     s->vps_list[vps_id] = vps_buf;
     return 0;
@@ -1050,6 +1056,12 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         goto err;
     }
 
+    if (get_bits_left(gb) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Overread SPS by %d bits\n", -get_bits_left(gb));
+        goto err;
+    }
+
     if (s->avctx->debug & FF_DEBUG_BITSTREAM) {
         av_log(s->avctx, AV_LOG_DEBUG,
                "Parsed SPS: id %d; coded wxh: %dx%d; "
@@ -1471,6 +1483,12 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
             }
             pps->min_tb_addr_zs[y * (sps->tb_mask+2) + x] = val;
         }
+    }
+
+    if (get_bits_left(gb) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Overread PPS by %d bits\n", -get_bits_left(gb));
+        goto err;
     }
 
     av_buffer_unref(&s->pps_list[pps_id]);
