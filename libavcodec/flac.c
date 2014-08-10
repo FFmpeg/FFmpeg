@@ -235,11 +235,3 @@ void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *
     skip_bits_long(&gb, 64); /* md5 sum */
     skip_bits_long(&gb, 64); /* md5 sum */
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 56
-void avpriv_flac_parse_block_header(const uint8_t *block_header,
-                                int *last, int *type, int *size)
-{
-    flac_parse_block_header(block_header, last, type, size);
-}
-#endif

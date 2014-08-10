@@ -110,11 +110,6 @@ int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
                                    enum FLACExtradataFormat *format,
                                    uint8_t **streaminfo_start);
 
-#if LIBAVCODEC_VERSION_MAJOR < 56
-void avpriv_flac_parse_block_header(const uint8_t *block_header,
-                                    int *last, int *type, int *size);
-#endif
-
 /**
  * Calculate an estimate for the maximum frame size based on verbatim mode.
  * @param blocksize block size, in samples
