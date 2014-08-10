@@ -56,18 +56,6 @@ static int (*lockmgr_cb)(void **mutex, enum AVLockOp op);
 static void *codec_mutex;
 static void *avformat_mutex;
 
-#if FF_API_FAST_MALLOC && CONFIG_SHARED && HAVE_SYMVER
-FF_SYMVER(void*, av_fast_realloc, (void *ptr, unsigned int *size, size_t min_size), "LIBAVCODEC_55")
-{
-    return av_fast_realloc(ptr, size, min_size);
-}
-
-FF_SYMVER(void, av_fast_malloc, (void *ptr, unsigned int *size, size_t min_size), "LIBAVCODEC_55")
-{
-    av_fast_malloc(ptr, size, min_size);
-}
-#endif
-
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size)
 {
     void **p = ptr;
