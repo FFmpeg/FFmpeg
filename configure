@@ -3799,7 +3799,7 @@ if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
     if ! check_gas ; then
         as=${gas:=$as}
         check_gas || \
-            $nogas "GNU assembler not found, install gas-preprocessor"
+            $nogas "GNU assembler not found, install/update gas-preprocessor"
     fi
 
     check_as <<EOF && enable as_func
