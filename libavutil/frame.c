@@ -492,7 +492,11 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
 
     for (i = 0; i < src->nb_side_data; i++) {
         const AVFrameSideData *sd_src = src->side_data[i];
-        AVFrameSideData *sd_dst = av_frame_new_side_data(dst, sd_src->type,
+        AVFrameSideData *sd_dst;
+        if (   sd_src->type == AV_FRAME_DATA_PANSCAN
+            && (src->width != dst->width || src->height != dst->height))
+            continue;
+        sd_dst = av_frame_new_side_data(dst, sd_src->type,
                                                          sd_src->size);
         if (!sd_dst) {
             for (i = 0; i < dst->nb_side_data; i++) {
