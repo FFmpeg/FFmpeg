@@ -1,6 +1,12 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.2.7
+- snow: fix null pointer dereference
+- iff: fix out of array access
+- svq1dec: fix input data corruption
+
+
 version 2.2.6
 - fix infinite loop in dvbsub parser
 - fix some interlaced MPEG-2 videos
