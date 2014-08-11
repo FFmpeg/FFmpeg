@@ -202,10 +202,10 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
             case AV_STEREO3D_CHECKERBOARD:
                 fpa_type = 0;
                 break;
-            case AV_STEREO3D_LINES:
+            case AV_STEREO3D_COLUMNS:
                 fpa_type = 1;
                 break;
-            case AV_STEREO3D_COLUMNS:
+            case AV_STEREO3D_LINES:
                 fpa_type = 2;
                 break;
             case AV_STEREO3D_SIDEBYSIDE:
