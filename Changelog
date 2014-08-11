@@ -1,6 +1,19 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.3.2:
+- snow: fix null pointer dereference
+- huffyucdec: fix overread
+- vc1dec: fix crash
+- iff: fix out of array access
+- matroskaenc: fix assertion failure
+- cdgraphics: fix infinite loop
+- dvdsub_parser: fix infinite loop
+- mpeg12dec: support decoding some broken files
+- v4l2enc: fix crash
+- h264_parser: fix handling huge resolutions
+- h264_mp4toannexb_bsf: multiple bugfixes
+
 version 2.3.1:
 - public AVDCT API/ABI for DCT functions
 - g2meet: allow size changes within original sizes
