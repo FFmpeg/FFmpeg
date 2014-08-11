@@ -78,7 +78,7 @@ static void print_times(void)
 int main(int argc, char **argv)
 {
     unsigned int p, i, type, size, retry;
-    AVProbeData pd;
+    AVProbeData pd = { 0 };
     AVLFG state;
     PutBitContext pb;
     int retry_count= 4097;

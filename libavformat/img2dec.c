@@ -308,7 +308,7 @@ int ff_img_read_header(AVFormatContext *s1)
             int probe_buffer_size = 2048;
             uint8_t *probe_buffer = av_realloc(NULL, probe_buffer_size + AVPROBE_PADDING_SIZE);
             AVInputFormat *fmt = NULL;
-            AVProbeData pd;
+            AVProbeData pd = { 0 };
 
             if (!probe_buffer)
                 return AVERROR(ENOMEM);
