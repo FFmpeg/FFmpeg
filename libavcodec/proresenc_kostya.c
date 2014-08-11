@@ -456,6 +456,11 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
                                       num_cblocks, plane_factor,
                                       qmat);
         total_size += sizes[i];
+        if (put_bits_left(pb) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Serious underevaluation of"
+                   "required buffer size");
+            return AVERROR_BUFFER_TOO_SMALL;
+        }
     }
     return total_size;
 }
@@ -754,9 +759,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 
-    pkt_size = ctx->frame_size_upper_bound + FF_MIN_BUFFER_SIZE;
+    pkt_size = ctx->frame_size_upper_bound;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size + FF_MIN_BUFFER_SIZE)) < 0)
         return ret;
 
     orig_buf = pkt->data;
@@ -833,7 +838,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 slice_hdr = buf;
                 buf += slice_hdr_size - 1;
                 init_put_bits(&pb, buf, (pkt_size - (buf - orig_buf)) * 8);
-                encode_slice(avctx, pic, &pb, sizes, x, y, q, mbs_per_slice);
+                ret = encode_slice(avctx, pic, &pb, sizes, x, y, q, mbs_per_slice);
+                if (ret < 0)
+                    return ret;
 
                 bytestream_put_byte(&slice_hdr, q);
                 slice_size = slice_hdr_size + sizes[ctx->num_planes - 1];
