@@ -470,7 +470,6 @@ static void put_alpha_run(PutBitContext *pb, int run)
 
 // todo alpha quantisation for high quants
 static int encode_alpha_plane(ProresContext *ctx, PutBitContext *pb,
-                              const uint16_t *src, int linesize,
                               int mbs_per_slice, uint16_t *blocks,
                               int quant)
 {
@@ -565,7 +564,7 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
             get_alpha_data(ctx, src, linesize, xp, yp,
                            pwidth, avctx->height / ctx->pictures_per_frame,
                            ctx->blocks[0], mbs_per_slice, ctx->alpha_bits);
-            sizes[i] = encode_alpha_plane(ctx, pb, src, linesize,
+            sizes[i] = encode_alpha_plane(ctx, pb,
                                           mbs_per_slice, ctx->blocks[0],
                                           quant);
         }
