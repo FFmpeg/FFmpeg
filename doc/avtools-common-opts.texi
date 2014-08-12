@@ -44,6 +44,13 @@ If @var{stream_index} is given, then matches stream number @var{stream_index} in
 program with id @var{program_id}. Otherwise matches all streams in this program.
 @item i:@var{stream_id}
 Match the stream by stream id (e.g. PID in MPEG-TS container).
+@item m:@var{key}[:@var{value}]
+Matches streams with the metadata tag @var{key} having the specified value. If
+@var{value} is not given, matches streams that contain the given tag with any
+value.
+
+Note that in @command{avconv}, matching by metadata will only work properly for
+input files.
 @end table
 @section Generic options
 

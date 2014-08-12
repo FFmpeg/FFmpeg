@@ -1536,6 +1536,29 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
         spec += 2;
         stream_id = strtol(spec, &endptr, 0);
         return stream_id == st->id;
+    } else if (*spec == 'm' && *(spec + 1) == ':') {
+        AVDictionaryEntry *tag;
+        char *key, *val;
+        int ret;
+
+        spec += 2;
+        val = strchr(spec, ':');
+
+        key = val ? av_strndup(spec, val - spec) : av_strdup(spec);
+        if (!key)
+            return AVERROR(ENOMEM);
+
+        tag = av_dict_get(st->metadata, key, NULL, 0);
+        if (tag) {
+            if (!val || !strcmp(tag->value, val + 1))
+                ret = 1;
+            else
+                ret = 0;
+        } else
+            ret = 0;
+
+        av_freep(&key);
+        return ret;
     } else if (!*spec) /* empty specifier, matches everything */
         return 1;
 
