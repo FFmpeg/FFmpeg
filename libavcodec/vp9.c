@@ -278,7 +278,7 @@ static int vp9_alloc_frame(AVCodecContext *ctx, VP9Frame *f)
 
     // retain segmentation map if it doesn't update
     if (s->segmentation.enabled && !s->segmentation.update_map &&
-        !s->intraonly && !s->keyframe) {
+        !s->intraonly && !s->keyframe && !s->errorres) {
         memcpy(f->segmentation_map, s->frames[LAST_FRAME].segmentation_map, sz);
     }
 
@@ -1344,16 +1344,20 @@ static void decode_mode(AVCodecContext *ctx)
                 vp56_rac_get_prob_branchy(&s->c,
                     s->prob.segpred[s->above_segpred_ctx[col] +
                                     s->left_segpred_ctx[row7]]))) {
-        int pred = 8, x;
-        uint8_t *refsegmap = s->frames[LAST_FRAME].segmentation_map;
+        if (!s->errorres) {
+            int pred = 8, x;
+            uint8_t *refsegmap = s->frames[LAST_FRAME].segmentation_map;
 
-        if (!s->last_uses_2pass)
-            ff_thread_await_progress(&s->frames[LAST_FRAME].tf, row >> 3, 0);
-        for (y = 0; y < h4; y++)
-            for (x = 0; x < w4; x++)
-                pred = FFMIN(pred, refsegmap[(y + row) * 8 * s->sb_cols + x + col]);
-        av_assert1(pred < 8);
-        b->seg_id = pred;
+            if (!s->last_uses_2pass)
+                ff_thread_await_progress(&s->frames[LAST_FRAME].tf, row >> 3, 0);
+            for (y = 0; y < h4; y++)
+                for (x = 0; x < w4; x++)
+                    pred = FFMIN(pred, refsegmap[(y + row) * 8 * s->sb_cols + x + col]);
+            av_assert1(pred < 8);
+            b->seg_id = pred;
+        } else {
+            b->seg_id = 0;
+        }
 
         memset(&s->above_segpred_ctx[col], 1, w4);
         memset(&s->left_segpred_ctx[row7], 1, h4);
