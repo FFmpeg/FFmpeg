@@ -71,12 +71,25 @@ static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
     return 1;
 }
 
+int ff_vorbis_stream_comment(AVFormatContext *as, AVStream *st,
+                             const uint8_t *buf, int size)
+{
+    int updates = ff_vorbis_comment(as, &st->metadata, buf, size, 1);
+
+    if (updates > 0) {
+        st->event_flags |= AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+    }
+
+    return updates;
+}
+
 int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                       const uint8_t *buf, int size,
                       int parse_picture)
 {
     const uint8_t *p   = buf;
     const uint8_t *end = buf + size;
+    int updates        = 0;
     unsigned n, j;
     int s;
 
@@ -156,10 +169,12 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                     av_log(as, AV_LOG_WARNING, "Failed to parse cover art block.\n");
                     continue;
                 }
-            } else if (!ogm_chapter(as, tt, ct))
+            } else if (!ogm_chapter(as, tt, ct)) {
+                updates++;
                 av_dict_set(m, tt, ct,
                             AV_DICT_DONT_STRDUP_KEY |
                             AV_DICT_DONT_STRDUP_VAL);
+            }
         }
     }
 
@@ -172,7 +187,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
 
     ff_metadata_conv(m, NULL, ff_vorbiscomment_metadata_conv);
 
-    return 0;
+    return updates;
 }
 
 /*
@@ -305,8 +320,8 @@ static int vorbis_header(AVFormatContext *s, int idx)
         }
     } else if (os->buf[os->pstart] == 3) {
         if (os->psize > 8 &&
-            ff_vorbis_comment(s, &st->metadata, os->buf + os->pstart + 7,
-                              os->psize - 8, 1) >= 0) {
+            ff_vorbis_stream_comment(s, st, os->buf + os->pstart + 7,
+                                     os->psize - 8) >= 0) {
             unsigned new_len;
 
             int ret = ff_replaygain_export(st, st->metadata);
