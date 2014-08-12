@@ -461,9 +461,11 @@ static int decode_info_header(NUTContext *nut)
     int64_t value, end;
     char name[256], str_value[1024], type_str[256];
     const char *type;
+    int *event_flags;
     AVChapter *chapter      = NULL;
     AVStream *st            = NULL;
     AVDictionary **metadata = NULL;
+    int metadata_flag       = 0;
 
     end  = get_packetheader(nut, bc, 1, INFO_STARTCODE);
     end += avio_tell(bc);
@@ -484,8 +486,13 @@ static int decode_info_header(NUTContext *nut)
     } else if (stream_id_plus1) {
         st       = s->streams[stream_id_plus1 - 1];
         metadata = &st->metadata;
-    } else
+        event_flags = &st->event_flags;
+        metadata_flag = AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+    } else {
         metadata = &s->metadata;
+        event_flags = &s->event_flags;
+        metadata_flag = AVFMT_EVENT_FLAG_METADATA_UPDATED;
+    }
 
     for (i = 0; i < count; i++) {
         get_str(bc, name, sizeof(name));
@@ -521,8 +528,10 @@ static int decode_info_header(NUTContext *nut)
                 continue;
             }
             if (metadata && av_strcasecmp(name, "Uses") &&
-                av_strcasecmp(name, "Depends") && av_strcasecmp(name, "Replaces"))
+                av_strcasecmp(name, "Depends") && av_strcasecmp(name, "Replaces")) {
+                *event_flags |= metadata_flag;
                 av_dict_set(metadata, name, str_value, 0);
+            }
         }
     }
 
