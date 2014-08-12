@@ -317,7 +317,6 @@ Advanced options (experts only):
                            disable buffer boundary checking in bitreaders
                            (faster, but may crash)
   --enable-memalign-hack   emulate memalign, interferes with memory debuggers
-  --enable-sram            allow use of on-chip SRAM
   --sws-max-filter-size=N  the max filter size swscale uses [$sws_max_filter_size_default]
 
 Optimization options (experts only):
@@ -1405,7 +1404,6 @@ FEATURE_LIST="
     safe_bitstream_reader
     shared
     small
-    sram
     static
     swscale_alpha
 "
