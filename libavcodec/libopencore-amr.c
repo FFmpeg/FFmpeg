@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 
