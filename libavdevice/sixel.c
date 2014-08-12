@@ -20,14 +20,22 @@
 
 #include <sixel.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avdevice.h"
+#include "libavutil/time.h"
 
 typedef struct SIXELContext {
     AVClass *class;
-    AVFormatContext *ctx;
-    char *window_size;
+    AVRational time_base;   /**< Time base */
+    int64_t    time_frame;  /**< Current time */
+    AVRational framerate;
+    char *window_title;
+    char *reset_position;
+    int row;
+    int col;
+    int reqcolors;
     int colors;
     LSOutputContextPtr output;
     LSImagePtr im;
@@ -39,33 +47,40 @@ typedef struct SIXELContext {
 static int sixel_write_header(AVFormatContext *s)
 {
     SIXELContext *c = s->priv_data;
-    AVCodecContext *encctx = s->streams[0]->codec;
+    AVCodecContext *codec = s->streams[0]->codec;
 
     if (s->nb_streams > 1
-        || encctx->codec_type != AVMEDIA_TYPE_VIDEO
-        || encctx->codec_id   != CODEC_ID_RAWVIDEO) {
+        || codec->codec_type != AVMEDIA_TYPE_VIDEO
+        || codec->codec_id   != CODEC_ID_RAWVIDEO) {
         av_log(s, AV_LOG_ERROR, "Only supports one rawvideo stream\n");
         return AVERROR(EINVAL);
     }
 
-    if (encctx->pix_fmt != PIX_FMT_RGB24) {
+    if (codec->pix_fmt != PIX_FMT_RGB24) {
         av_log(s, AV_LOG_ERROR,
                "Unsupported pixel format '%s', choose rgb24\n",
-               av_get_pix_fmt_name(encctx->pix_fmt));
+               av_get_pix_fmt_name(codec->pix_fmt));
         return AVERROR(EINVAL);
     }
-
     c->palette = NULL;
-    c->window_size = NULL;
-    c->colors = 16;
-    c->ctx = s;
     c->output = LSOutputContext_create(putchar, printf);
+    c->im = LSImage_create(codec->width, codec->height, 1, c->reqcolors);
     c->cachetable = av_calloc(1 << 3 * 5, sizeof(unsigned short));
     if (c->cachetable == 0) {
         return AVERROR(ENOMEM);
     }
-
+    c->reset_position = malloc(64);
+    if (c->row <= 1 && c->col <= 1) {
+        strcpy(c->reset_position, "\033[H");
+    } else {
+        sprintf(c->reset_position, "\033[%d;%dH", c->row, c->col);
+    }
+    if (c->window_title) {
+        printf("\033]0;%s\007", c->window_title);
+    }
     printf("\033[?25l\0337");
+    c->time_base = s->streams[0]->codec->time_base;
+    c->time_frame = av_gettime() / av_q2d(c->time_base);
 
     return 0;
 }
@@ -73,19 +88,33 @@ static int sixel_write_header(AVFormatContext *s)
 static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SIXELContext * const c = s->priv_data;
-    AVCodecContext * const encctx = s->streams[0]->codec;
-    int sx = encctx->width;
-    int sy = encctx->height;
-    int i;
-    unsigned char *pixels = pkt->data;
+    AVCodecContext * const codec = s->streams[0]->codec;
     int ret = 0;
+    int i;
+    int64_t curtime, delay;
+    struct timespec ts;
 
-    if (c->im == NULL) {
-        c->im = LSImage_create(sx, sy, 1, c->colors);
+    /* Calculate the time of the next frame */
+    c->time_frame += INT64_C(1000000);
+
+    /* wait based on the frame rate */
+    for(;;) {
+        curtime = av_gettime();
+        delay = c->time_frame * av_q2d(c->time_base) - curtime;
+        if (delay <= 0) {
+            if (delay < INT64_C(-1000000) * av_q2d(c->time_base)) {
+                return 0;
+            }
+            break;
+        }
+        ts.tv_sec = delay / 1000000;
+        ts.tv_nsec = (delay % 1000000) * 1000;
+        nanosleep(&ts, NULL);
     }
+
     if (c->palette == NULL) {
-        c->palette = LSQ_MakePalette(pixels, sx, sy, 3,
-                                     c->colors, &c->colors, NULL,
+        c->palette = LSQ_MakePalette(pkt->data, codec->width, codec->height,
+                                     3, c->reqcolors, &c->colors, NULL,
                                      LARGE_NORM, REP_CENTER_BOX, QUALITY_LOW);
         for (i = 0; i < c->colors; i++) {
             LSImage_setpalette(c->im, i,
@@ -94,13 +123,14 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
                                c->palette[i * 3 + 2]);
         }
     }
-    ret = LSQ_ApplyPalette(pixels, sx, sy, 3, c->palette, c->colors,
-                           DIFFUSE_ATKINSON, /* foptimize */ 1, c->cachetable,
-                           c->im->pixels);
+    ret = LSQ_ApplyPalette(pkt->data, codec->width, codec->height, 3,
+                           c->palette, c->reqcolors,
+                           DIFFUSE_ATKINSON, /* foptimize */ 1,
+                           c->cachetable, c->im->pixels);
     if (ret != 0) {
         return ret;
     }
-    printf("\033[H");
+    printf("%s", c->reset_position);
     LibSixel_LSImageToSixel(c->im, c->output);
     fflush(stdout);
     return 0;
@@ -109,6 +139,10 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int sixel_write_trailer(AVFormatContext *s)
 {
     SIXELContext * const c = s->priv_data;
+
+    if (c->window_title) {
+        printf("\033]0;\007");
+    }
 
     if (c->output) {
         LSOutputContext_destroy(c->output);
@@ -126,13 +160,22 @@ static int sixel_write_trailer(AVFormatContext *s)
         free(c->cachetable);
         c->cachetable = NULL;
     }
-
+    if (c->reset_position) {
+        free(c->reset_position);
+        c->reset_position = NULL;
+    }
     printf("\0338\033[?25h");
     fflush(stdout);
     return 0;
 }
 
+#define OFFSET(x) offsetof(SIXELContext, x)
+#define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    { "window_title", "set window title",  OFFSET(window_title), AV_OPT_TYPE_STRING,     {.str = NULL}, 0, 0,   ENC },
+    { "col",          "left position",     OFFSET(col),          AV_OPT_TYPE_INT,        {.i64 = 1},    1, 256, ENC },
+    { "row",          "top position",      OFFSET(row),          AV_OPT_TYPE_INT,        {.i64 = 1},    1, 256, ENC },
+    { "reqcolors",    "number of colors",  OFFSET(reqcolors),    AV_OPT_TYPE_INT,        {.i64 = 16},   2, 256, ENC },
     { NULL },
 };
 
@@ -153,6 +196,6 @@ AVOutputFormat ff_sixel_muxer = {
     .write_header   = sixel_write_header,
     .write_packet   = sixel_write_packet,
     .write_trailer  = sixel_write_trailer,
-    .flags          = AVFMT_NOFILE | AVFMT_NOTIMESTAMPS,
+    .flags          = AVFMT_NOFILE,
     .priv_class     = &sixel_class,
 };
