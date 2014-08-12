@@ -24,6 +24,7 @@
 
 #include "libavutil/intmath.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "ra144.h"
 
@@ -77,7 +78,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
 
     /* get output buffer */
     ractx->frame.nb_samples = NBLOCKS * BLOCKSIZE;
-    if ((ret = avctx->get_buffer(avctx, &ractx->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &ractx->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

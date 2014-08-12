@@ -1611,7 +1611,7 @@ static int input_reget_buffer(AVCodecContext *codec, AVFrame *pic)
 
     if (pic->data[0] == NULL) {
         pic->buffer_hints |= FF_BUFFER_HINTS_READABLE;
-        return codec->get_buffer(codec, pic);
+        return input_get_buffer(codec, pic);
     }
 
     if ((codec->width != ref->video->w) || (codec->height != ref->video->h) ||

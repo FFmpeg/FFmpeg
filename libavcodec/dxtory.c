@@ -21,6 +21,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/intreadwrite.h"
 
 static av_cold int decode_init(AVCodecContext *avctx)
@@ -51,7 +52,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     pic->reference = 0;
-    if ((ret = avctx->get_buffer(avctx, pic)) < 0)
+    if ((ret = ff_get_buffer(avctx, pic)) < 0)
         return ret;
 
     pic->pict_type = AV_PICTURE_TYPE_I;

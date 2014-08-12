@@ -136,4 +136,7 @@ int avpriv_unlock_avformat(void);
  */
 int ff_alloc_packet(AVPacket *avpkt, int size);
 
+
+int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame);
+
 #endif /* AVCODEC_INTERNAL_H */

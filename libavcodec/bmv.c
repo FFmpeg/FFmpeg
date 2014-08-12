@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "bytestream.h"
 #include "libavutil/avassert.h"
 
@@ -274,7 +275,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     c->pic.reference = 1;
-    if (avctx->get_buffer(avctx, &c->pic) < 0) {
+    if (ff_get_buffer(avctx, &c->pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -339,7 +340,7 @@ static int bmv_aud_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     c->frame.nb_samples = total_blocks * 32;
-    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

@@ -45,10 +45,11 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
+#include "bytestream.h"
 
 #define VMD_HEADER_SIZE 0x330
 #define PALETTE_COUNT 256
-#include "bytestream.h"
 
 /*
  * Video Decoder
@@ -398,7 +399,7 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
         return buf_size;
 
     s->frame.reference = 3;
-    if (avctx->get_buffer(avctx, &s->frame)) {
+    if (ff_get_buffer(avctx, &s->frame)) {
         av_log(s->avctx, AV_LOG_ERROR, "VMD Video: get_buffer() failed\n");
         return -1;
     }
@@ -571,7 +572,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame.nb_samples = ((silent_chunks + audio_chunks) * avctx->block_align) / avctx->channels;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

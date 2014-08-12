@@ -38,6 +38,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 
 /** decoder context */
 typedef struct EightSvxContext {
@@ -151,7 +152,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     esc->frame.nb_samples = (FFMIN(MAX_FRAME_SIZE, esc->samples_size - esc->samples_idx) +avctx->channels-1)  / avctx->channels;
-    if ((ret = avctx->get_buffer(avctx, &esc->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &esc->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
