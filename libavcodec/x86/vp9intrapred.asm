@@ -1374,7 +1374,7 @@ cglobal vp9_ipred_hd_32x32, 4, 6, 8, dst, stride, l, a
     palignr                 m6, m1, m0,  1
     palignr                 m1, m0,  2
     LOWPASS                  1,  6,  0,  7
-    pavgb                   m0, m1
+    pavgb                   m0, m6
     SBUTTERFLY              bw,  2,  3,  6
     SBUTTERFLY              bw,  0,  1,  6
 
