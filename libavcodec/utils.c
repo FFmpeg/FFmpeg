@@ -119,24 +119,6 @@ static int volatile entangled_thread_counter = 0;
 static void *codec_mutex;
 static void *avformat_mutex;
 
-#if CONFIG_RAISE_MAJOR
-#    define LIBNAME "LIBAVCODEC_155"
-#else
-#    define LIBNAME "LIBAVCODEC_55"
-#endif
-
-#if FF_API_FAST_MALLOC && CONFIG_SHARED && HAVE_SYMVER
-FF_SYMVER(void*, av_fast_realloc, (void *ptr, unsigned int *size, size_t min_size), LIBNAME)
-{
-    return av_fast_realloc(ptr, size, min_size);
-}
-
-FF_SYMVER(void, av_fast_malloc, (void *ptr, unsigned int *size, size_t min_size), LIBNAME)
-{
-    av_fast_malloc(ptr, size, min_size);
-}
-#endif
-
 static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
 {
     void **p = ptr;
@@ -780,7 +762,6 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
     }
     frame->reordered_opaque = avctx->reordered_opaque;
 
-#if FF_API_AVFRAME_COLORSPACE
     if (frame->color_primaries == AVCOL_PRI_UNSPECIFIED)
         frame->color_primaries = avctx->color_primaries;
     if (frame->color_trc == AVCOL_TRC_UNSPECIFIED)
@@ -791,7 +772,6 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
         av_frame_set_color_range(frame, avctx->color_range);
     if (frame->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
         frame->chroma_location = avctx->chroma_sample_location;
-#endif
 
     switch (avctx->codec->type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -1533,9 +1513,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         } else if (avctx->channel_layout) {
             avctx->channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
         }
-        if(avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
-           avctx->codec_id != AV_CODEC_ID_PNG // For mplayer
-        ) {
+        if(avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (avctx->width <= 0 || avctx->height <= 0) {
                 av_log(avctx, AV_LOG_ERROR, "dimensions not set\n");
                 ret = AVERROR(EINVAL);

@@ -393,9 +393,7 @@ typedef struct AVProbeData {
     const char *filename;
     unsigned char *buf; /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
     int buf_size;       /**< Size of buf except extra allocated bytes */
-#if FF_API_PROBE_MIME
     uint8_t *mime_type; /**< mime_type, when known. */
-#endif
 } AVProbeData;
 
 #define AVPROBE_SCORE_RETRY (AVPROBE_SCORE_MAX/4)
@@ -936,11 +934,6 @@ typedef struct AVStream {
 
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
 
-#if FF_API_REFERENCE_DTS
-    /* a hack to keep ABI compatibility for ffmpeg and other applications, which accesses parser even
-     * though it should not */
-    int64_t do_not_use;
-#endif
     // Timestamp generation support:
     /**
      * Timestamp corresponding to the last dts sync point.

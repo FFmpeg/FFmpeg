@@ -446,7 +446,6 @@ typedef struct AVFrame {
      */
     int flags;
 
-#if FF_API_AVFRAME_COLORSPACE
     /**
      * MPEG vs JPEG YUV range.
      * It must be accessed using av_frame_get_color_range() and
@@ -470,7 +469,6 @@ typedef struct AVFrame {
     enum AVColorSpace colorspace;
 
     enum AVChromaLocation chroma_location;
-#endif
 
     /**
      * frame timestamp estimated using various heuristics, in stream time base

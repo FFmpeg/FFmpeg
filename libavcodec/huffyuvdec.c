@@ -628,9 +628,9 @@ static void decode_422_bitstream(HYuvContext *s, int count)
             READ_2PIX(s->temp[0][2 * i],     s->temp[1][i], 1);
             READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
         }
-        for (; i < count && get_bits_left(&s->gb) > 0; i++) {
+        for (; i < count && BITS_LEFT(re, &s->gb) > 0; i++) {
             READ_2PIX(s->temp[0][2 * i    ], s->temp[1][i], 1);
-            if (get_bits_left(&s->gb) <= 0) break;
+            if (BITS_LEFT(re, &s->gb) <= 0) break;
             READ_2PIX(s->temp[0][2 * i + 1], s->temp[2][i], 2);
         }
         for (; i < count; i++)
@@ -669,7 +669,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
     if (s->bps <= 8) {
         OPEN_READER(re, &s->gb);
         if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
-            for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
+            for (i = 0; i < count && BITS_LEFT(re, &s->gb) > 0; i++) {
                 READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane, OP8bits);
             }
         } else {
@@ -681,7 +681,7 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
     } else if (s->bps <= 14) {
         OPEN_READER(re, &s->gb);
         if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
-            for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
+            for (i = 0; i < count && BITS_LEFT(re, &s->gb) > 0; i++) {
                 READ_2PIX_PLANE(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane, OP14bits);
             }
         } else {
@@ -710,7 +710,7 @@ static void decode_gray_bitstream(HYuvContext *s, int count)
     count /= 2;
 
     if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
-        for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
+        for (i = 0; i < count && BITS_LEFT(re, &s->gb) > 0; i++) {
             READ_2PIX(s->temp[0][2 * i], s->temp[0][2 * i + 1], 0);
         }
     } else {
@@ -727,7 +727,7 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
     int i;
     OPEN_READER(re, &s->gb);
 
-    for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
+    for (i = 0; i < count && BITS_LEFT(re, &s->gb) > 0; i++) {
         unsigned int index;
         int code, n;
 

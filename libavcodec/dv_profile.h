@@ -59,11 +59,6 @@ typedef struct AVDVProfile {
 
 const AVDVProfile* avpriv_dv_frame_profile2(AVCodecContext* codec, const AVDVProfile *sys,
                                             const uint8_t* frame, unsigned buf_size);
-#if LIBAVCODEC_VERSION_MAJOR < 56
-const AVDVProfile *avpriv_dv_frame_profile(const AVDVProfile *sys,
-                                           const uint8_t* frame, unsigned buf_size);
-const AVDVProfile *avpriv_dv_codec_profile(AVCodecContext* codec);
-#endif
 
 /**
  * Get a DV profile for the provided compressed frame.

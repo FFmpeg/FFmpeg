@@ -104,13 +104,11 @@ static void get_frame_defaults(AVFrame *frame)
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
     frame->extended_data       = frame->data;
-#if FF_API_AVFRAME_COLORSPACE
     frame->color_primaries     = AVCOL_PRI_UNSPECIFIED;
     frame->color_trc           = AVCOL_TRC_UNSPECIFIED;
     frame->colorspace          = AVCOL_SPC_UNSPECIFIED;
     frame->color_range         = AVCOL_RANGE_UNSPECIFIED;
     frame->chroma_location     = AVCHROMA_LOC_UNSPECIFIED;
-#endif
 }
 
 static void free_side_data(AVFrameSideData **ptr_sd)
@@ -482,13 +480,11 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->display_picture_number = src->display_picture_number;
     dst->flags                  = src->flags;
     dst->decode_error_flags     = src->decode_error_flags;
-#if FF_API_AVFRAME_COLORSPACE
     dst->color_primaries        = src->color_primaries;
     dst->color_trc              = src->color_trc;
     dst->colorspace             = src->colorspace;
     dst->color_range            = src->color_range;
     dst->chroma_location        = src->chroma_location;
-#endif
 
     av_dict_copy(&dst->metadata, src->metadata, 0);
 
@@ -496,7 +492,11 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
 
     for (i = 0; i < src->nb_side_data; i++) {
         const AVFrameSideData *sd_src = src->side_data[i];
-        AVFrameSideData *sd_dst = av_frame_new_side_data(dst, sd_src->type,
+        AVFrameSideData *sd_dst;
+        if (   sd_src->type == AV_FRAME_DATA_PANSCAN
+            && (src->width != dst->width || src->height != dst->height))
+            continue;
+        sd_dst = av_frame_new_side_data(dst, sd_src->type,
                                                          sd_src->size);
         if (!sd_dst) {
             for (i = 0; i < dst->nb_side_data; i++) {

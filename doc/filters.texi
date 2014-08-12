@@ -5546,6 +5546,51 @@ kerndeint=map=1
 @end example
 @end itemize
 
+@section lenscorrection
+
+Correct radial lens distortion
+
+This filter can be used to correct for radial distortion as can result from the use
+of wide angle lenses, and thereby re-rectify the image. To find the right parameters
+one can use tools available for example as part of opencv or simply trial-and-error.
+To use opencv use the calibration sample (under samples/cpp) from the opencv sources
+and extract the k1 and k2 coefficients from the resulting matrix.
+
+Note that effectively the same filter is available in the open-source tools Krita and
+Digikam from the KDE project.
+
+In contrast to the @ref{vignette} filter, which can also be used to compensate lens errors,
+this filter corrects the distortion of the image, whereas @ref{vignette} corrects the
+brightness distribution, so you may want to use both filters together in certain
+cases, though you will have to take care of ordering, i.e. whether vignetting should
+be applied before or after lens correction.
+
+@subsection Options
+
+The filter accepts the following options:
+
+@table @option
+@item cx
+Relative x-coordinate of the focal point of the image, and thereby the center of the
+distrortion. This value has a range [0,1] and is expressed as fractions of the image
+width.
+@item cy
+Relative y-coordinate of the focal point of the image, and thereby the center of the
+distrortion. This value has a range [0,1] and is expressed as fractions of the image
+height.
+@item k1
+Coefficient of the quadratic correction term. 0.5 means no correction.
+@item k2
+Coefficient of the double quadratic correction term. 0.5 means no correction.
+@end table
+
+The formula that generates the correction is:
+
+@var{r_src} = @var{r_tgt} * (1 + @var{k1} * (@var{r_tgt} / @var{r_0})^2 + @var{k2} * (@var{r_tgt} / @var{r_0})^4)
+
+where @var{r_0} is halve of the image diagonal and @var{r_src} and @var{r_tgt} are the
+distances from the focal point in the source and target images, respectively.
+
 @anchor{lut3d}
 @section lut3d
 
@@ -8758,6 +8803,7 @@ For example, to vertically flip a video with @command{ffmpeg}:
 ffmpeg -i in.avi -vf "vflip" out.avi
 @end example
 
+@anchor{vignette}
 @section vignette
 
 Make or reverse a natural vignetting effect.

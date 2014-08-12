@@ -181,7 +181,7 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
 
         kernel1.ctx = ctx;
         kernel1.kernel = unsharp->opencl_ctx.kernel_luma;
-        ret = ff_opencl_set_parameter(&kernel1,
+        ret = avpriv_opencl_set_parameter(&kernel1,
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_luma_mask),
@@ -198,7 +198,7 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
 
         kernel2.ctx = ctx;
         kernel2.kernel = unsharp->opencl_ctx.kernel_chroma;
-        ret = ff_opencl_set_parameter(&kernel2,
+        ret = avpriv_opencl_set_parameter(&kernel2,
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_chroma_mask),
@@ -230,7 +230,7 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         kernel1.ctx = ctx;
         kernel1.kernel = unsharp->opencl_ctx.kernel_default;
 
-        ret = ff_opencl_set_parameter(&kernel1,
+        ret = avpriv_opencl_set_parameter(&kernel1,
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_luma_mask),

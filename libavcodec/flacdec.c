@@ -130,6 +130,7 @@ static void dump_headers(AVCodecContext *avctx, FLACStreaminfo *s)
 static int allocate_buffers(FLACContext *s)
 {
     int buf_size;
+    int ret;
 
     av_assert0(s->max_blocksize);
 
@@ -142,9 +143,10 @@ static int allocate_buffers(FLACContext *s)
     if (!s->decoded_buffer)
         return AVERROR(ENOMEM);
 
-    return av_samples_fill_arrays((uint8_t **)s->decoded, NULL,
+    ret = av_samples_fill_arrays((uint8_t **)s->decoded, NULL,
                                   s->decoded_buffer, s->channels,
                                   s->max_blocksize, AV_SAMPLE_FMT_S32P, 0);
+    return ret < 0 ? ret : 0;
 }
 
 /**

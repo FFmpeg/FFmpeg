@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - Icecast protocol
+- ported lenscorrection filter from frei0r filter
 
 
 version 2.3:

@@ -2678,7 +2678,10 @@ typedef struct AVCodecContext {
 #if FF_API_UNUSED_MEMBERS
 #define FF_IDCT_IPP           13
 #endif /* FF_API_UNUSED_MEMBERS */
+#define FF_IDCT_XVID          14
+#if FF_API_IDCT_XVIDMMX
 #define FF_IDCT_XVIDMMX       14
+#endif /* FF_API_IDCT_XVIDMMX */
 #define FF_IDCT_SIMPLEARMV5TE 16
 #define FF_IDCT_SIMPLEARMV6   17
 #if FF_API_ARCH_SPARC

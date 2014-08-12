@@ -31,6 +31,8 @@
 
 #define SAMPLES 1000
 
+#define SWR_CH_MAX 32
+
 #define ASSERT_LEVEL 2
 
 static double get(uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFormat f){

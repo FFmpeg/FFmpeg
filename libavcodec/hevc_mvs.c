@@ -677,6 +677,17 @@ b_candidates:
                        xB0 < s->sps->width &&
                        PRED_BLOCK_AVAILABLE(B0);
 
+    // above spatial merge candidate
+    xB1    = x0 + nPbW - 1;
+    yB1    = y0 - 1;
+    is_available_b1 = AVAILABLE(cand_up, B1);
+
+    // above left spatial merge candidate
+    xB2 = x0 - 1;
+    yB2 = y0 - 1;
+    is_available_b2 = AVAILABLE(cand_up_left, B2);
+
+    // above right spatial merge candidate
     if (is_available_b0) {
         if (MP_MX(B0, pred_flag_index_l0, mxB)) {
             goto scalef;
@@ -687,11 +698,6 @@ b_candidates:
     }
 
     // above spatial merge candidate
-    xB1    = x0 + nPbW - 1;
-    yB1    = y0 - 1;
-
-    is_available_b1 = AVAILABLE(cand_up, B1);
-
     if (is_available_b1) {
         if (MP_MX(B1, pred_flag_index_l0, mxB)) {
             goto scalef;
@@ -702,10 +708,6 @@ b_candidates:
     }
 
     // above left spatial merge candidate
-    xB2 = x0 - 1;
-    yB2 = y0 - 1;
-    is_available_b2 = AVAILABLE(cand_up_left, B2);
-
     if (is_available_b2) {
         if (MP_MX(B2, pred_flag_index_l0, mxB)) {
             goto scalef;

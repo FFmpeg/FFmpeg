@@ -35,11 +35,7 @@ typedef struct PixelFormatTag {
     unsigned int fourcc;
 } PixelFormatTag;
 
-#if LIBAVCODEC_VERSION_MAJOR < 56
-extern av_export const PixelFormatTag ff_raw_pix_fmt_tags[];
-#else
 extern const PixelFormatTag ff_raw_pix_fmt_tags[]; // exposed through avpriv_get_raw_pix_fmt_tags()
-#endif
 
 const struct PixelFormatTag *avpriv_get_raw_pix_fmt_tags(void);
 

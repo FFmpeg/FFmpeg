@@ -25,6 +25,8 @@
 #include "libavutil/channel_layout.h"
 #include "config.h"
 
+#define SWR_CH_MAX 32
+
 #define SQRT3_2      1.22474487139158904909  /* sqrt(3/2) */
 
 #define NS_TAPS 20

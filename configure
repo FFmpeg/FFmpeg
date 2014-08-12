@@ -2657,8 +2657,6 @@ strip_default="strip"
 yasmexe_default="yasm"
 windres_default="windres"
 
-nogas=":"
-
 # OS
 target_os_default=$(tolower $(uname -s))
 host_os=$target_os_default
@@ -3106,6 +3104,17 @@ EOF
     die "Sanity test failed."
 fi
 
+armasm_flags(){
+    for flag; do
+        case $flag in
+            # Filter out MSVC cl.exe options from cflags that shouldn't
+            # be passed to gas-preprocessor
+            -M[TD]*)                                            ;;
+            *)                  echo $flag                      ;;
+        esac
+   done
+}
+
 ccc_flags(){
     for flag; do
         case $flag in
@@ -3394,6 +3403,12 @@ probe_cc(){
         _cflags_size="-O2 -Munroll=c:1 $opt_common"
         _cflags_noopt="-O"
         _flags_filter=pgi_flags
+    elif $_cc 2>&1 | grep -q 'Microsoft.*ARM.*Assembler'; then
+        _type=armasm
+        _ident=$($_cc | head -n1)
+        # 4509: "This form of conditional instruction is deprecated"
+        _flags="-nologo -ignore 4509"
+        _flags_filter=armasm_flags
     elif $_cc 2>&1 | grep -q Microsoft; then
         _type=msvc
         _ident=$($cc 2>&1 | head -n1)
@@ -3970,7 +3985,6 @@ case $target_os in
         strip="strip -d"
         ;;
     darwin)
-        test "${as#*gas-preprocessor.pl}" != "$as" || gas="${gas:=gas-preprocessor.pl} ${as:=$cc}"
         enabled ppc && add_asflags -force_cpusubtype_ALL
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR)'
         enabled x86_32 && append SHFLAGS -Wl,-read_only_relocs,suppress
@@ -4363,13 +4377,27 @@ EOF
 }
 
 if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
+    nogas=:
     enabled_any arm aarch64 && nogas=die
     enabled_all ppc altivec && [ $target_os_default != aix ] && nogas=warn
+    as_noop=-v
+
+    case $as_type in
+        arm*) gaspp_as_type=armasm; as_noop=-h ;;
+        gcc)  gaspp_as_type=gas ;;
+        *)    gaspp_as_type=$as_type ;;
+    esac
+
+    [ $target_os = "darwin" ] && gaspp_as_type="apple-$gaspp_as_type"
+
+    test "${as#*gas-preprocessor.pl}" != "$as" ||
+    check_cmd gas-preprocessor.pl -arch $arch -as-type $gaspp_as_type -- ${as:=$cc} $as_noop &&
+        gas="${gas:=gas-preprocessor.pl} -arch $arch -as-type $gaspp_as_type -- ${as:=$cc}"
 
     if ! check_gas ; then
         as=${gas:=$as}
         check_gas || \
-            $nogas "GNU assembler not found, install gas-preprocessor"
+            $nogas "GNU assembler not found, install/update gas-preprocessor"
     fi
 
     check_as <<EOF && enable as_func

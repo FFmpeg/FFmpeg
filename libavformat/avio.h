@@ -507,6 +507,9 @@ int     avio_pause(AVIOContext *h, int pause);
 int64_t avio_seek_time(AVIOContext *h, int stream_index,
                        int64_t timestamp, int flags);
 
+/* Avoid a warning. The header can not be included because it breaks c++. */
+struct AVBPrint;
+
 /**
  * Read contents of h into print buffer, up to max_size bytes, or up to EOF.
  *

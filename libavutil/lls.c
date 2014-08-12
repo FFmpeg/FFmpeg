@@ -30,9 +30,9 @@
 
 #include "attributes.h"
 #include "version.h"
-#include "lls2.h"
+#include "lls.h"
 
-static void update_lls(LLSModel2 *m, double *var)
+static void update_lls(LLSModel *m, double *var)
 {
     int i, j;
 
@@ -43,7 +43,7 @@ static void update_lls(LLSModel2 *m, double *var)
     }
 }
 
-void avpriv_solve_lls2(LLSModel2 *m, double threshold, unsigned short min_order)
+void avpriv_solve_lls(LLSModel *m, double threshold, unsigned short min_order)
 {
     int i, j, k;
     double (*factor)[MAX_VARS_ALIGN] = (void *) &m->covariance[1][0];
@@ -100,7 +100,7 @@ void avpriv_solve_lls2(LLSModel2 *m, double threshold, unsigned short min_order)
     }
 }
 
-static double evaluate_lls(LLSModel2 *m, double *param, int order)
+static double evaluate_lls(LLSModel *m, double *param, int order)
 {
     int i;
     double out = 0;
@@ -111,9 +111,9 @@ static double evaluate_lls(LLSModel2 *m, double *param, int order)
     return out;
 }
 
-av_cold void avpriv_init_lls2(LLSModel2 *m, int indep_count)
+av_cold void avpriv_init_lls(LLSModel *m, int indep_count)
 {
-    memset(m, 0, sizeof(LLSModel2));
+    memset(m, 0, sizeof(LLSModel));
     m->indep_count = indep_count;
     m->update_lls = update_lls;
     m->evaluate_lls = evaluate_lls;
@@ -129,12 +129,12 @@ av_cold void avpriv_init_lls2(LLSModel2 *m, int indep_count)
 
 int main(void)
 {
-    LLSModel2 m;
+    LLSModel m;
     int i, order;
     AVLFG lfg;
 
     av_lfg_init(&lfg, 1);
-    avpriv_init_lls2(&m, 3);
+    avpriv_init_lls(&m, 3);
 
     for (i = 0; i < 100; i++) {
         LOCAL_ALIGNED(32, double, var, [4]);
@@ -145,7 +145,7 @@ int main(void)
         var[2] = var[1] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
         var[3] = var[2] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
         m.update_lls(&m, var);
-        avpriv_solve_lls2(&m, 0.001, 0);
+        avpriv_solve_lls(&m, 0.001, 0);
         for (order = 0; order < 3; order++) {
             eval = m.evaluate_lls(&m, var + 1, order);
             printf("real:%9f order:%d pred:%9f var:%f coeffs:%f %9f %9f\n",

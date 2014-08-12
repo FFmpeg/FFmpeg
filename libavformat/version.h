@@ -29,9 +29,8 @@
 
 #include "libavutil/version.h"
 
-#define LIBAVFORMAT_VERSION_MAJOR 55
-
-#define LIBAVFORMAT_VERSION_MINOR 55
+#define LIBAVFORMAT_VERSION_MAJOR 56
+#define LIBAVFORMAT_VERSION_MINOR  0
 #define LIBAVFORMAT_VERSION_MICRO 100
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -49,11 +48,8 @@
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
  */
-#ifndef FF_API_REFERENCE_DTS
-#define FF_API_REFERENCE_DTS            (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_LAVF_BITEXACT
-#define FF_API_LAVF_BITEXACT            (LIBAVFORMAT_VERSION_MAJOR < 56)
+#define FF_API_LAVF_BITEXACT            (LIBAVFORMAT_VERSION_MAJOR < 57)
 #endif
 #ifndef FF_API_LAVF_FRAC
 #define FF_API_LAVF_FRAC                (LIBAVFORMAT_VERSION_MAJOR < 57)
@@ -89,8 +85,4 @@
 #ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1
 #endif
-#ifndef FF_API_PROBE_MIME
-#define FF_API_PROBE_MIME               (LIBAVFORMAT_VERSION_MAJOR > 55)
-#endif
-
 #endif /* AVFORMAT_VERSION_H */

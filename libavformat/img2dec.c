@@ -308,7 +308,7 @@ int ff_img_read_header(AVFormatContext *s1)
             int probe_buffer_size = 2048;
             uint8_t *probe_buffer = av_realloc(NULL, probe_buffer_size + AVPROBE_PADDING_SIZE);
             AVInputFormat *fmt = NULL;
-            AVProbeData pd;
+            AVProbeData pd = { 0 };
 
             if (!probe_buffer)
                 return AVERROR(ENOMEM);
@@ -395,7 +395,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
 
         if (codec->codec_id == AV_CODEC_ID_NONE) {
-            AVProbeData pd;
+            AVProbeData pd = { 0 };
             AVInputFormat *ifmt;
             uint8_t header[PROBE_BUF_MIN + AVPROBE_PADDING_SIZE];
             int ret;

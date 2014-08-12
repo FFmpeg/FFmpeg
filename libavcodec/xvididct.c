@@ -28,7 +28,7 @@ av_cold void ff_xvididct_init(IDCTDSPContext *c, AVCodecContext *avctx)
 
     if (high_bit_depth || avctx->lowres ||
         !(avctx->idct_algo == FF_IDCT_AUTO ||
-          avctx->idct_algo == FF_IDCT_XVIDMMX))
+          avctx->idct_algo == FF_IDCT_XVID))
         return;
 
     if (ARCH_X86)

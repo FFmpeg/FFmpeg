@@ -68,13 +68,6 @@ int avpriv_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
                                const uint8_t *buf, int len);
 void avpriv_mpegts_parse_close(MpegTSContext *ts);
 
-#if LIBAVFORMAT_VERSION_MAJOR < 56
-MpegTSContext *ff_mpegts_parse_open(AVFormatContext *s);
-int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
-                           const uint8_t *buf, int len);
-void ff_mpegts_parse_close(MpegTSContext *ts);
-#endif
-
 typedef struct SLConfigDescr {
     int use_au_start;
     int use_au_end;
