@@ -64,7 +64,7 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
     f->mv               = (VP9MVRefPair*)f->mv_buf->data;
 
     if (s->segmentation.enabled && !s->segmentation.update_map &&
-        !s->keyframe && !s->intraonly)
+        !s->keyframe && !s->intraonly && !s->errorres)
         memcpy(f->segmentation_map, s->frames[LAST_FRAME].segmentation_map, sz);
 
     return 0;

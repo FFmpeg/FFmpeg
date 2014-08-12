@@ -70,18 +70,22 @@ static void decode_mode(VP9Context *s, VP9Block *const b)
                 vp56_rac_get_prob_branchy(&s->c,
                                           s->prob.segpred[s->above_segpred_ctx[col] +
                                                           s->left_segpred_ctx[row7]]))) {
-        uint8_t *refsegmap = s->frames[LAST_FRAME].segmentation_map;
-        int pred = MAX_SEGMENT - 1;
-        int x;
+        if (!s->errorres) {
+            uint8_t *refsegmap = s->frames[LAST_FRAME].segmentation_map;
+            int pred = MAX_SEGMENT - 1;
+            int x;
 
-        if (!s->last_uses_2pass)
-            ff_thread_await_progress(&s->frames[LAST_FRAME].tf, row >> 3, 0);
+            if (!s->last_uses_2pass)
+                ff_thread_await_progress(&s->frames[LAST_FRAME].tf, row >> 3, 0);
 
-        for (y = 0; y < h4; y++)
-            for (x = 0; x < w4; x++)
-                pred = FFMIN(pred,
-                             refsegmap[(y + row) * 8 * s->sb_cols + x + col]);
-        b->seg_id = pred;
+            for (y = 0; y < h4; y++)
+                for (x = 0; x < w4; x++)
+                    pred = FFMIN(pred,
+                                 refsegmap[(y + row) * 8 * s->sb_cols + x + col]);
+            b->seg_id = pred;
+        } else {
+            b->seg_id = 0;
+        }
 
         memset(&s->above_segpred_ctx[col], 1, w4);
         memset(&s->left_segpred_ctx[row7], 1, h4);
