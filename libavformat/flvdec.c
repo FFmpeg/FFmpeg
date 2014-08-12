@@ -498,6 +498,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             !strcmp(key, "datastream"))
             return 0;
 
+        s->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
         if (amf_type == AMF_DATA_TYPE_BOOL) {
             av_strlcpy(str_val, num_val > 0 ? "true" : "false",
                        sizeof(str_val));
