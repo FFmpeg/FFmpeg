@@ -26,13 +26,13 @@ SECTION_TEXT
 
 INIT_XMM sse4
 %if ARCH_X86_64
-    cglobal flac_enc_lpc_16, 5, 7, 4, 0, res, smp, len, order, coefs
+    cglobal flac_enc_lpc_16, 5, 7, 8, 0, res, smp, len, order, coefs
     DECLARE_REG_TMP 5, 6
     %define length r2d
 
     movsxd orderq, orderd
 %else
-    cglobal flac_enc_lpc_16, 5, 6, 4, 0, res, smp, len, order, coefs
+    cglobal flac_enc_lpc_16, 5, 6, 8, 0, res, smp, len, order, coefs
     DECLARE_REG_TMP 2, 5
     %define length r2mp
 %endif
@@ -59,6 +59,8 @@ neg  orderq
 
 .looplen:
     pxor m0,   m0
+    pxor m4,   m4
+    pxor m6,   m6
     mov  posj, orderq
     xor  negj, negj
 
@@ -66,20 +68,34 @@ neg  orderq
         movd   m2, [coefsq+posj*4] ; c = coefs[j]
         SPLATD m2
         movu   m1, [smpq+negj*4-4] ; s = smp[i-j-1]
+        movu   m5, [smpq+negj*4-4+mmsize]
+        movu   m7, [smpq+negj*4-4+mmsize*2]
         pmulld m1,  m2
+        pmulld m5,  m2
+        pmulld m7,  m2
         paddd  m0,  m1             ; p += c * s
+        paddd  m4,  m5
+        paddd  m6,  m7
 
         dec    negj
         inc    posj
     jnz .looporder
 
     psrad  m0,     m3              ; p >>= shift
+    psrad  m4,     m3
+    psrad  m6,     m3
     movu   m1,    [smpq]
+    movu   m5,    [smpq+mmsize]
+    movu   m7,    [smpq+mmsize*2]
     psubd  m1,     m0              ; smp[i] - p
+    psubd  m5,     m4
+    psubd  m7,     m6
     movu  [resq],  m1              ; res[i] = smp[i] - (p >> shift)
+    movu  [resq+mmsize], m5
+    movu  [resq+mmsize*2], m7
 
-    add resq,   mmsize
-    add smpq,   mmsize
-    sub length, mmsize/4
+    add resq,    3*mmsize
+    add smpq,    3*mmsize
+    sub length, (3*mmsize)/4
 jg .looplen
 RET
