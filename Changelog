@@ -5,6 +5,7 @@ version 2.2.7
 - snow: fix null pointer dereference
 - iff: fix out of array access
 - svq1dec: fix input data corruption
+- proresenc_ks: check buffer size
 
 
 version 2.2.6
