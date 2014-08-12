@@ -462,8 +462,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     // append Zero motion vector candidates
     while (nb_merge_cand < s->sh.max_num_merge_cand) {
         mergecandlist[nb_merge_cand].pred_flag    = PF_L0 + ((s->sh.slice_type == B_SLICE) << 1);
-        AV_ZERO32(mergecandlist[nb_merge_cand].mv+0);
-        AV_ZERO32(mergecandlist[nb_merge_cand].mv+1);
+        AV_ZERO32(mergecandlist[nb_merge_cand].mv + 0);
+        AV_ZERO32(mergecandlist[nb_merge_cand].mv + 1);
         mergecandlist[nb_merge_cand].ref_idx[0]   = zero_idx < nb_refs ? zero_idx : 0;
         mergecandlist[nb_merge_cand].ref_idx[1]   = zero_idx < nb_refs ? zero_idx : 0;
 
