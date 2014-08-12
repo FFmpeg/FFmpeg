@@ -1530,6 +1530,7 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     if (entries >= UINT_MAX / sizeof(int))
         return AVERROR_INVALIDDATA;
+    av_freep(&sc->keyframes);
     sc->keyframes = av_malloc(entries * sizeof(int));
     if (!sc->keyframes)
         return AVERROR(ENOMEM);
