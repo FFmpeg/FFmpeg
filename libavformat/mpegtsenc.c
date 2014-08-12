@@ -1184,6 +1184,18 @@ int ff_check_h264_startcode(AVFormatContext *s, const AVStream *st, const AVPack
     return 0;
 }
 
+static int check_hevc_startcode(AVFormatContext *s, const AVStream *st, const AVPacket *pkt)
+{
+    if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
+        if (!st->nb_frames) {
+            av_log(s, AV_LOG_ERROR, "HEVC bitstream malformed, no startcode found\n");
+            return AVERROR_PATCHWELCOME;
+        }
+        av_log(s, AV_LOG_WARNING, "HEVC bitstream error, startcode missing\n");
+    }
+    return 0;
+}
+
 static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
@@ -1281,6 +1293,10 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             ts_st->amux->pb = NULL;
             buf             = data;
         }
+    } else if (st->codec->codec_id == AV_CODEC_ID_HEVC) {
+        int ret = check_hevc_startcode(s, st, pkt);
+        if (ret < 0)
+            return ret;
     }
 
     if (pkt->dts != AV_NOPTS_VALUE) {
