@@ -25,13 +25,13 @@
 static void idct_xvid_put(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_idct_xvid(block);
-    put_pixels_clamped_c(block, dest, line_size);
+    ff_put_pixels_clamped(block, dest, line_size);
 }
 
 static void idct_xvid_add(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_idct_xvid(block);
-    add_pixels_clamped_c(block, dest, line_size);
+    ff_add_pixels_clamped(block, dest, line_size);
 }
 
 av_cold void ff_xvididct_init(IDCTDSPContext *c, AVCodecContext *avctx)

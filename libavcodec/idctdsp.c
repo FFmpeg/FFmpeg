@@ -80,6 +80,27 @@ av_cold void ff_init_scantable_permutation(uint8_t *idct_permutation,
     }
 }
 
+void ff_put_pixels_clamped(const int16_t *block, uint8_t *av_restrict pixels,
+                           int line_size)
+{
+    int i;
+
+    /* read the pixels */
+    for (i = 0; i < 8; i++) {
+        pixels[0] = av_clip_uint8(block[0]);
+        pixels[1] = av_clip_uint8(block[1]);
+        pixels[2] = av_clip_uint8(block[2]);
+        pixels[3] = av_clip_uint8(block[3]);
+        pixels[4] = av_clip_uint8(block[4]);
+        pixels[5] = av_clip_uint8(block[5]);
+        pixels[6] = av_clip_uint8(block[6]);
+        pixels[7] = av_clip_uint8(block[7]);
+
+        pixels += line_size;
+        block  += 8;
+    }
+}
+
 static void put_pixels_clamped4_c(const int16_t *block, uint8_t *av_restrict pixels,
                                  int line_size)
 {
@@ -133,6 +154,26 @@ static void put_signed_pixels_clamped_c(const int16_t *block,
     }
 }
 
+void ff_add_pixels_clamped(const int16_t *block, uint8_t *av_restrict pixels,
+                           int line_size)
+{
+    int i;
+
+    /* read the pixels */
+    for (i = 0; i < 8; i++) {
+        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
+        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
+        pixels[2] = av_clip_uint8(pixels[2] + block[2]);
+        pixels[3] = av_clip_uint8(pixels[3] + block[3]);
+        pixels[4] = av_clip_uint8(pixels[4] + block[4]);
+        pixels[5] = av_clip_uint8(pixels[5] + block[5]);
+        pixels[6] = av_clip_uint8(pixels[6] + block[6]);
+        pixels[7] = av_clip_uint8(pixels[7] + block[7]);
+        pixels   += line_size;
+        block    += 8;
+    }
+}
+
 static void add_pixels_clamped4_c(const int16_t *block, uint8_t *av_restrict pixels,
                           int line_size)
 {
@@ -166,13 +207,13 @@ static void add_pixels_clamped2_c(const int16_t *block, uint8_t *av_restrict pix
 static void jref_idct_put(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_j_rev_dct(block);
-    put_pixels_clamped_c(block, dest, line_size);
+    ff_put_pixels_clamped(block, dest, line_size);
 }
 
 static void jref_idct_add(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_j_rev_dct(block);
-    add_pixels_clamped_c(block, dest, line_size);
+    ff_add_pixels_clamped(block, dest, line_size);
 }
 static void ff_jref_idct4_put(uint8_t *dest, int line_size, int16_t *block)
 {
@@ -255,9 +296,9 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
         }
     }
 
-    c->put_pixels_clamped        = put_pixels_clamped_c;
+    c->put_pixels_clamped        = ff_put_pixels_clamped;
     c->put_signed_pixels_clamped = put_signed_pixels_clamped_c;
-    c->add_pixels_clamped        = add_pixels_clamped_c;
+    c->add_pixels_clamped        = ff_add_pixels_clamped;
 
     if (CONFIG_MPEG4_DECODER && avctx->idct_algo == FF_IDCT_XVID)
         ff_xvididct_init(c, avctx);
