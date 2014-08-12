@@ -2017,8 +2017,9 @@ static int seek_frame_generic(AVFormatContext *s, int stream_index,
             if (stream_index == pkt.stream_index && pkt.dts > timestamp) {
                 if (pkt.flags & AV_PKT_FLAG_KEY)
                     break;
-                if (nonkey++ > 1000 && st->codec->codec_id != AV_CODEC_ID_CDGRAPHICS) {
-                    av_log(s, AV_LOG_ERROR,"seek_frame_generic failed as this stream seems to contain no keyframes after the target timestamp, %d non keyframes found\n", nonkey);
+                if (nonkey++ > 500 && st->codec->codec_id != AV_CODEC_ID_CDGRAPHICS) {
+                    ff_reduce_index(s, st->index);
+                    av_add_index_entry(st, pkt.pos, pkt.dts, 0, 0, AVINDEX_KEYFRAME);
                     break;
                 }
             }
