@@ -2185,6 +2185,9 @@ static int mxf_read_header(AVFormatContext *s)
                     return res;
                 }
                 break;
+            } else {
+                av_log(s, AV_LOG_VERBOSE, "Dark key " PRIxUID "\n",
+                       UID_ARG(klv.key));
             }
         }
         if (!metadata->read)
