@@ -80,6 +80,7 @@ static int mov_metadata_track_or_disc_number(MOVContext *c, AVIOContext *pb,
         snprintf(buf, sizeof(buf), "%d", current);
     else
         snprintf(buf, sizeof(buf), "%d/%d", current, total);
+    c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
     av_dict_set(&c->fc->metadata, key, buf, 0);
 
     return 0;
@@ -96,6 +97,7 @@ static int mov_metadata_int8_bypass_padding(MOVContext *c, AVIOContext *pb,
     avio_r8(pb);
 
     snprintf(buf, sizeof(buf), "%d", avio_r8(pb));
+    c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
     av_dict_set(&c->fc->metadata, key, buf, 0);
 
     return 0;
@@ -107,6 +109,7 @@ static int mov_metadata_int8_no_padding(MOVContext *c, AVIOContext *pb,
     char buf[16];
 
     snprintf(buf, sizeof(buf), "%d", avio_r8(pb));
+    c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
     av_dict_set(&c->fc->metadata, key, buf, 0);
 
     return 0;
@@ -124,6 +127,7 @@ static int mov_metadata_gnre(MOVContext *c, AVIOContext *pb,
     if (genre < 1 || genre > ID3v1_GENRE_MAX)
         return 0;
     snprintf(buf, sizeof(buf), "%s", ff_id3v1_genre_str[genre-1]);
+    c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
     av_dict_set(&c->fc->metadata, key, buf, 0);
 
     return 0;
@@ -242,6 +246,7 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
         snprintf(key2, sizeof(key2), "%s-%s", key, language);
         av_dict_set(&c->fc->metadata, key2, buf, 0);
     }
+    c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
     return av_dict_set(&c->fc->metadata, key, buf, 0);
 }
 
@@ -346,6 +351,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             avio_read(pb, str, str_size);
             str[str_size] = 0;
         }
+        c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
         av_dict_set(&c->fc->metadata, key, str, 0);
         if (*language && strcmp(language, "und")) {
             snprintf(key2, sizeof(key2), "%s-%s", key, language);
