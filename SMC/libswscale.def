@@ -7,7 +7,6 @@ EXPORTS
     sws_convVec
     sws_convertPalette8ToPacked24
     sws_convertPalette8ToPacked32
-    sws_format_name
     sws_freeContext
     sws_freeFilter
     sws_freeVec

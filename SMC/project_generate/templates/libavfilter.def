@@ -24,9 +24,6 @@ EXPORTS
     avfilter_copy_buf_props
     avfilter_copy_buffer_ref_props
     avfilter_copy_frame_props
-    avfilter_fill_frame_from_audio_buffer_ref
-    avfilter_fill_frame_from_buffer_ref
-    avfilter_fill_frame_from_video_buffer_ref
     avfilter_free
     avfilter_get_audio_buffer_ref_from_arrays
     avfilter_get_audio_buffer_ref_from_arrays_channels

@@ -123,10 +123,7 @@
     <ClCompile Include="..\libavutil\lfg.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavutil\lls1.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavutil\lls2.c">
+    <ClCompile Include="..\libavutil\lls.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\log.c">

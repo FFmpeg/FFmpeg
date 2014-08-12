@@ -155,11 +155,8 @@
     <ClCompile Include="..\libavutil\lfg.c">
       <ObjectFileName>$(IntDir)\libavutil_lfg.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavutil\lls1.c">
-      <ObjectFileName>$(IntDir)\libavutil_lls1.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavutil\lls2.c">
-      <ObjectFileName>$(IntDir)\libavutil_lls2.obj</ObjectFileName>
+    <ClCompile Include="..\libavutil\lls.c">
+      <ObjectFileName>$(IntDir)\libavutil_lls.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\log.c">
       <ObjectFileName>$(IntDir)\libavutil_log.obj</ObjectFileName>

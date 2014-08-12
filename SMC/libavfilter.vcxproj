@@ -380,6 +380,9 @@
     <ClCompile Include="..\libavfilter\vf_kerndeint.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_kerndeint.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_lenscorrection.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_lenscorrection.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_lut.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_lut.obj</ObjectFileName>
     </ClCompile>

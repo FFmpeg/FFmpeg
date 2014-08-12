@@ -1,7 +1,6 @@
 EXPORTS
     av_add_index_entry
     av_append_packet
-    av_close_input_file
     av_codec_get_id
     av_codec_get_tag
     av_codec_get_tag2
@@ -13,7 +12,6 @@ EXPORTS
     av_find_default_stream_index
     av_find_input_format
     av_find_program_from_stream
-    av_find_stream_info
     av_fmt_ctx_get_duration_estimation_method
     av_format_get_audio_codec
     av_format_get_probe_score
@@ -36,7 +34,6 @@ EXPORTS
     av_interleaved_write_frame
     av_match_ext
     av_new_program
-    av_new_stream
     av_oformat_next
     av_pkt_dump2
     av_pkt_dump_log2
@@ -46,7 +43,6 @@ EXPORTS
     av_probe_input_format2
     av_probe_input_format3
     av_read_frame
-    av_read_packet
     av_read_pause
     av_read_play
     av_register_all
@@ -54,7 +50,6 @@ EXPORTS
     av_register_output_format
     av_sdp_create
     av_seek_frame
-    av_set_pts_info
     av_stream_get_end_pts
     av_stream_get_parser
     av_stream_get_r_frame_rate
@@ -63,7 +58,6 @@ EXPORTS
     av_write_frame
     av_write_trailer
     avformat_alloc_context
-    avformat_alloc_output_context
     avformat_alloc_output_context2
     avformat_close_input
     avformat_configuration
