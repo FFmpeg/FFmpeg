@@ -61,6 +61,7 @@
 #include "elbg.h"
 #include "internal.h"
 #include "mathops.h"
+#include "internal.h"
 
 #define CHROMA_BIAS 1
 
