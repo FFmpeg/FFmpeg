@@ -19,6 +19,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "mem.h"
 #include "stereo3d.h"
@@ -35,6 +36,8 @@ AVStereo3D *av_stereo3d_create_side_data(AVFrame *frame)
                                                         sizeof(AVStereo3D));
     if (!side_data)
         return NULL;
+
+    memset(side_data->data, 0, sizeof(AVStereo3D));
 
     return (AVStereo3D *)side_data->data;
 }
