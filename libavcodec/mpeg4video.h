@@ -62,29 +62,29 @@
 typedef struct Mpeg4DecContext {
     MpegEncContext m;
 
-    ///< number of bits to represent the fractional part of time
+    /// number of bits to represent the fractional part of time
     int time_increment_bits;
     int shape;
     int vol_sprite_usage;
     int sprite_brightness_change;
     int num_sprite_warping_points;
-    ///< sprite trajectory points
+    /// sprite trajectory points
     uint16_t sprite_traj[4][2];
-    ///< sprite shift [isChroma]
+    /// sprite shift [isChroma]
     int sprite_shift[2];
 
     // reversible vlc
     int rvlc;
-    ///< could this stream contain resync markers
+    /// could this stream contain resync markers
     int resync_marker;
-    ///< time distance of first I -> B, used for interlaced b frames
+    /// time distance of first I -> B, used for interlaced B-frames
     int t_frame;
 
     int new_pred;
     int enhancement_type;
     int scalability;
     int use_intra_dc_vlc;
-    ///< QP above whch the ac VLC should be used for intra dc
+    /// QP above which the ac VLC should be used for intra dc
     int intra_dc_threshold;
 
     /* bug workarounds */
@@ -92,11 +92,11 @@ typedef struct Mpeg4DecContext {
     int divx_build;
     int xvid_build;
     int lavc_build;
-    ///< flag for having shown the warning about divxs invalid b frames
+    /// flag for having shown the warning about invalid Divx B-frames
     int showed_packed_warning;
-    int vol_control_parameters; /**< does the stream contain the low_delay flag,
-                                 *   used to work around buggy encoders. */
-
+    /** does the stream contain the low_delay flag,
+     *  used to work around buggy encoders. */
+    int vol_control_parameters;
     int cplx_estimation_trash_i;
     int cplx_estimation_trash_p;
     int cplx_estimation_trash_b;
