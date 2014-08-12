@@ -123,6 +123,7 @@ typedef struct {
     uint64_t pixel_width;
     uint64_t pixel_height;
     uint64_t fourcc;
+    uint64_t stereo_mode;
 } MatroskaTrackVideo;
 
 typedef struct {
@@ -319,7 +320,7 @@ static EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOPIXELCROPR,     EBML_NONE },
     { MATROSKA_ID_VIDEODISPLAYUNIT,    EBML_NONE },
     { MATROSKA_ID_VIDEOFLAGINTERLACED, EBML_NONE },
-    { MATROSKA_ID_VIDEOSTEREOMODE,     EBML_NONE },
+    { MATROSKA_ID_VIDEOSTEREOMODE,     EBML_UINT,  0, offsetof(MatroskaTrackVideo, stereo_mode), { .u = MATROSKA_VIDEO_STEREOMODE_TYPE_NB } },
     { MATROSKA_ID_VIDEOASPECTRATIO,    EBML_NONE },
     { 0 }
 };
@@ -1786,6 +1787,13 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           1000000000, track->default_duration, 30000);
             }
+            // add stream level stereo3d side data if it is a supported format
+            if (track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB &&
+                track->video.stereo_mode != 10 && track->video.stereo_mode != 12) {
+                int ret = ff_mkv_stereo3d_conv(st, track->video.stereo_mode);
+                if (ret < 0)
+                    return ret;
+            }
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
             st->codec->sample_rate = track->audio.out_samplerate;
@@ -1821,7 +1829,7 @@ static int matroska_read_header(AVFormatContext *s)
         ebml.version         > EBML_VERSION      ||
         ebml.max_size        > sizeof(uint64_t)  ||
         ebml.id_length       > sizeof(uint32_t)  ||
-        ebml.doctype_version > 2) {
+        ebml.doctype_version > 3) {
         av_log(matroska->ctx, AV_LOG_ERROR,
                "EBML header using unsupported features\n"
                "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
