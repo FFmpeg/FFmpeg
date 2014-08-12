@@ -237,6 +237,7 @@ typedef enum {
   MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_GREEN_MAG = 12,
   MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_LR = 13,
   MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_RL = 14,
+  MATROSKA_VIDEO_STEREOMODE_TYPE_NB,
 } MatroskaVideoStereoModeType;
 
 /*
@@ -254,5 +255,7 @@ typedef struct CodecTags{
 extern const CodecTags ff_mkv_codec_tags[];
 extern const CodecMime ff_mkv_mime_tags[];
 extern const AVMetadataConv ff_mkv_metadata_conv[];
+
+int ff_mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mode);
 
 #endif /* AVFORMAT_MATROSKA_H */

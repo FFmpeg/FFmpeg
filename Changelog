@@ -32,6 +32,7 @@ version <next>:
 - request icecast metadata by default
 - support for using metadata in stream specifiers in avtools
 - Aliases and defaults for Ogg subtypes (opus, spx)
+- matroska 3d support
 
 
 version 10:
