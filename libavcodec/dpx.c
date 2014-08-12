@@ -108,6 +108,16 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Invalid data start offset\n");
         return AVERROR_INVALIDDATA;
     }
+
+    // Check encryption
+    buf = avpkt->data + 660;
+    ret = read32(&buf, endian);
+    if (ret != 0xFFFFFFFF) {
+        avpriv_report_missing_feature(avctx, "Encryption");
+        av_log(avctx, AV_LOG_WARNING, "The image is encrypted and may "
+               "not properly decode.\n");
+    }
+
     // Need to end in 0x304 offset from start of file
     buf = avpkt->data + 0x304;
     w = read32(&buf, endian);
