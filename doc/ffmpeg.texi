@@ -823,7 +823,7 @@ ffmpeg -i INPUT -map 0 -map -0:a:1 OUTPUT
 
 To pick the English audio stream:
 @example
-avconv -i INPUT -map 0:m:language:eng OUTPUT
+ffmpeg -i INPUT -map 0:m:language:eng OUTPUT
 @end example
 
 Note that using this option disables the default mappings for this output file.

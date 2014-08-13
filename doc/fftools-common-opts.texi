@@ -51,7 +51,7 @@ Matches streams with the metadata tag @var{key} having the specified value. If
 @var{value} is not given, matches streams that contain the given tag with any
 value.
 
-Note that in @command{avconv}, matching by metadata will only work properly for
+Note that in @command{ffmpeg}, matching by metadata will only work properly for
 input files.
 @end table
 
