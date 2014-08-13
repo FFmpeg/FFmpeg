@@ -201,14 +201,14 @@ static int http_open_cnx(URLContext *h, AVDictionary **options)
     HTTPContext *s = h->priv_data;
     int location_changed, attempts = 0, redirects = 0;
 redo:
+    cur_auth_type       = s->auth_state.auth_type;
+    cur_proxy_auth_type = s->auth_state.auth_type;
+
     location_changed = http_open_cnx_internal(h, options);
     if (location_changed < 0)
         goto fail;
 
     attempts++;
-    cur_auth_type       = s->auth_state.auth_type;
-    cur_proxy_auth_type = s->auth_state.auth_type;
-
     if (s->http_code == 401) {
         if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
             s->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
