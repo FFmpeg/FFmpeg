@@ -841,7 +841,8 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
         memcpy(buf, s->buf_ptr, len);
         s->buf_ptr += len;
     } else {
-        if (!s->willclose && s->filesize >= 0 && s->off >= s->filesize)
+        if ((!s->willclose || s->chunksize < 0) &&
+            s->filesize >= 0 && s->off >= s->filesize)
             return AVERROR_EOF;
         len = ffurl_read(s->hd, buf, size);
     }
