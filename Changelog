@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - Icecast protocol
 - ported lenscorrection filter from frei0r filter
+- large optimizations in dctdnoiz to make it usable
 
 
 version 2.3:
