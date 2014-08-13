@@ -73,6 +73,18 @@ static BOOL (WINAPI *cond_wait)(pthread_cond_t *cond, pthread_mutex_t *mutex,
 #define cond_broadcast WakeAllConditionVariable
 #define cond_signal    WakeConditionVariable
 #define cond_wait      SleepConditionVariableCS
+
+#define CreateEvent(a, reset, init, name)                   \
+    CreateEventEx(a, name,                                  \
+                  (reset ? CREATE_EVENT_MANUAL_RESET : 0) | \
+                  (init ? CREATE_EVENT_INITIAL_SET : 0),    \
+                  EVENT_ALL_ACCESS)
+// CreateSemaphoreExA seems to be desktop-only, but as long as we don't
+// use named semaphores, it doesn't matter if we use the W version.
+#define CreateSemaphore(a, b, c, d) \
+    CreateSemaphoreExW(a, b, c, d, 0, SEMAPHORE_ALL_ACCESS)
+#define InitializeCriticalSection(x) InitializeCriticalSectionEx(x, 0, 0)
+#define WaitForSingleObject(a, b) WaitForSingleObjectEx(a, b, FALSE)
 #endif
 
 static unsigned __stdcall attribute_align_arg win32thread_worker(void *arg)
