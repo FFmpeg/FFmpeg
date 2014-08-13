@@ -241,6 +241,16 @@ av_alloc_size(1, 2) static inline void *av_mallocz_array(size_t nmemb, size_t si
 char *av_strdup(const char *s) av_malloc_attrib;
 
 /**
+ * Duplicate a substring of the string s.
+ * @param s string to be duplicated
+ * @param len the maximum length of the resulting string (not counting the
+ *            terminating byte).
+ * @return Pointer to a newly-allocated string containing a
+ * copy of s or NULL if the string cannot be allocated.
+ */
+char *av_strndup(const char *s, size_t len) av_malloc_attrib;
+
+/**
  * Duplicate the buffer p.
  * @param p buffer to be duplicated
  * @return Pointer to a newly allocated buffer containing a
