@@ -385,13 +385,11 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->coded_picture_number   = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
     dst->flags                  = src->flags;
-#if FF_API_AVFRAME_COLORSPACE
     dst->color_primaries        = src->color_primaries;
     dst->color_trc              = src->color_trc;
     dst->colorspace             = src->colorspace;
     dst->color_range            = src->color_range;
     dst->chroma_location        = src->chroma_location;
-#endif
 
     memcpy(dst->error, src->error, sizeof(dst->error));
 
