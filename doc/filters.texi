@@ -862,7 +862,7 @@ The input audio is not modified.
 The shown line contains a sequence of key/value pairs of the form
 @var{key}:@var{value}.
 
-It accepts the following parameters:
+The following values are shown in the output:
 
 @table @option
 @item n
@@ -7600,7 +7600,7 @@ The input video is not modified.
 The shown line contains a sequence of key/value pairs of the form
 @var{key}:@var{value}.
 
-It accepts the following parameters:
+The following values are shown in the output:
 
 @table @option
 @item n
