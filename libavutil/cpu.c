@@ -180,6 +180,10 @@ int av_cpu_count(void)
 #ifdef TEST
 
 #include <stdio.h>
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include "avstring.h"
 
 #if !HAVE_GETOPT
