@@ -255,7 +255,7 @@ Export the MIME type.
 If set to 1 request ICY (SHOUTcast) metadata from the server. If the server
 supports this, the metadata has to be retrieved by the application by reading
 the @option{icy_metadata_headers} and @option{icy_metadata_packet} options.
-The default is 0.
+The default is 1.
 
 @item icy_metadata_headers
 If the server supports ICY metadata, this contains the ICY-specific HTTP reply

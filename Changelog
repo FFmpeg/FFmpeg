@@ -5,6 +5,7 @@ version <next>:
 - Icecast protocol
 - ported lenscorrection filter from frei0r filter
 - large optimizations in dctdnoiz to make it usable
+- request icecast metadata by default
 
 
 version 2.3:
