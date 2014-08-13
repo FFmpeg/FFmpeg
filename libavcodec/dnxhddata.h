@@ -46,7 +46,7 @@ typedef struct CIDEntry {
     AVRational frame_rates[5];
 } CIDEntry;
 
-extern av_export const CIDEntry ff_dnxhd_cid_table[];
+extern const CIDEntry ff_dnxhd_cid_table[];
 
 int ff_dnxhd_get_cid_table(int cid);
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth);
