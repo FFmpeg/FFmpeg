@@ -282,8 +282,13 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_WARNING, "Invalid FIC Header.\n");
 
     /* Is it a skip frame? */
-    if (src[17])
+    if (src[17]) {
+        if (!ctx->final_frame) {
+            av_log(avctx, AV_LOG_WARNING, "Initial frame is skipped\n");
+            return AVERROR_INVALIDDATA;
+        }
         goto skip;
+    }
 
     nslices = src[13];
     if (!nslices) {
