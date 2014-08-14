@@ -29,4 +29,4 @@ $ git clone https://github.com/saitoha/FFmpeg-SIXEL
 $ cd FFmpeg-SIXEL
 $ ./configure --enable-libquvi --enable-libsixel
 $ make install
-$ ./ffmpeg -i 'https://www.youtube.com/watch?v=tKhbJNSX3UI' -f sixel -s 640x360 -pix_fmt rgb24 -col 5 -row 5 -reqcolors 16 -
+$ ffmpeg -i 'https://www.youtube.com/watch?v=ixaMZPPmVG0' -f sixel -pix_fmt rgb24 -s 480x270 - 
