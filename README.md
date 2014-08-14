@@ -18,8 +18,10 @@ FFmpeg README
 
 * See the INSTALL file.
 
-4) SIXEL integration
+4) SIXEL Integration
+--------------------
 
+```
 $ git clone https://github.com/saitoha/libsixel
 $ cd libsixel
 $ git checkout abi-1.0.0
@@ -30,3 +32,4 @@ $ cd FFmpeg-SIXEL
 $ ./configure --enable-libquvi --enable-libsixel
 $ make install
 $ ffmpeg -i 'https://www.youtube.com/watch?v=ixaMZPPmVG0' -f sixel -pix_fmt rgb24 -s 480x270 - 
+```
