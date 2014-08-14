@@ -101,7 +101,7 @@ static int segment_hls_window(AVFormatContext *s, int last)
     for (i = FFMAX(0, seg->number - seg->size);
          i < seg->number; i++) {
         avio_printf(seg->pb, "#EXTINF:%d,\n", (int)seg->time);
-        if (seg->entry_prefix != NULL) {
+        if (seg->entry_prefix) {
             avio_printf(seg->pb, "%s", seg->entry_prefix);
         }
         av_get_frame_filename(buf, sizeof(buf), s->filename, i);

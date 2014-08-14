@@ -544,7 +544,7 @@ int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags)
 void av_opt_set_defaults(void *s)
 {
     const AVOption *opt = NULL;
-    while ((opt = av_opt_next(s, opt)) != NULL) {
+    while ((opt = av_opt_next(s, opt))) {
         if (opt->flags & AV_OPT_FLAG_READONLY)
             continue;
 

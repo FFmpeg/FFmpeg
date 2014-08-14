@@ -177,7 +177,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if ((ext = strrchr(argv[1], '.')) != NULL && !strcmp(ext, ".wav"))
+    if ((ext = strrchr(argv[1], '.')) && !strcmp(ext, ".wav"))
         put_wav_header(sample_rate, nb_channels, 6 * sample_rate);
 
     /* 1 second of single freq sine at 1000 Hz */

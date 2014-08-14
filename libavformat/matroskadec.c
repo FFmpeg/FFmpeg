@@ -1583,7 +1583,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
 
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC") &&
             track->codec_priv.size >= 40                &&
-            track->codec_priv.data != NULL) {
+            track->codec_priv.data) {
             track->ms_compat    = 1;
             track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
             codec_id            = ff_codec_get_id(ff_codec_bmp_tags,
@@ -1591,7 +1591,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             extradata_offset    = 40;
         } else if (!strcmp(track->codec_id, "A_MS/ACM") &&
                    track->codec_priv.size >= 14         &&
-                   track->codec_priv.data != NULL) {
+                   track->codec_priv.data) {
             int ret;
             ffio_init_context(&b, track->codec_priv.data,
                               track->codec_priv.size,
@@ -1603,7 +1603,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             extradata_offset = FFMIN(track->codec_priv.size, 18);
         } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
                    (track->codec_priv.size >= 86)          &&
-                   (track->codec_priv.data != NULL)) {
+                   (track->codec_priv.data)) {
             track->video.fourcc = AV_RL32(track->codec_priv.data);
             codec_id            = ff_codec_get_id(ff_codec_movvideo_tags,
                                                   track->video.fourcc);

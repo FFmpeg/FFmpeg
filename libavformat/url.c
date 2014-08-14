@@ -111,7 +111,7 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
 
     /* Strip off any query string from base */
     path_query = strchr(buf, '?');
-    if (path_query != NULL)
+    if (path_query)
         *path_query = '\0';
 
     /* Is relative path just a new query part? */

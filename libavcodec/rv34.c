@@ -1591,7 +1591,7 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
             return ret;
         ff_print_debug_info(s, s->current_picture_ptr);
         got_picture = 1;
-    } else if (s->last_picture_ptr != NULL) {
+    } else if (s->last_picture_ptr) {
         if ((ret = av_frame_ref(pict, s->last_picture_ptr->f)) < 0)
             return ret;
         ff_print_debug_info(s, s->last_picture_ptr);

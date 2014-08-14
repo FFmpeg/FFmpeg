@@ -151,7 +151,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
 
     proxy_path = getenv("http_proxy");
     use_proxy  = !ff_http_match_no_proxy(getenv("no_proxy"), hostname) &&
-                 proxy_path != NULL && av_strstart(proxy_path, "http://", NULL);
+                 proxy_path && av_strstart(proxy_path, "http://", NULL);
 
     if (!strcmp(proto, "https")) {
         lower_proto = "tls";

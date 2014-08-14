@@ -56,7 +56,7 @@ void av_register_input_format(AVInputFormat *format)
 {
     AVInputFormat **p = &first_iformat;
 
-    while (*p != NULL)
+    while (*p)
         p = &(*p)->next;
 
     *p = format;
@@ -67,7 +67,7 @@ void av_register_output_format(AVOutputFormat *format)
 {
     AVOutputFormat **p = &first_oformat;
 
-    while (*p != NULL)
+    while (*p)
         p = &(*p)->next;
 
     *p = format;

@@ -314,7 +314,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             if (h < 0)
                 h = 0;
             if (w > 0 && h > 0) {
-                if (sub_header->rects != NULL) {
+                if (sub_header->rects) {
                     for (i = 0; i < sub_header->num_rects; i++) {
                         av_freep(&sub_header->rects[i]->pict.data[0]);
                         av_freep(&sub_header->rects[i]->pict.data[1]);

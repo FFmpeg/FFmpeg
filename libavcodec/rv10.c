@@ -737,7 +737,7 @@ static int rv10_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             i++;
     }
 
-    if (s->current_picture_ptr != NULL && s->mb_y >= s->mb_height) {
+    if (s->current_picture_ptr && s->mb_y >= s->mb_height) {
         ff_er_frame_end(&s->er);
         ff_mpv_frame_end(s);
 
@@ -745,7 +745,7 @@ static int rv10_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             if ((ret = av_frame_ref(pict, s->current_picture_ptr->f)) < 0)
                 return ret;
             ff_print_debug_info(s, s->current_picture_ptr);
-        } else if (s->last_picture_ptr != NULL) {
+        } else if (s->last_picture_ptr) {
             if ((ret = av_frame_ref(pict, s->last_picture_ptr->f)) < 0)
                 return ret;
             ff_print_debug_info(s, s->last_picture_ptr);

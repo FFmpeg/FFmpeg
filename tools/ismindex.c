@@ -323,7 +323,7 @@ static int handle_file(struct Tracks *tracks, const char *file, int split,
         tracks->tracks[tracks->nb_tracks] = track;
 
         track->name = file;
-        if ((ptr = strrchr(file, '/')) != NULL)
+        if ((ptr = strrchr(file, '/')))
             track->name = ptr + 1;
 
         track->bitrate   = st->codec->bit_rate;
