@@ -23,8 +23,6 @@
 
 #include <windows.h>
 
-#include "atomic.h"
-
 #define avpriv_atomic_int_get atomic_int_get_win32
 static inline int atomic_int_get_win32(volatile int *ptr)
 {
