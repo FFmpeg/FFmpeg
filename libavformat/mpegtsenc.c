@@ -233,7 +233,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 {
     MpegTSWrite *ts = s->priv_data;
     uint8_t data[SECTION_LENGTH], *q, *desc_length_ptr, *program_info_length_ptr;
-    int val, stream_type, i;
+    int val, stream_type, i, err = 0;
 
     q = data;
     put16(&q, 0xe000 | service->pcr_pid);
@@ -251,6 +251,11 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         AVStream *st = s->streams[i];
         MpegTSWriteStream *ts_st = st->priv_data;
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
+
+        if (q - data > SECTION_LENGTH - 32) {
+            err = 1;
+            break;
+        }
         switch (st->codec->codec_id) {
         case AV_CODEC_ID_MPEG1VIDEO:
         case AV_CODEC_ID_MPEG2VIDEO:
@@ -297,9 +302,6 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             break;
         }
 
-        if (q - data > sizeof(data) - 32)
-            return AVERROR(EINVAL);
-
         *q++ = stream_type;
         put16(&q, 0xe000 | ts_st->pid);
         desc_length_ptr = q;
@@ -331,7 +333,11 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 len_ptr  = q++;
                 *len_ptr = 0;
 
-                for (p = lang->value; next && *len_ptr < 255 / 4 * 4 && q - data < sizeof(data) - 4; p = next + 1) {
+                for (p = lang->value; next && *len_ptr < 255 / 4 * 4; p = next + 1) {
+                    if (q - data > SECTION_LENGTH - 4) {
+                        err = 1;
+                        break;
+                    }
                     next = strchr(p, ',');
                     if (strlen(p) != 3 && (!next || next != p + 3))
                         continue; /* not a 3-letter code */
@@ -368,7 +374,11 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                *q++ = 0x59; /* subtitling_descriptor */
                len_ptr = q++;
 
-               while (strlen(language) >= 3 && (sizeof(data) - (q - data)) >= 8) { /* 8 bytes per DVB subtitle substream data */
+               while (strlen(language) >= 3) {
+                   if (sizeof(data) - (q - data) < 8) { /* 8 bytes per DVB subtitle substream data */
+                       err = 1;
+                       break;
+                   }
                    *q++ = *language++;
                    *q++ = *language++;
                    *q++ = *language++;
@@ -459,6 +469,13 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         desc_length_ptr[0] = val >> 8;
         desc_length_ptr[1] = val;
     }
+
+    if (err)
+        av_log(s, AV_LOG_ERROR,
+               "The PMT section cannot fit stream %d and all following streams.\n"
+               "Try reducing the number of languages in the audio streams "
+               "or the total number of streams.\n", i);
+
     mpegts_write_section1(&service->pmt, PMT_TID, service->sid, ts->tables_version, 0, 0,
                           data, q - data);
     return 0;
