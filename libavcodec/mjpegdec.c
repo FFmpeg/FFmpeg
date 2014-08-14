@@ -1895,6 +1895,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int start_code;
     int i, index;
     int ret = 0;
+    int is16bit;
 
     av_dict_free(&s->exif_metadata);
     av_freep(&s->stereo3d);
@@ -2073,6 +2074,9 @@ fail:
     s->got_picture = 0;
     return ret;
 the_end:
+
+    is16bit = av_pix_fmt_desc_get(s->avctx->pix_fmt)->comp[0].step_minus1;
+
     if (s->upscale_h) {
         int p;
         av_assert0(avctx->pix_fmt == AV_PIX_FMT_YUVJ444P ||
@@ -2082,6 +2086,7 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_YUVA444P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUV420P  ||
+                   avctx->pix_fmt == AV_PIX_FMT_YUV420P16||
                    avctx->pix_fmt == AV_PIX_FMT_GBRAP
                   );
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
@@ -2093,8 +2098,12 @@ the_end:
             if (p==1 || p==2)
                 w >>= hshift;
             for (i = 0; i < s->chroma_height; i++) {
-                for (index = w - 1; index; index--)
-                    line[index] = (line[index / 2] + line[(index + 1) / 2]) >> 1;
+                for (index = w - 1; index; index--) {
+                    if (is16bit)
+                        ((uint16_t*)line)[index] = (((uint16_t*)line)[index / 2] + ((uint16_t*)line)[(index + 1) / 2]) >> 1;
+                    else
+                        line[index] = (line[index / 2] + line[(index + 1) / 2]) >> 1;
+                }
                 line += s->linesize[p];
             }
         }
