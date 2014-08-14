@@ -79,7 +79,7 @@ static int copy_from(IpvideoContext *s, AVFrame *src, AVFrame *dst, int delta_x,
             motion_offset, s->upper_motion_limit_offset);
         return AVERROR_INVALIDDATA;
     }
-    if (src->data[0] == NULL) {
+    if (!src->data[0]) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid decode type, corrupted header?\n");
         return AVERROR(EINVAL);
     }

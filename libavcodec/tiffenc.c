@@ -323,7 +323,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                      s->subsampling[0] * s->subsampling[1] + 7) >> 3;
     if (is_yuv) {
         yuv_line = av_malloc(bytes_per_row);
-        if (yuv_line == NULL) {
+        if (!yuv_line) {
             av_log(s->avctx, AV_LOG_ERROR, "Not enough memory\n");
             ret = AVERROR(ENOMEM);
             goto fail;

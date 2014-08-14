@@ -98,7 +98,7 @@ static int xvid_ff_2pass_create(xvid_plg_create_t * param,
     char *log = x->context->twopassbuffer;
 
     /* Do a quick bounds check */
-    if( log == NULL )
+    if (!log)
         return XVID_ERR_FAIL;
 
     /* We use snprintf() */
@@ -189,7 +189,7 @@ static int xvid_ff_2pass_after(struct xvid_context *ref,
     char frame_type;
 
     /* Quick bounds check */
-    if( log == NULL )
+    if (!log)
         return XVID_ERR_FAIL;
 
     /* Convert the type given to us into a character */
@@ -273,7 +273,7 @@ static int xvid_strip_vol_header(AVCodecContext *avctx,
 
     if( vo_len > 0 ) {
         /* We need to store the header, so extract it */
-        if( avctx->extradata == NULL ) {
+        if (!avctx->extradata) {
             avctx->extradata = av_malloc(vo_len);
             memcpy(avctx->extradata, pkt->data, vo_len);
             avctx->extradata_size = vo_len;
@@ -470,7 +470,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         rc2pass1.context = x;
         x->twopassbuffer = av_malloc(BUFFER_SIZE);
         x->old_twopassbuffer = av_malloc(BUFFER_SIZE);
-        if( x->twopassbuffer == NULL || x->old_twopassbuffer == NULL ) {
+        if (!x->twopassbuffer || !x->old_twopassbuffer) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot allocate 2-pass log buffers\n");
             return -1;
@@ -491,7 +491,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
             return -1;
         }
 
-        if( avctx->stats_in == NULL ) {
+        if (!avctx->stats_in) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: No 2-pass information loaded for second pass\n");
             return -1;

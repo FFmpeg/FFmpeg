@@ -826,7 +826,7 @@ fail:
 
 static void free_duplicate_context(MpegEncContext *s)
 {
-    if (s == NULL)
+    if (!s)
         return;
 
     av_freep(&s->edge_emu_buffer);
@@ -1630,7 +1630,7 @@ static void release_unused_pictures(MpegEncContext *s)
 
 static inline int pic_is_unused(MpegEncContext *s, Picture *pic)
 {
-    if (pic->f->buf[0] == NULL)
+    if (!pic->f->buf[0])
         return 1;
     if (pic->needs_realloc && !(pic->reference & DELAYED_PIC_REF))
         return 1;
@@ -1643,7 +1643,7 @@ static int find_unused_picture(MpegEncContext *s, int shared)
 
     if (shared) {
         for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            if (s->picture[i].f->buf[0] == NULL)
+            if (!s->picture[i].f->buf[0])
                 return i;
         }
     } else {
@@ -1704,8 +1704,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
     release_unused_pictures(s);
 
-    if (s->current_picture_ptr &&
-        s->current_picture_ptr->f->buf[0] == NULL) {
+    if (s->current_picture_ptr && !s->current_picture_ptr->f->buf[0]) {
         // we already have a unused image
         // (maybe it was set before reading the header)
         pic = s->current_picture_ptr;
@@ -1763,8 +1762,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->current_picture_ptr ? s->current_picture_ptr->f->data[0] : NULL,
             s->pict_type, s->droppable);
 
-    if ((s->last_picture_ptr == NULL ||
-         s->last_picture_ptr->f->buf[0] == NULL) &&
+    if ((!s->last_picture_ptr || !s->last_picture_ptr->f->buf[0]) &&
         (s->pict_type != AV_PICTURE_TYPE_I ||
          s->picture_structure != PICT_FRAME)) {
         int h_chroma_shift, v_chroma_shift;
@@ -1805,8 +1803,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         ff_thread_report_progress(&s->last_picture_ptr->tf, INT_MAX, 0);
         ff_thread_report_progress(&s->last_picture_ptr->tf, INT_MAX, 1);
     }
-    if ((s->next_picture_ptr == NULL ||
-         s->next_picture_ptr->f->buf[0] == NULL) &&
+    if ((!s->next_picture_ptr || !s->next_picture_ptr->f->buf[0]) &&
         s->pict_type == AV_PICTURE_TYPE_B) {
         /* Allocate a dummy frame */
         i = ff_find_unused_picture(s, 0);
@@ -2433,7 +2430,7 @@ void ff_mpeg_flush(AVCodecContext *avctx){
     int i;
     MpegEncContext *s = avctx->priv_data;
 
-    if(s==NULL || s->picture==NULL)
+    if (!s || !s->picture)
         return;
 
     for (i = 0; i < MAX_PICTURE_COUNT; i++)

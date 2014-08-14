@@ -1608,7 +1608,7 @@ static unsigned int celt_decode_band(CeltContext *s, OpusRangeCoder *rc,
                 for (j = 0; j < N; j++)
                     X[j] = 0.0f;
             } else {
-                if (lowband == NULL) {
+                if (!lowband) {
                     /* Noise */
                     for (j = 0; j < N; j++)
                         X[j] = (((int32_t)celt_rng(s)) >> 20);

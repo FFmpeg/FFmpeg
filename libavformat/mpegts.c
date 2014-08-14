@@ -1715,7 +1715,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         return 0;
     is_start = packet[1] & 0x40;
     tss = ts->pids[pid];
-    if (ts->auto_guess && tss == NULL && is_start) {
+    if (ts->auto_guess && !tss && is_start) {
         add_pes_stream(ts, pid, -1);
         tss = ts->pids[pid];
     }

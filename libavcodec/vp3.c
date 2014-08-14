@@ -1416,7 +1416,7 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
                                   0);
     }
 
-    if (s->avctx->draw_horiz_band == NULL)
+    if (!s->avctx->draw_horiz_band)
         return;
 
     h = y - s->last_slice_end;

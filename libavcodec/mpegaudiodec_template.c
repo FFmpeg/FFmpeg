@@ -1803,7 +1803,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
     MPEG4AudioConfig cfg;
     int i;
 
-    if ((avctx->extradata_size < 2) || (avctx->extradata == NULL)) {
+    if ((avctx->extradata_size < 2) || !avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Codec extradata missing or too short.\n");
         return AVERROR_INVALIDDATA;
     }

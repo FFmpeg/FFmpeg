@@ -1221,9 +1221,9 @@ static int select_input_picture(MpegEncContext *s)
     s->reordered_input_picture[MAX_PICTURE_COUNT - 1] = NULL;
 
     /* set next picture type & ordering */
-    if (s->reordered_input_picture[0] == NULL && s->input_picture[0]) {
+    if (!s->reordered_input_picture[0] && s->input_picture[0]) {
         if (/*s->picture_in_gop_number >= s->gop_size ||*/
-            s->next_picture_ptr == NULL || s->intra_only) {
+            !s->next_picture_ptr || s->intra_only) {
             s->reordered_input_picture[0] = s->input_picture[0];
             s->reordered_input_picture[0]->f->pict_type = AV_PICTURE_TYPE_I;
             s->reordered_input_picture[0]->f->coded_picture_number =
@@ -1276,7 +1276,7 @@ static int select_input_picture(MpegEncContext *s)
                     }
                 }
                 for (i = 0; i < s->max_b_frames + 1; i++) {
-                    if (s->input_picture[i] == NULL ||
+                    if (!s->input_picture[i] ||
                         s->input_picture[i]->b_frame_score - 1 >
                             s->mb_num / s->avctx->b_sensitivity)
                         break;

@@ -1519,7 +1519,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                    track->type);
             continue;
         }
-        if (track->codec_id == NULL)
+        if (!track->codec_id)
             continue;
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
@@ -1578,7 +1578,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
         }
 
         st = track->stream = avformat_new_stream(s, NULL);
-        if (st == NULL)
+        if (!st)
             return AVERROR(ENOMEM);
 
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC") &&
@@ -1638,7 +1638,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             int profile = matroska_aac_profile(track->codec_id);
             int sri     = matroska_aac_sri(track->audio.samplerate);
             extradata   = av_mallocz(5 + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (extradata == NULL)
+            if (!extradata)
                 return AVERROR(ENOMEM);
             extradata[0] = (profile << 3) | ((sri & 0x0E) >> 1);
             extradata[1] = ((sri & 0x01) << 7) | (track->audio.channels << 3);
@@ -1657,7 +1657,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             extradata_size = 12 + track->codec_priv.size;
             extradata      = av_mallocz(extradata_size +
                                         FF_INPUT_BUFFER_PADDING_SIZE);
-            if (extradata == NULL)
+            if (!extradata)
                 return AVERROR(ENOMEM);
             AV_WB32(extradata, extradata_size);
             memcpy(&extradata[4], "alac", 4);
@@ -1667,7 +1667,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
         } else if (codec_id == AV_CODEC_ID_TTA) {
             extradata_size = 30;
             extradata      = av_mallocz(extradata_size);
-            if (extradata == NULL)
+            if (!extradata)
                 return AVERROR(ENOMEM);
             ffio_init_context(&b, extradata, extradata_size, 1,
                               NULL, NULL, NULL, NULL);
@@ -1760,7 +1760,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             } else if (track->codec_priv.data && track->codec_priv.size > 0) {
                 st->codec->extradata = av_mallocz(track->codec_priv.size +
                                                   FF_INPUT_BUFFER_PADDING_SIZE);
-                if (st->codec->extradata == NULL)
+                if (!st->codec->extradata)
                     return AVERROR(ENOMEM);
                 st->codec->extradata_size = track->codec_priv.size;
                 memcpy(st->codec->extradata,
@@ -1872,14 +1872,14 @@ static int matroska_read_header(AVFormatContext *s)
             av_log(matroska->ctx, AV_LOG_ERROR, "incomplete attachment\n");
         } else {
             AVStream *st = avformat_new_stream(s, NULL);
-            if (st == NULL)
+            if (!st)
                 break;
             av_dict_set(&st->metadata, "filename", attachments[j].filename, 0);
             av_dict_set(&st->metadata, "mimetype", attachments[j].mime, 0);
             st->codec->codec_id   = AV_CODEC_ID_NONE;
             st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
             st->codec->extradata  = av_malloc(attachments[j].bin.size);
-            if (st->codec->extradata == NULL)
+            if (!st->codec->extradata)
                 break;
             st->codec->extradata_size = attachments[j].bin.size;
             memcpy(st->codec->extradata, attachments[j].bin.data,

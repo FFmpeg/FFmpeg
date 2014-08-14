@@ -1464,7 +1464,7 @@ static void qdm2_decode_fft_packets(QDM2Context *q)
     int i, j, min, max, value, type, unknown_flag;
     GetBitContext gb;
 
-    if (q->sub_packet_list_B[0].packet == NULL)
+    if (!q->sub_packet_list_B[0].packet)
         return;
 
     /* reset minimum indexes for FFT coefficients */

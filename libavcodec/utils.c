@@ -954,7 +954,7 @@ AVFrame *avcodec_alloc_frame(void)
 {
     AVFrame *frame = av_mallocz(sizeof(AVFrame));
 
-    if (frame == NULL)
+    if (!frame)
         return NULL;
 
 FF_DISABLE_DEPRECATION_WARNINGS

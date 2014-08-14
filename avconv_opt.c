@@ -587,7 +587,7 @@ static void assert_file_overwrite(const char *filename)
     }
 
     if (!file_overwrite &&
-        (strchr(filename, ':') == NULL || filename[1] == ':' ||
+        (!strchr(filename, ':') || filename[1] == ':' ||
          av_strstart(filename, "file:", NULL))) {
         if (avio_check(filename, 0) == 0) {
             if (!using_stdin && !file_skip) {

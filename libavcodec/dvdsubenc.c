@@ -97,7 +97,7 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
     unsigned long hist[256];
     int           cmap[256];
 
-    if (rects == 0 || h->rects == NULL)
+    if (rects == 0 || !h->rects)
         return -1;
     if (rects > 20)
         rects = 20;

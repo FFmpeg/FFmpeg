@@ -117,7 +117,7 @@
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_malloc(size);\
-    if (p == NULL && (size) != 0) {\
+    if (!(p) && (size) != 0) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -126,7 +126,7 @@
 #define FF_ALLOCZ_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_mallocz(size);\
-    if (p == NULL && (size) != 0) {\
+    if (!(p) && (size) != 0) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\

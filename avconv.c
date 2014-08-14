@@ -1363,7 +1363,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
     if (ist->next_dts == AV_NOPTS_VALUE)
         ist->next_dts = ist->last_dts;
 
-    if (pkt == NULL) {
+    if (!pkt) {
         /* EOF handling */
         av_init_packet(&avpkt);
         avpkt.data = NULL;

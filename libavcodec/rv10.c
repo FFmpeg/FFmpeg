@@ -326,7 +326,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->last_picture_ptr == NULL && s->pict_type == AV_PICTURE_TYPE_B) {
+    if (!s->last_picture_ptr && s->pict_type == AV_PICTURE_TYPE_B) {
         av_log(s->avctx, AV_LOG_ERROR, "early B-frame\n");
         return AVERROR_INVALIDDATA;
     }
@@ -557,7 +557,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr == NULL) {
+    if ((s->mb_x == 0 && s->mb_y == 0) || !s->current_picture_ptr) {
         // FIXME write parser so we always have complete frames?
         if (s->current_picture_ptr) {
             ff_er_frame_end(&s->er);

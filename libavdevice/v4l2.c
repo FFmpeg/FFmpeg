@@ -361,13 +361,13 @@ static int mmap_init(AVFormatContext *ctx)
     }
     s->buffers = req.count;
     s->buf_start = av_malloc(sizeof(void *) * s->buffers);
-    if (s->buf_start == NULL) {
+    if (!s->buf_start) {
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate buffer pointers\n");
 
         return AVERROR(ENOMEM);
     }
     s->buf_len = av_malloc(sizeof(unsigned int) * s->buffers);
-    if (s->buf_len == NULL) {
+    if (!s->buf_len) {
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate buffer sizes\n");
         av_free(s->buf_start);
 
@@ -513,7 +513,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
         buf_descriptor = av_malloc(sizeof(struct buff_data));
-        if (buf_descriptor == NULL) {
+        if (!buf_descriptor) {
             /* Something went wrong... Since av_malloc() failed, we cannot even
              * allocate a buffer for memcpying into it
              */

@@ -225,7 +225,7 @@ static void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 
     win32_argv_utf8 = av_mallocz(sizeof(char *) * (win32_argc + 1) + buffsize);
     argstr_flat     = (char *)win32_argv_utf8 + sizeof(char *) * (win32_argc + 1);
-    if (win32_argv_utf8 == NULL) {
+    if (!win32_argv_utf8) {
         LocalFree(argv_w);
         return;
     }
@@ -920,7 +920,7 @@ int show_formats(void *optctx, const char *opt, const char *arg)
         const char *long_name = NULL;
 
         while ((ofmt = av_oformat_next(ofmt))) {
-            if ((name == NULL || strcmp(ofmt->name, name) < 0) &&
+            if ((!name || strcmp(ofmt->name, name) < 0) &&
                 strcmp(ofmt->name, last_name) > 0) {
                 name      = ofmt->name;
                 long_name = ofmt->long_name;
@@ -928,7 +928,7 @@ int show_formats(void *optctx, const char *opt, const char *arg)
             }
         }
         while ((ifmt = av_iformat_next(ifmt))) {
-            if ((name == NULL || strcmp(ifmt->name, name) < 0) &&
+            if ((!name || strcmp(ifmt->name, name) < 0) &&
                 strcmp(ifmt->name, last_name) > 0) {
                 name      = ifmt->name;
                 long_name = ifmt->long_name;
@@ -937,7 +937,7 @@ int show_formats(void *optctx, const char *opt, const char *arg)
             if (name && strcmp(ifmt->name, name) == 0)
                 decode = 1;
         }
-        if (name == NULL)
+        if (!name)
             break;
         last_name = name;
 

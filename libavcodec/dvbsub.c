@@ -205,7 +205,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
     page_id = 1;
 
-    if (h->num_rects == 0 || h->rects == NULL)
+    if (h->num_rects == 0 || !h->rects)
         return -1;
 
     *q++ = 0x00; /* subtitle_stream_id */

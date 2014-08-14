@@ -285,7 +285,7 @@ static mkv_seekhead *mkv_start_seekhead(AVIOContext *pb, int64_t segment_offset,
                                         int numelements)
 {
     mkv_seekhead *new_seekhead = av_mallocz(sizeof(mkv_seekhead));
-    if (new_seekhead == NULL)
+    if (!new_seekhead)
         return NULL;
 
     new_seekhead->segment_offset = segment_offset;
@@ -378,7 +378,7 @@ fail:
 static mkv_cues *mkv_start_cues(int64_t segment_offset)
 {
     mkv_cues *cues = av_mallocz(sizeof(mkv_cues));
-    if (cues == NULL)
+    if (!cues)
         return NULL;
 
     cues->segment_offset = segment_offset;
@@ -1109,7 +1109,7 @@ static int mkv_write_header(AVFormatContext *s)
         mkv_write_seekhead(pb, mkv->main_seekhead);
 
     mkv->cues = mkv_start_cues(mkv->segment_offset);
-    if (mkv->cues == NULL)
+    if (!mkv->cues)
         return AVERROR(ENOMEM);
 
     if (pb->seekable && mkv->reserve_cues_space) {

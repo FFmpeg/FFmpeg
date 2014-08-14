@@ -50,7 +50,7 @@ int ff_tempfile(const char *prefix, char **filename) {
     *filename = av_malloc(len);
 #endif
     /* -----common section-----*/
-    if (*filename == NULL) {
+    if (!(*filename)) {
         av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
         return -1;
     }
