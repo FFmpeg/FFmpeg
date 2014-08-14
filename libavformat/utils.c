@@ -719,10 +719,6 @@ int ff_get_audio_frame_size(AVCodecContext *enc, int size, int mux)
 {
     int frame_size;
 
-    /* give frame_size priority if demuxing */
-    if (!mux && enc->frame_size > 1)
-        return enc->frame_size;
-
     if ((frame_size = av_get_audio_frame_duration(enc, size)) > 0)
         return frame_size;
 
