@@ -142,8 +142,8 @@ typedef struct SelectContext {
     double var_values[VAR_VARS_NB];
     int do_scene_detect;            ///< 1 if the expression requires scene detection variables, 0 otherwise
     av_pixelutils_sad_fn sad;       ///< Sum of the absolute difference function (scene detect only)
-    double prev_mafd;               ///< previous MAFD                             (scene detect only)
-    AVFrame *prev_picref; ///< previous frame                            (scene detect only)
+    double prev_mafd;               ///< previous MAFD                           (scene detect only)
+    AVFrame *prev_picref;           ///< previous frame                          (scene detect only)
     double select;
     int select_out;                 ///< mark the selected output pad index
     int nb_outputs;
