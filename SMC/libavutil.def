@@ -276,6 +276,7 @@ EXPORTS
     av_opt_freep_ranges
     av_opt_get
     av_opt_get_channel_layout
+    av_opt_get_dict_val
     av_opt_get_double
     av_opt_get_image_size
     av_opt_get_int
@@ -294,6 +295,7 @@ EXPORTS
     av_opt_set_defaults
     av_opt_set_defaults2
     av_opt_set_dict
+    av_opt_set_dict_val
     av_opt_set_dict2
     av_opt_set_double
     av_opt_set_from_string
@@ -374,6 +376,7 @@ EXPORTS
     av_strlcatf
     av_strlcpy
     av_strncasecmp
+    av_strndup
     av_strnstr
     av_strstart
     av_strtod

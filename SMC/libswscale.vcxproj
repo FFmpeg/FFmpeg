@@ -86,6 +86,9 @@
     <ClCompile Include="..\libswscale\yuv2rgb.c">
       <ObjectFileName>$(IntDir)\libswscale_yuv2rgb.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libswscale\log2_tab.c">
+      <ObjectFileName>$(IntDir)\libswscale_log2_tab.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">
       <ObjectFileName>$(IntDir)\libswscale_x86_rgb2rgb.obj</ObjectFileName>
     </ClCompile>

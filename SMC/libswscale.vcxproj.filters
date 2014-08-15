@@ -48,6 +48,9 @@
     <ClCompile Include="..\libswscale\yuv2rgb.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
+    <ClCompile Include="..\libswscale\log2_tab.c">
+      <Filter>Source Files\libswscale</Filter>
+    </ClCompile>
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">
       <Filter>Source Files\libswscale\x86</Filter>
     </ClCompile>

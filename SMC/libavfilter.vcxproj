@@ -587,6 +587,9 @@
     <ClCompile Include="..\libavfilter\pthread.c">
       <ObjectFileName>$(IntDir)\libavfilter_pthread.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\log2_tab.c">
+      <ObjectFileName>$(IntDir)\libavfilter_log2_tab.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_gradfun_init.c">
       <ObjectFileName>$(IntDir)\libavfilter_x86_vf_gradfun_init.obj</ObjectFileName>
     </ClCompile>

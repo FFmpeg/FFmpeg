@@ -69,6 +69,7 @@
 #define HAVE_NEON 0
 #define HAVE_VFP 0
 #define HAVE_VFPV3 0
+#define HAVE_SETEND 0
 #define HAVE_ALTIVEC 0
 #define HAVE_DCBZL 0
 #define HAVE_LDBRX 0
@@ -103,6 +104,7 @@
 #define HAVE_NEON_EXTERNAL 0
 #define HAVE_VFP_EXTERNAL 0
 #define HAVE_VFPV3_EXTERNAL 0
+#define HAVE_SETEND_EXTERNAL 0
 #define HAVE_ALTIVEC_EXTERNAL 0
 #define HAVE_DCBZL_EXTERNAL 0
 #define HAVE_LDBRX_EXTERNAL 0
@@ -137,6 +139,7 @@
 #define HAVE_NEON_INLINE 0
 #define HAVE_VFP_INLINE 0
 #define HAVE_VFPV3_INLINE 0
+#define HAVE_SETEND_INLINE 0
 #define HAVE_ALTIVEC_INLINE 0
 #define HAVE_DCBZL_INLINE 0
 #define HAVE_LDBRX_INLINE 0
@@ -551,7 +554,6 @@
 #   define CONFIG_SHARED 0
 #endif
 #define CONFIG_SMALL 0
-#define CONFIG_SRAM 0
 #if defined(_USRDLL)
 #   define CONFIG_STATIC 0
 #else

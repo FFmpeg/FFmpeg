@@ -1110,6 +1110,9 @@
     <ClCompile Include="..\libavcodec\xvididct.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\xvid_c_idct.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mpl2dec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2240,6 +2243,9 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\flacdsp.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavcodec\x86\flac_dsp_gpl.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\h263_loopfilter.asm">

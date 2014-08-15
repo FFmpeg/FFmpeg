@@ -1148,6 +1148,9 @@
     <ClCompile Include="..\libavcodec\xvididct.c">
       <ObjectFileName>$(IntDir)\libavcodec_xvididct.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\xvid_c_idct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_xvid_c_idct.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mpl2dec.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpl2dec.obj</ObjectFileName>
     </ClCompile>
@@ -2236,6 +2239,7 @@
     <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
     <YASM Include="..\libavcodec\x86\fft.asm" />
     <YASM Include="..\libavcodec\x86\flacdsp.asm" />
+    <YASM Include="..\libavcodec\x86\flac_dsp_gpl.asm" />
     <YASM Include="..\libavcodec\x86\h263_loopfilter.asm" />
     <YASM Include="..\libavcodec\x86\h264_chromamc.asm" />
     <YASM Include="..\libavcodec\x86\h264_chromamc_10bit.asm" />
