@@ -456,21 +456,9 @@ retry:
     if (ret < 0)
         return ret;
 
-    if (!s->context_initialized) {
+    if (!s->context_initialized)
         // we need the idct permutaton for reading a custom matrix
         ff_mpv_idct_init(s);
-        if ((ret = ff_MPV_common_init(s)) < 0)
-            return ret;
-    }
-
-    /* We need to set current_picture_ptr before reading the header,
-     * otherwise we cannot store anyting in there */
-    if (s->current_picture_ptr == NULL || s->current_picture_ptr->f->data[0]) {
-        int i = ff_find_unused_picture(s, 0);
-        if (i < 0)
-            return i;
-        s->current_picture_ptr = &s->picture[i];
-    }
 
     /* let's go :-) */
     if (CONFIG_WMV2_DECODER && s->msmpeg4_version == 5) {
@@ -508,6 +496,17 @@ retry:
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "header damaged\n");
         return ret;
+    }
+
+    if (!s->context_initialized)
+        if ((ret = ff_MPV_common_init(s)) < 0)
+            return ret;
+
+    if (s->current_picture_ptr == NULL || s->current_picture_ptr->f->data[0]) {
+        int i = ff_find_unused_picture(s, 0);
+        if (i < 0)
+            return i;
+        s->current_picture_ptr = &s->picture[i];
     }
 
     avctx->has_b_frames = !s->low_delay;
