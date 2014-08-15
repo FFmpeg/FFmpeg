@@ -397,8 +397,8 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    if ((ret = ff_MPV_frame_start(s, avctx)) < 0) {
-        av_log(v->s.avctx, AV_LOG_ERROR, "ff_MPV_frame_start error\n");
+    if ((ret = ff_mpv_frame_start(s, avctx)) < 0) {
+        av_log(v->s.avctx, AV_LOG_ERROR, "ff_mpv_frame_start error\n");
         avctx->pix_fmt = AV_PIX_FMT_RGB24;
         return ret;
     }
@@ -418,7 +418,7 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
 
     ff_er_frame_end(&s->er);
 
-    ff_MPV_frame_end(s);
+    ff_mpv_frame_end(s);
 
     f = s->current_picture.f;
 

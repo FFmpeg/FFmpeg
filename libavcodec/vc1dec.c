@@ -5777,7 +5777,7 @@ av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
         av_freep(&v->sr_rows[i >> 1][i & 1]);
     av_freep(&v->hrd_rate);
     av_freep(&v->hrd_buffer);
-    ff_MPV_common_end(&v->s);
+    ff_mpv_common_end(&v->s);
     av_freep(&v->mv_type_mb_plane);
     av_freep(&v->direct_mb_plane);
     av_freep(&v->forward_mb_plane);
@@ -5976,7 +5976,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         if (ff_msmpeg4_decode_init(avctx) < 0)
             goto err;
         if (ff_vc1_decode_init_alloc_tables(v) < 0) {
-            ff_MPV_common_end(s);
+            ff_mpv_common_end(s);
             goto err;
         }
 
@@ -6040,7 +6040,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             s->next_p_frame_damaged = 0;
     }
 
-    if (ff_MPV_frame_start(s, avctx) < 0) {
+    if (ff_mpv_frame_start(s, avctx) < 0) {
         goto err;
     }
 
@@ -6208,7 +6208,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             ff_er_frame_end(&s->er);
     }
 
-    ff_MPV_frame_end(s);
+    ff_mpv_frame_end(s);
 
     if (avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
 image:

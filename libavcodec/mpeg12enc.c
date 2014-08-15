@@ -147,7 +147,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && avctx->height > 2800)
         avctx->thread_count = 1;
 
-    if (ff_MPV_encode_init(avctx) < 0)
+    if (ff_mpv_encode_init(avctx) < 0)
         return -1;
 
     if (find_frame_rate_index(s) < 0) {
@@ -1149,8 +1149,8 @@ AVCodec ff_mpeg1video_encoder = {
     .id                   = AV_CODEC_ID_MPEG1VIDEO,
     .priv_data_size       = sizeof(MpegEncContext),
     .init                 = encode_init,
-    .encode2              = ff_MPV_encode_picture,
-    .close                = ff_MPV_encode_end,
+    .encode2              = ff_mpv_encode_picture,
+    .close                = ff_mpv_encode_end,
     .supported_framerates = ff_mpeg12_frame_rate_tab + 1,
     .pix_fmts             = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                            AV_PIX_FMT_NONE },
@@ -1165,8 +1165,8 @@ AVCodec ff_mpeg2video_encoder = {
     .id                   = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size       = sizeof(MpegEncContext),
     .init                 = encode_init,
-    .encode2              = ff_MPV_encode_picture,
-    .close                = ff_MPV_encode_end,
+    .encode2              = ff_mpv_encode_picture,
+    .close                = ff_mpv_encode_end,
     .supported_framerates = ff_mpeg2_frame_rate_tab,
     .pix_fmts             = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                            AV_PIX_FMT_YUV422P,

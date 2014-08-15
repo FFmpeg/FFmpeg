@@ -549,7 +549,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 #endif
     }
     /* update linesize on resize for h264. The h264 decoder doesn't
-     * necessarily call ff_MPV_frame_start in the new thread */
+     * necessarily call ff_mpv_frame_start in the new thread */
     h->linesize   = h1->linesize;
     h->uvlinesize = h1->uvlinesize;
 
@@ -783,7 +783,7 @@ static int h264_frame_start(H264Context *h)
 
     /* We mark the current picture as non-reference after allocating it, so
      * that if we break out due to an error it can be released automatically
-     * in the next ff_MPV_frame_start().
+     * in the next ff_mpv_frame_start().
      */
     h->cur_pic_ptr->reference = 0;
 

@@ -209,7 +209,7 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
         pic->data[i] += pic->linesize[i] * (vsample * s->height / V_MAX - 1);
         pic->linesize[i] *= -1;
     }
-    ret = ff_MPV_encode_picture(avctx, pkt, pic, got_packet);
+    ret = ff_mpv_encode_picture(avctx, pkt, pic, got_packet);
     av_frame_free(&pic);
     return ret;
 }
@@ -221,9 +221,9 @@ AVCodec ff_mjpeg_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = ff_MPV_encode_init,
-    .encode2        = ff_MPV_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .init           = ff_mpv_encode_init,
+    .encode2        = ff_mpv_encode_picture,
+    .close          = ff_mpv_encode_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE
@@ -237,9 +237,9 @@ AVCodec ff_amv_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AMV,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = ff_MPV_encode_init,
+    .init           = ff_mpv_encode_init,
     .encode2        = amv_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_NONE
     },
