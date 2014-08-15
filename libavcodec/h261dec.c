@@ -600,11 +600,10 @@ retry:
         s->parse_context = pc;
     }
 
-    if (!s->context_initialized)
+    if (!s->context_initialized) {
         if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
 
-    if (!s->context_initialized) {
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
             return ret;
