@@ -27,14 +27,6 @@
 #include <windows.h>
 #include <vfw.h>
 
-/* Defines for VFW missing from MinGW.
- * Remove this when MinGW incorporates them. */
-#define HWND_MESSAGE                ((HWND)-3)
-
-#define BI_RGB                      0
-
-/* End of missing MinGW defines */
-
 struct vfw_ctx {
     const AVClass *class;
     HWND hwnd;
