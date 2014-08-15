@@ -2065,7 +2065,7 @@ static int mov_write_track_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
     int ret, size;
     uint8_t *buf;
 
-    if (st == NULL || mov->fc->flags & AVFMT_FLAG_BITEXACT)
+    if (!st || mov->fc->flags & AVFMT_FLAG_BITEXACT)
         return 0;
 
     ret = avio_open_dyn_buf(&pb_buf);

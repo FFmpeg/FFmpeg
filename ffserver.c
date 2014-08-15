@@ -1600,7 +1600,7 @@ static int http_parse_request(HTTPContext *c)
             break;
         stream = stream->next;
     }
-    if (stream == NULL) {
+    if (!stream) {
         snprintf(msg, sizeof(msg), "File '%s' not found", url);
         http_log("File '%s' not found\n", url);
         goto send_error;
@@ -2980,7 +2980,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     *pbuffer = NULL;
 
     avc =  avformat_alloc_context();
-    if (avc == NULL || !rtp_format) {
+    if (!avc || !rtp_format) {
         return -1;
     }
     avc->oformat = rtp_format;

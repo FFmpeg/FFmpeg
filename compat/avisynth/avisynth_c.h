@@ -805,7 +805,7 @@ struct AVS_Library {
 
 AVSC_INLINE AVS_Library * avs_load_library() {
   AVS_Library *library = (AVS_Library *)malloc(sizeof(AVS_Library));
-  if (library == NULL)
+  if (!library)
     return NULL;
   library->handle = LoadLibrary("avisynth");
   if (library->handle == NULL)
@@ -870,7 +870,7 @@ fail:
 }
 
 AVSC_INLINE void avs_free_library(AVS_Library *library) {
-  if (library == NULL)
+  if (!library)
     return;
   FreeLibrary(library->handle);
   free(library);

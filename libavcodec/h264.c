@@ -299,7 +299,7 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
     av_fast_padded_malloc(&h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length+MAX_MBPAIR_SIZE);
     dst = h->rbsp_buffer[bufidx];
 
-    if (dst == NULL)
+    if (!dst)
         return NULL;
 
     if(i>=length-1){ //no escaped 0
@@ -1417,7 +1417,7 @@ static int get_last_needed_nal(H264Context *h, const uint8_t *buf, int buf_size)
         ptr = ff_h264_decode_nal(h, buf + buf_index, &dst_length, &consumed,
                                  next_avc - buf_index);
 
-        if (ptr == NULL || dst_length < 0)
+        if (!ptr || dst_length < 0)
             return AVERROR_INVALIDDATA;
 
         buf_index += consumed;
@@ -1516,7 +1516,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
 
             ptr = ff_h264_decode_nal(hx, buf + buf_index, &dst_length,
                                      &consumed, next_avc - buf_index);
-            if (ptr == NULL || dst_length < 0) {
+            if (!ptr || dst_length < 0) {
                 ret = -1;
                 goto end;
             }

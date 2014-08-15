@@ -2238,7 +2238,7 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
         int pos              = (mb_y << 16) | (mb_x & 0xFFFF);                \
         int sliced_threading = (avctx->active_thread_type == FF_THREAD_SLICE) && \
                                (num_jobs > 1);                                \
-        int is_null          = (next_td == NULL) || (prev_td == NULL);        \
+        int is_null          = !next_td || !prev_td;                          \
         int pos_check        = (is_null) ? 1                                  \
                                          : (next_td != td &&                  \
                                             pos >= next_td->wait_mb_pos) ||   \

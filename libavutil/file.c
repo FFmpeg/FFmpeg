@@ -152,7 +152,7 @@ int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_c
     *filename = av_malloc(len);
 #endif
     /* -----common section-----*/
-    if (*filename == NULL) {
+    if (!*filename) {
         av_log(&file_log_ctx, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
         return AVERROR(ENOMEM);
     }

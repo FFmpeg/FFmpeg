@@ -1239,7 +1239,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         av_mallocz(avctx->block_align
                    + DECODE_BYTES_PAD1(avctx->block_align)
                    + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (q->decoded_bytes_buffer == NULL)
+    if (!q->decoded_bytes_buffer)
         return AVERROR(ENOMEM);
 
     /* Initialize transform. */

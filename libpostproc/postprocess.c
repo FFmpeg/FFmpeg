@@ -716,10 +716,10 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
         int enable=1; //does the user want us to enabled or disabled the filter
 
         filterToken= strtok(p, filterDelimiters);
-        if(filterToken == NULL) break;
+        if(!filterToken) break;
         p+= strlen(filterToken) + 1; // p points to next filterToken
         filterName= strtok(filterToken, optionDelimiters);
-        if (filterName == NULL) {
+        if (!filterName) {
             ppMode->error++;
             break;
         }
@@ -732,7 +732,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
 
         for(;;){ //for all options
             option= strtok(NULL, optionDelimiters);
-            if(option == NULL) break;
+            if(!option) break;
 
             av_log(NULL, AV_LOG_DEBUG, "pp: option: %s\n", option);
             if(!strcmp("autoq", option) || !strcmp("a", option)) q= quality;
@@ -967,7 +967,7 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
                        FFMAX(minStride, c->stride),
                        FFMAX(c->qpStride, absQPStride));
 
-    if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)){
+    if(!QP_store || (mode->lumMode & FORCE_QUANT)){
         int i;
         QP_store= c->forcedQPTable;
         absQPStride = QPStride = 0;

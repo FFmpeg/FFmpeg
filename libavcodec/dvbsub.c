@@ -258,7 +258,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
     page_id = 1;
 
-    if (h->num_rects && h->rects == NULL)
+    if (h->num_rects && !h->rects)
         return -1;
 
     /* page composition segment */

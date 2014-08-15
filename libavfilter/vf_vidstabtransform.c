@@ -207,7 +207,7 @@ static int config_input(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "    interpol  = %s\n", getInterpolationTypeName(tc->conf.interpolType));
 
     f = fopen(tc->input, "r");
-    if (f == NULL) {
+    if (!f) {
         av_log(ctx, AV_LOG_ERROR, "cannot open input file %s\n", tc->input);
         return AVERROR(errno);
     } else {

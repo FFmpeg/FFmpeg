@@ -254,7 +254,7 @@ static void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 
     win32_argv_utf8 = av_mallocz(sizeof(char *) * (win32_argc + 1) + buffsize);
     argstr_flat     = (char *)win32_argv_utf8 + sizeof(char *) * (win32_argc + 1);
-    if (win32_argv_utf8 == NULL) {
+    if (!win32_argv_utf8) {
         LocalFree(argv_w);
         return;
     }
@@ -1242,7 +1242,7 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
             is_dev = is_device(ofmt->priv_class);
             if (!is_dev && device_only)
                 continue;
-            if ((name == NULL || strcmp(ofmt->name, name) < 0) &&
+            if ((!name || strcmp(ofmt->name, name) < 0) &&
                 strcmp(ofmt->name, last_name) > 0) {
                 name      = ofmt->name;
                 long_name = ofmt->long_name;
@@ -1253,7 +1253,7 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
             is_dev = is_device(ifmt->priv_class);
             if (!is_dev && device_only)
                 continue;
-            if ((name == NULL || strcmp(ifmt->name, name) < 0) &&
+            if ((!name || strcmp(ifmt->name, name) < 0) &&
                 strcmp(ifmt->name, last_name) > 0) {
                 name      = ifmt->name;
                 long_name = ifmt->long_name;
@@ -1262,7 +1262,7 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
             if (name && strcmp(ifmt->name, name) == 0)
                 decode = 1;
         }
-        if (name == NULL)
+        if (!name)
             break;
         last_name = name;
 

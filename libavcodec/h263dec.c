@@ -502,7 +502,7 @@ retry:
         if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
 
-    if (s->current_picture_ptr == NULL || s->current_picture_ptr->f->data[0]) {
+    if (!s->current_picture_ptr || s->current_picture_ptr->f->data[0]) {
         int i = ff_find_unused_picture(s, 0);
         if (i < 0)
             return i;
@@ -546,7 +546,7 @@ retry:
     s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
     /* skip B-frames if we don't have reference frames */
-    if (s->last_picture_ptr == NULL &&
+    if (!s->last_picture_ptr &&
         (s->pict_type == AV_PICTURE_TYPE_B || s->droppable))
         return get_consumed_bytes(s, buf_size);
     if ((avctx->skip_frame >= AVDISCARD_NONREF &&

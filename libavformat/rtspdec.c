@@ -412,7 +412,7 @@ static inline int parse_command_line(AVFormatContext *s, const char *line,
     }
 
     searchlinept = strchr(linept, ' ');
-    if (searchlinept == NULL) {
+    if (!searchlinept) {
         av_log(s, AV_LOG_ERROR, "Error parsing message URI\n");
         return AVERROR_INVALIDDATA;
     }
