@@ -2215,7 +2215,7 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
         avctx->idct_algo == FF_IDCT_AUTO &&
         (av_get_cpu_flags() & AV_CPU_FLAG_MMX)) {
         avctx->idct_algo = FF_IDCT_XVID;
-        ff_dct_common_init(s);
+        ff_mpv_idct_init(s);
         return 1;
     }
 #endif

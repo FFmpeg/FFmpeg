@@ -1118,18 +1118,16 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
 {
     Mpeg1Context *s    = avctx->priv_data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
-    int i;
-
-    /* we need some permutation to store matrices,
-     * until MPV_common_init() sets the real permutation. */
-    for (i = 0; i < 64; i++)
-        s2->idsp.idct_permutation[i] = i;
 
     ff_MPV_decode_defaults(s2);
 
     s->mpeg_enc_ctx.avctx  = avctx;
     s->mpeg_enc_ctx.flags  = avctx->flags;
     s->mpeg_enc_ctx.flags2 = avctx->flags2;
+
+    /* we need some permutation to store matrices,
+     * until the decoder sets the real permutation. */
+    ff_mpv_idct_init(s2);
     ff_mpeg12_common_init(&s->mpeg_enc_ctx);
     ff_mpeg12_init_vlcs();
 
@@ -1359,6 +1357,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
          * if DCT permutation is changed. */
         memcpy(old_permutation, s->idsp.idct_permutation, 64 * sizeof(uint8_t));
 
+        ff_mpv_idct_init(s);
         if (ff_MPV_common_init(s) < 0)
             return -2;
 
@@ -2187,6 +2186,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     avctx->pix_fmt = mpeg_get_pixelformat(avctx);
     setup_hwaccel_for_pixfmt(avctx);
 
+    ff_mpv_idct_init(s);
     if (ff_MPV_common_init(s) < 0)
         return -1;
     s1->mpeg_enc_ctx_allocated = 1;

@@ -590,10 +590,12 @@ static int h261_decode_frame(AVCodecContext *avctx, void *data,
 retry:
     init_get_bits(&s->gb, buf, buf_size * 8);
 
-    if (!s->context_initialized)
+    if (!s->context_initialized) {
         // we need the IDCT permutaton for reading a custom matrix
+        ff_mpv_idct_init(s);
         if (ff_MPV_common_init(s) < 0)
             return -1;
+    }
 
     ret = h261_decode_picture_header(h);
 

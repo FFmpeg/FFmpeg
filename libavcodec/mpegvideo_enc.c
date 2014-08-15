@@ -837,6 +837,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
                                 s->alternate_scan);
 
     /* init */
+    ff_mpv_idct_init(s);
     if (ff_MPV_common_init(s) < 0)
         return -1;
 
