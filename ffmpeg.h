@@ -402,8 +402,7 @@ typedef struct OutputStream {
     double forced_keyframes_expr_const_values[FKF_NB];
 
     /* audio only */
-#define FF_CH_MAX 32
-    int audio_channels_map[FF_CH_MAX];   /* list of the channels id to pick from the source stream */
+    int *audio_channels_map;             /* list of the channels id to pick from the source stream */
     int audio_channels_mapped;           /* number of channels in audio_channels_map */
 
     char *logfile_prefix;

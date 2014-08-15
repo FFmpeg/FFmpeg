@@ -483,6 +483,9 @@ static void ffmpeg_cleanup(int ret)
         av_freep(&ost->avfilter);
         av_freep(&ost->logfile_prefix);
 
+        av_freep(&ost->audio_channels_map);
+        ost->audio_channels_mapped = 0;
+
         avcodec_free_context(&ost->enc_ctx);
 
         av_freep(&output_streams[i]);
