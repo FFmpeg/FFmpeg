@@ -543,7 +543,7 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom)
+int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb)
 {
     AVStream *st;
     int tag;
@@ -567,7 +567,7 @@ int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_esds(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    return ff_mov_read_esds(c->fc, pb, atom);
+    return ff_mov_read_esds(c->fc, pb);
 }
 
 static int mov_read_dac3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
