@@ -441,7 +441,7 @@ static void packet_queue_flush(PacketQueue *q)
     MyAVPacketList *pkt, *pkt1;
 
     SDL_LockMutex(q->mutex);
-    for (pkt = q->first_pkt; pkt != NULL; pkt = pkt1) {
+    for (pkt = q->first_pkt; pkt; pkt = pkt1) {
         pkt1 = pkt->next;
         av_free_packet(&pkt->pkt);
         av_freep(&pkt);

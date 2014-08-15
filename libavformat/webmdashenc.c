@@ -150,7 +150,7 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     avio_printf(s->pb, " codecs=\"%s\"", get_codec_name(codec->codec_id));
 
     lang = av_dict_get(s->streams[as->streams[0]]->metadata, "language", NULL, 0);
-    if (lang != NULL) avio_printf(s->pb, " lang=\"%s\"", lang->value);
+    if (lang) avio_printf(s->pb, " lang=\"%s\"", lang->value);
 
     if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         avio_printf(s->pb, " width=\"%d\"", codec->width);

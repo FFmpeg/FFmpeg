@@ -1603,7 +1603,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
 
     /* get output buffer */
     if (!samples) {
-        av_assert0(s->frame != NULL);
+        av_assert0(s->frame);
         s->frame->nb_samples = s->avctx->frame_size;
         if ((ret = ff_get_buffer(s->avctx, s->frame, 0)) < 0)
             return ret;

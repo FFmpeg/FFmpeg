@@ -3081,7 +3081,7 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
 
         ptr = buffer;
-        while ((ptr = av_stristr(ptr, "systemBitrate=\"")) != NULL) {
+        while ((ptr = av_stristr(ptr, "systemBitrate=\""))) {
             ptr += sizeof("systemBitrate=\"") - 1;
             c->bitrates_count++;
             c->bitrates = av_realloc_f(c->bitrates, c->bitrates_count, sizeof(*c->bitrates));

@@ -71,7 +71,7 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
 {
     AVCodecContext *codec = stream->codec;
     assert(codec->codec_id == AV_CODEC_ID_H264);
-    assert(h264_data != NULL);
+    assert(h264_data);
 
     if (!strcmp(attr, "packetization-mode")) {
         av_log(s, AV_LOG_DEBUG, "RTP Packetization Mode: %d\n", atoi(value));

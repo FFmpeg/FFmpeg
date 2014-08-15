@@ -98,7 +98,7 @@ static int ff_sctp_recvmsg(int s, void *msg, size_t len, struct sockaddr *from,
     if (msg_flags)
         *msg_flags = inmsg.msg_flags;
 
-    for (cmsg = CMSG_FIRSTHDR(&inmsg); cmsg != NULL;
+    for (cmsg = CMSG_FIRSTHDR(&inmsg); cmsg;
          cmsg = CMSG_NXTHDR(&inmsg, cmsg)) {
         if ((IPPROTO_SCTP == cmsg->cmsg_level) &&
             (SCTP_SNDRCV  == cmsg->cmsg_type))

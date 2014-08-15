@@ -1772,7 +1772,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             extradata_offset = FFMIN(track->codec_priv.size, 18);
         } else if (!strcmp(track->codec_id, "A_QUICKTIME")
                    && (track->codec_priv.size >= 86)
-                   && (track->codec_priv.data != NULL)) {
+                   && (track->codec_priv.data)) {
             fourcc = AV_RL32(track->codec_priv.data + 4);
             codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
             if (ff_codec_get_id(ff_codec_movaudio_tags, AV_RL32(track->codec_priv.data))) {

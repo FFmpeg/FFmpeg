@@ -748,7 +748,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
         options[numOfUnknownOptions] = NULL;
 
         /* replace stuff from the replace Table */
-        for(i=0; replaceTable[2*i]!=NULL; i++){
+        for(i=0; replaceTable[2*i]; i++){
             if(!strcmp(replaceTable[2*i], filterName)){
                 int newlen= strlen(replaceTable[2*i + 1]);
                 int plen;
@@ -768,7 +768,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
             }
         }
 
-        for(i=0; filters[i].shortName!=NULL; i++){
+        for(i=0; filters[i].shortName; i++){
             if(   !strcmp(filters[i].longName, filterName)
                || !strcmp(filters[i].shortName, filterName)){
                 ppMode->lumMode &= ~filters[i].mask;
@@ -787,7 +787,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
                     int o;
                     ppMode->minAllowedY= 16;
                     ppMode->maxAllowedY= 234;
-                    for(o=0; options[o]!=NULL; o++){
+                    for(o=0; options[o]; o++){
                         if(  !strcmp(options[o],"fullyrange")
                            ||!strcmp(options[o],"f")){
                             ppMode->minAllowedY= 0;
@@ -801,7 +801,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
                     int o;
                     int numOfNoises=0;
 
-                    for(o=0; options[o]!=NULL; o++){
+                    for(o=0; options[o]; o++){
                         char *tail;
                         ppMode->maxTmpNoise[numOfNoises]=
                             strtol(options[o], &tail, 0);
@@ -816,7 +816,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
                      || filters[i].mask == V_A_DEBLOCK || filters[i].mask == H_A_DEBLOCK){
                     int o;
 
-                    for(o=0; options[o]!=NULL && o<2; o++){
+                    for(o=0; options[o] && o<2; o++){
                         char *tail;
                         int val= strtol(options[o], &tail, 0);
                         if(tail==options[o]) break;
@@ -830,7 +830,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
                     int o;
                     ppMode->forcedQuant= 15;
 
-                    for(o=0; options[o]!=NULL && o<1; o++){
+                    for(o=0; options[o] && o<1; o++){
                         char *tail;
                         int val= strtol(options[o], &tail, 0);
                         if(tail==options[o]) break;
