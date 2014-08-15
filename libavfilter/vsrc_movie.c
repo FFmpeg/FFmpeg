@@ -206,7 +206,6 @@ static int movie_get_frame(AVFilterLink *outlink)
     MovieContext *movie = outlink->src->priv;
     AVPacket pkt;
     int ret, frame_decoded;
-    AVStream av_unused *st = movie->format_ctx->streams[movie->stream_index];
 
     if (movie->is_done == 1)
         return 0;
@@ -226,7 +225,8 @@ static int movie_get_frame(AVFilterLink *outlink)
                 av_dlog(outlink->src,
                         "movie_get_frame(): file:'%s' pts:%"PRId64" time:%f aspect:%d/%d\n",
                         movie->file_name, movie->frame->pts,
-                        (double)movie->frame->pts * av_q2d(st->time_base),
+                        (double)movie->frame->pts *
+                        av_q2d(movie->format_ctx->streams[movie->stream_index]),
                         movie->frame->sample_aspect_ratio.num,
                         movie->frame->sample_aspect_ratio.den);
                 // We got it. Free the packet since we are returning
