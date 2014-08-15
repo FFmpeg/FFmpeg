@@ -193,7 +193,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
 
     proxy_path = getenv("http_proxy");
     use_proxy = !ff_http_match_no_proxy(getenv("no_proxy"), host) &&
-                proxy_path != NULL && av_strstart(proxy_path, "http://", NULL);
+                proxy_path && av_strstart(proxy_path, "http://", NULL);
 
     if (use_proxy) {
         char proxy_host[200], proxy_auth[200], dest[200];

@@ -139,7 +139,7 @@ static int xvid_ff_2pass_destroy(struct xvid_context *ref,
                                 xvid_plg_destroy_t *param) {
     /* Currently cannot think of anything to do on destruction */
     /* Still, the framework should be here for reference/use */
-    if( ref->twopassbuffer != NULL )
+    if (ref->twopassbuffer)
         ref->twopassbuffer[0] = 0;
     return 0;
 }
@@ -789,7 +789,7 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
     x->encoder_handle = NULL;
 
     av_freep(&avctx->extradata);
-    if( x->twopassbuffer != NULL ) {
+    if (x->twopassbuffer) {
         av_freep(&x->twopassbuffer);
         av_freep(&x->old_twopassbuffer);
         avctx->stats_out = NULL;

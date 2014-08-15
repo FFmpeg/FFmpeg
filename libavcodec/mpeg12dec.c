@@ -2067,7 +2067,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
                 s->picture_number++;
             /* latency of 1 frame for I- and P-frames */
             /* XXX: use another variable than picture_number */
-            if (s->last_picture_ptr != NULL) {
+            if (s->last_picture_ptr) {
                 int ret = av_frame_ref(pict, s->last_picture_ptr->f);
                 if (ret < 0)
                     return ret;
