@@ -98,7 +98,7 @@ static int thp_read_header(AVFormatContext *s)
 
     for (i = 0; i < thp->compcount; i++) {
         if (thp->components[i] == 0) {
-            if (thp->vst != 0)
+            if (thp->vst)
                 break;
 
             /* Video component.  */
