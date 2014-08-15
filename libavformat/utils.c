@@ -3525,7 +3525,7 @@ void avformat_free_context(AVFormatContext *s)
     av_dict_free(&s->metadata);
     av_freep(&s->streams);
     av_freep(&s->internal);
-    free_packet_buffer(&s->packet_buffer, &s->packet_buffer_end);
+    flush_packet_queue(s);
     av_free(s);
 }
 
