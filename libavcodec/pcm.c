@@ -253,7 +253,7 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
 #if HAVE_BIGENDIAN
 #define DECODE_PLANAR(size, endian, src, dst, n, shift, offset)         \
     {                                                                   \
-        int av_unused n2;                                               \
+        int n2;                                                         \
         n /= avctx->channels;                                           \
         for (c = 0; c < avctx->channels; c++) {                         \
             samples = frame->extended_data[c];                          \
