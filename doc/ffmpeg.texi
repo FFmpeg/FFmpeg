@@ -821,6 +821,11 @@ To map all the streams except the second audio, use negative mappings
 ffmpeg -i INPUT -map 0 -map -0:a:1 OUTPUT
 @end example
 
+To pick the English audio stream:
+@example
+ffmpeg -i INPUT -map 0:m:language:eng OUTPUT
+@end example
+
 Note that using this option disables the default mappings for this output file.
 
 @item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][:@var{output_file_id}.@var{stream_specifier}]

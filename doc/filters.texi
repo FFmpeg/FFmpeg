@@ -862,7 +862,7 @@ The input audio is not modified.
 The shown line contains a sequence of key/value pairs of the form
 @var{key}:@var{value}.
 
-It accepts the following parameters:
+The following values are shown in the output:
 
 @table @option
 @item n
@@ -7600,7 +7600,7 @@ The input video is not modified.
 The shown line contains a sequence of key/value pairs of the form
 @var{key}:@var{value}.
 
-It accepts the following parameters:
+The following values are shown in the output:
 
 @table @option
 @item n
@@ -10687,8 +10687,19 @@ the "Video size" section in the ffmpeg-utils manual. Default value is
 @code{640x512}.
 
 @item slide
-Specify if the spectrum should slide along the window. Default value is
-@code{0}.
+Specify how the spectrum should slide along the window.
+
+It accepts the following values:
+@table @samp
+@item replace
+the samples start again on the left when they reach the right
+@item scroll
+the samples scroll from right to left
+@item fullframe
+frames are only produced when the samples reach the right
+@end table
+
+Default value is @code{replace}.
 
 @item mode
 Specify display mode.

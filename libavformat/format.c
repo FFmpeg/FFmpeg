@@ -254,7 +254,6 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
 {
     AVProbeData pd = { filename ? filename : "" };
     uint8_t *buf = NULL;
-    uint8_t *mime_type;
     int ret = 0, probe_size, buf_offset = 0;
     int score = 0;
     int ret2;

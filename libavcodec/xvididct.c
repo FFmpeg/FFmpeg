@@ -22,6 +22,18 @@
 #include "idctdsp.h"
 #include "xvididct.h"
 
+static void idct_xvid_put(uint8_t *dest, int line_size, int16_t *block)
+{
+    ff_idct_xvid(block);
+    ff_put_pixels_clamped(block, dest, line_size);
+}
+
+static void idct_xvid_add(uint8_t *dest, int line_size, int16_t *block)
+{
+    ff_idct_xvid(block);
+    ff_add_pixels_clamped(block, dest, line_size);
+}
+
 av_cold void ff_xvididct_init(IDCTDSPContext *c, AVCodecContext *avctx)
 {
     const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
@@ -30,6 +42,13 @@ av_cold void ff_xvididct_init(IDCTDSPContext *c, AVCodecContext *avctx)
         !(avctx->idct_algo == FF_IDCT_AUTO ||
           avctx->idct_algo == FF_IDCT_XVID))
         return;
+
+    if (avctx->idct_algo == FF_IDCT_XVID) {
+        c->idct_put  = idct_xvid_put;
+        c->idct_add  = idct_xvid_add;
+        c->idct      = ff_idct_xvid;
+        c->perm_type = FF_IDCT_PERM_NONE;
+    }
 
     if (ARCH_X86)
         ff_xvididct_init_x86(c);

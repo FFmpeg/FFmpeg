@@ -47,10 +47,8 @@ typedef struct PerspectiveContext {
     int hsub, vsub;
     int nb_planes;
 
-    void (*perspective)(struct PerspectiveContext *s,
-                        uint8_t *dst, int dst_linesize,
-                        uint8_t *src, int src_linesize,
-                        int w, int h, int hsub, int vsub);
+    int (*perspective)(AVFilterContext *ctx,
+                       void *arg, int job, int nb_jobs);
 } PerspectiveContext;
 
 #define OFFSET(x) offsetof(PerspectiveContext, x)
@@ -193,15 +191,34 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static void resample_cubic(PerspectiveContext *s,
-                           uint8_t *dst, int dst_linesize,
-                           uint8_t *src, int src_linesize,
-                           int w, int h, int hsub, int vsub)
+typedef struct ThreadData {
+    uint8_t *dst;
+    int dst_linesize;
+    uint8_t *src;
+    int src_linesize;
+    int w, h;
+    int hsub, vsub;
+} ThreadData;
+
+static int resample_cubic(AVFilterContext *ctx, void *arg,
+                          int job, int nb_jobs)
 {
+    PerspectiveContext *s = ctx->priv;
+    ThreadData *td = arg;
+    uint8_t *dst = td->dst;
+    int dst_linesize = td->dst_linesize;
+    uint8_t *src = td->src;
+    int src_linesize = td->src_linesize;
+    int w = td->w;
+    int h = td->h;
+    int hsub = td->hsub;
+    int vsub = td->vsub;
+    int start = (h * job) / nb_jobs;
+    int end   = (h * (job+1)) / nb_jobs;
     const int linesize = s->linesize[0];
     int x, y;
 
-    for (y = 0; y < h; y++) {
+    for (y = start; y < end; y++) {
         int sy = y << vsub;
         for (x = 0; x < w; x++) {
             int u, v, subU, subV, sum, sx;
@@ -259,17 +276,28 @@ static void resample_cubic(PerspectiveContext *s,
             dst[x + y * dst_linesize] = sum;
         }
     }
+    return 0;
 }
 
-static void resample_linear(PerspectiveContext *s,
-                            uint8_t *dst, int dst_linesize,
-                            uint8_t *src, int src_linesize,
-                            int w, int h, int hsub, int vsub)
+static int resample_linear(AVFilterContext *ctx, void *arg,
+                           int job, int nb_jobs)
 {
+    PerspectiveContext *s = ctx->priv;
+    ThreadData *td = arg;
+    uint8_t *dst = td->dst;
+    int dst_linesize = td->dst_linesize;
+    uint8_t *src = td->src;
+    int src_linesize = td->src_linesize;
+    int w = td->w;
+    int h = td->h;
+    int hsub = td->hsub;
+    int vsub = td->vsub;
+    int start = (h * job) / nb_jobs;
+    int end   = (h * (job+1)) / nb_jobs;
     const int linesize = s->linesize[0];
     int x, y;
 
-    for (y = 0; y < h; y++){
+    for (y = start; y < end; y++){
         int sy = y << vsub;
         for (x = 0; x < w; x++){
             int u, v, subU, subV, sum, sx, index, subUI, subVI;
@@ -323,6 +351,7 @@ static void resample_linear(PerspectiveContext *s,
             dst[x + y * dst_linesize] = sum;
         }
     }
+    return 0;
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -355,9 +384,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     for (plane = 0; plane < s->nb_planes; plane++) {
         int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
         int vsub = plane == 1 || plane == 2 ? s->vsub : 0;
-        s->perspective(s, out->data[plane], out->linesize[plane],
-                       frame->data[plane], frame->linesize[plane],
-                       s->linesize[plane], s->height[plane], hsub, vsub);
+        ThreadData td = {.dst = out->data[plane],
+                         .dst_linesize = out->linesize[plane],
+                         .src = frame->data[plane],
+                         .src_linesize = frame->linesize[plane],
+                         .w = s->linesize[plane],
+                         .h = s->height[plane],
+                         .hsub = hsub,
+                         .vsub = vsub };
+        ctx->internal->execute(ctx, s->perspective, &td, NULL, FFMIN(td.h, ctx->graph->nb_threads));
     }
 
     av_frame_free(&frame);
@@ -399,5 +434,5 @@ AVFilter ff_vf_perspective = {
     .inputs        = perspective_inputs,
     .outputs       = perspective_outputs,
     .priv_class    = &perspective_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

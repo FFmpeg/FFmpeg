@@ -84,6 +84,7 @@ typedef struct {
     int icy_metaint;
     char *icy_metadata_headers;
     char *icy_metadata_packet;
+    AVDictionary *metadata;
 #if CONFIG_ZLIB
     int compressed;
     z_stream inflate_stream;
@@ -110,9 +111,10 @@ static const AVOption options[] = {
     { "post_data", "set custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D | E },
     { "mime_type", "export the MIME type", OFFSET(mime_type), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     { "cookies", "set cookies to be sent in applicable future requests, use newline delimited Set-Cookie HTTP field value syntax", OFFSET(cookies), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D },
-    { "icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
+    { "icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, D },
     { "icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_EXPORT },
     { "icy_metadata_packet", "return current ICY metadata packet", OFFSET(icy_metadata_packet), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_EXPORT },
+    { "metadata", "metadata read from the bitstream", OFFSET(metadata), AV_OPT_TYPE_DICT, {0}, 0, 0, AV_OPT_FLAG_EXPORT },
     { "auth_type", "HTTP authentication type", OFFSET(auth_state.auth_type), AV_OPT_TYPE_INT, { .i64 = HTTP_AUTH_NONE }, HTTP_AUTH_NONE, HTTP_AUTH_BASIC, D | E, "auth_type"},
     { "none", "No auth method set, autodetect", 0, AV_OPT_TYPE_CONST, { .i64 = HTTP_AUTH_NONE }, 0, 0, D | E, "auth_type"},
     { "basic", "HTTP basic authentication", 0, AV_OPT_TYPE_CONST, { .i64 = HTTP_AUTH_BASIC }, 0, 0, D | E, "auth_type"},
@@ -205,14 +207,14 @@ static int http_open_cnx(URLContext *h, AVDictionary **options)
     HTTPContext *s = h->priv_data;
     int location_changed, attempts = 0, redirects = 0;
 redo:
+    cur_auth_type       = s->auth_state.auth_type;
+    cur_proxy_auth_type = s->auth_state.auth_type;
+
     location_changed = http_open_cnx_internal(h, options);
     if (location_changed < 0)
         goto fail;
 
     attempts++;
-    cur_auth_type       = s->auth_state.auth_type;
-    cur_proxy_auth_type = s->auth_state.auth_type;
-
     if (s->http_code == 401) {
         if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
             s->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
@@ -425,6 +427,8 @@ static int parse_icy(HTTPContext *s, const char *tag, const char *p)
     int len = 4 + strlen(p) + strlen(tag);
     int is_first = !s->icy_metadata_headers;
     int ret;
+
+    av_dict_set(&s->metadata, tag, p, 0);
 
     if (s->icy_metadata_headers)
         len += strlen(s->icy_metadata_headers);
@@ -841,7 +845,8 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
         memcpy(buf, s->buf_ptr, len);
         s->buf_ptr += len;
     } else {
-        if (!s->willclose && s->filesize >= 0 && s->off >= s->filesize)
+        if ((!s->willclose || s->chunksize < 0) &&
+            s->filesize >= 0 && s->off >= s->filesize)
             return AVERROR_EOF;
         len = ffurl_read(s->hd, buf, size);
     }
@@ -940,6 +945,32 @@ static int http_read_stream_all(URLContext *h, uint8_t *buf, int size)
     return pos;
 }
 
+static void update_metadata(HTTPContext *s, char *data)
+{
+    char *key;
+    char *val;
+    char *end;
+    char *next = data;
+
+    while (*next) {
+        key = next;
+        val = strstr(key, "='");
+        if (!val)
+            break;
+        end = strstr(val, "';");
+        if (!end)
+            break;
+
+        *val = '\0';
+        *end = '\0';
+        val += 2;
+
+        av_dict_set(&s->metadata, key, val, 0);
+
+        next = end + 2;
+    }
+}
+
 static int store_icy(URLContext *h, int size)
 {
     HTTPContext *s = h->priv_data;
@@ -968,6 +999,7 @@ static int store_icy(URLContext *h, int size)
             data[len + 1] = 0;
             if ((ret = av_opt_set(s, "icy_metadata_packet", data, 0)) < 0)
                 return ret;
+            update_metadata(s, data);
         }
         s->icy_data_read = 0;
         remaining        = s->icy_metaint;

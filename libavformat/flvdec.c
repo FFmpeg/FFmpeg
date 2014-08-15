@@ -458,45 +458,47 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
         return -1;
     }
 
-    // only look for metadata values when we are not nested and key != NULL
-    if (depth == 1 && key) {
-        acodec = astream ? astream->codec : NULL;
-        vcodec = vstream ? vstream->codec : NULL;
+    if (key) {
+        // stream info doesn't live any deeper than the first object
+        if (depth == 1) {
+            acodec = astream ? astream->codec : NULL;
+            vcodec = vstream ? vstream->codec : NULL;
 
-        if (amf_type == AMF_DATA_TYPE_NUMBER ||
-            amf_type == AMF_DATA_TYPE_BOOL) {
-            if (!strcmp(key, "duration"))
-                s->duration = num_val * AV_TIME_BASE;
-            else if (!strcmp(key, "videodatarate") && vcodec &&
-                     0 <= (int)(num_val * 1024.0))
-                vcodec->bit_rate = num_val * 1024.0;
-            else if (!strcmp(key, "audiodatarate") && acodec &&
-                     0 <= (int)(num_val * 1024.0))
-                acodec->bit_rate = num_val * 1024.0;
-            else if (!strcmp(key, "datastream")) {
-                AVStream *st = create_stream(s, AVMEDIA_TYPE_DATA);
-                if (!st)
-                    return AVERROR(ENOMEM);
-                st->codec->codec_id = AV_CODEC_ID_TEXT;
-            } else if (flv->trust_metadata) {
-                if (!strcmp(key, "videocodecid") && vcodec) {
-                    flv_set_video_codec(s, vstream, num_val, 0);
-                } else if (!strcmp(key, "audiocodecid") && acodec) {
-                    int id = ((int)num_val) << FLV_AUDIO_CODECID_OFFSET;
-                    flv_set_audio_codec(s, astream, acodec, id);
-                } else if (!strcmp(key, "audiosamplerate") && acodec) {
-                    acodec->sample_rate = num_val;
-                } else if (!strcmp(key, "audiosamplesize") && acodec) {
-                    acodec->bits_per_coded_sample = num_val;
-                } else if (!strcmp(key, "stereo") && acodec) {
-                    acodec->channels       = num_val + 1;
-                    acodec->channel_layout = acodec->channels == 2 ?
-                                             AV_CH_LAYOUT_STEREO :
-                                             AV_CH_LAYOUT_MONO;
-                } else if (!strcmp(key, "width") && vcodec) {
-                    vcodec->width = num_val;
-                } else if (!strcmp(key, "height") && vcodec) {
-                    vcodec->height = num_val;
+            if (amf_type == AMF_DATA_TYPE_NUMBER ||
+                amf_type == AMF_DATA_TYPE_BOOL) {
+                if (!strcmp(key, "duration"))
+                    s->duration = num_val * AV_TIME_BASE;
+                else if (!strcmp(key, "videodatarate") && vcodec &&
+                         0 <= (int)(num_val * 1024.0))
+                    vcodec->bit_rate = num_val * 1024.0;
+                else if (!strcmp(key, "audiodatarate") && acodec &&
+                         0 <= (int)(num_val * 1024.0))
+                    acodec->bit_rate = num_val * 1024.0;
+                else if (!strcmp(key, "datastream")) {
+                    AVStream *st = create_stream(s, AVMEDIA_TYPE_DATA);
+                    if (!st)
+                        return AVERROR(ENOMEM);
+                    st->codec->codec_id = AV_CODEC_ID_TEXT;
+                } else if (flv->trust_metadata) {
+                    if (!strcmp(key, "videocodecid") && vcodec) {
+                        flv_set_video_codec(s, vstream, num_val, 0);
+                    } else if (!strcmp(key, "audiocodecid") && acodec) {
+                        int id = ((int)num_val) << FLV_AUDIO_CODECID_OFFSET;
+                        flv_set_audio_codec(s, astream, acodec, id);
+                    } else if (!strcmp(key, "audiosamplerate") && acodec) {
+                        acodec->sample_rate = num_val;
+                    } else if (!strcmp(key, "audiosamplesize") && acodec) {
+                        acodec->bits_per_coded_sample = num_val;
+                    } else if (!strcmp(key, "stereo") && acodec) {
+                        acodec->channels       = num_val + 1;
+                        acodec->channel_layout = acodec->channels == 2 ?
+                                                 AV_CH_LAYOUT_STEREO :
+                                                 AV_CH_LAYOUT_MONO;
+                    } else if (!strcmp(key, "width") && vcodec) {
+                        vcodec->width = num_val;
+                    } else if (!strcmp(key, "height") && vcodec) {
+                        vcodec->height = num_val;
+                    }
                 }
             }
         }
@@ -521,6 +523,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             !strcmp(key, "datastream"))
             return 0;
 
+        s->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
         if (amf_type == AMF_DATA_TYPE_BOOL) {
             av_strlcpy(str_val, num_val > 0 ? "true" : "false",
                        sizeof(str_val));
@@ -560,7 +563,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     if (!strcmp(buffer, "onTextData"))
         return 1;
 
-    if (strcmp(buffer, "onMetaData"))
+    if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint"))
         return -1;
 
     // find the streams now so that amf_parse_object doesn't need to do

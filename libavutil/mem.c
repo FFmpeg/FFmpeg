@@ -267,6 +267,26 @@ char *av_strdup(const char *s)
     return ptr;
 }
 
+char *av_strndup(const char *s, size_t len)
+{
+    char *ret = NULL, *end;
+
+    if (!s)
+        return NULL;
+
+    end = memchr(s, 0, len);
+    if (end)
+        len = end - s;
+
+    ret = av_realloc(NULL, len + 1);
+    if (!ret)
+        return NULL;
+
+    memcpy(ret, s, len);
+    ret[len] = 0;
+    return ret;
+}
+
 void *av_memdup(const void *p, size_t size)
 {
     void *ptr = NULL;

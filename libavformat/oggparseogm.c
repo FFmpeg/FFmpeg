@@ -111,7 +111,7 @@ ogm_header(AVFormatContext *s, int idx)
     } else if (bytestream2_peek_byte(&p) == 3) {
         bytestream2_skip(&p, 7);
         if (bytestream2_get_bytes_left(&p) > 1)
-            ff_vorbis_comment(s, &st->metadata, p.buffer, bytestream2_get_bytes_left(&p) - 1, 1);
+            ff_vorbis_stream_comment(s, st, p.buffer, bytestream2_get_bytes_left(&p) - 1);
     }
 
     return 1;

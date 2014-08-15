@@ -71,12 +71,25 @@ static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
     return 1;
 }
 
+int ff_vorbis_stream_comment(AVFormatContext *as, AVStream *st,
+                             const uint8_t *buf, int size)
+{
+    int updates = ff_vorbis_comment(as, &st->metadata, buf, size, 1);
+
+    if (updates > 0) {
+        st->event_flags |= AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+    }
+
+    return updates;
+}
+
 int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                       const uint8_t *buf, int size,
                       int parse_picture)
 {
     const uint8_t *p   = buf;
     const uint8_t *end = buf + size;
+    int updates        = 0;
     unsigned n, j;
     int s;
 
@@ -158,6 +171,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                     continue;
                 }
             } else if (!ogm_chapter(as, tt, ct)) {
+                updates++;
                 if (av_dict_get(*m, tt, NULL, 0)) {
                     av_dict_set(m, tt, ";", AV_DICT_APPEND);
                 }
@@ -178,7 +192,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
 
     ff_metadata_conv(m, NULL, ff_vorbiscomment_metadata_conv);
 
-    return 0;
+    return updates;
 }
 
 /*
@@ -256,8 +270,8 @@ static int vorbis_update_metadata(AVFormatContext *s, int idx)
 
     /* New metadata packet; release old data. */
     av_dict_free(&st->metadata);
-    ret = ff_vorbis_comment(s, &st->metadata, os->buf + os->pstart + 7,
-                            os->psize - 8, 1);
+    ret = ff_vorbis_stream_comment(s, st, os->buf + os->pstart + 7,
+                                   os->psize - 8);
     if (ret < 0)
         return ret;
 

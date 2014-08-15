@@ -46,6 +46,13 @@ in the program with the id @var{program_id}. Otherwise, it matches all streams i
 program.
 @item #@var{stream_id} or i:@var{stream_id}
 Match the stream by stream id (e.g. PID in MPEG-TS container).
+@item m:@var{key}[:@var{value}]
+Matches streams with the metadata tag @var{key} having the specified value. If
+@var{value} is not given, matches streams that contain the given tag with any
+value.
+
+Note that in @command{ffmpeg}, matching by metadata will only work properly for
+input files.
 @end table
 
 @section Generic options

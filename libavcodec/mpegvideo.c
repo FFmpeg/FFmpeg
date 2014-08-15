@@ -377,12 +377,11 @@ static void gray8(uint8_t *dst, const uint8_t *src, ptrdiff_t linesize, int h)
 }
 
 /* init common dct for both encoder and decoder */
-av_cold int ff_dct_common_init(MpegEncContext *s)
+static av_cold int dct_init(MpegEncContext *s)
 {
     ff_blockdsp_init(&s->bdsp, s->avctx);
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
-    ff_idctdsp_init(&s->idsp, s->avctx);
     ff_me_cmp_init(&s->mecc, s->avctx);
     ff_mpegvideodsp_init(&s->mdsp);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
@@ -421,6 +420,13 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     if (ARCH_X86)
         ff_MPV_common_init_x86(s);
 
+    return 0;
+}
+
+av_cold void ff_mpv_idct_init(MpegEncContext *s)
+{
+    ff_idctdsp_init(&s->idsp, s->avctx);
+
     /* load & permutate scantables
      * note: only wmv uses different ones
      */
@@ -433,8 +439,6 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     }
     ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
     ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
-
-    return 0;
 }
 
 static int frame_size_alloc(MpegEncContext *s, int linesize)
@@ -959,6 +963,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         if (s1->context_initialized){
 //             s->picture_range_start  += MAX_PICTURE_COUNT;
 //             s->picture_range_end    += MAX_PICTURE_COUNT;
+            ff_mpv_idct_init(s);
             if((ret = ff_MPV_common_init(s)) < 0){
                 memset(s, 0, sizeof(MpegEncContext));
                 s->avctx = dst;
@@ -1302,7 +1307,7 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
         av_image_check_size(s->width, s->height, 0, s->avctx))
         return -1;
 
-    ff_dct_common_init(s);
+    dct_init(s);
 
     s->flags  = s->avctx->flags;
     s->flags2 = s->avctx->flags2;

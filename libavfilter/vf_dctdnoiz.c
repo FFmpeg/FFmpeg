@@ -36,18 +36,22 @@
 static const char *const var_names[] = { "c", NULL };
 enum { VAR_C, VAR_VARS_NB };
 
+#define MAX_THREADS 8
+
 typedef struct DCTdnoizContext {
     const AVClass *class;
 
     /* coefficient factor expression */
     char *expr_str;
-    AVExpr *expr;
-    double var_values[VAR_VARS_NB];
+    AVExpr *expr[MAX_THREADS];
+    double var_values[MAX_THREADS][VAR_VARS_NB];
 
+    int nb_threads;
     int pr_width, pr_height;    // width and height to process
     float sigma;                // used when no expression are st
     float th;                   // threshold (3*sigma)
     float *cbuf[2][3];          // two planar rgb color buffers
+    float *slices[MAX_THREADS]; // slices buffers (1 slice buffer per thread)
     float *weights;             // dct coeff are cumulated with overlapping; these values are used for averaging
     int p_linesize;             // line sizes for color and weights
     int overlap;                // number of block overlapping pixels
@@ -56,7 +60,8 @@ typedef struct DCTdnoizContext {
     int bsize;                  // block size, 1<<n
     void (*filter_freq_func)(struct DCTdnoizContext *s,
                              const float *src, int src_linesize,
-                             float *dst, int dst_linesize);
+                             float *dst, int dst_linesize,
+                             int thread_id);
     void (*color_decorrelation)(float **dst, int dst_linesize,
                                 const uint8_t *src, int src_linesize,
                                 int w, int h);
@@ -377,16 +382,17 @@ static av_always_inline void filter_freq_##bsize(const float *src, int src_lines
                                                                                             \
 static void filter_freq_sigma_##bsize(DCTdnoizContext *s,                                   \
                                       const float *src, int src_linesize,                   \
-                                      float *dst, int dst_linesize)                         \
+                                      float *dst, int dst_linesize, int thread_id)          \
 {                                                                                           \
     filter_freq_##bsize(src, src_linesize, dst, dst_linesize, NULL, NULL, s->th);           \
 }                                                                                           \
                                                                                             \
 static void filter_freq_expr_##bsize(DCTdnoizContext *s,                                    \
                                      const float *src, int src_linesize,                    \
-                                     float *dst, int dst_linesize)                          \
+                                     float *dst, int dst_linesize, int thread_id)           \
 {                                                                                           \
-    filter_freq_##bsize(src, src_linesize, dst, dst_linesize, s->expr, s->var_values, 0);   \
+    filter_freq_##bsize(src, src_linesize, dst, dst_linesize,                               \
+                        s->expr[thread_id], s->var_values[thread_id], 0);                   \
 }
 
 DEF_FILTER_FREQ_FUNCS(8)
@@ -475,7 +481,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     DCTdnoizContext *s = ctx->priv;
-    int i, x, y, bx, by, linesize, *iweights;
+    int i, x, y, bx, by, linesize, *iweights, max_slice_h, slice_h;
     const int bsize = 1 << s->n;
 
     switch (inlink->format) {
@@ -500,12 +506,38 @@ static int config_input(AVFilterLink *inlink)
         av_log(ctx, AV_LOG_WARNING, "The last %d vertical pixels won't be denoised\n",
                inlink->h - s->pr_height);
 
+    max_slice_h = s->pr_height / ((s->bsize - 1) * 2);
+    s->nb_threads = FFMIN3(MAX_THREADS, ctx->graph->nb_threads, max_slice_h);
+    av_log(ctx, AV_LOG_DEBUG, "threads: [max=%d hmax=%d user=%d] => %d\n",
+           MAX_THREADS, max_slice_h, ctx->graph->nb_threads, s->nb_threads);
+
     s->p_linesize = linesize = FFALIGN(s->pr_width, 32);
     for (i = 0; i < 2; i++) {
         s->cbuf[i][0] = av_malloc(linesize * s->pr_height * sizeof(*s->cbuf[i][0]));
         s->cbuf[i][1] = av_malloc(linesize * s->pr_height * sizeof(*s->cbuf[i][1]));
         s->cbuf[i][2] = av_malloc(linesize * s->pr_height * sizeof(*s->cbuf[i][2]));
         if (!s->cbuf[i][0] || !s->cbuf[i][1] || !s->cbuf[i][2])
+            return AVERROR(ENOMEM);
+    }
+
+    /* eval expressions are probably not thread safe when the eval internal
+     * state can be changed (typically through load & store operations) */
+    if (s->expr_str) {
+        for (i = 0; i < s->nb_threads; i++) {
+            int ret = av_expr_parse(&s->expr[i], s->expr_str, var_names,
+                                    NULL, NULL, NULL, NULL, 0, ctx);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    /* each slice will need to (pre & re)process the top and bottom block of
+     * the previous one in in addition to its processing area. This is because
+     * each pixel is averaged by all the surrounding blocks */
+    slice_h = (int)ceilf(s->pr_height / s->nb_threads) + (s->bsize - 1) * 2;
+    for (i = 0; i < s->nb_threads; i++) {
+        s->slices[i] = av_malloc_array(linesize, slice_h * sizeof(*s->slices[i]));
+        if (!s->slices[i])
             return AVERROR(ENOMEM);
     }
 
@@ -544,10 +576,6 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     if (s->expr_str) {
-        int ret = av_expr_parse(&s->expr, s->expr_str, var_names,
-                                NULL, NULL, NULL, NULL, 0, ctx);
-        if (ret < 0)
-            return ret;
         switch (s->n) {
         case 3: s->filter_freq_func = filter_freq_expr_8;  break;
         case 4: s->filter_freq_func = filter_freq_expr_16; break;
@@ -576,36 +604,56 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static void filter_plane(AVFilterContext *ctx,
-                         float *dst, int dst_linesize,
-                         const float *src, int src_linesize,
-                         int w, int h)
+typedef struct ThreadData {
+    float *src, *dst;
+} ThreadData;
+
+static int filter_slice(AVFilterContext *ctx,
+                        void *arg, int jobnr, int nb_jobs)
 {
     int x, y;
     DCTdnoizContext *s = ctx->priv;
-    float *dst0 = dst;
-    const float *weights = s->weights;
+    const ThreadData *td = arg;
+    const int w = s->pr_width;
+    const int h = s->pr_height;
+    const int slice_start = (h *  jobnr   ) / nb_jobs;
+    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start_ctx = FFMAX(slice_start - s->bsize + 1, 0);
+    const int slice_end_ctx   = FFMIN(slice_end, h - s->bsize + 1);
+    const int slice_h = slice_end_ctx - slice_start_ctx;
+    const int src_linesize   = s->p_linesize;
+    const int dst_linesize   = s->p_linesize;
+    const int slice_linesize = s->p_linesize;
+    float *dst;
+    const float *src = td->src + slice_start_ctx * src_linesize;
+    const float *weights = s->weights + slice_start * dst_linesize;
+    float *slice = s->slices[jobnr];
 
     // reset block sums
-    memset(dst, 0, h * dst_linesize * sizeof(*dst));
+    memset(slice, 0, (slice_h + s->bsize - 1) * dst_linesize * sizeof(*slice));
 
     // block dct sums
-    for (y = 0; y < h - s->bsize + 1; y += s->step) {
+    for (y = 0; y < slice_h; y += s->step) {
         for (x = 0; x < w - s->bsize + 1; x += s->step)
             s->filter_freq_func(s, src + x, src_linesize,
-                                   dst + x, dst_linesize);
+                                slice + x, slice_linesize,
+                                jobnr);
         src += s->step * src_linesize;
-        dst += s->step * dst_linesize;
+        slice += s->step * slice_linesize;
     }
 
     // average blocks
-    dst = dst0;
-    for (y = 0; y < h; y++) {
+    slice = s->slices[jobnr] + (slice_start - slice_start_ctx) * slice_linesize;
+    dst = td->dst + slice_start * dst_linesize;
+    for (y = slice_start; y < slice_end; y++) {
         for (x = 0; x < w; x++)
-            dst[x] *= weights[x];
+            dst[x] = slice[x] * weights[x];
+        slice += slice_linesize;
         dst += dst_linesize;
         weights += dst_linesize;
     }
+
+    return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -632,10 +680,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->color_decorrelation(s->cbuf[0], s->p_linesize,
                            in->data[0], in->linesize[0],
                            s->pr_width, s->pr_height);
-    for (plane = 0; plane < 3; plane++)
-        filter_plane(ctx, s->cbuf[1][plane], s->p_linesize,
-                          s->cbuf[0][plane], s->p_linesize,
-                          s->pr_width, s->pr_height);
+    for (plane = 0; plane < 3; plane++) {
+        ThreadData td = {
+            .src = s->cbuf[0][plane],
+            .dst = s->cbuf[1][plane],
+        };
+        ctx->internal->execute(ctx, filter_slice, &td, NULL, s->nb_threads);
+    }
     s->color_correlation(out->data[0], out->linesize[0],
                          s->cbuf[1], s->p_linesize,
                          s->pr_width, s->pr_height);
@@ -687,7 +738,10 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_free(s->cbuf[i][1]);
         av_free(s->cbuf[i][2]);
     }
-    av_expr_free(s->expr);
+    for (i = 0; i < s->nb_threads; i++) {
+        av_free(s->slices[i]);
+        av_expr_free(s->expr[i]);
+    }
 }
 
 static const AVFilterPad dctdnoiz_inputs[] = {
@@ -718,5 +772,5 @@ AVFilter ff_vf_dctdnoiz = {
     .inputs        = dctdnoiz_inputs,
     .outputs       = dctdnoiz_outputs,
     .priv_class    = &dctdnoiz_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

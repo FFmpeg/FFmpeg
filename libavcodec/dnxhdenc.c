@@ -324,10 +324,9 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_fdctdsp_init(&ctx->m.fdsp, avctx);
-    ff_idctdsp_init(&ctx->m.idsp, avctx);
+    ff_mpv_idct_init(&ctx->m);
     ff_mpegvideoencdsp_init(&ctx->m.mpvencdsp, avctx);
     ff_pixblockdsp_init(&ctx->m.pdsp, avctx);
-    ff_dct_common_init(&ctx->m);
     ff_dct_encode_init(&ctx->m);
 
     if (!ctx->m.dct_quantize)

@@ -317,7 +317,6 @@ Advanced options (experts only):
                            disable buffer boundary checking in bitreaders
                            (faster, but may crash)
   --enable-memalign-hack   emulate memalign, interferes with memory debuggers
-  --enable-sram            allow use of on-chip SRAM
   --sws-max-filter-size=N  the max filter size swscale uses [$sws_max_filter_size_default]
 
 Optimization options (experts only):
@@ -1405,7 +1404,6 @@ FEATURE_LIST="
     safe_bitstream_reader
     shared
     small
-    sram
     static
     swscale_alpha
 "
@@ -1527,6 +1525,7 @@ ARCH_EXT_LIST_ARM="
     neon
     vfp
     vfpv3
+    setend
 "
 
 ARCH_EXT_LIST_MIPS="
@@ -1953,6 +1952,7 @@ neon_deps_any="aarch64 arm"
 intrinsics_neon_deps="neon"
 vfp_deps_any="aarch64 arm"
 vfpv3_deps="vfp"
+setend_deps="arm"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
@@ -4449,6 +4449,7 @@ EOF
     enabled neon    && check_insn neon    'vadd.i16 q0, q0, q0'
     enabled vfp     && check_insn vfp     'fadds s0, s0, s0'
     enabled vfpv3   && check_insn vfpv3   'vmov.f32 s0, #1.0'
+    enabled setend  && check_insn setend  'setend be'
 
     [ $target_os = linux ] || [ $target_os = android ] ||
         map 'enabled_any ${v}_external ${v}_inline || disable $v' \
@@ -4659,7 +4660,7 @@ check_func  mkstemp
 check_func  mmap
 check_func  mprotect
 # Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
-check_func  nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
+check_func_headers time.h nanosleep || { check_func_headers time.h nanosleep -lrt && add_extralibs -lrt; }
 check_func  sched_getaffinity
 check_func  setrlimit
 check_struct "sys/stat.h" "struct stat" st_mtim.tv_nsec -D_BSD_SOURCE

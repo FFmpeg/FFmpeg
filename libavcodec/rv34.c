@@ -1502,6 +1502,7 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     avctx->has_b_frames = 1;
     s->low_delay = 0;
 
+    ff_mpv_idct_init(s);
     if ((ret = ff_MPV_common_init(s)) < 0)
         return ret;
 
@@ -1538,6 +1539,7 @@ int ff_rv34_decode_init_thread_copy(AVCodecContext *avctx)
 
     if (avctx->internal->is_copy) {
         r->tmp_b_block_base = NULL;
+        ff_mpv_idct_init(&r->s);
         if ((err = ff_MPV_common_init(&r->s)) < 0)
             return err;
         if ((err = rv34_decoder_alloc(r)) < 0) {

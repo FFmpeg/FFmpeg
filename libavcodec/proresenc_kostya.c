@@ -1208,8 +1208,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         ctx->bits_per_mb = ls * 8;
         if (ctx->chroma_factor == CFACTOR_Y444)
             ctx->bits_per_mb += ls * 4;
-        if (ctx->num_planes == 4)
-            ctx->bits_per_mb += ls * 4;
     }
 
     ctx->frame_size_upper_bound = ctx->pictures_per_frame *
@@ -1217,6 +1215,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
                                   (2 + 2 * ctx->num_planes +
                                    (mps * ctx->bits_per_mb) / 8)
                                   + 200;
+
+    if (ctx->alpha_bits) {
+         // alpha plane is run-coded and might run over bit budget
+         ctx->frame_size_upper_bound += ctx->pictures_per_frame *
+                                        ctx->slices_per_picture *
+         /* num pixels per slice */     (ctx->mbs_per_slice * 256 *
+         /* bits per pixel */            (1 + ctx->alpha_bits + 1) + 7 >> 3);
+    }
 
     avctx->codec_tag   = ctx->profile_info->tag;
 

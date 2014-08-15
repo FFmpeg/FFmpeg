@@ -592,8 +592,7 @@ retry:
 
     if (!s->context_initialized)
         // we need the IDCT permutaton for reading a custom matrix
-        if (ff_MPV_common_init(s) < 0)
-            return -1;
+        ff_mpv_idct_init(s);
 
     ret = h261_decode_picture_header(h);
 
@@ -609,7 +608,11 @@ retry:
         ff_MPV_common_end(s);
         s->parse_context = pc;
     }
+
     if (!s->context_initialized) {
+        if ((ret = ff_MPV_common_init(s)) < 0)
+            return ret;
+
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
             return ret;

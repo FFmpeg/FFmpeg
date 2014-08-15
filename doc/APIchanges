@@ -15,6 +15,17 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2014-08-xx - xxxxxxx - lavu 54.03.0 - mem.h
+  Add av_strndup().
+
+2014-xx-xx - xxxxxxx - lavu 54.02.0 - opt.h
+  Add av_opt_get_dict_val/set_dict_val with AV_OPT_TYPE_DICT to support
+  dictionary types being set as options.
+
+2014-xx-xx - xxxxxxx - lavf 56.01.0 - avformat.h
+  Add AVFormatContext.event_flags and AVStream.event_flags for signaling to
+  the user when events happen in the file/stream.
+
 2014-04-xx - xxxxxxx - lavr 2.1.0 - avresample.h
   Add avresample_convert_frame() and avresample_config().
 

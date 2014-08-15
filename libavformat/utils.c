@@ -713,34 +713,6 @@ static int determinable_frame_size(AVCodecContext *avctx)
 }
 
 /**
- * Get the number of samples of an audio frame. Return -1 on error.
- */
-int ff_get_audio_frame_size(AVCodecContext *enc, int size, int mux)
-{
-    int frame_size;
-
-    /* give frame_size priority if demuxing */
-    if (!mux && enc->frame_size > 1)
-        return enc->frame_size;
-
-    if ((frame_size = av_get_audio_frame_duration(enc, size)) > 0)
-        return frame_size;
-
-    /* Fall back on using frame_size if muxing. */
-    if (enc->frame_size > 1)
-        return enc->frame_size;
-
-    //For WMA we currently have no other means to calculate duration thus we
-    //do it here by assuming CBR, which is true for all known cases.
-    if (!mux && enc->bit_rate>0 && size>0 && enc->sample_rate>0 && enc->block_align>1) {
-        if (enc->codec_id == AV_CODEC_ID_WMAV1 || enc->codec_id == AV_CODEC_ID_WMAV2)
-            return  ((int64_t)size * 8 * enc->sample_rate) / enc->bit_rate;
-    }
-
-    return -1;
-}
-
-/**
  * Return the frame duration in seconds. Return 0 if not available.
  */
 void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
@@ -775,7 +747,7 @@ void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
-        frame_size = ff_get_audio_frame_size(st->codec, pkt->size, 0);
+        frame_size = av_get_audio_frame_duration(st->codec, pkt->size);
         if (frame_size <= 0 || st->codec->sample_rate <= 0)
             break;
         *pnum = frame_size;
@@ -1286,6 +1258,7 @@ static int read_from_packet_buffer(AVPacketList **pkt_buffer,
 static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     int ret = 0, i, got_packet = 0;
+    AVDictionary *metadata = NULL;
 
     av_init_packet(pkt);
 
@@ -1409,6 +1382,14 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
         if (!(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
             av_packet_merge_side_data(pkt);
+    }
+
+    av_opt_get_dict_val(s, "metadata", AV_OPT_SEARCH_CHILDREN, &metadata);
+    if (metadata) {
+        s->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
+        av_dict_copy(&s->metadata, metadata, 0);
+        av_dict_free(&metadata);
+        av_opt_set_dict_val(s, "metadata", NULL, AV_OPT_SEARCH_CHILDREN);
     }
 
     if (s->debug & FF_FDEBUG_TS)
@@ -4207,6 +4188,29 @@ int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
         stream_id = strtol(spec, &endptr, 0);
         if (!*endptr)
             return stream_id == st->id;
+    } else if (*spec == 'm' && *(spec + 1) == ':') {
+        AVDictionaryEntry *tag;
+        char *key, *val;
+        int ret;
+
+        spec += 2;
+        val = strchr(spec, ':');
+
+        key = val ? av_strndup(spec, val - spec) : av_strdup(spec);
+        if (!key)
+            return AVERROR(ENOMEM);
+
+        tag = av_dict_get(st->metadata, key, NULL, 0);
+        if (tag) {
+            if (!val || !strcmp(tag->value, val + 1))
+                ret = 1;
+            else
+                ret = 0;
+        } else
+            ret = 0;
+
+        av_freep(&key);
+        return ret;
     } else if (!*spec) /* empty specifier, matches everything */
         return 1;
 
