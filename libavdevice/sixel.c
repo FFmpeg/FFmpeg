@@ -26,6 +26,7 @@
 #include "avdevice.h"
 #include "libavutil/time.h"
 
+
 typedef struct SIXELContext {
     AVClass *class;
     AVRational time_base;   /**< Time base */
@@ -35,74 +36,68 @@ typedef struct SIXELContext {
     int row;
     int col;
     int reqcolors;
-    int colors;
     LSOutputContextPtr output;
-    LSImagePtr im;
-    unsigned char *palette;
-    unsigned short *cachetable;
+    sixel_dither_t *dither;
+    sixel_dither_t *testdither;
     int fixedpal;
     enum methodForDiffuse diffuse;
     int threshold;
     int dropframe;
     int ignoredelay;
-    int average_r;
-    int average_g;
-    int average_b;
 } SIXELContext;
 
-static int detect_scene_change(SIXELContext *const c,
-                               unsigned char const *palette)
+static int detect_scene_change(SIXELContext *const c)
 {
     int score;
     int i;
     unsigned int r = 0;
     unsigned int g = 0;
     unsigned int b = 0;
+    static unsigned int average_r = 0;
+    static unsigned int average_g = 0;
+    static unsigned int average_b = 0;
 
-    if (c->palette == NULL) {
+    if (c->dither == NULL)
         goto detected;
-    }
 
-    for (i = 0; i < c->colors; i++) {
-        r += palette[i * 3 + 0];
-        g += palette[i * 3 + 1];
-        b += palette[i * 3 + 2];
-    }
-    score = (r - c->average_r) * (r - c->average_r)
-          + (g - c->average_g) * (g - c->average_g)
-          + (b - c->average_b) * (b - c->average_b);
-
-    if (score > c->threshold * c->colors * c->colors) {
+    /* detect scene change if number of colors increses 20% */
+    if (c->dither->origcolors * 6 < c->testdither->origcolors * 5)
         goto detected;
+
+    /* detect scene change if number of colors decreses 20% */
+    if (c->dither->origcolors * 4 > c->testdither->origcolors * 5)
+        goto detected;
+
+    /* compare color average difference between current
+     * palette and previous one */
+    for (i = 0; i < c->testdither->ncolors; i++) {
+        r += c->testdither->palette[i * 3 + 0];
+        g += c->testdither->palette[i * 3 + 1];
+        b += c->testdither->palette[i * 3 + 2];
     }
+    score = (r - average_r) * (r - average_r)
+          + (g - average_g) * (g - average_g)
+          + (b - average_b) * (b - average_b);
+    if (score > c->threshold * c->testdither->ncolors
+                             * c->testdither->ncolors)
+        goto detected;
 
     return 0;
 
 detected:
-    c->average_r = r;
-    c->average_g = g;
-    c->average_b = b;
+    average_r = r;
+    average_g = g;
+    average_b = b;
     return 1;
 }
 
 static int prepare_static_palette(SIXELContext *const c,
                                   AVCodecContext *const codec)
 {
-    int i;
-    sixel_dither_t *dither;
-
-    dither = sixel_dither_get(BUILTIN_XTERM256);
-    c->colors = c->reqcolors;
-    c->palette = malloc(c->colors * 3);
-    memcpy(c->palette, dither->palette, c->colors * 3);
-    sixel_dither_unref(dither);
-    for (i = 0; i < c->colors; i++) {
-        LSImage_setpalette(c->im, i,
-                           c->palette[i * 3],
-                           c->palette[i * 3 + 1],
-                           c->palette[i * 3 + 2]);
-    }
-
+    c->dither = sixel_dither_get(BUILTIN_XTERM256);
+    if (c->dither == NULL)
+        return (-1);
+    c->dither->ncolors = c->reqcolors;
     return 0;
 }
 
@@ -110,22 +105,25 @@ static int prepare_dynamic_palette(SIXELContext *const c,
                                    AVCodecContext *const codec,
                                    AVPacket *const pkt)
 {
-    int i;
+    int ret;
     unsigned char *palette;
 
-    palette = LSQ_MakePalette(pkt->data, codec->width, codec->height,
-                              3, c->reqcolors, &c->colors, NULL,
-                              LARGE_NORM, REP_CENTER_BOX, QUALITY_LOW);
+    /* create histgram and construct color palette
+     * with median cut algorithm. */
+    ret = sixel_prepare_palette(c->testdither, pkt->data,
+                                codec->width, codec->height, 3);
+    if (ret != 0)
+        return (-1);
 
-    if (detect_scene_change(c, palette)) {
-        for (i = 0; i < c->colors; i++) {
-            LSImage_setpalette(c->im, i,
-                               palette[i * 3 + 0],
-                               palette[i * 3 + 1],
-                               palette[i * 3 + 2]);
-        }
-        c->palette = palette;
-        memset(c->cachetable, 0, (1 << 3 * 5) * sizeof(unsigned short));
+    palette = c->testdither->palette;
+
+    /* check whether the scence is changed. use old palette
+     * if scene is not changed. */
+    if (detect_scene_change(c)) {
+        if (c->dither)
+            sixel_dither_unref(c->dither);
+        c->dither = c->testdither;
+        c->testdither = sixel_dither_create(c->reqcolors);
     }
     return 0;
 }
@@ -154,6 +152,7 @@ static int sixel_write_header(AVFormatContext *s)
     SIXELContext *c = s->priv_data;
     AVCodecContext *codec = s->streams[0]->codec;
     int ret = 0;
+    static char reset_position[256];
 
     if (s->nb_streams > 1
         || codec->codec_type != AVMEDIA_TYPE_VIDEO
@@ -178,27 +177,23 @@ static int sixel_write_header(AVFormatContext *s)
     if (!isatty(fileno(sixel_output_file))) {
         c->ignoredelay = 1;
     }
-    c->palette = NULL;
-    c->im = LSImage_create(codec->width, codec->height, 1, c->reqcolors);
-    c->cachetable = av_calloc(1 << 3 * 5, sizeof(unsigned short));
-    if (c->cachetable == 0) {
-        return AVERROR(ENOMEM);
-    }
-    c->reset_position = malloc(64);
-    if (c->row <= 1 && c->col <= 1) {
-        strcpy(c->reset_position, "\033[H");
-    } else {
-        sprintf(c->reset_position, "\033[%d;%dH", c->row, c->col);
-    }
+
+    c->dither = NULL;
+    c->testdither = sixel_dither_create(c->reqcolors);
+
+    if (c->row <= 1 && c->col <= 1)
+        strcpy(reset_position, "\033[H");
+    else
+        sprintf(reset_position, "\033[%d;%dH", c->row, c->col);
+    c->reset_position = reset_position;
     fprintf(sixel_output_file, "\033[?25l\0337");
     c->time_base = s->streams[0]->codec->time_base;
     c->time_frame = av_gettime() / av_q2d(c->time_base);
 
     if (c->fixedpal) {
         ret = prepare_static_palette(c, codec);
-        if (ret != 0) {
+        if (ret != 0)
             return ret;
-        }
     }
 
     return ret;
@@ -211,19 +206,20 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret = 0;
     int64_t curtime, delay;
     struct timespec ts;
+    LSImagePtr im;
+    int late_threshold;
 
     if (!c->ignoredelay) {
-        /* Calculate the time of the next frame */
+        /* calculate the time of the next frame */
         c->time_frame += INT64_C(1000000);
-
-        /* wait based on the frame rate */
         curtime = av_gettime();
         delay = c->time_frame * av_q2d(c->time_base) - curtime;
         if (delay <= 0) {
             if (c->dropframe) {
-                if (delay < INT64_C(-1000000) * av_q2d(c->time_base) * 2) {
+                /* late threshold of dropping this frame */
+                late_threshold = INT64_C(-1000000) * av_q2d(c->time_base);
+                if (delay < late_threshold)
                     return 0;
-                }
             }
         } else {
             ts.tv_sec = delay / 1000000;
@@ -236,18 +232,22 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!c->fixedpal) {
         ret = prepare_dynamic_palette(c, codec, pkt);
-        if (ret != 0) {
+        if (ret != 0)
             return ret;
-        }
     }
-    ret = LSQ_ApplyPalette(pkt->data, codec->width, codec->height, 3,
-                           c->palette, c->reqcolors,
-                           c->diffuse, /* foptimize */ 1,
-                           c->cachetable, c->im->pixels);
-    if (ret != 0) {
-        return ret;
-    }
-    LibSixel_LSImageToSixel(c->im, c->output);
+    /* create intermidiate bitmap image */
+    im = sixel_create_image(pkt->data, codec->width, codec->height,
+                            /* pixel depth */ 3,
+                            /* pkt->data is borrowed reference */ 1,
+                            c->dither);
+    if (!im)
+        return AVERROR(ENOMEM);
+    c->dither->method_for_diffuse = c->diffuse;
+    ret = sixel_apply_palette(im);
+    if (ret != 0)
+        return AVERROR(ret);
+    LibSixel_LSImageToSixel(im, c->output);
+    LSImage_destroy(im);
     fflush(stdout);
     return 0;
 }
@@ -260,26 +260,17 @@ static int sixel_write_trailer(AVFormatContext *s)
         fclose(sixel_output_file);
         sixel_output_file = NULL;
     }
-
     if (c->output) {
         LSOutputContext_destroy(c->output);
         c->output = NULL;
     }
-    if (c->im) {
-        LSImage_destroy(c->im);
-        c->im = NULL;
+    if (c->testdither) {
+        sixel_dither_unref(c->testdither);
+        c->testdither = NULL;
     }
-    if (c->palette) {
-        free(c->palette);
-        c->palette = NULL;
-    }
-    if (c->cachetable) {
-        free(c->cachetable);
-        c->cachetable = NULL;
-    }
-    if (c->reset_position) {
-        free(c->reset_position);
-        c->reset_position = NULL;
+    if (c->dither) {
+        sixel_dither_unref(c->dither);
+        c->dither = NULL;
     }
     fprintf(sixel_output_file, "\0338\033[?25h");
     fflush(stdout);
