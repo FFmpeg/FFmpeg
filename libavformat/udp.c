@@ -325,7 +325,7 @@ static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
                              socklen_t *addr_len, const char *localaddr)
 {
     int udp_fd = -1;
-    struct addrinfo *res0 = NULL, *res = NULL;
+    struct addrinfo *res0, *res;
     int family = AF_UNSPEC;
 
     if (((struct sockaddr *) &s->dest_addr)->sa_family)
