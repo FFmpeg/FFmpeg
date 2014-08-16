@@ -112,33 +112,33 @@ To show only video packets belonging to the video stream with index 1:
 ffprobe -show_packets -select_streams v:1 INPUT
 @end example
 
-@item -show_data
+@item -show_data, -sdt
 Show payload data, as a hexadecimal and ASCII dump. Coupled with
 @option{-show_packets}, it will dump the packets' data. Coupled with
 @option{-show_streams}, it will dump the codec extradata.
 
 The dump is printed as the "data" field. It may contain newlines.
 
-@item -show_error
+@item -show_error, -ser
 Show information about the error found when trying to probe the input.
 
 The error information is printed within a section with name "ERROR".
 
-@item -show_format
+@item -show_format, -sfm
 Show information about the container format of the input multimedia
 stream.
 
 All the container format information is printed within a section with
 name "FORMAT".
 
-@item -show_format_entry @var{name}
+@item -show_format_entry, -sfe @var{name}
 Like @option{-show_format}, but only prints the specified entry of the
 container format information, rather than all. This option may be given more
 than once, then all specified entries will be shown.
 
 This option is deprecated, use @code{show_entries} instead.
 
-@item -show_entries @var{section_entries}
+@item -show_entries, -set @var{section_entries}
 Set list of entries to show.
 
 Entries are specified according to the following
@@ -189,35 +189,35 @@ sections:
 stream_tags=title
 @end example
 
-@item -show_packets
+@item -show_packets, -spe
 Show information about each packet contained in the input multimedia
 stream.
 
 The information for each single packet is printed within a dedicated
 section with name "PACKET".
 
-@item -show_frames
+@item -show_frames, -sfr
 Show information about each frame and subtitle contained in the input
 multimedia stream.
 
 The information for each single frame is printed within a dedicated
 section with name "FRAME" or "SUBTITLE".
 
-@item -show_streams
+@item -show_streams, -sst
 Show information about each media stream contained in the input
 multimedia stream.
 
 Each media stream information is printed within a dedicated section
 with name "STREAM".
 
-@item -show_programs
+@item -show_programs, -spg
 Show information about programs and their streams contained in the input
 multimedia stream.
 
 Each media stream information is printed within a dedicated section
 with name "PROGRAM_STREAM".
 
-@item -show_chapters
+@item -show_chapters, -sct
 Show information about chapters stored in the format.
 
 Each chapter is printed within a dedicated section with name "CHAPTER".
