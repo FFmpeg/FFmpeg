@@ -506,6 +506,7 @@ static int analyze(const uint8_t *buf, int size, int packet_size, int *index)
     int stat[TS_MAX_PACKET_SIZE];
     int i;
     int best_score = 0;
+    int best_score2 = 0;
 
     memset(stat, 0, packet_size * sizeof(*stat));
 
@@ -517,11 +518,13 @@ static int analyze(const uint8_t *buf, int size, int packet_size, int *index)
                 best_score = stat[x];
                 if (index)
                     *index = x;
+            } else if (stat[x] > best_score2) {
+                best_score2 = stat[x];
             }
         }
     }
 
-    return best_score;
+    return best_score - best_score2;
 }
 
 /* autodetect fec presence. Must have at least 1024 bytes  */
