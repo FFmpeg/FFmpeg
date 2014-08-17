@@ -95,7 +95,11 @@ static void rpza_decode_stream(RpzaContext *s)
 
     /* If length mismatch use size from MOV file and try to decode anyway */
     if (chunk_size != bytestream2_get_bytes_left(&s->gb) - 4)
-        av_log(s->avctx, AV_LOG_WARNING, "MOV chunk size != encoded chunk size\n");
+        av_log(s->avctx, AV_LOG_WARNING,
+               "MOV chunk size %d != encoded chunk size %d\n",
+               chunk_size,
+               bytestream2_get_bytes_left(&s->gb) - 4
+              );
 
     /* Number of 4x4 blocks in frame. */
     total_blocks = ((s->avctx->width + 3) / 4) * ((s->avctx->height + 3) / 4);
