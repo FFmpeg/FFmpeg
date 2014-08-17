@@ -68,7 +68,7 @@ case AVLINK_STARTINIT:
 @end example
 
 @item
-Braces in function declarations are written on the new line:
+Braces in function definitions are written on the new line:
 @example
 const char *avfilter_configuration(void)
 @{
