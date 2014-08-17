@@ -62,7 +62,14 @@
     <None Include=".\template_in.def" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\template_in\template_shinres.rc" />
+    <ResourceCompile Include="..\template_in\template_shinres.rc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B4824EFF-C340-425D-A4A8-E2E02A71A7AE}</ProjectGuid>
