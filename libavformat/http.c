@@ -578,11 +578,6 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
                 int leading_dot = (param[7] == '.');
                 av_free(cdomain);
                 cdomain = av_strdup(&param[7+leading_dot]);
-            } else if (!av_strncasecmp("secure",  param, 6) ||
-                       !av_strncasecmp("comment", param, 7) ||
-                       !av_strncasecmp("max-age", param, 7) ||
-                       !av_strncasecmp("version", param, 7)) {
-                // ignore Comment, Max-Age, Secure and Version
             } else {
                 // ignore unknown attributes
             }
