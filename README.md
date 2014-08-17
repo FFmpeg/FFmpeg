@@ -24,7 +24,6 @@ FFmpeg README
 ```
 $ git clone https://github.com/saitoha/libsixel
 $ cd libsixel
-$ git checkout abi-1.0.0
 $ ./configure && make install
 $ cd ..
 $ git clone https://github.com/saitoha/FFmpeg-SIXEL
