@@ -54,7 +54,7 @@ AVCodecParserContext *av_parser_init(int codec_id)
     if (codec_id == AV_CODEC_ID_NONE)
         return NULL;
 
-    for (parser = av_first_parser; parser != NULL; parser = parser->next) {
+    for (parser = av_first_parser; parser; parser = parser->next) {
         if (parser->codec_ids[0] == codec_id ||
             parser->codec_ids[1] == codec_id ||
             parser->codec_ids[2] == codec_id ||

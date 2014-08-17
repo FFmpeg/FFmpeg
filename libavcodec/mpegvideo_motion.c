@@ -827,7 +827,7 @@ static inline void apply_8x8(MpegEncContext *s,
  * @param qpix_op qpel motion compensation function (average or put normally)
  * the motion vectors are taken from s->mv and the MV type from s->mv_type
  */
-static av_always_inline void MPV_motion_internal(MpegEncContext *s,
+static av_always_inline void mpv_motion_internal(MpegEncContext *s,
                                                  uint8_t *dest_y,
                                                  uint8_t *dest_cb,
                                                  uint8_t *dest_cr,
@@ -969,7 +969,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
     }
 }
 
-void ff_MPV_motion(MpegEncContext *s,
+void ff_mpv_motion(MpegEncContext *s,
                    uint8_t *dest_y, uint8_t *dest_cb,
                    uint8_t *dest_cr, int dir,
                    uint8_t **ref_picture,
@@ -978,10 +978,10 @@ void ff_MPV_motion(MpegEncContext *s,
 {
 #if !CONFIG_SMALL
     if (s->out_format == FMT_MPEG1)
-        MPV_motion_internal(s, dest_y, dest_cb, dest_cr, dir,
+        mpv_motion_internal(s, dest_y, dest_cb, dest_cr, dir,
                             ref_picture, pix_op, qpix_op, 1);
     else
 #endif
-        MPV_motion_internal(s, dest_y, dest_cb, dest_cr, dir,
+        mpv_motion_internal(s, dest_y, dest_cb, dest_cr, dir,
                             ref_picture, pix_op, qpix_op, 0);
 }

@@ -489,7 +489,7 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
                                   avctx->frame_number));
 
     s->m.mb_type = NULL;
-    ff_MPV_common_end(&s->m);
+    ff_mpv_common_end(&s->m);
 
     av_freep(&s->m.me.scratchpad);
     av_freep(&s->m.me.map);
@@ -539,7 +539,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     s->avctx               = avctx;
     s->m.avctx             = avctx;
 
-    if ((ret = ff_MPV_common_init(&s->m)) < 0) {
+    if ((ret = ff_mpv_common_init(&s->m)) < 0) {
         svq1_encode_end(avctx);
         return ret;
     }

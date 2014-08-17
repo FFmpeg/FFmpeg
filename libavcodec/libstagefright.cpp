@@ -280,7 +280,7 @@ static av_cold int Stagefright_init(AVCodecContext *avctx)
     memcpy(s->orig_extradata, avctx->extradata, avctx->extradata_size);
 
     meta = new MetaData;
-    if (meta == NULL) {
+    if (!meta) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }

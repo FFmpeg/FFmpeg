@@ -91,7 +91,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
         AVDictionaryEntry *tmp = av_realloc(m->elems,
                                             (m->count + 1) * sizeof(*m->elems));
         if (!tmp)
-            return AVERROR(ENOMEM);
+            goto err_out;
         m->elems = tmp;
     }
     if (value) {
@@ -105,7 +105,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
             int len = strlen(oldval) + strlen(value) + 1;
             char *newval = av_mallocz(len);
             if (!newval)
-                return AVERROR(ENOMEM);
+                goto err_out;
             av_strlcat(newval, oldval, len);
             av_freep(&oldval);
             av_strlcat(newval, value, len);
@@ -120,6 +120,21 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
     }
 
     return 0;
+
+err_out:
+    if (!m->count) {
+        av_free(m->elems);
+        av_freep(pm);
+    }
+    return AVERROR(ENOMEM);
+}
+
+int av_dict_set_int(AVDictionary **pm, const char *key, int64_t value,
+                int flags)
+{
+    char valuestr[22];
+    snprintf(valuestr, sizeof(valuestr), "%"PRId64, value);
+    return av_dict_set(pm, key, valuestr, flags);
 }
 
 static int parse_key_value_pair(AVDictionary **pm, const char **buf,

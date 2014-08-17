@@ -77,6 +77,8 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
     ret = avcodec_decode_video2(codec_ctx, frame, &frame_decoded, &pkt);
     if (ret < 0 || !frame_decoded) {
         av_log(log_ctx, AV_LOG_ERROR, "Failed to decode image from file\n");
+        if (ret >= 0)
+            ret = -1;
         goto end;
     }
 

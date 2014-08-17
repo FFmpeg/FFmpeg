@@ -196,7 +196,7 @@ static void coded_frame_add(void *list, struct FrameListData *cx_frame)
 {
     struct FrameListData **p = list;
 
-    while (*p != NULL)
+    while (*p)
         p = &(*p)->next;
     *p = cx_frame;
     cx_frame->next = NULL;
@@ -542,7 +542,7 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
             side_data = av_packet_new_side_data(pkt,
                                                 AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
                                                 cx_frame->sz_alpha + 8);
-            if(side_data == NULL) {
+            if(!side_data) {
                 av_free_packet(pkt);
                 av_free(pkt);
                 return AVERROR(ENOMEM);

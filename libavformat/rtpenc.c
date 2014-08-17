@@ -145,7 +145,7 @@ static int rtp_write_header(AVFormatContext *s1)
         return AVERROR(EIO);
     }
     s->buf = av_malloc(s1->packet_size);
-    if (s->buf == NULL) {
+    if (!s->buf) {
         return AVERROR(ENOMEM);
     }
     s->max_payload_size = s1->packet_size - 12;

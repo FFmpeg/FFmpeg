@@ -85,7 +85,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     /* Alloc extradata buffer */
     info = (UtVideoExtra *)av_malloc(sizeof(*info));
 
-    if (info == NULL) {
+    if (!info) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate extradata buffer.\n");
         return AVERROR(ENOMEM);
     }

@@ -115,7 +115,7 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_MPV_common_init_ppc(MpegEncContext *s)
+av_cold void ff_mpv_common_init_ppc(MpegEncContext *s)
 {
 #if HAVE_ALTIVEC
     if (!PPC_ALTIVEC(av_get_cpu_flags()))

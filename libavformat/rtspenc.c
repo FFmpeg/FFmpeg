@@ -56,7 +56,7 @@ int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
 
     /* Announce the stream */
     sdp = av_mallocz(SDP_MAX_SIZE);
-    if (sdp == NULL)
+    if (!sdp)
         return AVERROR(ENOMEM);
     /* We create the SDP based on the RTSP AVFormatContext where we
      * aren't allowed to change the filename field. (We create the SDP

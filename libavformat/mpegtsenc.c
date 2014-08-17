@@ -481,7 +481,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     return 0;
 }
 
-/* NOTE: str == NULL is accepted for an empty string */
+/* NOTE: !str is accepted for an empty string */
 static void putstr8(uint8_t **q_ptr, const char *str)
 {
     uint8_t *q;

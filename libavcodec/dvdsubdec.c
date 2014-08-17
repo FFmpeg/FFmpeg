@@ -195,7 +195,7 @@ static void reset_rects(AVSubtitle *sub_header)
 {
     int i;
 
-    if (sub_header->rects != NULL) {
+    if (sub_header->rects) {
         for (i = 0; i < sub_header->num_rects; i++) {
             av_freep(&sub_header->rects[i]->pict.data[0]);
             av_freep(&sub_header->rects[i]->pict.data[1]);
@@ -213,7 +213,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
 {
     int cmd_pos, pos, cmd, x1, y1, x2, y2, offset1, offset2, next_cmd_pos;
     int big_offsets, offset_size, is_8bit = 0;
-    const uint8_t *yuv_palette = 0;
+    const uint8_t *yuv_palette = NULL;
     uint8_t *colormap = ctx->colormap, *alpha = ctx->alpha;
     int date;
     int i;
@@ -362,7 +362,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                            buf, offset2, buf_size, is_8bit);
                 sub_header->rects[0]->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
                 if (is_8bit) {
-                    if (yuv_palette == 0)
+                    if (!yuv_palette)
                         goto fail;
                     sub_header->rects[0]->nb_colors = 256;
                     yuv_a_to_rgba(yuv_palette, alpha, (uint32_t*)sub_header->rects[0]->pict.data[1], 256);
@@ -414,7 +414,7 @@ static int find_smallest_bounding_rectangle(AVSubtitle *s)
     int y1, y2, x1, x2, y, w, h, i;
     uint8_t *bitmap;
 
-    if (s->num_rects == 0 || s->rects == NULL || s->rects[0]->w <= 0 || s->rects[0]->h <= 0)
+    if (s->num_rects == 0 || !s->rects || s->rects[0]->w <= 0 || s->rects[0]->h <= 0)
         return 0;
 
     for(i = 0; i < s->rects[0]->nb_colors; i++) {

@@ -800,7 +800,7 @@ static void draw_slice(HYuvContext *s, AVFrame *frame, int y)
     int h, cy, i;
     int offset[AV_NUM_DATA_POINTERS];
 
-    if (s->avctx->draw_horiz_band == NULL)
+    if (!s->avctx->draw_horiz_band)
         return;
 
     h  = y - s->last_slice_end;

@@ -372,7 +372,7 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
         char *param = rt->conn;
 
         // Write arbitrary AMF data to the Connect message.
-        while (param != NULL) {
+        while (param) {
             char *sep;
             param += strspn(param, " ");
             if (!*param)

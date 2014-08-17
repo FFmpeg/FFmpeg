@@ -619,7 +619,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
         return AVERROR(ENOMEM);
     pps->sps_id = get_ue_golomb_31(&h->gb);
     if ((unsigned)pps->sps_id >= MAX_SPS_COUNT ||
-        h->sps_buffers[pps->sps_id] == NULL) {
+        !h->sps_buffers[pps->sps_id]) {
         av_log(h->avctx, AV_LOG_ERROR, "sps_id %u out of range\n", pps->sps_id);
         goto fail;
     }

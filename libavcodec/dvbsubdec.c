@@ -888,7 +888,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
         av_dlog(avctx, "\n");
 #endif
 
-    if (region == 0)
+    if (!region)
         return;
 
     pbuf = region->pbuf;
@@ -1383,7 +1383,7 @@ static void save_display_set(DVBSubContext *ctx)
 
             clut = get_clut(ctx, region->clut);
 
-            if (clut == 0)
+            if (!clut)
                 clut = &default_clut;
 
             switch (region->depth) {

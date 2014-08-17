@@ -110,7 +110,7 @@ static void frame_list_remove_samples(FrameList *frame_list, int nb_samples)
         int samples = nb_samples;
         while (samples > 0) {
             FrameInfo *info = frame_list->list;
-            av_assert0(info != NULL);
+            av_assert0(info);
             if (info->nb_samples <= samples) {
                 samples -= info->nb_samples;
                 frame_list->list = info->next;
@@ -142,7 +142,7 @@ static int frame_list_add_frame(FrameList *frame_list, int nb_samples, int64_t p
         frame_list->list = info;
         frame_list->end  = info;
     } else {
-        av_assert0(frame_list->end != NULL);
+        av_assert0(frame_list->end);
         frame_list->end->next = info;
         frame_list->end       = info;
     }

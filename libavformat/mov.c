@@ -92,16 +92,13 @@ static int mov_metadata_track_or_disc_number(MOVContext *c, AVIOContext *pb,
 static int mov_metadata_int8_bypass_padding(MOVContext *c, AVIOContext *pb,
                                             unsigned len, const char *key)
 {
-    char buf[16];
-
     /* bypass padding bytes */
     avio_r8(pb);
     avio_r8(pb);
     avio_r8(pb);
 
-    snprintf(buf, sizeof(buf), "%d", avio_r8(pb));
     c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
-    av_dict_set(&c->fc->metadata, key, buf, 0);
+    av_dict_set_int(&c->fc->metadata, key, avio_r8(pb), 0);
 
     return 0;
 }
@@ -109,11 +106,8 @@ static int mov_metadata_int8_bypass_padding(MOVContext *c, AVIOContext *pb,
 static int mov_metadata_int8_no_padding(MOVContext *c, AVIOContext *pb,
                                         unsigned len, const char *key)
 {
-    char buf[16];
-
-    snprintf(buf, sizeof(buf), "%d", avio_r8(pb));
     c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
-    av_dict_set(&c->fc->metadata, key, buf, 0);
+    av_dict_set_int(&c->fc->metadata, key, avio_r8(pb), 0);
 
     return 0;
 }
@@ -736,7 +730,6 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     uint32_t minor_ver;
     int comp_brand_size;
-    char minor_ver_str[11]; /* 32 bit integer -> 10 digits + null */
     char* comp_brands_str;
     uint8_t type[5] = {0};
 
@@ -746,8 +739,7 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
     av_dict_set(&c->fc->metadata, "major_brand", type, 0);
     minor_ver = avio_rb32(pb); /* minor version */
-    snprintf(minor_ver_str, sizeof(minor_ver_str), "%"PRIu32"", minor_ver);
-    av_dict_set(&c->fc->metadata, "minor_version", minor_ver_str, 0);
+    av_dict_set_int(&c->fc->metadata, "minor_version", minor_ver, 0);
 
     comp_brand_size = atom.size - 8;
     if (comp_brand_size < 0)
@@ -3081,7 +3073,7 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
 
         ptr = buffer;
-        while ((ptr = av_stristr(ptr, "systemBitrate=\"")) != NULL) {
+        while ((ptr = av_stristr(ptr, "systemBitrate=\""))) {
             ptr += sizeof("systemBitrate=\"") - 1;
             c->bitrates_count++;
             c->bitrates = av_realloc_f(c->bitrates, c->bitrates_count, sizeof(*c->bitrates));

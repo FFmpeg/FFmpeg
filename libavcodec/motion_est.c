@@ -1753,7 +1753,7 @@ void ff_fix_long_mvs(MpegEncContext * s, uint8_t *field_select_table, int field_
         int xy= y*s->mb_stride;
         for(x=0; x<s->mb_width; x++){
             if (s->mb_type[xy] & type){    // RAL: "type" test added...
-                if(field_select_table==NULL || field_select_table[xy] == field_select){
+                if (!field_select_table || field_select_table[xy] == field_select) {
                     if(   mv_table[xy][0] >=h_range || mv_table[xy][0] <-h_range
                        || mv_table[xy][1] >=v_range || mv_table[xy][1] <-v_range){
 

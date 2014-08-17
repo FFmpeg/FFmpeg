@@ -15,6 +15,12 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2014-08-16 - xxxxxxx - lswr 1.1.100 - swresample.h
+  Add AVFrame based API
+
+2014-xx-xx - xxxxxxx - lavu 54.4.100 - dict.h
+  Add av_dict_set_int helper function.
+
 2014-08-xx - xxxxxxx - lavu 54.03.0 - mem.h
   Add av_strndup().
 

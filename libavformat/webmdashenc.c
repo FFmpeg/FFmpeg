@@ -70,7 +70,7 @@ static double get_duration(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVDictionaryEntry *duration = av_dict_get(s->streams[i]->metadata,
                                                   DURATION, NULL, 0);
-        if (duration == NULL || atof(duration->value) < 0) continue;
+        if (!duration || atof(duration->value) < 0) continue;
         if (atof(duration->value) > max) max = atof(duration->value);
     }
     return max / 1000;
@@ -102,11 +102,11 @@ static int subsegment_alignment(AVFormatContext *s, AdaptationSet *as) {
     int i;
     AVDictionaryEntry *gold = av_dict_get(s->streams[as->streams[0]]->metadata,
                                           CUE_TIMESTAMPS, NULL, 0);
-    if (gold == NULL) return 0;
+    if (!gold) return 0;
     for (i = 1; i < as->nb_streams; i++) {
         AVDictionaryEntry *ts = av_dict_get(s->streams[as->streams[i]]->metadata,
                                             CUE_TIMESTAMPS, NULL, 0);
-        if (ts == NULL || strncmp(gold->value, ts->value, strlen(gold->value))) return 0;
+        if (!ts || strncmp(gold->value, ts->value, strlen(gold->value))) return 0;
     }
     return 1;
 }
@@ -116,12 +116,12 @@ static int bitstream_switching(AVFormatContext *s, AdaptationSet *as) {
     AVDictionaryEntry *gold_track_num = av_dict_get(s->streams[as->streams[0]]->metadata,
                                                     TRACK_NUMBER, NULL, 0);
     AVCodecContext *gold_codec = s->streams[as->streams[0]]->codec;
-    if (gold_track_num == NULL) return 0;
+    if (!gold_track_num) return 0;
     for (i = 1; i < as->nb_streams; i++) {
         AVDictionaryEntry *track_num = av_dict_get(s->streams[as->streams[i]]->metadata,
                                                    TRACK_NUMBER, NULL, 0);
         AVCodecContext *codec = s->streams[as->streams[i]]->codec;
-        if (track_num == NULL ||
+        if (!track_num ||
             strncmp(gold_track_num->value, track_num->value, strlen(gold_track_num->value)) ||
             gold_codec->codec_id != codec->codec_id ||
             gold_codec->extradata_size != codec->extradata_size ||
@@ -150,7 +150,7 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     avio_printf(s->pb, " codecs=\"%s\"", get_codec_name(codec->codec_id));
 
     lang = av_dict_get(s->streams[as->streams[0]]->metadata, "language", NULL, 0);
-    if (lang != NULL) avio_printf(s->pb, " lang=\"%s\"", lang->value);
+    if (lang) avio_printf(s->pb, " lang=\"%s\"", lang->value);
 
     if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         avio_printf(s->pb, " width=\"%d\"", codec->width);
@@ -167,7 +167,7 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     for (i = 0; i < as->nb_streams; i++) {
         AVDictionaryEntry *kf = av_dict_get(s->streams[as->streams[i]]->metadata,
                                             CLUSTER_KEYFRAME, NULL, 0);
-        if (kf == NULL || !strncmp(kf->value, "0", 1)) subsegmentStartsWithSAP = 0;
+        if (!kf || !strncmp(kf->value, "0", 1)) subsegmentStartsWithSAP = 0;
     }
     avio_printf(s->pb, " subsegmentStartsWithSAP=\"%d\"", subsegmentStartsWithSAP);
     avio_printf(s->pb, ">\n");
@@ -179,8 +179,8 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
         AVDictionaryEntry *cues_end = av_dict_get(stream->metadata, CUES_END, NULL, 0);
         AVDictionaryEntry *filename = av_dict_get(stream->metadata, FILENAME, NULL, 0);
         AVDictionaryEntry *bandwidth = av_dict_get(stream->metadata, BANDWIDTH, NULL, 0);
-        if (irange == NULL || cues_start == NULL || cues_end == NULL || filename == NULL ||
-            bandwidth == NULL) {
+        if (!irange || cues_start == NULL || cues_end == NULL || filename == NULL ||
+            !bandwidth) {
             return -1;
         }
         avio_printf(s->pb, "<Representation id=\"%d\"", i);
@@ -202,7 +202,7 @@ static int to_integer(char *p, int len)
 {
     int ret;
     char *q = av_malloc(sizeof(char) * len);
-    if (q == NULL) return -1;
+    if (!q) return -1;
     strncpy(q, p, len);
     ret = atoi(q);
     av_free(q);

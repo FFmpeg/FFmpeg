@@ -1489,7 +1489,7 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = &r->s;
     int ret;
 
-    ff_MPV_decode_defaults(s);
+    ff_mpv_decode_defaults(s);
     s->avctx      = avctx;
     s->out_format = FMT_H263;
     s->codec_id   = avctx->codec_id;
@@ -1503,7 +1503,7 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     s->low_delay = 0;
 
     ff_mpv_idct_init(s);
-    if ((ret = ff_MPV_common_init(s)) < 0)
+    if ((ret = ff_mpv_common_init(s)) < 0)
         return ret;
 
     ff_h264_pred_init(&r->h, AV_CODEC_ID_RV40, 8, 1);
@@ -1518,7 +1518,7 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
 #endif
 
     if ((ret = rv34_decoder_alloc(r)) < 0) {
-        ff_MPV_common_end(&r->s);
+        ff_mpv_common_end(&r->s);
         return ret;
     }
 
@@ -1540,10 +1540,10 @@ int ff_rv34_decode_init_thread_copy(AVCodecContext *avctx)
     if (avctx->internal->is_copy) {
         r->tmp_b_block_base = NULL;
         ff_mpv_idct_init(&r->s);
-        if ((err = ff_MPV_common_init(&r->s)) < 0)
+        if ((err = ff_mpv_common_init(&r->s)) < 0)
             return err;
         if ((err = rv34_decoder_alloc(r)) < 0) {
-            ff_MPV_common_end(&r->s);
+            ff_mpv_common_end(&r->s);
             return err;
         }
     }
@@ -1563,7 +1563,7 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
     if (s->height != s1->height || s->width != s1->width) {
         s->height = s1->height;
         s->width  = s1->width;
-        if ((err = ff_MPV_common_frame_size_change(s)) < 0)
+        if ((err = ff_mpv_common_frame_size_change(s)) < 0)
             return err;
         if ((err = rv34_decoder_realloc(r)) < 0)
             return err;
@@ -1594,7 +1594,7 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
     int got_picture = 0, ret;
 
     ff_er_frame_end(&s->er);
-    ff_MPV_frame_end(s);
+    ff_mpv_frame_end(s);
     s->mb_num_left = 0;
 
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
@@ -1606,7 +1606,7 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
         ff_print_debug_info(s, s->current_picture_ptr, pict);
         ff_mpv_export_qp_table(s, pict, s->current_picture_ptr, FF_QSCALE_TYPE_MPEG1);
         got_picture = 1;
-    } else if (s->last_picture_ptr != NULL) {
+    } else if (s->last_picture_ptr) {
         if ((ret = av_frame_ref(pict, s->last_picture_ptr->f)) < 0)
             return ret;
         ff_print_debug_info(s, s->last_picture_ptr, pict);
@@ -1691,7 +1691,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.\n",
                    s->mb_num_left);
             ff_er_frame_end(&s->er);
-            ff_MPV_frame_end(s);
+            ff_mpv_frame_end(s);
         }
 
         if (s->width != si.width || s->height != si.height) {
@@ -1713,13 +1713,13 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             if (err < 0)
                 return err;
 
-            if ((err = ff_MPV_common_frame_size_change(s)) < 0)
+            if ((err = ff_mpv_common_frame_size_change(s)) < 0)
                 return err;
             if ((err = rv34_decoder_realloc(r)) < 0)
                 return err;
         }
         s->pict_type = si.type ? si.type : AV_PICTURE_TYPE_I;
-        if (ff_MPV_frame_start(s, s->avctx) < 0)
+        if (ff_mpv_frame_start(s, s->avctx) < 0)
             return -1;
         ff_mpeg_er_frame_start(s);
         if (!r->tmp_b_block_base) {
@@ -1824,7 +1824,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             /* always mark the current frame as finished, frame-mt supports
              * only complete frames */
             ff_er_frame_end(&s->er);
-            ff_MPV_frame_end(s);
+            ff_mpv_frame_end(s);
             s->mb_num_left = 0;
             ff_thread_report_progress(&s->current_picture_ptr->tf, INT_MAX, 0);
             return AVERROR_INVALIDDATA;
@@ -1838,7 +1838,7 @@ av_cold int ff_rv34_decode_end(AVCodecContext *avctx)
 {
     RV34DecContext *r = avctx->priv_data;
 
-    ff_MPV_common_end(&r->s);
+    ff_mpv_common_end(&r->s);
     rv34_decoder_free(r);
 
     return 0;

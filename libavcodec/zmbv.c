@@ -500,7 +500,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         c->decode_intra= decode_intra;
     }
 
-    if (c->decode_intra == NULL) {
+    if (!c->decode_intra) {
         av_log(avctx, AV_LOG_ERROR, "Error! Got no format or no keyframe!\n");
         return AVERROR_INVALIDDATA;
     }
@@ -588,7 +588,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     /* Allocate decompression buffer */
     if (c->decomp_size) {
-        if ((c->decomp_buf = av_mallocz(c->decomp_size)) == NULL) {
+        if (!(c->decomp_buf = av_mallocz(c->decomp_size))) {
             av_log(avctx, AV_LOG_ERROR,
                    "Can't allocate decompression buffer.\n");
             return AVERROR(ENOMEM);

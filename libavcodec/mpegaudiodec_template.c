@@ -1603,7 +1603,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
 
     /* get output buffer */
     if (!samples) {
-        av_assert0(s->frame != NULL);
+        av_assert0(s->frame);
         s->frame->nb_samples = s->avctx->frame_size;
         if ((ret = ff_get_buffer(s->avctx, s->frame, 0)) < 0)
             return ret;
@@ -1831,7 +1831,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
     MPEG4AudioConfig cfg;
     int i;
 
-    if ((avctx->extradata_size < 2) || (avctx->extradata == NULL)) {
+    if ((avctx->extradata_size < 2) || !avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Codec extradata missing or too short.\n");
         return AVERROR_INVALIDDATA;
     }

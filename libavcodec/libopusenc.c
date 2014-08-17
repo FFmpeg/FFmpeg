@@ -366,7 +366,7 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
         uint8_t* side_data = av_packet_new_side_data(avpkt,
                                                      AV_PKT_DATA_SKIP_SAMPLES,
                                                      10);
-        if(side_data == NULL) {
+        if(!side_data) {
             av_free_packet(avpkt);
             av_free(avpkt);
             return AVERROR(ENOMEM);

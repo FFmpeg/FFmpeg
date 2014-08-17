@@ -94,7 +94,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     /* initialize LAME and get defaults */
-    if ((s->gfp = lame_init()) == NULL)
+    if (!(s->gfp = lame_init()))
         return AVERROR(ENOMEM);
 
 

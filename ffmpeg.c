@@ -2071,7 +2071,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
     if (!ist->saw_first_ts) {
         ist->dts = ist->st->avg_frame_rate.num ? - ist->dec_ctx->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
         ist->pts = 0;
-        if (pkt != NULL && pkt->pts != AV_NOPTS_VALUE && !ist->decoding_needed) {
+        if (pkt && pkt->pts != AV_NOPTS_VALUE && !ist->decoding_needed) {
             ist->dts += av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
             ist->pts = ist->dts; //unused but better to set it to a value thats not totally wrong
         }
@@ -2083,7 +2083,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
     if (ist->next_pts == AV_NOPTS_VALUE)
         ist->next_pts = ist->pts;
 
-    if (pkt == NULL) {
+    if (!pkt) {
         /* EOF handling */
         av_init_packet(&avpkt);
         avpkt.data = NULL;

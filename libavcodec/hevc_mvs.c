@@ -607,7 +607,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     Mv mvpcand_list[2] = { { 0 } };
     Mv mxA;
     Mv mxB;
-    int ref_idx_curr = 0;
+    int ref_idx_curr;
     int ref_idx = 0;
     int pred_flag_index_l0;
     int pred_flag_index_l1;

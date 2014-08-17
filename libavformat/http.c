@@ -157,7 +157,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
 
     proxy_path = getenv("http_proxy");
     use_proxy  = !ff_http_match_no_proxy(getenv("no_proxy"), hostname) &&
-                 proxy_path != NULL && av_strstart(proxy_path, "http://", NULL);
+                 proxy_path && av_strstart(proxy_path, "http://", NULL);
 
     if (!strcmp(proto, "https")) {
         lower_proto = "tls";
@@ -390,11 +390,11 @@ static void parse_content_range(URLContext *h, const char *p)
 
 static int parse_content_encoding(URLContext *h, const char *p)
 {
-    HTTPContext *s = h->priv_data;
-
     if (!av_strncasecmp(p, "gzip", 4) ||
         !av_strncasecmp(p, "deflate", 7)) {
 #if CONFIG_ZLIB
+        HTTPContext *s = h->priv_data;
+
         s->compressed = 1;
         inflateEnd(&s->inflate_stream);
         if (inflateInit2(&s->inflate_stream, 32 + 15) != Z_OK) {

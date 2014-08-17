@@ -103,7 +103,7 @@ static void dct_unquantize_h263_inter_axp(MpegEncContext *s, int16_t *block,
     dct_unquantize_h263_axp(block, n_coeffs, qscale, (qscale - 1) | 1);
 }
 
-av_cold void ff_MPV_common_init_axp(MpegEncContext *s)
+av_cold void ff_mpv_common_init_axp(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_axp;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_axp;

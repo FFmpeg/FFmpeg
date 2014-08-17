@@ -665,7 +665,7 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
     av_dlog(s, "%s()\n", __FUNCTION__);
 
     /* in case we don't already have something to eat ... */
-    if (nsv->ahead[0].data == NULL && nsv->ahead[1].data == NULL)
+    if (!nsv->ahead[0].data && !nsv->ahead[1].data)
         err = nsv_read_chunk(s, 0);
     if (err < 0)
         return err;

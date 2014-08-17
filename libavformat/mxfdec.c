@@ -1632,14 +1632,10 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             }
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
             if (material_track->sequence->origin) {
-                char material_origin[3];
-                snprintf(material_origin, sizeof(material_origin), "%d", material_track->sequence->origin);
-                av_dict_set(&st->metadata, "material_track_origin", material_origin, 0);
+                av_dict_set_int(&st->metadata, "material_track_origin", material_track->sequence->origin, 0);
             }
             if (source_track->sequence->origin) {
-                char source_origin[3];
-                snprintf(source_origin, sizeof(source_origin), "%d", source_track->sequence->origin);
-                av_dict_set(&st->metadata, "source_track_origin", source_origin, 0);
+                av_dict_set_int(&st->metadata, "source_track_origin", source_track->sequence->origin, 0);
             }
         } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, essence_container_ul);

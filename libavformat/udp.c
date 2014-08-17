@@ -313,7 +313,7 @@ static int udp_set_url(struct sockaddr_storage *addr,
     int addr_len;
 
     res0 = udp_resolve_host(hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
-    if (res0 == 0) return AVERROR(EIO);
+    if (!res0) return AVERROR(EIO);
     memcpy(addr, res0->ai_addr, res0->ai_addrlen);
     addr_len = res0->ai_addrlen;
     freeaddrinfo(res0);
@@ -325,14 +325,14 @@ static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
                              socklen_t *addr_len, const char *localaddr)
 {
     int udp_fd = -1;
-    struct addrinfo *res0 = NULL, *res = NULL;
+    struct addrinfo *res0, *res;
     int family = AF_UNSPEC;
 
     if (((struct sockaddr *) &s->dest_addr)->sa_family)
         family = ((struct sockaddr *) &s->dest_addr)->sa_family;
     res0 = udp_resolve_host(localaddr[0] ? localaddr : NULL, s->local_port,
                             SOCK_DGRAM, family, AI_PASSIVE);
-    if (res0 == 0)
+    if (!res0)
         goto fail;
     for (res = res0; res; res=res->ai_next) {
         udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, 0);
