@@ -565,8 +565,11 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
         set_cookies = NULL;
 
         while ((param = av_strtok(cookie, "; ", &next_param))) {
-            cookie = NULL;
-            if        (!av_strncasecmp("path=",   param, 5)) {
+            if (cookie) {
+                // first key-value pair is the actual cookie value
+                cvalue = av_strdup(param);
+                cookie = NULL;
+            } else if (!av_strncasecmp("path=",   param, 5)) {
                 av_free(cpath);
                 cpath = av_strdup(&param[5]);
             } else if (!av_strncasecmp("domain=", param, 7)) {
@@ -575,14 +578,8 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
                 int leading_dot = (param[7] == '.');
                 av_free(cdomain);
                 cdomain = av_strdup(&param[7+leading_dot]);
-            } else if (!av_strncasecmp("secure",  param, 6) ||
-                       !av_strncasecmp("comment", param, 7) ||
-                       !av_strncasecmp("max-age", param, 7) ||
-                       !av_strncasecmp("version", param, 7)) {
-                // ignore Comment, Max-Age, Secure and Version
             } else {
-                av_free(cvalue);
-                cvalue = av_strdup(param);
+                // ignore unknown attributes
             }
         }
         if (!cdomain)
