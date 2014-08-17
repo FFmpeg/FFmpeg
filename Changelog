@@ -1,6 +1,20 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 10.4:
+- mpegts: Do not try to write a PMT larger than SECTION_SIZE (CVE-2014-2263)
+- mpegts: Define the section length with a constant
+- ffv1dec: check that global parameters do not change in version 0/1 (CVE-2013-7020)
+- h264: fix interpretation of interleaved stereo modes
+- svq1: do not modify the input packet
+- cdgraphics: do not return 0 from the decode function
+- cdgraphics: switch to bytestream2 (CVE-2013-3674)
+- jpeg2000: enable 4 component pixel formats
+- stereo3d: add missing include guards
+- huffyuvdec: check width size for yuv422p (CVE-2013-0848)
+- mmvideo: check horizontal coordinate too (CVE-2013-3672)
+- wmalosslessdec: fix mclms_coeffs* array size (CVE-2014-2098)
+
 version 10.3:
 - huffyuv: Check and propagate function return values (CVE-2013-0868)
 - h264: prevent theoretical infinite loop in SEI parsing (CVE-2011-3946)
