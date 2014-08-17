@@ -29,14 +29,14 @@
 
 typedef struct SIXELContext {
     AVClass *class;
-    AVRational time_base;   /**< Time base */
-    int64_t    time_frame;  /**< Current time */
+    AVRational time_base;   /* time base */
+    int64_t    time_frame;  /* current time */
     AVRational framerate;
     char *reset_position;
     int row;
     int col;
     int reqcolors;
-    LSOutputContextPtr output;
+    sixel_output_t *output;
     sixel_dither_t *dither;
     sixel_dither_t *testdither;
     int fixedpal;
@@ -56,35 +56,45 @@ static int detect_scene_change(SIXELContext *const c)
     static unsigned int average_r = 0;
     static unsigned int average_g = 0;
     static unsigned int average_b = 0;
+    static int previous_histgram_colors = 0;
+    int histgram_colors = 0;
+    int palette_colors = 0;
+    unsigned char const* palette;
+
+    histgram_colors = sixel_dither_get_num_of_histgram_colors(c->testdither);
 
     if (c->dither == NULL)
         goto detected;
 
     /* detect scene change if number of colors increses 20% */
-    if (c->dither->origcolors * 6 < c->testdither->origcolors * 5)
+    if (previous_histgram_colors * 6 < histgram_colors * 5)
         goto detected;
 
     /* detect scene change if number of colors decreses 20% */
-    if (c->dither->origcolors * 4 > c->testdither->origcolors * 5)
+    if (previous_histgram_colors * 4 > histgram_colors * 5)
         goto detected;
 
-    /* compare color average difference between current
+    palette_colors = sixel_dither_get_num_of_palette_colors(c->testdither);
+    palette = sixel_dither_get_palette(c->testdither);
+
+    /* compare color difference between current
      * palette and previous one */
-    for (i = 0; i < c->testdither->ncolors; i++) {
-        r += c->testdither->palette[i * 3 + 0];
-        g += c->testdither->palette[i * 3 + 1];
-        b += c->testdither->palette[i * 3 + 2];
+    for (i = 0; i < palette_colors; i++) {
+        r += palette[i * 3 + 0];
+        g += palette[i * 3 + 1];
+        b += palette[i * 3 + 2];
     }
     score = (r - average_r) * (r - average_r)
           + (g - average_g) * (g - average_g)
           + (b - average_b) * (b - average_b);
-    if (score > c->threshold * c->testdither->ncolors
-                             * c->testdither->ncolors)
+    if (score > c->threshold * palette_colors
+                             * palette_colors)
         goto detected;
 
     return 0;
 
 detected:
+    previous_histgram_colors = histgram_colors;
     average_r = r;
     average_g = g;
     average_b = b;
@@ -97,7 +107,7 @@ static int prepare_static_palette(SIXELContext *const c,
     c->dither = sixel_dither_get(BUILTIN_XTERM256);
     if (c->dither == NULL)
         return (-1);
-    c->dither->ncolors = c->reqcolors;
+    sixel_dither_set_diffusion_type(c->dither, c->diffuse);
     return 0;
 }
 
@@ -106,16 +116,15 @@ static int prepare_dynamic_palette(SIXELContext *const c,
                                    AVPacket *const pkt)
 {
     int ret;
-    unsigned char *palette;
 
     /* create histgram and construct color palette
      * with median cut algorithm. */
-    ret = sixel_prepare_palette(c->testdither, pkt->data,
-                                codec->width, codec->height, 3);
+    ret = sixel_dither_initialize(c->testdither, pkt->data,
+                                  codec->width, codec->height, 3,
+                                  LARGE_NORM, REP_CENTER_BOX,
+                                  QUALITY_LOW);
     if (ret != 0)
         return (-1);
-
-    palette = c->testdither->palette;
 
     /* check whether the scence is changed. use old palette
      * if scene is not changed. */
@@ -124,27 +133,16 @@ static int prepare_dynamic_palette(SIXELContext *const c,
             sixel_dither_unref(c->dither);
         c->dither = c->testdither;
         c->testdither = sixel_dither_create(c->reqcolors);
+        sixel_dither_set_diffusion_type(c->dither, c->diffuse);
     }
     return 0;
 }
 
 static FILE *sixel_output_file = NULL;
 
-static int sixel_putchar(int c)
+static int sixel_write(char *data, int size, void *priv)
 {
-    return fputc(c, sixel_output_file);
-}
-
-static int sixel_printf(char const *fmt, ...)
-{
-    int ret;
-    va_list ap;
-
-    va_start(ap, fmt);
-    ret = vfprintf(sixel_output_file, fmt, ap);
-    va_end(ap);
-
-    return ret;
+    return fwrite(data, 1, size, (FILE *)priv);
 }
 
 static int sixel_write_header(AVFormatContext *s)
@@ -169,12 +167,16 @@ static int sixel_write_header(AVFormatContext *s)
     }
     if (!s->filename || strcmp(s->filename, "pipe:") == 0) {
         sixel_output_file = stdout;
-        c->output = LSOutputContext_create(putchar, printf);
+        c->output = sixel_output_create(sixel_write, stdout);
     } else {
         sixel_output_file = fopen(s->filename, "w");
-        c->output = LSOutputContext_create(sixel_putchar, sixel_printf);
+        c->output = sixel_output_create(sixel_write, sixel_output_file);
     }
-    if (!isatty(fileno(sixel_output_file))) {
+    if (isatty(fileno(sixel_output_file))) {
+        fprintf(sixel_output_file,
+                "\0337"       /* save cursor position */
+                "\033[?25l"); /* hide cursor */
+    } else {
         c->ignoredelay = 1;
     }
 
@@ -186,7 +188,6 @@ static int sixel_write_header(AVFormatContext *s)
     else
         sprintf(reset_position, "\033[%d;%dH", c->row, c->col);
     c->reset_position = reset_position;
-    fprintf(sixel_output_file, "\033[?25l\0337");
     c->time_base = s->streams[0]->codec->time_base;
     c->time_frame = av_gettime() / av_q2d(c->time_base);
 
@@ -206,7 +207,6 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret = 0;
     int64_t curtime, delay;
     struct timespec ts;
-    LSImagePtr im;
     int late_threshold;
 
     if (!c->ignoredelay) {
@@ -235,20 +235,11 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret != 0)
             return ret;
     }
-    /* create intermidiate bitmap image */
-    im = sixel_create_image(pkt->data, codec->width, codec->height,
-                            /* pixel depth */ 3,
-                            /* pkt->data is borrowed reference */ 1,
-                            c->dither);
-    if (!im)
-        return AVERROR(ENOMEM);
-    c->dither->method_for_diffuse = c->diffuse;
-    ret = sixel_apply_palette(im);
+    ret = sixel_encode(pkt->data, codec->width, codec->height,
+                      /* pixel depth */ 3, c->dither, c->output);
     if (ret != 0)
         return AVERROR(ret);
-    LibSixel_LSImageToSixel(im, c->output);
-    LSImage_destroy(im);
-    fflush(stdout);
+    fflush(sixel_output_file);
     return 0;
 }
 
@@ -261,7 +252,7 @@ static int sixel_write_trailer(AVFormatContext *s)
         sixel_output_file = NULL;
     }
     if (c->output) {
-        LSOutputContext_destroy(c->output);
+        sixel_output_unref(c->output);
         c->output = NULL;
     }
     if (c->testdither) {
@@ -272,8 +263,13 @@ static int sixel_write_trailer(AVFormatContext *s)
         sixel_dither_unref(c->dither);
         c->dither = NULL;
     }
-    fprintf(sixel_output_file, "\0338\033[?25h");
-    fflush(stdout);
+    if (isatty(fileno(sixel_output_file))) {
+        fprintf(sixel_output_file,
+                "\033\\"      /* terminate DCS sequence */
+                "\0338"       /* restore cursor position */
+                "\033[?25h"); /* show cursor */
+    }
+    fflush(sixel_output_file);
     return 0;
 }
 
@@ -320,7 +316,6 @@ AVOutputFormat ff_sixel_muxer = {
     .write_header   = sixel_write_header,
     .write_packet   = sixel_write_packet,
     .write_trailer  = sixel_write_trailer,
-    .flags          = AVFMT_NOFILE,
-//    .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
+    .flags          = AVFMT_NOFILE, /* | AVFMT_VARIABLE_FPS, */
     .priv_class     = &sixel_class,
 };
