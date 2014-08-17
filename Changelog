@@ -1,6 +1,12 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.3.3:
+- h264: fix grayscale only decoding with weighted prediction
+- mjpegdec: support AV_PIX_FMT_YUV420P16 with upscale_h
+- proresenc_ks: fix buffer overflow
+- matroskadec: fix crash
+
 version 2.3.2:
 - snow: fix null pointer dereference
 - huffyucdec: fix overread
