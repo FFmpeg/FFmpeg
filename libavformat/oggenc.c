@@ -627,11 +627,12 @@ static int ogg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+#if CONFIG_OGG_MUXER
 AVOutputFormat ff_ogg_muxer = {
     .name              = "ogg",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg"),
     .mime_type         = "application/ogg",
-    .extensions        = "ogg,ogv,spx,opus",
+    .extensions        = "ogg,ogv",
     .priv_data_size    = sizeof(OGGContext),
     .audio_codec       = CONFIG_LIBVORBIS_ENCODER ?
                          AV_CODEC_ID_VORBIS : AV_CODEC_ID_FLAC,
@@ -642,3 +643,53 @@ AVOutputFormat ff_ogg_muxer = {
     .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
     .priv_class        = &ogg_muxer_class,
 };
+#endif
+
+#if CONFIG_OGA_MUXER
+AVOutputFormat ff_oga_muxer = {
+    .name              = "oga",
+    .long_name         = NULL_IF_CONFIG_SMALL("Ogg Audio"),
+    .mime_type         = "audio/ogg",
+    .extensions        = "oga",
+    .priv_data_size    = sizeof(OGGContext),
+    .audio_codec       = CONFIG_LIBVORBIS_ENCODER ?
+                         AV_CODEC_ID_VORBIS : AV_CODEC_ID_FLAC,
+    .write_header      = ogg_write_header,
+    .write_packet      = ogg_write_packet,
+    .write_trailer     = ogg_write_trailer,
+    .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
+    .priv_class        = &ogg_muxer_class,
+};
+#endif
+
+#if CONFIG_SPX_MUXER
+AVOutputFormat ff_spx_muxer = {
+    .name              = "spx",
+    .long_name         = NULL_IF_CONFIG_SMALL("Ogg Speex"),
+    .mime_type         = "audio/ogg",
+    .extensions        = "spx",
+    .priv_data_size    = sizeof(OGGContext),
+    .audio_codec       = AV_CODEC_ID_SPEEX,
+    .write_header      = ogg_write_header,
+    .write_packet      = ogg_write_packet,
+    .write_trailer     = ogg_write_trailer,
+    .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
+    .priv_class        = &ogg_muxer_class,
+};
+#endif
+
+#if CONFIG_OPUS_MUXER
+AVOutputFormat ff_opus_muxer = {
+    .name              = "opus",
+    .long_name         = NULL_IF_CONFIG_SMALL("Ogg Opus"),
+    .mime_type         = "audio/ogg",
+    .extensions        = "opus",
+    .priv_data_size    = sizeof(OGGContext),
+    .audio_codec       = AV_CODEC_ID_OPUS,
+    .write_header      = ogg_write_header,
+    .write_packet      = ogg_write_packet,
+    .write_trailer     = ogg_write_trailer,
+    .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
+    .priv_class        = &ogg_muxer_class,
+};
+#endif

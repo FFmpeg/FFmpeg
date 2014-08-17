@@ -31,6 +31,7 @@ version <next>:
 - Icecast protocol
 - request icecast metadata by default
 - support for using metadata in stream specifiers in avtools
+- Aliases and defaults for Ogg subtypes (opus, spx)
 
 
 version 10:
