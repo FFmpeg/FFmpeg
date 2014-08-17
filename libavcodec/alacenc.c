@@ -395,6 +395,19 @@ static void write_element(AlacEncodeContext *s,
         init_sample_buffers(s, channels, samples);
         write_element_header(s, element, instance);
 
+        // extract extra bits if needed
+        if (s->extra_bits) {
+            uint32_t mask = (1 << s->extra_bits) - 1;
+            for (j = 0; j < channels; j++) {
+                int32_t *extra = s->predictor_buf[j];
+                int32_t *smp   = s->sample_buf[j];
+                for (i = 0; i < s->frame_size; i++) {
+                    extra[i] = smp[i] & mask;
+                    smp[i] >>= s->extra_bits;
+                }
+            }
+        }
+
         if (channels == 2)
             alac_stereo_decorrelation(s);
         else
@@ -420,8 +433,7 @@ static void write_element(AlacEncodeContext *s,
             uint32_t mask = (1 << s->extra_bits) - 1;
             for (i = 0; i < s->frame_size; i++) {
                 for (j = 0; j < channels; j++) {
-                    put_bits(pb, s->extra_bits, s->sample_buf[j][i] & mask);
-                    s->sample_buf[j][i] >>= s->extra_bits;
+                    put_bits(pb, s->extra_bits, s->predictor_buf[j][i] & mask);
                 }
             }
         }
