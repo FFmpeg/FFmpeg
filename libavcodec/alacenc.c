@@ -66,7 +66,7 @@ typedef struct AlacEncodeContext {
     int write_sample_size;
     int extra_bits;
     int32_t sample_buf[2][DEFAULT_FRAME_SIZE];
-    int32_t predictor_buf[DEFAULT_FRAME_SIZE];
+    int32_t predictor_buf[2][DEFAULT_FRAME_SIZE];
     int interlacing_shift;
     int interlacing_leftweight;
     PutBitContext pbctx;
@@ -253,13 +253,14 @@ static void alac_linear_predictor(AlacEncodeContext *s, int ch)
 {
     int i;
     AlacLPCContext lpc = s->lpc[ch];
+    int32_t *residual = s->predictor_buf[ch];
 
     if (lpc.lpc_order == 31) {
-        s->predictor_buf[0] = s->sample_buf[ch][0];
+        residual[0] = s->sample_buf[ch][0];
 
         for (i = 1; i < s->frame_size; i++) {
-            s->predictor_buf[i] = s->sample_buf[ch][i    ] -
-                                  s->sample_buf[ch][i - 1];
+            residual[i] = s->sample_buf[ch][i    ] -
+                          s->sample_buf[ch][i - 1];
         }
 
         return;
@@ -269,7 +270,6 @@ static void alac_linear_predictor(AlacEncodeContext *s, int ch)
 
     if (lpc.lpc_order > 0) {
         int32_t *samples  = s->sample_buf[ch];
-        int32_t *residual = s->predictor_buf;
 
         // generate warm-up samples
         residual[0] = samples[0];
@@ -313,11 +313,11 @@ static void alac_linear_predictor(AlacEncodeContext *s, int ch)
     }
 }
 
-static void alac_entropy_coder(AlacEncodeContext *s)
+static void alac_entropy_coder(AlacEncodeContext *s, int ch)
 {
     unsigned int history = s->rc.initial_history;
     int sign_modifier = 0, i, k;
-    int32_t *samples = s->predictor_buf;
+    int32_t *samples = s->predictor_buf[ch];
 
     for (i = 0; i < s->frame_size;) {
         int x;
@@ -432,10 +432,11 @@ static void write_element(AlacEncodeContext *s,
             // TODO: determine when this will actually help. for now it's not used.
             if (prediction_type == 15) {
                 // 2nd pass 1st order filter
+                int32_t *residual = s->predictor_buf[channels];
                 for (j = s->frame_size - 1; j > 0; j--)
-                    s->predictor_buf[j] -= s->predictor_buf[j - 1];
+                    residual[j] -= residual[j - 1];
             }
-            alac_entropy_coder(s);
+            alac_entropy_coder(s, i);
         }
     }
 }
