@@ -80,6 +80,9 @@
     <ClCompile Include="..\libswresample\swresample.c">
       <ObjectFileName>$(IntDir)\libswresample_swresample.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libswresample\swresample_frame.c">
+      <ObjectFileName>$(IntDir)\libswresample_swresample_frame.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libswresample\soxr_resample.c">
       <ObjectFileName>$(IntDir)\libswresample_soxr_resample.obj</ObjectFileName>
     </ClCompile>
@@ -109,7 +112,14 @@
     <None Include=".\libswresample.def" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\libswresample\swresampleres.rc" />
+    <ResourceCompile Include="..\libswresample\swresampleres.rc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3CE4A9EF-98B6-4454-B76E-3AD9C03A2114}</ProjectGuid>

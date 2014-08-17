@@ -70,6 +70,7 @@ EXPORTS
     av_dict_get
     av_dict_parse_string
     av_dict_set
+    av_dict_set_int
     av_dirname
     av_display_matrix_flip
     av_display_rotation_get

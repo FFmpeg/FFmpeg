@@ -70,6 +70,7 @@ EXPORTS
     av_dict_get
     av_dict_parse_string
     av_dict_set
+    av_dict_set_int
     av_dirname
     av_display_matrix_flip
     av_display_rotation_get
@@ -276,8 +277,8 @@ EXPORTS
     av_opt_freep_ranges
     av_opt_get
     av_opt_get_channel_layout
-    av_opt_get_dict_val
     av_opt_get_double
+    av_opt_get_dict_val
     av_opt_get_image_size
     av_opt_get_int
     av_opt_get_key_value
