@@ -570,9 +570,9 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
         }
         total_size += sizes[i];
         if (put_bits_left(pb) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Serious underevaluation of"
-                   "required buffer size");
-            return AVERROR_BUFFER_TOO_SMALL;
+            av_log(avctx, AV_LOG_ERROR,
+                   "Underestimated required buffer size.\n");
+            return AVERROR_BUG;
         }
     }
     return total_size;
@@ -1023,7 +1023,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 slice_hdr = buf;
                 buf += slice_hdr_size - 1;
                 init_put_bits(&pb, buf, (pkt_size - (buf - orig_buf)) * 8);
-                ret = encode_slice(avctx, pic, &pb, sizes, x, y, q, mbs_per_slice);
+                ret = encode_slice(avctx, pic, &pb, sizes, x, y, q,
+                                   mbs_per_slice);
                 if (ret < 0)
                     return ret;
 
