@@ -1983,6 +1983,7 @@ void ff_mpv_frame_end(MpegEncContext *s)
 }
 
 
+#if FF_API_VISMV
 static int clip_line(int *sx, int *sy, int *ex, int *ey, int maxx)
 {
     if(*sx > *ex)
@@ -2107,6 +2108,7 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
     }
     draw_line(buf, sx, sy, ex, ey, w, h, stride, color);
 }
+#endif
 
 static int add_mb(AVMotionVector *mb, uint32_t mb_type,
                   int dst_x, int dst_y,
@@ -2292,13 +2294,15 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
 
     if ((avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) ||
         (avctx->debug_mv)) {
-        const int shift = 1 + quarter_sample;
         int mb_y;
-        uint8_t *ptr;
         int i;
         int h_chroma_shift, v_chroma_shift, block_height;
+#if FF_API_VISMV
+        const int shift = 1 + quarter_sample;
+        uint8_t *ptr;
         const int width          = avctx->width;
         const int height         = avctx->height;
+#endif
         const int mv_sample_log2 = avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_SVQ3 ? 2 : 1;
         const int mv_stride      = (mb_width << mv_sample_log2) +
                                    (avctx->codec->id == AV_CODEC_ID_H264 ? 0 : 1);
@@ -2310,13 +2314,16 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
         av_frame_make_writable(pict);
 
         pict->opaque = NULL;
+#if FF_API_VISMV
         ptr          = pict->data[0];
+#endif
         block_height = 16 >> v_chroma_shift;
 
         for (mb_y = 0; mb_y < mb_height; mb_y++) {
             int mb_x;
             for (mb_x = 0; mb_x < mb_width; mb_x++) {
                 const int mb_index = mb_x + mb_y * mb_stride;
+#if FF_API_VISMV
                 if ((avctx->debug_mv) && motion_val[0]) {
                     int type;
                     for (type = 0; type < 3; type++) {
@@ -2396,6 +2403,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                         }
                     }
                 }
+#endif
                 if ((avctx->debug & FF_DEBUG_VIS_QP)) {
                     uint64_t c = (qscale_table[mb_index] * 128 / 31) *
                                  0x0101010101010101ULL;
