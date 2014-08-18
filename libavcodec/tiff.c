@@ -408,6 +408,9 @@ static int tiff_decode_tag(TiffContext *s)
         case TIFF_NEWJPEG:
             avpriv_report_missing_feature(s->avctx, "JPEG compression");
             return AVERROR_PATCHWELCOME;
+        case TIFF_LZMA:
+            avpriv_report_missing_feature(s->avctx, "LZMA compression");
+            return AVERROR_PATCHWELCOME;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "Unknown compression method %i\n",
                    s->compr);
