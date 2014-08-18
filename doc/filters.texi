@@ -742,8 +742,58 @@ Pass the audio source unchanged to the output.
 
 @section apad
 
-Pad the end of a audio stream with silence, this can be used together with
--shortest to extend audio streams to the same length as the video stream.
+Pad the end of an audio stream with silence.
+
+This can be used together with @command{ffmpeg} @option{-shortest} to
+extend audio streams to the same length as the video stream.
+
+A description of the accepted options follows.
+
+@table @option
+@item packet_size
+Set silence packet size. Default value is 4096.
+
+@item pad_len
+Set the number of samples of silence to add to the end. After the
+value is reached, the stream is terminated. This option is mutually
+exclusive with @option{whole_len}.
+
+@item whole_len
+Set the minimum total number of samples in the output audio stream. If
+the value is longer than the input audio length, silence is added to
+the end, until the value is reached. This option is mutually exclusive
+with @option{pad_len}.
+@end table
+
+If neither the @option{pad_len} nor the @option{whole_len} option is
+set, the filter will add silence to the end of the input stream
+indefinitely.
+
+@subsection Examples
+
+@itemize
+@item
+Add 1024 samples of silence to the end of the input:
+@example
+apad=pad_len=1024
+@end example
+
+@item
+Make sure the audio output will contain at least 10000 samples, pad
+the input with silence if required:
+@example
+apad=whole_len=10000
+@end example
+
+@item
+Use @command{ffmpeg} to pad the audio input with silence, so that the
+video stream will always result the shortest and will be converted
+until the end in the output file when using the @option{shortest}
+option:
+@example
+ffmpeg -i VIDEO -i AUDIO -filter_complex "[1:0]apad" -shortest OUTPUT
+@end example
+@end itemize
 
 @section aphaser
 Add a phasing effect to the input audio.
