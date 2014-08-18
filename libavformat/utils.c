@@ -454,6 +454,27 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 /**********************************************************/
 
 /**
+ * Get the number of samples of an audio frame. Return -1 on error.
+ */
+int ff_get_audio_frame_size(AVCodecContext *enc, int size, int mux)
+{
+    int frame_size;
+
+    /* give frame_size priority if demuxing */
+    if (!mux && enc->frame_size > 1)
+        return enc->frame_size;
+
+    if ((frame_size = av_get_audio_frame_duration(enc, size)) > 0)
+        return frame_size;
+
+    /* Fall back on using frame_size if muxing. */
+    if (enc->frame_size > 1)
+        return enc->frame_size;
+
+    return -1;
+}
+
+/**
  * Return the frame duration in seconds. Return 0 if not available.
  */
 void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
@@ -488,7 +509,7 @@ void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
-        frame_size = av_get_audio_frame_duration(st->codec, pkt->size);
+        frame_size = ff_get_audio_frame_size(st->codec, pkt->size, 0);
         if (frame_size <= 0 || st->codec->sample_rate <= 0)
             break;
         *pnum = frame_size;
