@@ -70,9 +70,9 @@ static int cine_read_probe(AVProbeData *p)
     return 0;
 }
 
-static int set_metadata_int(AVDictionary **dict, const char *key, int value)
+static int set_metadata_int(AVDictionary **dict, const char *key, int value, int allow_zero)
 {
-    if (value) {
+    if (value || allow_zero) {
         return av_dict_set_int(dict, key, value, 0);
     }
     return 0;
@@ -166,16 +166,16 @@ static int cine_read_header(AVFormatContext *avctx)
 
     avio_skip(pb, 20); // Shutter .. bEnableColor
 
-    set_metadata_int(&st->metadata, "camera_version", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "firmware_version", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "software_version", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "recording_timezone", avio_rl32(pb));
+    set_metadata_int(&st->metadata, "camera_version", avio_rl32(pb), 0);
+    set_metadata_int(&st->metadata, "firmware_version", avio_rl32(pb), 0);
+    set_metadata_int(&st->metadata, "software_version", avio_rl32(pb), 0);
+    set_metadata_int(&st->metadata, "recording_timezone", avio_rl32(pb), 0);
 
     CFA = avio_rl32(pb);
 
-    set_metadata_int(&st->metadata, "brightness", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "contrast", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "gamma", avio_rl32(pb));
+    set_metadata_int(&st->metadata, "brightness", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "contrast", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "gamma", avio_rl32(pb), 1);
 
     avio_skip(pb, 72); // Reserved1 .. WBView
 
@@ -227,7 +227,7 @@ static int cine_read_header(AVFormatContext *avctx)
 
     avio_skip(pb, 668); // Conv8Min ... Sensor
 
-    set_metadata_int(&st->metadata, "shutter_ns", avio_rl32(pb));
+    set_metadata_int(&st->metadata, "shutter_ns", avio_rl32(pb), 0);
 
     avio_skip(pb, 24); // EDRShutterNs ... ImHeightAcq
 
@@ -245,11 +245,11 @@ static int cine_read_header(AVFormatContext *avctx)
 
     avio_skip(pb, 1176); // RisingEdge ... cmUser
 
-    set_metadata_int(&st->metadata, "enable_crop", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "crop_left", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "crop_top", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "crop_right", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "crop_bottom", avio_rl32(pb));
+    set_metadata_int(&st->metadata, "enable_crop", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "crop_left", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "crop_top", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "crop_right", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "crop_bottom", avio_rl32(pb), 1);
 
     /* parse image offsets */
     avio_seek(pb, offImageOffsets, SEEK_SET);
