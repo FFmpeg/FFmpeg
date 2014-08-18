@@ -939,7 +939,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int slice_hdr_size = 2 + 2 * (ctx->num_planes - 1);
     int frame_size, picture_size, slice_size;
     int pkt_size, ret;
-    int max_slice_size = (ctx->frame_size_upper_bound - 200) / ctx->pictures_per_frame / ctx->slices_per_picture;
+    int max_slice_size = (ctx->frame_size_upper_bound - 200) / (ctx->pictures_per_frame * ctx->slices_per_picture + 1);
     uint8_t frame_flags;
 
     *avctx->coded_frame           = *pic;
@@ -1028,9 +1028,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                     uint8_t *start = pkt->data;
                     // Recompute new size according to max_slice_size
                     // and deduce delta
-                    int delta = 200 + ctx->pictures_per_frame *
-                                ctx->slices_per_picture * max_slice_size -
-                                pkt_size;
+                    int delta = 200 + (ctx->pictures_per_frame *
+                                ctx->slices_per_picture + 1) *
+                                max_slice_size - pkt_size;
 
                     delta = FFMAX(delta, 2 * max_slice_size);
                     ctx->frame_size_upper_bound += delta;
@@ -1247,16 +1247,16 @@ static av_cold int encode_init(AVCodecContext *avctx)
             ctx->bits_per_mb += ls * 4;
     }
 
-    ctx->frame_size_upper_bound = ctx->pictures_per_frame *
-                                  ctx->slices_per_picture *
+    ctx->frame_size_upper_bound = (ctx->pictures_per_frame *
+                                   ctx->slices_per_picture + 1) *
                                   (2 + 2 * ctx->num_planes +
                                    (mps * ctx->bits_per_mb) / 8)
                                   + 200;
 
     if (ctx->alpha_bits) {
          // The alpha plane is run-coded and might exceed the bit budget.
-         ctx->frame_size_upper_bound += ctx->pictures_per_frame *
-                                        ctx->slices_per_picture *
+         ctx->frame_size_upper_bound += (ctx->pictures_per_frame *
+                                         ctx->slices_per_picture + 1) *
          /* num pixels per slice */     (ctx->mbs_per_slice * 256 *
          /* bits per pixel */            (1 + ctx->alpha_bits + 1) + 7 >> 3);
     }
