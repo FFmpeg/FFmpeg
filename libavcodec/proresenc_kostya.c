@@ -40,6 +40,7 @@
 #define MAX_PLANES 4
 
 enum {
+    PRORES_PROFILE_AUTO  = -1,
     PRORES_PROFILE_PROXY = 0,
     PRORES_PROFILE_LT,
     PRORES_PROFILE_STANDARD,
@@ -1146,7 +1147,21 @@ static av_cold int encode_init(AVCodecContext *avctx)
                "there should be an integer power of two MBs per slice\n");
         return AVERROR(EINVAL);
     }
+    if (ctx->profile == PRORES_PROFILE_AUTO) {
+        ctx->profile = av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_ALPHA
+                     ? PRORES_PROFILE_4444 : PRORES_PROFILE_HQ;
+        av_log(avctx, AV_LOG_INFO, "Autoselected %s. It can be overridden "
+               "through -profile option.\n", ctx->profile == PRORES_PROFILE_4444
+               ? "4:4:4:4 profile because of the alpha channel"
+               : "HQ profile to keep best quality");
+    }
     if (av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_ALPHA) {
+        if (ctx->profile != PRORES_PROFILE_4444) {
+            // force alpha and warn
+            av_log(avctx, AV_LOG_WARNING, "Profile selected will not "
+                   "encode alpha. Override with -profile if needed.\n");
+            ctx->alpha_bits = 0;
+        }
         if (ctx->alpha_bits & 7) {
             av_log(avctx, AV_LOG_ERROR, "alpha bits should be 0, 8 or 16\n");
             return AVERROR(EINVAL);
@@ -1280,8 +1295,10 @@ static const AVOption options[] = {
     { "mbs_per_slice", "macroblocks per slice", OFFSET(mbs_per_slice),
         AV_OPT_TYPE_INT, { .i64 = 8 }, 1, MAX_MBS_PER_SLICE, VE },
     { "profile",       NULL, OFFSET(profile), AV_OPT_TYPE_INT,
-        { .i64 = PRORES_PROFILE_STANDARD },
-        PRORES_PROFILE_PROXY, PRORES_PROFILE_4444, VE, "profile" },
+        { .i64 = PRORES_PROFILE_AUTO },
+        PRORES_PROFILE_AUTO, PRORES_PROFILE_4444, VE, "profile" },
+    { "auto",         NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_AUTO },
+        0, 0, VE, "profile" },
     { "proxy",         NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_PROXY },
         0, 0, VE, "profile" },
     { "lt",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_LT },
