@@ -1253,7 +1253,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                                   + 200;
 
     if (ctx->alpha_bits) {
-         // alpha plane is run-coded and might run over bit budget
+         // The alpha plane is run-coded and might exceed the bit budget.
          ctx->frame_size_upper_bound += ctx->pictures_per_frame *
                                         ctx->slices_per_picture *
          /* num pixels per slice */     (ctx->mbs_per_slice * 256 *
