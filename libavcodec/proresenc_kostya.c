@@ -565,9 +565,8 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
             get_alpha_data(ctx, src, linesize, xp, yp,
                            pwidth, avctx->height / ctx->pictures_per_frame,
                            ctx->blocks[0], mbs_per_slice, ctx->alpha_bits);
-            sizes[i] = encode_alpha_plane(ctx, pb,
-                                          mbs_per_slice, ctx->blocks[0],
-                                          quant);
+            sizes[i] = encode_alpha_plane(ctx, pb, mbs_per_slice,
+                                          ctx->blocks[0], quant);
         }
         total_size += sizes[i];
         if (put_bits_left(pb) < 0) {
