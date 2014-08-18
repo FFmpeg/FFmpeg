@@ -101,7 +101,7 @@ static int request_frame(AVFilterLink *outlink)
             apad->pad_len -= n_out;
         }
 
-        if(!n_out)
+        if (!n_out)
             return AVERROR_EOF;
 
         outsamplesref = ff_get_audio_buffer(outlink, n_out);
