@@ -206,6 +206,7 @@ typedef struct ProresContext {
     int bits_per_mb;
     int force_quant;
     int alpha_bits;
+    int warn;
 
     char *vendor;
     int quant_sel;
@@ -934,7 +935,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int sizes[4] = { 0 };
     int slice_hdr_size = 2 + 2 * (ctx->num_planes - 1);
     int frame_size, picture_size, slice_size;
-    int pkt_size, ret;
+    int pkt_size, ret, max_slice_size = 0;
     uint8_t frame_flags;
 
     *avctx->coded_frame           = *pic;
@@ -1021,6 +1022,39 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bytestream_put_byte(&buf, slice_hdr_size << 3);
                 slice_hdr = buf;
                 buf += slice_hdr_size - 1;
+                if (pkt_size <= buf - orig_buf + 2 * max_slice_size) {
+                    uint8_t *start = pkt->data;
+                    // Recompute new size according to max_slice_size
+                    // and deduce delta
+                    int delta = 200 + ctx->pictures_per_frame *
+                                ctx->slices_per_picture * max_slice_size -
+                                pkt_size;
+
+                    delta = FFMAX(delta, 2 * max_slice_size);
+                    ctx->frame_size_upper_bound += delta;
+
+                    if (!ctx->warn) {
+                        avpriv_request_sample(avctx,
+                                              "Packet too small: is %i,"
+                                              " needs %i (slice: %i). "
+                                              "Correct allocation",
+                                              pkt_size, delta, max_slice_size);
+                        ctx->warn = 1;
+                    }
+
+                    ret = av_grow_packet(pkt, delta);
+                    if (ret < 0)
+                        return ret;
+
+                    pkt_size += delta;
+                    // restore pointers
+                    orig_buf         = pkt->data + (orig_buf         - start);
+                    buf              = pkt->data + (buf              - start);
+                    picture_size_pos = pkt->data + (picture_size_pos - start);
+                    slice_sizes      = pkt->data + (slice_sizes      - start);
+                    slice_hdr        = pkt->data + (slice_hdr        - start);
+                    tmp              = pkt->data + (tmp              - start);
+                }
                 init_put_bits(&pb, buf, (pkt_size - (buf - orig_buf)) * 8);
                 ret = encode_slice(avctx, pic, &pb, sizes, x, y, q,
                                    mbs_per_slice);
@@ -1035,6 +1069,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 }
                 bytestream_put_be16(&slice_sizes, slice_size);
                 buf += slice_size - slice_hdr_size;
+                if (max_slice_size < slice_size)
+                    max_slice_size = slice_size;
             }
         }
 
