@@ -131,4 +131,20 @@ WEIGHTING_PROTOTYPES(8, sse4);
 WEIGHTING_PROTOTYPES(10, sse4);
 WEIGHTING_PROTOTYPES(12, sse4);
 
+///////////////////////////////////////////////////////////////////////////////
+// TRANSFORM_ADD
+///////////////////////////////////////////////////////////////////////////////
+void ff_hevc_transform_add4_8_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add8_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add16_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add32_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
+void ff_hevc_transform_add4_10_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add8_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add16_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add32_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
+void ff_hevc_transform_add16_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add32_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
 #endif // AVCODEC_X86_HEVCDSP_H
