@@ -938,7 +938,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int sizes[4] = { 0 };
     int slice_hdr_size = 2 + 2 * (ctx->num_planes - 1);
     int frame_size, picture_size, slice_size;
-    int pkt_size, ret, max_slice_size = 0;
+    int pkt_size, ret;
+    int max_slice_size = (ctx->frame_size_upper_bound - 200) / ctx->pictures_per_frame / ctx->slices_per_picture;
     uint8_t frame_flags;
 
     *avctx->coded_frame           = *pic;
