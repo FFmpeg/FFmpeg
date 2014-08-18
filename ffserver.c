@@ -4089,6 +4089,8 @@ static int parse_ffconfig(const char *filename)
             if (val < 1 || val > 65536) {
                 ERROR("Invalid port: %s\n", arg);
             }
+            if (val < 1024)
+                WARNING("Trying to use IETF assigned system port: %d\n", val);
             my_http_addr.sin_port = htons(val);
         } else if (!av_strcasecmp(cmd, "HTTPBindAddress") || !av_strcasecmp(cmd, "BindAddress")) {
             if (!av_strcasecmp(cmd, "BindAddress"))
