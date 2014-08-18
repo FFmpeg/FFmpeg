@@ -42,7 +42,7 @@ typedef struct HEVCDSPContext {
     void (*put_pcm)(uint8_t *dst, ptrdiff_t stride, int size,
                     GetBitContext *gb, int pcm_bit_depth);
 
-    void (*add_residual[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+    void (*add_residual[4])(uint8_t *dst, int16_t *res, ptrdiff_t stride);
 
     void (*dequant)(int16_t *coeffs);
     void (*transform_4x4_luma)(int16_t *coeffs);
