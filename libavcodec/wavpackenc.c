@@ -2876,10 +2876,11 @@ static int wavpack_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             return AVERROR(ENOMEM);
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, s->block_samples * avctx->channels * 8)) < 0)
+    buf_size = s->block_samples * avctx->channels * 8
+             + 200 /* for headers */;
+    if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size)) < 0)
         return ret;
     buf = avpkt->data;
-    buf_size = avpkt->size;
 
     for (s->ch_offset = 0; s->ch_offset < avctx->channels;) {
         set_samplerate(s);
