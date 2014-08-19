@@ -643,6 +643,15 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
                s->bpp, s->bppcount);
         return AVERROR_INVALIDDATA;
     }
+
+    if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
+        if((desc->flags & AV_PIX_FMT_FLAG_RGB) || desc->nb_components < 3) {
+            av_log(s->avctx, AV_LOG_ERROR, "Unsupported YCbCr variant\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
     if (s->width != s->avctx->width || s->height != s->avctx->height) {
         ret = ff_set_dimensions(s->avctx, s->width, s->height);
         if (ret < 0)
