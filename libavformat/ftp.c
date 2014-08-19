@@ -183,6 +183,9 @@ static int ftp_send_command(FTPContext *s, const char *command,
 {
     int err;
 
+    if (response)
+        *response = NULL;
+
     if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
         return err;
     if (!err)
@@ -444,12 +447,14 @@ static int ftp_features(FTPContext *s)
     static const char *enable_utf8_command = "OPTS UTF8 ON\r\n";
     static const int feat_codes[] = {211, 0};
     static const int opts_codes[] = {200, 451};
-    char *feat;
+    char *feat = NULL;
 
     if (ftp_send_command(s, feat_command, feat_codes, &feat) == 211) {
         if (av_stristr(feat, "UTF8"))
             ftp_send_command(s, enable_utf8_command, opts_codes, NULL);
     }
+    av_freep(&feat);
+
     return 0;
 }
 
