@@ -419,7 +419,8 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     int c, line, pixels, code, ret;
     const uint8_t *ssrc = src;
     int width = ((s->width * s->bpp) + 7) >> 3;
-    int is_yuv = s->photometric == TIFF_PHOTOMETRIC_YCBCR;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(p->format);
+    int is_yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components >= 2;
 
     if (s->planar)
         width /= s->bppcount;
