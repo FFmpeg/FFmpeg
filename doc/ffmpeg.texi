@@ -339,7 +339,7 @@ ffmpeg -i in.avi -metadata title="my title" out.flv
 
 To set the language of the first audio stream:
 @example
-ffmpeg -i INPUT -metadata:s:a:1 language=eng OUTPUT
+ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
 @end example
 
 @item -target @var{type} (@emph{output})
