@@ -110,7 +110,6 @@ AVFrame *ff_get_video_buffer(AVFilterLink *link, int w, int h)
 {
     AVFrame *ret = NULL;
 
-    av_unused char buf[16];
     FF_TPRINTF_START(NULL, get_video_buffer); ff_tlog_link(NULL, link, 0);
 
     if (link->dstpad->get_video_buffer)
