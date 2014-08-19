@@ -333,9 +333,9 @@ static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src,
     return zret == Z_STREAM_END ? Z_OK : zret;
 }
 
-static int tiff_unpack_zlib(TiffContext *s, uint8_t *dst, int stride,
-                            const uint8_t *src, int size,
-                            int width, int lines)
+static int tiff_unpack_zlib(TiffContext *s, AVFrame *p, uint8_t *dst, int stride,
+                            const uint8_t *src, int size, int width, int lines,
+                            int strip_start, int is_yuv)
 {
     uint8_t *zbuf;
     unsigned long outlen;
@@ -365,6 +365,10 @@ static int tiff_unpack_zlib(TiffContext *s, uint8_t *dst, int stride,
             horizontal_fill(s->bpp, dst, 1, src, 0, width, 0);
         } else {
             memcpy(dst, src, width);
+        }
+        if (is_yuv) {
+            unpack_yuv(s, p, dst, strip_start + line);
+            line += s->subsampling[1] - 1;
         }
         dst += stride;
         src += width;
@@ -443,12 +447,9 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     }
 
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE) {
-        if (is_yuv) {
-            av_log(s->avctx, AV_LOG_ERROR, "YUV deflate is unsupported");
-            return AVERROR_PATCHWELCOME;
-        }
 #if CONFIG_ZLIB
-        return tiff_unpack_zlib(s, dst, stride, src, size, width, lines);
+        return tiff_unpack_zlib(s, p, dst, stride, src, size, width, lines,
+                                strip_start, is_yuv);
 #else
         av_log(s->avctx, AV_LOG_ERROR,
                "zlib support not enabled, "
