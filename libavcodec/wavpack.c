@@ -253,6 +253,10 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
     return sign ? ~ret : ret;
 
 error:
+    ret = get_bits_left(gb);
+    if (ret <= 0) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "Too few bits (%d) left\n", ret);
+    }
     *last = 1;
     return 0;
 }
