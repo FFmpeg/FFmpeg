@@ -283,6 +283,34 @@ static int deinvert_buffer(TiffContext *s, const uint8_t *src, int size)
     return 0;
 }
 
+static void unpack_yuv(TiffContext *s, AVFrame *p,
+                       const uint8_t *src, int lnum)
+{
+    int i, j, k;
+    int w       = (s->width - 1) / s->subsampling[0] + 1;
+    uint8_t *pu = &p->data[1][lnum / s->subsampling[1] * p->linesize[1]];
+    uint8_t *pv = &p->data[2][lnum / s->subsampling[1] * p->linesize[2]];
+    if (s->width % s->subsampling[0] || s->height % s->subsampling[1]) {
+        for (i = 0; i < w; i++) {
+            for (j = 0; j < s->subsampling[1]; j++)
+                for (k = 0; k < s->subsampling[0]; k++)
+                    p->data[0][FFMIN(lnum + j, s->height-1) * p->linesize[0] +
+                               FFMIN(i * s->subsampling[0] + k, s->width-1)] = *src++;
+            *pu++ = *src++;
+            *pv++ = *src++;
+        }
+    }else{
+        for (i = 0; i < w; i++) {
+            for (j = 0; j < s->subsampling[1]; j++)
+                for (k = 0; k < s->subsampling[0]; k++)
+                    p->data[0][(lnum + j) * p->linesize[0] +
+                               i * s->subsampling[0] + k] = *src++;
+            *pu++ = *src++;
+            *pv++ = *src++;
+        }
+    }
+}
+
 #if CONFIG_ZLIB
 static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src,
                            int size)
@@ -382,35 +410,6 @@ static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
     av_free(src2);
     return ret;
 }
-
-static void unpack_yuv(TiffContext *s, AVFrame *p,
-                       const uint8_t *src, int lnum)
-{
-    int i, j, k;
-    int w       = (s->width - 1) / s->subsampling[0] + 1;
-    uint8_t *pu = &p->data[1][lnum / s->subsampling[1] * p->linesize[1]];
-    uint8_t *pv = &p->data[2][lnum / s->subsampling[1] * p->linesize[2]];
-    if (s->width % s->subsampling[0] || s->height % s->subsampling[1]) {
-        for (i = 0; i < w; i++) {
-            for (j = 0; j < s->subsampling[1]; j++)
-                for (k = 0; k < s->subsampling[0]; k++)
-                    p->data[0][FFMIN(lnum + j, s->height-1) * p->linesize[0] +
-                               FFMIN(i * s->subsampling[0] + k, s->width-1)] = *src++;
-            *pu++ = *src++;
-            *pv++ = *src++;
-        }
-    }else{
-        for (i = 0; i < w; i++) {
-            for (j = 0; j < s->subsampling[1]; j++)
-                for (k = 0; k < s->subsampling[0]; k++)
-                    p->data[0][(lnum + j) * p->linesize[0] +
-                               i * s->subsampling[0] + k] = *src++;
-            *pu++ = *src++;
-            *pv++ = *src++;
-        }
-    }
-}
-
 
 static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int stride,
                              const uint8_t *src, int size, int strip_start, int lines)
