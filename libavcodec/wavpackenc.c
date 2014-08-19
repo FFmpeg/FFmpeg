@@ -2813,6 +2813,8 @@ static int wavpack_encode_block(WavPackEncodeContext *s,
     block_size = bytestream2_tell_p(&pb);
     AV_WL32(out + 4, block_size - 8);
 
+    av_assert0(put_bits_left(&s->pb) > 0);
+
     return block_size;
 }
 
