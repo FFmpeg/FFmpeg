@@ -1192,6 +1192,12 @@ typedef struct AVFormatContext {
     int event_flags;
 #define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
 
+    /**
+     * Maximum number of packets to read while waiting for the first timestamp.
+     * Decoding only.
+     */
+    int max_ts_probe;
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
