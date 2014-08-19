@@ -1,6 +1,14 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 1.2.8:
+- proresenc_ks: fix buffer overflow
+- iff: fix crash
+- cdgraphics: fix infinite loop
+- Fix Ticket3804
+- Fix Ticket3208
+
+
 version 1.2:
 
 - VDPAU hardware acceleration through normal hwaccel
