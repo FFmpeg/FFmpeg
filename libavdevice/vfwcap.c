@@ -27,12 +27,6 @@
 #include <vfw.h>
 #include "avdevice.h"
 
-/* Defines for VFW missing from MinGW.
- * Remove this when MinGW incorporates them. */
-#define HWND_MESSAGE                ((HWND)-3)
-
-/* End of missing MinGW defines */
-
 struct vfw_ctx {
     const AVClass *class;
     HWND hwnd;
