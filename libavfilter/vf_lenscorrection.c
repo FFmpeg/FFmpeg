@@ -56,9 +56,9 @@ AVFILTER_DEFINE_CLASS(lenscorrection);
 
 typedef struct ThreadData {
     AVFrame *in, *out;
-    float w, h;
+    int w, h;
     int plane;
-    float xcenter, ycenter;
+    int xcenter, ycenter;
     float k1, k2;
 } ThreadData;
 
@@ -68,9 +68,9 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     AVFrame *in = td->in;
     AVFrame *out = td->out;
 
-    const float w = td->w, h = td->h;
-    const float xcenter = td->xcenter;
-    const float ycenter = td->ycenter;
+    const int w = td->w, h = td->h;
+    const int xcenter = td->xcenter;
+    const int ycenter = td->ycenter;
     const float r2inv = 4.0 / (w * w + h * h);
     const float k1 = td->k1;
     const float k2 = td->k2;
@@ -83,12 +83,12 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     uint8_t *outrow = out->data[plane] + start * outlinesize;
     int i;
     for (i = start; i < end; i++, outrow += outlinesize) {
-        const float off_y = i - ycenter;
-        const float off_y2 = off_y * off_y;
+        const int off_y = i - ycenter;
+        const int off_y2 = off_y * off_y;
         uint8_t *out = outrow;
         int j;
         for (j = 0; j < w; j++) {
-            const float off_x = j - xcenter;
+            const int off_x = j - xcenter;
             const float r2 = (off_x * off_x + off_y2) * r2inv;
             const float radius_mult = 1.0f + r2 * k1 + r2 * r2 * k2;
             const int x = xcenter + radius_mult * off_x + 0.5f;
@@ -147,10 +147,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (plane = 0; plane < rect->nb_planes; ++plane) {
         int hsub = plane == 1 || plane == 2 ? rect->hsub : 0;
         int vsub = plane == 1 || plane == 2 ? rect->vsub : 0;
-        float hdiv = 1 << hsub;
-        float vdiv = 1 << vsub;
-        float w = rect->width / hdiv;
-        float h = rect->height / vdiv;
+        int hdiv = 1 << hsub;
+        int vdiv = 1 << vsub;
+        int w = rect->width / hdiv;
+        int h = rect->height / vdiv;
         ThreadData td = {
             .in = in,
             .out  = out,
