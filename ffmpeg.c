@@ -4376,9 +4376,11 @@ int main(int argc, char **argv)
 
     show_banner();
 
-    av_log(NULL, AV_LOG_WARNING, "This program is not developed anymore and is only "
-                                 "provided for compatibility. Use avconv instead "
-                                 "(see Changelog for the list of incompatible changes).\n");
+    av_log(NULL, AV_LOG_WARNING,
+           "The ffmpeg program is only provided for script compatibility and will be removed\n"
+           "in a future release. It has been deprecated in the Libav project to allow for\n"
+           "incompatible command line syntax improvements in its replacement called avconv\n"
+           "(see Changelog for details). Please use avconv instead.\n");
 
     /* parse options */
     parse_options(NULL, argc, argv, options, opt_output_file);
