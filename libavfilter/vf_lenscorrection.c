@@ -149,8 +149,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int h = rect->height / vdiv;
         int xcenter = rect->cx * w;
         int ycenter = rect->cy * h;
-        float k1 = rect->k1;
-        float k2 = rect->k2;
+        int k1 = rect->k1 * (1<<24);
+        int k2 = rect->k2 * (1<<24);
         ThreadData td = {
             .in = in,
             .out  = out,
@@ -162,7 +162,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         if (!rect->correction[plane]) {
             int i,j;
-            const float r2inv = 4.0 / (w * w + h * h);
+            const int64_t r2inv = (4LL<<60) / (w * w + h * h);
 
             rect->correction[plane] = av_malloc_array(w, h * sizeof(**rect->correction));
             if (!rect->correction[plane])
@@ -172,9 +172,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 const int off_y2 = off_y * off_y;
                 for (i = 0; i < w; i++) {
                     const int off_x = i - xcenter;
-                    const float r2 = (off_x * off_x + off_y2) * r2inv;
-                    const float radius_mult = 1.0f + r2 * k1 + r2 * r2 * k2;
-                    rect->correction[plane][j * w + i] = lrintf(radius_mult * (1<<24));
+                    const int64_t r2 = ((off_x * off_x + off_y2) * r2inv + (1LL<<31)) >> 32;
+                    const int64_t r4 = (r2 * r2 + (1<<27)) >> 28;
+                    const int radius_mult = (r2 * k1 + r4 * k2 + (1LL<<27) + (1LL<<52))>>28;
+                    rect->correction[plane][j * w + i] = radius_mult;
                 }
             }
         }
