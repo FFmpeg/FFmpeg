@@ -226,7 +226,7 @@ static int movie_get_frame(AVFilterLink *outlink)
                         "movie_get_frame(): file:'%s' pts:%"PRId64" time:%f aspect:%d/%d\n",
                         movie->file_name, movie->frame->pts,
                         (double)movie->frame->pts *
-                        av_q2d(movie->format_ctx->streams[movie->stream_index]),
+                        av_q2d(movie->format_ctx->streams[movie->stream_index]->time_base),
                         movie->frame->sample_aspect_ratio.num,
                         movie->frame->sample_aspect_ratio.den);
                 // We got it. Free the packet since we are returning
