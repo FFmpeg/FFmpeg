@@ -729,7 +729,7 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
 
     for (i = 0; i < count && BITS_LEFT(re, &s->gb) > 0; i++) {
         unsigned int index;
-        int code, n;
+        int code, n, nb_bits;
 
         UPDATE_CACHE(re, &s->gb);
         index = SHOW_UBITS(re, &s->gb, VLC_BITS);
@@ -740,7 +740,6 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
             *(uint32_t *) &s->temp[0][4 * i] = s->pix_bgr_map[code];
             LAST_SKIP_BITS(re, &s->gb, n);
         } else {
-            int nb_bits;
             if (decorrelate) {
                 VLC_INTERN(s->temp[0][4 * i + G], s->vlc[1].table,
                            &s->gb, re, VLC_BITS, 3);
@@ -768,14 +767,14 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
                 VLC_INTERN(s->temp[0][4 * i + R], s->vlc[2].table,
                            &s->gb, re, VLC_BITS, 3);
             }
-            if (alpha) {
-                UPDATE_CACHE(re, &s->gb);
-                index = SHOW_UBITS(re, &s->gb, VLC_BITS);
-                VLC_INTERN(s->temp[0][4 * i + A], s->vlc[2].table,
-                           &s->gb, re, VLC_BITS, 3);
-            } else
-                s->temp[0][4 * i + A] = 0;
         }
+        if (alpha) {
+            UPDATE_CACHE(re, &s->gb);
+            index = SHOW_UBITS(re, &s->gb, VLC_BITS);
+            VLC_INTERN(s->temp[0][4 * i + A], s->vlc[2].table,
+                       &s->gb, re, VLC_BITS, 3);
+        } else
+            s->temp[0][4 * i + A] = 0;
     }
     CLOSE_READER(re, &s->gb);
 }
