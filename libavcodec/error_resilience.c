@@ -430,8 +430,6 @@ static void guess_mv(ERContext *s)
 
                     if (fixed[mb_xy] == MV_FROZEN)
                         continue;
-                    assert(!IS_INTRA(s->cur_pic.mb_type[mb_xy]));
-                    assert(s->last_pic && s->last_pic.f->data[0]);
 
                     j = 0;
                     if (mb_x > 0             && fixed[mb_xy - 1]         == MV_FROZEN)
