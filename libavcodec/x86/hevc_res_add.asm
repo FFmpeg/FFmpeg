@@ -357,7 +357,7 @@ cglobal hevc_transform_add32_10,3,4,6
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 
-cglobal hevc_transform_add16_10,3,4,10
+cglobal hevc_transform_add16_10,3,4,6
     pxor              m4, m4
     mova              m5, [max_pixels_10]
     lea               r3, [r2*3]
@@ -370,7 +370,7 @@ cglobal hevc_transform_add16_10,3,4,10
 %endrep
     RET
 
-cglobal hevc_transform_add32_10,3,4,10
+cglobal hevc_transform_add32_10,3,4,6
     pxor              m4, m4
     mova              m5, [max_pixels_10]
 
