@@ -522,7 +522,7 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
     while (!packet_read) {
         chunk_type = avio_rl32(pb);
         chunk_size = ea->big_endian ? avio_rb32(pb) : avio_rl32(pb);
-        if (chunk_size <= 8)
+        if (chunk_size < 8)
             return AVERROR_INVALIDDATA;
         chunk_size -= 8;
 
@@ -547,6 +547,9 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_skip(pb, 8);
                 chunk_size -= 12;
             }
+            if (!chunk_size)
+                continue;
+
             ret = av_get_packet(pb, pkt, chunk_size);
             if (ret < 0)
                 return ret;
@@ -607,6 +610,9 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
             goto get_video_packet;
 
         case mTCD_TAG:
+            if (chunk_size < 8)
+                return AVERROR_INVALIDDATA;
+
             avio_skip(pb, 8);               // skip ea DCT header
             chunk_size -= 8;
             goto get_video_packet;
@@ -617,6 +623,9 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
             key = AV_PKT_FLAG_KEY;
         case MV0F_TAG:
 get_video_packet:
+            if (!chunk_size)
+                continue;
+
             ret = av_get_packet(pb, pkt, chunk_size);
             if (ret < 0)
                 return ret;
