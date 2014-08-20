@@ -41,6 +41,7 @@ typedef struct LenscorrectionCtx {
     int hsub, vsub;
     int nb_planes;
     double cx, cy, k1, k2;
+    int32_t *correction[4];
 } LenscorrectionCtx;
 
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -59,7 +60,7 @@ typedef struct ThreadData {
     int w, h;
     int plane;
     int xcenter, ycenter;
-    float k1, k2;
+    int32_t *correction;
 } ThreadData;
 
 static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
@@ -71,9 +72,6 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     const int w = td->w, h = td->h;
     const int xcenter = td->xcenter;
     const int ycenter = td->ycenter;
-    const float r2inv = 4.0 / (w * w + h * h);
-    const float k1 = td->k1;
-    const float k2 = td->k2;
     const int start = (h *  job   ) / nb_jobs;
     const int end   = (h * (job+1)) / nb_jobs;
     const int plane = td->plane;
@@ -84,15 +82,13 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     int i;
     for (i = start; i < end; i++, outrow += outlinesize) {
         const int off_y = i - ycenter;
-        const int off_y2 = off_y * off_y;
         uint8_t *out = outrow;
         int j;
         for (j = 0; j < w; j++) {
             const int off_x = j - xcenter;
-            const float r2 = (off_x * off_x + off_y2) * r2inv;
-            const float radius_mult = 1.0f + r2 * k1 + r2 * r2 * k2;
-            const int x = xcenter + radius_mult * off_x + 0.5f;
-            const int y = ycenter + radius_mult * off_y + 0.5f;
+            const int64_t radius_mult = td->correction[j + i*w];
+            const int x = xcenter + ((radius_mult * off_x + (1<<23))>>24);
+            const int y = ycenter + ((radius_mult * off_y + (1<<23))>>24);
             const char isvalid = x > 0 && x < w - 1 && y > 0 && y < h - 1;
             *out++ =  isvalid ? indata[y * inlinesize + x] : 0;
         }
@@ -151,16 +147,39 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int vdiv = 1 << vsub;
         int w = rect->width / hdiv;
         int h = rect->height / vdiv;
+        int xcenter = rect->cx * w;
+        int ycenter = rect->cy * h;
+        float k1 = rect->k1;
+        float k2 = rect->k2;
         ThreadData td = {
             .in = in,
             .out  = out,
             .w  = w,
             .h  = h,
-            .xcenter = rect->cx * w,
-            .ycenter = rect->cy * h,
-            .k1 = rect->k1,
-            .k2 = rect->k2,
+            .xcenter = xcenter,
+            .ycenter = ycenter,
             .plane = plane};
+
+        if (!rect->correction[plane]) {
+            int i,j;
+            const float r2inv = 4.0 / (w * w + h * h);
+
+            rect->correction[plane] = av_malloc_array(w, h * sizeof(**rect->correction));
+            if (!rect->correction[plane])
+                return AVERROR(ENOMEM);
+            for (j = 0; j < h; j++) {
+                const int off_y = j - ycenter;
+                const int off_y2 = off_y * off_y;
+                for (i = 0; i < w; i++) {
+                    const int off_x = i - xcenter;
+                    const float r2 = (off_x * off_x + off_y2) * r2inv;
+                    const float radius_mult = 1.0f + r2 * k1 + r2 * r2 * k2;
+                    rect->correction[plane][j * w + i] = lrintf(radius_mult * (1<<24));
+                }
+            }
+        }
+
+        td.correction = rect->correction[plane];
         ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ctx->graph->nb_threads));
     }
 
