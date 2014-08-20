@@ -139,6 +139,10 @@ void ff_hevc_transform_add8_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stri
 void ff_hevc_transform_add16_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 void ff_hevc_transform_add32_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
+void ff_hevc_transform_add8_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add16_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add32_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
 void ff_hevc_transform_add4_10_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 void ff_hevc_transform_add8_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 void ff_hevc_transform_add16_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);

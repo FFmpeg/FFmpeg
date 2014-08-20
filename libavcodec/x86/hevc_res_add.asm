@@ -156,8 +156,8 @@ cglobal hevc_transform_add4_8, 3, 4, 6
 %endmacro
 
 
-INIT_XMM sse2
-; void ff_hevc_transform_add8_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+%macro TRANSFORM_ADD_8 0
+; void ff_hevc_transform_add8_8_<opt>(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
 cglobal hevc_transform_add8_8, 3, 4, 8
     lea               r3, [r2*3]
     TR_ADD_SSE_8_8
@@ -167,7 +167,7 @@ cglobal hevc_transform_add8_8, 3, 4, 8
     RET
 
 %if ARCH_X86_64
-; void ff_hevc_transform_add16_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+; void ff_hevc_transform_add16_8_<opt>(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
 cglobal hevc_transform_add16_8, 3, 4, 12
     lea               r3, [r2*3]
     TR_ADD_SSE_16_8
@@ -178,7 +178,7 @@ cglobal hevc_transform_add16_8, 3, 4, 12
 %endrep
     RET
 
-; void ff_hevc_transform_add16_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+; void ff_hevc_transform_add32_8_<opt>(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
 cglobal hevc_transform_add32_8, 3, 4, 12
 
     TR_ADD_SSE_32_8
@@ -190,6 +190,13 @@ cglobal hevc_transform_add32_8, 3, 4, 12
     RET
 
 %endif ;ARCH_X86_64
+%endmacro
+
+INIT_XMM sse2
+TRANSFORM_ADD_8
+INIT_XMM avx
+TRANSFORM_ADD_8
+
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_transform_add_10(pixel *dst, int16_t *block, int stride)
 ;-----------------------------------------------------------------------------
