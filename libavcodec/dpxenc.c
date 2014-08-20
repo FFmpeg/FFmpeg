@@ -159,11 +159,11 @@ static void encode_gbrp12(AVCodecContext *avctx, const AVPicture *pic, uint16_t 
                 value[2] = AV_RL16(src[1] + x) << 4;
                 value[0] = AV_RL16(src[2] + x) << 4;
             }
-            for (i = 0; i < pad; i++)
-                *dst++ = 0;
             for (i = 0; i < 3; i++)
                 write16(dst++, value[i]);
         }
+        for (i = 0; i < pad; i++)
+            *dst++ = 0;
         for (i = 0; i < 3; i++)
             src[i] += pic->linesize[i]/2;
     }
