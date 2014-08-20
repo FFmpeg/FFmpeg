@@ -33,13 +33,13 @@ typedef struct AVMotionVector {
      */
     uint8_t w, h;
     /**
-     * Absolute source position.
+     * Absolute source position. Can be outside the frame area.
      */
-    uint16_t src_x, src_y;
+    int16_t src_x, src_y;
     /**
-     * Absolute destination position.
+     * Absolute destination position. Can be outside the frame area.
      */
-    uint16_t dst_x, dst_y;
+    int16_t dst_x, dst_y;
     /**
      * Extra flag information.
      * Currently unused.
