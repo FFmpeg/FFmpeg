@@ -24,6 +24,8 @@
  * video presentation timestamp (PTS) modification filter
  */
 
+#include <inttypes.h>
+
 #include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
@@ -141,15 +143,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     d = av_expr_eval(setpts->expr, setpts->var_values, NULL);
     frame->pts = D2TS(d);
 
-#ifdef DEBUG
-    av_log(inlink->dst, AV_LOG_DEBUG,
-           "n:%"PRId64" interlaced:%d pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
-           (int64_t)setpts->var_values[VAR_N],
-           (int)setpts->var_values[VAR_INTERLACED],
-           in_pts, in_pts * av_q2d(inlink->time_base),
-           frame->pts, frame->pts * av_q2d(inlink->time_base));
-#endif
-
+    av_dlog(inlink->dst,
+            "n:%"PRId64" interlaced:%d pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
+            (int64_t)setpts->var_values[VAR_N],
+            (int)setpts->var_values[VAR_INTERLACED],
+            in_pts, in_pts * av_q2d(inlink->time_base),
+            frame->pts, frame->pts * av_q2d(inlink->time_base));
 
     if (inlink->type == AVMEDIA_TYPE_VIDEO) {
         setpts->var_values[VAR_N] += 1.0;
