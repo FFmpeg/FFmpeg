@@ -810,7 +810,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     default:
         av_log(s->avctx, AV_LOG_ERROR,
                "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10 and 12 bits.\n");
-        return AVERROR_PATCHWELCOME;
+        ret = AVERROR_PATCHWELCOME;
+        goto err;
     }
 
     desc = av_pix_fmt_desc_get(sps->pix_fmt);
