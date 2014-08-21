@@ -111,6 +111,16 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    LenscorrectionCtx *rect = ctx->priv;
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(rect->correction); i++) {
+        av_freep(&rect->correction[i]);
+    }
+}
+
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -214,5 +224,6 @@ AVFilter ff_vf_lenscorrection = {
     .inputs        = lenscorrection_inputs,
     .outputs       = lenscorrection_outputs,
     .priv_class    = &lenscorrection_class,
+    .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
