@@ -180,6 +180,14 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
     IMCContext *q = avctx->priv_data;
     double r1, r2;
 
+    if (avctx->codec_id == AV_CODEC_ID_IAC && avctx->sample_rate > 96000) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Strange sample rate of %i, file likely corrupt or "
+               "needing a new table derivation method.\n",
+               avctx->sample_rate);
+        return AVERROR_PATCHWELCOME;
+    }
+
     if (avctx->codec_id == AV_CODEC_ID_IMC)
         avctx->channels = 1;
 
