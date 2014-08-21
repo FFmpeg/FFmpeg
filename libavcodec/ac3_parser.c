@@ -166,7 +166,7 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     int err;
     union {
         uint64_t u64;
-        uint8_t  u8[8];
+        uint8_t  u8[8 + FF_INPUT_BUFFER_PADDING_SIZE];
     } tmp = { av_be2ne64(state) };
     AC3HeaderInfo hdr, *phdr = &hdr;
     GetBitContext gbc;
