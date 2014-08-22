@@ -25,12 +25,23 @@
 
 #include "avfilter.h"
 
-/* ** some conversions from avlib to vid.stab constants and functions *** */
+/* Conversion routines between libav* and vid.stab */
 
-/** converts the pixelformat of avlib into the one of the vid.stab library */
+/**
+ * Converts an AVPixelFormat to a VSPixelFormat.
+ *
+ * @param[in] ctx AVFilterContext used for logging
+ * @param[in] pf  AVPixelFormat
+ * @return    a corresponding VSPixelFormat
+ */
 VSPixelFormat ff_av2vs_pixfmt(AVFilterContext *ctx, enum AVPixelFormat pf);
 
-/** sets the memory allocation function and logging constants to av versions */
+/**
+ * Initialize libvidstab
+ *
+ * Sets the memory allocation functions and logging constants to corresponding
+ * av* versions.
+ */
 void ff_vs_init(void);
 
 #endif
