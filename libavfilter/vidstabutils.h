@@ -28,9 +28,9 @@
 /* ** some conversions from avlib to vid.stab constants and functions *** */
 
 /** converts the pixelformat of avlib into the one of the vid.stab library */
-VSPixelFormat av_2_vs_pixel_format(AVFilterContext *ctx, enum AVPixelFormat pf);
+VSPixelFormat ff_av2vs_pixfmt(AVFilterContext *ctx, enum AVPixelFormat pf);
 
 /** sets the memory allocation function and logging constants to av versions */
-void vs_set_mem_and_log_functions(void);
+void ff_vs_init(void);
 
 #endif
