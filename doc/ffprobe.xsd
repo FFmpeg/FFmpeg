@@ -50,6 +50,7 @@
       <xsd:attribute name="pos"           type="xsd:long"  />
       <xsd:attribute name="flags"         type="xsd:string" use="required" />
       <xsd:attribute name="data"          type="xsd:string" />
+      <xsd:attribute name="data_hash"     type="xsd:string" />
     </xsd:complexType>
 
     <xsd:complexType name="frameType">
@@ -153,6 +154,7 @@
       <xsd:attribute name="codec_tag"        type="xsd:string" use="required"/>
       <xsd:attribute name="codec_tag_string" type="xsd:string" use="required"/>
       <xsd:attribute name="extradata"        type="xsd:string" />
+      <xsd:attribute name="extradata_hash"   type="xsd:string" />
 
       <!-- video attributes -->
       <xsd:attribute name="width"                type="xsd:int"/>

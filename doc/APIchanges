@@ -15,6 +15,9 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2014-08-21 - 980a5b0 - lavu 54.6.100 - frame.h motion_vector.h
+  Add AV_FRAME_DATA_MOTION_VECTORS side data and AVMotionVector structure
+
 2014-08-16 - xxxxxxx - lswr 1.1.100 - swresample.h
   Add AVFrame based API
 
@@ -51,7 +54,7 @@ API changes, most recent first:
 2014-08-xx - xxxxxxx - lavc 55.57.3 - avcodec.h
   reordered_opaque is not going to be removed in the future.
 
-2014-08-02 - xxxxxxx - lavu 52.98.100 - pixelutils.h
+2014-08-02 - 28a2107 - lavu 52.98.100 - pixelutils.h
   Add pixelutils API with SAD functions
 
 2014-08-xx - xxxxxxx - lavu 53.22.0 - pixfmt.h

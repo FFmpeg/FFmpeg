@@ -1195,6 +1195,8 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
         if (asf_st->pkt.size != asf_st->packet_obj_size ||
             // FIXME is this condition sufficient?
             asf_st->frag_offset + asf->packet_frag_size > asf_st->pkt.size) {
+            int ret;
+
             if (asf_st->pkt.data) {
                 av_log(s, AV_LOG_INFO,
                        "freeing incomplete packet size %d, new %d\n",
@@ -1203,7 +1205,8 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
                 av_free_packet(&asf_st->pkt);
             }
             /* new packet */
-            av_new_packet(&asf_st->pkt, asf_st->packet_obj_size);
+            if ((ret = av_new_packet(&asf_st->pkt, asf_st->packet_obj_size)) < 0)
+                return ret;
             asf_st->seq              = asf->packet_seq;
             if (asf->ts_is_pts) {
                 asf_st->pkt.pts          = asf->packet_frag_timestamp - asf->hdr.preroll;

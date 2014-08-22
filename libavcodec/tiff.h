@@ -95,7 +95,8 @@ enum TiffCompr {
     TIFF_NEWJPEG,
     TIFF_ADOBE_DEFLATE,
     TIFF_PACKBITS = 0x8005,
-    TIFF_DEFLATE  = 0x80B2
+    TIFF_DEFLATE  = 0x80B2,
+    TIFF_LZMA     = 0x886D,
 };
 
 enum TiffGeoTagKey {

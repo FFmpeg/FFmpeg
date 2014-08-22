@@ -31,6 +31,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/motion_vector.h"
 #include "libavutil/timer.h"
 #include "avcodec.h"
 #include "blockdsp.h"
@@ -600,7 +601,8 @@ static int alloc_picture_tables(MpegEncContext *s, Picture *pic)
             return AVERROR(ENOMEM);
     }
 
-    if (s->out_format == FMT_H263 || s->encoding || s->avctx->debug_mv) {
+    if (s->out_format == FMT_H263 || s->encoding || s->avctx->debug_mv ||
+        (s->avctx->flags2 & CODEC_FLAG2_EXPORT_MVS)) {
         int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);
         int ref_index_size = 4 * mb_array_size;
 
@@ -2106,6 +2108,24 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
     draw_line(buf, sx, sy, ex, ey, w, h, stride, color);
 }
 
+static int add_mb(AVMotionVector *mb, uint32_t mb_type,
+                  int dst_x, int dst_y,
+                  int src_x, int src_y,
+                  int direction)
+{
+    if (dst_x == src_x && dst_y == src_y)
+        return 0;
+    mb->w = IS_8X8(mb_type) || IS_8X16(mb_type) ? 8 : 16;
+    mb->h = IS_8X8(mb_type) || IS_16X8(mb_type) ? 8 : 16;
+    mb->src_x = src_x;
+    mb->src_y = src_y;
+    mb->dst_x = dst_x;
+    mb->dst_y = dst_y;
+    mb->source = direction ? 1 : -1;
+    mb->flags = 0; // XXX: does mb_type contain extra information that could be exported here?
+    return 1;
+}
+
 /**
  * Print debugging info for the given picture.
  */
@@ -2114,6 +2134,87 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                          int *low_delay,
                          int mb_width, int mb_height, int mb_stride, int quarter_sample)
 {
+    if ((avctx->flags2 & CODEC_FLAG2_EXPORT_MVS) && mbtype_table && motion_val[0]) {
+        const int shift = 1 + quarter_sample;
+        const int mv_sample_log2 = avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_SVQ3 ? 2 : 1;
+        const int mv_stride      = (mb_width << mv_sample_log2) +
+                                   (avctx->codec->id == AV_CODEC_ID_H264 ? 0 : 1);
+        int mb_x, mb_y, mbcount = 0;
+
+        /* size is width * height * 2 * 4 where 2 is for directions and 4 is
+         * for the maximum number of MB (4 MB in case of IS_8x8) */
+        AVMotionVector *mvs = av_malloc_array(mb_width * mb_height, 2 * 4 * sizeof(AVMotionVector));
+        if (!mvs)
+            return;
+
+        for (mb_y = 0; mb_y < mb_height; mb_y++) {
+            for (mb_x = 0; mb_x < mb_width; mb_x++) {
+                int i, direction, mb_type = mbtype_table[mb_x + mb_y * mb_stride];
+                for (direction = 0; direction < 2; direction++) {
+                    if (!USES_LIST(mb_type, direction))
+                        continue;
+                    if (IS_8X8(mb_type)) {
+                        for (i = 0; i < 4; i++) {
+                            int sx = mb_x * 16 + 4 + 8 * (i & 1);
+                            int sy = mb_y * 16 + 4 + 8 * (i >> 1);
+                            int xy = (mb_x * 2 + (i & 1) +
+                                      (mb_y * 2 + (i >> 1)) * mv_stride) << (mv_sample_log2 - 1);
+                            int mx = (motion_val[direction][xy][0] >> shift) + sx;
+                            int my = (motion_val[direction][xy][1] >> shift) + sy;
+                            mbcount += add_mb(mvs + mbcount, mb_type, sx, sy, mx, my, direction);
+                        }
+                    } else if (IS_16X8(mb_type)) {
+                        for (i = 0; i < 2; i++) {
+                            int sx = mb_x * 16 + 8;
+                            int sy = mb_y * 16 + 4 + 8 * i;
+                            int xy = (mb_x * 2 + (mb_y * 2 + i) * mv_stride) << (mv_sample_log2 - 1);
+                            int mx = (motion_val[direction][xy][0] >> shift);
+                            int my = (motion_val[direction][xy][1] >> shift);
+
+                            if (IS_INTERLACED(mb_type))
+                                my *= 2;
+
+                            mbcount += add_mb(mvs + mbcount, mb_type, sx, sy, mx + sx, my + sy, direction);
+                        }
+                    } else if (IS_8X16(mb_type)) {
+                        for (i = 0; i < 2; i++) {
+                            int sx = mb_x * 16 + 4 + 8 * i;
+                            int sy = mb_y * 16 + 8;
+                            int xy = (mb_x * 2 + i + mb_y * 2 * mv_stride) << (mv_sample_log2 - 1);
+                            int mx = motion_val[direction][xy][0] >> shift;
+                            int my = motion_val[direction][xy][1] >> shift;
+
+                            if (IS_INTERLACED(mb_type))
+                                my *= 2;
+
+                            mbcount += add_mb(mvs + mbcount, mb_type, sx, sy, mx + sx, my + sy, direction);
+                        }
+                    } else {
+                          int sx = mb_x * 16 + 8;
+                          int sy = mb_y * 16 + 8;
+                          int xy = (mb_x + mb_y * mv_stride) << mv_sample_log2;
+                          int mx = (motion_val[direction][xy][0]>>shift) + sx;
+                          int my = (motion_val[direction][xy][1]>>shift) + sy;
+                          mbcount += add_mb(mvs + mbcount, mb_type, sx, sy, mx, my, direction);
+                    }
+                }
+            }
+        }
+
+        if (mbcount) {
+            AVFrameSideData *sd;
+
+            av_log(avctx, AV_LOG_DEBUG, "Adding %d MVs info to frame %d\n", mbcount, avctx->frame_number);
+            sd = av_frame_new_side_data(pict, AV_FRAME_DATA_MOTION_VECTORS, mbcount * sizeof(AVMotionVector));
+            if (!sd)
+                return;
+            memcpy(sd->data, mvs, mbcount * sizeof(AVMotionVector));
+        }
+
+        av_freep(&mvs);
+    }
+
+    /* TODO: export all the following to make them accessible for users (and filters) */
     if (avctx->hwaccel || !mbtype_table
         || (avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU))
         return;

@@ -52,11 +52,11 @@ static int vs_2_av_log_wrapper(int type, const char *tag, const char *format, ..
     va_list ap;
     VS2AVLogCtx ctx;
     AVClass class = {
-      .class_name = tag,
-      .item_name  = av_default_item_name,
-      .option     = 0,
-      .version    = LIBAVUTIL_VERSION_INT,
-      .category   = AV_CLASS_CATEGORY_FILTER,
+        .class_name = tag,
+        .item_name  = av_default_item_name,
+        .option     = 0,
+        .version    = LIBAVUTIL_VERSION_INT,
+        .category   = AV_CLASS_CATEGORY_FILTER,
     };
     ctx.class = &class;
     va_start(ap, format);

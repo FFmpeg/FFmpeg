@@ -1193,7 +1193,8 @@ int ff_check_h264_startcode(AVFormatContext *s, const AVStream *st, const AVPack
     if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
         if (!st->nb_frames) {
             av_log(s, AV_LOG_ERROR, "H.264 bitstream malformed, "
-                   "no startcode found, use the h264_mp4toannexb bitstream filter (-bsf h264_mp4toannexb)\n");
+                   "no startcode found, use the video bitstream filter 'h264_mp4toannexb' to fix it "
+                   "('-bsf:v h264_mp4toannexb' option with ffmpeg)\n");
             return AVERROR_INVALIDDATA;
         }
         av_log(s, AV_LOG_WARNING, "H.264 bitstream error, startcode missing\n");

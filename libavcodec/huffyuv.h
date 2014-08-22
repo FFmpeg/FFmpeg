@@ -52,6 +52,7 @@ typedef enum Predictor {
 } Predictor;
 
 typedef struct HYuvContext {
+    AVClass *class;
     AVCodecContext *avctx;
     Predictor predictor;
     GetBitContext gb;
@@ -88,6 +89,7 @@ typedef struct HYuvContext {
     HuffYUVDSPContext hdsp;
     HuffYUVEncDSPContext hencdsp;
     LLVidDSPContext llviddsp;
+    int non_determ; // non-deterministic, multi-threaded encoder allowed
 } HYuvContext;
 
 void ff_huffyuv_common_init(AVCodecContext *s);

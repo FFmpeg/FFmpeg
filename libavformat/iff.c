@@ -59,6 +59,7 @@
 #define ID_RGB8       MKTAG('R','G','B','8')
 #define ID_RGBN       MKTAG('R','G','B','N')
 #define ID_DSD        MKTAG('D','S','D',' ')
+#define ID_ANIM       MKTAG('A','N','I','M')
 
 #define ID_FORM       MKTAG('F','O','R','M')
 #define ID_FRM8       MKTAG('F','R','M','8')
@@ -147,6 +148,7 @@ static int iff_probe(AVProbeData *p)
           AV_RL32(d+8) == ID_ILBM ||
           AV_RL32(d+8) == ID_RGB8 ||
           AV_RL32(d+8) == ID_RGB8 ||
+          AV_RL32(d+8) == ID_ANIM ||
           AV_RL32(d+8) == ID_RGBN)) ||
          (AV_RL32(d) == ID_FRM8 && AV_RL32(d+12) == ID_DSD))
         return AVPROBE_SCORE_MAX;
@@ -358,6 +360,10 @@ static int iff_read_header(AVFormatContext *s)
     avio_skip(pb, iff->is_64bit ? 8 : 4);
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
     st->codec->codec_tag = avio_rl32(pb);
+    if (st->codec->codec_tag == ID_ANIM) {
+        avio_skip(pb, 8);
+        st->codec->codec_tag = avio_rl32(pb);
+    }
     iff->bitmap_compression = -1;
     iff->svx8_compression = -1;
     iff->maud_bits = -1;

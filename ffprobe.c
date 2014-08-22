@@ -33,6 +33,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/hash.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"
@@ -80,6 +81,7 @@ static int show_private_data            = 1;
 
 static char *print_format;
 static char *stream_specifier;
+static char *show_data_hash;
 
 typedef struct {
     int id;             ///< identifier
@@ -186,6 +188,8 @@ static const OptionDef *options;
 /* FFprobe context */
 static const char *input_filename;
 static AVInputFormat *iformat = NULL;
+
+static struct AVHashContext *hash;
 
 static const char *const binary_unit_prefixes [] = { "", "Ki", "Mi", "Gi", "Ti", "Pi" };
 static const char *const decimal_unit_prefixes[] = { "", "K" , "M" , "G" , "T" , "P"  };
@@ -683,6 +687,21 @@ static void writer_print_data(WriterContext *wctx, const char *name,
     }
     writer_print_string(wctx, name, bp.str, 0);
     av_bprint_finalize(&bp, NULL);
+}
+
+static void writer_print_data_hash(WriterContext *wctx, const char *name,
+                                   uint8_t *data, int size)
+{
+    char *p, buf[AV_HASH_MAX_SIZE * 2 + 64] = { 0 };
+
+    if (!hash)
+        return;
+    av_hash_init(hash);
+    av_hash_update(hash, data, size);
+    snprintf(buf, sizeof(buf), "%s:", av_hash_get_name(hash));
+    p = buf + strlen(buf);
+    av_hash_final_hex(hash, p, buf + sizeof(buf) - p);
+    writer_print_string(wctx, name, buf, 0);
 }
 
 #define MAX_REGISTERED_WRITERS_NB 64
@@ -1692,6 +1711,7 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
     if (do_show_data)
         writer_print_data(w, "data", pkt->data, pkt->size);
+    writer_print_data_hash(w, "data_hash", pkt->data, pkt->size);
     writer_print_section_footer(w);
 
     av_bprint_finalize(&pbuf, NULL);
@@ -2159,6 +2179,8 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     if (do_show_data)
         writer_print_data(w, "extradata", dec_ctx->extradata,
                                           dec_ctx->extradata_size);
+    writer_print_data_hash(w, "extradata_hash", dec_ctx->extradata,
+                                                dec_ctx->extradata_size);
 
     /* Print disposition information */
 #define PRINT_DISPOSITION(flagname, name) do {                                \
@@ -2887,6 +2909,7 @@ static const OptionDef real_options[] = {
     { "select_streams", OPT_STRING | HAS_ARG, {(void*)&stream_specifier}, "select the specified streams", "stream_specifier" },
     { "sections", OPT_EXIT, {.func_arg = opt_sections}, "print sections structure and section information, and exit" },
     { "show_data",    OPT_BOOL, {(void*)&do_show_data}, "show packets data" },
+    { "show_data_hash", OPT_STRING | HAS_ARG, {(void*)&show_data_hash}, "show packets data hash" },
     { "show_error",   0, {(void*)&opt_show_error},  "show probing error" },
     { "show_format",  0, {(void*)&opt_show_format}, "show format/container info" },
     { "show_frames",  0, {(void*)&opt_show_frames}, "show frames info" },
@@ -2990,6 +3013,21 @@ int main(int argc, char **argv)
     w_name = av_strtok(print_format, "=", &buf);
     w_args = buf;
 
+    if (show_data_hash) {
+        if ((ret = av_hash_alloc(&hash, show_data_hash)) < 0) {
+            if (ret == AVERROR(EINVAL)) {
+                const char *n;
+                av_log(NULL, AV_LOG_ERROR,
+                       "Unknown hash algorithm '%s'\nKnown algorithms:",
+                       show_data_hash);
+                for (i = 0; (n = av_hash_names(i)); i++)
+                    av_log(NULL, AV_LOG_ERROR, " %s", n);
+                av_log(NULL, AV_LOG_ERROR, "\n");
+            }
+            goto end;
+        }
+    }
+
     w = writer_get_by_name(w_name);
     if (!w) {
         av_log(NULL, AV_LOG_ERROR, "Unknown output format with name '%s'\n", w_name);
@@ -3029,6 +3067,7 @@ int main(int argc, char **argv)
 end:
     av_freep(&print_format);
     av_freep(&read_intervals);
+    av_hash_freep(&hash);
 
     uninit_opts();
     for (i = 0; i < FF_ARRAY_ELEMS(sections); i++)
