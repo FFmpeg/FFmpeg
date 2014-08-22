@@ -420,6 +420,8 @@ static int process_ea_header(AVFormatContext *s)
 
         case MADk_TAG:
             ea->video_codec = AV_CODEC_ID_MAD;
+            avio_skip(pb, 6);
+            ea->time_base = (AVRational) { avio_rl16(pb), 1000 };
             break;
 
         case MVhd_TAG:
