@@ -2487,6 +2487,9 @@ static int wavpack_encode_block(WavPackEncodeContext *s,
     struct Decorr *dpp;
     PutByteContext pb;
 
+    if (s->flags & WV_MONO_DATA) {
+        CLEAR(s->w);
+    }
     if (!(s->flags & WV_MONO) && s->optimize_mono) {
         int32_t lor = 0, diff = 0;
 
