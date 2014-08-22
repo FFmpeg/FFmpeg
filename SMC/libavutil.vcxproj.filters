@@ -335,6 +335,9 @@
     <ClInclude Include="..\libavutil\mem.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavutil\motion_vector.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavutil\murmur3.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>

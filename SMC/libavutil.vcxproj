@@ -295,6 +295,7 @@
     <ClInclude Include="..\libavutil\mathematics.h" />
     <ClInclude Include="..\libavutil\md5.h" />
     <ClInclude Include="..\libavutil\mem.h" />
+    <ClInclude Include="..\libavutil\motion_vector.h" />
     <ClInclude Include="..\libavutil\murmur3.h" />
     <ClInclude Include="..\libavutil\dict.h" />
     <ClInclude Include="..\libavutil\old_pix_fmts.h" />
@@ -612,6 +613,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -731,6 +733,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -853,6 +856,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -975,6 +979,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -1097,6 +1102,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -1219,6 +1225,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -1345,6 +1352,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -1471,6 +1479,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -1602,6 +1611,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -1733,6 +1743,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -1864,6 +1875,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -1995,6 +2007,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -2120,6 +2133,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil
@@ -2245,6 +2259,7 @@ copy ..\libavutil\macros.h $(OutDir)\include\libavutil
 copy ..\libavutil\mathematics.h $(OutDir)\include\libavutil
 copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
+copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
 copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\old_pix_fmts.h $(OutDir)\include\libavutil

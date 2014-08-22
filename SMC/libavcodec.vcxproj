@@ -2272,6 +2272,7 @@
     <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
     <YASM Include="..\libavcodec\x86\hevc_deblock.asm" />
     <YASM Include="..\libavcodec\x86\hevc_idct.asm" />
+    <YASM Include="..\libavcodec\x86\hevc_res_add.asm" />
     <YASM Include="..\libavcodec\x86\pngdsp.asm" />
     <YASM Include="..\libavcodec\x86\proresdsp.asm" />
     <YASM Include="..\libavcodec\x86\rv34dsp.asm" />
