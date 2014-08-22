@@ -135,7 +135,7 @@ static av_cold int wavpack_encode_init(AVCodecContext *avctx)
         else
             block_samples = avctx->sample_rate;
 
-        while (block_samples * avctx->channels > 150000)
+        while (block_samples * avctx->channels > WV_MAX_SAMPLES)
             block_samples /= 2;
 
         while (block_samples * avctx->channels < 40000)
