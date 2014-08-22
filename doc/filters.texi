@@ -10660,6 +10660,26 @@ Default value is @code{3.0}.
 @item fontfile
 Specify font file for use with freetype. If not specified, use embedded font.
 
+@item fontcolor
+Specify font color expression. This is arithmetic expression that should return
+integer value 0xRRGGBB. The expression can contain variables:
+@table @option
+@item frequency, freq, f
+the frequency where transform is evaluated
+@item timeclamp, tc
+value of timeclamp option
+@end table
+and functions:
+@table @option
+@item midi(f)
+midi number of frequency f, some midi numbers: E0(16), C1(24), C2(36), A4(69)
+@item r(x), g(x), b(x)
+red, green, and blue value of intensity x
+@end table
+Default value is @code{st(0, (midi(f)-59.5)/12);
+st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));
+r(1-ld(1)) + b(ld(1))}
+
 @item fullhd
 If set to 1 (the default), the video size is 1920x1080 (full HD),
 if set to 0, the video size is 960x540. Use this option to make CPU usage lower.
@@ -10719,6 +10739,12 @@ volume=16*b_weighting(f)
 Lower Q factor
 @example
 tlength=100/f*tc/(100/f+tc)
+@end example
+
+@item
+Custom fontcolor, C-note is colored green, others are colored blue
+@example
+fontcolor='if(mod(floor(midi(f)+0.5),12), 0x0000FF, g(1))'
 @end example
 
 @end itemize
