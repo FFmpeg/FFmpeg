@@ -1569,16 +1569,18 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
             return err;
     }
 
-    if ((err = ff_mpeg_update_thread_context(dst, src)))
-        return err;
-
     r->cur_pts  = r1->cur_pts;
     r->last_pts = r1->last_pts;
     r->next_pts = r1->next_pts;
 
     memset(&r->si, 0, sizeof(r->si));
 
-    return 0;
+    // Do no call ff_mpeg_update_thread_context on a partially initialized
+    // decoder context.
+    if (!s1->linesize)
+        return 0;
+
+    return ff_mpeg_update_thread_context(dst, src);
 }
 
 static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n)
