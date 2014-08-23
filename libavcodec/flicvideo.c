@@ -1,6 +1,6 @@
 /*
  * FLI/FLC Animation Video Decoder
- * Copyright (C) 2003, 2004 the ffmpeg project
+ * Copyright (c) 2003, 2004 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *

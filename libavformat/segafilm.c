@@ -1,6 +1,6 @@
 /*
  * Sega FILM Format (CPK) Demuxer
- * Copyright (c) 2003 The ffmpeg Project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
