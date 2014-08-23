@@ -84,13 +84,13 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass ogg_muxer_class = {
-    .class_name = "Ogg muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
+#define OGG_CLASS(flavor)\
+static const AVClass flavor ## _muxer_class = {\
+    .class_name = #flavor " muxer",\
+    .item_name  = av_default_item_name,\
+    .option     = options,\
+    .version    = LIBAVUTIL_VERSION_INT,\
 };
-
 
 static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc_offset)
 {
@@ -628,6 +628,7 @@ static int ogg_write_trailer(AVFormatContext *s)
 }
 
 #if CONFIG_OGG_MUXER
+OGG_CLASS(ogg)
 AVOutputFormat ff_ogg_muxer = {
     .name              = "ogg",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg"),
@@ -646,6 +647,7 @@ AVOutputFormat ff_ogg_muxer = {
 #endif
 
 #if CONFIG_OGA_MUXER
+OGG_CLASS(oga)
 AVOutputFormat ff_oga_muxer = {
     .name              = "oga",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg Audio"),
@@ -658,11 +660,12 @@ AVOutputFormat ff_oga_muxer = {
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
     .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
-    .priv_class        = &ogg_muxer_class,
+    .priv_class        = &oga_muxer_class,
 };
 #endif
 
 #if CONFIG_SPX_MUXER
+OGG_CLASS(spx)
 AVOutputFormat ff_spx_muxer = {
     .name              = "spx",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg Speex"),
@@ -674,11 +677,12 @@ AVOutputFormat ff_spx_muxer = {
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
     .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
-    .priv_class        = &ogg_muxer_class,
+    .priv_class        = &spx_muxer_class,
 };
 #endif
 
 #if CONFIG_OPUS_MUXER
+OGG_CLASS(opus)
 AVOutputFormat ff_opus_muxer = {
     .name              = "opus",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg Opus"),
@@ -690,6 +694,6 @@ AVOutputFormat ff_opus_muxer = {
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
     .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
-    .priv_class        = &ogg_muxer_class,
+    .priv_class        = &opus_muxer_class,
 };
 #endif
