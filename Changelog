@@ -7,6 +7,7 @@ version <next>:
 - large optimizations in dctdnoiz to make it usable
 - request icecast metadata by default
 - support for using metadata in stream specifiers in fftools
+- LZMA compression support in TIFF decoder
 
 
 version 2.3:
