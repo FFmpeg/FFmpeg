@@ -1240,6 +1240,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         }
     }
 
+#if FF_API_AUDIOENC_DELAY
+    if (av_codec_is_encoder(avctx->codec))
+        avctx->delay = avctx->initial_padding;
+#endif
+
     if (av_codec_is_decoder(avctx->codec)) {
         /* validate channel layout from the decoder */
         if (avctx->channel_layout) {
@@ -1446,6 +1451,10 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
 
 end:
     av_frame_free(&padded_frame);
+
+#if FF_API_AUDIOENC_DELAY
+    avctx->delay = avctx->initial_padding;
+#endif
 
     return ret;
 }

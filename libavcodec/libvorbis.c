@@ -322,8 +322,8 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (duration > 0) {
         /* we do not know encoder delay until we get the first packet from
          * libvorbis, so we have to update the AudioFrameQueue counts */
-        if (!avctx->delay) {
-            avctx->delay              = duration;
+        if (!avctx->initial_padding) {
+            avctx->initial_padding    = duration;
             s->afq.remaining_delay   += duration;
             s->afq.remaining_samples += duration;
         }

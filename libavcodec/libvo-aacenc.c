@@ -61,7 +61,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     int index, ret;
 
     avctx->frame_size = FRAME_SIZE;
-    avctx->delay      = ENC_DELAY;
+    avctx->initial_padding = ENC_DELAY;
     s->last_frame     = 2;
     ff_af_queue_init(avctx, &s->afq);
 

@@ -157,7 +157,7 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    avctx->delay = FAAC_DELAY_SAMPLES;
+    avctx->initial_padding = FAAC_DELAY_SAMPLES;
     ff_af_queue_init(avctx, &s->afq);
 
     return 0;
