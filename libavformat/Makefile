@@ -33,6 +33,7 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o                       \
                                             rtpdec_amr.o                \
                                             rtpdec_asf.o                \
                                             rtpdec_g726.o               \
+                                            rtpdec_h261.o               \
                                             rtpdec_h263.o               \
                                             rtpdec_h263_rfc2190.o       \
                                             rtpdec_h264.o               \
@@ -362,6 +363,7 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc_aac.o     \
                                             rtpenc_latm.o    \
                                             rtpenc_amr.o     \
+                                            rtpenc_h261.o    \
                                             rtpenc_h263.o    \
                                             rtpenc_h263_rfc2190.o \
                                             rtpenc_jpeg.o \
