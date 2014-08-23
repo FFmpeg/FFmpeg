@@ -490,7 +490,9 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     const uint8_t *ssrc = src;
     int width = ((s->width * s->bpp) + 7) >> 3;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(p->format);
-    int is_yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components >= 2;
+    int is_yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) &&
+                 (desc->flags & AV_PIX_FMT_FLAG_PLANAR) &&
+                 desc->nb_components >= 3;
 
     if (s->planar)
         width /= s->bppcount;
@@ -723,7 +725,9 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
 
     if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
-        if((desc->flags & AV_PIX_FMT_FLAG_RGB) || desc->nb_components < 3) {
+        if((desc->flags & AV_PIX_FMT_FLAG_RGB) ||
+           !(desc->flags & AV_PIX_FMT_FLAG_PLANAR) ||
+           desc->nb_components < 3) {
             av_log(s->avctx, AV_LOG_ERROR, "Unsupported YCbCr variant\n");
             return AVERROR_INVALIDDATA;
         }
