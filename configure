@@ -89,6 +89,7 @@ Standard options:
   --mandir=DIR             install man page in DIR [PREFIX/share/man]
   --enable-rpath           use rpath to allow installing libraries in paths
                            not part of the dynamic linker search path
+                           use rpath when linking programs [USE WITH CARE]
 
 Licensing options:
   --enable-gpl             allow use of GPL code, the resulting libs
@@ -5031,7 +5032,7 @@ check_disable_warning -Wno-pointer-sign
 # add some linker flags
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
-enabled rpath && add_ldflags -Wl,-rpath,$libdir
+enabled rpath && add_ldexeflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 # add some strip flags
