@@ -46,6 +46,16 @@ typedef enum {
     AV_CLASS_CATEGORY_NB, ///< not part of ABI/API
 }AVClassCategory;
 
+#define AV_IS_INPUT_DEVICE(category) \
+    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_INPUT))
+
+#define AV_IS_OUTPUT_DEVICE(category) \
+    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_OUTPUT))
+
 struct AVOptionRanges;
 
 /**

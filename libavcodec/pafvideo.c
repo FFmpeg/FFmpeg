@@ -21,7 +21,6 @@
 
 #include "libavutil/imgutils.h"
 
-#include "libavcodec/paf.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "copy_block.h"

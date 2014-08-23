@@ -54,6 +54,9 @@
 #define TLENGTH_DEFAULT "384/f*tc/(384/f+tc)"
 #define VOLUME_MIN 1e-10
 #define VOLUME_MAX 100.0
+#define FONTCOLOR_DEFAULT "st(0, (midi(f)-59.5)/12);" \
+    "st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));" \
+    "r(1-ld(1)) + b(ld(1))"
 
 typedef struct {
     FFTSample value;
@@ -73,7 +76,7 @@ typedef struct {
     uint8_t *font_alpha;
     char *fontfile;     /* using freetype */
     int coeffs_len[VIDEO_WIDTH];
-    uint8_t font_color[VIDEO_WIDTH];
+    uint8_t fontcolor_value[VIDEO_WIDTH*3];  /* result of fontcolor option */
     int64_t frame_count;
     int spectogram_count;
     int spectogram_index;
@@ -82,6 +85,7 @@ typedef struct {
     int remaining_fill;
     char *tlength;
     char *volume;
+    char *fontcolor;
     double timeclamp;   /* lower timeclamp, time-accurate, higher timeclamp, freq-accurate (at low freq)*/
     float coeffclamp;   /* lower coeffclamp, more precise, higher coeffclamp, faster */
     int fullhd;         /* if true, output video is at full HD resolution, otherwise it will be halved */
@@ -103,6 +107,7 @@ static const AVOption showcqt_options[] = {
     { "fps", "set video fps", OFFSET(fps), AV_OPT_TYPE_INT, { .i64 = 25 }, 10, 100, FLAGS },
     { "count", "set number of transform per frame", OFFSET(count), AV_OPT_TYPE_INT, { .i64 = 6 }, 1, 30, FLAGS },
     { "fontfile", "set font file", OFFSET(fontfile), AV_OPT_TYPE_STRING, { .str = NULL }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "fontcolor", "set font color", OFFSET(fontcolor), AV_OPT_TYPE_STRING, { .str = FONTCOLOR_DEFAULT }, CHAR_MIN, CHAR_MAX, FLAGS },
     { NULL }
 };
 
@@ -275,6 +280,29 @@ static double c_weighting(void *p, double f)
     return ret;
 }
 
+static double midi(void *p, double f)
+{
+    return log2(f/440.0) * 12.0 + 69.0;
+}
+
+static double r_func(void *p, double x)
+{
+    x = av_clipd(x, 0.0, 1.0);
+    return (int)(x*255.0+0.5) << 16;
+}
+
+static double g_func(void *p, double x)
+{
+    x = av_clipd(x, 0.0, 1.0);
+    return (int)(x*255.0+0.5) << 8;
+}
+
+static double b_func(void *p, double x)
+{
+    x = av_clipd(x, 0.0, 1.0);
+    return (int)(x*255.0+0.5);
+}
+
 static inline int qsort_sparsecoeff(const SparseCoeff *a, const SparseCoeff *b)
 {
     if (fabsf(a->value) >= fabsf(b->value))
@@ -288,10 +316,13 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowCQTContext *s = ctx->priv;
-    AVExpr *tlength_expr, *volume_expr;
+    AVExpr *tlength_expr = NULL, *volume_expr = NULL, *fontcolor_expr = NULL;
+    uint8_t *fontcolor_value = s->fontcolor_value;
     static const char * const expr_vars[] = { "timeclamp", "tc", "frequency", "freq", "f", NULL };
     static const char * const expr_func_names[] = { "a_weighting", "b_weighting", "c_weighting", NULL };
+    static const char * const expr_fontcolor_func_names[] = { "midi", "r", "g", "b", NULL };
     static double (* const expr_funcs[])(void *, double) = { a_weighting, b_weighting, c_weighting, NULL };
+    static double (* const expr_fontcolor_funcs[])(void *, double) = { midi, r_func, g_func, b_func, NULL };
     int fft_len, k, x, y, ret;
     int num_coeffs = 0;
     int rate = inlink->sample_rate;
@@ -319,17 +350,6 @@ static int config_output(AVFilterLink *outlink)
     if (!s->fft_data || !s->coeff_sort || !s->fft_result_left || !s->fft_result_right || !s->fft_context)
         return AVERROR(ENOMEM);
 
-    /* initializing font */
-    for (x = 0; x < video_width; x++) {
-        if (x >= (12*3+8)*8*video_scale && x < (12*4+8)*8*video_scale) {
-            float fx = (x-(12*3+8)*8*video_scale) * (2.0f/(192.0f*video_scale));
-            float sv = sinf(M_PI*fx);
-            s->font_color[x] = sv*sv*255.0f + 0.5f;
-        } else {
-            s->font_color[x] = 0;
-        }
-    }
-
 #if CONFIG_LIBFREETYPE
     load_freetype_font(ctx);
 #else
@@ -342,13 +362,18 @@ static int config_output(AVFilterLink *outlink)
     start_time = av_gettime_relative();
     ret = av_expr_parse(&tlength_expr, s->tlength, expr_vars, NULL, NULL, NULL, NULL, 0, ctx);
     if (ret < 0)
-        return ret;
+        goto eval_error;
+
     ret = av_expr_parse(&volume_expr, s->volume, expr_vars, expr_func_names,
                         expr_funcs, NULL, NULL, 0, ctx);
-    if (ret < 0) {
-        av_expr_free(tlength_expr);
-        return ret;
-    }
+    if (ret < 0)
+        goto eval_error;
+
+    ret = av_expr_parse(&fontcolor_expr, s->fontcolor, expr_vars, expr_fontcolor_func_names,
+                        expr_fontcolor_funcs, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        goto eval_error;
+
     for (k = 0; k < VIDEO_WIDTH; k++) {
         int hlen = fft_len >> 1;
         float total = 0;
@@ -388,6 +413,14 @@ static int config_output(AVFilterLink *outlink)
         } else if (volume > VOLUME_MAX) {
             av_log(ctx, AV_LOG_WARNING, "at freq %g: volume is %g, setting it to %g\n", freq, volume, VOLUME_MAX);
             volume = VOLUME_MAX;
+        }
+
+        if (s->fullhd || !(k & 1)) {
+            int fontcolor = av_expr_eval(fontcolor_expr, expr_vars_val, NULL);
+            fontcolor_value[0] = (fontcolor >> 16) & 0xFF;
+            fontcolor_value[1] = (fontcolor >> 8) & 0xFF;
+            fontcolor_value[2] = fontcolor & 0xFF;
+            fontcolor_value += 3;
         }
 
         tlen = tlength * rate;
@@ -445,9 +478,8 @@ static int config_output(AVFilterLink *outlink)
                 num_coeffs += s->coeffs_len[k];
                 s->coeffs[k] = av_malloc_array(s->coeffs_len[k], sizeof(*s->coeffs[k]));
                 if (!s->coeffs[k]) {
-                    av_expr_free(volume_expr);
-                    av_expr_free(tlength_expr);
-                    return AVERROR(ENOMEM);
+                    ret = AVERROR(ENOMEM);
+                    goto eval_error;
                 }
                 for (y = 0; y < s->coeffs_len[k]; y++)
                     s->coeffs[k][y] = s->coeff_sort[x+y];
@@ -455,6 +487,7 @@ static int config_output(AVFilterLink *outlink)
             }
         }
     }
+    av_expr_free(fontcolor_expr);
     av_expr_free(volume_expr);
     av_expr_free(tlength_expr);
     end_time = av_gettime_relative();
@@ -482,6 +515,12 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base = av_make_q(1, s->fps);
     outlink->frame_rate = av_make_q(s->fps, 1);
     return 0;
+
+eval_error:
+    av_expr_free(fontcolor_expr);
+    av_expr_free(volume_expr);
+    av_expr_free(tlength_expr);
+    return ret;
 }
 
 static int plot_cqt(AVFilterLink *inlink)
@@ -597,12 +636,13 @@ static int plot_cqt(AVFilterLink *inlink)
             for (y = 0; y < font_height; y++) {
                 uint8_t *lineptr = data + (spectogram_height + y) * linesize;
                 uint8_t *spectogram_src = s->spectogram + s->spectogram_index * linesize;
+                uint8_t *fontcolor_value = s->fontcolor_value;
                 for (x = 0; x < video_width; x++) {
                     uint8_t alpha = s->font_alpha[y*video_width+x];
-                    uint8_t color = s->font_color[x];
-                    lineptr[3*x] = (spectogram_src[3*x] * (255-alpha) + (255-color) * alpha + 255) >> 8;
-                    lineptr[3*x+1] = (spectogram_src[3*x+1] * (255-alpha) + 255) >> 8;
-                    lineptr[3*x+2] = (spectogram_src[3*x+2] * (255-alpha) + color * alpha + 255) >> 8;
+                    lineptr[3*x] = (spectogram_src[3*x] * (255-alpha) + fontcolor_value[0] * alpha + 255) >> 8;
+                    lineptr[3*x+1] = (spectogram_src[3*x+1] * (255-alpha) + fontcolor_value[1] * alpha + 255) >> 8;
+                    lineptr[3*x+2] = (spectogram_src[3*x+2] * (255-alpha) + fontcolor_value[2] * alpha + 255) >> 8;
+                    fontcolor_value += 3;
                 }
             }
         } else {
@@ -622,16 +662,16 @@ static int plot_cqt(AVFilterLink *inlink)
                         int mask;
                         for (mask = 0x80; mask; mask >>= 1) {
                             if (mask & avpriv_vga16_font[str[u] * 16 + v]) {
-                                p[0] = 255 - s->font_color[ux];
-                                p[1] = 0;
-                                p[2] = s->font_color[ux];
+                                p[0] = s->fontcolor_value[3*ux];
+                                p[1] = s->fontcolor_value[3*ux+1];
+                                p[2] = s->fontcolor_value[3*ux+2];
                                 if (video_scale == 2) {
                                     p[linesize] = p[0];
                                     p[linesize+1] = p[1];
                                     p[linesize+2] = p[2];
-                                    p[3] = p[linesize+3] = 255 - s->font_color[ux+1];
-                                    p[4] = p[linesize+4] = 0;
-                                    p[5] = p[linesize+5] = s->font_color[ux+1];
+                                    p[3] = p[linesize+3] = s->fontcolor_value[3*ux+3];
+                                    p[4] = p[linesize+4] = s->fontcolor_value[3*ux+4];
+                                    p[5] = p[linesize+5] = s->fontcolor_value[3*ux+5];
                                 }
                             }
                             p  += 3 * video_scale;

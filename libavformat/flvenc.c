@@ -521,7 +521,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
                (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
         if (!s->streams[pkt->stream_index]->nb_frames) {
         av_log(s, AV_LOG_ERROR, "Malformed AAC bitstream detected: "
-               "use audio bitstream filter 'aac_adtstoasc' to fix it "
+               "use the audio bitstream filter 'aac_adtstoasc' to fix it "
                "('-bsf:a aac_adtstoasc' option with ffmpeg)\n");
         return AVERROR_INVALIDDATA;
         }

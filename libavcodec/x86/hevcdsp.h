@@ -41,11 +41,11 @@ dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##
 
 
 #define PEL_PROTOTYPE(name, D, opt) \
-void ff_hevc_put_hevc_ ## name ## _ ## D ## _##opt(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
-void ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, intptr_t mx, intptr_t my, int width); \
+void ff_hevc_put_hevc_ ## name ## _ ## D ## _##opt(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
+void ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, int height, intptr_t mx, intptr_t my, int width); \
 void ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width); \
 void ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width); \
-void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
+void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,7 +75,7 @@ void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t
 
 #define WEIGHTING_PROTOTYPE(width, bitd, opt) \
 void ff_hevc_put_hevc_uni_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox); \
-void ff_hevc_put_hevc_bi_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)
+void ff_hevc_put_hevc_bi_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)
 
 #define WEIGHTING_PROTOTYPES(bitd, opt) \
         WEIGHTING_PROTOTYPE(2, bitd, opt); \
@@ -130,5 +130,25 @@ QPEL_PROTOTYPES(qpel_hv, 12, sse4);
 WEIGHTING_PROTOTYPES(8, sse4);
 WEIGHTING_PROTOTYPES(10, sse4);
 WEIGHTING_PROTOTYPES(12, sse4);
+
+///////////////////////////////////////////////////////////////////////////////
+// TRANSFORM_ADD
+///////////////////////////////////////////////////////////////////////////////
+void ff_hevc_transform_add4_8_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add8_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add16_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add32_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
+void ff_hevc_transform_add8_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add16_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add32_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
+void ff_hevc_transform_add4_10_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add8_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add16_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add32_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
+void ff_hevc_transform_add16_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_add32_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
 #endif // AVCODEC_X86_HEVCDSP_H

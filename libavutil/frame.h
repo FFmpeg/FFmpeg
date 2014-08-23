@@ -87,6 +87,13 @@ enum AVFrameSideDataType {
      * in ETSI TS 101 154 using AVActiveFormatDescription enum.
      */
     AV_FRAME_DATA_AFD,
+    /**
+     * Motion vectors exported by some codecs (on demand through the export_mvs
+     * flag set in the libavcodec AVCodecContext flags2 option).
+     * The data is the AVMotionVector struct defined in
+     * libavutil/motion_vector.h.
+     */
+    AV_FRAME_DATA_MOTION_VECTORS,
 };
 
 enum AVActiveFormatDescription {

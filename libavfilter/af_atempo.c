@@ -949,7 +949,13 @@ static int yae_flush(ATempoContext *atempo,
         }
     }
 
-    // flush the remaininder of the current fragment:
+    // check whether all of the input samples have been consumed:
+    if (frag->position[0] + frag->nsamples < atempo->position[0]) {
+        yae_advance_to_next_frag(atempo);
+        return AVERROR(EAGAIN);
+    }
+
+    // flush the remainder of the current fragment:
     start_here = FFMAX(atempo->position[1], overlap_end);
     stop_here  = frag->position[1] + frag->nsamples;
     offset     = start_here - frag->position[1];

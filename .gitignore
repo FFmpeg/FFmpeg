@@ -39,6 +39,7 @@
 /doc/examples/avio_reading
 /doc/examples/decoding_encoding
 /doc/examples/demuxing_decoding
+/doc/examples/extract_mvs
 /doc/examples/filter_audio
 /doc/examples/filtering_audio
 /doc/examples/filtering_video

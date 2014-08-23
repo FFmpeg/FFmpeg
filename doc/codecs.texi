@@ -797,6 +797,9 @@ Frame data might be split into multiple chunks.
 Show all frames before the first keyframe.
 @item skiprd
 Deprecated, use mpegvideo private options instead.
+@item export_mvs
+Export motion vectors into frame side-data (see @code{AV_FRAME_DATA_MOTION_VECTORS})
+for codecs that support it. See also @file{doc/examples/export_mvs.c}.
 @end table
 
 @item error @var{integer} (@emph{encoding,video})

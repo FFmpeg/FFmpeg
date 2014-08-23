@@ -135,7 +135,7 @@ static av_cold int wavpack_encode_init(AVCodecContext *avctx)
         else
             block_samples = avctx->sample_rate;
 
-        while (block_samples * avctx->channels > 150000)
+        while (block_samples * avctx->channels > WV_MAX_SAMPLES)
             block_samples /= 2;
 
         while (block_samples * avctx->channels < 40000)
@@ -2487,6 +2487,9 @@ static int wavpack_encode_block(WavPackEncodeContext *s,
     struct Decorr *dpp;
     PutByteContext pb;
 
+    if (s->flags & WV_MONO_DATA) {
+        CLEAR(s->w);
+    }
     if (!(s->flags & WV_MONO) && s->optimize_mono) {
         int32_t lor = 0, diff = 0;
 
@@ -2813,6 +2816,8 @@ static int wavpack_encode_block(WavPackEncodeContext *s,
     block_size = bytestream2_tell_p(&pb);
     AV_WL32(out + 4, block_size - 8);
 
+    av_assert0(!bytestream2_get_eof(&pb));
+
     return block_size;
 }
 
@@ -2876,10 +2881,11 @@ static int wavpack_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             return AVERROR(ENOMEM);
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, s->block_samples * avctx->channels * 8)) < 0)
+    buf_size = s->block_samples * avctx->channels * 8
+             + 200 /* for headers */;
+    if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size)) < 0)
         return ret;
     buf = avpkt->data;
-    buf_size = avpkt->size;
 
     for (s->ch_offset = 0; s->ch_offset < avctx->channels;) {
         set_samplerate(s);

@@ -1305,6 +1305,7 @@ EXAMPLE_LIST="
     avio_reading_example
     decoding_encoding_example
     demuxing_decoding_example
+    extract_mvs_example
     filter_audio_example
     filtering_audio_example
     filtering_video_example
@@ -2406,7 +2407,9 @@ mpegtsraw_demuxer_select="mpegts_demuxer"
 mxf_d10_muxer_select="mxf_muxer"
 nut_muxer_select="riffenc"
 nuv_demuxer_select="riffdec"
+oga_muxer_select="ogg_muxer"
 ogg_demuxer_select="golomb"
+opus_muxer_select="ogg_muxer"
 psp_muxer_select="mov_muxer"
 rtp_demuxer_select="sdp_demuxer"
 rtpdec_select="asf_demuxer rm_demuxer rtp_protocol mpegts_demuxer mov_demuxer"
@@ -2417,6 +2420,7 @@ sap_muxer_select="rtp_muxer rtp_protocol rtpenc_chain"
 sdp_demuxer_select="rtpdec"
 smoothstreaming_muxer_select="ismv_muxer"
 spdif_muxer_select="aac_parser"
+spx_muxer_select="ogg_muxer"
 tak_demuxer_select="tak_parser"
 tg2_muxer_select="mov_muxer"
 tgp_muxer_select="mov_muxer"
@@ -2586,6 +2590,7 @@ zoompan_filter_deps="swscale"
 avio_reading="avformat avcodec avutil"
 avcodec_example_deps="avcodec avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"
+extract_mvs_example_deps="avcodec avformat avutil"
 filter_audio_example_deps="avfilter avutil"
 filtering_audio_example_deps="avfilter avcodec avformat avutil"
 filtering_video_example_deps="avfilter avcodec avformat avutil"
@@ -3179,7 +3184,7 @@ msvc_flags(){
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
                                        -wd4554 \
-                                       -wd4273 ;;
+                                       -wd4273 -wd4701 ;;
         esac
     done
 }

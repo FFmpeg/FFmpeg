@@ -56,7 +56,6 @@
 #define MAX_TRANSFORM_DEPTH 5
 
 #define MAX_TB_SIZE 32
-#define MAX_PB_SIZE 64
 #define MAX_LOG2_CTB_SIZE 6
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2

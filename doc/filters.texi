@@ -742,8 +742,58 @@ Pass the audio source unchanged to the output.
 
 @section apad
 
-Pad the end of a audio stream with silence, this can be used together with
--shortest to extend audio streams to the same length as the video stream.
+Pad the end of an audio stream with silence.
+
+This can be used together with @command{ffmpeg} @option{-shortest} to
+extend audio streams to the same length as the video stream.
+
+A description of the accepted options follows.
+
+@table @option
+@item packet_size
+Set silence packet size. Default value is 4096.
+
+@item pad_len
+Set the number of samples of silence to add to the end. After the
+value is reached, the stream is terminated. This option is mutually
+exclusive with @option{whole_len}.
+
+@item whole_len
+Set the minimum total number of samples in the output audio stream. If
+the value is longer than the input audio length, silence is added to
+the end, until the value is reached. This option is mutually exclusive
+with @option{pad_len}.
+@end table
+
+If neither the @option{pad_len} nor the @option{whole_len} option is
+set, the filter will add silence to the end of the input stream
+indefinitely.
+
+@subsection Examples
+
+@itemize
+@item
+Add 1024 samples of silence to the end of the input:
+@example
+apad=pad_len=1024
+@end example
+
+@item
+Make sure the audio output will contain at least 10000 samples, pad
+the input with silence if required:
+@example
+apad=whole_len=10000
+@end example
+
+@item
+Use @command{ffmpeg} to pad the audio input with silence, so that the
+video stream will always result the shortest and will be converted
+until the end in the output file when using the @option{shortest}
+option:
+@example
+ffmpeg -i VIDEO -i AUDIO -filter_complex "[1:0]apad" -shortest OUTPUT
+@end example
+@end itemize
 
 @section aphaser
 Add a phasing effect to the input audio.
@@ -10610,6 +10660,26 @@ Default value is @code{3.0}.
 @item fontfile
 Specify font file for use with freetype. If not specified, use embedded font.
 
+@item fontcolor
+Specify font color expression. This is arithmetic expression that should return
+integer value 0xRRGGBB. The expression can contain variables:
+@table @option
+@item frequency, freq, f
+the frequency where transform is evaluated
+@item timeclamp, tc
+value of timeclamp option
+@end table
+and functions:
+@table @option
+@item midi(f)
+midi number of frequency f, some midi numbers: E0(16), C1(24), C2(36), A4(69)
+@item r(x), g(x), b(x)
+red, green, and blue value of intensity x
+@end table
+Default value is @code{st(0, (midi(f)-59.5)/12);
+st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));
+r(1-ld(1)) + b(ld(1))}
+
 @item fullhd
 If set to 1 (the default), the video size is 1920x1080 (full HD),
 if set to 0, the video size is 960x540. Use this option to make CPU usage lower.
@@ -10669,6 +10739,12 @@ volume=16*b_weighting(f)
 Lower Q factor
 @example
 tlength=100/f*tc/(100/f+tc)
+@end example
+
+@item
+Custom fontcolor, C-note is colored green, others are colored blue
+@example
+fontcolor='if(mod(floor(midi(f)+0.5),12), 0x0000FF, g(1))'
 @end example
 
 @end itemize
@@ -10813,6 +10889,9 @@ Draw a vertical line for each sample.
 
 @item p2p
 Draw a point for each sample and a line between them.
+
+@item cline
+Draw a centered vertical line for each sample.
 @end table
 
 Default value is @code{point}.
@@ -10826,6 +10905,9 @@ is not explicitly specified.
 @item rate, r
 Set the (approximate) output frame rate. This is done by setting the
 option @var{n}. Default value is "25".
+
+@item split_channels
+Set if channels should be drawn separately or overlap. Default value is 0.
 
 @end table
 

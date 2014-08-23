@@ -129,7 +129,7 @@ static void gif_copy_img_rect(const uint32_t *src, uint32_t *dst,
 
 static int gif_read_image(GifState *s, AVFrame *frame)
 {
-    int left, top, width, height, bits_per_pixel, code_size, flags;
+    int left, top, width, height, bits_per_pixel, code_size, flags, pw;
     int is_interleaved, has_local_palette, y, pass, y1, linesize, pal_size;
     uint32_t *ptr, *pal, *px, *pr, *ptr1;
     int ret;
@@ -179,14 +179,27 @@ static int gif_read_image(GifState *s, AVFrame *frame)
     }
 
     /* verify that all the image is inside the screen dimensions */
-    if (left + width > s->screen_width ||
-        top + height > s->screen_height) {
-        av_log(s->avctx, AV_LOG_ERROR, "image is outside the screen dimensions.\n");
+    if (!width || width > s->screen_width || left >= s->screen_width) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid image width.\n");
         return AVERROR_INVALIDDATA;
     }
-    if (width <= 0 || height <= 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid image dimensions.\n");
+    if (!height || height > s->screen_height || top >= s->screen_height) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid image height.\n");
         return AVERROR_INVALIDDATA;
+    }
+    if (left + width > s->screen_width) {
+        /* width must be kept around to avoid lzw vs line desync */
+        pw = s->screen_width - left;
+        av_log(s->avctx, AV_LOG_WARNING, "Image too wide by %d, truncating.\n",
+               left + width - s->screen_width);
+    } else {
+        pw = width;
+    }
+    if (top + height > s->screen_height) {
+        /* we don't care about the extra invisible lines */
+        av_log(s->avctx, AV_LOG_WARNING, "Image too high by %d, truncating.\n",
+               top + height - s->screen_height);
+        height = s->screen_height - top;
     }
 
     /* process disposal method */
@@ -201,7 +214,7 @@ static int gif_read_image(GifState *s, AVFrame *frame)
 
     if (s->gce_disposal != GCE_DISPOSAL_NONE) {
         s->gce_l = left;  s->gce_t = top;
-        s->gce_w = width; s->gce_h = height;
+        s->gce_w = pw;    s->gce_h = height;
 
         if (s->gce_disposal == GCE_DISPOSAL_BACKGROUND) {
             if (s->transparent_color_index >= 0)
@@ -214,7 +227,7 @@ static int gif_read_image(GifState *s, AVFrame *frame)
                 return AVERROR(ENOMEM);
 
             gif_copy_img_rect((uint32_t *)frame->data[0], s->stored_img,
-                frame->linesize[0] / sizeof(uint32_t), left, top, width, height);
+                frame->linesize[0] / sizeof(uint32_t), left, top, pw, height);
         }
     }
 
@@ -244,7 +257,7 @@ static int gif_read_image(GifState *s, AVFrame *frame)
             goto decode_tail;
         }
 
-        pr = ptr + width;
+        pr = ptr + pw;
 
         for (px = ptr, idx = s->idx_line; px < pr; px++, idx++) {
             if (*idx != s->transparent_color_index)

@@ -134,16 +134,20 @@ cglobal pixelutils_sad_16x16, 4,4,5, src1, stride1, src2, stride2
 %macro SAD_XMM_16x16 1
 INIT_XMM sse2
 cglobal pixelutils_sad_%1_16x16, 4,4,3, src1, stride1, src2, stride2
-    pxor        m2, m2
-%rep 8
-    mov%1       m0, [src2q]
+    mov%1       m2, [src2q]
+    psadbw      m2, [src1q]
     mov%1       m1, [src2q + stride2q]
+    psadbw      m1, [src1q + stride1q]
+    paddw       m2, m1
+%rep 7
+    lea         src1q, [src1q + 2*stride1q]
+    lea         src2q, [src2q + 2*stride2q]
+    mov%1       m0, [src2q]
     psadbw      m0, [src1q]
+    mov%1       m1, [src2q + stride2q]
     psadbw      m1, [src1q + stride1q]
     paddw       m2, m0
     paddw       m2, m1
-    lea         src1q, [src1q + 2*stride1q]
-    lea         src2q, [src2q + 2*stride2q]
 %endrep
     movhlps     m0, m2
     paddw       m2, m0
