@@ -31,6 +31,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
+#include "libavutil/time.h"
 #include "libavutil/opt.h"
 
 #define DEFAULT_CODEC_ID AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE)
@@ -47,6 +48,7 @@ typedef struct PulseData {
     pa_simple *s;
     int64_t pts;
     int64_t frame_duration;
+    int wallclock;
 } PulseData;
 
 static pa_sample_format_t codec_id_to_pulse_format(int codec_id) {
@@ -141,6 +143,8 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (pd->pts == AV_NOPTS_VALUE) {
         pd->pts = -latency;
+        if (pd->wallclock)
+            pd->pts += av_gettime();
     }
 
     pkt->pts = pd->pts;
@@ -168,6 +172,7 @@ static const AVOption options[] = {
     { "channels",      "number of audio channels",                       OFFSET(channels),      AV_OPT_TYPE_INT,    {.i64 = 2},        1, INT_MAX, D },
     { "frame_size",    "number of bytes per frame",                      OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.i64 = 1024},     1, INT_MAX, D },
     { "fragment_size", "buffering size, affects latency and cpu usage",  OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.i64 = -1},      -1, INT_MAX, D },
+    { "wallclock",     "set the initial pts using the current time",     OFFSET(wallclock),     AV_OPT_TYPE_INT,    {.i64 = 1},       -1, 1, D },
     { NULL },
 };
 
