@@ -247,6 +247,13 @@ static int sixel_write_trailer(AVFormatContext *s)
 {
     SIXELContext * const c = s->priv_data;
 
+    if (isatty(fileno(sixel_output_file))) {
+        fprintf(sixel_output_file,
+                "\033\\"      /* terminate DCS sequence */
+                "\0338"       /* restore cursor position */
+                "\033[?25h"); /* show cursor */
+    }
+    fflush(sixel_output_file);
     if (sixel_output_file && sixel_output_file != stdout) {
         fclose(sixel_output_file);
         sixel_output_file = NULL;
@@ -263,13 +270,6 @@ static int sixel_write_trailer(AVFormatContext *s)
         sixel_dither_unref(c->dither);
         c->dither = NULL;
     }
-    if (isatty(fileno(sixel_output_file))) {
-        fprintf(sixel_output_file,
-                "\033\\"      /* terminate DCS sequence */
-                "\0338"       /* restore cursor position */
-                "\033[?25h"); /* show cursor */
-    }
-    fflush(sixel_output_file);
     return 0;
 }
 
