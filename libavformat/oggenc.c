@@ -86,6 +86,14 @@ static const AVOption options[] = {
     { NULL },
 };
 
+#define OGG_CLASS(flavor, name)\
+static const AVClass flavor ## _muxer_class = {\
+    .class_name = #name " muxer",\
+    .item_name  = av_default_item_name,\
+    .option     = options,\
+    .version    = LIBAVUTIL_VERSION_INT,\
+};
+
 static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc_offset)
 {
     int64_t pos = avio_tell(pb);
@@ -638,13 +646,7 @@ static int ogg_write_trailer(AVFormatContext *s)
 }
 
 #if CONFIG_OGG_MUXER
-static const AVClass ogg_muxer_class = {
-    .class_name = "Ogg muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
+OGG_CLASS(ogg, Ogg)
 AVOutputFormat ff_ogg_muxer = {
     .name              = "ogg",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg"),
@@ -670,13 +672,7 @@ AVOutputFormat ff_ogg_muxer = {
 #endif
 
 #if CONFIG_OGA_MUXER
-static const AVClass oga_muxer_class = {
-    .class_name = "Ogg audio muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
+OGG_CLASS(oga, Ogg audio)
 AVOutputFormat ff_oga_muxer = {
     .name              = "oga",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg Audio"),
@@ -694,13 +690,7 @@ AVOutputFormat ff_oga_muxer = {
 #endif
 
 #if CONFIG_SPX_MUXER
-static const AVClass spx_muxer_class = {
-    .class_name = "Ogg Speex muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
+OGG_CLASS(spx, Ogg Speex)
 AVOutputFormat ff_spx_muxer = {
     .name              = "spx",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg Speex"),
@@ -717,13 +707,7 @@ AVOutputFormat ff_spx_muxer = {
 #endif
 
 #if CONFIG_OPUS_MUXER
-static const AVClass opus_muxer_class = {
-    .class_name = "Ogg Opus muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
+OGG_CLASS(opus, Ogg Opus)
 AVOutputFormat ff_opus_muxer = {
     .name              = "opus",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg Opus"),
