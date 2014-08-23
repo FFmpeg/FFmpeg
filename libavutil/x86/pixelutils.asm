@@ -109,18 +109,24 @@ cglobal pixelutils_sad_16x16, 4,4,0, src1, stride1, src2, stride2
 ;-------------------------------------------------------------------------------
 INIT_XMM sse2
 cglobal pixelutils_sad_16x16, 4,4,5, src1, stride1, src2, stride2
-    pxor        m4, m4
-%rep 8
-    movu        m0, [src1q]
-    movu        m1, [src1q + stride1q]
+    movu        m4, [src1q]
     movu        m2, [src2q]
+    movu        m1, [src1q + stride1q]
+    movu        m3, [src2q + stride2q]
+    psadbw      m4, m2
+    psadbw      m1, m3
+    paddw       m4, m1
+%rep 7
+    lea         src1q, [src1q + 2*stride1q]
+    lea         src2q, [src2q + 2*stride2q]
+    movu        m0, [src1q]
+    movu        m2, [src2q]
+    movu        m1, [src1q + stride1q]
     movu        m3, [src2q + stride2q]
     psadbw      m0, m2
     psadbw      m1, m3
     paddw       m4, m0
     paddw       m4, m1
-    lea         src1q, [src1q + 2*stride1q]
-    lea         src2q, [src2q + 2*stride2q]
 %endrep
     movhlps     m0, m4
     paddw       m4, m0
