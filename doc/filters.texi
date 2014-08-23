@@ -4089,7 +4089,7 @@ drawtext='fontfile=FreeSans.ttf:text=%@{localtime:%a %b %d %Y@}'
 @end example
 
 @item
-Shwo text fading in and out (appearing/disappearing):
+Show text fading in and out (appearing/disappearing):
 @example
 #!/bin/sh
 DS=1.0 # display start
