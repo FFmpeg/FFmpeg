@@ -92,6 +92,10 @@ typedef struct MpegTSWrite {
 #define DEFAULT_PES_HEADER_FREQ 16
 #define DEFAULT_PES_PAYLOAD_SIZE ((DEFAULT_PES_HEADER_FREQ - 1) * 184 + 170)
 
+/* The section length is 12 bits. The first 2 are set to 0, the remaining
+ * 10 bits should not exceed 1021. */
+#define SECTION_LENGTH 1020
+
 static const AVOption options[] = {
     { "mpegts_transport_stream_id", "Set transport_stream_id field.",
       offsetof(MpegTSWrite, transport_stream_id), AV_OPT_TYPE_INT, {.i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM},
@@ -246,7 +250,7 @@ static void mpegts_write_pat(AVFormatContext *s)
 {
     MpegTSWrite *ts = s->priv_data;
     MpegTSService *service;
-    uint8_t data[1012], *q;
+    uint8_t data[SECTION_LENGTH], *q;
     int i;
 
     q = data;
@@ -262,7 +266,7 @@ static void mpegts_write_pat(AVFormatContext *s)
 static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 {
     MpegTSWrite *ts = s->priv_data;
-    uint8_t data[1012], *q, *desc_length_ptr, *program_info_length_ptr;
+    uint8_t data[SECTION_LENGTH], *q, *desc_length_ptr, *program_info_length_ptr;
     int val, stream_type, i;
 
     q = data;
@@ -504,7 +508,7 @@ static void mpegts_write_sdt(AVFormatContext *s)
 {
     MpegTSWrite *ts = s->priv_data;
     MpegTSService *service;
-    uint8_t data[1012], *q, *desc_list_len_ptr, *desc_len_ptr;
+    uint8_t data[SECTION_LENGTH], *q, *desc_list_len_ptr, *desc_len_ptr;
     int i, running_status, free_ca_mode, val;
 
     q = data;
