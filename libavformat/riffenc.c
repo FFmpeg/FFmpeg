@@ -63,8 +63,6 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
      * fall back on using AVCodecContext.frame_size, which is not as reliable
      * for indicating packet duration. */
     frame_size = av_get_audio_frame_duration(enc, enc->block_align);
-    if (!frame_size)
-        frame_size = enc->frame_size;
 
     waveformatextensible = (enc->channels > 2 && enc->channel_layout) ||
                            enc->sample_rate > 48000 ||
@@ -96,12 +94,10 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
                enc->bits_per_coded_sample, bps);
     }
 
-    if (enc->codec_id == AV_CODEC_ID_MP2 ||
-        enc->codec_id == AV_CODEC_ID_MP3) {
-        /* This is wrong, but it seems many demuxers do not work if this
-         * is set correctly. */
+    if (enc->codec_id == AV_CODEC_ID_MP2) {
         blkalign = frame_size;
-        // blkalign = 144 * enc->bit_rate/enc->sample_rate;
+    } else if (enc->codec_id == AV_CODEC_ID_MP3) {
+        blkalign = 576 * (enc->sample_rate <= 24000 ? 1 : 2);
     } else if (enc->codec_id == AV_CODEC_ID_AC3) {
         blkalign = 3840;                /* maximum bytes per frame */
     } else if (enc->block_align != 0) { /* specified by the codec */
