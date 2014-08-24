@@ -891,7 +891,7 @@ cglobal hevc_put_hevc_uni_qpel_v%1_%2, 7, 9, 15, dst, dststride, src, srcstride,
     QPEL_V_LOAD       %2, srcq, srcstride, %1, r8
     QPEL_COMPUTE      %1, %2
 %if %2 > 8
-    packusdw          m0, m1
+    packssdw          m0, m1
 %endif
     UNI_COMPUTE       %1, %2, m0, m1, m9
     PEL_%2STORE%1   dstq, m0, m1
