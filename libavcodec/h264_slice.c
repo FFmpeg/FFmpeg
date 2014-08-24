@@ -537,7 +537,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         h->pps = h1->pps;
 
         if ((err = h264_slice_header_init(h, 1)) < 0) {
-            av_log(h->avctx, AV_LOG_ERROR, "h264_slice_header_init() failed");
+            av_log(h->avctx, AV_LOG_ERROR, "h264_slice_header_init() failed\n");
             return err;
         }
         context_reinitialized = 1;
