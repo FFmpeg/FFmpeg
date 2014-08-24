@@ -123,6 +123,7 @@ static int vc1_parse(AVCodecParserContext *s,
     uint8_t *unesc_buffer = vpc->unesc_buffer;
     size_t unesc_index = vpc->unesc_index;
     VC1ParseSearchState search_state = vpc->search_state;
+    int start_code_found;
     int next = END_NOT_FOUND;
     int i = vpc->bytes_to_skip;
 
@@ -133,8 +134,8 @@ static int vc1_parse(AVCodecParserContext *s,
         next = 0;
     }
     while (i < buf_size) {
-        int start_code_found = 0;
         uint8_t b;
+        start_code_found = 0;
         while (i < buf_size && unesc_index < UNESCAPED_THRESHOLD) {
             b = buf[i++];
             unesc_buffer[unesc_index++] = b;
@@ -232,7 +233,7 @@ static int vc1_parse(AVCodecParserContext *s,
      * the start code we've already seen, or cause extra bytes to be
      * inserted at the start of the unescaped buffer. */
     vpc->bytes_to_skip = 4;
-    if (next < 0)
+    if (next < 0 && start_code_found)
         vpc->bytes_to_skip += next;
 
     *poutbuf = buf;
