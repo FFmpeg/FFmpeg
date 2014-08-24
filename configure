@@ -210,10 +210,13 @@ External library support:
   --enable-libx264         enable H.264 encoding via x264 [no]
   --enable-libx265         enable HEVC encoding via x265 [no]
   --enable-libxavs         enable AVS encoding via xavs [no]
+  --enable-libxcb          enable X11 grabbing using XCB [no]
+  --enable-libxcb-shm      enable X11 grabbing shm communication [auto]
+  --enable-libxcb-xfixes   enable X11 grabbing mouse rendering [auto]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
   --enable-openssl         enable openssl [no]
-  --enable-x11grab         enable X11 grabbing [no]
+  --enable-x11grab         enable X11 grabbing (legacy) [no]
   --enable-zlib            enable zlib [autodetect]
 
 Toolchain options:
@@ -1170,6 +1173,9 @@ EXTERNAL_LIBRARY_LIST="
     libx264
     libx265
     libxavs
+    libxcb
+    libxcb_shm
+    libxcb_xfixes
     libxvid
     openssl
     x11grab
@@ -2102,7 +2108,8 @@ sndio_outdev_deps="sndio_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
-x11grab_indev_deps="x11grab XShmCreateImage"
+x11grab_indev_deps="x11grab"
+x11grab_xcb_indev_deps="libxcb"
 
 # protocols
 ffrtmpcrypt_protocol_deps="!librtmp_protocol"
@@ -4273,10 +4280,30 @@ fi
 
 check_lib X11/Xlib.h XOpenDisplay -lX11 && enable xlib
 
-enabled x11grab                                           &&
-require Xext X11/extensions/XShm.h XShmCreateImage -lXext &&
-require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes &&
-{ enabled xlib || die "ERROR: Xlib not found"; }
+if enabled libxcb || enabled x11grab && ! disabled libxcb; then
+    check_pkg_config xcb-event xcb/xcb.h xcb_connect || {
+        enabled libxcb && die "ERROR: libxcb not found";
+    } && disable x11grab && enable libxcb
+
+    disabled libxcb_shm ||
+        check_pkg_config xcb-shm xcb/shm.h xcb_shm_attach || {
+            enabled libxcb_shm && die "ERROR: libxcb_shm not found";
+        } && check_header sys/shm.h && enable libxcb_shm
+
+    disabled libxcb_xfixes ||
+        check_pkg_config xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image || {
+            enabled libxcb_xfixes && die "ERROR: libxcb_xfixes not found";
+        } && enable libxcb_xfixes
+
+    add_cflags "$xcb_event_cflags $xcb_shm_cflags $xcb_xfixes_cflags"
+    add_extralibs "$xcb_event_libs $xcb_shm_libs $xcb_xfixes_libs"
+fi
+
+if enabled x11grab; then
+    enabled xlib || die "ERROR: Xlib not found"
+    require Xext X11/extensions/XShm.h XShmCreateImage -lXext
+    require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
+fi
 
 enabled vdpau &&
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
