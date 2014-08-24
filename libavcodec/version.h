@@ -174,5 +174,9 @@
 #ifndef FF_API_AFD
 #define FF_API_AFD               (LIBAVCODEC_VERSION_MAJOR < 57)
 #endif
+#ifndef FF_API_VISMV
+/* XXX: don't forget to drop the -vismv documentation */
+#define FF_API_VISMV             (LIBAVCODEC_VERSION_MAJOR < 57)
+#endif
 
 #endif /* AVCODEC_VERSION_H */

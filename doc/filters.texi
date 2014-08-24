@@ -2805,6 +2805,42 @@ boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chrom
 @end example
 @end itemize
 
+@section codecview
+
+Visualize information exported by some codecs.
+
+Some codecs can export information through frames using side-data or other
+means. For example, some MPEG based codecs export motion vectors through the
+@var{export_mvs} flag in the codec @option{flags2} option.
+
+The filter accepts the following option:
+
+@table @option
+@item mv
+Set motion vectors to visualize.
+
+Available flags for @var{mv} are:
+
+@table @samp
+@item pf
+forward predicted MVs of P-frames
+@item bf
+forward predicted MVs of B-frames
+@item bb
+backward predicted MVs of B-frames
+@end table
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Visualizes multi-directionals MVs from P and B-Frames using @command{ffplay}:
+@example
+ffplay -flags2 +export_mvs input.mpg -vf codecview=mv=pf+bf+bb
+@end example
+@end itemize
+
 @section colorbalance
 Modify intensity of primary colors (red, green and blue) of input frames.
 
