@@ -123,6 +123,45 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dst
     mc_rep_uni_func(name, bitd, step, W, opt);        \
     mc_rep_bi_func(name, bitd, step, W, opt)
 
+#define mc_rep_func2(name, bitd, step1, step2, W, opt) \
+void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *dst,                                                  \
+                                                 uint8_t *src, ptrdiff_t _srcstride, int height,                \
+                                                 intptr_t mx, intptr_t my, int width)                           \
+{                                                                                                               \
+    ff_hevc_put_hevc_##name##step1##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);               \
+    ff_hevc_put_hevc_##name##step2##_##bitd##_##opt(dst + step1, src + (step1 * ((bitd + 7) / 8)),              \
+                                                    _srcstride, height, mx, my, width);                         \
+}
+#define mc_rep_uni_func2(name, bitd, step1, step2, W, opt) \
+void ff_hevc_put_hevc_uni_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride,                         \
+                                                     uint8_t *src, ptrdiff_t _srcstride, int height,            \
+                                                     intptr_t mx, intptr_t my, int width)                       \
+{                                                                                                               \
+    ff_hevc_put_hevc_uni_##name##step1##_##bitd##_##opt(dst, dststride, src, _srcstride, height, mx, my, width);\
+    ff_hevc_put_hevc_uni_##name##step2##_##bitd##_##opt(dst + (step1 * ((bitd + 7) / 8)), dststride,            \
+                                                        src + (step1 * ((bitd + 7) / 8)), _srcstride,           \
+                                                        height, mx, my, width);                                 \
+}
+#define mc_rep_bi_func2(name, bitd, step1, step2, W, opt) \
+void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,            \
+                                                    ptrdiff_t _srcstride, int16_t* src2,                        \
+                                                    int height, intptr_t mx, intptr_t my, int width)            \
+{                                                                                                               \
+    ff_hevc_put_hevc_bi_##name##step1##_##bitd##_##opt(dst, dststride, src, _srcstride, src2, height, mx, my, width);\
+    ff_hevc_put_hevc_bi_##name##step2##_##bitd##_##opt(dst + (step1 * ((bitd + 7) / 8)), dststride,             \
+                                                       src + (step1 * ((bitd + 7) / 8)), _srcstride,            \
+                                                       src2 + step1, height, mx, my, width);                    \
+}
+
+#define mc_rep_funcs(name, bitd, step, W, opt)        \
+    mc_rep_func(name, bitd, step, W, opt);            \
+    mc_rep_uni_func(name, bitd, step, W, opt);        \
+    mc_rep_bi_func(name, bitd, step, W, opt)
+
+#define mc_rep_funcs2(name, bitd, step1, step2, W, opt) \
+    mc_rep_func2(name, bitd, step1, step2, W, opt);     \
+    mc_rep_uni_func2(name, bitd, step1, step2, W, opt); \
+    mc_rep_bi_func2(name, bitd, step1, step2, W, opt)
 
 #if ARCH_X86_64 && HAVE_SSE4_EXTERNAL
 
@@ -180,7 +219,7 @@ mc_rep_funcs(epel_hv, 8,  8, 48, sse4);
 mc_rep_funcs(epel_hv, 8,  8, 32, sse4);
 mc_rep_funcs(epel_hv, 8,  8, 24, sse4);
 mc_rep_funcs(epel_hv, 8,  8, 16, sse4);
-mc_rep_funcs(epel_hv, 8,  4, 12, sse4);
+mc_rep_funcs2(epel_hv,8,  8,  4, 12, sse4);
 mc_rep_funcs(epel_hv,10,  8, 64, sse4);
 mc_rep_funcs(epel_hv,10,  8, 48, sse4);
 mc_rep_funcs(epel_hv,10,  8, 32, sse4);
@@ -231,7 +270,7 @@ mc_rep_funcs(qpel_hv, 8,  8, 48, sse4);
 mc_rep_funcs(qpel_hv, 8,  8, 32, sse4);
 mc_rep_funcs(qpel_hv, 8,  8, 24, sse4);
 mc_rep_funcs(qpel_hv, 8,  8, 16, sse4);
-mc_rep_funcs(qpel_hv, 8,  4, 12, sse4);
+mc_rep_funcs2(qpel_hv,8,  8,  4, 12, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 64, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 48, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 32, sse4);
