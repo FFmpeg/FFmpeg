@@ -21,7 +21,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>
-#if HAVE_GETTIMEOFDAY
+#if HAVE_CLOCK_GETTIME
+#include <time.h>
+#elif HAVE_GETTIMEOFDAY
 #include <sys/time.h>
 #endif
 #if HAVE_UNISTD_H
@@ -36,7 +38,11 @@
 
 int64_t av_gettime(void)
 {
-#if HAVE_GETTIMEOFDAY
+#if HAVE_CLOCK_GETTIME
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (int64_t)ts.tv_sec * 100000 + ts.tv_nsec / 1000;
+#elif HAVE_GETTIMEOFDAY
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
