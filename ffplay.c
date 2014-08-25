@@ -991,7 +991,7 @@ static void video_audio_display(VideoState *s)
             av_free(s->rdft_data);
             s->rdft = av_rdft_init(rdft_bits, DFT_R2C);
             s->rdft_bits = rdft_bits;
-            s->rdft_data = av_malloc(4 * nb_freq * sizeof(*s->rdft_data));
+            s->rdft_data = av_malloc_array(nb_freq, 4 *sizeof(*s->rdft_data));
         }
         {
             FFTSample *data[2];
