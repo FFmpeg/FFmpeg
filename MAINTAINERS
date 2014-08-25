@@ -460,6 +460,7 @@ Muxers/Demuxers:
   rtmp*                                 Kostya Shishkov
   rtp.c, rtpenc.c                       Martin Storsjo
   rtpdec_h261.*, rtpenc_h261.*          Thomas Volkert
+  rtpdec_hevc.*                         Thomas Volkert
   rtpdec_asf.*                          Ronald S. Bultje
   rtpenc_mpv.*, rtpenc_aac.*            Martin Storsjo
   rtsp.c                                Luca Barbato
