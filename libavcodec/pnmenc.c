@@ -84,8 +84,6 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream += strlen(bytestream);
     if (avctx->pix_fmt != AV_PIX_FMT_MONOWHITE) {
         int maxdepth = (1 << (av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth_minus1 + 1)) - 1;
-        if( avctx->bits_per_raw_sample )
-            maxdepth = (1 << avctx->bits_per_raw_sample) - 1;
         snprintf(bytestream, bytestream_end - bytestream,
                  "%d\n", maxdepth);
         bytestream += strlen(bytestream);
