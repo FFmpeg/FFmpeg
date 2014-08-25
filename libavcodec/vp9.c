@@ -368,7 +368,7 @@ static int update_block_buffers(AVCodecContext *ctx)
     if (s->uses_2pass) {
         int sbs = s->sb_cols * s->sb_rows;
 
-        s->b_base = av_malloc(sizeof(VP9Block) * s->cols * s->rows);
+        s->b_base = av_malloc_array(s->cols * s->rows, sizeof(VP9Block));
         s->block_base = av_mallocz((64 * 64 + 128) * sbs * 3);
         if (!s->b_base || !s->block_base)
             return AVERROR(ENOMEM);
