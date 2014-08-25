@@ -375,8 +375,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -436,8 +439,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -500,8 +506,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -564,8 +573,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -628,8 +640,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -692,8 +707,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -760,8 +778,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -828,8 +849,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -901,8 +925,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -974,8 +1001,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -1047,8 +1077,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -1120,8 +1153,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -1187,8 +1223,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
@@ -1254,8 +1293,11 @@ del ..\version.h
 if exist ..\config.asm (
 del ..\config.asm
 )
-if exist ..\avconfig.h (
-del ..\avconfig.h
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )
 if exist $(OutDir)\include\libswscale (
 rd /s /q $(OutDir)\include\libswscale
