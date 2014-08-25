@@ -660,11 +660,9 @@ static void decode_422_bitstream(HYuvContext *s, int count)
     dst1 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3)<<2;\
     dst1 += get_bits(&s->gb, 2);\
 }
-static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
+static void decode_plane_bitstream(HYuvContext *s, int width, int plane)
 {
-    int i;
-
-    count /= 2;
+    int i, count = width/2;
 
     if (s->bps <= 8) {
         OPEN_READER(re, &s->gb);
@@ -676,6 +674,14 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
             for(i=0; i<count; i++){
                 READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane, OP8bits);
             }
+        }
+        if( width&1 && BITS_LEFT(re, &s->gb)>0 ) {
+            unsigned int index;
+            int nb_bits, code, n;
+            UPDATE_CACHE(re, &s->gb);
+            index = SHOW_UBITS(re, &s->gb, VLC_BITS);
+            VLC_INTERN(s->temp[0][width-1], s->vlc[plane].table,
+                       &s->gb, re, VLC_BITS, 3);
         }
         CLOSE_READER(re, &s->gb);
     } else if (s->bps <= 14) {
@@ -689,6 +695,14 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
                 READ_2PIX_PLANE(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane, OP14bits);
             }
         }
+        if( width&1 && BITS_LEFT(re, &s->gb)>0 ) {
+            unsigned int index;
+            int nb_bits, code, n;
+            UPDATE_CACHE(re, &s->gb);
+            index = SHOW_UBITS(re, &s->gb, VLC_BITS);
+            VLC_INTERN(s->temp16[0][width-1], s->vlc[plane].table,
+                       &s->gb, re, VLC_BITS, 3);
+        }
         CLOSE_READER(re, &s->gb);
     } else {
         if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
@@ -699,6 +713,10 @@ static void decode_plane_bitstream(HYuvContext *s, int count, int plane)
             for(i=0; i<count; i++){
                 READ_2PIX_PLANE16(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane);
             }
+        }
+        if( width&1 && get_bits_left(&s->gb)>0 ) {
+            int dst = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3)<<2;
+            s->temp16[0][width-1] = dst + get_bits(&s->gb, 2);
         }
     }
 }
