@@ -1132,7 +1132,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 #define OFFSET(x) offsetof(MpegMuxContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "muxrate", NULL, OFFSET(mux_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
+    { "muxrate", NULL, OFFSET(mux_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, (1 << 22) - 1, E },
     { "preload", "Initial demux-decode delay in microseconds.", OFFSET(preload),  AV_OPT_TYPE_INT, {.i64 = 500000}, 0, INT_MAX, E},
     { NULL },
 };
