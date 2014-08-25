@@ -1203,11 +1203,12 @@ cglobal hevc_put_hevc_uni_w%1_%2, 6, 6, 7, dst, dststride, src, srcstride, heigh
     paddd             m0, m3
     paddd             m1, m3
 %endif
-    packusdw          m0, m1
+    packssdw          m0, m1
 %if %2 == 8
     packuswb          m0, m0
 %else
     pminsw            m0, [max_pixels_%2]
+    pmaxsw            m0, [zero]
 %endif
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
@@ -1274,11 +1275,12 @@ cglobal hevc_put_hevc_bi_w%1_%2, 5, 7, 10, dst, dststride, src, srcstride, src2,
     psrad             m0, m5
     psrad             m1, m5
 %endif
-    packusdw          m0, m1
+    packssdw          m0, m1
 %if %2 == 8
     packuswb          m0, m0
 %else
     pminsw            m0, [max_pixels_%2]
+    pmaxsw            m0, [zero]
 %endif
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
