@@ -211,6 +211,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -248,6 +254,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -285,6 +297,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -322,6 +340,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -368,6 +392,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -414,6 +444,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -460,6 +496,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -506,6 +548,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -551,6 +599,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -596,6 +650,12 @@ del ..\version.h
 )
 if exist ..\config.asm (
 del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>

@@ -518,8 +518,11 @@ del ..\\version.h\n\
 if exist ..\\config.asm (\n\
 del ..\\config.asm\n\
 )\n\
-if exist ..\\avconfig.h (\n\
-del ..\\avconfig.h\n\
+if exist ..\\libavutil\\avconfig.h (\n\
+del ..\\libavutil\\avconfig.h\n\
+)\n\
+if exist ..\\libavutil\\ffversion.h (\n\
+del ..\\libavutil\\ffversion.h\n\
 )\n\
 if exist $(OutDir)\\include\\" + sProjectName + " (\n\
 rd /s /q $(OutDir)\\include\\" + sProjectName + "\n\
