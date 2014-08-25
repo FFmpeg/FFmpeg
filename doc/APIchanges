@@ -126,7 +126,7 @@ API changes, most recent first:
   AVCodecContext.
 
 2014-05-15 - 0c1959b - lavf 55.17.0 - avformat.h
-  Add AVMFT_FLAG_BITEXACT flag. Muxers now use it instead of checking
+  Add AVFMT_FLAG_BITEXACT flag. Muxers now use it instead of checking
   CODEC_FLAG_BITEXACT on the first stream.
 
 2014-05-11 - 66e6c8a - lavu 53.14.0 - pixfmt.h
