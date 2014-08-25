@@ -3321,7 +3321,7 @@ static int webm_dash_manifest_cues(AVFormatContext *s)
     EbmlList *seekhead_list = &matroska->seekhead;
     MatroskaSeekhead *seekhead = seekhead_list->elem;
     char *buf;
-    int64_t cues_start, cues_end, before_pos, bandwidth;
+    int64_t cues_start = -1, cues_end = -1, before_pos, bandwidth;
     int i;
 
     // determine cues start and end positions
@@ -3340,6 +3340,7 @@ static int webm_dash_manifest_cues(AVFormatContext *s)
         cues_end = cues_start + cues_length + 11; // 11 is the offset of Cues ID.
     }
     avio_seek(matroska->ctx->pb, before_pos, SEEK_SET);
+    if (cues_start == -1 || cues_end == -1) return -1;
 
     // parse the cues
     matroska_parse_cues(matroska);
