@@ -213,7 +213,7 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
                "Could not get OpenCL platform ids: %s\n", av_opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
-    platform_ids = av_mallocz(device_list->platform_num * sizeof(cl_platform_id));
+    platform_ids = av_mallocz_array(device_list->platform_num, sizeof(cl_platform_id));
     if (!platform_ids)
         return AVERROR(ENOMEM);
     status = clGetPlatformIDs(device_list->platform_num, platform_ids, NULL);
@@ -223,7 +223,7 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
         ret = AVERROR_EXTERNAL;
         goto end;
     }
-    device_list->platform_node = av_mallocz(device_list->platform_num * sizeof(AVOpenCLPlatformNode *));
+    device_list->platform_node = av_mallocz_array(device_list->platform_num, sizeof(AVOpenCLPlatformNode *));
     if (!device_list->platform_node) {
         ret = AVERROR(ENOMEM);
         goto end;
@@ -249,14 +249,14 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
                                     device_type[j], 0, NULL, &devices_num[j]);
             total_devices_num += devices_num[j];
         }
-        device_list->platform_node[i]->device_node = av_mallocz(total_devices_num * sizeof(AVOpenCLDeviceNode *));
+        device_list->platform_node[i]->device_node = av_mallocz_array(total_devices_num, sizeof(AVOpenCLDeviceNode *));
         if (!device_list->platform_node[i]->device_node) {
             ret = AVERROR(ENOMEM);
             goto end;
         }
         for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
             if (devices_num[j]) {
-                device_ids = av_mallocz(devices_num[j] * sizeof(cl_device_id));
+                device_ids = av_mallocz_array(devices_num[j], sizeof(cl_device_id));
                 if (!device_ids) {
                     ret = AVERROR(ENOMEM);
                     goto end;
