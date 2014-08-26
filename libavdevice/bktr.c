@@ -3,7 +3,7 @@
  * Copyright (c) 2002 Steve O'Hara-Smith
  * based on
  *           Linux video grab interface
- *           Copyright (c) 2000,2001 Gerard Lantau
+ *           Copyright (c) 2000, 2001 Fabrice Bellard
  * and
  *           simple_grab.c Copyright (c) 1999 Roger Hardiman
  *
