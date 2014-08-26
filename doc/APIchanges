@@ -189,7 +189,7 @@ API changes, most recent first:
   Add av_gettime_relative() av_gettime_relative_is_monotonic()
 
 2014-05-15 - eacf7d6 / 0c1959b - lavf 55.38.100 / 55.17.0 - avformat.h
-  Add AVMFT_FLAG_BITEXACT flag. Muxers now use it instead of checking
+  Add AVFMT_FLAG_BITEXACT flag. Muxers now use it instead of checking
   CODEC_FLAG_BITEXACT on the first stream.
 
 2014-05-15 - 96cb4c8 - lswr 0.19.100 - swresample.h
