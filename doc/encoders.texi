@@ -1330,7 +1330,7 @@ ffmpeg -i INPUT -codec:v libtheora -b:v 1000k OUTPUT.ogg
 
 @section libvpx
 
-VP8 format supported through libvpx.
+VP8/VP9 format supported through libvpx.
 
 Requires the presence of the libvpx headers and library during configuration.
 You need to explicitly configure the build with @code{--enable-libvpx}.
@@ -1441,6 +1441,9 @@ g_lag_in_frames
 
 @item vp8flags error_resilient
 g_error_resilient
+
+@item aq_mode
+@code{VP9E_SET_AQ_MODE}
 
 @end table
 

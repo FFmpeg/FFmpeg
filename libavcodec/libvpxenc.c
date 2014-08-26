@@ -96,6 +96,7 @@ typedef struct VP8EncoderContext {
     int tile_columns;
     int tile_rows;
     int frame_parallel;
+    int aq_mode;
 } VP8Context;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -123,6 +124,7 @@ static const char *const ctlidstr[] = {
     [VP9E_SET_TILE_COLUMNS]            = "VP9E_SET_TILE_COLUMNS",
     [VP9E_SET_TILE_ROWS]               = "VP9E_SET_TILE_ROWS",
     [VP9E_SET_FRAME_PARALLEL_DECODING] = "VP9E_SET_FRAME_PARALLEL_DECODING",
+    [VP9E_SET_AQ_MODE]                 = "VP9E_SET_AQ_MODE",
 #endif
 };
 
@@ -444,6 +446,8 @@ static av_cold int vpx_init(AVCodecContext *avctx,
             codecctl_int(avctx, VP9E_SET_TILE_ROWS, ctx->tile_rows);
         if (ctx->frame_parallel >= 0)
             codecctl_int(avctx, VP9E_SET_FRAME_PARALLEL_DECODING, ctx->frame_parallel);
+        if (ctx->aq_mode >= 0)
+            codecctl_int(avctx, VP9E_SET_AQ_MODE, ctx->aq_mode);
     }
 #endif
 
@@ -803,6 +807,11 @@ static const AVOption vp9_options[] = {
     { "tile-columns",    "Number of tile columns to use, log2",         OFFSET(tile_columns),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
     { "tile-rows",       "Number of tile rows to use, log2",            OFFSET(tile_rows),       AV_OPT_TYPE_INT, {.i64 = -1}, -1, 2, VE},
     { "frame-parallel",  "Enable frame parallel decodability features", OFFSET(frame_parallel),  AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE},
+    { "aq-mode",         "adaptive quantization mode",                  OFFSET(aq_mode),         AV_OPT_TYPE_INT, {.i64 = -1}, -1, 3, VE, "aq_mode"},
+    { "none",            "Aq not used",         0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 0, VE, "aq_mode" }, \
+    { "variance",        "Variance based Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 1}, 0, 0, VE, "aq_mode" }, \
+    { "complexity",      "Complexity based Aq", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 0, VE, "aq_mode" }, \
+    { "cyclic",          "Cyclic Refresh Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 0, VE, "aq_mode" }, \
     LEGACY_OPTIONS
     { NULL }
 };
