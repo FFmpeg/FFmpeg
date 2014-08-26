@@ -35,6 +35,7 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o                       \
                                             rtpdec_h263.o               \
                                             rtpdec_h263_rfc2190.o       \
                                             rtpdec_h264.o               \
+                                            rtpdec_hevc.o               \
                                             rtpdec_ilbc.o               \
                                             rtpdec_jpeg.o               \
                                             rtpdec_latm.o               \

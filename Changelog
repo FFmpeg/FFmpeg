@@ -33,6 +33,7 @@ version <next>:
 - support for using metadata in stream specifiers in avtools
 - Aliases and defaults for Ogg subtypes (opus, spx)
 - matroska 3d support
+- HEVC/H.265 RTP payload format (draft v6) depacketizer
 
 
 version 10:
