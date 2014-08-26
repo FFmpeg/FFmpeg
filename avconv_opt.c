@@ -1633,6 +1633,10 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         av_log(NULL, AV_LOG_ERROR, "Unknown target: %s\n", arg);
         return AVERROR(EINVAL);
     }
+
+    av_dict_copy(&o->g->codec_opts,  codec_opts, 0);
+    av_dict_copy(&o->g->format_opts, format_opts, 0);
+
     return 0;
 }
 
