@@ -117,8 +117,8 @@ int ff_h261_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     sbit  =  (buf[0] >> 5) & 0x07;
     ebit  =  (buf[0] >> 2) & 0x07;
     gobn  =  (buf[1] >> 4) & 0x0f;
-    mbap  = ((buf[1] << 1) & 0x1e) | ((buf[1] >> 7) & 0x01);
-    quant =  (buf[1] >> 4) & 0x0f;
+    mbap  = ((buf[1] << 1) & 0x1e) | ((buf[2] >> 7) & 0x01);
+    quant =  (buf[2] >> 2) & 0x1f;
 
     /* pass the H.261 payload header and continue with the actual payload */
     buf += RTP_H261_PAYLOAD_HEADER_SIZE;
