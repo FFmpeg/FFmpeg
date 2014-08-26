@@ -84,6 +84,9 @@ typedef struct AC3DecodeContext {
     int bitstream_mode;                     ///< bitstream mode                         (bsmod)
     int channel_mode;                       ///< channel mode                           (acmod)
     int lfe_on;                             ///< lfe channel in use
+    int dialog_normalization[2];            ///< dialog level in dBFS                   (dialnorm)
+    int compression_exists[2];              ///< compression field is valid for frame   (compre)
+    int compression_gain[2];                ///< gain to apply for heavy compression    (compr)
     int channel_map;                        ///< custom channel map
     int preferred_downmix;                  ///< Preferred 2-channel downmix mode       (dmixmod)
     int center_mix_level;                   ///< Center mix level index
@@ -103,6 +106,8 @@ typedef struct AC3DecodeContext {
     float ltrt_surround_mix_level;
     float loro_center_mix_level;
     float loro_surround_mix_level;
+    int target_level;                       ///< target level in dBFS
+    float level_gain[2];
 
 ///@name Frame syntax parameters
     int snr_offset_strategy;                ///< SNR offset strategy                    (snroffststr)
@@ -161,6 +166,8 @@ typedef struct AC3DecodeContext {
 ///@name Dynamic range
     INTFLOAT dynamic_range[2];                 ///< dynamic range
     INTFLOAT drc_scale;                        ///< percentage of dynamic range compression to be applied
+    int heavy_compression;                     ///< apply heavy compression
+    INTFLOAT heavy_dynamic_range[2];           ///< heavy dynamic range compression
 ///@}
 
 ///@name Bandwidth
