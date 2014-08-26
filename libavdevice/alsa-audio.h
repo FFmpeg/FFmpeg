@@ -99,4 +99,6 @@ int ff_alsa_xrun_recover(AVFormatContext *s1, int err);
 
 int ff_alsa_extend_reorder_buf(AlsaData *s, int size);
 
+int ff_alsa_get_device_list(AVDeviceInfoList *device_list, snd_pcm_stream_t stream_type);
+
 #endif /* AVDEVICE_ALSA_AUDIO_H */
