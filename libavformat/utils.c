@@ -1911,7 +1911,6 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
             av_log(s, AV_LOG_ERROR, "read_timestamp() failed in the middle\n");
             return -1;
         }
-        assert(ts != AV_NOPTS_VALUE);
         if (target_ts <= ts) {
             pos_limit = start_pos - 1;
             pos_max   = pos;
