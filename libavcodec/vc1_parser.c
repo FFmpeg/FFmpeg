@@ -123,7 +123,7 @@ static int vc1_parse(AVCodecParserContext *s,
     uint8_t *unesc_buffer = vpc->unesc_buffer;
     size_t unesc_index = vpc->unesc_index;
     VC1ParseSearchState search_state = vpc->search_state;
-    int start_code_found;
+    int start_code_found = 0;
     int next = END_NOT_FOUND;
     int i = vpc->bytes_to_skip;
 
