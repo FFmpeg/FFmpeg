@@ -239,7 +239,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     avctx->pix_fmt = dirac_pix_fmt[!luma_offset][source->chroma_format];
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_x_shift, &chroma_y_shift);
     if ((source->width % (1<<chroma_x_shift)) || (source->height % (1<<chroma_y_shift))) {
-        av_log(avctx, AV_LOG_ERROR, "Dimensions must be a integer multiply of the chroma subsampling\n");
+        av_log(avctx, AV_LOG_ERROR, "Dimensions must be an integer multiple of the chroma subsampling\n");
         return AVERROR_INVALIDDATA;
     }
 

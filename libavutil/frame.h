@@ -162,7 +162,7 @@ typedef struct AVFrame {
      * For audio, only linesize[0] may be set. For planar audio, each channel
      * plane must be the same size.
      *
-     * For video the linesizes should be multiplies of the CPUs alignment
+     * For video the linesizes should be multiples of the CPUs alignment
      * preference, this is 16 or 32 for modern desktop CPUs.
      * Some code requires such alignment other code can be slower without
      * correct alignment, for yet other it makes no difference.

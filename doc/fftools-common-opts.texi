@@ -3,7 +3,7 @@ representing a number as input, which may be followed by one of the SI
 unit prefixes, for example: 'K', 'M', or 'G'.
 
 If 'i' is appended to the SI unit prefix, the complete prefix will be
-interpreted as a unit prefix for binary multiplies, which are based on
+interpreted as a unit prefix for binary multiples, which are based on
 powers of 1024 instead of powers of 1000. Appending 'B' to the SI unit
 prefix multiplies the value by 8. This allows using, for example:
 'KB', 'MiB', 'G' and 'B' as number suffixes.

@@ -199,7 +199,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (s->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
         if ((avctx->width & 0xFFF) == 0 || (avctx->height & 0xFFF) == 0) {
-            av_log(avctx, AV_LOG_ERROR, "Width or Height are not allowed to be multiplies of 4096\n"
+            av_log(avctx, AV_LOG_ERROR, "Width or Height are not allowed to be multiples of 4096\n"
                                         "add '-strict %d' if you want to use them anyway.\n", FF_COMPLIANCE_UNOFFICIAL);
             return AVERROR(EINVAL);
         }
