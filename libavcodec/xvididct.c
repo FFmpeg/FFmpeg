@@ -34,7 +34,7 @@ static void idct_xvid_add(uint8_t *dest, int line_size, int16_t *block)
     ff_add_pixels_clamped(block, dest, line_size);
 }
 
-av_cold void ff_xvididct_init(IDCTDSPContext *c, AVCodecContext *avctx)
+av_cold void ff_xvid_idct_init(IDCTDSPContext *c, AVCodecContext *avctx)
 {
     const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
 
@@ -51,7 +51,7 @@ av_cold void ff_xvididct_init(IDCTDSPContext *c, AVCodecContext *avctx)
     }
 
     if (ARCH_X86)
-        ff_xvididct_init_x86(c);
+        ff_xvid_idct_init_x86(c);
 
     ff_init_scantable_permutation(c->idct_permutation, c->perm_type);
 }

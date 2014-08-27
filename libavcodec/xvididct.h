@@ -22,9 +22,9 @@
 #include "avcodec.h"
 #include "idctdsp.h"
 
-void ff_xvididct_init(IDCTDSPContext *c, AVCodecContext *avctx);
+void ff_xvid_idct_init(IDCTDSPContext *c, AVCodecContext *avctx);
 
-void ff_xvididct_init_x86(IDCTDSPContext *c);
+void ff_xvid_idct_init_x86(IDCTDSPContext *c);
 
 void ff_idct_xvid(int16_t *const In);
 
