@@ -1911,7 +1911,6 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
             av_log(s, AV_LOG_ERROR, "read_timestamp() failed in the middle\n");
             return -1;
         }
-        assert(ts != AV_NOPTS_VALUE);
         if (target_ts <= ts) {
             pos_limit = start_pos - 1;
             pos_max   = pos;
@@ -3064,6 +3063,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 break;
             if (st->first_dts == AV_NOPTS_VALUE &&
                 !(ic->iformat->flags & AVFMT_NOTIMESTAMPS) &&
+                st->codec_info_nb_frames < ic->max_ts_probe &&
                 (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
                  st->codec->codec_type == AVMEDIA_TYPE_AUDIO))
                 break;

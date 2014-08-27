@@ -356,6 +356,8 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     case AV_PIX_FMT_GBRP12BE:
     case AV_PIX_FMT_GBRP14LE:
     case AV_PIX_FMT_GBRP14BE:
+    case AV_PIX_FMT_GBRP16LE:
+    case AV_PIX_FMT_GBRP16BE:
         w_align = 16; //FIXME assume 16 pixel per macroblock
         h_align = 16 * 2; // interlaced needs 2 macroblocks height
         break;
@@ -1434,6 +1436,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
+
+#if FF_API_VISMV
+    if (avctx->debug_mv)
+        av_log(avctx, AV_LOG_WARNING, "The 'vismv' option is deprecated, "
+               "see the codecview filter instead.\n");
+#endif
 
     if (av_codec_is_encoder(avctx->codec)) {
         int i;

@@ -15,66 +15,74 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2014-08-25 - 215db29 / b263f8f - lavf 56.3.100 / 56.3.0 - avformat.h
+  Add AVFormatContext.max_ts_probe.
+
+2014-08-23 - 8fc9bd0 - lavu 54.7.100 - dict.h
+  AV_DICT_DONT_STRDUP_KEY and AV_DICT_DONT_STRDUP_VAL arguments are now
+  freed even on error. This is consistent with the behaviour all users
+  of it we could find expect.
+
 2014-08-21 - 980a5b0 - lavu 54.6.100 - frame.h motion_vector.h
   Add AV_FRAME_DATA_MOTION_VECTORS side data and AVMotionVector structure
 
-2014-08-16 - xxxxxxx - lswr 1.1.100 - swresample.h
+2014-08-16 - b7d5e01 - lswr 1.1.100 - swresample.h
   Add AVFrame based API
 
-2014-xx-xx - xxxxxxx - lavu 54.4.100 - dict.h
+2014-08-16 - c2829dc - lavu 54.4.100 - dict.h
   Add av_dict_set_int helper function.
 
-2014-08-xx - xxxxxxx - lavu 54.03.0 - mem.h
+2014-08-13 - c8571c6 / 8ddc326 - lavu 54.3.100 / 54.3.0 - mem.h
   Add av_strndup().
 
-2014-xx-xx - xxxxxxx - lavu 54.02.0 - opt.h
+2014-08-13 - 2ba4577 / a8c104a - lavu 54.2.100 / 54.2.0 - opt.h
   Add av_opt_get_dict_val/set_dict_val with AV_OPT_TYPE_DICT to support
   dictionary types being set as options.
 
-2014-xx-xx - xxxxxxx - lavf 56.01.0 - avformat.h
+2014-08-13 - afbd4b8 - lavf 56.01.0 - avformat.h
   Add AVFormatContext.event_flags and AVStream.event_flags for signaling to
   the user when events happen in the file/stream.
 
-2014-04-xx - xxxxxxx - lavr 2.1.0 - avresample.h
+2014-08-10 - 78eaaa8 / fb1ddcd - lavr 2.1.0 - avresample.h
   Add avresample_convert_frame() and avresample_config().
 
-2014-04-xx - xxxxxxx - lavu 54.1.0 - error.h
+2014-08-10 - 78eaaa8 / fb1ddcd - lavu 54.1.100 / 54.1.0 - error.h
   Add AVERROR_INPUT_CHANGED and AVERROR_OUTPUT_CHANGED.
 
-2014-08-xx - xxxxxxx - lavc 55.57.4 - avcodec.h
+2014-08-08 - 3841f2a / d35b94f - lavc 55.73.102 / 55.57.4 - avcodec.h
   Deprecate FF_IDCT_XVIDMMX define and xvidmmx idct option.
   Replaced by FF_IDCT_XVID and xvid respectively.
 
-2014-08-xx - xxxxxxx - lavf 55.53.100 - avio.h
+2014-08-08 - 5c3c671 - lavf 55.53.100 - avio.h
   Add avio_feof() and deprecate url_feof().
 
-2014-08-xx - xxxxxxx - lsws 2.1.3 - swscale.h
+2014-08-07 - bb78903 - lsws 2.1.3 - swscale.h
   sws_getContext is not going to be removed in the future.
 
-2014-08-xx - xxxxxxx - lavc 55.57.3 - avcodec.h
+2014-08-07 - a561662 / ad1ee5f - lavc 55.73.101 / 55.57.3 - avcodec.h
   reordered_opaque is not going to be removed in the future.
 
 2014-08-02 - 28a2107 - lavu 52.98.100 - pixelutils.h
   Add pixelutils API with SAD functions
 
-2014-08-xx - xxxxxxx - lavu 53.22.0 - pixfmt.h
+2014-08-04 - 6017c98 / e9abafc - lavu 52.97.100 / 53.22.0 - pixfmt.h
   Add AV_PIX_FMT_YA16 pixel format for 16 bit packed gray with alpha.
 
-2014-08-xx - xxxxxxx - lavu 53.21.1 - avstring.h
+2014-08-04 - 4c8bc6f / e96c3b8 - lavu 52.96.101 / 53.21.1 - avstring.h
   Rename AV_PIX_FMT_Y400A to AV_PIX_FMT_YA8 to better identify the format.
   An alias pixel format and color space name are provided for compatibility.
 
-2014-08-xx - xxxxxxx - lavu 53.21.0 - pixdesc.h
+2014-08-04 - 073c074 / d2962e9 - lavu 52.96.100 / 53.21.0 - pixdesc.h
   Support name aliases for pixel formats.
 
-2014-08-04 - xxxxxxx - lavc 55.72.101 / 55.57.2 - avcodec.h
-2014-08-04 - xxxxxxx - lavu 52.95.100 / 53.20.0 - frame.h
+2014-08-03 - 71d008e / 1ef9e83 - lavc 55.72.101 / 55.57.2 - avcodec.h
+2014-08-03 - 71d008e / 1ef9e83 - lavu 52.95.100 / 53.20.0 - frame.h
   Deprecate AVCodecContext.dtg_active_format and use side-data instead.
 
-2014-08-03 - xxxxxxx - lavc 55.72.100 - avcodec.h
+2014-08-03 - e680c73 - lavc 55.72.100 - avcodec.h
   Add get_pixels() to AVDCT
 
-2014-08-xx - xxxxxxx - lavc 55.57.1 - avcodec.h
+2014-08-03 - 9400603 / 9f17685 - lavc 55.71.101 / 55.57.1 - avcodec.h
   Deprecate unused FF_IDCT_IPP define and ipp avcodec option.
   Deprecate unused FF_DEBUG_PTS define and pts avcodec option.
   Deprecate unused FF_CODER_TYPE_DEFLATE define and deflate avcodec option.
@@ -144,7 +152,7 @@ API changes, most recent first:
 2014-05-29 - bdb2e80 / b2d4565 - lavr 1.3.0 - avresample.h
   Add avresample_max_output_samples
 
-2014-05-24 - d858ee7 / 6d21259 - lavf 55.42.100 / 55.19.0 - avformat.h
+2014-05-28 - d858ee7 / 6d21259 - lavf 55.42.100 / 55.19.0 - avformat.h
   Add strict_std_compliance and related AVOptions to support experimental
   muxing.
 
@@ -154,7 +162,7 @@ API changes, most recent first:
 2014-05-26 - c37d179 - lavf 55.41.100 - avformat.h
   Add format_probesize to AVFormatContext.
 
-2014-05-19 - 7d25af1 / c23c96b - lavf 55.39.100 / 55.18.0 - avformat.h
+2014-05-20 - 7d25af1 / c23c96b - lavf 55.39.100 / 55.18.0 - avformat.h
   Add av_stream_get_side_data() to access stream-level side data
   in the same way as av_packet_get_side_data().
 
@@ -165,7 +173,7 @@ API changes, most recent first:
   Add AV_FRAME_DATA_DISPLAYMATRIX for exporting frame-level
   spatial rendering on video frames for proper display.
 
-2014-05-xx - xxxxxxx - lavc 55.64.100 / 55.53.0 - avcodec.h
+2014-05-19 - ef1d4ee / bddd8cb - lavc 55.64.100 / 55.53.0 - avcodec.h
   Add AV_PKT_DATA_DISPLAYMATRIX for exporting packet-level
   spatial rendering on video frames for proper display.
 
@@ -181,7 +189,7 @@ API changes, most recent first:
   Add av_gettime_relative() av_gettime_relative_is_monotonic()
 
 2014-05-15 - eacf7d6 / 0c1959b - lavf 55.38.100 / 55.17.0 - avformat.h
-  Add AVMFT_FLAG_BITEXACT flag. Muxers now use it instead of checking
+  Add AVFMT_FLAG_BITEXACT flag. Muxers now use it instead of checking
   CODEC_FLAG_BITEXACT on the first stream.
 
 2014-05-15 - 96cb4c8 - lswr 0.19.100 - swresample.h

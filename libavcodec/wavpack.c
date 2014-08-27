@@ -906,7 +906,10 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 chmask = bytestream2_get_le32(&gb);
                 break;
             case 5:
-                bytestream2_skip(&gb, 1);
+                size = bytestream2_get_byte(&gb);
+                if (avctx->channels != size)
+                    av_log(avctx, AV_LOG_WARNING, "%i channels signalled"
+                           " instead of %i.\n", size, avctx->channels);
                 chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
                 chmask = bytestream2_get_le16(&gb);
                 break;

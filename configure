@@ -89,6 +89,7 @@ Standard options:
   --mandir=DIR             install man page in DIR [PREFIX/share/man]
   --enable-rpath           use rpath to allow installing libraries in paths
                            not part of the dynamic linker search path
+                           use rpath when linking programs [USE WITH CARE]
 
 Licensing options:
   --enable-gpl             allow use of GPL code, the resulting libs
@@ -253,6 +254,7 @@ External library support:
                            native MPEG-4/Xvid encoder exists [no]
   --enable-libzmq          enable message passing via libzmq [no]
   --enable-libzvbi         enable teletext support via libzvbi [no]
+  --disable-lzma           disable lzma [autodetect]
   --enable-decklink        enable Blackmagick DeckLink output [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL code
@@ -1380,6 +1382,7 @@ EXTERNAL_LIBRARY_LIST="
     libxvid
     libzmq
     libzvbi
+    lzma
     openal
     opencl
     opengl
@@ -2187,7 +2190,7 @@ svq3_decoder_suggest="zlib"
 tak_decoder_select="audiodsp"
 theora_decoder_select="vp3_decoder"
 thp_decoder_select="mjpeg_decoder"
-tiff_decoder_suggest="zlib"
+tiff_decoder_suggest="zlib lzma"
 tiff_encoder_suggest="zlib"
 truehd_decoder_select="mlp_parser"
 truemotion2_decoder_select="bswapdsp"
@@ -2407,7 +2410,9 @@ mpegtsraw_demuxer_select="mpegts_demuxer"
 mxf_d10_muxer_select="mxf_muxer"
 nut_muxer_select="riffenc"
 nuv_demuxer_select="riffdec"
+oga_muxer_select="ogg_muxer"
 ogg_demuxer_select="golomb"
+opus_muxer_select="ogg_muxer"
 psp_muxer_select="mov_muxer"
 rtp_demuxer_select="sdp_demuxer"
 rtpdec_select="asf_demuxer rm_demuxer rtp_protocol mpegts_demuxer mov_demuxer"
@@ -2418,6 +2423,7 @@ sap_muxer_select="rtp_muxer rtp_protocol rtpenc_chain"
 sdp_demuxer_select="rtpdec"
 smoothstreaming_muxer_select="ismv_muxer"
 spdif_muxer_select="aac_parser"
+spx_muxer_select="ogg_muxer"
 tak_demuxer_select="tak_parser"
 tg2_muxer_select="mov_muxer"
 tgp_muxer_select="mov_muxer"
@@ -3181,7 +3187,7 @@ msvc_flags(){
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
                                        -wd4554 \
-                                       -wd4273 ;;
+                                       -wd4273 -wd4701 ;;
         esac
     done
 }
@@ -4755,6 +4761,7 @@ fi
 
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
+disabled  lzma || check_lib2  lzma.h lzma_version_number -llzma || disable lzma
 
 check_lib math.h sin -lm && LIBM="-lm"
 disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
@@ -4839,7 +4846,7 @@ enabled libvpx            && {
     enabled libvpx_vp8_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
                                     die "ERROR: libvpx encoder version must be >=0.9.7"; }
     enabled libvpx_vp9_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx || disable libvpx_vp9_decoder; }
-    enabled libvpx_vp9_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_SVC" -lvpx || disable libvpx_vp9_encoder; } }
+    enabled libvpx_vp9_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx || disable libvpx_vp9_encoder; } }
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
 enabled libwebp           && require_pkg_config libwebp webp/encode.h WebPGetEncoderVersion &&
                              { check_code cc webp/encode.h "WebPPicture wp; wp.use_argb++" ||
@@ -5028,7 +5035,7 @@ check_disable_warning -Wno-pointer-sign
 # add some linker flags
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
-enabled rpath && add_ldflags -Wl,-rpath,$libdir
+enabled rpath && add_ldexeflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 # add some strip flags

@@ -23,6 +23,9 @@ fate-filter-mcdeint-medium: CMD = framecrc -flags bitexact -idct simple -i $(TAR
 
 FATE_FILTER-$(call ALLYES, MCDEINT_FILTER, MPEGTS_DEMUXER, MPEG2VIDEO_DECODER SNOW_ENCODER) += $(FATE_MCDEINT)
 
+FATE_FILTER-$(call ALLYES, CODECVIEW_FILTER RM_DEMUXER RV40_DECODER) += fate-filter-codecview-mvs
+fate-filter-codecview-mvs: CMD = framecrc -flags2 +export_mvs -i $(TARGET_SAMPLES)/real/spygames-2MB.rmvb -vf codecview=mv=pf+bf+bb -vframes 60 -an
+
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 
 FATE_FILTER-$(call ALLYES, AVDEVICE LIFE_FILTER) += fate-filter-lavd-life

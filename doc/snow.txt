@@ -618,7 +618,6 @@ flip wavelet?
 try to use the wavelet transformed predicted image (motion compensated image) as context for coding the residual coefficients
 try the MV length as context for coding the residual coefficients
 use extradata for stuff which is in the keyframes now?
-the MV median predictor is patented IIRC
 implement per picture halfpel interpolation
 try different range coder state transition tables for different contexts
 

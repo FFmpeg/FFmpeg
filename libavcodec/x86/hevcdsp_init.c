@@ -72,7 +72,7 @@ IDCT_FUNCS(16x16, avx2);
 IDCT_FUNCS(32x32, avx2);
 
 #define mc_rep_func(name, bitd, step, W, opt) \
-void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst, ptrdiff_t dststride,                            \
+void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst,                                                 \
                                                 uint8_t *_src, ptrdiff_t _srcstride, int height,                \
                                                 intptr_t mx, intptr_t my, int width)                            \
 {                                                                                                               \
@@ -82,7 +82,7 @@ void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst, ptrdiff_t dststr
     for (i = 0; i < W; i += step) {                                                                             \
         src  = _src + (i * ((bitd + 7) / 8));                                                                   \
         dst = _dst + i;                                                                                         \
-        ff_hevc_put_hevc_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride, height, mx, my, width); \
+        ff_hevc_put_hevc_##name##step##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);            \
     }                                                                                                           \
 }
 #define mc_rep_uni_func(name, bitd, step, W, opt) \
@@ -102,7 +102,7 @@ void ff_hevc_put_hevc_uni_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t ds
 }
 #define mc_rep_bi_func(name, bitd, step, W, opt) \
 void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, uint8_t *_src,          \
-                                                   ptrdiff_t _srcstride, int16_t* _src2, ptrdiff_t _src2stride, \
+                                                   ptrdiff_t _srcstride, int16_t* _src2,                        \
                                                    int height, intptr_t mx, intptr_t my, int width)             \
 {                                                                                                               \
     int i;                                                                                                      \
@@ -114,7 +114,7 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dst
         dst  = _dst + (i * ((bitd + 7) / 8));                                                                   \
         src2 = _src2 + i;                                                                                       \
         ff_hevc_put_hevc_bi_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride, src2,                \
-                                                         _src2stride, height, mx, my, width);                   \
+                                                          height, mx, my, width);                               \
     }                                                                                                           \
 }
 
@@ -123,6 +123,45 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dst
     mc_rep_uni_func(name, bitd, step, W, opt);        \
     mc_rep_bi_func(name, bitd, step, W, opt)
 
+#define mc_rep_func2(name, bitd, step1, step2, W, opt) \
+void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *dst,                                                  \
+                                                 uint8_t *src, ptrdiff_t _srcstride, int height,                \
+                                                 intptr_t mx, intptr_t my, int width)                           \
+{                                                                                                               \
+    ff_hevc_put_hevc_##name##step1##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);               \
+    ff_hevc_put_hevc_##name##step2##_##bitd##_##opt(dst + step1, src + (step1 * ((bitd + 7) / 8)),              \
+                                                    _srcstride, height, mx, my, width);                         \
+}
+#define mc_rep_uni_func2(name, bitd, step1, step2, W, opt) \
+void ff_hevc_put_hevc_uni_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride,                         \
+                                                     uint8_t *src, ptrdiff_t _srcstride, int height,            \
+                                                     intptr_t mx, intptr_t my, int width)                       \
+{                                                                                                               \
+    ff_hevc_put_hevc_uni_##name##step1##_##bitd##_##opt(dst, dststride, src, _srcstride, height, mx, my, width);\
+    ff_hevc_put_hevc_uni_##name##step2##_##bitd##_##opt(dst + (step1 * ((bitd + 7) / 8)), dststride,            \
+                                                        src + (step1 * ((bitd + 7) / 8)), _srcstride,           \
+                                                        height, mx, my, width);                                 \
+}
+#define mc_rep_bi_func2(name, bitd, step1, step2, W, opt) \
+void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,            \
+                                                    ptrdiff_t _srcstride, int16_t* src2,                        \
+                                                    int height, intptr_t mx, intptr_t my, int width)            \
+{                                                                                                               \
+    ff_hevc_put_hevc_bi_##name##step1##_##bitd##_##opt(dst, dststride, src, _srcstride, src2, height, mx, my, width);\
+    ff_hevc_put_hevc_bi_##name##step2##_##bitd##_##opt(dst + (step1 * ((bitd + 7) / 8)), dststride,             \
+                                                       src + (step1 * ((bitd + 7) / 8)), _srcstride,            \
+                                                       src2 + step1, height, mx, my, width);                    \
+}
+
+#define mc_rep_funcs(name, bitd, step, W, opt)        \
+    mc_rep_func(name, bitd, step, W, opt);            \
+    mc_rep_uni_func(name, bitd, step, W, opt);        \
+    mc_rep_bi_func(name, bitd, step, W, opt)
+
+#define mc_rep_funcs2(name, bitd, step1, step2, W, opt) \
+    mc_rep_func2(name, bitd, step1, step2, W, opt);     \
+    mc_rep_uni_func2(name, bitd, step1, step2, W, opt); \
+    mc_rep_bi_func2(name, bitd, step1, step2, W, opt)
 
 #if ARCH_X86_64 && HAVE_SSE4_EXTERNAL
 
@@ -180,7 +219,7 @@ mc_rep_funcs(epel_hv, 8,  8, 48, sse4);
 mc_rep_funcs(epel_hv, 8,  8, 32, sse4);
 mc_rep_funcs(epel_hv, 8,  8, 24, sse4);
 mc_rep_funcs(epel_hv, 8,  8, 16, sse4);
-mc_rep_funcs(epel_hv, 8,  4, 12, sse4);
+mc_rep_funcs2(epel_hv,8,  8,  4, 12, sse4);
 mc_rep_funcs(epel_hv,10,  8, 64, sse4);
 mc_rep_funcs(epel_hv,10,  8, 48, sse4);
 mc_rep_funcs(epel_hv,10,  8, 32, sse4);
@@ -231,7 +270,7 @@ mc_rep_funcs(qpel_hv, 8,  8, 48, sse4);
 mc_rep_funcs(qpel_hv, 8,  8, 32, sse4);
 mc_rep_funcs(qpel_hv, 8,  8, 24, sse4);
 mc_rep_funcs(qpel_hv, 8,  8, 16, sse4);
-mc_rep_funcs(qpel_hv, 8,  4, 12, sse4);
+mc_rep_funcs2(qpel_hv,8,  8,  4, 12, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 64, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 48, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 32, sse4);
@@ -283,7 +322,7 @@ mc_rep_uni_w(12, 8, 64, sse4);
 
 #define mc_rep_bi_w(bitd, step, W, opt) \
 void ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, \
-                                              int16_t *_src2, ptrdiff_t _src2stride, int height,                        \
+                                              int16_t *_src2, int height,                                               \
                                               int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)                      \
 {                                                                                                                       \
     int i;                                                                                                              \
@@ -294,7 +333,7 @@ void ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststrid
         src  = _src  + i;                                                                                               \
         src2 = _src2 + i;                                                                                               \
         dst  = _dst  + (i * ((bitd + 7) / 8));                                                                          \
-        ff_hevc_put_hevc_bi_w##step##_##bitd##_##opt(dst, dststride, src, _srcstride, src2, _src2stride,                \
+        ff_hevc_put_hevc_bi_w##step##_##bitd##_##opt(dst, dststride, src, _srcstride, src2,                             \
                                                     height, denom, _wx0, _wx1, _ox0, _ox1);                             \
     }                                                                                                                   \
 }
@@ -327,9 +366,9 @@ void ff_hevc_put_hevc_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t 
                                                       int _wx, int _ox,                             \
                                                       intptr_t mx, intptr_t my, int width)          \
 {                                                                                                   \
-    LOCAL_ALIGNED_16(int16_t, temp, [71 * 64]);                                                     \
-    ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, 64, _src, _srcstride, height, mx, my, width); \
-    ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(_dst, _dststride, temp, 64, height, denom, _wx, _ox);\
+    LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                            \
+    ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);     \
+    ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(_dst, _dststride, temp, MAX_PB_SIZE, height, denom, _wx, _ox);\
 }
 
 #define mc_uni_w_funcs(name, bitd, opt)       \
@@ -381,14 +420,14 @@ mc_uni_w_funcs(qpel_hv, 12, sse4);
 #define mc_bi_w_func(name, bitd, W, opt) \
 void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,           \
                                                      uint8_t *_src, ptrdiff_t _srcstride,            \
-                                                     int16_t *_src2, ptrdiff_t _src2stride,          \
+                                                     int16_t *_src2,                                 \
                                                      int height, int denom,                          \
                                                      int _wx0, int _wx1, int _ox0, int _ox1,         \
                                                      intptr_t mx, intptr_t my, int width)            \
 {                                                                                                    \
-    LOCAL_ALIGNED_16(int16_t, temp, [71 * 64]);                                                      \
-    ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, 64, _src, _srcstride, height, mx, my, width);  \
-    ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(_dst, _dststride, temp, 64, _src2, _src2stride,        \
+    LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                             \
+    ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);      \
+    ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(_dst, _dststride, temp, MAX_PB_SIZE, _src2,            \
                                              height, denom, _wx0, _wx1, _ox0, _ox1);                 \
 }
 

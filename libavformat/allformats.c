@@ -274,8 +274,8 @@ void av_register_all(void)
     REGISTER_DEMUXER (SMUSH,            smush);
     REGISTER_DEMUXER (SOL,              sol);
     REGISTER_MUXDEMUX(SOX,              sox);
+    REGISTER_MUXER   (SPX,              spx);
     REGISTER_MUXDEMUX(SPDIF,            spdif);
-    REGISTER_MUXER   (SPEEX,            speex);
     REGISTER_MUXDEMUX(SRT,              srt);
     REGISTER_DEMUXER (STR,              str);
     REGISTER_DEMUXER (SUBVIEWER1,       subviewer1);

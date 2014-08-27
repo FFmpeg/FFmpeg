@@ -145,8 +145,9 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
  the_end: ;
     if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && bit_rate) {
         avctx->rc_max_rate = 400*bit_rate;
-    } else if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && bit_rate &&
-               (bit_rate != 0x3FFFF || vbv_delay != 0xFFFF)) {
+    }
+    if (bit_rate &&
+        ((avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && bit_rate != 0x3FFFF) || vbv_delay != 0xFFFF)) {
         avctx->bit_rate = 400*bit_rate;
     }
 }

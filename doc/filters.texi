@@ -2805,6 +2805,42 @@ boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chrom
 @end example
 @end itemize
 
+@section codecview
+
+Visualize information exported by some codecs.
+
+Some codecs can export information through frames using side-data or other
+means. For example, some MPEG based codecs export motion vectors through the
+@var{export_mvs} flag in the codec @option{flags2} option.
+
+The filter accepts the following option:
+
+@table @option
+@item mv
+Set motion vectors to visualize.
+
+Available flags for @var{mv} are:
+
+@table @samp
+@item pf
+forward predicted MVs of P-frames
+@item bf
+forward predicted MVs of B-frames
+@item bb
+backward predicted MVs of B-frames
+@end table
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Visualizes multi-directionals MVs from P and B-Frames using @command{ffplay}:
+@example
+ffplay -flags2 +export_mvs input.mpg -vf codecview=mv=pf+bf+bb
+@end example
+@end itemize
+
 @section colorbalance
 Modify intensity of primary colors (red, green and blue) of input frames.
 
@@ -4089,7 +4125,7 @@ drawtext='fontfile=FreeSans.ttf:text=%@{localtime:%a %b %d %Y@}'
 @end example
 
 @item
-Shwo text fading in and out (appearing/disappearing):
+Show text fading in and out (appearing/disappearing):
 @example
 #!/bin/sh
 DS=1.0 # display start
@@ -10660,6 +10696,26 @@ Default value is @code{3.0}.
 @item fontfile
 Specify font file for use with freetype. If not specified, use embedded font.
 
+@item fontcolor
+Specify font color expression. This is arithmetic expression that should return
+integer value 0xRRGGBB. The expression can contain variables:
+@table @option
+@item frequency, freq, f
+the frequency where transform is evaluated
+@item timeclamp, tc
+value of timeclamp option
+@end table
+and functions:
+@table @option
+@item midi(f)
+midi number of frequency f, some midi numbers: E0(16), C1(24), C2(36), A4(69)
+@item r(x), g(x), b(x)
+red, green, and blue value of intensity x
+@end table
+Default value is @code{st(0, (midi(f)-59.5)/12);
+st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));
+r(1-ld(1)) + b(ld(1))}
+
 @item fullhd
 If set to 1 (the default), the video size is 1920x1080 (full HD),
 if set to 0, the video size is 960x540. Use this option to make CPU usage lower.
@@ -10719,6 +10775,12 @@ volume=16*b_weighting(f)
 Lower Q factor
 @example
 tlength=100/f*tc/(100/f+tc)
+@end example
+
+@item
+Custom fontcolor, C-note is colored green, others are colored blue
+@example
+fontcolor='if(mod(floor(midi(f)+0.5),12), 0x0000FF, g(1))'
 @end example
 
 @end itemize

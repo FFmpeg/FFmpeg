@@ -126,6 +126,8 @@ err_out:
         av_free(m->elems);
         av_freep(pm);
     }
+    if (flags & AV_DICT_DONT_STRDUP_KEY) av_free(key);
+    if (flags & AV_DICT_DONT_STRDUP_VAL) av_free(value);
     return AVERROR(ENOMEM);
 }
 

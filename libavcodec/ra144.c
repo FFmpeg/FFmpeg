@@ -1,6 +1,6 @@
 /*
  * Real Audio 1.0 (14.4K)
- * Copyright (c) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *

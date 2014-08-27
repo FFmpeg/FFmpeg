@@ -107,7 +107,7 @@ AVFILTER_DEFINE_CLASS(vidstabtransform);
 static av_cold int init(AVFilterContext *ctx)
 {
     TransformContext *tc = ctx->priv;
-    vs_set_mem_and_log_functions();
+    ff_vs_init();
     tc->class = &vidstabtransform_class;
     av_log(ctx, AV_LOG_VERBOSE, "vidstabtransform filter: init %s\n", LIBVIDSTAB_VERSION);
     return 0;
@@ -151,9 +151,9 @@ static int config_input(AVFilterLink *inlink)
     VSFrameInfo fi_dest;
 
     if (!vsFrameInfoInit(&fi_src, inlink->w, inlink->h,
-                         av_2_vs_pixel_format(ctx, inlink->format)) ||
+                         ff_av2vs_pixfmt(ctx, inlink->format)) ||
         !vsFrameInfoInit(&fi_dest, inlink->w, inlink->h,
-                         av_2_vs_pixel_format(ctx, inlink->format))) {
+                         ff_av2vs_pixfmt(ctx, inlink->format))) {
         av_log(ctx, AV_LOG_ERROR, "unknown pixel format: %i (%s)",
                inlink->format, desc->name);
         return AVERROR(EINVAL);

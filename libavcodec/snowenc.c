@@ -390,7 +390,6 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     i_len= ic.bytestream - ic.bytestream_start;
     iscore += (s->lambda2*(get_rac_count(&ic)-base_bits))>>FF_LAMBDA_SHIFT;
 
-//    assert(score==256*256*256*64-1);
     av_assert1(iscore < 255*255*256 + s->lambda2*10);
     av_assert1(iscore >= 0);
     av_assert1(l>=0 && l<=255);

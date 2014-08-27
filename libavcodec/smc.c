@@ -1,6 +1,6 @@
 /*
  * Quicktime Graphics (SMC) Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *

@@ -1454,6 +1454,12 @@ typedef struct AVFormatContext {
     int event_flags;
 #define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
 
+    /**
+     * Maximum number of packets to read while waiting for the first timestamp.
+     * Decoding only.
+     */
+    int max_ts_probe;
+
 
     /**
      * Transport stream id.

@@ -37,6 +37,7 @@
 
     • ported lenscorrection filter from frei0r filter
     • large optimizations in dctdnoiz to make it usable
+    • added codecview filter to visualize information exported by some codecs
 
    ┌────────────────────────────┐
    │ libavutil                  │
@@ -49,3 +50,4 @@
  └────────────────────────────┘
 
   • dctdnoiz filter now uses a block size of 8x8 instead of 16x16 by default
+  • -vismv option is deprecated in favor of the codecview filter

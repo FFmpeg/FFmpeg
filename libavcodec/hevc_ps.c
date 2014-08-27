@@ -472,7 +472,7 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
     VUI *vui          = &sps->vui;
     GetBitContext *gb = &s->HEVClc->gb;
     GetBitContext backup;
-    int sar_present, alt = 1;
+    int sar_present, alt = 0;
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VUI\n");
 

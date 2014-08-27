@@ -48,6 +48,7 @@ typedef struct PulseData {
 
     TimeFilter *timefilter;
     int last_period;
+    int wallclock;
 } PulseData;
 
 
@@ -311,7 +312,8 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
             dts += latency;
         } else
             dts -= latency;
-        pkt->pts = ff_timefilter_update(pd->timefilter, dts, pd->last_period);
+        if (pd->wallclock)
+            pkt->pts = ff_timefilter_update(pd->timefilter, dts, pd->last_period);
 
         pd->last_period = frame_duration;
     } else {
@@ -346,6 +348,7 @@ static const AVOption options[] = {
     { "channels",      "set number of audio channels",                      OFFSET(channels),      AV_OPT_TYPE_INT,    {.i64 = 2},        1, INT_MAX, D },
     { "frame_size",    "set number of bytes per frame",                     OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.i64 = 1024},     1, INT_MAX, D },
     { "fragment_size", "set buffering size, affects latency and cpu usage", OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.i64 = -1},      -1, INT_MAX, D },
+    { "wallclock",     "set the initial pts using the current time",     OFFSET(wallclock),     AV_OPT_TYPE_INT,    {.i64 = 1},       -1, 1, D },
     { NULL },
 };
 

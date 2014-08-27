@@ -874,8 +874,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             }
         }
 
-        if ((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) ||
-            (tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0)) ||
+        if (((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
+            ((tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
             (codec->pix_fmt == AV_PIX_FMT_YUVA420P)) {
             put_ebml_uint(pb, MATROSKA_ID_VIDEOALPHAMODE, 1);
         }

@@ -27,6 +27,11 @@
 #include <vfw.h>
 #include "avdevice.h"
 
+/* Some obsolete versions of MinGW32 before 4.0.0 lack this. */
+#ifndef HWND_MESSAGE
+#define HWND_MESSAGE ((HWND) -3)
+#endif
+
 struct vfw_ctx {
     const AVClass *class;
     HWND hwnd;

@@ -21,7 +21,7 @@
 #include "vidstabutils.h"
 
 /** convert AV's pixelformat to vid.stab pixelformat */
-VSPixelFormat av_2_vs_pixel_format(AVFilterContext *ctx, enum AVPixelFormat pf)
+VSPixelFormat ff_av2vs_pixfmt(AVFilterContext *ctx, enum AVPixelFormat pf)
 {
     switch (pf) {
     case AV_PIX_FMT_YUV420P:  return PF_YUV420P;
@@ -47,7 +47,7 @@ typedef struct {
 } VS2AVLogCtx;
 
 /** wrapper to log vs_log into av_log */
-static int vs_2_av_log_wrapper(int type, const char *tag, const char *format, ...)
+static int vs2av_log(int type, const char *tag, const char *format, ...)
 {
     va_list ap;
     VS2AVLogCtx ctx;
@@ -66,7 +66,7 @@ static int vs_2_av_log_wrapper(int type, const char *tag, const char *format, ..
 }
 
 /** sets the memory allocation function and logging constants to av versions */
-void vs_set_mem_and_log_functions(void)
+void ff_vs_init(void)
 {
     vs_malloc  = av_malloc;
     vs_zalloc  = av_mallocz;
@@ -78,7 +78,7 @@ void vs_set_mem_and_log_functions(void)
     VS_INFO_TYPE  = AV_LOG_INFO;
     VS_MSG_TYPE   = AV_LOG_VERBOSE;
 
-    vs_log   = vs_2_av_log_wrapper;
+    vs_log   = vs2av_log;
 
     VS_ERROR = 0;
     VS_OK    = 1;

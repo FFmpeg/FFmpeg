@@ -498,6 +498,8 @@ threading operations
 @item vismv @var{integer} (@emph{decoding,video})
 Visualize motion vectors (MVs).
 
+This option is deprecated, see the codecview filter instead.
+
 Possible values:
 @table @samp
 @item pf

@@ -4,7 +4,7 @@
  * based on "Creative YUV (CYUV) stream format for AVI":
  *   http://www.csse.monash.edu.au/~timf/videocodec/cyuv.txt
  *
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *

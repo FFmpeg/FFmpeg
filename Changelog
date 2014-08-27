@@ -7,6 +7,9 @@ version <next>:
 - large optimizations in dctdnoiz to make it usable
 - request icecast metadata by default
 - support for using metadata in stream specifiers in fftools
+- LZMA compression support in TIFF decoder
+- support for H.261 RTP payload format (RFC 4587)
+- added codecview filter to visualize information exported by some codecs
 
 
 version 2.3:

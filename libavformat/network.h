@@ -111,6 +111,10 @@ struct sockaddr_storage {
 };
 #endif /* !HAVE_STRUCT_SOCKADDR_STORAGE */
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 #if !HAVE_STRUCT_ADDRINFO
 struct addrinfo {
     int ai_flags;

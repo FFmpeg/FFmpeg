@@ -45,7 +45,7 @@
 #   undef fstat
 #  endif
 #  define fstat(f,s) _fstati64((f), (s))
-#endif /* defined(__MINGW32__) && !defined(__MINGW32CE__) */
+#endif /* defined(_WIN32) && !defined(__MINGW32CE__) */
 
 #ifdef _WIN32
 #if HAVE_DIRECT_H
