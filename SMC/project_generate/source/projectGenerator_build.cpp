@@ -324,7 +324,8 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["libxavs"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libxvid"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libzmq"] = ( sProjectName.compare("libavfilter") == 0 );//??
-    mProjectDeps["libzvbi"] = ( sProjectName.compare("libavcodec") == 0 );
+    mProjectDeps["libzvbi"] = ( sProjectName.compare( "libavcodec" ) == 0 );
+    mProjectDeps["lzma"] = ( sProjectName.compare( "libavcodec" ) == 0 );
     mProjectDeps["openal"] = ( sProjectName.compare("libavdevice") == 0 );//?
     mProjectDeps["opencl"] = ( sProjectName.compare( "libavutil" ) == 0 ) || ( sProjectName.compare( "libavfilter" ) == 0 );
     mProjectDeps["opengl"] = ( sProjectName.compare( "libavdevice" ) == 0 );
