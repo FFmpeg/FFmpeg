@@ -302,14 +302,22 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         enccfg.g_pass = VPX_RC_ONE_PASS;
 
     if (avctx->rc_min_rate == avctx->rc_max_rate &&
-        avctx->rc_min_rate == avctx->bit_rate && avctx->bit_rate)
+        avctx->rc_min_rate == avctx->bit_rate && avctx->bit_rate) {
         enccfg.rc_end_usage = VPX_CBR;
-    else if (ctx->crf)
+    } else if (ctx->crf >= 0) {
         enccfg.rc_end_usage = VPX_CQ;
+#if CONFIG_LIBVPX_VP9_ENCODER
+        if (!avctx->bit_rate && avctx->codec_id == AV_CODEC_ID_VP9)
+            enccfg.rc_end_usage = VPX_Q;
+#endif
+    }
 
     if (avctx->bit_rate) {
         enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
-                                                AV_ROUND_NEAR_INF);
+                                                  AV_ROUND_NEAR_INF);
+#if CONFIG_LIBVPX_VP9_ENCODER
+    } else if (enccfg.rc_end_usage == VPX_Q) {
+#endif
     } else {
         if (enccfg.rc_end_usage == VPX_CQ) {
             enccfg.rc_target_bitrate = 1000000;
@@ -326,7 +334,11 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     if (avctx->qmax >= 0)
         enccfg.rc_max_quantizer = avctx->qmax;
 
-    if (enccfg.rc_end_usage == VPX_CQ) {
+    if (enccfg.rc_end_usage == VPX_CQ
+#if CONFIG_LIBVPX_VP9_ENCODER
+        || enccfg.rc_end_usage == VPX_Q
+#endif
+        ) {
         if (ctx->crf < enccfg.rc_min_quantizer || ctx->crf > enccfg.rc_max_quantizer) {
                 av_log(avctx, AV_LOG_ERROR,
                        "CQ level must be between minimum and maximum quantizer value (%d-%d)\n",
@@ -432,7 +444,8 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     if (avctx->codec_id == AV_CODEC_ID_VP8)
         codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     codecctl_int(avctx, VP8E_SET_STATIC_THRESHOLD,  avctx->mb_threshold);
-    codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          ctx->crf);
+    if (ctx->crf >= 0)
+        codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          ctx->crf);
     if (ctx->max_intra_rate >= 0)
         codecctl_int(avctx, VP8E_SET_MAX_INTRA_BITRATE_PCT, ctx->max_intra_rate);
 
@@ -779,7 +792,7 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
                          "by the bool decoder, meaning that partitions can be decoded even " \
                          "though earlier partitions have been lost. Note that intra predicition" \
                          " is still done over the partition boundary.",       0, AV_OPT_TYPE_CONST, {.i64 = VPX_ERROR_RESILIENT_PARTITIONS}, 0, 0, VE, "er"}, \
-    { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63, VE }, \
+    { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, VE }, \
 
 #define LEGACY_OPTIONS \
     {"speed", "", offsetof(VP8Context, cpu_used), AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE}, \
