@@ -137,6 +137,9 @@
     <ClCompile Include="..\libavformat\rtpdec_g726.c">
       <ObjectFileName>$(IntDir)\libavformat_rtpdec_g726.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_h261.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_h261.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_h263.c">
       <ObjectFileName>$(IntDir)\libavformat_rtpdec_h263.obj</ObjectFileName>
     </ClCompile>
@@ -145,6 +148,9 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_h264.c">
       <ObjectFileName>$(IntDir)\libavformat_rtpdec_h264.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_hevc.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpdec_hevc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_ilbc.c">
       <ObjectFileName>$(IntDir)\libavformat_rtpdec_ilbc.obj</ObjectFileName>
@@ -889,6 +895,9 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_amr.c">
       <ObjectFileName>$(IntDir)\libavformat_rtpenc_amr.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_h261.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_h261.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_h263.c">
       <ObjectFileName>$(IntDir)\libavformat_rtpenc_h263.obj</ObjectFileName>

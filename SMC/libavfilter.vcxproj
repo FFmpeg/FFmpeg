@@ -269,6 +269,9 @@
     <ClCompile Include="..\libavfilter\vf_boxblur.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_boxblur.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_codecview.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_codecview.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_colorbalance.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_colorbalance.obj</ObjectFileName>
     </ClCompile>
