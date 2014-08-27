@@ -1360,7 +1360,7 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
             }
         }
 
-        //If enabled then all of these should then be enabled
+        //If enabled then all of these should then be enabled (if not already forced disabled)
         sCheckFunc = sOptionLower + "_suggest";
         vCheckList.resize(0);
         if( getConfigList( sCheckFunc, vCheckList, false ) )
@@ -1368,7 +1368,11 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
             vector<string>::iterator vitCheckItem = vCheckList.begin( );
             for( vitCheckItem; vitCheckItem<vCheckList.end( ); vitCheckItem++ )
             {
-                toggleConfigValue( *vitCheckItem, true ); //Weak check
+                //Only enable if not forced to disable
+                if( getConfigOption( *vitCheckItem )->m_sValue.compare( "0" ) != 0 )
+                {
+                    toggleConfigValue( *vitCheckItem, true ); //Weak check
+                }
             }
         }
     }
