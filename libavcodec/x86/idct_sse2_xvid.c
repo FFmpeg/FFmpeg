@@ -52,9 +52,6 @@
 
 #define X8(x)     x,x,x,x,x,x,x,x
 
-#define ROW_SHIFT 11
-#define COL_SHIFT 6
-
 DECLARE_ASM_CONST(16, int16_t, tan1)[] = {X8(13036)}; // tan( pi/16)
 DECLARE_ASM_CONST(16, int16_t, tan2)[] = {X8(27146)}; // tan(2pi/16) = sqrt(2)-1
 DECLARE_ASM_CONST(16, int16_t, tan3)[] = {X8(43790)}; // tan(3pi/16)-1
