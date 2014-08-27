@@ -22,31 +22,32 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/idctdsp.h"
 #include "libavcodec/xvididct.h"
-#include "idct_xvid.h"
-#include "idctdsp.h"
 
-av_cold void ff_xvididct_init_x86(IDCTDSPContext *c)
+#include "idctdsp.h"
+#include "xvididct.h"
+
+av_cold void ff_xvid_idct_init_x86(IDCTDSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
     if (INLINE_MMX(cpu_flags)) {
-        c->idct_put  = ff_idct_xvid_mmx_put;
-        c->idct_add  = ff_idct_xvid_mmx_add;
-        c->idct      = ff_idct_xvid_mmx;
+        c->idct_put  = ff_xvid_idct_mmx_put;
+        c->idct_add  = ff_xvid_idct_mmx_add;
+        c->idct      = ff_xvid_idct_mmx;
         c->perm_type = FF_IDCT_PERM_NONE;
     }
 
     if (INLINE_MMXEXT(cpu_flags)) {
-        c->idct_put  = ff_idct_xvid_mmxext_put;
-        c->idct_add  = ff_idct_xvid_mmxext_add;
-        c->idct      = ff_idct_xvid_mmxext;
+        c->idct_put  = ff_xvid_idct_mmxext_put;
+        c->idct_add  = ff_xvid_idct_mmxext_add;
+        c->idct      = ff_xvid_idct_mmxext;
         c->perm_type = FF_IDCT_PERM_NONE;
     }
 
     if (INLINE_SSE2(cpu_flags)) {
-        c->idct_put  = ff_idct_xvid_sse2_put;
-        c->idct_add  = ff_idct_xvid_sse2_add;
-        c->idct      = ff_idct_xvid_sse2;
+        c->idct_put  = ff_xvid_idct_sse2_put;
+        c->idct_add  = ff_xvid_idct_sse2_add;
+        c->idct      = ff_xvid_idct_sse2;
         c->perm_type = FF_IDCT_PERM_SSE2;
     }
 }

@@ -2068,7 +2068,7 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
     }
 
     if (CONFIG_MPEG4_DECODER && ctx->xvid_build >= 0)
-        ff_xvididct_init(&s->idsp, s->avctx);
+        ff_xvid_idct_init(&s->idsp, s->avctx);
 
     return 0;
 }
@@ -2547,7 +2547,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
         return ret;
 
     if (CONFIG_MPEG4_DECODER && !init && s1->xvid_build >= 0)
-        ff_xvididct_init(&s->m.idsp, dst);
+        ff_xvid_idct_init(&s->m.idsp, dst);
 
     s->shape               = s1->shape;
     s->time_increment_bits = s1->time_increment_bits;

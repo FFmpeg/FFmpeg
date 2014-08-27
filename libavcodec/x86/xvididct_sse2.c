@@ -41,8 +41,9 @@
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
-#include "idct_xvid.h"
+
 #include "idctdsp.h"
+#include "xvididct.h"
 
 #if HAVE_SSE2_INLINE
 
@@ -341,7 +342,7 @@ DECLARE_ASM_CONST(16, int32_t, walkenIdctRounders)[] = {
     "movdqa   %%xmm6, 4*16("dct")     \n\t" \
     "movdqa   "SREG2", 7*16("dct")    \n\t"
 
-inline void ff_idct_xvid_sse2(short *block)
+inline void ff_xvid_idct_sse2(short *block)
 {
     __asm__ volatile(
     "movq     "MANGLE(m127)", %%mm0                              \n\t"
@@ -390,15 +391,15 @@ inline void ff_idct_xvid_sse2(short *block)
     );
 }
 
-void ff_idct_xvid_sse2_put(uint8_t *dest, int line_size, short *block)
+void ff_xvid_idct_sse2_put(uint8_t *dest, int line_size, short *block)
 {
-    ff_idct_xvid_sse2(block);
+    ff_xvid_idct_sse2(block);
     ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 
-void ff_idct_xvid_sse2_add(uint8_t *dest, int line_size, short *block)
+void ff_xvid_idct_sse2_add(uint8_t *dest, int line_size, short *block)
 {
-    ff_idct_xvid_sse2(block);
+    ff_xvid_idct_sse2(block);
     ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
 

@@ -66,8 +66,8 @@ MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/idctdsp_mmx.o             \
 MMX-OBJS-$(CONFIG_QPELDSP)             += x86/fpel_mmx.o
 
 # decoders/encoders
-MMX-OBJS-$(CONFIG_MPEG4_DECODER)       += x86/idct_mmx_xvid.o           \
-                                          x86/idct_sse2_xvid.o
+MMX-OBJS-$(CONFIG_MPEG4_DECODER)       += x86/xvididct_mmx.o            \
+                                          x86/xvididct_sse2.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 
 
