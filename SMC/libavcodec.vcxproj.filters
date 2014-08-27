@@ -1836,6 +1836,9 @@
     <ClCompile Include="..\libavcodec\libx264.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\libx265.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\libxvid.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
