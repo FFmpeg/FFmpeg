@@ -320,21 +320,24 @@ bool configGenerator::changeConfig( const string & stOption )
     else
     {
         bool bEnable;
+        string sOption;
         if( stOption.find("--enable-") == 0 )
         {
             bEnable = true;
+            //Find remainder of option
+            sOption = stOption.substr( 9 );
         }
         else if( stOption.find("--disable-") == 0 )
         {
             bEnable = false;
+            //Find remainder of option
+            sOption = stOption.substr( 10 );
         }
         else
         {
             cout << "  Error: Unknown command line option (" << stOption << ")" << endl;
             return false;
         }
-        //Find remainder of option
-        string sOption = stOption.substr( 9 );
         //Replace any '-'s with '_'
         replace( sOption.begin(), sOption.end(), '-', '_' );
         //Check and make sure that a reserved item is not being changed
