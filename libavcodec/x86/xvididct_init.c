@@ -26,9 +26,15 @@
 #include "idctdsp.h"
 #include "xvididct.h"
 
-av_cold void ff_xvid_idct_init_x86(IDCTDSPContext *c)
+av_cold void ff_xvid_idct_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
+                                   unsigned high_bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
+
+    if (high_bit_depth ||
+        !(avctx->idct_algo == FF_IDCT_AUTO ||
+          avctx->idct_algo == FF_IDCT_XVID))
+        return;
 
     if (INLINE_MMX(cpu_flags)) {
         c->idct_put  = ff_xvid_idct_mmx_put;

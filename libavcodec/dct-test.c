@@ -42,6 +42,7 @@
 #include "dct.h"
 #include "idctdsp.h"
 #include "simple_idct.h"
+#include "xvididct.h"
 #include "aandcttab.h"
 #include "faandct.h"
 #include "faanidct.h"
@@ -62,11 +63,14 @@ static const struct algo fdct_tab[4] = {
     { "IJG-LLM-INT", ff_jpeg_fdct_islow_8, FF_IDCT_PERM_NONE },
 };
 
-static const struct algo idct_tab[4] = {
+static const struct algo idct_tab[] = {
     { "FAANI",       ff_faanidct,          FF_IDCT_PERM_NONE },
     { "REF-DBL",     ff_ref_idct,          FF_IDCT_PERM_NONE },
     { "INT",         ff_j_rev_dct,         FF_IDCT_PERM_LIBMPEG2 },
     { "SIMPLE-C",    ff_simple_idct_8,     FF_IDCT_PERM_NONE },
+#if CONFIG_MPEG4_DECODER
+    { "XVID",        ff_xvid_idct,         FF_IDCT_PERM_NONE, 0, 1 },
+#endif /* CONFIG_MPEG4_DECODER */
 };
 
 #if ARCH_ARM
