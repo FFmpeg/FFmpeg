@@ -1027,6 +1027,12 @@ enum AVPacketSideDataType {
      */
     AV_PKT_DATA_DISPLAYMATRIX,
 
+    /*
+     * This side data should be associated with a video stream and contains
+     * Stereoscopic 3D information in form of the AVStereo3D struct.
+     */
+    AV_PKT_DATA_STEREO3D,
+
     /**
      * Recommmends skipping the specified number of samples
      * @code
