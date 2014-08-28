@@ -223,7 +223,7 @@ static int x11grab_read_header(AVFormatContext *s1)
     if (x11grab->use_shm) {
         use_shm = XShmQueryExtension(dpy);
         av_log(s1, AV_LOG_INFO,
-               "shared memory extension%s found\n", use_shm ? "" : " not");
+               "shared memory extension %sfound\n", use_shm ? "" : "not ");
     }
 
     if (use_shm) {
