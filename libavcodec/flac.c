@@ -166,7 +166,7 @@ int ff_flac_get_max_frame_size(int blocksize, int ch, int bps)
     return count;
 }
 
-int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
+int ff_flac_is_extradata_valid(AVCodecContext *avctx,
                                enum FLACExtradataFormat *format,
                                uint8_t **streaminfo_start)
 {
@@ -242,5 +242,12 @@ void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *
                               const uint8_t *buffer)
 {
     ff_flac_parse_streaminfo(avctx, s, buffer);
+}
+
+int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
+                               enum FLACExtradataFormat *format,
+                               uint8_t **streaminfo_start)
+{
+    return ff_flac_is_extradata_valid(avctx, format, streaminfo_start);
 }
 #endif
