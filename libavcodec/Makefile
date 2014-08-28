@@ -567,8 +567,6 @@ OBJS-$(CONFIG_VC1_VDPAU_HWACCEL)          += vdpau_vc1.o
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_CAF_DEMUXER)             += mpeg4audio.o mpegaudiodata.o  \
                                           ac3tab.o
-OBJS-$(CONFIG_FLAC_DEMUXER)            += flac.o flacdata.o             \
-                                          xiph.o
 OBJS-$(CONFIG_FLAC_MUXER)              += flac.o flacdata.o
 OBJS-$(CONFIG_FLV_DEMUXER)             += mpeg4audio.o
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
@@ -588,7 +586,7 @@ OBJS-$(CONFIG_MOV_MUXER)               += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGTS_MUXER)            += mpeg4audio.o
 OBJS-$(CONFIG_MPEGTS_DEMUXER)          += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
-OBJS-$(CONFIG_OGG_DEMUXER)             += xiph.o flac.o flacdata.o     \
+OBJS-$(CONFIG_OGG_DEMUXER)             += xiph.o       \
                                           mpeg12data.o \
                                           dirac.o
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flac.o flacdata.o
