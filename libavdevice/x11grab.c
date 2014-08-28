@@ -62,7 +62,7 @@
 #include "libavformat/internal.h"
 
 /** X11 device demuxer context */
-struct x11grab {
+typedef struct X11GrabContext {
     const AVClass *class;    /**< Class for private options. */
     int frame_size;          /**< Size in bytes of a grabbed frame */
     AVRational time_base;    /**< Time base */
@@ -86,7 +86,7 @@ struct x11grab {
 
     Cursor c;
     Window region_win;       /**< This is used by show_region option. */
-};
+} X11GrabContext;
 
 #define REGION_WIN_BORDER 3
 
@@ -95,7 +95,7 @@ struct x11grab {
  *
  * @param s x11grab context
  */
-static void x11grab_draw_region_win(struct x11grab *s)
+static void x11grab_draw_region_win(X11GrabContext *s)
 {
     Display *dpy = s->dpy;
     Window win   = s->region_win;
@@ -116,7 +116,7 @@ static void x11grab_draw_region_win(struct x11grab *s)
  *
  * @param s x11grab context
  */
-static void x11grab_region_win_init(struct x11grab *s)
+static void x11grab_region_win_init(X11GrabContext *s)
 {
     Display *dpy = s->dpy;
     XRectangle rect;
@@ -155,7 +155,7 @@ static void x11grab_region_win_init(struct x11grab *s)
  */
 static int x11grab_read_header(AVFormatContext *s1)
 {
-    struct x11grab *x11grab = s1->priv_data;
+    X11GrabContext *x11grab = s1->priv_data;
     Display *dpy;
     AVStream *st = NULL;
     enum AVPixelFormat input_pixfmt;
@@ -366,7 +366,7 @@ out:
  */
 static void paint_mouse_pointer(XImage *image, AVFormatContext *s1)
 {
-    struct x11grab *s = s1->priv_data;
+    X11GrabContext *s = s1->priv_data;
     int x_off    = s->x_off;
     int y_off    = s->y_off;
     int width    = s->width;
@@ -489,7 +489,7 @@ static int xget_zpixmap(Display *dpy, Drawable d, XImage *image, int x, int y)
  */
 static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
-    struct x11grab *s = s1->priv_data;
+    X11GrabContext *s = s1->priv_data;
     Display *dpy      = s->dpy;
     XImage *image     = s->image;
     int x_off         = s->x_off;
@@ -604,7 +604,7 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
  */
 static int x11grab_read_close(AVFormatContext *s1)
 {
-    struct x11grab *x11grab = s1->priv_data;
+    X11GrabContext *x11grab = s1->priv_data;
 
     /* Detach cleanly from shared mem */
     if (x11grab->use_shm) {
@@ -627,7 +627,7 @@ static int x11grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
-#define OFFSET(x) offsetof(struct x11grab, x)
+#define OFFSET(x) offsetof(X11GrabContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "draw_mouse", "draw the mouse pointer", OFFSET(draw_mouse), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, DEC },
@@ -656,7 +656,7 @@ static const AVClass x11_class = {
 AVInputFormat ff_x11grab_demuxer = {
     .name           = "x11grab",
     .long_name      = NULL_IF_CONFIG_SMALL("X11grab"),
-    .priv_data_size = sizeof(struct x11grab),
+    .priv_data_size = sizeof(X11GrabContext),
     .read_header    = x11grab_read_header,
     .read_packet    = x11grab_read_packet,
     .read_close     = x11grab_read_close,
