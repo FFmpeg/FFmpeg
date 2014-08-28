@@ -3418,6 +3418,7 @@ static int webm_dash_manifest_read_packet(AVFormatContext *s, AVPacket *pkt)
 AVInputFormat ff_matroska_demuxer = {
     .name           = "matroska,webm",
     .long_name      = NULL_IF_CONFIG_SMALL("Matroska / WebM"),
+    .extensions     = "mkv,mk3d,mka,mks",
     .priv_data_size = sizeof(MatroskaDemuxContext),
     .read_probe     = matroska_probe,
     .read_header    = matroska_read_header,
