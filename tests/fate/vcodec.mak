@@ -294,7 +294,8 @@ FATE_VSYNTH2 = $(FATE_VCODEC:%=fate-vsynth2-%)
 $(FATE_VSYNTH1): tests/data/vsynth1.yuv
 $(FATE_VSYNTH2): tests/data/vsynth2.yuv
 
-FATE_AVCONV += $(FATE_VSYNTH1) $(FATE_VSYNTH2)
+FATE_AVCONV += $(FATE_VSYNTH1)
+FATE_SAMPLES_AVCONV += $(FATE_VSYNTH2)
 
 fate-vsynth1: $(FATE_VSYNTH1)
 fate-vsynth2: $(FATE_VSYNTH2)

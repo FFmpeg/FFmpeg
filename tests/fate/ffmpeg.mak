@@ -21,7 +21,7 @@ fate-ffmpeg-filter_complex: CMD = framecrc -filter_complex color=d=1:r=5
 FATE_FFMPEG-$(CONFIG_COLOR_FILTER) += fate-ffmpeg-lavfi
 fate-ffmpeg-lavfi: CMD = framecrc -lavfi color=d=1:r=5
 
-FATE_FFMPEG-$(CONFIG_RAWVIDEO_DEMUXER) += fate-force_key_frames
+FATE_SAMPLES_FFMPEG-$(CONFIG_RAWVIDEO_DEMUXER) += fate-force_key_frames
 fate-force_key_frames: tests/data/vsynth2.yuv
 fate-force_key_frames: CMD = enc_dec \
   "rawvideo -s 352x288 -pix_fmt yuv420p" tests/data/vsynth2.yuv \
