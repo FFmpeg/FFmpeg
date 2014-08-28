@@ -299,6 +299,11 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVCodecDefault x265_defaults[] = {
+    { "b", "0" },
+    { NULL },
+};
+
 AVCodec ff_libx265_encoder = {
     .name             = "libx265",
     .long_name        = NULL_IF_CONFIG_SMALL("libx265 H.265 / HEVC"),
@@ -310,5 +315,6 @@ AVCodec ff_libx265_encoder = {
     .close            = libx265_encode_close,
     .priv_data_size   = sizeof(libx265Context),
     .priv_class       = &class,
+    .defaults         = x265_defaults,
     .capabilities     = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
 };
