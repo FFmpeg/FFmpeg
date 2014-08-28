@@ -99,11 +99,9 @@ static void x11grab_draw_region_win(struct x11grab *s)
 {
     Display *dpy = s->dpy;
     Window win   = s->region_win;
-    int screen;
-    GC gc;
+    int screen = DefaultScreen(dpy);
+    GC gc = XCreateGC(dpy, win, 0, 0);
 
-    screen = DefaultScreen(dpy);
-    gc     = XCreateGC(dpy, win, 0, 0);
     XSetForeground(dpy, gc, WhitePixel(dpy, screen));
     XSetBackground(dpy, gc, BlackPixel(dpy, screen));
     XSetLineAttributes(dpy, gc, REGION_WIN_BORDER, LineDoubleDash, 0, 0);
@@ -121,12 +119,10 @@ static void x11grab_draw_region_win(struct x11grab *s)
 static void x11grab_region_win_init(struct x11grab *s)
 {
     Display *dpy = s->dpy;
-    int screen;
-    XSetWindowAttributes attribs;
     XRectangle rect;
+    XSetWindowAttributes attribs = { .override_redirect = True };
+    int screen = DefaultScreen(dpy);
 
-    screen = DefaultScreen(dpy);
-    attribs.override_redirect = True;
     s->region_win = XCreateWindow(dpy, RootWindow(dpy, screen),
                                   s->x_off  - REGION_WIN_BORDER,
                                   s->y_off  - REGION_WIN_BORDER,
@@ -164,12 +160,8 @@ static int x11grab_read_header(AVFormatContext *s1)
     AVStream *st = NULL;
     enum AVPixelFormat input_pixfmt;
     XImage *image;
-    int x_off = 0;
-    int y_off = 0;
-    int screen;
-    int use_shm = 0;
+    int x_off = 0, y_off = 0, ret = 0, screen, use_shm = 0;
     char *dpyname, *offset;
-    int ret = 0;
     Colormap color_map;
     XColor color[256];
     int i;
@@ -578,10 +570,10 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     if (s->show_region) {
         if (s->region_win) {
-            XEvent evt;
-            // clean up the events, and do the initinal draw or redraw.
-            for (evt.type = NoEventMask;
-                 XCheckMaskEvent(dpy, ExposureMask | StructureNotifyMask, &evt);)
+            XEvent evt = { .type = NoEventMask };
+            // Clean up the events, and do the initial draw or redraw.
+            while (XCheckMaskEvent(dpy, ExposureMask | StructureNotifyMask,
+                                   &evt))
                 ;
             if (evt.type)
                 x11grab_draw_region_win(s);
