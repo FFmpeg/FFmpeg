@@ -732,7 +732,11 @@ static void recommend_keyframe(FlashSV2Context * s, int *keyframe)
 #endif
 }
 
+#ifndef FLASHSV2_DUMB
 static const double block_size_fraction = 1.0 / 300;
+static const double use15_7_threshold = 8192;
+static const double color15_7_factor = 100;
+#endif
 static int optimum_block_width(FlashSV2Context * s)
 {
 #ifndef FLASHSV2_DUMB
@@ -757,8 +761,6 @@ static int optimum_block_height(FlashSV2Context * s)
 #endif
 }
 
-static const double use15_7_threshold = 8192;
-
 static int optimum_use15_7(FlashSV2Context * s)
 {
 #ifndef FLASHSV2_DUMB
@@ -773,8 +775,6 @@ static int optimum_use15_7(FlashSV2Context * s)
     return s->avctx->global_quality == 0;
 #endif
 }
-
-static const double color15_7_factor = 100;
 
 static int optimum_dist(FlashSV2Context * s)
 {
