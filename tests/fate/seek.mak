@@ -155,7 +155,7 @@ fate-seek-vsynth2-wmv1:              SRC = fate/vsynth2-wmv1.avi
 fate-seek-vsynth2-wmv2:              SRC = fate/vsynth2-wmv2.avi
 fate-seek-vsynth2-yuv:               SRC = fate/vsynth2-yuv.avi
 
-FATE_SEEK += $(FATE_SEEK_VSYNTH2-yes:%=fate-seek-vsynth2-%)
+FATE_SAMPLES_SEEK += $(FATE_SEEK_VSYNTH2-yes:%=fate-seek-vsynth2-%)
 
 # files from fate-lavf
 
@@ -237,10 +237,11 @@ fate-seek-lavf-yuv4mpeg: SRC = lavf/lavf.y4m
 
 FATE_SEEK += $(FATE_SEEK_LAVF-yes:%=fate-seek-lavf-%)
 
-$(FATE_SEEK): libavformat/seek-test$(EXESUF)
-$(FATE_SEEK): CMD = run libavformat/seek-test$(EXESUF) $(TARGET_PATH)/tests/data/$(SRC)
-$(FATE_SEEK): fate-seek-%: fate-%
+$(FATE_SEEK) $(FATE_SAMPLES_SEEK): libavformat/seek-test$(EXESUF)
+$(FATE_SEEK) $(FATE_SAMPLES_SEEK): CMD = run libavformat/seek-test$(EXESUF) $(TARGET_PATH)/tests/data/$(SRC)
+$(FATE_SEEK) $(FATE_SAMPLES_SEEK): fate-seek-%: fate-%
 fate-seek-%: REF = $(SRC_PATH)/tests/ref/seek/$(@:fate-seek-%=%)
 
 FATE_AVCONV += $(FATE_SEEK)
-fate-seek:     $(FATE_SEEK)
+FATE_SAMPLES_AVCONV += $(FATE_SAMPLES_SEEK)
+fate-seek:     $(FATE_SEEK) $(FATE_SAMPLES_SEEK)
