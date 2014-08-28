@@ -261,6 +261,7 @@ typedef enum {
   MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_GREEN_MAG = 12,
   MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_LR = 13,
   MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_RL = 14,
+  MATROSKA_VIDEO_STEREOMODE_TYPE_NB,
 } MatroskaVideoStereoModeType;
 
 /*
@@ -295,5 +296,7 @@ extern const char * const ff_matroska_video_stereo_plane[MATROSKA_VIDEO_STEREO_P
 #define CUE_TIMESTAMPS "webm_dash_manifest_cue_timestamps"
 #define TRACK_NUMBER "webm_dash_manifest_track_number"
 #define CODEC_PRIVATE_SIZE "webm_dash_manifest_codec_priv_size"
+
+int ff_mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mode);
 
 #endif /* AVFORMAT_MATROSKA_H */
