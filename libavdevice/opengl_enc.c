@@ -164,7 +164,7 @@ typedef struct OpenGLVertexInfo
 } OpenGLVertexInfo;
 
 /* defines 2 triangles to display */
-static GLushort g_index[6] =
+static const GLushort g_index[6] =
 {
     0, 1, 2,
     0, 3, 2,

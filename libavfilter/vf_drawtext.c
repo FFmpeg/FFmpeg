@@ -272,7 +272,7 @@ struct ft_error
 {
     int err;
     const char *err_msg;
-} static ft_errors[] =
+} static const ft_errors[] =
 #include FT_ERRORS_H
 
 #define FT_ERRMSG(e) ft_errors[e].err_msg

@@ -80,7 +80,7 @@ typedef struct VideoData {
 #define VIDEO_FORMAT NTSC
 #endif
 
-static int bktr_dev[] = { METEOR_DEV0, METEOR_DEV1, METEOR_DEV2,
+static const int bktr_dev[] = { METEOR_DEV0, METEOR_DEV1, METEOR_DEV2,
     METEOR_DEV3, METEOR_DEV_SVIDEO };
 
 uint8_t *video_buf;

@@ -344,7 +344,7 @@ static const struct MovChannelLayoutMap mov_ch_layout_map_9ch[] = {
     { 0, 0 },
 };
 
-static const struct MovChannelLayoutMap *mov_ch_layout_map[] = {
+static const struct MovChannelLayoutMap * const mov_ch_layout_map[] = {
     mov_ch_layout_map_misc,
     mov_ch_layout_map_1ch,
     mov_ch_layout_map_2ch,

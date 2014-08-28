@@ -77,7 +77,7 @@ static const int16_t low_inv_quant5[32] = {
      587,   473,   370,   276,   190,   110,    35,   -35
 };
 
-static const int16_t *low_inv_quants[3] = { ff_g722_low_inv_quant6,
+static const int16_t * const low_inv_quants[3] = { ff_g722_low_inv_quant6,
                                                     low_inv_quant5,
                                             ff_g722_low_inv_quant4 };
 

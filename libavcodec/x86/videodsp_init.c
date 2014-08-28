@@ -61,7 +61,7 @@ extern emu_edge_vfix_func ff_emu_edge_vfix20_mmx;
 extern emu_edge_vfix_func ff_emu_edge_vfix21_mmx;
 extern emu_edge_vfix_func ff_emu_edge_vfix22_mmx;
 #if ARCH_X86_32
-static emu_edge_vfix_func *vfixtbl_mmx[22] = {
+static emu_edge_vfix_func * const vfixtbl_mmx[22] = {
     &ff_emu_edge_vfix1_mmx,  &ff_emu_edge_vfix2_mmx,  &ff_emu_edge_vfix3_mmx,
     &ff_emu_edge_vfix4_mmx,  &ff_emu_edge_vfix5_mmx,  &ff_emu_edge_vfix6_mmx,
     &ff_emu_edge_vfix7_mmx,  &ff_emu_edge_vfix8_mmx,  &ff_emu_edge_vfix9_mmx,
@@ -80,7 +80,7 @@ extern emu_edge_vfix_func ff_emu_edge_vfix19_sse;
 extern emu_edge_vfix_func ff_emu_edge_vfix20_sse;
 extern emu_edge_vfix_func ff_emu_edge_vfix21_sse;
 extern emu_edge_vfix_func ff_emu_edge_vfix22_sse;
-static emu_edge_vfix_func *vfixtbl_sse[22] = {
+static emu_edge_vfix_func * const vfixtbl_sse[22] = {
     ff_emu_edge_vfix1_mmx,  ff_emu_edge_vfix2_mmx,  ff_emu_edge_vfix3_mmx,
     ff_emu_edge_vfix4_mmx,  ff_emu_edge_vfix5_mmx,  ff_emu_edge_vfix6_mmx,
     ff_emu_edge_vfix7_mmx,  ff_emu_edge_vfix8_mmx,  ff_emu_edge_vfix9_mmx,
@@ -109,7 +109,7 @@ extern emu_edge_hfix_func ff_emu_edge_hfix18_mmx;
 extern emu_edge_hfix_func ff_emu_edge_hfix20_mmx;
 extern emu_edge_hfix_func ff_emu_edge_hfix22_mmx;
 #if ARCH_X86_32
-static emu_edge_hfix_func *hfixtbl_mmx[11] = {
+static emu_edge_hfix_func * const hfixtbl_mmx[11] = {
     ff_emu_edge_hfix2_mmx,  ff_emu_edge_hfix4_mmx,  ff_emu_edge_hfix6_mmx,
     ff_emu_edge_hfix8_mmx,  ff_emu_edge_hfix10_mmx, ff_emu_edge_hfix12_mmx,
     ff_emu_edge_hfix14_mmx, ff_emu_edge_hfix16_mmx, ff_emu_edge_hfix18_mmx,
@@ -121,7 +121,7 @@ extern emu_edge_hfix_func ff_emu_edge_hfix16_sse2;
 extern emu_edge_hfix_func ff_emu_edge_hfix18_sse2;
 extern emu_edge_hfix_func ff_emu_edge_hfix20_sse2;
 extern emu_edge_hfix_func ff_emu_edge_hfix22_sse2;
-static emu_edge_hfix_func *hfixtbl_sse2[11] = {
+static emu_edge_hfix_func * const hfixtbl_sse2[11] = {
     ff_emu_edge_hfix2_mmx,  ff_emu_edge_hfix4_mmx,  ff_emu_edge_hfix6_mmx,
     ff_emu_edge_hfix8_mmx,  ff_emu_edge_hfix10_mmx, ff_emu_edge_hfix12_mmx,
     ff_emu_edge_hfix14_mmx, ff_emu_edge_hfix16_sse2, ff_emu_edge_hfix18_sse2,

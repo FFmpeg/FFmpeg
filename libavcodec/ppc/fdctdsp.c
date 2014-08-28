@@ -59,7 +59,7 @@
 #define WA (SQRT_2 * (-C3 - C5))
 #define WB (SQRT_2 *  (C5 - C3))
 
-static vector float fdctconsts[3] = {
+static const vector float fdctconsts[3] = {
     { W0, W1, W2, W3 },
     { W4, W5, W6, W7 },
     { W8, W9, WA, WB }

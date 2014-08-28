@@ -254,7 +254,7 @@ static const AVOption subtitles_options[] = {
     {NULL},
 };
 
-static const char *font_mimetypes[] = {
+static const char * const font_mimetypes[] = {
     "application/x-truetype-font",
     "application/vnd.ms-opentype",
     "application/x-font-ttf",

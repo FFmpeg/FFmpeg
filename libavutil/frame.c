@@ -72,7 +72,7 @@ int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type)
 
 const char *av_get_colorspace_name(enum AVColorSpace val)
 {
-    static const char *name[] = {
+    static const char * const name[] = {
         [AVCOL_SPC_RGB]       = "GBR",
         [AVCOL_SPC_BT709]     = "bt709",
         [AVCOL_SPC_FCC]       = "fcc",
