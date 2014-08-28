@@ -708,7 +708,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
         (tag = av_dict_get( s->metadata, "stereo_mode", NULL, 0))) {
         int stereo_mode = atoi(tag->value);
 
-        for (i=0; i<MATROSKA_VIDEO_STEREO_MODE_COUNT; i++)
+        for (i=0; i<MATROSKA_VIDEO_STEREOMODE_TYPE_NB; i++)
             if (!strcmp(tag->value, ff_matroska_video_stereo_mode[i])){
                 stereo_mode = i;
                 break;
@@ -774,7 +774,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
     if ((mode == MODE_WEBM &&
         format > MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM &&
         format != MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT)
-        || format >= MATROSKA_VIDEO_STEREO_MODE_COUNT) {
+        || format >= MATROSKA_VIDEO_STEREOMODE_TYPE_NB) {
         av_log(s, AV_LOG_ERROR,
                "The specified stereo mode is not valid.\n");
         format = MATROSKA_VIDEO_STEREOMODE_TYPE_NB;
