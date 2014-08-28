@@ -27,6 +27,7 @@
 #include "config.h"
 #include "common.h"
 #include "mem.h"
+#include "avassert.h"
 #include "avstring.h"
 #include "bprint.h"
 
@@ -331,7 +332,10 @@ int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
     const uint8_t *p = *bufp;
     uint32_t top;
     uint64_t code;
-    int ret = 0;
+    int ret = 0, tail_len;
+    uint32_t overlong_encoding_mins[6] = {
+        0x00000000, 0x00000080, 0x00000800, 0x00010000, 0x00200000, 0x04000000,
+    };
 
     if (p >= buf_end)
         return 0;
@@ -346,8 +350,10 @@ int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
     }
     top = (code & 128) >> 1;
 
+    tail_len = 0;
     while (code & top) {
         int tmp;
+        tail_len++;
         if (p >= buf_end) {
             (*bufp) ++;
             return AVERROR(EILSEQ); /* incomplete sequence */
@@ -363,6 +369,13 @@ int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
         top <<= 5;
     }
     code &= (top << 1) - 1;
+
+    /* check for overlong encodings */
+    av_assert0(tail_len <= 5);
+    if (code < overlong_encoding_mins[tail_len]) {
+        ret = AVERROR(EILSEQ);
+        goto end;
+    }
 
     if (code >= 1<<31) {
         ret = AVERROR(EILSEQ);  /* out-of-range value */
