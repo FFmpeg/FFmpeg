@@ -67,7 +67,7 @@ typedef struct XVTagFormatMap
     enum AVPixelFormat format;
 } XVTagFormatMap;
 
-static XVTagFormatMap tag_codec_map[] = {
+static const XVTagFormatMap tag_codec_map[] = {
     { MKTAG('I','4','2','0'), AV_PIX_FMT_YUV420P },
     { MKTAG('U','Y','V','Y'), AV_PIX_FMT_UYVY422 },
     { MKTAG('Y','U','Y','2'), AV_PIX_FMT_YUYV422 },
@@ -76,7 +76,7 @@ static XVTagFormatMap tag_codec_map[] = {
 
 static int xv_get_tag_from_format(enum AVPixelFormat format)
 {
-    XVTagFormatMap *m = tag_codec_map;
+    const XVTagFormatMap *m = tag_codec_map;
     int i;
     for (i = 0; m->tag; m = &tag_codec_map[++i]) {
         if (m->format == format)
