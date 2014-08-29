@@ -2201,11 +2201,11 @@
     <ClCompile Include="..\libavcodec\x86\simple_idct.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\idct_mmx_xvid.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_idct_mmx_xvid.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\x86\xvididct_mmx.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_xvididct_mmx.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\idct_sse2_xvid.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_idct_sse2_xvid.obj</ObjectFileName>
+    <ClCompile Include="..\libavcodec\x86\xvididct_sse2.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_xvididct_sse2.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_snowdsp.obj</ObjectFileName>

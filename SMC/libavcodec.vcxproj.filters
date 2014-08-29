@@ -2163,10 +2163,10 @@
     <ClCompile Include="..\libavcodec\x86\simple_idct.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\idct_mmx_xvid.c">
+    <ClCompile Include="..\libavcodec\x86\xvididct_mmx.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\idct_sse2_xvid.c">
+    <ClCompile Include="..\libavcodec\x86\xvididct_sse2.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c">
