@@ -87,7 +87,7 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
 
 
     for (n=0; n<num_transforms; n++) {
-        offset = fft_offsets_lut[n] << 2;
+        offset = ff_fft_offsets_lut[n] << 2;
         tmpz = z + offset;
 
         tmp1 = tmpz[0].re + tmpz[1].re;
@@ -116,7 +116,7 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
     num_transforms = (num_transforms >> 1) | 1;
 
     for (n=0; n<num_transforms; n++) {
-        offset = fft_offsets_lut[n] << 3;
+        offset = ff_fft_offsets_lut[n] << 3;
         tmpz = z + offset;
 
         __asm__ volatile (
@@ -227,7 +227,7 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
         n34 = 3 * n4;
 
         for (n=0; n<num_transforms; n++) {
-            offset = fft_offsets_lut[n] << nbits;
+            offset = ff_fft_offsets_lut[n] << nbits;
             tmpz = z + offset;
 
             tmpz_n2  = tmpz +  n2;
@@ -521,7 +521,7 @@ av_cold void ff_fft_init_mips(FFTContext *s)
 {
     int n=0;
 
-    ff_fft_lut_init(fft_offsets_lut, 0, 1 << 16, &n);
+    ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 16, &n);
     ff_init_ff_cos_tabs(16);
 
 #if HAVE_INLINE_ASM
