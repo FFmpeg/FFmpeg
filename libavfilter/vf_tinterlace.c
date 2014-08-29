@@ -80,7 +80,7 @@ AVFILTER_DEFINE_CLASS(tinterlace);
 #define FULL_SCALE_YUVJ_FORMATS \
     AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P
 
-static enum AVPixelFormat full_scale_yuvj_pix_fmts[] = {
+static const enum AVPixelFormat full_scale_yuvj_pix_fmts[] = {
     FULL_SCALE_YUVJ_FORMATS, AV_PIX_FMT_NONE
 };
 
