@@ -228,8 +228,6 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
     int n4, n2, n34;
     FFTSample tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
     FFTComplex *tmpz;
-    FFTSample w_re, w_im;
-    const FFTSample *w_re_ptr, *w_im_ptr;
     const int fft_size = (1 << s->nbits);
     int64_t accu;
 
@@ -322,6 +320,8 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
         num_transforms = (num_transforms >> 1) | 1;
 
         for (n=0; n<num_transforms; n++){
+            const FFTSample *w_re_ptr = ff_w_tab_sr + step;
+            const FFTSample *w_im_ptr = ff_w_tab_sr + MAX_FFT_SIZE/(4*16) - step;
             offset = ff_fft_offsets_lut[n] << nbits;
             tmpz = z + offset;
 
@@ -339,12 +339,9 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
             tmpz[n34].im = tmpz[n4].im + tmp1;
             tmpz[ n4].im = tmpz[n4].im - tmp1;
 
-            w_re_ptr = ff_w_tab_sr + step;
-            w_im_ptr = ff_w_tab_sr + MAX_FFT_SIZE/(4*16) - step;
-
             for (i=1; i<n4; i++){
-                w_re = w_re_ptr[0];
-                w_im = w_im_ptr[0];
+                FFTSample w_re = w_re_ptr[0];
+                FFTSample w_im = w_im_ptr[0];
                 accu  = (int64_t)w_re*tmpz[ n2+i].re;
                 accu += (int64_t)w_im*tmpz[ n2+i].im;
                 tmp1 = (int32_t)((accu + 0x40000000) >> 31);
