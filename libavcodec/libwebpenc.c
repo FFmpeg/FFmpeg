@@ -231,7 +231,11 @@ static int libwebp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     *got_packet = 1;
 
 end:
+#if (WEBP_ENCODER_ABI_VERSION > 0x0203)
+    WebPMemoryWriterClear(&mw);
+#else
     free(mw.mem); /* must use free() according to libwebp documentation */
+#endif
     WebPPictureFree(pic);
     av_freep(&pic);
     av_frame_free(&alt_frame);

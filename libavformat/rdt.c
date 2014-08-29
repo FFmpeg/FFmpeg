@@ -301,7 +301,7 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
     if (rdt->audio_pkt_cnt == 0) {
         int pos;
 
-        ffio_init_context(&pb, buf, len, 0, NULL, NULL, NULL, NULL);
+        ffio_init_context(&pb, (uint8_t *)buf, len, 0, NULL, NULL, NULL, NULL);
         flags = (flags & RTP_FLAG_KEY) ? 2 : 0;
         res = ff_rm_parse_packet (rdt->rmctx, &pb, st, rdt->rmst[st->index], len, pkt,
                                   &seq, flags, *timestamp);

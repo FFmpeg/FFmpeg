@@ -266,7 +266,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     }
     if((avctx->width&3) || (avctx->height&3)){
-        av_log(avctx, AV_LOG_ERROR, "width and height must be multiplies of 4\n");
+        av_log(avctx, AV_LOG_ERROR, "width and height must be multiples of 4\n");
         return -1;
     }
 

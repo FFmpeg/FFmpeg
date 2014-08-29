@@ -2697,7 +2697,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     memcpy(((uint8_t*)s) + sizeof(MpegEncContext), ((uint8_t*)s1) + sizeof(MpegEncContext), sizeof(Mpeg4DecContext) - sizeof(MpegEncContext));
 
     if (CONFIG_MPEG4_DECODER && !init && s1->xvid_build >= 0)
-        ff_xvididct_init(&s->m.idsp, dst);
+        ff_xvid_idct_init(&s->m.idsp, dst);
 
     return 0;
 }

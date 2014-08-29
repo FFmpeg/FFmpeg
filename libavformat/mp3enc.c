@@ -421,8 +421,12 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
             /* buffer audio packets until we get all the pictures */
             AVPacketList *pktl = av_mallocz(sizeof(*pktl));
             int ret;
-            if (!pktl)
-                return AVERROR(ENOMEM);
+            if (!pktl) {
+                av_log(s, AV_LOG_WARNING, "Not enough memory to buffer audio. Skipping picture streams\n");
+                mp3->pics_to_write = 0;
+                mp3_queue_flush(s);
+                return mp3_write_audio_packet(s, pkt);
+            }
 
             ret = av_copy_packet(&pktl->pkt, pkt);
             if (ret < 0) {

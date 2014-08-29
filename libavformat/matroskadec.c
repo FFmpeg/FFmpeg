@@ -340,7 +340,6 @@ static EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOPIXELWIDTH,     EBML_UINT,  0, offsetof(MatroskaTrackVideo, pixel_width) },
     { MATROSKA_ID_VIDEOPIXELHEIGHT,    EBML_UINT,  0, offsetof(MatroskaTrackVideo, pixel_height) },
     { MATROSKA_ID_VIDEOCOLORSPACE,     EBML_BIN,   0, offsetof(MatroskaTrackVideo, color_space) },
-    { MATROSKA_ID_VIDEOSTEREOMODE,     EBML_UINT,  0, offsetof(MatroskaTrackVideo, stereo_mode) },
     { MATROSKA_ID_VIDEOALPHAMODE,      EBML_UINT,  0, offsetof(MatroskaTrackVideo, alpha_mode) },
     { MATROSKA_ID_VIDEOPIXELCROPB,     EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPT,     EBML_NONE },
@@ -348,6 +347,7 @@ static EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOPIXELCROPR,     EBML_NONE },
     { MATROSKA_ID_VIDEODISPLAYUNIT,    EBML_NONE },
     { MATROSKA_ID_VIDEOFLAGINTERLACED, EBML_NONE },
+    { MATROSKA_ID_VIDEOSTEREOMODE,     EBML_UINT,  0, offsetof(MatroskaTrackVideo, stereo_mode), { .u = MATROSKA_VIDEO_STEREOMODE_TYPE_NB } },
     { MATROSKA_ID_VIDEOASPECTRATIO,    EBML_NONE },
     { 0 }
 };
@@ -1985,7 +1985,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             }
 
             /* export stereo mode flag as metadata tag */
-            if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREO_MODE_COUNT)
+            if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
                 av_dict_set(&st->metadata, "stereo_mode", ff_matroska_video_stereo_mode[track->video.stereo_mode], 0);
 
             /* export alpha mode flag as metadata tag  */
@@ -2005,6 +2005,13 @@ static int matroska_parse_tracks(AVFormatContext *s)
                                     "stereo_mode", buf, 0);
                         break;
                     }
+            }
+            // add stream level stereo3d side data if it is a supported format
+            if (track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB &&
+                track->video.stereo_mode != 10 && track->video.stereo_mode != 12) {
+                int ret = ff_mkv_stereo3d_conv(st, track->video.stereo_mode);
+                if (ret < 0)
+                    return ret;
             }
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
@@ -3418,6 +3425,7 @@ static int webm_dash_manifest_read_packet(AVFormatContext *s, AVPacket *pkt)
 AVInputFormat ff_matroska_demuxer = {
     .name           = "matroska,webm",
     .long_name      = NULL_IF_CONFIG_SMALL("Matroska / WebM"),
+    .extensions     = "mkv,mk3d,mka,mks",
     .priv_data_size = sizeof(MatroskaDemuxContext),
     .read_probe     = matroska_probe,
     .read_header    = matroska_read_header,

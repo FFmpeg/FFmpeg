@@ -2005,13 +2005,6 @@ static const AVClass h264_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVClass h264_vdpau_class = {
-    .class_name = "H264 VDPAU Decoder",
-    .item_name  = av_default_item_name,
-    .option     = h264_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 AVCodec ff_h264_decoder = {
     .name                  = "h264",
     .long_name             = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
@@ -2032,6 +2025,13 @@ AVCodec ff_h264_decoder = {
 };
 
 #if CONFIG_H264_VDPAU_DECODER
+static const AVClass h264_vdpau_class = {
+    .class_name = "H264 VDPAU Decoder",
+    .item_name  = av_default_item_name,
+    .option     = h264_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_h264_vdpau_decoder = {
     .name           = "h264_vdpau",
     .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),

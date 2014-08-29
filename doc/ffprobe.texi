@@ -184,7 +184,7 @@ format : stream=codec_type
 
 To show all the tags in the stream and format sections:
 @example
-format_tags : format_tags
+stream_tags : format_tags
 @end example
 
 To show only the @code{title} tag (if available) in the stream

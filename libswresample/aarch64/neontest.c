@@ -1,5 +1,6 @@
 /*
- * XVID MPEG-4 VIDEO CODEC
+ * check NEON registers for clobbers
+ * Copyright (c) 2013 Martin Storsjo
  *
  * This file is part of FFmpeg.
  *
@@ -18,26 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * header for Xvid IDCT functions
- */
+#include "libswresample/swresample.h"
+#include "libavutil/aarch64/neontest.h"
 
-#ifndef AVCODEC_X86_IDCT_XVID_H
-#define AVCODEC_X86_IDCT_XVID_H
-
-#include <stdint.h>
-
-void ff_idct_xvid_mmx(short *block);
-void ff_idct_xvid_mmx_put(uint8_t *dest, int line_size, int16_t *block);
-void ff_idct_xvid_mmx_add(uint8_t *dest, int line_size, int16_t *block);
-
-void ff_idct_xvid_mmxext(short *block);
-void ff_idct_xvid_mmxext_put(uint8_t *dest, int line_size, int16_t *block);
-void ff_idct_xvid_mmxext_add(uint8_t *dest, int line_size, int16_t *block);
-
-void ff_idct_xvid_sse2(short *block);
-void ff_idct_xvid_sse2_put(uint8_t *dest, int line_size, short *block);
-void ff_idct_xvid_sse2_add(uint8_t *dest, int line_size, short *block);
-
-#endif /* AVCODEC_X86_IDCT_XVID_H */
+wrap(swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
+                 const uint8_t **in , int in_count))
+{
+    testneonclobbers(swr_convert, s, out, out_count, in, in_count);
+}

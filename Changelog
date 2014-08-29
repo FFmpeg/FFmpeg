@@ -10,6 +10,7 @@ version <next>:
 - LZMA compression support in TIFF decoder
 - support for H.261 RTP payload format (RFC 4587)
 - added codecview filter to visualize information exported by some codecs
+- matroska 3d support thorugh side data
 
 
 version 2.3:

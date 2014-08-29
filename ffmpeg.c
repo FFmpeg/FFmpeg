@@ -3433,7 +3433,7 @@ static int process_input(int file_index)
     }
 
     /* add the stream-global side data to the first packet */
-    if (ist->nb_packets == 1)
+    if (ist->nb_packets == 1) {
         if (ist->st->nb_side_data)
             av_packet_split_side_data(&pkt);
         for (i = 0; i < ist->st->nb_side_data; i++) {
@@ -3449,6 +3449,7 @@ static int process_input(int file_index)
 
             memcpy(dst_data, src_sd->data, src_sd->size);
         }
+    }
 
     if (pkt.dts != AV_NOPTS_VALUE)
         pkt.dts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);

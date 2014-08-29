@@ -65,6 +65,7 @@ static const uint8_t quantization_tab[16] = {
 
 /** dynamic range table. converts codes to scale factors. */
 static float dynamic_range_tab[256];
+static float heavy_dynamic_range_tab[256];
 
 /** Adjustments in dB gain */
 static const float gain_levels[9] = {
@@ -164,6 +165,14 @@ static av_cold void ac3_tables_init(void)
         int v = (i >> 5) - ((i >> 7) << 3) - 5;
         dynamic_range_tab[i] = powf(2.0f, v) * ((i & 0x1F) | 0x20);
     }
+
+    /* generate compr dynamic range table
+       reference: Section 7.7.2 Heavy Compression */
+    for (i = 0; i < 256; i++) {
+        int v = (i >> 4) - ((i >> 7) << 4) - 4;
+        heavy_dynamic_range_tab[i] = powf(2.0f, v) * ((i & 0xF) | 0x10);
+    }
+
 }
 
 /**
@@ -236,9 +245,19 @@ static int ac3_parse_header(AC3DecodeContext *s)
     /* read the rest of the bsi. read twice for dual mono mode. */
     i = !s->channel_mode;
     do {
-        skip_bits(gbc, 5); // skip dialog normalization
-        if (get_bits1(gbc))
-            skip_bits(gbc, 8); //skip compression
+        s->dialog_normalization[(!s->channel_mode)-i] = -get_bits(gbc, 5);
+        if (s->dialog_normalization[(!s->channel_mode)-i] == 0) {
+            s->dialog_normalization[(!s->channel_mode)-i] = -31;
+        }
+        if (s->target_level != 0) {
+            s->level_gain[(!s->channel_mode)-i] = powf(2.0f,
+                (float)(s->target_level -
+                s->dialog_normalization[(!s->channel_mode)-i])/6.0f);
+        }
+        if (s->compression_exists[(!s->channel_mode)-i] = get_bits1(gbc)) {
+            s->heavy_dynamic_range[(!s->channel_mode)-i] =
+                AC3_HEAVY_RANGE(get_bits(gbc, 8));
+        }
         if (get_bits1(gbc))
             skip_bits(gbc, 8); //skip language code
         if (get_bits1(gbc))
@@ -819,8 +838,9 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         if (get_bits1(gbc)) {
             /* Allow asymmetric application of DRC when drc_scale > 1.
                Amplification of quiet sounds is enhanced */
-            INTFLOAT range = AC3_RANGE(get_bits(gbc, 8));
-            if (range > 1.0 || s->drc_scale <= 1.0)
+            int range_bits = get_bits(gbc, 8);
+            INTFLOAT range = AC3_RANGE(range_bits);
+            if (range_bits <= 127 || s->drc_scale <= 1.0)
                 s->dynamic_range[i] = AC3_DYNAMIC_RANGE(range);
             else
                 s->dynamic_range[i] = range;
@@ -1314,15 +1334,20 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
     /* apply scaling to coefficients (headroom, dynrng) */
     for (ch = 1; ch <= s->channels; ch++) {
+        int audio_channel = 0;
         INTFLOAT gain;
-        if(s->channel_mode == AC3_CHMODE_DUALMONO) {
-            gain = s->dynamic_range[2-ch];
-        } else {
-            gain = s->dynamic_range[0];
-        }
+        if (s->channel_mode == AC3_CHMODE_DUALMONO)
+            audio_channel = 2-ch;
+        if (s->heavy_compression && s->compression_exists[audio_channel])
+            gain = s->heavy_dynamic_range[audio_channel];
+        else
+            gain = s->dynamic_range[audio_channel];
+
 #if USE_FIXED
         scale_coefs(s->transform_coeffs[ch], s->fixed_coeffs[ch], gain, 256);
 #else
+        if (s->target_level != 0)
+          gain = gain * s->level_gain[audio_channel];
         gain *= 1.0 / 4194304.0f;
         s->fmt_conv.int32_to_float_fmul_scalar(s->transform_coeffs[ch],
                                                s->fixed_coeffs[ch], gain, 256);
