@@ -59,7 +59,7 @@
 #define MAX_LOG2_NFFT 16 //!< Specifies maximum allowed fft size
 #define MAX_FFT_SIZE (1 << MAX_LOG2_NFFT)
 
-extern int32_t w_tab_sr[];
+extern const int32_t w_tab_sr[];
 extern uint16_t fft_offsets_lut[];
 void ff_fft_lut_init(uint16_t *table, int off, int size, int *index);
 
