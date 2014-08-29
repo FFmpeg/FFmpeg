@@ -1,1 +1,0 @@
-#define FFMPEG_VERSION ""

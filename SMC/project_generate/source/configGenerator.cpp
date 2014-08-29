@@ -615,27 +615,22 @@ bool configGenerator::outputConfig( )
     ofAVConfigFile.close( );
 
 
-    //Output version.h
-    cout << "  Outputting version.h..." << endl;
+    //Output ffversion.h
+    cout << "  Outputting ffversion.h..." << endl;
     //Open VERSION file and get version string
-    string sVersionDefFile = "../../../VERSION";
+    string sVersionDefFile = "../../../RELEASE";
     ifstream ifVersionDefFile( sVersionDefFile );
     if( !ifVersionDefFile.is_open( ) )
     {
-        sVersionDefFile = "../../../RELEASE";
-        ifstream ifVersionDefFile( sVersionDefFile );
-        if( !ifVersionDefFile.is_open( ) )
-        {
-            cout << "  Error: Failed opening output version file (" << sVersionDefFile << ")" << endl;
-            return false;
-        }
+        cout << "  Error: Failed opening output version file (" << sVersionDefFile << ")" << endl;
+        return false;
     }
     //Load first line into string
     string sVersion;
     getline( ifVersionDefFile, sVersion );
     ifVersionDefFile.close( );
     //Open output file
-    string sVersionFile = "../../version.h";
+    string sVersionFile = "../../libavutil/ffversion.h";
     ofstream ofVersionFile( sVersionFile );
     if( !ofVersionFile.is_open( ) )
     {
@@ -643,9 +638,9 @@ bool configGenerator::outputConfig( )
         return false;
     }
     //Output info
-    ofVersionFile << "#define " << m_sProjectName << "_VERSION \"";
+    ofVersionFile << "#ifndef AVUTIL_FFVERSION_H\n#define AVUTIL_FFVERSION_H\n#define FFMPEG_VERSION \"";
     ofVersionFile << sVersion;
-    ofVersionFile << "\"" << endl;
+    ofVersionFile << "\"\n#endif /* AVUTIL_FFVERSION_H */" << endl;
 
     ofVersionFile.close( );
 
