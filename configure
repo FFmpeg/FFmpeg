@@ -130,6 +130,7 @@ Component options:
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
+  --disable-faan           disable floating point AAN (I)DCT code
 
 Hardware accelerators:
   --enable-dxva2           enable DXVA2 code
@@ -1220,6 +1221,7 @@ SUBSYSTEM_LIST="
     dct
     doc
     error_resilience
+    faan
     fft
     lsp
     lzo
@@ -1547,6 +1549,8 @@ CONFIG_EXTRA="
     bswapdsp
     cabac
     dvprofile
+    faandct
+    faanidct
     fdctdsp
     gcrypt
     golomb
@@ -1725,6 +1729,8 @@ threads_if_any="$THREADS_LIST"
 # subsystems
 dct_select="rdft"
 error_resilience_select="me_cmp"
+faandct_deps="faan fdctdsp"
+faanidct_deps="faan idctdsp"
 intrax8_select="error_resilience"
 mdct_select="fft"
 rdft_select="fft"
@@ -2221,6 +2227,7 @@ enable $EXAMPLE_LIST $LIBRARY_LIST $PROGRAM_LIST
 enable asm
 enable debug
 enable doc
+enable faan faandct faanidct
 enable optimizations
 enable safe_bitstream_reader
 enable static

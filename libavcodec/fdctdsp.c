@@ -33,9 +33,11 @@ av_cold void ff_fdctdsp_init(FDCTDSPContext *c, AVCodecContext *avctx)
     } else if (avctx->dct_algo == FF_DCT_FASTINT) {
         c->fdct    = ff_fdct_ifast;
         c->fdct248 = ff_fdct_ifast248;
+#if CONFIG_FAANDCT
     } else if (avctx->dct_algo == FF_DCT_FAAN) {
         c->fdct    = ff_faandct;
         c->fdct248 = ff_faandct248;
+#endif /* CONFIG_FAANDCT */
     } else {
         c->fdct    = ff_jpeg_fdct_islow_8; // slow/accurate/default
         c->fdct248 = ff_fdct248_islow_8;
