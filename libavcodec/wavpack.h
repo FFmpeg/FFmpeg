@@ -53,7 +53,7 @@
 #define WV_FLT_ZERO_SENT  0x08
 #define WV_FLT_ZERO_SIGN  0x10
 
-#define WV_MAX_SAMPLES    131072
+#define WV_MAX_SAMPLES    150000
 
 enum WP_ID_Flags {
     WP_IDF_MASK   = 0x3F,
