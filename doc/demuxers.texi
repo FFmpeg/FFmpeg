@@ -174,6 +174,40 @@ See @url{http://quvi.sourceforge.net/} for more information.
 FFmpeg needs to be built with @code{--enable-libquvi} for this demuxer to be
 enabled.
 
+@section gif
+
+Animated GIF demuxer.
+
+It accepts the following options:
+
+@table @option
+@item min_delay
+Set the minimum valid delay between frames in hundredths of seconds.
+Range is 0 to 6000. Default value is 2.
+
+@item default_delay
+Set the default delay between frames in hundredths of seconds.
+Range is 0 to 6000. Default value is 10.
+
+@item ignore_loop
+GIF files can contain information to loop a certain number of times (or
+infinitely). If @option{ignore_loop} is set to 1, then the loop setting
+from the input will be ignored and looping will not occur. If set to 0,
+then looping will occur and will cycle the number of times according to
+the GIF. Default value is 1.
+@end table
+
+For example, with the overlay filter, place an infinitely looping GIF
+over another video:
+@example
+ffmpeg -i input.mp4 -ignore_loop 0 -i input.gif -filter_complex overlay=shortest=1 out.mkv
+@end example
+
+Note that in the above example the shortest option for overlay filter is
+used to end the output video at the length of the shortest input file,
+which in this case is @file{input.mp4} as the GIF in this example loops
+infinitely.
+
 @section image2
 
 Image file demuxer.
