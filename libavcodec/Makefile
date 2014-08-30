@@ -873,6 +873,7 @@ TOOLS = fourcc2pixfmt
 
 HOSTPROGS = aac_tablegen                                                \
             aacps_tablegen                                              \
+            aacsbr_tablegen                                             \
             cbrt_tablegen                                               \
             cos_tablegen                                                \
             dsd_tablegen                                                \
@@ -900,7 +901,7 @@ else
 $(SUBDIR)%_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DCONFIG_SMALL=0
 endif
 
-GEN_HEADERS = cbrt_tables.h aacps_tables.h aac_tables.h dsd_tables.h dv_tables.h     \
+GEN_HEADERS = cbrt_tables.h aacps_tables.h aacsbr_tables.h aac_tables.h dsd_tables.h dv_tables.h     \
               sinewin_tables.h mpegaudio_tables.h motionpixels_tables.h \
               pcm_tables.h qdm2_tables.h
 GEN_HEADERS := $(addprefix $(SUBDIR), $(GEN_HEADERS))
@@ -911,6 +912,7 @@ $(GEN_HEADERS): $(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
 ifdef CONFIG_HARDCODED_TABLES
 $(SUBDIR)aacdec.o: $(SUBDIR)cbrt_tables.h
 $(SUBDIR)aacps.o: $(SUBDIR)aacps_tables.h
+$(SUBDIR)aacsbr.o: $(SUBDIR)aacsbr_tables.h
 $(SUBDIR)aactab.o: $(SUBDIR)aac_tables.h
 $(SUBDIR)dsddec.o: $(SUBDIR)dsd_tables.h
 $(SUBDIR)dvenc.o: $(SUBDIR)dv_tables.h
