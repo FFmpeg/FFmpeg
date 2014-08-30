@@ -474,8 +474,6 @@ int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
     picref->width  = mpi->w;
     picref->height = mpi->h;
 
-    picref->type = AVMEDIA_TYPE_VIDEO;
-
     for(i=0; conversion_map[i].fmt && mpi->imgfmt != conversion_map[i].fmt; i++);
     picref->format = conversion_map[i].pix_fmt;
 
