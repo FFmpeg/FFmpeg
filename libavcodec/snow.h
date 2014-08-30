@@ -655,7 +655,10 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                 if(v){
                     v= 2*(get_symbol2(&s->c, b->state[context + 2], context-4) + 1);
                     v+=get_rac(&s->c, &b->state[0][16 + 1 + 3 + ff_quant3bA[l&0xFF] + 3*ff_quant3bA[t&0xFF]]);
-
+                    if ((uint16_t)v != v) {
+                        av_log(s->avctx, AV_LOG_ERROR, "Coefficient damaged\n");
+                        v = 1;
+                    }
                     xc->x=x;
                     (xc++)->coeff= v;
                 }
@@ -665,6 +668,10 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                     else           run= INT_MAX;
                     v= 2*(get_symbol2(&s->c, b->state[0 + 2], 0-4) + 1);
                     v+=get_rac(&s->c, &b->state[0][16 + 1 + 3]);
+                    if ((uint16_t)v != v) {
+                        av_log(s->avctx, AV_LOG_ERROR, "Coefficient damaged\n");
+                        v = 1;
+                    }
 
                     xc->x=x;
                     (xc++)->coeff= v;
