@@ -795,7 +795,6 @@ retry:
                                                      10);
         if(side_data == NULL) {
             av_free_packet(pkt);
-            av_free(pkt);
             return AVERROR(ENOMEM);
         }
         AV_WL32(side_data + 4, os->end_trimming);
