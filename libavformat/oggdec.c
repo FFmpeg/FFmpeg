@@ -817,7 +817,6 @@ retry:
     return psize;
 fail:
     av_free_packet(pkt);
-    av_free(pkt);
     return AVERROR(ENOMEM);
 }
 
