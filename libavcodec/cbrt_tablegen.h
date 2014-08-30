@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <math.h>
+#include "libavutil/attributes.h"
 
 #if CONFIG_HARDCODED_TABLES
 #define cbrt_tableinit()
@@ -32,7 +33,7 @@
 #else
 static uint32_t cbrt_tab[1 << 13];
 
-static void cbrt_tableinit(void)
+static av_cold void cbrt_tableinit(void)
 {
     if (!cbrt_tab[(1<<13) - 1]) {
         int i;
