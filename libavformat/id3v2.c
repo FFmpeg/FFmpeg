@@ -676,7 +676,7 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
     int buffer_size       = 0;
     const ID3v2EMFunc *extra_func = NULL;
     unsigned char *uncompressed_buffer = NULL;
-    int uncompressed_buffer_size = 0;
+    av_unused int uncompressed_buffer_size = 0;
 
     av_log(s, AV_LOG_DEBUG, "id3v2 ver:%d flags:%02X len:%d\n", version, flags, len);
 
