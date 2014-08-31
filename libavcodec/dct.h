@@ -59,5 +59,7 @@ void ff_fdct248_islow_8(int16_t *data);
 void ff_fdct248_islow_10(int16_t *data);
 
 void ff_j_rev_dct(int16_t *data);
+void ff_jref_idct_put(uint8_t *dest, int line_size, int16_t *block);
+void ff_jref_idct_add(uint8_t *dest, int line_size, int16_t *block);
 
 #endif /* AVCODEC_DCT_H */

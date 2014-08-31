@@ -29,10 +29,6 @@
 #include "idct.h"
 #include "idctdsp_arm.h"
 
-/* XXX: local hack */
-static void (*ff_put_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
-static void (*ff_add_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
-
 void ff_add_pixels_clamped_arm(const int16_t *block, uint8_t *dest,
                                int line_size);
 
@@ -66,9 +62,6 @@ av_cold void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,
                                  unsigned high_bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
-
-    ff_put_pixels_clamped = c->put_pixels_clamped;
-    ff_add_pixels_clamped = c->add_pixels_clamped;
 
     if (!high_bit_depth) {
         if (avctx->idct_algo == FF_IDCT_AUTO ||
