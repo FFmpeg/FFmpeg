@@ -206,7 +206,7 @@ static const float lsf_cb5[32][2] = {
     { 0.150514,  0.034366}, { 0.186092, -0.069272}
 };
 
-static const float *lsf_codebooks[] = {
+static const float * const lsf_codebooks[] = {
     lsf_cb1[0], lsf_cb2[0], lsf_cb3[0], lsf_cb4[0], lsf_cb5[0]
 };
 

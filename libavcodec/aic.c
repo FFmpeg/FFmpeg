@@ -132,7 +132,7 @@ static const uint8_t aic_c_ext_scan[192] = {
     177, 184, 176, 169, 162, 161, 168, 160,
 };
 
-static const uint8_t *aic_scan[NUM_BANDS] = {
+static const uint8_t * const aic_scan[NUM_BANDS] = {
     aic_y_scan, aic_c_scan, aic_y_ext_scan, aic_c_ext_scan
 };
 

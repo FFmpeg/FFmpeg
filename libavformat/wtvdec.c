@@ -751,6 +751,26 @@ enum {
 };
 
 /**
+ * Try to seek over a broken chunk
+ * @return <0 on error
+ */
+static int recover(WtvContext *wtv, uint64_t broken_pos)
+{
+    AVIOContext *pb = wtv->pb;
+    int i;
+    for (i = 0; i < wtv->nb_index_entries; i++) {
+        if (wtv->index_entries[i].pos > broken_pos) {
+            int ret = avio_seek(pb, wtv->index_entries[i].pos, SEEK_SET);
+            if (ret < 0)
+                return ret;
+            wtv->pts = wtv->index_entries[i].timestamp;
+            return 0;
+         }
+     }
+     return AVERROR(EIO);
+}
+
+/**
  * Parse WTV chunks
  * @param mode SEEK_TO_DATA or SEEK_TO_PTS
  * @param seekts timestamp
@@ -767,8 +787,13 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
 
         ff_get_guid(pb, &g);
         len = avio_rl32(pb);
-        if (len < 32)
-            break;
+        if (len < 32) {
+            int ret;
+            av_log(s, AV_LOG_WARNING, "encountered broken chunk\n");
+            if ((ret = recover(wtv, avio_tell(pb) - 20)) < 0)
+                return ret;
+            continue;
+        }
         sid = avio_rl32(pb) & 0x7FFF;
         avio_skip(pb, 8);
         consumed = 32;

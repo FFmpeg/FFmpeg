@@ -84,12 +84,12 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t frame_size;
     int ret, first = 1;
 
-    if (pb->eof_reached)
+    if (avio_feof(pb))
         return AVERROR_EOF;
 
     if (av_get_packet(pb, pkt, 12) != 12)
         return AVERROR(EIO);
-    while (!pb->eof_reached) {
+    while (!avio_feof(pb)) {
         if (!first) {
             ret = av_append_packet(pb, pkt, 12);
             if (ret < 0) {

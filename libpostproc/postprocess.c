@@ -154,7 +154,7 @@ static const struct PPFilter filters[]=
     {NULL, NULL,0,0,0,0} //End Marker
 };
 
-static const char *replaceTable[]=
+static const char * const replaceTable[]=
 {
     "default",      "hb:a,vb:a,dr:a",
     "de",           "hb:a,vb:a,dr:a",

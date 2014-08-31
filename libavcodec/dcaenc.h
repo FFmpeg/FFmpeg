@@ -38,12 +38,12 @@ static const uint8_t bitstream_sfreq[] = { 1, 2, 3, 6, 7, 8, 11, 12, 13 };
 /* Auditory filter center frequencies and bandwidths, in Hz.
  * The last two are made up, because there is no scientific data.
  */
-static uint16_t fc[] = {
+static const uint16_t fc[] = {
     50, 150, 250, 350, 450, 570, 700, 840, 1000, 1170, 1370, 1600, 1850, 2150,
     2500, 2900, 3400, 4000, 4800, 5800, 7000, 8500, 10500, 13500, 17000
 };
 
-static uint16_t erb[] = {
+static const uint16_t erb[] = {
     80, 100, 100, 100, 110, 120, 140, 150, 160, 190, 210, 240, 280,
     320, 380, 450, 550, 700, 900, 1100, 1300, 1800, 2500, 3500, 4500
 };

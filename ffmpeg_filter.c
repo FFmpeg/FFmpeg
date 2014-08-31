@@ -898,8 +898,11 @@ int configure_filtergraph(FilterGraph *fg)
         init_input_filter(fg, cur);
 
     for (cur = inputs, i = 0; cur; cur = cur->next, i++)
-        if ((ret = configure_input_filter(fg, fg->inputs[i], cur)) < 0)
+        if ((ret = configure_input_filter(fg, fg->inputs[i], cur)) < 0) {
+            avfilter_inout_free(&inputs);
+            avfilter_inout_free(&outputs);
             return ret;
+        }
     avfilter_inout_free(&inputs);
 
     if (!init || simple) {

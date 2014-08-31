@@ -28,7 +28,7 @@
 #include "audio_data.h"
 #include "audio_mix.h"
 
-static const char *coeff_type_names[] = { "q8", "q15", "flt" };
+static const char * const coeff_type_names[] = { "q8", "q15", "flt" };
 
 struct AudioMix {
     AVAudioResampleContext *avr;

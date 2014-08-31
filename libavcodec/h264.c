@@ -1567,6 +1567,12 @@ again:
 
             switch (hx->nal_unit_type) {
             case NAL_IDR_SLICE:
+                if ((ptr[0] & 0xFC) == 0x98) {
+                    av_log(h->avctx, AV_LOG_ERROR, "Invalid inter IDR frame\n");
+                    h->next_outputed_poc = INT_MIN;
+                    ret = -1;
+                    goto end;
+                }
                 if (h->nal_unit_type != NAL_IDR_SLICE) {
                     av_log(h->avctx, AV_LOG_ERROR,
                            "Invalid mix of idr and non-idr slices\n");

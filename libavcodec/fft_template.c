@@ -229,7 +229,7 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
     FFTSample tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
     FFTComplex *tmpz;
     FFTSample w_re, w_im;
-    FFTSample *w_re_ptr, *w_im_ptr;
+    const FFTSample *w_re_ptr, *w_im_ptr;
     const int fft_size = (1 << s->nbits);
     int64_t accu;
 

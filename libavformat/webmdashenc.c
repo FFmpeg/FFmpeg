@@ -203,7 +203,7 @@ static int to_integer(char *p, int len)
     int ret;
     char *q = av_malloc(sizeof(char) * len);
     if (!q) return -1;
-    strncpy(q, p, len);
+    av_strlcpy(q, p, len);
     ret = atoi(q);
     av_free(q);
     return ret;
@@ -240,7 +240,7 @@ static int parse_adaptation_sets(AVFormatContext *s)
             while (*q != '\0' && *q != ',' && *q != ' ') q++;
             as->streams = av_realloc(as->streams, sizeof(*as->streams) * ++as->nb_streams);
             if (as->streams == NULL) return -1;
-            as->streams[as->nb_streams - 1] = to_integer(p, q - p);
+            as->streams[as->nb_streams - 1] = to_integer(p, q - p + 1);
             if (as->streams[as->nb_streams - 1] < 0) return -1;
             if (*q == '\0') break;
             if (*q == ' ') state = new_set;

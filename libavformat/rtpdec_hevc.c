@@ -128,7 +128,7 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
             hevc_data->using_donl_field = 1;
 
 #ifdef DEBUG
-        av_log(s, AV_LOG_DEBUG, "SDP: found sprop-max-don-diff in SDP, DON field usage is: %d\n", hevc_data->using_dons);
+        av_log(s, AV_LOG_DEBUG, "SDP: found sprop-max-don-diff in SDP, DON field usage is: %d\n", hevc_data->using_donl_field);
 #endif
     }
 
@@ -138,7 +138,7 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
             hevc_data->using_donl_field = 1;
 
 #ifdef DEBUG
-        av_log(s, AV_LOG_DEBUG, "SDP: found sprop-depack-buf-nalus in SDP, DON field usage is: %d\n", hevc_data->using_dons);
+        av_log(s, AV_LOG_DEBUG, "SDP: found sprop-depack-buf-nalus in SDP, DON field usage is: %d\n", hevc_data->using_donl_field);
 #endif
     }
 
@@ -295,7 +295,7 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
         /* A/V packet: copy NAL unit data */
         memcpy(pkt->data + sizeof(start_sequence), buf, len);
 
-        COUNT_HEVC_NAL_TYPE(data, nal_type);
+        COUNT_HEVC_NAL_TYPE(rtp_hevc_ctx, nal_type);
 
         break;
     /* fragmentation unit (FU) */
@@ -367,7 +367,7 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
         }
 
         if(!res){
-            COUNT_HEVC_NAL_TYPE(data, fu_type);
+            COUNT_HEVC_NAL_TYPE(rtp_hevc_ctx, fu_type);
         }
 
         break;

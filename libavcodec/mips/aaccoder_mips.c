@@ -81,7 +81,7 @@ static const uint8_t run_value_bits_short[16] = {
     3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 9
 };
 
-static const uint8_t *run_value_bits[2] = {
+static const uint8_t * const run_value_bits[2] = {
     run_value_bits_long, run_value_bits_short
 };
 

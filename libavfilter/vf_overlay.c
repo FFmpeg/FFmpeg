@@ -76,7 +76,7 @@ enum EOFAction {
     EOF_ACTION_PASS
 };
 
-static const char *eof_action_str[] = {
+static const char * const eof_action_str[] = {
     "repeat", "endall", "pass"
 };
 
