@@ -305,6 +305,7 @@ static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
     }
     {
     OPEN_READER(re, &s->gb);
+    i--; // offset by -1 to allow direct indexing of scan_table
     for (;;) {
         UPDATE_CACHE(re, &s->gb);
         GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TCOEFF_VLC_BITS, 2, 0);
@@ -330,17 +331,17 @@ static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
             SKIP_COUNTER(re, &s->gb, 1);
         }
         i += run;
-        if (i > 64) {
+        if (i >= 64) {
             av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d\n",
                    s->mb_x, s->mb_y);
             return -1;
         }
-        j        = scan_table[i-1];
+        j        = scan_table[i];
         block[j] = level;
     }
     CLOSE_READER(re, &s->gb);
     }
-    s->block_last_index[n] = i - 1;
+    s->block_last_index[n] = i;
     return 0;
 }
 

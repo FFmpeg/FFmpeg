@@ -481,6 +481,7 @@ static int h263_decode_block(MpegEncContext * s, int16_t * block,
 retry:
     {
     OPEN_READER(re, &s->gb);
+    i--; // offset by -1 to allow direct indexing of scan_table
     for(;;) {
         UPDATE_CACHE(re, &s->gb);
         GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
@@ -529,9 +530,9 @@ retry:
             SKIP_COUNTER(re, &s->gb, 1);
         }
         i += run;
-        if (i > 64){
-            // redo update without last flag
-            i = i - run + ((run-1)&63);
+        if (i >= 64){
+            // redo update without last flag, revert -1 offset
+            i = i - run + ((run-1)&63) + 1;
             if (i < 64) {
                 // only last marker, no overrun
                 block[scan_table[i]] = level;
@@ -549,7 +550,7 @@ retry:
             av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d i:%d\n", s->mb_x, s->mb_y, s->mb_intra);
             return -1;
         }
-        j = scan_table[i-1];
+        j = scan_table[i];
         block[j] = level;
     }
     CLOSE_READER(re, &s->gb);
