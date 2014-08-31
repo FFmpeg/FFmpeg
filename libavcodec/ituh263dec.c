@@ -486,6 +486,7 @@ retry:
         UPDATE_CACHE(re, &s->gb);
         GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
         if (run == 66 && level){
+            CLOSE_READER(re, &s->gb);
             av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n", s->mb_x, s->mb_y);
             return -1;
         }
@@ -531,6 +532,7 @@ retry:
         }
         i += run;
         if (i >= 64){
+            CLOSE_READER(re, &s->gb);
             // redo update without last flag, revert -1 offset
             i = i - run + ((run-1)&63) + 1;
             if (i < 64) {
@@ -539,7 +541,6 @@ retry:
                 break;
             }
             if(s->alt_inter_vlc && rl == &ff_h263_rl_inter && !s->mb_intra){
-                CLOSE_READER(re, &s->gb);
                 //Looks like a hack but no, it's the way it is supposed to work ...
                 rl = &ff_rl_intra_aic;
                 i = 0;
@@ -553,7 +554,6 @@ retry:
         j = scan_table[i];
         block[j] = level;
     }
-    CLOSE_READER(re, &s->gb);
     }
 not_coded:
     if (s->mb_intra && s->h263_aic) {

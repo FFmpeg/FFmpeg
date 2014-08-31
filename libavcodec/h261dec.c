@@ -310,6 +310,7 @@ static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
         UPDATE_CACHE(re, &s->gb);
         GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TCOEFF_VLC_BITS, 2, 0);
         if (run == 66 && level) {
+            CLOSE_READER(re, &s->gb);
             av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n",
                    s->mb_x, s->mb_y);
             return -1;
@@ -332,6 +333,7 @@ static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
         }
         i += run;
         if (i >= 64) {
+            CLOSE_READER(re, &s->gb);
             av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d\n",
                    s->mb_x, s->mb_y);
             return -1;
