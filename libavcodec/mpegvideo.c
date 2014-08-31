@@ -1618,7 +1618,7 @@ av_cold void ff_init_rl(RLTable *rl,
     }
 }
 
-av_cold void ff_init_vlc_rl(RLTable *rl)
+av_cold void ff_init_vlc_rl(RLTable *rl, const VLC *vlc)
 {
     int i, q;
 
@@ -1630,9 +1630,9 @@ av_cold void ff_init_vlc_rl(RLTable *rl)
             qmul = 1;
             qadd = 0;
         }
-        for (i = 0; i < rl->vlc.table_size; i++) {
-            int code = rl->vlc.table[i][0];
-            int len  = rl->vlc.table[i][1];
+        for (i = 0; i < vlc->table_size; i++) {
+            int code = vlc->table[i][0];
+            int len  = vlc->table[i][1];
             int level, run;
 
             if (len == 0) { // illegal code

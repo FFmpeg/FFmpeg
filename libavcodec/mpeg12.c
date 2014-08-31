@@ -70,21 +70,22 @@ static const uint8_t table_mb_btype[11][2] = {
 #define INIT_2D_VLC_RL(rl, static_size)\
 {\
     static RL_VLC_ELEM rl_vlc_table[static_size];\
-    INIT_VLC_STATIC(&rl.vlc, TEX_VLC_BITS, rl.n + 2,\
+    VLC tmp_vlc;\
+    INIT_VLC_STATIC(&tmp_vlc, TEX_VLC_BITS, rl.n + 2,\
                     &rl.table_vlc[0][1], 4, 2,\
                     &rl.table_vlc[0][0], 4, 2, static_size);\
 \
     rl.rl_vlc[0] = rl_vlc_table;\
-    init_2d_vlc_rl(&rl);\
+    init_2d_vlc_rl(&rl, &tmp_vlc);\
 }
 
-static av_cold void init_2d_vlc_rl(RLTable *rl)
+static av_cold void init_2d_vlc_rl(RLTable *rl, const VLC *vlc)
 {
     int i;
 
-    for (i = 0; i < rl->vlc.table_size; i++) {
-        int code = rl->vlc.table[i][0];
-        int len  = rl->vlc.table[i][1];
+    for (i = 0; i < vlc->table_size; i++) {
+        int code = vlc->table[i][0];
+        int len  = vlc->table[i][1];
         int level, run;
 
         if (len == 0) { // illegal code
