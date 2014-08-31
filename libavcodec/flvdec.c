@@ -22,18 +22,6 @@
 #include "flv.h"
 #include "libavutil/imgutils.h"
 
-void ff_flv2_decode_ac_esc(GetBitContext *gb, int *level, int *run, int *last)
-{
-    int is11 = get_bits1(gb);
-    *last = get_bits1(gb);
-    *run  = get_bits(gb, 6);
-    if (is11) {
-        *level = get_sbits(gb, 11);
-    } else {
-        *level = get_sbits(gb, 7);
-    }
-}
-
 int ff_flv_decode_picture_header(MpegEncContext *s)
 {
     int format, width, height;

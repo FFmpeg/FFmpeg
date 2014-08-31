@@ -258,7 +258,7 @@ static int decode_mv_component(GetBitContext *gb, int v)
 static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
 {
     MpegEncContext *const s = &h->s;
-    int code, level, i, j, run;
+    int level, i, j, run;
     RLTable *rl = &ff_h261_rl_tcoeff;
     const uint8_t *scan_table;
 
@@ -303,27 +303,32 @@ static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
         s->block_last_index[n] = i - 1;
         return 0;
     }
+    {
+    OPEN_READER(re, &s->gb);
     for (;;) {
-        code = get_vlc2(&s->gb, rl->vlc.table, TCOEFF_VLC_BITS, 2);
-        if (code < 0) {
+        UPDATE_CACHE(re, &s->gb);
+        GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TCOEFF_VLC_BITS, 2, 0);
+        if (run == 66 && level) {
             av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n",
                    s->mb_x, s->mb_y);
             return -1;
         }
-        if (code == rl->n) {
+        if (run == 66) {
             /* escape */
             /* The remaining combinations of (run, level) are encoded with a
              * 20-bit word consisting of 6 bits escape, 6 bits run and 8 bits
              * level. */
-            run   = get_bits(&s->gb, 6);
-            level = get_sbits(&s->gb, 8);
-        } else if (code == 0) {
+            run   = SHOW_UBITS(re, &s->gb, 6);
+            SKIP_CACHE(re, &s->gb, 6);
+            level = SHOW_SBITS(re, &s->gb, 8);
+            SKIP_COUNTER(re, &s->gb, 6 + 8);
+        } else if (level == 0) {
             break;
         } else {
-            run   = rl->table_run[code];
-            level = rl->table_level[code];
-            if (get_bits1(&s->gb))
+            run--;
+            if (SHOW_UBITS(re, &s->gb, 1))
                 level = -level;
+            SKIP_COUNTER(re, &s->gb, 1);
         }
         i += run;
         if (i >= 64) {
@@ -334,6 +339,8 @@ static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
         j        = scan_table[i];
         block[j] = level;
         i++;
+    }
+    CLOSE_READER(re, &s->gb);
     }
     s->block_last_index[n] = i - 1;
     return 0;
