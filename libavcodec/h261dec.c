@@ -318,27 +318,25 @@ static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
             /* The remaining combinations of (run, level) are encoded with a
              * 20-bit word consisting of 6 bits escape, 6 bits run and 8 bits
              * level. */
-            run   = SHOW_UBITS(re, &s->gb, 6);
+            run   = SHOW_UBITS(re, &s->gb, 6) + 1;
             SKIP_CACHE(re, &s->gb, 6);
             level = SHOW_SBITS(re, &s->gb, 8);
             SKIP_COUNTER(re, &s->gb, 6 + 8);
         } else if (level == 0) {
             break;
         } else {
-            run--;
             if (SHOW_UBITS(re, &s->gb, 1))
                 level = -level;
             SKIP_COUNTER(re, &s->gb, 1);
         }
         i += run;
-        if (i >= 64) {
+        if (i > 64) {
             av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d\n",
                    s->mb_x, s->mb_y);
             return -1;
         }
-        j        = scan_table[i];
+        j        = scan_table[i-1];
         block[j] = level;
-        i++;
     }
     CLOSE_READER(re, &s->gb);
     }
