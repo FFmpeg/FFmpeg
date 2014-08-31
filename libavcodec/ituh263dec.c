@@ -485,12 +485,12 @@ retry:
     for(;;) {
         UPDATE_CACHE(re, &s->gb);
         GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
-        if (run == 66 && level){
-            CLOSE_READER(re, &s->gb);
-            av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n", s->mb_x, s->mb_y);
-            return -1;
-        }
         if (run == 66) {
+            if (level){
+                CLOSE_READER(re, &s->gb);
+                av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n", s->mb_x, s->mb_y);
+                return -1;
+            }
             /* escape */
             if (CONFIG_FLV_DECODER && s->h263_flv > 1) {
                 int is11 = SHOW_UBITS(re, &s->gb, 1);

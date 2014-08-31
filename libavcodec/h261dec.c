@@ -309,13 +309,13 @@ static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
     for (;;) {
         UPDATE_CACHE(re, &s->gb);
         GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TCOEFF_VLC_BITS, 2, 0);
-        if (run == 66 && level) {
-            CLOSE_READER(re, &s->gb);
-            av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n",
-                   s->mb_x, s->mb_y);
-            return -1;
-        }
         if (run == 66) {
+            if (level) {
+                CLOSE_READER(re, &s->gb);
+                av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n",
+                       s->mb_x, s->mb_y);
+                return -1;
+            }
             /* escape */
             /* The remaining combinations of (run, level) are encoded with a
              * 20-bit word consisting of 6 bits escape, 6 bits run and 8 bits
