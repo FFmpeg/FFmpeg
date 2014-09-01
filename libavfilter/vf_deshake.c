@@ -244,9 +244,10 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     int contrast;
 
     int pos;
-    double *angles = av_malloc_array(width * height / (16 * deshake->blocksize), sizeof(*angles));
     int center_x = 0, center_y = 0;
     double p_x, p_y;
+
+    av_fast_malloc(&deshake->angles, &deshake->angles_size, width * height / (16 * deshake->blocksize) * sizeof(*deshake->angles));
 
     // Reset counts to zero
     for (x = 0; x < deshake->rx * 2 + 1; x++) {
@@ -269,7 +270,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
                 if (mv.x != -1 && mv.y != -1) {
                     deshake->counts[mv.x + deshake->rx][mv.y + deshake->ry] += 1;
                     if (x > deshake->rx && y > deshake->ry)
-                        angles[pos++] = block_angle(x, y, 0, 0, &mv);
+                        deshake->angles[pos++] = block_angle(x, y, 0, 0, &mv);
 
                     center_x += mv.x;
                     center_y += mv.y;
@@ -281,7 +282,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     if (pos) {
          center_x /= pos;
          center_y /= pos;
-         t->angle = clean_mean(angles, pos);
+         t->angle = clean_mean(deshake->angles, pos);
          if (t->angle < 0.001)
               t->angle = 0;
     } else {
@@ -312,7 +313,6 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     t->angle = av_clipf(t->angle, -0.1, 0.1);
 
     //av_log(NULL, AV_LOG_ERROR, "%d x %d\n", avg->x, avg->y);
-    av_free(angles);
 }
 
 static int deshake_transform_c(AVFilterContext *ctx,
@@ -422,6 +422,8 @@ static av_cold void uninit(AVFilterContext *ctx)
         ff_opencl_deshake_uninit(ctx);
     }
     av_frame_free(&deshake->ref);
+    av_freep(&deshake->angles);
+    deshake->angles_size = 0;
     if (deshake->fp)
         fclose(deshake->fp);
 }
