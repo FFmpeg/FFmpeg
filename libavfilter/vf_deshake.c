@@ -67,8 +67,6 @@
 #define OFFSET(x) offsetof(DeshakeContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
-#define MAX_R 64
-
 static const AVOption deshake_options[] = {
     { "x", "set x for the rectangular search area",      OFFSET(cx), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
     { "y", "set y for the rectangular search area",      OFFSET(cy), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
@@ -242,7 +240,6 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
 {
     int x, y;
     IntMotionVector mv = {0, 0};
-    int counts[2*MAX_R+1][2*MAX_R+1];
     int count_max_value = 0;
     int contrast;
 
@@ -254,7 +251,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     // Reset counts to zero
     for (x = 0; x < deshake->rx * 2 + 1; x++) {
         for (y = 0; y < deshake->ry * 2 + 1; y++) {
-            counts[x][y] = 0;
+            deshake->counts[x][y] = 0;
         }
     }
 
@@ -270,7 +267,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
                 //av_log(NULL, AV_LOG_ERROR, "%d\n", contrast);
                 find_block_motion(deshake, src1, src2, x, y, stride, &mv);
                 if (mv.x != -1 && mv.y != -1) {
-                    counts[mv.x + deshake->rx][mv.y + deshake->ry] += 1;
+                    deshake->counts[mv.x + deshake->rx][mv.y + deshake->ry] += 1;
                     if (x > deshake->rx && y > deshake->ry)
                         angles[pos++] = block_angle(x, y, 0, 0, &mv);
 
@@ -294,11 +291,11 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     // Find the most common motion vector in the frame and use it as the gmv
     for (y = deshake->ry * 2; y >= 0; y--) {
         for (x = 0; x < deshake->rx * 2 + 1; x++) {
-            //av_log(NULL, AV_LOG_ERROR, "%5d ", counts[x][y]);
-            if (counts[x][y] > count_max_value) {
+            //av_log(NULL, AV_LOG_ERROR, "%5d ", deshake->counts[x][y]);
+            if (deshake->counts[x][y] > count_max_value) {
                 t->vector.x = x - deshake->rx;
                 t->vector.y = y - deshake->ry;
-                count_max_value = counts[x][y];
+                count_max_value = deshake->counts[x][y];
             }
         }
         //av_log(NULL, AV_LOG_ERROR, "\n");

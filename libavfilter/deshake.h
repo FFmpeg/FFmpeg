@@ -71,8 +71,11 @@ typedef struct {
 
 #endif
 
+#define MAX_R 64
+
 typedef struct {
     const AVClass *class;
+    int counts[2*MAX_R+1][2*MAX_R+1]; /// < Scratch buffer for motion search
     AVFrame *ref;              ///< Previous frame
     int rx;                    ///< Maximum horizontal shift
     int ry;                    ///< Maximum vertical shift
