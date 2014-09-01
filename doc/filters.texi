@@ -491,7 +491,7 @@ aeval=val(ch)/2:c=same
 @item
 Invert phase of the second channel:
 @example
-eval=val(0)|-val(1)
+aeval=val(0)|-val(1)
 @end example
 @end itemize
 
@@ -8850,7 +8850,7 @@ Default value is "all", which will cycle through the list of all tests.
 
 For example the following:
 @example
-testsrc=t=dc_luma
+mptestsrc=t=dc_luma
 @end example
 
 will generate a "dc_luma" test pattern.
