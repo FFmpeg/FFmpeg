@@ -155,14 +155,17 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         s->current_picture_ptr->hwaccel_picture_private;
     const int is_field = s->picture_structure != PICT_FRAME;
     const unsigned mb_count = s->mb_width * (s->mb_height >> is_field);
+    void     *dxva_data_ptr;
     uint8_t  *dxva_data, *current, *end;
     unsigned dxva_size;
     unsigned i;
 
     if (FAILED(IDirectXVideoDecoder_GetBuffer(ctx->decoder,
                                               DXVA2_BitStreamDateBufferType,
-                                              (void **)&dxva_data, &dxva_size)))
+                                              &dxva_data_ptr, &dxva_size)))
         return -1;
+
+    dxva_data = dxva_data_ptr;
     current = dxva_data;
     end = dxva_data + dxva_size;
 
