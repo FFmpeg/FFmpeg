@@ -2,7 +2,7 @@
 
 import sys, subprocess
 
-if len(sys.argv) > 1:
+if len(sys.argv) > 2:
     ifile  = sys.argv[1]
     encopt = sys.argv[2:-1]
     ofile  = sys.argv[-1]
