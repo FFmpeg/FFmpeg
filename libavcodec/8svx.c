@@ -96,11 +96,11 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
 
         if (avpkt->size < hdr_size * avctx->channels) {
             av_log(avctx, AV_LOG_ERROR, "packet size is too small\n");
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         }
         if (esc->data[0]) {
             av_log(avctx, AV_LOG_ERROR, "unexpected data after first packet\n");
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         }
 
         if (is_compr) {
@@ -125,7 +125,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     }
     if (!esc->data[0]) {
         av_log(avctx, AV_LOG_ERROR, "unexpected empty packet\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     /* decode next piece of data from the buffer */
@@ -166,7 +166,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
 
     if (avctx->channels < 1 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "8SVX does not support more than 2 channels\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     switch(avctx->codec->id) {
@@ -179,7 +179,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
         case AV_CODEC_ID_PCM_S8_PLANAR:
             break;
         default:
-          return -1;
+          return AVERROR_INVALIDDATA;
     }
     avctx->sample_fmt = AV_SAMPLE_FMT_U8P;
 
