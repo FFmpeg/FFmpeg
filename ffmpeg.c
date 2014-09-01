@@ -2298,7 +2298,7 @@ static int init_input_stream(int ist_index, char *error, int error_len)
 
         av_opt_set_int(ist->dec_ctx, "refcounted_frames", 1, 0);
         if(ist->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE)
-            av_dict_set(&ist->decoder_opts, "compute_edt", "1", 0);
+            av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
 
         if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
             av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
