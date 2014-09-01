@@ -1802,6 +1802,7 @@ HAVE_LIST="
     libdc1394_1
     libdc1394_2
     makeinfo
+    makeinfo_html
     perl
     pod2man
     sdl
@@ -2631,7 +2632,8 @@ ffserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 # documentation
 podpages_deps="perl"
 manpages_deps="perl pod2man"
-htmlpages_deps="perl texi2html"
+htmlpages_deps="perl"
+htmlpages_deps_any="makeinfo_html texi2html"
 txtpages_deps="perl makeinfo"
 doc_deps_any="manpages htmlpages podpages txtpages"
 
@@ -4916,8 +4918,11 @@ else
 fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
-texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
+enabled makeinfo && (makeinfo --version | \
+                     grep -q 'makeinfo (GNU texinfo) 5' > /dev/null 2>&1) \
+    && enable makeinfo_html || disable makeinfo_html
+disabled makeinfo_html && texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
 perl -v            > /dev/null 2>&1 && enable perl      || disable perl
 pod2man --help     > /dev/null 2>&1 && enable pod2man   || disable pod2man
 rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || disable rsync_contimeout
@@ -5401,6 +5406,7 @@ echo "texi2html enabled         ${texi2html-no}"
 echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
 echo "makeinfo enabled          ${makeinfo-no}"
+echo "makeinfo supports HTML    ${makeinfo_html-no}"
 test -n "$random_seed" &&
     echo "random seed               ${random_seed}"
 echo

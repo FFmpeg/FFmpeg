@@ -52,3 +52,5 @@
   • dctdnoiz filter now uses a block size of 8x8 instead of 16x16 by default
   • -vismv option is deprecated in favor of the codecview filter
   • libmodplug is now detected through pkg-config
+  • HTML documentation generation through texi2html is deprecated in
+    favor of makeinfo/texi2any

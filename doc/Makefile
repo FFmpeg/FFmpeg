@@ -82,14 +82,25 @@ $(GENTEXI): doc/avoptions_%.texi: doc/print_options$(HOSTEXESUF)
 	$(M)doc/print_options $* > $@
 
 doc/%.html: TAG = HTML
+doc/%-all.html: TAG = HTML
+
+ifdef HAVE_MAKEINFO_HTML
+doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.pm $(GENTEXI)
+	$(Q)$(TEXIDEP)
+	$(M)makeinfo --html -I doc --no-split -D config-not-all --init-file=$(SRC_PATH)/doc/t2h.pm --output $@ $<
+
+doc/%-all.html: doc/%.texi $(SRC_PATH)/doc/t2h.pm $(GENTEXI)
+	$(Q)$(TEXIDEP)
+	$(M)makeinfo --html -I doc --no-split -D config-all --init-file=$(SRC_PATH)/doc/t2h.pm --output $@ $<
+else
 doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init $(GENTEXI)
 	$(Q)$(TEXIDEP)
 	$(M)texi2html -I doc -monolithic --D=config-not-all --init-file $(SRC_PATH)/doc/t2h.init --output $@ $<
 
-doc/%-all.html: TAG = HTML
 doc/%-all.html: doc/%.texi $(SRC_PATH)/doc/t2h.init $(GENTEXI)
 	$(Q)$(TEXIDEP)
 	$(M)texi2html -I doc -monolithic --D=config-all --init-file $(SRC_PATH)/doc/t2h.init --output $@ $<
+endif
 
 doc/%.pod: TAG = POD
 doc/%.pod: doc/%.texi $(SRC_PATH)/doc/texi2pod.pl $(GENTEXI)
