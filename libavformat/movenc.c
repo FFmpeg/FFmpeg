@@ -33,7 +33,7 @@
 #include "avc.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
-#include "libavcodec/vc1.h"
+#include "libavcodec/vc1_common.h"
 #include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intfloat.h"
