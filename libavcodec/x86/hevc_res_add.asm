@@ -89,8 +89,12 @@ cglobal hevc_transform_add4_8, 3, 4, 6
 %endmacro
 
 %macro TR_ADD_SSE_16_32_8 3
-    mova              m2, [r1+%1   ]
-    mova              m6, [r1+%1+16]
+    mova             xm2, [r1+%1   ]
+    mova             xm6, [r1+%1+16]
+%if cpuflag(avx2)
+    vinserti128       m2, m2, [r1+%1+32], 1
+    vinserti128       m6, m6, [r1+%1+48], 1
+%endif
 %if cpuflag(avx)
     psubw             m1, m0, m2
     psubw             m5, m0, m6
@@ -103,8 +107,12 @@ cglobal hevc_transform_add4_8, 3, 4, 6
     packuswb          m2, m6
     packuswb          m1, m5
 
-    mova              m4, [r1+%1+32]
-    mova              m6, [r1+%1+48]
+    mova             xm4, [r1+%1+mmsize*2   ]
+    mova             xm6, [r1+%1+mmsize*2+16]
+%if cpuflag(avx2)
+    vinserti128       m4, m4, [r1+%1+96 ], 1
+    vinserti128       m6, m6, [r1+%1+112], 1
+%endif
 %if cpuflag(avx)
     psubw             m3, m0, m4
     psubw             m5, m0, m6
@@ -168,6 +176,21 @@ INIT_XMM sse2
 TRANSFORM_ADD_8
 INIT_XMM avx
 TRANSFORM_ADD_8
+
+INIT_YMM avx2
+; void ff_hevc_transform_add32_8_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+cglobal hevc_transform_add32_8, 3, 4, 7
+    pxor              m0, m0
+    lea               r3, [r2*3]
+    TR_ADD_SSE_16_32_8   0, r0,      r0+r2
+    TR_ADD_SSE_16_32_8 128, r0+r2*2, r0+r3
+%rep 7
+    add                r1, 256
+    lea                r0, [r0+r2*4]
+    TR_ADD_SSE_16_32_8   0, r0,      r0+r2
+    TR_ADD_SSE_16_32_8 128, r0+r2*2, r0+r3
+%endrep
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_transform_add_10(pixel *dst, int16_t *block, int stride)

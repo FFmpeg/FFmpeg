@@ -555,6 +555,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         if (EXTERNAL_AVX2(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_avx2;
+
+            c->transform_add[3]    = ff_hevc_transform_add32_8_avx2;
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
