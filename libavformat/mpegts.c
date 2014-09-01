@@ -1511,7 +1511,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
 
     av_dlog(fc, "tag: 0x%02x len=%d\n", desc_tag, desc_len);
 
-    if (st->codec->codec_id == AV_CODEC_ID_NONE &&
+    if ((st->codec->codec_id == AV_CODEC_ID_NONE || st->request_probe > 0) &&
         stream_type == STREAM_TYPE_PRIVATE_DATA)
         mpegts_find_stream_type(st, desc_tag, DESC_types);
 
