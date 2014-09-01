@@ -2297,8 +2297,12 @@ static int init_input_stream(int ist_index, char *error, int error_len)
         ist->dec_ctx->thread_safe_callbacks = 1;
 
         av_opt_set_int(ist->dec_ctx, "refcounted_frames", 1, 0);
-        if(ist->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE)
+        if (ist->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
+           (ist->decoding_needed & DECODING_FOR_OST)) {
             av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
+            if (ist->decoding_needed & DECODING_FOR_FILTER)
+                av_log(NULL, AV_LOG_WARNING, "Warning using DVB subtitles for filtering and output at the same time is not fully supported, also see -compute_edt [0|1]\n");
+        }
 
         if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
             av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
@@ -2678,7 +2682,7 @@ static int transcode_init(void)
             }
 
             if (ist)
-                ist->decoding_needed++;
+                ist->decoding_needed |= DECODING_FOR_OST;
             ost->encoding_needed = 1;
 
             set_encoder_id(output_files[ost->file_index], ost);
