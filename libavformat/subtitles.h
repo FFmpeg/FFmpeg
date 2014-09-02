@@ -144,11 +144,6 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q);
  *
  * @param c cached character, to avoid a backward seek
  */
-int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c);
-
-/**
- * As ff_smil_extract_next_chunk(), but with FFTextReader.
- */
 int ff_smil_extract_next_text_chunk(FFTextReader *tr, AVBPrint *buf, char *c);
 
 /**

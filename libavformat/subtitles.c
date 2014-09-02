@@ -297,15 +297,6 @@ int ff_smil_extract_next_text_chunk(FFTextReader *tr, AVBPrint *buf, char *c)
     return i;
 }
 
-int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c)
-{
-    FFTextReader tr;
-    tr.buf_pos = tr.buf_len = 0;
-    tr.type = 0;
-    tr.pb = pb;
-    return ff_smil_extract_next_text_chunk(&tr, buf, c);
-}
-
 const char *ff_smil_get_attr_ptr(const char *s, const char *attr)
 {
     int in_quotes = 0;
