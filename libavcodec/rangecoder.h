@@ -115,7 +115,6 @@ static inline void refill(RangeCoder *c)
 static inline int get_rac(RangeCoder *c, uint8_t *const state)
 {
     int range1 = (c->range * (*state)) >> 8;
-    int av_unused one_mask;
 
     c->range -= range1;
 #if 1
@@ -131,13 +130,14 @@ static inline int get_rac(RangeCoder *c, uint8_t *const state)
         return 1;
     }
 #else
-    one_mask = (c->range - c->low - 1) >> 31;
+    {
+        int one_mask one_mask = (c->range - c->low - 1) >> 31;
 
-    c->low   -= c->range & one_mask;
-    c->range += (range1 - c->range) & one_mask;
+        c->low   -=           c->range  & one_mask;
+        c->range += (range1 - c->range) & one_mask;
 
-    *state = c->zero_state[(*state) + (256 & one_mask)];
-
+        *state = c->zero_state[(*state) + (256 & one_mask)];
+    }
     refill(c);
 
     return one_mask & 1;
