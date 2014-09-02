@@ -86,6 +86,25 @@ void ff_text_read(FFTextReader *r, char *buf, size_t size)
         *buf++ = ff_text_r8(r);
 }
 
+int ff_text_eof(FFTextReader *r)
+{
+    return r->buf_pos >= r->buf_len && avio_feof(r->pb);
+}
+
+int ff_text_peek_r8(FFTextReader *r)
+{
+    int c;
+    if (r->buf_pos < r->buf_len)
+        return r->buf[r->buf_pos];
+    c = ff_text_r8(r);
+    if (!avio_feof(r->pb)) {
+        r->buf_pos = 0;
+        r->buf_len = 1;
+        r->buf[0] = c;
+    }
+    return c;
+}
+
 AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
                                     const uint8_t *event, int len, int merge)
 {
@@ -303,7 +322,7 @@ static inline int is_eol(char c)
     return c == '\r' || c == '\n';
 }
 
-void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
+void ff_subtitles_read_text_chunk(FFTextReader *tr, AVBPrint *buf)
 {
     char eol_buf[5], last_was_cr = 0;
     int n = 0, i = 0, nb_eol = 0;
@@ -311,7 +330,7 @@ void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
     av_bprint_clear(buf);
 
     for (;;) {
-        char c = avio_r8(pb);
+        char c = ff_text_r8(tr);
 
         if (!c)
             break;
@@ -343,4 +362,34 @@ void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
         av_bprint_chars(buf, c, 1);
         n++;
     }
+}
+
+void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
+{
+    FFTextReader tr;
+    tr.buf_pos = tr.buf_len = 0;
+    tr.type = 0;
+    tr.pb = pb;
+    ff_subtitles_read_text_chunk(&tr, buf);
+}
+
+ptrdiff_t ff_subtitles_read_line(FFTextReader *tr, char *buf, size_t size)
+{
+    size_t cur = 0;
+    if (!size)
+        return 0;
+    while (cur + 1 < size) {
+        unsigned char c = ff_text_r8(tr);
+        if (!c)
+            return ff_text_eof(tr) ? cur : AVERROR_INVALIDDATA;
+        if (c == '\r' || c == '\n')
+            break;
+        buf[cur++] = c;
+        buf[cur] = '\0';
+    }
+    if (ff_text_peek_r8(tr) == '\r')
+        ff_text_r8(tr);
+    if (ff_text_peek_r8(tr) == '\n')
+        ff_text_r8(tr);
+    return cur;
 }

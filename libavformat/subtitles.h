@@ -22,6 +22,7 @@
 #define AVFORMAT_SUBTITLES_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "avformat.h"
 #include "libavutil/bprint.h"
 
@@ -79,6 +80,16 @@ int64_t ff_text_pos(FFTextReader *r);
  * UTF-8. On invalid UTF-16, 0 is returned.
  */
 int ff_text_r8(FFTextReader *r);
+
+/**
+ * Return non-zero if EOF was reached.
+ */
+int ff_text_eof(FFTextReader *r);
+
+/**
+ * Like ff_text_r8(), but don't remove the byte from the buffer.
+ */
+int ff_text_peek_r8(FFTextReader *r);
 
 /**
  * Read the given number of bytes (in UTF-8). On error or EOF, \0 bytes are
@@ -144,19 +155,24 @@ int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c);
 const char *ff_smil_get_attr_ptr(const char *s, const char *attr);
 
 /**
- * @brief Read a subtitles chunk.
+ * @brief Same as ff_subtitles_read_text_chunk(), but read from an AVIOContext.
+ */
+void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf);
+
+/**
+ * @brief Read a subtitles chunk from FFTextReader.
  *
  * A chunk is defined by a multiline "event", ending with a second line break.
  * The trailing line breaks are trimmed. CRLF are supported.
  * Example: "foo\r\nbar\r\n\r\nnext" will print "foo\r\nbar" into buf, and pb
  * will focus on the 'n' of the "next" string.
  *
- * @param pb  I/O context
+ * @param tr  I/O context
  * @param buf an initialized buf where the chunk is written
  *
  * @note buf is cleared before writing into it.
  */
-void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf);
+void ff_subtitles_read_text_chunk(FFTextReader *tr, AVBPrint *buf);
 
 /**
  * Get the number of characters to increment to jump to the next line, or to
@@ -176,5 +192,17 @@ static av_always_inline int ff_subtitles_next_line(const char *ptr)
         n++;
     return n;
 }
+
+/**
+ * Read a line of text. Discards line ending characters.
+ * The function handles the following line breaks schemes:
+ * LF, CRLF (MS), or standalone CR (old MacOS).
+ *
+ * Returns the number of bytes written to buf. Always writes a terminating 0,
+ * similar as with snprintf.
+ *
+ * @note returns a negative error code if a \0 byte is found
+ */
+ptrdiff_t ff_subtitles_read_line(FFTextReader *tr, char *buf, size_t size);
 
 #endif /* AVFORMAT_SUBTITLES_H */
