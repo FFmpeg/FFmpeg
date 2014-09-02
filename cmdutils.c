@@ -1161,12 +1161,14 @@ int show_protocols(void *optctx, const char *opt, const char *arg)
 
 int show_filters(void *optctx, const char *opt, const char *arg)
 {
-    const AVFilter av_unused(*filter) = NULL;
+#if CONFIG_AVFILTER
+    const AVFilter *filter = NULL;
 
     printf("Filters:\n");
-#if CONFIG_AVFILTER
     while ((filter = avfilter_next(filter)))
         printf("%-16s %s\n", filter->name, filter->description);
+#else
+    printf("No filters available: libavfilter disabled\n");
 #endif
     return 0;
 }
