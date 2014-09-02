@@ -346,11 +346,15 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 avpriv_set_pts_info(vst, 64, 256, swf->frame_rate);
                 st = vst;
             }
-            st->codec->width  = width;
-            st->codec->height = height;
 
             if ((res = av_new_packet(pkt, out_len - colormapsize * colormapbpp)) < 0)
                 goto bitmap_end;
+            if (!st->codec->width && !st->codec->height) {
+                st->codec->width  = width;
+                st->codec->height = height;
+            } else {
+                ff_add_param_change(pkt, 0, 0, 0, width, height);
+            }
             pkt->pos = pos;
             pkt->stream_index = st->index;
 
