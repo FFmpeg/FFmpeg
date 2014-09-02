@@ -30,6 +30,62 @@ enum sub_sort {
     SUB_SORT_POS_TS,        ///< sort by position, then timestamps
 };
 
+enum ff_utf_type {
+    FF_UTF_8,       // or other 8 bit encodings
+    FF_UTF16LE,
+    FF_UTF16BE,
+};
+
+typedef struct {
+    int type;
+    AVIOContext *pb;
+    unsigned char buf[8];
+    int buf_pos, buf_len;
+    AVIOContext buf_pb;
+} FFTextReader;
+
+/**
+ * Initialize the FFTextReader from the given AVIOContext. This function will
+ * read some bytes from pb, and test for UTF-8 or UTF-16 BOMs. Further accesses
+ * to FFTextReader will read more data from pb.
+ *
+ * The purpose of FFTextReader is to transparently convert read data to UTF-8
+ * if the stream had a UTF-16 BOM.
+ *
+ * @param r object which will be initialized
+ * @param pb stream to read from (referenced as long as FFTextReader is in use)
+ */
+void ff_text_init_avio(FFTextReader *r, AVIOContext *pb);
+
+/**
+ * Similar to ff_text_init_avio(), but sets it up to read from a bounded buffer.
+ *
+ * @param r object which will be initialized
+ * @param buf buffer to read from (referenced as long as FFTextReader is in use)
+ * @param size size of buf
+ */
+void ff_text_init_buf(FFTextReader *r, void *buf, size_t size);
+
+/**
+ * Return the byte position of the next byte returned by ff_text_r8(). For
+ * UTF-16 source streams, this will return the original position, but it will
+ * be incorrect if a codepoint was only partially read with ff_text_r8().
+ */
+int64_t ff_text_pos(FFTextReader *r);
+
+/**
+ * Return the next byte. The return value is always 0 - 255. Returns 0 on EOF.
+ * If the source stream is UTF-16, this reads from the stream converted to
+ * UTF-8. On invalid UTF-16, 0 is returned.
+ */
+int ff_text_r8(FFTextReader *r);
+
+/**
+ * Read the given number of bytes (in UTF-8). On error or EOF, \0 bytes are
+ * written.
+ */
+void ff_text_read(FFTextReader *r, char *buf, size_t size);
+
 typedef struct {
     AVPacket *subs;         ///< array of subtitles packets
     int nb_subs;            ///< number of subtitles packets

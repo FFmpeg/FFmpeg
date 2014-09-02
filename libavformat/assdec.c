@@ -33,10 +33,13 @@ typedef struct ASSContext {
 
 static int ass_probe(AVProbeData *p)
 {
-    const char *header = "[Script Info]";
+    char buf[13];
+    FFTextReader tr;
+    ff_text_init_buf(&tr, p->buf, p->buf_size);
 
-    if (!memcmp(p->buf, header, strlen(header)) ||
-        !memcmp(p->buf + 3, header, strlen(header)))
+    ff_text_read(&tr, buf, sizeof(buf));
+
+    if (!memcmp(buf, "[Script Info]", 13))
         return AVPROBE_SCORE_MAX;
 
     return 0;
@@ -66,13 +69,13 @@ static int read_ts(const uint8_t *p, int64_t *start, int *duration)
     return -1;
 }
 
-static int64_t get_line(AVBPrint *buf, AVIOContext *pb)
+static int64_t get_line(AVBPrint *buf, FFTextReader *tr)
 {
-    int64_t pos = avio_tell(pb);
+    int64_t pos = ff_text_pos(tr);
 
     av_bprint_clear(buf);
     for (;;) {
-        char c = avio_r8(pb);
+        char c = ff_text_r8(tr);
         if (!c)
             break;
         av_bprint_chars(buf, c, 1);
@@ -88,6 +91,8 @@ static int ass_read_header(AVFormatContext *s)
     AVBPrint header, line;
     int header_remaining, res = 0;
     AVStream *st;
+    FFTextReader tr;
+    ff_text_init_avio(&tr, s->pb);
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -102,7 +107,7 @@ static int ass_read_header(AVFormatContext *s)
     av_bprint_init(&line,   0, AV_BPRINT_SIZE_UNLIMITED);
 
     for (;;) {
-        int64_t pos = get_line(&line, s->pb);
+        int64_t pos = get_line(&line, &tr);
 
         if (!line.str[0]) // EOF
             break;
