@@ -2592,6 +2592,7 @@ zoompan_filter_deps="swscale"
 # examples
 avio_reading="avformat avcodec avutil"
 avcodec_example_deps="avcodec avutil"
+decoding_encoding_example_deps="avcodec avformat avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"
 extract_mvs_example_deps="avcodec avformat avutil"
 filter_audio_example_deps="avfilter avutil"
