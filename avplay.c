@@ -254,7 +254,7 @@ static enum AVDiscard skip_idct        = AVDISCARD_DEFAULT;
 static enum AVDiscard skip_loop_filter = AVDISCARD_DEFAULT;
 static int error_concealment = 3;
 static int decoder_reorder_pts = -1;
-static int autoexit;
+static int noautoexit;
 static int exit_on_keydown;
 static int exit_on_mousedown;
 static int loop = 1;
@@ -2421,7 +2421,7 @@ static int decode_thread(void *arg)
             if (is->audioq.size + is->videoq.size + is->subtitleq.size == 0) {
                 if (loop != 1 && (!loop || --loop)) {
                     stream_seek(cur_stream, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
-                } else if (autoexit) {
+                } else if (!noautoexit) {
                     ret = AVERROR_EOF;
                     goto fail;
                 }
@@ -2874,7 +2874,7 @@ static const OptionDef options[] = {
     { "idct", OPT_INT | HAS_ARG | OPT_EXPERT, { &idct }, "set idct algo",  "algo" },
     { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, { &error_concealment }, "set error concealment options",  "bit_mask" },
     { "sync", HAS_ARG | OPT_EXPERT, { .func_arg = opt_sync }, "set audio-video sync. type (type=audio/video/ext)", "type" },
-    { "autoexit", OPT_BOOL | OPT_EXPERT, { &autoexit }, "exit at the end", "" },
+    { "noautoexit", OPT_BOOL | OPT_EXPERT, { &noautoexit }, "Do not exit at the end of playback", "" },
     { "exitonkeydown", OPT_BOOL | OPT_EXPERT, { &exit_on_keydown }, "exit on key down", "" },
     { "exitonmousedown", OPT_BOOL | OPT_EXPERT, { &exit_on_mousedown }, "exit on mouse down", "" },
     { "loop", OPT_INT | HAS_ARG | OPT_EXPERT, { &loop }, "set number of times the playback shall be looped", "loop count" },
