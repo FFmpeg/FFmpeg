@@ -133,12 +133,13 @@ static int segment_mux_init(AVFormatContext *s)
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc;
     int i;
+    int ret;
 
-    seg->avf = oc = avformat_alloc_context();
-    if (!oc)
-        return AVERROR(ENOMEM);
+    ret = avformat_alloc_output_context2(&seg->avf, seg->oformat, NULL, NULL);
+    if (ret < 0)
+        return ret;
+    oc = seg->avf;
 
-    oc->oformat            = seg->oformat;
     oc->interrupt_callback = s->interrupt_callback;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
