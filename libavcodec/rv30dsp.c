@@ -31,7 +31,7 @@
 #include "rv34dsp.h"
 
 #define RV30_LOWPASS(OPNAME, OP) \
-static av_unused void OPNAME ## rv30_tpel8_h_lowpass(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, const int C1, const int C2){\
+static void OPNAME ## rv30_tpel8_h_lowpass(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, const int C1, const int C2){\
     const int h = 8;\
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;\
     int i;\
