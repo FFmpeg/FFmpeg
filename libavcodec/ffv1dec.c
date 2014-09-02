@@ -1051,12 +1051,17 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         return 0;
 
     {
-        FFV1Context bak = *fdst;
+        ThreadFrame picture = fdst->picture, last_picture = fdst->last_picture;
+        uint8_t (*initial_states[MAX_QUANT_TABLES])[32];
+        struct FFV1Context *slice_context[MAX_SLICES];
+        memcpy(initial_states, fdst->initial_states, sizeof(fdst->initial_states));
+        memcpy(slice_context,  fdst->slice_context , sizeof(fdst->slice_context));
+
         memcpy(fdst, fsrc, sizeof(*fdst));
-        memcpy(fdst->initial_states, bak.initial_states, sizeof(fdst->initial_states));
-        memcpy(fdst->slice_context,  bak.slice_context , sizeof(fdst->slice_context));
-        fdst->picture      = bak.picture;
-        fdst->last_picture = bak.last_picture;
+        memcpy(fdst->initial_states, initial_states, sizeof(fdst->initial_states));
+        memcpy(fdst->slice_context,  slice_context , sizeof(fdst->slice_context));
+        fdst->picture      = picture;
+        fdst->last_picture = last_picture;
         for (i = 0; i<fdst->num_h_slices * fdst->num_v_slices; i++) {
             FFV1Context *fssrc = fsrc->slice_context[i];
             FFV1Context *fsdst = fdst->slice_context[i];
