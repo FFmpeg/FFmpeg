@@ -147,6 +147,11 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q);
 int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c);
 
 /**
+ * As ff_smil_extract_next_chunk(), but with FFTextReader.
+ */
+int ff_smil_extract_next_text_chunk(FFTextReader *tr, AVBPrint *buf, char *c);
+
+/**
  * SMIL helper to point on the value of an attribute in the given tag.
  *
  * @param s    SMIL tag ("<...>")

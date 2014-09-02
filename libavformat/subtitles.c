@@ -274,20 +274,20 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q)
     q->nb_subs = q->allocated_size = q->current_sub_idx = 0;
 }
 
-int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c)
+int ff_smil_extract_next_text_chunk(FFTextReader *tr, AVBPrint *buf, char *c)
 {
     int i = 0;
     char end_chr;
 
     if (!*c) // cached char?
-        *c = avio_r8(pb);
+        *c = ff_text_r8(tr);
     if (!*c)
         return 0;
 
     end_chr = *c == '<' ? '>' : '<';
     do {
         av_bprint_chars(buf, *c, 1);
-        *c = avio_r8(pb);
+        *c = ff_text_r8(tr);
         i++;
     } while (*c != end_chr && *c);
     if (end_chr == '>') {
@@ -295,6 +295,15 @@ int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c)
         *c = 0;
     }
     return i;
+}
+
+int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c)
+{
+    FFTextReader tr;
+    tr.buf_pos = tr.buf_len = 0;
+    tr.type = 0;
+    tr.pb = pb;
+    return ff_smil_extract_next_text_chunk(&tr, buf, c);
 }
 
 const char *ff_smil_get_attr_ptr(const char *s, const char *attr)
