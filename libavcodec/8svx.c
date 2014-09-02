@@ -101,7 +101,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
         }
         if (avpkt->size < (hdr_size + 1) * avctx->channels) {
             av_log(avctx, AV_LOG_ERROR, "packet size is too small\n");
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         }
 
         esc->fib_acc[0] = avpkt->data[1] + 128;
@@ -124,7 +124,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     }
     if (!esc->data[0]) {
         av_log(avctx, AV_LOG_ERROR, "unexpected empty packet\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     /* decode next piece of data from the buffer */
