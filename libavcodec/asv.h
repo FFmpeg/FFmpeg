@@ -39,7 +39,7 @@
 #include "pixblockdsp.h"
 #include "put_bits.h"
 
-typedef struct ASV1Context{
+typedef struct ASV1Context {
     AVCodecContext *avctx;
     BlockDSPContext bdsp;
     BswapDSPContext bbdsp;
