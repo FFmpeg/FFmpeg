@@ -243,7 +243,10 @@ typedef struct InputStream {
     AVStream *st;
     int discard;             /* true if stream data should be discarded */
     int user_set_discard;
-    int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
+    int decoding_needed;     /* non zero if the packets must be decoded in 'raw_fifo', see DECODING_FOR_* */
+#define DECODING_FOR_OST    1
+#define DECODING_FOR_FILTER 2
+
     AVCodecContext *dec_ctx;
     AVCodec *dec;
     AVFrame *decoded_frame;

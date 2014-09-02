@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <math.h>
+#include "libavutil/attributes.h"
 
 #define TABLE_4_3_SIZE (8191 + 16)*4
 #if CONFIG_HARDCODED_TABLES
@@ -41,7 +42,7 @@ static float expval_table_float[512][16];
 #define FRAC_BITS 23
 #define IMDCT_SCALAR 1.759
 
-static void mpegaudio_tableinit(void)
+static av_cold void mpegaudio_tableinit(void)
 {
     int i, value, exponent;
     for (i = 1; i < TABLE_4_3_SIZE; i++) {

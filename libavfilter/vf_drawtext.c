@@ -268,11 +268,11 @@ AVFILTER_DEFINE_CLASS(drawtext);
 #define FT_ERRORDEF(e, v, s) { (e), (s) },
 #define FT_ERROR_END_LIST { 0, NULL } };
 
-struct ft_error
+static const struct ft_error
 {
     int err;
     const char *err_msg;
-} static const ft_errors[] =
+} ft_errors[] =
 #include FT_ERRORS_H
 
 #define FT_ERRMSG(e) ft_errors[e].err_msg

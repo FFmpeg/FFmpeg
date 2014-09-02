@@ -297,6 +297,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const H264Picture *current_picture = h->cur_pic_ptr;
     struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     DXVA_Slice_H264_Short *slice = NULL;
+    void     *dxva_data_ptr;
     uint8_t  *dxva_data, *current, *end;
     unsigned dxva_size;
     void     *slice_data;
@@ -306,9 +307,11 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
 
     /* Create an annex B bitstream buffer with only slice NAL and finalize slice */
     if (FAILED(IDirectXVideoDecoder_GetBuffer(ctx->decoder,
-                                               DXVA2_BitStreamDateBufferType,
-                                               (void **)&dxva_data, &dxva_size)))
+                                              DXVA2_BitStreamDateBufferType,
+                                              &dxva_data_ptr, &dxva_size)))
         return -1;
+
+    dxva_data = dxva_data_ptr;
     current = dxva_data;
     end = dxva_data + dxva_size;
 

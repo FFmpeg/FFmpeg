@@ -24,6 +24,7 @@
 #define AVCODEC_MOTIONPIXELS_TABLEGEN_H
 
 #include <stdint.h>
+#include "libavutil/attributes.h"
 
 typedef struct YuvPixel {
     int8_t y, v, u;
@@ -49,7 +50,7 @@ static int mp_yuv_to_rgb(int y, int v, int u, int clip_rgb) {
 #else
 static YuvPixel mp_rgb_yuv_table[1 << 15];
 
-static void mp_set_zero_yuv(YuvPixel *p)
+static av_cold void mp_set_zero_yuv(YuvPixel *p)
 {
     int i, j;
 
@@ -63,7 +64,7 @@ static void mp_set_zero_yuv(YuvPixel *p)
     }
 }
 
-static void mp_build_rgb_yuv_table(YuvPixel *p)
+static av_cold void mp_build_rgb_yuv_table(YuvPixel *p)
 {
     int y, v, u, i;
 
@@ -81,7 +82,7 @@ static void mp_build_rgb_yuv_table(YuvPixel *p)
         mp_set_zero_yuv(p + i * 32);
 }
 
-static void motionpixels_tableinit(void)
+static av_cold void motionpixels_tableinit(void)
 {
     if (!mp_rgb_yuv_table[0].u)
         mp_build_rgb_yuv_table(mp_rgb_yuv_table);

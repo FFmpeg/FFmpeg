@@ -2097,8 +2097,11 @@ the_end:
                 continue;
             if (p==1 || p==2)
                 w >>= hshift;
+            av_assert0(w > 0);
             for (i = 0; i < s->chroma_height; i++) {
-                for (index = w - 1; index; index--) {
+                if (is16bit) ((uint16_t*)line)[w - 1] = ((uint16_t*)line)[(w - 1) / 2];
+                else                      line[w - 1] = line[(w - 1) / 2];
+                for (index = w - 2; index > 0; index--) {
                     if (is16bit)
                         ((uint16_t*)line)[index] = (((uint16_t*)line)[index / 2] + ((uint16_t*)line)[(index + 1) / 2]) >> 1;
                     else
@@ -2128,7 +2131,7 @@ the_end:
             for (i = s->height - 1; i; i--) {
                 uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[p])[i / 2 * s->linesize[p]];
                 uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[p])[(i + 1) / 2 * s->linesize[p]];
-                if (src1 == src2) {
+                if (src1 == src2 || i == s->height - 1) {
                     memcpy(dst, src1, w);
                 } else {
                     for (index = 0; index < w; index++)

@@ -35,10 +35,6 @@
  * @{
  */
 
-#if   ARCH_ARM
-#   include "arm/intmath.h"
-#endif
-
 #if HAVE_FAST_CLZ && AV_GCC_VERSION_AT_LEAST(3,4)
 
 #ifndef ff_log2

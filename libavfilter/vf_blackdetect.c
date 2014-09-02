@@ -64,7 +64,7 @@ AVFILTER_DEFINE_CLASS(blackdetect);
 #define YUVJ_FORMATS \
     AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P
 
-static enum AVPixelFormat yuvj_formats[] = {
+static const enum AVPixelFormat yuvj_formats[] = {
     YUVJ_FORMATS, AV_PIX_FMT_NONE
 };
 

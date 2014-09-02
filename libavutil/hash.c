@@ -60,7 +60,7 @@ typedef struct AVHashContext {
     uint32_t crc;
 } AVHashContext;
 
-struct {
+static const struct {
     const char *name;
     int size;
 } hashdesc[] = {

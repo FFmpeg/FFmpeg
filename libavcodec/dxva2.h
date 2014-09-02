@@ -29,11 +29,8 @@
  * Public libavcodec DXVA2 header.
  */
 
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0600
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
 #undef _WIN32_WINNT
-#endif
-
-#if !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x0600
 #endif
 
