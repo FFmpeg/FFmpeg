@@ -9,7 +9,7 @@ version <next>:
 - support for using metadata in stream specifiers in fftools
 - LZMA compression support in TIFF decoder
 - support for H.261 RTP payload format (RFC 4587)
-- support for HEVC/H.265 RTP payload format (draft v6) - depacketizing
+- HEVC/H.265 RTP payload format (draft v6) depacketizer
 - added codecview filter to visualize information exported by some codecs
 - matroska 3d support thorugh side data
 
