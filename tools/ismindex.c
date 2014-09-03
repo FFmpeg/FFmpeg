@@ -325,6 +325,12 @@ static int handle_file(struct Tracks *tracks, const char *file, int split,
     for (i = 0; i < ctx->nb_streams; i++) {
         struct Track **temp;
         AVStream *st = ctx->streams[i];
+
+        if (st->codec->bit_rate == 0) {
+            fprintf(stderr, "Skipping track %d in %s as it has zero bitrate\n", i, file);
+            continue;
+        }
+
         track = av_mallocz(sizeof(*track));
         if (!track) {
             err = AVERROR(ENOMEM);
