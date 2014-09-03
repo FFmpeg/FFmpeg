@@ -36,7 +36,7 @@
 #include "rdft.h"
 #include "fmtconvert.h"
 #include "internal.h"
-#include "wma.h"
+#include "wma_freqs.h"
 #include "libavutil/intfloat.h"
 
 static float quant_table[96];
