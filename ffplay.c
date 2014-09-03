@@ -187,6 +187,10 @@ typedef struct Decoder {
     int flushed;
     int packet_pending;
     SDL_cond *empty_queue_cond;
+    int64_t start_pts;
+    AVRational start_pts_tb;
+    int64_t next_pts;
+    AVRational next_pts_tb;
 } Decoder;
 
 typedef struct VideoState {
@@ -249,7 +253,6 @@ typedef struct VideoState {
     int frame_drops_early;
     int frame_drops_late;
     AVFrame *frame;
-    int64_t audio_frame_next_pts;
 
     enum ShowMode {
         SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
@@ -540,10 +543,12 @@ static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, 
     d->avctx = avctx;
     d->queue = queue;
     d->empty_queue_cond = empty_queue_cond;
+    d->start_pts = AV_NOPTS_VALUE;
 }
 
 static int decoder_decode_frame(Decoder *d, void *fframe) {
     int got_frame = 0;
+    AVFrame *frame = fframe;
 
     d->flushed = 0;
 
@@ -564,6 +569,8 @@ static int decoder_decode_frame(Decoder *d, void *fframe) {
                     avcodec_flush_buffers(d->avctx);
                     d->finished = 0;
                     d->flushed = 1;
+                    d->next_pts = d->start_pts;
+                    d->next_pts_tb = d->start_pts_tb;
                 }
             } while (pkt.data == flush_pkt.data || d->queue->serial != d->pkt_serial);
             av_free_packet(&d->pkt);
@@ -573,10 +580,32 @@ static int decoder_decode_frame(Decoder *d, void *fframe) {
 
         switch (d->avctx->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
-                ret = avcodec_decode_video2(d->avctx, fframe, &got_frame, &d->pkt_temp);
+                ret = avcodec_decode_video2(d->avctx, frame, &got_frame, &d->pkt_temp);
+                if (got_frame) {
+                    if (decoder_reorder_pts == -1) {
+                        frame->pts = av_frame_get_best_effort_timestamp(frame);
+                    } else if (decoder_reorder_pts) {
+                        frame->pts = frame->pkt_pts;
+                    } else {
+                        frame->pts = frame->pkt_dts;
+                    }
+                }
                 break;
             case AVMEDIA_TYPE_AUDIO:
-                ret = avcodec_decode_audio4(d->avctx, fframe, &got_frame, &d->pkt_temp);
+                ret = avcodec_decode_audio4(d->avctx, frame, &got_frame, &d->pkt_temp);
+                if (got_frame) {
+                    AVRational tb = (AVRational){1, frame->sample_rate};
+                    if (frame->pts != AV_NOPTS_VALUE)
+                        frame->pts = av_rescale_q(frame->pts, d->avctx->time_base, tb);
+                    else if (frame->pkt_pts != AV_NOPTS_VALUE)
+                        frame->pts = av_rescale_q(frame->pkt_pts, d->avctx->pkt_timebase, tb);
+                    else if (d->next_pts != AV_NOPTS_VALUE)
+                        frame->pts = av_rescale_q(d->next_pts, d->next_pts_tb, tb);
+                    if (frame->pts != AV_NOPTS_VALUE) {
+                        d->next_pts = frame->pts + frame->nb_samples;
+                        d->next_pts_tb = tb;
+                    }
+                }
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 ret = avcodec_decode_subtitle2(d->avctx, fframe, &got_frame, &d->pkt_temp);
@@ -1840,14 +1869,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame)
     if (got_picture) {
         double dpts = NAN;
 
-        if (decoder_reorder_pts == -1) {
-            frame->pts = av_frame_get_best_effort_timestamp(frame);
-        } else if (decoder_reorder_pts) {
-            frame->pts = frame->pkt_pts;
-        } else {
-            frame->pts = frame->pkt_dts;
-        }
-
         if (frame->pts != AV_NOPTS_VALUE)
             dpts = av_q2d(is->video_st->time_base) * frame->pts;
 
@@ -2301,7 +2322,6 @@ static int synchronize_audio(VideoState *is, int nb_samples)
  */
 static int audio_decode_frame(VideoState *is)
 {
-    AVCodecContext *dec = is->audio_st->codec;
     int data_size, resampled_data_size;
     int64_t dec_channel_layout;
     int got_frame = 0;
@@ -2329,19 +2349,6 @@ static int audio_decode_frame(VideoState *is)
             if (!is->audio_buf_frames_pending) {
                 got_frame = 0;
                 tb = (AVRational){1, is->frame->sample_rate};
-                if (is->frame->pts != AV_NOPTS_VALUE)
-                    is->frame->pts = av_rescale_q(is->frame->pts, dec->time_base, tb);
-                else if (is->frame->pkt_pts != AV_NOPTS_VALUE)
-                    is->frame->pts = av_rescale_q(is->frame->pkt_pts, is->audio_st->time_base, tb);
-                else if (is->audio_frame_next_pts != AV_NOPTS_VALUE)
-#if CONFIG_AVFILTER
-                    is->frame->pts = av_rescale_q(is->audio_frame_next_pts, (AVRational){1, is->audio_filter_src.freq}, tb);
-#else
-                    is->frame->pts = av_rescale_q(is->audio_frame_next_pts, (AVRational){1, is->audio_src.freq}, tb);
-#endif
-
-                if (is->frame->pts != AV_NOPTS_VALUE)
-                    is->audio_frame_next_pts = is->frame->pts + is->frame->nb_samples;
 
 #if CONFIG_AVFILTER
                 dec_channel_layout = get_valid_channel_layout(is->frame->channel_layout, av_frame_get_channels(is->frame));
@@ -2479,12 +2486,8 @@ static int audio_decode_frame(VideoState *is)
         if ((got_frame = decoder_decode_frame(&is->auddec, is->frame)) < 0)
             return -1;
 
-        if (is->auddec.flushed) {
+        if (is->auddec.flushed)
             is->audio_buf_frames_pending = 0;
-            is->audio_frame_next_pts = AV_NOPTS_VALUE;
-            if ((is->ic->iformat->flags & (AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK)) && !is->ic->iformat->read_seek)
-                is->audio_frame_next_pts = is->audio_st->start_time;
-        }
     }
 }
 
@@ -2706,6 +2709,10 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         packet_queue_start(&is->audioq);
         decoder_init(&is->auddec, avctx, &is->audioq, is->continue_read_thread);
+        if ((is->ic->iformat->flags & (AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK)) && !is->ic->iformat->read_seek) {
+            is->auddec.start_pts = is->audio_st->start_time;
+            is->auddec.start_pts_tb = is->audio_st->time_base;
+        }
         SDL_PauseAudio(0);
         break;
     case AVMEDIA_TYPE_VIDEO:
