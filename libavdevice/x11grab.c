@@ -143,6 +143,35 @@ static void x11grab_region_win_init(X11GrabContext *s)
     x11grab_draw_region_win(s);
 }
 
+static int setup_shm(AVFormatContext *s, Display *dpy, XImage **image)
+{
+    X11GrabContext *g = s->priv_data;
+    int scr           = XDefaultScreen(dpy);
+    XImage *img       = XShmCreateImage(dpy, DefaultVisual(dpy, scr),
+                                        DefaultDepth(dpy, scr), ZPixmap, NULL,
+                                        &g->shminfo, g->width, g->height);
+
+    g->shminfo.shmid = shmget(IPC_PRIVATE, img->bytes_per_line * img->height,
+                              IPC_CREAT | 0777);
+
+    if (g->shminfo.shmid == -1) {
+        av_log(s, AV_LOG_ERROR, "Cannot get shared memory!\n");
+        return AVERROR(ENOMEM);
+    }
+
+    g->shminfo.shmaddr  = img->data = shmat(g->shminfo.shmid, 0, 0);
+    g->shminfo.readOnly = False;
+
+    if (!XShmAttach(dpy, &g->shminfo)) {
+        av_log(s, AV_LOG_ERROR, "Failed to attach shared memory!\n");
+        /* needs some better error subroutine :) */
+        return AVERROR(EIO);
+    }
+
+    *image = img;
+    return 0;
+}
+
 /**
  * Initialize the x11 grab device demuxer (public device demuxer API).
  *
@@ -226,33 +255,12 @@ static int x11grab_read_header(AVFormatContext *s1)
                "shared memory extension %sfound\n", use_shm ? "" : "not ");
     }
 
-    if (use_shm) {
-        int scr = XDefaultScreen(dpy);
-        image = XShmCreateImage(dpy,
-                                DefaultVisual(dpy, scr),
-                                DefaultDepth(dpy, scr),
-                                ZPixmap,
-                                NULL,
-                                &x11grab->shminfo,
-                                x11grab->width, x11grab->height);
-        x11grab->shminfo.shmid = shmget(IPC_PRIVATE,
-                                        image->bytes_per_line * image->height,
-                                        IPC_CREAT | 0777);
-        if (x11grab->shminfo.shmid == -1) {
-            av_log(s1, AV_LOG_ERROR, "Fatal: Can't get shared memory!\n");
-            ret = AVERROR(ENOMEM);
-            goto out;
-        }
-        x11grab->shminfo.shmaddr  = image->data = shmat(x11grab->shminfo.shmid, 0, 0);
-        x11grab->shminfo.readOnly = False;
+    if (use_shm && setup_shm(s1, dpy, &image) < 0) {
+        av_log(s1, AV_LOG_WARNING, "Falling back to XGetImage\n");
+        use_shm = 0;
+    }
 
-        if (!XShmAttach(dpy, &x11grab->shminfo)) {
-            av_log(s1, AV_LOG_ERROR, "Fatal: Failed to attach shared memory!\n");
-            /* needs some better error subroutine :) */
-            ret = AVERROR(EIO);
-            goto out;
-        }
-    } else {
+    if (!use_shm) {
         image = XGetImage(dpy, RootWindow(dpy, screen),
                           x_off, y_off,
                           x11grab->width, x11grab->height,
