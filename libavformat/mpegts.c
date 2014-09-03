@@ -140,6 +140,8 @@ struct MpegTSContext {
     int skip_changes;
     int skip_clear;
 
+    int resync_size;
+
     /******************************************/
     /* private mpegts data */
     /* scan context */
@@ -153,7 +155,11 @@ struct MpegTSContext {
     int current_pid;
 };
 
-static const AVOption mpegtsraw_options[] = {
+#define MPEGTS_OPTIONS \
+    { "resync_size",   "Size limit for looking up a new syncronization.", offsetof(MpegTSContext, resync_size), AV_OPT_TYPE_INT,  { .i64 =  MAX_RESYNC_SIZE}, 0, INT_MAX,  AV_OPT_FLAG_DECODING_PARAM }
+
+static const AVOption raw_options[] = {
+    MPEGTS_OPTIONS,
     { "compute_pcr",   "Compute exact PCR for each transport stream packet.",
           offsetof(MpegTSContext, mpeg2ts_compute_pcr), AV_OPT_TYPE_INT,
           { .i64 = 0 }, 0, 1,  AV_OPT_FLAG_DECODING_PARAM },
@@ -167,11 +173,12 @@ static const AVOption mpegtsraw_options[] = {
 static const AVClass mpegtsraw_class = {
     .class_name = "mpegtsraw demuxer",
     .item_name  = av_default_item_name,
-    .option     = mpegtsraw_options,
+    .option     = raw_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVOption mpegts_options[] = {
+static const AVOption options[] = {
+    MPEGTS_OPTIONS,
     {"fix_teletext_pts", "Try to fix pts values of dvb teletext streams.", offsetof(MpegTSContext, fix_teletext_pts), AV_OPT_TYPE_INT,
      {.i64 = 1}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     {"ts_packetsize", "Output option carrying the raw packet size.", offsetof(MpegTSContext, raw_packet_size), AV_OPT_TYPE_INT,
@@ -186,7 +193,7 @@ static const AVOption mpegts_options[] = {
 static const AVClass mpegts_class = {
     .class_name = "mpegts demuxer",
     .item_name  = av_default_item_name,
-    .option     = mpegts_options,
+    .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -2188,10 +2195,11 @@ static void reanalyze(MpegTSContext *ts) {
  * get_packet_size() ?) */
 static int mpegts_resync(AVFormatContext *s)
 {
+    MpegTSContext *ts = s->priv_data;
     AVIOContext *pb = s->pb;
     int c, i;
 
-    for (i = 0; i < MAX_RESYNC_SIZE; i++) {
+    for (i = 0; i < ts->resync_size; i++) {
         c = avio_r8(pb);
         if (avio_feof(pb))
             return AVERROR_EOF;
