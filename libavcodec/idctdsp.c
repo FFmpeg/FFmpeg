@@ -292,9 +292,6 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
     c->put_signed_pixels_clamped = put_signed_pixels_clamped_c;
     c->add_pixels_clamped        = add_pixels_clamped_c;
 
-    ff_put_pixels_clamped = c->put_pixels_clamped;
-    ff_add_pixels_clamped = c->add_pixels_clamped;
-
     if (CONFIG_MPEG4_DECODER && avctx->idct_algo == FF_IDCT_XVID)
         ff_xvid_idct_init(c, avctx);
 
@@ -306,6 +303,9 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
         ff_idctdsp_init_ppc(c, avctx, high_bit_depth);
     if (ARCH_X86)
         ff_idctdsp_init_x86(c, avctx, high_bit_depth);
+
+    ff_put_pixels_clamped = c->put_pixels_clamped;
+    ff_add_pixels_clamped = c->add_pixels_clamped;
 
     ff_init_scantable_permutation(c->idct_permutation,
                                   c->perm_type);
