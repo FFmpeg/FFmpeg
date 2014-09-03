@@ -2209,16 +2209,13 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
                s->workaround_bugs, ctx->lavc_build, ctx->xvid_build,
                ctx->divx_version, ctx->divx_build, s->divx_packed ? "p" : "");
 
-#if HAVE_MMX
     if (CONFIG_MPEG4_DECODER && ctx->xvid_build >= 0 &&
         s->codec_id == AV_CODEC_ID_MPEG4 &&
-        avctx->idct_algo == FF_IDCT_AUTO &&
-        (av_get_cpu_flags() & AV_CPU_FLAG_MMX)) {
+        avctx->idct_algo == FF_IDCT_AUTO) {
         avctx->idct_algo = FF_IDCT_XVID;
         ff_mpv_idct_init(s);
         return 1;
     }
-#endif
 
     return 0;
 }
