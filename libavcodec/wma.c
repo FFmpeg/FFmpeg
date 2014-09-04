@@ -25,6 +25,7 @@
 #include "sinewin.h"
 #include "wma.h"
 #include "wma_common.h"
+#include "wma_freqs.h"
 #include "wmadata.h"
 
 #undef NDEBUG

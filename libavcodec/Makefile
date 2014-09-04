@@ -94,6 +94,7 @@ OBJS-$(CONFIG_STARTCODE)               += startcode.o
 OBJS-$(CONFIG_TPELDSP)                 += tpeldsp.o
 OBJS-$(CONFIG_VIDEODSP)                += videodsp.o
 OBJS-$(CONFIG_VP3DSP)                  += vp3dsp.o
+OBJS-$(CONFIG_WMA_FREQS)               += wma_freqs.o
 
 # decoders/encoders
 OBJS-$(CONFIG_ZERO12V_DECODER)         += 012v.o
@@ -157,8 +158,8 @@ OBJS-$(CONFIG_AYUV_ENCODER)            += v408enc.o
 OBJS-$(CONFIG_BETHSOFTVID_DECODER)     += bethsoftvideo.o
 OBJS-$(CONFIG_BFI_DECODER)             += bfi.o
 OBJS-$(CONFIG_BINK_DECODER)            += bink.o binkdsp.o
-OBJS-$(CONFIG_BINKAUDIO_DCT_DECODER)   += binkaudio.o wma.o wma_common.o
-OBJS-$(CONFIG_BINKAUDIO_RDFT_DECODER)  += binkaudio.o wma.o wma_common.o
+OBJS-$(CONFIG_BINKAUDIO_DCT_DECODER)   += binkaudio.o
+OBJS-$(CONFIG_BINKAUDIO_RDFT_DECODER)  += binkaudio.o
 OBJS-$(CONFIG_BINTEXT_DECODER)         += bintext.o cga_data.o
 OBJS-$(CONFIG_BMP_DECODER)             += bmp.o msrledec.o
 OBJS-$(CONFIG_BMP_ENCODER)             += bmpenc.o

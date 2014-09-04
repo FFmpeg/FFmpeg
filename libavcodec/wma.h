@@ -139,7 +139,6 @@ typedef struct WMACodecContext {
 #endif /* TRACE */
 } WMACodecContext;
 
-extern const uint16_t ff_wma_critical_freqs[25];
 extern const uint16_t ff_wma_hgain_huffcodes[37];
 extern const uint8_t ff_wma_hgain_huffbits[37];
 extern const float ff_wma_lsp_codebook[NB_LSP_COEFS][16];
