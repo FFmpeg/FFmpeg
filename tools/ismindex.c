@@ -25,6 +25,9 @@
  * This step creates foo.ism and foo.ismc that is required by IIS for
  * serving it.
  *
+ * With -ismf, it also creates foo.ismf, which maps fragment names to
+ * start-end offsets in the ismv, for use in your own streaming server.
+ *
  * By adding -path-prefix path/, the produced foo.ism will refer to the
  * files foo.ismv as "path/foo.ismv" - the prefix for the generated ismc
  * file can be set with the -ismc-prefix option similarly.
@@ -51,7 +54,7 @@
 
 static int usage(const char *argv0, int ret)
 {
-    fprintf(stderr, "%s [-split] [-n basename] [-path-prefix prefix] "
+    fprintf(stderr, "%s [-split] [-ismf] [-n basename] [-path-prefix prefix] "
                     "[-ismc-prefix prefix] [-output dir] file1 [file2] ...\n", argv0);
     return ret;
 }
@@ -88,6 +91,18 @@ struct Tracks {
     int nb_video_tracks, nb_audio_tracks;
 };
 
+static int expect_tag(int32_t got_tag, int32_t expected_tag) {
+    if (got_tag != expected_tag) {
+        char got_tag_str[4], expected_tag_str[4];
+        AV_WB32(got_tag_str, got_tag);
+        AV_WB32(expected_tag_str, expected_tag);
+        fprintf(stderr, "wanted tag %.4s, got %.4s\n", expected_tag_str,
+                got_tag_str);
+        return -1;
+    }
+    return 0;
+}
+
 static int copy_tag(AVIOContext *in, AVIOContext *out, int32_t tag_name)
 {
     int32_t size, tag;
@@ -96,13 +111,8 @@ static int copy_tag(AVIOContext *in, AVIOContext *out, int32_t tag_name)
     tag  = avio_rb32(in);
     avio_wb32(out, size);
     avio_wb32(out, tag);
-    if (tag != tag_name) {
-        char tag_str[4], tag_name_str[4];
-        AV_WB32(tag_str, tag);
-        AV_WB32(tag_name_str, tag_name);
-        fprintf(stderr, "wanted tag %.4s, got %.4s\n", tag_name_str, tag_str);
+    if (expect_tag(tag, tag_name) != 0)
         return -1;
-    }
     size -= 8;
     while (size > 0) {
         char buf[1024];
@@ -115,6 +125,19 @@ static int copy_tag(AVIOContext *in, AVIOContext *out, int32_t tag_name)
         avio_write(out, buf, len);
         size -= len;
     }
+    return 0;
+}
+
+static int skip_tag(AVIOContext *in, int32_t tag_name)
+{
+    int64_t pos = avio_tell(in);
+    int32_t size, tag;
+
+    size = avio_rb32(in);
+    tag  = avio_rb32(in);
+    if (expect_tag(tag, tag_name) != 0)
+        return -1;
+    avio_seek(in, pos + size, SEEK_SET);
     return 0;
 }
 
@@ -139,25 +162,66 @@ static int write_fragment(const char *filename, AVIOContext *in)
     return ret;
 }
 
-static int write_fragments(struct Tracks *tracks, int start_index,
-                           AVIOContext *in, const char *output_prefix)
+static int skip_fragment(AVIOContext *in)
 {
-    char dirname[2048], filename[2048];
-    int i, j;
+    int ret;
+    ret = skip_tag(in, MKBETAG('m', 'o', 'o', 'f'));
+    if (!ret)
+        ret = skip_tag(in, MKBETAG('m', 'd', 'a', 't'));
+    return ret;
+}
 
+static int write_fragments(struct Tracks *tracks, int start_index,
+                           AVIOContext *in, const char *basename,
+                           int split, int ismf, const char* output_prefix)
+{
+    char dirname[2048], filename[2048], idxname[2048];
+    int i, j, ret = 0, fragment_ret;
+    FILE* out = NULL;
+
+    if (ismf) {
+        snprintf(idxname, sizeof(idxname), "%s%s.ismf", output_prefix, basename);
+        out = fopen(idxname, "w");
+        if (!out) {
+            ret = AVERROR(errno);
+            perror(idxname);
+            goto fail;
+        }
+    }
     for (i = start_index; i < tracks->nb_tracks; i++) {
         struct Track *track = tracks->tracks[i];
         const char *type    = track->is_video ? "video" : "audio";
         snprintf(dirname, sizeof(dirname), "%sQualityLevels(%d)", output_prefix, track->bitrate);
-        mkdir(dirname, 0777);
+        if (split) {
+            if (mkdir(dirname, 0777) == -1 && errno != EEXIST) {
+                ret = AVERROR(errno);
+                perror(dirname);
+                goto fail;
+            }
+        }
         for (j = 0; j < track->chunks; j++) {
             snprintf(filename, sizeof(filename), "%s/Fragments(%s=%"PRId64")",
                      dirname, type, track->offsets[j].time);
             avio_seek(in, track->offsets[j].offset, SEEK_SET);
-            write_fragment(filename, in);
+            if (ismf)
+                fprintf(out, "%s %"PRId64, filename, avio_tell(in));
+            if (split)
+                fragment_ret = write_fragment(filename, in);
+            else
+                fragment_ret = skip_fragment(in);
+            if (ismf)
+                fprintf(out, " %"PRId64"\n", avio_tell(in));
+            if (fragment_ret != 0) {
+                fprintf(stderr, "failed fragment %d in track %d (%s)\n", j,
+                        track->track_id, track->name);
+                ret = fragment_ret;
+            }
         }
     }
-    return 0;
+fail:
+    if (out)
+        fclose(out);
+    return ret;
 }
 
 static int read_tfra(struct Tracks *tracks, int start_index, AVIOContext *f)
@@ -217,7 +281,8 @@ fail:
 }
 
 static int read_mfra(struct Tracks *tracks, int start_index,
-                     const char *file, int split, const char *output_prefix)
+                     const char *file, int split, int ismf,
+                     const char *basename, const char* output_prefix)
 {
     int err = 0;
     const char* err_str = "";
@@ -243,8 +308,10 @@ static int read_mfra(struct Tracks *tracks, int start_index,
         /* Empty */
     }
 
-    if (split)
-        write_fragments(tracks, start_index, f, output_prefix);
+    if (split || ismf)
+        err = write_fragments(tracks, start_index, f, basename, split, ismf,
+                              output_prefix);
+    err_str = "error in write_fragments";
 
 fail:
     if (f)
@@ -296,7 +363,8 @@ fail:
 }
 
 static int handle_file(struct Tracks *tracks, const char *file, int split,
-                       const char *output_prefix)
+                       int ismf, const char *basename,
+                       const char* output_prefix)
 {
     AVFormatContext *ctx = NULL;
     int err = 0, i, orig_tracks = tracks->nb_tracks;
@@ -327,7 +395,8 @@ static int handle_file(struct Tracks *tracks, const char *file, int split,
         AVStream *st = ctx->streams[i];
 
         if (st->codec->bit_rate == 0) {
-            fprintf(stderr, "Skipping track %d in %s as it has zero bitrate\n", i, file);
+            fprintf(stderr, "Skipping track %d in %s as it has zero bitrate\n",
+                    st->id, file);
             continue;
         }
 
@@ -404,7 +473,8 @@ static int handle_file(struct Tracks *tracks, const char *file, int split,
 
     avformat_close_input(&ctx);
 
-    err = read_mfra(tracks, orig_tracks, file, split, output_prefix);
+    err = read_mfra(tracks, orig_tracks, file, split, ismf, basename,
+                    output_prefix);
 
 fail:
     if (ctx)
@@ -579,7 +649,7 @@ int main(int argc, char **argv)
     const char *path_prefix = "", *ismc_prefix = "";
     const char *output_prefix = "";
     char output_prefix_buf[2048];
-    int split = 0, i;
+    int split = 0, ismf = 0, i;
     struct Tracks tracks = { 0, .video_track = -1, .audio_track = -1 };
 
     av_register_all();
@@ -604,10 +674,13 @@ int main(int argc, char **argv)
             }
         } else if (!strcmp(argv[i], "-split")) {
             split = 1;
+        } else if (!strcmp(argv[i], "-ismf")) {
+            ismf = 1;
         } else if (argv[i][0] == '-') {
             return usage(argv[0], 1);
         } else {
-            if (handle_file(&tracks, argv[i], split, output_prefix))
+            if (handle_file(&tracks, argv[i], split, ismf,
+                            basename, output_prefix))
                 return 1;
         }
     }
