@@ -777,7 +777,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* pkt size is repeated at end. skip it */
     for (;; avio_skip(s->pb, 4)) {
         pos  = avio_tell(s->pb);
-        type = avio_r8(s->pb);
+        type = (avio_r8(s->pb) & 0x1F);
         size = avio_rb24(s->pb);
         dts  = avio_rb24(s->pb);
         dts |= avio_r8(s->pb) << 24;
