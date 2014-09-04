@@ -1073,11 +1073,11 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
             d*= FFSIGN(-middleEnergy);
 
             if(q>0){
-                d= d<0 ? 0 : d;
-                d= d>q ? q : d;
+                d = FFMAX(d, 0);
+                d = FFMIN(d, q);
             }else{
-                d= d>0 ? 0 : d;
-                d= d<q ? q : d;
+                d = FFMIN(d, 0);
+                d = FFMAX(d, q);
             }
 
             src[l4]-= d;
