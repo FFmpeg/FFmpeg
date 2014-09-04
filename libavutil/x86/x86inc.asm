@@ -796,9 +796,9 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
 %endmacro
 
 ; Merge mmx and sse*
-; m# is a simd regsiter of the currently selected size
-; xm# is the corresponding xmmreg (if selcted xmm or ymm size), or mmreg (if selected mmx)
-; ym# is the corresponding ymmreg (if selcted xmm or ymm size), or mmreg (if selected mmx)
+; m# is a simd register of the currently selected size
+; xm# is the corresponding xmm register if mmsize >= 16, otherwise the same as m#
+; ym# is the corresponding ymm register if mmsize >= 32, otherwise the same as m#
 ; (All 3 remain in sync through SWAP.)
 
 %macro CAT_XDEFINE 3
@@ -892,7 +892,7 @@ INIT_XMM
     %define xmmxmm%1 xmm%1
     %define xmmymm%1 xmm%1
     %define ymmmm%1   mm%1
-    %define ymmxmm%1 ymm%1
+    %define ymmxmm%1 xmm%1
     %define ymmymm%1 ymm%1
     %define xm%1 xmm %+ m%1
     %define ym%1 ymm %+ m%1
