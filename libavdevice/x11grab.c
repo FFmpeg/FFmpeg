@@ -181,6 +181,8 @@ static int pixfmt_from_image(AVFormatContext *s, XImage *image, int *pix_fmt)
            image->blue_mask,
            image->bits_per_pixel);
 
+    *pix_fmt = AV_PIX_FMT_NONE;
+
     switch (image->bits_per_pixel) {
     case 8:
         *pix_fmt =  AV_PIX_FMT_PAL8;
@@ -214,7 +216,8 @@ static int pixfmt_from_image(AVFormatContext *s, XImage *image, int *pix_fmt)
             *pix_fmt = AV_PIX_FMT_0RGB32;
         }
         break;
-    default:
+    }
+    if (*pix_fmt == AV_PIX_FMT_NONE) {
         av_log(s, AV_LOG_ERROR,
                "XImages with RGB mask 0x%.6lx 0x%.6lx 0x%.6lx and depth %i "
                "are currently not supported.\n",
