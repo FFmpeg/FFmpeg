@@ -3,6 +3,9 @@
  └───────────────────────────────────────────┘
 
    The FFmpeg Project proudly presents FFmpeg <next> "FIXME", ...
+   FFmpeg 2.4 is API-, but not ABI-compatible with the previous major release.
+   This means that the code using our libraries needs to be rebuilt, but no
+   source changes should be required.
 
    ┌────────────────────────────┐
    │ *  API Information         │
@@ -30,6 +33,7 @@
    └────────────────────────────┘
 
     • Icecast protocol
+    • API for live metadata updates through event flags.
 
    ┌────────────────────────────┐
    │ libavfilter                │
