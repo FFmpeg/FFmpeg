@@ -821,12 +821,12 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     %assign %%i 0
     %rep 8
     CAT_XDEFINE m, %%i, mm %+ %%i
-    CAT_XDEFINE nmm, %%i, %%i
+    CAT_XDEFINE nnmm, %%i, %%i
     %assign %%i %%i+1
     %endrep
     %rep 8
     CAT_UNDEF m, %%i
-    CAT_UNDEF nmm, %%i
+    CAT_UNDEF nnmm, %%i
     %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
@@ -847,7 +847,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     %assign %%i 0
     %rep num_mmregs
     CAT_XDEFINE m, %%i, xmm %+ %%i
-    CAT_XDEFINE nxmm, %%i, %%i
+    CAT_XDEFINE nnxmm, %%i, %%i
     %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
@@ -925,7 +925,7 @@ INIT_XMM
 %endrep
 %rep %0/2
     %xdefine m%1 %%tmp%2
-    CAT_XDEFINE n, m%1, %1
+    CAT_XDEFINE nn, m%1, %1
     %rotate 2
 %endrep
 %endmacro
@@ -943,16 +943,16 @@ INIT_XMM
         %xdefine %%tmp m%1
         %xdefine m%1 m%2
         %xdefine m%2 %%tmp
-        CAT_XDEFINE n, m%1, %1
-        CAT_XDEFINE n, m%2, %2
+        CAT_XDEFINE nn, m%1, %1
+        CAT_XDEFINE nn, m%2, %2
     %rotate 1
     %endrep
 %endmacro
 
 %macro SWAP_INTERNAL_NAME 2-*
-    %xdefine %%args n %+ %1
+    %xdefine %%args nn %+ %1
     %rep %0-1
-        %xdefine %%args %%args, n %+ %2
+        %xdefine %%args %%args, nn %+ %2
     %rotate 1
     %endrep
     SWAP_INTERNAL_NUM %%args
@@ -979,7 +979,7 @@ INIT_XMM
         %assign %%i 0
         %rep num_mmregs
             CAT_XDEFINE m, %%i, %1_m %+ %%i
-            CAT_XDEFINE n, m %+ %%i, %%i
+            CAT_XDEFINE nn, m %+ %%i, %%i
         %assign %%i %%i+1
         %endrep
     %endif
