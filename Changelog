@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- aliases and defaults for Ogg subtypes (opus, spx)
 - HEVC/H.265 RTP payload format (draft v6) depacketizer
 
 
@@ -35,7 +36,6 @@ version 11:
 - Icecast protocol
 - request Icecast metadata by default
 - support for using metadata in stream specifiers in avtools
-- aliases and defaults for Ogg subtypes (opus, spx)
 - Matroska 3D support
 
 
