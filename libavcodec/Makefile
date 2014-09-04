@@ -42,7 +42,6 @@ OBJS-$(CONFIG_BSWAPDSP)                += bswapdsp.o
 OBJS-$(CONFIG_CABAC)                   += cabac.o
 OBJS-$(CONFIG_CRYSTALHD)               += crystalhd.o
 OBJS-$(CONFIG_DCT)                     += dct.o dct32_fixed.o dct32_float.o
-OBJS-$(CONFIG_DXVA2)                   += dxva2.o
 OBJS-$(CONFIG_ERROR_RESILIENCE)        += error_resilience.o
 OBJS-$(CONFIG_EXIF)                    += exif.o tiff_common.o
 OBJS-$(CONFIG_FDCTDSP)                 += fdctdsp.o faandct.o           \
@@ -93,9 +92,6 @@ OBJS-$(CONFIG_SHARED)                  += log2_tab.o
 OBJS-$(CONFIG_SINEWIN)                 += sinewin.o
 OBJS-$(CONFIG_STARTCODE)               += startcode.o
 OBJS-$(CONFIG_TPELDSP)                 += tpeldsp.o
-OBJS-$(CONFIG_VAAPI)                   += vaapi.o
-OBJS-$(CONFIG_VDA)                     += vda.o
-OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 OBJS-$(CONFIG_VIDEODSP)                += videodsp.o
 OBJS-$(CONFIG_VP3DSP)                  += vp3dsp.o
 
@@ -649,6 +645,11 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcmenc.o adpcm_data.o
 OBJS-$(CONFIG_VIMA_DECODER)               += vima.o adpcm_data.o
 
 # hardware accelerators
+OBJS-$(CONFIG_DXVA2)                      += dxva2.o
+OBJS-$(CONFIG_VAAPI)                      += vaapi.o
+OBJS-$(CONFIG_VDA)                        += vda.o
+OBJS-$(CONFIG_VDPAU)                      += vdpau.o
+
 OBJS-$(CONFIG_H263_VAAPI_HWACCEL)         += vaapi_mpeg4.o vaapi_mpeg.o
 OBJS-$(CONFIG_H263_VDPAU_HWACCEL)         += vdpau_mpeg4.o
 OBJS-$(CONFIG_H264_DXVA2_HWACCEL)         += dxva2_h264.o
