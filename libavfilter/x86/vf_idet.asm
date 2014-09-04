@@ -73,7 +73,7 @@ cglobal idet_filter_line, 4, 5, 0, a, b, c, width, index
 
     mova      m0, m_sum
     psrlq     m_sum, 0x20
-    paddq     m0, m_sum
+    paddd     m0, m_sum
     movd      eax, m0
     RET
 %endmacro
