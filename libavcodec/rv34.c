@@ -1490,14 +1490,9 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     int ret;
 
     ff_mpv_decode_defaults(s);
-    s->avctx      = avctx;
+    ff_mpv_decode_init(s, avctx);
     s->out_format = FMT_H263;
-    s->codec_id   = avctx->codec_id;
 
-    s->width  = avctx->width;
-    s->height = avctx->height;
-
-    r->s.avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->has_b_frames = 1;
     s->low_delay = 0;

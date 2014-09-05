@@ -475,10 +475,9 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
         return ret;
 
     ff_mpv_decode_defaults(s);
+    ff_mpv_decode_init(s, avctx);
 
-    s->avctx       = avctx;
     s->out_format  = FMT_H263;
-    s->codec_id    = avctx->codec_id;
 
     rv->orig_width  =
     s->width        = avctx->coded_width;

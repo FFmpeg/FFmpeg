@@ -1109,6 +1109,18 @@ void ff_mpv_decode_defaults(MpegEncContext *s)
     ff_mpv_common_defaults(s);
 }
 
+void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
+{
+    s->avctx           = avctx;
+    s->width           = avctx->coded_width;
+    s->height          = avctx->coded_height;
+    s->codec_id        = avctx->codec->id;
+    s->workaround_bugs = avctx->workaround_bugs;
+    s->flags           = avctx->flags;
+    s->flags2          = avctx->flags2;
+
+}
+
 static int init_er(MpegEncContext *s)
 {
     ERContext *er = &s->er;
