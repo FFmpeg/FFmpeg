@@ -186,10 +186,8 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
                        uint32_t pix_fmt)
 {
     struct video_data *s = ctx->priv_data;
-    int fd = s->fd;
     struct v4l2_format fmt = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
     struct v4l2_pix_format *pix = &fmt.fmt.pix;
-
     int res = 0;
 
     pix->width = *width;
@@ -197,7 +195,7 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
     pix->pixelformat = pix_fmt;
     pix->field = V4L2_FIELD_ANY;
 
-    if (v4l2_ioctl(fd, VIDIOC_S_FMT, &fmt) < 0)
+    if (v4l2_ioctl(s->fd, VIDIOC_S_FMT, &fmt) < 0)
         res = AVERROR(errno);
 
     if ((*width != fmt.fmt.pix.width) || (*height != fmt.fmt.pix.height)) {
