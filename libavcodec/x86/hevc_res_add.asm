@@ -177,6 +177,7 @@ TRANSFORM_ADD_8
 INIT_XMM avx
 TRANSFORM_ADD_8
 
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 ; void ff_hevc_transform_add32_8_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
 cglobal hevc_transform_add32_8, 3, 4, 7
@@ -191,6 +192,7 @@ cglobal hevc_transform_add32_8, 3, 4, 7
     TR_ADD_SSE_16_32_8 128, r0+r2*2, r0+r3
 %endrep
     RET
+%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_transform_add_10(pixel *dst, int16_t *block, int stride)
