@@ -69,6 +69,7 @@ EOT
 
     my $head2 = $ENV{"FFMPEG_HEADER2"} || <<EOT;
     </title>
+    <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="style.min.css">
   </head>
   <body>
