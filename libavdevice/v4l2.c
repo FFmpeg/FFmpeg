@@ -264,12 +264,12 @@ static void list_framesizes(AVFormatContext *ctx, uint32_t pixelformat)
 }
 #endif
 
-static void list_formats(AVFormatContext *ctx, int fd, int type)
+static void list_formats(AVFormatContext *ctx, int type)
 {
     const struct video_data *s = ctx->priv_data;
     struct v4l2_fmtdesc vfd = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
 
-    while(!v4l2_ioctl(fd, VIDIOC_ENUM_FMT, &vfd)) {
+    while(!v4l2_ioctl(s->fd, VIDIOC_ENUM_FMT, &vfd)) {
         enum AVCodecID codec_id = avpriv_fmt_v4l2codec(vfd.pixelformat);
         enum AVPixelFormat pix_fmt = avpriv_fmt_v4l2ff(vfd.pixelformat, codec_id);
 
@@ -857,7 +857,7 @@ static int v4l2_read_header(AVFormatContext *ctx)
            s->channel, input.name, (uint64_t)input.std);
 
     if (s->list_format) {
-        list_formats(ctx, s->fd, s->list_format);
+        list_formats(ctx, s->list_format);
         res = AVERROR_EXIT;
         goto fail;
     }
