@@ -564,6 +564,9 @@
     <ClCompile Include="..\libavfilter\x86\vf_hqdn3d_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_idet_init.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_pullup_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
@@ -605,6 +608,9 @@
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
     <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\vf_idet.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
     <YASM Include="..\libavfilter\x86\vf_pullup.asm">
