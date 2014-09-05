@@ -225,18 +225,16 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
     return res;
 }
 
-static int first_field(const struct video_data *s, int fd)
+static int first_field(const struct video_data *s)
 {
     int res;
     v4l2_std_id std;
 
-    res = v4l2_ioctl(fd, VIDIOC_G_STD, &std);
-    if (res < 0) {
+    res = v4l2_ioctl(s->fd, VIDIOC_G_STD, &std);
+    if (res < 0)
         return 0;
-    }
-    if (std & V4L2_STD_NTSC) {
+    if (std & V4L2_STD_NTSC)
         return 0;
-    }
 
     return 1;
 }
@@ -935,7 +933,7 @@ static int v4l2_read_header(AVFormatContext *ctx)
         (res = mmap_start(ctx)) < 0)
             goto fail;
 
-    s->top_field_first = first_field(s, s->fd);
+    s->top_field_first = first_field(s);
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = codec_id;
