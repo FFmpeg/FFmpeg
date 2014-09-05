@@ -80,6 +80,7 @@ version 2.2:
 - libx265 encoder
 - dejudder filter
 - Autodetect VDA like all other hardware accelerations
+- aliases and defaults for Ogg subtypes (opus, spx)
 
 
 version 2.1:
