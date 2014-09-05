@@ -323,7 +323,10 @@ static int hds_write_header(AVFormatContext *s)
     int ret = 0, i;
     AVOutputFormat *oformat;
 
-    mkdir(s->filename, 0777);
+    if (mkdir(s->filename, 0777) == -1 && errno != EEXIST) {
+        ret = AVERROR(errno);
+        goto fail;
+    }
 
     oformat = av_guess_format("flv", NULL, NULL);
     if (!oformat) {
