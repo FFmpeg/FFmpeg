@@ -42,6 +42,7 @@
 #include "dct.h"
 #include "idctdsp.h"
 #include "simple_idct.h"
+#include "xvididct.h"
 #include "aandcttab.h"
 #include "faandct.h"
 #include "faanidct.h"
@@ -81,6 +82,9 @@ static const struct algo idct_tab[] = {
     { "INT",         ff_j_rev_dct,         FF_IDCT_PERM_LIBMPEG2 },
     { "SIMPLE-C",    ff_simple_idct_8,     FF_IDCT_PERM_NONE },
     { "PR-C",        ff_prores_idct_wrap,  FF_IDCT_PERM_NONE, 0, 1 },
+#if CONFIG_MPEG4_DECODER
+    { "XVID",        ff_xvid_idct,         FF_IDCT_PERM_NONE, 0, 1 },
+#endif /* CONFIG_MPEG4_DECODER */
 };
 
 #if ARCH_ARM

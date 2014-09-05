@@ -27,34 +27,10 @@
 #include "h264chroma.h"
 #include "mpegvideo.h"
 #include "intrax8.h"
+#include "vc1_common.h"
 #include "vc1dsp.h"
 
 #define AC_VLC_BITS 9
-
-/** Markers used in VC-1 AP frame data */
-//@{
-enum VC1Code {
-    VC1_CODE_RES0       = 0x00000100,
-    VC1_CODE_ENDOFSEQ   = 0x0000010A,
-    VC1_CODE_SLICE,
-    VC1_CODE_FIELD,
-    VC1_CODE_FRAME,
-    VC1_CODE_ENTRYPOINT,
-    VC1_CODE_SEQHDR,
-};
-//@}
-
-#define IS_MARKER(x) (((x) & ~0xFF) == VC1_CODE_RES0)
-
-/** Available Profiles */
-//@{
-enum Profile {
-    PROFILE_SIMPLE,
-    PROFILE_MAIN,
-    PROFILE_COMPLEX, ///< TODO: WMV9 specific
-    PROFILE_ADVANCED
-};
-//@}
 
 /** Sequence quantizer mode */
 //@{
@@ -416,43 +392,6 @@ typedef struct VC1Context{
     int parse_only;              ///< Context is used within parser
     int resync_marker;           ///< could this stream contain resync markers
 } VC1Context;
-
-/** Find VC-1 marker in buffer
- * @return position where next marker starts or end of buffer if no marker found
- */
-static av_always_inline const uint8_t* find_next_marker(const uint8_t *src, const uint8_t *end)
-{
-    uint32_t mrk = 0xFFFFFFFF;
-
-    if (end-src < 4)
-        return end;
-    while (src < end) {
-        mrk = (mrk << 8) | *src++;
-        if (IS_MARKER(mrk))
-            return src - 4;
-    }
-    return end;
-}
-
-static av_always_inline int vc1_unescape_buffer(const uint8_t *src, int size, uint8_t *dst)
-{
-    int dsize = 0, i;
-
-    if (size < 4) {
-        for (dsize = 0; dsize < size; dsize++)
-            *dst++ = *src++;
-        return size;
-    }
-    for (i = 0; i < size; i++, src++) {
-        if (src[0] == 3 && i >= 2 && !src[-1] && !src[-2] && i < size-1 && src[1] < 4) {
-            dst[dsize++] = src[1];
-            src++;
-            i++;
-        } else
-            dst[dsize++] = *src;
-    }
-    return dsize;
-}
 
 /**
  * Decode Simple/Main Profiles sequence header

@@ -98,14 +98,22 @@ static int copy_tag(AVIOContext *in, AVIOContext *out, int32_t tag_name)
     tag  = avio_rb32(in);
     avio_wb32(out, size);
     avio_wb32(out, tag);
-    if (tag != tag_name)
+    if (tag != tag_name) {
+        char tag_str[4], tag_name_str[4];
+        AV_WB32(tag_str, tag);
+        AV_WB32(tag_name_str, tag_name);
+        fprintf(stderr, "wanted tag %.4s, got %.4s\n", tag_name_str, tag_str);
         return -1;
+    }
     size -= 8;
     while (size > 0) {
         char buf[1024];
         int len = FFMIN(sizeof(buf), size);
-        if (avio_read(in, buf, len) != len)
+        int got;
+        if ((got = avio_read(in, buf, len)) != len) {
+            fprintf(stderr, "short read, wanted %d, got %d\n", len, got);
             break;
+        }
         avio_write(out, buf, len);
         size -= len;
     }
@@ -117,10 +125,15 @@ static int write_fragment(const char *filename, AVIOContext *in)
     AVIOContext *out = NULL;
     int ret;
 
-    if ((ret = avio_open2(&out, filename, AVIO_FLAG_WRITE, NULL, NULL)) < 0)
+    if ((ret = avio_open2(&out, filename, AVIO_FLAG_WRITE, NULL, NULL)) < 0) {
+        char errbuf[100];
+        av_strerror(ret, errbuf, sizeof(errbuf));
+        fprintf(stderr, "Unable to open %s: %s\n", filename, errbuf);
         return ret;
-    copy_tag(in, out, MKBETAG('m', 'o', 'o', 'f'));
-    copy_tag(in, out, MKBETAG('m', 'd', 'a', 't'));
+    }
+    ret = copy_tag(in, out, MKBETAG('m', 'o', 'o', 'f'));
+    if (!ret)
+        ret = copy_tag(in, out, MKBETAG('m', 'd', 'a', 't'));
 
     avio_flush(out);
     avio_close(out);
@@ -210,6 +223,7 @@ static int read_mfra(struct Tracks *tracks, int start_index,
                      const char *file, int split, const char *output_prefix)
 {
     int err = 0;
+    const char* err_str = "";
     AVIOContext *f = NULL;
     int32_t mfra_size;
 
@@ -220,10 +234,12 @@ static int read_mfra(struct Tracks *tracks, int start_index,
     avio_seek(f, -mfra_size, SEEK_CUR);
     if (avio_rb32(f) != mfra_size) {
         err = AVERROR_INVALIDDATA;
+        err_str = "mfra size mismatch";
         goto fail;
     }
     if (avio_rb32(f) != MKBETAG('m', 'f', 'r', 'a')) {
         err = AVERROR_INVALIDDATA;
+        err_str = "mfra tag mismatch";
         goto fail;
     }
     while (!read_tfra(tracks, start_index, f)) {
@@ -237,7 +253,7 @@ fail:
     if (f)
         avio_close(f);
     if (err)
-        fprintf(stderr, "Unable to read the MFRA atom in %s\n", file);
+        fprintf(stderr, "Unable to read the MFRA atom in %s (%s)\n", file, err_str);
     return err;
 }
 
@@ -255,15 +271,14 @@ static int get_video_private_data(struct Track *track, AVCodecContext *codec)
 {
     AVIOContext *io = NULL;
     uint16_t sps_size, pps_size;
-    int err = AVERROR(EINVAL);
+    int err;
 
     if (codec->codec_id == AV_CODEC_ID_VC1)
         return get_private_data(track, codec);
 
-    if (avio_open_dyn_buf(&io) < 0)  {
-        err = AVERROR(ENOMEM);
+    if ((err = avio_open_dyn_buf(&io)) < 0)
         goto fail;
-    }
+    err = AVERROR(EINVAL);
     if (codec->extradata_size < 11 || codec->extradata[0] != 1)
         goto fail;
     sps_size = AV_RB16(&codec->extradata[6]);
@@ -313,6 +328,12 @@ static int handle_file(struct Tracks *tracks, const char *file, int split,
     for (i = 0; i < ctx->nb_streams; i++) {
         struct Track **temp;
         AVStream *st = ctx->streams[i];
+
+        if (st->codec->bit_rate == 0) {
+            fprintf(stderr, "Skipping track %d in %s as it has zero bitrate\n", i, file);
+            continue;
+        }
+
         track = av_mallocz(sizeof(*track));
         if (!track) {
             err = AVERROR(ENOMEM);
@@ -437,12 +458,23 @@ static void print_track_chunks(FILE *out, struct Tracks *tracks, int main,
 {
     int i, j;
     struct Track *track = tracks->tracks[main];
+    int should_print_time_mismatch = 1;
+
     for (i = 0; i < track->chunks; i++) {
         for (j = main + 1; j < tracks->nb_tracks; j++) {
-            if (tracks->tracks[j]->is_audio == track->is_audio &&
-                track->offsets[i].duration != tracks->tracks[j]->offsets[i].duration)
-                fprintf(stderr, "Mismatched duration of %s chunk %d in %s and %s\n",
-                        type, i, track->name, tracks->tracks[j]->name);
+            if (tracks->tracks[j]->is_audio == track->is_audio) {
+                if (track->offsets[i].duration != tracks->tracks[j]->offsets[i].duration) {
+                    fprintf(stderr, "Mismatched duration of %s chunk %d in %s (%d) and %s (%d)\n",
+                            type, i, track->name, main, tracks->tracks[j]->name, j);
+                    should_print_time_mismatch = 1;
+                }
+                if (track->offsets[i].time != tracks->tracks[j]->offsets[i].time) {
+                    if (should_print_time_mismatch)
+                        fprintf(stderr, "Mismatched (start) time of %s chunk %d in %s (%d) and %s (%d)\n",
+                                type, i, track->name, main, tracks->tracks[j]->name, j);
+                    should_print_time_mismatch = 0;
+                }
+            }
         }
         fprintf(out, "\t\t<c n=\"%d\" d=\"%"PRId64"\" />\n",
                 i, track->offsets[i].duration);
@@ -491,8 +523,8 @@ static void output_client_manifest(struct Tracks *tracks, const char *basename,
             fprintf(out, "\" />\n");
             index++;
             if (track->chunks != first_track->chunks)
-                fprintf(stderr, "Mismatched number of video chunks in %s and %s\n",
-                        track->name, first_track->name);
+                fprintf(stderr, "Mismatched number of video chunks in %s (id: %d, chunks %d) and %s (id: %d, chunks %d)\n",
+                        track->name, track->track_id, track->chunks, first_track->name, first_track->track_id, first_track->chunks);
         }
         print_track_chunks(out, tracks, tracks->video_track, "video");
         fprintf(out, "\t</StreamIndex>\n");

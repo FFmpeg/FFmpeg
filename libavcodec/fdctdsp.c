@@ -30,17 +30,15 @@ av_cold void ff_fdctdsp_init(FDCTDSPContext *c, AVCodecContext *avctx)
     if (avctx->bits_per_raw_sample == 10) {
         c->fdct    = ff_jpeg_fdct_islow_10;
         c->fdct248 = ff_fdct248_islow_10;
+    } else if (avctx->dct_algo == FF_DCT_FASTINT) {
+        c->fdct    = ff_fdct_ifast;
+        c->fdct248 = ff_fdct_ifast248;
+    } else if (avctx->dct_algo == FF_DCT_FAAN) {
+        c->fdct    = ff_faandct;
+        c->fdct248 = ff_faandct248;
     } else {
-        if (avctx->dct_algo == FF_DCT_FASTINT) {
-            c->fdct    = ff_fdct_ifast;
-            c->fdct248 = ff_fdct_ifast248;
-        } else if (avctx->dct_algo == FF_DCT_FAAN) {
-            c->fdct    = ff_faandct;
-            c->fdct248 = ff_faandct248;
-        } else {
-            c->fdct    = ff_jpeg_fdct_islow_8; // slow/accurate/default
-            c->fdct248 = ff_fdct248_islow_8;
-        }
+        c->fdct    = ff_jpeg_fdct_islow_8; // slow/accurate/default
+        c->fdct248 = ff_fdct248_islow_8;
     }
 
     if (ARCH_PPC)

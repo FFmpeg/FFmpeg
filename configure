@@ -1802,6 +1802,7 @@ HAVE_LIST="
     libdc1394_1
     libdc1394_2
     makeinfo
+    makeinfo_html
     perl
     pod2man
     sdl
@@ -1862,6 +1863,7 @@ CONFIG_EXTRA="
     tpeldsp
     videodsp
     vp3dsp
+    wma_freqs
 "
 
 CMDLINE_SELECT="
@@ -2058,8 +2060,8 @@ atrac3_decoder_select="mdct"
 atrac3p_decoder_select="mdct sinewin"
 avrn_decoder_select="exif"
 bink_decoder_select="blockdsp hpeldsp"
-binkaudio_dct_decoder_select="mdct rdft dct sinewin"
-binkaudio_rdft_decoder_select="mdct rdft sinewin"
+binkaudio_dct_decoder_select="mdct rdft dct sinewin wma_freqs"
+binkaudio_rdft_decoder_select="mdct rdft sinewin wma_freqs"
 cavs_decoder_select="blockdsp golomb h264chroma idctdsp qpeldsp videodsp"
 cllc_decoder_select="bswapdsp"
 comfortnoise_encoder_select="lpc"
@@ -2214,11 +2216,11 @@ vp8_decoder_select="h264pred videodsp"
 vp9_decoder_select="videodsp vp9_parser"
 webp_decoder_select="vp8_decoder"
 wmalossless_decoder_select="llauddsp"
-wmapro_decoder_select="mdct sinewin"
-wmav1_decoder_select="mdct sinewin"
-wmav1_encoder_select="mdct sinewin"
-wmav2_decoder_select="mdct sinewin"
-wmav2_encoder_select="mdct sinewin"
+wmapro_decoder_select="mdct sinewin wma_freqs"
+wmav1_decoder_select="mdct sinewin wma_freqs"
+wmav1_encoder_select="mdct sinewin wma_freqs"
+wmav2_decoder_select="mdct sinewin wma_freqs"
+wmav2_encoder_select="mdct sinewin wma_freqs"
 wmavoice_decoder_select="lsp rdft dct mdct sinewin"
 wmv1_decoder_select="h263_decoder"
 wmv1_encoder_select="h263_encoder"
@@ -2631,7 +2633,8 @@ ffserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 # documentation
 podpages_deps="perl"
 manpages_deps="perl pod2man"
-htmlpages_deps="perl texi2html"
+htmlpages_deps="perl"
+htmlpages_deps_any="makeinfo_html texi2html"
 txtpages_deps="perl makeinfo"
 doc_deps_any="manpages htmlpages podpages txtpages"
 
@@ -4655,7 +4658,7 @@ check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
 check_func  access
-check_func  clock_gettime || { check_func clock_gettime -lrt && add_extralibs -lrt; }
+check_func_headers time.h clock_gettime || { check_func_headers time.h clock_gettime -lrt && add_extralibs -lrt; }
 check_func  fcntl
 check_func  fork
 check_func  gethrtime
@@ -4916,8 +4919,11 @@ else
 fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
-texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
+enabled makeinfo && (makeinfo --version | \
+                     grep -q 'makeinfo (GNU texinfo) 5' > /dev/null 2>&1) \
+    && enable makeinfo_html || disable makeinfo_html
+disabled makeinfo_html && texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
 perl -v            > /dev/null 2>&1 && enable perl      || disable perl
 pod2man --help     > /dev/null 2>&1 && enable pod2man   || disable pod2man
 rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || disable rsync_contimeout
@@ -5401,6 +5407,7 @@ echo "texi2html enabled         ${texi2html-no}"
 echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
 echo "makeinfo enabled          ${makeinfo-no}"
+echo "makeinfo supports HTML    ${makeinfo_html-no}"
 test -n "$random_seed" &&
     echo "random seed               ${random_seed}"
 echo

@@ -1,3 +1,7 @@
+# Init file for texi2html.
+
+# This is deprecated, and the makeinfo/texi2any version is doc/t2h.pm
+
 # no horiz rules between sections
 $end_section = \&FFmpeg_end_section;
 sub FFmpeg_end_section($$)

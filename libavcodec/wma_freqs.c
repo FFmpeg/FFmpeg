@@ -1,6 +1,4 @@
 /*
- * FLV specific private header.
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,17 +16,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_FLV_H
-#define AVCODEC_FLV_H
+#include <stdint.h>
 
-#include "get_bits.h"
-#include "mpegvideo.h"
-#include "put_bits.h"
+#include "wma_freqs.h"
 
-void ff_flv_encode_picture_header(MpegEncContext *s, int picture_number);
-void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level, int run,
-                           int last);
-
-int ff_flv_decode_picture_header(MpegEncContext *s);
-
-#endif /* AVCODEC_FLV_H */
+const uint16_t ff_wma_critical_freqs[25] = {
+      100,   200,  300,  400,  510,  630,   770,   920,
+     1080,  1270, 1480, 1720, 2000, 2320,  2700,  3150,
+     3700,  4400, 5300, 6400, 7700, 9500, 12000, 15500,
+    24500,
+};

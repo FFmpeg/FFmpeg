@@ -318,13 +318,13 @@ static inline void doHorizDefFilter_C(uint8_t dst[], int stride, const PPContext
 
             if(q>0)
             {
-                d= d<0 ? 0 : d;
-                d= d>q ? q : d;
+                d = FFMAX(d, 0);
+                d = FFMIN(d, q);
             }
             else
             {
-                d= d>0 ? 0 : d;
-                d= d<q ? q : d;
+                d = FFMIN(d, 0);
+                d = FFMAX(d, q);
             }
 
             dst[3]-= d;
@@ -515,11 +515,11 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
                 d*= FFSIGN(-middleEnergy);
 
                 if(q>0){
-                    d= d<0 ? 0 : d;
-                    d= d>q ? q : d;
+                    d = FFMAX(d, 0);
+                    d = FFMIN(d, q);
                 }else{
-                    d= d>0 ? 0 : d;
-                    d= d<q ? q : d;
+                    d = FFMIN(d, 0);
+                    d = FFMAX(d, q);
                 }
 
                 src[3*step]-= d;

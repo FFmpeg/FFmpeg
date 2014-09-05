@@ -120,11 +120,12 @@ int ff_rac_terminate(RangeCoder *c)
 #include "libavutil/lfg.h"
 #include "libavutil/log.h"
 
+static uint8_t b[9 * SIZE];
+static uint8_t r[9 * SIZE];
+
 int main(void)
 {
     RangeCoder c;
-    uint8_t b[9 * SIZE];
-    uint8_t r[9 * SIZE];
     int i;
     uint8_t state[10];
     AVLFG prng;

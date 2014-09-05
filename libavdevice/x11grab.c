@@ -143,6 +143,95 @@ static void x11grab_region_win_init(X11GrabContext *s)
     x11grab_draw_region_win(s);
 }
 
+static int setup_shm(AVFormatContext *s, Display *dpy, XImage **image)
+{
+    X11GrabContext *g = s->priv_data;
+    int scr           = XDefaultScreen(dpy);
+    XImage *img       = XShmCreateImage(dpy, DefaultVisual(dpy, scr),
+                                        DefaultDepth(dpy, scr), ZPixmap, NULL,
+                                        &g->shminfo, g->width, g->height);
+
+    g->shminfo.shmid = shmget(IPC_PRIVATE, img->bytes_per_line * img->height,
+                              IPC_CREAT | 0777);
+
+    if (g->shminfo.shmid == -1) {
+        av_log(s, AV_LOG_ERROR, "Cannot get shared memory!\n");
+        return AVERROR(ENOMEM);
+    }
+
+    g->shminfo.shmaddr  = img->data = shmat(g->shminfo.shmid, 0, 0);
+    g->shminfo.readOnly = False;
+
+    if (!XShmAttach(dpy, &g->shminfo)) {
+        av_log(s, AV_LOG_ERROR, "Failed to attach shared memory!\n");
+        /* needs some better error subroutine :) */
+        return AVERROR(EIO);
+    }
+
+    *image = img;
+    return 0;
+}
+
+static int pixfmt_from_image(AVFormatContext *s, XImage *image, int *pix_fmt)
+{
+    av_log(s, AV_LOG_DEBUG,
+           "Image r 0x%.6lx g 0x%.6lx b 0x%.6lx and depth %i\n",
+           image->red_mask,
+           image->green_mask,
+           image->blue_mask,
+           image->bits_per_pixel);
+
+    *pix_fmt = AV_PIX_FMT_NONE;
+
+    switch (image->bits_per_pixel) {
+    case 8:
+        *pix_fmt =  AV_PIX_FMT_PAL8;
+        break;
+    case 16:
+        if (image->red_mask   == 0xf800 &&
+            image->green_mask == 0x07e0 &&
+            image->blue_mask  == 0x001f) {
+            *pix_fmt = AV_PIX_FMT_RGB565;
+        } else if (image->red_mask   == 0x7c00 &&
+                   image->green_mask == 0x03e0 &&
+                   image->blue_mask  == 0x001f) {
+            *pix_fmt = AV_PIX_FMT_RGB555;
+        }
+        break;
+    case 24:
+        if (image->red_mask   == 0xff0000 &&
+            image->green_mask == 0x00ff00 &&
+            image->blue_mask  == 0x0000ff) {
+            *pix_fmt = AV_PIX_FMT_BGR24;
+        } else if (image->red_mask   == 0x0000ff &&
+                   image->green_mask == 0x00ff00 &&
+                   image->blue_mask  == 0xff0000) {
+            *pix_fmt = AV_PIX_FMT_RGB24;
+        }
+        break;
+    case 32:
+        if (image->red_mask   == 0xff0000 &&
+            image->green_mask == 0x00ff00 &&
+            image->blue_mask  == 0x0000ff ) {
+            *pix_fmt = AV_PIX_FMT_0RGB32;
+        }
+        break;
+    }
+    if (*pix_fmt == AV_PIX_FMT_NONE) {
+        av_log(s, AV_LOG_ERROR,
+               "XImages with RGB mask 0x%.6lx 0x%.6lx 0x%.6lx and depth %i "
+               "are currently not supported.\n",
+               image->red_mask,
+               image->green_mask,
+               image->blue_mask,
+               image->bits_per_pixel);
+
+        return AVERROR_PATCHWELCOME;
+    }
+
+    return 0;
+}
+
 /**
  * Initialize the x11 grab device demuxer (public device demuxer API).
  *
@@ -158,7 +247,6 @@ static int x11grab_read_header(AVFormatContext *s1)
     X11GrabContext *x11grab = s1->priv_data;
     Display *dpy;
     AVStream *st = NULL;
-    enum AVPixelFormat input_pixfmt;
     XImage *image;
     int x_off = 0, y_off = 0, ret = 0, screen, use_shm = 0;
     char *dpyname, *offset;
@@ -226,113 +314,16 @@ static int x11grab_read_header(AVFormatContext *s1)
                "shared memory extension %sfound\n", use_shm ? "" : "not ");
     }
 
-    if (use_shm) {
-        int scr = XDefaultScreen(dpy);
-        image = XShmCreateImage(dpy,
-                                DefaultVisual(dpy, scr),
-                                DefaultDepth(dpy, scr),
-                                ZPixmap,
-                                NULL,
-                                &x11grab->shminfo,
-                                x11grab->width, x11grab->height);
-        x11grab->shminfo.shmid = shmget(IPC_PRIVATE,
-                                        image->bytes_per_line * image->height,
-                                        IPC_CREAT | 0777);
-        if (x11grab->shminfo.shmid == -1) {
-            av_log(s1, AV_LOG_ERROR, "Fatal: Can't get shared memory!\n");
-            ret = AVERROR(ENOMEM);
-            goto out;
-        }
-        x11grab->shminfo.shmaddr  = image->data = shmat(x11grab->shminfo.shmid, 0, 0);
-        x11grab->shminfo.readOnly = False;
+    if (use_shm && setup_shm(s1, dpy, &image) < 0) {
+        av_log(s1, AV_LOG_WARNING, "Falling back to XGetImage\n");
+        use_shm = 0;
+    }
 
-        if (!XShmAttach(dpy, &x11grab->shminfo)) {
-            av_log(s1, AV_LOG_ERROR, "Fatal: Failed to attach shared memory!\n");
-            /* needs some better error subroutine :) */
-            ret = AVERROR(EIO);
-            goto out;
-        }
-    } else {
+    if (!use_shm) {
         image = XGetImage(dpy, RootWindow(dpy, screen),
                           x_off, y_off,
                           x11grab->width, x11grab->height,
                           AllPlanes, ZPixmap);
-    }
-
-    switch (image->bits_per_pixel) {
-    case 8:
-        av_log(s1, AV_LOG_DEBUG, "8 bit palette\n");
-        input_pixfmt = AV_PIX_FMT_PAL8;
-        color_map = DefaultColormap(dpy, screen);
-        for (i = 0; i < 256; ++i)
-            color[i].pixel = i;
-        XQueryColors(dpy, color_map, color, 256);
-        for (i = 0; i < 256; ++i)
-            x11grab->palette[i] = (color[i].red   & 0xFF00) << 8 |
-                                  (color[i].green & 0xFF00)      |
-                                  (color[i].blue  & 0xFF00) >> 8;
-        x11grab->palette_changed = 1;
-        break;
-    case 16:
-        if (image->red_mask   == 0xf800 &&
-            image->green_mask == 0x07e0 &&
-            image->blue_mask  == 0x001f) {
-            av_log(s1, AV_LOG_DEBUG, "16 bit RGB565\n");
-            input_pixfmt = AV_PIX_FMT_RGB565;
-        } else if (image->red_mask   == 0x7c00 &&
-                   image->green_mask == 0x03e0 &&
-                   image->blue_mask  == 0x001f) {
-            av_log(s1, AV_LOG_DEBUG, "16 bit RGB555\n");
-            input_pixfmt = AV_PIX_FMT_RGB555;
-        } else {
-            av_log(s1, AV_LOG_ERROR,
-                   "RGB ordering at image depth %i not supported ... aborting\n",
-                   image->bits_per_pixel);
-            av_log(s1, AV_LOG_ERROR,
-                   "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n",
-                   image->red_mask, image->green_mask, image->blue_mask);
-            ret = AVERROR_PATCHWELCOME;
-            goto out;
-        }
-        break;
-    case 24:
-        if (image->red_mask   == 0xff0000 &&
-            image->green_mask == 0x00ff00 &&
-            image->blue_mask  == 0x0000ff) {
-            input_pixfmt = AV_PIX_FMT_BGR24;
-        } else if (image->red_mask   == 0x0000ff &&
-                   image->green_mask == 0x00ff00 &&
-                   image->blue_mask  == 0xff0000) {
-            input_pixfmt = AV_PIX_FMT_RGB24;
-        } else {
-            av_log(s1, AV_LOG_ERROR,
-                   "rgb ordering at image depth %i not supported ... aborting\n",
-                   image->bits_per_pixel);
-            av_log(s1, AV_LOG_ERROR,
-                   "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n",
-                   image->red_mask, image->green_mask, image->blue_mask);
-            ret = AVERROR_PATCHWELCOME;
-            goto out;
-        }
-        break;
-    case 32:
-        if (        image->red_mask   == 0xff0000 &&
-                    image->green_mask == 0x00ff00 &&
-                    image->blue_mask  == 0x0000ff ) {
-            input_pixfmt = AV_PIX_FMT_0RGB32;
-        } else {
-            av_log(s1, AV_LOG_ERROR,"rgb ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
-            av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
-            ret = AVERROR_PATCHWELCOME;
-            goto out;
-        }
-        break;
-    default:
-        av_log(s1, AV_LOG_ERROR,
-               "image depth %i not supported ... aborting\n",
-               image->bits_per_pixel);
-        ret = AVERROR_PATCHWELCOME;
-        goto out;
     }
 
     x11grab->frame_size = x11grab->width * x11grab->height * image->bits_per_pixel / 8;
@@ -344,11 +335,27 @@ static int x11grab_read_header(AVFormatContext *s1)
     x11grab->image      = image;
     x11grab->use_shm    = use_shm;
 
+    ret = pixfmt_from_image(s1, image, &st->codec->pix_fmt);
+    if (ret < 0)
+        goto out;
+
+    if (st->codec->pix_fmt == AV_PIX_FMT_PAL8) {
+        color_map = DefaultColormap(dpy, screen);
+        for (i = 0; i < 256; ++i)
+            color[i].pixel = i;
+        XQueryColors(dpy, color_map, color, 256);
+        for (i = 0; i < 256; ++i)
+            x11grab->palette[i] = (color[i].red   & 0xFF00) << 8 |
+                                  (color[i].green & 0xFF00)      |
+                                  (color[i].blue  & 0xFF00) >> 8;
+        x11grab->palette_changed = 1;
+    }
+
+
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
     st->codec->width      = x11grab->width;
     st->codec->height     = x11grab->height;
-    st->codec->pix_fmt    = input_pixfmt;
     st->codec->time_base  = x11grab->time_base;
     st->codec->bit_rate   = x11grab->frame_size * 1 / av_q2d(x11grab->time_base) * 8;
 

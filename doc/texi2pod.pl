@@ -332,11 +332,11 @@ $inf = pop @instack;
 
 die "No filename or title\n" unless defined $fn && defined $tl;
 
-$chapters{NAME} = "$fn \- $tl\n";
-$chapters{FOOTNOTES} .= "=back\n" if exists $chapters{FOOTNOTES};
-
 # always use utf8
 print "=encoding utf8\n\n";
+
+$chapters{NAME} = "$fn \- $tl\n";
+$chapters{FOOTNOTES} .= "=back\n" if exists $chapters{FOOTNOTES};
 
 unshift @chapters_sequence, "NAME";
 for $chapter (@chapters_sequence) {

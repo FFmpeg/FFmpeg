@@ -44,7 +44,6 @@ typedef struct RLTable {
     uint8_t *index_run[2];         ///< encoding only
     int8_t *max_level[2];          ///< encoding & decoding
     int8_t *max_run[2];            ///< encoding & decoding
-    VLC vlc;                       ///< decoding only deprecated FIXME remove
     RL_VLC_ELEM *rl_vlc[32];       ///< decoding only
 } RLTable;
 
@@ -54,21 +53,18 @@ typedef struct RLTable {
  *                     the level and run tables, if this is NULL av_malloc() will be used
  */
 void ff_init_rl(RLTable *rl, uint8_t static_store[2][2*MAX_RUN + MAX_LEVEL + 3]);
-void ff_init_vlc_rl(RLTable *rl);
+void ff_init_vlc_rl(RLTable *rl, unsigned static_size);
 
 #define INIT_VLC_RL(rl, static_size)\
 {\
     int q;\
     static RL_VLC_ELEM rl_vlc_table[32][static_size];\
-    INIT_VLC_STATIC(&rl.vlc, 9, rl.n + 1,\
-             &rl.table_vlc[0][1], 4, 2,\
-             &rl.table_vlc[0][0], 4, 2, static_size);\
 \
     if(!rl.rl_vlc[0]){\
         for(q=0; q<32; q++)\
             rl.rl_vlc[q]= rl_vlc_table[q];\
 \
-        ff_init_vlc_rl(&rl);\
+        ff_init_vlc_rl(&rl, static_size);\
     }\
 }
 

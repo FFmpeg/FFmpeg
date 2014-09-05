@@ -585,9 +585,11 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
 {
     int i;
     PutBitContext pb;
-    uint8_t buffer[50000] = {0}, *p = buffer;
-    int buffer_len = sizeof buffer;
     int len, hlens[3];
+    int buffer_len = 50000;
+    uint8_t *buffer = av_mallocz(buffer_len), *p = buffer;
+    if (!buffer)
+        return AVERROR(ENOMEM);
 
     // identification header
     init_put_bits(&pb, p, buffer_len);
@@ -710,6 +712,7 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
         buffer_len += hlens[i];
     }
 
+    av_freep(&buffer);
     return p - *out;
 }
 

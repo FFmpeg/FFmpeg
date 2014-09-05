@@ -278,7 +278,7 @@ llrint() in its C library.
 Install your Cygwin with all the "Base" packages, plus the
 following "Devel" ones:
 @example
-binutils, gcc4-core, make, git, mingw-runtime, texi2html
+binutils, gcc4-core, make, git, mingw-runtime, texinfo
 @end example
 
 In order to run FATE you will also need the following "Utils" packages:

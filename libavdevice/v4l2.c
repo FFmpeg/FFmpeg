@@ -838,14 +838,14 @@ static int v4l2_read_header(AVFormatContext *s1)
         if (v4l2_ioctl(s->fd, VIDIOC_S_INPUT, &s->channel) < 0) {
             res = AVERROR(errno);
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_INPUT): %s\n", av_err2str(res));
-            return res;
+            goto fail;
         }
     } else {
         /* get current video input */
         if (v4l2_ioctl(s->fd, VIDIOC_G_INPUT, &s->channel) < 0) {
             res = AVERROR(errno);
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_INPUT): %s\n", av_err2str(res));
-            return res;
+            goto fail;
         }
     }
 
@@ -854,7 +854,7 @@ static int v4l2_read_header(AVFormatContext *s1)
     if (v4l2_ioctl(s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
         res = AVERROR(errno);
         av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMINPUT): %s\n", av_err2str(res));
-        return res;
+        goto fail;
     }
     s->std_id = input.std;
     av_log(s1, AV_LOG_DEBUG, "Current input_channel: %d, input_name: %s, input_std: %"PRIx64"\n",
@@ -862,18 +862,20 @@ static int v4l2_read_header(AVFormatContext *s1)
 
     if (s->list_format) {
         list_formats(s1, s->fd, s->list_format);
-        return AVERROR_EXIT;
+        res = AVERROR_EXIT;
+        goto fail;
     }
 
     if (s->list_standard) {
         list_standards(s1);
-        return AVERROR_EXIT;
+        res = AVERROR_EXIT;
+        goto fail;
     }
 
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     if ((res = v4l2_set_parameters(s1)) < 0)
-        return res;
+        goto fail;
 
     if (s->pixel_format) {
         AVCodec *codec = avcodec_find_decoder_by_name(s->pixel_format);
@@ -887,7 +889,8 @@ static int v4l2_read_header(AVFormatContext *s1)
             av_log(s1, AV_LOG_ERROR, "No such input format: %s.\n",
                    s->pixel_format);
 
-            return AVERROR(EINVAL);
+            res = AVERROR(EINVAL);
+            goto fail;
         }
     }
 
@@ -899,7 +902,7 @@ static int v4l2_read_header(AVFormatContext *s1)
         if (v4l2_ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
             res = AVERROR(errno);
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n", av_err2str(res));
-            return res;
+            goto fail;
         }
 
         s->width  = fmt.fmt.pix.width;
@@ -909,10 +912,8 @@ static int v4l2_read_header(AVFormatContext *s1)
     }
 
     res = device_try_init(s1, pix_fmt, &s->width, &s->height, &desired_format, &codec_id);
-    if (res < 0) {
-        v4l2_close(s->fd);
-        return res;
-    }
+    if (res < 0)
+        goto fail;
 
     /* If no pixel_format was specified, the codec_id was not known up
      * until now. Set video_codec_id in the context, as codec_id will
@@ -922,7 +923,7 @@ static int v4l2_read_header(AVFormatContext *s1)
         s1->video_codec_id = codec_id;
 
     if ((res = av_image_check_size(s->width, s->height, 0, s1)) < 0)
-        return res;
+        goto fail;
 
     s->frame_format = desired_format;
 
@@ -931,10 +932,8 @@ static int v4l2_read_header(AVFormatContext *s1)
         avpicture_get_size(st->codec->pix_fmt, s->width, s->height);
 
     if ((res = mmap_init(s1)) ||
-        (res = mmap_start(s1)) < 0) {
-        v4l2_close(s->fd);
-        return res;
-    }
+        (res = mmap_start(s1)) < 0)
+            goto fail;
 
     s->top_field_first = first_field(s, s->fd);
 
@@ -956,6 +955,10 @@ static int v4l2_read_header(AVFormatContext *s1)
         st->codec->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
 
     return 0;
+
+fail:
+    v4l2_close(s->fd);
+    return res;
 }
 
 static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
