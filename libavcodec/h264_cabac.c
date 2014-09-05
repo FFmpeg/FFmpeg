@@ -1604,7 +1604,7 @@ decode_cabac_residual_internal(H264Context *h, int16_t *block,
 
     int index[64];
 
-    int av_unused last;
+    int last;
     int coeff_count = 0;
     int node_ctx = 0;
 
