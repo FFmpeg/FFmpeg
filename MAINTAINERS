@@ -319,7 +319,7 @@ libavdevice
   pulse_audio_enc.c                     Lukasz Marek
   qtkit.m                               Thilo Borgmann
   sdl                                   Stefano Sabatini
-  v4l2.c                                Luca Abeni
+  v4l2.c                                Giorgio Vazzana
   vfwcap.c                              Ramiro Polla
   xv.c                                  Lukasz Marek
 
