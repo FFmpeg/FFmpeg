@@ -238,12 +238,12 @@ static int first_field(const struct video_data *s)
 }
 
 #if HAVE_STRUCT_V4L2_FRMIVALENUM_DISCRETE
-static void list_framesizes(AVFormatContext *ctx, int fd, uint32_t pixelformat)
+static void list_framesizes(AVFormatContext *ctx, uint32_t pixelformat)
 {
     const struct video_data *s = ctx->priv_data;
     struct v4l2_frmsizeenum vfse = { .pixel_format = pixelformat };
 
-    while(!v4l2_ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &vfse)) {
+    while(!v4l2_ioctl(s->fd, VIDIOC_ENUM_FRAMESIZES, &vfse)) {
         switch (vfse.type) {
         case V4L2_FRMSIZE_TYPE_DISCRETE:
             av_log(ctx, AV_LOG_INFO, " %ux%u",
@@ -296,7 +296,7 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
             av_log(ctx, AV_LOG_INFO, " Emulated :");
 #endif
 #if HAVE_STRUCT_V4L2_FRMIVALENUM_DISCRETE
-        list_framesizes(ctx, fd, vfd.pixelformat);
+        list_framesizes(ctx, vfd.pixelformat);
 #endif
         av_log(ctx, AV_LOG_INFO, "\n");
     }
