@@ -299,18 +299,20 @@ av_cold static int auto_matrix(SwrContext *s)
     for(out_i=i=0; i<64; i++){
         double sum=0;
         int in_i=0;
+        if((out_ch_layout & (1ULL<<i)) == 0)
+            continue;
         for(j=0; j<64; j++){
+            if((in_ch_layout & (1ULL<<j)) == 0)
+               continue;
             if (i < FF_ARRAY_ELEMS(matrix) && j < FF_ARRAY_ELEMS(matrix[0]))
                 s->matrix[out_i][in_i]= matrix[i][j];
             else
                 s->matrix[out_i][in_i]= i == j && (in_ch_layout & out_ch_layout & (1ULL<<i));
             sum += fabs(s->matrix[out_i][in_i]);
-            if(in_ch_layout & (1ULL<<j))
-                in_i++;
+            in_i++;
         }
         maxcoef= FFMAX(maxcoef, sum);
-        if(out_ch_layout & (1ULL<<i))
-            out_i++;
+        out_i++;
     }
     if(s->rematrix_volume  < 0)
         maxcoef = -s->rematrix_volume;
