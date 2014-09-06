@@ -311,7 +311,7 @@ static int fast = 0;
 static int genpts = 0;
 static int lowres = 0;
 static int decoder_reorder_pts = -1;
-static int autoexit;
+static int autoexit = 1;
 static int exit_on_keydown;
 static int exit_on_mousedown;
 static int loop = 1;
