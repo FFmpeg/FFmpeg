@@ -304,9 +304,7 @@ av_cold static int auto_matrix(SwrContext *s)
                 s->matrix[out_i][in_i]= matrix[i][j];
             else
                 s->matrix[out_i][in_i]= i == j && (in_ch_layout & out_ch_layout & (1ULL<<i));
-            if(s->matrix[out_i][in_i]){
-                sum += fabs(s->matrix[out_i][in_i]);
-            }
+            sum += fabs(s->matrix[out_i][in_i]);
             if(in_ch_layout & (1ULL<<j))
                 in_i++;
         }
