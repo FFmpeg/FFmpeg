@@ -804,6 +804,11 @@ reference stream. The default value is @code{auto}.
 Override the inner container format, by default it is guessed by the filename
 extension.
 
+@item segment_format_options @var{options_list}
+Set output format options using a :-separated list of key=value
+parameters. Values containing the @code{:} special character must be
+escaped.
+
 @item segment_list @var{name}
 Generate also a listfile named @var{name}. If not specified no
 listfile is generated.
@@ -956,6 +961,12 @@ To remux the content of file @file{in.mkv} to a list of segments
 generated segments to @file{out.list}:
 @example
 ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.list out%03d.nut
+@end example
+
+@item
+Segment input and set output format options for the output segments:
+@example
+ffmpeg -i in.mkv -f segment -segment_time 10 -segment_format_options movflags=+faststart out%03d.mp4
 @end example
 
 @item
