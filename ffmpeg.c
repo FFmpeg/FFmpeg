@@ -578,6 +578,14 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     AVCodecContext          *avctx = ost->st->codec;
     int ret;
 
+    if (!ost->st->codec->extradata_size && ost->enc_ctx->extradata_size) {
+        ost->st->codec->extradata = av_mallocz(ost->enc_ctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (ost->st->codec->extradata) {
+            memcpy(ost->st->codec->extradata, ost->enc_ctx->extradata, ost->enc_ctx->extradata_size);
+            ost->st->codec->extradata_size = ost->enc_ctx->extradata_size;
+        }
+    }
+
     if ((avctx->codec_type == AVMEDIA_TYPE_VIDEO && video_sync_method == VSYNC_DROP) ||
         (avctx->codec_type == AVMEDIA_TYPE_AUDIO && audio_sync_method < 0))
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
