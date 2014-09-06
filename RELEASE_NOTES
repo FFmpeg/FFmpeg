@@ -59,3 +59,4 @@
   • libmodplug is now detected through pkg-config
   • HTML documentation generation through texi2html is deprecated in
     favor of makeinfo/texi2any
+  • ffplay now exits by default at the end of playback
