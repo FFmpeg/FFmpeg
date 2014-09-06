@@ -156,7 +156,7 @@ struct MpegTSContext {
 };
 
 #define MPEGTS_OPTIONS \
-    { "resync_size",   "Size limit for looking up a new syncronization.", offsetof(MpegTSContext, resync_size), AV_OPT_TYPE_INT,  { .i64 =  MAX_RESYNC_SIZE}, 0, INT_MAX,  AV_OPT_FLAG_DECODING_PARAM }
+    { "resync_size",   "Size limit for looking up a new synchronization.", offsetof(MpegTSContext, resync_size), AV_OPT_TYPE_INT,  { .i64 =  MAX_RESYNC_SIZE}, 0, INT_MAX,  AV_OPT_FLAG_DECODING_PARAM }
 
 static const AVOption options[] = {
     MPEGTS_OPTIONS,
