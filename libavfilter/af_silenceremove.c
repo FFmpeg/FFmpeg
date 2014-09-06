@@ -335,13 +335,10 @@ silence_copy:
                                 flush(out, outlink, &nb_samples_written, &ret);
                                 goto silence_trim;
                             }
-                        } else {
-                            s->mode = SILENCE_COPY_FLUSH;
-                            flush(out, outlink, &nb_samples_written, &ret);
-                            goto silence_copy_flush;
                         }
+                        s->mode = SILENCE_COPY_FLUSH;
                         flush(out, outlink, &nb_samples_written, &ret);
-                        break;
+                        goto silence_copy_flush;
                     }
                 }
             }
