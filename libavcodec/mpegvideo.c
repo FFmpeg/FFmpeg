@@ -1063,7 +1063,7 @@ int ff_MPV_common_frame_size_change(MpegEncContext *s)
 
     if ((s->width || s->height) &&
         av_image_check_size(s->width, s->height, 0, s->avctx))
-        return AVERROR_INVALIDDATA;
+        goto fail;
 
     if ((err = init_context_frame(s)))
         goto fail;
