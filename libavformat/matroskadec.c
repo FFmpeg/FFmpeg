@@ -1286,65 +1286,6 @@ failed:
     return result;
 }
 
-#if FF_API_ASS_SSA
-static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
-                                    AVPacket *pkt, uint64_t display_duration)
-{
-    AVBufferRef *line;
-    char *layer, *ptr = pkt->data, *end = ptr + pkt->size;
-
-    for (; *ptr != ',' && ptr < end - 1; ptr++)
-        ;
-    if (*ptr == ',')
-        ptr++;
-    layer = ptr;
-    for (; *ptr != ',' && ptr < end - 1; ptr++)
-        ;
-    if (*ptr == ',') {
-        int64_t end_pts = pkt->pts + display_duration;
-        int sc = matroska->time_scale * pkt->pts / 10000000;
-        int ec = matroska->time_scale * end_pts  / 10000000;
-        int sh, sm, ss, eh, em, es, len;
-        sh     = sc / 360000;
-        sc    -= 360000 * sh;
-        sm     = sc / 6000;
-        sc    -= 6000 * sm;
-        ss     = sc / 100;
-        sc    -= 100 * ss;
-        eh     = ec / 360000;
-        ec    -= 360000 * eh;
-        em     = ec / 6000;
-        ec    -= 6000 * em;
-        es     = ec / 100;
-        ec    -= 100 * es;
-        *ptr++ = '\0';
-        len    = 50 + end - ptr + FF_INPUT_BUFFER_PADDING_SIZE;
-        if (!(line = av_buffer_alloc(len)))
-            return;
-        snprintf(line->data, len,
-                 "Dialogue: %s,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s\r\n",
-                 layer, sh, sm, ss, sc, eh, em, es, ec, ptr);
-        av_buffer_unref(&pkt->buf);
-        pkt->buf  = line;
-        pkt->data = line->data;
-        pkt->size = strlen(line->data);
-    }
-}
-
-static int matroska_merge_packets(AVPacket *out, AVPacket *in)
-{
-    int ret = av_grow_packet(out, in->size);
-    if (ret < 0)
-        return ret;
-
-    memcpy(out->data + out->size - in->size, in->data, in->size);
-
-    av_free_packet(in);
-    av_free(in);
-    return 0;
-}
-#endif
-
 static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
                                  AVDictionary **metadata, char *prefix)
 {
@@ -2044,12 +1985,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             }
         } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-#if FF_API_ASS_SSA
-            if (st->codec->codec_id == AV_CODEC_ID_SSA ||
-                st->codec->codec_id == AV_CODEC_ID_ASS)
-#else
             if (st->codec->codec_id == AV_CODEC_ID_ASS)
-#endif
                 matroska->contains_ssa = 1;
         }
     }
@@ -2719,24 +2655,8 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         pkt->duration = lace_duration;
     }
 
-#if FF_API_ASS_SSA
-    if (st->codec->codec_id == AV_CODEC_ID_SSA)
-        matroska_fix_ass_packet(matroska, pkt, lace_duration);
-
-    if (matroska->prev_pkt                                 &&
-        timecode                         != AV_NOPTS_VALUE &&
-        matroska->prev_pkt->pts          == timecode       &&
-        matroska->prev_pkt->stream_index == st->index      &&
-        st->codec->codec_id == AV_CODEC_ID_SSA)
-        matroska_merge_packets(matroska->prev_pkt, pkt);
-    else {
-        dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
-        matroska->prev_pkt = pkt;
-    }
-#else
     dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
     matroska->prev_pkt = pkt;
-#endif
 
     return 0;
 
