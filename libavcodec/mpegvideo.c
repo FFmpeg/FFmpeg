@@ -1034,6 +1034,9 @@ int ff_MPV_common_frame_size_change(MpegEncContext *s)
 {
     int i, err = 0;
 
+    if (!s->context_initialized)
+        return AVERROR(EINVAL);
+
     if (s->slice_context_count > 1) {
         for (i = 0; i < s->slice_context_count; i++) {
             free_duplicate_context(s->thread_context[i]);
