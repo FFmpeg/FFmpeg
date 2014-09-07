@@ -274,11 +274,13 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
                 c->idct_add  = ff_jref_idct_add;
                 c->idct      = ff_j_rev_dct;
                 c->perm_type = FF_IDCT_PERM_LIBMPEG2;
+#if CONFIG_FAANIDCT
             } else if (avctx->idct_algo == FF_IDCT_FAAN) {
                 c->idct_put  = ff_faanidct_put;
                 c->idct_add  = ff_faanidct_add;
                 c->idct      = ff_faanidct;
                 c->perm_type = FF_IDCT_PERM_NONE;
+#endif /* CONFIG_FAANIDCT */
             } else { // accurate/default
                 c->idct_put  = ff_simple_idct_put_8;
                 c->idct_add  = ff_simple_idct_add_8;

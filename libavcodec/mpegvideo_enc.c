@@ -90,8 +90,10 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
     for (qscale = qmin; qscale <= qmax; qscale++) {
         int i;
         if (fdsp->fdct == ff_jpeg_fdct_islow_8  ||
-            fdsp->fdct == ff_jpeg_fdct_islow_10 ||
-            fdsp->fdct == ff_faandct) {
+#if CONFIG_FAANDCT
+            fdsp->fdct == ff_faandct            ||
+#endif /* CONFIG_FAANDCT */
+            fdsp->fdct == ff_jpeg_fdct_islow_10) {
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905
