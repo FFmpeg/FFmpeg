@@ -221,6 +221,9 @@
     <ClCompile Include="..\libavfilter\af_silencedetect.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_silencedetect.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_silenceremove.c">
+      <ObjectFileName>$(IntDir)\libavfilter_af_silenceremove.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_volume.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_volume.obj</ObjectFileName>
     </ClCompile>
