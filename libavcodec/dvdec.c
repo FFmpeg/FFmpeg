@@ -96,7 +96,7 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, int16_t *block)
     int partial_bit_count = mb->partial_bit_count;
     int level, run, vlc_len, index;
 
-    OPEN_READER(re, gb);
+    OPEN_READER_NOSIZE(re, gb);
     UPDATE_CACHE(re, gb);
 
     /* if we must parse a partial VLC, we do it here */

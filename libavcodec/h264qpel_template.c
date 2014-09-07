@@ -378,7 +378,7 @@ static void FUNC(OPNAME ## h264_qpel16_hv_lowpass)(uint8_t *dst, pixeltmp *tmp, 
 }\
 
 #define H264_MC(OPNAME, SIZE) \
-static av_unused void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc00)(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc00)(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     FUNCC(OPNAME ## pixels ## SIZE)(dst, src, stride, SIZE);\
 }\

@@ -1140,9 +1140,6 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
             if (s->sps->chroma_format_idc == 2 && (!split_transform_flag || log2_trafo_size == 3)) {
                 cbf_cb[1] = ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
             }
-        } else if (trafo_depth == 0) {
-            cbf_cb[0] =
-            cbf_cb[1] = 0;
         }
 
         if (trafo_depth == 0 || cbf_cr[0]) {
@@ -1150,9 +1147,6 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
             if (s->sps->chroma_format_idc == 2 && (!split_transform_flag || log2_trafo_size == 3)) {
                 cbf_cr[1] = ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
             }
-        } else if (trafo_depth == 0) {
-            cbf_cr[0] =
-            cbf_cr[1] = 0;
         }
     }
 

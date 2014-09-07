@@ -81,6 +81,16 @@ void write_float_2d_array   (const void *, int, int);
 #define FMT "zu"
 #endif
 
+#define WRITE_ARRAY_ALIGNED(prefix, align, type, name)  \
+    do {                                                \
+        const size_t array_size = FF_ARRAY_ELEMS(name); \
+        printf(prefix" DECLARE_ALIGNED("#align", "      \
+               #type", "#name")[%"FMT"] = {\n",         \
+               array_size);                             \
+        write_##type##_array(name, array_size);         \
+        printf("};\n");                                 \
+    } while(0)
+
 #define WRITE_ARRAY(prefix, type, name)                 \
     do {                                                \
         const size_t array_size = FF_ARRAY_ELEMS(name); \

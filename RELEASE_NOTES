@@ -42,6 +42,7 @@
     • ported lenscorrection filter from frei0r filter
     • large optimizations in dctdnoiz to make it usable
     • added codecview filter to visualize information exported by some codecs
+    • added silenceremove filter
 
    ┌────────────────────────────┐
    │ libavutil                  │
@@ -58,3 +59,4 @@
   • libmodplug is now detected through pkg-config
   • HTML documentation generation through texi2html is deprecated in
     favor of makeinfo/texi2any
+  • ffplay now exits by default at the end of playback

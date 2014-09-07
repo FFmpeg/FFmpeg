@@ -76,14 +76,11 @@ static av_cold int h261_decode_init(AVCodecContext *avctx)
 
     // set defaults
     ff_mpv_decode_defaults(s);
-    s->avctx       = avctx;
-    s->width       = s->avctx->coded_width;
-    s->height      = s->avctx->coded_height;
-    s->codec_id    = s->avctx->codec->id;
+    ff_mpv_decode_init(s, avctx);
+
     s->out_format  = FMT_H261;
     s->low_delay   = 1;
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-    s->codec_id    = avctx->codec->id;
 
     ff_h261_common_init();
     h261_decode_init_vlc(h);

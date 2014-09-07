@@ -48,14 +48,12 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     int ret;
 
-    s->avctx           = avctx;
     s->out_format      = FMT_H263;
-    s->width           = avctx->coded_width;
-    s->height          = avctx->coded_height;
-    s->workaround_bugs = avctx->workaround_bugs;
 
     // set defaults
     ff_mpv_decode_defaults(s);
+    ff_mpv_decode_init(s, avctx);
+
     s->quant_precision = 5;
     s->decode_mb       = ff_h263_decode_mb;
     s->low_delay       = 1;

@@ -468,7 +468,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->chroma_height = s->height / 2;
+        s->chroma_height = (s->height + 1) / 2;
         break;
     case 0x11000000:
     case 0x13000000:
@@ -492,7 +492,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->chroma_height = s->height / 2;
+        s->chroma_height = (s->height + 1) / 2;
         break;
     case 0x21111100:
         if (s->bits <= 8) s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV422P : AV_PIX_FMT_YUVJ422P;
@@ -513,7 +513,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         if (pix_fmt_id == 0x42111100) {
             s->upscale_h = 6;
-            s->chroma_height = s->height / 2;
+            s->chroma_height = (s->height + 1) / 2;
         }
         break;
     case 0x41111100:

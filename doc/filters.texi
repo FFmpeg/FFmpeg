@@ -517,27 +517,21 @@ volume as the input audio, at the end of the fade-out transition
 the output audio will be silence. Default is 44100.
 
 @item start_time, st
-Specify time for starting to apply the fade effect. Default is 0.
-The accepted syntax is:
-@example
-[-]HH[:MM[:SS[.m...]]]
-[-]S+[.m...]
-@end example
-See also the function @code{av_parse_time()}.
-If set this option is used instead of @var{start_sample} one.
+Specify the start time of the fade effect. Default is 0.
+The value must be specified as a time duration; see
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
+If set this option is used instead of @var{start_sample}.
 
 @item duration, d
-Specify the duration for which the fade effect has to last. Default is 0.
-The accepted syntax is:
-@example
-[-]HH[:MM[:SS[.m...]]]
-[-]S+[.m...]
-@end example
-See also the function @code{av_parse_time()}.
+Specify the duration of the fade effect. See
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
 At the end of the fade-in effect the output audio will have the same
 volume as the input audio, at the end of the fade-out transition
 the output audio will be silence.
-If set this option is used instead of @var{nb_samples} one.
+By default the duration is determined by @var{nb_samples}.
+If set this option is used instead of @var{nb_samples}.
 
 @item curve
 Set curve for fade transition.
@@ -1120,9 +1114,9 @@ The number of the first sample that should be output.
 The number of the first sample that should be dropped.
 @end table
 
-@option{start}, @option{end}, @option{duration} are expressed as time
-duration specifications, check the "Time duration" section in the
-ffmpeg-utils manual.
+@option{start}, @option{end}, and @option{duration} are expressed as time
+duration specifications; see
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 Note that the first two sets of the start/end options and the @option{duration}
 option look at the frame timestamp, while the _sample options simply count the
@@ -1637,9 +1631,9 @@ Set the number of samples per channel per each output frame, default
 is 1024. Only used if plugin have zero inputs.
 
 @item duration, d
-Set the minimum duration of the sourced audio. See the function
-@code{av_parse_time()} for the accepted format, also check the "Time duration"
-section in the ffmpeg-utils manual.
+Set the minimum duration of the sourced audio. See
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
 Note that the resulting duration may be greater than the specified duration,
 as the generated audio is always cut at the end of a complete frame.
 If not specified, or the expressed duration is negative, the audio is
@@ -1878,6 +1872,75 @@ Complete example with @command{ffmpeg} to detect silence with 0.0001 noise
 tolerance in @file{silence.mp3}:
 @example
 ffmpeg -i silence.mp3 -af silencedetect=noise=0.0001 -f null -
+@end example
+@end itemize
+
+@section silenceremove
+
+Remove silence from the beginning, middle or end of the audio.
+
+The filter accepts the following options:
+
+@table @option
+@item start_periods
+This value is used to indicate if audio should be trimmed at beginning of
+the audio. A value of zero indicates no silence should be trimmed from the
+beginning. When specifying a non-zero value, it trims audio up until it
+finds non-silence. Normally, when trimming silence from beginning of audio
+the @var{start_periods} will be @code{1} but it can be increased to higher
+values to trim all audio up to specific count of non-silence periods.
+Default value is @code{0}.
+
+@item start_duration
+Specify the amount of time that non-silence must be detected before it stops
+trimming audio. By increasing the duration, bursts of noises can be treated
+as silence and trimmed off. Default value is @code{0}.
+
+@item start_threshold
+This indicates what sample value should be treated as silence. For digital
+audio, a value of @code{0} may be fine but for audio recorded from analog,
+you may wish to increase the value to account for background noise.
+Can be specified in dB (in case "dB" is appended to the specified value)
+or amplitude ratio. Default value is @code{0}.
+
+@item stop_periods
+Set the count for trimming silence from the end of audio.
+To remove silence from the middle of a file, specify a @var{stop_periods}
+that is negative. This value is then threated as a positive value and is
+used to indicate the effect should restart processing as specified by
+@var{start_periods}, making it suitable for removing periods of silence
+in the middle of the audio.
+Default value is @code{0}.
+
+@item stop_duration
+Specify a duration of silence that must exist before audio is not copied any
+more. By specifying a higher duration, silence that is wanted can be left in
+the audio.
+Default value is @code{0}.
+
+@item stop_threshold
+This is the same as @option{start_threshold} but for trimming silence from
+the end of audio.
+Can be specified in dB (in case "dB" is appended to the specified value)
+or amplitude ratio. Default value is @code{0}.
+
+@item leave_silence
+This indicate that @var{stop_duration} length of audio should be left intact
+at the beginning of each period of silence.
+For example, if you want to remove long pauses between words but do not want
+to remove the pauses completely. Default value is @code{0}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+The following example shows how this filter can be used to start a recording
+that does not contain the delay at the start which usually occurs between
+pressing the record button and the start of the performance:
+@example
+silenceremove=1:5:0.02
 @end example
 @end itemize
 
@@ -2189,8 +2252,9 @@ Set the channel layout. The number of channels in the specified layout
 must be equal to the number of specified expressions.
 
 @item duration, d
-Set the minimum duration of the sourced audio. See the function
-@code{av_parse_time()} for the accepted format.
+Set the minimum duration of the sourced audio. See
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
 Note that the resulting duration may be greater than the specified
 duration, as the generated audio is always cut at the end of a
 complete frame.
@@ -8546,9 +8610,10 @@ The number of the first frame that should be passed to the output.
 The number of the first frame that should be dropped.
 @end table
 
-@option{start}, @option{end}, @option{duration} are expressed as time
-duration specifications, check the "Time duration" section in the
-ffmpeg-utils manual.
+@option{start}, @option{end}, and @option{duration} are expressed as time
+duration specifications; see
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
 
 Note that the first two sets of the start/end options and the @option{duration}
 option look at the frame timestamp, while the _frame variants simply count the
@@ -9459,12 +9524,9 @@ number or a valid video frame rate abbreviation. The default value is
 "25".
 
 @item duration, d
-Set the video duration of the sourced video. The accepted syntax is:
-@example
-[-]HH:MM:SS[.m...]
-[-]S+[.m...]
-@end example
-See also the function @code{av_parse_time()}.
+Set the duration of the sourced video. See
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
 
 If not specified, or the expressed duration is negative, the video is
 supposed to be generated forever.
@@ -9726,12 +9788,9 @@ number or a valid video frame rate abbreviation. The default value is
 Set the sample aspect ratio of the sourced video.
 
 @item duration, d
-Set the video duration of the sourced video. The accepted syntax is:
-@example
-[-]HH[:MM[:SS[.m...]]]
-[-]S+[.m...]
-@end example
-Also see the the @code{av_parse_time()} function.
+Set the duration of the sourced video. See
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
 
 If not specified, or the expressed duration is negative, the video is
 supposed to be generated forever.

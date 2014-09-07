@@ -31,20 +31,22 @@ typedef struct {
 
 static int srt_probe(AVProbeData *p)
 {
-    const unsigned char *ptr = p->buf;
     int i, v, num = 0;
+    FFTextReader tr;
 
-    if (AV_RB24(ptr) == 0xEFBBBF)
-        ptr += 3;  /* skip UTF-8 BOM */
+    ff_text_init_buf(&tr, p->buf, p->buf_size);
 
-    while (*ptr == '\r' || *ptr == '\n')
-        ptr++;
+    while (ff_text_peek_r8(&tr) == '\r' || ff_text_peek_r8(&tr) == '\n')
+        ff_text_r8(&tr);
     for (i=0; i<2; i++) {
+        char buf[128];
+        if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0)
+            break;
         if ((num == i || num + 1 == i)
-            && sscanf(ptr, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
+            && buf[0] >= '0' && buf[1] <= '9' && strstr(buf, " --> ")
+            && sscanf(buf, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
             return AVPROBE_SCORE_MAX;
-        num = atoi(ptr);
-        ptr += ff_subtitles_next_line(ptr);
+        num = atoi(buf);
     }
     return 0;
 }
@@ -79,6 +81,8 @@ static int srt_read_header(AVFormatContext *s)
     AVBPrint buf;
     AVStream *st = avformat_new_stream(s, NULL);
     int res = 0;
+    FFTextReader tr;
+    ff_text_init_avio(&tr, s->pb);
 
     if (!st)
         return AVERROR(ENOMEM);
@@ -88,11 +92,11 @@ static int srt_read_header(AVFormatContext *s)
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    while (!avio_feof(s->pb)) {
-        ff_subtitles_read_chunk(s->pb, &buf);
+    while (!ff_text_eof(&tr)) {
+        ff_subtitles_read_text_chunk(&tr, &buf);
 
         if (buf.len) {
-            int64_t pos = avio_tell(s->pb);
+            int64_t pos = ff_text_pos(&tr);
             int64_t pts;
             int duration;
             const char *ptr = buf.str;

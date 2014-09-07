@@ -13,6 +13,8 @@ version <next>:
 - added codecview filter to visualize information exported by some codecs
 - Matroska 3D support thorugh side data
 - HTML generation using texi2html is deprecated in favor of makeinfo/texi2any
+- silenceremove filter
+- ffplay now exits by default at the end of playback
 
 
 version 2.3:
@@ -80,6 +82,7 @@ version 2.2:
 - libx265 encoder
 - dejudder filter
 - Autodetect VDA like all other hardware accelerations
+- aliases and defaults for Ogg subtypes (opus, spx)
 
 
 version 2.1:

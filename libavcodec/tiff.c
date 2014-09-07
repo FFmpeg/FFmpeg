@@ -653,6 +653,7 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
 static int init_image(TiffContext *s, ThreadFrame *frame)
 {
     int ret;
+    int create_gray_palette = 0;
 
     switch (s->planar * 1000 + s->bpp * 10 + s->bppcount) {
     case 11:
@@ -662,6 +663,11 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
         }
     case 21:
     case 41:
+        s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
+        if (!s->palette_is_set) {
+            create_gray_palette = 1;
+        }
+        break;
     case 81:
         s->avctx->pix_fmt = s->palette_is_set ? AV_PIX_FMT_PAL8 : AV_PIX_FMT_GRAY8;
         break;
@@ -741,7 +747,15 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
     if ((ret = ff_thread_get_buffer(s->avctx, frame, 0)) < 0)
         return ret;
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        memcpy(frame->f->data[1], s->palette, sizeof(s->palette));
+        if (!create_gray_palette)
+            memcpy(frame->f->data[1], s->palette, sizeof(s->palette));
+        else {
+            /* make default grayscale pal */
+            int i;
+            uint32_t *pal = (uint32_t *)frame->f->data[1];
+            for (i = 0; i < 1<<s->bpp; i++)
+                pal[i] = 0xFFU << 24 | i * 255 / ((1<<s->bpp) - 1) * 0x010101;
+        }
     }
     return 0;
 }

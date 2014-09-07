@@ -706,7 +706,6 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     const int mvy_limit = IS_INTERLACED(mb_type) ? 2 : 4;
     int first_vertical_edge_done = 0;
-    av_unused int dir;
     int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags&CODEC_FLAG_GRAY));
     int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
     int a = 52 + h->slice_alpha_c0_offset - qp_bd_offset;
@@ -817,8 +816,14 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
     }
 
 #if CONFIG_SMALL
-    for( dir = 0; dir < 2; dir++ )
-        filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, dir ? 0 : first_vertical_edge_done, a, b, chroma, dir);
+    {
+        int dir;
+        for (dir = 0; dir < 2; dir++)
+            filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize,
+                          uvlinesize, mb_xy, mb_type, mvy_limit,
+                          dir ? 0 : first_vertical_edge_done, a, b,
+                          chroma, dir);
+    }
 #else
     filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, first_vertical_edge_done, a, b, chroma, 0);
     filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, 0,                        a, b, chroma, 1);

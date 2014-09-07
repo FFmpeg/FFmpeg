@@ -1109,6 +1109,22 @@ void ff_mpv_decode_defaults(MpegEncContext *s)
     ff_mpv_common_defaults(s);
 }
 
+void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
+{
+    s->avctx           = avctx;
+    s->width           = avctx->coded_width;
+    s->height          = avctx->coded_height;
+    s->codec_id        = avctx->codec->id;
+    s->workaround_bugs = avctx->workaround_bugs;
+    s->flags           = avctx->flags;
+    s->flags2          = avctx->flags2;
+
+    /* convert fourcc to upper case */
+    s->codec_tag          = avpriv_toupper4(avctx->codec_tag);
+
+    s->stream_codec_tag   = avpriv_toupper4(avctx->stream_codec_tag);
+}
+
 static int init_er(MpegEncContext *s)
 {
     ERContext *er = &s->er;
@@ -1319,10 +1335,6 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
                                   &s->chroma_x_shift,
                                   &s->chroma_y_shift);
 
-    /* convert fourcc to upper case */
-    s->codec_tag          = avpriv_toupper4(s->avctx->codec_tag);
-
-    s->stream_codec_tag   = avpriv_toupper4(s->avctx->stream_codec_tag);
 
     FF_ALLOCZ_OR_GOTO(s->avctx, s->picture,
                       MAX_PICTURE_COUNT * sizeof(Picture), fail);

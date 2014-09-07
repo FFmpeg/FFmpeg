@@ -30,6 +30,7 @@
 #include "sbr.h"
 #include "aacsbr.h"
 #include "aacsbrdata.h"
+#include "aacsbr_tablegen.h"
 #include "fft.h"
 #include "aacps.h"
 #include "sbrdsp.h"
@@ -95,7 +96,6 @@ static void aacsbr_func_ptr_init(AACSBRContext *c);
 
 av_cold void ff_aac_sbr_init(void)
 {
-    int n;
     static const struct {
         const void *sbr_codes, *sbr_bits;
         const unsigned int table_size, elem_size;
@@ -124,13 +124,7 @@ av_cold void ff_aac_sbr_init(void)
     SBR_INIT_VLC_STATIC(8, 592);
     SBR_INIT_VLC_STATIC(9, 512);
 
-    for (n = 1; n < 320; n++)
-        sbr_qmf_window_us[320 + n] = sbr_qmf_window_us[320 - n];
-    sbr_qmf_window_us[384] = -sbr_qmf_window_us[384];
-    sbr_qmf_window_us[512] = -sbr_qmf_window_us[512];
-
-    for (n = 0; n < 320; n++)
-        sbr_qmf_window_ds[n] = sbr_qmf_window_us[2*n];
+    aacsbr_tableinit();
 
     ff_ps_init();
 }

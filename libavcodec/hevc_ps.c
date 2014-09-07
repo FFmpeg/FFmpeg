@@ -527,8 +527,7 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
 
     vui->default_display_window_flag = get_bits1(gb);
     // Backup context in case an alternate header is detected
-    if( get_bits_left(gb) >= 66)
-        memcpy(&backup, gb, sizeof(backup));
+    memcpy(&backup, gb, sizeof(backup));
 
     if (vui->default_display_window_flag) {
         //TODO: * 2 is only valid for 420

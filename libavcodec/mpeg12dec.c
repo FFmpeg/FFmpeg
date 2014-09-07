@@ -1120,10 +1120,9 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
 
     ff_mpv_decode_defaults(s2);
+    ff_mpv_decode_init(s2, avctx);
 
     s->mpeg_enc_ctx.avctx  = avctx;
-    s->mpeg_enc_ctx.flags  = avctx->flags;
-    s->mpeg_enc_ctx.flags2 = avctx->flags2;
 
     /* we need some permutation to store matrices,
      * until the decoder sets the real permutation. */
