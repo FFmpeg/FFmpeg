@@ -91,7 +91,7 @@ static int mpegps_probe(AVProbeData *p)
         score= AVPROBE_SCORE_MAX/4;
 
     if(sys>invalid && sys*9 <= pspack*10)
-        return (audio > 12 || vid > 3 || pspack > 2) ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
+        return (audio > 12 || vid > 3 || pspack > 2) ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4+1; // +1 for .mpg
     if(pspack > invalid && (priv1+vid+audio)*10 >= pspack*9)
         return pspack > 2 ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
     if((!!vid ^ !!audio) && (audio > 4 || vid > 1) && !sys && !pspack && p->buf_size>2048 && vid + audio > invalid) /* PES stream */
