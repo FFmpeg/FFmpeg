@@ -662,8 +662,10 @@ static int seg_write_header(AVFormatContext *s)
     if (av_dict_count(options)) {
         av_log(s, AV_LOG_ERROR,
                "Some of the provided format options in '%s' are not recognized\n", seg->format_options_str);
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
-    av_dict_free(&options);
+
     if (ret < 0) {
         avio_close(oc->pb);
         goto fail;
@@ -681,6 +683,7 @@ static int seg_write_header(AVFormatContext *s)
     }
 
 fail:
+    av_dict_free(&options);
     if (ret) {
         if (seg->list)
             avio_close(seg->list_pb);
