@@ -32,6 +32,10 @@
 #include "cabac.h"
 #include "config.h"
 
+#ifndef UNCHECKED_BITSTREAM_READER
+#define UNCHECKED_BITSTREAM_READER !CONFIG_SAFE_BITSTREAM_READER
+#endif
+
 #if ARCH_AARCH64
 #   include "aarch64/cabac.h"
 #endif
