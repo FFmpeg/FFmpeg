@@ -234,7 +234,8 @@ enum dirac_subband {
     subband_ll = 0,
     subband_hl = 1,
     subband_lh = 2,
-    subband_hh = 3
+    subband_hh = 3,
+    subband_nb,
 };
 
 static const uint8_t default_qmat[][4][4] = {
