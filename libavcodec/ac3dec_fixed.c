@@ -53,18 +53,6 @@
 #include "ac3dec.h"
 
 
-/**
- * Table for center mix levels
- * reference: Section 5.4.2.4 cmixlev
- */
-static const uint8_t center_levels[4] = { 4, 5, 6, 5 };
-
-/**
- * Table for surround mix levels
- * reference: Section 5.4.2.5 surmixlev
- */
-static const uint8_t surround_levels[4] = { 4, 6, 7, 6 };
-
 static const int end_freq_inv_tab[8] =
 {
     50529027, 44278013, 39403370, 32292987, 27356480, 23729101, 20951060, 18755316
