@@ -69,10 +69,8 @@ cglobal idet_filter_line, 4, 5, 0, a, b, c, width, index
     CMP       widthd, indexd
     jg        .loop
 
-    mova      m0, m_sum
-    psrlq     m_sum, 0x20
-    paddd     m0, m_sum
-    movd      eax, m0
+    HADDD     m_sum, m0
+    movd      eax, m_sum
     RET
 %endmacro
 
@@ -123,18 +121,7 @@ cglobal idet_filter_line_16bit, 4, 5, 8, a, b, c, width, index
     paddd          m_sum, m5
     jl        .loop_16bit
 
-    mova      m2, m_sum
-%if mmsize == 16
-    psrldq    m2, 4
-    paddd     m_sum, m2
-    psrldq    m2, 4
-    paddd     m_sum, m2
-    psrldq    m2, 4
-    paddd     m_sum, m2
-%else
-    psrlq     m2, 32
-    paddd     m_sum, m2
-%endif
+    HADDD     m_sum, m2
     movd      eax, m_sum
     RET
 %endmacro
