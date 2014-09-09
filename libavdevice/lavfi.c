@@ -119,7 +119,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         AVIOContext *avio = NULL;
         ret = avio_open(&avio, lavfi->graph_filename, AVIO_FLAG_READ);
         if (ret < 0)
-            FAIL(ret);
+            goto end;
         av_bprint_init(&graph_file_pb, 0, AV_BPRINT_SIZE_UNLIMITED);
         ret = avio_read_to_bprint(avio, &graph_file_pb, INT_MAX);
         avio_close(avio);
@@ -128,10 +128,10 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
             ret = AVERROR(ENOMEM);
         if (ret) {
             av_bprint_finalize(&graph_file_pb, NULL);
-            FAIL(ret);
+            goto end;
         }
         if ((ret = av_bprint_finalize(&graph_file_pb, &lavfi->graph_str)))
-            FAIL(ret);
+            goto end;
     }
 
     if (!lavfi->graph_str)
@@ -143,7 +143,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
 
     if ((ret = avfilter_graph_parse_ptr(lavfi->graph, lavfi->graph_str,
                                     &input_links, &output_links, avctx)) < 0)
-        FAIL(ret);
+        goto end;
 
     if (input_links) {
         av_log(avctx, AV_LOG_ERROR,
@@ -252,12 +252,12 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
 
         lavfi->sinks[i] = sink;
         if ((ret = avfilter_link(inout->filter_ctx, inout->pad_idx, sink, 0)) < 0)
-            FAIL(ret);
+            goto end;
     }
 
     /* configure the graph */
     if ((ret = avfilter_graph_config(lavfi->graph, avctx)) < 0)
-        FAIL(ret);
+        goto end;
 
     if (lavfi->dump_graph) {
         char *dump = avfilter_graph_dump(lavfi->graph, lavfi->dump_graph);
