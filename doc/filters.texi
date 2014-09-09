@@ -4174,7 +4174,7 @@ drawtext='fontfile=Linux Libertine O-40\:style=Semibold:text=FFmpeg'
 @item
 Print the date of a real-time encoding (see strftime(3)):
 @example
-drawtext='fontfile=FreeSans.ttf:text=%@{localtime:%a %b %d %Y@}'
+drawtext='fontfile=FreeSans.ttf:text=%@{localtime\:%a %b %d %Y@}'
 @end example
 
 @item
