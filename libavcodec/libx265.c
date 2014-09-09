@@ -111,6 +111,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->fpsDenom        = avctx->time_base.num * avctx->ticks_per_frame;
     ctx->params->sourceWidth     = avctx->width;
     ctx->params->sourceHeight    = avctx->height;
+    ctx->params->bEnablePsnr     = !!(avctx->flags & CODEC_FLAG_PSNR);
 
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
         av_reduce(&sar_num, &sar_den,
