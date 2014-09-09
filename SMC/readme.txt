@@ -24,9 +24,13 @@ Currently only up to VS2010 is supported on the web page so just download that.
 	a) Open vsyasm.props that you just extracted
 	b) Replace the 1 occurrence of [Input] with "%(FullPath)"  (make sure to include the "s)
 	
-4) ???
+4) In order to use version 1.3.0 of vsyasm you will also have to fix a error in the distributed build customizations
+    a) Open vsyasm.props that you just extracted
+    b) Replace the 1 occurrence of $(Platform) with win$(PlatformArchitecture)
+    
+5) ???
 
-5) Profit
+6) Profit
 
 
 *** Generating custom project files ***
