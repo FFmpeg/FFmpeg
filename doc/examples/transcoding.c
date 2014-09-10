@@ -385,17 +385,9 @@ static int encode_write_frame(AVFrame *filt_frame, unsigned int stream_index, in
 
     /* prepare packet for muxing */
     enc_pkt.stream_index = stream_index;
-    enc_pkt.dts = av_rescale_q_rnd(enc_pkt.dts,
-            ofmt_ctx->streams[stream_index]->codec->time_base,
-            ofmt_ctx->streams[stream_index]->time_base,
-            AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-    enc_pkt.pts = av_rescale_q_rnd(enc_pkt.pts,
-            ofmt_ctx->streams[stream_index]->codec->time_base,
-            ofmt_ctx->streams[stream_index]->time_base,
-            AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-    enc_pkt.duration = av_rescale_q(enc_pkt.duration,
-            ofmt_ctx->streams[stream_index]->codec->time_base,
-            ofmt_ctx->streams[stream_index]->time_base);
+    av_packet_rescale_ts(&enc_pkt,
+                         ofmt_ctx->streams[stream_index]->codec->time_base,
+                         ofmt_ctx->streams[stream_index]->time_base);
 
     av_log(NULL, AV_LOG_DEBUG, "Muxing frame\n");
     /* mux encoded frame */
@@ -509,14 +501,9 @@ int main(int argc, char **argv)
                 ret = AVERROR(ENOMEM);
                 break;
             }
-            packet.dts = av_rescale_q_rnd(packet.dts,
-                    ifmt_ctx->streams[stream_index]->time_base,
-                    ifmt_ctx->streams[stream_index]->codec->time_base,
-                    AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-            packet.pts = av_rescale_q_rnd(packet.pts,
-                    ifmt_ctx->streams[stream_index]->time_base,
-                    ifmt_ctx->streams[stream_index]->codec->time_base,
-                    AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+            av_packet_rescale_ts(&packet,
+                                 ifmt_ctx->streams[stream_index]->time_base,
+                                 ifmt_ctx->streams[stream_index]->codec->time_base);
             dec_func = (type == AVMEDIA_TYPE_VIDEO) ? avcodec_decode_video2 :
                 avcodec_decode_audio4;
             ret = dec_func(ifmt_ctx->streams[stream_index]->codec, frame,
@@ -538,14 +525,9 @@ int main(int argc, char **argv)
             }
         } else {
             /* remux this frame without reencoding */
-            packet.dts = av_rescale_q_rnd(packet.dts,
-                    ifmt_ctx->streams[stream_index]->time_base,
-                    ofmt_ctx->streams[stream_index]->time_base,
-                    AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-            packet.pts = av_rescale_q_rnd(packet.pts,
-                    ifmt_ctx->streams[stream_index]->time_base,
-                    ofmt_ctx->streams[stream_index]->time_base,
-                    AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+            av_packet_rescale_ts(&packet,
+                                 ifmt_ctx->streams[stream_index]->time_base,
+                                 ofmt_ctx->streams[stream_index]->time_base);
 
             ret = av_interleaved_write_frame(ofmt_ctx, &packet);
             if (ret < 0)
