@@ -1445,71 +1445,6 @@ static int mkv_blockgroup_size(int pkt_size)
     return size;
 }
 
-static int ass_get_duration(const uint8_t *p)
-{
-    int sh, sm, ss, sc, eh, em, es, ec;
-    uint64_t start, end;
-
-    if (sscanf(p, "%*[^,],%d:%d:%d%*c%d,%d:%d:%d%*c%d",
-               &sh, &sm, &ss, &sc, &eh, &em, &es, &ec) != 8)
-        return 0;
-    start = 3600000LL * sh + 60000LL * sm + 1000LL * ss + 10LL * sc;
-    end   = 3600000LL * eh + 60000LL * em + 1000LL * es + 10LL * ec;
-    return end - start;
-}
-
-#if FF_API_ASS_SSA
-/* Writes the contents of pkt to a block, using the data starting at *datap.
- * If pkt corresponds to more than one block, this writes the contents of the first block
- * (starting from *datap) and updates *datap so it points to the beginning of the data
- * corresponding to the next block.
- */
-static int mkv_write_ass_block(AVFormatContext *s, AVIOContext *pb,
-                               AVPacket *pkt, uint8_t **datap)
-{
-    MatroskaMuxContext *mkv = s->priv_data;
-    int i, layer = 0, size, line_size, data_size = pkt->size - (*datap - pkt->data);
-    uint8_t *start, *end, *data = *datap;
-    ebml_master blockgroup;
-    char buffer[2048];
-
-        int duration = ass_get_duration(data);
-        end          = memchr(data, '\n', data_size);
-        size         = line_size = end ? end - data + 1 : data_size;
-        size        -= end ? (end[-1] == '\r') + 1 : 0;
-        start        = data;
-        for (i = 0; i < 3; i++, start++)
-            if (!(start = memchr(start, ',', size - (start - data))))
-                return duration;
-        size -= start - data;
-        sscanf(data, "Dialogue: %d,", &layer);
-        i = snprintf(buffer, sizeof(buffer), "%" PRId64 ",%d,",
-                     s->streams[pkt->stream_index]->nb_frames, layer);
-        size = FFMIN(i + size, sizeof(buffer));
-        memcpy(buffer + i, start, size - i);
-
-        av_log(s, AV_LOG_DEBUG,
-               "Writing block at offset %" PRIu64 ", size %d, "
-               "pts %" PRId64 ", duration %d\n",
-               avio_tell(pb), size, pkt->pts, duration);
-        blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP,
-                                       mkv_blockgroup_size(size));
-        put_ebml_id(pb, MATROSKA_ID_BLOCK);
-        put_ebml_num(pb, size + 4, 0);
-        // this assumes stream_index is less than 126
-        avio_w8(pb, 0x80 | (pkt->stream_index + 1));
-        avio_wb16(pb, pkt->pts - mkv->cluster_pts);
-        avio_w8(pb, 0);
-        avio_write(pb, buffer, size);
-        put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
-        end_ebml_master(pb, blockgroup);
-
-        *datap += line_size;
-
-    return duration;
-}
-#endif
-
 static int mkv_strip_wavpack(const uint8_t *src, uint8_t **pdst, int *size)
 {
     uint8_t *dst;
@@ -1780,7 +1715,6 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
     int ret;
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
     int64_t relative_packet_pos;
-    uint8_t *data_offset = pkt->data;
     int dash_tracknum = mkv->is_dash ? mkv->dash_track_number : pkt->stream_index + 1;
 
     if (ts == AV_NOPTS_VALUE) {
@@ -1822,15 +1756,6 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
             ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, dash_tracknum, ts, mkv->cluster_pos, relative_packet_pos, -1);
             if (ret < 0) return ret;
         }
-#if FF_API_ASS_SSA
-    } else if (codec->codec_id == AV_CODEC_ID_SSA) {
-        while (data_offset < pkt->data + pkt->size) {
-            duration = mkv_write_ass_block(s, pb, pkt, &data_offset);
-            ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, dash_tracknum, ts, mkv->cluster_pos, relative_packet_pos, duration);
-            if (ret < 0) return ret;
-            relative_packet_pos = avio_tell(s->pb) - mkv->cluster.pos;
-        }
-#endif
     } else {
     if (codec->codec_id == AV_CODEC_ID_SRT) {
         duration = mkv_write_srt_blocks(s, pb, pkt);
@@ -2122,11 +2047,7 @@ AVOutputFormat ff_matroska_muxer = {
          ff_codec_bmp_tags, ff_codec_wav_tags,
          additional_audio_tags, additional_video_tags, 0
     },
-#if FF_API_ASS_SSA
-    .subtitle_codec    = AV_CODEC_ID_SSA,
-#else
     .subtitle_codec    = AV_CODEC_ID_ASS,
-#endif
     .query_codec       = mkv_query_codec,
     .priv_class        = &matroska_class,
 };

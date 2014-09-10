@@ -25,8 +25,6 @@
 
 SECTION_TEXT
 
-%if ARCH_X86_32
-
 ; Implementation that does 8-bytes at a time using single-word operations.
 %macro IDET_FILTER_LINE 1
 INIT_MMX %1
@@ -71,18 +69,73 @@ cglobal idet_filter_line, 4, 5, 0, a, b, c, width, index
     CMP       widthd, indexd
     jg        .loop
 
-    mova      m0, m_sum
-    psrlq     m_sum, 0x20
-    paddd     m0, m_sum
-    movd      eax, m0
+    HADDD     m_sum, m0
+    movd      eax, m_sum
     RET
 %endmacro
 
+%if ARCH_X86_32
 IDET_FILTER_LINE mmxext
 IDET_FILTER_LINE mmx
 %endif
 
+;******************************************************************************
+; 16bit implementation that does 4/8-pixels at a time
+
+%macro PABS_DIFF_WD 3    ; a, b, junk   , output=a
+  psubusw   %3, %2, %1
+  psubusw   %1, %2
+  por       %1, %3
+
+  mova      %2, %1
+  punpcklwd %1, m_zero
+  punpckhwd %2, m_zero
+  paddd     %1, %2
+%endmacro
+
+%macro IDET_FILTER_LINE_16BIT 1   ; %1=increment (4 or 8 words)
+cglobal idet_filter_line_16bit, 4, 5, 8, a, b, c, width, index
+    xor       indexq, indexq
+%define m_zero m1
+%define m_sum  m0
+    pxor      m_sum, m_sum
+    pxor      m_zero, m_zero
+
+.loop_16bit:
+    movu      m2, [bq + indexq * 2]  ; B
+    movu      m3, [aq + indexq * 2]  ; A
+    mova      m6, m2
+    psubusw   m5, m2, m3             ; ba
+
+    movu      m4, [cq + indexq * 2]  ; C
+    add       indexq, %1
+    psubusw   m3, m2                 ; ab
+    CMP       indexd, widthd
+
+    psubusw   m6, m4                 ; bc
+    psubusw   m4, m2                 ; cb
+
+    PABS_DIFF_WD   m3, m6, m7        ; |ab - bc|
+    PABS_DIFF_WD   m5, m4, m7        ; |ba - cb|
+    paddd          m_sum, m3
+    paddd          m_sum, m5
+    jl        .loop_16bit
+
+    HADDD     m_sum, m2
+    movd      eax, m_sum
+    RET
+%endmacro
+
+INIT_XMM sse2
+IDET_FILTER_LINE_16BIT 8
+%if ARCH_X86_32
+INIT_MMX mmx
+IDET_FILTER_LINE_16BIT 4
+%endif
+
+;******************************************************************************
 ; SSE2 8-bit implementation that does 16-bytes at a time:
+
 INIT_XMM sse2
 cglobal idet_filter_line, 4, 6, 7, a, b, c, width, index, total
     xor       indexq, indexq

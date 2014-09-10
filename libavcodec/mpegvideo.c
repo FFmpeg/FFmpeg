@@ -460,10 +460,10 @@ static int frame_size_alloc(MpegEncContext *s, int linesize)
     // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->edge_emu_buffer, alloc_size * 4 * 68,
+    FF_ALLOCZ_ARRAY_OR_GOTO(s->avctx, s->edge_emu_buffer, alloc_size, 4 * 68,
                       fail);
 
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->me.scratchpad, alloc_size * 4 * 16 * 2,
+    FF_ALLOCZ_ARRAY_OR_GOTO(s->avctx, s->me.scratchpad, alloc_size, 4 * 16 * 2,
                       fail)
     s->me.temp         = s->me.scratchpad;
     s->rd_scratchpad   = s->me.scratchpad;
@@ -1403,7 +1403,7 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
  * Is used during resolution changes to avoid a full reinitialization of the
  * codec.
  */
-static int free_context_frame(MpegEncContext *s)
+static void free_context_frame(MpegEncContext *s)
 {
     int i, j, k;
 
@@ -1450,13 +1450,14 @@ static int free_context_frame(MpegEncContext *s)
     av_freep(&s->bits_tab);
 
     s->linesize = s->uvlinesize = 0;
-
-    return 0;
 }
 
 int ff_mpv_common_frame_size_change(MpegEncContext *s)
 {
     int i, err = 0;
+
+    if (!s->context_initialized)
+        return AVERROR(EINVAL);
 
     if (s->slice_context_count > 1) {
         for (i = 0; i < s->slice_context_count; i++) {
@@ -1468,8 +1469,7 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
     } else
         free_duplicate_context(s);
 
-    if ((err = free_context_frame(s)) < 0)
-        return err;
+    free_context_frame(s);
 
     if (s->picture)
         for (i = 0; i < MAX_PICTURE_COUNT; i++) {
@@ -1487,8 +1487,8 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
         s->mb_height = (s->height + 15) / 16;
 
     if ((s->width || s->height) &&
-        av_image_check_size(s->width, s->height, 0, s->avctx))
-        return AVERROR_INVALIDDATA;
+        (err = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
+        goto fail;
 
     if ((err = init_context_frame(s)))
         goto fail;
@@ -1504,7 +1504,7 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
             }
 
             for (i = 0; i < nb_slices; i++) {
-                if (init_duplicate_context(s->thread_context[i]) < 0)
+                if ((err = init_duplicate_context(s->thread_context[i])) < 0)
                     goto fail;
                     s->thread_context[i]->start_mb_y =
                         (s->mb_height * (i) + nb_slices / 2) / nb_slices;

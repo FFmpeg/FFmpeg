@@ -145,6 +145,7 @@ Component options:
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
+  --disable-faan           disable floating point AAN (I)DCT code
   --disable-pixelutils     disable pixel utils in libavutil
 
 Hardware accelerators:
@@ -1449,6 +1450,7 @@ SUBSYSTEM_LIST="
     dct
     dwt
     error_resilience
+    faan
     fast_unaligned
     fft
     lsp
@@ -1823,6 +1825,8 @@ CONFIG_EXTRA="
     cabac
     dvprofile
     exif
+    faandct
+    faanidct
     fdctdsp
     frame_thread_encoder
     gcrypt
@@ -2024,6 +2028,8 @@ threads_if_any="$THREADS_LIST"
 # subsystems
 dct_select="rdft"
 error_resilience_select="me_cmp"
+faandct_deps="faan fdctdsp"
+faanidct_deps="faan idctdsp"
 frame_thread_encoder_deps="encoders threads"
 intrax8_select="error_resilience"
 mdct_select="fft"
@@ -2693,6 +2699,7 @@ enable stripping
 enable asm
 enable debug
 enable doc
+enable faan faandct faanidct
 enable optimizations
 enable runtime_cpudetect
 enable safe_bitstream_reader

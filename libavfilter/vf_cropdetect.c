@@ -143,7 +143,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             }
         }
 
-        for (y = frame->height - 1; y > s->y2; y--) {
+        for (y = frame->height - 1; y > FFMAX(s->y2, s->y1); y--) {
             if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->width, bpp) > s->limit) {
                 s->y2 = y;
                 break;
@@ -157,7 +157,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             }
         }
 
-        for (y = frame->width - 1; y > s->x2; y--) {
+        for (y = frame->width - 1; y > FFMAX(s->x2, s->x1); y--) {
             if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->height, bpp) > s->limit) {
                 s->x2 = y;
                 break;

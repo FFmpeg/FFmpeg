@@ -72,7 +72,9 @@ typedef struct {
     int segment_count;     ///< number of segment files already written
     AVOutputFormat *oformat;
     AVFormatContext *avf;
-    char *format;          ///< format to use for output segment files
+    char *format;              ///< format to use for output segment files
+    char *format_options_str;  ///< format options to use for output segment files
+    AVDictionary *format_options;
     char *list;            ///< filename for the segment list file
     int   list_flags;      ///< flags affecting list generation
     int   list_size;       ///< number of entries for the segment list file
@@ -563,6 +565,7 @@ static int seg_write_header(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = NULL;
+    AVDictionary *options = NULL;
     int ret;
 
     seg->segment_count = 0;
@@ -591,6 +594,15 @@ static int seg_write_header(AVFormatContext *s)
                    "Invalid time duration specification '%s' for segment_time option\n",
                    seg->time_str);
             return ret;
+        }
+    }
+
+    if (seg->format_options_str) {
+        ret = av_dict_parse_string(&seg->format_options, seg->format_options_str, "=", ":", 0);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Could not parse format options list '%s'\n",
+                   seg->format_options_str);
+            goto fail;
         }
     }
 
@@ -645,7 +657,16 @@ static int seg_write_header(AVFormatContext *s)
             goto fail;
     }
 
-    if ((ret = avformat_write_header(oc, NULL)) < 0) {
+    av_dict_copy(&options, seg->format_options, 0);
+    ret = avformat_write_header(oc, &options);
+    if (av_dict_count(options)) {
+        av_log(s, AV_LOG_ERROR,
+               "Some of the provided format options in '%s' are not recognized\n", seg->format_options_str);
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    if (ret < 0) {
         avio_close(oc->pb);
         goto fail;
     }
@@ -662,6 +683,7 @@ static int seg_write_header(AVFormatContext *s)
     }
 
 fail:
+    av_dict_free(&options);
     if (ret) {
         if (seg->list)
             avio_close(seg->list_pb);
@@ -799,6 +821,7 @@ fail:
     if (seg->list)
         avio_close(seg->list_pb);
 
+    av_dict_free(&seg->format_options);
     av_opt_free(seg);
     av_freep(&seg->times);
     av_freep(&seg->frames);
@@ -820,6 +843,7 @@ fail:
 static const AVOption options[] = {
     { "reference_stream",  "set reference stream", OFFSET(reference_stream_specifier), AV_OPT_TYPE_STRING, {.str = "auto"}, CHAR_MIN, CHAR_MAX, E },
     { "segment_format",    "set container format used for the segments", OFFSET(format),  AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
+    { "segment_format_options", "set list of options for the container format used for the segments", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
     { "segment_list",      "set the segment list filename",              OFFSET(list),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
 
     { "segment_list_flags","set flags affecting segment list generation", OFFSET(list_flags), AV_OPT_TYPE_FLAGS, {.i64 = SEGMENT_LIST_FLAG_CACHE }, 0, UINT_MAX, E, "list_flags"},

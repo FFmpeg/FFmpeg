@@ -14,7 +14,6 @@ version <next>:
 - Matroska 3D support thorugh side data
 - HTML generation using texi2html is deprecated in favor of makeinfo/texi2any
 - silenceremove filter
-- ffplay now exits by default at the end of playback
 
 
 version 2.3:

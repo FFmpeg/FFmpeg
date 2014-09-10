@@ -26,8 +26,9 @@
 #include "avcodec.h"
 
 /* minimum number of bytes to read from a DV stream in order to
-   determine the profile */
-#define DV_PROFILE_BYTES (6*80) /* 6 DIF blocks */
+ * determine the profile */
+#define DV_PROFILE_BYTES (6 * 80) /* 6 DIF blocks */
+
 
 /*
  * AVDVProfile is used to express the differences between various

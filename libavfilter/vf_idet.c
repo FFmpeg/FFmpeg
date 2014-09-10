@@ -61,7 +61,7 @@ int ff_idet_filter_line_c(const uint8_t *a, const uint8_t *b, const uint8_t *c, 
     return ret;
 }
 
-static int filter_line_c_16bit(const uint16_t *a, const uint16_t *b, const uint16_t *c, int w)
+int ff_idet_filter_line_c_16bit(const uint16_t *a, const uint16_t *b, const uint16_t *c, int w)
 {
     int x;
     int ret=0;
@@ -169,8 +169,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
 
     if (!idet->csp)
         idet->csp = av_pix_fmt_desc_get(link->format);
-    if (idet->csp->comp[0].depth_minus1 / 8 == 1)
-        idet->filter_line = (void*)filter_line_c_16bit;
+    if (idet->csp->comp[0].depth_minus1 / 8 == 1){
+        idet->filter_line = (ff_idet_filter_func)ff_idet_filter_line_c_16bit;
+        if (ARCH_X86)
+            ff_idet_init_x86(idet, 1);
+    }
 
     filter(ctx);
 
@@ -245,7 +248,7 @@ static av_cold int init(AVFilterContext *ctx)
     idet->filter_line = ff_idet_filter_line_c;
 
     if (ARCH_X86)
-        ff_idet_init_x86(idet);
+        ff_idet_init_x86(idet, 0);
 
     return 0;
 }

@@ -469,6 +469,7 @@ Muxers/Demuxers:
   sbgdec.c                              Nicolas George
   sdp.c                                 Martin Storsjo
   segafilm.c                            Mike Melanson
+  segment.c                             Stefano Sabatini
   siff.c                                Kostya Shishkov
   smacker.c                             Kostya Shishkov
   smjpeg*                               Paul B Mahol

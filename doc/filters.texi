@@ -4083,11 +4083,11 @@ value.
 @item expr_int_format, eif
 Evaluate the expression's value and output as formatted integer.
 
-First argument is expression to be evaluated, same as for @var{expr} function.
-Second argument specifies output format. Allowed values are 'x', 'X', 'd' and
-'u', they are treated exactly as in printf function.
-Third parameter is optional and sets the number of positions taken by output.
-Effectively this allows to add padding with zeros from the left.
+The first argument is the expression to be evaluated, just as for the @var{expr} function.
+The second argument specifies the output format. Allowed values are 'x', 'X', 'd' and
+'u'. They are treated exactly as in the printf function.
+The third parameter is optional and sets the number of positions taken by the output.
+It can be used to add padding with zeros from the left.
 
 @item gmtime
 The time at which the filter is running, expressed in UTC.

@@ -681,6 +681,8 @@ int main(int argc, char **argv)
         } else if (argv[i][0] == '-') {
             return usage(argv[0], 1);
         } else {
+            if (!basename)
+                ismf = 0;
             if (handle_file(&tracks, argv[i], split, ismf,
                             basename, output_prefix))
                 return 1;

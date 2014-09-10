@@ -389,8 +389,16 @@ static void paint_mouse_pointer(XImage *image, AVFormatContext *s1)
      * Anyone who performs further investigation of the xlib API likely risks
      * permanent brain damage. */
     uint8_t *pix = image->data;
-    Window w;
+    Window root;
     XSetWindowAttributes attr;
+    Bool pointer_on_screen;
+    Window w;
+    int _;
+
+    root = DefaultRootWindow(dpy);
+    pointer_on_screen = XQueryPointer(dpy, root, &w, &w, &_, &_, &_, &_, &_);
+    if (!pointer_on_screen)
+        return;
 
     /* Code doesn't currently support 16-bit or PAL8 */
     if (image->bits_per_pixel != 24 && image->bits_per_pixel != 32)
@@ -398,9 +406,8 @@ static void paint_mouse_pointer(XImage *image, AVFormatContext *s1)
 
     if (!s->c)
         s->c = XCreateFontCursor(dpy, XC_left_ptr);
-    w = DefaultRootWindow(dpy);
     attr.cursor = s->c;
-    XChangeWindowAttributes(dpy, w, CWCursor, &attr);
+    XChangeWindowAttributes(dpy, root, CWCursor, &attr);
 
     xcim = XFixesGetCursorImage(dpy);
     if (!xcim) {

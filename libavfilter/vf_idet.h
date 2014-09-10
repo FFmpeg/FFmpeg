@@ -24,6 +24,8 @@
 
 #define HIST_SIZE 4
 
+typedef int (*ff_idet_filter_func)(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w);
+
 typedef enum {
     TFF,
     BFF,
@@ -45,14 +47,15 @@ typedef struct {
     AVFrame *cur;
     AVFrame *next;
     AVFrame *prev;
-    int (*filter_line)(const uint8_t *prev, const uint8_t *cur, const uint8_t *next, int w);
+    ff_idet_filter_func filter_line;
 
     const AVPixFmtDescriptor *csp;
 } IDETContext;
 
-void ff_idet_init_x86(IDETContext *idet);
+void ff_idet_init_x86(IDETContext *idet, int for_16b);
 
 /* main fall-back for left-over */
 int ff_idet_filter_line_c(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w);
+int ff_idet_filter_line_c_16bit(const uint16_t *a, const uint16_t *b, const uint16_t *c, int w);
 
 #endif

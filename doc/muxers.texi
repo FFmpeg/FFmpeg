@@ -804,6 +804,11 @@ reference stream. The default value is @code{auto}.
 Override the inner container format, by default it is guessed by the filename
 extension.
 
+@item segment_format_options @var{options_list}
+Set output format options using a :-separated list of key=value
+parameters. Values containing the @code{:} special character must be
+escaped.
+
 @item segment_list @var{name}
 Generate also a listfile named @var{name}. If not specified no
 listfile is generated.
@@ -951,7 +956,7 @@ argument must be a time duration specification, and defaults to 0.
 
 @itemize
 @item
-To remux the content of file @file{in.mkv} to a list of segments
+Remux the content of file @file{in.mkv} to a list of segments
 @file{out-000.nut}, @file{out-001.nut}, etc., and write the list of
 generated segments to @file{out.list}:
 @example
@@ -959,14 +964,20 @@ ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.list out%03d.nu
 @end example
 
 @item
-As the example above, but segment the input file according to the split
-points specified by the @var{segment_times} option:
+Segment input and set output format options for the output segments:
+@example
+ffmpeg -i in.mkv -f segment -segment_time 10 -segment_format_options movflags=+faststart out%03d.mp4
+@end example
+
+@item
+Segment the input file according to the split points specified by the
+@var{segment_times} option:
 @example
 ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_times 1,2,3,5,8,13,21 out%03d.nut
 @end example
 
 @item
-As the example above, but use the @command{ffmpeg} @option{force_key_frames}
+Use the @command{ffmpeg} @option{force_key_frames}
 option to force key frames in the input at the specified location, together
 with the segment option @option{segment_time_delta} to account for
 possible roundings operated when setting key frame times.
@@ -985,7 +996,7 @@ ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_fr
 @end example
 
 @item
-To convert the @file{in.mkv} to TS segments using the @code{libx264}
+Convert the @file{in.mkv} to TS segments using the @code{libx264}
 and @code{libfaac} encoders:
 @example
 ffmpeg -i in.mkv -map 0 -codec:v libx264 -codec:a libfaac -f ssegment -segment_list out.list out%03d.ts
