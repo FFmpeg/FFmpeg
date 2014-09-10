@@ -509,7 +509,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
         /* stereo: 4 bytes (8 samples) for left, 4 bytes for right */
         if (avctx->trellis > 0) {
-            FF_ALLOC_OR_GOTO(avctx, buf, avctx->channels * blocks * 8, error);
+            FF_ALLOC_ARRAY_OR_GOTO(avctx, buf, avctx->channels, blocks * 8, error);
             for (ch = 0; ch < avctx->channels; ch++) {
                 adpcm_compress_trellis(avctx, &samples_p[ch][1],
                                        buf + ch * blocks * 8, &c->status[ch],
