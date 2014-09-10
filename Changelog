@@ -1,6 +1,26 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.16:
+
+- avcodec: Add more missing #includes for ff_get_buffer()
+- ffv1dec: check that global parameters do not change in version 0/1
+- arm: dsputil: fix overreads in put/avg_pixels functions
+- arm: dsputil: prettify some conditional instructions in put_pixels macros
+- arm/neon: dsputil: use correct size specifiers on vld1/vst1
+- vp8: avoid race condition on segment map.
+- nutdec: Remove unused and broken debug function stub
+- h264_refs: Fix debug tprintf argument types
+- swscale: Remove two bogus asserts
+- elbg: Fix an assert
+- mpegvideo: remove last_picture_ptr / h264 assert.
+- parser: Don't use pc as context for av_dlog
+- h264: Remove an assert on current_picture_ptr being null
+- svq1enc: Set picture_structure correctly
+- adpcmenc: Calculate the IMA_QT predictor without overflow
+- ffmpeg: Clarify wording of ffmpeg --> avconv deprecation message
+- doc: Fix syntax and logical errors in avconv stream combination example
+
 version 0.8.15:
 
 - avcodec: Introduce ff_get_buffer
