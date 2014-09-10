@@ -1,5 +1,13 @@
 Releases are sorted from youngest to oldest.
 
+version 9.17:
+- ffv1dec: check that global parameters do not change in version 0/1
+- mpegenc: limit the maximum muxrate
+- avconv: fix the muxrate values for -target
+- avconv: fix parsing the AVOptions for -target
+- pulse: Add a wallclock option to be compatible with other other captures
+- doc: Fix syntax and logical errors in avconv stream combination example
+
 version 9.16:
 - vp3: Copy all 3 frames for thread updates (CVE-2011-3934)
 - mpegts: Do not try to write a PMT larger than SECTION_SIZE (CVE-2014-2263)
