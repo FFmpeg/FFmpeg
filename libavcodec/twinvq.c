@@ -546,24 +546,24 @@ static av_cold int init_mdct_win(TwinVQContext *tctx)
             return ret;
     }
 
-    FF_ALLOC_OR_GOTO(tctx->avctx, tctx->tmp_buf,
-                     mtab->size * sizeof(*tctx->tmp_buf), alloc_fail);
+    FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->tmp_buf,
+                     mtab->size, sizeof(*tctx->tmp_buf), alloc_fail);
 
-    FF_ALLOC_OR_GOTO(tctx->avctx, tctx->spectrum,
-                     2 * mtab->size * channels * sizeof(*tctx->spectrum),
+    FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->spectrum,
+                     2 * mtab->size, channels * sizeof(*tctx->spectrum),
                      alloc_fail);
-    FF_ALLOC_OR_GOTO(tctx->avctx, tctx->curr_frame,
-                     2 * mtab->size * channels * sizeof(*tctx->curr_frame),
+    FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->curr_frame,
+                     2 * mtab->size, channels * sizeof(*tctx->curr_frame),
                      alloc_fail);
-    FF_ALLOC_OR_GOTO(tctx->avctx, tctx->prev_frame,
-                     2 * mtab->size * channels * sizeof(*tctx->prev_frame),
+    FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->prev_frame,
+                     2 * mtab->size, channels * sizeof(*tctx->prev_frame),
                      alloc_fail);
 
     for (i = 0; i < 3; i++) {
         int m       = 4 * mtab->size / mtab->fmode[i].sub;
         double freq = 2 * M_PI / m;
-        FF_ALLOC_OR_GOTO(tctx->avctx, tctx->cos_tabs[i],
-                         (m / 4) * sizeof(*tctx->cos_tabs[i]), alloc_fail);
+        FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->cos_tabs[i],
+                         (m / 4), sizeof(*tctx->cos_tabs[i]), alloc_fail);
 
         for (j = 0; j <= m / 8; j++)
             tctx->cos_tabs[i][j] = cos((2 * j + 1) * freq);
