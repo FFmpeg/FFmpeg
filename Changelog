@@ -1,6 +1,12 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.15:
+
+- avcodec: Introduce ff_get_buffer
+- configure: Check for -Werror parameters on clang
+- lavf: Fix leftovers from the ff_get_buffer patch
+
 version 0.8.14:
 
 - vp3: Copy all 3 frames for thread updates (CVE-2011-3934)
