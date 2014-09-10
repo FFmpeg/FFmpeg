@@ -57,7 +57,7 @@ int AC3_NAME(allocate_sample_buffers)(AC3EncodeContext *s)
 
     FF_ALLOC_OR_GOTO(s->avctx, s->windowed_samples, AC3_WINDOW_SIZE *
                      sizeof(*s->windowed_samples), alloc_fail);
-    FF_ALLOC_OR_GOTO(s->avctx, s->planar_samples, s->channels * sizeof(*s->planar_samples),
+    FF_ALLOC_ARRAY_OR_GOTO(s->avctx, s->planar_samples, s->channels, sizeof(*s->planar_samples),
                      alloc_fail);
     for (ch = 0; ch < s->channels; ch++) {
         FF_ALLOCZ_OR_GOTO(s->avctx, s->planar_samples[ch],
