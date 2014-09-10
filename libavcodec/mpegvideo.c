@@ -460,10 +460,10 @@ static int frame_size_alloc(MpegEncContext *s, int linesize)
     // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->edge_emu_buffer, alloc_size * 4 * 68,
+    FF_ALLOCZ_ARRAY_OR_GOTO(s->avctx, s->edge_emu_buffer, alloc_size, 4 * 68,
                       fail);
 
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->me.scratchpad, alloc_size * 4 * 16 * 2,
+    FF_ALLOCZ_ARRAY_OR_GOTO(s->avctx, s->me.scratchpad, alloc_size, 4 * 16 * 2,
                       fail)
     s->me.temp         = s->me.scratchpad;
     s->rd_scratchpad   = s->me.scratchpad;
