@@ -181,6 +181,9 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "dct", true );
     fastToggleConfigValue( "dwt", true );
     fastToggleConfigValue( "error-resilience", true );
+    fastToggleConfigValue( "faan", true );
+    fastToggleConfigValue( "faandct", true );
+    fastToggleConfigValue( "faanidct", true );
     fastToggleConfigValue( "fast_unaligned", true );
     fastToggleConfigValue( "lsp", true );
     fastToggleConfigValue( "lzo", true );
@@ -296,21 +299,29 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
     //Add to config.asm only list
     mASMReplaceValues["ARCH_X86_32"] = "%ifidn __OUTPUT_FORMAT__,x64\n\
 %define ARCH_X86_32 0\n\
+%elifidn __OUTPUT_FORMAT__,win64\n\
+%define ARCH_X86_32 0\n\
 %elifidn __OUTPUT_FORMAT__,win32\n\
 %define ARCH_X86_32 1\n\
 %define PREFIX\n\
 %endif";
     mASMReplaceValues["ARCH_X86_64"] = "%ifidn __OUTPUT_FORMAT__,x64\n\
 %define ARCH_X86_64 1\n\
+%elifidn __OUTPUT_FORMAT__,win64\n\
+%define ARCH_X86_64 1\n\
 %elifidn __OUTPUT_FORMAT__,win32\n\
 %define ARCH_X86_64 0\n\
 %endif";
     mASMReplaceValues["HAVE_ALIGNED_STACK"] = "%ifidn __OUTPUT_FORMAT__,x64\n\
 %define HAVE_ALIGNED_STACK 1\n\
+%elifidn __OUTPUT_FORMAT__,win64\n\
+%define HAVE_ALIGNED_STACK 1\n\
 %elifidn __OUTPUT_FORMAT__,win32\n\
 %define HAVE_ALIGNED_STACK 0\n\
 %endif";
     mASMReplaceValues["HAVE_FAST_64BIT"] = "%ifidn __OUTPUT_FORMAT__,x64\n\
+%define HAVE_FAST_64BIT 1\n\
+%elifidn __OUTPUT_FORMAT__,win64\n\
 %define HAVE_FAST_64BIT 1\n\
 %elifidn __OUTPUT_FORMAT__,win32\n\
 %define HAVE_FAST_64BIT 0\n\
