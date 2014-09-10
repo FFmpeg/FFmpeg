@@ -1094,7 +1094,7 @@ static int video_open(VideoState *is, int force_set_video_mode, VideoPicture *vp
     int w,h;
 
     if (is_full_screen) flags |= SDL_FULLSCREEN;
-    else                flags |= SDL_RESIZABLE;
+    else                flags |= SDL_NOFRAME;
 
     if (vp && vp->width)
         set_default_window_size(vp->width, vp->height, vp->sar);
@@ -1114,6 +1114,7 @@ static int video_open(VideoState *is, int force_set_video_mode, VideoPicture *vp
        && is->height== screen->h && screen->h == h && !force_set_video_mode)
         return 0;
     screen = SDL_SetVideoMode(w, h, 0, flags);
+    
     if (!screen) {
         av_log(NULL, AV_LOG_FATAL, "SDL: could not set video mode - exiting\n");
         do_exit(is);
@@ -3418,7 +3419,7 @@ static void event_loop(VideoState *cur_stream)
             break;
         case SDL_VIDEORESIZE:
                 screen = SDL_SetVideoMode(FFMIN(16383, event.resize.w), event.resize.h, 0,
-                                          SDL_HWSURFACE|SDL_RESIZABLE|SDL_ASYNCBLIT|SDL_HWACCEL);
+                                          SDL_HWSURFACE|SDL_NOFRAME|SDL_ASYNCBLIT|SDL_HWACCEL);
                 if (!screen) {
                     av_log(NULL, AV_LOG_FATAL, "Failed to set video mode\n");
                     do_exit(cur_stream);
