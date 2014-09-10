@@ -3660,9 +3660,10 @@ int main(int argc, char **argv)
     VideoState *is;
     char dummy_videodriver[] = "SDL_VIDEODRIVER=dummy";
 
+    setvbuf(stderr,NULL,_IONBF,0); /* win32 runtime needs this */
+    
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
-    setvbuf(stderr, (char *) NULL, _IOLBF, 0);
 
     /* register all codecs, demux and protocols */
 #if CONFIG_AVDEVICE
