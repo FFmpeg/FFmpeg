@@ -3662,6 +3662,7 @@ int main(int argc, char **argv)
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
+    setvbuf(stderr, (char *) NULL, _IOLBF, 0);
 
     /* register all codecs, demux and protocols */
 #if CONFIG_AVDEVICE
