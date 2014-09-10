@@ -152,11 +152,14 @@
     <ClCompile Include="..\libavcodec\tiff_common.c">
       <ObjectFileName>$(IntDir)\libavcodec_tiff_common.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\fdctdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_fdctdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\faandct.c">
       <ObjectFileName>$(IntDir)\libavcodec_faandct.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\faanidct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_faanidct.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\fdctdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_fdctdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\jfdctfst.c">
       <ObjectFileName>$(IntDir)\libavcodec_jfdctfst.obj</ObjectFileName>
@@ -214,9 +217,6 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\idctdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_idctdsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\faanidct.c">
-      <ObjectFileName>$(IntDir)\libavcodec_faanidct.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\simple_idct.c">
       <ObjectFileName>$(IntDir)\libavcodec_simple_idct.obj</ObjectFileName>

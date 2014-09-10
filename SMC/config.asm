@@ -22,11 +22,15 @@
 %define ARCH_X86 1
 %ifidn __OUTPUT_FORMAT__,x64
 %define ARCH_X86_32 0
+%elifidn __OUTPUT_FORMAT__,win64
+%define ARCH_X86_32 0
 %elifidn __OUTPUT_FORMAT__,win32
 %define ARCH_X86_32 1
 %define PREFIX
 %endif
 %ifidn __OUTPUT_FORMAT__,x64
+%define ARCH_X86_64 1
+%elifidn __OUTPUT_FORMAT__,win64
 %define ARCH_X86_64 1
 %elifidn __OUTPUT_FORMAT__,win32
 %define ARCH_X86_64 0
@@ -138,10 +142,14 @@
 %define HAVE_LOONGSON_INLINE 0
 %ifidn __OUTPUT_FORMAT__,x64
 %define HAVE_ALIGNED_STACK 1
+%elifidn __OUTPUT_FORMAT__,win64
+%define HAVE_ALIGNED_STACK 1
 %elifidn __OUTPUT_FORMAT__,win32
 %define HAVE_ALIGNED_STACK 0
 %endif
 %ifidn __OUTPUT_FORMAT__,x64
+%define HAVE_FAST_64BIT 1
+%elifidn __OUTPUT_FORMAT__,win64
 %define HAVE_FAST_64BIT 1
 %elifidn __OUTPUT_FORMAT__,win32
 %define HAVE_FAST_64BIT 0
@@ -468,6 +476,7 @@
 %define CONFIG_DCT 1
 %define CONFIG_DWT 1
 %define CONFIG_ERROR_RESILIENCE 1
+%define CONFIG_FAAN 1
 %define CONFIG_FAST_UNALIGNED 1
 %define CONFIG_FFT 1
 %define CONFIG_LSP 1
@@ -495,6 +504,8 @@
 %define CONFIG_CABAC 1
 %define CONFIG_DVPROFILE 1
 %define CONFIG_EXIF 1
+%define CONFIG_FAANDCT 1
+%define CONFIG_FAANIDCT 1
 %define CONFIG_FDCTDSP 1
 %define CONFIG_FRAME_THREAD_ENCODER 1
 %define CONFIG_GCRYPT 0
