@@ -503,7 +503,7 @@ static int img_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 #define OFFSET(x) offsetof(VideoDemuxData, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
-static const AVOption options[] = {
+const AVOption ff_img_options[] = {
     { "framerate",    "set the video framerate",             OFFSET(framerate),    AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0,   DEC },
     { "loop",         "force loop over input file sequence", OFFSET(loop),         AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, 1,       DEC },
 
@@ -528,7 +528,7 @@ static const AVOption options[] = {
 static const AVClass img2_class = {
     .class_name = "image2 demuxer",
     .item_name  = av_default_item_name,
-    .option     = options,
+    .option     = ff_img_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 AVInputFormat ff_image2_demuxer = {
@@ -548,7 +548,7 @@ AVInputFormat ff_image2_demuxer = {
 static const AVClass img2pipe_class = {
     .class_name = "image2pipe demuxer",
     .item_name  = av_default_item_name,
-    .option     = options,
+    .option     = ff_img_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 AVInputFormat ff_image2pipe_demuxer = {
@@ -681,7 +681,7 @@ static int webp_probe(AVProbeData *p)
 static const AVClass imgname ## _class = {\
     .class_name = AV_STRINGIFY(imgname) " demuxer",\
     .item_name  = av_default_item_name,\
-    .option     = options,\
+    .option     = ff_img_options,\
     .version    = LIBAVUTIL_VERSION_INT,\
 };\
 AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
