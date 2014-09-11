@@ -168,6 +168,19 @@ static int setup_shm(AVFormatContext *s, Display *dpy, XImage **image)
     return 0;
 }
 
+static int setup_mouse(Display *dpy, int screen)
+{
+    int ev_ret, ev_err;
+
+    if (XFixesQueryExtension(dpy, &ev_ret, &ev_err)) {
+        Window root = RootWindow(dpy, screen);
+        XFixesSelectCursorInput(dpy, root, XFixesDisplayCursorNotifyMask);
+        return 0;
+    }
+
+    return AVERROR(ENOSYS);
+}
+
 static int pixfmt_from_image(AVFormatContext *s, XImage *image, int *pix_fmt)
 {
     av_log(s, AV_LOG_DEBUG,
@@ -316,6 +329,12 @@ static int x11grab_read_header(AVFormatContext *s1)
                           x_off, y_off,
                           x11grab->width, x11grab->height,
                           AllPlanes, ZPixmap);
+    }
+
+    if (x11grab->draw_mouse && setup_mouse(dpy, screen) < 0) {
+        av_log(s1, AV_LOG_WARNING,
+               "XFixes not available, cannot draw the mouse cursor\n");
+        x11grab->draw_mouse = 0;
     }
 
     x11grab->frame_size = x11grab->width * x11grab->height * image->bits_per_pixel / 8;
