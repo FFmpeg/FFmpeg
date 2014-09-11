@@ -72,6 +72,14 @@ int ff_neterrno(void);
 #include <poll.h>
 #endif
 
+typedef union sockaddr_union {
+    struct sockaddr_storage storage;
+    struct sockaddr_in in;
+#if HAVE_STRUCT_SOCKADDR_IN6
+    struct sockaddr_in6 in6;
+#endif
+} sockaddr_union;
+
 int ff_socket_nonblock(int socket, int enable);
 
 extern int ff_network_inited_globally;
