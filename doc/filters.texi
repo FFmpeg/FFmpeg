@@ -2552,6 +2552,26 @@ Same as the @ref{subtitles} filter, except that it doesn't require libavcodec
 and libavformat to work. On the other hand, it is limited to ASS (Advanced
 Substation Alpha) subtitles files.
 
+This filter accepts the following option in addition to the common options from
+the @ref{subtitles} filter:
+
+@table @option
+@item shaping
+Set the shaping engine
+
+Available values are:
+@table @samp
+@item auto
+The default libass shaping engine, which is the best available.
+@item simple
+Fast, font-agnostic shaper that can do only substitutions
+@item complex
+Slower shaper using OpenType for substitutions and positioning
+@end table
+
+The default is @code{auto}.
+@end table
+
 @section bbox
 
 Compute the bounding box for the non-black pixels in the input frame

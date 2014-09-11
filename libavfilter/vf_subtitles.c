@@ -55,6 +55,7 @@ typedef struct {
     uint8_t rgba_map[4];
     int     pix_step[4];       ///< steps per pixel for each plane of the main output
     int original_w, original_h;
+    int shaping;
     FFDrawContext draw;
 } AssContext;
 
@@ -141,6 +142,8 @@ static int config_input(AVFilterLink *inlink)
     if (ass->original_w && ass->original_h)
         ass_set_aspect_ratio(ass->renderer, (double)inlink->w / inlink->h,
                              (double)ass->original_w / ass->original_h);
+    if (ass->shaping != -1)
+        ass_set_shaper(ass->renderer, ass->shaping);
 
     return 0;
 }
@@ -207,6 +210,10 @@ static const AVFilterPad ass_outputs[] = {
 
 static const AVOption ass_options[] = {
     COMMON_OPTIONS
+    {"shaping", "set shaping engine", OFFSET(shaping), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, FLAGS, "shaping_mode"},
+        {"auto", NULL,                 0, AV_OPT_TYPE_CONST, {.i64 = -1},                  INT_MIN, INT_MAX, FLAGS, "shaping_mode"},
+        {"simple",  "simple shaping",  0, AV_OPT_TYPE_CONST, {.i64 = ASS_SHAPING_SIMPLE},  INT_MIN, INT_MAX, FLAGS, "shaping_mode"},
+        {"complex", "complex shaping", 0, AV_OPT_TYPE_CONST, {.i64 = ASS_SHAPING_COMPLEX}, INT_MIN, INT_MAX, FLAGS, "shaping_mode"},
     {NULL},
 };
 
