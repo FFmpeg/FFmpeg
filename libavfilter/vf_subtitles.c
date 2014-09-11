@@ -68,14 +68,14 @@ typedef struct {
 
 /* libass supports a log level ranging from 0 to 7 */
 static const int ass_libavfilter_log_level_map[] = {
-    AV_LOG_QUIET,               /* 0 */
-    AV_LOG_PANIC,               /* 1 */
-    AV_LOG_FATAL,               /* 2 */
-    AV_LOG_ERROR,               /* 3 */
-    AV_LOG_WARNING,             /* 4 */
-    AV_LOG_INFO,                /* 5 */
-    AV_LOG_VERBOSE,             /* 6 */
-    AV_LOG_DEBUG,               /* 7 */
+    [0] = AV_LOG_FATAL,     /* MSGL_FATAL */
+    [1] = AV_LOG_ERROR,     /* MSGL_ERR */
+    [2] = AV_LOG_WARNING,   /* MSGL_WARN */
+    [3] = AV_LOG_WARNING,   /* <undefined> */
+    [4] = AV_LOG_INFO,      /* MSGL_INFO */
+    [5] = AV_LOG_INFO,      /* <undefined> */
+    [6] = AV_LOG_VERBOSE,   /* MSGL_V */
+    [7] = AV_LOG_DEBUG,     /* MSGL_DBG2 */
 };
 
 static void ass_log(int ass_level, const char *fmt, va_list args, void *ctx)
