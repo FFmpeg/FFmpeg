@@ -66,6 +66,7 @@ static int do_show_stream_disposition = 0;
 static int do_show_data    = 0;
 static int do_show_program_version  = 0;
 static int do_show_library_versions = 0;
+static int do_show_pixel_formats = 0;
 
 static int do_show_chapter_tags = 0;
 static int do_show_format_tags = 0;
@@ -132,6 +133,8 @@ typedef enum {
     SECTION_ID_PACKET,
     SECTION_ID_PACKETS,
     SECTION_ID_PACKETS_AND_FRAMES,
+    SECTION_ID_PIXEL_FORMAT,
+    SECTION_ID_PIXEL_FORMATS,
     SECTION_ID_PROGRAM_STREAM_DISPOSITION,
     SECTION_ID_PROGRAM_STREAM_TAGS,
     SECTION_ID_PROGRAM,
@@ -165,6 +168,8 @@ static struct section sections[] = {
     [SECTION_ID_PACKETS] =            { SECTION_ID_PACKETS, "packets", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
     [SECTION_ID_PACKETS_AND_FRAMES] = { SECTION_ID_PACKETS_AND_FRAMES, "packets_and_frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
     [SECTION_ID_PACKET] =             { SECTION_ID_PACKET, "packet", 0, { -1 } },
+    [SECTION_ID_PIXEL_FORMATS] =      { SECTION_ID_PIXEL_FORMATS, "pixel_formats", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PIXEL_FORMAT, -1 } },
+    [SECTION_ID_PIXEL_FORMAT] =       { SECTION_ID_PIXEL_FORMAT, "pixel_format", 0, { -1 } },
     [SECTION_ID_PROGRAM_STREAM_DISPOSITION] = { SECTION_ID_PROGRAM_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "program_stream_disposition" },
     [SECTION_ID_PROGRAM_STREAM_TAGS] =        { SECTION_ID_PROGRAM_STREAM_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "program_stream_tags" },
     [SECTION_ID_PROGRAM] =                    { SECTION_ID_PROGRAM, "program", 0, { SECTION_ID_PROGRAM_TAGS, SECTION_ID_PROGRAM_STREAMS, -1 } },
@@ -175,7 +180,8 @@ static struct section sections[] = {
     [SECTION_ID_PROGRAMS] =                   { SECTION_ID_PROGRAMS, "programs", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PROGRAM, -1 } },
     [SECTION_ID_ROOT] =               { SECTION_ID_ROOT, "root", SECTION_FLAG_IS_WRAPPER,
                                         { SECTION_ID_CHAPTERS, SECTION_ID_FORMAT, SECTION_ID_FRAMES, SECTION_ID_PROGRAMS, SECTION_ID_STREAMS,
-                                          SECTION_ID_PACKETS, SECTION_ID_ERROR, SECTION_ID_PROGRAM_VERSION, SECTION_ID_LIBRARY_VERSIONS, -1} },
+                                          SECTION_ID_PACKETS, SECTION_ID_ERROR, SECTION_ID_PROGRAM_VERSION, SECTION_ID_LIBRARY_VERSIONS,
+                                          SECTION_ID_PIXEL_FORMATS, -1} },
     [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS, "streams", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM, -1 } },
     [SECTION_ID_STREAM] =             { SECTION_ID_STREAM, "stream", 0, { SECTION_ID_STREAM_DISPOSITION, SECTION_ID_STREAM_TAGS, -1 } },
     [SECTION_ID_STREAM_DISPOSITION] = { SECTION_ID_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "stream_disposition" },
@@ -2557,6 +2563,24 @@ static void ffprobe_show_library_versions(WriterContext *w)
     writer_print_section_footer(w);
 }
 
+static void ffprobe_show_pixel_formats(WriterContext *w)
+{
+    const AVPixFmtDescriptor *pixdesc = NULL;
+    int n;
+
+    writer_print_section_header(w, SECTION_ID_PIXEL_FORMATS);
+    while (pixdesc = av_pix_fmt_desc_next(pixdesc)) {
+        writer_print_section_header(w, SECTION_ID_PIXEL_FORMAT);
+        print_str("name", pixdesc->name);
+        print_int("nb_components", pixdesc->nb_components);
+        n = av_get_bits_per_pixel(pixdesc);
+        if (n) print_int    ("bits_per_pixel", n);
+        else   print_str_opt("bits_per_pixel", "N/A");
+        writer_print_section_footer(w);
+    }
+    writer_print_section_footer(w);
+}
+
 static int opt_format(void *optctx, const char *opt, const char *arg)
 {
     iformat = av_find_input_format(arg);
@@ -2890,6 +2914,7 @@ DEFINE_OPT_SHOW_SECTION(format,           FORMAT);
 DEFINE_OPT_SHOW_SECTION(frames,           FRAMES);
 DEFINE_OPT_SHOW_SECTION(library_versions, LIBRARY_VERSIONS);
 DEFINE_OPT_SHOW_SECTION(packets,          PACKETS);
+DEFINE_OPT_SHOW_SECTION(pixel_formats,    PIXEL_FORMATS);
 DEFINE_OPT_SHOW_SECTION(program_version,  PROGRAM_VERSION);
 DEFINE_OPT_SHOW_SECTION(streams,          STREAMS);
 DEFINE_OPT_SHOW_SECTION(programs,         PROGRAMS);
@@ -2928,6 +2953,7 @@ static const OptionDef real_options[] = {
     { "show_program_version",  0, {(void*)&opt_show_program_version},  "show ffprobe version" },
     { "show_library_versions", 0, {(void*)&opt_show_library_versions}, "show library versions" },
     { "show_versions",         0, {(void*)&opt_show_versions}, "show program and library versions" },
+    { "show_pixel_formats", 0, {(void*)&opt_show_pixel_formats}, "show pixel format descriptions" },
     { "show_private_data", OPT_BOOL, {(void*)&show_private_data}, "show private data" },
     { "private",           OPT_BOOL, {(void*)&show_private_data}, "same as show_private_data" },
     { "bitexact", OPT_BOOL, {&do_bitexact}, "force bitexact output" },
@@ -2984,6 +3010,7 @@ int main(int argc, char **argv)
     SET_DO_SHOW(FRAMES, frames);
     SET_DO_SHOW(LIBRARY_VERSIONS, library_versions);
     SET_DO_SHOW(PACKETS, packets);
+    SET_DO_SHOW(PIXEL_FORMATS, pixel_formats);
     SET_DO_SHOW(PROGRAM_VERSION, program_version);
     SET_DO_SHOW(PROGRAMS, programs);
     SET_DO_SHOW(STREAMS, streams);
@@ -3048,10 +3075,12 @@ int main(int argc, char **argv)
             ffprobe_show_program_version(wctx);
         if (do_show_library_versions)
             ffprobe_show_library_versions(wctx);
+        if (do_show_pixel_formats)
+            ffprobe_show_pixel_formats(wctx);
 
         if (!input_filename &&
             ((do_show_format || do_show_programs || do_show_streams || do_show_chapters || do_show_packets || do_show_error) ||
-             (!do_show_program_version && !do_show_library_versions))) {
+             (!do_show_program_version && !do_show_library_versions && !do_show_pixel_formats))) {
             show_usage();
             av_log(NULL, AV_LOG_ERROR, "You have to specify one input file.\n");
             av_log(NULL, AV_LOG_ERROR, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);

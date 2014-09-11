@@ -10,6 +10,7 @@
         <xsd:sequence>
             <xsd:element name="program_version"  type="ffprobe:programVersionType"  minOccurs="0" maxOccurs="1" />
             <xsd:element name="library_versions" type="ffprobe:libraryVersionsType" minOccurs="0" maxOccurs="1" />
+            <xsd:element name="pixel_formats"    type="ffprobe:pixelFormatsType"    minOccurs="0" maxOccurs="1" />
             <xsd:element name="packets"  type="ffprobe:packetsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="frames"   type="ffprobe:framesType"  minOccurs="0" maxOccurs="1" />
             <xsd:element name="programs" type="ffprobe:programsType" minOccurs="0" maxOccurs="1" />
@@ -276,5 +277,17 @@
         <xsd:sequence>
           <xsd:element name="library_version" type="ffprobe:libraryVersionType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatType">
+      <xsd:attribute name="name"                type="xsd:string" use="required"/>
+      <xsd:attribute name="nb_components"       type="xsd:int"    use="required"/>
+      <xsd:attribute name="bits_per_pixel"      type="xsd:int"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatsType">
+      <xsd:sequence>
+        <xsd:element name="pixel_format" type="ffprobe:pixelFormatType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
     </xsd:complexType>
 </xsd:schema>
