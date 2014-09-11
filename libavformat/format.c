@@ -202,7 +202,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
 
     fmt = NULL;
     while ((fmt1 = av_iformat_next(fmt1))) {
-        if (!is_opened == !(fmt1->flags & AVFMT_NOFILE))
+        if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;
         score = 0;
         if (fmt1->read_probe) {
