@@ -95,6 +95,9 @@ API changes, most recent first:
 2014-07-30 - ba3e331 - lavu 52.94.100 - frame.h
   Add av_frame_side_data_name()
 
+2014-07-29 - 80a3a66 / 3a19405 - lavf 56.01.100 / 56.01.0 - avformat.h
+  Add mime_type field to AVProbeData.
+
 2014-07-29 - 31e0b5d / 69e7336 - lavu 52.92.100 / 53.19.0 - avstring.h
   Make name matching function from lavf public as av_match_name().
 

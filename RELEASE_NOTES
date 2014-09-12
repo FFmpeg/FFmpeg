@@ -54,6 +54,9 @@
  │ ⚠  Behaviour changes       │
  └────────────────────────────┘
 
+  • IMPORTANT: The new field mime_type was added to AVProbeData.
+    To avoid crashes, make sure to always initialize AVProbeData, e.g. use
+    'AVProbeData pd = { 0 };' instead of 'AVProbeData pd;'.
   • dctdnoiz filter now uses a block size of 8x8 instead of 16x16 by default
   • -vismv option is deprecated in favor of the codecview filter
   • libmodplug is now detected through pkg-config
