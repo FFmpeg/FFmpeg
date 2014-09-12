@@ -33,8 +33,6 @@
 
 #include <limits.h>
 
-#include "libavutil/channel_layout.h"
-#include "libavutil/crc.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
