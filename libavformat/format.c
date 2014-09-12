@@ -196,7 +196,7 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened,
                 score = AVPROBE_SCORE_EXTENSION;
         }
         if (av_match_name(lpd.mime_type, fmt1->mime_type))
-            score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
+            score = FFMAX(score, AVPROBE_SCORE_MIME);
         if (score > *score_max) {
             *score_max = score;
             fmt        = fmt1;
