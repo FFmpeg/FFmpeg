@@ -75,7 +75,8 @@ static void check_color_terminal(void)
     char *term = getenv("TERM");
     use_color = !getenv("NO_COLOR") && !getenv("AV_LOG_FORCE_NOCOLOR") &&
                 (getenv("TERM") && isatty(2) || getenv("AV_LOG_FORCE_COLOR"));
-    use_color += term && strstr(term, "256color");
+    if (use_color)
+        use_color += term && strstr(term, "256color");
 #else
     use_color = getenv("AV_LOG_FORCE_COLOR") && !getenv("NO_COLOR") &&
                !getenv("AV_LOG_FORCE_NOCOLOR");
