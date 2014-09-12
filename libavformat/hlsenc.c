@@ -73,6 +73,8 @@ typedef struct HLSContext {
 
     char *basename;
     char *baseurl;
+    char *format_options_str;
+    AVDictionary *format_options;
 
     AVIOContext *pb;
 } HLSContext;
@@ -226,6 +228,7 @@ static int hls_write_header(AVFormatContext *s)
     int ret, i;
     char *p;
     const char *pattern = "%d.ts";
+    AVDictionary *options = NULL;
     int basename_size = strlen(s->filename) + strlen(pattern) + 1;
 
     hls->sequence       = hls->start_sequence;
@@ -234,6 +237,14 @@ static int hls_write_header(AVFormatContext *s)
 
     if (hls->flags & HLS_SINGLE_FILE)
         pattern = ".ts";
+
+    if (hls->format_options_str) {
+        ret = av_dict_parse_string(&hls->format_options, hls->format_options_str, "=", ":", 0);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Could not parse format options list '%s'\n", hls->format_options_str);
+            goto fail;
+        }
+    }
 
     for (i = 0; i < s->nb_streams; i++)
         hls->has_video +=
@@ -273,11 +284,17 @@ static int hls_write_header(AVFormatContext *s)
     if ((ret = hls_start(s)) < 0)
         goto fail;
 
-    if ((ret = avformat_write_header(hls->avf, NULL)) < 0)
+    av_dict_copy(&options, hls->format_options, 0);
+    ret = avformat_write_header(hls->avf, &options);
+    if (av_dict_count(options)) {
+        av_log(s, AV_LOG_ERROR, "Some of provided format options in '%s' are not recognized\n", hls->format_options_str);
+        ret = AVERROR(EINVAL);
         goto fail;
-
+    }
 
 fail:
+
+    av_dict_free(&options);
     if (ret) {
         av_free(hls->basename);
         if (hls->avf)
@@ -375,6 +392,7 @@ static const AVOption options[] = {
     {"start_number",  "set first number in the sequence",        OFFSET(start_sequence),AV_OPT_TYPE_INT64,  {.i64 = 0},     0, INT64_MAX, E},
     {"hls_time",      "set segment length in seconds",           OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E},
     {"hls_list_size", "set maximum number of playlist entries",  OFFSET(max_nb_segments),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
+    {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_wrap",      "set number after which the index wraps",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
     {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
