@@ -504,9 +504,9 @@ static void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
 static int analyze(const uint8_t *buf, int size, int packet_size, int *index)
 {
     int stat[TS_MAX_PACKET_SIZE];
+    int stat_all = 0;
     int i;
     int best_score = 0;
-    int best_score2 = 0;
 
     memset(stat, 0, packet_size * sizeof(*stat));
 
@@ -514,17 +514,16 @@ static int analyze(const uint8_t *buf, int size, int packet_size, int *index)
         if (buf[i] == 0x47 && !(buf[i + 1] & 0x80) && buf[i + 3] != 0x47) {
             int x = i % packet_size;
             stat[x]++;
+            stat_all++;
             if (stat[x] > best_score) {
                 best_score = stat[x];
                 if (index)
                     *index = x;
-            } else if (stat[x] > best_score2) {
-                best_score2 = stat[x];
             }
         }
     }
 
-    return best_score - best_score2;
+    return best_score - FFMAX(stat_all - 10*best_score, 0)/10;
 }
 
 /* autodetect fec presence. Must have at least 1024 bytes  */
