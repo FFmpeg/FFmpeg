@@ -1258,24 +1258,13 @@ static int modify_current_stream(HTTPContext *c, char *rates)
     return action_required;
 }
 
-/* XXX: factorize in utils.c ? */
-/* XXX: take care with different space meaning */
-static void skip_spaces(const char **pp)
-{
-    const char *p;
-    p = *pp;
-    while (*p == ' ' || *p == '\t')
-        p++;
-    *pp = p;
-}
-
 static void get_word(char *buf, int buf_size, const char **pp)
 {
     const char *p;
     char *q;
 
     p = *pp;
-    skip_spaces(&p);
+    p += strspn(p, SPACE_CHARS);
     q = buf;
     while (!av_isspace(*p) && *p != '\0') {
         if ((q - buf) < buf_size - 1)
