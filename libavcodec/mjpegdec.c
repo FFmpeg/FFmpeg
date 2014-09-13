@@ -2128,7 +2128,7 @@ the_end:
             if (!(s->upscale_v & (1<<p)))
                 continue;
             if (p==1 || p==2)
-                w >>= hshift;
+                w = FF_CEIL_RSHIFT(w, hshift);
             for (i = s->height - 1; i; i--) {
                 uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[p])[i / 2 * s->linesize[p]];
                 uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[p])[(i + 1) / 2 * s->linesize[p]];
