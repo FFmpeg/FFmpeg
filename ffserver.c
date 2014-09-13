@@ -3051,7 +3051,7 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
         }
     }
     /* no stream found */
-    rtsp_reply_error(c, RTSP_STATUS_SERVICE); /* XXX: right error ? */
+    rtsp_reply_error(c, RTSP_STATUS_NOT_FOUND);
     return;
 
  found:
