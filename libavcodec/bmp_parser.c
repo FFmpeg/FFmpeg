@@ -62,11 +62,13 @@ restart:
                     bpc->pc.frame_start_found = 0;
                     continue;
                 }
-                if (bpc->fsize <= ihsize + 14)
-                    bpc->fsize = INT_MAX/2;
                 bpc->pc.frame_start_found++;
                 bpc->remaining_size = bpc->fsize + i - 17;
-                goto restart;
+
+                if (bpc->pc.index + i > 17) {
+                    next = i - 17;
+                } else
+                    goto restart;
             } else if (bpc->pc.frame_start_found)
                 bpc->pc.frame_start_found++;
         }
@@ -77,7 +79,9 @@ restart:
             bpc->remaining_size -= i;
             if (bpc->remaining_size)
                 goto flush;
-            next = i;
+
+            bpc->pc.frame_start_found = 0;
+            goto restart;
         }
     }
 
