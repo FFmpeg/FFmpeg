@@ -45,21 +45,32 @@ static int bmp_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     int i = 0;
 
     *poutbuf_size = 0;
-    if (buf_size == 0)
-        return 0;
 
-    if (!bpc->pc.frame_start_found) {
+    if (bpc->pc.frame_start_found <= 2+4+4) {
         for (; i < buf_size; i++) {
             state = (state << 8) | buf[i];
-            if ((state >> 48) == (('B' << 8) | 'M')) {
-                bpc->fsize = av_bswap32(state >> 16);
-                bpc->pc.frame_start_found = 1;
-                if (bpc->fsize > buf_size - i + 7)
-                    bpc->remaining_size = bpc->fsize - buf_size + i - 7;
+            if (bpc->pc.frame_start_found == 0) {
+                if ((state >> 48) == (('B' << 8) | 'M')) {
+                    bpc->fsize = av_bswap32(state >> 16);
+                    bpc->pc.frame_start_found = 1;
+                }
+            } else if (bpc->pc.frame_start_found == 2+4+4) {
+//                 unsigned hsize = av_bswap32(state>>32);
+                unsigned ihsize = av_bswap32(state);
+                if (ihsize < 12 || ihsize > 200) {
+                    bpc->pc.frame_start_found = 0;
+                    continue;
+                }
+                if (bpc->fsize <= ihsize + 14)
+                    bpc->fsize = INT_MAX/2;
+                bpc->pc.frame_start_found++;
+                if (bpc->fsize > buf_size - i + 17)
+                    bpc->remaining_size = bpc->fsize - buf_size + i - 17;
                 else
-                    next = bpc->fsize + i - 7;
+                    next = bpc->fsize + i - 17;
                 break;
-            }
+            } else if (bpc->pc.frame_start_found)
+                bpc->pc.frame_start_found++;
         }
         bpc->pc.state64 = state;
     } else {
