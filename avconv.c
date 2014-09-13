@@ -2420,7 +2420,9 @@ static int process_input(void)
     if (pkt.dts != AV_NOPTS_VALUE)
         pkt.dts *= ist->ts_scale;
 
-    if (pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE &&
+    if ((ist->dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+         ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
+        pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE &&
         (is->iformat->flags & AVFMT_TS_DISCONT)) {
         int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
         int64_t delta   = pkt_dts - ist->next_dts;
