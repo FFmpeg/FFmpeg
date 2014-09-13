@@ -96,7 +96,12 @@ API changes, most recent first:
   Add av_frame_side_data_name()
 
 2014-07-29 - 80a3a66 / 3a19405 - lavf 56.01.100 / 56.01.0 - avformat.h
-  Add mime_type field to AVProbeData.
+  Add mime_type field to AVProbeData, which now MUST be initialized in
+  order to avoid uninitialized reads of the mime_type pointer, likely
+  leading to crashes.
+  Typically, this means you will do 'AVProbeData pd = { 0 };' instead of
+  'AVProbeData pd;'.
+
 
 2014-07-29 - 31e0b5d / 69e7336 - lavu 52.92.100 / 53.19.0 - avstring.h
   Make name matching function from lavf public as av_match_name().
