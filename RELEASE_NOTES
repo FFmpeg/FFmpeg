@@ -1,8 +1,8 @@
- ┌───────────────────────────────────────────┐
- │ RELEASE NOTES for FFmpeg <next> "FIXME"   │
- └───────────────────────────────────────────┘
+ ┌────────────────────────────────────────┐
+ │ RELEASE NOTES for FFmpeg 2.4 "Fresnel" │
+ └────────────────────────────────────────┘
 
-   The FFmpeg Project proudly presents FFmpeg <next> "FIXME", ...
+   The FFmpeg Project proudly presents FFmpeg 2.4 "Fresnel", ...
    FFmpeg 2.4 is API-, but not ABI-compatible with the previous major release.
    This means that the code using our libraries needs to be rebuilt, but no
    source changes should be required.
