@@ -46,6 +46,7 @@ static int bmp_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
     *poutbuf_size = 0;
 
+restart:
     if (bpc->pc.frame_start_found <= 2+4+4) {
         for (; i < buf_size; i++) {
             state = (state << 8) | buf[i];
@@ -64,11 +65,8 @@ static int bmp_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                 if (bpc->fsize <= ihsize + 14)
                     bpc->fsize = INT_MAX/2;
                 bpc->pc.frame_start_found++;
-                if (bpc->fsize > buf_size - i + 17)
-                    bpc->remaining_size = bpc->fsize - buf_size + i - 17;
-                else
-                    next = bpc->fsize + i - 17;
-                break;
+                bpc->remaining_size = bpc->fsize + i - 17;
+                goto restart;
             } else if (bpc->pc.frame_start_found)
                 bpc->pc.frame_start_found++;
         }
