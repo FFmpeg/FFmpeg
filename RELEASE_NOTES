@@ -11,16 +11,16 @@
    │ *  API Information         │
    └────────────────────────────┘
 
-     FFmpeg <next> includes the following library versions:
+     FFmpeg 2.4 includes the following library versions:
 
-       • libavutil      xx.yy.1zz
-       • libavcodec     xx.yy.1zz
-       • libavformat    xx.yy.1zz
-       • libavdevice    xx.yy.1zz
-       • libavfilter    xx.yy.1zz
-       • libswscale     xx.yy.1zz
-       • libswresample  xx.yy.1zz
-       • libpostproc    xx.yy.1zz
+       • libavutil      54.7.100
+       • libavcodec     56.1.100
+       • libavformat    56.4.101
+       • libavdevice    56.0.100
+       • libavfilter     5.1.100
+       • libswscale      3.0.100
+       • libswresample   1.1.100
+       • libpostproc    53.0.100
 
      Please refer to the doc/APIChanges file for more information.
 
