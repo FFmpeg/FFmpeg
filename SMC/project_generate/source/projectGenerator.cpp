@@ -245,13 +245,9 @@ bool projectGenerator::outputProject( )
 
     //Change all occurance of template_platform with specified project toolchain
     string sToolchain;
-    if( m_ConfigHelper.m_sToolchain.compare("msvc") == 0 )
+    if( !passToolchain( sToolchain ) )
     {
-        sToolchain = "v120";
-    }
-    else
-    {
-        sToolchain = "Intel C++ Compiler XE 14.0";
+        return false;
     }
     const string sPlatformSearch = "template_platform";
     uiFindPos = sProjectFile.find( sPlatformSearch );
@@ -996,13 +992,9 @@ bool projectGenerator::outputSolution()
 
     //Next add the projects
     string sToolchain;
-    if( m_ConfigHelper.m_sToolchain.compare("msvc") == 0 )
+    if( !passToolchain( sToolchain ) )
     {
-        sToolchain = "v120";
-    }
-    else
-    {
-        sToolchain = "Intel C++ Compiler XE 14.0";
+        return false;
     }
     string sProjectAdd;
     vector<string> vAddedPrograms;
@@ -1982,6 +1974,58 @@ bool projectGenerator::passMake( )
     }
     cout << "  Error: could not open open MakeFile (" << sMakeFile << ")" << endl;
     return false;
+}
+
+bool projectGenerator::passToolchain( string & sToolchain )
+{
+    if( m_ConfigHelper.m_sToolchain.compare( "msvc" ) == 0 )
+    {
+        //Check for the existence of complient msvc compiler
+        if( GetEnvironmentVariable( "VS130COMNTOOLS", NULL, 0 ) )
+        {
+            //??? Future release
+            sToolchain = "v130";
+        }
+        else if( GetEnvironmentVariable( "VS120COMNTOOLS", NULL, 0 ) )
+        {
+            sToolchain = "v120";
+        }
+        else if( GetEnvironmentVariable( "VS110COMNTOOLS", NULL, 0 ) )
+        {
+            sToolchain = "v110";
+        }
+        else
+        {
+            cout << "  Error: Failed finding valid MSVC compiler (Requires VS2012 or higher)." << endl;
+            return false;
+        }
+    }
+    else
+    {
+        //Check for the existence of Intel compiler
+        if( GetEnvironmentVariable( "ICPP_COMPILER16", NULL, 0 ) )
+        {
+            //??? Future release
+            sToolchain = "Intel C++ Compiler XE 16.0";
+        }
+        else if( GetEnvironmentVariable( "ICPP_COMPILER15", NULL, 0 ) )
+        {
+            sToolchain = "Intel C++ Compiler XE 15.0";
+        }
+        else if( GetEnvironmentVariable( "ICPP_COMPILER14", NULL, 0 ) )
+        {
+            sToolchain = "Intel C++ Compiler XE 14.0";
+        }
+        else if( GetEnvironmentVariable( "ICPP_COMPILER13", NULL, 0 ) )
+        {
+            sToolchain = "Intel C++ Compiler XE 13.0";
+        }
+        else
+        {
+            cout << "  Error: Failed finding valid Intel compiler." << endl;
+            return false;
+        }
+    }
 }
 
 bool projectGenerator::findFile( const string & sFileName, string & sRetFileName )

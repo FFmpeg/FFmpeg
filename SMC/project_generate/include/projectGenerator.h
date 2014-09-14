@@ -80,6 +80,8 @@ private:
 
     bool passMake( );
 
+    bool passToolchain( string & sToolchain );
+
     static bool findFile( const string & sFileName, string & sRetFileName );
 
     static bool findFiles( const string & sFileSearch, vector<string> & VRetFiles );
