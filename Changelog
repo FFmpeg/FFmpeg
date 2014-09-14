@@ -5,7 +5,7 @@ version <next>:
 - Icecast protocol
 - ported lenscorrection filter from frei0r filter
 - large optimizations in dctdnoiz to make it usable
-- request Icecast metadata by default
+- ICY metadata are now requested by default with the HTTP protocol
 - support for using metadata in stream specifiers in fftools
 - LZMA compression support in TIFF decoder
 - support for H.261 RTP payload format (RFC 4587)
