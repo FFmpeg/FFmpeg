@@ -510,7 +510,9 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
         }
         dst = s->yuv_line;
         stride = 0;
-        width = s->width * s->subsampling[1] + 2*(s->width / s->subsampling[0]);
+
+        width = (s->width - 1) / s->subsampling[0] + 1;
+        width = width * s->subsampling[0] * s->subsampling[1] + 2*width;
         av_assert0(width <= bytes_per_row);
         av_assert0(s->bpp == 24);
     }
