@@ -193,28 +193,6 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
     return in;
 }
 
-static const char *read_ts(const char *buf, int *ts_start, int *ts_end,
-                           int *x1, int *y1, int *x2, int *y2)
-{
-    int i, hs, ms, ss, he, me, se;
-
-    for (i=0; i<2; i++) {
-        /* try to read timestamps in either the first or second line */
-        int c = sscanf(buf, "%d:%2d:%2d%*1[,.]%3d --> %d:%2d:%2d%*1[,.]%3d"
-                       "%*[ ]X1:%u X2:%u Y1:%u Y2:%u",
-                       &hs, &ms, &ss, ts_start, &he, &me, &se, ts_end,
-                       x1, x2, y1, y2);
-        buf += strcspn(buf, "\n");
-        buf += !!*buf;
-        if (c >= 8) {
-            *ts_start = 100*(ss + 60*(ms + 60*hs)) + *ts_start/10;
-            *ts_end   = 100*(se + 60*(me + 60*he)) + *ts_end  /10;
-            return buf;
-        }
-    }
-    return NULL;
-}
-
 static int srt_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_sub_ptr, AVPacket *avpkt)
 {
@@ -237,11 +215,7 @@ static int srt_decode_frame(AVCodecContext *avctx,
         return avpkt->size;
 
     while (ptr < end && *ptr) {
-        if (avctx->codec->id == AV_CODEC_ID_SRT) {
-            ptr = read_ts(ptr, &ts_start, &ts_end, &x1, &y1, &x2, &y2);
-            if (!ptr)
-                break;
-        } else {
+        // TODO: reindent
             // Do final divide-by-10 outside rescale to force rounding down.
             ts_start = av_rescale_q(avpkt->pts,
                                     avctx->time_base,
@@ -249,7 +223,6 @@ static int srt_decode_frame(AVCodecContext *avctx,
             ts_end   = av_rescale_q(avpkt->pts + avpkt->duration,
                                     avctx->time_base,
                                     (AVRational){1,100});
-        }
         ptr = srt_to_ass(avctx, buffer, buffer+sizeof(buffer), ptr,
                          x1, y1, x2, y2);
         ret = ff_ass_add_rect(sub, buffer, ts_start, ts_end-ts_start, 0);
@@ -265,9 +238,9 @@ static int srt_decode_frame(AVCodecContext *avctx,
 /* deprecated decoder */
 AVCodec ff_srt_decoder = {
     .name         = "srt",
-    .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle with embedded timing"),
+    .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = AV_CODEC_ID_SRT,
+    .id           = AV_CODEC_ID_SUBRIP,
     .init         = ff_ass_subtitle_header_default,
     .decode       = srt_decode_frame,
 };
