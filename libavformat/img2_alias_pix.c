@@ -22,7 +22,7 @@
 #include "img2.h"
 #include "libavcodec/bytestream.h"
 
-static int brender_read_probe(AVProbeData *p)
+static int alias_pix_read_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     const uint8_t *end = b + p->buf_size;
@@ -54,12 +54,20 @@ static int brender_read_probe(AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION + 1;
 }
 
+static const AVClass image2_alias_pix_class = {
+    .class_name = "alias_pix demuxer",
+    .item_name  = av_default_item_name,
+    .option     = ff_img_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_image2_alias_pix_demuxer = {
     .name           = "alias_pix",
     .long_name      = NULL_IF_CONFIG_SMALL("Alias/Wavefront PIX image"),
     .priv_data_size = sizeof(VideoDemuxData),
-    .read_probe     = brender_read_probe,
+    .read_probe     = alias_pix_read_probe,
     .read_header    = ff_img_read_header,
     .read_packet    = ff_img_read_packet,
     .raw_codec_id   = AV_CODEC_ID_ALIAS_PIX,
+    .priv_class     = &image2_alias_pix_class,
 };

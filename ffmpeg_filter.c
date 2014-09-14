@@ -928,6 +928,16 @@ int configure_filtergraph(FilterGraph *fg)
     }
 
     fg->reconfiguration = 1;
+
+    for (i = 0; i < fg->nb_outputs; i++) {
+        OutputStream *ost = fg->outputs[i]->ost;
+        if (ost &&
+            ost->enc->type == AVMEDIA_TYPE_AUDIO &&
+            !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
+            av_buffersink_set_frame_size(ost->filter->filter,
+                                         ost->enc_ctx->frame_size);
+    }
+
     return 0;
 }
 

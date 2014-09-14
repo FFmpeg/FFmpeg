@@ -77,8 +77,8 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
 
     if (tag) {
         if (flags & AV_DICT_DONT_OVERWRITE) {
-            if (flags & AV_DICT_DONT_STRDUP_KEY) av_free(key);
-            if (flags & AV_DICT_DONT_STRDUP_VAL) av_free(value);
+            if (flags & AV_DICT_DONT_STRDUP_KEY) av_free((void*)key);
+            if (flags & AV_DICT_DONT_STRDUP_VAL) av_free((void*)value);
             return 0;
         }
         if (flags & AV_DICT_APPEND)
@@ -126,8 +126,8 @@ err_out:
         av_free(m->elems);
         av_freep(pm);
     }
-    if (flags & AV_DICT_DONT_STRDUP_KEY) av_free(key);
-    if (flags & AV_DICT_DONT_STRDUP_VAL) av_free(value);
+    if (flags & AV_DICT_DONT_STRDUP_KEY) av_free((void*)key);
+    if (flags & AV_DICT_DONT_STRDUP_VAL) av_free((void*)value);
     return AVERROR(ENOMEM);
 }
 

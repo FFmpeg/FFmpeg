@@ -323,9 +323,12 @@ Always fill out the commit log message. Describe in a few lines what you
 changed and why. You can refer to mailing list postings if you fix a
 particular bug. Comments such as "fixed!" or "Changed it." are unacceptable.
 Recommended format:
+
+@example
 area changed: Short 1 line description
 
 details describing what and why and giving references.
+@end example
 
 @item
 Make sure the author of the commit is set correctly. (see git commit --author)

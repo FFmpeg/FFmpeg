@@ -783,7 +783,7 @@ static int vobsub_read_header(AVFormatContext *s)
 
             while (*p == ' ')
                 p++;
-            av_log(s, AV_LOG_DEBUG, "IDX stream[%d] name=%s\n", st->id, p);
+            av_log(s, AV_LOG_DEBUG, "IDX stream[%d] name=%s\n", stream_id, p);
             av_strlcpy(alt, p, sizeof(alt));
             header_parsed = 1;
 

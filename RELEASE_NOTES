@@ -1,26 +1,33 @@
- ┌───────────────────────────────────────────┐
- │ RELEASE NOTES for FFmpeg <next> "FIXME"   │
- └───────────────────────────────────────────┘
+ ┌────────────────────────────────────────┐
+ │ RELEASE NOTES for FFmpeg 2.4 "Fresnel" │
+ └────────────────────────────────────────┘
 
-   The FFmpeg Project proudly presents FFmpeg <next> "FIXME", ...
-   FFmpeg 2.4 is API-, but not ABI-compatible with the previous major release.
-   This means that the code using our libraries needs to be rebuilt, but no
-   source changes should be required.
+   The FFmpeg Project proudly presents FFmpeg 2.4 "Fresnel", ...
+   FFmpeg 2.4 is mostly API-, but not ABI-compatible with the previous major release.
+   This means that the code using our libraries needs to be rebuilt, but only minimal
+   source changes should be required, as described in the section 'API Information'.
 
    ┌────────────────────────────┐
    │ *  API Information         │
    └────────────────────────────┘
 
-     FFmpeg <next> includes the following library versions:
+     FFmpeg 2.4 includes the following library versions:
 
-       • libavutil      xx.yy.1zz
-       • libavcodec     xx.yy.1zz
-       • libavformat    xx.yy.1zz
-       • libavdevice    xx.yy.1zz
-       • libavfilter    xx.yy.1zz
-       • libswscale     xx.yy.1zz
-       • libswresample  xx.yy.1zz
-       • libpostproc    xx.yy.1zz
+       • libavutil      54.7.100
+       • libavcodec     56.1.100
+       • libavformat    56.4.101
+       • libavdevice    56.0.100
+       • libavfilter     5.1.100
+       • libswscale      3.0.100
+       • libswresample   1.1.100
+       • libpostproc    53.0.100
+
+     Important API changes since 2.3:
+
+       • The new field mime_type was added to AVProbeData, which can
+         cause crashes, if it is not initialized.
+       • Some deprecated functions were removed.
+       • The avfilter_graph_parse function was made compatible with Libav.
 
      Please refer to the doc/APIChanges file for more information.
 
