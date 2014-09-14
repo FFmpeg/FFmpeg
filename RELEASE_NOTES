@@ -3,9 +3,9 @@
  └────────────────────────────────────────┘
 
    The FFmpeg Project proudly presents FFmpeg 2.4 "Fresnel", ...
-   FFmpeg 2.4 is API-, but not ABI-compatible with the previous major release.
-   This means that the code using our libraries needs to be rebuilt, but no
-   source changes should be required.
+   FFmpeg 2.4 is mostly API-, but not ABI-compatible with the previous major release.
+   This means that the code using our libraries needs to be rebuilt, but only minimal
+   source changes should be required, as described in the section 'API Information'.
 
    ┌────────────────────────────┐
    │ *  API Information         │
@@ -21,6 +21,13 @@
        • libswscale      3.0.100
        • libswresample   1.1.100
        • libpostproc    53.0.100
+
+     Important API changes since 2.3:
+
+       • The new field mime_type was added to AVProbeData, which can
+         cause crashes, if it is not initialized.
+       • Some deprecated functions were removed.
+       • The avfilter_graph_parse function was made compatible with Libav.
 
      Please refer to the doc/APIChanges file for more information.
 
@@ -54,9 +61,6 @@
  │ ⚠  Behaviour changes       │
  └────────────────────────────┘
 
-  • IMPORTANT: The new field mime_type was added to AVProbeData.
-    To avoid crashes, make sure to always initialize AVProbeData, e.g. use
-    'AVProbeData pd = { 0 };' instead of 'AVProbeData pd;'.
   • dctdnoiz filter now uses a block size of 8x8 instead of 16x16 by default
   • -vismv option is deprecated in favor of the codecview filter
   • libmodplug is now detected through pkg-config
