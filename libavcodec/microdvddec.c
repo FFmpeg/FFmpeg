@@ -303,16 +303,16 @@ static int microdvd_decode_frame(AVCodecContext *avctx,
     if (new_line.len) {
         av_bprintf(&new_line, "\r\n");
 
-    av_bprint_finalize(&new_line, &decoded_sub);
-    if (*decoded_sub) {
-        int64_t start    = avpkt->pts;
-        int64_t duration = avpkt->duration;
-        int ts_start     = av_rescale_q(start,    avctx->time_base, (AVRational){1,100});
-        int ts_duration  = duration != -1 ?
-                           av_rescale_q(duration, avctx->time_base, (AVRational){1,100}) : -1;
-        ff_ass_add_rect(sub, decoded_sub, ts_start, ts_duration, 0);
-    }
-    av_free(decoded_sub);
+        av_bprint_finalize(&new_line, &decoded_sub);
+        if (*decoded_sub) {
+            int64_t start    = avpkt->pts;
+            int64_t duration = avpkt->duration;
+            int ts_start     = av_rescale_q(start,    avctx->time_base, (AVRational){1,100});
+            int ts_duration  = duration != -1 ?
+                av_rescale_q(duration, avctx->time_base, (AVRational){1,100}) : -1;
+            ff_ass_add_rect(sub, decoded_sub, ts_start, ts_duration, 0);
+        }
+        av_free(decoded_sub);
     }
 
     *got_sub_ptr = sub->num_rects > 0;
