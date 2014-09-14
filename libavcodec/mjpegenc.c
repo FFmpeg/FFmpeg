@@ -241,7 +241,7 @@ AVCodec ff_amv_encoder = {
     .encode2        = amv_encode_picture,
     .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_NONE
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE
     },
 };
 #endif
