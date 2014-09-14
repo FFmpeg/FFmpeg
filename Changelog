@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+version 2.4:
 - Icecast protocol
 - ported lenscorrection filter from frei0r filter
 - large optimizations in dctdnoiz to make it usable
