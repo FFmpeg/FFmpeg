@@ -33,7 +33,6 @@ typedef struct DialogueLine {
 
 typedef struct ASSContext {
     const AVClass *class;
-    int write_ts; // 0: ssa (timing in payload), 1: ass (matroska like)
     int expected_readorder;
     DialogueLine *dialogue_cache;
     DialogueLine *last_added_dialogue;
@@ -49,12 +48,10 @@ static int write_header(AVFormatContext *s)
     ASSContext *ass = s->priv_data;
     AVCodecContext *avctx = s->streams[0]->codec;
 
-    if (s->nb_streams != 1 || (avctx->codec_id != AV_CODEC_ID_SSA &&
-                               avctx->codec_id != AV_CODEC_ID_ASS)) {
+    if (s->nb_streams != 1 || avctx->codec_id != AV_CODEC_ID_ASS) {
         av_log(s, AV_LOG_ERROR, "Exactly one ASS/SSA stream is needed.\n");
         return AVERROR(EINVAL);
     }
-    ass->write_ts = avctx->codec_id == AV_CODEC_ID_ASS;
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
     if (avctx->extradata_size > 0) {
         size_t header_size = avctx->extradata_size;
@@ -159,7 +156,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ASSContext *ass = s->priv_data;
 
-    if (ass->write_ts) {
+    // TODO: reindent
         long int layer;
         char *p = pkt->data;
         int64_t start = pkt->pts;
@@ -200,9 +197,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         insert_dialogue(ass, dialogue);
         purge_dialogues(s, ass->ignore_readorder);
-    } else {
-        avio_write(s->pb, pkt->data, pkt->size);
-    }
 
     return 0;
 }
@@ -237,10 +231,10 @@ static const AVClass ass_class = {
 AVOutputFormat ff_ass_muxer = {
     .name           = "ass",
     .long_name      = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
-    .mime_type      = "text/x-ssa",
+    .mime_type      = "text/x-ass",
     .extensions     = "ass,ssa",
     .priv_data_size = sizeof(ASSContext),
-    .subtitle_codec = AV_CODEC_ID_SSA,
+    .subtitle_codec = AV_CODEC_ID_ASS,
     .write_header   = write_header,
     .write_packet   = write_packet,
     .write_trailer  = write_trailer,
