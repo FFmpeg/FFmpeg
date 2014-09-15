@@ -290,9 +290,21 @@
       <xsd:attribute name="alpha"      type="xsd:int" use="required"/>
     </xsd:complexType>
 
+    <xsd:complexType name="pixelFormatComponentType">
+      <xsd:attribute name="index"      type="xsd:int" use="required"/>
+      <xsd:attribute name="bit_depth"  type="xsd:int" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatComponentsType">
+      <xsd:sequence>
+        <xsd:element name="component" type="ffprobe:pixelFormatComponentType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
+    </xsd:complexType>
+
     <xsd:complexType name="pixelFormatType">
       <xsd:sequence>
         <xsd:element name="flags" type="ffprobe:pixelFormatFlagsType" minOccurs="0" maxOccurs="1"/>
+        <xsd:element name="components" type="ffprobe:pixelFormatComponentsType" minOccurs="0" maxOccurs="1"/>
       </xsd:sequence>
 
       <xsd:attribute name="name"                type="xsd:string" use="required"/>

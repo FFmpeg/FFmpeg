@@ -68,6 +68,7 @@ static int do_show_program_version  = 0;
 static int do_show_library_versions = 0;
 static int do_show_pixel_formats = 0;
 static int do_show_pixel_format_flags = 0;
+static int do_show_pixel_format_components = 0;
 
 static int do_show_chapter_tags = 0;
 static int do_show_format_tags = 0;
@@ -136,6 +137,8 @@ typedef enum {
     SECTION_ID_PACKETS_AND_FRAMES,
     SECTION_ID_PIXEL_FORMAT,
     SECTION_ID_PIXEL_FORMAT_FLAGS,
+    SECTION_ID_PIXEL_FORMAT_COMPONENT,
+    SECTION_ID_PIXEL_FORMAT_COMPONENTS,
     SECTION_ID_PIXEL_FORMATS,
     SECTION_ID_PROGRAM_STREAM_DISPOSITION,
     SECTION_ID_PROGRAM_STREAM_TAGS,
@@ -171,8 +174,10 @@ static struct section sections[] = {
     [SECTION_ID_PACKETS_AND_FRAMES] = { SECTION_ID_PACKETS_AND_FRAMES, "packets_and_frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
     [SECTION_ID_PACKET] =             { SECTION_ID_PACKET, "packet", 0, { -1 } },
     [SECTION_ID_PIXEL_FORMATS] =      { SECTION_ID_PIXEL_FORMATS, "pixel_formats", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PIXEL_FORMAT, -1 } },
-    [SECTION_ID_PIXEL_FORMAT] =       { SECTION_ID_PIXEL_FORMAT, "pixel_format", 0, { SECTION_ID_PIXEL_FORMAT_FLAGS, -1 } },
+    [SECTION_ID_PIXEL_FORMAT] =       { SECTION_ID_PIXEL_FORMAT, "pixel_format", 0, { SECTION_ID_PIXEL_FORMAT_FLAGS, SECTION_ID_PIXEL_FORMAT_COMPONENTS, -1 } },
     [SECTION_ID_PIXEL_FORMAT_FLAGS] = { SECTION_ID_PIXEL_FORMAT_FLAGS, "flags", 0, { -1 }, .unique_name = "pixel_format_flags" },
+    [SECTION_ID_PIXEL_FORMAT_COMPONENTS] = { SECTION_ID_PIXEL_FORMAT_COMPONENTS, "components", SECTION_FLAG_IS_ARRAY, {SECTION_ID_PIXEL_FORMAT_COMPONENT, -1 }, .unique_name = "pixel_format_components" },
+    [SECTION_ID_PIXEL_FORMAT_COMPONENT]  = { SECTION_ID_PIXEL_FORMAT_COMPONENT, "component", 0, { -1 } },
     [SECTION_ID_PROGRAM_STREAM_DISPOSITION] = { SECTION_ID_PROGRAM_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "program_stream_disposition" },
     [SECTION_ID_PROGRAM_STREAM_TAGS] =        { SECTION_ID_PROGRAM_STREAM_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "program_stream_tags" },
     [SECTION_ID_PROGRAM] =                    { SECTION_ID_PROGRAM, "program", 0, { SECTION_ID_PROGRAM_TAGS, SECTION_ID_PROGRAM_STREAMS, -1 } },
@@ -2574,7 +2579,7 @@ static void ffprobe_show_library_versions(WriterContext *w)
 static void ffprobe_show_pixel_formats(WriterContext *w)
 {
     const AVPixFmtDescriptor *pixdesc = NULL;
-    int n;
+    int i, n;
 
     writer_print_section_header(w, SECTION_ID_PIXEL_FORMATS);
     while (pixdesc = av_pix_fmt_desc_next(pixdesc)) {
@@ -2594,6 +2599,16 @@ static void ffprobe_show_pixel_formats(WriterContext *w)
             PRINT_PIX_FMT_FLAG(RGB,       "rgb");
             PRINT_PIX_FMT_FLAG(PSEUDOPAL, "pseudopal");
             PRINT_PIX_FMT_FLAG(ALPHA,     "alpha");
+            writer_print_section_footer(w);
+        }
+        if (do_show_pixel_format_components && (pixdesc->nb_components > 0)) {
+            writer_print_section_header(w, SECTION_ID_PIXEL_FORMAT_COMPONENTS);
+            for (i = 0; i < pixdesc->nb_components; i++) {
+                writer_print_section_header(w, SECTION_ID_PIXEL_FORMAT_COMPONENT);
+                print_int("index", i + 1);
+                print_int("bit_depth", pixdesc->comp[i].depth_minus1 + 1);
+                writer_print_section_footer(w);
+            }
             writer_print_section_footer(w);
         }
         writer_print_section_footer(w);
@@ -3032,6 +3047,7 @@ int main(int argc, char **argv)
     SET_DO_SHOW(PACKETS, packets);
     SET_DO_SHOW(PIXEL_FORMATS, pixel_formats);
     SET_DO_SHOW(PIXEL_FORMAT_FLAGS, pixel_format_flags);
+    SET_DO_SHOW(PIXEL_FORMAT_COMPONENTS, pixel_format_components);
     SET_DO_SHOW(PROGRAM_VERSION, program_version);
     SET_DO_SHOW(PROGRAMS, programs);
     SET_DO_SHOW(STREAMS, streams);
