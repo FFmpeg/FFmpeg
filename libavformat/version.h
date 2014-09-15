@@ -61,9 +61,6 @@
 #define FF_API_URL_FEOF                 (LIBAVFORMAT_VERSION_MAJOR < 57)
 #endif
 
-#ifndef FF_API_NEW_STREAM
-#define FF_API_NEW_STREAM              (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_SET_PTS_INFO
 #define FF_API_SET_PTS_INFO            (LIBAVFORMAT_VERSION_MAJOR < 56)
 #endif
