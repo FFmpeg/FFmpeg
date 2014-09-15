@@ -611,14 +611,6 @@ av_cold void ff_sws_init_range_convert(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
 
-#if FF_API_SWS_FORMAT_NAME
-/**
- * @deprecated Use av_get_pix_fmt_name() instead.
- */
-attribute_deprecated
-const char *sws_format_name(enum AVPixelFormat format);
-#endif
-
 static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
