@@ -116,9 +116,6 @@
 #ifndef FF_API_XVMC
 #define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
-#ifndef FF_API_INTFLOAT
-#define FF_API_INTFLOAT                 (LIBAVUTIL_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_OPT_TYPE_METADATA
 #define FF_API_OPT_TYPE_METADATA        (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
