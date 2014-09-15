@@ -80,9 +80,6 @@
  * @{
  */
 
-#ifndef FF_API_GET_BITS_PER_SAMPLE_FMT
-#define FF_API_GET_BITS_PER_SAMPLE_FMT (LIBAVUTIL_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_FIND_OPT
 #define FF_API_FIND_OPT                 (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
