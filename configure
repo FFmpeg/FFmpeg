@@ -3121,6 +3121,7 @@ elif enabled x86; then
     case $cpu in
         i[345]86|pentium)
             cpuflags="-march=$cpu"
+            disable i686
             disable mmx
         ;;
         # targets that do NOT support nopl and conditional mov (cmov)
