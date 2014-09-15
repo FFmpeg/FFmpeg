@@ -1874,16 +1874,6 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
  */
 
 
-#if FF_API_ALLOC_OUTPUT_CONTEXT
-/**
- * @deprecated deprecated in favor of avformat_alloc_output_context2()
- */
-attribute_deprecated
-AVFormatContext *avformat_alloc_output_context(const char *format,
-                                               AVOutputFormat *oformat,
-                                               const char *filename);
-#endif
-
 /**
  * Allocate an AVFormatContext for an output format.
  * avformat_free_context() can be used to free the context and
