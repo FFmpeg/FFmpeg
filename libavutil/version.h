@@ -113,9 +113,6 @@
 #ifndef FF_API_LLS_PRIVATE
 #define FF_API_LLS_PRIVATE              (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
-#ifndef FF_API_LLS1
-#define FF_API_LLS1                     (LIBAVUTIL_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_AVFRAME_LAVC
 #define FF_API_AVFRAME_LAVC             (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
