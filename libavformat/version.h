@@ -61,9 +61,6 @@
 #define FF_API_URL_FEOF                 (LIBAVFORMAT_VERSION_MAJOR < 57)
 #endif
 
-#ifndef FF_API_READ_PACKET
-#define FF_API_READ_PACKET             (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1
 #endif
