@@ -309,6 +309,8 @@
 
       <xsd:attribute name="name"                type="xsd:string" use="required"/>
       <xsd:attribute name="nb_components"       type="xsd:int"    use="required"/>
+      <xsd:attribute name="log2_chroma_w"       type="xsd:int"/>
+      <xsd:attribute name="log2_chroma_h"       type="xsd:int"/>
       <xsd:attribute name="bits_per_pixel"      type="xsd:int"/>
     </xsd:complexType>
 

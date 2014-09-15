@@ -2586,6 +2586,13 @@ static void ffprobe_show_pixel_formats(WriterContext *w)
         writer_print_section_header(w, SECTION_ID_PIXEL_FORMAT);
         print_str("name", pixdesc->name);
         print_int("nb_components", pixdesc->nb_components);
+        if ((pixdesc->nb_components >= 3) && !(pixdesc->flags & AV_PIX_FMT_FLAG_RGB)) {
+            print_int    ("log2_chroma_w", pixdesc->log2_chroma_w);
+            print_int    ("log2_chroma_h", pixdesc->log2_chroma_h);
+        } else {
+            print_str_opt("log2_chroma_w", "N/A");
+            print_str_opt("log2_chroma_h", "N/A");
+        }
         n = av_get_bits_per_pixel(pixdesc);
         if (n) print_int    ("bits_per_pixel", n);
         else   print_str_opt("bits_per_pixel", "N/A");
