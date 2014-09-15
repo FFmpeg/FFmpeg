@@ -55,9 +55,6 @@
 #ifndef FF_API_FOO_COUNT
 #define FF_API_FOO_COUNT                    (LIBAVFILTER_VERSION_MAJOR < 6)
 #endif
-#ifndef FF_API_FILL_FRAME
-#define FF_API_FILL_FRAME                   (LIBAVFILTER_VERSION_MAJOR < 5)
-#endif
 #ifndef FF_API_AVFILTERBUFFER
 #define FF_API_AVFILTERBUFFER               (LIBAVFILTER_VERSION_MAJOR < 6)
 #endif
