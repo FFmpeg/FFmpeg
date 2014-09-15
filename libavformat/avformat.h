@@ -1986,26 +1986,6 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
 attribute_deprecated
 int av_demuxer_open(AVFormatContext *ic);
 
-#if FF_API_FORMAT_PARAMETERS
-/**
- * Read packets of a media file to get stream information. This
- * is useful for file formats with no headers such as MPEG. This
- * function also computes the real framerate in case of MPEG-2 repeat
- * frame mode.
- * The logical file position is not changed by this function;
- * examined packets may be buffered for later processing.
- *
- * @param ic media file handle
- * @return >=0 if OK, AVERROR_xxx on error
- * @todo Let the user decide somehow what information is needed so that
- *       we do not waste time getting stuff the user does not need.
- *
- * @deprecated use avformat_find_stream_info.
- */
-attribute_deprecated
-int av_find_stream_info(AVFormatContext *ic);
-#endif
-
 /**
  * Read packets of a media file to get stream information. This
  * is useful for file formats with no headers such as MPEG. This
