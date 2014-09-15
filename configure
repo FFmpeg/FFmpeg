@@ -2532,7 +2532,6 @@ unix_protocol_deps="sys_un_h"
 unix_protocol_select="network"
 
 # filters
-aconvert_filter_deps="swresample"
 amovie_filter_deps="avcodec avformat"
 aresample_filter_deps="swresample"
 ass_filter_deps="libass"
@@ -5300,7 +5299,6 @@ done
 enabled zlib && add_cppflags -DZLIB_CONST
 
 # conditional library dependencies, in linking order
-enabled aconvert_filter     && prepend avfilter_deps "swresample"
 enabled amovie_filter       && prepend avfilter_deps "avformat avcodec"
 enabled aresample_filter    && prepend avfilter_deps "swresample"
 enabled asyncts_filter      && prepend avfilter_deps "avresample"
