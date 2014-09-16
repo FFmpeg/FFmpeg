@@ -222,9 +222,6 @@
     <ClCompile Include="..\libavcodec\me_cmp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\dsputil_compat.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg_er.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

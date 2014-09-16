@@ -260,9 +260,6 @@
     <ClCompile Include="..\libavcodec\me_cmp.c">
       <ObjectFileName>$(IntDir)\libavcodec_me_cmp.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\dsputil_compat.c">
-      <ObjectFileName>$(IntDir)\libavcodec_dsputil_compat.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg_er.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpeg_er.obj</ObjectFileName>
     </ClCompile>
