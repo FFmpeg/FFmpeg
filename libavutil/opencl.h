@@ -69,14 +69,6 @@ typedef struct {
     AVOpenCLPlatformNode **platform_node;
 } AVOpenCLDeviceList;
 
-#if FF_API_OLD_OPENCL
-typedef struct {
-    cl_command_queue command_queue;
-    cl_kernel kernel;
-    char kernel_name[AV_OPENCL_MAX_KERNEL_NAME_SIZE];
-} AVOpenCLKernelEnv;
-#endif
-
 typedef struct {
     cl_platform_id platform_id;
     cl_device_type device_type;
@@ -187,19 +179,6 @@ int av_opencl_register_kernel_code(const char *kernel_code);
  */
 int av_opencl_init(AVOpenCLExternalEnv *ext_opencl_env);
 
-#if FF_API_OLD_OPENCL
-/**
- * Create kernel object in the specified kernel environment.
- *
- * @param env              pointer to kernel environment which is filled with
- *                         the environment used to run the kernel
- * @param kernel_name      kernel function name
- * @return >=0 on success, a negative error code in case of failure
- * @deprecated, use clCreateKernel
- */
-int av_opencl_create_kernel(AVOpenCLKernelEnv *env, const char *kernel_name);
-#endif
-
 /**
  * compile specific OpenCL kernel source
  *
@@ -291,17 +270,6 @@ int av_opencl_buffer_read_image(uint8_t **dst_data, int *plane_size, int plane_n
  *               previously filled with av_opencl_buffer_create()
  */
 void av_opencl_buffer_release(cl_mem *cl_buf);
-
-#if FF_API_OLD_OPENCL
-/**
- * Release kernel object.
- *
- * @param env kernel environment where the kernel object was created
- *            with av_opencl_create_kernel()
- * @deprecated, use clReleaseKernel
- */
-void av_opencl_release_kernel(AVOpenCLKernelEnv *env);
-#endif
 
 /**
  * Release OpenCL environment.

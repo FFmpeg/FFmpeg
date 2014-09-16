@@ -111,6 +111,14 @@ struct sockaddr_storage {
 };
 #endif /* !HAVE_STRUCT_SOCKADDR_STORAGE */
 
+typedef union sockaddr_union {
+    struct sockaddr_storage storage;
+    struct sockaddr_in in;
+#if HAVE_STRUCT_SOCKADDR_IN6
+    struct sockaddr_in6 in6;
+#endif
+} sockaddr_union;
+
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif

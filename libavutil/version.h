@@ -113,9 +113,6 @@
 #ifndef FF_API_LLS_PRIVATE
 #define FF_API_LLS_PRIVATE              (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
-#ifndef FF_API_LLS1
-#define FF_API_LLS1                     (LIBAVUTIL_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_AVFRAME_LAVC
 #define FF_API_AVFRAME_LAVC             (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
@@ -124,9 +121,6 @@
 #endif
 #ifndef FF_API_GET_CHANNEL_LAYOUT_COMPAT
 #define FF_API_GET_CHANNEL_LAYOUT_COMPAT (LIBAVUTIL_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_OLD_OPENCL
-#define FF_API_OLD_OPENCL               (LIBAVUTIL_VERSION_MAJOR < 54)
 #endif
 #ifndef FF_API_XVMC
 #define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 55)

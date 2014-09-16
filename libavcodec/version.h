@@ -141,9 +141,6 @@
 #ifndef FF_API_EMU_EDGE
 #define FF_API_EMU_EDGE          (LIBAVCODEC_VERSION_MAJOR < 57)
 #endif
-#ifndef FF_API_DSPUTIL
-#define FF_API_DSPUTIL           (LIBAVCODEC_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_ARCH_SH4
 #define FF_API_ARCH_SH4          (LIBAVCODEC_VERSION_MAJOR < 57)
 #endif

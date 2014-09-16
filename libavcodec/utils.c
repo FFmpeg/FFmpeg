@@ -1235,7 +1235,7 @@ int av_codec_get_max_lowres(const AVCodec *codec)
     return codec->max_lowres;
 }
 
-static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
+static void get_subtitle_defaults(AVSubtitle *sub)
 {
     memset(sub, 0, sizeof(*sub));
     sub->pts = AV_NOPTS_VALUE;
@@ -2616,7 +2616,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
     }
 
     *got_sub_ptr = 0;
-    avcodec_get_subtitle_defaults(sub);
+    get_subtitle_defaults(sub);
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size) {
         AVPacket pkt_recoded;

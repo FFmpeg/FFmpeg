@@ -254,6 +254,13 @@ static int read_tfra(struct Tracks *tracks, int start_index, AVIOContext *f)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+    // The duration here is always the difference between consecutive
+    // start times and doesn't even try to read the actual duration of the
+    // media fragments. This is what other smooth streaming tools tend to
+    // do too, but cannot express missing fragments, and the start times
+    // may not match the stream metadata we get from libavformat. Correct
+    // calculation would require parsing the tfxd atom (if present, it's
+    // not mandatory) or parsing the full moof atoms separately.
     for (i = 0; i < track->chunks; i++) {
         if (version == 1) {
             track->offsets[i].time   = avio_rb64(f);
@@ -272,9 +279,30 @@ static int read_tfra(struct Tracks *tracks, int start_index, AVIOContext *f)
             track->offsets[i - 1].duration = track->offsets[i].time -
                                              track->offsets[i - 1].time;
     }
-    if (track->chunks > 0)
-        track->offsets[track->chunks - 1].duration = track->duration -
+    if (track->chunks > 0) {
+        track->offsets[track->chunks - 1].duration = track->offsets[0].time +
+                                                     track->duration -
                                                      track->offsets[track->chunks - 1].time;
+        if (track->offsets[track->chunks - 1].duration <= 0) {
+            fprintf(stderr, "Calculated last chunk duration for track %d "
+                    "was non-positive (%"PRId64"), probably due to missing "
+                    "fragments ", track->track_id,
+                    track->offsets[track->chunks - 1].duration);
+            if (track->chunks > 1) {
+                track->offsets[track->chunks - 1].duration =
+                    track->offsets[track->chunks - 2].duration;
+            } else {
+                track->offsets[track->chunks - 1].duration = 1;
+            }
+            fprintf(stderr, "corrected to %"PRId64"\n",
+                    track->offsets[track->chunks - 1].duration);
+            track->duration = track->offsets[track->chunks - 1].time +
+                              track->offsets[track->chunks - 1].duration -
+                              track->offsets[0].time;
+            fprintf(stderr, "Track duration corrected to %"PRId64"\n",
+                    track->duration);
+        }
+    }
     ret = 0;
 
 fail:
@@ -526,6 +554,7 @@ static void print_track_chunks(FILE *out, struct Tracks *tracks, int main,
                                const char *type)
 {
     int i, j;
+    int64_t pos = 0;
     struct Track *track = tracks->tracks[main];
     int should_print_time_mismatch = 1;
 
@@ -545,8 +574,18 @@ static void print_track_chunks(FILE *out, struct Tracks *tracks, int main,
                 }
             }
         }
-        fprintf(out, "\t\t<c n=\"%d\" d=\"%"PRId64"\" />\n",
+        fprintf(out, "\t\t<c n=\"%d\" d=\"%"PRId64"\" ",
                 i, track->offsets[i].duration);
+        if (pos != track->offsets[i].time) {
+            // With the current logic for calculation of durations from
+            // chunk start times, this branch can only be hit on the first
+            // chunk - but that's still useful and this will keep working
+            // if the duration calculation is improved.
+            fprintf(out, "t=\"%"PRId64"\" ", track->offsets[i].time);
+            pos = track->offsets[i].time;
+        }
+        pos += track->offsets[i].duration;
+        fprintf(out, "/>\n");
     }
 }
 
