@@ -53,6 +53,8 @@
     • API for live metadata updates through event flags.
     • UTF-16 support in text subtitles formats.
     • The ASS muxer now reorders the Dialogue events properly.
+    • support for H.261 RTP payload format (RFC 4587)
+    • HEVC/H.265 RTP payload format (draft v6) depacketizer
 
    ┌────────────────────────────┐
    │ libavfilter                │
