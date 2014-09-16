@@ -11,9 +11,9 @@ version 10.5:
 - mpegenc: limit the maximum muxrate
 - avconv: fix the muxrate values for -target
 - avconv: fix parsing the AVOptions for -target
-- pulse: Add a wallclock option to be compatible with other other captures
+- pulse: Add a wallclock option to be compatible with other captures (libav/647)
 - license: Mention that vf_interlace is GPL, not LGPL
-- doc: Fix syntax and logical errors in avconv stream combination example
+- doc: Fix syntax and logical errors in avconv stream combination example (libav/661)
 
 version 10.4:
 - mpegts: Do not try to write a PMT larger than SECTION_SIZE (CVE-2014-2263)
