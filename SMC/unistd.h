@@ -39,7 +39,7 @@
 #define random rand
 
 #define inline __inline
-typedef unsigned short mode_t;
+typedef int mode_t;
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 
