@@ -804,9 +804,9 @@ static void xyz12Torgb48(struct SwsContext *c, uint16_t *dst,
                 c->xyz2rgb_matrix[2][2] * z >> 12;
 
             // limit values to 12-bit depth
-            r = av_clip_c(r,0,4095);
-            g = av_clip_c(g,0,4095);
-            b = av_clip_c(b,0,4095);
+            r = av_clip(r, 0, 4095);
+            g = av_clip(g, 0, 4095);
+            b = av_clip(b, 0, 4095);
 
             // convert from sRGBlinear to RGB and scale from 12bit to 16bit
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {
@@ -860,9 +860,9 @@ static void rgb48Toxyz12(struct SwsContext *c, uint16_t *dst,
                 c->rgb2xyz_matrix[2][2] * b >> 12;
 
             // limit values to 12-bit depth
-            x = av_clip_c(x,0,4095);
-            y = av_clip_c(y,0,4095);
-            z = av_clip_c(z,0,4095);
+            x = av_clip(x, 0, 4095);
+            y = av_clip(y, 0, 4095);
+            z = av_clip(z, 0, 4095);
 
             // convert from XYZlinear to X'Y'Z' and scale from 12bit to 16bit
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {
