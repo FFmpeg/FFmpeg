@@ -1,12 +1,12 @@
 Releases are sorted from youngest to oldest.
 
 version 9.17:
-- ffv1dec: check that global parameters do not change in version 0/1
+- ffv1dec: check that global parameters do not change in version 0/1 (CVE-2013-7020)
 - mpegenc: limit the maximum muxrate
 - avconv: fix the muxrate values for -target
 - avconv: fix parsing the AVOptions for -target
-- pulse: Add a wallclock option to be compatible with other other captures
-- doc: Fix syntax and logical errors in avconv stream combination example
+- pulse: Add a wallclock option to be compatible with other captures (libav/647)
+- doc: Fix syntax and logical errors in avconv stream combination example (libav/661)
 
 version 9.16:
 - vp3: Copy all 3 frames for thread updates (CVE-2011-3934)
@@ -435,7 +435,7 @@ version 9.2:
 - H.264: fix ff_generate_sliding_window_mmcos() prototype
 - H.264: don't clobber mmco opcode tables for non-first slice headers
 - libx264: use the library specific default rc_initial_buffer_occupancy
-- lavc: set the default rc_initial_buffer_occupancy
+- lavc: set the default rc_initial_buffer_occupancy (libav/222, ubuntu/1023408)
 - lavc: introduce the convenience function init_get_bits8
 - lavc: check for overflow in init_get_bits
 - configure: enable pic for shared libs on AArch64
