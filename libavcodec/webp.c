@@ -1024,7 +1024,7 @@ static int apply_color_indexing_transform(WebPContext *s)
     ImageContext *img;
     ImageContext *pal;
     int i, x, y;
-    uint8_t *p, *pi;
+    uint8_t *p;
 
     img = &s->image[IMAGE_ROLE_ARGB];
     pal = &s->image[IMAGE_ROLE_COLOR_INDEXING];
@@ -1062,11 +1062,11 @@ static int apply_color_indexing_transform(WebPContext *s)
             p = GET_PIXEL(img->frame, x, y);
             i = p[2];
             if (i >= pal->frame->width) {
-                av_log(s->avctx, AV_LOG_ERROR, "invalid palette index %d\n", i);
-                return AVERROR_INVALIDDATA;
+                AV_WB32(p, 0xFF000000);
+            } else {
+                const uint8_t *pi = GET_PIXEL(pal->frame, i, 0);
+                AV_COPY32(p, pi);
             }
-            pi = GET_PIXEL(pal->frame, i, 0);
-            AV_COPY32(p, pi);
         }
     }
 
