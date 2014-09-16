@@ -5144,6 +5144,22 @@ Modify RGB components depending on pixel position:
 @example
 geq=r='X/W*r(X,Y)':g='(1-X/W)*g(X,Y)':b='(H-Y)/H*b(X,Y)'
 @end example
+
+@item
+Create a radial gradient that is the same size as the input (also see
+the @ref{vignette} filter):
+@example
+geq=lum=255*gauss((X/W-0.5)*3)*gauss((Y/H-0.5)*3)/gauss(0)/gauss(0),format=gray
+@end example
+
+@item
+Create a linear gradient to use as a mask for another filter, then
+compose with @ref{overlay}. In this example the video will gradually
+become more blurry from the top to the bottom of the y-axis as defined
+by the linear gradient:
+@example
+ffmpeg -i input.mp4 -filter_complex "geq=lum=255*(Y/H),format=gray[grad];[0:v]boxblur=4[blur];[blur][grad]alphamerge[alpha];[0:v][alpha]overlay" output.mp4
+@end example
 @end itemize
 
 @section gradfun
