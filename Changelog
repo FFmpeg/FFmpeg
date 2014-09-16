@@ -4,7 +4,7 @@ releases are sorted from youngest to oldest.
 version 0.8.16:
 
 - avcodec: Add more missing #includes for ff_get_buffer()
-- ffv1dec: check that global parameters do not change in version 0/1
+- ffv1dec: check that global parameters do not change in version 0/1 (CVE-2013-7020)
 - arm: dsputil: fix overreads in put/avg_pixels functions
 - arm: dsputil: prettify some conditional instructions in put_pixels macros
 - arm/neon: dsputil: use correct size specifiers on vld1/vst1
@@ -19,11 +19,11 @@ version 0.8.16:
 - svq1enc: Set picture_structure correctly
 - adpcmenc: Calculate the IMA_QT predictor without overflow
 - ffmpeg: Clarify wording of ffmpeg --> avconv deprecation message
-- doc: Fix syntax and logical errors in avconv stream combination example
+- doc: Fix syntax and logical errors in avconv stream combination example (libav/661)
 
 version 0.8.15:
 
-- avcodec: Introduce ff_get_buffer
+- avcodec: Introduce ff_get_buffer (CVE-2011-3935)
 - configure: Check for -Werror parameters on clang
 - lavf: Fix leftovers from the ff_get_buffer patch
 
@@ -222,7 +222,7 @@ version 0.8.9:
 - 8bps: Bound-check the input buffer
 - rtmp: Do not misuse memcmp
 - rtmp: rename data_size to size
-- lavc: set the default rc_initial_buffer_occupancy
+- lavc: set the default rc_initial_buffer_occupancy (libav/222, ubuntu/1023408)
 - 4xm: Reject not a multiple of 16 dimension
 - 4xm: do not overread the prestream buffer
 - 4xm: validate the buffer size before parsing it
