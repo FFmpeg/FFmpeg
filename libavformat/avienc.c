@@ -576,7 +576,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIStream *avist    = s->streams[stream_index]->priv_data;
     AVCodecContext *enc = s->streams[stream_index]->codec;
 
-    if (enc->codec_id == AV_CODEC_ID_H264 && enc->codec_tag == MKTAG('H','2','6','4')) {
+    if (enc->codec_id == AV_CODEC_ID_H264 && enc->codec_tag == MKTAG('H','2','6','4') && pkt->size) {
         int ret = ff_check_h264_startcode(s, s->streams[stream_index], pkt);
         if (ret < 0)
             return ret;
