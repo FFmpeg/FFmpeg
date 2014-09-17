@@ -350,17 +350,6 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
 }
 
 RTPDynamicProtocolHandler ff_hevc_dynamic_handler = {
-    .enc_name         = "HEVC",
-    .codec_type       = AVMEDIA_TYPE_VIDEO,
-    .codec_id         = AV_CODEC_ID_HEVC,
-    .init             = hevc_init,
-    .parse_sdp_a_line = hevc_parse_sdp_line,
-    .alloc            = hevc_new_context,
-    .free             = hevc_free_context,
-    .parse_packet     = hevc_handle_packet
-};
-
-RTPDynamicProtocolHandler ff_h265_dynamic_handler = {
     .enc_name         = "H265",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_HEVC,
