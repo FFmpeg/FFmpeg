@@ -3241,7 +3241,7 @@ static void toggle_full_screen(VideoState *is)
     /* OS X needs to reallocate the SDL overlays */
     int i;
     for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++)
-        is->pictq[i].reallocate = 1;
+        is->pictq.queue[i].reallocate = 1;
 #endif
     is_full_screen = !is_full_screen;
     video_open(is, 1, NULL);
