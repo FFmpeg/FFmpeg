@@ -474,14 +474,15 @@ HF_NOISE 16
 ;int ff_sad_<opt>(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, int stride, int h);
 ;---------------------------------------------------------------------------------------
 INIT_MMX mmxext
-cglobal sad8, 4, 4, 0, v, pix1, pix2, stride
+cglobal sad8, 5, 5, 0, v, pix1, pix2, stride, h
     movu      m2, [pix2q]
     movu      m1, [pix2q+strideq]
     psadbw    m2, [pix1q]
     psadbw    m1, [pix1q+strideq]
     paddw     m2, m1
+    sub       hd, 2
 
-%rep 3
+.loop:
     lea    pix1q, [pix1q+strideq*2]
     lea    pix2q, [pix2q+strideq*2]
     movu      m0, [pix2q]
@@ -490,7 +491,9 @@ cglobal sad8, 4, 4, 0, v, pix1, pix2, stride
     psadbw    m1, [pix1q+strideq]
     paddw     m2, m0
     paddw     m2, m1
-%endrep
+    sub       hd, 2
+        jne .loop
+
     movd     eax, m2
     RET
 
@@ -535,7 +538,7 @@ SAD16
 ;int ff_sad_x2_<opt>(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, int stride, int h);
 ;------------------------------------------------------------------------------------------
 INIT_MMX mmxext
-cglobal sad8_x2, 4, 4, 0, v, pix1, pix2, stride
+cglobal sad8_x2, 5, 5, 0, v, pix1, pix2, stride, h
     movu      m0, [pix2q]
     movu      m2, [pix2q+strideq]
     pavgb     m0, [pix2q+1]
@@ -543,8 +546,9 @@ cglobal sad8_x2, 4, 4, 0, v, pix1, pix2, stride
     psadbw    m0, [pix1q]
     psadbw    m2, [pix1q+strideq]
     paddw     m0, m2
+    sub       hd, 2
 
-%rep 3
+.loop:
     lea    pix1q, [pix1q+2*strideq]
     lea    pix2q, [pix2q+2*strideq]
     movu      m1, [pix2q]
@@ -555,7 +559,9 @@ cglobal sad8_x2, 4, 4, 0, v, pix1, pix2, stride
     psadbw    m2, [pix1q+strideq]
     paddw     m0, m1
     paddw     m0, m2
-%endrep
+    sub       hd, 2
+        jne .loop
+
     movd     eax, m0
     RET
 
@@ -611,7 +617,7 @@ SAD16_X2
 ;int ff_sad_y2_<opt>(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, int stride, int h);
 ;------------------------------------------------------------------------------------------
 INIT_MMX mmxext
-cglobal sad8_y2, 4, 4, 0, v, pix1, pix2, stride
+cglobal sad8_y2, 5, 5, 0, v, pix1, pix2, stride, h
     movu      m1, [pix2q]
     movu      m0, [pix2q+strideq]
     movu      m3, [pix2q+2*strideq]
@@ -622,8 +628,9 @@ cglobal sad8_y2, 4, 4, 0, v, pix1, pix2, stride
     psadbw    m0, [pix1q+strideq]
     paddw     m0, m1
     mova      m1, m3
+    sub       hd, 2
 
-%rep 3
+.loop:
     lea    pix1q, [pix1q+2*strideq]
     lea    pix2q, [pix2q+2*strideq]
     movu      m2, [pix2q]
@@ -635,7 +642,9 @@ cglobal sad8_y2, 4, 4, 0, v, pix1, pix2, stride
     paddw     m0, m1
     paddw     m0, m2
     mova      m1, m3
-%endrep
+    sub       hd, 2
+        jne .loop
+
     movd     eax, m0
     RET
 
@@ -691,7 +700,7 @@ SAD16_Y2
 ;int ff_sad_approx_xy2_<opt>(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, int stride, int h);
 ;-------------------------------------------------------------------------------------------
 INIT_MMX mmxext
-cglobal sad8_approx_xy2, 4, 4, 0, v, pix1, pix2, stride
+cglobal sad8_approx_xy2, 5, 5, 0, v, pix1, pix2, stride, h
     pxor      m0, m0
     mova      m4, [pb_1]
     movu      m1, [pix2q]
@@ -708,8 +717,9 @@ cglobal sad8_approx_xy2, 4, 4, 0, v, pix1, pix2, stride
     psadbw    m0, [pix1q+strideq]
     paddw     m0, m1
     mova      m1, m3
+    sub       hd, 2
 
-%rep 3
+.loop:
     lea    pix1q, [pix1q+2*strideq]
     lea    pix2q, [pix2q+2*strideq]
     movu      m2, [pix2q]
@@ -724,7 +734,9 @@ cglobal sad8_approx_xy2, 4, 4, 0, v, pix1, pix2, stride
     paddw     m0, m1
     paddw     m0, m2
     mova      m1, m3
-%endrep
+    sub       hd, 2
+        jne .loop
+
     movd     eax, m0
     RET
 
