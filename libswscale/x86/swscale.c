@@ -205,36 +205,20 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
         yuv2yuvX_mmxext(filter, filterSize, src, dest, dstW, dither, offset);
         return;
     }
-    if (offset) {
-        __asm__ volatile("movq       (%0), %%xmm3\n\t"
-                         "movdqa    %%xmm3, %%xmm4\n\t"
-                         "psrlq       $24, %%xmm3\n\t"
-                         "psllq       $40, %%xmm4\n\t"
-                         "por       %%xmm4, %%xmm3\n\t"
-                         :: "r"(dither)
-                         );
-    } else {
-        __asm__ volatile("movq       (%0), %%xmm3\n\t"
-                         :: "r"(dither)
-                         );
-    }
     filterSize--;
-    __asm__ volatile(
-        "pxor      %%xmm0, %%xmm0\n\t"
-        "punpcklbw %%xmm0, %%xmm3\n\t"
-        "movd          %0, %%xmm1\n\t"
-        "punpcklwd %%xmm1, %%xmm1\n\t"
-        "punpckldq %%xmm1, %%xmm1\n\t"
-        "punpcklqdq %%xmm1, %%xmm1\n\t"
-        "psllw         $3, %%xmm1\n\t"
-        "paddw     %%xmm1, %%xmm3\n\t"
-        "psraw         $4, %%xmm3\n\t"
-        ::"m"(filterSize)
-     );
-    __asm__ volatile(
-        "movdqa    %%xmm3, %%xmm4\n\t"
-        "movdqa    %%xmm3, %%xmm7\n\t"
-        "movl %3, %%ecx\n\t"
+#define MAIN_FUNCTION \
+        "pxor       %%xmm0, %%xmm0 \n\t" \
+        "punpcklbw  %%xmm0, %%xmm3 \n\t" \
+        "movd           %4, %%xmm1 \n\t" \
+        "punpcklwd  %%xmm1, %%xmm1 \n\t" \
+        "punpckldq  %%xmm1, %%xmm1 \n\t" \
+        "punpcklqdq %%xmm1, %%xmm1 \n\t" \
+        "psllw          $3, %%xmm1 \n\t" \
+        "paddw      %%xmm1, %%xmm3 \n\t" \
+        "psraw          $4, %%xmm3 \n\t" \
+        "movdqa     %%xmm3, %%xmm4 \n\t" \
+        "movdqa     %%xmm3, %%xmm7 \n\t" \
+        "movl           %3, %%ecx  \n\t" \
         "mov                                 %0, %%"REG_d"  \n\t"\
         "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
         ".p2align                             4             \n\t" /* FIXME Unroll? */\
@@ -252,20 +236,41 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
         " jnz                                1b             \n\t"\
         "psraw                               $3, %%xmm3      \n\t"\
         "psraw                               $3, %%xmm4      \n\t"\
-        "packuswb                         %%xmm4, %%xmm3      \n\t"
-        "movntdq                          %%xmm3, (%1, %%"REG_c")\n\t"
+        "packuswb                         %%xmm4, %%xmm3      \n\t"\
+        "movntdq                          %%xmm3, (%1, %%"REG_c")\n\t"\
         "add                         $16, %%"REG_c"         \n\t"\
         "cmp                          %2, %%"REG_c"         \n\t"\
-        "movdqa    %%xmm7, %%xmm3\n\t"
-        "movdqa    %%xmm7, %%xmm4\n\t"
+        "movdqa                   %%xmm7, %%xmm3            \n\t" \
+        "movdqa                   %%xmm7, %%xmm4            \n\t" \
         "mov                                 %0, %%"REG_d"  \n\t"\
         "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-        "jb                                  1b             \n\t"\
-        :: "g" (filter),
-           "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset)
-        : XMM_CLOBBERS("%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" , "%xmm4" , "%xmm5" , "%xmm7" ,)
-         "%"REG_d, "%"REG_S, "%"REG_c
-    );
+        "jb                                  1b             \n\t"
+
+    if (offset) {
+        __asm__ volatile(
+            "movq          %5, %%xmm3  \n\t"
+            "movdqa    %%xmm3, %%xmm4  \n\t"
+            "psrlq        $24, %%xmm3  \n\t"
+            "psllq        $40, %%xmm4  \n\t"
+            "por       %%xmm4, %%xmm3  \n\t"
+            MAIN_FUNCTION
+              :: "g" (filter),
+              "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset),
+              "m"(filterSize), "m"(((uint64_t *) dither)[0])
+              : XMM_CLOBBERS("%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" , "%xmm4" , "%xmm5" , "%xmm7" ,)
+                "%"REG_d, "%"REG_S, "%"REG_c
+              );
+    } else {
+        __asm__ volatile(
+            "movq          %5, %%xmm3   \n\t"
+            MAIN_FUNCTION
+              :: "g" (filter),
+              "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset),
+              "m"(filterSize), "m"(((uint64_t *) dither)[0])
+              : XMM_CLOBBERS("%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" , "%xmm4" , "%xmm5" , "%xmm7" ,)
+                "%"REG_d, "%"REG_S, "%"REG_c
+              );
+    }
 }
 #endif
 
