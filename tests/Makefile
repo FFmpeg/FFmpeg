@@ -128,7 +128,7 @@ $(FATE_AVCONV) $(FATE_SAMPLES_AVCONV): avconv$(EXESUF)
 ifdef SAMPLES
 FATE += $(FATE_SAMPLES)
 fate-rsync:
-	rsync -vaLW rsync://fate-suite.libav.org/fate-suite/ $(SAMPLES)
+	rsync -vaLW rsync://fate-suite.libav.org/fate-suite-11/ $(SAMPLES)
 else
 fate-rsync:
 	@echo "use 'make fate-rsync SAMPLES=/path/to/samples' to sync the fate suite"
