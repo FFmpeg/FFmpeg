@@ -1543,7 +1543,8 @@ int show_protocols(void *optctx, const char *opt, const char *arg)
 
 int show_filters(void *optctx, const char *opt, const char *arg)
 {
-    const AVFilter av_unused(*filter) = NULL;
+#if CONFIG_AVFILTER
+    const AVFilter *filter = NULL;
     char descr[64], *descr_cur;
     int i, j;
     const AVFilterPad *pad;
@@ -1556,7 +1557,6 @@ int show_filters(void *optctx, const char *opt, const char *arg)
            "  V = Video input/output\n"
            "  N = Dynamic number and/or type of input/output\n"
            "  | = Source or sink filter\n");
-#if CONFIG_AVFILTER
     while ((filter = avfilter_next(filter))) {
         descr_cur = descr;
         for (i = 0; i < 2; i++) {
@@ -1581,6 +1581,8 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                filter->process_command                        ? 'C' : '.',
                filter->name, descr, filter->description);
     }
+#else
+    printf("No filters available: libavfilter disabled\n");
 #endif
     return 0;
 }
