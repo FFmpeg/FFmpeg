@@ -20,9 +20,9 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%if ARCH_X86_64
-
 %include "libavutil/x86/x86util.asm"
+
+%if ARCH_X86_64
 
 SECTION_RODATA
 
