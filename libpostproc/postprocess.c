@@ -209,13 +209,13 @@ static inline int isHorizDC_C(const uint8_t src[], int stride, const PPContext *
     const int dcThreshold= dcOffset*2 + 1;
 
     for(y=0; y<BLOCK_SIZE; y++){
-        if(((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[1] - src[2] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[2] - src[3] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[3] - src[4] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[4] - src[5] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[5] - src[6] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[6] - src[7] + dcOffset)) < dcThreshold) numEq++;
+        numEq += ((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[1] - src[2] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[2] - src[3] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[3] - src[4] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[4] - src[5] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[5] - src[6] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[6] - src[7] + dcOffset)) < dcThreshold;
         src+= stride;
     }
     return numEq > c->ppMode.flatnessThreshold;
@@ -233,14 +233,14 @@ static inline int isVertDC_C(const uint8_t src[], int stride, const PPContext *c
 
     src+= stride*4; // src points to begin of the 8x8 Block
     for(y=0; y<BLOCK_SIZE-1; y++){
-        if(((unsigned)(src[0] - src[0+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[1] - src[1+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[2] - src[2+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[3] - src[3+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[4] - src[4+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[5] - src[5+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[6] - src[6+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[7] - src[7+stride] + dcOffset)) < dcThreshold) numEq++;
+        numEq += ((unsigned)(src[0] - src[0+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[1] - src[1+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[2] - src[2+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[3] - src[3+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[4] - src[4+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[5] - src[5+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[6] - src[6+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[7] - src[7+stride] + dcOffset)) < dcThreshold;
         src+= stride;
     }
     return numEq > c->ppMode.flatnessThreshold;
@@ -278,10 +278,7 @@ static inline int isVertMinMaxOk_C(const uint8_t src[], int stride, int QP)
 static inline int horizClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isHorizDC_C(src, stride, c) ){
-        if( isHorizMinMaxOk_C(src, stride, c->QP) )
-            return 1;
-        else
-            return 0;
+        return isHorizMinMaxOk_C(src, stride, c->QP);
     }else{
         return 2;
     }
@@ -290,10 +287,7 @@ static inline int horizClassify_C(const uint8_t src[], int stride, const PPConte
 static inline int vertClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isVertDC_C(src, stride, c) ){
-        if( isVertMinMaxOk_C(src, stride, c->QP) )
-            return 1;
-        else
-            return 0;
+        return isVertMinMaxOk_C(src, stride, c->QP);
     }else{
         return 2;
     }
@@ -704,21 +698,22 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     av_log(NULL, AV_LOG_DEBUG, "pp: %s\n", name);
 
     for(;;){
-        char *filterName;
+        const char *filterName;
         int q= 1000000; //PP_QUALITY_MAX;
         int chrom=-1;
         int luma=-1;
-        char *option;
-        char *options[OPTIONS_ARRAY_SIZE];
+        const char *option;
+        const char *options[OPTIONS_ARRAY_SIZE];
         int i;
         int filterNameOk=0;
         int numOfUnknownOptions=0;
         int enable=1; //does the user want us to enabled or disabled the filter
+        char *tokstate;
 
-        filterToken= strtok(p, filterDelimiters);
+        filterToken= av_strtok(p, filterDelimiters, &tokstate);
         if(!filterToken) break;
         p+= strlen(filterToken) + 1; // p points to next filterToken
-        filterName= strtok(filterToken, optionDelimiters);
+        filterName= av_strtok(filterToken, optionDelimiters, &tokstate);
         if (!filterName) {
             ppMode->error++;
             break;
@@ -731,7 +726,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
         }
 
         for(;;){ //for all options
-            option= strtok(NULL, optionDelimiters);
+            option= av_strtok(NULL, optionDelimiters, &tokstate);
             if(!option) break;
 
             av_log(NULL, AV_LOG_DEBUG, "pp: option: %s\n", option);
