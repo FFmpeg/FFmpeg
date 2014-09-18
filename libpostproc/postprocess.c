@@ -209,13 +209,13 @@ static inline int isHorizDC_C(const uint8_t src[], int stride, const PPContext *
     const int dcThreshold= dcOffset*2 + 1;
 
     for(y=0; y<BLOCK_SIZE; y++){
-        if(((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[1] - src[2] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[2] - src[3] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[3] - src[4] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[4] - src[5] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[5] - src[6] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[6] - src[7] + dcOffset)) < dcThreshold) numEq++;
+        numEq += ((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[1] - src[2] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[2] - src[3] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[3] - src[4] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[4] - src[5] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[5] - src[6] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[6] - src[7] + dcOffset)) < dcThreshold;
         src+= stride;
     }
     return numEq > c->ppMode.flatnessThreshold;
@@ -233,14 +233,14 @@ static inline int isVertDC_C(const uint8_t src[], int stride, const PPContext *c
 
     src+= stride*4; // src points to begin of the 8x8 Block
     for(y=0; y<BLOCK_SIZE-1; y++){
-        if(((unsigned)(src[0] - src[0+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[1] - src[1+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[2] - src[2+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[3] - src[3+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[4] - src[4+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[5] - src[5+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[6] - src[6+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[7] - src[7+stride] + dcOffset)) < dcThreshold) numEq++;
+        numEq += ((unsigned)(src[0] - src[0+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[1] - src[1+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[2] - src[2+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[3] - src[3+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[4] - src[4+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[5] - src[5+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[6] - src[6+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[7] - src[7+stride] + dcOffset)) < dcThreshold;
         src+= stride;
     }
     return numEq > c->ppMode.flatnessThreshold;
