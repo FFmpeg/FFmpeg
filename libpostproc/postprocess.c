@@ -926,8 +926,10 @@ void pp_free_context(void *vc){
     PPContext *c = (PPContext*)vc;
     int i;
 
-    for(i=0; i<3; i++) av_free(c->tempBlurred[i]);
-    for(i=0; i<3; i++) av_free(c->tempBlurredPast[i]);
+    for(i=0; i<FF_ARRAY_ELEMS(c->tempBlurred); i++)
+        av_free(c->tempBlurred[i]);
+    for(i=0; i<FF_ARRAY_ELEMS(c->tempBlurredPast); i++)
+        av_free(c->tempBlurredPast[i]);
 
     av_free(c->tempBlocks);
     av_free(c->yHistogram);
