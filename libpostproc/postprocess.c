@@ -953,8 +953,8 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
 {
     int mbWidth = (width+15)>>4;
     int mbHeight= (height+15)>>4;
-    PPMode *mode = (PPMode*)vm;
-    PPContext *c = (PPContext*)vc;
+    PPMode *mode = vm;
+    PPContext *c = vc;
     int minStride= FFMAX(FFABS(srcStride[0]), FFABS(dstStride[0]));
     int absQPStride = FFABS(QPStride);
 
