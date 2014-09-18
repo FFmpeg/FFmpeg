@@ -708,11 +708,12 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
         int filterNameOk=0;
         int numOfUnknownOptions=0;
         int enable=1; //does the user want us to enabled or disabled the filter
+        char *tokstate;
 
-        filterToken= strtok(p, filterDelimiters);
+        filterToken= av_strtok(p, filterDelimiters, &tokstate);
         if(!filterToken) break;
         p+= strlen(filterToken) + 1; // p points to next filterToken
-        filterName= strtok(filterToken, optionDelimiters);
+        filterName= av_strtok(filterToken, optionDelimiters, &tokstate);
         if (!filterName) {
             ppMode->error++;
             break;
@@ -725,7 +726,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
         }
 
         for(;;){ //for all options
-            option= strtok(NULL, optionDelimiters);
+            option= av_strtok(NULL, optionDelimiters, &tokstate);
             if(!option) break;
 
             av_log(NULL, AV_LOG_DEBUG, "pp: option: %s\n", option);
