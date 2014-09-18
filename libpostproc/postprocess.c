@@ -698,12 +698,12 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     av_log(NULL, AV_LOG_DEBUG, "pp: %s\n", name);
 
     for(;;){
-        char *filterName;
+        const char *filterName;
         int q= 1000000; //PP_QUALITY_MAX;
         int chrom=-1;
         int luma=-1;
-        char *option;
-        char *options[OPTIONS_ARRAY_SIZE];
+        const char *option;
+        const char *options[OPTIONS_ARRAY_SIZE];
         int i;
         int filterNameOk=0;
         int numOfUnknownOptions=0;
