@@ -278,10 +278,7 @@ static inline int isVertMinMaxOk_C(const uint8_t src[], int stride, int QP)
 static inline int horizClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isHorizDC_C(src, stride, c) ){
-        if( isHorizMinMaxOk_C(src, stride, c->QP) )
-            return 1;
-        else
-            return 0;
+        return isHorizMinMaxOk_C(src, stride, c->QP);
     }else{
         return 2;
     }
@@ -290,10 +287,7 @@ static inline int horizClassify_C(const uint8_t src[], int stride, const PPConte
 static inline int vertClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isVertDC_C(src, stride, c) ){
-        if( isVertMinMaxOk_C(src, stride, c->QP) )
-            return 1;
-        else
-            return 0;
+        return isVertMinMaxOk_C(src, stride, c->QP);
     }else{
         return 2;
     }
