@@ -2026,6 +2026,7 @@ bool projectGenerator::passToolchain( string & sToolchain )
             return false;
         }
     }
+    return true;
 }
 
 bool projectGenerator::findFile( const string & sFileName, string & sRetFileName )
