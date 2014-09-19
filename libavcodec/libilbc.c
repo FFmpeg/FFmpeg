@@ -95,8 +95,7 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     }
 
-    WebRtcIlbcfix_DecodeImpl((WebRtc_Word16*) frame->data[0],
-                             (const WebRtc_UWord16*) buf, &s->decoder, 1);
+    WebRtcIlbcfix_DecodeImpl((int16_t *) frame->data[0], (const uint16_t *) buf, &s->decoder, 1);
 
     *got_frame_ptr = 1;
 
@@ -168,7 +167,7 @@ static int ilbc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return ret;
     }
 
-    WebRtcIlbcfix_EncodeImpl((WebRtc_UWord16*) avpkt->data, (const WebRtc_Word16*) frame->data[0], &s->encoder);
+    WebRtcIlbcfix_EncodeImpl((uint16_t *) avpkt->data, (const int16_t *) frame->data[0], &s->encoder);
 
     avpkt->size     = s->encoder.no_of_bytes;
     *got_packet_ptr = 1;
