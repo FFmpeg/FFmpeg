@@ -117,6 +117,8 @@ Start the sequence from @var{number}.
 @item -hls_base_url @var{baseurl}
 Append @var{baseurl} to every entry in the playlist.
 Useful to generate playlists with absolute paths.
+@item -hls_allow_cache @var{allowcache}
+Explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments
 @end table
 
 @anchor{image2}
