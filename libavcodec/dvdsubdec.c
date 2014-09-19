@@ -649,9 +649,9 @@ static av_cold int dvdsub_close(AVCodecContext *avctx)
 }
 
 #define OFFSET(field) offsetof(DVDSubContext, field)
-#define VD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
+#define SD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "palette", "set the global palette", OFFSET(palette_str), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VD },
+    { "palette", "set the global palette", OFFSET(palette_str), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, SD },
     { NULL }
 };
 static const AVClass dvdsub_class = {
