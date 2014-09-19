@@ -72,9 +72,6 @@
     <ClCompile Include="..\libavfilter\avcodec.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavfilter\af_aconvert.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavfilter\af_adelay.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

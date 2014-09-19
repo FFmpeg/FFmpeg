@@ -107,9 +107,6 @@
     <ClCompile Include="..\libavfilter\avcodec.c">
       <ObjectFileName>$(IntDir)\libavfilter_avcodec.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavfilter\af_aconvert.c">
-      <ObjectFileName>$(IntDir)\libavfilter_af_aconvert.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavfilter\af_adelay.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_adelay.obj</ObjectFileName>
     </ClCompile>
@@ -1021,7 +1018,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libavformatd.lib;libavcodecd.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1093,7 +1090,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libavformatd.lib;libavcodecd.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1165,7 +1162,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libavformatd.lib;libavcodecd.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1237,7 +1234,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libavformatd.lib;libavcodecd.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1470,7 +1467,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.lib;libswresample.lib;libavformat.lib;libavcodec.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1551,7 +1548,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.lib;libswresample.lib;libavformat.lib;libavcodec.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1632,7 +1629,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.lib;libswresample.lib;libavformat.lib;libavcodec.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1713,7 +1710,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.lib;libswresample.lib;libavformat.lib;libavcodec.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
