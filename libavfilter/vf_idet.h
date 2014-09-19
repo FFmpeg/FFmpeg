@@ -29,7 +29,7 @@ typedef int (*ff_idet_filter_func)(const uint8_t *a, const uint8_t *b, const uin
 typedef enum {
     TFF,
     BFF,
-    PROGRSSIVE,
+    PROGRESSIVE,
     UNDETERMINED,
 } Type;
 
