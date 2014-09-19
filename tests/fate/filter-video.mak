@@ -229,6 +229,9 @@ fate-filter-pad: CMD = video_filter "pad=iw*1.5:ih*1.5:iw*0.3:ih*0.2"
 FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp
 fate-filter-pp: CMD = video_filter "pp=be/hb/vb/tn/l5/al"
 
+FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp1
+fate-filter-pp1: CMD = video_filter "pp=fq|4/be/hb/vb/tn/l5/al"
+
 FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp2
 fate-filter-pp2: CMD = video_filter "pp=be/fq|16/h1/v1/lb"
 

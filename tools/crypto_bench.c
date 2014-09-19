@@ -33,6 +33,10 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/timer.h"
 
+#ifndef AV_READ_TIME
+#define AV_READ_TIME(x) 0
+#endif
+
 #if HAVE_UNISTD_H
 #include <unistd.h> /* for getopt */
 #endif

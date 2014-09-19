@@ -75,6 +75,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     rtpctx->start_time_realtime = s->start_time_realtime;
 
     avcodec_copy_context(rtpctx->streams[0]->codec, st->codec);
+    rtpctx->streams[0]->time_base = st->time_base;
 
     if (handle) {
         ret = ffio_fdopen(&rtpctx->pb, handle);

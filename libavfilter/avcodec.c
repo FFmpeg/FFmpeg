@@ -135,23 +135,3 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
     return 0;
 }
 #endif
-
-#if FF_API_FILL_FRAME
-int avfilter_fill_frame_from_audio_buffer_ref(AVFrame *frame,
-                                              const AVFilterBufferRef *samplesref)
-{
-    return avfilter_copy_buf_props(frame, samplesref);
-}
-
-int avfilter_fill_frame_from_video_buffer_ref(AVFrame *frame,
-                                              const AVFilterBufferRef *picref)
-{
-    return avfilter_copy_buf_props(frame, picref);
-}
-
-int avfilter_fill_frame_from_buffer_ref(AVFrame *frame,
-                                        const AVFilterBufferRef *ref)
-{
-    return avfilter_copy_buf_props(frame, ref);
-}
-#endif

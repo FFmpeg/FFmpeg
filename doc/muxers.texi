@@ -224,6 +224,11 @@ Set the segment length in seconds. Default value is 2.
 Set the maximum number of playlist entries. If set to 0 the list file
 will contain all the segments. Default value is 5.
 
+@item hls_ts_options @var{options_list}
+Set output format options using a :-separated list of key=value
+parameters. Values containing @code{:} special characters must be
+escaped.
+
 @item hls_wrap @var{wrap}
 Set the number after which the segment filename number (the number
 specified in each segment file) wraps. If set to 0 the number will be

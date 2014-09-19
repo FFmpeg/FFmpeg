@@ -130,26 +130,23 @@ static int compare_addr(const struct sockaddr_storage *a,
 
 static int get_port(const struct sockaddr_storage *ss)
 {
-    sockaddr_union ssu = (sockaddr_union){.storage = *ss};
     if (ss->ss_family == AF_INET)
-        return ntohs(ssu.in.sin_port);
+        return ntohs(((const struct sockaddr_in *)ss)->sin_port);
 #if HAVE_STRUCT_SOCKADDR_IN6
     if (ss->ss_family == AF_INET6)
-        return ntohs(ssu.in6.sin6_port);
+        return ntohs(((const struct sockaddr_in6 *)ss)->sin6_port);
 #endif
     return 0;
 }
 
 static void set_port(struct sockaddr_storage *ss, int port)
 {
-    sockaddr_union ssu = (sockaddr_union){.storage = *ss};
     if (ss->ss_family == AF_INET)
-        ssu.in.sin_port = htons(port);
+        ((struct sockaddr_in *)ss)->sin_port = htons(port);
 #if HAVE_STRUCT_SOCKADDR_IN6
     else if (ss->ss_family == AF_INET6)
-        ssu.in6.sin6_port = htons(port);
+        ((struct sockaddr_in6 *)ss)->sin6_port = htons(port);
 #endif
-    *ss = ssu.storage;
 }
 
 static int rtp_check_source_lists(RTPContext *s, struct sockaddr_storage *source_addr_ptr)

@@ -294,8 +294,8 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
         for (x = 0; x < deshake->rx * 2 + 1; x++) {
             //av_log(NULL, AV_LOG_ERROR, "%5d ", deshake->counts[x][y]);
             if (deshake->counts[x][y] > count_max_value) {
-                t->vector.x = x - deshake->rx;
-                t->vector.y = y - deshake->ry;
+                t->vec.x = x - deshake->rx;
+                t->vec.y = y - deshake->ry;
                 count_max_value = deshake->counts[x][y];
             }
         }
@@ -304,12 +304,12 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
 
     p_x = (center_x - width / 2.0);
     p_y = (center_y - height / 2.0);
-    t->vector.x += (cos(t->angle)-1)*p_x  - sin(t->angle)*p_y;
-    t->vector.y += sin(t->angle)*p_x  + (cos(t->angle)-1)*p_y;
+    t->vec.x += (cos(t->angle)-1)*p_x  - sin(t->angle)*p_y;
+    t->vec.y += sin(t->angle)*p_x  + (cos(t->angle)-1)*p_y;
 
     // Clamp max shift & rotation?
-    t->vector.x = av_clipf(t->vector.x, -deshake->rx * 2, deshake->rx * 2);
-    t->vector.y = av_clipf(t->vector.y, -deshake->ry * 2, deshake->ry * 2);
+    t->vec.x = av_clipf(t->vec.x, -deshake->rx * 2, deshake->rx * 2);
+    t->vec.y = av_clipf(t->vec.y, -deshake->ry * 2, deshake->ry * 2);
     t->angle = av_clipf(t->angle, -0.1, 0.1);
 
     //av_log(NULL, AV_LOG_ERROR, "%d x %d\n", avg->x, avg->y);
@@ -407,8 +407,8 @@ static int config_props(AVFilterLink *link)
     DeshakeContext *deshake = link->dst->priv;
 
     deshake->ref = NULL;
-    deshake->last.vector.x = 0;
-    deshake->last.vector.y = 0;
+    deshake->last.vec.x = 0;
+    deshake->last.vec.y = 0;
     deshake->last.angle = 0;
     deshake->last.zoom = 0;
 
@@ -476,57 +476,57 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
 
     // Copy transform so we can output it later to compare to the smoothed value
-    orig.vector.x = t.vector.x;
-    orig.vector.y = t.vector.y;
+    orig.vec.x = t.vec.x;
+    orig.vec.y = t.vec.y;
     orig.angle = t.angle;
     orig.zoom = t.zoom;
 
     // Generate a one-sided moving exponential average
-    deshake->avg.vector.x = alpha * t.vector.x + (1.0 - alpha) * deshake->avg.vector.x;
-    deshake->avg.vector.y = alpha * t.vector.y + (1.0 - alpha) * deshake->avg.vector.y;
+    deshake->avg.vec.x = alpha * t.vec.x + (1.0 - alpha) * deshake->avg.vec.x;
+    deshake->avg.vec.y = alpha * t.vec.y + (1.0 - alpha) * deshake->avg.vec.y;
     deshake->avg.angle = alpha * t.angle + (1.0 - alpha) * deshake->avg.angle;
     deshake->avg.zoom = alpha * t.zoom + (1.0 - alpha) * deshake->avg.zoom;
 
     // Remove the average from the current motion to detect the motion that
     // is not on purpose, just as jitter from bumping the camera
-    t.vector.x -= deshake->avg.vector.x;
-    t.vector.y -= deshake->avg.vector.y;
+    t.vec.x -= deshake->avg.vec.x;
+    t.vec.y -= deshake->avg.vec.y;
     t.angle -= deshake->avg.angle;
     t.zoom -= deshake->avg.zoom;
 
     // Invert the motion to undo it
-    t.vector.x *= -1;
-    t.vector.y *= -1;
+    t.vec.x *= -1;
+    t.vec.y *= -1;
     t.angle *= -1;
 
     // Write statistics to file
     if (deshake->fp) {
-        snprintf(tmp, 256, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", orig.vector.x, deshake->avg.vector.x, t.vector.x, orig.vector.y, deshake->avg.vector.y, t.vector.y, orig.angle, deshake->avg.angle, t.angle, orig.zoom, deshake->avg.zoom, t.zoom);
+        snprintf(tmp, 256, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", orig.vec.x, deshake->avg.vec.x, t.vec.x, orig.vec.y, deshake->avg.vec.y, t.vec.y, orig.angle, deshake->avg.angle, t.angle, orig.zoom, deshake->avg.zoom, t.zoom);
         fwrite(tmp, sizeof(char), strlen(tmp), deshake->fp);
     }
 
     // Turn relative current frame motion into absolute by adding it to the
     // last absolute motion
-    t.vector.x += deshake->last.vector.x;
-    t.vector.y += deshake->last.vector.y;
+    t.vec.x += deshake->last.vec.x;
+    t.vec.y += deshake->last.vec.y;
     t.angle += deshake->last.angle;
     t.zoom += deshake->last.zoom;
 
     // Shrink motion by 10% to keep things centered in the camera frame
-    t.vector.x *= 0.9;
-    t.vector.y *= 0.9;
+    t.vec.x *= 0.9;
+    t.vec.y *= 0.9;
     t.angle *= 0.9;
 
     // Store the last absolute motion information
-    deshake->last.vector.x = t.vector.x;
-    deshake->last.vector.y = t.vector.y;
+    deshake->last.vec.x = t.vec.x;
+    deshake->last.vec.y = t.vec.y;
     deshake->last.angle = t.angle;
     deshake->last.zoom = t.zoom;
 
     // Generate a luma transformation matrix
-    avfilter_get_matrix(t.vector.x, t.vector.y, t.angle, 1.0 + t.zoom / 100.0, matrix_y);
+    avfilter_get_matrix(t.vec.x, t.vec.y, t.angle, 1.0 + t.zoom / 100.0, matrix_y);
     // Generate a chroma transformation matrix
-    avfilter_get_matrix(t.vector.x / (link->w / CHROMA_WIDTH(link)), t.vector.y / (link->h / CHROMA_HEIGHT(link)), t.angle, 1.0 + t.zoom / 100.0, matrix_uv);
+    avfilter_get_matrix(t.vec.x / (link->w / CHROMA_WIDTH(link)), t.vec.y / (link->h / CHROMA_HEIGHT(link)), t.angle, 1.0 + t.zoom / 100.0, matrix_uv);
     // Transform the luma and chroma planes
     ret = deshake->transform(link->dst, link->w, link->h, CHROMA_WIDTH(link), CHROMA_HEIGHT(link),
                              matrix_y, matrix_uv, INTERPOLATE_BILINEAR, deshake->edge, in, out);

@@ -209,13 +209,13 @@ static inline int isHorizDC_C(const uint8_t src[], int stride, const PPContext *
     const int dcThreshold= dcOffset*2 + 1;
 
     for(y=0; y<BLOCK_SIZE; y++){
-        if(((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[1] - src[2] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[2] - src[3] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[3] - src[4] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[4] - src[5] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[5] - src[6] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[6] - src[7] + dcOffset)) < dcThreshold) numEq++;
+        numEq += ((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[1] - src[2] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[2] - src[3] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[3] - src[4] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[4] - src[5] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[5] - src[6] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[6] - src[7] + dcOffset)) < dcThreshold;
         src+= stride;
     }
     return numEq > c->ppMode.flatnessThreshold;
@@ -233,14 +233,14 @@ static inline int isVertDC_C(const uint8_t src[], int stride, const PPContext *c
 
     src+= stride*4; // src points to begin of the 8x8 Block
     for(y=0; y<BLOCK_SIZE-1; y++){
-        if(((unsigned)(src[0] - src[0+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[1] - src[1+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[2] - src[2+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[3] - src[3+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[4] - src[4+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[5] - src[5+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[6] - src[6+stride] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[7] - src[7+stride] + dcOffset)) < dcThreshold) numEq++;
+        numEq += ((unsigned)(src[0] - src[0+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[1] - src[1+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[2] - src[2+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[3] - src[3+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[4] - src[4+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[5] - src[5+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[6] - src[6+stride] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[7] - src[7+stride] + dcOffset)) < dcThreshold;
         src+= stride;
     }
     return numEq > c->ppMode.flatnessThreshold;
@@ -278,10 +278,7 @@ static inline int isVertMinMaxOk_C(const uint8_t src[], int stride, int QP)
 static inline int horizClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isHorizDC_C(src, stride, c) ){
-        if( isHorizMinMaxOk_C(src, stride, c->QP) )
-            return 1;
-        else
-            return 0;
+        return isHorizMinMaxOk_C(src, stride, c->QP);
     }else{
         return 2;
     }
@@ -290,10 +287,7 @@ static inline int horizClassify_C(const uint8_t src[], int stride, const PPConte
 static inline int vertClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isVertDC_C(src, stride, c) ){
-        if( isVertMinMaxOk_C(src, stride, c->QP) )
-            return 1;
-        else
-            return 0;
+        return isVertMinMaxOk_C(src, stride, c->QP);
     }else{
         return 2;
     }
@@ -704,21 +698,22 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     av_log(NULL, AV_LOG_DEBUG, "pp: %s\n", name);
 
     for(;;){
-        char *filterName;
+        const char *filterName;
         int q= 1000000; //PP_QUALITY_MAX;
         int chrom=-1;
         int luma=-1;
-        char *option;
-        char *options[OPTIONS_ARRAY_SIZE];
+        const char *option;
+        const char *options[OPTIONS_ARRAY_SIZE];
         int i;
         int filterNameOk=0;
         int numOfUnknownOptions=0;
         int enable=1; //does the user want us to enabled or disabled the filter
+        char *tokstate;
 
-        filterToken= strtok(p, filterDelimiters);
+        filterToken= av_strtok(p, filterDelimiters, &tokstate);
         if(!filterToken) break;
         p+= strlen(filterToken) + 1; // p points to next filterToken
-        filterName= strtok(filterToken, optionDelimiters);
+        filterName= av_strtok(filterToken, optionDelimiters, &tokstate);
         if (!filterName) {
             ppMode->error++;
             break;
@@ -731,7 +726,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
         }
 
         for(;;){ //for all options
-            option= strtok(NULL, optionDelimiters);
+            option= av_strtok(NULL, optionDelimiters, &tokstate);
             if(!option) break;
 
             av_log(NULL, AV_LOG_DEBUG, "pp: option: %s\n", option);
@@ -858,7 +853,7 @@ void pp_free_mode(pp_mode *mode){
     av_free(mode);
 }
 
-static void reallocAlign(void **p, int alignment, int size){
+static void reallocAlign(void **p, int size){
     av_free(*p);
     *p= av_mallocz(size);
 }
@@ -871,23 +866,23 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride, int 
     c->stride= stride;
     c->qpStride= qpStride;
 
-    reallocAlign((void **)&c->tempDst, 8, stride*24+32);
-    reallocAlign((void **)&c->tempSrc, 8, stride*24);
-    reallocAlign((void **)&c->tempBlocks, 8, 2*16*8);
-    reallocAlign((void **)&c->yHistogram, 8, 256*sizeof(uint64_t));
+    reallocAlign((void **)&c->tempDst, stride*24+32);
+    reallocAlign((void **)&c->tempSrc, stride*24);
+    reallocAlign((void **)&c->tempBlocks, 2*16*8);
+    reallocAlign((void **)&c->yHistogram, 256*sizeof(uint64_t));
     for(i=0; i<256; i++)
             c->yHistogram[i]= width*height/64*15/256;
 
     for(i=0; i<3; i++){
         //Note: The +17*1024 is just there so I do not have to worry about r/w over the end.
-        reallocAlign((void **)&c->tempBlurred[i], 8, stride*mbHeight*16 + 17*1024);
-        reallocAlign((void **)&c->tempBlurredPast[i], 8, 256*((height+7)&(~7))/2 + 17*1024);//FIXME size
+        reallocAlign((void **)&c->tempBlurred[i], stride*mbHeight*16 + 17*1024);
+        reallocAlign((void **)&c->tempBlurredPast[i], 256*((height+7)&(~7))/2 + 17*1024);//FIXME size
     }
 
-    reallocAlign((void **)&c->deintTemp, 8, 2*width+32);
-    reallocAlign((void **)&c->nonBQPTable, 8, qpStride*mbHeight*sizeof(QP_STORE_T));
-    reallocAlign((void **)&c->stdQPTable, 8, qpStride*mbHeight*sizeof(QP_STORE_T));
-    reallocAlign((void **)&c->forcedQPTable, 8, mbWidth*sizeof(QP_STORE_T));
+    reallocAlign((void **)&c->deintTemp, 2*width+32);
+    reallocAlign((void **)&c->nonBQPTable, qpStride*mbHeight*sizeof(QP_STORE_T));
+    reallocAlign((void **)&c->stdQPTable, qpStride*mbHeight*sizeof(QP_STORE_T));
+    reallocAlign((void **)&c->forcedQPTable, mbWidth*sizeof(QP_STORE_T));
 }
 
 static const char * context_to_name(void * ptr) {
@@ -931,8 +926,10 @@ void pp_free_context(void *vc){
     PPContext *c = (PPContext*)vc;
     int i;
 
-    for(i=0; i<3; i++) av_free(c->tempBlurred[i]);
-    for(i=0; i<3; i++) av_free(c->tempBlurredPast[i]);
+    for(i=0; i<FF_ARRAY_ELEMS(c->tempBlurred); i++)
+        av_free(c->tempBlurred[i]);
+    for(i=0; i<FF_ARRAY_ELEMS(c->tempBlurredPast); i++)
+        av_free(c->tempBlurredPast[i]);
 
     av_free(c->tempBlocks);
     av_free(c->yHistogram);
@@ -956,8 +953,8 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
 {
     int mbWidth = (width+15)>>4;
     int mbHeight= (height+15)>>4;
-    PPMode *mode = (PPMode*)vm;
-    PPContext *c = (PPContext*)vc;
+    PPMode *mode = vm;
+    PPContext *c = vc;
     int minStride= FFMAX(FFABS(srcStride[0]), FFABS(dstStride[0]));
     int absQPStride = FFABS(QPStride);
 

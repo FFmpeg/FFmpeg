@@ -309,41 +309,6 @@ build.
 
 Below is a description of the currently available audio filters.
 
-@section aconvert
-
-Convert the input audio format to the specified formats.
-
-@emph{This filter is deprecated. Use @ref{aformat} instead.}
-
-The filter accepts a string of the form:
-"@var{sample_format}:@var{channel_layout}".
-
-@var{sample_format} specifies the sample format, and can be a string or the
-corresponding numeric value defined in @file{libavutil/samplefmt.h}. Use 'p'
-suffix for a planar sample format.
-
-@var{channel_layout} specifies the channel layout, and can be a string
-or the corresponding number value defined in @file{libavutil/channel_layout.h}.
-
-The special parameter "auto", signifies that the filter will
-automatically select the output format depending on the output filter.
-
-@subsection Examples
-
-@itemize
-@item
-Convert input to float, planar, stereo:
-@example
-aconvert=fltp:stereo
-@end example
-
-@item
-Convert input to unsigned 8-bit, automatically select out channel layout:
-@example
-aconvert=u8:auto
-@end example
-@end itemize
-
 @section adelay
 
 Delay one or more audio channels.
@@ -2551,6 +2516,26 @@ overlay to a video stream, consider the @var{overlay} filter instead.
 Same as the @ref{subtitles} filter, except that it doesn't require libavcodec
 and libavformat to work. On the other hand, it is limited to ASS (Advanced
 Substation Alpha) subtitles files.
+
+This filter accepts the following option in addition to the common options from
+the @ref{subtitles} filter:
+
+@table @option
+@item shaping
+Set the shaping engine
+
+Available values are:
+@table @samp
+@item auto
+The default libass shaping engine, which is the best available.
+@item simple
+Fast, font-agnostic shaper that can do only substitutions
+@item complex
+Slower shaper using OpenType for substitutions and positioning
+@end table
+
+The default is @code{auto}.
+@end table
 
 @section bbox
 
@@ -5123,6 +5108,22 @@ format=gray,geq=lum_expr='(p(X,Y)+(256-p(X-4,Y-4)))/2'
 Modify RGB components depending on pixel position:
 @example
 geq=r='X/W*r(X,Y)':g='(1-X/W)*g(X,Y)':b='(H-Y)/H*b(X,Y)'
+@end example
+
+@item
+Create a radial gradient that is the same size as the input (also see
+the @ref{vignette} filter):
+@example
+geq=lum=255*gauss((X/W-0.5)*3)*gauss((Y/H-0.5)*3)/gauss(0)/gauss(0),format=gray
+@end example
+
+@item
+Create a linear gradient to use as a mask for another filter, then
+compose with @ref{overlay}. In this example the video will gradually
+become more blurry from the top to the bottom of the y-axis as defined
+by the linear gradient:
+@example
+ffmpeg -i input.mp4 -filter_complex "geq=lum=255*(Y/H),format=gray[grad];[0:v]boxblur=4[blur];[blur][grad]alphamerge[alpha];[0:v][alpha]overlay" output.mp4
 @end example
 @end itemize
 

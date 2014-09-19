@@ -95,7 +95,7 @@ static void write_header(AVFormatContext *s)
 
 static void write_footer(AVFormatContext *s)
 {
-    avio_printf(s->pb, "</MPD>");
+    avio_printf(s->pb, "</MPD>\n");
 }
 
 static int subsegment_alignment(AVFormatContext *s, AdaptationSet *as) {

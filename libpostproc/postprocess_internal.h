@@ -76,8 +76,6 @@
 //filters on
 //#define COMPILE_TIME_MODE 0x77
 
-#define CLIP av_clip_uint8
-
 /**
  * Postprocessing filter.
  */
