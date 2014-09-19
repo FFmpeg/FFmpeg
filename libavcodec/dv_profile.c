@@ -257,7 +257,7 @@ void ff_dv_print_profiles(void *logctx, int loglevel)
 
 #endif /* CONFIG_DVPROFILE */
 
-const AVDVProfile* avpriv_dv_frame_profile2(AVCodecContext* codec, const AVDVProfile *sys,
+const AVDVProfile* ff_dv_frame_profile(AVCodecContext* codec, const AVDVProfile *sys,
                                        const uint8_t *frame, unsigned buf_size)
 {
 #if CONFIG_DVPROFILE
@@ -297,10 +297,18 @@ const AVDVProfile* avpriv_dv_frame_profile2(AVCodecContext* codec, const AVDVPro
     return NULL;
 }
 
+#if FF_API_DV_FRAME_PROFILE
+const AVDVProfile* avpriv_dv_frame_profile2(AVCodecContext* codec, const AVDVProfile *sys,
+                                            const uint8_t *frame, unsigned buf_size)
+{
+    return ff_dv_frame_profile(codec, sys, frame, buf_size);
+}
+#endif
+
 const AVDVProfile *av_dv_frame_profile(const AVDVProfile *sys,
                                        const uint8_t *frame, unsigned buf_size)
 {
-    return avpriv_dv_frame_profile2(NULL, sys, frame, buf_size);
+    return ff_dv_frame_profile(NULL, sys, frame, buf_size);
 }
 
 const AVDVProfile *av_dv_codec_profile(int width, int height,
