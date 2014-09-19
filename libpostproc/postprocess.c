@@ -441,15 +441,15 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
     for(y=0; y<8; y++){
         int numEq= 0;
 
-        if(((unsigned)(src[-1*step] - src[0*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 0*step] - src[1*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 1*step] - src[2*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 2*step] - src[3*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 3*step] - src[4*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 4*step] - src[5*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 5*step] - src[6*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 6*step] - src[7*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 7*step] - src[8*step] + dcOffset)) < dcThreshold) numEq++;
+        numEq += ((unsigned)(src[-1*step] - src[0*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 0*step] - src[1*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 1*step] - src[2*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 2*step] - src[3*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 3*step] - src[4*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 4*step] - src[5*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 5*step] - src[6*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 6*step] - src[7*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 7*step] - src[8*step] + dcOffset)) < dcThreshold;
         if(numEq > c->ppMode.flatnessThreshold){
             int min, max, x;
 
