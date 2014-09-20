@@ -30,6 +30,7 @@
 #include <pulse/error.h>
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
+#include "libavutil/time.h"
 #include "libavutil/opt.h"
 #include "pulse_audio_common.h"
 
@@ -47,6 +48,7 @@ typedef struct PulseData {
     pa_simple *s;
     int64_t pts;
     int64_t frame_duration;
+    int wallclock;
 } PulseData;
 
 static av_cold int pulse_read_header(AVFormatContext *s)
@@ -131,6 +133,8 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         pd->pts = -latency;
+        if (pd->wallclock)
+            pd->pts += av_gettime();
     }
 
     pkt->pts = pd->pts;
@@ -158,6 +162,7 @@ static const AVOption options[] = {
     { "channels",      "set number of audio channels",                      OFFSET(channels),      AV_OPT_TYPE_INT,    {.i64 = 2},        1, INT_MAX, D },
     { "frame_size",    "set number of bytes per frame",                     OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.i64 = 1024},     1, INT_MAX, D },
     { "fragment_size", "set buffering size, affects latency and cpu usage", OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.i64 = -1},      -1, INT_MAX, D },
+    { "wallclock",     "set the initial pts using the current time",     OFFSET(wallclock),     AV_OPT_TYPE_INT,    {.i64 = 1},       -1, 1, D },
     { NULL },
 };
 
