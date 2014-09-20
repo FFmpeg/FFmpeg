@@ -432,7 +432,7 @@ static void write_element(AlacEncodeContext *s,
             uint32_t mask = (1 << s->extra_bits) - 1;
             for (i = 0; i < s->frame_size; i++) {
                 for (j = 0; j < channels; j++) {
-                    put_bits(pb, s->extra_bits, s->predictor_buf[j][i] & mask);
+                    put_bits(pb, s->extra_bits, s->predictor_buf[j][i]);
                 }
             }
         }
