@@ -124,28 +124,27 @@ static int ass_read_header(AVFormatContext *s)
     av_bprint_init(&line,   0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_init(&rline,  0, AV_BPRINT_SIZE_UNLIMITED);
 
-    // TODO reindent
     for (;;) {
         int64_t pos = get_line(&line, &tr);
-            int64_t ts_start = AV_NOPTS_VALUE;
-            int duration = -1;
-            AVPacket *sub;
+        int64_t ts_start = AV_NOPTS_VALUE;
+        int duration = -1;
+        AVPacket *sub;
 
         if (!line.str[0]) // EOF
             break;
 
-            if (read_dialogue(ass, &rline, line.str, &ts_start, &duration) < 0) {
-                av_bprintf(&header, "%s", line.str);
-                continue;
-            }
-            sub = ff_subtitles_queue_insert(&ass->q, rline.str, rline.len, 0);
-            if (!sub) {
-                res = AVERROR(ENOMEM);
-                goto end;
-            }
-            sub->pos = pos;
-            sub->pts = ts_start;
-            sub->duration = duration;
+        if (read_dialogue(ass, &rline, line.str, &ts_start, &duration) < 0) {
+            av_bprintf(&header, "%s", line.str);
+            continue;
+        }
+        sub = ff_subtitles_queue_insert(&ass->q, rline.str, rline.len, 0);
+        if (!sub) {
+            res = AVERROR(ENOMEM);
+            goto end;
+        }
+        sub->pos = pos;
+        sub->pts = ts_start;
+        sub->duration = duration;
     }
 
     av_bprint_finalize(&line, NULL);
