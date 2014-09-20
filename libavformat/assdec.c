@@ -108,7 +108,7 @@ static int ass_read_header(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
     AVBPrint header, line, rline;
-    int header_remaining, res = 0;
+    int res = 0;
     AVStream *st;
     FFTextReader tr;
     ff_text_init_avio(&tr, s->pb);
@@ -120,33 +120,24 @@ static int ass_read_header(AVFormatContext *s)
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codec->codec_id   = AV_CODEC_ID_ASS;
 
-    header_remaining = INT_MAX;
-
     av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_init(&line,   0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_init(&rline,  0, AV_BPRINT_SIZE_UNLIMITED);
 
+    // TODO reindent
     for (;;) {
         int64_t pos = get_line(&line, &tr);
-
-        if (!line.str[0]) // EOF
-            break;
-
-        if (!memcmp(line.str, "[Events]", 8))
-            header_remaining = 2;
-        else if (line.str[0] == '[')
-            header_remaining = INT_MAX;
-
-        if (header_remaining) {
-            av_bprintf(&header, "%s", line.str);
-            header_remaining--;
-        } else {
             int64_t ts_start = AV_NOPTS_VALUE;
             int duration = -1;
             AVPacket *sub;
 
-            if (read_dialogue(ass, &rline, line.str, &ts_start, &duration) < 0)
+        if (!line.str[0]) // EOF
+            break;
+
+            if (read_dialogue(ass, &rline, line.str, &ts_start, &duration) < 0) {
+                av_bprintf(&header, "%s", line.str);
                 continue;
+            }
             sub = ff_subtitles_queue_insert(&ass->q, rline.str, rline.len, 0);
             if (!sub) {
                 res = AVERROR(ENOMEM);
@@ -155,7 +146,6 @@ static int ass_read_header(AVFormatContext *s)
             sub->pos = pos;
             sub->pts = ts_start;
             sub->duration = duration;
-        }
     }
 
     av_bprint_finalize(&line, NULL);
