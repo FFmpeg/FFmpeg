@@ -1031,6 +1031,14 @@ typedef struct AVStream {
     int skip_samples;
 
     /**
+     * If not 0, the first audio sample that should be discarded from the stream.
+     * This is broken by design (needs global sample count), but can't be
+     * avoided for broken by design formats such as mp3 with ad-hoc gapless
+     * audio support.
+     */
+    int64_t end_discard_sample;
+
+    /**
      * Number of internally decoded frames, used internally in libavformat, do not access
      * its lifetime differs from info which is why it is not in that structure.
      */
