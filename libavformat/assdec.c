@@ -1,6 +1,7 @@
 /*
  * SSA/ASS demuxer
  * Copyright (c) 2008 Michael Niedermayer
+ * Copyright (c) 2014 Clément Bœsch
  *
  * This file is part of FFmpeg.
  *
