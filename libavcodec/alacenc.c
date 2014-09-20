@@ -444,7 +444,7 @@ static void write_element(AlacEncodeContext *s,
             // TODO: determine when this will actually help. for now it's not used.
             if (prediction_type == 15) {
                 // 2nd pass 1st order filter
-                int32_t *residual = s->predictor_buf[channels];
+                int32_t *residual = s->predictor_buf[i];
                 for (j = s->frame_size - 1; j > 0; j--)
                     residual[j] -= residual[j - 1];
             }
