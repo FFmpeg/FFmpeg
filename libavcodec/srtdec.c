@@ -223,7 +223,7 @@ static int srt_decode_frame(AVCodecContext *avctx,
     char buffer[2048];
     const char *ptr = avpkt->data;
     const char *end = avpkt->data + avpkt->size;
-    int size;
+    int size, ret;
     const uint8_t *p = av_packet_get_side_data(avpkt, AV_PKT_DATA_SUBTITLE_POSITION, &size);
 
     if (p && size == 16) {
@@ -252,7 +252,9 @@ static int srt_decode_frame(AVCodecContext *avctx,
         }
         ptr = srt_to_ass(avctx, buffer, buffer+sizeof(buffer), ptr,
                          x1, y1, x2, y2);
-        ff_ass_add_rect(sub, buffer, ts_start, ts_end-ts_start, 0);
+        ret = ff_ass_add_rect(sub, buffer, ts_start, ts_end-ts_start, 0);
+        if (ret < 0)
+            return ret;
     }
 
     *got_sub_ptr = sub->num_rects > 0;
