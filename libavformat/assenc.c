@@ -47,7 +47,7 @@ static int write_header(AVFormatContext *s)
     if (s->nb_streams != 1 || (avctx->codec_id != AV_CODEC_ID_SSA &&
                                avctx->codec_id != AV_CODEC_ID_ASS)) {
         av_log(s, AV_LOG_ERROR, "Exactly one ASS/SSA stream is needed.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     ass->write_ts = avctx->codec_id == AV_CODEC_ID_ASS;
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
