@@ -2959,19 +2959,23 @@ if ! check_cmd mktemp -u XXXXXX; then
     # simple replacement for missing mktemp
     # NOT SAFE FOR GENERAL USE
     mktemp(){
-        echo "${2%%XXX*}.${HOSTNAME}.${UID}.$$"
+        tmpname="${2%%XXX*}.${HOSTNAME}.${UID}.$$"
+        echo "$tmpname"
+        mkdir "$tmpname"
     }
 fi
 
+AVTMPDIR=$(mktemp -d "${TMPDIR}/avconf.XXXXXXXX" 2> /dev/null) ||
+    die "Unable to create temporary directory in $TMPDIR."
+
 tmpfile(){
-    tmp=$(mktemp -u "${TMPDIR}/ffconf.XXXXXXXX")$2 &&
-        (set -C; exec > $tmp) 2>/dev/null ||
-        die "Unable to create temporary file in $TMPDIR."
-    append TMPFILES $tmp
+    tmp="${AVTMPDIR}/test"$2
+    (set -C; exec > $tmp) 2> /dev/null ||
+        die "Unable to create temporary file in $AVTMPDIR."
     eval $1=$tmp
 }
 
-trap 'rm -f -- $TMPFILES' EXIT
+trap 'rm -rf -- "$AVTMPDIR"' EXIT
 
 tmpfile TMPASM .asm
 tmpfile TMPC   .c
