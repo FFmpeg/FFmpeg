@@ -1,5 +1,5 @@
 /*
- * Blackmagic DeckLink output
+ * Blackmagic DeckLink common code
  * Copyright (c) 2013-2014 Ramiro Polla
  *
  * This file is part of FFmpeg.
@@ -19,14 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct decklink_cctx {
+    const AVClass *cclass;
 
-int ff_decklink_write_header(AVFormatContext *avctx);
-int ff_decklink_write_packet(AVFormatContext *avctx, AVPacket *pkt);
-int ff_decklink_write_trailer(AVFormatContext *avctx);
+    void *ctx;
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+    /* Options */
+    int list_devices;
+    int list_formats;
+    double preroll;
+};
+
