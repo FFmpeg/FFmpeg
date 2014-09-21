@@ -1036,7 +1036,14 @@ typedef struct AVStream {
      * avoided for broken by design formats such as mp3 with ad-hoc gapless
      * audio support.
      */
-    int64_t end_discard_sample;
+    int64_t first_discard_sample;
+
+    /**
+     * The sample after last sample that is intended to be discarded after
+     * first_discard_sample. Works on frame boundaries only. Used to prevent
+     * early EOF if the gapless info is broken (considered concatenated mp3s).
+     */
+    int64_t last_discard_sample;
 
     /**
      * Number of internally decoded frames, used internally in libavformat, do not access
