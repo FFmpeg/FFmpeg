@@ -3750,6 +3750,7 @@ EOF
 fi
 
 check_ldflags -Wl,--as-needed
+check_ldflags -Wl,-z,noexecstack
 
 if check_func dlopen; then
     ldl=
