@@ -85,6 +85,7 @@ void ff_rtp_send_h261(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_h263(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_h263_rfc2190(AVFormatContext *s1, const uint8_t *buf1, int size,
                               const uint8_t *mb_info, int mb_info_size);
+void ff_rtp_send_hevc(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_latm(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_amr(AVFormatContext *s1, const uint8_t *buff, int size);
