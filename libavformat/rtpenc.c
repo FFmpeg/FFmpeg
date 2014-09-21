@@ -52,6 +52,7 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_H263:
     case AV_CODEC_ID_H263P:
     case AV_CODEC_ID_H264:
+    case AV_CODEC_ID_HEVC:
     case AV_CODEC_ID_MPEG1VIDEO:
     case AV_CODEC_ID_MPEG2VIDEO:
     case AV_CODEC_ID_MPEG4:
@@ -194,6 +195,15 @@ static int rtp_write_header(AVFormatContext *s1)
         /* check for H.264 MP4 syntax */
         if (st->codec->extradata_size > 4 && st->codec->extradata[0] == 1) {
             s->nal_length_size = (st->codec->extradata[4] & 0x03) + 1;
+        }
+        break;
+    case AV_CODEC_ID_HEVC:
+        /* Only check for the standardized hvcC version of extradata, keeping
+         * things simple and similar to the avcC/H264 case above, instead
+         * of trying to handle the pre-standardization versions (as in
+         * libavcodec/hevc.c). */
+        if (st->codec->extradata_size > 21 && st->codec->extradata[0] == 1) {
+            s->nal_length_size = (st->codec->extradata[21] & 0x03) + 1;
         }
         break;
     case AV_CODEC_ID_VORBIS:
@@ -565,6 +575,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         /* Fallthrough */
     case AV_CODEC_ID_H263P:
         ff_rtp_send_h263(s1, pkt->data, size);
+        break;
+    case AV_CODEC_ID_HEVC:
+        ff_rtp_send_hevc(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_VORBIS:
     case AV_CODEC_ID_THEORA:

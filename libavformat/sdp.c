@@ -428,6 +428,12 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                     payload_type,
                                     payload_type, c->width, c->height);
             break;
+        case AV_CODEC_ID_HEVC:
+            if (c->extradata_size)
+                av_log(NULL, AV_LOG_WARNING, "HEVC extradata not currently "
+                                             "passed properly through SDP\n");
+            av_strlcatf(buff, size, "a=rtpmap:%d H265/90000\r\n", payload_type);
+            break;
         case AV_CODEC_ID_MPEG4:
             if (c->extradata_size) {
                 config = extradata2config(c);
