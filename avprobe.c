@@ -84,14 +84,14 @@ typedef enum {
     OBJECT
 } PrintElementType;
 
-typedef struct {
+typedef struct PrintElement {
     const char *name;
     PrintElementType type;
     int64_t index;
     int64_t nb_elems;
 } PrintElement;
 
-typedef struct {
+typedef struct PrintContext {
     PrintElement *prefix;
     int level;
     void (*print_header)(void);
