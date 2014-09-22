@@ -3467,7 +3467,7 @@ static void event_loop(VideoState *cur_stream)
             break;
         case SDL_VIDEORESIZE:
                 screen = SDL_SetVideoMode(FFMIN(16383, event.resize.w), event.resize.h, 0,
-                                          SDL_HWSURFACE|SDL_RESIZABLE|SDL_ASYNCBLIT|SDL_HWACCEL);
+                                          SDL_HWSURFACE|(is_full_screen?SDL_FULLSCREEN:SDL_RESIZABLE)|SDL_ASYNCBLIT|SDL_HWACCEL);
                 if (!screen) {
                     av_log(NULL, AV_LOG_FATAL, "Failed to set video mode\n");
                     do_exit(cur_stream);
