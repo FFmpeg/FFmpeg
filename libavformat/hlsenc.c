@@ -59,6 +59,8 @@ typedef struct HLSContext {
     int  wrap;             // Set by a private option.
     uint32_t flags;        // enum HLSFlags
 
+    int allowcache;
+
     int64_t recording_time;
     int has_video;
     int64_t start_pts;
@@ -171,6 +173,9 @@ static int hls_window(AVFormatContext *s, int last)
 
     avio_printf(hls->pb, "#EXTM3U\n");
     avio_printf(hls->pb, "#EXT-X-VERSION:%d\n", version);
+    if (hls->allowcache == 0 || hls->allowcache == 1) {
+        avio_printf(hls->pb, "#EXT-X-ALLOW-CACHE:%s\n", hls->allowcache == 0 ? "NO" : "YES");
+    }
     avio_printf(hls->pb, "#EXT-X-TARGETDURATION:%d\n", target_duration);
     avio_printf(hls->pb, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
 
@@ -394,6 +399,7 @@ static const AVOption options[] = {
     {"hls_list_size", "set maximum number of playlist entries",  OFFSET(max_nb_segments),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_wrap",      "set number after which the index wraps",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
+    {"hls_allow_cache", "explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments", OFFSET(allowcache), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, E},
     {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
