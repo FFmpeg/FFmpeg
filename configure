@@ -4231,9 +4231,6 @@ probe_libc(){
     elif check_${pfx}cpp_condition sys/brand.h "defined LABELED_BRAND_NAME"; then
         eval ${pfx}libc_type=solaris
         add_${pfx}cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
-    # FFmpeg needs a POSIX.1-2001/XSI compliant C library
-    else
-        add_${pfx}cppflags -D_XOPEN_SOURCE=600
     fi
 }
 
