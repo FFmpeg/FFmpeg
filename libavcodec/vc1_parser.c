@@ -47,7 +47,7 @@ typedef enum {
     ONE
 } VC1ParseSearchState;
 
-typedef struct {
+typedef struct VC1ParseContext {
     ParseContext pc;
     VC1Context v;
     uint8_t prev_start_code;

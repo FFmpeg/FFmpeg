@@ -64,12 +64,12 @@
 #define SUBBAND_SIZE    20
 #define MAX_SUBPACKETS   5
 
-typedef struct {
+typedef struct cook_gains {
     int *now;
     int *previous;
 } cook_gains;
 
-typedef struct {
+typedef struct COOKSubpacket {
     int                 ch_idx;
     int                 size;
     int                 num_channels;

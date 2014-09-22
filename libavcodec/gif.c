@@ -52,7 +52,7 @@
 
 #include "put_bits.h"
 
-typedef struct {
+typedef struct GIFContext {
     LZWState *lzw;
     uint8_t *buf;
 } GIFContext;

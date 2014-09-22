@@ -92,7 +92,7 @@
 #include "internal.h"
 #include "audio_frame_queue.h"
 
-typedef struct {
+typedef struct LibSpeexEncContext {
     AVClass *class;             ///< AVClass for private options
     SpeexBits bits;             ///< libspeex bitwriter context
     SpeexHeader header;         ///< libspeex header struct

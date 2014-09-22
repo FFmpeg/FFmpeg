@@ -58,7 +58,7 @@
 
 #define ALAC_EXTRADATA_SIZE 36
 
-typedef struct {
+typedef struct ALACContext {
     AVCodecContext *avctx;
     GetBitContext gb;
     int channels;

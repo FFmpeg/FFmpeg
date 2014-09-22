@@ -40,14 +40,14 @@
 #include "internal.h"
 
 
-typedef struct {
+typedef struct cvid_codebook {
     uint8_t  y0, y1, y2, y3;
     uint8_t  u, v;
 } cvid_codebook;
 
 #define MAX_STRIPS      32
 
-typedef struct {
+typedef struct cvid_strip {
     uint16_t          id;
     uint16_t          x1, y1;
     uint16_t          x2, y2;

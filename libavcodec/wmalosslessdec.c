@@ -50,7 +50,7 @@
 /**
  * @brief frame-specific decoder context for a single channel
  */
-typedef struct {
+typedef struct WmallChannelCtx {
     int16_t     prev_block_len;                         ///< length of the previous block
     uint8_t     transmit_coefs;
     uint8_t     num_subframes;

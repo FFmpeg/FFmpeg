@@ -57,7 +57,7 @@
 /**
  * Sound unit struct, one unit is used per channel
  */
-typedef struct {
+typedef struct AT1SUCtx {
     int                 log2_block_count[AT1_QMF_BANDS];    ///< log2 number of blocks in a band
     int                 num_bfus;                           ///< number of Block Floating Units
     float*              spectrum[2];
@@ -71,7 +71,7 @@ typedef struct {
 /**
  * The atrac1 context, holds all needed parameters for decoding
  */
-typedef struct {
+typedef struct AT1Ctx {
     AT1SUCtx            SUs[AT1_MAX_CHANNELS];              ///< channel sound unit
     DECLARE_ALIGNED(32, float, spec)[AT1_SU_SAMPLES];      ///< the mdct spectrum buffer
 

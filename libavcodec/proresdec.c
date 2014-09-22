@@ -40,7 +40,7 @@
 #include "proresdsp.h"
 #include "get_bits.h"
 
-typedef struct {
+typedef struct ProresThreadData {
     const uint8_t *index;            ///< pointers to the data of this slice
     int slice_num;
     int x_pos, y_pos;
@@ -51,7 +51,7 @@ typedef struct {
     DECLARE_ALIGNED(16, int16_t, qmat_chroma_scaled)[64];
 } ProresThreadData;
 
-typedef struct {
+typedef struct ProresContext {
     ProresDSPContext dsp;
     AVFrame    *frame;
     ScanTable  scantable;

@@ -55,7 +55,7 @@ enum Rate {
 /**
  * G723.1 unpacked data subframe
  */
-typedef struct {
+typedef struct G723_1_Subframe {
     int ad_cb_lag;     ///< adaptive codebook lag
     int ad_cb_gain;
     int dirac_train;
@@ -68,7 +68,7 @@ typedef struct {
 /**
  * Pitch postfilter parameters
  */
-typedef struct {
+typedef struct PPFParam {
     int     index;    ///< postfilter backward/forward lag
     int16_t opt_gain; ///< optimal gain
     int16_t sc_gain;  ///< scaling gain

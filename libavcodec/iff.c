@@ -33,7 +33,7 @@
 #include "get_bits.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct IffContext {
     AVFrame *frame;
     int planesize;
     uint8_t * planebuf;

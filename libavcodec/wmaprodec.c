@@ -132,7 +132,7 @@ static float            sin64[33];        ///< sine table for decorrelation
 /**
  * @brief frame specific decoder context for a single channel
  */
-typedef struct {
+typedef struct WMAProChannelCtx {
     int16_t  prev_block_len;                          ///< length of the previous block
     uint8_t  transmit_coefs;
     uint8_t  num_subframes;
@@ -157,7 +157,7 @@ typedef struct {
 /**
  * @brief channel group for channel transformations
  */
-typedef struct {
+typedef struct WMAProChannelGrp {
     uint8_t num_channels;                                     ///< number of channels in the group
     int8_t  transform;                                        ///< transform on / off
     int8_t  transform_band[MAX_BANDS];                        ///< controls if the transform is enabled for a certain band

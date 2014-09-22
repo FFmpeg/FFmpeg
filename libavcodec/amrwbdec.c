@@ -42,7 +42,7 @@
 
 #include "amrwbdata.h"
 
-typedef struct {
+typedef struct AMRWBContext {
     AMRWBFrame                             frame; ///< AMRWB parameters decoded from bitstream
     enum Mode                        fr_cur_mode; ///< mode index of current frame
     uint8_t                           fr_quality; ///< frame quality index (FQI)

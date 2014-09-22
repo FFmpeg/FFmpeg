@@ -79,7 +79,7 @@ typedef struct IMCChannel {
     int decoder_reset;
 } IMCChannel;
 
-typedef struct {
+typedef struct IMCContext {
     IMCChannel chctx[2];
 
     /** MDCT tables */

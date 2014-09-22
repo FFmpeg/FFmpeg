@@ -42,7 +42,7 @@
 #define V_MAX_VLCS (1 << 16)
 #define V_MAX_PARTITIONS (1 << 20)
 
-typedef struct {
+typedef struct vorbis_codebook {
     uint8_t      dimensions;
     uint8_t      lookup_type;
     uint8_t      maxdepth;
@@ -58,7 +58,7 @@ struct vorbis_context_s;
 typedef
 int (* vorbis_floor_decode_func)
     (struct vorbis_context_s *, vorbis_floor_data *, float *);
-typedef struct {
+typedef struct vorbis_floor {
     uint8_t floor_type;
     vorbis_floor_decode_func decode;
     union vorbis_floor_u {
@@ -88,7 +88,7 @@ typedef struct {
     } data;
 } vorbis_floor;
 
-typedef struct {
+typedef struct vorbis_residue {
     uint16_t      type;
     uint32_t      begin;
     uint32_t      end;
@@ -101,7 +101,7 @@ typedef struct {
     uint8_t      *classifs;
 } vorbis_residue;
 
-typedef struct {
+typedef struct vorbis_mapping {
     uint8_t       submaps;
     uint16_t      coupling_steps;
     uint8_t      *magnitude;
@@ -111,7 +111,7 @@ typedef struct {
     uint8_t       submap_residue[16];
 } vorbis_mapping;
 
-typedef struct {
+typedef struct vorbis_mode {
     uint8_t       blockflag;
     uint16_t      windowtype;
     uint16_t      transformtype;

@@ -38,7 +38,7 @@
 
 #if CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER
 
-typedef struct {
+typedef struct SpriteData {
     /**
      * Transform coefficients for both sprites in 16.16 fixed point format,
      * in the order they appear in the bitstream:
