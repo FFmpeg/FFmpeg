@@ -950,7 +950,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int asf_write_index(AVFormatContext *s, ASFIndex *index,
+static int asf_write_index(AVFormatContext *s, const ASFIndex *index,
                            uint16_t max, uint32_t count)
 {
     AVIOContext *pb = s->pb;
