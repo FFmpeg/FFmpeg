@@ -261,6 +261,7 @@ External library support:
   --enable-opencl          enable OpenCL code
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl [no]
+  --disable-sdl            disable sdl [autodetect]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
@@ -1388,6 +1389,7 @@ EXTERNAL_LIBRARY_LIST="
     opencl
     opengl
     openssl
+    sdl
     x11grab
     xlib
     zlib
@@ -4909,7 +4911,8 @@ if enabled libdc1394; then
         enable libdc1394_1; } ||
     die "ERROR: No version of libdc1394 found "
 fi
-
+if ! disabled sdl; then
+    disable sdl
 SDL_CONFIG="${cross_prefix}sdl-config"
 if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
     check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
@@ -4924,6 +4927,7 @@ else
     check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
     enable sdl
   fi
+fi
 fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
