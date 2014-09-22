@@ -61,7 +61,7 @@ typedef struct AVIStream {
     uint8_t *sub_buffer;
 } AVIStream;
 
-typedef struct {
+typedef struct AVIContext {
     int64_t riff_end;
     int64_t movi_end;
     int64_t fsize;

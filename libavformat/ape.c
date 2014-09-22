@@ -42,7 +42,7 @@
 
 #define APE_EXTRADATA_SIZE 6
 
-typedef struct {
+typedef struct APEFrame {
     int64_t pos;
     int nblocks;
     int size;
@@ -50,7 +50,7 @@ typedef struct {
     int64_t pts;
 } APEFrame;
 
-typedef struct {
+typedef struct APEContext {
     /* Derived fields */
     uint32_t junklength;
     uint32_t firstframe;

@@ -45,7 +45,7 @@
 #define BUFFER_SIZE   MAX_URL_SIZE
 #define MAX_REDIRECTS 8
 
-typedef struct {
+typedef struct HTTPContext {
     const AVClass *class;
     URLContext *hd;
     unsigned char buffer[BUFFER_SIZE], *buf_ptr, *buf_end;

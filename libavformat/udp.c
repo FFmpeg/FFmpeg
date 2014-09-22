@@ -40,7 +40,7 @@
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 #endif
 
-typedef struct {
+typedef struct UDPContext {
     int udp_fd;
     int ttl;
     int buffer_size;

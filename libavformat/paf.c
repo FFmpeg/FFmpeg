@@ -28,7 +28,7 @@
 #define PAF_SOUND_SAMPLES     2205
 #define PAF_SOUND_FRAME_SIZE  ((256 + PAF_SOUND_SAMPLES) * 2)
 
-typedef struct {
+typedef struct PAFDemuxContext {
     uint32_t buffer_size;
     uint32_t frame_blks;
     uint32_t nb_frames;

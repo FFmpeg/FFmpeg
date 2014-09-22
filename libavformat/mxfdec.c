@@ -72,7 +72,7 @@ typedef enum {
     OPSonyOpt,  /* FATE sample, violates the spec in places */
 } MXFOP;
 
-typedef struct {
+typedef struct MXFPartition {
     int closed;
     int complete;
     MXFPartitionType type;
@@ -88,13 +88,13 @@ typedef struct {
     int pack_length;
 } MXFPartition;
 
-typedef struct {
+typedef struct MXFCryptoContext {
     UID uid;
     enum MXFMetadataSetType type;
     UID source_container_ul;
 } MXFCryptoContext;
 
-typedef struct {
+typedef struct MXFStructuralComponent {
     UID uid;
     enum MXFMetadataSetType type;
     UID source_package_uid;
@@ -104,7 +104,7 @@ typedef struct {
     int source_track_id;
 } MXFStructuralComponent;
 
-typedef struct {
+typedef struct MXFSequence {
     UID uid;
     enum MXFMetadataSetType type;
     UID data_definition_ul;
@@ -114,7 +114,7 @@ typedef struct {
     uint8_t origin;
 } MXFSequence;
 
-typedef struct {
+typedef struct MXFTrack {
     UID uid;
     enum MXFMetadataSetType type;
     MXFSequence *sequence; /* mandatory, and only one */
@@ -127,7 +127,7 @@ typedef struct {
     int64_t original_duration; /* st->duration in SampleRate/EditRate units */
 } MXFTrack;
 
-typedef struct {
+typedef struct MXFDescriptor {
     UID uid;
     enum MXFMetadataSetType type;
     UID essence_container_ul;
@@ -153,7 +153,7 @@ typedef struct {
     enum AVPixelFormat pix_fmt;
 } MXFDescriptor;
 
-typedef struct {
+typedef struct MXFIndexTableSegment {
     UID uid;
     enum MXFMetadataSetType type;
     int edit_unit_byte_count;
@@ -168,7 +168,7 @@ typedef struct {
     int nb_index_entries;
 } MXFIndexTableSegment;
 
-typedef struct {
+typedef struct MXFPackage {
     UID uid;
     enum MXFMetadataSetType type;
     UID package_uid;
@@ -178,13 +178,13 @@ typedef struct {
     UID descriptor_ref;
 } MXFPackage;
 
-typedef struct {
+typedef struct MXFMetadataSet {
     UID uid;
     enum MXFMetadataSetType type;
 } MXFMetadataSet;
 
 /* decoded index table */
-typedef struct {
+typedef struct MXFIndexTable {
     int index_sid;
     int body_sid;
     int nb_ptses;               /* number of PTSes or total duration of index */
@@ -195,7 +195,7 @@ typedef struct {
     AVIndexEntry *fake_index;   /* used for calling ff_index_search_timestamp() */
 } MXFIndexTable;
 
-typedef struct {
+typedef struct MXFContext {
     MXFPartition *partitions;
     unsigned partitions_count;
     MXFOP op;
@@ -230,7 +230,7 @@ enum MXFWrappingScheme {
 /* NOTE: klv_offset is not set (-1) for local keys */
 typedef int MXFMetadataReadFunc(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset);
 
-typedef struct {
+typedef struct MXFMetadataReadTableEntry {
     const UID key;
     MXFMetadataReadFunc *read;
     int ctx_size;

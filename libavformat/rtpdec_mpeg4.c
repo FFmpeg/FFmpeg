@@ -63,7 +63,7 @@ struct PayloadContext {
     int buf_pos, buf_size;
 };
 
-typedef struct {
+typedef struct AttrNameMap {
     const char *str;
     uint16_t    type;
     uint32_t    offset;

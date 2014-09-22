@@ -28,7 +28,7 @@
 
 #define DXA_EXTRA_SIZE  9
 
-typedef struct{
+typedef struct DXAContext {
     int frames;
     int has_sound;
     int bpc;

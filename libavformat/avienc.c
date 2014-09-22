@@ -44,13 +44,13 @@ typedef struct AVIIndex {
     AVIIentry** cluster;
 } AVIIndex;
 
-typedef struct {
+typedef struct AVIContext {
     int64_t riff_start, movi_list, odml_list;
     int64_t frames_hdr_all;
     int riff_id;
 } AVIContext;
 
-typedef struct  {
+typedef struct AVIStream {
     int64_t frames_hdr_strm;
     int audio_strm_length;
     int packet_count;

@@ -39,7 +39,7 @@
 #include "asf.h"
 #include "asfcrypt.h"
 
-typedef struct {
+typedef struct ASFContext {
     const AVClass *class;
     int asfid2avid[128];                 ///< conversion table from asf ID 2 AVStream ID
     ASFStream streams[128];              ///< it's max number and it's not that big

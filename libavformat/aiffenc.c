@@ -27,7 +27,7 @@
 #include "aiff.h"
 #include "avio_internal.h"
 
-typedef struct {
+typedef struct AIFFOutputContext {
     int64_t form;
     int64_t frames;
     int64_t ssnd;

@@ -74,7 +74,7 @@ typedef enum {
     BITMAP_BYTERUN1
 } bitmap_compression_type;
 
-typedef struct {
+typedef struct IffDemuxContext {
     uint64_t  body_pos;
     uint32_t  body_size;
     uint32_t  sent_bytes;

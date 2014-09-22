@@ -86,18 +86,18 @@ typedef const struct EbmlSyntax {
     } def;
 } EbmlSyntax;
 
-typedef struct {
+typedef struct EbmlList {
     int nb_elem;
     void *elem;
 } EbmlList;
 
-typedef struct {
+typedef struct EbmlBin {
     int      size;
     uint8_t *data;
     int64_t  pos;
 } EbmlBin;
 
-typedef struct {
+typedef struct Ebml {
     uint64_t version;
     uint64_t max_size;
     uint64_t id_length;
@@ -105,18 +105,18 @@ typedef struct {
     uint64_t doctype_version;
 } Ebml;
 
-typedef struct {
+typedef struct MatroskaTrackCompression {
     uint64_t algo;
     EbmlBin  settings;
 } MatroskaTrackCompression;
 
-typedef struct {
+typedef struct MatroskaTrackEncoding {
     uint64_t scope;
     uint64_t type;
     MatroskaTrackCompression compression;
 } MatroskaTrackEncoding;
 
-typedef struct {
+typedef struct MatroskaTrackVideo {
     double   frame_rate;
     uint64_t display_width;
     uint64_t display_height;
@@ -126,7 +126,7 @@ typedef struct {
     uint64_t stereo_mode;
 } MatroskaTrackVideo;
 
-typedef struct {
+typedef struct MatroskaTrackAudio {
     double   samplerate;
     double   out_samplerate;
     uint64_t bitdepth;
@@ -143,7 +143,7 @@ typedef struct {
     uint8_t *buf;
 } MatroskaTrackAudio;
 
-typedef struct {
+typedef struct MatroskaTrack {
     uint64_t num;
     uint64_t uid;
     uint64_t type;
@@ -165,7 +165,7 @@ typedef struct {
     int ms_compat;
 } MatroskaTrack;
 
-typedef struct {
+typedef struct MatroskaAttachment {
     uint64_t uid;
     char *filename;
     char *mime;
@@ -174,7 +174,7 @@ typedef struct {
     AVStream *stream;
 } MatroskaAttachment;
 
-typedef struct {
+typedef struct MatroskaChapter {
     uint64_t start;
     uint64_t end;
     uint64_t uid;
@@ -183,17 +183,17 @@ typedef struct {
     AVChapter *chapter;
 } MatroskaChapter;
 
-typedef struct {
+typedef struct MatroskaIndexPos {
     uint64_t track;
     uint64_t pos;
 } MatroskaIndexPos;
 
-typedef struct {
+typedef struct MatroskaIndex {
     uint64_t time;
     EbmlList pos;
 } MatroskaIndex;
 
-typedef struct {
+typedef struct MatroskaTag {
     char *name;
     char *string;
     char *lang;
@@ -201,7 +201,7 @@ typedef struct {
     EbmlList sub;
 } MatroskaTag;
 
-typedef struct {
+typedef struct MatroskaTagTarget {
     char    *type;
     uint64_t typevalue;
     uint64_t trackuid;
@@ -209,27 +209,27 @@ typedef struct {
     uint64_t attachuid;
 } MatroskaTagTarget;
 
-typedef struct {
+typedef struct MatroskaTags {
     MatroskaTagTarget target;
     EbmlList tag;
 } MatroskaTags;
 
-typedef struct {
+typedef struct MatroskaSeekhead {
     uint64_t id;
     uint64_t pos;
 } MatroskaSeekhead;
 
-typedef struct {
+typedef struct MatroskaLevel {
     uint64_t start;
     uint64_t length;
 } MatroskaLevel;
 
-typedef struct {
+typedef struct MatroskaCluster {
     uint64_t timecode;
     EbmlList blocks;
 } MatroskaCluster;
 
-typedef struct {
+typedef struct MatroskaDemuxContext {
     AVFormatContext *ctx;
 
     /* EBML stuff */
@@ -273,7 +273,7 @@ typedef struct {
     int contains_ssa;
 } MatroskaDemuxContext;
 
-typedef struct {
+typedef struct MatroskaBlock {
     uint64_t duration;
     int64_t  reference;
     uint64_t non_simple;

@@ -29,7 +29,7 @@
 #define MAX_BUFFER_BLOCKS 150
 #define BLOCKSIZE 16
 
-typedef struct {
+typedef struct CryptoContext {
     const AVClass *class;
     URLContext *hd;
     uint8_t inbuffer [BLOCKSIZE*MAX_BUFFER_BLOCKS],

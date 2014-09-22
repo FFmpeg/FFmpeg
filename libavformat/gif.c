@@ -58,7 +58,7 @@
  * (byte 19) in the app_header */
 #define GIF_ADD_APP_HEADER // required to enable looping of animated gif
 
-typedef struct {
+typedef struct rgb_triplet {
     unsigned char r;
     unsigned char g;
     unsigned char b;
@@ -253,7 +253,7 @@ static int gif_image_write_image(AVIOContext *pb,
     return 0;
 }
 
-typedef struct {
+typedef struct GIFContext {
     AVClass *class;         /** Class for private options. */
     int64_t time, file_time;
     uint8_t buffer[100]; /* data chunks */

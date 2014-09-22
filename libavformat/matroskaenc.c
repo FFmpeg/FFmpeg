@@ -67,19 +67,19 @@ typedef struct mkv_seekhead {
     int                     num_entries;
 } mkv_seekhead;
 
-typedef struct {
+typedef struct mkv_cuepoint {
     uint64_t        pts;
     int             tracknum;
     int64_t         cluster_pos;        ///< file offset of the cluster containing the block
 } mkv_cuepoint;
 
-typedef struct {
+typedef struct mkv_cues {
     int64_t         segment_offset;
     mkv_cuepoint    *entries;
     int             num_entries;
 } mkv_cues;
 
-typedef struct {
+typedef struct mkv_track {
     int             write_dts;
     int64_t         ts_offset;
 } mkv_track;

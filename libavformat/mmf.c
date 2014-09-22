@@ -26,7 +26,7 @@
 #include "pcm.h"
 #include "riff.h"
 
-typedef struct {
+typedef struct MMFContext {
     int64_t atrpos, atsqpos, awapos;
     int64_t data_size;
 } MMFContext;

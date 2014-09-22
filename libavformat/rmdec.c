@@ -54,7 +54,7 @@ struct RMStream {
     int32_t deint_id;  ///< deinterleaver used in audio stream
 };
 
-typedef struct {
+typedef struct RMDemuxContext {
     int nb_packets;
     int old_format;
     int current_stream;

@@ -25,7 +25,7 @@
 #include "id3v1.h"
 #include "libavutil/dict.h"
 
-typedef struct {
+typedef struct TTAContext {
     int totalframes, currentframe;
     int frame_size;
     int last_frame_size;

@@ -30,7 +30,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
 
-typedef struct {
+typedef struct SegmentContext {
     const AVClass *class;  /**< Class for private options. */
     int number;
     AVOutputFormat *oformat;

@@ -31,7 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
-typedef struct {
+typedef struct QCPContext {
     uint32_t data_size;                     ///< size of data chunk
 
 #define QCP_MAX_MODE 4

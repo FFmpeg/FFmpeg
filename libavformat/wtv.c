@@ -57,7 +57,7 @@
 
 #define SHIFT_SECTOR_BITS(a) ((int64_t)(a) << WTV_SECTOR_BITS)
 
-typedef struct {
+typedef struct WtvFile {
     AVIOContext *pb_filesystem;  /** file system (AVFormatContext->pb) */
 
     int sector_bits;     /** sector shift bits; used to convert sector number into pb_filesystem offset */
@@ -324,11 +324,11 @@ static void wtvfile_close(AVIOContext *pb)
  *
  */
 
-typedef struct {
+typedef struct WtvStream {
     int seen_data;
 } WtvStream;
 
-typedef struct {
+typedef struct WtvContext {
     AVIOContext *pb;       /** timeline file */
     int64_t epoch;
     int64_t pts;             /** pts for next data chunk */

@@ -28,7 +28,7 @@
 #include "internal.h"
 #include "libavutil/opt.h"
 
-typedef struct {
+typedef struct VideoMuxData {
     const AVClass *class;  /**< Class for private options. */
     int img_number;
     int is_pipe;
