@@ -905,6 +905,9 @@
     <ClCompile Include="..\libavformat\rtpenc_h263_rfc2190.c">
       <ObjectFileName>$(IntDir)\libavformat_rtpenc_h263_rfc2190.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_hevc.c">
+      <ObjectFileName>$(IntDir)\libavformat_rtpenc_hevc.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_jpeg.c">
       <ObjectFileName>$(IntDir)\libavformat_rtpenc_jpeg.obj</ObjectFileName>
     </ClCompile>

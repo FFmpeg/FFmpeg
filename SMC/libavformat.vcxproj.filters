@@ -864,6 +864,9 @@
     <ClCompile Include="..\libavformat\rtpenc_h263_rfc2190.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_hevc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_jpeg.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
