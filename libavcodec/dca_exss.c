@@ -95,7 +95,7 @@ static int dca_exss_parse_asset_header(DCAContext *s)
     int i, j;
 
     if (get_bits_left(&s->gb) < 16)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* We will parse just enough to get to the extensions bitmask with which
      * we can set the profile value. */
@@ -114,7 +114,7 @@ static int dca_exss_parse_asset_header(DCAContext *s)
              * for the asset header size field above was 512 bytes? */
             int text_length = get_bits(&s->gb, 10) + 1;
             if (get_bits_left(&s->gb) < text_length * 8)
-                return -1;
+                return AVERROR_INVALIDDATA;
             skip_bits_long(&s->gb, text_length * 8); // info text
         }
 
@@ -147,7 +147,7 @@ static int dca_exss_parse_asset_header(DCAContext *s)
             for (i = 0; i < spkr_remap_sets; i++) {
                 int num_dec_ch_remaps = get_bits(&s->gb, 5) + 1;
                 if (get_bits_left(&s->gb) < 0)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
 
                 for (j = 0; j < num_spkrs[i]; j++) {
                     int remap_dec_ch_mask = get_bits_long(&s->gb, num_dec_ch_remaps);
@@ -187,7 +187,7 @@ static int dca_exss_parse_asset_header(DCAContext *s)
 
         for (i = 0; i < s->num_mix_configs; i++) {
             if (get_bits_left(&s->gb) < 0)
-                return -1;
+                return AVERROR_INVALIDDATA;
             dca_exss_skip_mix_coeffs(&s->gb, channels, s->mix_config_num_ch[i]);
             if (embedded_6ch)
                 dca_exss_skip_mix_coeffs(&s->gb, 6, s->mix_config_num_ch[i]);
@@ -214,11 +214,11 @@ static int dca_exss_parse_asset_header(DCAContext *s)
     /* not parsed further, we were only interested in the extensions mask */
 
     if (get_bits_left(&s->gb) < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     if (get_bits_count(&s->gb) - header_pos > header_size * 8) {
         av_log(s->avctx, AV_LOG_WARNING, "Asset header size mismatch.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     skip_bits_long(&s->gb, header_pos + header_size * 8 - get_bits_count(&s->gb));
 
