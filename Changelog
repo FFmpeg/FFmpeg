@@ -4,7 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 version 2.4.1:
-- swsscale: Allow chroma samples to be above and to the left of luma samples
+- swscale: Allow chroma samples to be above and to the left of luma samples
 - avcodec/libilbc: support for latest git of libilbc
 - avcodec/webp: treat out-of-bound palette index as translucent black
 - vf_deshake: rename Transform.vector to Transform.vec to avoid compiler confusion
