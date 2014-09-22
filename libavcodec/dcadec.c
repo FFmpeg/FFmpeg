@@ -53,8 +53,6 @@
 #   include "arm/dca.h"
 #endif
 
-//#define TRACE
-
 enum DCAMode {
     DCA_MONO = 0,
     DCA_CHANNEL,
@@ -361,33 +359,6 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel)
     s->current_subframe    = 0;
     s->current_subsubframe = 0;
 
-#ifdef TRACE
-    av_log(s->avctx, AV_LOG_DEBUG, "subframes: %i\n", s->subframes);
-    av_log(s->avctx, AV_LOG_DEBUG, "prim channels: %i\n", s->prim_channels);
-    for (i = base_channel; i < s->prim_channels; i++) {
-        av_log(s->avctx, AV_LOG_DEBUG, "subband activity: %i\n",
-               s->subband_activity[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "vq start subband: %i\n",
-               s->vq_start_subband[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "joint intensity: %i\n",
-               s->joint_intensity[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "transient mode codebook: %i\n",
-               s->transient_huffman[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "scale factor codebook: %i\n",
-               s->scalefactor_huffman[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "bit allocation quantizer: %i\n",
-               s->bitalloc_huffman[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "quant index huff:");
-        for (j = 0; j < 11; j++)
-            av_log(s->avctx, AV_LOG_DEBUG, " %i", s->quant_index_huffman[i][j]);
-        av_log(s->avctx, AV_LOG_DEBUG, "\n");
-        av_log(s->avctx, AV_LOG_DEBUG, "scalefac adj:");
-        for (j = 0; j < 11; j++)
-            av_log(s->avctx, AV_LOG_DEBUG, " %1.3f", s->scalefactor_adj[i][j]);
-        av_log(s->avctx, AV_LOG_DEBUG, "\n");
-    }
-#endif
-
     return 0;
 }
 
@@ -447,43 +418,6 @@ static int dca_parse_frame_header(DCAContext *s)
     s->output = s->amode;
     if (s->lfe)
         s->output |= DCA_LFE;
-
-#ifdef TRACE
-    av_log(s->avctx, AV_LOG_DEBUG, "frame type: %i\n", s->frame_type);
-    av_log(s->avctx, AV_LOG_DEBUG, "samples deficit: %i\n", s->samples_deficit);
-    av_log(s->avctx, AV_LOG_DEBUG, "crc present: %i\n", s->crc_present);
-    av_log(s->avctx, AV_LOG_DEBUG, "sample blocks: %i (%i samples)\n",
-           s->sample_blocks, s->sample_blocks * 32);
-    av_log(s->avctx, AV_LOG_DEBUG, "frame size: %i bytes\n", s->frame_size);
-    av_log(s->avctx, AV_LOG_DEBUG, "amode: %i (%i channels)\n",
-           s->amode, dca_channels[s->amode]);
-    av_log(s->avctx, AV_LOG_DEBUG, "sample rate: %i Hz\n",
-           s->sample_rate);
-    av_log(s->avctx, AV_LOG_DEBUG, "bit rate: %i bits/s\n",
-           s->bit_rate);
-    av_log(s->avctx, AV_LOG_DEBUG, "dynrange: %i\n", s->dynrange);
-    av_log(s->avctx, AV_LOG_DEBUG, "timestamp: %i\n", s->timestamp);
-    av_log(s->avctx, AV_LOG_DEBUG, "aux_data: %i\n", s->aux_data);
-    av_log(s->avctx, AV_LOG_DEBUG, "hdcd: %i\n", s->hdcd);
-    av_log(s->avctx, AV_LOG_DEBUG, "ext descr: %i\n", s->ext_descr);
-    av_log(s->avctx, AV_LOG_DEBUG, "ext coding: %i\n", s->ext_coding);
-    av_log(s->avctx, AV_LOG_DEBUG, "aspf: %i\n", s->aspf);
-    av_log(s->avctx, AV_LOG_DEBUG, "lfe: %i\n", s->lfe);
-    av_log(s->avctx, AV_LOG_DEBUG, "predictor history: %i\n",
-           s->predictor_history);
-    av_log(s->avctx, AV_LOG_DEBUG, "header crc: %i\n", s->header_crc);
-    av_log(s->avctx, AV_LOG_DEBUG, "multirate inter: %i\n",
-           s->multirate_inter);
-    av_log(s->avctx, AV_LOG_DEBUG, "version number: %i\n", s->version);
-    av_log(s->avctx, AV_LOG_DEBUG, "copy history: %i\n", s->copy_history);
-    av_log(s->avctx, AV_LOG_DEBUG,
-           "source pcm resolution: %i (%i bits/sample)\n",
-           s->source_pcm_res, dca_bits_per_sample[s->source_pcm_res]);
-    av_log(s->avctx, AV_LOG_DEBUG, "front sum: %i\n", s->front_sum);
-    av_log(s->avctx, AV_LOG_DEBUG, "surround sum: %i\n", s->surround_sum);
-    av_log(s->avctx, AV_LOG_DEBUG, "dialog norm: %i\n", s->dialog_norm);
-    av_log(s->avctx, AV_LOG_DEBUG, "\n");
-#endif
 
     /* Primary audio coding header */
     s->subframes = get_bits(&s->gb, 4) + 1;
@@ -683,72 +617,6 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
         for (j = lfe_samples; j < lfe_end_sample; j++)
             s->lfe_data[j] *= lfe_scale;
     }
-
-#ifdef TRACE
-    av_log(s->avctx, AV_LOG_DEBUG, "subsubframes: %i\n",
-           s->subsubframes[s->current_subframe]);
-    av_log(s->avctx, AV_LOG_DEBUG, "partial samples: %i\n",
-           s->partial_samples[s->current_subframe]);
-
-    for (j = base_channel; j < s->prim_channels; j++) {
-        av_log(s->avctx, AV_LOG_DEBUG, "prediction mode:");
-        for (k = 0; k < s->subband_activity[j]; k++)
-            av_log(s->avctx, AV_LOG_DEBUG, " %i", s->prediction_mode[j][k]);
-        av_log(s->avctx, AV_LOG_DEBUG, "\n");
-    }
-    for (j = base_channel; j < s->prim_channels; j++) {
-        for (k = 0; k < s->subband_activity[j]; k++)
-            av_log(s->avctx, AV_LOG_DEBUG,
-                   "prediction coefs: %f, %f, %f, %f\n",
-                   (float) adpcm_vb[s->prediction_vq[j][k]][0] / 8192,
-                   (float) adpcm_vb[s->prediction_vq[j][k]][1] / 8192,
-                   (float) adpcm_vb[s->prediction_vq[j][k]][2] / 8192,
-                   (float) adpcm_vb[s->prediction_vq[j][k]][3] / 8192);
-    }
-    for (j = base_channel; j < s->prim_channels; j++) {
-        av_log(s->avctx, AV_LOG_DEBUG, "bitalloc index: ");
-        for (k = 0; k < s->vq_start_subband[j]; k++)
-            av_log(s->avctx, AV_LOG_DEBUG, "%2.2i ", s->bitalloc[j][k]);
-        av_log(s->avctx, AV_LOG_DEBUG, "\n");
-    }
-    for (j = base_channel; j < s->prim_channels; j++) {
-        av_log(s->avctx, AV_LOG_DEBUG, "Transition mode:");
-        for (k = 0; k < s->subband_activity[j]; k++)
-            av_log(s->avctx, AV_LOG_DEBUG, " %i", s->transition_mode[j][k]);
-        av_log(s->avctx, AV_LOG_DEBUG, "\n");
-    }
-    for (j = base_channel; j < s->prim_channels; j++) {
-        av_log(s->avctx, AV_LOG_DEBUG, "Scale factor:");
-        for (k = 0; k < s->subband_activity[j]; k++) {
-            if (k >= s->vq_start_subband[j] || s->bitalloc[j][k] > 0)
-                av_log(s->avctx, AV_LOG_DEBUG, " %i", s->scale_factor[j][k][0]);
-            if (k < s->vq_start_subband[j] && s->transition_mode[j][k])
-                av_log(s->avctx, AV_LOG_DEBUG, " %i(t)", s->scale_factor[j][k][1]);
-        }
-        av_log(s->avctx, AV_LOG_DEBUG, "\n");
-    }
-    for (j = base_channel; j < s->prim_channels; j++) {
-        if (s->joint_intensity[j] > 0) {
-            int source_channel = s->joint_intensity[j] - 1;
-            av_log(s->avctx, AV_LOG_DEBUG, "Joint scale factor index:\n");
-            for (k = s->subband_activity[j]; k < s->subband_activity[source_channel]; k++)
-                av_log(s->avctx, AV_LOG_DEBUG, " %i", s->joint_scale_factor[j][k]);
-            av_log(s->avctx, AV_LOG_DEBUG, "\n");
-        }
-    }
-    for (j = base_channel; j < s->prim_channels; j++)
-        for (k = s->vq_start_subband[j]; k < s->subband_activity[j]; k++)
-            av_log(s->avctx, AV_LOG_DEBUG, "VQ index: %i\n", s->high_freq_vq[j][k]);
-    if (!base_channel && s->lfe) {
-        int lfe_samples    = 2 * s->lfe * (4 + block_index);
-        int lfe_end_sample = 2 * s->lfe * (4 + block_index + s->subsubframes[s->current_subframe]);
-
-        av_log(s->avctx, AV_LOG_DEBUG, "LFE samples:\n");
-        for (j = lfe_samples; j < lfe_end_sample; j++)
-            av_log(s->avctx, AV_LOG_DEBUG, " %f", s->lfe_data[j]);
-        av_log(s->avctx, AV_LOG_DEBUG, "\n");
-    }
-#endif
 
     return 0;
 }
@@ -1056,11 +924,7 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
 
     /* Check for DSYNC after subsubframe */
     if (s->aspf || subsubframe == s->subsubframes[s->current_subframe] - 1) {
-        if (0xFFFF == get_bits(&s->gb, 16)) {   /* 0xFFFF */
-#ifdef TRACE
-            av_log(s->avctx, AV_LOG_DEBUG, "Got subframe DSYNC\n");
-#endif
-        } else {
+        if (get_bits(&s->gb, 16) != 0xFFFF) {
             av_log(s->avctx, AV_LOG_ERROR, "Didn't get subframe DSYNC\n");
             return AVERROR_INVALIDDATA;
         }
@@ -1226,18 +1090,12 @@ static int dca_decode_block(DCAContext *s, int base_channel, int block_index)
     }
 
     if (!s->current_subsubframe) {
-#ifdef TRACE
-        av_log(s->avctx, AV_LOG_DEBUG, "DSYNC dca_subframe_header\n");
-#endif
         /* Read subframe header */
         if ((ret = dca_subframe_header(s, base_channel, block_index)))
             return ret;
     }
 
     /* Read subsubframe */
-#ifdef TRACE
-    av_log(s->avctx, AV_LOG_DEBUG, "DSYNC dca_subsubframe\n");
-#endif
     if ((ret = dca_subsubframe(s, base_channel, block_index)))
         return ret;
 
@@ -1248,9 +1106,6 @@ static int dca_decode_block(DCAContext *s, int base_channel, int block_index)
         s->current_subframe++;
     }
     if (s->current_subframe >= s->subframes) {
-#ifdef TRACE
-        av_log(s->avctx, AV_LOG_DEBUG, "DSYNC dca_subframe_footer\n");
-#endif
         /* Read subframe footer */
         if ((ret = dca_subframe_footer(s, base_channel)))
             return ret;
