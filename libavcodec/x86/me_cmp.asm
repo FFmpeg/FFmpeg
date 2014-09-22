@@ -26,6 +26,7 @@
 SECTION_RODATA
 
 cextern pb_1
+cextern pb_80
 
 SECTION .text
 
@@ -772,3 +773,163 @@ SAD_APPROX_XY2 8
 SAD_APPROX_XY2 16
 INIT_XMM sse2
 SAD_APPROX_XY2 16
+
+;--------------------------------------------------------------------
+;int ff_vsad_intra(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+;                  int line_size, int h);
+;--------------------------------------------------------------------
+; %1 = 8/16
+%macro VSAD_INTRA 1
+cglobal vsad_intra%1, 5, 5, 3, v, pix1, pix2, lsize, h
+    mova      m0, [pix1q]
+%if %1 == mmsize
+    mova      m2, [pix1q+lsizeq]
+    psadbw    m0, m2
+%else
+    mova      m2, [pix1q+lsizeq]
+    mova      m3, [pix1q+8]
+    mova      m4, [pix1q+lsizeq+8]
+    psadbw    m0, m2
+    psadbw    m3, m4
+    paddw     m0, m3
+%endif
+    sub       hd, 2
+
+.loop
+    lea    pix1q, [pix1q + 2*lsizeq]
+%if %1 == mmsize
+    mova      m1, [pix1q]
+    psadbw    m2, m1
+    paddw     m0, m2
+    mova      m2, [pix1q+lsizeq]
+    psadbw    m1, m2
+    paddw     m0, m1
+%else
+    mova      m1, [pix1q]
+    mova      m3, [pix1q+8]
+    psadbw    m2, m1
+    psadbw    m4, m3
+    paddw     m0, m2
+    paddw     m0, m4
+    mova      m2, [pix1q+lsizeq]
+    mova      m4, [pix1q+lsizeq+8]
+    psadbw    m1, m2
+    psadbw    m3, m4
+    paddw     m0, m1
+    paddw     m0, m3
+%endif
+    sub       hd, 2
+    jg     .loop
+
+%if mmsize == 16
+    pshufd m1, m0, 0xe
+    paddd  m0, m1
+%endif
+    movd eax, m0
+    RET
+%endmacro
+
+INIT_MMX mmxext
+VSAD_INTRA 8
+VSAD_INTRA 16
+INIT_XMM sse2
+VSAD_INTRA 16
+
+;---------------------------------------------------------------------
+;int ff_vsad_approx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+;                   int line_size, int h);
+;---------------------------------------------------------------------
+; %1 = 8/16
+%macro VSAD_APPROX 1
+cglobal vsad%1_approx, 5, 5, 5, v, pix1, pix2, lsize, h
+    mova   m1, [pb_80]
+    mova   m0, [pix1q]
+%if %1 == mmsize ; vsad8_mmxext, vsad16_sse2
+    mova   m4, [pix1q+lsizeq]
+%if mmsize == 16
+    movu   m3, [pix2q]
+    movu   m2, [pix2q+lsizeq]
+    psubb  m0, m3
+    psubb  m4, m2
+%else
+    psubb  m0, [pix2q]
+    psubb  m4, [pix2q+lsizeq]
+%endif
+    pxor   m0, m1
+    pxor   m4, m1
+    psadbw m0, m4
+%else ; vsad16_mmxext
+    mova   m3, [pix1q+8]
+    psubb  m0, [pix2q]
+    psubb  m3, [pix2q+8]
+    pxor   m0, m1
+    pxor   m3, m1
+    mova   m4, [pix1q+lsizeq]
+    mova   m5, [pix1q+lsizeq+8]
+    psubb  m4, [pix2q+lsizeq]
+    psubb  m5, [pix2q+lsizeq+8]
+    pxor   m4, m1
+    pxor   m5, m1
+    psadbw m0, m4
+    psadbw m3, m5
+    paddw  m0, m3
+%endif
+    sub    hd, 2
+
+.loop
+    lea pix1q, [pix1q + 2*lsizeq]
+    lea pix2q, [pix2q + 2*lsizeq]
+    mova   m2, [pix1q]
+%if %1 == mmsize ; vsad8_mmxext, vsad16_sse2
+%if mmsize == 16
+    movu   m3, [pix2q]
+    psubb  m2, m3
+%else
+    psubb  m2, [pix2q]
+%endif
+    pxor   m2, m1
+    psadbw m4, m2
+    paddw  m0, m4
+    mova   m4, [pix1q+lsizeq]
+    movu   m3, [pix2q+lsizeq]
+    psubb  m4, m3
+    pxor   m4, m1
+    psadbw m2, m4
+    paddw  m0, m2
+%else ; vsad16_mmxext
+    mova   m3, [pix1q+8]
+    psubb  m2, [pix2q]
+    psubb  m3, [pix2q+8]
+    pxor   m2, m1
+    pxor   m3, m1
+    psadbw m4, m2
+    psadbw m5, m3
+    paddw  m0, m4
+    paddw  m0, m5
+    mova   m4, [pix1q+lsizeq]
+    mova   m5, [pix1q+lsizeq+8]
+    psubb  m4, [pix2q+lsizeq]
+    psubb  m5, [pix2q+lsizeq+8]
+    pxor   m4, m1
+    pxor   m5, m1
+    psadbw m2, m4
+    psadbw m3, m5
+    paddw  m0, m2
+    paddw  m0, m3
+%endif
+    sub    hd, 2
+    jg  .loop
+
+%if mmsize == 16
+    pshufd m1, m0, 0xe
+    paddd  m0, m1
+%endif
+    movd  eax, m0
+    RET
+%endmacro
+
+INIT_MMX mmxext
+VSAD_APPROX 8
+VSAD_APPROX 16
+INIT_XMM sse2
+VSAD_APPROX 16

@@ -179,7 +179,7 @@ void av_bprint_clear(AVBPrint *buf);
  * It may have been truncated due to a memory allocation failure
  * or the size_max limit (compare size and size_max if necessary).
  */
-static inline int av_bprint_is_complete(AVBPrint *buf)
+static inline int av_bprint_is_complete(const AVBPrint *buf)
 {
     return buf->len < buf->size;
 }

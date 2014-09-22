@@ -30,7 +30,7 @@
 
 #define LIBAVCODEC_VERSION_MAJOR 56
 #define LIBAVCODEC_VERSION_MINOR  1
-#define LIBAVCODEC_VERSION_MICRO 100
+#define LIBAVCODEC_VERSION_MICRO 101
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -174,6 +174,9 @@
 #ifndef FF_API_VISMV
 /* XXX: don't forget to drop the -vismv documentation */
 #define FF_API_VISMV             (LIBAVCODEC_VERSION_MAJOR < 57)
+#endif
+#ifndef FF_API_DV_FRAME_PROFILE
+#define FF_API_DV_FRAME_PROFILE  (LIBAVCODEC_VERSION_MAJOR < 57)
 #endif
 
 #endif /* AVCODEC_VERSION_H */

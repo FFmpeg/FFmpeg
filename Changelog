@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- HEVC/H.265 RTP payload format (draft v6) packetizer
 
 version 2.4:
 - Icecast protocol

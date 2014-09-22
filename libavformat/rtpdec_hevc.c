@@ -300,6 +300,7 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
 
         av_dlog(ctx, " FU type %d with %d bytes\n", fu_type, len);
 
+        /* sanity check for size of input packet: 1 byte payload at least */
         if (len > 0) {
             new_nal_header[0] = (rtp_pl[0] & 0x81) | (fu_type << 1);
             new_nal_header[1] = rtp_pl[1];
@@ -328,11 +329,14 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
                 memcpy(pkt->data, buf, len);
             }
         } else {
-            /* sanity check for size of input packet: 1 byte payload at least */
-            av_log(ctx, AV_LOG_ERROR,
-                   "Too short RTP/HEVC packet, got %d bytes of NAL unit type %d\n",
-                   len, nal_type);
-            res = AVERROR_INVALIDDATA;
+            if (len < 0) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Too short RTP/HEVC packet, got %d bytes of NAL unit type %d\n",
+                       len, nal_type);
+                res = AVERROR_INVALIDDATA;
+            } else {
+                res = AVERROR(EAGAIN);
+            }
         }
 
         break;

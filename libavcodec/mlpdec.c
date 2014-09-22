@@ -132,6 +132,9 @@ typedef struct MLPDecodeContext {
     /// Current access unit being read has a major sync.
     int         is_major_sync_unit;
 
+    /// Size of the major sync unit, in bytes
+    int         major_sync_header_size;
+
     /// Set if a valid major sync block has been read. Otherwise no decoding is possible.
     uint8_t     params_valid;
 
@@ -349,11 +352,15 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
         return AVERROR_PATCHWELCOME;
     }
 
+    m->major_sync_header_size = mh.header_size;
+
     m->access_unit_size      = mh.access_unit_size;
     m->access_unit_size_pow2 = mh.access_unit_size_pow2;
 
     m->num_substreams        = mh.num_substreams;
-    m->max_decoded_substream = m->num_substreams - 1;
+
+    /* limit to decoding 3 substreams, as the 4th is used by Dolby Atmos for non-audio data */
+    m->max_decoded_substream = FFMIN(m->num_substreams - 1, 2);
 
     m->avctx->sample_rate    = mh.group1_samplerate;
     m->avctx->frame_size     = mh.access_unit_size;
@@ -1142,7 +1149,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data,
         if (read_major_sync(m, &gb) < 0)
             goto error;
         m->is_major_sync_unit = 1;
-        header_size += 28;
+        header_size += m->major_sync_header_size;
     }
 
     if (!m->params_valid) {

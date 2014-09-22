@@ -256,7 +256,7 @@ External library support:
   --enable-libzmq          enable message passing via libzmq [no]
   --enable-libzvbi         enable teletext support via libzvbi [no]
   --disable-lzma           disable lzma [autodetect]
-  --enable-decklink        enable Blackmagick DeckLink output [no]
+  --enable-decklink        enable Blackmagick DeckLink I/O support [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL code
   --enable-opengl          enable OpenGL rendering [no]
@@ -2455,6 +2455,8 @@ bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr
 caca_outdev_deps="libcaca"
 decklink_outdev_deps="decklink pthreads"
 decklink_outdev_extralibs="-lstdc++"
+decklink_indev_deps="decklink pthreads"
+decklink_indev_extralibs="-lstdc++"
 dshow_indev_deps="IBaseFilter"
 dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid"
 dv1394_indev_deps="dv1394"
@@ -4229,6 +4231,9 @@ probe_libc(){
     elif check_${pfx}cpp_condition sys/brand.h "defined LABELED_BRAND_NAME"; then
         eval ${pfx}libc_type=solaris
         add_${pfx}cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
+    # FFmpeg needs a POSIX.1-2001/XSI compliant C library
+    else
+        add_${pfx}cppflags -D_XOPEN_SOURCE=600
     fi
 }
 

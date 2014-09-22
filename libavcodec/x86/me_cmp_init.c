@@ -65,6 +65,18 @@ int ff_sad16_approx_xy2_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                                int stride, int h);
 int ff_sad16_approx_xy2_sse2(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                              int stride, int h);
+int ff_vsad_intra8_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                          int line_size, int h);
+int ff_vsad_intra16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                           int line_size, int h);
+int ff_vsad_intra16_sse2(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                         int line_size, int h);
+int ff_vsad8_approx_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                    int line_size, int h);
+int ff_vsad16_approx_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                     int line_size, int h);
+int ff_vsad16_approx_sse2(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                   int line_size, int h);
 
 #define hadamard_func(cpu)                                              \
     int ff_hadamard8_diff_ ## cpu(MpegEncContext *s, uint8_t *src1,     \
@@ -177,49 +189,6 @@ static int vsad_intra16_mmx(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
 }
 #undef SUM
 
-static int vsad_intra16_mmxext(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
-                               int line_size, int h)
-{
-    int tmp;
-
-    av_assert2((((int) pix) & 7) == 0);
-    av_assert2((line_size & 7) == 0);
-
-#define SUM(in0, in1, out0, out1)               \
-    "movq (%0), " #out0 "\n"                    \
-    "movq 8(%0), " #out1 "\n"                   \
-    "add %2, %0\n"                              \
-    "psadbw " #out0 ", " #in0 "\n"              \
-    "psadbw " #out1 ", " #in1 "\n"              \
-    "paddw " #in1 ", " #in0 "\n"                \
-    "paddw " #in0 ", %%mm6\n"
-
-    __asm__ volatile (
-        "movl %3, %%ecx\n"
-        "pxor %%mm6, %%mm6\n"
-        "pxor %%mm7, %%mm7\n"
-        "movq (%0), %%mm0\n"
-        "movq 8(%0), %%mm1\n"
-        "add %2, %0\n"
-        "jmp 2f\n"
-        "1:\n"
-
-        SUM(%%mm4, %%mm5, %%mm0, %%mm1)
-        "2:\n"
-        SUM(%%mm0, %%mm1, %%mm4, %%mm5)
-
-        "subl $2, %%ecx\n"
-        "jnz 1b\n"
-
-        "movd %%mm6, %1\n"
-        : "+r" (pix), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "m" (h)
-        : "%ecx");
-
-    return tmp;
-}
-#undef SUM
-
 static int vsad16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                       int line_size, int h)
 {
@@ -300,68 +269,6 @@ static int vsad16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
     return tmp & 0x7FFF;
 }
 #undef SUM
-
-static int vsad16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                         int line_size, int h)
-{
-    int tmp;
-
-    av_assert2((((int) pix1) & 7) == 0);
-    av_assert2((((int) pix2) & 7) == 0);
-    av_assert2((line_size & 7) == 0);
-
-#define SUM(in0, in1, out0, out1)               \
-    "movq (%0), " #out0 "\n"                    \
-    "movq (%1), %%mm2\n"                        \
-    "movq 8(%0), " #out1 "\n"                   \
-    "movq 8(%1), %%mm3\n"                       \
-    "add %3, %0\n"                              \
-    "add %3, %1\n"                              \
-    "psubb %%mm2, " #out0 "\n"                  \
-    "psubb %%mm3, " #out1 "\n"                  \
-    "pxor %%mm7, " #out0 "\n"                   \
-    "pxor %%mm7, " #out1 "\n"                   \
-    "psadbw " #out0 ", " #in0 "\n"              \
-    "psadbw " #out1 ", " #in1 "\n"              \
-    "paddw " #in1 ", " #in0 "\n"                \
-    "paddw " #in0 ", %%mm6\n    "
-
-    __asm__ volatile (
-        "movl %4, %%ecx\n"
-        "pxor %%mm6, %%mm6\n"
-        "pcmpeqw %%mm7, %%mm7\n"
-        "psllw $15, %%mm7\n"
-        "packsswb %%mm7, %%mm7\n"
-        "movq (%0), %%mm0\n"
-        "movq (%1), %%mm2\n"
-        "movq 8(%0), %%mm1\n"
-        "movq 8(%1), %%mm3\n"
-        "add %3, %0\n"
-        "add %3, %1\n"
-        "psubb %%mm2, %%mm0\n"
-        "psubb %%mm3, %%mm1\n"
-        "pxor %%mm7, %%mm0\n"
-        "pxor %%mm7, %%mm1\n"
-        "jmp 2f\n"
-        "1:\n"
-
-        SUM(%%mm4, %%mm5, %%mm0, %%mm1)
-        "2:\n"
-        SUM(%%mm0, %%mm1, %%mm4, %%mm5)
-
-        "subl $2, %%ecx\n"
-        "jnz 1b\n"
-
-        "movd %%mm6, %2\n"
-        : "+r" (pix1), "+r" (pix2), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "m" (h)
-        : "%ecx");
-
-    return tmp;
-}
-#undef SUM
-
-
 
 DECLARE_ASM_CONST(8, uint64_t, round_tab)[3] = {
     0x0000000000000000ULL,
@@ -667,14 +574,6 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         }
     }
 
-    if (INLINE_MMXEXT(cpu_flags)) {
-        c->vsad[4] = vsad_intra16_mmxext;
-
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
-            c->vsad[0] = vsad16_mmxext;
-        }
-    }
-
 #endif /* HAVE_INLINE_ASM */
 
     if (EXTERNAL_MMX(cpu_flags)) {
@@ -704,9 +603,15 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->pix_abs[1][1] = ff_sad8_x2_mmxext;
         c->pix_abs[1][2] = ff_sad8_y2_mmxext;
 
+        c->vsad[4] = ff_vsad_intra16_mmxext;
+        c->vsad[5] = ff_vsad_intra8_mmxext;
+
         if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
             c->pix_abs[0][3] = ff_sad16_approx_xy2_mmxext;
             c->pix_abs[1][3] = ff_sad8_approx_xy2_mmxext;
+
+            c->vsad[0] = ff_vsad16_approx_mmxext;
+            c->vsad[1] = ff_vsad8_approx_mmxext;
         }
     }
 
@@ -724,8 +629,10 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
             c->pix_abs[0][1] = ff_sad16_x2_sse2;
             c->pix_abs[0][2] = ff_sad16_y2_sse2;
 
+            c->vsad[4]       = ff_vsad_intra16_sse2;
             if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
                 c->pix_abs[0][3] = ff_sad16_approx_xy2_sse2;
+                c->vsad[0]       = ff_vsad16_approx_sse2;
             }
         }
     }

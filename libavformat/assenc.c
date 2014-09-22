@@ -30,7 +30,6 @@ typedef struct DialogueLine {
 } DialogueLine;
 
 typedef struct ASSContext{
-    unsigned int extra_index;
     int write_ts; // 0: ssa (timing in payload), 1: ass (matroska like)
     int expected_readorder;
     DialogueLine *dialogue_cache;
@@ -42,30 +41,19 @@ static int write_header(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
     AVCodecContext *avctx= s->streams[0]->codec;
-    uint8_t *last= NULL;
 
     if (s->nb_streams != 1 || (avctx->codec_id != AV_CODEC_ID_SSA &&
                                avctx->codec_id != AV_CODEC_ID_ASS)) {
         av_log(s, AV_LOG_ERROR, "Exactly one ASS/SSA stream is needed.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     ass->write_ts = avctx->codec_id == AV_CODEC_ID_ASS;
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
-
-    while(ass->extra_index < avctx->extradata_size){
-        uint8_t *p  = avctx->extradata + ass->extra_index;
-        uint8_t *end= strchr(p, '\n');
-        if(!end) end= avctx->extradata + avctx->extradata_size;
-        else     end++;
-
-        avio_write(s->pb, p, end-p);
-        ass->extra_index += end-p;
-
-        if(last && !memcmp(last, "[Events]", 8))
-            break;
-        last=p;
+    if (avctx->extradata_size > 0) {
+        avio_write(s->pb, avctx->extradata, avctx->extradata_size);
+        if (avctx->extradata[avctx->extradata_size - 1] != '\n')
+            avio_write(s->pb, "\r\n", 2);
     }
-
     avio_flush(s->pb);
 
     return 0;
@@ -191,13 +179,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int write_trailer(AVFormatContext *s)
 {
-    ASSContext *ass = s->priv_data;
-    AVCodecContext *avctx= s->streams[0]->codec;
-
     purge_dialogues(s, 1);
-    avio_write(s->pb, avctx->extradata      + ass->extra_index,
-                      avctx->extradata_size - ass->extra_index);
-
     return 0;
 }
 

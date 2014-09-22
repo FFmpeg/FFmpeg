@@ -429,10 +429,9 @@ static void write_element(AlacEncodeContext *s,
 
         // write extra bits if needed
         if (s->extra_bits) {
-            uint32_t mask = (1 << s->extra_bits) - 1;
             for (i = 0; i < s->frame_size; i++) {
                 for (j = 0; j < channels; j++) {
-                    put_bits(pb, s->extra_bits, s->predictor_buf[j][i] & mask);
+                    put_bits(pb, s->extra_bits, s->predictor_buf[j][i]);
                 }
             }
         }
@@ -444,7 +443,7 @@ static void write_element(AlacEncodeContext *s,
             // TODO: determine when this will actually help. for now it's not used.
             if (prediction_type == 15) {
                 // 2nd pass 1st order filter
-                int32_t *residual = s->predictor_buf[channels];
+                int32_t *residual = s->predictor_buf[i];
                 for (j = s->frame_size - 1; j > 0; j--)
                     residual[j] -= residual[j - 1];
             }

@@ -1,6 +1,6 @@
 /*
  * Blackmagic DeckLink output
- * Copyright (c) 2013-2014 Ramiro Polla
+ * Copyright (c) 2014 Deti Fliegl
  *
  * This file is part of FFmpeg.
  *
@@ -23,35 +23,32 @@
 #include "libavutil/opt.h"
 
 #include "decklink_common_c.h"
-#include "decklink_enc.h"
+#include "decklink_dec.h"
 
 #define OFFSET(x) offsetof(struct decklink_cctx, x)
-#define ENC AV_OPT_FLAG_ENCODING_PARAM
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+
 static const AVOption options[] = {
-    { "list_devices", "list available devices"  , OFFSET(list_devices), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, ENC },
-    { "list_formats", "list supported formats"  , OFFSET(list_formats), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, ENC },
-    { "preroll"     , "video preroll in seconds", OFFSET(preroll     ), AV_OPT_TYPE_DOUBLE, { .dbl = 0.5 }, 0, 5, ENC },
+    { "list_devices", "list available devices"  , OFFSET(list_devices), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
+    { "list_formats", "list supported formats"  , OFFSET(list_formats), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { NULL },
 };
 
-static const AVClass decklink_muxer_class = {
-    .class_name = "Blackmagic DeckLink muxer",
+static const AVClass decklink_demuxer_class = {
+    .class_name = "Blackmagic DeckLink demuxer",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
+    .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-AVOutputFormat ff_decklink_muxer = {
+AVInputFormat ff_decklink_demuxer = {
     .name           = "decklink",
-    .long_name      = NULL_IF_CONFIG_SMALL("Blackmagic DeckLink output"),
-    .audio_codec    = AV_CODEC_ID_PCM_S16LE,
-    .video_codec    = AV_CODEC_ID_RAWVIDEO,
-    .subtitle_codec = AV_CODEC_ID_NONE,
+    .long_name      = NULL_IF_CONFIG_SMALL("Blackmagic DeckLink input"),
     .flags          = AVFMT_NOFILE | AVFMT_RAWPICTURE,
-    .priv_class     = &decklink_muxer_class,
+    .priv_class     = &decklink_demuxer_class,
     .priv_data_size = sizeof(struct decklink_cctx),
-    .write_header   = ff_decklink_write_header,
-    .write_packet   = ff_decklink_write_packet,
-    .write_trailer  = ff_decklink_write_trailer,
+    .read_header   = ff_decklink_read_header,
+    .read_packet   = ff_decklink_read_packet,
+    .read_close    = ff_decklink_read_close,
 };

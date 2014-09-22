@@ -1416,12 +1416,10 @@ static int dca_filter_channels(DCAContext *s, int block_index)
 
     /* 32 subbands QMF */
     for (k = 0; k < s->prim_channels; k++) {
-/*        static float pcm_to_double[8] = { 32768.0, 32768.0, 524288.0, 524288.0,
-                                            0, 8388608.0, 8388608.0 };*/
         if (s->channel_order_tab[k] >= 0)
             qmf_32_subbands(s, k, subband_samples[k],
                             s->samples_chanptr[s->channel_order_tab[k]],
-                            M_SQRT1_2 / 32768.0 /* pcm_to_double[s->source_pcm_res] */);
+                            M_SQRT1_2 / 32768.0);
     }
 
     /* Generate LFE samples for this subsubframe FIXME!!! */

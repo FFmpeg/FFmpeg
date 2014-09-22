@@ -266,7 +266,7 @@ static double getSplineCoeff(double a, double b, double c, double d,
 
 static av_cold int get_local_pos(SwsContext *s, int chr_subsample, int pos, int dir)
 {
-    if (pos < 0) {
+    if (pos == -1 || pos <= -513) {
         pos = (128 << chr_subsample) - 128;
     }
     pos += 128; // relative to ideal left edge

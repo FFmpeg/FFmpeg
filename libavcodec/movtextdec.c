@@ -60,7 +60,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_sub_ptr, AVPacket *avpkt)
 {
     AVSubtitle *sub = data;
-    int ts_start, ts_end;
+    int ret, ts_start, ts_end;
     AVBPrint buf;
     const char *ptr = avpkt->data;
     const char *end;
@@ -96,13 +96,11 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     // Note that the spec recommends lines be no longer than 2048 characters.
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     text_to_ass(&buf, ptr, end);
-
-    if (!av_bprint_is_complete(&buf))
-        return AVERROR(ENOMEM);
-
-    ff_ass_add_rect(sub, buf.str, ts_start, ts_end-ts_start, 0);
-    *got_sub_ptr = sub->num_rects > 0;
+    ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_end-ts_start, 0);
     av_bprint_finalize(&buf, NULL);
+    if (ret < 0)
+        return ret;
+    *got_sub_ptr = sub->num_rects > 0;
     return avpkt->size;
 }
 

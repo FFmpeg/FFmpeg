@@ -23,9 +23,9 @@
 extern "C" {
 #endif
 
-int ff_decklink_write_header(AVFormatContext *avctx);
-int ff_decklink_write_packet(AVFormatContext *avctx, AVPacket *pkt);
-int ff_decklink_write_trailer(AVFormatContext *avctx);
+int ff_decklink_read_header(AVFormatContext *avctx);
+int ff_decklink_read_packet(AVFormatContext *avctx, AVPacket *pkt);
+int ff_decklink_read_close(AVFormatContext *avctx);
 
 #ifdef __cplusplus
 } /* extern "C" */

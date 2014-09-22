@@ -1255,6 +1255,11 @@ static int read_from_packet_buffer(AVPacketList **pkt_buffer,
     return 0;
 }
 
+static int64_t ts_to_samples(AVStream *st, int64_t ts)
+{
+    return av_rescale(ts, st->time_base.num * st->codec->sample_rate, st->time_base.den);
+}
+
 static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     int ret = 0, i, got_packet = 0;
@@ -1352,10 +1357,21 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
     if (ret >= 0) {
         AVStream *st = s->streams[pkt->stream_index];
-        if (st->skip_samples) {
+        int discard_padding = 0;
+        if (st->first_discard_sample && pkt->pts != AV_NOPTS_VALUE) {
+            int64_t pts = pkt->pts - (is_relative(pkt->pts) ? RELATIVE_TS_BASE : 0);
+            int64_t sample = ts_to_samples(st, pts);
+            int duration = ts_to_samples(st, pkt->duration);
+            int64_t end_sample = sample + duration;
+            if (duration > 0 && end_sample >= st->first_discard_sample &&
+                sample < st->last_discard_sample)
+                discard_padding = FFMIN(end_sample - st->first_discard_sample, duration);
+        }
+        if (st->skip_samples || discard_padding) {
             uint8_t *p = av_packet_new_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
             if (p) {
                 AV_WL32(p, st->skip_samples);
+                AV_WL32(p + 4, discard_padding);
                 av_log(s, AV_LOG_DEBUG, "demuxer injecting skip %d\n", st->skip_samples);
             }
             st->skip_samples = 0;
