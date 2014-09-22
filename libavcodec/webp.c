@@ -1066,7 +1066,7 @@ static int apply_color_indexing_transform(WebPContext *s)
             p = GET_PIXEL(img->frame, x, y);
             i = p[2];
             if (i >= pal->frame->width) {
-                AV_WB32(p, 0xFF000000);
+                AV_WB32(p, 0x00000000);
             } else {
                 const uint8_t *pi = GET_PIXEL(pal->frame, i, 0);
                 AV_COPY32(p, pi);
