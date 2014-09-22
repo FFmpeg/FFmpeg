@@ -339,7 +339,7 @@ static inline void mcdc(uint16_t *dst, const uint16_t *src, int log2w,
     }
 }
 
-static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
+static int decode_p_block(FourXContext *f, uint16_t *dst, const uint16_t *src,
                           int log2w, int log2h, int stride)
 {
     const int index = size2index[log2h][log2w];
