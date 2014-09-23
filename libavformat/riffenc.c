@@ -203,11 +203,15 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
 void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
                        const AVCodecTag *tags, int for_asf, int ignore_extradata)
 {
+    int keep_height = enc->extradata_size >= 9 &&
+                      !memcmp(enc->extradata + enc->extradata_size - 9, "BottomUp", 9);
+    int extradata_size = enc->extradata_size - 9*keep_height;
+
     /* size */
-    avio_wl32(pb, 40 + (ignore_extradata ? 0 : enc->extradata_size));
+    avio_wl32(pb, 40 + (ignore_extradata ? 0 :extradata_size));
     avio_wl32(pb, enc->width);
     //We always store RGB TopDown
-    avio_wl32(pb, enc->codec_tag ? enc->height : -enc->height);
+    avio_wl32(pb, enc->codec_tag || keep_height ? enc->height : -enc->height);
     /* planes */
     avio_wl16(pb, 1);
     /* depth */
@@ -221,9 +225,9 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
     avio_wl32(pb, 0);
 
     if (!ignore_extradata) {
-        avio_write(pb, enc->extradata, enc->extradata_size);
+        avio_write(pb, enc->extradata, extradata_size);
 
-        if (!for_asf && enc->extradata_size & 1)
+        if (!for_asf && extradata_size & 1)
             avio_w8(pb, 0);
     }
 }
