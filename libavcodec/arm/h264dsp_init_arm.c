@@ -107,8 +107,10 @@ av_cold void ff_h264dsp_init_arm(H264DSPContext *c, const int bit_depth,
 {
     int cpu_flags = av_get_cpu_flags();
 
+#if HAVE_ARMV6
     if (have_setend(cpu_flags))
         c->startcode_find_candidate = ff_startcode_find_candidate_armv6;
+#endif
     if (have_neon(cpu_flags))
         h264dsp_init_neon(c, bit_depth, chroma_format_idc);
 }
