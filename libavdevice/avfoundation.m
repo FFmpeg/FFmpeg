@@ -384,8 +384,7 @@ static int avf_read_header(AVFormatContext *s)
         }
     }
 
-    NSString* dev_display_name = [video_device localizedName];
-    av_log(s, AV_LOG_DEBUG, "'%s' opened\n", [dev_display_name UTF8String]);
+    av_log(s, AV_LOG_DEBUG, "'%s' opened\n", [[video_device localizedName] UTF8String]);
 
     // Initialize capture session
     ctx->capture_session = [[AVCaptureSession alloc] init];
