@@ -22,17 +22,17 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
+SECTION_RODATA 32
 
 cextern pw_256
 
 %macro F8_TAPS 8
-times 8 db %1, %2
-times 8 db %3, %4
-times 8 db %5, %6
-times 8 db %7, %8
+times 16 db %1, %2
+times 16 db %3, %4
+times 16 db %5, %6
+times 16 db %7, %8
 %endmacro
-; int8_t ff_filters_ssse3[3][15][4][16]
+; int8_t ff_filters_ssse3[3][15][4][32]
 const filters_ssse3 ; smooth
                     F8_TAPS -3, -1,  32,  64,  38,   1, -3,  0
                     F8_TAPS -2, -2,  29,  63,  41,   2, -3,  0
@@ -90,9 +90,9 @@ cglobal vp9_%1_8tap_1d_h_ %+ %%px, 6, 6, 11, dst, src, dstride, sstride, h, filt
     mova        m6, [pw_256]
     mova        m7, [filteryq+ 0]
 %if ARCH_X86_64 && mmsize > 8
-    mova        m8, [filteryq+16]
-    mova        m9, [filteryq+32]
-    mova       m10, [filteryq+48]
+    mova        m8, [filteryq+32]
+    mova        m9, [filteryq+64]
+    mova       m10, [filteryq+96]
 %endif
 .loop:
     movh        m0, [srcq-3]
@@ -114,9 +114,9 @@ cglobal vp9_%1_8tap_1d_h_ %+ %%px, 6, 6, 11, dst, src, dstride, sstride, h, filt
     pmaddubsw   m4, m9
     pmaddubsw   m1, m10
 %else
-    pmaddubsw   m2, [filteryq+16]
-    pmaddubsw   m4, [filteryq+32]
-    pmaddubsw   m1, [filteryq+48]
+    pmaddubsw   m2, [filteryq+32]
+    pmaddubsw   m4, [filteryq+64]
+    pmaddubsw   m1, [filteryq+96]
 %endif
     paddw       m0, m2
     paddw       m4, m1
@@ -150,9 +150,9 @@ filter_h_fn avg
 cglobal vp9_%1_8tap_1d_h_ %+ %%px, 6, 6, 14, dst, src, dstride, sstride, h, filtery
     mova       m13, [pw_256]
     mova        m8, [filteryq+ 0]
-    mova        m9, [filteryq+16]
-    mova       m10, [filteryq+32]
-    mova       m11, [filteryq+48]
+    mova        m9, [filteryq+32]
+    mova       m10, [filteryq+64]
+    mova       m11, [filteryq+96]
 .loop:
     movu        m0, [srcq-3]
     movu        m1, [srcq-2]
@@ -198,6 +198,12 @@ INIT_XMM ssse3
 filter_hx2_fn put
 filter_hx2_fn avg
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+filter_hx2_fn put
+filter_hx2_fn avg
+%endif
+
 %endif ; ARCH_X86_64
 
 %macro filter_v_fn 1
@@ -215,9 +221,9 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px, 4, 7, 11, dst, src, dstride, sstride, filtery
     sub       srcq, sstride3q
     mova        m7, [filteryq+ 0]
 %if ARCH_X86_64 && mmsize > 8
-    mova        m8, [filteryq+16]
-    mova        m9, [filteryq+32]
-    mova       m10, [filteryq+48]
+    mova        m8, [filteryq+32]
+    mova        m9, [filteryq+64]
+    mova       m10, [filteryq+96]
 %endif
 .loop:
     ; FIXME maybe reuse loads from previous rows, or just more generally
@@ -242,9 +248,9 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px, 4, 7, 11, dst, src, dstride, sstride, filtery
     pmaddubsw   m4, m9
     pmaddubsw   m1, m10
 %else
-    pmaddubsw   m2, [filteryq+16]
-    pmaddubsw   m4, [filteryq+32]
-    pmaddubsw   m1, [filteryq+48]
+    pmaddubsw   m2, [filteryq+32]
+    pmaddubsw   m4, [filteryq+64]
+    pmaddubsw   m1, [filteryq+96]
 %endif
     paddw       m0, m2
     paddw       m4, m1
@@ -282,9 +288,9 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px, 6, 8, 14, dst, src, dstride, sstride, h, filt
     lea      src4q, [srcq+sstrideq]
     sub       srcq, sstride3q
     mova        m8, [filteryq+ 0]
-    mova        m9, [filteryq+16]
-    mova       m10, [filteryq+32]
-    mova       m11, [filteryq+48]
+    mova        m9, [filteryq+32]
+    mova       m10, [filteryq+64]
+    mova       m11, [filteryq+96]
 .loop:
     ; FIXME maybe reuse loads from previous rows, or just
     ; more generally unroll this to prevent multiple loads of
@@ -334,6 +340,12 @@ INIT_XMM ssse3
 filter_vx2_fn put
 filter_vx2_fn avg
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+filter_vx2_fn put
+filter_vx2_fn avg
+%endif
+
 %endif ; ARCH_X86_64
 
 %macro fpel_fn 6
@@ -345,7 +357,7 @@ filter_vx2_fn avg
 %define %%dstfn mova
 %endif
 
-%if %2 <= 16
+%if %2 <= mmsize
 cglobal vp9_%1%2, 5, 7, 4, dst, src, dstride, sstride, h, dstride3, sstride3
     lea  sstride3q, [sstrideq*3]
     lea  dstride3q, [dstrideq*3]
@@ -376,6 +388,8 @@ cglobal vp9_%1%2, 5, 5, 4, dst, src, dstride, sstride, h
 
 %define d16 16
 %define s16 16
+%define d32 32
+%define s32 32
 INIT_MMX mmx
 fpel_fn put, 4,  strideq, strideq*2, stride3q, 4
 fpel_fn put, 8,  strideq, strideq*2, stride3q, 4
@@ -390,5 +404,15 @@ INIT_XMM sse2
 fpel_fn avg, 16, strideq, strideq*2, stride3q, 4
 fpel_fn avg, 32, mmsize,  strideq,   strideq+mmsize, 2
 fpel_fn avg, 64, mmsize,  mmsize*2,  mmsize*3, 1
+INIT_YMM avx
+fpel_fn put, 32, strideq, strideq*2, stride3q, 4
+fpel_fn put, 64, mmsize,  strideq,   strideq+mmsize, 2
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+fpel_fn avg, 32, strideq, strideq*2, stride3q, 4
+fpel_fn avg, 64, mmsize,  strideq,   strideq+mmsize, 2
+%endif
 %undef s16
 %undef d16
+%undef s32
+%undef d32

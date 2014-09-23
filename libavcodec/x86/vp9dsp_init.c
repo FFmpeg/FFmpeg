@@ -45,6 +45,10 @@ fpel_func(avg,  8, mmxext);
 fpel_func(avg, 16, sse2);
 fpel_func(avg, 32, sse2);
 fpel_func(avg, 64, sse2);
+fpel_func(put, 32, avx);
+fpel_func(put, 64, avx);
+fpel_func(avg, 32, avx2);
+fpel_func(avg, 64, avx2);
 #undef fpel_func
 
 #define mc_func(avg, sz, dir, opt)                                              \
@@ -54,18 +58,19 @@ ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,         
                                                           ptrdiff_t dst_stride, \
                                                           ptrdiff_t src_stride, \
                                                           int h,                \
-                                                          const int8_t (*filter)[16])
+                                                          const int8_t (*filter)[32])
 
-#define mc_funcs(sz)            \
-    mc_func(put, sz, h, ssse3); \
-    mc_func(avg, sz, h, ssse3); \
-    mc_func(put, sz, v, ssse3); \
-    mc_func(avg, sz, v, ssse3)
+#define mc_funcs(sz, opt)     \
+    mc_func(put, sz, h, opt); \
+    mc_func(avg, sz, h, opt); \
+    mc_func(put, sz, v, opt); \
+    mc_func(avg, sz, v, opt)
 
-mc_funcs(4);
-mc_funcs(8);
+mc_funcs(4, ssse3);
+mc_funcs(8, ssse3);
 #if ARCH_X86_64
-mc_funcs(16);
+mc_funcs(16, ssse3);
+mc_funcs(32, avx2);
 #endif
 
 #undef mc_funcs
@@ -78,7 +83,7 @@ ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,     \
                                                       ptrdiff_t dst_stride, \
                                                       ptrdiff_t src_stride, \
                                                       int h,                \
-                                                      const int8_t (*filter)[16]) \
+                                                      const int8_t (*filter)[32]) \
 {                                                                           \
     ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## hsz ## _ ## opt(dst, src,    \
                                                            dst_stride,      \
@@ -92,94 +97,109 @@ ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,     \
                                                            h, filter);      \
 }
 
-#define mc_rep_funcs(sz, hsz)            \
-    mc_rep_func(put, sz, hsz, h, ssse3); \
-    mc_rep_func(avg, sz, hsz, h, ssse3); \
-    mc_rep_func(put, sz, hsz, v, ssse3); \
-    mc_rep_func(avg, sz, hsz, v, ssse3)
+#define mc_rep_funcs(sz, hsz, opt)     \
+    mc_rep_func(put, sz, hsz, h, opt); \
+    mc_rep_func(avg, sz, hsz, h, opt); \
+    mc_rep_func(put, sz, hsz, v, opt); \
+    mc_rep_func(avg, sz, hsz, v, opt)
 
 #if ARCH_X86_32
-mc_rep_funcs(16, 8);
+mc_rep_funcs(16, 8, ssse3);
 #endif
-mc_rep_funcs(32, 16);
-mc_rep_funcs(64, 32);
+mc_rep_funcs(32, 16, ssse3);
+mc_rep_funcs(64, 32, ssse3);
+#if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+mc_rep_funcs(64, 32, avx2);
+#endif
 
 #undef mc_rep_funcs
 #undef mc_rep_func
 
-extern const int8_t ff_filters_ssse3[3][15][4][16];
+extern const int8_t ff_filters_ssse3[3][15][4][32];
 
-#define filter_8tap_2d_fn(op, sz, f, fname)                                    \
-static void                                                                    \
-op ## _8tap_ ## fname ## _ ## sz ## hv_ssse3(uint8_t *dst,                     \
-                                             const uint8_t *src,               \
-                                             ptrdiff_t dst_stride,             \
-                                             ptrdiff_t src_stride,             \
-                                             int h, int mx, int my)            \
-{                                                                              \
-    LOCAL_ALIGNED_16(uint8_t, temp, [71 * 64]);                                \
-    ff_vp9_put_8tap_1d_h_ ## sz ## _ssse3(temp, src - 3 * src_stride,          \
-                                          64, src_stride,                      \
-                                          h + 7,                               \
-                                          ff_filters_ssse3[f][mx - 1]);        \
-    ff_vp9_ ## op ## _8tap_1d_v_ ## sz ## _ssse3(dst, temp + 3 * 64,           \
-                                                 dst_stride, 64,               \
-                                                 h,                            \
-                                                 ff_filters_ssse3[f][my - 1]); \
+#define filter_8tap_2d_fn(op, sz, f, fname, align, opt)                          \
+static void                                                                      \
+op ## _8tap_ ## fname ## _ ## sz ## hv_ ## opt(uint8_t *dst,                     \
+                                               const uint8_t *src,               \
+                                               ptrdiff_t dst_stride,             \
+                                               ptrdiff_t src_stride,             \
+                                               int h, int mx, int my)            \
+{                                                                                \
+    LOCAL_ALIGNED_ ## align(uint8_t, temp, [71 * 64]);                           \
+    ff_vp9_put_8tap_1d_h_ ## sz ## _ ## opt(temp, src - 3 * src_stride,          \
+                                            64, src_stride,                      \
+                                            h + 7,                               \
+                                            ff_filters_ssse3[f][mx - 1]);        \
+    ff_vp9_ ## op ## _8tap_1d_v_ ## sz ## _ ## opt(dst, temp + 3 * 64,           \
+                                                   dst_stride, 64,               \
+                                                   h,                            \
+                                                   ff_filters_ssse3[f][my - 1]); \
 }
 
-#define filters_8tap_2d_fn(op, sz)                          \
-    filter_8tap_2d_fn(op, sz, FILTER_8TAP_REGULAR, regular) \
-    filter_8tap_2d_fn(op, sz, FILTER_8TAP_SHARP, sharp)     \
-    filter_8tap_2d_fn(op, sz, FILTER_8TAP_SMOOTH, smooth)
+#define filters_8tap_2d_fn(op, sz, align, opt)                          \
+    filter_8tap_2d_fn(op, sz, FILTER_8TAP_REGULAR, regular, align, opt) \
+    filter_8tap_2d_fn(op, sz, FILTER_8TAP_SHARP,   sharp,   align, opt) \
+    filter_8tap_2d_fn(op, sz, FILTER_8TAP_SMOOTH,  smooth,  align, opt)
 
-#define filters_8tap_2d_fn2(op) \
-    filters_8tap_2d_fn(op, 64)  \
-    filters_8tap_2d_fn(op, 32)  \
-    filters_8tap_2d_fn(op, 16)  \
-    filters_8tap_2d_fn(op, 8)   \
-    filters_8tap_2d_fn(op, 4)
+#define filters_8tap_2d_fn2(op, align, opt) \
+    filters_8tap_2d_fn(op, 64, align, opt)  \
+    filters_8tap_2d_fn(op, 32, align, opt)  \
+    filters_8tap_2d_fn(op, 16, align, opt)  \
+    filters_8tap_2d_fn(op, 8,  align, opt)  \
+    filters_8tap_2d_fn(op, 4,  align, opt)
 
-filters_8tap_2d_fn2(put)
-filters_8tap_2d_fn2(avg)
+filters_8tap_2d_fn2(put, 16, ssse3)
+filters_8tap_2d_fn2(avg, 16, ssse3)
+#if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+filters_8tap_2d_fn(put, 64, 32, avx2)
+filters_8tap_2d_fn(put, 32, 32, avx2)
+filters_8tap_2d_fn(avg, 64, 32, avx2)
+filters_8tap_2d_fn(avg, 32, 32, avx2)
+#endif
 
 #undef filters_8tap_2d_fn2
 #undef filters_8tap_2d_fn
 #undef filter_8tap_2d_fn
 
-#define filter_8tap_1d_fn(op, sz, f, fname, dir, dvar)                   \
-static void                                                              \
-op ## _8tap_ ## fname ## _ ## sz ## dir ## _ssse3(uint8_t *dst,          \
-                                                  const uint8_t *src,    \
-                                                  ptrdiff_t dst_stride,  \
-                                                  ptrdiff_t src_stride,  \
-                                                  int h, int mx,         \
-                                                  int my)                \
-{                                                                        \
-    ff_vp9_ ## op ## _8tap_1d_ ## dir ## _ ## sz ## _ssse3(dst, src,     \
-                                                           dst_stride,   \
-                                                           src_stride, h,\
-                                                           ff_filters_ssse3[f][dvar - 1]); \
+#define filter_8tap_1d_fn(op, sz, f, fname, dir, dvar, opt)                \
+static void                                                                \
+op ## _8tap_ ## fname ## _ ## sz ## dir ## _ ## opt(uint8_t *dst,          \
+                                                    const uint8_t *src,    \
+                                                    ptrdiff_t dst_stride,  \
+                                                    ptrdiff_t src_stride,  \
+                                                    int h, int mx,         \
+                                                    int my)                \
+{                                                                          \
+    ff_vp9_ ## op ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(dst, src,     \
+                                                             dst_stride,   \
+                                                             src_stride, h,\
+                                                             ff_filters_ssse3[f][dvar - 1]); \
 }
 
-#define filters_8tap_1d_fn(op, sz, dir, dvar)                          \
-    filter_8tap_1d_fn(op, sz, FILTER_8TAP_REGULAR, regular, dir, dvar) \
-    filter_8tap_1d_fn(op, sz, FILTER_8TAP_SHARP, sharp, dir, dvar)     \
-    filter_8tap_1d_fn(op, sz, FILTER_8TAP_SMOOTH, smooth, dir, dvar)
+#define filters_8tap_1d_fn(op, sz, dir, dvar, opt)                          \
+    filter_8tap_1d_fn(op, sz, FILTER_8TAP_REGULAR, regular, dir, dvar, opt) \
+    filter_8tap_1d_fn(op, sz, FILTER_8TAP_SHARP,   sharp,   dir, dvar, opt) \
+    filter_8tap_1d_fn(op, sz, FILTER_8TAP_SMOOTH,  smooth,  dir, dvar, opt)
 
-#define filters_8tap_1d_fn2(op, sz)             \
-    filters_8tap_1d_fn(op, sz, h, mx)           \
-    filters_8tap_1d_fn(op, sz, v, my)
+#define filters_8tap_1d_fn2(op, sz, opt)        \
+    filters_8tap_1d_fn(op, sz, h, mx, opt)      \
+    filters_8tap_1d_fn(op, sz, v, my, opt)
 
-#define filters_8tap_1d_fn3(op) \
-    filters_8tap_1d_fn2(op, 64) \
-    filters_8tap_1d_fn2(op, 32) \
-    filters_8tap_1d_fn2(op, 16) \
-    filters_8tap_1d_fn2(op,  8) \
-    filters_8tap_1d_fn2(op,  4)
+#define filters_8tap_1d_fn3(op, opt) \
+    filters_8tap_1d_fn2(op, 64, opt) \
+    filters_8tap_1d_fn2(op, 32, opt) \
+    filters_8tap_1d_fn2(op, 16, opt) \
+    filters_8tap_1d_fn2(op,  8, opt) \
+    filters_8tap_1d_fn2(op,  4, opt)
 
-filters_8tap_1d_fn3(put)
-filters_8tap_1d_fn3(avg)
+filters_8tap_1d_fn3(put, ssse3)
+filters_8tap_1d_fn3(avg, ssse3)
+#if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+filters_8tap_1d_fn2(put, 64, avx2)
+filters_8tap_1d_fn2(put, 32, avx2)
+filters_8tap_1d_fn2(avg, 64, avx2)
+filters_8tap_1d_fn2(avg, 32, avx2)
+#endif
 
 #undef filters_8tap_1d_fn
 #undef filters_8tap_1d_fn2
@@ -205,9 +225,12 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
     dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][idxh][idxv] = type ## _8tap_regular_ ## sz ## dir ## _ ## opt; \
     dsp->mc[idx1][FILTER_8TAP_SHARP][idx2][idxh][idxv]   = type ## _8tap_sharp_   ## sz ## dir ## _ ## opt
 
+#define init_subpel2_32_64(idx, idxh, idxv, dir, type, opt) \
+    init_subpel1(0, idx, idxh, idxv, 64, dir, type, opt);   \
+    init_subpel1(1, idx, idxh, idxv, 32, dir, type, opt)
+
 #define init_subpel2(idx, idxh, idxv, dir, type, opt)     \
-    init_subpel1(0, idx, idxh, idxv, 64, dir, type, opt); \
-    init_subpel1(1, idx, idxh, idxv, 32, dir, type, opt); \
+    init_subpel2_32_64(idx, idxh, idxv, dir, type, opt);  \
     init_subpel1(2, idx, idxh, idxv, 16, dir, type, opt); \
     init_subpel1(3, idx, idxh, idxv,  8, dir, type, opt); \
     init_subpel1(4, idx, idxh, idxv,  4, dir, type, opt)
@@ -242,6 +265,25 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
     if (EXTERNAL_SSSE3(cpu_flags)) {
         init_subpel3(0, put, ssse3);
         init_subpel3(1, avg, ssse3);
+    }
+
+    if (EXTERNAL_AVX(cpu_flags)) {
+        init_fpel(1, 0, 32, put, avx);
+        init_fpel(0, 0, 64, put, avx);
+    }
+
+    if (EXTERNAL_AVX2(cpu_flags)) {
+        init_fpel(1, 1, 32, avg, avx2);
+        init_fpel(0, 1, 64, avg, avx2);
+
+#if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+        init_subpel2_32_64(0, 1, 1, hv, put, avx2);
+        init_subpel2_32_64(0, 0, 1, v,  put, avx2);
+        init_subpel2_32_64(0, 1, 0, h,  put, avx2);
+        init_subpel2_32_64(1, 1, 1, hv, avg, avx2);
+        init_subpel2_32_64(1, 0, 1, v,  avg, avx2);
+        init_subpel2_32_64(1, 1, 0, h,  avg, avx2);
+#endif /* ARCH_X86_64 && HAVE_AVX2_EXTERNAL */
     }
 
 #undef init_fpel
