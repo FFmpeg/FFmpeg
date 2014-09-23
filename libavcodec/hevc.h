@@ -679,7 +679,6 @@ typedef struct PredictionUnit {
 } PredictionUnit;
 
 typedef struct TransformUnit {
-    DECLARE_ALIGNED(32, int16_t, coeffs[2][MAX_TB_SIZE * MAX_TB_SIZE]);
     int cu_qp_delta;
 
     int res_scale_val;

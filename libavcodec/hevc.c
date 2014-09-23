@@ -972,8 +972,8 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                         ptrdiff_t stride = s->frame->linesize[1];
                         int hshift = s->sps->hshift[1];
                         int vshift = s->sps->vshift[1];
-                        int16_t *coeffs_y = lc->tu.coeffs[0];
-                        int16_t *coeffs =   lc->tu.coeffs[1];
+                        int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
+                        int16_t *coeffs   = (int16_t*)lc->edge_emu_buffer2;
                         int size = 1 << log2_trafo_size_c;
 
                         uint8_t *dst = &s->frame->data[1][(y0 >> vshift) * stride +
@@ -1001,8 +1001,8 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                         ptrdiff_t stride = s->frame->linesize[2];
                         int hshift = s->sps->hshift[2];
                         int vshift = s->sps->vshift[2];
-                        int16_t *coeffs_y = lc->tu.coeffs[0];
-                        int16_t *coeffs =   lc->tu.coeffs[1];
+                        int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
+                        int16_t *coeffs   = (int16_t*)lc->edge_emu_buffer2;
                         int size = 1 << log2_trafo_size_c;
 
                         uint8_t *dst = &s->frame->data[2][(y0 >> vshift) * stride +
