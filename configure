@@ -4912,7 +4912,6 @@ if enabled libdc1394; then
     die "ERROR: No version of libdc1394 found "
 fi
 if ! disabled sdl; then
-    disable sdl
     SDL_CONFIG="${cross_prefix}sdl-config"
     if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
@@ -4926,6 +4925,10 @@ if ! disabled sdl; then
             check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
             check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
             enable sdl
+        elif enabled sdl ; then
+            die "ERROR: SDL not found"
+        else
+            disable sdl
         fi
     fi
 fi
