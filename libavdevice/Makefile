@@ -58,7 +58,8 @@ OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES)             += avdeviceres.o
 
-SKIPHEADERS-$(CONFIG_DECKLINK)           += decklink_enc.h decklink_dec.h decklink_common.h
+SKIPHEADERS-$(CONFIG_DECKLINK)           += decklink_enc.h decklink_dec.h \
+                                            decklink_common.h decklink_common_c.h
 SKIPHEADERS-$(CONFIG_DSHOW_INDEV)        += dshow_capture.h
 SKIPHEADERS-$(CONFIG_FBDEV_INDEV)        += fbdev_common.h
 SKIPHEADERS-$(CONFIG_FBDEV_OUTDEV)       += fbdev_common.h
