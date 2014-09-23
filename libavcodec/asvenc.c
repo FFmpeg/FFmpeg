@@ -26,8 +26,10 @@
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 
+#include "aandcttab.h"
 #include "asv.h"
 #include "avcodec.h"
+#include "dct.h"
 #include "fdctdsp.h"
 #include "internal.h"
 #include "mathops.h"
@@ -331,8 +333,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ((uint32_t *) avctx->extradata)[1] = av_le2ne32(AV_RL32("ASUS"));
 
     for (i = 0; i < 64; i++) {
-        int q = 32 * scale * ff_mpeg1_default_intra_matrix[i];
-        a->q_intra_matrix[i] = ((a->inv_qscale << 16) + q / 2) / q;
+        if (a->fdsp.fdct == ff_fdct_ifast) {
+            int q = 32LL * scale * ff_mpeg1_default_intra_matrix[i] * ff_aanscales[i];
+            a->q_intra_matrix[i] = (((int64_t)a->inv_qscale << 30) + q / 2) / q;
+        } else {
+            int q = 32 * scale * ff_mpeg1_default_intra_matrix[i];
+            a->q_intra_matrix[i] = ((a->inv_qscale << 16) + q / 2) / q;
+        }
     }
 
     return 0;
