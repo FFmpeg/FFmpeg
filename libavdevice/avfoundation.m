@@ -35,7 +35,7 @@
 #include "libavutil/time.h"
 #include "avdevice.h"
 
-static const int avf_time_base = 100;
+static const int avf_time_base = 1000000;
 
 static const AVRational avf_time_base_q = {
     .num = 1,
