@@ -135,9 +135,9 @@ static av_always_inline void emulated_edge_mc(uint8_t *dst, const uint8_t *src,
                                               x86_reg block_w, x86_reg block_h,
                                               x86_reg src_x, x86_reg src_y,
                                               x86_reg w, x86_reg h,
-                                              emu_edge_vfix_func **vfix_tbl,
+                                              emu_edge_vfix_func * const *vfix_tbl,
                                               emu_edge_vvar_func *v_extend_var,
-                                              emu_edge_hfix_func **hfix_tbl,
+                                              emu_edge_hfix_func * const *hfix_tbl,
                                               emu_edge_hvar_func *h_extend_var)
 {
     x86_reg start_y, start_x, end_y, end_x, src_y_add = 0, p;

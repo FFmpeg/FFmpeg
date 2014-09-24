@@ -45,7 +45,7 @@ typedef struct {
 
 #define ADTS_MAX_FRAME_BYTES ((1 << 13) - 1)
 
-static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf, int size)
+static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const uint8_t *buf, int size)
 {
     GetBitContext gb;
     PutBitContext pb;

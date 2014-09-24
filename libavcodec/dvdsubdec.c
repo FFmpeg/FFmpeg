@@ -39,6 +39,7 @@ typedef struct DVDSubContext
   uint8_t  alpha[256];
   uint8_t *buf;
   int      buf_size;
+  int      forced_subs_only;
 #ifdef DEBUG
   int sub_id;
 #endif
@@ -548,6 +549,9 @@ static int dvdsub_decode(AVCodecContext *avctx,
     if (!is_menu && find_smallest_bounding_rectangle(sub) == 0)
         goto no_subtitle;
 
+    if (ctx->forced_subs_only && !(sub->rects[0]->flags & AV_SUBTITLE_FLAG_FORCED))
+        goto no_subtitle;
+
 #if defined(DEBUG)
     {
     char ppm_name[32];
@@ -652,6 +656,7 @@ static av_cold int dvdsub_close(AVCodecContext *avctx)
 #define SD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "palette", "set the global palette", OFFSET(palette_str), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, SD },
+    { "forced_subs_only", "Only show forced subtitles", OFFSET(forced_subs_only), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, SD},
     { NULL }
 };
 static const AVClass dvdsub_class = {

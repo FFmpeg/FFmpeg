@@ -659,6 +659,17 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
 
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
+        if (pkt->dts != AV_NOPTS_VALUE &&
+            pkt->pts != AV_NOPTS_VALUE &&
+            pkt->dts > pkt->pts) {
+            av_log(s, AV_LOG_WARNING, "Invalid DTS: %"PRId64" PTS: %"PRId64" in output stream %d:%d, replacing by guess\n",
+                   pkt->dts, pkt->pts,
+                   ost->file_index, ost->st->index);
+            pkt->pts =
+            pkt->dts = pkt->pts + pkt->dts + ost->last_mux_dts + 1
+                     - FFMIN3(pkt->pts, pkt->dts, ost->last_mux_dts + 1)
+                     - FFMAX3(pkt->pts, pkt->dts, ost->last_mux_dts + 1);
+        }
      if(
         (avctx->codec_type == AVMEDIA_TYPE_AUDIO || avctx->codec_type == AVMEDIA_TYPE_VIDEO) &&
         pkt->dts != AV_NOPTS_VALUE &&
@@ -681,15 +692,6 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         pkt->dts = max;
       }
      }
-        if (pkt->dts != AV_NOPTS_VALUE &&
-            pkt->pts != AV_NOPTS_VALUE &&
-            pkt->dts > pkt->pts) {
-            av_log(s, AV_LOG_WARNING, "Invalid DTS: %"PRId64" PTS: %"PRId64" in output stream %d:%d\n",
-                   pkt->dts, pkt->pts,
-                   ost->file_index, ost->st->index);
-            pkt->pts = AV_NOPTS_VALUE;
-            pkt->dts = AV_NOPTS_VALUE;
-        }
     }
     ost->last_mux_dts = pkt->dts;
 

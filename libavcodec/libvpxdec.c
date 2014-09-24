@@ -68,6 +68,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img) {
         case VPX_IMG_FMT_I420:
             avctx->pix_fmt = AV_PIX_FMT_YUV420P;
             return 0;
+#if CONFIG_LIBVPX_VP9_DECODER
         case VPX_IMG_FMT_I422:
             avctx->pix_fmt = AV_PIX_FMT_YUV422P;
             return 0;
@@ -105,6 +106,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img) {
             } else {
                 return AVERROR_INVALIDDATA;
             }
+#endif
 #endif
         default:
             return AVERROR_INVALIDDATA;

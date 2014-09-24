@@ -248,6 +248,7 @@ if test $err = 0; then
     rm -f $outfile $errfile $cmpfile $cleanfiles
 elif test $gen = "no"; then
     echo "Test $test failed. Look at $errfile for details."
+    test "${V:-0}" -gt 0 && cat $errfile
 else
     echo "Updating reference failed, possibly no output file was generated."
 fi

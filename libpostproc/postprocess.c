@@ -166,28 +166,28 @@ static const char * const replaceTable[]=
 
 
 #if ARCH_X86 && HAVE_INLINE_ASM
-static inline void prefetchnta(void *p)
+static inline void prefetchnta(const void *p)
 {
     __asm__ volatile(   "prefetchnta (%0)\n\t"
         : : "r" (p)
     );
 }
 
-static inline void prefetcht0(void *p)
+static inline void prefetcht0(const void *p)
 {
     __asm__ volatile(   "prefetcht0 (%0)\n\t"
         : : "r" (p)
     );
 }
 
-static inline void prefetcht1(void *p)
+static inline void prefetcht1(const void *p)
 {
     __asm__ volatile(   "prefetcht1 (%0)\n\t"
         : : "r" (p)
     );
 }
 
-static inline void prefetcht2(void *p)
+static inline void prefetcht2(const void *p)
 {
     __asm__ volatile(   "prefetcht2 (%0)\n\t"
         : : "r" (p)

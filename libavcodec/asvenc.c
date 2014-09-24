@@ -26,8 +26,10 @@
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 
+#include "aandcttab.h"
 #include "asv.h"
 #include "avcodec.h"
+#include "dct.h"
 #include "fdctdsp.h"
 #include "internal.h"
 #include "mathops.h"
@@ -50,7 +52,7 @@ static inline void asv1_put_level(PutBitContext *pb, int level)
     }
 }
 
-static inline void asv2_put_level(PutBitContext *pb, int level)
+static inline void asv2_put_level(ASV1Context *a, PutBitContext *pb, int level)
 {
     unsigned int index = level + 31;
 
@@ -58,6 +60,10 @@ static inline void asv2_put_level(PutBitContext *pb, int level)
         put_bits(pb, ff_asv2_level_tab[index][1], ff_asv2_level_tab[index][0]);
     } else {
         put_bits(pb, ff_asv2_level_tab[31][1], ff_asv2_level_tab[31][0]);
+        if (level < -128 || level > 127) {
+            av_log(a->avctx, AV_LOG_WARNING, "Cliping level %d, increase qscale\n", level);
+            level = av_clip_int8(level);
+        }
         asv2_put_bits(pb, 8, level & 0xFF);
     }
 }
@@ -150,13 +156,13 @@ static inline void asv2_encode_block(ASV1Context *a, int16_t block[64])
 
         if (ccp) {
             if (ccp & 8)
-                asv2_put_level(&a->pb, block[index + 0]);
+                asv2_put_level(a, &a->pb, block[index + 0]);
             if (ccp & 4)
-                asv2_put_level(&a->pb, block[index + 8]);
+                asv2_put_level(a, &a->pb, block[index + 8]);
             if (ccp & 2)
-                asv2_put_level(&a->pb, block[index + 1]);
+                asv2_put_level(a, &a->pb, block[index + 1]);
             if (ccp & 1)
-                asv2_put_level(&a->pb, block[index + 9]);
+                asv2_put_level(a, &a->pb, block[index + 9]);
         }
     }
 }
@@ -331,8 +337,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ((uint32_t *) avctx->extradata)[1] = av_le2ne32(AV_RL32("ASUS"));
 
     for (i = 0; i < 64; i++) {
-        int q = 32 * scale * ff_mpeg1_default_intra_matrix[i];
-        a->q_intra_matrix[i] = ((a->inv_qscale << 16) + q / 2) / q;
+        if (a->fdsp.fdct == ff_fdct_ifast) {
+            int q = 32LL * scale * ff_mpeg1_default_intra_matrix[i] * ff_aanscales[i];
+            a->q_intra_matrix[i] = (((int64_t)a->inv_qscale << 30) + q / 2) / q;
+        } else {
+            int q = 32 * scale * ff_mpeg1_default_intra_matrix[i];
+            a->q_intra_matrix[i] = ((a->inv_qscale << 16) + q / 2) / q;
+        }
     }
 
     return 0;

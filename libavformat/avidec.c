@@ -756,6 +756,10 @@ static int avi_read_header(AVFormatContext *s)
                         pal_size = FFMIN(pal_size, st->codec->extradata_size);
                         pal_src  = st->codec->extradata +
                                    st->codec->extradata_size - pal_size;
+                        /* Exclude the "BottomUp" field from the palette */
+                        if (pal_src - st->codec->extradata >= 9 &&
+                            !memcmp(st->codec->extradata + st->codec->extradata_size - 9, "BottomUp", 9))
+                            pal_src -= 9;
                         for (i = 0; i < pal_size / 4; i++)
                             ast->pal[i] = 0xFFU<<24 | AV_RL32(pal_src+4*i);
                         ast->has_pal = 1;

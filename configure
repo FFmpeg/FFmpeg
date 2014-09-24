@@ -261,6 +261,7 @@ External library support:
   --enable-opencl          enable OpenCL code
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl [no]
+  --disable-sdl            disable sdl [autodetect]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
@@ -1388,6 +1389,7 @@ EXTERNAL_LIBRARY_LIST="
     opencl
     opengl
     openssl
+    sdl
     x11grab
     xlib
     zlib
@@ -4231,10 +4233,16 @@ probe_libc(){
     elif check_${pfx}cpp_condition sys/brand.h "defined LABELED_BRAND_NAME"; then
         eval ${pfx}libc_type=solaris
         add_${pfx}cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
-    # FFmpeg needs a POSIX.1-2001/XSI compliant C library
-    else
-        add_${pfx}cppflags -D_XOPEN_SOURCE=600
     fi
+    check_${pfx}cc <<EOF
+#include <time.h>
+void *v = localtime_r;
+EOF
+test "$?" != 0 && check_${pfx}cc -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 <<EOF && add_${pfx}cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
+#include <time.h>
+void *v = localtime_r;
+EOF
+
 }
 
 probe_libc
@@ -4912,21 +4920,26 @@ if enabled libdc1394; then
         enable libdc1394_1; } ||
     die "ERROR: No version of libdc1394 found "
 fi
-
-SDL_CONFIG="${cross_prefix}sdl-config"
-if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
-    check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-    check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
-    enable sdl
-else
-  if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
-    sdl_cflags=$("${SDL_CONFIG}" --cflags)
-    sdl_libs=$("${SDL_CONFIG}" --libs)
-    check_func_headers SDL_version.h SDL_Linked_Version $sdl_cflags $sdl_libs &&
-    check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-    check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
-    enable sdl
-  fi
+if ! disabled sdl; then
+    SDL_CONFIG="${cross_prefix}sdl-config"
+    if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
+        enable sdl
+    else
+        if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
+            sdl_cflags=$("${SDL_CONFIG}" --cflags)
+            sdl_libs=$("${SDL_CONFIG}" --libs)
+            check_func_headers SDL_version.h SDL_Linked_Version $sdl_cflags $sdl_libs &&
+            check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
+            check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
+            enable sdl
+        elif enabled sdl ; then
+            die "ERROR: SDL not found"
+        else
+            disable sdl
+        fi
+    fi
 fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
