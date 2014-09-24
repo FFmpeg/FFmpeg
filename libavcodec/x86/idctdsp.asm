@@ -31,7 +31,7 @@ SECTION_TEXT
 
 ;--------------------------------------------------------------------------
 ;void ff_put_signed_pixels_clamped(const int16_t *block, uint8_t *pixels,
-;                                  int line_size)
+;                                  ptrdiff_t line_size)
 ;--------------------------------------------------------------------------
 
 %macro PUT_SIGNED_PIXELS_CLAMPED_HALF 1

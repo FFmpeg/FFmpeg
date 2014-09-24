@@ -25,13 +25,14 @@
 #include "config.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavcodec/idctdsp.h"
 #include "idctdsp.h"
 #include "inline_asm.h"
 
 #if HAVE_INLINE_ASM
 
 void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
-                               int line_size)
+                               ptrdiff_t line_size)
 {
     const int16_t *p;
     uint8_t *pix;
@@ -89,7 +90,7 @@ void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
 }
 
 void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
-                               int line_size)
+                               ptrdiff_t line_size)
 {
     const int16_t *p;
     uint8_t *pix;

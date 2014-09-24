@@ -30,7 +30,7 @@
 #include "idctdsp_arm.h"
 
 void ff_add_pixels_clamped_arm(const int16_t *block, uint8_t *dest,
-                               int line_size);
+                               ptrdiff_t line_size);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
  * converted */

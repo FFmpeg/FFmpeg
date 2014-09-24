@@ -52,13 +52,13 @@ typedef struct IDCTDSPContext {
     /* pixel ops : interface with DCT */
     void (*put_pixels_clamped)(const int16_t *block /* align 16 */,
                                uint8_t *pixels /* align 8 */,
-                               int line_size);
+                               ptrdiff_t line_size);
     void (*put_signed_pixels_clamped)(const int16_t *block /* align 16 */,
                                       uint8_t *pixels /* align 8 */,
-                                      int line_size);
+                                      ptrdiff_t line_size);
     void (*add_pixels_clamped)(const int16_t *block /* align 16 */,
                                uint8_t *pixels /* align 8 */,
-                               int line_size);
+                               ptrdiff_t line_size);
 
     void (*idct)(int16_t *block /* align 16 */);
 
@@ -95,8 +95,8 @@ typedef struct IDCTDSPContext {
     enum idct_permutation_type perm_type;
 } IDCTDSPContext;
 
-extern void (*ff_put_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
-extern void (*ff_add_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
+extern void (*ff_put_pixels_clamped)(const int16_t *block, uint8_t *pixels, ptrdiff_t line_size);
+extern void (*ff_add_pixels_clamped)(const int16_t *block, uint8_t *pixels, ptrdiff_t line_size);
 
 void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx);
 
