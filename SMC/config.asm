@@ -440,6 +440,7 @@
 %define CONFIG_OPENCL 1
 %define CONFIG_OPENGL 1
 %define CONFIG_OPENSSL 1
+%define CONFIG_SDL 1
 %define CONFIG_X11GRAB 0
 %define CONFIG_XLIB 0
 %define CONFIG_ZLIB 1
