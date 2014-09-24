@@ -566,7 +566,7 @@ int av_opt_set_channel_layout(void *obj, const char *name, int64_t cl, int searc
                "The value set by option '%s' is not a channel layout.\n", o->name);
         return AVERROR(EINVAL);
     }
-    *(int *)(((int64_t *)target_obj) + o->offset) = cl;
+    *(int64_t *)(((uint8_t *)target_obj) + o->offset) = cl;
     return 0;
 }
 
