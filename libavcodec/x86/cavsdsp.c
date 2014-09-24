@@ -198,7 +198,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         );
     }
 
-    ff_add_pixels_clamped_mmx(b2, dst, stride);
+    ff_add_pixels_clamped(b2, dst, stride);
 }
 
 #endif /* HAVE_MMX_INLINE */
