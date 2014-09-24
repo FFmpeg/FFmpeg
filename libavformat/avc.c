@@ -191,3 +191,20 @@ int ff_avc_write_annexb_extradata(const uint8_t *in, uint8_t **buf, int *size)
     *size = out_size;
     return 0;
 }
+
+const uint8_t *ff_avc_mp4_find_startcode(const uint8_t *start,
+                                         const uint8_t *end,
+                                         int nal_length_size)
+{
+    unsigned int res = 0;
+
+    if (end - start < nal_length_size)
+        return NULL;
+    while (nal_length_size--)
+        res = (res << 8) | *start++;
+
+    if (res > end - start)
+        return NULL;
+
+    return start + res;
+}
