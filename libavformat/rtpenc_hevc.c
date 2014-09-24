@@ -19,28 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avformat.h"
 #include "avc.h"
+#include "avformat.h"
 #include "rtpenc.h"
 
 #define RTP_HEVC_HEADERS_SIZE 3
-
-static const uint8_t *avc_mp4_find_startcode(const uint8_t *start, const uint8_t *end, int nal_length_size)
-{
-    unsigned int res = 0;
-
-    /* is the given data big enough for 1 NAL unit? */
-    if (end - start < nal_length_size)
-        return NULL;
-
-    while (nal_length_size--)
-        res = (res << 8) | *start++;
-
-    if (res > end - start)
-        return NULL;
-
-    return start + res;
-}
 
 static void nal_send(AVFormatContext *ctx, const uint8_t *buf, int len, int last_packet_of_frame)
 {
@@ -90,7 +73,7 @@ static void nal_send(AVFormatContext *ctx, const uint8_t *buf, int len, int last
         buf += 2;
         len -= 2;
 
-        while (len + RTP_HEVC_HEADERS_SIZE > rtp_ctx->max_payload_size) {
+        while (len > rtp_payload_size) {
             /* complete and send current RTP packet */
             memcpy(&rtp_ctx->buf[RTP_HEVC_HEADERS_SIZE], buf, rtp_payload_size);
             ff_rtp_send_data(ctx, rtp_ctx->buf, rtp_ctx->max_payload_size, 0);
@@ -121,20 +104,21 @@ void ff_rtp_send_hevc(AVFormatContext *ctx, const uint8_t *frame_buf, int frame_
     rtp_ctx->timestamp = rtp_ctx->cur_timestamp;
 
     if (rtp_ctx->nal_length_size)
-        buf_ptr = avc_mp4_find_startcode(frame_buf, buf_end, rtp_ctx->nal_length_size) ? frame_buf : buf_end;
+        buf_ptr = ff_avc_mp4_find_startcode(frame_buf, buf_end, rtp_ctx->nal_length_size) ? frame_buf : buf_end;
     else
         buf_ptr = ff_avc_find_startcode(frame_buf, buf_end);
 
     /* find all NAL units and send them as separate packets */
     while (buf_ptr < buf_end) {
         if (rtp_ctx->nal_length_size) {
-            next_NAL_unit = avc_mp4_find_startcode(buf_ptr, buf_end, rtp_ctx->nal_length_size);
+            next_NAL_unit = ff_avc_mp4_find_startcode(buf_ptr, buf_end, rtp_ctx->nal_length_size);
             if (!next_NAL_unit)
                 next_NAL_unit = buf_end;
 
             buf_ptr += rtp_ctx->nal_length_size;
         } else {
-            while (!*(buf_ptr++)) ;
+            while (!*(buf_ptr++))
+                ;
             next_NAL_unit = ff_avc_find_startcode(buf_ptr, buf_end);
         }
         /* send the next NAL unit */
