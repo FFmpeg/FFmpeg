@@ -145,7 +145,6 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "pragma_deprecated", true );
     fastToggleConfigValue( "rdtsc", true );
     fastToggleConfigValue( "rsync_contimeout", true );
-    //fastToggleConfigValue( "sdl", true );   //Needed for ffplay
     fastToggleConfigValue( "SetConsoleTextAttribute", true );
     fastToggleConfigValue( "setmode", true );
     fastToggleConfigValue( "Sleep", true );
@@ -191,6 +190,13 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "network", true );
     fastToggleConfigValue( "rdft", true );
     fastToggleConfigValue( "fft", true );
+    fastToggleConfigValue( "pixelutils", true );
+
+    fastToggleConfigValue( "bzlib", true );
+    fastToggleConfigValue( "iconv", true );
+    fastToggleConfigValue( "lzma", true );
+    fastToggleConfigValue( "sdl", true );
+    fastToggleConfigValue( "zlib", true );
 
     return true;
 }

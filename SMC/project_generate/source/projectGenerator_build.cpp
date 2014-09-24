@@ -95,7 +95,6 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
     //Add extra external libraries
     vExternLibs.push_back( "vfwcap_indev" );
     vExternLibs.push_back( "dshow_indev" );
-    vExternLibs.push_back( "sdl" );
     for( vector<string>::iterator vitLib=vExternLibs.begin(); vitLib<vExternLibs.end(); vitLib++ )
     {
         //Check if enabled
@@ -328,14 +327,14 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["openal"] = ( sProjectName.compare("libavdevice") == 0 );//?
     mProjectDeps["opencl"] = ( sProjectName.compare( "libavutil" ) == 0 ) || ( sProjectName.compare( "libavfilter" ) == 0 );
     mProjectDeps["opengl"] = ( sProjectName.compare( "libavdevice" ) == 0 );
-    mProjectDeps["openssl"] = ( sProjectName.compare("libavformat") == 0 );
+    mProjectDeps["openssl"] = ( sProjectName.compare( "libavformat" ) == 0 );
+    mProjectDeps["sdl"] = ( sProjectName.compare( "libavdevice" ) == 0 );
     //mProjectDeps["x11grab"] = ( sProjectName.compare("libavdevice") == 0 );//Always disabled on Win32
     mProjectDeps["zlib"] = ( sProjectName.compare("libavformat") == 0 ) || ( sProjectName.compare("libavcodec") == 0 );
 
     //extras
     mProjectDeps["vfwcap_indev"] = ( sProjectName.compare("libavdevice") == 0 );
     mProjectDeps["dshow_indev"] = ( sProjectName.compare("libavdevice") == 0 );
-    mProjectDeps["sdl"] = ( sProjectName.compare("libavdevice") == 0 );
 }
 
 void projectGenerator::buildProgramIncludes( const string & sProject, StaticList & vCIncludes, StaticList & vHIncludes, StaticList & vLibs, StaticList & vIncDirs, StaticList & vLib32Dirs, StaticList & vLib64Dirs )
