@@ -598,7 +598,7 @@ static int decoder_decode_frame(Decoder *d, void *fframe) {
                     if (frame->pts != AV_NOPTS_VALUE)
                         frame->pts = av_rescale_q(frame->pts, d->avctx->time_base, tb);
                     else if (frame->pkt_pts != AV_NOPTS_VALUE)
-                        frame->pts = av_rescale_q(frame->pkt_pts, d->avctx->pkt_timebase, tb);
+                        frame->pts = av_rescale_q(frame->pkt_pts, av_codec_get_pkt_timebase(d->avctx), tb);
                     else if (d->next_pts != AV_NOPTS_VALUE)
                         frame->pts = av_rescale_q(d->next_pts, d->next_pts_tb, tb);
                     if (frame->pts != AV_NOPTS_VALUE) {
