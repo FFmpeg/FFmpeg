@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - HEVC/H.265 RTP payload format (draft v6) packetizer
+- SUP/PGS subtitle demuxer
 
 version 2.4:
 - Icecast protocol
