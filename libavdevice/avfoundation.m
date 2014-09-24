@@ -172,6 +172,148 @@ static void destroy_context(AVFContext* ctx)
     }
 }
 
+static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
+{
+    AVFContext *ctx = (AVFContext*)s->priv_data;
+    NSError *error  = nil;
+    AVCaptureDeviceInput* capture_dev_input = [[[AVCaptureDeviceInput alloc] initWithDevice:video_device error:&error] autorelease];
+
+    if (!capture_dev_input) {
+        av_log(s, AV_LOG_ERROR, "Failed to create AV capture input device: %s\n",
+               [[error localizedDescription] UTF8String]);
+        return 1;
+    }
+
+    if ([ctx->capture_session canAddInput:capture_dev_input]) {
+        [ctx->capture_session addInput:capture_dev_input];
+    } else {
+        av_log(s, AV_LOG_ERROR, "can't add video input to capture session\n");
+        return 1;
+    }
+
+    // Attaching output
+    ctx->video_output = [[AVCaptureVideoDataOutput alloc] init];
+
+    if (!ctx->video_output) {
+        av_log(s, AV_LOG_ERROR, "Failed to init AV video output\n");
+        return 1;
+    }
+
+    // select pixel format
+    struct AVFPixelFormatSpec pxl_fmt_spec;
+    pxl_fmt_spec.ff_id = AV_PIX_FMT_NONE;
+
+    for (int i = 0; avf_pixel_formats[i].ff_id != AV_PIX_FMT_NONE; i++) {
+        if (ctx->pixel_format == avf_pixel_formats[i].ff_id) {
+            pxl_fmt_spec = avf_pixel_formats[i];
+            break;
+        }
+    }
+
+    // check if selected pixel format is supported by AVFoundation
+    if (pxl_fmt_spec.ff_id == AV_PIX_FMT_NONE) {
+        av_log(s, AV_LOG_ERROR, "Selected pixel format (%s) is not supported by AVFoundation.\n",
+               av_get_pix_fmt_name(pxl_fmt_spec.ff_id));
+        return 1;
+    }
+
+    // check if the pixel format is available for this device
+    if ([[ctx->video_output availableVideoCVPixelFormatTypes] indexOfObject:[NSNumber numberWithInt:pxl_fmt_spec.avf_id]] == NSNotFound) {
+        av_log(s, AV_LOG_ERROR, "Selected pixel format (%s) is not supported by the input device.\n",
+               av_get_pix_fmt_name(pxl_fmt_spec.ff_id));
+
+        pxl_fmt_spec.ff_id = AV_PIX_FMT_NONE;
+
+        av_log(s, AV_LOG_ERROR, "Supported pixel formats:\n");
+        for (NSNumber *pxl_fmt in [ctx->video_output availableVideoCVPixelFormatTypes]) {
+            struct AVFPixelFormatSpec pxl_fmt_dummy;
+            pxl_fmt_dummy.ff_id = AV_PIX_FMT_NONE;
+            for (int i = 0; avf_pixel_formats[i].ff_id != AV_PIX_FMT_NONE; i++) {
+                if ([pxl_fmt intValue] == avf_pixel_formats[i].avf_id) {
+                    pxl_fmt_dummy = avf_pixel_formats[i];
+                    break;
+                }
+            }
+
+            if (pxl_fmt_dummy.ff_id != AV_PIX_FMT_NONE) {
+                av_log(s, AV_LOG_ERROR, "  %s\n", av_get_pix_fmt_name(pxl_fmt_dummy.ff_id));
+
+                // select first supported pixel format instead of user selected (or default) pixel format
+                if (pxl_fmt_spec.ff_id == AV_PIX_FMT_NONE) {
+                    pxl_fmt_spec = pxl_fmt_dummy;
+                }
+            }
+        }
+
+        // fail if there is no appropriate pixel format or print a warning about overriding the pixel format
+        if (pxl_fmt_spec.ff_id == AV_PIX_FMT_NONE) {
+            return 1;
+        } else {
+            av_log(s, AV_LOG_WARNING, "Overriding selected pixel format to use %s instead.\n",
+                   av_get_pix_fmt_name(pxl_fmt_spec.ff_id));
+        }
+    }
+
+    ctx->pixel_format          = pxl_fmt_spec.ff_id;
+    NSNumber     *pixel_format = [NSNumber numberWithUnsignedInt:pxl_fmt_spec.avf_id];
+    NSDictionary *capture_dict = [NSDictionary dictionaryWithObject:pixel_format
+                                               forKey:(id)kCVPixelBufferPixelFormatTypeKey];
+
+    [ctx->video_output setVideoSettings:capture_dict];
+    [ctx->video_output setAlwaysDiscardsLateVideoFrames:YES];
+
+    ctx->avf_delegate = [[AVFFrameReceiver alloc] initWithContext:ctx];
+
+    dispatch_queue_t queue = dispatch_queue_create("avf_queue", NULL);
+    [ctx->video_output setSampleBufferDelegate:ctx->avf_delegate queue:queue];
+    dispatch_release(queue);
+
+    if ([ctx->capture_session canAddOutput:ctx->video_output]) {
+        [ctx->capture_session addOutput:ctx->video_output];
+    } else {
+        av_log(s, AV_LOG_ERROR, "can't add video output to capture session\n");
+        return 1;
+    }
+
+    return 0;
+}
+
+static int get_video_config(AVFormatContext *s)
+{
+    AVFContext *ctx = (AVFContext*)s->priv_data;
+
+    // Take stream info from the first frame.
+    while (ctx->frames_captured < 1) {
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, YES);
+    }
+
+    lock_frames(ctx);
+
+    AVStream* stream = avformat_new_stream(s, NULL);
+
+    if (!stream) {
+        return 1;
+    }
+
+    avpriv_set_pts_info(stream, 64, 1, avf_time_base);
+
+    CVImageBufferRef image_buffer = CMSampleBufferGetImageBuffer(ctx->current_frame);
+    CGSize image_buffer_size      = CVImageBufferGetEncodedSize(image_buffer);
+
+    stream->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    stream->codec->width      = (int)image_buffer_size.width;
+    stream->codec->height     = (int)image_buffer_size.height;
+    stream->codec->pix_fmt    = ctx->pixel_format;
+
+    CFRelease(ctx->current_frame);
+    ctx->current_frame = nil;
+
+    unlock_frames(ctx);
+
+    return 0;
+}
+
 static int avf_read_header(AVFormatContext *s)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
@@ -226,7 +368,7 @@ static int avf_read_header(AVFormatContext *s)
             goto fail;
         }
     } else {
-        video_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeMuxed];
+        video_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     }
 
     // Video capture device not found, looking for AVMediaTypeVideo
@@ -245,142 +387,16 @@ static int avf_read_header(AVFormatContext *s)
     // Initialize capture session
     ctx->capture_session = [[AVCaptureSession alloc] init];
 
-    NSError *error = nil;
-    AVCaptureDeviceInput* capture_dev_input = [[[AVCaptureDeviceInput alloc] initWithDevice:video_device error:&error] autorelease];
-
-    if (!capture_dev_input) {
-        av_log(s, AV_LOG_ERROR, "Failed to create AV capture input device: %s\n",
-               [[error localizedDescription] UTF8String]);
-        goto fail;
-    }
-
-    if (!capture_dev_input) {
-        av_log(s, AV_LOG_ERROR, "Failed to add AV capture input device to session: %s\n",
-               [[error localizedDescription] UTF8String]);
-        goto fail;
-    }
-
-    if ([ctx->capture_session canAddInput:capture_dev_input]) {
-        [ctx->capture_session addInput:capture_dev_input];
-    } else {
-        av_log(s, AV_LOG_ERROR, "can't add video input to capture session\n");
-        goto fail;
-    }
-
-    // Attaching output
-    ctx->video_output = [[AVCaptureVideoDataOutput alloc] init];
-
-    if (!ctx->video_output) {
-        av_log(s, AV_LOG_ERROR, "Failed to init AV video output\n");
-        goto fail;
-    }
-
-    // select pixel format
-    struct AVFPixelFormatSpec pxl_fmt_spec;
-    pxl_fmt_spec.ff_id = AV_PIX_FMT_NONE;
-
-    for (int i = 0; avf_pixel_formats[i].ff_id != AV_PIX_FMT_NONE; i++) {
-        if (ctx->pixel_format == avf_pixel_formats[i].ff_id) {
-            pxl_fmt_spec = avf_pixel_formats[i];
-            break;
-        }
-    }
-
-    // check if selected pixel format is supported by AVFoundation
-    if (pxl_fmt_spec.ff_id == AV_PIX_FMT_NONE) {
-        av_log(s, AV_LOG_ERROR, "Selected pixel format (%s) is not supported by AVFoundation.\n",
-               av_get_pix_fmt_name(pxl_fmt_spec.ff_id));
-        goto fail;
-    }
-
-    // check if the pixel format is available for this device
-    if ([[ctx->video_output availableVideoCVPixelFormatTypes] indexOfObject:[NSNumber numberWithInt:pxl_fmt_spec.avf_id]] == NSNotFound) {
-        av_log(s, AV_LOG_ERROR, "Selected pixel format (%s) is not supported by the input device.\n",
-               av_get_pix_fmt_name(pxl_fmt_spec.ff_id));
-
-        pxl_fmt_spec.ff_id = AV_PIX_FMT_NONE;
-
-        av_log(s, AV_LOG_ERROR, "Supported pixel formats:\n");
-        for (NSNumber *pxl_fmt in [ctx->video_output availableVideoCVPixelFormatTypes]) {
-            struct AVFPixelFormatSpec pxl_fmt_dummy;
-            pxl_fmt_dummy.ff_id = AV_PIX_FMT_NONE;
-            for (int i = 0; avf_pixel_formats[i].ff_id != AV_PIX_FMT_NONE; i++) {
-                if ([pxl_fmt intValue] == avf_pixel_formats[i].avf_id) {
-                    pxl_fmt_dummy = avf_pixel_formats[i];
-                    break;
-                }
-            }
-
-            if (pxl_fmt_dummy.ff_id != AV_PIX_FMT_NONE) {
-                av_log(s, AV_LOG_ERROR, "  %s\n", av_get_pix_fmt_name(pxl_fmt_dummy.ff_id));
-
-                // select first supported pixel format instead of user selected (or default) pixel format
-                if (pxl_fmt_spec.ff_id == AV_PIX_FMT_NONE) {
-                    pxl_fmt_spec = pxl_fmt_dummy;
-                }
-            }
-        }
-
-        // fail if there is no appropriate pixel format or print a warning about overriding the pixel format
-        if (pxl_fmt_spec.ff_id == AV_PIX_FMT_NONE) {
-            goto fail;
-        } else {
-            av_log(s, AV_LOG_WARNING, "Overriding selected pixel format to use %s instead.\n",
-                   av_get_pix_fmt_name(pxl_fmt_spec.ff_id));
-        }
-    }
-
-
-    NSNumber     *pixel_format = [NSNumber numberWithUnsignedInt:pxl_fmt_spec.avf_id];
-    NSDictionary *capture_dict = [NSDictionary dictionaryWithObject:pixel_format
-                                               forKey:(id)kCVPixelBufferPixelFormatTypeKey];
-
-    [ctx->video_output setVideoSettings:capture_dict];
-    [ctx->video_output setAlwaysDiscardsLateVideoFrames:YES];
-
-    ctx->avf_delegate = [[AVFFrameReceiver alloc] initWithContext:ctx];
-
-    dispatch_queue_t queue = dispatch_queue_create("avf_queue", NULL);
-    [ctx->video_output setSampleBufferDelegate:ctx->avf_delegate queue:queue];
-    dispatch_release(queue);
-
-    if ([ctx->capture_session canAddOutput:ctx->video_output]) {
-        [ctx->capture_session addOutput:ctx->video_output];
-    } else {
-        av_log(s, AV_LOG_ERROR, "can't add video output to capture session\n");
+    if (add_video_device(s, video_device)) {
         goto fail;
     }
 
     [ctx->capture_session startRunning];
 
-    // Take stream info from the first frame.
-    while (ctx->frames_captured < 1) {
-        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, YES);
-    }
-
-    lock_frames(ctx);
-
-    AVStream* stream = avformat_new_stream(s, NULL);
-
-    if (!stream) {
+    if (get_video_config(s)) {
         goto fail;
     }
 
-    avpriv_set_pts_info(stream, 64, 1, avf_time_base);
-
-    CVImageBufferRef image_buffer = CMSampleBufferGetImageBuffer(ctx->current_frame);
-    CGSize image_buffer_size      = CVImageBufferGetEncodedSize(image_buffer);
-
-    stream->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    stream->codec->width      = (int)image_buffer_size.width;
-    stream->codec->height     = (int)image_buffer_size.height;
-    stream->codec->pix_fmt    = pxl_fmt_spec.ff_id;
-
-    CFRelease(ctx->current_frame);
-    ctx->current_frame = nil;
-
-    unlock_frames(ctx);
     [pool release];
     return 0;
 
