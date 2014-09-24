@@ -50,7 +50,6 @@ extern RTPDynamicProtocolHandler ff_h263_1998_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_h263_2000_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_h263_rfc2190_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_h264_dynamic_handler;
-extern RTPDynamicProtocolHandler ff_h265_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_hevc_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_ilbc_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_jpeg_dynamic_handler;
