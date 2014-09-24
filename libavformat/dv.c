@@ -72,7 +72,7 @@ static inline uint16_t dv_audio_12to16(uint16_t sample)
     return result;
 }
 
-static const uint8_t *dv_extract_pack(uint8_t *frame, enum dv_pack_type t)
+static const uint8_t *dv_extract_pack(const uint8_t *frame, enum dv_pack_type t)
 {
     int offs;
     int c;
@@ -116,7 +116,7 @@ static const int dv_audio_frequency[3] = {
  * 3. Audio is always returned as 16bit linear samples: 12bit nonlinear samples
  *    are converted into 16bit linear ones.
  */
-static int dv_extract_audio(uint8_t *frame, uint8_t **ppcm,
+static int dv_extract_audio(const uint8_t *frame, uint8_t **ppcm,
                             const AVDVProfile *sys)
 {
     int size, chan, i, j, d, of, smpls, freq, quant, half_ch;
@@ -219,7 +219,7 @@ static int dv_extract_audio(uint8_t *frame, uint8_t **ppcm,
     return size;
 }
 
-static int dv_extract_audio_info(DVDemuxContext *c, uint8_t *frame)
+static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
 {
     const uint8_t *as_pack;
     int freq, stype, smpls, quant, i, ach;
@@ -279,7 +279,7 @@ static int dv_extract_audio_info(DVDemuxContext *c, uint8_t *frame)
     return (c->sys->audio_min_samples[freq] + smpls) * 4; /* 2ch, 2bytes */
 }
 
-static int dv_extract_video_info(DVDemuxContext *c, uint8_t *frame)
+static int dv_extract_video_info(DVDemuxContext *c, const uint8_t *frame)
 {
     const uint8_t *vsc_pack;
     AVCodecContext *avctx;
@@ -307,7 +307,7 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t *frame)
     return size;
 }
 
-static int dv_extract_timecode(DVDemuxContext* c, uint8_t* frame, char *tc)
+static int dv_extract_timecode(DVDemuxContext* c, const uint8_t* frame, char *tc)
 {
     const uint8_t *tc_pack;
 
