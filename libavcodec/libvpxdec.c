@@ -56,7 +56,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
-    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     return 0;
 }
 
