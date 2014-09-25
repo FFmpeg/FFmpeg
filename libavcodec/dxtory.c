@@ -424,7 +424,7 @@ static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
         return AVERROR_INVALIDDATA;
     }
 
-    if (!nslices || avctx->height % nslices) {
+    if (!nslices) {
         avpriv_request_sample(avctx, "%d slices for %dx%d", nslices,
                               avctx->width, avctx->height);
         return AVERROR_PATCHWELCOME;
@@ -445,9 +445,9 @@ static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
     V = pic->data[2];
 
     cur_y  = 0;
-    next_y = ref_slice_height;
     for (slice = 0; slice < nslices; slice++) {
         slice_size   = bytestream2_get_le32(&gb);
+        next_y = ((slice + 1) * avctx->height) / nslices;
         slice_height = (next_y & ~3) - (cur_y & ~3);
         if (slice_size > src_size - off) {
             av_log(avctx, AV_LOG_ERROR,
@@ -475,7 +475,6 @@ static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
         V += pic->linesize[2] * (slice_height >> 2);
         off += slice_size;
         cur_y   = next_y;
-        next_y += ref_slice_height;
     }
 
     return 0;
@@ -528,7 +527,7 @@ static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
         return AVERROR_INVALIDDATA;
     }
 
-    if (!nslices || avctx->height % nslices) {
+    if (!nslices) {
         avpriv_request_sample(avctx, "%d slices for %dx%d", nslices,
                               avctx->width, avctx->height);
         return AVERROR_PATCHWELCOME;
@@ -549,9 +548,9 @@ static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
     V = pic->data[2];
 
     cur_y  = 0;
-    next_y = ref_slice_height;
     for (slice = 0; slice < nslices; slice++) {
         slice_size   = bytestream2_get_le32(&gb);
+        next_y = ((slice + 1) * avctx->height) / nslices;
         slice_height = (next_y & ~1) - (cur_y & ~1);
         if (slice_size > src_size - off) {
             av_log(avctx, AV_LOG_ERROR,
@@ -579,7 +578,6 @@ static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
         V += pic->linesize[2] * (slice_height >> 1);
         off += slice_size;
         cur_y   = next_y;
-        next_y += ref_slice_height;
     }
 
     return 0;
