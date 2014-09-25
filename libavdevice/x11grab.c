@@ -487,8 +487,8 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int x_off         = s->x_off;
     int y_off         = s->y_off;
     int follow_mouse  = s->follow_mouse;
-    int screen;
-    Window root;
+    int screen, pointer_x, pointer_y, _, same_screen = 1;
+    Window w, root;
     int64_t curtime, delay;
     struct timespec ts;
 
@@ -516,14 +516,16 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     screen = DefaultScreen(dpy);
     root   = RootWindow(dpy, screen);
-    if (follow_mouse) {
+
+    if (follow_mouse || s->draw_mouse)
+        same_screen = XQueryPointer(dpy, root, &w, &w,
+                                    &pointer_x, &pointer_y, &_, &_, &_);
+
+    if (follow_mouse && same_screen) {
         int screen_w, screen_h;
-        int pointer_x, pointer_y, _;
-        Window w;
 
         screen_w = DisplayWidth(dpy, screen);
         screen_h = DisplayHeight(dpy, screen);
-        XQueryPointer(dpy, root, &w, &w, &pointer_x, &pointer_y, &_, &_, &_);
         if (follow_mouse == -1) {
             // follow the mouse, put it at center of grabbing region
             x_off += pointer_x - s->width / 2 - x_off;
@@ -550,7 +552,7 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
                         s->y_off - REGION_WIN_BORDER);
     }
 
-    if (s->show_region) {
+    if (s->show_region && same_screen) {
         if (s->region_win) {
             XEvent evt = { .type = NoEventMask };
             // Clean up the events, and do the initial draw or redraw.
@@ -572,7 +574,7 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
             av_log(s1, AV_LOG_INFO, "XGetZPixmap() failed\n");
     }
 
-    if (s->draw_mouse)
+    if (s->draw_mouse && same_screen)
         paint_mouse_pointer(image, s);
 
     return s->frame_size;
