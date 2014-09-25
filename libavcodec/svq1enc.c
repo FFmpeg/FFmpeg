@@ -96,7 +96,7 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
     int w            = 2 << (level + 2 >> 1);
     int h            = 2 << (level + 1 >> 1);
     int size         = w * h;
-    int16_t block[7][256];
+    DECLARE_ALIGNED(16, int16_t, block)[7][256];
     const int8_t *codebook_sum, *codebook;
     const uint16_t(*mean_vlc)[2];
     const uint8_t(*multistage_vlc)[2];
