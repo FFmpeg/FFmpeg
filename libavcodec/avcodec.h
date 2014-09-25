@@ -552,7 +552,7 @@ enum AVCodecID {
 /**
  * This struct describes the properties of a single codec described by an
  * AVCodecID.
- * @see avcodec_get_descriptor()
+ * @see avcodec_descriptor_get()
  */
 typedef struct AVCodecDescriptor {
     enum AVCodecID     id;
