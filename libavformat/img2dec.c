@@ -463,7 +463,13 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     if (ret[0] <= 0 || ret[1] < 0 || ret[2] < 0) {
         av_free_packet(pkt);
-        return AVERROR(EIO); /* signal EOF */
+        if (ret[0] < 0) {
+            return ret[0];
+        } else if (ret[1] < 0) {
+            return ret[1];
+        } else if (ret[2] < 0)
+            return ret[2];
+        return AVERROR_EOF;
     } else {
         s->img_count++;
         s->img_number++;
