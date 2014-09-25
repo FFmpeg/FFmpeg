@@ -1776,6 +1776,7 @@ vbv_retry:
                     PutBitContext *pb = &s->thread_context[i]->pb;
                     init_put_bits(pb, pb->buf, pb->buf_end - pb->buf);
                 }
+                av_log(s->avctx, AV_LOG_VERBOSE, "reencoding frame due to VBV\n");
                 goto vbv_retry;
             }
 
