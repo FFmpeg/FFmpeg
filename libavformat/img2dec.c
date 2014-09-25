@@ -422,7 +422,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     } else {
         f[0] = s1->pb;
         if (avio_feof(f[0]))
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         if (s->frame_size > 0) {
             size[0] = s->frame_size;
         } else if (!s1->streams[0]->parser) {
