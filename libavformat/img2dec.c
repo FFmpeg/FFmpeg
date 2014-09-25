@@ -450,6 +450,9 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         pkt->pts      = s->pts;
     }
 
+    if (s->is_pipe)
+        pkt->pos = avio_tell(f[0]);
+
     pkt->size = 0;
     for (i = 0; i < 3; i++) {
         if (f[i]) {
