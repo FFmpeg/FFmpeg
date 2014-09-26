@@ -45,7 +45,7 @@
 /** Maximum number of substreams that can be decoded.
  *  MLP's limit is 2. TrueHD supports at least up to 3.
  */
-#define MAX_SUBSTREAMS      3
+#define MAX_SUBSTREAMS      4
 
 /** which multiple of 48000 the maximum sample rate is */
 #define MAX_RATEFACTOR      4
