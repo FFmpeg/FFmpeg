@@ -546,9 +546,8 @@ static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, 
     d->start_pts = AV_NOPTS_VALUE;
 }
 
-static int decoder_decode_frame(Decoder *d, void *fframe) {
+static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
     int got_frame = 0;
-    AVFrame *frame = fframe;
 
     d->flushed = 0;
 
@@ -608,7 +607,7 @@ static int decoder_decode_frame(Decoder *d, void *fframe) {
                 }
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
-                ret = avcodec_decode_subtitle2(d->avctx, fframe, &got_frame, &d->pkt_temp);
+                ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, &d->pkt_temp);
                 break;
         }
 
@@ -1863,7 +1862,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame)
 {
     int got_picture;
 
-    if ((got_picture = decoder_decode_frame(&is->viddec, frame)) < 0)
+    if ((got_picture = decoder_decode_frame(&is->viddec, frame, NULL)) < 0)
         return -1;
 
     if (got_picture) {
@@ -2219,7 +2218,7 @@ static int subtitle_thread(void *arg)
         if (!(sp = frame_queue_peek_writable(&is->subpq)))
             return 0;
 
-        if ((got_subtitle = decoder_decode_frame(&is->subdec, &sp->sub)) < 0)
+        if ((got_subtitle = decoder_decode_frame(&is->subdec, NULL, &sp->sub)) < 0)
             break;
 
         pts = 0;
@@ -2483,7 +2482,7 @@ static int audio_decode_frame(VideoState *is)
             return resampled_data_size;
         }
 
-        if ((got_frame = decoder_decode_frame(&is->auddec, is->frame)) < 0)
+        if ((got_frame = decoder_decode_frame(&is->auddec, is->frame, NULL)) < 0)
             return -1;
 
         if (is->auddec.flushed)
