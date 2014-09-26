@@ -1523,6 +1523,33 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
     },
 };
 
+static const char *color_range_names[AVCOL_RANGE_NB] = {
+    "unknown", "tv", "pc",
+};
+
+static const char *color_primaries_names[AVCOL_PRI_NB] = {
+    "reserved", "bt709", "unknown", "reserved", "bt470m",
+    "bt470bg", "smpte170m", "smpte240m", "film", "bt2020",
+};
+
+static const char *color_transfer_names[AVCOL_TRC_NB] = {
+    "reserved", "bt709", "unknown", "reserved", "bt470m",
+    "bt470bg", "smpte170m", "smpte240m", "linear", "log100",
+    "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1",
+    "bt2020-10", "bt2020-20",
+};
+
+static const char *color_space_names[AVCOL_SPC_NB] = {
+    "gbr", "bt709", "unknown", "reserved", "fcc",
+    "bt470bg", "smpte170m", "smpte240m", "ycgco",
+    "bt2020nc", "bt2020c",
+};
+
+static const char *chroma_location_names[AVCHROMA_LOC_NB] = {
+    "unspecified", "left", "center", "topleft",
+    "top", "bottomleft", "bottom",
+};
+
 FF_DISABLE_DEPRECATION_WARNINGS
 static enum AVPixelFormat get_pix_fmt_internal(const char *name)
 {
@@ -1700,3 +1727,34 @@ enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
     }
 #undef PIX_FMT_SWAP_ENDIANNESS
 }
+
+const char *av_color_range_name(enum AVColorRange range)
+{
+    return (unsigned) range < AVCOL_RANGE_NB ?
+        color_range_names[range] : NULL;
+}
+
+const char *av_color_primaries_name(enum AVColorPrimaries primaries)
+{
+    return (unsigned) primaries < AVCOL_PRI_NB ?
+        color_primaries_names[primaries] : NULL;
+}
+
+const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer)
+{
+    return (unsigned) transfer < AVCOL_TRC_NB ?
+        color_transfer_names[transfer] : NULL;
+}
+
+const char *av_color_space_name(enum AVColorSpace space)
+{
+    return (unsigned) space < AVCOL_SPC_NB ?
+        color_space_names[space] : NULL;
+}
+
+const char *av_chroma_location_name(enum AVChromaLocation location)
+{
+    return (unsigned) location < AVCHROMA_LOC_NB ?
+        chroma_location_names[location] : NULL;
+}
+

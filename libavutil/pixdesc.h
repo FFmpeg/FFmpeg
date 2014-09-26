@@ -291,4 +291,29 @@ int av_pix_fmt_count_planes(enum AVPixelFormat pix_fmt);
  */
 enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt);
 
+/**
+ * @return the name for provided color range or NULL if unknown.
+ */
+const char *av_color_range_name(enum AVColorRange range);
+
+/**
+ * @return the name for provided color primaries or NULL if unknown.
+ */
+const char *av_color_primaries_name(enum AVColorPrimaries primaries);
+
+/**
+ * @return the name for provided color transfer or NULL if unknown.
+ */
+const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer);
+
+/**
+ * @return the name for provided color space or NULL if unknown.
+ */
+const char *av_color_space_name(enum AVColorSpace space);
+
+/**
+ * @return the name for provided chroma location or NULL if unknown.
+ */
+const char *av_chroma_location_name(enum AVChromaLocation location);
+
 #endif /* AVUTIL_PIXDESC_H */
