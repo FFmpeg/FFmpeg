@@ -410,7 +410,7 @@ static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
 {
     GetByteContext gb;
     GetBitContext  gb2;
-    int nslices, slice, slice_height, ref_slice_height;
+    int nslices, slice, slice_height;
     int cur_y, next_y;
     uint32_t off, slice_size;
     uint8_t *Y, *U, *V;
@@ -430,7 +430,6 @@ static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
         return AVERROR_PATCHWELCOME;
     }
 
-    ref_slice_height = avctx->height / nslices;
     if ((avctx->width & 3) || (avctx->height & 3)) {
         avpriv_request_sample(avctx, "Frame dimensions %dx%d",
                               avctx->width, avctx->height);
@@ -513,7 +512,7 @@ static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
 {
     GetByteContext gb;
     GetBitContext  gb2;
-    int nslices, slice, slice_height, ref_slice_height;
+    int nslices, slice, slice_height;
     int cur_y, next_y;
     uint32_t off, slice_size;
     uint8_t *Y, *U, *V;
@@ -533,7 +532,6 @@ static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
         return AVERROR_PATCHWELCOME;
     }
 
-    ref_slice_height = avctx->height / nslices;
     if ((avctx->width & 1) || (avctx->height & 1)) {
         avpriv_request_sample(avctx, "Frame dimensions %dx%d",
                               avctx->width, avctx->height);
