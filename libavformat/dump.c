@@ -116,11 +116,11 @@ static void print_fps(double d, const char *postfix)
 {
     uint64_t v = lrintf(d * 100);
     if (v % 100)
-        av_log(NULL, AV_LOG_INFO, ", %3.2f %s", d, postfix);
+        av_log(NULL, AV_LOG_INFO, "%3.2f %s", d, postfix);
     else if (v % (100 * 1000))
-        av_log(NULL, AV_LOG_INFO, ", %1.0f %s", d, postfix);
+        av_log(NULL, AV_LOG_INFO, "%1.0f %s", d, postfix);
     else
-        av_log(NULL, AV_LOG_INFO, ", %1.0fk %s", d / 1000, postfix);
+        av_log(NULL, AV_LOG_INFO, "%1.0fk %s", d / 1000, postfix);
 }
 
 static void dump_metadata(void *ctx, AVDictionary *m, const char *indent)
@@ -357,11 +357,17 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     }
 
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if (st->avg_frame_rate.den && st->avg_frame_rate.num)
-            print_fps(av_q2d(st->avg_frame_rate), "fps");
-        if (st->time_base.den && st->time_base.num)
-            print_fps(1 / av_q2d(st->time_base), "tbn");
-        if (st->codec->time_base.den && st->codec->time_base.num)
+        int fps = st->avg_frame_rate.den && st->avg_frame_rate.num;
+        int tbn = st->time_base.den && st->time_base.num;
+        int tbc = st->codec->time_base.den && st->codec->time_base.num;
+
+        if (fps || tbn || tbc)
+            av_log(NULL, AV_LOG_INFO, "\n      ");
+        if (fps)
+            print_fps(av_q2d(st->avg_frame_rate), tbn || tbc ? "fps, " : "fps");
+        if (tbn)
+            print_fps(1 / av_q2d(st->time_base), tbc ? "tbn, " : "tbn");
+        if (tbc)
             print_fps(1 / av_q2d(st->codec->time_base), "tbc");
     }
 

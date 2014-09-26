@@ -1887,6 +1887,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     const AVCodec *p;
     char buf1[32];
     int bitrate;
+    int new_line = 0;
     AVRational display_aspect_ratio;
 
     if (enc->codec)
@@ -1919,15 +1920,19 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (profile)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      " (%s)", profile);
-        if (enc->pix_fmt != AV_PIX_FMT_NONE) {
-            snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %s",
+
+        av_strlcat(buf, "\n      ", buf_size);
+        snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                 "%s", enc->pix_fmt == AV_PIX_FMT_NONE ? "none" :
                      av_get_pix_fmt_name(enc->pix_fmt));
-        }
+
         if (enc->width) {
+            av_strlcat(buf, new_line ? "\n      " : ", ", buf_size);
+
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %dx%d",
+                     "%dx%d",
                      enc->width, enc->height);
+
             if (enc->sample_aspect_ratio.num) {
                 av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
                           enc->width * enc->sample_aspect_ratio.num,
@@ -1957,11 +1962,11 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (profile)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      " (%s)", profile);
+        av_strlcat(buf, "\n      ", buf_size);
         if (enc->sample_rate) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %d Hz", enc->sample_rate);
+                     "%d Hz, ", enc->sample_rate);
         }
-        av_strlcat(buf, ", ", buf_size);
         av_get_channel_layout_string(buf + strlen(buf), buf_size - strlen(buf), enc->channels, enc->channel_layout);
         if (enc->sample_fmt != AV_SAMPLE_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
