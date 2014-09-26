@@ -1926,6 +1926,23 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                  "%s", enc->pix_fmt == AV_PIX_FMT_NONE ? "none" :
                      av_get_pix_fmt_name(enc->pix_fmt));
 
+        if (enc->color_range != AVCOL_RANGE_UNSPECIFIED)
+            snprintf(buf + strlen(buf), buf_size - strlen(buf), ", %s",
+                     av_color_range_name(enc->color_range));
+        if (enc->colorspace != AVCOL_SPC_UNSPECIFIED ||
+            enc->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+            enc->color_trc != AVCOL_TRC_UNSPECIFIED) {
+            new_line = 1;
+            snprintf(buf + strlen(buf), buf_size - strlen(buf), ", %s/%s/%s",
+                     av_color_space_name(enc->colorspace),
+                     av_color_primaries_name(enc->color_primaries),
+                     av_color_transfer_name(enc->color_trc));
+        }
+        if (av_log_get_level() >= AV_LOG_DEBUG &&
+            enc->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
+            snprintf(buf + strlen(buf), buf_size - strlen(buf), ", %s",
+                     av_chroma_location_name(enc->chroma_sample_location));
+
         if (enc->width) {
             av_strlcat(buf, new_line ? "\n      " : ", ", buf_size);
 
