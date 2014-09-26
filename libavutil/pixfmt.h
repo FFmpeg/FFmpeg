@@ -304,6 +304,7 @@ enum AVPixelFormat {
   * Chromaticity coordinates of the source primaries.
   */
 enum AVColorPrimaries {
+    AVCOL_PRI_RESERVED0   = 0,
     AVCOL_PRI_BT709       = 1, ///< also ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B
     AVCOL_PRI_UNSPECIFIED = 2,
     AVCOL_PRI_RESERVED    = 3,
@@ -321,6 +322,7 @@ enum AVColorPrimaries {
  * Color Transfer Characteristic.
  */
 enum AVColorTransferCharacteristic {
+    AVCOL_TRC_RESERVED0    = 0,
     AVCOL_TRC_BT709        = 1,  ///< also ITU-R BT1361
     AVCOL_TRC_UNSPECIFIED  = 2,
     AVCOL_TRC_RESERVED     = 3,
