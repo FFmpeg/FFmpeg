@@ -1679,6 +1679,7 @@ again:
             goto end;
     }
 
+    ret = 0;
 end:
     /* clean up */
     if (h->cur_pic_ptr && !h->droppable) {
