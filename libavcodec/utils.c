@@ -2448,6 +2448,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         uint8_t *side;
         int side_size;
         uint32_t discard_padding = 0;
+        uint8_t skip_reason = 0;
+        uint8_t discard_reason = 0;
         // copy to ensure we do not change avpkt
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
@@ -2488,8 +2490,11 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_DEBUG, "skip %d samples due to side data\n",
                    avctx->internal->skip_samples);
             discard_padding = AV_RL32(side + 4);
+            skip_reason = AV_RL8(side + 8);
+            discard_reason = AV_RL8(side + 9);
         }
-        if (avctx->internal->skip_samples && *got_frame_ptr) {
+        if (avctx->internal->skip_samples && *got_frame_ptr &&
+            !(avctx->flags2 & CODEC_FLAG2_SKIP_MANUAL)) {
             if(frame->nb_samples <= avctx->internal->skip_samples){
                 *got_frame_ptr = 0;
                 avctx->internal->skip_samples -= frame->nb_samples;
@@ -2518,7 +2523,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             }
         }
 
-        if (discard_padding > 0 && discard_padding <= frame->nb_samples && *got_frame_ptr) {
+        if (discard_padding > 0 && discard_padding <= frame->nb_samples && *got_frame_ptr &&
+            !(avctx->flags2 & CODEC_FLAG2_SKIP_MANUAL)) {
             if (discard_padding == frame->nb_samples) {
                 *got_frame_ptr = 0;
             } else {
@@ -2534,6 +2540,17 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 av_log(avctx, AV_LOG_DEBUG, "discard %d/%d samples\n",
                        discard_padding, frame->nb_samples);
                 frame->nb_samples -= discard_padding;
+            }
+        }
+
+        if ((avctx->flags2 & CODEC_FLAG2_SKIP_MANUAL) && *got_frame_ptr) {
+            AVFrameSideData *fside = av_frame_new_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES, 10);
+            if (fside) {
+                AV_WL32(fside->data, avctx->internal->skip_samples);
+                AV_WL32(fside->data + 4, discard_padding);
+                AV_WL8(fside->data + 8, skip_reason);
+                AV_WL8(fside->data + 9, discard_reason);
+                avctx->internal->skip_samples = 0;
             }
         }
 fail:
