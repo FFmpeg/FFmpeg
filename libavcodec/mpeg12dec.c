@@ -1209,6 +1209,16 @@ static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_NONE
 };
 
+static const enum AVPixelFormat mpeg12_pixfmt_list_422[] = {
+    AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat mpeg12_pixfmt_list_444[] = {
+    AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_NONE
+};
+
 static inline int uses_vdpau(AVCodecContext *avctx) {
     return avctx->pix_fmt == AV_PIX_FMT_VDPAU_MPEG1 || avctx->pix_fmt == AV_PIX_FMT_VDPAU_MPEG2;
 }
@@ -1217,16 +1227,18 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
 {
     Mpeg1Context *s1  = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
+    const enum AVPixelFormat *pix_fmts;
 
     if (s->chroma_format < 2)
-        return ff_thread_get_format(avctx,
-                                avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO ?
+        pix_fmts = avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO ?
                                 mpeg1_hwaccel_pixfmt_list_420 :
-                                mpeg2_hwaccel_pixfmt_list_420);
+                                mpeg2_hwaccel_pixfmt_list_420;
     else if (s->chroma_format == 2)
-        return AV_PIX_FMT_YUV422P;
+        pix_fmts = mpeg12_pixfmt_list_422;
     else
-        return AV_PIX_FMT_YUV444P;
+        pix_fmts = mpeg12_pixfmt_list_444;
+
+    return ff_thread_get_format(avctx, pix_fmts);
 }
 
 static void setup_hwaccel_for_pixfmt(AVCodecContext *avctx)
