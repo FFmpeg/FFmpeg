@@ -148,9 +148,6 @@ static int ass_read_header(AVFormatContext *s)
         sub->duration = duration;
     }
 
-    av_bprint_finalize(&line, NULL);
-    av_bprint_finalize(&rline, NULL);
-
     res = avpriv_bprint_to_extradata(st->codec, &header);
     if (res < 0)
         goto end;
@@ -158,6 +155,9 @@ static int ass_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(&ass->q);
 
 end:
+    av_bprint_finalize(&header, NULL);
+    av_bprint_finalize(&line,   NULL);
+    av_bprint_finalize(&rline,  NULL);
     return res;
 }
 
