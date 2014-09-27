@@ -3658,8 +3658,8 @@ probe_libc(){
         eval ${pfx}libc_type=solaris
         add_${pfx}cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
     else
-        eval ${pfx}libc_type=unknown
-        add_${pfx}cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
+        eval ${pfx}libc_type=default
+        add_${pfx}cppflags -D_DEFAULT_SOURCE
     fi
 }
 
