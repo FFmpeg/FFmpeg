@@ -454,6 +454,7 @@ library:
 @item Sony Wave64 (W64)         @tab X @tab X
 @item SoX native format         @tab X @tab X
 @item SUN AU format             @tab X @tab X
+@item SUP raw PGS subtitles     @tab   @tab X
 @item Text files                @tab   @tab X
 @item THP                       @tab   @tab X
     @tab Used on the Nintendo GameCube.

@@ -1152,50 +1152,87 @@ static AVHWAccel *find_hwaccel(enum AVCodecID codec_id,
     return NULL;
 }
 
+static int setup_hwaccel(AVCodecContext *avctx,
+                         const enum AVPixelFormat fmt,
+                         const char *name)
+{
+    AVHWAccel *hwa = find_hwaccel(avctx->codec_id, fmt);
+    int ret        = 0;
+
+    if (!hwa) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Could not find an AVHWAccel for the pixel format: %s",
+               name);
+        return AVERROR(ENOENT);
+    }
+
+    if (hwa->priv_data_size) {
+        avctx->internal->hwaccel_priv_data = av_mallocz(hwa->priv_data_size);
+        if (!avctx->internal->hwaccel_priv_data)
+            return AVERROR(ENOMEM);
+    }
+
+    if (hwa->init) {
+        ret = hwa->init(avctx);
+        if (ret < 0) {
+            av_freep(&avctx->internal->hwaccel_priv_data);
+            return ret;
+        }
+    }
+
+    avctx->hwaccel = hwa;
+
+    return 0;
+}
 
 int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
 {
     const AVPixFmtDescriptor *desc;
-    enum AVPixelFormat ret = avctx->get_format(avctx, fmt);
+    enum AVPixelFormat *choices;
+    enum AVPixelFormat ret;
+    unsigned n = 0;
 
-    desc = av_pix_fmt_desc_get(ret);
-    if (!desc)
+    while (fmt[n] != AV_PIX_FMT_NONE)
+        ++n;
+
+    choices = av_malloc_array(n + 1, sizeof(*choices));
+    if (!choices)
         return AV_PIX_FMT_NONE;
 
-    if (avctx->hwaccel && avctx->hwaccel->uninit)
-        avctx->hwaccel->uninit(avctx);
-    av_freep(&avctx->internal->hwaccel_priv_data);
-    avctx->hwaccel = NULL;
+    memcpy(choices, fmt, (n + 1) * sizeof(*choices));
 
-    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL &&
-        !(avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)) {
-        AVHWAccel *hwaccel;
-        int err;
+    for (;;) {
+        ret = avctx->get_format(avctx, choices);
 
-        hwaccel = find_hwaccel(avctx->codec_id, ret);
-        if (!hwaccel) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Could not find an AVHWAccel for the pixel format: %s",
-                   desc->name);
-            return AV_PIX_FMT_NONE;
+        desc = av_pix_fmt_desc_get(ret);
+        if (!desc) {
+            ret = AV_PIX_FMT_NONE;
+            break;
         }
 
-        if (hwaccel->priv_data_size) {
-            avctx->internal->hwaccel_priv_data = av_mallocz(hwaccel->priv_data_size);
-            if (!avctx->internal->hwaccel_priv_data)
-                return AV_PIX_FMT_NONE;
-        }
+        if (avctx->hwaccel && avctx->hwaccel->uninit)
+            avctx->hwaccel->uninit(avctx);
+        av_freep(&avctx->internal->hwaccel_priv_data);
+        avctx->hwaccel = NULL;
 
-        if (hwaccel->init) {
-            err = hwaccel->init(avctx);
-            if (err < 0) {
-                av_freep(&avctx->internal->hwaccel_priv_data);
-                return AV_PIX_FMT_NONE;
-            }
-        }
-        avctx->hwaccel = hwaccel;
+        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
+            break;
+        if (avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+            break;
+
+        if (!setup_hwaccel(avctx, ret, desc->name))
+            break;
+
+        /* Remove failed hwaccel from choices */
+        for (n = 0; choices[n] != ret; n++)
+            av_assert0(choices[n] != AV_PIX_FMT_NONE);
+
+        do
+            choices[n] = choices[n + 1];
+        while (choices[n] != AV_PIX_FMT_NONE);
     }
 
+    av_freep(&choices);
     return ret;
 }
 

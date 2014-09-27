@@ -552,7 +552,7 @@ enum AVCodecID {
 /**
  * This struct describes the properties of a single codec described by an
  * AVCodecID.
- * @see avcodec_get_descriptor()
+ * @see avcodec_descriptor_get()
  */
 typedef struct AVCodecDescriptor {
     enum AVCodecID     id;
@@ -1480,6 +1480,10 @@ typedef struct AVCodecContext {
      * @param fmt is the list of formats which are supported by the codec,
      * it is terminated by -1 as 0 is a valid format, the formats are ordered by quality.
      * The first is always the native one.
+     * @note The callback may be called again immediately if initialization for
+     * the selected (hardware-accelerated) pixel format failed.
+     * @warning Behavior is undefined if the callback returns a value not
+     * in the fmt list of formats.
      * @return the chosen format
      * - encoding: unused
      * - decoding: Set by user, if not set the native format will be chosen.

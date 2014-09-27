@@ -3673,7 +3673,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                     vc1_mc_4mv_chroma(v, 0);
                 v->mb_type[0][s->block_index[i]] = is_intra[i];
                 if (!coded_inter)
-                    coded_inter = !is_intra[i] & is_coded[i];
+                    coded_inter = !is_intra[i] && is_coded[i];
             }
             // if there are no coded blocks then don't do anything more
             dst_idx = 0;

@@ -41,6 +41,8 @@
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 
+#include "libavcodec/idctdsp.h"
+
 #include "idctdsp.h"
 #include "xvididct.h"
 
@@ -392,13 +394,13 @@ av_extern_inline void ff_xvid_idct_sse2(short *block)
 void ff_xvid_idct_sse2_put(uint8_t *dest, int line_size, short *block)
 {
     ff_xvid_idct_sse2(block);
-    ff_put_pixels_clamped_mmx(block, dest, line_size);
+    ff_put_pixels_clamped(block, dest, line_size);
 }
 
 void ff_xvid_idct_sse2_add(uint8_t *dest, int line_size, short *block)
 {
     ff_xvid_idct_sse2(block);
-    ff_add_pixels_clamped_mmx(block, dest, line_size);
+    ff_add_pixels_clamped(block, dest, line_size);
 }
 
 #endif /* HAVE_SSE2_INLINE */

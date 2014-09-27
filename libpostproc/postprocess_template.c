@@ -2544,7 +2544,7 @@ Switch between
 /**
  * accurate deblock filter
  */
-static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int stride, const PPContext *c){
+static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int stride, const PPContext *c, int mode){
     int64_t dc_mask, eq_mask, both_masks;
     int64_t sums[10*8*2];
     src+= step*3; // src points to begin of the 8x8 Block
@@ -3272,6 +3272,12 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
     uint8_t * const tempDst= (dstStride > 0 ? c.tempDst : c.tempDst - 23*dstStride) + 32;
     //const int mbWidth= isColor ? (width+7)>>3 : (width+15)>>4;
 
+    if (mode & VISUALIZE){
+        if(!(mode & (V_A_DEBLOCK | H_A_DEBLOCK)) || TEMPLATE_PP_MMX) {
+            av_log(c2, AV_LOG_WARNING, "Visualization is currently only supported with the accurate deblock filter without SIMD\n");
+        }
+    }
+
 #if TEMPLATE_PP_MMX
     for(i=0; i<57; i++){
         int offset= ((i*c.ppMode.baseDcDiff)>>8) + 1;
@@ -3566,7 +3572,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                     else if(t==2)
                         RENAME(doVertDefFilter)(dstBlock, stride, &c);
                 }else if(mode & V_A_DEBLOCK){
-                    RENAME(do_a_deblock)(dstBlock, stride, 1, &c);
+                    RENAME(do_a_deblock)(dstBlock, stride, 1, &c, mode);
                 }
             }
 
@@ -3587,7 +3593,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                     else if(t==2)
                         RENAME(doVertDefFilter)(tempBlock1, 16, &c);
                 }else if(mode & H_A_DEBLOCK){
-                        RENAME(do_a_deblock)(tempBlock1, 16, 1, &c);
+                        RENAME(do_a_deblock)(tempBlock1, 16, 1, &c, mode);
                 }
 
                 RENAME(transpose2)(dstBlock-4, dstStride, tempBlock1 + 4*16);
@@ -3619,7 +3625,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                         RENAME(doHorizDefFilter)(dstBlock-4, stride, &c);
 #endif
                 }else if(mode & H_A_DEBLOCK){
-                    RENAME(do_a_deblock)(dstBlock-8, 1, stride, &c);
+                    RENAME(do_a_deblock)(dstBlock-8, 1, stride, &c, mode);
                 }
 #endif //TEMPLATE_PP_MMX
                 if(mode & DERING){

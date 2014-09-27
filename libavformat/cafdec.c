@@ -46,7 +46,7 @@ typedef struct {
 
     int64_t data_start;             ///< data start position, in bytes
     int64_t data_size;              ///< raw data size, in bytes
-} CaffContext;
+} CafContext;
 
 static int probe(AVProbeData *p)
 {
@@ -59,7 +59,7 @@ static int probe(AVProbeData *p)
 static int read_desc_chunk(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    CaffContext *caf  = s->priv_data;
+    CafContext *caf = s->priv_data;
     AVStream *st;
     int flags;
 
@@ -167,7 +167,7 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
 {
     AVIOContext *pb = s->pb;
     AVStream *st      = s->streams[0];
-    CaffContext *caf  = s->priv_data;
+    CafContext *caf   = s->priv_data;
     int64_t pos = 0, ccount, num_packets;
     int i;
 
@@ -216,7 +216,7 @@ static void read_info_chunk(AVFormatContext *s, int64_t size)
 static int read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    CaffContext *caf  = s->priv_data;
+    CafContext *caf = s->priv_data;
     AVStream *st;
     uint32_t tag = 0;
     int found_data, ret;
@@ -334,7 +334,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
     AVStream *st      = s->streams[0];
-    CaffContext *caf  = s->priv_data;
+    CafContext *caf   = s->priv_data;
     int res, pkt_size = 0, pkt_frames = 0;
     int64_t left      = CAF_MAX_PKT_SIZE;
 
@@ -390,7 +390,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
                      int64_t timestamp, int flags)
 {
     AVStream *st = s->streams[0];
-    CaffContext *caf = s->priv_data;
+    CafContext *caf = s->priv_data;
     int64_t pos, packet_cnt, frame_cnt;
 
     timestamp = FFMAX(timestamp, 0);
@@ -422,7 +422,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
 AVInputFormat ff_caf_demuxer = {
     .name           = "caf",
     .long_name      = NULL_IF_CONFIG_SMALL("Apple CAF (Core Audio Format)"),
-    .priv_data_size = sizeof(CaffContext),
+    .priv_data_size = sizeof(CafContext),
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,

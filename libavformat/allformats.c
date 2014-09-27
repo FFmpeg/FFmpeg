@@ -280,6 +280,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (STR,              str);
     REGISTER_DEMUXER (SUBVIEWER1,       subviewer1);
     REGISTER_DEMUXER (SUBVIEWER,        subviewer);
+    REGISTER_DEMUXER (SUP,              sup);
     REGISTER_MUXDEMUX(SWF,              swf);
     REGISTER_DEMUXER (TAK,              tak);
     REGISTER_MUXER   (TEE,              tee);
@@ -325,6 +326,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (IMAGE_DPX_PIPE,        image_dpx_pipe);
     REGISTER_DEMUXER (IMAGE_EXR_PIPE,        image_exr_pipe);
     REGISTER_DEMUXER (IMAGE_J2K_PIPE,        image_j2k_pipe);
+    REGISTER_DEMUXER (IMAGE_JPEG_PIPE,       image_jpeg_pipe);
     REGISTER_DEMUXER (IMAGE_JPEGLS_PIPE,     image_jpegls_pipe);
     REGISTER_DEMUXER (IMAGE_PICTOR_PIPE,     image_pictor_pipe);
     REGISTER_DEMUXER (IMAGE_PNG_PIPE,        image_png_pipe);

@@ -151,6 +151,7 @@ static const struct PPFilter filters[]=
     {"tn", "tmpnoise",              1, 7, 8, TEMP_NOISE_FILTER},
     {"fq", "forcequant",            1, 0, 0, FORCE_QUANT},
     {"be", "bitexact",              1, 0, 0, BITEXACT},
+    {"vi", "visualize",             1, 0, 0, VISUALIZE},
     {NULL, NULL,0,0,0,0} //End Marker
 };
 
@@ -430,7 +431,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
  * accurate deblock filter
  */
 static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
-                                            int stride, const PPContext *c)
+                                            int stride, const PPContext *c, int mode)
 {
     int y;
     const int QP= c->QP;
@@ -485,6 +486,16 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
                 sums[8] = sums[7] - src[3*step] + last;
                 sums[9] = sums[8] - src[4*step] + last;
 
+                if (mode & VISUALIZE) {
+                    src[0*step] =
+                    src[1*step] =
+                    src[2*step] =
+                    src[3*step] =
+                    src[4*step] =
+                    src[5*step] =
+                    src[6*step] =
+                    src[7*step] = 128;
+                }
                 src[0*step]= (sums[0] + sums[2] + 2*src[0*step])>>4;
                 src[1*step]= (sums[1] + sums[3] + 2*src[1*step])>>4;
                 src[2*step]= (sums[2] + sums[4] + 2*src[2*step])>>4;
@@ -514,6 +525,13 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
                 }else{
                     d = FFMIN(d, 0);
                     d = FFMAX(d, q);
+                }
+
+                if ((mode & VISUALIZE) && d) {
+                    d= (d < 0) ? 32 : -32;
+                    src[3*step]= av_clip_uint8(src[3*step] - d);
+                    src[4*step]= av_clip_uint8(src[4*step] + d);
+                    d = 0;
                 }
 
                 src[3*step]-= d;

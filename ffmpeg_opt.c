@@ -1623,6 +1623,10 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
         AVCodecContext *avctx;
 
         codec = avcodec_find_encoder(ic->streams[i]->codec->codec_id);
+        if (!codec) {
+            av_log(s, AV_LOG_ERROR, "no encoder found for codec id %i\n", ic->streams[i]->codec->codec_id);
+            return AVERROR(EINVAL);
+        }
         ost   = new_output_stream(o, s, codec->type, -1);
         st    = ost->st;
         avctx = st->codec;

@@ -31,23 +31,28 @@ typedef struct {
 
 static int srt_probe(AVProbeData *p)
 {
-    int i, v, num = 0;
+    int v;
+    char buf[64], *pbuf;
     FFTextReader tr;
 
     ff_text_init_buf(&tr, p->buf, p->buf_size);
 
     while (ff_text_peek_r8(&tr) == '\r' || ff_text_peek_r8(&tr) == '\n')
         ff_text_r8(&tr);
-    for (i=0; i<2; i++) {
-        char buf[128];
-        if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0)
-            break;
-        if ((num == i || num + 1 == i)
-            && buf[0] >= '0' && buf[1] <= '9' && strstr(buf, " --> ")
-            && sscanf(buf, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
-            return AVPROBE_SCORE_MAX;
-        num = atoi(buf);
-    }
+
+    /* Check if the first non-empty line is a number. We do not check what the
+     * number is because in practice it can be anything. */
+    if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0 ||
+        strtol(buf, &pbuf, 10) < 0 || *pbuf)
+        return 0;
+
+    /* Check if the next line matches a SRT timestamp */
+    if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0)
+        return 0;
+    if (buf[0] >= '0' && buf[1] <= '9' && strstr(buf, " --> ")
+        && sscanf(buf, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
+        return AVPROBE_SCORE_MAX;
+
     return 0;
 }
 

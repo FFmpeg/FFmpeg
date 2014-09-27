@@ -528,10 +528,17 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
+    AVFilterChannelLayouts *layouts;
+
+    layouts = ff_all_channel_layouts();
+
+    if (!layouts)
+        return AVERROR(ENOMEM);
+
     ff_add_format(&formats, AV_SAMPLE_FMT_FLT);
     ff_add_format(&formats, AV_SAMPLE_FMT_FLTP);
     ff_set_common_formats(ctx, formats);
-    ff_set_common_channel_layouts(ctx, ff_all_channel_layouts());
+    ff_set_common_channel_layouts(ctx, layouts);
     ff_set_common_samplerates(ctx, ff_all_samplerates());
     return 0;
 }

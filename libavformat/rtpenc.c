@@ -202,9 +202,11 @@ static int rtp_write_header(AVFormatContext *s1)
         }
         break;
     case AV_CODEC_ID_HEVC:
-        if (st->codec->extradata_size > 21 &&
-            (st->codec->extradata[0] || st->codec->extradata[1] ||
-             st->codec->extradata[2] > 1)) {
+        /* Only check for the standardized hvcC version of extradata, keeping
+         * things simple and similar to the avcC/H264 case above, instead
+         * of trying to handle the pre-standardization versions (as in
+         * libavcodec/hevc.c). */
+        if (st->codec->extradata_size > 21 && st->codec->extradata[0] == 1) {
             s->nal_length_size = (st->codec->extradata[21] & 0x03) + 1;
         }
         break;

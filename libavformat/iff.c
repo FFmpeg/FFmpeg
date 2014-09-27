@@ -285,7 +285,13 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
         case MKTAG('C','M','P','R'):
             if (size < 4)
                 return AVERROR_INVALIDDATA;
-            st->codec->codec_id = ff_codec_get_id(dsd_codec_tags, avio_rl32(pb));
+            tag = avio_rl32(pb);
+            st->codec->codec_id = ff_codec_get_id(dsd_codec_tags, tag);
+            if (!st->codec->codec_id) {
+                av_log(s, AV_LOG_ERROR, "'%c%c%c%c' compression is not supported\n",
+                    tag&0xFF, (tag>>8)&0xFF, (tag>>16)&0xFF, (tag>>24)&0xFF);
+                return AVERROR_PATCHWELCOME;
+            }
             break;
 
         case MKTAG('F','S',' ',' '):

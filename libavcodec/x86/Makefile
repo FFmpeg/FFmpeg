@@ -66,8 +66,7 @@ OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 # subsystems
 MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
 MMX-OBJS-$(CONFIG_FDCTDSP)             += x86/fdct.o
-MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/idctdsp_mmx.o             \
-                                          x86/simple_idct.o
+MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/simple_idct.o
 
 # decoders/encoders
 MMX-OBJS-$(CONFIG_MPEG4_DECODER)       += x86/xvididct_mmx.o            \

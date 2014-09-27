@@ -1816,6 +1816,7 @@ redirect:
     ff_rtsp_close_connections(s);
     if (reply->status_code >=300 && reply->status_code < 400 && s->iformat) {
         av_strlcpy(s->filename, reply->location, sizeof(s->filename));
+        rt->session_id[0] = '\0';
         av_log(s, AV_LOG_INFO, "Status %d: Redirecting to %s\n",
                reply->status_code,
                s->filename);
