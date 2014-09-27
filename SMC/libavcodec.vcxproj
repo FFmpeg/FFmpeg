@@ -2192,9 +2192,6 @@
     <ClCompile Include="..\libavcodec\x86\fdct.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_fdct.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\idctdsp_mmx.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_idctdsp_mmx.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\simple_idct.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
     </ClCompile>

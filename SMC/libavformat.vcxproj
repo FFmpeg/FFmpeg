@@ -1016,6 +1016,9 @@
     <ClCompile Include="..\libavformat\subviewerdec.c">
       <ObjectFileName>$(IntDir)\libavformat_subviewerdec.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\supdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_supdec.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\swfdec.c">
       <ObjectFileName>$(IntDir)\libavformat_swfdec.obj</ObjectFileName>
     </ClCompile>
