@@ -1746,7 +1746,7 @@ vbv_retry:
 
         if (avctx->rc_buffer_size) {
             RateControlContext *rcc = &s->rc_context;
-            int max_size = rcc->buffer_index * avctx->rc_max_available_vbv_use;
+            int max_size = FFMAX(rcc->buffer_index * avctx->rc_max_available_vbv_use, rcc->buffer_index - 500);
 
             if (put_bits_count(&s->pb) > max_size &&
                 s->lambda < s->avctx->lmax) {
