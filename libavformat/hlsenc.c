@@ -300,8 +300,8 @@ static int hls_write_header(AVFormatContext *s)
     av_assert0(s->nb_streams == hls->avf->nb_streams);
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *inner_st  = hls->avf->streams[i];
-        AVStream *outter_st = s->streams[i];
-        avpriv_set_pts_info(outter_st, inner_st->pts_wrap_bits, inner_st->time_base.num, inner_st->time_base.den);
+        AVStream *outer_st = s->streams[i];
+        avpriv_set_pts_info(outer_st, inner_st->pts_wrap_bits, inner_st->time_base.num, inner_st->time_base.den);
     }
 fail:
 
