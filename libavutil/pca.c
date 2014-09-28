@@ -57,7 +57,7 @@ void ff_pca_free(PCA *pca){
     av_free(pca);
 }
 
-void ff_pca_add(PCA *pca, double *v){
+void ff_pca_add(PCA *pca, const double *v){
     int i, j;
     const int n= pca->n;
 
