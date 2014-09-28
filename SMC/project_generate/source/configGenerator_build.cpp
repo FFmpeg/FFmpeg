@@ -235,7 +235,7 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #else\n\
 #   define EXTERN_ASM _\n\
 #endif";
-    mReplaceValues["SLIBSUF"] = "#if defined(_USRDLL)\n\
+    mReplaceValues["SLIBSUF"] = "#if defined(_USRDLL) || defined(_WINDLL)\n\
 #   define SLIBSUF \".dll\"\n\
 #else\n\
 #   define SLIBSUF \".lib\"\n\
@@ -251,12 +251,12 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #else\n\
 #   define ARCH_X86_64 0\n\
 #endif";
-    mReplaceValues["CONFIG_SHARED"] = "#if defined(_USRDLL)\n\
+    mReplaceValues["CONFIG_SHARED"] = "#if defined(_USRDLL) || defined(_WINDLL)\n\
 #   define CONFIG_SHARED 1\n\
 #else\n\
 #   define CONFIG_SHARED 0\n\
 #endif";
-    mReplaceValues["CONFIG_STATIC"] = "#if defined(_USRDLL)\n\
+    mReplaceValues["CONFIG_STATIC"] = "#if defined(_USRDLL) || defined(_WINDLL)\n\
 #   define CONFIG_STATIC 0\n\
 #else\n\
 #   define CONFIG_STATIC 1\n\
