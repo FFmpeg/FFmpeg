@@ -83,7 +83,7 @@ INT32_TO_FLOAT_FMUL_SCALAR 3
 ;------------------------------------------------------------------------------
 %macro INT32_TO_FLOAT_FMUL_ARRAY8 0
 cglobal int32_to_float_fmul_array8, 5, 5, 5, c, dst, src, mul, len
-    shl     lenq, 2
+    shl     lend, 2
     add     srcq, lenq
     add     dstq, lenq
     neg     lenq
