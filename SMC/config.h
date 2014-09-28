@@ -23,7 +23,7 @@
 #   define EXTERN_ASM _
 #endif
 #define BUILDSUF ""
-#if defined(_USRDLL)
+#if defined(_USRDLL) || defined(_WINDLL)
 #   define SLIBSUF ".dll"
 #else
 #   define SLIBSUF ".lib"
@@ -552,13 +552,13 @@
 #define CONFIG_HARDCODED_TABLES 0
 #define CONFIG_RUNTIME_CPUDETECT 1
 #define CONFIG_SAFE_BITSTREAM_READER 1
-#if defined(_USRDLL)
+#if defined(_USRDLL) || defined(_WINDLL)
 #   define CONFIG_SHARED 1
 #else
 #   define CONFIG_SHARED 0
 #endif
 #define CONFIG_SMALL 0
-#if defined(_USRDLL)
+#if defined(_USRDLL) || defined(_WINDLL)
 #   define CONFIG_STATIC 0
 #else
 #   define CONFIG_STATIC 1
