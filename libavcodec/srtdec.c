@@ -47,8 +47,14 @@ typedef struct {
     char param[PARAM_NUMBER][128];
 } SrtStack;
 
-static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
-                              const char *in, int x1, int y1, int x2, int y2)
+static void rstrip_spaces_buf(AVBPrint *buf)
+{
+    while (buf->len > 0 && buf->str[buf->len - 1] == ' ')
+        buf->str[--buf->len] = 0;
+}
+
+static void srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
+                       const char *in, int x1, int y1, int x2, int y2)
 {
     char *param, buffer[128], tmp[128];
     int len, tag_close, sptr = 1, line_start = 1, an = 0, end = 0;
@@ -61,14 +67,12 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
 
     if (x1 >= 0 && y1 >= 0) {
         if (x2 >= 0 && y2 >= 0 && (x2 != x1 || y2 != y1))
-            snprintf(out, out_end-out,
-                            "{\\an1}{\\move(%d,%d,%d,%d)}", x1, y1, x2, y2);
+            av_bprintf(dst, "{\\an1}{\\move(%d,%d,%d,%d)}", x1, y1, x2, y2);
         else
-            snprintf(out, out_end-out, "{\\an1}{\\pos(%d,%d)}", x1, y1);
-        out += strlen(out);
+            av_bprintf(dst, "{\\an1}{\\pos(%d,%d)}", x1, y1);
     }
 
-    for (; out < out_end && !end && *in; in++) {
+    for (; !end && *in; in++) {
         switch (*in) {
         case '\r':
             break;
@@ -77,15 +81,13 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
                 end = 1;
                 break;
             }
-            while (out[-1] == ' ')
-                out--;
-            snprintf(out, out_end-out, "\\N");
-            if(out<out_end) out += strlen(out);
+            rstrip_spaces_buf(dst);
+            av_bprintf(dst, "\\N");
             line_start = 1;
             break;
         case ' ':
             if (!line_start)
-                *out++ = *in;
+                av_bprint_chars(dst, *in, 1);
             break;
         case '{':    /* skip all {\xxx} substrings except for {\an%d}
                         and all microdvd like styles such as {Y:xxx} */
@@ -95,7 +97,7 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
                 (len = 0, sscanf(in, "{%*1[CcFfoPSsYy]:%*[^}]}%n", &len) >= 0 && len > 0)) {
                 in += len - 1;
             } else
-                *out++ = *in;
+                av_bprint_chars(dst, *in, 1);
             break;
         case '<':
             tag_close = in[1] == '/';
@@ -115,9 +117,7 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
                                 if (stack[sptr-1].param[i][0])
                                     for (j=sptr-2; j>=0; j--)
                                         if (stack[j].param[i][0]) {
-                                            snprintf(out, out_end-out,
-                                                            "%s", stack[j].param[i]);
-                                            if(out<out_end) out += strlen(out);
+                                            av_bprintf(dst, "%s", stack[j].param[i]);
                                             break;
                                         }
                         } else {
@@ -151,16 +151,11 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
                                     param++;
                             }
                             for (i=0; i<PARAM_NUMBER; i++)
-                                if (stack[sptr].param[i][0]) {
-                                    snprintf(out, out_end-out,
-                                                    "%s", stack[sptr].param[i]);
-                                    if(out<out_end) out += strlen(out);
-                                }
+                                if (stack[sptr].param[i][0])
+                                    av_bprintf(dst, "%s", stack[sptr].param[i]);
                         }
                     } else if (!buffer[1] && strspn(buffer, "bisu") == 1) {
-                        snprintf(out, out_end-out,
-                                        "{\\%c%d}", buffer[0], !tag_close);
-                        if(out<out_end) out += strlen(out);
+                        av_bprintf(dst, "{\\%c%d}", buffer[0], !tag_close);
                     } else {
                         unknown = 1;
                         snprintf(tmp, sizeof(tmp), "</%s>", buffer);
@@ -169,7 +164,7 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
                         sptr--;
                     } else if (unknown && !strstr(in, tmp)) {
                         in -= len + tag_close;
-                        *out++ = *in;
+                        av_bprint_chars(dst, *in, 1);
                     } else
                         av_strlcpy(stack[sptr++].tag, buffer,
                                    sizeof(stack[0].tag));
@@ -177,30 +172,26 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
                 }
             }
         default:
-            *out++ = *in;
+            av_bprint_chars(dst, *in, 1);
             break;
         }
         if (*in != ' ' && *in != '\r' && *in != '\n')
             line_start = 0;
     }
 
-    out = FFMIN(out, out_end-3);
-    while (!strncmp(out-2, "\\N", 2))
-        out -= 2;
-    while (out[-1] == ' ')
-        out--;
-    snprintf(out, out_end-out, "\r\n");
-    return in;
+    while (dst->len >= 2 && !strncmp(&dst->str[dst->len - 2], "\\N", 2))
+        dst->len -= 2;
+    dst->str[dst->len] = 0;
+    rstrip_spaces_buf(dst);
+    av_bprintf(dst, "\r\n");
 }
 
 static int srt_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_sub_ptr, AVPacket *avpkt)
 {
     AVSubtitle *sub = data;
+    AVBPrint buffer;
     int ts_start, ts_end, x1 = -1, y1 = -1, x2 = -1, y2 = -1;
-    char buffer[2048];
-    const char *ptr = avpkt->data;
-    const char *end = avpkt->data + avpkt->size;
     int size, ret;
     const uint8_t *p = av_packet_get_side_data(avpkt, AV_PKT_DATA_SUBTITLE_POSITION, &size);
 
@@ -214,7 +205,8 @@ static int srt_decode_frame(AVCodecContext *avctx,
     if (avpkt->size <= 0)
         return avpkt->size;
 
-    while (ptr < end && *ptr) {
+    av_bprint_init(&buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
+
         // TODO: reindent
             // Do final divide-by-10 outside rescale to force rounding down.
             ts_start = av_rescale_q(avpkt->pts,
@@ -223,12 +215,12 @@ static int srt_decode_frame(AVCodecContext *avctx,
             ts_end   = av_rescale_q(avpkt->pts + avpkt->duration,
                                     avctx->time_base,
                                     (AVRational){1,100});
-        ptr = srt_to_ass(avctx, buffer, buffer+sizeof(buffer), ptr,
-                         x1, y1, x2, y2);
-        ret = ff_ass_add_rect(sub, buffer, ts_start, ts_end-ts_start, 0);
-        if (ret < 0)
-            return ret;
-    }
+
+    srt_to_ass(avctx, &buffer, avpkt->data, x1, y1, x2, y2);
+    ret = ff_ass_add_rect_bprint(sub, &buffer, ts_start, ts_end-ts_start, 0);
+    av_bprint_finalize(&buffer, NULL);
+    if (ret < 0)
+        return ret;
 
     *got_sub_ptr = sub->num_rects > 0;
     return avpkt->size;
