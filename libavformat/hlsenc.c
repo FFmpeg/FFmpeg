@@ -22,6 +22,7 @@
 #include <float.h>
 #include <stdint.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/avstring.h"
@@ -251,6 +252,12 @@ static int hls_write_header(AVFormatContext *s)
     if ((ret = avformat_write_header(hls->avf, NULL)) < 0)
         goto fail;
 
+    av_assert0(s->nb_streams == hls->avf->nb_streams);
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *inner_st  = hls->avf->streams[i];
+        AVStream *outter_st = s->streams[i];
+        avpriv_set_pts_info(outter_st, inner_st->pts_wrap_bits, inner_st->time_base.num, inner_st->time_base.den);
+    }
 
 fail:
     if (ret) {
