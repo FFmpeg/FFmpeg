@@ -122,7 +122,7 @@ static void *avformat_mutex;
 static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
 {
     void **p = ptr;
-    if (min_size < *size)
+    if (min_size <= *size && *p)
         return 0;
     min_size = FFMAX(17 * min_size / 16 + 32, min_size);
     av_free(*p);
