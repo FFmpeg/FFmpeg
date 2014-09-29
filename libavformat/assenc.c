@@ -54,6 +54,8 @@ static int write_header(AVFormatContext *s)
         if (avctx->extradata[avctx->extradata_size - 1] != '\n')
             avio_write(s->pb, "\r\n", 2);
     }
+    if (!strstr(avctx->extradata, "\n[Events]"))
+        avio_printf(s->pb, "[Events]\r\nFormat: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text\r\n");
     avio_flush(s->pb);
 
     return 0;

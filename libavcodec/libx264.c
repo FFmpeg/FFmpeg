@@ -100,7 +100,7 @@ static void X264_log(void *p, int level, const char *fmt, va_list args)
 
 
 static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
-                       x264_nal_t *nals, int nnal)
+                       const x264_nal_t *nals, int nnal)
 {
     X264Context *x4 = ctx->priv_data;
     uint8_t *p;

@@ -260,22 +260,12 @@ static int microdvd_decode_frame(AVCodecContext *avctx,
 {
     AVSubtitle *sub = data;
     AVBPrint new_line;
-    char c;
     char *line = avpkt->data;
     char *end = avpkt->data + avpkt->size;
     struct microdvd_tag tags[sizeof(MICRODVD_TAGS) - 1] = {{0}};
 
     if (avpkt->size <= 0)
         return avpkt->size;
-
-    /* To be removed later */
-    if (sscanf(line, "{%*d}{%*[0123456789]}%c", &c) == 1 &&
-        line[avpkt->size - 1] == '\n') {
-        av_log(avctx, AV_LOG_ERROR, "AVPacket is not clean (contains timing "
-               "information and a trailing line break). You need to upgrade "
-               "your libavformat or sanitize your packet.\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     av_bprint_init(&new_line, 0, 2048);
 
