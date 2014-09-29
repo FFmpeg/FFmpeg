@@ -597,8 +597,18 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
             }
             break;
         case AV_CODEC_ID_OPUS:
-            av_strlcatf(buff, size, "a=rtpmap:%d opus/48000\r\n",
+            /* The opus RTP draft says that all opus streams MUST be declared
+               as stereo, to avoid negotiation failures. The actual number of
+               channels can change on a packet-by-packet basis. The number of
+               channels a receiver prefers to receive or a sender plans to send
+               can be declared via fmtp parameters (both default to mono), but
+               receivers MUST be able to receive and process stereo packets. */
+            av_strlcatf(buff, size, "a=rtpmap:%d opus/48000/2\r\n",
                                      payload_type);
+            if (c->channels == 2) {
+                av_strlcatf(buff, size, "a=fmtp:%d sprop-stereo:1\r\n",
+                                         payload_type);
+            }
             break;
         default:
             /* Nothing special to do here... */
