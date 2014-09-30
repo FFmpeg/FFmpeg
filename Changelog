@@ -44,6 +44,7 @@ version <next>:
 - drop deprecated qtkit input device (use avfoundation instead)
 - despill video filter
 - haas audio filter
+- SUP/PGS subtitle muxer
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
