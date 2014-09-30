@@ -248,7 +248,7 @@ static int flv_write_header(AVFormatContext *s)
                        "16-bit big-endian audio in flv is valid but most likely unplayable (hardware dependent); use s16le\n");
             break;
         case AVMEDIA_TYPE_DATA:
-            if (enc->codec_id != AV_CODEC_ID_TEXT) {
+            if (enc->codec_id != AV_CODEC_ID_TEXT && enc->codec_id != AV_CODEC_ID_NONE) {
                 av_log(s, AV_LOG_ERROR, "Data codec '%s' for stream %d is not compatible with FLV\n",
                        avcodec_get_name(enc->codec_id), i);
                 return AVERROR_INVALIDDATA;
@@ -556,18 +556,24 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (enc->codec_type == AVMEDIA_TYPE_DATA) {
         int data_size;
         int64_t metadata_size_pos = avio_tell(pb);
-        avio_w8(pb, AMF_DATA_TYPE_STRING);
-        put_amf_string(pb, "onTextData");
-        avio_w8(pb, AMF_DATA_TYPE_MIXEDARRAY);
-        avio_wb32(pb, 2);
-        put_amf_string(pb, "type");
-        avio_w8(pb, AMF_DATA_TYPE_STRING);
-        put_amf_string(pb, "Text");
-        put_amf_string(pb, "text");
-        avio_w8(pb, AMF_DATA_TYPE_STRING);
-        put_amf_string(pb, pkt->data);
-        put_amf_string(pb, "");
-        avio_w8(pb, AMF_END_OF_OBJECT);
+        if (enc->codec_type == AV_CODEC_ID_TEXT) {
+            // legacy FFmpeg magic?
+            avio_w8(pb, AMF_DATA_TYPE_STRING);
+            put_amf_string(pb, "onTextData");
+            avio_w8(pb, AMF_DATA_TYPE_MIXEDARRAY);
+            avio_wb32(pb, 2);
+            put_amf_string(pb, "type");
+            avio_w8(pb, AMF_DATA_TYPE_STRING);
+            put_amf_string(pb, "Text");
+            put_amf_string(pb, "text");
+            avio_w8(pb, AMF_DATA_TYPE_STRING);
+            put_amf_string(pb, pkt->data);
+            put_amf_string(pb, "");
+            avio_w8(pb, AMF_END_OF_OBJECT);
+        } else {
+            // just pass the metadata through
+            avio_write(pb, data ? data : pkt->data, size);
+        }
         /* write total size of tag */
         data_size = avio_tell(pb) - metadata_size_pos;
         avio_seek(pb, metadata_size_pos - 10, SEEK_SET);
