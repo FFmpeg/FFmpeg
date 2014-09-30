@@ -242,6 +242,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     AVProbeData pd = { filename ? filename : "" };
     uint8_t *buf = NULL;
     int ret = 0, probe_size;
+    uint8_t *mime_type_opt = NULL;
 
     if (!max_probe_size)
         max_probe_size = PROBE_BUF_MAX;
@@ -254,8 +255,11 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
         return AVERROR(EINVAL);
     avio_skip(pb, offset);
     max_probe_size -= offset;
-    if (pb->av_class)
-        av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &pd.mime_type);
+    if (pb->av_class) {
+        av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type_opt);
+        pd.mime_type = (const char *)mime_type_opt;
+        mime_type_opt = NULL;
+    }
     for (probe_size = PROBE_BUF_MIN; probe_size <= max_probe_size && !*fmt;
          probe_size = FFMIN(probe_size << 1,
                             FFMAX(max_probe_size, probe_size + 1))) {
@@ -301,6 +305,6 @@ fail:
         (ret = ffio_rewind_with_probe_data(pb, buf, pd.buf_size)) < 0) {
         av_free(buf);
     }
-    av_free(pd.mime_type);
+    av_freep(&pd.mime_type);
     return ret;
 }
