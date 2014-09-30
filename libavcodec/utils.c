@@ -3461,6 +3461,8 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
             return -1;
         if (lockmgr_cb(&avformat_mutex, AV_LOCK_DESTROY))
             return -1;
+        codec_mutex = NULL;
+        avformat_mutex = NULL;
     }
 
     lockmgr_cb = cb;
