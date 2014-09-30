@@ -3112,6 +3112,13 @@ typedef struct AVCodecContext {
      */
     uint8_t *dump_separator;
 
+    /**
+     * ',' seperated list of allowed decoders.
+     * If NULL then all are allowed
+     * - encoding: unused
+     * - decoding: set by user through AVOPtions (NO direct access)
+     */
+    char *codec_whitelist;
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
