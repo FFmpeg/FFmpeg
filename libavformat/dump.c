@@ -332,7 +332,7 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
 
     avcodec_string(buf, sizeof(buf), st->codec, is_output);
-    av_log(NULL, AV_LOG_INFO, "    Stream #%d.%d", index, i);
+    av_log(NULL, AV_LOG_INFO, "    Stream #%d:%d", index, i);
 
     /* the pid is an important information, so we display it */
     /* XXX: add a generic system */
@@ -446,7 +446,7 @@ void av_dump_format(AVFormatContext *ic, int index,
 
     for (i = 0; i < ic->nb_chapters; i++) {
         AVChapter *ch = ic->chapters[i];
-        av_log(NULL, AV_LOG_INFO, "    Chapter #%d.%d: ", index, i);
+        av_log(NULL, AV_LOG_INFO, "    Chapter #%d:%d: ", index, i);
         av_log(NULL, AV_LOG_INFO,
                "start %f, ", ch->start * av_q2d(ch->time_base));
         av_log(NULL, AV_LOG_INFO,
