@@ -2795,6 +2795,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 av_fast_padded_malloc(&new_buffer, &new_buffer_size, new_size);
                 if (new_buffer) {
                     memcpy(new_buffer, s->avctx->internal->byte_buffer, s->avctx->internal->byte_buffer_size);
+                    av_free(s->avctx->internal->byte_buffer);
                     s->avctx->internal->byte_buffer      = new_buffer;
                     s->avctx->internal->byte_buffer_size = new_buffer_size;
                     rebase_put_bits(&s->pb, new_buffer, new_buffer_size);
