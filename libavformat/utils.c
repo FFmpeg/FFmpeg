@@ -2201,6 +2201,12 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
     return -1; //unreachable
 }
 
+int avformat_flush(AVFormatContext *s)
+{
+    ff_read_frame_flush(s);
+    return 0;
+}
+
 /*******************************************************/
 
 /**
