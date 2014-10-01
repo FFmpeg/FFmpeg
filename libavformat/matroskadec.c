@@ -3261,10 +3261,13 @@ static int webm_dash_manifest_cues(AVFormatContext *s)
     before_pos = avio_tell(matroska->ctx->pb);
     cues_start = seekhead[i].pos + matroska->segment_start;
     if (avio_seek(matroska->ctx->pb, cues_start, SEEK_SET) == cues_start) {
-        uint64_t cues_length = 0, cues_id = 0;
-        ebml_read_num(matroska, matroska->ctx->pb, 4, &cues_id);
-        ebml_read_length(matroska, matroska->ctx->pb, &cues_length);
-        cues_end = cues_start + cues_length + 11; // 11 is the offset of Cues ID.
+        // cues_end is computed as cues_start + cues_length + length of the
+        // Cues element ID + EBML length of the Cues element. cues_end is
+        // inclusive and the above sum is reduced by 1.
+        uint64_t cues_length = 0, cues_id = 0, bytes_read = 0;
+        bytes_read += ebml_read_num(matroska, matroska->ctx->pb, 4, &cues_id);
+        bytes_read += ebml_read_length(matroska, matroska->ctx->pb, &cues_length);
+        cues_end = cues_start + cues_length + bytes_read - 1;
     }
     avio_seek(matroska->ctx->pb, before_pos, SEEK_SET);
     if (cues_start == -1 || cues_end == -1) return -1;

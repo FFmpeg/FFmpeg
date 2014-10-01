@@ -20,7 +20,7 @@
 <Representation id="1" bandwidth="321574">
 <BaseURL>dash_video3.webm</BaseURL>
 <SegmentBase
-  indexRange="1116070-1116461">
+  indexRange="1116070-1116455">
 <Initialization
   range="0-249" />
 </SegmentBase>
