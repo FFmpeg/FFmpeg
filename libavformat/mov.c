@@ -1422,6 +1422,10 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
             st->codec->codec_id =
                 st->codec->codec_id == AV_CODEC_ID_PCM_S16BE ?
                 AV_CODEC_ID_PCM_S24BE : AV_CODEC_ID_PCM_S24LE;
+        else if (st->codec->bits_per_coded_sample == 32)
+             st->codec->codec_id =
+                st->codec->codec_id == AV_CODEC_ID_PCM_S16BE ?
+                AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
         break;
     /* set values for old format before stsd version 1 appeared */
     case AV_CODEC_ID_MACE3:
