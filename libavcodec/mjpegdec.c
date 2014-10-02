@@ -216,21 +216,21 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
 
 int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 {
-    int len, nb_components, i, width, height, pix_fmt_id;
+    int len, nb_components, i, width, height, bits, pix_fmt_id;
 
     s->cur_scan = 0;
     s->upscale_h = s->upscale_v = 0;
 
     /* XXX: verify len field validity */
     len     = get_bits(&s->gb, 16);
-    s->bits = get_bits(&s->gb, 8);
+    bits = get_bits(&s->gb, 8);
 
     if (s->pegasus_rct)
-        s->bits = 9;
-    if (s->bits == 9 && !s->pegasus_rct)
+        bits = 9;
+    if (bits == 9 && !s->pegasus_rct)
         s->rct  = 1;    // FIXME ugly
 
-    if (s->bits != 8 && !s->lossless) {
+    if (bits != 8 && !s->lossless) {
         av_log(s->avctx, AV_LOG_ERROR, "only 8 bits/component accepted\n");
         return -1;
     }
@@ -262,7 +262,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             return AVERROR_INVALIDDATA;
         }
     }
-    if (s->ls && !(s->bits <= 8 || nb_components == 1)) {
+    if (s->ls && !(bits <= 8 || nb_components == 1)) {
         av_log(s->avctx, AV_LOG_ERROR,
                "only <= 8 bits/component or 16-bit gray accepted for JPEG-LS\n");
         return -1;
@@ -306,11 +306,14 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
     /* if different size, realloc/alloc picture */
     /* XXX: also check h_count and v_count */
-    if (width != s->width || height != s->height) {
+    if (   width != s->width || height != s->height
+        || bits != s->bits
+       ) {
         av_freep(&s->qscale_table);
 
         s->width      = width;
         s->height     = height;
+        s->bits       = bits;
         s->interlaced = 0;
 
         /* test interlaced mode */
