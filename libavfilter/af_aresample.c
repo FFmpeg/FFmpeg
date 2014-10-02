@@ -103,6 +103,11 @@ static int query_formats(AVFilterContext *ctx)
     } else {
         out_samplerates = ff_all_samplerates();
     }
+    if (!out_samplerates) {
+        av_log(ctx, AV_LOG_ERROR, "Cannot allocate output samplerates.\n");
+        return AVERROR(ENOMEM);
+    }
+
     ff_formats_ref(out_samplerates, &outlink->in_samplerates);
 
     if(out_format != AV_SAMPLE_FMT_NONE) {
