@@ -139,6 +139,8 @@ static int dirac_combine_frame(AVCodecParserContext *s, AVCodecContext *avctx,
         void *new_buffer =
             av_fast_realloc(pc->buffer, &pc->buffer_size,
                             pc->index + (*buf_size - pc->sync_offset));
+        if (!new_buffer)
+            return AVERROR(ENOMEM);
         pc->buffer = new_buffer;
         memcpy(pc->buffer + pc->index, (*buf + pc->sync_offset),
                *buf_size - pc->sync_offset);
@@ -149,6 +151,8 @@ static int dirac_combine_frame(AVCodecParserContext *s, AVCodecContext *avctx,
         DiracParseUnit pu1, pu;
         void *new_buffer = av_fast_realloc(pc->buffer, &pc->buffer_size,
                                            pc->index + next);
+        if (!new_buffer)
+            return AVERROR(ENOMEM);
         pc->buffer = new_buffer;
         memcpy(pc->buffer + pc->index, *buf, next);
         pc->index += next;
