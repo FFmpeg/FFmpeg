@@ -34,7 +34,8 @@
 enum DWTType {
     FF_DWT97,
     FF_DWT53,
-    FF_DWT97_INT
+    FF_DWT97_INT,
+    FF_DWT_NB
 };
 
 typedef struct DWTContext {
