@@ -386,11 +386,11 @@ static int tiff_decode_tag(TiffContext *s)
         s->height = value;
         break;
     case TIFF_BPP:
-        s->bppcount = count;
-        if(count > 4){
-            av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%d, %d components)\n", s->bpp, count);
+        if(count > 4U){
+            av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%d, %d components)\n", value, count);
             return -1;
         }
+        s->bppcount = count;
         if(count == 1) s->bpp = value;
         else{
             switch(type){
@@ -406,6 +406,13 @@ static int tiff_decode_tag(TiffContext *s)
             default:
                 s->bpp = -1;
             }
+        }
+        if (s->bpp > 64U) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "This format is not supported (bpp=%d, %d components)\n",
+                   s->bpp, count);
+            s->bpp = 0;
+            return AVERROR_INVALIDDATA;
         }
         break;
     case TIFF_SAMPLES_PER_PIXEL:
