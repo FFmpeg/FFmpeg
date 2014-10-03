@@ -623,6 +623,12 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
             desc = av_pix_fmt_desc_get(dec_ctx->pix_fmt);
             probe_str("pix_fmt", desc ? desc->name : "unknown");
             probe_int("level", dec_ctx->level);
+
+            probe_str("color_range", av_color_range_name(dec_ctx->color_range));
+            probe_str("color_space", av_color_space_name(dec_ctx->colorspace));
+            probe_str("color_trc", av_color_transfer_name(dec_ctx->color_trc));
+            probe_str("color_pri", av_color_primaries_name(dec_ctx->color_primaries));
+            probe_str("chroma_loc", av_chroma_location_name(dec_ctx->chroma_sample_location));
             break;
 
         case AVMEDIA_TYPE_AUDIO:
