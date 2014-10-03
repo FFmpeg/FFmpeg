@@ -182,6 +182,10 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
             w_align = 4;
             h_align = 4;
         }
+        if (s->codec_id == CODEC_ID_JV) {
+            w_align = 8;
+            h_align = 8;
+        }
         break;
     case PIX_FMT_BGR24:
         if((s->codec_id == CODEC_ID_MSZH) || (s->codec_id == CODEC_ID_ZLIB)){
