@@ -1157,7 +1157,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
 
     h->cur_pic_ptr = s->cur_pic;
     av_frame_unref(&h->cur_pic.f);
-    h->cur_pic     = *s->cur_pic;
+    memcpy(&h->cur_pic.tf, &s->cur_pic->tf, sizeof(h->cur_pic) - offsetof(Picture, tf));
     ret = av_frame_ref(&h->cur_pic.f, &s->cur_pic->f);
     if (ret < 0)
         return ret;
