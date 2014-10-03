@@ -253,25 +253,20 @@ static int gif_read_image(GifState *s)
             case 1:
                 y1 += 8;
                 ptr += linesize * 8;
-                if (y1 >= height) {
-                    y1 = pass ? 2 : 4;
-                    ptr = ptr1 + linesize * y1;
-                    pass++;
-                }
                 break;
             case 2:
                 y1 += 4;
                 ptr += linesize * 4;
-                if (y1 >= height) {
-                    y1 = 1;
-                    ptr = ptr1 + linesize;
-                    pass++;
-                }
                 break;
             case 3:
                 y1 += 2;
                 ptr += linesize * 2;
                 break;
+            }
+            while (y1 >= height) {
+                y1 = 4 >> pass;
+                ptr = ptr1 + linesize * y1;
+                pass++;
             }
         } else {
             ptr += linesize;
