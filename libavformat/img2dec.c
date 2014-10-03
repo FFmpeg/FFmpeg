@@ -585,7 +585,7 @@ static int bmp_probe(AVProbeData *p)
         return 0;
 
     if (!AV_RN32(b + 6)) {
-        return AVPROBE_SCORE_EXTENSION - 1; // lower than extension as bmp pipe has bugs
+        return AVPROBE_SCORE_EXTENSION + 1;
     } else {
         return AVPROBE_SCORE_EXTENSION / 4;
     }
