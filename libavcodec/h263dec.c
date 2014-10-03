@@ -336,6 +336,14 @@ static int decode_slice(MpegEncContext *s)
         s->padding_bug_score += 32;
     }
 
+    if (s->codec_id == AV_CODEC_ID_H263          &&
+        (s->workaround_bugs & FF_BUG_AUTODETECT) &&
+        get_bits_left(&s->gb) >= 64              &&
+        AV_RB64(s->gb.buffer_end - 8) == 0xCDCDCDCDFC7F0000) {
+
+        s->padding_bug_score += 32;
+    }
+
     if (s->workaround_bugs & FF_BUG_AUTODETECT) {
         if (s->padding_bug_score > -2 && !s->data_partitioning)
             s->workaround_bugs |= FF_BUG_NO_PADDING;
