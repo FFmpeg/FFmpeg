@@ -228,6 +228,7 @@ EXPORTS
     av_match_name
     av_malloc
     av_mallocz
+    av_match_list
     av_max_alloc
     av_md5_alloc
     av_md5_final

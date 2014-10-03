@@ -996,6 +996,9 @@
     <ClCompile Include="..\libavcodec\jpeg2000dec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\jpeg2000dsp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mqcdec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2106,7 +2109,7 @@
     <ClCompile Include="..\libavcodec\x86\hevcdsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\mlpdsp.c">
+    <ClCompile Include="..\libavcodec\x86\mlpdsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\xvididct_init.c">
@@ -2342,6 +2345,9 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\hevc_res_add.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavcodec\x86\mlpdsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
     <YASM Include="..\libavcodec\x86\pngdsp.asm">
