@@ -789,6 +789,8 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
         len = avio_rl32(pb);
         if (len < 32) {
             int ret;
+            if (avio_feof(pb))
+                return AVERROR_EOF;
             av_log(s, AV_LOG_WARNING, "encountered broken chunk\n");
             if ((ret = recover(wtv, avio_tell(pb) - 20)) < 0)
                 return ret;

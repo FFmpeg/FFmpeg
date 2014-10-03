@@ -1017,6 +1017,60 @@ static int mov_get_mpeg2_xdcam_codec_tag(AVFormatContext *s, MOVTrack *track)
     return tag;
 }
 
+static int mov_get_h264_codec_tag(AVFormatContext *s, MOVTrack *track)
+{
+    int tag = track->enc->codec_tag;
+    int interlaced = track->enc->field_order > AV_FIELD_PROGRESSIVE;
+    AVStream *st = track->st;
+    int rate = av_q2d(find_fps(s, st));
+
+    if (!tag)
+        tag = MKTAG('a', 'v', 'c', 'i'); //fallback tag
+
+    if (track->enc->pix_fmt == AV_PIX_FMT_YUV420P10) {
+        if (track->enc->width == 960 && track->enc->height == 720) {
+            if (!interlaced) {
+                if      (rate == 24) tag = MKTAG('a','i','5','p');
+                else if (rate == 25) tag = MKTAG('a','i','5','q');
+                else if (rate == 30) tag = MKTAG('a','i','5','p');
+                else if (rate == 50) tag = MKTAG('a','i','5','q');
+                else if (rate == 60) tag = MKTAG('a','i','5','p');
+            }
+        } else if (track->enc->width == 1440 && track->enc->height == 1080) {
+            if (!interlaced) {
+                if      (rate == 24) tag = MKTAG('a','i','5','3');
+                else if (rate == 25) tag = MKTAG('a','i','5','2');
+                else if (rate == 30) tag = MKTAG('a','i','5','3');
+            } else {
+                if      (rate == 50) tag = MKTAG('a','i','5','5');
+                else if (rate == 60) tag = MKTAG('a','i','5','6');
+            }
+        }
+    } else if (track->enc->pix_fmt == AV_PIX_FMT_YUV422P10) {
+        if (track->enc->width == 1280 && track->enc->height == 720) {
+            if (!interlaced) {
+                if      (rate == 24) tag = MKTAG('a','i','1','p');
+                else if (rate == 25) tag = MKTAG('a','i','1','q');
+                else if (rate == 30) tag = MKTAG('a','i','1','p');
+                else if (rate == 50) tag = MKTAG('a','i','1','q');
+                else if (rate == 60) tag = MKTAG('a','i','1','p');
+            }
+        } else if (track->enc->width == 1920 && track->enc->height == 1080) {
+            if (!interlaced) {
+                if      (rate == 24) tag = MKTAG('a','i','1','3');
+                else if (rate == 25) tag = MKTAG('a','i','1','2');
+                else if (rate == 30) tag = MKTAG('a','i','1','3');
+            } else {
+                if      (rate == 25) tag = MKTAG('a','i','1','5');
+                else if (rate == 50) tag = MKTAG('a','i','1','5');
+                else if (rate == 60) tag = MKTAG('a','i','1','6');
+            }
+        }
+    }
+
+    return tag;
+}
+
 static const struct {
     enum AVPixelFormat pix_fmt;
     uint32_t tag;
@@ -1072,6 +1126,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                  (track->enc->codec_id == AV_CODEC_ID_DVVIDEO ||
                   track->enc->codec_id == AV_CODEC_ID_RAWVIDEO ||
                   track->enc->codec_id == AV_CODEC_ID_H263 ||
+                  track->enc->codec_id == AV_CODEC_ID_H264 ||
                   track->enc->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
                   av_get_bits_per_sample(track->enc->codec_id)))) { // pcm audio
         if (track->enc->codec_id == AV_CODEC_ID_DVVIDEO)
@@ -1080,6 +1135,8 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
             tag = mov_get_rawvideo_codec_tag(s, track);
         else if (track->enc->codec_id == AV_CODEC_ID_MPEG2VIDEO)
             tag = mov_get_mpeg2_xdcam_codec_tag(s, track);
+        else if (track->enc->codec_id == AV_CODEC_ID_H264)
+            tag = mov_get_h264_codec_tag(s, track);
         else if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             tag = ff_codec_get_tag(ff_codec_movvideo_tags, track->enc->codec_id);
             if (!tag) { // if no mac fcc found, try with Microsoft tags
@@ -1294,7 +1351,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_avid_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_HEVC)
         mov_write_hvcc_tag(pb, track);
-    else if (track->enc->codec_id == AV_CODEC_ID_H264) {
+    else if (track->enc->codec_id == AV_CODEC_ID_H264 && !TAG_IS_AVCI(track->tag)) {
         mov_write_avcc_tag(pb, track);
         if (track->mode == MODE_IPOD)
             mov_write_uuid_tag_ipod(pb);
@@ -3508,7 +3565,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         samples_in_chunk = 1;
 
     /* copy extradata if it exists */
-    if (trk->vos_len == 0 && enc->extradata_size > 0) {
+    if (trk->vos_len == 0 && enc->extradata_size > 0 && !TAG_IS_AVCI(trk->tag)) {
         trk->vos_len  = enc->extradata_size;
         trk->vos_data = av_malloc(trk->vos_len);
         memcpy(trk->vos_data, enc->extradata, trk->vos_len);
@@ -3524,7 +3581,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         av_log(s, AV_LOG_WARNING, "aac bitstream error\n");
     }
-    if (enc->codec_id == AV_CODEC_ID_H264 && trk->vos_len > 0 && *(uint8_t *)trk->vos_data != 1) {
+    if (enc->codec_id == AV_CODEC_ID_H264 && trk->vos_len > 0 && *(uint8_t *)trk->vos_data != 1 && !TAG_IS_AVCI(trk->tag)) {
         /* from x264 or from bytestream h264 */
         /* nal reformating needed */
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
@@ -4227,7 +4284,7 @@ static int mov_write_header(AVFormatContext *s)
         if (st->codec->extradata_size) {
             if (st->codec->codec_id == AV_CODEC_ID_DVD_SUBTITLE)
                 mov_create_dvd_sub_decoder_specific_info(track, st);
-            else {
+            else if (!TAG_IS_AVCI(track->tag)){
                 track->vos_len  = st->codec->extradata_size;
                 track->vos_data = av_malloc(track->vos_len);
                 memcpy(track->vos_data, st->codec->extradata, track->vos_len);

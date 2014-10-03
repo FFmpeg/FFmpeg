@@ -2670,7 +2670,7 @@ reconnect:
         // audio or video packet arrives.
         while (!rt->has_audio && !rt->has_video && !rt->received_metadata) {
             if ((ret = get_packet(s, 0)) < 0)
-               return ret;
+               goto fail;
         }
 
         // Either after we have read the metadata or (if there is none) the

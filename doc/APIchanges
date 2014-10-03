@@ -15,6 +15,16 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2014-10-02 - xxxxxxx - lavc 56.2.100 - avcodec.h
+2014-10-02 - xxxxxxx - lavu 54.9.100 - frame.h
+  Add AV_FRAME_DATA_SKIP_SAMPLES. Add lavc CODEC_FLAG2_SKIP_MANUAL and
+  AVOption "skip_manual", which makes lavc export skip information via
+  AV_FRAME_DATA_SKIP_SAMPLES AVFrame side data, instead of skipping and
+  discarding samples automatically.
+
+2014-10-02 - xxxxxxx - lavu 54.8.100 - avstring.h
+  Add av_match_list()
+
 2014-09-24 - xxxxxxx - libpostproc 53.1.100
   Add visualization support
 

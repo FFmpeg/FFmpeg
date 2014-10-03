@@ -20,7 +20,7 @@
 <Representation id="1" bandwidth="302355">
 <BaseURL>dash_video2.webm</BaseURL>
 <SegmentBase
-  indexRange="1115782-1115886">
+  indexRange="1115782-1115879">
 <Initialization
   range="0-249" />
 </SegmentBase>
@@ -38,7 +38,7 @@
 <Representation id="1" bandwidth="82814">
 <BaseURL>dash_audio2.webm</BaseURL>
 <SegmentBase
-  indexRange="335312-335432">
+  indexRange="335312-335425">
 <Initialization
   range="0-3927" />
 </SegmentBase>

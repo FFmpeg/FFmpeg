@@ -3197,6 +3197,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %"PRId64" reached at %"PRId64" microseconds\n",
                        max_analyze_duration,
                        t);
+                if (ic->flags & AVFMT_FLAG_NOBUFFER)
+                    av_packet_unref(pkt);
                 break;
             }
             if (pkt->duration) {
@@ -3229,6 +3231,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
          * the container. */
         try_decode_frame(ic, st, pkt,
                          (options && i < orig_nb_streams) ? &options[i] : NULL);
+
+        if (ic->flags & AVFMT_FLAG_NOBUFFER)
+            av_packet_unref(pkt);
 
         st->codec_info_nb_frames++;
         count++;

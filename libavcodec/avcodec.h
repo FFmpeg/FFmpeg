@@ -768,6 +768,7 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_CHUNKS        0x00008000 ///< Input bitstream might be truncated at a packet boundaries instead of only at frame boundaries.
 #define CODEC_FLAG2_SHOW_ALL      0x00400000 ///< Show all frames before the first keyframe
 #define CODEC_FLAG2_EXPORT_MVS    0x10000000 ///< Export motion vectors through frame side data
+#define CODEC_FLAG2_SKIP_MANUAL   0x20000000 ///< Do not skip samples and export skip information as frame side data
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
@@ -5120,16 +5121,26 @@ enum AVLockOp {
 
 /**
  * Register a user provided lock manager supporting the operations
- * specified by AVLockOp. mutex points to a (void *) where the
- * lockmgr should store/get a pointer to a user allocated mutex. It's
- * NULL upon AV_LOCK_CREATE and != NULL for all other ops.
+ * specified by AVLockOp.  The "mutex" argument to the function points
+ * to a (void *) where the lockmgr should store/get a pointer to a user
+ * allocated mutex.  It is NULL upon AV_LOCK_CREATE and equal to the
+ * value left by the last call for all other ops.  If the lock manager is
+ * unable to perform the op then it should leave the mutex in the same
+ * state as when it was called and return a non-zero value.  However,
+ * when called with AV_LOCK_DESTROY the mutex will always be assumed to
+ * have been successfully destroyed.  If av_lockmgr_register succeeds
+ * it will return a non-negative value, if it fails it will return a
+ * negative value and destroy all mutex and unregister all callbacks.
+ * av_lockmgr_register is not thread-safe, it must be called from a
+ * single thread before any calls which make use of locking are used.
  *
- * @param cb User defined callback. Note: FFmpeg may invoke calls to this
- *           callback during the call to av_lockmgr_register().
- *           Thus, the application must be prepared to handle that.
- *           If cb is set to NULL the lockmgr will be unregistered.
- *           Also note that during unregistration the previously registered
- *           lockmgr callback may also be invoked.
+ * @param cb User defined callback.  av_lockmgr_register invokes calls
+ *           to this callback and the previously registered callback.
+ *           The callback will be used to create more than one mutex
+ *           each of which must be backed by its own underlying locking
+ *           mechanism (i.e. do not use a single static object to
+ *           implement your lock manager).  If cb is set to NULL the
+ *           lockmgr will be unregistered.
  */
 int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
 

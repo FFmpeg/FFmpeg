@@ -26,6 +26,22 @@
 #include "libavcodec/mlpdsp.h"
 #include "libavcodec/mlp.h"
 
+#define REMATRIX_CHANNEL_FUNC(opt) \
+void ff_mlp_rematrix_channel_##opt(int32_t *samples, \
+                                   const int32_t *coeffs, \
+                                   const uint8_t *bypassed_lsbs, \
+                                   const int8_t *noise_buffer, \
+                                   int index, \
+                                   unsigned int dest_ch, \
+                                   uint16_t blockpos, \
+                                   unsigned int maxchan, \
+                                   int matrix_noise_shift, \
+                                   int access_unit_size_pow2, \
+                                   int32_t mask);
+
+REMATRIX_CHANNEL_FUNC(sse4)
+REMATRIX_CHANNEL_FUNC(avx2_bmi2)
+
 #if HAVE_7REGS && HAVE_INLINE_ASM && HAVE_INLINE_ASM_NONLOCAL_LABELS
 
 extern char ff_mlp_firorder_8;
@@ -178,9 +194,13 @@ static void mlp_filter_channel_x86(int32_t *state, const int32_t *coeff,
 
 av_cold void ff_mlpdsp_init_x86(MLPDSPContext *c)
 {
-#if HAVE_7REGS && HAVE_INLINE_ASM && HAVE_INLINE_ASM_NONLOCAL_LABELS
     int cpu_flags = av_get_cpu_flags();
+#if HAVE_7REGS && HAVE_INLINE_ASM && HAVE_INLINE_ASM_NONLOCAL_LABELS
     if (INLINE_MMX(cpu_flags))
         c->mlp_filter_channel = mlp_filter_channel_x86;
 #endif
+    if (ARCH_X86_64 && EXTERNAL_SSE4(cpu_flags))
+        c->mlp_rematrix_channel = ff_mlp_rematrix_channel_sse4;
+    if (ARCH_X86_64 && EXTERNAL_AVX2(cpu_flags) && cpu_flags & AV_CPU_FLAG_BMI2)
+        c->mlp_rematrix_channel = ff_mlp_rematrix_channel_avx2_bmi2;
 }

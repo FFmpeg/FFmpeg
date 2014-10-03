@@ -1079,7 +1079,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int vshift = s->sps->vshift[c_idx];
     uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
                                           ((x0 >> hshift) << s->sps->pixel_shift)];
-    int16_t *coeffs = lc->tu.coeffs[c_idx > 0];
+    int16_t *coeffs = (int16_t*)(c_idx ? lc->edge_emu_buffer2 : lc->edge_emu_buffer);
     uint8_t significant_coeff_group_flag[8][8] = {{0}};
     int explicit_rdpcm_flag = 0;
     int explicit_rdpcm_dir_flag;
@@ -1552,7 +1552,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         }
     }
     if (lc->tu.cross_pf) {
-        int16_t *coeffs_y = lc->tu.coeffs[0];
+        int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
 
         for (i = 0; i < (trafo_size * trafo_size); i++) {
             coeffs[i] = coeffs[i] + ((lc->tu.res_scale_val * coeffs_y[i]) >> 3);

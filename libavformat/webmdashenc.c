@@ -133,6 +133,80 @@ static int bitstream_switching(AVFormatContext *s, AdaptationSet *as) {
 }
 
 /*
+ * Writes a Representation within an Adaptation Set. Returns 0 on success and
+ * < 0 on failure.
+ */
+static int write_representation(AVFormatContext *s, AVStream *stream, int id,
+                                int output_width, int output_height,
+                                int output_sample_rate) {
+    AVDictionaryEntry *irange = av_dict_get(stream->metadata, INITIALIZATION_RANGE, NULL, 0);
+    AVDictionaryEntry *cues_start = av_dict_get(stream->metadata, CUES_START, NULL, 0);
+    AVDictionaryEntry *cues_end = av_dict_get(stream->metadata, CUES_END, NULL, 0);
+    AVDictionaryEntry *filename = av_dict_get(stream->metadata, FILENAME, NULL, 0);
+    AVDictionaryEntry *bandwidth = av_dict_get(stream->metadata, BANDWIDTH, NULL, 0);
+    if (!irange || cues_start == NULL || cues_end == NULL || filename == NULL ||
+        !bandwidth) {
+        return -1;
+    }
+    avio_printf(s->pb, "<Representation id=\"%d\"", id);
+    avio_printf(s->pb, " bandwidth=\"%s\"", bandwidth->value);
+    if (stream->codec->codec_type == AVMEDIA_TYPE_VIDEO && output_width)
+        avio_printf(s->pb, " width=\"%d\"", stream->codec->width);
+    if (stream->codec->codec_type == AVMEDIA_TYPE_VIDEO && output_height)
+        avio_printf(s->pb, " height=\"%d\"", stream->codec->height);
+    if (stream->codec->codec_type = AVMEDIA_TYPE_AUDIO && output_sample_rate)
+        avio_printf(s->pb, " audioSamplingRate=\"%d\"", stream->codec->sample_rate);
+    avio_printf(s->pb, ">\n");
+    avio_printf(s->pb, "<BaseURL>%s</BaseURL>\n", filename->value);
+    avio_printf(s->pb, "<SegmentBase\n");
+    avio_printf(s->pb, "  indexRange=\"%s-%s\">\n", cues_start->value, cues_end->value);
+    avio_printf(s->pb, "<Initialization\n");
+    avio_printf(s->pb, "  range=\"0-%s\" />\n", irange->value);
+    avio_printf(s->pb, "</SegmentBase>\n");
+    avio_printf(s->pb, "</Representation>\n");
+    return 0;
+}
+
+/*
+ * Checks if width of all streams are the same. Returns 1 if true, 0 otherwise.
+ */
+static int check_matching_width(AVFormatContext *s, AdaptationSet *as) {
+    int first_width, i;
+    if (as->nb_streams < 2) return 1;
+    first_width = s->streams[as->streams[0]]->codec->width;
+    for (i = 1; i < as->nb_streams; i++)
+        if (first_width != s->streams[as->streams[i]]->codec->width)
+          return 0;
+    return 1;
+}
+
+/*
+ * Checks if height of all streams are the same. Returns 1 if true, 0 otherwise.
+ */
+static int check_matching_height(AVFormatContext *s, AdaptationSet *as) {
+    int first_height, i;
+    if (as->nb_streams < 2) return 1;
+    first_height = s->streams[as->streams[0]]->codec->height;
+    for (i = 1; i < as->nb_streams; i++)
+        if (first_height != s->streams[as->streams[i]]->codec->height)
+          return 0;
+    return 1;
+}
+
+/*
+ * Checks if sample rate of all streams are the same. Returns 1 if true, 0 otherwise.
+ */
+static int check_matching_sample_rate(AVFormatContext *s, AdaptationSet *as) {
+    int first_sample_rate, i;
+    if (as->nb_streams < 2) return 1;
+    first_sample_rate = s->streams[as->streams[0]]->codec->sample_rate;
+    for (i = 1; i < as->nb_streams; i++)
+        if (first_sample_rate != s->streams[as->streams[i]]->codec->sample_rate)
+          return 0;
+    return 1;
+}
+
+/*
  * Writes an Adaptation Set. Returns 0 on success and < 0 on failure.
  */
 static int write_adaptation_set(AVFormatContext *s, int as_index)
@@ -140,10 +214,22 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     WebMDashMuxContext *w = s->priv_data;
     AdaptationSet *as = &w->as[as_index];
     AVCodecContext *codec = s->streams[as->streams[0]]->codec;
+    AVDictionaryEntry *lang;
     int i;
     static const char boolean[2][6] = { "false", "true" };
     int subsegmentStartsWithSAP = 1;
-    AVDictionaryEntry *lang;
+
+    // Width, Height and Sample Rate will go in the AdaptationSet tag if they
+    // are the same for all contained Representations. otherwise, they will go
+    // on their respective Representation tag.
+    int width_in_as = 1, height_in_as = 1, sample_rate_in_as = 1;
+    if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+      width_in_as = check_matching_width(s, as);
+      height_in_as = check_matching_height(s, as);
+    } else {
+      sample_rate_in_as = check_matching_sample_rate(s, as);
+    }
+
     avio_printf(s->pb, "<AdaptationSet id=\"%s\"", as->id);
     avio_printf(s->pb, " mimeType=\"%s/webm\"",
                 codec->codec_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio");
@@ -152,12 +238,12 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     lang = av_dict_get(s->streams[as->streams[0]]->metadata, "language", NULL, 0);
     if (lang) avio_printf(s->pb, " lang=\"%s\"", lang->value);
 
-    if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (codec->codec_type == AVMEDIA_TYPE_VIDEO && width_in_as)
         avio_printf(s->pb, " width=\"%d\"", codec->width);
+    if (codec->codec_type == AVMEDIA_TYPE_VIDEO && height_in_as)
         avio_printf(s->pb, " height=\"%d\"", codec->height);
-    } else {
+    if (codec->codec_type == AVMEDIA_TYPE_AUDIO && sample_rate_in_as)
         avio_printf(s->pb, " audioSamplingRate=\"%d\"", codec->sample_rate);
-    }
 
     avio_printf(s->pb, " bitstreamSwitching=\"%s\"",
                 boolean[bitstream_switching(s, as)]);
@@ -173,26 +259,8 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     avio_printf(s->pb, ">\n");
 
     for (i = 0; i < as->nb_streams; i++) {
-        AVStream *stream = s->streams[as->streams[i]];
-        AVDictionaryEntry *irange = av_dict_get(stream->metadata, INITIALIZATION_RANGE, NULL, 0);
-        AVDictionaryEntry *cues_start = av_dict_get(stream->metadata, CUES_START, NULL, 0);
-        AVDictionaryEntry *cues_end = av_dict_get(stream->metadata, CUES_END, NULL, 0);
-        AVDictionaryEntry *filename = av_dict_get(stream->metadata, FILENAME, NULL, 0);
-        AVDictionaryEntry *bandwidth = av_dict_get(stream->metadata, BANDWIDTH, NULL, 0);
-        if (!irange || cues_start == NULL || cues_end == NULL || filename == NULL ||
-            !bandwidth) {
-            return -1;
-        }
-        avio_printf(s->pb, "<Representation id=\"%d\"", i);
-        avio_printf(s->pb, " bandwidth=\"%s\"", bandwidth->value);
-        avio_printf(s->pb, ">\n");
-        avio_printf(s->pb, "<BaseURL>%s</BaseURL>\n", filename->value);
-        avio_printf(s->pb, "<SegmentBase\n");
-        avio_printf(s->pb, "  indexRange=\"%s-%s\">\n", cues_start->value, cues_end->value);
-        avio_printf(s->pb, "<Initialization\n");
-        avio_printf(s->pb, "  range=\"0-%s\" />\n", irange->value);
-        avio_printf(s->pb, "</SegmentBase>\n");
-        avio_printf(s->pb, "</Representation>\n");
+        write_representation(s, s->streams[as->streams[i]], i,
+                             !width_in_as, !height_in_as, !sample_rate_in_as);
     }
     avio_printf(s->pb, "</AdaptationSet>\n");
     return 0;

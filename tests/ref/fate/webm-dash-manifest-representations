@@ -8,8 +8,8 @@
   minBufferTime="PT1S"
   profiles="urn:webm:dash:profile:webm-on-demand:2012">
 <Period id="0" start="PT0S" duration="PT32.48S" >
-<AdaptationSet id="0" mimeType="video/webm" codecs="vp8" lang="eng" width="640" height="360" bitstreamSwitching="true" subsegmentAlignment="false" subsegmentStartsWithSAP="0">
-<Representation id="0" bandwidth="302355">
+<AdaptationSet id="0" mimeType="video/webm" codecs="vp8" lang="eng" bitstreamSwitching="true" subsegmentAlignment="false" subsegmentStartsWithSAP="1">
+<Representation id="0" bandwidth="302355" width="640" height="360">
 <BaseURL>dash_video1.webm</BaseURL>
 <SegmentBase
   indexRange="1115974-1116097">
@@ -17,12 +17,12 @@
   range="0-441" />
 </SegmentBase>
 </Representation>
-<Representation id="1" bandwidth="321574">
-<BaseURL>dash_video3.webm</BaseURL>
+<Representation id="1" bandwidth="243938" width="320" height="240">
+<BaseURL>dash_video4.webm</BaseURL>
 <SegmentBase
-  indexRange="1116070-1116455">
+  indexRange="871124-871645">
 <Initialization
-  range="0-249" />
+  range="0-437" />
 </SegmentBase>
 </Representation>
 </AdaptationSet>

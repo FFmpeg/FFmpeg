@@ -1745,6 +1745,10 @@ Enable calculation and printing SSIM stats after the encoding.
 Enable the use of Periodic Intra Refresh instead of IDR frames when set
 to 1.
 
+@item avcintra-class (@emph{class})
+Configure the encoder to generate AVC-Intra.
+Valid values are 50,100 and 200
+
 @item bluray-compat (@emph{bluray-compat})
 Configure the encoder to be compatible with the bluray standard.
 It is a shorthand for setting "bluray-compat=1 force-cfr=1".

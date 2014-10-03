@@ -20,7 +20,7 @@
 <Representation id="1" bandwidth="83502">
 <BaseURL>dash_audio3.webm</BaseURL>
 <SegmentBase
-  indexRange="335312-335432">
+  indexRange="335312-335425">
 <Initialization
   range="0-3927" />
 </SegmentBase>

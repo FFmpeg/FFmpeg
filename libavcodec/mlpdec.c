@@ -105,7 +105,7 @@ typedef struct SubStream {
     /// Whether the LSBs of the matrix output are encoded in the bitstream.
     uint8_t     lsb_bypass[MAX_MATRICES];
     /// Matrix coefficients, stored as 2.14 fixed point.
-    int32_t     matrix_coeff[MAX_MATRICES][MAX_CHANNELS];
+    DECLARE_ALIGNED(32, int32_t, matrix_coeff)[MAX_MATRICES][MAX_CHANNELS];
     /// Left shift to apply to noise values in 0x31eb substreams.
     uint8_t     matrix_noise_shift[MAX_MATRICES];
     //@}
@@ -159,7 +159,7 @@ typedef struct MLPDecodeContext {
 
     int8_t      noise_buffer[MAX_BLOCKSIZE_POW2];
     int8_t      bypassed_lsbs[MAX_BLOCKSIZE][MAX_CHANNELS];
-    int32_t     sample_buffer[MAX_BLOCKSIZE][MAX_CHANNELS];
+    DECLARE_ALIGNED(32, int32_t, sample_buffer)[MAX_BLOCKSIZE][MAX_CHANNELS];
 
     MLPDSPContext dsp;
 } MLPDecodeContext;
@@ -1038,15 +1038,27 @@ static void fill_noise_buffer(MLPDecodeContext *m, unsigned int substr)
     s->noisegen_seed = seed;
 }
 
+/** Write the audio data into the output buffer. */
 
-/** Apply the channel matrices in turn to reconstruct the original audio
- *  samples. */
-
-static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
+static int output_data(MLPDecodeContext *m, unsigned int substr,
+                       AVFrame *frame, int *got_frame_ptr)
 {
+    AVCodecContext *avctx = m->avctx;
     SubStream *s = &m->substream[substr];
     unsigned int mat;
     unsigned int maxchan;
+    int ret;
+    int is32 = (m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
+
+    if (m->avctx->channels != s->max_matrix_channel + 1) {
+        av_log(m->avctx, AV_LOG_ERROR, "channel count mismatch\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (!s->blockpos) {
+        av_log(avctx, AV_LOG_ERROR, "No samples to output.\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     maxchan = s->max_matrix_channel;
     if (!s->noise_type) {
@@ -1056,6 +1068,8 @@ static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
         fill_noise_buffer(m, substr);
     }
 
+    /* Apply the channel matrices in turn to reconstruct the original audio
+     * samples. */
     for (mat = 0; mat < s->num_primitive_matrices; mat++) {
         unsigned int dest_ch = s->matrix_out_ch[mat];
         m->dsp.mlp_rematrix_channel(&m->sample_buffer[0][0],
@@ -1069,27 +1083,6 @@ static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
                                     s->matrix_noise_shift[mat],
                                     m->access_unit_size_pow2,
                                     MSB_MASK(s->quant_step_size[dest_ch]));
-    }
-}
-
-/** Write the audio data into the output buffer. */
-
-static int output_data(MLPDecodeContext *m, unsigned int substr,
-                       AVFrame *frame, int *got_frame_ptr)
-{
-    AVCodecContext *avctx = m->avctx;
-    SubStream *s = &m->substream[substr];
-    int ret;
-    int is32 = (m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
-
-    if (m->avctx->channels != s->max_matrix_channel + 1) {
-        av_log(m->avctx, AV_LOG_ERROR, "channel count mismatch\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (!s->blockpos) {
-        av_log(avctx, AV_LOG_ERROR, "No samples to output.\n");
-        return AVERROR_INVALIDDATA;
     }
 
     /* get output buffer */
@@ -1297,8 +1290,6 @@ next_substr:
 
         buf += substream_data_len[substr];
     }
-
-    rematrix_channels(m, m->max_decoded_substream);
 
     if ((ret = output_data(m, m->max_decoded_substream, data, got_frame_ptr)) < 0)
         return ret;
