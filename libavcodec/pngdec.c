@@ -584,9 +584,10 @@ static int decode_frame(AVCodecContext *avctx,
             int i, j;
             uint8_t *pd = s->current_picture->data[0];
             uint8_t *pd_last = s->last_picture->data[0];
+            int ls = FFMIN(av_image_get_linesize(s->current_picture->format, s->width, 0), s->width * s->bpp);
 
             for(j=0; j < s->height; j++) {
-                for(i=0; i < s->width * s->bpp; i++) {
+                for(i=0; i < ls; i++) {
                     pd[i] += pd_last[i];
                 }
                 pd += s->image_linesize;
