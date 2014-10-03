@@ -61,7 +61,6 @@ typedef struct HLSContext {
     uint32_t flags;        // enum HLSFlags
 
     int allowcache;
-
     int64_t recording_time;
     int has_video;
     int64_t start_pts;
