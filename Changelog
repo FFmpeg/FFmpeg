@@ -3,6 +3,43 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+version 2.4.2:
+- avcodec/on2avc: Check number of channels
+- avcodec/hevc: fix chroma transform_add size
+- avcodec/h264: Check mode before considering mixed mode intra prediction
+- avformat/mpegts: use a padded buffer in read_sl_header()
+- avformat/mpegts: Check desc_len / get8() return code
+- avcodec/vorbisdec: Fix off by 1 error in ptns_to_read
+- sdp: add support for H.261
+- avcodec/svq3: Do not memcpy AVFrame
+- avcodec/smc: fix off by 1 error
+- avcodec/qpeg: fix off by 1 error in MV bounds check
+- avcodec/gifdec: factorize interleave end handling out
+- avcodec/cinepak: fix integer underflow
+- avcodec/pngdec: Check bits per pixel before setting monoblack pixel format
+- avcodec/pngdec: Calculate MPNG bytewidth more defensively
+- avcodec/tiff: more completely check bpp/bppcount
+- avcodec/mmvideo: Bounds check 2nd line of HHV Intra blocks
+- avcodec/h263dec: Fix decoding messenger.h263
+- avcodec/utils: Add case for jv to avcodec_align_dimensions2()
+- avcodec/mjpegdec: check bits per pixel for changes similar to dimensions
+- avcodec/jpeglsdec: Check run value more completely in ls_decode_line()
+- avformat/hlsenc: export inner muxer timebase
+- configure: add noexecstack to linker options if supported.
+- avcodec/ac3enc_template: fix out of array read
+- avutil/x86/cpu: fix cpuid sub-leaf selection
+- avformat/img2dec: enable generic seeking for image pipes
+- avformat/img2dec: initialize pkt->pos for image pipes
+- avformat/img2dec: pass error code and signal EOF
+- avformat/img2dec: fix error code at EOF for pipes
+- libavutil/opt: fix av_opt_set_channel_layout() to access correct memory address
+- tests/fate-run.sh: Cat .err file in case of error with V>0
+- avformat/riffenc: Filter out "BottomUp" in ff_put_bmp_header()
+- avcodec/webp: fix default palette color 0xff000000 -> 0x00000000
+- avcodec/asvenc: fix AAN scaling
+- Fix compile error on arm4/arm5 platform
+
+
 version 2.4.1:
 - swscale: Allow chroma samples to be above and to the left of luma samples
 - avcodec/libilbc: support for latest git of libilbc
