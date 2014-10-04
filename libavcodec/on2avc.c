@@ -908,6 +908,11 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     On2AVCContext *c = avctx->priv_data;
     int i;
 
+    if (avctx->channels > 2U) {
+        avpriv_request_sample(avctx, "Decoding more than 2 channels");
+        return AVERROR_PATCHWELCOME;
+    }
+
     c->avctx = avctx;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
     avctx->channel_layout = (avctx->channels == 2) ? AV_CH_LAYOUT_STEREO
