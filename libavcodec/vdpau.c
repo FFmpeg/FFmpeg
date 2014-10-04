@@ -22,7 +22,9 @@
  */
 
 #include <limits.h>
+#include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "h264.h"
 #include "vc1.h"
 
@@ -60,6 +62,68 @@ static int vdpau_error(VdpStatus status)
     default:
         return AVERROR(EINVAL);
     }
+}
+
+int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
+                         int level)
+{
+    VDPAUHWContext *hwctx = avctx->hwaccel_context;
+    VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
+    VdpDecoderCreate *create;
+    void *func;
+    VdpStatus status;
+    /* See vdpau/vdpau.h for alignment constraints. */
+    uint32_t width  = (avctx->coded_width + 1) & ~1;
+    uint32_t height = (avctx->coded_height + 3) & ~3;
+
+    if (hwctx->context.decoder != VDP_INVALID_HANDLE) {
+        vdctx->decoder = hwctx->context.decoder;
+        vdctx->render  = hwctx->context.render;
+        vdctx->device  = VDP_INVALID_HANDLE;
+        return 0; /* Decoder created by user */
+    }
+
+    vdctx->device           = hwctx->device;
+    vdctx->get_proc_address = hwctx->get_proc_address;
+
+    status = vdctx->get_proc_address(vdctx->device, VDP_FUNC_ID_DECODER_CREATE,
+                                     &func);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+    else
+        create = func;
+
+    status = vdctx->get_proc_address(vdctx->device, VDP_FUNC_ID_DECODER_RENDER,
+                                     &func);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+    else
+        vdctx->render = func;
+
+    status = create(vdctx->device, profile, width, height, avctx->refs,
+                    &vdctx->decoder);
+    return vdpau_error(status);
+}
+
+int ff_vdpau_common_uninit(AVCodecContext *avctx)
+{
+    VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
+    VdpDecoderDestroy *destroy;
+    void *func;
+    VdpStatus status;
+
+    if (vdctx->device == VDP_INVALID_HANDLE)
+        return 0; /* Decoder created and destroyed by user */
+
+    status = vdctx->get_proc_address(vdctx->device,
+                                     VDP_FUNC_ID_DECODER_DESTROY, &func);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+    else
+        destroy = func;
+
+    status = destroy(vdctx->decoder);
+    return vdpau_error(status);
 }
 
 int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic_ctx,
