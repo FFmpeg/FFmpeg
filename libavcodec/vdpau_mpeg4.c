@@ -89,6 +89,12 @@ static int vdpau_mpeg4_decode_slice(av_unused AVCodecContext *avctx,
 }
 
 #if CONFIG_H263_VDPAU_HWACCEL
+static int vdpau_h263_init(AVCodecContext *avctx)
+{
+    return ff_vdpau_common_init(avctx, VDP_DECODER_PROFILE_MPEG4_PART2_ASP,
+                                VDP_DECODER_LEVEL_MPEG4_PART2_ASP_L5);
+}
+
 AVHWAccel ff_h263_vdpau_hwaccel = {
     .name           = "h263_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -98,10 +104,31 @@ AVHWAccel ff_h263_vdpau_hwaccel = {
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg4_decode_slice,
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_h263_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .priv_data_size = sizeof(VDPAUContext),
 };
 #endif
 
 #if CONFIG_MPEG4_VDPAU_HWACCEL
+static int vdpau_mpeg4_init(AVCodecContext *avctx)
+{
+    VdpDecoderProfile profile;
+
+    switch (avctx->profile) {
+    case FF_PROFILE_MPEG4_SIMPLE:
+        profile = VDP_DECODER_PROFILE_MPEG4_PART2_SP;
+        break;
+    case FF_PROFILE_MPEG4_ADVANCED_SIMPLE:
+        profile = VDP_DECODER_PROFILE_MPEG4_PART2_ASP;
+        break;
+    default:
+        return AVERROR(ENOTSUP);
+    }
+
+    return ff_vdpau_common_init(avctx, profile, avctx->level);
+}
+
 AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .name           = "mpeg4_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -111,5 +138,8 @@ AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg4_decode_slice,
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_mpeg4_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .priv_data_size = sizeof(VDPAUContext),
 };
 #endif
