@@ -1766,7 +1766,7 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 break;
             desc_len = get8(&p, desc_list_end);
             desc_end = p + desc_len;
-            if (desc_end > desc_list_end)
+            if (desc_len < 0 || desc_end > desc_list_end)
                 break;
 
             av_dlog(ts->stream, "tag: 0x%02x len=%d\n",
