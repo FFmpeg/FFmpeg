@@ -78,6 +78,7 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
 
     vdctx->width            = UINT32_MAX;
     vdctx->height           = UINT32_MAX;
+    hwctx->reset            = 0;
 
     if (hwctx->context.decoder != VDP_INVALID_HANDLE) {
         vdctx->decoder = hwctx->context.decoder;
@@ -138,12 +139,13 @@ int ff_vdpau_common_uninit(AVCodecContext *avctx)
 
 static int ff_vdpau_common_reinit(AVCodecContext *avctx)
 {
+    VDPAUHWContext *hwctx = avctx->hwaccel_context;
     VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
 
     if (vdctx->device == VDP_INVALID_HANDLE)
         return 0; /* Decoder created by user */
     if (avctx->coded_width == vdctx->width &&
-        avctx->coded_height == vdctx->height)
+        avctx->coded_height == vdctx->height && !hwctx->reset)
         return 0;
 
     avctx->hwaccel->uninit(avctx);
@@ -264,6 +266,24 @@ do {                        \
 AVVDPAUContext *av_vdpau_alloc_context(void)
 {
     return av_mallocz(sizeof(AVVDPAUContext));
+}
+
+int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
+                          VdpGetProcAddress *get_proc, unsigned flags)
+{
+    VDPAUHWContext *hwctx;
+
+    if (av_reallocp(&avctx->hwaccel_context, sizeof(*hwctx)))
+        return AVERROR(ENOMEM);
+
+    hwctx = avctx->hwaccel_context;
+
+    memset(hwctx, 0, sizeof(*hwctx));
+    hwctx->context.decoder  = VDP_INVALID_HANDLE;
+    hwctx->device           = device;
+    hwctx->get_proc_address = get_proc;
+    hwctx->reset            = 1;
+    return 0;
 }
 
 /* @}*/

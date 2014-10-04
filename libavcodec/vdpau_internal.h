@@ -52,6 +52,7 @@ typedef struct VDPAUHWContext {
     AVVDPAUContext context;
     VdpDevice device;
     VdpGetProcAddress *get_proc_address;
+    char reset;
 } VDPAUHWContext;
 
 typedef struct VDPAUContext {
