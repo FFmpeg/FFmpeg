@@ -1314,7 +1314,9 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                                            vorbis_residue *vr,
                                            uint8_t *do_not_decode,
                                            unsigned ch_used,
-                                           int partition_count)
+                                           int partition_count,
+                                           int ptns_to_read
+                                          )
 {
     int p, j, i;
     unsigned c_p_c         = vc->codebooks[vr->classbook].dimensions;
@@ -1336,7 +1338,7 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                 for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
                     temp2 = (((uint64_t)temp) * inverse_class) >> 32;
 
-                    if (i < vr->ptns_to_read)
+                    if (i < ptns_to_read)
                         vr->classifs[p + i] = temp - temp2 * vr->classifications;
                     temp = temp2;
                 }
@@ -1344,13 +1346,13 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                 for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
                     temp2 = temp / vr->classifications;
 
-                    if (i < vr->ptns_to_read)
+                    if (i < ptns_to_read)
                         vr->classifs[p + i] = temp - temp2 * vr->classifications;
                     temp = temp2;
                 }
             }
         }
-        p += vr->ptns_to_read;
+        p += ptns_to_read;
     }
     return 0;
 }
@@ -1404,7 +1406,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
         for (partition_count = 0; partition_count < ptns_to_read;) {  // SPEC        error
             if (!pass) {
                 int ret;
-                if ((ret = setup_classifs(vc, vr, do_not_decode, ch_used, partition_count)) < 0)
+                if ((ret = setup_classifs(vc, vr, do_not_decode, ch_used, partition_count, ptns_to_read)) < 0)
                     return ret;
             }
             for (i = 0; (i < c_p_c) && (partition_count < ptns_to_read); ++i) {
