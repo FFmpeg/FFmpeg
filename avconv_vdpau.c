@@ -42,9 +42,6 @@ typedef struct VDPAUContext {
     VdpGetErrorString                               *get_error_string;
     VdpGetInformationString                         *get_information_string;
     VdpDeviceDestroy                                *device_destroy;
-    VdpDecoderCreate                                *decoder_create;
-    VdpDecoderDestroy                               *decoder_destroy;
-    VdpDecoderRender                                *decoder_render;
     VdpVideoSurfaceCreate                           *video_surface_create;
     VdpVideoSurfaceDestroy                          *video_surface_destroy;
     VdpVideoSurfaceGetBitsYCbCr                     *video_surface_get_bits;
@@ -65,9 +62,6 @@ static void vdpau_uninit(AVCodecContext *s)
     ist->hwaccel_uninit        = NULL;
     ist->hwaccel_get_buffer    = NULL;
     ist->hwaccel_retrieve_data = NULL;
-
-    if (ctx->decoder_destroy)
-        ctx->decoder_destroy(ctx->decoder);
 
     if (ctx->device_destroy)
         ctx->device_destroy(ctx->device);
@@ -190,7 +184,6 @@ static int vdpau_alloc(AVCodecContext *s)
 {
     InputStream  *ist = s->opaque;
     int loglevel = (ist->hwaccel_id == HWACCEL_AUTO) ? AV_LOG_VERBOSE : AV_LOG_ERROR;
-    AVVDPAUContext *vdpau_ctx;
     VDPAUContext *ctx;
     const char *display, *vendor;
     VdpStatus err;
@@ -239,9 +232,6 @@ do {                                                                            
     GET_CALLBACK(VDP_FUNC_ID_GET_ERROR_STRING,               get_error_string);
     GET_CALLBACK(VDP_FUNC_ID_GET_INFORMATION_STRING,         get_information_string);
     GET_CALLBACK(VDP_FUNC_ID_DEVICE_DESTROY,                 device_destroy);
-    GET_CALLBACK(VDP_FUNC_ID_DECODER_CREATE,                 decoder_create);
-    GET_CALLBACK(VDP_FUNC_ID_DECODER_DESTROY,                decoder_destroy);
-    GET_CALLBACK(VDP_FUNC_ID_DECODER_RENDER,                 decoder_render);
     GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_CREATE,           video_surface_create);
     GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_DESTROY,          video_surface_destroy);
     GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_GET_BITS_Y_CB_CR, video_surface_get_bits);
@@ -270,12 +260,8 @@ do {                                                                            
     ctx->vdpau_format = vdpau_formats[i][0];
     ctx->pix_fmt      = vdpau_formats[i][1];
 
-    vdpau_ctx = av_vdpau_alloc_context();
-    if (!vdpau_ctx)
+    if (av_vdpau_bind_context(s, ctx->device, ctx->get_proc_address, 0))
         goto fail;
-    vdpau_ctx->render = ctx->decoder_render;
-
-    s->hwaccel_context = vdpau_ctx;
 
     ctx->get_information_string(&vendor);
     av_log(NULL, AV_LOG_VERBOSE, "Using VDPAU -- %s -- on X11 display %s, "
@@ -294,39 +280,12 @@ fail:
 int vdpau_init(AVCodecContext *s)
 {
     InputStream *ist = s->opaque;
-    int loglevel = (ist->hwaccel_id == HWACCEL_AUTO) ? AV_LOG_VERBOSE : AV_LOG_ERROR;
-    AVVDPAUContext *vdpau_ctx;
-    VDPAUContext *ctx;
-    VdpStatus err;
-    int profile, ret;
 
     if (!ist->hwaccel_ctx) {
-        ret = vdpau_alloc(s);
+        int ret = vdpau_alloc(s);
         if (ret < 0)
             return ret;
     }
-    ctx       = ist->hwaccel_ctx;
-    vdpau_ctx = s->hwaccel_context;
-
-    ret = av_vdpau_get_profile(s, &profile);
-    if (ret < 0) {
-        av_log(NULL, loglevel, "No known VDPAU decoder profile for this stream.\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (ctx->decoder)
-        ctx->decoder_destroy(ctx->decoder);
-
-    err = ctx->decoder_create(ctx->device, profile,
-                              s->coded_width, s->coded_height,
-                              16, &ctx->decoder);
-    if (err != VDP_STATUS_OK) {
-        av_log(NULL, loglevel, "Error creating the VDPAU decoder: %s\n",
-               ctx->get_error_string(err));
-        return AVERROR_UNKNOWN;
-    }
-
-    vdpau_ctx->decoder = ctx->decoder;
 
     ist->hwaccel_get_buffer    = vdpau_get_buffer;
     ist->hwaccel_retrieve_data = vdpau_retrieve_data;
