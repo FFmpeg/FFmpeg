@@ -421,6 +421,8 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             infer_size(&codec->width, &codec->height, size[0]);
     } else {
         f[0] = s1->pb;
+        if (avio_feof(f[0]) && s->loop && s->is_pipe)
+            avio_seek(f[0], 0, SEEK_SET);
         if (avio_feof(f[0]))
             return AVERROR_EOF;
         if (s->frame_size > 0) {
@@ -457,6 +459,12 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     for (i = 0; i < 3; i++) {
         if (f[i]) {
             ret[i] = avio_read(f[i], pkt->data + pkt->size, size[i]);
+            if (s->loop && s->is_pipe && ret[i] == AVERROR_EOF) {
+                if (avio_seek(f[i], 0, SEEK_SET) >= 0) {
+                    pkt->pos = 0;
+                    ret[i] = avio_read(f[i], pkt->data + pkt->size, size[i]);
+                }
+            }
             if (!s->is_pipe)
                 avio_close(f[i]);
             if (ret[i] > 0)
