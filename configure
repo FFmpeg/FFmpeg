@@ -4037,6 +4037,7 @@ case $target_os in
         enabled shared && ! enabled small && check_cmd $windres --version && enable gnu_windres
         check_ldflags -Wl,--nxcompat
         check_ldflags -Wl,--dynamicbase
+        enabled x86_32 && check_ldflags -Wl,--large-address-aware
         shlibdir_default="$bindir_default"
         SLIBPREF=""
         SLIBSUF=".dll"
@@ -4069,6 +4070,7 @@ case $target_os in
             # Cannot build both shared and static libs with MSVC or icl.
             disable static
         fi
+        enabled x86_32 && check_ldflags -LARGEADDRESSAWARE
         shlibdir_default="$bindir_default"
         SLIBPREF=""
         SLIBSUF=".dll"
