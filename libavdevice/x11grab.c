@@ -431,8 +431,7 @@ static void paint_mouse_pointer(XImage *image, AVFormatContext *s1)
     xcim = XFixesGetCursorImage(dpy);
     if (!xcim) {
         av_log(s1, AV_LOG_WARNING,
-               "XFixes extension not available, impossible to draw cursor\n");
-        s->draw_mouse = 0;
+               "XFixesGetCursorImage failed\n");
         return;
     }
 
