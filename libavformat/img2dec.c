@@ -162,6 +162,8 @@ static int img_read_probe(AVProbeData *p)
             return AVPROBE_SCORE_MAX;
         else if (is_glob(p->filename))
             return AVPROBE_SCORE_MAX;
+        else if (p->filename[strcspn(p->filename, "*?{")]) // probably PT_GLOB
+            return AVPROBE_SCORE_EXTENSION + 2; // score chosen to be a tad above the image pipes
         else if (p->buf_size == 0)
             return 0;
         else if (av_match_ext(p->filename, "raw") || av_match_ext(p->filename, "gif"))
