@@ -1040,6 +1040,18 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     s->cur_frame->pict_type = s->keyframe ? AV_PICTURE_TYPE_I
                                           : AV_PICTURE_TYPE_P;
 
+    if (s->fullrange)
+        avctx->color_range = AVCOL_RANGE_JPEG;
+    else
+        avctx->color_range = AVCOL_RANGE_MPEG;
+
+    switch (s->colorspace) {
+    case 1: avctx->colorspace = AVCOL_SPC_BT470BG; break;
+    case 2: avctx->colorspace = AVCOL_SPC_BT709; break;
+    case 3: avctx->colorspace = AVCOL_SPC_SMPTE170M; break;
+    case 4: avctx->colorspace = AVCOL_SPC_SMPTE240M; break;
+    }
+
     // main tile decode loop
     memset(s->above_partition_ctx, 0, s->cols);
     memset(s->above_skip_ctx, 0, s->cols);
