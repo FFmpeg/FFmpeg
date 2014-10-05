@@ -1099,6 +1099,10 @@ static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (type == MKTAG('f','i','e','l') && size == atom.size)
             return mov_read_default(c, pb, atom);
     }
+    if (st->codec->extradata_size > 1 && st->codec->extradata) {
+        av_log(c, AV_LOG_WARNING, "ignoring multiple glbl\n");
+        return 0;
+    }
     av_free(st->codec->extradata);
     if (ff_get_extradata(st->codec, pb, atom.size) < 0)
         return AVERROR(ENOMEM);
