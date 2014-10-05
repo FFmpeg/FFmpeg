@@ -753,6 +753,8 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
         in_count = 0;
         if(ret>0) {
             s->drop_output -= ret;
+            if (!s->drop_output && !out_arg)
+                return 0;
             continue;
         }
 
