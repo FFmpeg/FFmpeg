@@ -172,6 +172,19 @@ static int setup_shm(AVFormatContext *s, Display *dpy, XImage **image)
     return 0;
 }
 
+static int setup_mouse(Display *dpy, int screen)
+{
+    int ev_ret, ev_err;
+
+    if (XFixesQueryExtension(dpy, &ev_ret, &ev_err)) {
+        Window root = RootWindow(dpy, screen);
+        XFixesSelectCursorInput(dpy, root, XFixesDisplayCursorNotifyMask);
+        return 0;
+    }
+
+    return AVERROR(ENOSYS);
+}
+
 static int pixfmt_from_image(AVFormatContext *s, XImage *image, int *pix_fmt)
 {
     av_log(s, AV_LOG_DEBUG,
@@ -326,6 +339,12 @@ static int x11grab_read_header(AVFormatContext *s1)
                           AllPlanes, ZPixmap);
     }
 
+    if (x11grab->draw_mouse && setup_mouse(dpy, screen) < 0) {
+        av_log(s1, AV_LOG_WARNING,
+               "XFixes not available, cannot draw the mouse cursor\n");
+        x11grab->draw_mouse = 0;
+    }
+
     x11grab->frame_size = x11grab->width * x11grab->height * image->bits_per_pixel / 8;
     x11grab->dpy        = dpy;
     x11grab->time_base  = av_inv_q(x11grab->framerate);
@@ -391,14 +410,6 @@ static void paint_mouse_pointer(XImage *image, AVFormatContext *s1)
     uint8_t *pix = image->data;
     Window root;
     XSetWindowAttributes attr;
-    Bool pointer_on_screen;
-    Window w;
-    int _;
-
-    root = DefaultRootWindow(dpy);
-    pointer_on_screen = XQueryPointer(dpy, root, &w, &w, &_, &_, &_, &_, &_);
-    if (!pointer_on_screen)
-        return;
 
     /* Code doesn't currently support 16-bit or PAL8 */
     if (image->bits_per_pixel != 24 && image->bits_per_pixel != 32)
@@ -406,14 +417,14 @@ static void paint_mouse_pointer(XImage *image, AVFormatContext *s1)
 
     if (!s->c)
         s->c = XCreateFontCursor(dpy, XC_left_ptr);
+    root = DefaultRootWindow(dpy);
     attr.cursor = s->c;
     XChangeWindowAttributes(dpy, root, CWCursor, &attr);
 
     xcim = XFixesGetCursorImage(dpy);
     if (!xcim) {
         av_log(s1, AV_LOG_WARNING,
-               "XFixes extension not available, impossible to draw cursor\n");
-        s->draw_mouse = 0;
+               "XFixesGetCursorImage failed\n");
         return;
     }
 
@@ -509,8 +520,8 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int x_off         = s->x_off;
     int y_off         = s->y_off;
     int follow_mouse  = s->follow_mouse;
-    int screen;
-    Window root;
+    int screen, pointer_x, pointer_y, _, same_screen = 1;
+    Window w, root;
     int64_t curtime, delay;
     struct timespec ts;
 
@@ -548,14 +559,16 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     screen = DefaultScreen(dpy);
     root   = RootWindow(dpy, screen);
-    if (follow_mouse) {
+
+    if (follow_mouse || s->draw_mouse)
+        same_screen = XQueryPointer(dpy, root, &w, &w,
+                                    &pointer_x, &pointer_y, &_, &_, &_);
+
+    if (follow_mouse && same_screen) {
         int screen_w, screen_h;
-        int pointer_x, pointer_y, _;
-        Window w;
 
         screen_w = DisplayWidth(dpy, screen);
         screen_h = DisplayHeight(dpy, screen);
-        XQueryPointer(dpy, root, &w, &w, &pointer_x, &pointer_y, &_, &_, &_);
         if (follow_mouse == -1) {
             // follow the mouse, put it at center of grabbing region
             x_off += pointer_x - s->width / 2 - x_off;
@@ -582,7 +595,7 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
                         s->y_off - REGION_WIN_BORDER);
     }
 
-    if (s->show_region) {
+    if (s->show_region && same_screen) {
         if (s->region_win) {
             XEvent evt = { .type = NoEventMask };
             // Clean up the events, and do the initial draw or redraw.
@@ -604,7 +617,7 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
             av_log(s1, AV_LOG_INFO, "XGetZPixmap() failed\n");
     }
 
-    if (s->draw_mouse)
+    if (s->draw_mouse && same_screen)
         paint_mouse_pointer(image, s1);
 
     return s->frame_size;

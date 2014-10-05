@@ -858,8 +858,12 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl,
     int padding_flag = 0, padding_bits = 0, inst_bitrate_flag = 0;
     int dts_flag = -1, cts_flag = -1;
     int64_t dts = AV_NOPTS_VALUE, cts = AV_NOPTS_VALUE;
+    uint8_t buf_padded[128 + FF_INPUT_BUFFER_PADDING_SIZE];
+    int buf_padded_size = FFMIN(buf_size, sizeof(buf_padded) - FF_INPUT_BUFFER_PADDING_SIZE);
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    memcpy(buf_padded, buf, buf_padded_size);
+
+    init_get_bits(&gb, buf_padded, buf_padded_size * 8);
 
     if (sl->use_au_start)
         au_start_flag = get_bits1(&gb);
@@ -1994,7 +1998,7 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 break;
             desc_len = get8(&p, desc_list_end);
             desc_end = p + desc_len;
-            if (desc_end > desc_list_end)
+            if (desc_len < 0 || desc_end > desc_list_end)
                 break;
 
             av_dlog(ts->stream, "tag: 0x%02x len=%d\n",

@@ -533,7 +533,12 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.b_vfr_input = 0;
     }
     if (x4->avcintra_class >= 0)
+#if X264_BUILD >= 142
         x4->params.i_avcintra_class = x4->avcintra_class;
+#else
+        av_log(avctx, AV_LOG_ERROR,
+               "x264 too old for AVC Intra, at least version 142 needed\n");
+#endif
     if (x4->b_bias != INT_MIN)
         x4->params.i_bframe_bias              = x4->b_bias;
     if (x4->b_pyramid >= 0)
