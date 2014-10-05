@@ -6,6 +6,7 @@ version <next>:
 - HEVC/H.265 RTP payload format (draft v6) packetizer and depacketizer
 - avplay now exits by default at the end of playback
 - XCB-based screen-grabber
+- creating DASH compatible fragmented MP4
 
 
 version 11:

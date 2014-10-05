@@ -180,6 +180,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_OMIT_TFHD_OFFSET      (1 <<  8)
 #define FF_MOV_FLAG_DISABLE_CHPL          (1 <<  9)
 #define FF_MOV_FLAG_DEFAULT_BASE_MOOF     (1 << 10)
+#define FF_MOV_FLAG_DASH                  (1 << 11)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
