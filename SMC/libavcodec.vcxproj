@@ -2683,6 +2683,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -2833,6 +2834,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -3150,6 +3152,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -3318,6 +3321,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include

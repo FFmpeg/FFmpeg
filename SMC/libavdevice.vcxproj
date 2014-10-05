@@ -479,6 +479,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavformatd.lib;libavcodecd.lib;libavutild.lib;libavfilterd.lib;libcdio_paranoiad.lib;Opengl32.lib;SDL.lib;vfw32.lib;strmiids.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -613,6 +614,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavformatd.lib;libavcodecd.lib;libavutild.lib;libavfilterd.lib;libcdio_paranoiad.lib;Opengl32.lib;SDL.lib;vfw32.lib;strmiids.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -898,6 +900,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavformat.lib;libavcodec.lib;libavutil.lib;libavfilter.lib;libcdio_paranoia.lib;Opengl32.lib;SDL.lib;vfw32.lib;strmiids.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -1050,6 +1053,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavformat.lib;libavcodec.lib;libavutil.lib;libavfilter.lib;libcdio_paranoia.lib;Opengl32.lib;SDL.lib;vfw32.lib;strmiids.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include

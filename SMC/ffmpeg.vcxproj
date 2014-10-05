@@ -217,7 +217,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
-    <Link />
     <Link>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>libavcodecd.lib;libavdeviced.lib;libavfilterd.lib;libavformatd.lib;libavutild.lib;libpostprocd.lib;libswresampled.lib;libswscaled.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -226,6 +225,7 @@
       <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib</IgnoreSpecificDefaultLibraries>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -260,7 +260,6 @@ del ..\libavutil\ffversion.h
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
-    <Link />
     <Link>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>libavcodecd.lib;libavdeviced.lib;libavfilterd.lib;libavformatd.lib;libavutild.lib;libpostprocd.lib;libswresampled.lib;libswscaled.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -303,7 +302,6 @@ del ..\libavutil\ffversion.h
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
-    <Link />
     <Link>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>libavcodecd.lib;libavdeviced.lib;libavfilterd.lib;libavformatd.lib;libavutild.lib;libpostprocd.lib;libswresampled.lib;libswscaled.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -312,6 +310,7 @@ del ..\libavutil\ffversion.h
       <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib</IgnoreSpecificDefaultLibraries>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -346,7 +345,6 @@ del ..\libavutil\ffversion.h
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
-    <Link />
     <Link>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>libavcodecd.lib;libavdeviced.lib;libavfilterd.lib;libavformatd.lib;libavutild.lib;libpostprocd.lib;libswresampled.lib;libswscaled.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -407,6 +405,7 @@ del ..\libavutil\ffversion.h
       <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
       <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -511,6 +510,7 @@ del ..\libavutil\ffversion.h
       <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
       <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -614,6 +614,7 @@ del ..\libavutil\ffversion.h
       <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
       <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PreBuildEvent>
       <Command>if exist ..\config.h (

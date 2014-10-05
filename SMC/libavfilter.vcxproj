@@ -1020,6 +1020,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -1164,6 +1165,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -1469,6 +1471,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -1631,6 +1634,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
