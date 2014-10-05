@@ -505,6 +505,13 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
 
     avctx->has_b_frames = !!avctx->max_b_frames;
 
+    if (v->color_prim == 1 || v->color_prim == 5 || v->color_prim == 6)
+        avctx->color_primaries = v->color_prim;
+    if (v->transfer_char == 1 || v->transfer_char == 7)
+        avctx->color_trc = v->transfer_char;
+    if (v->matrix_coef == 1 || v->matrix_coef == 6 || v->matrix_coef == 7)
+        avctx->colorspace = v->matrix_coef;
+
     s->mb_width  = (avctx->coded_width  + 15) >> 4;
     s->mb_height = (avctx->coded_height + 15) >> 4;
 
