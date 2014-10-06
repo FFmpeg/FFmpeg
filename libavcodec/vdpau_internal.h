@@ -107,7 +107,7 @@ struct vdpau_picture_context {
 
 int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
                          int level);
-#endif
+#endif //CONFIG_VDPAU
 
 int ff_vdpau_common_uninit(AVCodecContext *avctx);
 
