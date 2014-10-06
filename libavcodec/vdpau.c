@@ -38,6 +38,30 @@
  * @{
  */
 
+static int vdpau_error(VdpStatus status)
+{
+    switch (status) {
+    case VDP_STATUS_OK:
+        return 0;
+    case VDP_STATUS_NO_IMPLEMENTATION:
+        return AVERROR(ENOSYS);
+    case VDP_STATUS_DISPLAY_PREEMPTED:
+        return AVERROR(EIO);
+    case VDP_STATUS_INVALID_HANDLE:
+        return AVERROR(EBADF);
+    case VDP_STATUS_INVALID_POINTER:
+        return AVERROR(EFAULT);
+    case VDP_STATUS_RESOURCES:
+        return AVERROR(ENOBUFS);
+    case VDP_STATUS_HANDLE_DEVICE_MISMATCH:
+        return AVERROR(EXDEV);
+    case VDP_STATUS_ERROR:
+        return AVERROR(EIO);
+    default:
+        return AVERROR(EINVAL);
+    }
+}
+
 AVVDPAUContext *av_alloc_vdpaucontext(void)
 {
     return av_vdpau_alloc_context();
