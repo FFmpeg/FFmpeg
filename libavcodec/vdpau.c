@@ -79,17 +79,12 @@ int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic_ctx,
     return 0;
 }
 
-#if CONFIG_H263_VDPAU_HWACCEL  || CONFIG_MPEG1_VDPAU_HWACCEL || \
-    CONFIG_MPEG2_VDPAU_HWACCEL || CONFIG_MPEG4_VDPAU_HWACCEL || \
-    CONFIG_VC1_VDPAU_HWACCEL   || CONFIG_WMV3_VDPAU_HWACCEL
-int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
+int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
+                              struct vdpau_picture_context *pic_ctx)
 {
-    int res = 0;
     AVVDPAUContext *hwctx = avctx->hwaccel_context;
-    MpegEncContext *s = avctx->priv_data;
-    Picture *pic = s->current_picture_ptr;
-    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
-    VdpVideoSurface surf = ff_vdpau_get_surface_id(pic->f);
+    VdpVideoSurface surf = ff_vdpau_get_surface_id(frame);
+    VdpStatus status;
 
 #if FF_API_BUFS_VDPAU
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -101,13 +96,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     if (!hwctx->render) {
-        res = hwctx->render2(avctx, pic->f, (void *)&pic_ctx->info,
-                             pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
+        status = hwctx->render2(avctx, frame, (void *)&pic_ctx->info,
+                                pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
     } else
-    hwctx->render(hwctx->decoder, surf, (void *)&pic_ctx->info,
-                  pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
+    status = hwctx->render(hwctx->decoder, surf, (void *)&pic_ctx->info,
+                           pic_ctx->bitstream_buffers_used,
+                           pic_ctx->bitstream_buffers);
 
-    ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
     av_freep(&pic_ctx->bitstream_buffers);
 
 #if FF_API_BUFS_VDPAU
@@ -118,7 +113,25 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    return res;
+    return vdpau_error(status);
+}
+
+#if CONFIG_H263_VDPAU_HWACCEL  || CONFIG_MPEG1_VDPAU_HWACCEL || \
+    CONFIG_MPEG2_VDPAU_HWACCEL || CONFIG_MPEG4_VDPAU_HWACCEL || \
+    CONFIG_VC1_VDPAU_HWACCEL   || CONFIG_WMV3_VDPAU_HWACCEL
+int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
+{
+    MpegEncContext *s = avctx->priv_data;
+    Picture *pic = s->current_picture_ptr;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
+    int val;
+
+    val = ff_vdpau_common_end_frame(avctx, pic->f, pic_ctx);
+    if (val < 0)
+        return val;
+
+    ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
+    return 0;
 }
 #endif
 

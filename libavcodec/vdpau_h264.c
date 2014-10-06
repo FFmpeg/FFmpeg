@@ -189,41 +189,17 @@ static int vdpau_h264_decode_slice(AVCodecContext *avctx,
 
 static int vdpau_h264_end_frame(AVCodecContext *avctx)
 {
-    int res = 0;
-    AVVDPAUContext *hwctx = avctx->hwaccel_context;
     H264Context *h = avctx->priv_data;
     H264Picture *pic = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
-    VdpVideoSurface surf = ff_vdpau_get_surface_id(&pic->f);
+    int val;
 
-#if FF_API_BUFS_VDPAU
-FF_DISABLE_DEPRECATION_WARNINGS
-    hwctx->info = pic_ctx->info;
-    hwctx->bitstream_buffers = pic_ctx->bitstream_buffers;
-    hwctx->bitstream_buffers_used = pic_ctx->bitstream_buffers_used;
-    hwctx->bitstream_buffers_allocated = pic_ctx->bitstream_buffers_allocated;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
-    if (!hwctx->render) {
-        res = hwctx->render2(avctx, &pic->f, (void *)&pic_ctx->info,
-                             pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
-    } else
-    hwctx->render(hwctx->decoder, surf, (void *)&pic_ctx->info,
-                  pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
+    val = ff_vdpau_common_end_frame(avctx, &pic->f, pic_ctx);
+    if (val < 0)
+        return val;
 
     ff_h264_draw_horiz_band(h, 0, h->avctx->height);
-    av_freep(&pic_ctx->bitstream_buffers);
-
-#if FF_API_BUFS_VDPAU
-FF_DISABLE_DEPRECATION_WARNINGS
-    hwctx->bitstream_buffers = NULL;
-    hwctx->bitstream_buffers_used = 0;
-    hwctx->bitstream_buffers_allocated = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
-    return res;
+    return 0;
 }
 
 AVHWAccel ff_h264_vdpau_hwaccel = {
