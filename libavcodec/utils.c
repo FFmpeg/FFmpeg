@@ -3492,12 +3492,12 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
         void *new_avformat_mutex = NULL;
         int err;
         if (err = cb(&new_codec_mutex, AV_LOCK_CREATE)) {
-            return err > 0 ? AVERROR_EXTERNAL : err;
+            return err > 0 ? AVERROR_UNKNOWN : err;
         }
         if (err = cb(&new_avformat_mutex, AV_LOCK_CREATE)) {
             // Ignore failures to destroy the newly created mutex.
             cb(&new_codec_mutex, AV_LOCK_DESTROY);
-            return err > 0 ? AVERROR_EXTERNAL : err;
+            return err > 0 ? AVERROR_UNKNOWN : err;
         }
         lockmgr_cb     = cb;
         codec_mutex    = new_codec_mutex;
@@ -3536,6 +3536,7 @@ int ff_unlock_avcodec(void)
         if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE))
             return -1;
     }
+
     return 0;
 }
 
