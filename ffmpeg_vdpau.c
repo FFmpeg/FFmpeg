@@ -57,6 +57,8 @@ typedef struct VDPAUContext {
     VdpYCbCrFormat vdpau_format;
 } VDPAUContext;
 
+int vdpau_api_ver = 2;
+
 static void vdpau_uninit(AVCodecContext *s)
 {
     InputStream  *ist = s->opaque;
@@ -291,6 +293,49 @@ fail:
     return AVERROR(EINVAL);
 }
 
+static int vdpau_old_init(AVCodecContext *s)
+{
+    InputStream *ist = s->opaque;
+    int loglevel = (ist->hwaccel_id == HWACCEL_AUTO) ? AV_LOG_VERBOSE : AV_LOG_ERROR;
+    AVVDPAUContext *vdpau_ctx;
+    VDPAUContext *ctx;
+    VdpStatus err;
+    int profile, ret;
+
+    if (!ist->hwaccel_ctx) {
+        ret = vdpau_alloc(s);
+        if (ret < 0)
+            return ret;
+    }
+    ctx       = ist->hwaccel_ctx;
+    vdpau_ctx = s->hwaccel_context;
+
+    ret = av_vdpau_get_profile(s, &profile);
+    if (ret < 0) {
+        av_log(NULL, loglevel, "No known VDPAU decoder profile for this stream.\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (ctx->decoder)
+        ctx->decoder_destroy(ctx->decoder);
+
+    err = ctx->decoder_create(ctx->device, profile,
+                              s->coded_width, s->coded_height,
+                              16, &ctx->decoder);
+    if (err != VDP_STATUS_OK) {
+        av_log(NULL, loglevel, "Error creating the VDPAU decoder: %s\n",
+               ctx->get_error_string(err));
+        return AVERROR_UNKNOWN;
+    }
+
+    vdpau_ctx->decoder = ctx->decoder;
+
+    ist->hwaccel_get_buffer    = vdpau_get_buffer;
+    ist->hwaccel_retrieve_data = vdpau_retrieve_data;
+
+    return 0;
+}
+
 int vdpau_init(AVCodecContext *s)
 {
     InputStream *ist = s->opaque;
@@ -299,6 +344,9 @@ int vdpau_init(AVCodecContext *s)
     VDPAUContext *ctx;
     VdpStatus err;
     int profile, ret;
+
+    if (vdpau_api_ver == 1)
+        return vdpau_old_init(s);
 
     if (!ist->hwaccel_ctx) {
         ret = vdpau_alloc(s);
