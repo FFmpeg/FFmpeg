@@ -83,6 +83,12 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     uint32_t width  = (avctx->coded_width + 1) & ~1;
     uint32_t height = (avctx->coded_height + 3) & ~3;
 
+    if (!hwctx) {
+        vdctx->device  = VDP_INVALID_HANDLE;
+        av_log(avctx, AV_LOG_WARNING, "hwaccel_context has not been setup by the user application, cannot initialize\n");
+        return 0;
+    }
+
     if (hwctx->context.decoder != VDP_INVALID_HANDLE) {
         vdctx->decoder = hwctx->context.decoder;
         vdctx->render  = hwctx->context.render;
