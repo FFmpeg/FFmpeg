@@ -973,7 +973,7 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
 
         do
             choices[n] = choices[n + 1];
-        while (choices[n] != AV_PIX_FMT_NONE);
+        while (choices[n++] != AV_PIX_FMT_NONE);
     }
 
     av_freep(&choices);
