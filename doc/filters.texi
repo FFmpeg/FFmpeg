@@ -282,6 +282,10 @@ sequential number of the input frame, starting from 0
 
 @item pos
 the position in the file of the input frame, NAN if unknown
+
+@item w
+@item h
+width and height of the input frame if video
 @end table
 
 Additionally, these filters support an @option{enable} command that can be used
