@@ -24,6 +24,7 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "h264.h"
 #include "mpegutils.h"
 #include "vdpau.h"
@@ -202,6 +203,32 @@ static int vdpau_h264_end_frame(AVCodecContext *avctx)
     return 0;
 }
 
+static int vdpau_h264_init(AVCodecContext *avctx)
+{
+    VdpDecoderProfile profile;
+    uint32_t level = avctx->level;
+
+    switch (avctx->profile & ~FF_PROFILE_H264_INTRA) {
+    case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+    case FF_PROFILE_H264_BASELINE:
+        profile = VDP_DECODER_PROFILE_H264_BASELINE;
+        break;
+    case FF_PROFILE_H264_MAIN:
+        profile = VDP_DECODER_PROFILE_H264_MAIN;
+        break;
+    case FF_PROFILE_H264_HIGH:
+        profile = VDP_DECODER_PROFILE_H264_HIGH;
+        break;
+    default:
+        return AVERROR(ENOTSUP);
+    }
+
+    if ((avctx->profile & FF_PROFILE_H264_INTRA) && avctx->level == 11)
+        level = VDP_DECODER_LEVEL_H264_1b;
+
+    return ff_vdpau_common_init(avctx, profile, level);
+}
+
 AVHWAccel ff_h264_vdpau_hwaccel = {
     .name           = "h264_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -211,4 +238,7 @@ AVHWAccel ff_h264_vdpau_hwaccel = {
     .end_frame      = vdpau_h264_end_frame,
     .decode_slice   = vdpau_h264_decode_slice,
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_h264_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .priv_data_size = sizeof(VDPAUContext),
 };

@@ -146,6 +146,7 @@ int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic_ctx,
 int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
                               struct vdpau_picture_context *pic_ctx)
 {
+    VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
     AVVDPAUContext *hwctx = avctx->hwaccel_context;
     VdpVideoSurface surf = ff_vdpau_get_surface_id(frame);
     VdpStatus status;
@@ -163,7 +164,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         status = hwctx->render2(avctx, frame, (void *)&pic_ctx->info,
                                 pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
     } else
-    status = hwctx->render(hwctx->decoder, surf, (void *)&pic_ctx->info,
+    status = vdctx->render(vdctx->decoder, surf, (void *)&pic_ctx->info,
                            pic_ctx->bitstream_buffers_used,
                            pic_ctx->bitstream_buffers);
 
