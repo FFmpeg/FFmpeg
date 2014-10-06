@@ -150,6 +150,26 @@ AVVDPAU_Render2 av_vdpau_hwaccel_get_render2(const AVVDPAUContext *);
 void av_vdpau_hwaccel_set_render2(AVVDPAUContext *, AVVDPAU_Render2);
 
 /**
+ * Associate a VDPAU device with a codec context for hardware acceleration.
+ * This function is meant to be called from the get_format() codec callback,
+ * or earlier. It can also be called after avcodec_flush_buffers() to change
+ * the underlying VDPAU device mid-stream (e.g. to recover from non-transparent
+ * display preemption).
+ *
+ * @note get_format() must return AV_PIX_FMT_VDPAU if this function completes
+ * succesfully.
+ *
+ * @param avctx decoding context whose get_format() callback is invoked
+ * @param device VDPAU device handle to use for hardware acceleration
+ * @param get_proc_address VDPAU device driver
+ * @param flags for future use, must be zero
+ *
+ * @return 0 on success, an AVERROR code on failure.
+ */
+int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
+                          VdpGetProcAddress *get_proc_address, unsigned flags);
+
+/**
  * Allocate an AVVDPAUContext.
  *
  * @return Newly-allocated AVVDPAUContext or NULL on failure.
