@@ -89,7 +89,6 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
 
     vdctx->width            = UINT32_MAX;
     vdctx->height           = UINT32_MAX;
-    hwctx->reset            = 0;
 
     if (!hwctx) {
         vdctx->device  = VDP_INVALID_HANDLE;
@@ -103,6 +102,7 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
         vdctx->device  = VDP_INVALID_HANDLE;
         return 0; /* Decoder created by user */
     }
+    hwctx->reset            = 0;
 
     vdctx->device           = hwctx->device;
     vdctx->get_proc_address = hwctx->get_proc_address;
