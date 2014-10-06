@@ -1065,6 +1065,7 @@ static int apply_color_indexing_transform(WebPContext *s)
     if (img->frame->height * img->frame->width > 300) {
         uint8_t palette[256 * 4];
         const int size = pal->frame->width * 4;
+        av_assert0(size <= 1024U);
         memcpy(palette, GET_PIXEL(pal->frame, 0, 0), size);   // copy palette
         // set extra entries to transparent black
         memset(palette + size, 0, 256 * 4 - size);

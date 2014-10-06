@@ -4696,7 +4696,7 @@ check_func  mkstemp
 check_func  mmap
 check_func  mprotect
 # Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
-check_func_headers time.h nanosleep || { check_func_headers time.h nanosleep -lrt && add_extralibs -lrt; }
+check_func_headers time.h nanosleep || { check_func_headers time.h nanosleep -lrt && add_extralibs -lrt && LIBRT="-lrt"; }
 check_func  sched_getaffinity
 check_func  setrlimit
 check_struct "sys/stat.h" "struct stat" st_mtim.tv_nsec -D_BSD_SOURCE

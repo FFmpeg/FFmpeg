@@ -30,7 +30,6 @@ HEADERS = adler32.h                                                     \
           hmac.h                                                        \
           imgutils.h                                                    \
           intfloat.h                                                    \
-          intfloat_readwrite.h                                          \
           intreadwrite.h                                                \
           lfg.h                                                         \
           log.h                                                         \
@@ -100,7 +99,6 @@ OBJS = adler32.o                                                        \
        hash.o                                                           \
        hmac.o                                                           \
        imgutils.o                                                       \
-       intfloat_readwrite.o                                             \
        intmath.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \

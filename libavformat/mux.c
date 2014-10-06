@@ -171,16 +171,6 @@ error:
     return ret;
 }
 
-#if FF_API_ALLOC_OUTPUT_CONTEXT
-AVFormatContext *avformat_alloc_output_context(const char *format,
-                                               AVOutputFormat *oformat, const char *filename)
-{
-    AVFormatContext *avctx;
-    int ret = avformat_alloc_output_context2(&avctx, oformat, format, filename);
-    return ret < 0 ? NULL : avctx;
-}
-#endif
-
 static int validate_codec_tag(AVFormatContext *s, AVStream *st)
 {
     const AVCodecTag *avctag;

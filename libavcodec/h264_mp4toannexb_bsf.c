@@ -186,9 +186,9 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
             goto fail;
 
         if (unit_type == 7)
-            ctx->idr_sps_seen = 1;
+            ctx->idr_sps_seen = ctx->new_idr = 1;
         else if (unit_type == 8) {
-            ctx->idr_pps_seen = 1;
+            ctx->idr_pps_seen = ctx->new_idr = 1;
             /* if SPS has not been seen yet, prepend the AVCC one to PPS */
             if (!ctx->idr_sps_seen) {
                 if (ctx->sps_offset == -1)

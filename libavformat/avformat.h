@@ -1874,16 +1874,6 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
  */
 
 
-#if FF_API_ALLOC_OUTPUT_CONTEXT
-/**
- * @deprecated deprecated in favor of avformat_alloc_output_context2()
- */
-attribute_deprecated
-AVFormatContext *avformat_alloc_output_context(const char *format,
-                                               AVOutputFormat *oformat,
-                                               const char *filename);
-#endif
-
 /**
  * Allocate an AVFormatContext for an output format.
  * avformat_free_context() can be used to free the context and
@@ -1996,26 +1986,6 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
 attribute_deprecated
 int av_demuxer_open(AVFormatContext *ic);
 
-#if FF_API_FORMAT_PARAMETERS
-/**
- * Read packets of a media file to get stream information. This
- * is useful for file formats with no headers such as MPEG. This
- * function also computes the real framerate in case of MPEG-2 repeat
- * frame mode.
- * The logical file position is not changed by this function;
- * examined packets may be buffered for later processing.
- *
- * @param ic media file handle
- * @return >=0 if OK, AVERROR_xxx on error
- * @todo Let the user decide somehow what information is needed so that
- *       we do not waste time getting stuff the user does not need.
- *
- * @deprecated use avformat_find_stream_info.
- */
-attribute_deprecated
-int av_find_stream_info(AVFormatContext *ic);
-#endif
-
 /**
  * Read packets of a media file to get stream information. This
  * is useful for file formats with no headers such as MPEG. This
@@ -2081,24 +2051,6 @@ int av_find_best_stream(AVFormatContext *ic,
                         int related_stream,
                         AVCodec **decoder_ret,
                         int flags);
-
-#if FF_API_READ_PACKET
-/**
- * @deprecated use AVFMT_FLAG_NOFILLIN | AVFMT_FLAG_NOPARSE to read raw
- * unprocessed packets
- *
- * Read a transport packet from a media file.
- *
- * This function is obsolete and should never be used.
- * Use av_read_frame() instead.
- *
- * @param s media file handle
- * @param pkt is filled
- * @return 0 if OK, AVERROR_xxx on error
- */
-attribute_deprecated
-int av_read_packet(AVFormatContext *s, AVPacket *pkt);
-#endif
 
 /**
  * Return the next frame of a stream.
@@ -2185,17 +2137,6 @@ int av_read_play(AVFormatContext *s);
  */
 int av_read_pause(AVFormatContext *s);
 
-#if FF_API_CLOSE_INPUT_FILE
-/**
- * @deprecated use avformat_close_input()
- * Close a media file (but not its codecs).
- *
- * @param s media file handle
- */
-attribute_deprecated
-void av_close_input_file(AVFormatContext *s);
-#endif
-
 /**
  * Close an opened input AVFormatContext. Free it and all its contents
  * and set *s to NULL.
@@ -2204,30 +2145,6 @@ void avformat_close_input(AVFormatContext **s);
 /**
  * @}
  */
-
-#if FF_API_NEW_STREAM
-/**
- * Add a new stream to a media file.
- *
- * Can only be called in the read_header() function. If the flag
- * AVFMTCTX_NOHEADER is in the format context, then new streams
- * can be added in read_packet too.
- *
- * @param s media file handle
- * @param id file-format-dependent stream ID
- */
-attribute_deprecated
-AVStream *av_new_stream(AVFormatContext *s, int id);
-#endif
-
-#if FF_API_SET_PTS_INFO
-/**
- * @deprecated this function is not supposed to be called outside of lavf
- */
-attribute_deprecated
-void av_set_pts_info(AVStream *s, int pts_wrap_bits,
-                     unsigned int pts_num, unsigned int pts_den);
-#endif
 
 #define AVSEEK_FLAG_BACKWARD 1 ///< seek backward
 #define AVSEEK_FLAG_BYTE     2 ///< seeking based on position in bytes

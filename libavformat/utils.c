@@ -691,13 +691,6 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 }
 
-#if FF_API_READ_PACKET
-int av_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    return ff_read_packet(s, pkt);
-}
-#endif
-
 
 /**********************************************************/
 
@@ -2785,13 +2778,6 @@ static int tb_unreliable(AVCodecContext *c)
     return 0;
 }
 
-#if FF_API_FORMAT_PARAMETERS
-int av_find_stream_info(AVFormatContext *ic)
-{
-    return avformat_find_stream_info(ic, NULL);
-}
-#endif
-
 int ff_alloc_extradata(AVCodecContext *avctx, int size)
 {
     int ret;
@@ -3551,13 +3537,6 @@ void avformat_free_context(AVFormatContext *s)
     av_free(s);
 }
 
-#if FF_API_CLOSE_INPUT_FILE
-void av_close_input_file(AVFormatContext *s)
-{
-    avformat_close_input(&s);
-}
-#endif
-
 void avformat_close_input(AVFormatContext **ps)
 {
     AVFormatContext *s;
@@ -3585,16 +3564,6 @@ void avformat_close_input(AVFormatContext **ps)
 
     avio_close(pb);
 }
-
-#if FF_API_NEW_STREAM
-AVStream *av_new_stream(AVFormatContext *s, int id)
-{
-    AVStream *st = avformat_new_stream(s, NULL);
-    if (st)
-        st->id = id;
-    return st;
-}
-#endif
 
 AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 {
@@ -3922,14 +3891,6 @@ int ff_hex_to_data(uint8_t *data, const char *p)
     }
     return len;
 }
-
-#if FF_API_SET_PTS_INFO
-void av_set_pts_info(AVStream *s, int pts_wrap_bits,
-                     unsigned int pts_num, unsigned int pts_den)
-{
-    avpriv_set_pts_info(s, pts_wrap_bits, pts_num, pts_den);
-}
-#endif
 
 void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
                          unsigned int pts_num, unsigned int pts_den)
