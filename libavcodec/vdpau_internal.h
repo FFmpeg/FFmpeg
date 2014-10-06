@@ -81,6 +81,9 @@ typedef struct VDPAUContext {
      * VDPAU decoder render callback
      */
     VdpDecoderRender *render;
+
+    uint32_t width;
+    uint32_t height;
 } VDPAUContext;
 
 struct vdpau_picture_context {

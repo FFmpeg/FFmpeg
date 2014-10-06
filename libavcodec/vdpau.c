@@ -83,6 +83,9 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     uint32_t width  = (avctx->coded_width + 1) & ~1;
     uint32_t height = (avctx->coded_height + 3) & ~3;
 
+    vdctx->width            = UINT32_MAX;
+    vdctx->height           = UINT32_MAX;
+
     if (!hwctx) {
         vdctx->device  = VDP_INVALID_HANDLE;
         av_log(avctx, AV_LOG_WARNING, "hwaccel_context has not been setup by the user application, cannot initialize\n");
@@ -115,6 +118,11 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
 
     status = create(vdctx->device, profile, width, height, avctx->refs,
                     &vdctx->decoder);
+    if (status == VDP_STATUS_OK) {
+        vdctx->width  = avctx->coded_width;
+        vdctx->height = avctx->coded_height;
+    }
+
     return vdpau_error(status);
 }
 
@@ -127,6 +135,8 @@ int ff_vdpau_common_uninit(AVCodecContext *avctx)
 
     if (vdctx->device == VDP_INVALID_HANDLE)
         return 0; /* Decoder created and destroyed by user */
+    if (vdctx->width == UINT32_MAX && vdctx->height == UINT32_MAX)
+        return 0;
 
     status = vdctx->get_proc_address(vdctx->device,
                                      VDP_FUNC_ID_DECODER_DESTROY, &func);
@@ -137,6 +147,20 @@ int ff_vdpau_common_uninit(AVCodecContext *avctx)
 
     status = destroy(vdctx->decoder);
     return vdpau_error(status);
+}
+
+static int ff_vdpau_common_reinit(AVCodecContext *avctx)
+{
+    VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
+
+    if (vdctx->device == VDP_INVALID_HANDLE)
+        return 0; /* Decoder created by user */
+    if (avctx->coded_width == vdctx->width &&
+        avctx->coded_height == vdctx->height)
+        return 0;
+
+    avctx->hwaccel->uninit(avctx);
+    return avctx->hwaccel->init(avctx);
 }
 
 int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic_ctx,
@@ -156,6 +180,11 @@ int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     AVVDPAUContext *hwctx = avctx->hwaccel_context;
     VdpVideoSurface surf = ff_vdpau_get_surface_id(frame);
     VdpStatus status;
+    int val;
+
+    val = ff_vdpau_common_reinit(avctx);
+    if (val < 0)
+        return val;
 
 #if FF_API_BUFS_VDPAU
 FF_DISABLE_DEPRECATION_WARNINGS
