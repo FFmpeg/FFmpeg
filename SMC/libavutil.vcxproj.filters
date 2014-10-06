@@ -114,9 +114,6 @@
     <ClCompile Include="..\libavutil\imgutils.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavutil\intfloat_readwrite.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavutil\intmath.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
@@ -309,9 +306,6 @@
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\intfloat.h">
-      <Filter>Header Files\libavutil</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libavutil\intfloat_readwrite.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\intreadwrite.h">

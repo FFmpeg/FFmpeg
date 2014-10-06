@@ -146,9 +146,6 @@
     <ClCompile Include="..\libavutil\imgutils.c">
       <ObjectFileName>$(IntDir)\libavutil_imgutils.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavutil\intfloat_readwrite.c">
-      <ObjectFileName>$(IntDir)\libavutil_intfloat_readwrite.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavutil\intmath.c">
       <ObjectFileName>$(IntDir)\libavutil_intmath.obj</ObjectFileName>
     </ClCompile>
@@ -287,7 +284,6 @@
     <ClInclude Include="..\libavutil\hmac.h" />
     <ClInclude Include="..\libavutil\imgutils.h" />
     <ClInclude Include="..\libavutil\intfloat.h" />
-    <ClInclude Include="..\libavutil\intfloat_readwrite.h" />
     <ClInclude Include="..\libavutil\intreadwrite.h" />
     <ClInclude Include="..\libavutil\lfg.h" />
     <ClInclude Include="..\libavutil\log.h" />
@@ -605,7 +601,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -728,7 +723,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -855,7 +849,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -981,7 +974,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -1108,7 +1100,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -1234,7 +1225,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -1364,7 +1354,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -1494,7 +1483,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -1630,7 +1618,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -1765,7 +1752,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -1901,7 +1887,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -2036,7 +2021,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -2165,7 +2149,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
@@ -2294,7 +2277,6 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\intfloat.h $(OutDir)\include\libavutil
-copy ..\libavutil\intfloat_readwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\intreadwrite.h $(OutDir)\include\libavutil
 copy ..\libavutil\lfg.h $(OutDir)\include\libavutil
 copy ..\libavutil\log.h $(OutDir)\include\libavutil
