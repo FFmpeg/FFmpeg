@@ -1803,6 +1803,9 @@
     <ClCompile Include="..\libavcodec\libfdk-aacenc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\libilbc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\libmp3lame.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
