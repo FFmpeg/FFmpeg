@@ -34,8 +34,7 @@
 
 void av_destruct_packet(AVPacket *pkt)
 {
-    av_free(pkt->data);
-    pkt->data = NULL;
+    av_freep(&pkt->data);
     pkt->size = 0;
 }
 
