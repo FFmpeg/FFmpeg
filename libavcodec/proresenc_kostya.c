@@ -1101,7 +1101,7 @@ static av_cold int encode_close(AVCodecContext *avctx)
 
     if (ctx->tdata) {
         for (i = 0; i < avctx->thread_count; i++)
-            av_free(ctx->tdata[i].nodes);
+            av_freep(&ctx->tdata[i].nodes);
     }
     av_freep(&ctx->tdata);
     av_freep(&ctx->slice_q);
