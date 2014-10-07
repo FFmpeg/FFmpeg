@@ -76,7 +76,7 @@ static av_cold int escape124_decode_close(AVCodecContext *avctx)
     Escape124Context *s = avctx->priv_data;
 
     for (i = 0; i < 3; i++)
-        av_free(s->codebooks[i].blocks);
+        av_freep(&s->codebooks[i].blocks);
 
     av_frame_free(&s->frame);
 
@@ -263,7 +263,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
                     cb_size = s->num_superblocks << cb_depth;
                 }
             }
-            av_free(s->codebooks[i].blocks);
+            av_freep(&s->codebooks[i].blocks);
             s->codebooks[i] = unpack_codebook(&gb, cb_depth, cb_size);
             if (!s->codebooks[i].blocks)
                 return -1;
