@@ -101,6 +101,7 @@ static int hls_mux_init(AVFormatContext *s)
             return AVERROR(ENOMEM);
         avcodec_copy_context(st->codec, s->streams[i]->codec);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+        st->time_base = s->streams[i]->time_base;
     }
     hls->start_pos = 0;
 

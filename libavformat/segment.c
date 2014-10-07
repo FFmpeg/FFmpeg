@@ -162,6 +162,7 @@ static int segment_mux_init(AVFormatContext *s)
             ocodec->codec_tag = 0;
         }
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+        st->time_base = s->streams[i]->time_base;
         av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
     }
 

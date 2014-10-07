@@ -721,6 +721,7 @@ static int mpegts_write_header(AVFormatContext *s)
             ret = avcodec_copy_context(ast->codec, st->codec);
             if (ret != 0)
                 goto fail;
+            ast->time_base = st->time_base;
             ret = avformat_write_header(ts_st->amux, NULL);
             if (ret < 0)
                 goto fail;
