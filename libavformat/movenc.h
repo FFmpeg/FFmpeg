@@ -142,6 +142,8 @@ typedef struct MOVTrack {
         int     packet_entry;
         int     slices;
     } vc1_info;
+
+    void       *eac3_priv;
 } MOVTrack;
 
 typedef struct MOVMuxContext {

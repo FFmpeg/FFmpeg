@@ -31,6 +31,7 @@
 #include "avio.h"
 #include "isom.h"
 #include "avc.h"
+#include "libavcodec/ac3_parser.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
 #include "libavcodec/vc1_common.h"
@@ -292,6 +293,184 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
     return 11;
 }
 
+struct eac3_info {
+    uint8_t ec3_done;
+
+    /* Layout of the EC3SpecificBox */
+    /* maximum bitrate */
+    uint16_t data_rate;
+    /* number of independent substreams */
+    uint8_t  num_ind_sub;
+    struct {
+        /* sample rate code (see ff_ac3_sample_rate_tab) 2 bits */
+        uint8_t fscod;
+        /* bit stream identification 5 bits */
+        uint8_t bsid;
+        /* one bit reserved */
+        /* audio service mixing (not supported yet) 1 bit */
+        /* bit stream mode 3 bits */
+        uint8_t bsmod;
+        /* audio coding mode 3 bits */
+        uint8_t acmod;
+        /* sub woofer on 1 bit */
+        uint8_t lfeon;
+        /* 3 bits reserved */
+        /* number of dependent substreams associated with this substream 4 bits */
+        uint8_t num_dep_sub;
+        /* channel locations of the dependent substream(s), if any, 9 bits */
+        uint16_t chan_loc;
+        /* if there is no dependent substream, then one bit reserved instead */
+    } substream[1]; /* TODO: support 8 independent substreams */
+};
+
+static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
+{
+    GetBitContext gbc;
+    AC3HeaderInfo tmp, *hdr = &tmp;
+    struct eac3_info *info;
+    int num_blocks;
+
+    if (!track->eac3_priv && !(track->eac3_priv = av_mallocz(sizeof(*info))))
+        return AVERROR(ENOMEM);
+    info = track->eac3_priv;
+
+    init_get_bits(&gbc, pkt->data, pkt->size * 8);
+    if (avpriv_ac3_parse_header2(&gbc, &hdr) < 0) {
+        /* drop the packets until we see a good one */
+        if (!track->entry) {
+            av_log(mov, AV_LOG_WARNING, "Dropping invalid packet from start of the stream\n");
+            return 0;
+        }
+        return AVERROR_INVALIDDATA;
+    }
+
+    info->data_rate = FFMAX(info->data_rate, hdr->bit_rate / 1000);
+    num_blocks = hdr->num_blocks;
+
+    if (!info->ec3_done) {
+        /* AC-3 substream must be the first one */
+        if (hdr->bitstream_id <= 10 && hdr->substreamid != 0)
+            return AVERROR(EINVAL);
+
+        /* this should always be the case, given that our AC-3 parser
+         * concatenates dependent frames to their independent parent */
+        if (hdr->frame_type == EAC3_FRAME_TYPE_INDEPENDENT) {
+            /* substream ids must be incremental */
+            if (hdr->substreamid > info->num_ind_sub + 1)
+                return AVERROR(EINVAL);
+
+            if (hdr->substreamid == info->num_ind_sub + 1) {
+                //info->num_ind_sub++;
+                avpriv_request_sample(track->enc, "Multiple independent substreams");
+                return AVERROR_PATCHWELCOME;
+            } else if (hdr->substreamid < info->num_ind_sub ||
+                       hdr->substreamid == 0 && info->substream[0].bsid) {
+                info->ec3_done = 1;
+                goto concatenate;
+            }
+        }
+
+        /* fill the info needed for the "dec3" atom */
+        info->substream[hdr->substreamid].fscod = hdr->sr_code;
+        info->substream[hdr->substreamid].bsid  = hdr->bitstream_id;
+        info->substream[hdr->substreamid].bsmod = hdr->bitstream_mode;
+        info->substream[hdr->substreamid].acmod = hdr->channel_mode;
+        info->substream[hdr->substreamid].lfeon = hdr->lfe_on;
+
+        /* Parse dependent substream(s), if any */
+        if (pkt->size != hdr->frame_size) {
+            int cumul_size = hdr->frame_size;
+            int parent = hdr->substreamid;
+
+            while (cumul_size != pkt->size) {
+                int i;
+                init_get_bits(&gbc, pkt->data + cumul_size, (pkt->size - cumul_size) * 8);
+                if (avpriv_ac3_parse_header2(&gbc, &hdr) < 0)
+                    return AVERROR_INVALIDDATA;
+                if (hdr->frame_type != EAC3_FRAME_TYPE_DEPENDENT)
+                    return AVERROR(EINVAL);
+                cumul_size += hdr->frame_size;
+                info->substream[parent].num_dep_sub++;
+
+                /* header is parsed up to lfeon, but custom channel map may be needed */
+                /* skip bsid */
+                skip_bits(&gbc, 5);
+                /* skip volume control params */
+                for (i = 0; i < (hdr->channel_mode ? 1 : 2); i++) {
+                    skip_bits(&gbc, 5); // skip dialog normalization
+                    if (get_bits1(&gbc)) {
+                        skip_bits(&gbc, 8); // skip compression gain word
+                    }
+                }
+                /* get the dependent stream channel map, if exists */
+                if (get_bits1(&gbc))
+                    info->substream[parent].chan_loc |= (get_bits(&gbc, 16) >> 5) & 0x1f;
+                else
+                    info->substream[parent].chan_loc |= hdr->channel_mode;
+            }
+        }
+    }
+
+/* TODO: concatenate syncframes to have 6 blocks per entry */
+concatenate:
+    if (num_blocks != 6) {
+        avpriv_request_sample(track->enc, "%d block(s) in syncframe", num_blocks);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    return pkt->size;
+}
+
+static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
+{
+    PutBitContext pbc;
+    uint8_t *buf;
+    struct eac3_info *info;
+    int size, i;
+
+    if (!track->eac3_priv)
+        return AVERROR(EINVAL);
+
+    info = track->eac3_priv;
+    size = 2 + 4 * (info->num_ind_sub + 1);
+    buf = av_malloc(size);
+    if (!buf) {
+        av_freep(&track->eac3_priv);
+        return AVERROR(ENOMEM);
+    }
+
+    init_put_bits(&pbc, buf, size);
+    put_bits(&pbc, 13, info->data_rate);
+    put_bits(&pbc,  3, info->num_ind_sub);
+    for (i = 0; i <= info->num_ind_sub; i++) {
+        put_bits(&pbc, 2, info->substream[i].fscod);
+        put_bits(&pbc, 5, info->substream[i].bsid);
+        put_bits(&pbc, 1, 0); /* reserved */
+        put_bits(&pbc, 1, 0); /* asvc */
+        put_bits(&pbc, 3, info->substream[i].bsmod);
+        put_bits(&pbc, 3, info->substream[i].acmod);
+        put_bits(&pbc, 1, info->substream[i].lfeon);
+        put_bits(&pbc, 5, 0); /* reserved */
+        put_bits(&pbc, 4, info->substream[i].num_dep_sub);
+        if (!info->substream[i].num_dep_sub) {
+            put_bits(&pbc, 1, 0); /* reserved */
+            size--;
+        } else {
+            put_bits(&pbc, 9, info->substream[i].chan_loc);
+        }
+    }
+    flush_put_bits(&pbc);
+
+    avio_wb32(pb, size + 8);
+    ffio_wfourcc(pb, "dec3");
+    avio_write(pb, buf, size);
+
+    av_free(buf);
+    av_freep(&track->eac3_priv);
+
+    return size;
+}
+
 /**
  * This function writes extradata "as is".
  * Extradata must be formatted like a valid atom (with size and tag).
@@ -486,6 +665,8 @@ static int mov_write_wave_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_amr_tag(pb, track);
     } else if (track->enc->codec_id == AV_CODEC_ID_AC3) {
         mov_write_ac3_tag(pb, track);
+    } else if (track->enc->codec_id == AV_CODEC_ID_EAC3) {
+        mov_write_eac3_tag(pb, track);
     } else if (track->enc->codec_id == AV_CODEC_ID_ALAC ||
                track->enc->codec_id == AV_CODEC_ID_QDM2) {
         mov_write_extradata_tag(pb, track);
@@ -756,6 +937,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
     if (track->mode == MODE_MOV &&
         (track->enc->codec_id == AV_CODEC_ID_AAC           ||
          track->enc->codec_id == AV_CODEC_ID_AC3           ||
+         track->enc->codec_id == AV_CODEC_ID_EAC3          ||
          track->enc->codec_id == AV_CODEC_ID_AMR_NB        ||
          track->enc->codec_id == AV_CODEC_ID_ALAC          ||
          track->enc->codec_id == AV_CODEC_ID_ADPCM_MS      ||
@@ -770,6 +952,8 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_amr_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_AC3)
         mov_write_ac3_tag(pb, track);
+    else if (track->enc->codec_id == AV_CODEC_ID_EAC3)
+        mov_write_eac3_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_ALAC)
         mov_write_extradata_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_WMAPRO)
@@ -877,6 +1061,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     if      (track->enc->codec_id == AV_CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
     else if (track->enc->codec_id == AV_CODEC_ID_HEVC)      tag = MKTAG('h','e','v','1');
     else if (track->enc->codec_id == AV_CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
+    else if (track->enc->codec_id == AV_CODEC_ID_EAC3)      tag = MKTAG('e','c','-','3');
     else if (track->enc->codec_id == AV_CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
     else if (track->enc->codec_id == AV_CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
     else if (track->enc->codec_id == AV_CODEC_ID_VC1)       tag = MKTAG('v','c','-','1');
@@ -3600,6 +3785,11 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             size = ff_hevc_annexb2mp4(pb, pkt->data, pkt->size, 0, NULL);
         }
+    } else if (enc->codec_id == AV_CODEC_ID_EAC3) {
+        size = handle_eac3(mov, pkt, trk);
+        if (size < 0)
+            return size;
+        avio_write(pb, pkt->data, size);
     } else {
         avio_write(pb, pkt->data, size);
     }
