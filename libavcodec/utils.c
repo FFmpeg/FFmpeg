@@ -2948,6 +2948,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     const char *profile = NULL;
     const AVCodec *p;
     int bitrate;
+    int new_line = 0;
     AVRational display_aspect_ratio;
 
     if (!buf || buf_size <= 0)
@@ -2985,8 +2986,11 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (enc->pix_fmt != AV_PIX_FMT_NONE) {
             char detail[256] = "(";
             const char *colorspace_name;
+
+            av_strlcat(buf, "\n      ", buf_size);
+
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %s",
+                 "%s", enc->pix_fmt == AV_PIX_FMT_NONE ? "none" :
                      av_get_pix_fmt_name(enc->pix_fmt));
             if (enc->bits_per_raw_sample &&
                 enc->bits_per_raw_sample <= av_pix_fmt_desc_get(enc->pix_fmt)->comp[0].depth_minus1)
@@ -3004,10 +3008,14 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                 av_strlcatf(buf, buf_size, "%s)", detail);
             }
         }
+
         if (enc->width) {
+            av_strlcat(buf, new_line ? "\n      " : ", ", buf_size);
+
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %dx%d",
+                     "%dx%d",
                      enc->width, enc->height);
+
             if (enc->sample_aspect_ratio.num) {
                 av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
                           enc->width * enc->sample_aspect_ratio.num,
@@ -3031,11 +3039,11 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
+        av_strlcat(buf, "\n      ", buf_size);
         if (enc->sample_rate) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %d Hz", enc->sample_rate);
+                     "%d Hz, ", enc->sample_rate);
         }
-        av_strlcat(buf, ", ", buf_size);
         av_get_channel_layout_string(buf + strlen(buf), buf_size - strlen(buf), enc->channels, enc->channel_layout);
         if (enc->sample_fmt != AV_SAMPLE_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
