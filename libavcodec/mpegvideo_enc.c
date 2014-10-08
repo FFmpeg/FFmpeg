@@ -510,13 +510,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    i = (INT_MAX / 2 + 128) >> 8;
-    if (avctx->mb_threshold >= i) {
-        av_log(avctx, AV_LOG_ERROR, "mb_threshold too large, max is %d\n",
-               i - 1);
-        return -1;
-    }
-
     if (avctx->b_frame_strategy && (avctx->flags & CODEC_FLAG_PASS2)) {
         av_log(avctx, AV_LOG_INFO,
                "notice: b_frame_strategy only affects the first pass\n");
