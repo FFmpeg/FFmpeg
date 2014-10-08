@@ -3079,6 +3079,17 @@ typedef struct AVCodecContext {
      * - decoding: unused.
      */
     uint16_t *chroma_intra_matrix;
+
+    /**
+     * dump format seperator.
+     * can be ", " or "\n      " or anything else
+     * Code outside libavcodec should access this field using AVOptions
+     * (NO direct access).
+     * - encoding: Set by user.
+     * - decoding: Set by user.
+     */
+    uint8_t *dump_separator;
+
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);

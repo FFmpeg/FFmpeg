@@ -2950,6 +2950,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     int bitrate;
     int new_line = 0;
     AVRational display_aspect_ratio;
+    const char *separator = enc->dump_separator ? enc->dump_separator : ", ";
 
     if (!buf || buf_size <= 0)
         return;
@@ -2987,7 +2988,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             char detail[256] = "(";
             const char *colorspace_name;
 
-            av_strlcat(buf, "\n      ", buf_size);
+            av_strlcat(buf, separator, buf_size);
 
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                  "%s", enc->pix_fmt == AV_PIX_FMT_NONE ? "none" :
@@ -3039,7 +3040,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
-        av_strlcat(buf, "\n      ", buf_size);
+        av_strlcat(buf, separator, buf_size);
         if (enc->sample_rate) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      "%d Hz, ", enc->sample_rate);
