@@ -66,6 +66,7 @@ typedef struct VP8EncoderContext {
     int lag_in_frames;
     int error_resilient;
     int crf;
+    int static_thresh;
 } VP8Context;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -347,7 +348,16 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         codecctl_int(avctx, VP8E_SET_ARNR_TYPE,        ctx->arnr_type);
     codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, avctx->noise_reduction);
     codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
-    codecctl_int(avctx, VP8E_SET_STATIC_THRESHOLD,  avctx->mb_threshold);
+#if FF_API_MPV_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->mb_threshold) {
+        av_log(avctx, AV_LOG_WARNING, "The mb_threshold option is deprecated, "
+               "use the static-thresh private option instead.\n");
+        ctx->static_thresh = avctx->mb_threshold;
+    }
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    codecctl_int(avctx, VP8E_SET_STATIC_THRESHOLD,  ctx->static_thresh);
     codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          ctx->crf);
 
     //provide dummy value to initialize wrapper, values will be updated each _encode()
@@ -565,6 +575,7 @@ static const AVOption options[] = {
                          " is still done over the partition boundary.",       0, AV_OPT_TYPE_CONST, {.i64 = VPX_ERROR_RESILIENT_PARTITIONS}, 0, 0, VE, "er"},
 #endif
     { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63, VE },
+    { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { NULL }
 };
 
