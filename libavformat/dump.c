@@ -468,7 +468,7 @@ void av_dump_format(AVFormatContext *ic, int index,
 
     for (i = 0; i < ic->nb_chapters; i++) {
         AVChapter *ch = ic->chapters[i];
-        av_log(NULL, AV_LOG_INFO, "    Chapter #%d.%d: ", index, i);
+        av_log(NULL, AV_LOG_INFO, "    Chapter #%d:%d: ", index, i);
         av_log(NULL, AV_LOG_INFO,
                "start %f, ", ch->start * av_q2d(ch->time_base));
         av_log(NULL, AV_LOG_INFO,
