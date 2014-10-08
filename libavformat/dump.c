@@ -27,6 +27,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/avstring.h"
 #include "libavutil/replaygain.h"
 #include "libavutil/stereo3d.h"
@@ -345,6 +346,7 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     int flags = (is_output ? ic->oformat->flags : ic->iformat->flags);
     AVStream *st = ic->streams[i];
     AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
+    char *separator = ic->dump_separator;
 
     avcodec_string(buf, sizeof(buf), st->codec, is_output);
     av_log(NULL, AV_LOG_INFO, "    Stream #%d:%d", index, i);
@@ -378,7 +380,7 @@ static void dump_stream_format(AVFormatContext *ic, int i,
         int tbc = st->codec->time_base.den && st->codec->time_base.num;
 
         if (fps || tbr || tbn || tbc)
-            av_log(NULL, AV_LOG_INFO, "\n      ");
+            av_log(NULL, AV_LOG_INFO, "%s", separator);
 
         if (fps)
             print_fps(av_q2d(st->avg_frame_rate), tbr || tbn || tbc ? "fps, " : "fps");

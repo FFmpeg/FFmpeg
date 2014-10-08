@@ -1713,6 +1713,16 @@ typedef struct AVFormatContext {
      * via AVOptions (NO direct access).
      */
     int64_t probesize2;
+
+    /**
+     * dump format seperator.
+     * can be ", " or "\n      " or anything else
+     * Code outside libavformat should access this field using AVOptions
+     * (NO direct access).
+     * - muxing: Set by user.
+     * - demuxing: Set by user.
+     */
+    uint8_t *dump_separator;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);
