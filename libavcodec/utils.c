@@ -1530,6 +1530,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
             }
+            if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ420P ||
+                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ422P ||
+                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ440P ||
+                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ444P)
+                avctx->color_range = AVCOL_RANGE_JPEG;
         }
         if (avctx->codec->supported_samplerates) {
             for (i = 0; avctx->codec->supported_samplerates[i] != 0; i++)
