@@ -513,6 +513,12 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
         if ((ret = ff_mpv_common_frame_size_change(s)))
             return ret;
+
+        if (avctx->pix_fmt != h263_get_format(avctx)) {
+            av_log(avctx, AV_LOG_ERROR, "format change not supported\n");
+            avctx->pix_fmt = AV_PIX_FMT_NONE;
+            return AVERROR_UNKNOWN;
+        }
     }
 
     if (s->codec_id == AV_CODEC_ID_H263  ||
