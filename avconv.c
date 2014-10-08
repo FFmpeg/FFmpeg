@@ -564,8 +564,7 @@ static void do_video_out(AVFormatContext *s,
             in_picture->top_field_first = !!ost->top_field_first;
 
         in_picture->quality = enc->global_quality;
-        if (!enc->me_threshold)
-            in_picture->pict_type = 0;
+        in_picture->pict_type = 0;
         if (ost->forced_kf_index < ost->forced_kf_count &&
             in_picture->pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
             in_picture->pict_type = AV_PICTURE_TYPE_I;
