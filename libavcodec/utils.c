@@ -3032,6 +3032,12 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      "%dx%d",
                      enc->width, enc->height);
 
+            if (av_log_get_level() >= AV_LOG_VERBOSE &&
+                (enc->width != enc->coded_width ||
+                 enc->height != enc->coded_height))
+                snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                         " (%dx%d)", enc->coded_width, enc->coded_height);
+
             if (enc->sample_aspect_ratio.num) {
                 av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
                           enc->width * enc->sample_aspect_ratio.num,
