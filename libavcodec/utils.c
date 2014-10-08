@@ -2986,7 +2986,6 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     case AVMEDIA_TYPE_VIDEO:
         if (enc->pix_fmt != AV_PIX_FMT_NONE) {
             char detail[256] = "(";
-            const char *colorspace_name;
 
             av_strlcat(buf, separator, buf_size);
 
@@ -2997,12 +2996,28 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                 enc->bits_per_raw_sample <= av_pix_fmt_desc_get(enc->pix_fmt)->comp[0].depth_minus1)
                 av_strlcatf(detail, sizeof(detail), "%d bpc, ", enc->bits_per_raw_sample);
             if (enc->color_range != AVCOL_RANGE_UNSPECIFIED)
-                av_strlcatf(detail, sizeof(detail),
-                            enc->color_range == AVCOL_RANGE_MPEG ? "tv, ": "pc, ");
+                av_strlcatf(detail, sizeof(detail), "%s, ",
+                            av_color_range_name(enc->color_range));
 
-            colorspace_name = av_get_colorspace_name(enc->colorspace);
-            if (colorspace_name)
-                av_strlcatf(detail, sizeof(detail), "%s, ", colorspace_name);
+            if (enc->colorspace != AVCOL_SPC_UNSPECIFIED ||
+                enc->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+                enc->color_trc != AVCOL_TRC_UNSPECIFIED) {
+                if (enc->colorspace != enc->color_primaries ||
+                    enc->colorspace != enc->color_trc) {
+                    new_line = 1;
+                    av_strlcatf(detail, sizeof(detail), "%s/%s/%s, ",
+                                av_color_space_name(enc->colorspace),
+                                av_color_primaries_name(enc->color_primaries),
+                                av_color_transfer_name(enc->color_trc));
+                } else
+                    av_strlcatf(detail, sizeof(detail), "%s, ",
+                                av_get_colorspace_name(enc->colorspace));
+            }
+
+            if (av_log_get_level() >= AV_LOG_DEBUG &&
+                enc->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
+                av_strlcatf(detail, sizeof(detail), "%s, ",
+                            av_chroma_location_name(enc->chroma_sample_location));
 
             if (strlen(detail) > 1) {
                 detail[strlen(detail) - 2] = 0;
@@ -3011,7 +3026,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         }
 
         if (enc->width) {
-            av_strlcat(buf, new_line ? "\n      " : ", ", buf_size);
+            av_strlcat(buf, new_line ? separator : ", ", buf_size);
 
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      "%dx%d",
