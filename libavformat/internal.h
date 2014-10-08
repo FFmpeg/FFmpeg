@@ -323,7 +323,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 /**
  * Return the frame duration in seconds. Return 0 if not available.
  */
-void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
+void ff_compute_frame_duration(AVFormatContext *s, int *pnum, int *pden, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt);
 
 unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id);

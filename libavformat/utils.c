@@ -456,9 +456,11 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 /**
  * Return the frame duration in seconds. Return 0 if not available.
  */
-void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
+void ff_compute_frame_duration(AVFormatContext *s, int *pnum, int *pden, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt)
 {
+    AVRational codec_framerate = s->iformat ? st->codec->framerate :
+                                              av_inv_q(st->codec->time_base);
     int frame_size;
 
     *pnum = 0;
@@ -471,9 +473,9 @@ void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
         } else if (st->time_base.num * 1000LL > st->time_base.den) {
             *pnum = st->time_base.num;
             *pden = st->time_base.den;
-        } else if (st->codec->time_base.num * 1000LL > st->codec->time_base.den) {
-            *pnum = st->codec->time_base.num;
-            *pden = st->codec->time_base.den;
+        } else if (codec_framerate.den * 1000LL > codec_framerate.num) {
+            *pnum = codec_framerate.den;
+            *pden = codec_framerate.num;
             if (pc && pc->repeat_pict) {
                 if (*pnum > INT_MAX / (1 + pc->repeat_pict))
                     *pden /= 1 + pc->repeat_pict;
@@ -620,7 +622,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     }
 
     if (pkt->duration == 0 && st->codec->codec_type != AVMEDIA_TYPE_AUDIO) {
-        ff_compute_frame_duration(&num, &den, st, pc, pkt);
+        ff_compute_frame_duration(s, &num, &den, st, pc, pkt);
         if (den && num) {
             pkt->duration = av_rescale_rnd(1, num * (int64_t) st->time_base.den,
                                            den * (int64_t) st->time_base.num,
@@ -683,7 +685,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                    st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             int duration = pkt->duration;
             if (!duration && st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-                ff_compute_frame_duration(&num, &den, st, pc, pkt);
+                ff_compute_frame_duration(s, &num, &den, st, pc, pkt);
                 if (den && num) {
                     duration = av_rescale_rnd(1,
                                               num * (int64_t) st->time_base.den,
