@@ -67,7 +67,7 @@ typedef struct ATRAC3PContext {
 
 static av_cold int atrac3p_decode_close(AVCodecContext *avctx)
 {
-    av_free(((ATRAC3PContext *)(avctx->priv_data))->ch_units);
+    av_freep(&((ATRAC3PContext *)(avctx->priv_data))->ch_units);
 
     return 0;
 }
