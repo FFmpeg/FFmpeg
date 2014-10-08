@@ -2419,6 +2419,7 @@ static int audio_decode_frame(VideoState *is)
                            "Cannot create sample rate converter for conversion of %d Hz %s %d channels to %d Hz %s %d channels!\n",
                             is->frame->sample_rate, av_get_sample_fmt_name(is->frame->format), av_frame_get_channels(is->frame),
                             is->audio_tgt.freq, av_get_sample_fmt_name(is->audio_tgt.fmt), is->audio_tgt.channels);
+                    swr_free(&is->swr_ctx);
                     break;
                 }
                 is->audio_src.channel_layout = dec_channel_layout;
@@ -2454,7 +2455,8 @@ static int audio_decode_frame(VideoState *is)
                 }
                 if (len2 == out_count) {
                     av_log(NULL, AV_LOG_WARNING, "audio buffer is probably too small\n");
-                    swr_init(is->swr_ctx);
+                    if (swr_init(is->swr_ctx) < 0)
+                        swr_free(&is->swr_ctx);
                 }
                 is->audio_buf = is->audio_buf1;
                 resampled_data_size = len2 * is->audio_tgt.channels * av_get_bytes_per_sample(is->audio_tgt.fmt);
