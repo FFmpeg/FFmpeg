@@ -57,7 +57,7 @@ static av_const SoftFloat av_normalize_sf(SoftFloat a){
 
 static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
 #if 1
-    if(a.mant + 0x40000000 < 0){
+    if((int32_t)(a.mant + 0x40000000U) < 0){
         a.exp++;
         a.mant>>=1;
     }
