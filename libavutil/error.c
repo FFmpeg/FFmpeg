@@ -29,6 +29,7 @@ struct error_entry {
 };
 
 #define ERROR_TAG(tag) AVERROR_##tag, #tag
+#define AVERROR_INPUT_AND_OUTPUT_CHANGED (AVERROR_INPUT_CHANGED | AVERROR_OUTPUT_CHANGED)
 static const struct error_entry error_entries[] = {
     { ERROR_TAG(BSF_NOT_FOUND),      "Bitstream filter not found"                     },
     { ERROR_TAG(BUG),                "Internal bug, should not have happened"         },
@@ -41,14 +42,17 @@ static const struct error_entry error_entries[] = {
     { ERROR_TAG(EXIT),               "Immediate exit requested"                       },
     { ERROR_TAG(EXTERNAL),           "Generic error in an external library"           },
     { ERROR_TAG(FILTER_NOT_FOUND),   "Filter not found"                               },
+    { ERROR_TAG(INPUT_CHANGED),      "Input changed"                                  },
     { ERROR_TAG(INVALIDDATA),        "Invalid data found when processing input"       },
     { ERROR_TAG(MUXER_NOT_FOUND),    "Muxer not found"                                },
     { ERROR_TAG(OPTION_NOT_FOUND),   "Option not found"                               },
+    { ERROR_TAG(OUTPUT_CHANGED),     "Output changed"                                 },
     { ERROR_TAG(PATCHWELCOME),       "Not yet implemented in FFmpeg, patches welcome" },
     { ERROR_TAG(PROTOCOL_NOT_FOUND), "Protocol not found"                             },
     { ERROR_TAG(STREAM_NOT_FOUND),   "Stream not found"                               },
     { ERROR_TAG(UNKNOWN),            "Unknown error occurred"                         },
     { ERROR_TAG(EXPERIMENTAL),       "Experimental feature"                           },
+    { ERROR_TAG(INPUT_AND_OUTPUT_CHANGED), "Input and output changed"                 },
 };
 
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
