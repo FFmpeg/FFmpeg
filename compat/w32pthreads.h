@@ -54,12 +54,15 @@ typedef struct pthread_t {
  * not mutexes */
 typedef CRITICAL_SECTION pthread_mutex_t;
 
-/* This is the CONDITIONAL_VARIABLE typedef for using Window's native
- * conditional variables on kernels 6.0+.
- * MinGW does not currently have this typedef. */
+/* This is the CONDITION_VARIABLE typedef for using Windows' native
+ * conditional variables on kernels 6.0+. */
+#if HAVE_CONDITION_VARIABLE_PTR
+typedef CONDITION_VARIABLE pthread_cond_t;
+#else
 typedef struct pthread_cond_t {
-    void *ptr;
+    void *Ptr;
 } pthread_cond_t;
+#endif
 
 /* function pointers to conditional variable API on windows 6.0+ kernels */
 #if _WIN32_WINNT < 0x0600
@@ -158,7 +161,7 @@ static av_unused void pthread_cond_init(pthread_cond_t *cond, const void *unused
     win32_cond = av_mallocz(sizeof(win32_cond_t));
     if (!win32_cond)
         return;
-    cond->ptr = win32_cond;
+    cond->Ptr = win32_cond;
     win32_cond->semaphore = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
     if (!win32_cond->semaphore)
         return;
@@ -172,7 +175,7 @@ static av_unused void pthread_cond_init(pthread_cond_t *cond, const void *unused
 
 static av_unused void pthread_cond_destroy(pthread_cond_t *cond)
 {
-    win32_cond_t *win32_cond = cond->ptr;
+    win32_cond_t *win32_cond = cond->Ptr;
     /* native condition variables do not destroy */
     if (cond_init)
         return;
@@ -183,12 +186,12 @@ static av_unused void pthread_cond_destroy(pthread_cond_t *cond)
     pthread_mutex_destroy(&win32_cond->mtx_waiter_count);
     pthread_mutex_destroy(&win32_cond->mtx_broadcast);
     av_freep(&win32_cond);
-    cond->ptr = NULL;
+    cond->Ptr = NULL;
 }
 
 static av_unused void pthread_cond_broadcast(pthread_cond_t *cond)
 {
-    win32_cond_t *win32_cond = cond->ptr;
+    win32_cond_t *win32_cond = cond->Ptr;
     int have_waiter;
 
     if (cond_broadcast) {
@@ -219,7 +222,7 @@ static av_unused void pthread_cond_broadcast(pthread_cond_t *cond)
 
 static av_unused int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-    win32_cond_t *win32_cond = cond->ptr;
+    win32_cond_t *win32_cond = cond->Ptr;
     int last_waiter;
     if (cond_wait) {
         cond_wait(cond, mutex, INFINITE);
@@ -251,7 +254,7 @@ static av_unused int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mu
 
 static av_unused void pthread_cond_signal(pthread_cond_t *cond)
 {
-    win32_cond_t *win32_cond = cond->ptr;
+    win32_cond_t *win32_cond = cond->Ptr;
     int have_waiter;
     if (cond_signal) {
         cond_signal(cond);
