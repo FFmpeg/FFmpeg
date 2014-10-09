@@ -65,28 +65,7 @@ typedef struct pthread_cond_t {
 } pthread_cond_t;
 #endif
 
-/* function pointers to conditional variable API on windows 6.0+ kernels */
-#if _WIN32_WINNT < 0x0600
-static void (WINAPI *cond_broadcast)(pthread_cond_t *cond);
-static void (WINAPI *cond_init)(pthread_cond_t *cond);
-static void (WINAPI *cond_signal)(pthread_cond_t *cond);
-static BOOL (WINAPI *cond_wait)(pthread_cond_t *cond, pthread_mutex_t *mutex,
-                                DWORD milliseconds);
-#else
-#define cond_init      InitializeConditionVariable
-#define cond_broadcast WakeAllConditionVariable
-#define cond_signal    WakeConditionVariable
-#define cond_wait      SleepConditionVariableCS
-
-#define CreateEvent(a, reset, init, name)                   \
-    CreateEventEx(a, name,                                  \
-                  (reset ? CREATE_EVENT_MANUAL_RESET : 0) | \
-                  (init ? CREATE_EVENT_INITIAL_SET : 0),    \
-                  EVENT_ALL_ACCESS)
-// CreateSemaphoreExA seems to be desktop-only, but as long as we don't
-// use named semaphores, it doesn't matter if we use the W version.
-#define CreateSemaphore(a, b, c, d) \
-    CreateSemaphoreExW(a, b, c, d, 0, SEMAPHORE_ALL_ACCESS)
+#if _WIN32_WINNT >= 0x0600
 #define InitializeCriticalSection(x) InitializeCriticalSectionEx(x, 0, 0)
 #define WaitForSingleObject(a, b) WaitForSingleObjectEx(a, b, FALSE)
 #endif
@@ -139,6 +118,36 @@ static inline int pthread_mutex_unlock(pthread_mutex_t *m)
     return 0;
 }
 
+#if _WIN32_WINNT >= 0x0600
+static inline int pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
+{
+    InitializeConditionVariable(cond);
+    return 0;
+}
+
+/* native condition variables do not destroy */
+static inline void pthread_cond_destroy(pthread_cond_t *cond)
+{
+    return;
+}
+
+static inline void pthread_cond_broadcast(pthread_cond_t *cond)
+{
+    WakeAllConditionVariable(cond);
+}
+
+static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+{
+    SleepConditionVariableCS(cond, mutex, INFINITE);
+    return 0;
+}
+
+static inline void pthread_cond_signal(pthread_cond_t *cond)
+{
+    WakeConditionVariable(cond);
+}
+
+#else // _WIN32_WINNT < 0x0600
 /* for pre-Windows 6.0 platforms we need to define and use our own condition
  * variable and api */
 typedef struct  win32_cond_t {
@@ -149,6 +158,13 @@ typedef struct  win32_cond_t {
     HANDLE waiters_done;
     volatile int is_broadcast;
 } win32_cond_t;
+
+/* function pointers to conditional variable API on windows 6.0+ kernels */
+static void (WINAPI *cond_broadcast)(pthread_cond_t *cond);
+static void (WINAPI *cond_init)(pthread_cond_t *cond);
+static void (WINAPI *cond_signal)(pthread_cond_t *cond);
+static BOOL (WINAPI *cond_wait)(pthread_cond_t *cond, pthread_mutex_t *mutex,
+                                DWORD milliseconds);
 
 static av_unused int pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
 {
@@ -278,6 +294,7 @@ static av_unused void pthread_cond_signal(pthread_cond_t *cond)
 
     pthread_mutex_unlock(&win32_cond->mtx_broadcast);
 }
+#endif
 
 static av_unused void w32thread_init(void)
 {
