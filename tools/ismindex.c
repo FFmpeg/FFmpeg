@@ -235,24 +235,24 @@ static int64_t read_trun_duration(AVIOContext *in, int64_t end)
     int entries;
     avio_r8(in); /* version */
     flags = avio_rb24(in);
-    if (! (flags & MOV_TRUN_SAMPLE_DURATION)) {
-        fprintf(stderr, "no sample duration in trun flags");
+    if (!(flags & MOV_TRUN_SAMPLE_DURATION)) {
+        fprintf(stderr, "No sample duration in trun flags\n");
         return -1;
     }
     entries = avio_rb32(in);
 
-    if (flags & MOV_TRUN_DATA_OFFSET) avio_rb32(in);
+    if (flags & MOV_TRUN_DATA_OFFSET)        avio_rb32(in);
     if (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS) avio_rb32(in);
 
     pos = avio_tell(in);
     for (i = 0; i < entries && pos < end; i++) {
         int sample_duration = 0;
         if (flags & MOV_TRUN_SAMPLE_DURATION) sample_duration = avio_rb32(in);
-        if (flags & MOV_TRUN_SAMPLE_SIZE) avio_rb32(in);
-        if (flags & MOV_TRUN_SAMPLE_FLAGS) avio_rb32(in);
-        if (flags & MOV_TRUN_SAMPLE_CTS) avio_rb32(in);
+        if (flags & MOV_TRUN_SAMPLE_SIZE)     avio_rb32(in);
+        if (flags & MOV_TRUN_SAMPLE_FLAGS)    avio_rb32(in);
+        if (flags & MOV_TRUN_SAMPLE_CTS)      avio_rb32(in);
         if (sample_duration < 0) {
-            fprintf(stderr, "negative sample duration %d\n", sample_duration);
+            fprintf(stderr, "Negative sample duration %d\n", sample_duration);
             return -1;
         }
         ret += sample_duration;
@@ -271,7 +271,8 @@ static int64_t read_moof_duration(AVIOContext *in, int64_t offset)
     avio_seek(in, offset, SEEK_SET);
     moof_size = avio_rb32(in);
     tag  = avio_rb32(in);
-    if (expect_tag(tag, MKBETAG('m', 'o', 'o', 'f')) != 0) goto fail;
+    if (expect_tag(tag, MKBETAG('m', 'o', 'o', 'f')) != 0)
+        goto fail;
     while (pos < offset + moof_size) {
         pos = avio_tell(in);
         size = avio_rb32(in);
@@ -288,12 +289,12 @@ static int64_t read_moof_duration(AVIOContext *in, int64_t offset)
                 }
                 avio_seek(in, pos + size, SEEK_SET);
             }
-            fprintf(stderr, "couldn't find trun");
+            fprintf(stderr, "Couldn't find trun\n");
             goto fail;
         }
         avio_seek(in, pos + size, SEEK_SET);
     }
-    fprintf(stderr, "couldn't find traf");
+    fprintf(stderr, "Couldn't find traf\n");
 
 fail:
     return ret;
