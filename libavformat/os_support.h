@@ -56,6 +56,13 @@
 #define mkdir(a, b) _mkdir(a)
 #endif
 
+#ifdef __ANDROID__
+#  ifdef lseek
+#   undef lseek
+#  endif
+#  define lseek(f,p,w) lseek64((f), (p), (w))
+#endif
+
 static inline int is_dos_path(const char *path)
 {
 #if HAVE_DOS_PATHS
