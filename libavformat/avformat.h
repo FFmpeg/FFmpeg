@@ -1715,7 +1715,7 @@ typedef struct AVFormatContext {
     int64_t probesize2;
 
     /**
-     * dump format seperator.
+     * dump format separator.
      * can be ", " or "\n      " or anything else
      * Code outside libavformat should access this field using AVOptions
      * (NO direct access).

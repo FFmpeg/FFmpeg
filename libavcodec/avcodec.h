@@ -3081,7 +3081,7 @@ typedef struct AVCodecContext {
     uint16_t *chroma_intra_matrix;
 
     /**
-     * dump format seperator.
+     * dump format separator.
      * can be ", " or "\n      " or anything else
      * Code outside libavcodec should access this field using AVOptions
      * (NO direct access).
