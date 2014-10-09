@@ -609,10 +609,12 @@ int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
 static int rtsp_listen(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
-    char host[128], path[512], auth[128];
+    char proto[128], host[128], path[512], auth[128];
     char uri[500];
     int port;
+    int default_port = RTSP_DEFAULT_PORT;
     char tcpname[500];
+    const char *lower_proto = "tcp";
     unsigned char rbuf[4096];
     unsigned char method[10];
     int rbuflen = 0;
@@ -620,18 +622,23 @@ static int rtsp_listen(AVFormatContext *s)
     enum RTSPMethod methodcode;
 
     /* extract hostname and port */
-    av_url_split(NULL, 0, auth, sizeof(auth), host, sizeof(host), &port,
-                 path, sizeof(path), s->filename);
+    av_url_split(proto, sizeof(proto), auth, sizeof(auth), host, sizeof(host),
+                 &port, path, sizeof(path), s->filename);
 
     /* ff_url_join. No authorization by now (NULL) */
-    ff_url_join(rt->control_uri, sizeof(rt->control_uri), "rtsp", NULL, host,
+    ff_url_join(rt->control_uri, sizeof(rt->control_uri), proto, NULL, host,
                 port, "%s", path);
 
+    if (!strcmp(proto, "rtsps")) {
+        lower_proto  = "tls";
+        default_port = RTSPS_DEFAULT_PORT;
+    }
+
     if (port < 0)
-        port = RTSP_DEFAULT_PORT;
+        port = default_port;
 
     /* Create TCP connection */
-    ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port,
+    ff_url_join(tcpname, sizeof(tcpname), lower_proto, NULL, host, port,
                 "?listen&listen_timeout=%d", rt->initial_timeout * 1000);
 
     if (ret = ffurl_open(&rt->rtsp_hd, tcpname, AVIO_FLAG_READ_WRITE,
