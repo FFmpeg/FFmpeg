@@ -1531,6 +1531,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 goto free_and_end;
             }
             if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ420P ||
+                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ411P ||
                 avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ422P ||
                 avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ440P ||
                 avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ444P)
