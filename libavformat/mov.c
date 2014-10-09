@@ -937,7 +937,7 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     color_trc = avio_rb16(pb);
     color_matrix = avio_rb16(pb);
 
-    av_dlog(c->fc, "%s: pri %"PRIu16" trc %"PRIu16" matrix %"PRIu16"",
+    av_dlog(c->fc, "%s: pri %d trc %d matrix %d",
             color_parameter_type, color_primaries, color_trc, color_matrix);
 
     if (c->isom) {
