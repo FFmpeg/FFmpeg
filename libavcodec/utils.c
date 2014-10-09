@@ -2951,7 +2951,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     int bitrate;
     int new_line = 0;
     AVRational display_aspect_ratio;
-    const char *separator = enc->dump_separator ? enc->dump_separator : ", ";
+    const char *separator = enc->dump_separator ? (const char *)enc->dump_separator : ", ";
 
     if (!buf || buf_size <= 0)
         return;
