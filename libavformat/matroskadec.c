@@ -3326,8 +3326,7 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
 
     // basename of the file
     buf = strrchr(s->filename, '/');
-    if (!buf) return -1;
-    av_dict_set(&s->streams[0]->metadata, FILENAME, ++buf, 0);
+    av_dict_set(&s->streams[0]->metadata, FILENAME, buf ? ++buf : s->filename, 0);
 
     // duration
     buf = av_asprintf("%g", matroska->duration);
