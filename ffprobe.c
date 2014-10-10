@@ -2112,7 +2112,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
             else   print_str_opt("pix_fmt", "unknown");
             print_int("level",   dec_ctx->level);
             if (dec_ctx->color_range != AVCOL_RANGE_UNSPECIFIED)
-                print_str    ("color_range", dec_ctx->color_range == AVCOL_RANGE_MPEG ? "tv": "pc");
+                print_str    ("color_range", av_color_range_name(dec_ctx->color_range));
             else
                 print_str_opt("color_range", "N/A");
             s = av_get_colorspace_name(dec_ctx->colorspace);
