@@ -175,6 +175,7 @@ TESTPROGS = adler32                                                     \
             ripemd                                                      \
             sha                                                         \
             sha512                                                      \
+            softfloat                                                   \
             tree                                                        \
             utf8                                                        \
             xtea                                                        \

@@ -356,4 +356,30 @@ int av_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
  */
 enum AVPixelFormat av_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt1, enum AVPixelFormat dst_pix_fmt2,
                                              enum AVPixelFormat src_pix_fmt, int has_alpha, int *loss_ptr);
+
+/**
+ * @return the name for provided color range or NULL if unknown.
+ */
+const char *av_color_range_name(enum AVColorRange range);
+
+/**
+ * @return the name for provided color primaries or NULL if unknown.
+ */
+const char *av_color_primaries_name(enum AVColorPrimaries primaries);
+
+/**
+ * @return the name for provided color transfer or NULL if unknown.
+ */
+const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer);
+
+/**
+ * @return the name for provided color space or NULL if unknown.
+ */
+const char *av_color_space_name(enum AVColorSpace space);
+
+/**
+ * @return the name for provided chroma location or NULL if unknown.
+ */
+const char *av_chroma_location_name(enum AVChromaLocation location);
+
 #endif /* AVUTIL_PIXDESC_H */

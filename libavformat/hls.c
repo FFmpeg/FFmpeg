@@ -193,9 +193,9 @@ static void free_segment_list(struct playlist *pls)
 {
     int i;
     for (i = 0; i < pls->n_segments; i++) {
-        av_free(pls->segments[i]->key);
-        av_free(pls->segments[i]->url);
-        av_free(pls->segments[i]);
+        av_freep(&pls->segments[i]->key);
+        av_freep(&pls->segments[i]->url);
+        av_freep(&pls->segments[i]);
     }
     av_freep(&pls->segments);
     pls->n_segments = 0;
@@ -212,7 +212,7 @@ static void free_playlist_list(HLSContext *c)
         av_dict_free(&pls->id3_initial);
         ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
         av_free_packet(&pls->pkt);
-        av_free(pls->pb.buffer);
+        av_freep(&pls->pb.buffer);
         if (pls->input)
             ffurl_close(pls->input);
         if (pls->ctx) {
@@ -243,7 +243,7 @@ static void free_rendition_list(HLSContext *c)
 {
     int i;
     for (i = 0; i < c->n_renditions; i++)
-        av_free(c->renditions[i]);
+        av_freep(&c->renditions[i]);
     av_freep(&c->renditions);
     c->n_renditions = 0;
 }

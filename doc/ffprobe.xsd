@@ -10,6 +10,7 @@
         <xsd:sequence>
             <xsd:element name="program_version"  type="ffprobe:programVersionType"  minOccurs="0" maxOccurs="1" />
             <xsd:element name="library_versions" type="ffprobe:libraryVersionsType" minOccurs="0" maxOccurs="1" />
+            <xsd:element name="pixel_formats"    type="ffprobe:pixelFormatsType"    minOccurs="0" maxOccurs="1" />
             <xsd:element name="packets"  type="ffprobe:packetsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="frames"   type="ffprobe:framesType"  minOccurs="0" maxOccurs="1" />
             <xsd:element name="programs" type="ffprobe:programsType" minOccurs="0" maxOccurs="1" />
@@ -276,5 +277,46 @@
         <xsd:sequence>
           <xsd:element name="library_version" type="ffprobe:libraryVersionType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatFlagsType">
+      <xsd:attribute name="big_endian" type="xsd:int" use="required"/>
+      <xsd:attribute name="palette"    type="xsd:int" use="required"/>
+      <xsd:attribute name="bitstream"  type="xsd:int" use="required"/>
+      <xsd:attribute name="hwaccel"    type="xsd:int" use="required"/>
+      <xsd:attribute name="planar"     type="xsd:int" use="required"/>
+      <xsd:attribute name="rgb"        type="xsd:int" use="required"/>
+      <xsd:attribute name="pseudopal"  type="xsd:int" use="required"/>
+      <xsd:attribute name="alpha"      type="xsd:int" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatComponentType">
+      <xsd:attribute name="index"      type="xsd:int" use="required"/>
+      <xsd:attribute name="bit_depth"  type="xsd:int" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatComponentsType">
+      <xsd:sequence>
+        <xsd:element name="component" type="ffprobe:pixelFormatComponentType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatType">
+      <xsd:sequence>
+        <xsd:element name="flags" type="ffprobe:pixelFormatFlagsType" minOccurs="0" maxOccurs="1"/>
+        <xsd:element name="components" type="ffprobe:pixelFormatComponentsType" minOccurs="0" maxOccurs="1"/>
+      </xsd:sequence>
+
+      <xsd:attribute name="name"                type="xsd:string" use="required"/>
+      <xsd:attribute name="nb_components"       type="xsd:int"    use="required"/>
+      <xsd:attribute name="log2_chroma_w"       type="xsd:int"/>
+      <xsd:attribute name="log2_chroma_h"       type="xsd:int"/>
+      <xsd:attribute name="bits_per_pixel"      type="xsd:int"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatsType">
+      <xsd:sequence>
+        <xsd:element name="pixel_format" type="ffprobe:pixelFormatType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
     </xsd:complexType>
 </xsd:schema>

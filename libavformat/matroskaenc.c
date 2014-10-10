@@ -1770,7 +1770,8 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         // on seeing key frames.
         start_new_cluster = keyframe;
     } else if (mkv->is_dash && codec_type == AVMEDIA_TYPE_AUDIO &&
-               cluster_time > mkv->cluster_time_limit) {
+               (mkv->cluster_pos == -1 ||
+                cluster_time > mkv->cluster_time_limit)) {
         // For DASH audio, we create a Cluster based on cluster_time_limit
         start_new_cluster = 1;
     } else if (!mkv->is_dash &&

@@ -203,6 +203,9 @@ typedef struct VC1Context{
     int panscanflag;      ///< NUMPANSCANWIN, TOPLEFT{X,Y}, BOTRIGHT{X,Y} present
     int refdist_flag;     ///< REFDIST syntax element present in II, IP, PI or PP field picture headers
     int extended_dmv;     ///< Additional extended dmv range at P/B frame-level
+    int color_prim;       ///< 8bits, chroma coordinates of the color primaries
+    int transfer_char;    ///< 8bits, Opto-electronic transfer characteristics
+    int matrix_coef;      ///< 8bits, Color primaries->YCbCr transform matrix
     int hrd_param_flag;   ///< Presence of Hypothetical Reference
                           ///< Decoder parameters
     int psf;              ///< Progressive Segmented Frame
@@ -412,5 +415,17 @@ int  ff_vc1_decode_init_alloc_tables(VC1Context *v);
 void ff_vc1_init_transposed_scantables(VC1Context *v);
 int  ff_vc1_decode_end(AVCodecContext *avctx);
 void ff_vc1_decode_blocks(VC1Context *v);
+
+void ff_vc1_loop_filter_iblk(VC1Context *v, int pq);
+void ff_vc1_loop_filter_iblk_delayed(VC1Context *v, int pq);
+void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v);
+void ff_vc1_apply_p_loop_filter(VC1Context *v);
+
+void ff_vc1_mc_1mv(VC1Context *v, int dir);
+void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg);
+void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir);
+void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg);
+
+void ff_vc1_interp_mc(VC1Context *v);
 
 #endif /* AVCODEC_VC1_H */

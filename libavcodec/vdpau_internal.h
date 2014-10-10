@@ -55,6 +55,38 @@ union AVVDPAUPictureInfo {
 #include "vdpau.h"
 #endif
 
+typedef struct VDPAUHWContext {
+    AVVDPAUContext context;
+    VdpDevice device;
+    VdpGetProcAddress *get_proc_address;
+    char reset;
+} VDPAUHWContext;
+
+typedef struct VDPAUContext {
+    /**
+     * VDPAU device handle
+     */
+    VdpDevice device;
+
+    /**
+     * VDPAU decoder handle
+     */
+    VdpDecoder decoder;
+
+    /**
+     * VDPAU device driver
+     */
+    VdpGetProcAddress *get_proc_address;
+
+    /**
+     * VDPAU decoder render callback
+     */
+    VdpDecoderRender *render;
+
+    uint32_t width;
+    uint32_t height;
+} VDPAUContext;
+
 struct vdpau_picture_context {
     /**
      * VDPAU picture information.
@@ -76,10 +108,17 @@ struct vdpau_picture_context {
      */
     VdpBitstreamBuffer *bitstream_buffers;
 };
-#endif
+
+int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
+                         int level);
+#endif //CONFIG_VDPAU
+
+int ff_vdpau_common_uninit(AVCodecContext *avctx);
 
 int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic,
                                 const uint8_t *buffer, uint32_t size);
+int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
+                              struct vdpau_picture_context *pic);
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx);
 int ff_vdpau_add_buffer(struct vdpau_picture_context *pic, const uint8_t *buf,
                         uint32_t buf_size);

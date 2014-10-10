@@ -156,8 +156,9 @@ static char *extradata2psets(AVCodecContext *c)
     const uint8_t *r;
     static const char pset_string[] = "; sprop-parameter-sets=";
     static const char profile_string[] = "; profile-level-id=";
-    uint8_t *orig_extradata = NULL;
-    int orig_extradata_size = 0;
+    uint8_t *extradata = c->extradata;
+    int extradata_size = c->extradata_size;
+    uint8_t *tmpbuf = NULL;
     const uint8_t *sps = NULL, *sps_end;
 
     if (c->extradata_size > MAX_EXTRADATA_SIZE) {
@@ -166,44 +167,28 @@ static char *extradata2psets(AVCodecContext *c)
         return NULL;
     }
     if (c->extradata[0] == 1) {
-        uint8_t *dummy_p;
-        int dummy_int;
-        AVBitStreamFilterContext *bsfc= av_bitstream_filter_init("h264_mp4toannexb");
-
-        if (!bsfc) {
-            av_log(c, AV_LOG_ERROR, "Cannot open the h264_mp4toannexb BSF!\n");
-
+        if (ff_avc_write_annexb_extradata(c->extradata, &extradata,
+                                          &extradata_size))
             return NULL;
-        }
-
-        orig_extradata_size = c->extradata_size;
-        orig_extradata = av_mallocz(orig_extradata_size +
-                                    FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!orig_extradata) {
-            av_bitstream_filter_close(bsfc);
-            return NULL;
-        }
-        memcpy(orig_extradata, c->extradata, orig_extradata_size);
-        av_bitstream_filter_filter(bsfc, c, NULL, &dummy_p, &dummy_int, NULL, 0, 0);
-        av_bitstream_filter_close(bsfc);
+        tmpbuf = extradata;
     }
 
     psets = av_mallocz(MAX_PSET_SIZE);
     if (!psets) {
         av_log(c, AV_LOG_ERROR, "Cannot allocate memory for the parameter sets.\n");
-        av_free(orig_extradata);
+        av_free(tmpbuf);
         return NULL;
     }
     memcpy(psets, pset_string, strlen(pset_string));
     p = psets + strlen(pset_string);
-    r = ff_avc_find_startcode(c->extradata, c->extradata + c->extradata_size);
-    while (r < c->extradata + c->extradata_size) {
+    r = ff_avc_find_startcode(extradata, extradata + extradata_size);
+    while (r < extradata + extradata_size) {
         const uint8_t *r1;
         uint8_t nal_type;
 
         while (!*(r++));
         nal_type = *r & 0x1f;
-        r1 = ff_avc_find_startcode(r, c->extradata + c->extradata_size);
+        r1 = ff_avc_find_startcode(r, extradata + extradata_size);
         if (nal_type != 7 && nal_type != 8) { /* Only output SPS and PPS */
             r = r1;
             continue;
@@ -219,6 +204,7 @@ static char *extradata2psets(AVCodecContext *c)
         if (!av_base64_encode(p, MAX_PSET_SIZE - (p - psets), r, r1 - r)) {
             av_log(c, AV_LOG_ERROR, "Cannot Base64-encode %"PTRDIFF_SPECIFIER" %"PTRDIFF_SPECIFIER"!\n", MAX_PSET_SIZE - (p - psets), r1 - r);
             av_free(psets);
+            av_free(tmpbuf);
 
             return NULL;
         }
@@ -231,11 +217,7 @@ static char *extradata2psets(AVCodecContext *c)
         ff_data_to_hex(p, sps + 1, 3, 0);
         p[6] = '\0';
     }
-    if (orig_extradata) {
-        av_free(c->extradata);
-        c->extradata      = orig_extradata;
-        c->extradata_size = orig_extradata_size;
-    }
+    av_free(tmpbuf);
 
     return psets;
 }

@@ -381,8 +381,23 @@ int ff_poll_frame(AVFilterLink *link)
     return min;
 }
 
-static const char *const var_names[] = {   "t",   "n",   "pos",        NULL };
-enum                                   { VAR_T, VAR_N, VAR_POS, VAR_VARS_NB };
+static const char *const var_names[] = {
+    "t",
+    "n",
+    "pos",
+    "w",
+    "h",
+    NULL
+};
+
+enum {
+    VAR_T,
+    VAR_N,
+    VAR_POS,
+    VAR_W,
+    VAR_H,
+    VAR_VARS_NB
+};
 
 static int set_enable_expr(AVFilterContext *ctx, const char *expr)
 {
@@ -1071,6 +1086,8 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         int64_t pos = av_frame_get_pkt_pos(out);
         dstctx->var_values[VAR_N] = link->frame_count;
         dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
+        dstctx->var_values[VAR_W] = link->w;
+        dstctx->var_values[VAR_H] = link->h;
         dstctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
 
         dstctx->is_disabled = fabs(av_expr_eval(dstctx->enable, dstctx->var_values, NULL)) < 0.5;

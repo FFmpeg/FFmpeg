@@ -398,7 +398,7 @@ typedef struct AVProbeData {
     const char *filename;
     unsigned char *buf; /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
     int buf_size;       /**< Size of buf except extra allocated bytes */
-    uint8_t *mime_type; /**< mime_type, when known. */
+    const char *mime_type; /**< mime_type, when known. */
 } AVProbeData;
 
 #define AVPROBE_SCORE_RETRY (AVPROBE_SCORE_MAX/4)
@@ -1713,6 +1713,16 @@ typedef struct AVFormatContext {
      * via AVOptions (NO direct access).
      */
     int64_t probesize2;
+
+    /**
+     * dump format separator.
+     * can be ", " or "\n      " or anything else
+     * Code outside libavformat should access this field using AVOptions
+     * (NO direct access).
+     * - muxing: Set by user.
+     * - demuxing: Set by user.
+     */
+    uint8_t *dump_separator;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);

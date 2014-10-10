@@ -22,7 +22,9 @@
  */
 
 #include <limits.h>
+#include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "h264.h"
 #include "vc1.h"
 
@@ -38,12 +40,170 @@
  * @{
  */
 
+static int vdpau_error(VdpStatus status)
+{
+    switch (status) {
+    case VDP_STATUS_OK:
+        return 0;
+    case VDP_STATUS_NO_IMPLEMENTATION:
+        return AVERROR(ENOSYS);
+    case VDP_STATUS_DISPLAY_PREEMPTED:
+        return AVERROR(EIO);
+    case VDP_STATUS_INVALID_HANDLE:
+        return AVERROR(EBADF);
+    case VDP_STATUS_INVALID_POINTER:
+        return AVERROR(EFAULT);
+    case VDP_STATUS_RESOURCES:
+        return AVERROR(ENOBUFS);
+    case VDP_STATUS_HANDLE_DEVICE_MISMATCH:
+        return AVERROR(EXDEV);
+    case VDP_STATUS_ERROR:
+        return AVERROR(EIO);
+    default:
+        return AVERROR(EINVAL);
+    }
+}
+
 AVVDPAUContext *av_alloc_vdpaucontext(void)
 {
     return av_vdpau_alloc_context();
 }
 
 MAKE_ACCESSORS(AVVDPAUContext, vdpau_hwaccel, AVVDPAU_Render2, render2)
+
+int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
+                         int level)
+{
+    VDPAUHWContext *hwctx = avctx->hwaccel_context;
+    VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
+    VdpVideoSurfaceQueryCapabilities *surface_query_caps;
+    VdpDecoderQueryCapabilities *decoder_query_caps;
+    VdpDecoderCreate *create;
+    void *func;
+    VdpStatus status;
+    VdpBool supported;
+    uint32_t max_level, max_mb, max_width, max_height;
+    /* See vdpau/vdpau.h for alignment constraints. */
+    uint32_t width  = (avctx->coded_width + 1) & ~1;
+    uint32_t height = (avctx->coded_height + 3) & ~3;
+
+    vdctx->width            = UINT32_MAX;
+    vdctx->height           = UINT32_MAX;
+
+    if (!hwctx) {
+        vdctx->device  = VDP_INVALID_HANDLE;
+        av_log(avctx, AV_LOG_WARNING, "hwaccel_context has not been setup by the user application, cannot initialize\n");
+        return 0;
+    }
+
+    if (hwctx->context.decoder != VDP_INVALID_HANDLE) {
+        vdctx->decoder = hwctx->context.decoder;
+        vdctx->render  = hwctx->context.render;
+        vdctx->device  = VDP_INVALID_HANDLE;
+        return 0; /* Decoder created by user */
+    }
+    hwctx->reset            = 0;
+
+    vdctx->device           = hwctx->device;
+    vdctx->get_proc_address = hwctx->get_proc_address;
+
+    if (level < 0)
+        return AVERROR(ENOTSUP);
+
+    status = vdctx->get_proc_address(vdctx->device,
+                                     VDP_FUNC_ID_VIDEO_SURFACE_QUERY_CAPABILITIES,
+                                     &func);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+    else
+        surface_query_caps = func;
+
+    status = surface_query_caps(vdctx->device, VDP_CHROMA_TYPE_420, &supported,
+                                &max_width, &max_height);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+    if (supported != VDP_TRUE ||
+        max_width < width || max_height < height)
+        return AVERROR(ENOTSUP);
+
+    status = vdctx->get_proc_address(vdctx->device,
+                                     VDP_FUNC_ID_DECODER_QUERY_CAPABILITIES,
+                                     &func);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+    else
+        decoder_query_caps = func;
+
+    status = decoder_query_caps(vdctx->device, profile, &supported, &max_level,
+                                &max_mb, &max_width, &max_height);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+
+    if (supported != VDP_TRUE || max_level < level ||
+        max_width < width || max_height < height)
+        return AVERROR(ENOTSUP);
+
+    status = vdctx->get_proc_address(vdctx->device, VDP_FUNC_ID_DECODER_CREATE,
+                                     &func);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+    else
+        create = func;
+
+    status = vdctx->get_proc_address(vdctx->device, VDP_FUNC_ID_DECODER_RENDER,
+                                     &func);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+    else
+        vdctx->render = func;
+
+    status = create(vdctx->device, profile, width, height, avctx->refs,
+                    &vdctx->decoder);
+    if (status == VDP_STATUS_OK) {
+        vdctx->width  = avctx->coded_width;
+        vdctx->height = avctx->coded_height;
+    }
+
+    return vdpau_error(status);
+}
+
+int ff_vdpau_common_uninit(AVCodecContext *avctx)
+{
+    VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
+    VdpDecoderDestroy *destroy;
+    void *func;
+    VdpStatus status;
+
+    if (vdctx->device == VDP_INVALID_HANDLE)
+        return 0; /* Decoder created and destroyed by user */
+    if (vdctx->width == UINT32_MAX && vdctx->height == UINT32_MAX)
+        return 0;
+
+    status = vdctx->get_proc_address(vdctx->device,
+                                     VDP_FUNC_ID_DECODER_DESTROY, &func);
+    if (status != VDP_STATUS_OK)
+        return vdpau_error(status);
+    else
+        destroy = func;
+
+    status = destroy(vdctx->decoder);
+    return vdpau_error(status);
+}
+
+static int ff_vdpau_common_reinit(AVCodecContext *avctx)
+{
+    VDPAUHWContext *hwctx = avctx->hwaccel_context;
+    VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
+
+    if (vdctx->device == VDP_INVALID_HANDLE)
+        return 0; /* Decoder created by user */
+    if (avctx->coded_width == vdctx->width &&
+        avctx->coded_height == vdctx->height && !hwctx->reset)
+        return 0;
+
+    avctx->hwaccel->uninit(avctx);
+    return avctx->hwaccel->init(avctx);
+}
 
 int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic_ctx,
                                 av_unused const uint8_t *buffer,
@@ -55,17 +215,18 @@ int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic_ctx,
     return 0;
 }
 
-#if CONFIG_H263_VDPAU_HWACCEL  || CONFIG_MPEG1_VDPAU_HWACCEL || \
-    CONFIG_MPEG2_VDPAU_HWACCEL || CONFIG_MPEG4_VDPAU_HWACCEL || \
-    CONFIG_VC1_VDPAU_HWACCEL   || CONFIG_WMV3_VDPAU_HWACCEL
-int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
+int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
+                              struct vdpau_picture_context *pic_ctx)
 {
-    int res = 0;
+    VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
     AVVDPAUContext *hwctx = avctx->hwaccel_context;
-    MpegEncContext *s = avctx->priv_data;
-    Picture *pic = s->current_picture_ptr;
-    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
-    VdpVideoSurface surf = ff_vdpau_get_surface_id(pic->f);
+    VdpVideoSurface surf = ff_vdpau_get_surface_id(frame);
+    VdpStatus status;
+    int val;
+
+    val = ff_vdpau_common_reinit(avctx);
+    if (val < 0)
+        return val;
 
 #if FF_API_BUFS_VDPAU
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -76,14 +237,14 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    if (!hwctx->render) {
-        res = hwctx->render2(avctx, pic->f, (void *)&pic_ctx->info,
-                             pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
+    if (!hwctx->render && hwctx->render2) {
+        status = hwctx->render2(avctx, frame, (void *)&pic_ctx->info,
+                                pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
     } else
-    hwctx->render(hwctx->decoder, surf, (void *)&pic_ctx->info,
-                  pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
+    status = vdctx->render(vdctx->decoder, surf, (void *)&pic_ctx->info,
+                           pic_ctx->bitstream_buffers_used,
+                           pic_ctx->bitstream_buffers);
 
-    ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
     av_freep(&pic_ctx->bitstream_buffers);
 
 #if FF_API_BUFS_VDPAU
@@ -94,7 +255,25 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    return res;
+    return vdpau_error(status);
+}
+
+#if CONFIG_H263_VDPAU_HWACCEL  || CONFIG_MPEG1_VDPAU_HWACCEL || \
+    CONFIG_MPEG2_VDPAU_HWACCEL || CONFIG_MPEG4_VDPAU_HWACCEL || \
+    CONFIG_VC1_VDPAU_HWACCEL   || CONFIG_WMV3_VDPAU_HWACCEL
+int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
+{
+    MpegEncContext *s = avctx->priv_data;
+    Picture *pic = s->current_picture_ptr;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
+    int val;
+
+    val = ff_vdpau_common_end_frame(avctx, pic->f, pic_ctx);
+    if (val < 0)
+        return val;
+
+    ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
+    return 0;
 }
 #endif
 
@@ -500,6 +679,24 @@ do {                        \
 AVVDPAUContext *av_vdpau_alloc_context(void)
 {
     return av_mallocz(sizeof(AVVDPAUContext));
+}
+
+int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
+                          VdpGetProcAddress *get_proc, unsigned flags)
+{
+    VDPAUHWContext *hwctx;
+
+    if (av_reallocp(&avctx->hwaccel_context, sizeof(*hwctx)))
+        return AVERROR(ENOMEM);
+
+    hwctx = avctx->hwaccel_context;
+
+    memset(hwctx, 0, sizeof(*hwctx));
+    hwctx->context.decoder  = VDP_INVALID_HANDLE;
+    hwctx->device           = device;
+    hwctx->get_proc_address = get_proc;
+    hwctx->reset            = 1;
+    return 0;
 }
 
 /* @}*/

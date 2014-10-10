@@ -1920,7 +1920,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           1000000000, track->default_duration, 30000);
 #if FF_API_R_FRAME_RATE
-                if (st->avg_frame_rate.num < st->avg_frame_rate.den * 1000L)
+                if (   st->avg_frame_rate.num < st->avg_frame_rate.den * 1000L
+                    && st->avg_frame_rate.num > st->avg_frame_rate.den * 5L)
                     st->r_frame_rate = st->avg_frame_rate;
 #endif
             }
@@ -3325,8 +3326,7 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
 
     // basename of the file
     buf = strrchr(s->filename, '/');
-    if (!buf) return -1;
-    av_dict_set(&s->streams[0]->metadata, FILENAME, ++buf, 0);
+    av_dict_set(&s->streams[0]->metadata, FILENAME, buf ? ++buf : s->filename, 0);
 
     // duration
     buf = av_asprintf("%g", matroska->duration);

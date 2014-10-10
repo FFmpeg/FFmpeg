@@ -433,14 +433,16 @@ enum AVPixelFormat {
   * Chromaticity coordinates of the source primaries.
   */
 enum AVColorPrimaries {
+    AVCOL_PRI_RESERVED0   = 0,
     AVCOL_PRI_BT709       = 1, ///< also ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B
     AVCOL_PRI_UNSPECIFIED = 2,
     AVCOL_PRI_RESERVED    = 3,
-    AVCOL_PRI_BT470M      = 4,
+    AVCOL_PRI_BT470M      = 4, ///< also FCC Title 47 Code of Federal Regulations 73.682 (a)(20)
+
     AVCOL_PRI_BT470BG     = 5, ///< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM
     AVCOL_PRI_SMPTE170M   = 6, ///< also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC
     AVCOL_PRI_SMPTE240M   = 7, ///< functionally identical to above
-    AVCOL_PRI_FILM        = 8,
+    AVCOL_PRI_FILM        = 8, ///< colour filters using Illuminant C
     AVCOL_PRI_BT2020      = 9, ///< ITU-R BT2020
     AVCOL_PRI_NB,              ///< Not part of ABI
 };
@@ -449,6 +451,7 @@ enum AVColorPrimaries {
  * Color Transfer Characteristic.
  */
 enum AVColorTransferCharacteristic {
+    AVCOL_TRC_RESERVED0    = 0,
     AVCOL_TRC_BT709        = 1,  ///< also ITU-R BT1361
     AVCOL_TRC_UNSPECIFIED  = 2,
     AVCOL_TRC_RESERVED     = 3,
@@ -471,11 +474,11 @@ enum AVColorTransferCharacteristic {
  * YUV colorspace type.
  */
 enum AVColorSpace {
-    AVCOL_SPC_RGB         = 0,
+    AVCOL_SPC_RGB         = 0,  ///< order of coefficients is actually GBR, also IEC 61966-2-1 (sRGB)
     AVCOL_SPC_BT709       = 1,  ///< also ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B
     AVCOL_SPC_UNSPECIFIED = 2,
     AVCOL_SPC_RESERVED    = 3,
-    AVCOL_SPC_FCC         = 4,
+    AVCOL_SPC_FCC         = 4,  ///< FCC Title 47 Code of Federal Regulations 73.682 (a)(20)
     AVCOL_SPC_BT470BG     = 5,  ///< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM / IEC 61966-2-4 xvYCC601
     AVCOL_SPC_SMPTE170M   = 6,  ///< also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC / functionally identical to above
     AVCOL_SPC_SMPTE240M   = 7,
