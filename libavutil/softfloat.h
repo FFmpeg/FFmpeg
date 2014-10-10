@@ -104,8 +104,10 @@ static inline av_const int av_cmp_sf(SoftFloat a, SoftFloat b){
 
 static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
-    if(t<0) return av_normalize1_sf((SoftFloat){b.exp, b.mant + (a.mant >> (-t))});
-    else    return av_normalize1_sf((SoftFloat){a.exp, a.mant + (b.mant >>   t )});
+    if      (t <-31) return b;
+    else if (t <  0) return av_normalize1_sf((SoftFloat){b.exp, b.mant + (a.mant >> (-t))});
+    else if (t < 32) return av_normalize1_sf((SoftFloat){a.exp, a.mant + (b.mant >>   t )});
+    else             return a;
 }
 
 static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
