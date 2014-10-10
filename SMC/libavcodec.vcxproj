@@ -1589,6 +1589,18 @@
     <ClCompile Include="..\libavcodec\vc1dec.c">
       <ObjectFileName>$(IntDir)\libavcodec_vc1dec.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\vc1_block.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vc1_block.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vc1_loopfilter.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vc1_loopfilter.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vc1_mc.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vc1_mc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vc1_pred.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vc1_pred.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\vc1.c">
       <ObjectFileName>$(IntDir)\libavcodec_vc1.obj</ObjectFileName>
     </ClCompile>
