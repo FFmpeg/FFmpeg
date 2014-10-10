@@ -2122,9 +2122,6 @@ static int video_thread(void *arg)
 #endif
 
     for (;;) {
-        while (is->paused && !is->videoq.abort_request)
-            SDL_Delay(10);
-
         ret = get_video_frame(is, frame);
         if (ret < 0)
             goto the_end;
@@ -2211,10 +2208,6 @@ static int subtitle_thread(void *arg)
     int r, g, b, y, u, v, a;
 
     for (;;) {
-        while (is->paused && !is->subtitleq.abort_request) {
-            SDL_Delay(10);
-        }
-
         if (!(sp = frame_queue_peek_writable(&is->subpq)))
             return 0;
 
