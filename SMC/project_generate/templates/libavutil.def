@@ -50,6 +50,11 @@ EXPORTS
     av_buffer_unref
     av_calloc
     av_channel_layout_extract_channel
+    av_chroma_location_name
+    av_color_primaries_name
+    av_color_range_name
+    av_color_space_name
+    av_color_transfer_name
     av_compare_mod
     av_compare_ts
     av_cpu_count
