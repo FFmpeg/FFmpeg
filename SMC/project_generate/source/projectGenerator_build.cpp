@@ -285,7 +285,7 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["libflite"] = ( sProjectName.compare("libavfilter") == 0 );//??
     mProjectDeps["libfreetype"] = ( sProjectName.compare( "libavfilter" ) == 0 );
     mProjectDeps["libfribidi"] = ( sProjectName.compare( "libavfilter" ) == 0 );
-    mProjectDeps["libgme"] = ( sProjectName.compare("libavformat") == 0 );//??
+    mProjectDeps["libgme"] = ( sProjectName.compare("libavformat") == 0 );
     mProjectDeps["libgsm"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libiec61883"] = ( sProjectName.compare("libavdevice") == 0 );//?
     mProjectDeps["libilbc"] = ( sProjectName.compare("libavcodec") == 0 );

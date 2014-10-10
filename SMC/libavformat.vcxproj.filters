@@ -1092,6 +1092,9 @@
     <ClCompile Include="..\libavformat\yuv4mpegdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\libgme.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\libmodplug.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

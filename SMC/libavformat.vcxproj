@@ -1133,6 +1133,9 @@
     <ClCompile Include="..\libavformat\yuv4mpegdec.c">
       <ObjectFileName>$(IntDir)\libavformat_yuv4mpegdec.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\libgme.c">
+      <ObjectFileName>$(IntDir)\libavformat_libgme.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\libmodplug.c">
       <ObjectFileName>$(IntDir)\libavformat_libmodplug.obj</ObjectFileName>
     </ClCompile>
@@ -1454,7 +1457,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -1519,7 +1522,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -1587,7 +1590,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavcodecd.lib;libavutild.lib;libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavcodecd.lib;libavutild.lib;libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
@@ -1656,7 +1659,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavcodecd.lib;libavutild.lib;libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavcodecd.lib;libavutild.lib;libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1724,7 +1727,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavcodecd.lib;libavutild.lib;libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavcodecd.lib;libavutild.lib;libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
@@ -1793,7 +1796,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavcodecd.lib;libavutild.lib;libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavcodecd.lib;libavutild.lib;libbz2d.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;librtmpd.lib;libsshd.lib;libzd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -1865,7 +1868,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libgnutls.lib;libbluray.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -1937,7 +1940,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libgnutls.lib;libbluray.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -2014,7 +2017,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavcodec.lib;libavutil.lib;libbz2.lib;libgnutls.lib;libbluray.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavcodec.lib;libavutil.lib;libbz2.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
@@ -2092,7 +2095,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavcodec.lib;libavutil.lib;libbz2.lib;libgnutls.lib;libbluray.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavcodec.lib;libavutil.lib;libbz2.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -2169,7 +2172,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavcodec.lib;libavutil.lib;libbz2.lib;libgnutls.lib;libbluray.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavcodec.lib;libavutil.lib;libbz2.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
@@ -2247,7 +2250,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavcodec.lib;libavutil.lib;libbz2.lib;libgnutls.lib;libbluray.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libavcodec.lib;libavutil.lib;libbz2.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -2318,7 +2321,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libgnutls.lib;libbluray.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -2389,7 +2392,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libgnutls.lib;libbluray.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;librtmp.lib;libssh.lib;libz.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
