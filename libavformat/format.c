@@ -243,7 +243,6 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
     int ret = 0, probe_size, buf_offset = 0;
     int score = 0;
     int ret2;
-    uint8_t *mime_type_opt = NULL;
 
     if (!max_probe_size)
         max_probe_size = PROBE_BUF_MAX;
@@ -257,9 +256,9 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
         return AVERROR(EINVAL);
 
     if (pb->av_class) {
+        uint8_t *mime_type_opt = NULL;
         av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type_opt);
         pd.mime_type = (const char *)mime_type_opt;
-        mime_type_opt = NULL;
     }
 #if 0
     if (!*fmt && pb->av_class && av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type) >= 0 && mime_type) {
