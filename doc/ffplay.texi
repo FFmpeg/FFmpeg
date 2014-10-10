@@ -109,8 +109,6 @@ duration, the codec parameters, the current position in the stream and
 the audio/video synchronisation drift. It is on by default, to
 explicitly disable it you need to specify @code{-nostats}.
 
-@item -bug
-Work around bugs.
 @item -fast
 Non-spec-compliant optimizations.
 @item -genpts
