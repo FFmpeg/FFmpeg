@@ -1,1 +1,22 @@
-1741d6776462277430d5e320157f5bf9
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 288
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, AlphaLevel, Encoding
+Style: Default,Comic Sans MS,30,&H123456,&H123456,&H0,&H0,0,0,0,1,1,0,2,10,10,10,0,0
+
+[Events]
+Format: Layer, Start, End, Style, Text
+Dialogue: 0,0:00:00.00,0:00:40.00,Default,25.000 FPS
+Dialogue: 0,0:00:40.00,0:00:52.00,Default,{\c&H345678&}foo{\c}\N{\c&HABCDEF&}bar{\c}\Nbla
+Dialogue: 0,0:00:52.00,0:00:56.00,Default,{\u1}{\s1}{\i1}{\b1}italic bold underline strike{\s0}{\u0}\Nitalic bold no-underline no-strike
+Dialogue: 0,0:00:56.00,0:01:00.00,Default,back to
+Dialogue: 0,0:01:00.00,0:01:04.00,Default,the future
+Dialogue: 0,0:01:20.00,0:01:24.92,Default,{\pos(10,20)}Some more crazy stuff
+Dialogue: 0,0:02:14.00,0:02:15.60,Default,this subtitle...
+Dialogue: 0,0:02:15.60,0:02:40.00,Default,...continues up to...
+Dialogue: 0,0:02:40.00,0:03:00.00,Default,this one.
+Dialogue: 0,0:03:04.00,0:03:12.00,Default,and now...
+Dialogue: 0,0:03:12.00,9:59:59.99,Default,...to the end of the presentation

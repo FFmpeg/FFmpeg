@@ -114,6 +114,12 @@ pcm(){
     ffmpeg "$@" -vn -f s16le -
 }
 
+fmtstdout(){
+    fmt=$1
+    shift 1
+    ffmpeg "$@" -f $fmt -
+}
+
 enc_dec_pcm(){
     out_fmt=$1
     dec_fmt=$2

@@ -1,1 +1,14 @@
-a335eefaf09b3b148e65c757bf41af4d
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 288
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, AlphaLevel, Encoding
+Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,1,1,0,2,10,10,10,0,0
+
+[Events]
+Format: Layer, Start, End, Style, Text
+Dialogue: 0,0:04:04.70,0:04:11.30,Default,You should come to the Drama Club, too.
+Dialogue: 0,0:04:11.30,0:04:19.40,Default,Yeah. The Drama Club is worried\Nthat you haven't been coming.
+Dialogue: 0,0:04:20.30,0:04:27.50,Default,I see. Sorry, I'll drop by next time.

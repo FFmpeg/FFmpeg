@@ -1,1 +1,14 @@
-848f774195e873ce71febf35b6c9c541
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 288
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, AlphaLevel, Encoding
+Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,1,1,0,2,10,10,10,0,0
+
+[Events]
+Format: Layer, Start, End, Style, Text
+Dialogue: 0,0:01:00.10,0:02:00.20,Default,Hello.\NWorld!
+Dialogue: 0,0:02:00.30,0:03:00.40,Default,\Nfoo\Nbar\Nbla\Nmixed with br
+Dialogue: 0,0:03:04.12,0:03:10.20,Default,Another event.
