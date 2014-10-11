@@ -35,6 +35,7 @@ typedef struct ASSContext{
     DialogueLine *dialogue_cache;
     DialogueLine *last_added_dialogue;
     int cache_size;
+    int ssa_mode;
 }ASSContext;
 
 static int write_header(AVFormatContext *s)
@@ -53,8 +54,10 @@ static int write_header(AVFormatContext *s)
         avio_write(s->pb, avctx->extradata, avctx->extradata_size);
         if (avctx->extradata[avctx->extradata_size - 1] != '\n')
             avio_write(s->pb, "\r\n", 2);
+        ass->ssa_mode = !strstr(avctx->extradata, "\n[V4+ Styles]");
         if (!strstr(avctx->extradata, "\n[Events]"))
-            avio_printf(s->pb, "[Events]\r\nFormat: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text\r\n");
+            avio_printf(s->pb, "[Events]\r\nFormat: %s, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\r\n",
+                        ass->ssa_mode ? "Marked" : "Layer");
     }
     avio_flush(s->pb);
 
@@ -154,6 +157,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         if (*p == ',')
             p++;
 
+        if (ass->ssa_mode && !strncmp(p, "Marked=", 7))
+            p += 7;
+
         layer = strtol(p, &p, 10);
         if (*p == ',')
             p++;
@@ -164,7 +170,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         if (hh1 > 9) hh1 = 9, mm1 = 59, ss1 = 59, ms1 = 99;
         if (hh2 > 9) hh2 = 9, mm2 = 59, ss2 = 59, ms2 = 99;
 
-        dialogue->line = av_asprintf("%ld,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s",
+        dialogue->line = av_asprintf("%s%ld,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s",
+                                     ass->ssa_mode ? "Marked=" : "",
                                      layer, hh1, mm1, ss1, ms1, hh2, mm2, ss2, ms2, p);
         if (!dialogue->line) {
             av_free(dialogue);
