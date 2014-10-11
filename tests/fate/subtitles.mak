@@ -37,7 +37,7 @@ fate-sub-sami: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SAMI_capability_test
 FATE_SUBTITLES_ASS-$(call DEMDEC, SRT, SUBRIP) += fate-sub-srt
 fate-sub-srt: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 
-FATE_SUBTITLES-$(call ALLYES, MOV_DEMUXER MOVTEXT_DECODER SUBRIP_ENCODER) += fate-sub-subripenc
+FATE_SUBTITLES-$(call ALLYES, MOV_DEMUXER MOVTEXT_DECODER SUBRIP_ENCODER SRT_MUXER) += fate-sub-subripenc
 fate-sub-subripenc: CMD = fmtstdout srt -i $(TARGET_SAMPLES)/sub/MovText_capability_tester.mp4 -scodec subrip
 
 FATE_SUBTITLES_ASS-$(call ALLYES, SUBVIEWER1_DEMUXER SUBVIEWER1_DECODER ICONV) += fate-sub-subviewer1
@@ -52,7 +52,7 @@ fate-sub-vplayer: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/VPlayer_capabilit
 FATE_SUBTITLES_ASS-$(call DEMDEC, WEBVTT, WEBVTT) += fate-sub-webvtt
 fate-sub-webvtt: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/WebVTT_capability_tester.vtt
 
-FATE_SUBTITLES_ASS-$(call ENCMUX, WEBVTT, WEBVTT) += fate-sub-webvttenc
+FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER WEBVTT_ENCODER WEBVTT_MUXER) += fate-sub-webvttenc
 fate-sub-webvttenc: CMD = fmtstdout webvtt -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 
 FATE_SUBTITLES_ASS-$(call ALLYES, MICRODVD_DEMUXER MICRODVD_DECODER ICONV) += fate-sub-charenc
