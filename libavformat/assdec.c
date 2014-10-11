@@ -68,7 +68,7 @@ static int read_dialogue(ASSContext *ass, AVBPrint *dst, const uint8_t *p,
 
         /* This is not part of the sscanf itself in order to handle an actual
          * number (which would be the Layer) or the form "Marked=N" (which is
-         * the old SSA field, now replaced by Layer, and will be lead to Layer
+         * the old SSA field, now replaced by Layer, and will lead to Layer
          * being 0 here). */
         const int layer = atoi(p + 10);
 
