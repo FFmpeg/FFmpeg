@@ -62,4 +62,5 @@ FATE_SUBTITLES-$(call ENCMUX, ASS, ASS) += $(FATE_SUBTITLES_ASS-yes)
 FATE_SUBTITLES += $(FATE_SUBTITLES-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_SUBTITLES)
+fate-subtitles: CMP = rawdiff
 fate-subtitles: $(FATE_SUBTITLES)
