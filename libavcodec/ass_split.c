@@ -229,6 +229,20 @@ static inline const char *skip_space(const char *buf)
     return buf;
 }
 
+static int *get_default_field_orders(const ASSSection *section)
+{
+    int i;
+    int *order = av_malloc(FF_ARRAY_ELEMS(section->fields) * sizeof(*order));
+
+    if (!order)
+        return NULL;
+    for (i = 0; section->fields[i].name; i++)
+        order[i] = i;
+    while (i < FF_ARRAY_ELEMS(section->fields))
+        order[i] = -1;
+    return order;
+}
+
 static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
 {
     const ASSSection *section = &ass_sections[ctx->current_section];
@@ -246,7 +260,7 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
         } else if (section->format_header && !order) {
             len = strlen(section->format_header);
             if (strncmp(buf, section->format_header, len) || buf[len] != ':')
-                return NULL;
+                goto next_line;
             buf += len + 1;
             while (!is_eol(*buf)) {
                 buf = skip_space(buf);
@@ -269,6 +283,15 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
             if (!strncmp(buf, section->fields_header, len) && buf[len] == ':') {
                 uint8_t *ptr, *struct_ptr = realloc_section_array(ctx);
                 if (!struct_ptr)  return NULL;
+
+                /* No format header line found so far, assume default */
+                if (!order) {
+                    order = get_default_field_orders(section);
+                    if (!order)
+                        return NULL;
+                    ctx->field_order[ctx->current_section] = order;
+                }
+
                 buf += len + 1;
                 for (i=0; !is_eol(*buf) && i < *number; i++) {
                     int last = i == *number - 1;
@@ -298,6 +321,7 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
                     }
             }
         }
+next_line:
         buf += strcspn(buf, "\n");
         buf += !!*buf;
     }
