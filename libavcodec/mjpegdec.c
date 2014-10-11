@@ -256,6 +256,11 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     s->avctx->bits_per_raw_sample =
     bits = get_bits(&s->gb, 8);
 
+    if (bits > 16 || bits < 1) {
+        av_log(s->avctx, AV_LOG_ERROR, "bits %d is invalid\n", bits);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (s->pegasus_rct)
         bits = 9;
     if (bits == 9 && !s->pegasus_rct)
