@@ -4,11 +4,11 @@ PlayResX: 384
 PlayResY: 288
 
 [V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, AlphaLevel, Encoding
-Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,1,1,0,2,10,10,10,0,0
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,1,1,0,2,10,10,10,0
 
 [Events]
-Format: Layer, Start, End, Style, Text
-Dialogue: 0,0:00:00.12,0:00:23.51,Default,Hello
-Dialogue: 0,0:00:23.51,0:01:02.05,Default,World
-Dialogue: 0,0:01:02.05,9:59:59.99,Default,!\Nnewline
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.12,0:00:23.51,Default,,0,0,0,,Hello
+Dialogue: 0,0:00:23.51,0:01:02.05,Default,,0,0,0,,World
+Dialogue: 0,0:01:02.05,9:59:59.99,Default,,0,0,0,,!\Nnewline

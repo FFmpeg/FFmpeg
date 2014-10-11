@@ -4,11 +4,11 @@ PlayResX: 384
 PlayResY: 288
 
 [V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, AlphaLevel, Encoding
-Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,1,1,0,2,10,10,10,0,0
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,1,1,0,2,10,10,10,0
 
 [Events]
-Format: Layer, Start, End, Style, Text
-Dialogue: 0,0:00:00.97,0:00:02.54,Default,- Test 1.\N- Test 2.
-Dialogue: 0,0:00:03.05,0:00:04.74,Default,Test 3.
-Dialogue: 0,0:00:05.85,0:00:08.14,Default,- Test 4.\N- Test 5.
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.97,0:00:02.54,Default,,0,0,0,,- Test 1.\N- Test 2.
+Dialogue: 0,0:00:03.05,0:00:04.74,Default,,0,0,0,,Test 3.
+Dialogue: 0,0:00:05.85,0:00:08.14,Default,,0,0,0,,- Test 4.\N- Test 5.
