@@ -3826,6 +3826,8 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
         }
         s->prob_ctx[s->framectxid].p = s->prob.p;
         ff_thread_finish_setup(ctx);
+    } else if (!s->refreshctx) {
+        ff_thread_finish_setup(ctx);
     }
 
     do {
