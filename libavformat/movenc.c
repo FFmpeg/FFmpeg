@@ -3115,8 +3115,14 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
          * of this packet to be what the previous packets duration implies. */
         trk->cluster[trk->entry].dts = trk->start_dts + trk->track_duration;
     }
-    if (trk->start_dts == AV_NOPTS_VALUE)
+    if (trk->start_dts == AV_NOPTS_VALUE) {
         trk->start_dts = pkt->dts;
+        if (pkt->dts && mov->flags & FF_MOV_FLAG_EMPTY_MOOV)
+            av_log(s, AV_LOG_WARNING,
+                   "Track %d starts with a nonzero dts %"PRId64". This "
+                   "currently isn't handled correctly in combination with "
+                   "empty_moov.\n", pkt->stream_index, pkt->dts);
+    }
     trk->track_duration = pkt->dts - trk->start_dts + pkt->duration;
 
     if (pkt->pts == AV_NOPTS_VALUE) {
