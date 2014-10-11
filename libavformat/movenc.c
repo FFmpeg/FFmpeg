@@ -1595,7 +1595,8 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
 }
 
 // This box seems important for the psp playback ... without it the movie seems to hang
-static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track)
 {
     int64_t duration = av_rescale_rnd(track->track_duration, MOV_TIMESCALE,
                                       track->timescale, AV_ROUND_UP);
@@ -1644,6 +1645,13 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
          * dts<0 pts=0. */
         duration += delay;
     }
+
+    /* For fragmented files, we don't know the full length yet. Setting
+     * duration to 0 allows us to only specify the offset, including
+     * the rest of the content (from all future fragments) without specifying
+     * an explicit duration. */
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT)
+        duration = 0;
 
     /* duration */
     if (version == 1) {
@@ -1758,8 +1766,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS ||
         (track->entry && track->cluster[0].dts) ||
         is_clcp_track(track)) {
-        if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
-            mov_write_edts_tag(pb, track);  // PSP Movies require edts box
+        mov_write_edts_tag(pb, mov, track);  // PSP Movies require edts box
     }
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
