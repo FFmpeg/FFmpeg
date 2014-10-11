@@ -716,6 +716,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 #if FF_API_DRAWTEXT_OLD_TIMELINE
     av_expr_free(s->draw_pexpr);
     s->x_pexpr = s->y_pexpr = s->draw_pexpr = NULL;
+#else
+    s->x_pexpr = s->y_pexpr = NULL;
 #endif
     av_freep(&s->positions);
     s->nb_positions = 0;
