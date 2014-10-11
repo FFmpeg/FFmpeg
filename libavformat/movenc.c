@@ -3018,6 +3018,17 @@ static int mov_flush_fragment(AVFormatContext *s)
             info = &track->frag_info[track->nb_frag_info - 1];
             info->offset   = avio_tell(s->pb);
             info->time     = track->frag_start;
+            if (track->entry) {
+                // Try to recreate the original pts for the first packet
+                // from the fields we have stored
+                info->time = track->start_dts + track->frag_start +
+                             track->cluster[0].cts;
+                // If the pts is less than zero, we will have trimmed
+                // away parts of the media track using an edit list,
+                // and the corresponding start presentation time is zero.
+                if (info->time < 0)
+                    info->time = 0;
+            }
             info->duration = duration;
             mov_write_tfrf_tags(s->pb, mov, track);
 
