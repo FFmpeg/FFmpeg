@@ -35,6 +35,44 @@
 #include "libavcodec/me_cmp.h"
 
 #if HAVE_ALTIVEC
+#if HAVE_VSX
+static int sad16_x2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                                                        int line_size, int h)
+{
+    int i, s = 0;
+    const vector unsigned char zero =
+        (const vector unsigned char) vec_splat_u8(0);
+    vector unsigned int sad = (vector unsigned int) vec_splat_u32(0);
+    vector signed int sumdiffs;
+
+    for (i = 0; i < h; i++) {
+        /* Read unaligned pixels into our vectors. The vectors are as follows:
+         * pix1v: pix1[0] - pix1[15]
+         * pix2v: pix2[0] - pix2[15]      pix2iv: pix2[1] - pix2[16] */
+        vector unsigned char pix1v  = vec_vsx_ld(0,  pix1);
+        vector unsigned char pix2v  = vec_vsx_ld(0,  pix2);
+        vector unsigned char pix2iv = vec_vsx_ld(1,  pix2);
+
+        /* Calculate the average vector. */
+        vector unsigned char avgv = vec_avg(pix2v, pix2iv);
+
+        /* Calculate a sum of abs differences vector. */
+        vector unsigned char t5 = vec_sub(vec_max(pix1v, avgv),
+                                          vec_min(pix1v, avgv));
+
+        /* Add each 4 pixel group together and put 4 results into sad. */
+        sad = vec_sum4s(t5, sad);
+
+        pix1 += line_size;
+        pix2 += line_size;
+    }
+    /* Sum up the four partial sums, and put the result into s. */
+    sumdiffs = vec_sums((vector signed int) sad, (vector signed int) zero);
+    sumdiffs = vec_splat(sumdiffs, 3);
+    vec_vsx_st(sumdiffs, 0, &s);
+    return s;
+}
+#else
 static int sad16_x2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                             int line_size, int h)
 {
@@ -76,7 +114,58 @@ static int sad16_x2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 
     return s;
 }
+#endif /* HAVE_VSX */
 
+#if HAVE_VSX
+static int sad16_y2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                                                        int line_size, int h)
+{
+  int i, s = 0;
+  const vector unsigned char zero =
+    (const vector unsigned char) vec_splat_u8(0);
+  vector unsigned char perm = vec_lvsl(0, pix2);
+  vector unsigned char pix1v, pix3v, avgv, t5;
+  vector unsigned int sad = (vector unsigned int) vec_splat_u32(0);
+  vector signed int sumdiffs;
+  uint8_t *pix3 = pix2 + line_size;
+
+  /* Due to the fact that pix3 = pix2 + line_size, the pix3 of one
+   * iteration becomes pix2 in the next iteration. We can use this
+   * fact to avoid a potentially expensive unaligned read, each
+   * time around the loop.
+   * Read unaligned pixels into our vectors. The vectors are as follows:
+   * pix2v: pix2[0] - pix2[15]
+   * Split the pixel vectors into shorts. */
+  vector unsigned char pix2v = vec_vsx_ld(0, pix2);
+
+  for (i = 0; i < h; i++) {
+    /* Read unaligned pixels into our vectors. The vectors are as follows:
+     * pix1v: pix1[0] - pix1[15]
+     * pix3v: pix3[0] - pix3[15] */
+    pix1v = vec_vsx_ld(0,  pix1);
+    pix3v = vec_vsx_ld(0,  pix3);
+
+    /* Calculate the average vector. */
+    avgv = vec_avg(pix2v, pix3v);
+
+    /* Calculate a sum of abs differences vector. */
+    t5 = vec_sub(vec_max(pix1v, avgv), vec_min(pix1v, avgv));
+
+    /* Add each 4 pixel group together and put 4 results into sad. */
+    sad = vec_sum4s(t5, sad);
+
+    pix1 += line_size;
+    pix2v = pix3v;
+    pix3 += line_size;
+  }
+
+  /* Sum up the four partial sums, and put the result into s. */
+  sumdiffs = vec_sums((vector signed int) sad, (vector signed int) zero);
+  sumdiffs = vec_splat(sumdiffs, 3);
+  vec_vsx_st(sumdiffs, 0, &s);
+  return s;
+}
+#else
 static int sad16_y2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                             int line_size, int h)
 {
@@ -130,7 +219,96 @@ static int sad16_y2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
     vec_ste(sumdiffs, 0, &s);
     return s;
 }
+#endif /* HAVE_VSX */
 
+#if HAVE_VSX
+static int sad16_xy2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                             int line_size, int h)
+{
+  int i, s = 0;
+  uint8_t *pix3 = pix2 + line_size;
+  const vector unsigned char zero =
+    (const vector unsigned char) vec_splat_u8(0);
+  const vector unsigned short two =
+    (const vector unsigned short) vec_splat_u16(2);
+  vector unsigned char avgv, t5;
+  vector unsigned char pix1v, pix3v, pix3iv;
+  vector unsigned short pix3lv, pix3hv, pix3ilv, pix3ihv;
+  vector unsigned short avghv, avglv;
+  vector unsigned int sad = (vector unsigned int) vec_splat_u32(0);
+  vector signed int sumdiffs;
+
+  /* Due to the fact that pix3 = pix2 + line_size, the pix3 of one
+   * iteration becomes pix2 in the next iteration. We can use this
+   * fact to avoid a potentially expensive unaligned read, as well
+   * as some splitting, and vector addition each time around the loop.
+   * Read unaligned pixels into our vectors. The vectors are as follows:
+   * pix2v: pix2[0] - pix2[15]  pix2iv: pix2[1] - pix2[16]
+   * Split the pixel vectors into shorts. */
+  vector unsigned char pix2v  = vec_vsx_ld(0,  pix2);
+  vector unsigned char pix2iv = vec_vsx_ld(1,  pix2);
+    vector unsigned short pix2hv  =
+      (vector unsigned short) vec_mergeh(pix2v, zero);
+    vector unsigned short pix2lv  =
+      (vector unsigned short) vec_mergel(pix2v, zero);
+    vector unsigned short pix2ihv =
+      (vector unsigned short) vec_mergeh(pix2iv, zero);
+    vector unsigned short pix2ilv =
+      (vector unsigned short) vec_mergel(pix2iv, zero);
+  vector unsigned short t1 = vec_add(pix2hv, pix2ihv);
+  vector unsigned short t2 = vec_add(pix2lv, pix2ilv);
+
+  vector unsigned short t3, t4;
+
+  for (i = 0; i < h; i++) {
+    /* Read unaligned pixels into our vectors. The vectors are as follows:
+     * pix1v: pix1[0] - pix1[15]
+     * pix3v: pix3[0] - pix3[15]      pix3iv: pix3[1] - pix3[16] */
+    pix1v  = vec_vsx_ld(0, pix1);
+    pix3v  = vec_vsx_ld(0, pix3);
+    pix3iv = vec_vsx_ld(1, pix3);
+
+    /* Note that AltiVec does have vec_avg, but this works on vector pairs
+     * and rounds up. We could do avg(avg(a, b), avg(c, d)), but the
+     * rounding would mean that, for example, avg(3, 0, 0, 1) = 2, when
+     * it should be 1. Instead, we have to split the pixel vectors into
+     * vectors of shorts and do the averaging by hand. */
+
+    /* Split the pixel vectors into shorts. */
+    pix3hv  = (vector unsigned short) vec_mergeh(pix3v, zero);
+    pix3lv  = (vector unsigned short) vec_mergel(pix3v, zero);
+    pix3ihv = (vector unsigned short) vec_mergeh(pix3iv, zero);
+    pix3ilv = (vector unsigned short) vec_mergel(pix3iv, zero);
+
+    /* Do the averaging on them. */
+    t3 = vec_add(pix3hv, pix3ihv);
+    t4 = vec_add(pix3lv, pix3ilv);
+
+    avghv = vec_sr(vec_add(vec_add(t1, t3), two), two);
+    avglv = vec_sr(vec_add(vec_add(t2, t4), two), two);
+
+    /* Pack the shorts back into a result. */
+    avgv = vec_pack(avghv, avglv);
+
+    /* Calculate a sum of abs differences vector. */
+    t5 = vec_sub(vec_max(pix1v, avgv), vec_min(pix1v, avgv));
+
+    /* Add each 4 pixel group together and put 4 results into sad. */
+    sad = vec_sum4s(t5, sad);
+
+    pix1 += line_size;
+    pix3 += line_size;
+    /* Transfer the calculated values for pix3 into pix2. */
+    t1 = t3;
+    t2 = t4;
+  }
+  /* Sum up the four partial sums, and put the result into s. */
+  sumdiffs = vec_sums((vector signed int) sad, (vector signed int) zero);
+  sumdiffs = vec_splat(sumdiffs, 3);
+  vec_vsx_st(sumdiffs, 0, &s);
+  return s;
+}
+#else
 static int sad16_xy2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                              int line_size, int h)
 {
@@ -225,7 +403,42 @@ static int sad16_xy2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 
     return s;
 }
+#endif /* HAVE_VSX */
 
+#if HAVE_VSX
+static int sad16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                         int line_size, int h)
+{
+  int i, s;
+  const vector unsigned int zero =
+    (const vector unsigned int) vec_splat_u32(0);
+  vector unsigned int sad = (vector unsigned int) vec_splat_u32(0);
+  vector signed int sumdiffs;
+
+  for (i = 0; i < h; i++) {
+    /* Read potentially unaligned pixels into t1 and t2. */
+    vector unsigned char t1 =vec_vsx_ld(0, pix1);
+    vector unsigned char t2 = vec_vsx_ld(0, pix2);
+
+    /* Calculate a sum of abs differences vector. */
+    vector unsigned char t3 = vec_max(t1, t2);
+    vector unsigned char t4 = vec_min(t1, t2);
+    vector unsigned char t5 = vec_sub(t3, t4);
+
+    /* Add each 4 pixel group together and put 4 results into sad. */
+    sad = vec_sum4s(t5, sad);
+
+    pix1 += line_size;
+    pix2 += line_size;
+  }
+
+  /* Sum up the four partial sums, and put the result into s. */
+  sumdiffs = vec_sums((vector signed int) sad, (vector signed int) zero);
+  sumdiffs = vec_splat(sumdiffs, 3);
+  vec_vsx_st(sumdiffs, 0, &s);
+  return s;
+}
+#else
 static int sad16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                          int line_size, int h)
 {
@@ -262,7 +475,49 @@ static int sad16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 
     return s;
 }
+#endif /* HAVE_VSX */
 
+#if HAVE_VSX
+static int sad8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                                                int line_size, int h)
+{
+  int i, s;
+  const vector unsigned int zero =
+    (const vector unsigned int) vec_splat_u32(0);
+  const vector unsigned char permclear =
+    (vector unsigned char)
+    { 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0 };
+  vector unsigned int sad = (vector unsigned int) vec_splat_u32(0);
+  vector signed int sumdiffs;
+
+  for (i = 0; i < h; i++) {
+    /* Read potentially unaligned pixels into t1 and t2.
+     * Since we're reading 16 pixels, and actually only want 8,
+     * mask out the last 8 pixels. The 0s don't change the sum. */
+    vector unsigned char pix1l = vec_vsx_ld(0, pix1);
+    vector unsigned char pix2l = vec_vsx_ld(0, pix2);
+    vector unsigned char t1 = vec_and(pix1l, permclear);
+    vector unsigned char t2 = vec_and(pix2l, permclear);
+
+    /* Calculate a sum of abs differences vector. */
+    vector unsigned char t3 = vec_max(t1, t2);
+    vector unsigned char t4 = vec_min(t1, t2);
+    vector unsigned char t5 = vec_sub(t3, t4);
+
+    /* Add each 4 pixel group together and put 4 results into sad. */
+    sad = vec_sum4s(t5, sad);
+
+    pix1 += line_size;
+    pix2 += line_size;
+  }
+
+  /* Sum up the four partial sums, and put the result into s. */
+  sumdiffs = vec_sums((vector signed int) sad, (vector signed int) zero);
+  sumdiffs = vec_splat(sumdiffs, 3);
+  vec_vsx_st(sumdiffs, 0, &s);
+  return s;
+}
+#else
 static int sad8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                         int line_size, int h)
 {
@@ -309,6 +564,7 @@ static int sad8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 
     return s;
 }
+#endif /* HAVE_VSX */
 
 /* Sum of Squared Errors for an 8x8 block, AltiVec-enhanced.
  * It's the sad8_altivec code above w/ squaring added. */
@@ -364,6 +620,43 @@ static int sse8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 
 /* Sum of Squared Errors for a 16x16 block, AltiVec-enhanced.
  * It's the sad16_altivec code above w/ squaring added. */
+#if HAVE_VSX
+static int sse16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                                                  int line_size, int h)
+{
+  int i, s;
+  const vector unsigned int zero =
+    (const vector unsigned int) vec_splat_u32(0);
+  vector unsigned int sum = (vector unsigned int) vec_splat_u32(0);
+  vector signed int sumsqr;
+
+  for (i = 0; i < h; i++) {
+    /* Read potentially unaligned pixels into t1 and t2. */
+    vector unsigned char t1 = vec_vsx_ld(0, pix1);
+    vector unsigned char t2 = vec_vsx_ld(0, pix2);
+
+    /* Since we want to use unsigned chars, we can take advantage
+     *          * of the fact that abs(a - b) ^ 2 = (a - b) ^ 2. */
+
+    /* Calculate abs differences vector. */
+    vector unsigned char t3 = vec_max(t1, t2);
+    vector unsigned char t4 = vec_min(t1, t2);
+    vector unsigned char t5 = vec_sub(t3, t4);
+
+    /* Square the values and add them to our sum. */
+    sum = vec_msum(t5, t5, sum);
+
+    pix1 += line_size;
+    pix2 += line_size;
+  }
+
+  /* Sum up the four partial sums, and put the result into s. */
+  sumsqr = vec_sums((vector signed int) sum, (vector signed int) zero);
+  sumsqr = vec_splat(sumsqr, 3);
+  vec_vsx_st(sumsqr, 0, &s);
+  return s;
+}
+#else
 static int sse16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                          int line_size, int h)
 {
@@ -403,6 +696,7 @@ static int sse16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 
     return s;
 }
+#endif /* HAVE_VSX */
 
 static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
                                      uint8_t *src, int stride, int h)

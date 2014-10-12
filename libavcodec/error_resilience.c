@@ -858,7 +858,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
 
 void ff_er_frame_end(ERContext *s)
 {
-    int *linesize = s->cur_pic.f->linesize;
+    int *linesize = NULL;
     int i, mb_x, mb_y, error, error_type, dc_error, mv_error, ac_error;
     int distance;
     int threshold_part[4] = { 100, 100, 100 };
@@ -875,6 +875,7 @@ void ff_er_frame_end(ERContext *s)
                           (s->avctx->skip_top + s->avctx->skip_bottom)) {
         return;
     }
+    linesize = s->cur_pic.f->linesize;
     for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
         int status = s->error_status_table[mb_x + (s->mb_height - 1) * s->mb_stride];
         if (status != 0x7F)

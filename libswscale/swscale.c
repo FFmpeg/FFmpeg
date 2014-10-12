@@ -27,6 +27,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
 #include "libavutil/cpu.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
@@ -899,6 +900,18 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         av_log(c, AV_LOG_ERROR, "One of the input parameters to sws_scale() is NULL, please check the calling code\n");
         return 0;
     }
+    if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->srcH) {
+        ret = sws_scale(c->cascaded_context[0],
+                        srcSlice, srcStride, srcSliceY, srcSliceH,
+                        c->cascaded_tmp, c->cascaded_tmpStride);
+        if (ret < 0)
+            return ret;
+        ret = sws_scale(c->cascaded_context[1],
+                        (const uint8_t * const * )c->cascaded_tmp, c->cascaded_tmpStride, 0, c->cascaded_context[0]->dstH,
+                        dst, dstStride);
+        return ret;
+    }
+
     memcpy(src2, srcSlice, sizeof(src2));
     memcpy(dst2, dst, sizeof(dst2));
 

@@ -2171,8 +2171,8 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         s->low_delay = 1;
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(s->avctx, AV_LOG_DEBUG, "vbv buffer: %d, bitrate:%d\n",
-               s->avctx->rc_buffer_size, s->bit_rate);
+        av_log(s->avctx, AV_LOG_DEBUG, "vbv buffer: %d, bitrate:%d, aspect_ratio_info: %d \n",
+               s->avctx->rc_buffer_size, s->bit_rate, s->aspect_ratio_info);
 
     return 0;
 }

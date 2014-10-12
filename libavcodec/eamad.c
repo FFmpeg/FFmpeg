@@ -329,7 +329,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     MadContext *t = avctx->priv_data;
     av_frame_free(&t->last_frame);
-    av_free(t->bitstream_buf);
+    av_freep(&t->bitstream_buf);
     return 0;
 }
 
