@@ -2567,6 +2567,46 @@ static int mov_write_tfrf_tags(AVIOContext *pb, MOVMuxContext *mov,
     return 0;
 }
 
+static int mov_add_tfra_entries(AVIOContext *pb, MOVMuxContext *mov, int tracks)
+{
+    int i;
+    for (i = 0; i < mov->nb_streams; i++) {
+        MOVTrack *track = &mov->tracks[i];
+        MOVFragmentInfo *info;
+        if ((tracks >= 0 && i != tracks) || !track->entry)
+            continue;
+        track->nb_frag_info++;
+        if (track->nb_frag_info >= track->frag_info_capacity) {
+            unsigned new_capacity = track->nb_frag_info + MOV_FRAG_INFO_ALLOC_INCREMENT;
+            if (av_reallocp_array(&track->frag_info,
+                                  new_capacity,
+                                  sizeof(*track->frag_info)))
+                return AVERROR(ENOMEM);
+            track->frag_info_capacity = new_capacity;
+        }
+        info = &track->frag_info[track->nb_frag_info - 1];
+        info->offset   = avio_tell(pb);
+        // Try to recreate the original pts for the first packet
+        // from the fields we have stored
+        info->time     = track->start_dts + track->frag_start +
+                         track->cluster[0].cts;
+        // If the pts is less than zero, we will have trimmed
+        // away parts of the media track using an edit list,
+        // and the corresponding start presentation time is zero.
+        if (info->time < 0)
+            info->time = 0;
+        info->duration = track->start_dts + track->track_duration -
+                         track->cluster[0].dts;
+        info->tfrf_offset = 0;
+        mov_write_tfrf_tags(pb, mov, track);
+        // If writing all tracks, we currently only add a tfra entry for
+        // the first track (that actually has data to be written).
+        if (tracks < 0)
+            break;
+    }
+    return 0;
+}
+
 static int mov_write_tfdt_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -2597,7 +2637,11 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
         if (mov->ism_lookahead) {
             int i, size = 16 + 4 + 1 + 16 * mov->ism_lookahead;
 
-            track->tfrf_offset = avio_tell(pb);
+            if (track->nb_frag_info > 0) {
+                MOVFragmentInfo *info = &track->frag_info[track->nb_frag_info - 1];
+                if (!info->tfrf_offset)
+                    info->tfrf_offset = avio_tell(pb);
+            }
             avio_wb32(pb, 8 + size);
             ffio_wfourcc(pb, "free");
             for (i = 0; i < size; i++)
@@ -2640,6 +2684,10 @@ static int mov_write_moof_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
         return ret;
     mov_write_moof_tag_internal(avio_buf, mov, tracks, 0);
     moof_size = ffio_close_null_buf(avio_buf);
+
+    if ((ret = mov_add_tfra_entries(pb, mov, tracks)) < 0)
+        return ret;
+
     return mov_write_moof_tag_internal(pb, mov, tracks, moof_size);
 }
 
@@ -3004,36 +3052,9 @@ static int mov_flush_fragment(AVFormatContext *s)
         }
 
         if (write_moof) {
-            MOVFragmentInfo *info;
             avio_flush(s->pb);
-            track->nb_frag_info++;
-            if (track->nb_frag_info >= track->frag_info_capacity) {
-                unsigned new_capacity = track->nb_frag_info + MOV_FRAG_INFO_ALLOC_INCREMENT;
-                if (av_reallocp_array(&track->frag_info,
-                                      new_capacity,
-                                      sizeof(*track->frag_info)))
-                    return AVERROR(ENOMEM);
-                track->frag_info_capacity = new_capacity;
-            }
-            info = &track->frag_info[track->nb_frag_info - 1];
-            info->offset   = avio_tell(s->pb);
-            info->time     = track->frag_start;
-            if (track->entry) {
-                // Try to recreate the original pts for the first packet
-                // from the fields we have stored
-                info->time = track->start_dts + track->frag_start +
-                             track->cluster[0].cts;
-                // If the pts is less than zero, we will have trimmed
-                // away parts of the media track using an edit list,
-                // and the corresponding start presentation time is zero.
-                if (info->time < 0)
-                    info->time = 0;
-            }
-            info->duration = duration;
-            mov_write_tfrf_tags(s->pb, mov, track);
 
             mov_write_moof_tag(s->pb, mov, moof_tracks);
-            info->tfrf_offset = track->tfrf_offset;
             mov->fragments++;
 
             avio_wb32(s->pb, mdat_size + 8);

@@ -120,7 +120,6 @@ typedef struct MOVTrack {
     AVIOContext *mdat_buf;
     int64_t     data_offset;
     int64_t     frag_start;
-    int64_t     tfrf_offset;
 
     int         nb_frag_info;
     MOVFragmentInfo *frag_info;
