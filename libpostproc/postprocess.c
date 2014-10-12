@@ -1042,6 +1042,9 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
     postProcess(src[0], srcStride[0], dst[0], dstStride[0],
                 width, height, QP_store, QPStride, 0, mode, c);
 
+    if (!(src[1] && src[2] && dst[1] && dst[2]))
+        return;
+
     width  = (width )>>c->hChromaSubSample;
     height = (height)>>c->vChromaSubSample;
 
