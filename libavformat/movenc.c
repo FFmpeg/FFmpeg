@@ -2600,10 +2600,6 @@ static int mov_add_tfra_entries(AVIOContext *pb, MOVMuxContext *mov, int tracks)
                          track->cluster[0].dts;
         info->tfrf_offset = 0;
         mov_write_tfrf_tags(pb, mov, track);
-        // If writing all tracks, we currently only add a tfra entry for
-        // the first track (that actually has data to be written).
-        if (tracks < 0)
-            break;
     }
     return 0;
 }
