@@ -2211,6 +2211,11 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
 
     avio_wb32(pb, entry_count);
     if (delay > 0) { /* add an empty edit to delay presentation */
+        /* In the positive delay case, the delay includes the cts
+         * offset, and the second edit list entry below trims out
+         * the same amount from the actual content. This makes sure
+         * that the offsetted last sample is included in the edit
+         * list duration as well. */
         if (version == 1) {
             avio_wb64(pb, delay);
             avio_wb64(pb, -1);
@@ -2226,6 +2231,9 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
          * rounded to 0 when represented in MOV_TIMESCALE units. */
         av_assert0(av_rescale_rnd(track->cluster[0].dts, MOV_TIMESCALE, track->timescale, AV_ROUND_DOWN) <= 0);
         start_ct  = -FFMIN(track->cluster[0].dts, 0);
+        /* Note, this delay is calculated from the pts of the first sample,
+         * ensuring that we don't reduce the duration for cases with
+         * dts<0 pts=0. */
         duration += delay;
     }
 
