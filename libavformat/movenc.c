@@ -3676,7 +3676,7 @@ static int mov_flush_fragment(AVFormatContext *s)
             }
             info = &track->frag_info[track->nb_frag_info - 1];
             info->offset   = avio_tell(s->pb);
-            info->time     = mov->tracks[i].frag_start;
+            info->time     = track->frag_start;
             info->duration = duration;
             mov_write_tfrf_tags(s->pb, mov, track);
 
