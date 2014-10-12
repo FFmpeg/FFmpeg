@@ -112,6 +112,7 @@ static int64_t update_size(AVIOContext *pb, int64_t pos)
 static int supports_edts(MOVMuxContext *mov)
 {
     // EDTS with fragments is tricky as we don't know the duration when its written
+    // also we might end up having to write the EDTS before the first packet, which would fail
     return (mov->use_editlist<0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT)) || mov->use_editlist>0;
 }
 
@@ -2186,7 +2187,8 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
 }
 
 // This box seems important for the psp playback ... without it the movie seems to hang
-static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track)
 {
     int64_t duration = av_rescale_rnd(track->track_duration, MOV_TIMESCALE,
                                       track->timescale, AV_ROUND_UP);
@@ -2236,6 +2238,13 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
          * dts<0 pts=0. */
         duration += delay;
     }
+
+    /* For fragmented files, we don't know the full length yet. Setting
+     * duration to 0 allows us to only specify the offset, including
+     * the rest of the content (from all future fragments) without specifying
+     * an explicit duration. */
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT)
+        duration = 0;
 
     /* duration */
     if (version == 1) {
@@ -2348,7 +2357,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, mov, track, st);
     if (supports_edts(mov))
-        mov_write_edts_tag(pb, track);  // PSP Movies and several other cases require edts box
+        mov_write_edts_tag(pb, mov, track);  // PSP Movies and several other cases require edts box
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
     mov_write_mdia_tag(pb, track);
