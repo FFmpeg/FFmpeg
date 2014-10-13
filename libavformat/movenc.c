@@ -295,7 +295,9 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
 }
 
 struct eac3_info {
+    AVPacket pkt;
     uint8_t ec3_done;
+    uint8_t num_blocks;
 
     /* Layout of the EC3SpecificBox */
     /* maximum bitrate */
@@ -412,11 +414,34 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
         }
     }
 
-/* TODO: concatenate syncframes to have 6 blocks per entry */
 concatenate:
-    if (num_blocks != 6) {
-        avpriv_request_sample(track->enc, "%d block(s) in syncframe", num_blocks);
-        return AVERROR_PATCHWELCOME;
+    if (!info->num_blocks && num_blocks == 6)
+        return pkt->size;
+    else if (info->num_blocks + num_blocks > 6)
+        return AVERROR_INVALIDDATA;
+
+    if (!info->num_blocks) {
+        int ret;
+        if ((ret = av_copy_packet(&info->pkt, pkt)) < 0)
+            return ret;
+        info->num_blocks = num_blocks;
+        return 0;
+    } else {
+        int ret;
+        if ((ret = av_grow_packet(&info->pkt, pkt->size)) < 0)
+            return ret;
+        memcpy(info->pkt.data + info->pkt.size - pkt->size, pkt->data, pkt->size);
+        info->num_blocks += num_blocks;
+        info->pkt.duration += pkt->duration;
+        if ((ret = av_copy_packet_side_data(&info->pkt, pkt)) < 0)
+            return ret;
+        if (info->num_blocks != 6)
+            return 0;
+        av_free_packet(pkt);
+        if ((ret = av_copy_packet(pkt, &info->pkt)) < 0)
+            return ret;
+        av_free_packet(&info->pkt);
+        info->num_blocks = 0;
     }
 
     return pkt->size;
@@ -436,8 +461,8 @@ static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
     size = 2 + 4 * (info->num_ind_sub + 1);
     buf = av_malloc(size);
     if (!buf) {
-        av_freep(&track->eac3_priv);
-        return AVERROR(ENOMEM);
+        size = AVERROR(ENOMEM);
+        goto end;
     }
 
     init_put_bits(&pbc, buf, size);
@@ -467,6 +492,9 @@ static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
     avio_write(pb, buf, size);
 
     av_free(buf);
+
+end:
+    av_free_packet(&info->pkt);
     av_freep(&track->eac3_priv);
 
     return size;
@@ -3810,6 +3838,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         size = handle_eac3(mov, pkt, trk);
         if (size < 0)
             return size;
+        else if (!size)
+            goto end;
         avio_write(pb, pkt->data, size);
     } else {
         avio_write(pb, pkt->data, size);
@@ -3889,6 +3919,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams)
         ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry,
                                  reformatted_data, size);
+end:
     av_free(reformatted_data);
     return 0;
 }
