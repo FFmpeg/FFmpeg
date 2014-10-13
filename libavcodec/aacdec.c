@@ -630,6 +630,16 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
             return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][1];
         }
     case 4:
+        /* Some streams incorrectly code 4.0 audio as
+         * SCE[0] CPE[0] LFE[0]
+         * instead of
+         * SCE[0] CPE[0] SCE[1].
+         * If we seem to have encountered such a stream, transfer
+         * the SCE[1] element to the LFE[0]'s mapping */
+        if (ac->tags_mapped == tags_per_config[ac->oc[1].m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
+            ac->tags_mapped++;
+            return ac->tag_che_map[type][elem_id] = ac->che[TYPE_SCE][1];
+        }
         if (ac->tags_mapped == 2 &&
             ac->oc[1].m4ac.chan_config == 4 &&
             type == TYPE_SCE) {
