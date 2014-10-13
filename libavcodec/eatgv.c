@@ -349,8 +349,8 @@ static av_cold int tgv_decode_end(AVCodecContext *avctx)
     TgvContext *s = avctx->priv_data;
     av_frame_free(&s->last_frame);
     av_freep(&s->frame_buffer);
-    av_free(s->mv_codebook);
-    av_free(s->block_codebook);
+    av_freep(&s->mv_codebook);
+    av_freep(&s->block_codebook);
     return 0;
 }
 

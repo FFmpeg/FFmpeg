@@ -80,6 +80,7 @@ static int pp_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_NONE
     };
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -99,6 +100,8 @@ static int pp_config_props(AVFilterLink *inlink)
     case AV_PIX_FMT_YUV411P: flags |= PP_FORMAT_411; break;
     case AV_PIX_FMT_YUVJ444P:
     case AV_PIX_FMT_YUV444P: flags |= PP_FORMAT_444; break;
+    case AV_PIX_FMT_YUVJ440P:
+    case AV_PIX_FMT_YUV440P: flags |= PP_FORMAT_440; break;
     default: av_assert0(0);
     }
 
