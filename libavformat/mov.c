@@ -3270,6 +3270,28 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_free(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    int ret;
+    uint8_t content[16];
+
+    if (atom.size < 8)
+        return 0;
+
+    ret = avio_read(pb, content, FFMIN(sizeof(content), atom.size));
+    if (ret < 0)
+        return ret;
+
+    if (   !c->found_moov
+        && !c->found_mdat
+        && !memcmp(content, "Anevia\x1A\x1A", 8)
+        && c->use_mfra_for == FF_MOV_FLAG_MFRA_AUTO) {
+        c->use_mfra_for = FF_MOV_FLAG_MFRA_PTS;
+    }
+
+    return 0;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_avid },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -3338,6 +3360,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('h','v','c','C'), mov_read_glbl },
 { MKTAG('u','u','i','d'), mov_read_uuid },
 { MKTAG('C','i','n', 0x8e), mov_read_targa_y216 },
+{ MKTAG('f','r','e','e'), mov_read_free },
 { MKTAG('-','-','-','-'), mov_read_custom },
 { 0, NULL }
 };
@@ -4144,9 +4167,11 @@ static const AVOption options[] = {
         0, 1, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM},
     {"use_mfra_for",
         "use mfra for fragment timestamps",
-        offsetof(MOVContext, use_mfra_for), FF_OPT_TYPE_INT, {.i64 = 0},
-        0, FF_MOV_FLAG_MFRA_PTS, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM,
+        offsetof(MOVContext, use_mfra_for), FF_OPT_TYPE_INT, {.i64 = FF_MOV_FLAG_MFRA_AUTO},
+        -1, FF_MOV_FLAG_MFRA_PTS, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM,
         "use_mfra_for"},
+    {"auto", "auto", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_MFRA_AUTO}, 0, 0,
+        AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM, "use_mfra_for" },
     {"dts", "dts", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_MFRA_DTS}, 0, 0,
         AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM, "use_mfra_for" },
     {"pts", "pts", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_MFRA_PTS}, 0, 0,
