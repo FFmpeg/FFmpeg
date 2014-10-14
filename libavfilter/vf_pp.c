@@ -79,6 +79,7 @@ static int pp_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P,
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_GBRP,
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_GRAY8,
@@ -100,6 +101,7 @@ static int pp_config_props(AVFilterLink *inlink)
     case AV_PIX_FMT_YUVJ422P:
     case AV_PIX_FMT_YUV422P: flags |= PP_FORMAT_422; break;
     case AV_PIX_FMT_YUV411P: flags |= PP_FORMAT_411; break;
+    case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_YUVJ444P:
     case AV_PIX_FMT_YUV444P: flags |= PP_FORMAT_444; break;
     case AV_PIX_FMT_YUVJ440P:
