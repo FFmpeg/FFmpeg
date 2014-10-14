@@ -181,7 +181,7 @@ static void ini_print_object_header(const char *name)
     }
 
     avio_printf(probe_out, "%s", name);
-    if (el && el->type == ARRAY)
+    if (el->type == ARRAY)
         avio_printf(probe_out, ".%"PRId64"", el->nb_elems);
     avio_printf(probe_out, "]\n");
 }
