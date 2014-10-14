@@ -123,6 +123,7 @@ typedef struct RTMPContext {
     int           listen;                     ///< listen mode flag
     int           listen_timeout;             ///< listen timeout to wait for new connections
     int           nb_streamid;                ///< The next stream id to return on createStream calls
+    double        duration;                   ///< Duration of the stream in seconds as returned by the server (only valid if non-zero)
     char          username[50];
     char          password[50];
     char          auth_params[500];
@@ -676,6 +677,30 @@ static int gen_delete_stream(URLContext *s, RTMPContext *rt)
     ff_amf_write_number(&p, rt->stream_id);
 
     return rtmp_send_packet(rt, &pkt, 0);
+}
+
+/**
+ * Generate 'getStreamLength' call and send it to the server. If the server
+ * knows the duration of the selected stream, it will reply with the duration
+ * in seconds.
+ */
+static int gen_get_stream_length(URLContext *s, RTMPContext *rt)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+    int ret;
+
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SOURCE_CHANNEL, RTMP_PT_INVOKE,
+                                     0, 31 + strlen(rt->playpath))) < 0)
+        return ret;
+
+    p = pkt.data;
+    ff_amf_write_string(&p, "getStreamLength");
+    ff_amf_write_number(&p, ++rt->nb_invokes);
+    ff_amf_write_null(&p);
+    ff_amf_write_string(&p, rt->playpath);
+
+    return rtmp_send_packet(rt, &pkt, 1);
 }
 
 /**
@@ -2044,10 +2069,18 @@ static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
             if ((ret = gen_publish(s, rt)) < 0)
                 goto fail;
         } else {
+            if (rt->live != -1) {
+                if ((ret = gen_get_stream_length(s, rt)) < 0)
+                    goto fail;
+            }
             if ((ret = gen_play(s, rt)) < 0)
                 goto fail;
             if ((ret = gen_buffer_time(s, rt)) < 0)
                 goto fail;
+        }
+    } else if (!strcmp(tracked_method, "getStreamLength")) {
+        if (read_number_result(pkt, &rt->duration)) {
+            av_log(s, AV_LOG_WARNING, "Unexpected reply on getStreamLength()\n");
         }
     }
 
@@ -2450,6 +2483,70 @@ static int rtmp_close(URLContext *h)
 }
 
 /**
+ * Insert a fake onMetadata packet into the FLV stream to notify the FLV
+ * demuxer about the duration of the stream.
+ *
+ * This should only be done if there was no real onMetadata packet sent by the
+ * server at the start of the stream and if we were able to retrieve a valid
+ * duration via a getStreamLength call.
+ *
+ * @return 0 for successful operation, negative value in case of error
+ */
+static int inject_fake_duration_metadata(RTMPContext *rt)
+{
+    // We need to insert the metdata packet directly after the FLV
+    // header, i.e. we need to move all other already read data by the
+    // size of our fake metadata packet.
+
+    uint8_t* p;
+    // Keep old flv_data pointer
+    uint8_t* old_flv_data = rt->flv_data;
+    // Allocate a new flv_data pointer with enough space for the additional package
+    if (!(rt->flv_data = av_malloc(rt->flv_size + 55))) {
+        rt->flv_data = old_flv_data;
+        return AVERROR(ENOMEM);
+    }
+
+    // Copy FLV header
+    memcpy(rt->flv_data, old_flv_data, 13);
+    // Copy remaining packets
+    memcpy(rt->flv_data + 13 + 55, old_flv_data + 13, rt->flv_size - 13);
+    // Increase the size by the injected packet
+    rt->flv_size += 55;
+    // Delete the old FLV data
+    av_free(old_flv_data);
+
+    p = rt->flv_data + 13;
+    bytestream_put_byte(&p, FLV_TAG_TYPE_META);
+    bytestream_put_be24(&p, 40); // size of data part (sum of all parts below)
+    bytestream_put_be24(&p, 0);  // timestamp
+    bytestream_put_be32(&p, 0);  // reserved
+
+    // first event name as a string
+    bytestream_put_byte(&p, AMF_DATA_TYPE_STRING);
+    // "onMetaData" as AMF string
+    bytestream_put_be16(&p, 10);
+    bytestream_put_buffer(&p, "onMetaData", 10);
+
+    // mixed array (hash) with size and string/type/data tuples
+    bytestream_put_byte(&p, AMF_DATA_TYPE_MIXEDARRAY);
+    bytestream_put_be32(&p, 1); // metadata_count
+
+    // "duration" as AMF string
+    bytestream_put_be16(&p, 8);
+    bytestream_put_buffer(&p, "duration", 8);
+    bytestream_put_byte(&p, AMF_DATA_TYPE_NUMBER);
+    bytestream_put_be64(&p, av_double2int(rt->duration));
+
+    // Finalise object
+    bytestream_put_be16(&p, 0); // Empty string
+    bytestream_put_byte(&p, AMF_END_OF_OBJECT);
+    bytestream_put_be32(&p, 40); // size of data part (sum of all parts below)
+
+    return 0;
+}
+
+/**
  * Open RTMP connection and verify that the stream can be played.
  *
  * URL syntax: rtmp://server[:port][/app][/playpath]
@@ -2656,6 +2753,7 @@ reconnect:
     rt->received_metadata = 0;
     rt->last_bytes_read = 0;
     rt->server_bw = 2500000;
+    rt->duration = 0;
 
     av_log(s, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
            proto, path, rt->app, rt->playpath);
@@ -2713,6 +2811,14 @@ reconnect:
         }
         if (rt->has_video) {
             rt->flv_data[4] |= FLV_HEADER_FLAG_HASVIDEO;
+        }
+
+        // If we received the first packet of an A/V stream and no metadata but
+        // the server returned a valid duration, create a fake metadata packet
+        // to inform the FLV decoder about the duration.
+        if (!rt->received_metadata && rt->duration > 0) {
+            if ((ret = inject_fake_duration_metadata(rt)) < 0)
+                goto fail;
         }
     } else {
         rt->flv_size = 0;
