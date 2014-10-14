@@ -165,7 +165,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size = NELLY_SAMPLES;
-    avctx->delay      = NELLY_BUF_LEN;
+    avctx->initial_padding = NELLY_BUF_LEN;
     ff_af_queue_init(avctx, &s->afq);
     s->avctx = avctx;
     if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)

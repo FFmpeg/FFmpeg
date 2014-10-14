@@ -107,7 +107,7 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
            a common packet size for VoIP applications */
         avctx->frame_size = 320;
     }
-    avctx->delay = 22;
+    avctx->initial_padding = 22;
 
     if (avctx->trellis) {
         /* validate trellis */
@@ -374,7 +374,7 @@ static int g722_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     if (frame->pts != AV_NOPTS_VALUE)
-        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->delay);
+        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
     *got_packet_ptr = 1;
     return 0;
 }
