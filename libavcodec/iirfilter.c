@@ -299,9 +299,9 @@ void ff_iir_filter_flt(const struct FFIIRFilterCoeffs *c,
     }
 }
 
-av_cold void ff_iir_filter_free_state(struct FFIIRFilterState *state)
+av_cold void ff_iir_filter_free_statep(struct FFIIRFilterState **state)
 {
-    av_free(state);
+    av_freep(state);
 }
 
 av_cold void ff_iir_filter_free_coeffsp(struct FFIIRFilterCoeffs **coeffsp)
@@ -349,7 +349,7 @@ int main(void)
         printf("%6d %6d\n", x[i], y[i]);
 
     ff_iir_filter_free_coeffsp(&fcoeffs);
-    ff_iir_filter_free_state(fstate);
+    ff_iir_filter_free_statep(&fstate);
     return 0;
 }
 #endif /* TEST */
