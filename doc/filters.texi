@@ -6226,7 +6226,7 @@ values are assumed.
 
 Refer to the official libopencv documentation for more precise
 information:
-@url{http://opencv.willowgarage.com/documentation/c/image_filtering.html}
+@url{http://docs.opencv.org/master/modules/imgproc/doc/filtering.html}
 
 Several libopencv filters are supported; see the following subsections.
 
