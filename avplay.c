@@ -2266,14 +2266,16 @@ static int decode_thread(void *arg)
     orig_nb_streams = ic->nb_streams;
 
     err = avformat_find_stream_info(ic, opts);
+
+    for (i = 0; i < orig_nb_streams; i++)
+        av_dict_free(&opts[i]);
+    av_freep(&opts);
+
     if (err < 0) {
         fprintf(stderr, "%s: could not find codec parameters\n", is->filename);
         ret = -1;
         goto fail;
     }
-    for (i = 0; i < orig_nb_streams; i++)
-        av_dict_free(&opts[i]);
-    av_freep(&opts);
 
     if (ic->pb)
         ic->pb->eof_reached = 0; // FIXME hack, avplay maybe should not use url_feof() to test for the end
