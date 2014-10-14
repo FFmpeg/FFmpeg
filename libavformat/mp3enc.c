@@ -218,7 +218,7 @@ static int mp3_write_xing(AVFormatContext *s)
         avio_w8(s->pb, vendor[i]);
     for (; i < 21; ++i)
         avio_w8(s->pb, 0);
-    avio_wb24(s->pb, FFMAX(codec->delay - 528 - 1, 0)<<12);
+    avio_wb24(s->pb, FFMAX(codec->initial_padding - 528 - 1, 0)<<12);
 
     ffio_fill(s->pb, 0, mpah.frame_size - bytes_needed);
 
