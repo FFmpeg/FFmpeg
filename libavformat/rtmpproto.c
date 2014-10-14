@@ -1953,6 +1953,45 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
     return ret;
 }
 
+/**
+ * Read the AMF_NUMBER response ("_result") to a function call
+ * (e.g. createStream()). This response should be made up of the AMF_STRING
+ * "result", a NULL object and then the response encoded as AMF_NUMBER. On a
+ * successful response, we will return set the value to number (otherwise number
+ * will not be changed).
+ *
+ * @return 0 if reading the value succeeds, negative value otherwiss
+ */
+static int read_number_result(RTMPPacket *pkt, double *number)
+{
+    // We only need to fit "_result" in this.
+    uint8_t strbuffer[8];
+    int stringlen;
+    double numbuffer;
+    GetByteContext gbc;
+
+    bytestream2_init(&gbc, pkt->data, pkt->size);
+
+    // Value 1/4: "_result" as AMF_STRING
+    if (ff_amf_read_string(&gbc, strbuffer, sizeof(strbuffer), &stringlen))
+        return AVERROR_INVALIDDATA;
+    if (strcmp(strbuffer, "_result"))
+        return AVERROR_INVALIDDATA;
+    // Value 2/4: The callee reference number
+    if (ff_amf_read_number(&gbc, &numbuffer))
+        return AVERROR_INVALIDDATA;
+    // Value 3/4: Null
+    if (ff_amf_read_null(&gbc))
+        return AVERROR_INVALIDDATA;
+    // Value 4/4: The resonse as AMF_NUMBER
+    if (ff_amf_read_number(&gbc, &numbuffer))
+        return AVERROR_INVALIDDATA;
+    else
+        *number = numbuffer;
+
+    return 0;
+}
+
 static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
@@ -1994,11 +2033,11 @@ static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
             }
         }
     } else if (!strcmp(tracked_method, "createStream")) {
-        //extract a number from the result
-        if (pkt->data[10] || pkt->data[19] != 5 || pkt->data[20]) {
+        double stream_id;
+        if (read_number_result(pkt, &stream_id)) {
             av_log(s, AV_LOG_WARNING, "Unexpected reply on connect()\n");
         } else {
-            rt->stream_id = av_int2double(AV_RB64(pkt->data + 21));
+            rt->stream_id = stream_id;
         }
 
         if (!rt->is_input) {
