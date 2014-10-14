@@ -104,7 +104,7 @@ struct FFIIRFilterState* ff_iir_filter_init_state(int order);
  *
  * @param coeffs pointer allocated with ff_iir_filter_init_coeffs()
  */
-void ff_iir_filter_free_coeffs(struct FFIIRFilterCoeffs *coeffs);
+void ff_iir_filter_free_coeffsp(struct FFIIRFilterCoeffs **coeffs);
 
 /**
  * Free filter state.

@@ -196,7 +196,7 @@ av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(void *avc,
         return c;
 
 init_fail:
-    ff_iir_filter_free_coeffs(c);
+    ff_iir_filter_free_coeffsp(&c);
     return NULL;
 }
 
@@ -304,13 +304,14 @@ av_cold void ff_iir_filter_free_state(struct FFIIRFilterState *state)
     av_free(state);
 }
 
-av_cold void ff_iir_filter_free_coeffs(struct FFIIRFilterCoeffs *coeffs)
+av_cold void ff_iir_filter_free_coeffsp(struct FFIIRFilterCoeffs **coeffsp)
 {
+    struct FFIIRFilterCoeffs *coeffs = *coeffsp;
     if(coeffs){
-        av_free(coeffs->cx);
-        av_free(coeffs->cy);
+        av_freep(&coeffs->cx);
+        av_freep(&coeffs->cy);
     }
-    av_free(coeffs);
+    av_freep(coeffsp);
 }
 
 void ff_iir_filter_init(FFIIRFilterContext *f) {
@@ -347,7 +348,7 @@ int main(void)
     for (i = 0; i < SIZE; i++)
         printf("%6d %6d\n", x[i], y[i]);
 
-    ff_iir_filter_free_coeffs(fcoeffs);
+    ff_iir_filter_free_coeffsp(&fcoeffs);
     ff_iir_filter_free_state(fstate);
     return 0;
 }
