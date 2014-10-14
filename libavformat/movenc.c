@@ -3280,6 +3280,18 @@ static int mov_write_tfrf_tags(AVIOContext *pb, MOVMuxContext *mov,
     return 0;
 }
 
+static int mov_write_tfdt_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "tfdt");
+    avio_w8(pb, 1); /* version */
+    avio_wb24(pb, 0);
+    avio_wb64(pb, track->frag_start);
+    return update_size(pb, pos);
+}
+
 static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track, int64_t moof_offset,
                               int moof_size)
@@ -3289,6 +3301,7 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
     ffio_wfourcc(pb, "traf");
 
     mov_write_tfhd_tag(pb, mov, track, moof_offset);
+    mov_write_tfdt_tag(pb, track);
     mov_write_trun_tag(pb, mov, track, moof_size);
     if (mov->mode == MODE_ISM) {
         mov_write_tfxd_tag(pb, track);
