@@ -2637,7 +2637,10 @@ static int transcode_init(void)
                 enc_ctx->frame_size         = dec_ctx->frame_size;
                 enc_ctx->audio_service_type = dec_ctx->audio_service_type;
                 enc_ctx->block_align        = dec_ctx->block_align;
+                enc_ctx->initial_padding    = dec_ctx->delay;
+#if FF_API_AUDIOENC_DELAY
                 enc_ctx->delay              = dec_ctx->delay;
+#endif
                 if((enc_ctx->block_align == 1 || enc_ctx->block_align == 1152 || enc_ctx->block_align == 576) && enc_ctx->codec_id == AV_CODEC_ID_MP3)
                     enc_ctx->block_align= 0;
                 if(enc_ctx->codec_id == AV_CODEC_ID_AC3)
