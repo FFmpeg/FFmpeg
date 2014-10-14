@@ -870,13 +870,14 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         }
     }
 
-    if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->delay && codec->codec_id == AV_CODEC_ID_OPUS) {
-//         mkv->tracks[i].ts_offset = av_rescale_q(codec->delay,
+    if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->initial_padding && codec->codec_id == AV_CODEC_ID_OPUS) {
+//         mkv->tracks[i].ts_offset = av_rescale_q(codec->initial_padding,
 //                                                 (AVRational){ 1, codec->sample_rate },
 //                                                 st->time_base);
 
         put_ebml_uint(pb, MATROSKA_ID_CODECDELAY,
-                      av_rescale_q(codec->delay, (AVRational){ 1, codec->sample_rate },
+                      av_rescale_q(codec->initial_padding,
+                                   (AVRational){ 1, codec->sample_rate },
                                    (AVRational){ 1, 1000000000 }));
     }
     if (codec->codec_id == AV_CODEC_ID_OPUS) {

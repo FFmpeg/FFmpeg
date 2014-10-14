@@ -43,6 +43,14 @@
 #include "vdpau_internal.h"
 #include "thread.h"
 
+static enum AVPixelFormat h263_get_format(AVCodecContext *avctx)
+{
+    if (avctx->codec->id == AV_CODEC_ID_MSS2)
+        return AV_PIX_FMT_YUV420P;
+
+    return avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
+}
+
 av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
@@ -57,10 +65,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->quant_precision = 5;
     s->decode_mb       = ff_h263_decode_mb;
     s->low_delay       = 1;
-    if (avctx->codec->id == AV_CODEC_ID_MSS2)
-        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-    else
-        avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
     s->unrestricted_mv = 1;
 
     /* select sub codec */
@@ -120,6 +124,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     if (avctx->codec->id != AV_CODEC_ID_H263 &&
         avctx->codec->id != AV_CODEC_ID_H263P &&
         avctx->codec->id != AV_CODEC_ID_MPEG4) {
+        avctx->pix_fmt = h263_get_format(avctx);
         ff_mpv_idct_init(s);
         if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
@@ -505,9 +510,11 @@ retry:
         return ret;
     }
 
-    if (!s->context_initialized)
+    if (!s->context_initialized) {
+        avctx->pix_fmt = h263_get_format(avctx);
         if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
+    }
 
     if (!s->current_picture_ptr || s->current_picture_ptr->f->data[0]) {
         int i = ff_find_unused_picture(s, 0);
@@ -541,6 +548,12 @@ retry:
 
         if ((ret = ff_mpv_common_frame_size_change(s)))
             return ret;
+
+        if (avctx->pix_fmt != h263_get_format(avctx)) {
+            av_log(avctx, AV_LOG_ERROR, "format change not supported\n");
+            avctx->pix_fmt = AV_PIX_FMT_NONE;
+            return AVERROR_UNKNOWN;
+        }
     }
 
     if (s->codec_id == AV_CODEC_ID_H263  ||

@@ -1373,16 +1373,7 @@ typedef struct AVCodecContext {
      *   encoded input.
      *
      * Audio:
-     *   For encoding, this is the number of "priming" samples added by the
-     *   encoder to the beginning of the stream. The decoded output will be
-     *   delayed by this many samples relative to the input to the encoder (or
-     *   more, if the decoder adds its own padding).
-     *   The timestamps on the output packets are adjusted by the encoder so
-     *   that they always refer to the first sample of the data actually
-     *   contained in the packet, including any added padding.
-     *   E.g. if the timebase is 1/samplerate and the timestamp of the first
-     *   input sample is 0, the timestamp of the first output packet will be
-     *   -delay.
+     *   For encoding, this field is unused (see initial_padding).
      *
      *   For decoding, this is the number of samples the decoder needs to
      *   output before the decoder's output is valid. When seeking, you should
@@ -2979,6 +2970,23 @@ typedef struct AVCodecContext {
      * use AVOptions to set this field.
      */
     int side_data_only_packets;
+
+    /**
+     * Audio only. The number of "priming" samples (padding) inserted by the
+     * encoder at the beginning of the audio. I.e. this number of leading
+     * decoded samples must be discarded by the caller to get the original audio
+     * without leading padding.
+     *
+     * - decoding: unused
+     * - encoding: Set by libavcodec. The timestamps on the output packets are
+     *             adjusted by the encoder so that they always refer to the
+     *             first sample of the data actually contained in the packet,
+     *             including any added padding.  E.g. if the timebase is
+     *             1/samplerate and the timestamp of the first input sample is
+     *             0, the timestamp of the first output packet will be
+     *             -initial_padding.
+     */
+    int initial_padding;
 
     /**
      * Timebase in which pkt_dts/pts and AVPacket.dts/pts are.

@@ -88,9 +88,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                          (avctx->sample_rate * 8);
     block_align        = FFMIN(block_align, MAX_CODED_SUPERFRAME_SIZE);
     avctx->block_align = block_align;
-
-    avctx->frame_size  =
-    avctx->delay       = s->frame_len;
+    avctx->frame_size = avctx->initial_padding = s->frame_len;
 
     return 0;
 }
@@ -403,7 +401,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
     av_assert0(put_bits_ptr(&s->pb) - s->pb.buf == avctx->block_align);
 
     if (frame->pts != AV_NOPTS_VALUE)
-        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->delay);
+        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
 
     avpkt->size     = avctx->block_align;
     *got_packet_ptr = 1;

@@ -582,7 +582,10 @@ static int ogg_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         }
         granule = (oggstream->last_kf_pts<<oggstream->kfgshift) | pframe_count;
     } else if (st->codec->codec_id == AV_CODEC_ID_OPUS)
-        granule = pkt->pts + pkt->duration + av_rescale_q(st->codec->delay, (AVRational){ 1, st->codec->sample_rate }, st->time_base);
+        granule = pkt->pts + pkt->duration +
+                  av_rescale_q(st->codec->initial_padding,
+                               (AVRational){ 1, st->codec->sample_rate },
+                               st->time_base);
     else
         granule = pkt->pts + pkt->duration;
 

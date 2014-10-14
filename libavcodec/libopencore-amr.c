@@ -199,7 +199,7 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size  = 160;
-    avctx->delay       =  50;
+    avctx->initial_padding = 50;
     ff_af_queue_init(avctx, &s->afq);
 
     s->enc_state = Encoder_Interface_init(s->enc_dtx);
@@ -246,7 +246,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 return AVERROR(ENOMEM);
             memcpy(flush_buf, samples, frame->nb_samples * sizeof(*flush_buf));
             samples = flush_buf;
-            if (frame->nb_samples < avctx->frame_size - avctx->delay)
+            if (frame->nb_samples < avctx->frame_size - avctx->initial_padding)
                 s->enc_last_frame = -1;
         }
         if ((ret = ff_af_queue_add(&s->afq, frame)) < 0) {

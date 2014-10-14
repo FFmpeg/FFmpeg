@@ -89,7 +89,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     bitrate = bitrate / 1000;
     s->nb_channels = channels;
     avctx->frame_size = MPA_FRAME_SIZE;
-    avctx->delay      = 512 - 32 + 1;
+    avctx->initial_padding = 512 - 32 + 1;
 
     /* encoding freq */
     s->lsf = 0;
@@ -771,7 +771,7 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     encode_frame(s, bit_alloc, padding);
 
     if (frame->pts != AV_NOPTS_VALUE)
-        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->delay);
+        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
 
     avpkt->size = put_bits_count(&s->pb) / 8;
     *got_packet_ptr = 1;

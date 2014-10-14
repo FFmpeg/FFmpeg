@@ -776,7 +776,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     for (i = 0; i < 428; i++)
         ff_aac_pow34sf_tab[i] = sqrt(ff_aac_pow2sf_tab[i] * sqrt(ff_aac_pow2sf_tab[i]));
 
-    avctx->delay = 1024;
+    avctx->initial_padding = 1024;
     ff_af_queue_init(avctx, &s->afq);
 
     return 0;
