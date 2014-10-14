@@ -268,17 +268,17 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         AVFilterContext *filter;
         snprintf(name, sizeof(name), "pixel format for output stream %d:%d",
                  ost->file_index, ost->index);
-        if ((ret = avfilter_graph_create_filter(&filter,
-                                                avfilter_get_by_name("format"),
-                                                "format", pix_fmts, NULL,
-                                                fg->graph)) < 0)
+        ret = avfilter_graph_create_filter(&filter,
+                                           avfilter_get_by_name("format"),
+                                           "format", pix_fmts, NULL, fg->graph);
+        av_freep(&pix_fmts);
+        if (ret < 0)
             return ret;
         if ((ret = avfilter_link(last_filter, pad_idx, filter, 0)) < 0)
             return ret;
 
         last_filter = filter;
         pad_idx     = 0;
-        av_freep(&pix_fmts);
     }
 
     if (ost->frame_rate.num) {
