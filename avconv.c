@@ -1963,7 +1963,9 @@ static int transcode_init(void)
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                              "It takes bits/s as argument, not kbits/s\n");
         } else {
-            av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+            ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+            if (ret < 0)
+                return ret;
         }
 
         ret = avcodec_copy_context(ost->st->codec, ost->enc_ctx);
