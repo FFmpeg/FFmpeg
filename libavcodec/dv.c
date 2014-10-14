@@ -50,7 +50,7 @@
 #include "simple_idct.h"
 
 /* XXX: also include quantization */
-RL_VLC_ELEM ff_dv_rl_vlc[1184];
+RL_VLC_ELEM ff_dv_rl_vlc[1664];
 
 static inline void dv_calc_mb_coordinates(const AVDVProfile *d, int chan,
                                           int seq, int slot, uint16_t *tbl)
@@ -243,7 +243,7 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
          * to accelerate the parsing of partial codes */
         init_vlc(&dv_vlc, TEX_VLC_BITS, j, new_dv_vlc_len,
                  1, 1, new_dv_vlc_bits, 2, 2, 0);
-        av_assert1(dv_vlc.table_size == 1184);
+        av_assert1(dv_vlc.table_size == 1664);
 
         for (i = 0; i < dv_vlc.table_size; i++) {
             int code = dv_vlc.table[i][0];
