@@ -2030,6 +2030,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     SDL_AudioSpec wanted_spec, spec;
     AVDictionary *opts;
     AVDictionaryEntry *t = NULL;
+    int ret = 0;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return -1;
@@ -2052,11 +2053,13 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO)
         av_dict_set(&opts, "refcounted_frames", "1", 0);
     if (!codec ||
-        avcodec_open2(avctx, codec, &opts) < 0)
-        return -1;
+        (ret = avcodec_open2(avctx, codec, &opts)) < 0) {
+        goto fail;
+    }
     if ((t = av_dict_get(opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
         av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
-        return AVERROR_OPTION_NOT_FOUND;
+        ret =  AVERROR_OPTION_NOT_FOUND;
+        goto fail;
     }
 
     /* prepare audio output */
@@ -2067,7 +2070,8 @@ static int stream_component_open(VideoState *is, int stream_index)
             avctx->channel_layout = av_get_default_channel_layout(avctx->channels);
         if (!avctx->channel_layout) {
             fprintf(stderr, "unable to guess channel layout\n");
-            return -1;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
         if (avctx->channels == 1)
             is->sdl_channel_layout = AV_CH_LAYOUT_MONO;
@@ -2084,7 +2088,8 @@ static int stream_component_open(VideoState *is, int stream_index)
         wanted_spec.userdata = is;
         if (SDL_OpenAudio(&wanted_spec, &spec) < 0) {
             fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
-            return -1;
+            ret = AVERROR_UNKNOWN;
+            goto fail;
         }
         is->audio_hw_buf_size = spec.size;
         is->sdl_sample_fmt          = AV_SAMPLE_FMT_S16;
@@ -2129,7 +2134,11 @@ static int stream_component_open(VideoState *is, int stream_index)
     default:
         break;
     }
-    return 0;
+
+fail:
+    av_dict_free(&opts);
+
+    return ret;
 }
 
 static void stream_component_close(VideoState *is, int stream_index)
