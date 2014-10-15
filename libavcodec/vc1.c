@@ -490,7 +490,6 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
                 }
             }
             if (v->broadcast) { // Pulldown may be present
-                v->s.avctx->framerate.num  *= 2;
                 v->s.avctx->ticks_per_frame = 2;
             }
         }
