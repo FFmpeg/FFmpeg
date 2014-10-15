@@ -712,7 +712,7 @@ void ff_compute_frame_duration(AVFormatContext *s, int *pnum, int *pden, AVStrea
                                AVCodecParserContext *pc, AVPacket *pkt)
 {
     AVRational codec_framerate = s->iformat ? st->codec->framerate :
-                                              av_inv_q(st->codec->time_base);
+                                              av_mul_q(av_inv_q(st->codec->time_base), (AVRational){1, st->codec->ticks_per_frame});
     int frame_size;
 
     *pnum = 0;
