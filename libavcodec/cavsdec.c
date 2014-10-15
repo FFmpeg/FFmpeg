@@ -1147,8 +1147,7 @@ static int decode_seq_header(AVSContext *h)
     h->low_delay =  get_bits1(&h->gb);
     h->mb_width  = (h->width  + 15) >> 4;
     h->mb_height = (h->height + 15) >> 4;
-    h->avctx->time_base.den = ff_mpeg12_frame_rate_tab[frame_rate_code].num;
-    h->avctx->time_base.num = ff_mpeg12_frame_rate_tab[frame_rate_code].den;
+    h->avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_code];
     h->avctx->width  = h->width;
     h->avctx->height = h->height;
     if (!h->top_qp)
