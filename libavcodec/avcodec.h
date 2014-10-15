@@ -2989,7 +2989,7 @@ typedef struct AVCodecContext {
      */
     int initial_padding;
 
-    /*
+    /**
      * - decoding: For codecs that store a framerate value in the compressed
      *             bitstream, the decoder may export it here. { 0, 1} when
      *             unknown.
