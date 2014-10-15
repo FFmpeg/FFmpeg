@@ -3229,7 +3229,8 @@ int av_codec_get_max_lowres(const AVCodec *codec);
 struct MpegEncContext;
 
 /**
- * AVHWAccel.
+ * @defgroup lavc_hwaccel AVHWAccel
+ * @{
  */
 typedef struct AVHWAccel {
     /**
@@ -3364,6 +3365,17 @@ typedef struct AVHWAccel {
      */
     int priv_data_size;
 } AVHWAccel;
+
+/**
+ * Hardware acceleration should be used for decoding even if the codec level
+ * used is unknown or higher than the maximum supported level reported by the
+ * hardware driver.
+ */
+#define AV_HWACCEL_FLAG_IGNORE_LEVEL (1 << 0)
+
+/**
+ * @}
+ */
 
 /**
  * @defgroup lavc_picture AVPicture
