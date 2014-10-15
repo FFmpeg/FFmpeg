@@ -2294,7 +2294,8 @@ static int mxf_read_header(AVFormatContext *s)
                 }
                 if (res < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
-                    return res;
+                    ret = res;
+                    goto fail;
                 }
                 break;
             } else {
