@@ -8651,6 +8651,7 @@ ffmpeg -i INPUT -vf trim=duration=1
 @end itemize
 
 
+@anchor{unsharp}
 @section unsharp
 
 Sharpen or blur the input video.
@@ -8812,7 +8813,7 @@ Read a file with transform information for each frame and
 apply/compensate them. Together with the @ref{vidstabdetect}
 filter this can be used to deshake videos. See also
 @url{http://public.hronopik.de/vid.stab}. It is important to also use
-the unsharp filter, see below.
+the @ref{unsharp} filter, see below.
 
 To enable compilation of this filter you need to configure FFmpeg with
 @code{--enable-libvidstab}.
@@ -8822,7 +8823,7 @@ To enable compilation of this filter you need to configure FFmpeg with
 @table @option
 @item input
 Set path to the file used to read the transforms. Default value is
-@file{transforms.trf}).
+@file{transforms.trf}.
 
 @item smoothing
 Set the number of frames (value*2 + 1) used for lowpass filtering the
@@ -8830,9 +8831,9 @@ camera movements. Default value is 10.
 
 For example a number of 10 means that 21 frames are used (10 in the
 past and 10 in the future) to smoothen the motion in the video. A
-larger values leads to a smoother video, but limits the acceleration
-of the camera (pan/tilt movements). 0 is a special case where a
-static camera is simulated.
+larger value leads to a smoother video, but limits the acceleration of
+the camera (pan/tilt movements). 0 is a special case where a static
+camera is simulated.
 
 @item optalgo
 Set the camera path optimization algorithm.
@@ -8869,7 +8870,7 @@ fill the border black
 Invert transforms if set to 1. Default value is 0.
 
 @item relative
-Consider transforms as relative to previsou frame if set to 1,
+Consider transforms as relative to previous frame if set to 1,
 absolute if set to 0. Default value is 0.
 
 @item zoom
@@ -8935,7 +8936,7 @@ Use @command{ffmpeg} for a typical stabilization with default values:
 ffmpeg -i inp.mpeg -vf vidstabtransform,unsharp=5:5:0.8:3:3:0.4 inp_stabilized.mpeg
 @end example
 
-Note the use of the unsharp filter which is always recommended.
+Note the use of the @ref{unsharp} filter which is always recommended.
 
 @item
 Zoom in a bit more and load transform data from a given file:
