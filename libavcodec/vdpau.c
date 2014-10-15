@@ -686,6 +686,9 @@ int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
 {
     VDPAUHWContext *hwctx;
 
+    if (flags != 0)
+        return AVERROR(EINVAL);
+
     if (av_reallocp(&avctx->hwaccel_context, sizeof(*hwctx)))
         return AVERROR(ENOMEM);
 
