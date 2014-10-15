@@ -124,24 +124,20 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
             decoded_packet_size = av_base64_decode(decoded_packet, base64packet,
                                                    sizeof(decoded_packet));
             if (decoded_packet_size > 0) {
-                uint8_t *dest = av_malloc(decoded_packet_size +
+                uint8_t *tmp = av_realloc(*data_ptr, decoded_packet_size +
                                           sizeof(start_sequence) + *size_ptr);
-                if (!dest) {
+                if (!tmp) {
                     av_log(s, AV_LOG_ERROR,
                            "Unable to allocate memory for extradata!\n");
                     return AVERROR(ENOMEM);
                 }
-                if (*size_ptr) {
-                    memcpy(dest, *data_ptr, *size_ptr);
-                    av_free(*data_ptr);
-                }
+                *data_ptr = tmp;
 
-                memcpy(dest + *size_ptr, start_sequence,
+                memcpy(*data_ptr + *size_ptr, start_sequence,
                        sizeof(start_sequence));
-                memcpy(dest + *size_ptr + sizeof(start_sequence),
+                memcpy(*data_ptr + *size_ptr + sizeof(start_sequence),
                        decoded_packet, decoded_packet_size);
 
-                *data_ptr  = dest;
                 *size_ptr += sizeof(start_sequence) + decoded_packet_size;
             }
         }
