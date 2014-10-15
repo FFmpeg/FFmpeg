@@ -688,10 +688,10 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     ff_h264_reset_sei(h);
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         if (avctx->ticks_per_frame == 1) {
-            if(h->avctx->framerate.num < INT_MAX/2) {
-                h->avctx->framerate.num *= 2;
+            if(h->avctx->time_base.den < INT_MAX/2) {
+                h->avctx->time_base.den *= 2;
             } else
-                h->avctx->framerate.den /= 2;
+                h->avctx->time_base.num /= 2;
         }
         avctx->ticks_per_frame = 2;
     }
