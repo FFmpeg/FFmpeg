@@ -455,7 +455,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
     /* duration field */
     if (pkt->duration == 0) {
-        ff_compute_frame_duration(&num, &den, st, NULL, pkt);
+        ff_compute_frame_duration(s, &num, &den, st, NULL, pkt);
         if (den && num) {
             pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den * st->codec->ticks_per_frame, den * (int64_t)st->time_base.num);
         }

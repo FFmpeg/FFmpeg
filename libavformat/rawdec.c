@@ -84,6 +84,7 @@ int ff_raw_video_read_header(AVFormatContext *s)
     st->codec->codec_id = s->iformat->raw_codec_id;
     st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
+    st->codec->framerate = s1->framerate;
     st->codec->time_base = av_inv_q(s1->framerate);
     avpriv_set_pts_info(st, 64, 1, 1200000);
 
