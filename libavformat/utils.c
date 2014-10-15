@@ -726,17 +726,18 @@ void ff_compute_frame_duration(AVFormatContext *s, int *pnum, int *pden, AVStrea
             *pnum = st->time_base.num;
             *pden = st->time_base.den;
         } else if (codec_framerate.den * 1000LL > codec_framerate.num) {
-            *pnum = codec_framerate.den;
-            *pden = codec_framerate.num;
-
-            *pden *= st->codec->ticks_per_frame;
             av_assert0(st->codec->ticks_per_frame);
+            av_reduce(pnum, pden,
+                      codec_framerate.den,
+                      codec_framerate.num * (int64_t)st->codec->ticks_per_frame,
+                      INT_MAX);
+
             if (pc && pc->repeat_pict) {
                 av_assert0(s->iformat); // this may be wrong for interlaced encoding but its not used for that case
-                if (*pnum > INT_MAX / (1 + pc->repeat_pict))
-                    *pden /= 1 + pc->repeat_pict;
-                else
-                    *pnum *= 1 + pc->repeat_pict;
+                av_reduce(pnum, pden,
+                          (*pnum) * (1LL + pc->repeat_pict),
+                          (*pden),
+                          INT_MAX);
             }
             /* If this codec can be interlaced or progressive then we need
              * a parser to compute duration of a packet. Thus if we have
