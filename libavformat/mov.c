@@ -967,7 +967,8 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
          * 23001-8) so some adjusting is required */
         if (color_primaries >= AVCOL_PRI_FILM)
             color_primaries = AVCOL_PRI_UNSPECIFIED;
-        if (color_trc >= AVCOL_TRC_LINEAR || color_trc <= AVCOL_TRC_LOG_SQRT ||
+        if ((color_trc >= AVCOL_TRC_LINEAR &&
+             color_trc <= AVCOL_TRC_LOG_SQRT) ||
             color_trc >= AVCOL_TRC_BT2020_10)
             color_trc = AVCOL_TRC_UNSPECIFIED;
         if (color_matrix >= AVCOL_SPC_BT2020_NCL)
