@@ -624,6 +624,9 @@ static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int siz
     MXFContext *mxf = arg;
     switch (tag) {
     case 0x1901:
+        if (mxf->packages_refs)
+            av_log(mxf->fc, AV_LOG_VERBOSE, "Multiple packages_refs\n");
+        av_free(mxf->packages_refs);
         mxf->packages_count = avio_rb32(pb);
         mxf->packages_refs = av_calloc(mxf->packages_count, sizeof(UID));
         if (!mxf->packages_refs)
