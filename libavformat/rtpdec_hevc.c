@@ -109,7 +109,7 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
         while (*value) {
             char base64packet[1024];
             uint8_t decoded_packet[1024];
-            int packet_size;
+            int decoded_packet_size;
             char *dst = base64packet;
 
             while (*value && *value != ',' &&
@@ -121,11 +121,11 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
             if (*value == ',')
                 value++;
 
-            packet_size = av_base64_decode(decoded_packet, base64packet,
-                                           sizeof(decoded_packet));
-            if (packet_size > 0) {
-                uint8_t *dest = av_malloc(packet_size + sizeof(start_sequence) +
-                                          *size_ptr);
+            decoded_packet_size = av_base64_decode(decoded_packet, base64packet,
+                                                   sizeof(decoded_packet));
+            if (decoded_packet_size > 0) {
+                uint8_t *dest = av_malloc(decoded_packet_size +
+                                          sizeof(start_sequence) + *size_ptr);
                 if (!dest) {
                     av_log(s, AV_LOG_ERROR,
                            "Unable to allocate memory for extradata!\n");
@@ -139,10 +139,10 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
                 memcpy(dest + *size_ptr, start_sequence,
                        sizeof(start_sequence));
                 memcpy(dest + *size_ptr + sizeof(start_sequence),
-                       decoded_packet, packet_size);
+                       decoded_packet, decoded_packet_size);
 
                 *data_ptr  = dest;
-                *size_ptr += sizeof(start_sequence) + packet_size;
+                *size_ptr += sizeof(start_sequence) + decoded_packet_size;
             }
         }
     }
