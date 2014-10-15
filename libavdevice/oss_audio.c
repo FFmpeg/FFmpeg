@@ -48,6 +48,7 @@ int ff_oss_audio_open(AVFormatContext *s1, int is_output,
     int audio_fd;
     int tmp, err;
     char *flip = getenv("AUDIO_FLIP_LEFT");
+    char errbuff[128];
 
     if (is_output)
         audio_fd = avpriv_open(audio_device, O_WRONLY);
@@ -68,8 +69,18 @@ int ff_oss_audio_open(AVFormatContext *s1, int is_output,
 
     s->frame_size = OSS_AUDIO_BLOCK_SIZE;
 
-    /* select format : favour native format */
-    err = ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &tmp);
+#define CHECK_IOCTL_ERROR(event)                                              \
+    if (err < 0) {                                                            \
+        av_strerror(AVERROR(errno), errbuff, sizeof(errbuff));                \
+        av_log(s1, AV_LOG_ERROR, #event ": %s\n", errbuff);                   \
+        goto fail;                                                            \
+    }
+
+    /* select format : favour native format
+     * We don't CHECK_IOCTL_ERROR here because even if failed OSS still may be
+     * usable. If OSS is not usable the SNDCTL_DSP_SETFMTS later is going to
+     * fail anyway. */
+    (void) ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &tmp);
 
 #if HAVE_BIGENDIAN
     if (tmp & AFMT_S16_BE) {
@@ -102,24 +113,15 @@ int ff_oss_audio_open(AVFormatContext *s1, int is_output,
         return AVERROR(EIO);
     }
     err=ioctl(audio_fd, SNDCTL_DSP_SETFMT, &tmp);
-    if (err < 0) {
-        av_log(s1, AV_LOG_ERROR, "SNDCTL_DSP_SETFMT: %s\n", strerror(errno));
-        goto fail;
-    }
+    CHECK_IOCTL_ERROR(SNDCTL_DSP_SETFMTS)
 
     tmp = (s->channels == 2);
     err = ioctl(audio_fd, SNDCTL_DSP_STEREO, &tmp);
-    if (err < 0) {
-        av_log(s1, AV_LOG_ERROR, "SNDCTL_DSP_STEREO: %s\n", strerror(errno));
-        goto fail;
-    }
+    CHECK_IOCTL_ERROR(SNDCTL_DSP_STEREO)
 
     tmp = s->sample_rate;
     err = ioctl(audio_fd, SNDCTL_DSP_SPEED, &tmp);
-    if (err < 0) {
-        av_log(s1, AV_LOG_ERROR, "SNDCTL_DSP_SPEED: %s\n", strerror(errno));
-        goto fail;
-    }
+    CHECK_IOCTL_ERROR(SNDCTL_DSP_SPEED)
     s->sample_rate = tmp; /* store real sample rate */
     s->fd = audio_fd;
 
@@ -127,6 +129,7 @@ int ff_oss_audio_open(AVFormatContext *s1, int is_output,
  fail:
     close(audio_fd);
     return AVERROR(EIO);
+#undef CHECK_IOCTL_ERROR
 }
 
 int ff_oss_audio_close(OSSAudioData *s)
