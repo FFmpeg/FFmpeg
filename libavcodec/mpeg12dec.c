@@ -1316,7 +1316,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             // MPEG-2 fps
             av_reduce(&s->avctx->framerate.num,
                       &s->avctx->framerate.den,
-                      ff_mpeg12_frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num * 2,
+                      ff_mpeg12_frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num,
                       ff_mpeg12_frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
                       1 << 30);
             avctx->ticks_per_frame = 2;
