@@ -98,8 +98,8 @@ static const struct algo idct_tab[] = {
 #elif ARCH_X86
 #include "x86/dct-test.c"
 #else
-static const struct algo fdct_tab_arch[] = { 0 };
-static const struct algo idct_tab_arch[] = { 0 };
+static const struct algo fdct_tab_arch[] = { { 0 } };
+static const struct algo idct_tab_arch[] = { { 0 } };
 #endif
 
 #define AANSCALE_BITS 12
