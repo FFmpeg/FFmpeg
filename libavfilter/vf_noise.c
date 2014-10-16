@@ -348,16 +348,20 @@ static void noise(uint8_t *dst, const uint8_t *src,
 
     for (y = start; y < end; y++) {
         const int ix = y & (MAX_RES - 1);
-        if (flags & NOISE_TEMPORAL)
-            shift = av_lfg_get(lfg) & (MAX_SHIFT - 1);
-        else
-            shift = n->rand_shift[ix];
+        int x;
+        for (x=0; x < width; x+= MAX_RES) {
+            int w = FFMIN(width - x, MAX_RES);
+            if (flags & NOISE_TEMPORAL)
+                shift = av_lfg_get(lfg) & (MAX_SHIFT - 1);
+            else
+                shift = n->rand_shift[ix];
 
-        if (flags & NOISE_AVERAGED) {
-            n->line_noise_avg(dst, src, width, (const int8_t**)p->prev_shift[ix]);
-            p->prev_shift[ix][shift & 3] = noise + shift;
-        } else {
-            n->line_noise(dst, src, noise, width, shift);
+            if (flags & NOISE_AVERAGED) {
+                n->line_noise_avg(dst + x, src + x, w, (const int8_t**)p->prev_shift[ix]);
+                p->prev_shift[ix][shift & 3] = noise + shift;
+            } else {
+                n->line_noise(dst + x, src + x, noise, w, shift);
+            }
         }
         dst += dst_linesize;
         src += src_linesize;
