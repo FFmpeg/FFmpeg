@@ -51,6 +51,8 @@ typedef struct {
     int seed;
     int8_t *noise;
     int8_t *prev_shift[MAX_RES][3];
+    int rand_shift[MAX_RES];
+    int rand_shift_init;
 } FilterParams;
 
 typedef struct {
@@ -60,8 +62,6 @@ typedef struct {
     int height[4];
     FilterParams all;
     FilterParams param[4];
-    int rand_shift[MAX_RES];
-    int rand_shift_init;
     void (*line_noise)(uint8_t *dst, const uint8_t *src, const int8_t *noise, int len, int shift);
     void (*line_noise_avg)(uint8_t *dst, const uint8_t *src, int len, const int8_t * const *shift);
 } NoiseContext;
@@ -344,7 +344,7 @@ static void noise(uint8_t *dst, const uint8_t *src,
         int x;
         for (x=0; x < width; x+= MAX_RES) {
             int w = FFMIN(width - x, MAX_RES);
-            int shift = n->rand_shift[ix];
+            int shift = p->rand_shift[ix];
 
             if (flags & NOISE_AVERAGED) {
                 n->line_noise_avg(dst + x, src + x, w, (const int8_t**)p->prev_shift[ix]);
@@ -399,12 +399,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     for (comp = 0; comp < 4; comp++) {
         FilterParams *fp = &n->param[comp];
 
-        if ((!n->rand_shift_init || (fp->flags & NOISE_TEMPORAL)) && fp->strength) {
+        if ((!fp->rand_shift_init || (fp->flags & NOISE_TEMPORAL)) && fp->strength) {
 
             for (i = 0; i < MAX_RES; i++) {
-                n->rand_shift[i] = av_lfg_get(&fp->lfg) & (MAX_SHIFT - 1);
+                fp->rand_shift[i] = av_lfg_get(&fp->lfg) & (MAX_SHIFT - 1);
             }
-            n->rand_shift_init = 1;
+            fp->rand_shift_init = 1;
         }
     }
 
