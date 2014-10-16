@@ -110,7 +110,7 @@ static av_cold int init_noise(NoiseContext *n, int comp)
     if (!noise)
         return AVERROR(ENOMEM);
 
-    av_lfg_init(&fp->lfg, fp->seed);
+    av_lfg_init(&fp->lfg, fp->seed + comp*31415U);
 
     for (i = 0, j = 0; i < MAX_NOISE; i++, j++) {
         if (flags & NOISE_UNIFORM) {
