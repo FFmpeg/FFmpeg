@@ -399,11 +399,11 @@ static int invert_initial_buffer(ResampleContext *c, AudioData *dst, const Audio
 
     res = num - *out_sz;
     *out_idx = c->filter_length + (c->index >> c->phase_shift);
-    *out_sz = 1 + c->filter_length * 2 - *out_idx;
+    *out_sz = FFMAX(*out_sz + c->filter_length,
+                    1 + c->filter_length * 2) - *out_idx;
     c->index &= c->phase_mask;
-    av_assert1(res > 0);
 
-    return res;
+    return FFMAX(res, 0);
 }
 
 struct Resampler const swri_resampler={
