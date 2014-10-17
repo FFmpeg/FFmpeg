@@ -2887,10 +2887,11 @@ static int transcode_init(void)
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                              " It takes bits/s as argument, not kbits/s\n");
         } else {
-            if (av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts) < 0) {
+            ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+            if (ret < 0) {
                 av_log(NULL, AV_LOG_FATAL,
                     "Error setting up codec context options.\n");
-                exit_program(1);
+                return ret;
             }
         }
 
