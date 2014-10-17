@@ -1478,7 +1478,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             goto fail;
         } else if (reply->status_code != RTSP_STATUS_OK ||
                    reply->nb_transports != 1) {
-            err = AVERROR_INVALIDDATA;
+            err = ff_rtsp_averror(reply->status_code, AVERROR_INVALIDDATA);
             goto fail;
         }
 
@@ -1778,7 +1778,7 @@ redirect:
                        sizeof(cmd));
         ff_rtsp_send_cmd(s, "OPTIONS", rt->control_uri, cmd, reply, NULL);
         if (reply->status_code != RTSP_STATUS_OK) {
-            err = AVERROR_INVALIDDATA;
+            err = ff_rtsp_averror(reply->status_code, AVERROR_INVALIDDATA);
             goto fail;
         }
 
