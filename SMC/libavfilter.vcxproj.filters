@@ -567,6 +567,9 @@
     <ClCompile Include="..\libavfilter\x86\vf_idet_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_noise.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_pullup_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>

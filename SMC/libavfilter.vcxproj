@@ -602,6 +602,9 @@
     <ClCompile Include="..\libavfilter\x86\vf_idet_init.c">
       <ObjectFileName>$(IntDir)\libavfilter_x86_vf_idet_init.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_noise.c">
+      <ObjectFileName>$(IntDir)\libavfilter_x86_vf_noise.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_pullup_init.c">
       <ObjectFileName>$(IntDir)\libavfilter_x86_vf_pullup_init.obj</ObjectFileName>
     </ClCompile>
