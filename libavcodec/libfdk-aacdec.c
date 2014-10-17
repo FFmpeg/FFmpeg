@@ -39,6 +39,10 @@ typedef struct FDKAACDecContext {
     uint8_t *decoder_buffer;
     uint8_t *anc_buffer;
     enum ConcealMethod conceal_method;
+    int drc_level;
+    int drc_boost;
+    int drc_heavy;
+    int drc_cut;
 } FDKAACDecContext;
 
 
@@ -53,6 +57,14 @@ static const AVOption fdk_aac_dec_options[] = {
     { "spectral", "Spectral muting",      0, AV_OPT_TYPE_CONST, { .i64 = CONCEAL_METHOD_SPECTRAL_MUTING },      INT_MIN, INT_MAX, AD, "conceal" },
     { "noise",    "Noise Substitution",   0, AV_OPT_TYPE_CONST, { .i64 = CONCEAL_METHOD_NOISE_SUBSTITUTION },   INT_MIN, INT_MAX, AD, "conceal" },
     { "energy",   "Energy Interpolation", 0, AV_OPT_TYPE_CONST, { .i64 = CONCEAL_METHOD_ENERGY_INTERPOLATION }, INT_MIN, INT_MAX, AD, "conceal" },
+    { "drc_boost", "Dynamic Range Control: boost, where [0] is none and [127] is max boost",
+                     OFFSET(drc_boost),      AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, 127, AD, NULL    },
+    { "drc_cut",   "Dynamic Range Control: attenuation factor, where [0] is none and [127] is max compression",
+                     OFFSET(drc_cut),        AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, 127, AD, NULL    },
+    { "drc_level", "Dynamic Range Control: reference level, quantized to 0.25dB steps where [0] is 0dB and [127] is -31.75dB",
+                     OFFSET(drc_level),      AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 127, AD, NULL    },
+    { "drc_heavy", "Dynamic Range Control: heavy compression, where [1] is on (RF mode) and [0] is off",
+                     OFFSET(drc_heavy),      AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 1,   AD, NULL    },
     { NULL }
 };
 
@@ -243,6 +255,34 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
                    goto fail;
                }
             }
+        }
+    }
+
+    if (s->drc_boost != -1) {
+        if (aacDecoder_SetParam(s->handle, AAC_DRC_BOOST_FACTOR, s->drc_boost) != AAC_DEC_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to set DRC boost factor in the decoder\n");
+            return AVERROR_UNKNOWN;
+        }
+    }
+
+    if (s->drc_cut != -1) {
+        if (aacDecoder_SetParam(s->handle, AAC_DRC_ATTENUATION_FACTOR, s->drc_cut) != AAC_DEC_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to set DRC attenuation factor in the decoder\n");
+            return AVERROR_UNKNOWN;
+        }
+    }
+
+    if (s->drc_level != -1) {
+        if (aacDecoder_SetParam(s->handle, AAC_DRC_REFERENCE_LEVEL, s->drc_level) != AAC_DEC_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to set DRC reference level in the decoder\n");
+            return AVERROR_UNKNOWN;
+        }
+    }
+
+    if (s->drc_heavy != -1) {
+        if (aacDecoder_SetParam(s->handle, AAC_DRC_HEAVY_COMPRESSION, s->drc_heavy) != AAC_DEC_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to set DRC heavy compression in the decoder\n");
+            return AVERROR_UNKNOWN;
         }
     }
 
