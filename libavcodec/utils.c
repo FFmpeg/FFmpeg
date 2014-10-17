@@ -2995,6 +2995,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 
     if (profile)
         snprintf(buf + strlen(buf), buf_size - strlen(buf), " (%s)", profile);
+
     if (enc->codec_tag) {
         char tag_buf[32];
         av_get_codec_tag_string(tag_buf, sizeof(tag_buf), enc->codec_tag);
@@ -3082,6 +3083,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         break;
     case AVMEDIA_TYPE_AUDIO:
         av_strlcat(buf, separator, buf_size);
+
         if (enc->sample_rate) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      "%d Hz, ", enc->sample_rate);
