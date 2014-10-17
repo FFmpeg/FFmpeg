@@ -143,6 +143,7 @@ static int segment_mux_init(AVFormatContext *s)
     oc = seg->avf;
 
     oc->interrupt_callback = s->interrupt_callback;
+    oc->max_delay          = s->max_delay;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
     for (i = 0; i < s->nb_streams; i++) {
