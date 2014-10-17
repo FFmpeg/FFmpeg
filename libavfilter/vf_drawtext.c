@@ -398,8 +398,11 @@ static av_cold int init(AVFilterContext *ctx)
             return err;
         }
 
-        if (!(s->text = av_malloc(textbuf_size+1)))
+        if (textbuf_size > SIZE_MAX - 1 ||
+            !(s->text = av_malloc(textbuf_size + 1))) {
+            av_file_unmap(textbuf, textbuf_size);
             return AVERROR(ENOMEM);
+        }
         memcpy(s->text, textbuf, textbuf_size);
         s->text[textbuf_size] = 0;
         av_file_unmap(textbuf, textbuf_size);
