@@ -78,9 +78,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int i, plane, vsub = desc->log2_chroma_h;
 
     for (plane = 0; frame->data[plane] && plane < 4; plane++) {
-        size_t linesize = av_image_get_linesize(frame->format, frame->width, plane);
         uint8_t *data = frame->data[plane];
         int h = plane == 1 || plane == 2 ? inlink->h >> vsub : inlink->h;
+        int linesize = av_image_get_linesize(frame->format, frame->width, plane);
+        if (linesize < 0)
+            return linesize;
 
         for (i = 0; i < h; i++) {
             plane_checksum[plane] = av_adler32_update(plane_checksum[plane], data, linesize);
