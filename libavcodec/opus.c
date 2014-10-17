@@ -290,10 +290,6 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
                                     OpusContext *s)
 {
     static const uint8_t default_channel_map[2] = { 0, 1 };
-    uint8_t default_extradata[19] = {
-        'O', 'p', 'u', 's', 'H', 'e', 'a', 'd',
-        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    };
 
     int (*channel_reorder)(int, int) = channel_reorder_unknown;
 
@@ -308,9 +304,8 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
                    "Multichannel configuration without extradata.\n");
             return AVERROR(EINVAL);
         }
-        default_extradata[9] = (avctx->channels == 1) ? 1 : 2;
-        extradata      = default_extradata;
-        extradata_size = sizeof(default_extradata);
+        extradata      = opus_default_extradata;
+        extradata_size = sizeof(opus_default_extradata);
     } else {
         extradata = avctx->extradata;
         extradata_size = avctx->extradata_size;
@@ -330,7 +325,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
 
     avctx->delay = AV_RL16(extradata + 10);
 
-    channels = extradata[9];
+    channels = avctx->extradata ? extradata[9] : (avctx->channels == 1) ? 1 : 2;
     if (!channels) {
         av_log(avctx, AV_LOG_ERROR, "Zero channel count specified in the extadata\n");
         return AVERROR_INVALIDDATA;
