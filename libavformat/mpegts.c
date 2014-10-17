@@ -1925,8 +1925,10 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         } else {
             MpegTSFilter *fil = ts->pids[pmt_pid];
             program = av_new_program(ts->stream, sid);
-            program->program_num = sid;
-            program->pmt_pid = pmt_pid;
+            if (program) {
+                program->program_num = sid;
+                program->pmt_pid = pmt_pid;
+            }
             if (fil)
                 if (   fil->type != MPEGTS_SECTION
                     || fil->pid != pmt_pid

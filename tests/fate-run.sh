@@ -114,6 +114,12 @@ pcm(){
     ffmpeg "$@" -vn -f s16le -
 }
 
+fmtstdout(){
+    fmt=$1
+    shift 1
+    ffmpeg -flags +bitexact "$@" -f $fmt -
+}
+
 enc_dec_pcm(){
     out_fmt=$1
     dec_fmt=$2
@@ -223,6 +229,7 @@ fi
 if test -e "$ref" || test $cmp = "oneline" ; then
     case $cmp in
         diff)   diff -u -b "$ref" "$outfile"            >$cmpfile ;;
+        rawdiff)diff -u    "$ref" "$outfile"            >$cmpfile ;;
         oneoff) oneoff     "$ref" "$outfile"            >$cmpfile ;;
         stddev) stddev     "$ref" "$outfile"            >$cmpfile ;;
         oneline)oneline    "$ref" "$outfile"            >$cmpfile ;;

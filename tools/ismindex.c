@@ -227,7 +227,8 @@ fail:
     return ret;
 }
 
-static int64_t read_trun_duration(AVIOContext *in, int64_t end)
+static int64_t read_trun_duration(AVIOContext *in, int default_duration,
+                                  int64_t end)
 {
     int64_t ret = 0;
     int64_t pos;
@@ -235,7 +236,7 @@ static int64_t read_trun_duration(AVIOContext *in, int64_t end)
     int entries;
     avio_r8(in); /* version */
     flags = avio_rb24(in);
-    if (!(flags & MOV_TRUN_SAMPLE_DURATION)) {
+    if (default_duration <= 0 && !(flags & MOV_TRUN_SAMPLE_DURATION)) {
         fprintf(stderr, "No sample duration in trun flags\n");
         return -1;
     }
@@ -246,7 +247,7 @@ static int64_t read_trun_duration(AVIOContext *in, int64_t end)
 
     pos = avio_tell(in);
     for (i = 0; i < entries && pos < end; i++) {
-        int sample_duration = 0;
+        int sample_duration = default_duration;
         if (flags & MOV_TRUN_SAMPLE_DURATION) sample_duration = avio_rb32(in);
         if (flags & MOV_TRUN_SAMPLE_SIZE)     avio_rb32(in);
         if (flags & MOV_TRUN_SAMPLE_FLAGS)    avio_rb32(in);
@@ -267,6 +268,7 @@ static int64_t read_moof_duration(AVIOContext *in, int64_t offset)
     int64_t ret = -1;
     int32_t moof_size, size, tag;
     int64_t pos = 0;
+    int default_duration = 0;
 
     avio_seek(in, offset, SEEK_SET);
     moof_size = avio_rb32(in);
@@ -284,8 +286,21 @@ static int64_t read_moof_duration(AVIOContext *in, int64_t offset)
                 pos = avio_tell(in);
                 size = avio_rb32(in);
                 tag  = avio_rb32(in);
+                if (tag == MKBETAG('t', 'f', 'h', 'd')) {
+                    int flags = 0;
+                    avio_r8(in); /* version */
+                    flags = avio_rb24(in);
+                    avio_rb32(in); /* track_id */
+                    if (flags & MOV_TFHD_BASE_DATA_OFFSET)
+                        avio_rb64(in);
+                    if (flags & MOV_TFHD_STSD_ID)
+                        avio_rb32(in);
+                    if (flags & MOV_TFHD_DEFAULT_DURATION)
+                        default_duration = avio_rb32(in);
+                }
                 if (tag == MKBETAG('t', 'r', 'u', 'n')) {
-                    return read_trun_duration(in, pos + size);
+                    return read_trun_duration(in, default_duration,
+                                              pos + size);
                 }
                 avio_seek(in, pos + size, SEEK_SET);
             }

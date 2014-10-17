@@ -1170,8 +1170,8 @@ static int h264_slice_header_init(H264Context *h, int reinit)
         int64_t den = h->sps.time_scale;
         if (h->x264_build < 44U)
             den *= 2;
-        av_reduce(&h->avctx->time_base.num, &h->avctx->time_base.den,
-                  h->sps.num_units_in_tick, den, 1 << 30);
+        av_reduce(&h->avctx->framerate.den, &h->avctx->framerate.num,
+                  h->sps.num_units_in_tick * h->avctx->ticks_per_frame, den, 1 << 30);
     }
 
     if (reinit)

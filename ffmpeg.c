@@ -2124,11 +2124,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
             ret = decode_video    (ist, &avpkt, &got_output);
             if (avpkt.duration) {
                 duration = av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
-            } else if(ist->dec_ctx->time_base.num != 0 && ist->dec_ctx->time_base.den != 0) {
+            } else if(ist->dec_ctx->framerate.num != 0 && ist->dec_ctx->framerate.den != 0) {
                 int ticks= av_stream_get_parser(ist->st) ? av_stream_get_parser(ist->st)->repeat_pict+1 : ist->dec_ctx->ticks_per_frame;
                 duration = ((int64_t)AV_TIME_BASE *
-                                ist->dec_ctx->time_base.num * ticks) /
-                                ist->dec_ctx->time_base.den;
+                                ist->dec_ctx->framerate.den * ticks) /
+                                ist->dec_ctx->framerate.num / ist->dec_ctx->ticks_per_frame;
             } else
                 duration = 0;
 
@@ -2183,11 +2183,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
                 ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
             } else if (pkt->duration) {
                 ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
-            } else if(ist->dec_ctx->time_base.num != 0) {
+            } else if(ist->dec_ctx->framerate.num != 0) {
                 int ticks= av_stream_get_parser(ist->st) ? av_stream_get_parser(ist->st)->repeat_pict + 1 : ist->dec_ctx->ticks_per_frame;
                 ist->next_dts += ((int64_t)AV_TIME_BASE *
-                                  ist->dec_ctx->time_base.num * ticks) /
-                                  ist->dec_ctx->time_base.den;
+                                  ist->dec_ctx->framerate.den * ticks) /
+                                  ist->dec_ctx->framerate.num / ist->dec_ctx->ticks_per_frame;
             }
             break;
         }

@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/base64.h"
 
 #include "avformat.h"
 #include "rtpdec.h"
@@ -34,6 +35,8 @@
 struct PayloadContext {
     int using_donl_field;
     int profile_id;
+    uint8_t *sps, *pps, *vps, *sei;
+    int sps_size, pps_size, vps_size, sei_size;
 };
 
 static const uint8_t start_sequence[] = { 0x00, 0x00, 0x00, 0x01 };
@@ -85,6 +88,61 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
     /* sprop-sps: [base64] */
     /* sprop-pps: [base64] */
     /* sprop-sei: [base64] */
+    if (!strcmp(attr, "sprop-vps") || !strcmp(attr, "sprop-sps") ||
+        !strcmp(attr, "sprop-pps") || !strcmp(attr, "sprop-sei")) {
+        uint8_t **data_ptr;
+        int *size_ptr;
+        if (!strcmp(attr, "sprop-vps")) {
+            data_ptr = &hevc_data->vps;
+            size_ptr = &hevc_data->vps_size;
+        } else if (!strcmp(attr, "sprop-sps")) {
+            data_ptr = &hevc_data->sps;
+            size_ptr = &hevc_data->sps_size;
+        } else if (!strcmp(attr, "sprop-pps")) {
+            data_ptr = &hevc_data->pps;
+            size_ptr = &hevc_data->pps_size;
+        } else if (!strcmp(attr, "sprop-sei")) {
+            data_ptr = &hevc_data->sei;
+            size_ptr = &hevc_data->sei_size;
+        }
+
+        while (*value) {
+            char base64packet[1024];
+            uint8_t decoded_packet[1024];
+            int decoded_packet_size;
+            char *dst = base64packet;
+
+            while (*value && *value != ',' &&
+                   (dst - base64packet) < sizeof(base64packet) - 1) {
+                *dst++ = *value++;
+            }
+            *dst++ = '\0';
+
+            if (*value == ',')
+                value++;
+
+            decoded_packet_size = av_base64_decode(decoded_packet, base64packet,
+                                                   sizeof(decoded_packet));
+            if (decoded_packet_size > 0) {
+                uint8_t *tmp = av_realloc(*data_ptr, decoded_packet_size +
+                                          sizeof(start_sequence) + *size_ptr);
+                if (!tmp) {
+                    av_log(s, AV_LOG_ERROR,
+                           "Unable to allocate memory for extradata!\n");
+                    return AVERROR(ENOMEM);
+                }
+                *data_ptr = tmp;
+
+                memcpy(*data_ptr + *size_ptr, start_sequence,
+                       sizeof(start_sequence));
+                memcpy(*data_ptr + *size_ptr + sizeof(start_sequence),
+                       decoded_packet, decoded_packet_size);
+
+                *size_ptr += sizeof(start_sequence) + decoded_packet_size;
+            }
+        }
+    }
+
     /* max-lsr, max-lps, max-cpb, max-dpb, max-br, max-tr, max-tc */
     /* max-fps */
 
@@ -162,8 +220,41 @@ static av_cold int hevc_parse_sdp_line(AVFormatContext *ctx, int st_index,
         /* jump beyond the "-" and determine the height value */
         codec->height  = atoi(sdp_line_ptr + 1);
     } else if (av_strstart(sdp_line_ptr, "fmtp:", &sdp_line_ptr)) {
-        return ff_parse_fmtp(ctx, current_stream, hevc_data, sdp_line_ptr,
-                             hevc_sdp_parse_fmtp_config);
+        int ret = ff_parse_fmtp(ctx, current_stream, hevc_data, sdp_line_ptr,
+                                hevc_sdp_parse_fmtp_config);
+        if (hevc_data->vps_size || hevc_data->sps_size ||
+            hevc_data->pps_size || hevc_data->sei_size) {
+            av_freep(&codec->extradata);
+            codec->extradata_size = hevc_data->vps_size + hevc_data->sps_size +
+                                    hevc_data->pps_size + hevc_data->sei_size;
+            codec->extradata = av_malloc(codec->extradata_size +
+                                         FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!codec->extradata) {
+                ret = AVERROR(ENOMEM);
+                codec->extradata_size = 0;
+            } else {
+                int pos = 0;
+                memcpy(codec->extradata + pos, hevc_data->vps, hevc_data->vps_size);
+                pos += hevc_data->vps_size;
+                memcpy(codec->extradata + pos, hevc_data->sps, hevc_data->sps_size);
+                pos += hevc_data->sps_size;
+                memcpy(codec->extradata + pos, hevc_data->pps, hevc_data->pps_size);
+                pos += hevc_data->pps_size;
+                memcpy(codec->extradata + pos, hevc_data->sei, hevc_data->sei_size);
+                pos += hevc_data->sei_size;
+                memset(codec->extradata + pos, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+            }
+
+            av_freep(&hevc_data->vps);
+            av_freep(&hevc_data->sps);
+            av_freep(&hevc_data->pps);
+            av_freep(&hevc_data->sei);
+            hevc_data->vps_size = 0;
+            hevc_data->sps_size = 0;
+            hevc_data->pps_size = 0;
+            hevc_data->sei_size = 0;
+        }
+        return ret;
     }
 
     return 0;

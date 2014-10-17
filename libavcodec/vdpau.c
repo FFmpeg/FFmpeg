@@ -107,7 +107,9 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     vdctx->device           = hwctx->device;
     vdctx->get_proc_address = hwctx->get_proc_address;
 
-    if (level < 0)
+    if (hwctx->flags & AV_HWACCEL_FLAG_IGNORE_LEVEL)
+        level = 0;
+    else if (level < 0)
         return AVERROR(ENOTSUP);
 
     status = vdctx->get_proc_address(vdctx->device,
@@ -686,6 +688,9 @@ int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
 {
     VDPAUHWContext *hwctx;
 
+    if (flags & ~AV_HWACCEL_FLAG_IGNORE_LEVEL)
+        return AVERROR(EINVAL);
+
     if (av_reallocp(&avctx->hwaccel_context, sizeof(*hwctx)))
         return AVERROR(ENOMEM);
 
@@ -695,6 +700,7 @@ int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
     hwctx->context.decoder  = VDP_INVALID_HANDLE;
     hwctx->device           = device;
     hwctx->get_proc_address = get_proc;
+    hwctx->flags            = flags;
     hwctx->reset            = 1;
     return 0;
 }

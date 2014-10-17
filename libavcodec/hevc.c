@@ -351,7 +351,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     }
 
     if (num != 0 && den != 0)
-        av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
+        av_reduce(&s->avctx->framerate.den, &s->avctx->framerate.num,
                   num, den, 1 << 30);
 
     return 0;

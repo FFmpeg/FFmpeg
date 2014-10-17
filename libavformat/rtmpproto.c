@@ -503,7 +503,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     if (ret < 0)
         return ret;
 
-    // Send result_ NetConnection.Connect.Success to connect
+    // Send _result NetConnection.Connect.Success to connect
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL,
                                      RTMP_PT_INVOKE, 0,
                                      RTMP_PKTDATA_DEFAULT_SIZE)) < 0)

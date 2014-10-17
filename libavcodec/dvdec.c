@@ -382,7 +382,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
     s->frame->key_frame = 1;
     s->frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->pix_fmt      = s->sys->pix_fmt;
-    avctx->time_base    = s->sys->time_base;
+    avctx->framerate    = av_inv_q(s->sys->time_base);
 
     ret = ff_set_dimensions(avctx, s->sys->width, s->sys->height);
     if (ret < 0)

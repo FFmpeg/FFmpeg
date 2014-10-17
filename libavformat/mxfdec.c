@@ -426,6 +426,10 @@ static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, U
         av_log(mxf->fc, AV_LOG_ERROR, "item_num %d is too large\n", item_num);
         return AVERROR_INVALIDDATA;
     }
+    if (mxf->local_tags)
+        av_log(mxf->fc, AV_LOG_VERBOSE, "Multiple primer packs\n");
+    av_free(mxf->local_tags);
+    mxf->local_tags_count = 0;
     mxf->local_tags = av_calloc(item_num, item_len);
     if (!mxf->local_tags)
         return AVERROR(ENOMEM);
@@ -620,6 +624,9 @@ static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int siz
     MXFContext *mxf = arg;
     switch (tag) {
     case 0x1901:
+        if (mxf->packages_refs)
+            av_log(mxf->fc, AV_LOG_VERBOSE, "Multiple packages_refs\n");
+        av_free(mxf->packages_refs);
         mxf->packages_count = avio_rb32(pb);
         mxf->packages_refs = av_calloc(mxf->packages_count, sizeof(UID));
         if (!mxf->packages_refs)
@@ -1012,7 +1019,7 @@ static const MXFCodecUL mxf_sound_essence_container_uls[] = {
 
 static const MXFCodecUL mxf_data_essence_container_uls[] = {
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x09,0x0d,0x01,0x03,0x01,0x02,0x0e,0x00,0x00 }, 16, 0 },
-    { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x09,0x0d,0x01,0x03,0x01,0x02,0x0e,0x00,0x00 }, 16, AV_CODEC_ID_NONE },
+    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0, AV_CODEC_ID_NONE },
 };
 
 static const char* const mxf_data_essence_descriptor[] = {
@@ -2287,7 +2294,8 @@ static int mxf_read_header(AVFormatContext *s)
                 }
                 if (res < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
-                    return res;
+                    ret = res;
+                    goto fail;
                 }
                 break;
             } else {

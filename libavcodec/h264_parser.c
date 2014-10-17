@@ -490,6 +490,8 @@ static int h264_parse(AVCodecParserContext *s,
 
     parse_nal_units(s, avctx, buf, buf_size);
 
+    if (avctx->framerate.num)
+        avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
     if (h->sei_cpb_removal_delay >= 0) {
         s->dts_sync_point    = h->sei_buffering_period_present;
         s->dts_ref_dts_delta = h->sei_cpb_removal_delay;

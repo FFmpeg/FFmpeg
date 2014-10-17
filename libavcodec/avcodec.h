@@ -1346,8 +1346,11 @@ typedef struct AVCodecContext {
      * of which frame timestamps are represented. For fixed-fps content,
      * timebase should be 1/framerate and timestamp increments should be
      * identically 1.
+     * This often, but not always is the inverse of the frame rate or field rate
+     * for video.
      * - encoding: MUST be set by user.
-     * - decoding: Set by libavcodec.
+     * - decoding: the use of this field for decoding is deprecated.
+     *             Use framerate instead.
      */
     AVRational time_base;
 
@@ -2989,6 +2992,14 @@ typedef struct AVCodecContext {
     int initial_padding;
 
     /**
+     * - decoding: For codecs that store a framerate value in the compressed
+     *             bitstream, the decoder may export it here. { 0, 1} when
+     *             unknown.
+     * - encoding: unused
+     */
+    AVRational framerate;
+
+    /**
      * Timebase in which pkt_dts/pts and AVPacket.dts/pts are.
      * Code outside libavcodec should access this field using:
      * av_codec_{get,set}_pkt_timebase(avctx)
@@ -3229,7 +3240,8 @@ int av_codec_get_max_lowres(const AVCodec *codec);
 struct MpegEncContext;
 
 /**
- * AVHWAccel.
+ * @defgroup lavc_hwaccel AVHWAccel
+ * @{
  */
 typedef struct AVHWAccel {
     /**
@@ -3364,6 +3376,17 @@ typedef struct AVHWAccel {
      */
     int priv_data_size;
 } AVHWAccel;
+
+/**
+ * Hardware acceleration should be used for decoding even if the codec level
+ * used is unknown or higher than the maximum supported level reported by the
+ * hardware driver.
+ */
+#define AV_HWACCEL_FLAG_IGNORE_LEVEL (1 << 0)
+
+/**
+ * @}
+ */
 
 /**
  * @defgroup lavc_picture AVPicture

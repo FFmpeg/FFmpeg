@@ -162,7 +162,7 @@ void av_vdpau_hwaccel_set_render2(AVVDPAUContext *, AVVDPAU_Render2);
  * @param avctx decoding context whose get_format() callback is invoked
  * @param device VDPAU device handle to use for hardware acceleration
  * @param get_proc_address VDPAU device driver
- * @param flags for future use, must be zero
+ * @param flags zero of more OR'd AV_HWACCEL_FLAG_* flags
  *
  * @return 0 on success, an AVERROR code on failure.
  */

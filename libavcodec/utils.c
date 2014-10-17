@@ -1674,6 +1674,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 }
             }
         }
+
+#if FF_API_AVCTX_TIMEBASE
+        if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+            avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
+#endif
     }
 end:
     ff_unlock_avcodec();
@@ -2383,6 +2388,11 @@ fail:
     /* many decoders assign whole AVFrames, thus overwriting extended_data;
      * make sure it's set correctly */
     av_assert0(!picture->extended_data || picture->extended_data == picture->data);
+
+#if FF_API_AVCTX_TIMEBASE
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+        avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
+#endif
 
     return ret;
 }

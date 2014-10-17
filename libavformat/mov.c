@@ -967,7 +967,8 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
          * 23001-8) so some adjusting is required */
         if (color_primaries >= AVCOL_PRI_FILM)
             color_primaries = AVCOL_PRI_UNSPECIFIED;
-        if (color_trc >= AVCOL_TRC_LINEAR || color_trc <= AVCOL_TRC_LOG_SQRT ||
+        if ((color_trc >= AVCOL_TRC_LINEAR &&
+             color_trc <= AVCOL_TRC_LOG_SQRT) ||
             color_trc >= AVCOL_TRC_BT2020_10)
             color_trc = AVCOL_TRC_UNSPECIFIED;
         if (color_matrix >= AVCOL_SPC_BT2020_NCL)
@@ -2918,6 +2919,36 @@ static int mov_read_trex(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_tfdt(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    MOVFragment *frag = &c->fragment;
+    AVStream *st = NULL;
+    MOVStreamContext *sc;
+    int version, i;
+
+    for (i = 0; i < c->fc->nb_streams; i++) {
+        if (c->fc->streams[i]->id == frag->track_id) {
+            st = c->fc->streams[i];
+            break;
+        }
+    }
+    if (!st) {
+        av_log(c->fc, AV_LOG_ERROR, "could not find corresponding track id %d\n", frag->track_id);
+        return AVERROR_INVALIDDATA;
+    }
+    sc = st->priv_data;
+    if (sc->pseudo_stream_id + 1 != frag->stsd_id)
+        return 0;
+    version = avio_r8(pb);
+    avio_rb24(pb); /* flags */
+    if (version) {
+        sc->track_end = avio_rb64(pb);
+    } else {
+        sc->track_end = avio_rb32(pb);
+    }
+    return 0;
+}
+
 static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVFragment *frag = &c->fragment;
@@ -3240,6 +3271,28 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_free(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    int ret;
+    uint8_t content[16];
+
+    if (atom.size < 8)
+        return 0;
+
+    ret = avio_read(pb, content, FFMIN(sizeof(content), atom.size));
+    if (ret < 0)
+        return ret;
+
+    if (   !c->found_moov
+        && !c->found_mdat
+        && !memcmp(content, "Anevia\x1A\x1A", 8)
+        && c->use_mfra_for == FF_MOV_FLAG_MFRA_AUTO) {
+        c->use_mfra_for = FF_MOV_FLAG_MFRA_PTS;
+    }
+
+    return 0;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_avid },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -3285,6 +3338,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('s','t','t','s'), mov_read_stts },
 { MKTAG('s','t','z','2'), mov_read_stsz }, /* compact sample size */
 { MKTAG('t','k','h','d'), mov_read_tkhd }, /* track header */
+{ MKTAG('t','f','d','t'), mov_read_tfdt },
 { MKTAG('t','f','h','d'), mov_read_tfhd }, /* track fragment header */
 { MKTAG('t','r','a','k'), mov_read_trak },
 { MKTAG('t','r','a','f'), mov_read_default },
@@ -3307,6 +3361,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('h','v','c','C'), mov_read_glbl },
 { MKTAG('u','u','i','d'), mov_read_uuid },
 { MKTAG('C','i','n', 0x8e), mov_read_targa_y216 },
+{ MKTAG('f','r','e','e'), mov_read_free },
 { MKTAG('-','-','-','-'), mov_read_custom },
 { 0, NULL }
 };
@@ -4113,9 +4168,11 @@ static const AVOption options[] = {
         0, 1, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM},
     {"use_mfra_for",
         "use mfra for fragment timestamps",
-        offsetof(MOVContext, use_mfra_for), FF_OPT_TYPE_INT, {.i64 = 0},
-        0, FF_MOV_FLAG_MFRA_PTS, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM,
+        offsetof(MOVContext, use_mfra_for), FF_OPT_TYPE_INT, {.i64 = FF_MOV_FLAG_MFRA_AUTO},
+        -1, FF_MOV_FLAG_MFRA_PTS, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM,
         "use_mfra_for"},
+    {"auto", "auto", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_MFRA_AUTO}, 0, 0,
+        AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM, "use_mfra_for" },
     {"dts", "dts", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_MFRA_DTS}, 0, 0,
         AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM, "use_mfra_for" },
     {"pts", "pts", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_MFRA_PTS}, 0, 0,
