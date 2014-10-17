@@ -29,6 +29,7 @@
 #include "libavutil/avassert.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/get_bits.h"
+#include "libavcodec/opus.h"
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
@@ -701,6 +702,7 @@ static const StreamType REGD_types[] = {
     { MKTAG('H', 'E', 'V', 'C'), AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_HEVC  },
     { MKTAG('K', 'L', 'V', 'A'), AVMEDIA_TYPE_DATA,  AV_CODEC_ID_SMPTE_KLV },
     { MKTAG('V', 'C', '-', '1'), AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_VC1   },
+    { MKTAG('O', 'p', 'u', 's'), AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_OPUS  },
     { 0 },
 };
 
@@ -1499,13 +1501,28 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section,
         av_free(mp4_descr[i].dec_config_descr);
 }
 
+static const uint8_t opus_coupled_stream_cnt[9] = {
+    1, 0, 1, 1, 2, 2, 2, 3, 3
+};
+
+static const uint8_t opus_channel_map[8][8] = {
+    { 0 },
+    { 0,1 },
+    { 0,2,1 },
+    { 0,1,2,3 },
+    { 0,4,1,2,3 },
+    { 0,4,1,2,3,5 },
+    { 0,4,1,2,3,5,6 },
+    { 0,6,1,2,3,4,5,7 },
+};
+
 int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type,
                               const uint8_t **pp, const uint8_t *desc_list_end,
                               Mp4Descr *mp4_descr, int mp4_descr_count, int pid,
                               MpegTSContext *ts)
 {
     const uint8_t *desc_end;
-    int desc_len, desc_tag, desc_es_id;
+    int desc_len, desc_tag, desc_es_id, ext_desc_tag, channels, channel_config_code;
     char language[252];
     int i;
 
@@ -1708,6 +1725,41 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             st->codec->codec_tag = bytestream_get_le32(pp);
             if (st->codec->codec_id == AV_CODEC_ID_NONE)
                 mpegts_find_stream_type(st, st->codec->codec_tag, METADATA_types);
+        }
+        break;
+    case 0x7f: /* DVB extension descriptor */
+        ext_desc_tag = get8(pp, desc_end);
+        if (ext_desc_tag < 0)
+            return AVERROR_INVALIDDATA;
+        if (st->codec->codec_id == AV_CODEC_ID_OPUS &&
+            ext_desc_tag == 0x80) { /* User defined (provisional Opus) */
+            if (!st->codec->extradata) {
+                st->codec->extradata = av_mallocz(sizeof(opus_default_extradata) +
+                                                  FF_INPUT_BUFFER_PADDING_SIZE);
+                if (!st->codec->extradata)
+                    return AVERROR(ENOMEM);
+
+                st->codec->extradata_size = sizeof(opus_default_extradata);
+                memcpy(st->codec->extradata, opus_default_extradata, sizeof(opus_default_extradata));
+
+                channel_config_code = get8(pp, desc_end);
+                if (channel_config_code < 0)
+                    return AVERROR_INVALIDDATA;
+                if (channel_config_code <= 0x8) {
+                    st->codec->extradata[9]  = channels = channel_config_code ? channel_config_code : 2;
+                    st->codec->extradata[18] = channels > 2;
+                    st->codec->extradata[19] = channel_config_code;
+                    if (channel_config_code == 0) { /* Dual Mono */
+                        st->codec->extradata[18] = 255; /* Mapping */
+                        st->codec->extradata[19] = 2;   /* Stream Count */
+                    }
+                    st->codec->extradata[20] = opus_coupled_stream_cnt[channel_config_code];
+                    memcpy(&st->codec->extradata[21], opus_channel_map[channels - 1], channels);
+                } else {
+                    avpriv_request_sample(fc, "Opus in MPEG-TS - channel_config_code > 0x8");
+                }
+                st->need_parsing = AVSTREAM_PARSE_FULL;
+            }
         }
         break;
     default:
