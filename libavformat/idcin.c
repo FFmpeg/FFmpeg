@@ -317,9 +317,9 @@ static int idcin_read_packet(AVFormatContext *s,
 
             pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                           AVPALETTE_SIZE);
-            if (ret < 0) {
+            if (!pal) {
                 av_free_packet(pkt);
-                return ret;
+                return AVERROR(ENOMEM);
             }
             memcpy(pal, palette, AVPALETTE_SIZE);
             pkt->flags |= AV_PKT_FLAG_KEY;
