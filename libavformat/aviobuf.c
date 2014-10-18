@@ -965,7 +965,7 @@ int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size)
 
 int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
-    DynBuffer *d = s->opaque;
+    DynBuffer *d;
     int size;
     static const char padbuf[FF_INPUT_BUFFER_PADDING_SIZE] = {0};
     int padding = 0;
@@ -983,6 +983,7 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 
     avio_flush(s);
 
+    d = s->opaque;
     *pbuffer = d->buffer;
     size = d->size;
     av_free(d);
