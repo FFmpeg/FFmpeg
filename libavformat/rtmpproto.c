@@ -2817,11 +2817,10 @@ reconnect:
     }
 
     if (rt->is_input) {
-        int err;
         // generate FLV header for demuxer
         rt->flv_size = 13;
-        if ((err = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
-            return err;
+        if ((ret = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
+            goto fail;
         rt->flv_off  = 0;
         memcpy(rt->flv_data, "FLV\1\0\0\0\0\011\0\0\0\0", rt->flv_size);
 
@@ -2832,7 +2831,7 @@ reconnect:
         // audio or video packet arrives.
         while (!rt->has_audio && !rt->has_video && !rt->received_metadata) {
             if ((ret = get_packet(s, 0)) < 0)
-               return ret;
+               goto fail;
         }
 
         // Either after we have read the metadata or (if there is none) the
