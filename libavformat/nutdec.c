@@ -461,7 +461,7 @@ static int decode_info_header(NUTContext *nut)
     int64_t value, end;
     char name[256], str_value[1024], type_str[256];
     const char *type;
-    int *event_flags;
+    int *event_flags        = NULL;
     AVChapter *chapter      = NULL;
     AVStream *st            = NULL;
     AVDictionary **metadata = NULL;
@@ -529,7 +529,8 @@ static int decode_info_header(NUTContext *nut)
             }
             if (metadata && av_strcasecmp(name, "Uses") &&
                 av_strcasecmp(name, "Depends") && av_strcasecmp(name, "Replaces")) {
-                *event_flags |= metadata_flag;
+                if (event_flags)
+                    *event_flags |= metadata_flag;
                 av_dict_set(metadata, name, str_value, 0);
             }
         }
