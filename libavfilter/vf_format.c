@@ -59,6 +59,11 @@ static av_cold int init(AVFilterContext *ctx)
     int nb_formats = 1;
     int i;
 
+    if (!s->pix_fmts) {
+        av_log(ctx, AV_LOG_ERROR, "Empty output format string.\n");
+        return AVERROR(EINVAL);
+    }
+
     /* count the formats */
     cur = s->pix_fmts;
     while ((cur = strchr(cur, '|'))) {
