@@ -250,9 +250,9 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             return -1;
         }
         /* init stuff with the user specified complexity */
-        if (s->avctx->rc_initial_cplx) {
+        if (s->rc_initial_cplx) {
             for (i = 0; i < 60 * 30; i++) {
-                double bits = s->avctx->rc_initial_cplx * (i / 10000.0 + 1.0) * s->mb_num;
+                double bits = s->rc_initial_cplx * (i / 10000.0 + 1.0) * s->mb_num;
                 RateControlEntry rce;
 
                 if (i % ((s->gop_size + 3) / 4) == 0)
@@ -533,7 +533,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
                 d = 1.0;
             else if (d < 0.0001)
                 d = 0.0001;
-            q *= pow(d, 1.0 / s->avctx->rc_buffer_aggressivity);
+            q *= pow(d, 1.0 / s->rc_buffer_aggressivity);
 
             q_limit = bits2qp(rce,
                               FFMAX((min_rate - buffer_size + rcc->buffer_index) *
@@ -553,7 +553,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
                 d = 1.0;
             else if (d < 0.0001)
                 d = 0.0001;
-            q /= pow(d, 1.0 / s->avctx->rc_buffer_aggressivity);
+            q /= pow(d, 1.0 / s->rc_buffer_aggressivity);
 
             q_limit = bits2qp(rce,
                               FFMAX(rcc->buffer_index *
@@ -569,7 +569,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
     }
     av_dlog(s, "q:%f max:%f min:%f size:%f index:%f agr:%f\n",
             q, max_rate, min_rate, buffer_size, rcc->buffer_index,
-            s->avctx->rc_buffer_aggressivity);
+            s->rc_buffer_aggressivity);
     if (s->rc_qsquish == 0.0 || qmin == qmax) {
         if (q < qmin)
             q = qmin;
