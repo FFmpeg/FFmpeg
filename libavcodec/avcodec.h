@@ -1800,14 +1800,13 @@ typedef struct AVCodecContext {
      */
     attribute_deprecated
     int me_threshold;
-#endif
 
     /**
-     * Macroblock threshold below which the user specified macroblock types will be used.
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated this field is unused
      */
+    attribute_deprecated
     int mb_threshold;
+#endif
 
     /**
      * precision of the intra DC coefficient - 8
