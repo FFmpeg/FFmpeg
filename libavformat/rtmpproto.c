@@ -775,6 +775,33 @@ static int gen_seek(URLContext *s, RTMPContext *rt, int64_t timestamp)
 }
 
 /**
+ * Generate a pause packet that either pauses or unpauses the current stream.
+ */
+static int gen_pause(URLContext *s, RTMPContext *rt, int pause, uint32_t timestamp)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+    int ret;
+
+    av_log(s, AV_LOG_DEBUG, "Sending pause command for timestamp %d\n",
+           timestamp);
+
+    if ((ret = ff_rtmp_packet_create(&pkt, 3, RTMP_PT_INVOKE, 0, 29)) < 0)
+        return ret;
+
+    pkt.extra = rt->stream_id;
+
+    p = pkt.data;
+    ff_amf_write_string(&p, "pause");
+    ff_amf_write_number(&p, 0); //no tracking back responses
+    ff_amf_write_null(&p); //as usual, the first null param
+    ff_amf_write_bool(&p, pause); // pause or unpause
+    ff_amf_write_number(&p, timestamp); //where we pause the stream
+
+    return rtmp_send_packet(rt, &pkt, 1);
+}
+
+/**
  * Generate 'publish' call and send it to the server.
  */
 static int gen_publish(URLContext *s, RTMPContext *rt)
@@ -2896,6 +2923,20 @@ static int64_t rtmp_seek(URLContext *s, int stream_index, int64_t timestamp,
     return timestamp;
 }
 
+static int rtmp_pause(URLContext *s, int pause)
+{
+    RTMPContext *rt = s->priv_data;
+    int ret;
+    av_log(s, AV_LOG_DEBUG, "Pause at timestamp %d\n",
+           rt->last_timestamp);
+    if ((ret = gen_pause(s, rt, pause, rt->last_timestamp)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Unable to send pause command at timestamp %d\n",
+               rt->last_timestamp);
+        return ret;
+    }
+    return 0;
+}
+
 static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 {
     RTMPContext *rt = s->priv_data;
@@ -3058,6 +3099,7 @@ URLProtocol ff_##flavor##_protocol = {           \
     .url_open       = rtmp_open,                 \
     .url_read       = rtmp_read,                 \
     .url_read_seek  = rtmp_seek,                 \
+    .url_read_pause = rtmp_pause,                \
     .url_write      = rtmp_write,                \
     .url_close      = rtmp_close,                \
     .priv_data_size = sizeof(RTMPContext),       \
