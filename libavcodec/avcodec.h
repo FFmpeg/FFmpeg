@@ -2372,19 +2372,19 @@ typedef struct AVCodecContext {
      */
     int context_model;
 
+#if FF_API_MPV_OPT
     /**
-     * minimum Lagrange multiplier
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     int lmin;
 
     /**
-     * maximum Lagrange multiplier
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     int lmax;
+#endif
 
     /**
      * frame skip threshold

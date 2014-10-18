@@ -962,6 +962,10 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->rc_buffer_aggressivity = avctx->rc_buffer_aggressivity;
     if (avctx->rc_initial_cplx != 0.0)
         s->rc_initial_cplx = avctx->rc_initial_cplx;
+    if (avctx->lmin)
+        s->lmin = avctx->lmin;
+    if (avctx->lmax)
+        s->lmax = avctx->lmax;
 
     if (avctx->rc_eq) {
         av_freep(&s->rc_eq);
@@ -1781,7 +1785,7 @@ vbv_retry:
             int max_size = FFMAX(rcc->buffer_index * avctx->rc_max_available_vbv_use, rcc->buffer_index - 500);
 
             if (put_bits_count(&s->pb) > max_size &&
-                s->lambda < s->avctx->lmax) {
+                s->lambda < s->lmax) {
                 s->next_lambda = FFMAX(s->lambda + 1, s->lambda *
                                        (s->qscale + 1) / s->qscale);
                 if (s->adaptive_quant) {

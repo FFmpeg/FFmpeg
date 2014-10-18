@@ -477,8 +477,8 @@ static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, doubl
  */
 static void get_qminmax(int *qmin_ret, int *qmax_ret, MpegEncContext *s, int pict_type)
 {
-    int qmin = s->avctx->lmin;
-    int qmax = s->avctx->lmax;
+    int qmin = s->lmin;
+    int qmax = s->lmax;
 
     assert(qmin <= qmax);
 
