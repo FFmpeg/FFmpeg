@@ -1794,14 +1794,13 @@ typedef struct AVCodecContext {
      */
     int noise_reduction;
 
+#if FF_API_MPV_OPT
     /**
-     * Motion estimation threshold below which no motion estimation is
-     * performed, but instead the user specified motion vectors are used.
-     *
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated this field is unused
      */
+    attribute_deprecated
     int me_threshold;
+#endif
 
     /**
      * Macroblock threshold below which the user specified macroblock types will be used.

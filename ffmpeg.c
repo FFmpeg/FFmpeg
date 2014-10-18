@@ -1009,8 +1009,7 @@ static void do_video_out(AVFormatContext *s,
             mux_enc->field_order = AV_FIELD_PROGRESSIVE;
 
         in_picture->quality = enc->global_quality;
-        if (!enc->me_threshold)
-            in_picture->pict_type = 0;
+        in_picture->pict_type = 0;
 
         pts_time = in_picture->pts != AV_NOPTS_VALUE ?
             in_picture->pts * av_q2d(enc->time_base) : NAN;
