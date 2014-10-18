@@ -1753,6 +1753,26 @@ static int transcode_init(void)
             } else
                 enc_ctx->time_base = ist->st->time_base;
 
+            if (ist->st->nb_side_data) {
+                ost->st->side_data = av_realloc_array(NULL, ist->st->nb_side_data,
+                                                      sizeof(*ist->st->side_data));
+                if (!ost->st->side_data)
+                    return AVERROR(ENOMEM);
+
+                for (j = 0; j < ist->st->nb_side_data; j++) {
+                    const AVPacketSideData *sd_src = &ist->st->side_data[j];
+                    AVPacketSideData *sd_dst = &ost->st->side_data[j];
+
+                    sd_dst->data = av_malloc(sd_src->size);
+                    if (!sd_dst->data)
+                        return AVERROR(ENOMEM);
+                    memcpy(sd_dst->data, sd_src->data, sd_src->size);
+                    sd_dst->size = sd_src->size;
+                    sd_dst->type = sd_src->type;
+                    ost->st->nb_side_data++;
+                }
+            }
+
             ost->parser = av_parser_init(enc_ctx->codec_id);
 
             switch (enc_ctx->codec_type) {
