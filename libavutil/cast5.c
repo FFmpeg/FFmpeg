@@ -535,6 +535,7 @@ int main(int argc, char** argv)
             }
         }
     }
+    av_free(cs);
     return err;
 }
 #endif
