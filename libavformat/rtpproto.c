@@ -231,8 +231,10 @@ static void rtp_parse_addr_list(URLContext *h, char *buf,
         ai = rtp_resolve_host(p, 0, SOCK_DGRAM, AF_UNSPEC, 0);
         if (ai) {
             source_addr = av_mallocz(sizeof(struct sockaddr_storage));
-            if (!source_addr)
+            if (!source_addr) {
+                freeaddrinfo(ai);
                 break;
+            }
 
             memcpy(source_addr, ai->ai_addr, ai->ai_addrlen);
             freeaddrinfo(ai);
