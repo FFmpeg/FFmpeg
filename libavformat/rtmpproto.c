@@ -2824,11 +2824,10 @@ reconnect:
     }
 
     if (rt->is_input) {
-        int err;
         // generate FLV header for demuxer
         rt->flv_size = 13;
-        if ((err = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
-            return err;
+        if ((ret = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
+            goto fail;
         rt->flv_off  = 0;
         memcpy(rt->flv_data, "FLV\1\0\0\0\0\011\0\0\0\0", rt->flv_size);
 
