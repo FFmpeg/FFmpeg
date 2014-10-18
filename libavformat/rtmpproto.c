@@ -96,6 +96,7 @@ typedef struct RTMPContext {
     uint32_t      client_report_size;         ///< number of bytes after which client should report to server
     uint32_t      bytes_read;                 ///< number of bytes read from server
     uint32_t      last_bytes_read;            ///< number of bytes read last reported to server
+    uint32_t      last_timestamp;             ///< last timestamp received in a packet
     int           skip_bytes;                 ///< number of bytes to skip from the input FLV stream in the next write call
     int           has_audio;                  ///< presence of audio data
     int           has_video;                  ///< presence of video data
@@ -2399,6 +2400,10 @@ static int get_packet(URLContext *s, int for_header)
                 return AVERROR(EIO);
             }
         }
+
+        // Track timestamp for later use
+        rt->last_timestamp = rpkt.timestamp;
+
         rt->bytes_read += ret;
         if (rt->bytes_read - rt->last_bytes_read > rt->client_report_size) {
             av_log(s, AV_LOG_DEBUG, "Sending bytes read report\n");
