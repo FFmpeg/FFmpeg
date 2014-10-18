@@ -2299,12 +2299,13 @@ typedef struct AVCodecContext {
     int rc_override_count;
     RcOverride *rc_override;
 
+#if FF_API_MPV_OPT
     /**
-     * rate control equation
-     * - encoding: Set by user
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     const char *rc_eq;
+#endif
 
     /**
      * maximum bitrate
