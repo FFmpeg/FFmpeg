@@ -374,12 +374,19 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     /* Fixed QSCALE */
     s->fixed_qscale = !!(avctx->flags & CODEC_FLAG_QSCALE);
 
+#if FF_API_MPV_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->border_masking != 0.0)
+        s->border_masking = avctx->border_masking;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     s->adaptive_quant = (s->avctx->lumi_masking ||
                          s->avctx->dark_masking ||
                          s->avctx->temporal_cplx_masking ||
                          s->avctx->spatial_cplx_masking  ||
                          s->avctx->p_masking      ||
-                         s->avctx->border_masking ||
+                         s->border_masking ||
                          (s->mpv_flags & FF_MPV_FLAG_QP_RD)) &&
                         !s->fixed_qscale;
 
