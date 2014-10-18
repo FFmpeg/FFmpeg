@@ -972,7 +972,9 @@ static int read_header(AVFormatContext *s)
     avio_skip(s->pb, 4);
     root_sector = avio_rl32(s->pb);
 
-    seek_by_sector(s->pb, root_sector, 0);
+    ret = seek_by_sector(s->pb, root_sector, 0);
+    if (ret < 0)
+        return ret;
     root_size = avio_read(s->pb, root, root_size);
     if (root_size < 0)
         return AVERROR_INVALIDDATA;
