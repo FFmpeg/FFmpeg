@@ -950,6 +950,13 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+#if FF_API_MPV_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->rc_qsquish != 0.0)
+        s->rc_qsquish = avctx->rc_qsquish;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     if (avctx->b_frame_strategy == 2) {
         for (i = 0; i < s->max_b_frames + 2; i++) {
             s->tmp_frames[i] = av_frame_alloc();
