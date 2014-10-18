@@ -361,8 +361,6 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
         buf += RTP_HEVC_PAYLOAD_HEADER_SIZE;
         len -= RTP_HEVC_PAYLOAD_HEADER_SIZE;
 
-        if (len < 1)
-            return AVERROR_INVALIDDATA;
         /*
              decode the FU header
 
