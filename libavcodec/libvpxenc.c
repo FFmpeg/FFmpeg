@@ -763,8 +763,8 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (rawimg_alpha) {
-        av_free(rawimg_alpha->planes[VPX_PLANE_U]);
-        av_free(rawimg_alpha->planes[VPX_PLANE_V]);
+        av_freep(&rawimg_alpha->planes[VPX_PLANE_U]);
+        av_freep(&rawimg_alpha->planes[VPX_PLANE_V]);
     }
 
     *got_packet = !!coded_size;
