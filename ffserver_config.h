@@ -104,6 +104,13 @@ typedef struct FFServerConfig {
     char logfilename[1024];
     struct sockaddr_in http_addr;
     struct sockaddr_in rtsp_addr;
+    int errors;
+    int warnings;
+    // Following variables MUST NOT be used outside configuration parsing code.
+    AVCodecContext audio_enc;
+    AVCodecContext video_enc;
+    enum AVCodecID audio_id;
+    enum AVCodecID video_id;
 
 } FFServerConfig;
 

@@ -334,18 +334,517 @@ static void report_config_error(const char *filename, int line_num, int log_leve
     (*errors)++;
 }
 
+#define ERROR(...)   report_config_error(config->filename, line_num, AV_LOG_ERROR,   &config->errors,   __VA_ARGS__)
+#define WARNING(...) report_config_error(config->filename, line_num, AV_LOG_WARNING, &config->warnings, __VA_ARGS__)
+
+static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
+                                        const char **p, int line_num)
+{
+    int val;
+    char arg[1024];
+    if (!av_strcasecmp(cmd, "Port") || !av_strcasecmp(cmd, "HTTPPort")) {
+        if (!av_strcasecmp(cmd, "Port"))
+            WARNING("Port option is deprecated, use HTTPPort instead\n");
+        ffserver_get_arg(arg, sizeof(arg), p);
+        val = atoi(arg);
+        if (val < 1 || val > 65536)
+            ERROR("Invalid port: %s\n", arg);
+        if (val < 1024)
+            WARNING("Trying to use IETF assigned system port: %d\n", val);
+        config->http_addr.sin_port = htons(val);
+    } else if (!av_strcasecmp(cmd, "HTTPBindAddress") || !av_strcasecmp(cmd, "BindAddress")) {
+        if (!av_strcasecmp(cmd, "BindAddress"))
+            WARNING("BindAddress option is deprecated, use HTTPBindAddress instead\n");
+        ffserver_get_arg(arg, sizeof(arg), p);
+        if (resolve_host(&config->http_addr.sin_addr, arg) != 0)
+            ERROR("%s:%d: Invalid host/IP address: %s\n", arg);
+    } else if (!av_strcasecmp(cmd, "NoDaemon")) {
+        WARNING("NoDaemon option has no effect, you should remove it\n");
+    } else if (!av_strcasecmp(cmd, "RTSPPort")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        val = atoi(arg);
+        if (val < 1 || val > 65536)
+            ERROR("%s:%d: Invalid port: %s\n", arg);
+        config->rtsp_addr.sin_port = htons(atoi(arg));
+    } else if (!av_strcasecmp(cmd, "RTSPBindAddress")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        if (resolve_host(&config->rtsp_addr.sin_addr, arg) != 0)
+            ERROR("Invalid host/IP address: %s\n", arg);
+    } else if (!av_strcasecmp(cmd, "MaxHTTPConnections")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        val = atoi(arg);
+        if (val < 1 || val > 65536)
+            ERROR("Invalid MaxHTTPConnections: %s\n", arg);
+        config->nb_max_http_connections = val;
+    } else if (!av_strcasecmp(cmd, "MaxClients")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        val = atoi(arg);
+        if (val < 1 || val > config->nb_max_http_connections)
+            ERROR("Invalid MaxClients: %s\n", arg);
+        else
+            config->nb_max_connections = val;
+    } else if (!av_strcasecmp(cmd, "MaxBandwidth")) {
+        int64_t llval;
+        ffserver_get_arg(arg, sizeof(arg), p);
+        llval = strtoll(arg, NULL, 10);
+        if (llval < 10 || llval > 10000000)
+            ERROR("Invalid MaxBandwidth: %s\n", arg);
+        else
+            config->max_bandwidth = llval;
+    } else if (!av_strcasecmp(cmd, "CustomLog")) {
+        if (!config->debug)
+            ffserver_get_arg(config->logfilename, sizeof(config->logfilename), p);
+    } else if (!av_strcasecmp(cmd, "LoadModule")) {
+        ERROR("Loadable modules no longer supported\n");
+    } else
+        ERROR("Incorrect keyword: '%s'\n", cmd);
+    return 0;
+}
+
+static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, const char **p,
+                                      int line_num, FFServerStream **pfeed)
+{
+    FFServerStream *feed;
+    char arg[1024];
+    av_assert0(pfeed);
+    feed = *pfeed;
+    if (!av_strcasecmp(cmd, "<Feed")) {
+        char *q;
+        FFServerStream *s;
+        feed = av_mallocz(sizeof(FFServerStream));
+        if (!feed)
+            return AVERROR(ENOMEM);
+        ffserver_get_arg(feed->filename, sizeof(feed->filename), p);
+        q = strrchr(feed->filename, '>');
+        if (*q)
+            *q = '\0';
+
+        for (s = config->first_feed; s; s = s->next) {
+            if (!strcmp(feed->filename, s->filename))
+                ERROR("Feed '%s' already registered\n", s->filename);
+        }
+
+        feed->fmt = av_guess_format("ffm", NULL, NULL);
+        /* default feed file */
+        snprintf(feed->feed_filename, sizeof(feed->feed_filename),
+                 "/tmp/%s.ffm", feed->filename);
+        feed->feed_max_size = 5 * 1024 * 1024;
+        feed->is_feed = 1;
+        feed->feed = feed; /* self feeding :-) */
+        *pfeed = feed;
+        return 0;
+    }
+    av_assert0(feed);
+    if (!av_strcasecmp(cmd, "Launch")) {
+        int i;
+
+        feed->child_argv = av_mallocz(64 * sizeof(char *));
+        if (!feed->child_argv)
+            return AVERROR(ENOMEM);
+        for (i = 0; i < 62; i++) {
+            ffserver_get_arg(arg, sizeof(arg), p);
+            if (!arg[0])
+                break;
+
+            feed->child_argv[i] = av_strdup(arg);
+            if (!feed->child_argv[i])
+                return AVERROR(ENOMEM);
+        }
+
+        feed->child_argv[i] =
+            av_asprintf("http://%s:%d/%s",
+                        (config->http_addr.sin_addr.s_addr == INADDR_ANY) ? "127.0.0.1" :
+                        inet_ntoa(config->http_addr.sin_addr), ntohs(config->http_addr.sin_port),
+                        feed->filename);
+        if (!feed->child_argv[i])
+            return AVERROR(ENOMEM);
+    } else if (!av_strcasecmp(cmd, "ACL")) {
+        ffserver_parse_acl_row(NULL, feed, NULL, *p, config->filename, line_num);
+    } else if (!av_strcasecmp(cmd, "File") || !av_strcasecmp(cmd, "ReadOnlyFile")) {
+        ffserver_get_arg(feed->feed_filename, sizeof(feed->feed_filename), p);
+        feed->readonly = !av_strcasecmp(cmd, "ReadOnlyFile");
+    } else if (!av_strcasecmp(cmd, "Truncate")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        /* assume Truncate is true in case no argument is specified */
+        if (!arg[0]) {
+            feed->truncate = 1;
+        } else {
+            WARNING("Truncate N syntax in configuration file is deprecated, "
+                    "use Truncate alone with no arguments\n");
+            feed->truncate = strtod(arg, NULL);
+        }
+    } else if (!av_strcasecmp(cmd, "FileMaxSize")) {
+        char *p1;
+        double fsize;
+
+        ffserver_get_arg(arg, sizeof(arg), p);
+        p1 = arg;
+        fsize = strtod(p1, &p1);
+        switch(av_toupper(*p1)) {
+        case 'K':
+            fsize *= 1024;
+            break;
+        case 'M':
+            fsize *= 1024 * 1024;
+            break;
+        case 'G':
+            fsize *= 1024 * 1024 * 1024;
+            break;
+        }
+        feed->feed_max_size = (int64_t)fsize;
+        if (feed->feed_max_size < FFM_PACKET_SIZE*4)
+            ERROR("Feed max file size is too small, must be at least %d\n", FFM_PACKET_SIZE*4);
+    } else if (!av_strcasecmp(cmd, "</Feed>")) {
+        *pfeed = NULL;
+    } else {
+        ERROR("Invalid entry '%s' inside <Feed></Feed>\n", cmd);
+    }
+    return 0;
+}
+
+static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd, const char **p,
+                                        int line_num, FFServerStream **pstream)
+{
+    char arg[1024], arg2[1024];
+    FFServerStream *stream;
+
+    av_assert0(pstream);
+    stream = *pstream;
+
+    if (!av_strcasecmp(cmd, "<Stream")) {
+        char *q;
+        FFServerStream *s;
+        stream = av_mallocz(sizeof(FFServerStream));
+        if (!stream)
+            return AVERROR(ENOMEM);
+        ffserver_get_arg(stream->filename, sizeof(stream->filename), p);
+        q = strrchr(stream->filename, '>');
+        if (q)
+            *q = '\0';
+
+        for (s = config->first_stream; s; s = s->next) {
+            if (!strcmp(stream->filename, s->filename))
+                ERROR("Stream '%s' already registered\n", s->filename);
+        }
+
+        stream->fmt = ffserver_guess_format(NULL, stream->filename, NULL);
+        avcodec_get_context_defaults3(&config->video_enc, NULL);
+        avcodec_get_context_defaults3(&config->audio_enc, NULL);
+
+        config->audio_id = AV_CODEC_ID_NONE;
+        config->video_id = AV_CODEC_ID_NONE;
+        if (stream->fmt) {
+            config->audio_id = stream->fmt->audio_codec;
+            config->video_id = stream->fmt->video_codec;
+        }
+        *pstream = stream;
+        return 0;
+    }
+    av_assert0(stream);
+    if (!av_strcasecmp(cmd, "Feed")) {
+        FFServerStream *sfeed;
+        ffserver_get_arg(arg, sizeof(arg), p);
+        sfeed = config->first_feed;
+        while (sfeed) {
+            if (!strcmp(sfeed->filename, arg))
+                break;
+            sfeed = sfeed->next_feed;
+        }
+        if (!sfeed)
+            ERROR("Feed with name '%s' for stream '%s' is not defined\n", arg, stream->filename);
+        else
+            stream->feed = sfeed;
+    } else if (!av_strcasecmp(cmd, "Format")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        if (!strcmp(arg, "status")) {
+            stream->stream_type = STREAM_TYPE_STATUS;
+            stream->fmt = NULL;
+        } else {
+            stream->stream_type = STREAM_TYPE_LIVE;
+            /* JPEG cannot be used here, so use single frame MJPEG */
+            if (!strcmp(arg, "jpeg"))
+                strcpy(arg, "mjpeg");
+            stream->fmt = ffserver_guess_format(arg, NULL, NULL);
+            if (!stream->fmt)
+                ERROR("Unknown Format: %s\n", arg);
+        }
+        if (stream->fmt) {
+            config->audio_id = stream->fmt->audio_codec;
+            config->video_id = stream->fmt->video_codec;
+        }
+    } else if (!av_strcasecmp(cmd, "InputFormat")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        stream->ifmt = av_find_input_format(arg);
+        if (!stream->ifmt)
+            ERROR("Unknown input format: %s\n", arg);
+    } else if (!av_strcasecmp(cmd, "FaviconURL")) {
+        if (stream->stream_type == STREAM_TYPE_STATUS)
+            ffserver_get_arg(stream->feed_filename, sizeof(stream->feed_filename), p);
+        else
+            ERROR("FaviconURL only permitted for status streams\n");
+    } else if (!av_strcasecmp(cmd, "Author")    ||
+               !av_strcasecmp(cmd, "Comment")   ||
+               !av_strcasecmp(cmd, "Copyright") ||
+               !av_strcasecmp(cmd, "Title")) {
+        char key[32];
+        int i, ret;
+        ffserver_get_arg(arg, sizeof(arg), p);
+        for (i = 0; i < strlen(cmd); i++)
+            key[i] = av_tolower(cmd[i]);
+        key[i] = 0;
+        WARNING("'%s' option in configuration file is deprecated, "
+                "use 'Metadata %s VALUE' instead\n", cmd, key);
+        if ((ret = av_dict_set(&stream->metadata, key, arg, 0)) < 0)
+            ERROR("Could not set metadata '%s' to value '%s': %s\n", key, arg, av_err2str(ret));
+    } else if (!av_strcasecmp(cmd, "Metadata")) {
+        int ret;
+        ffserver_get_arg(arg, sizeof(arg), p);
+        ffserver_get_arg(arg2, sizeof(arg2), p);
+        if ((ret = av_dict_set(&stream->metadata, arg, arg2, 0)) < 0) {
+            ERROR("Could not set metadata '%s' to value '%s': %s\n",
+                  arg, arg2, av_err2str(ret));
+        }
+    } else if (!av_strcasecmp(cmd, "Preroll")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        stream->prebuffer = atof(arg) * 1000;
+    } else if (!av_strcasecmp(cmd, "StartSendOnKey")) {
+        stream->send_on_key = 1;
+    } else if (!av_strcasecmp(cmd, "AudioCodec")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->audio_id = opt_codec(arg, AVMEDIA_TYPE_AUDIO);
+        if (config->audio_id == AV_CODEC_ID_NONE)
+            ERROR("Unknown AudioCodec: %s\n", arg);
+    } else if (!av_strcasecmp(cmd, "VideoCodec")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_id = opt_codec(arg, AVMEDIA_TYPE_VIDEO);
+        if (config->video_id == AV_CODEC_ID_NONE)
+            ERROR("Unknown VideoCodec: %s\n", arg);
+    } else if (!av_strcasecmp(cmd, "MaxTime")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        stream->max_time = atof(arg) * 1000;
+    } else if (!av_strcasecmp(cmd, "AudioBitRate")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->audio_enc.bit_rate = lrintf(atof(arg) * 1000);
+    } else if (!av_strcasecmp(cmd, "AudioChannels")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->audio_enc.channels = atoi(arg);
+    } else if (!av_strcasecmp(cmd, "AudioSampleRate")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->audio_enc.sample_rate = atoi(arg);
+    } else if (!av_strcasecmp(cmd, "VideoBitRateRange")) {
+        int minrate, maxrate;
+        ffserver_get_arg(arg, sizeof(arg), p);
+        if (sscanf(arg, "%d-%d", &minrate, &maxrate) == 2) {
+            config->video_enc.rc_min_rate = minrate * 1000;
+            config->video_enc.rc_max_rate = maxrate * 1000;
+        } else
+            ERROR("Incorrect format for VideoBitRateRange -- should be <min>-<max>: %s\n", arg);
+    } else if (!av_strcasecmp(cmd, "Debug")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.debug = strtol(arg,0,0);
+    } else if (!av_strcasecmp(cmd, "Strict")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.strict_std_compliance = atoi(arg);
+    } else if (!av_strcasecmp(cmd, "VideoBufferSize")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.rc_buffer_size = atoi(arg) * 8*1024;
+    } else if (!av_strcasecmp(cmd, "VideoBitRateTolerance")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.bit_rate_tolerance = atoi(arg) * 1000;
+    } else if (!av_strcasecmp(cmd, "VideoBitRate")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.bit_rate = atoi(arg) * 1000;
+    } else if (!av_strcasecmp(cmd, "VideoSize")) {
+        int ret;
+        ffserver_get_arg(arg, sizeof(arg), p);
+        ret = av_parse_video_size(&config->video_enc.width, &config->video_enc.height, arg);
+        if (ret < 0)
+            ERROR("Invalid video size '%s'\n", arg);
+        else if ((config->video_enc.width % 16) != 0 || (config->video_enc.height % 16) != 0)
+            ERROR("Image size must be a multiple of 16\n");
+    } else if (!av_strcasecmp(cmd, "VideoFrameRate")) {
+        AVRational frame_rate;
+        ffserver_get_arg(arg, sizeof(arg), p);
+        if (av_parse_video_rate(&frame_rate, arg) < 0) {
+            ERROR("Incorrect frame rate: %s\n", arg);
+        } else {
+            config->video_enc.time_base.num = frame_rate.den;
+            config->video_enc.time_base.den = frame_rate.num;
+        }
+    } else if (!av_strcasecmp(cmd, "PixelFormat")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.pix_fmt = av_get_pix_fmt(arg);
+        if (config->video_enc.pix_fmt == AV_PIX_FMT_NONE)
+            ERROR("Unknown pixel format: %s\n", arg);
+    } else if (!av_strcasecmp(cmd, "VideoGopSize")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.gop_size = atoi(arg);
+    } else if (!av_strcasecmp(cmd, "VideoIntraOnly")) {
+        config->video_enc.gop_size = 1;
+    } else if (!av_strcasecmp(cmd, "VideoHighQuality")) {
+        config->video_enc.mb_decision = FF_MB_DECISION_BITS;
+    } else if (!av_strcasecmp(cmd, "Video4MotionVector")) {
+        config->video_enc.mb_decision = FF_MB_DECISION_BITS; //FIXME remove
+        config->video_enc.flags |= CODEC_FLAG_4MV;
+    } else if (!av_strcasecmp(cmd, "AVOptionVideo") ||
+               !av_strcasecmp(cmd, "AVOptionAudio")) {
+        AVCodecContext *avctx;
+        int type;
+        ffserver_get_arg(arg, sizeof(arg), p);
+        ffserver_get_arg(arg2, sizeof(arg2), p);
+        if (!av_strcasecmp(cmd, "AVOptionVideo")) {
+            avctx = &config->video_enc;
+            type = AV_OPT_FLAG_VIDEO_PARAM;
+        } else {
+            avctx = &config->audio_enc;
+            type = AV_OPT_FLAG_AUDIO_PARAM;
+        }
+        if (ffserver_opt_default(arg, arg2, avctx, type|AV_OPT_FLAG_ENCODING_PARAM)) {
+            ERROR("Error setting %s option to %s %s\n", cmd, arg, arg2);
+        }
+    } else if (!av_strcasecmp(cmd, "AVPresetVideo") ||
+               !av_strcasecmp(cmd, "AVPresetAudio")) {
+        AVCodecContext *avctx;
+        int type;
+        ffserver_get_arg(arg, sizeof(arg), p);
+        if (!av_strcasecmp(cmd, "AVPresetVideo")) {
+            avctx = &config->video_enc;
+            config->video_enc.codec_id = config->video_id;
+            type = AV_OPT_FLAG_VIDEO_PARAM;
+        } else {
+            avctx = &config->audio_enc;
+            config->audio_enc.codec_id = config->audio_id;
+            type = AV_OPT_FLAG_AUDIO_PARAM;
+        }
+        if (ffserver_opt_preset(arg, avctx, type|AV_OPT_FLAG_ENCODING_PARAM, &config->audio_id, &config->video_id)) {
+            ERROR("AVPreset error: %s\n", arg);
+        }
+    } else if (!av_strcasecmp(cmd, "VideoTag")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        if (strlen(arg) == 4)
+            config->video_enc.codec_tag = MKTAG(arg[0], arg[1], arg[2], arg[3]);
+    } else if (!av_strcasecmp(cmd, "BitExact")) {
+        config->video_enc.flags |= CODEC_FLAG_BITEXACT;
+    } else if (!av_strcasecmp(cmd, "DctFastint")) {
+        config->video_enc.dct_algo  = FF_DCT_FASTINT;
+    } else if (!av_strcasecmp(cmd, "IdctSimple")) {
+        config->video_enc.idct_algo = FF_IDCT_SIMPLE;
+    } else if (!av_strcasecmp(cmd, "Qscale")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.flags |= CODEC_FLAG_QSCALE;
+        config->video_enc.global_quality = FF_QP2LAMBDA * atoi(arg);
+    } else if (!av_strcasecmp(cmd, "VideoQDiff")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.max_qdiff = atoi(arg);
+        if (config->video_enc.max_qdiff < 1 || config->video_enc.max_qdiff > 31)
+            ERROR("VideoQDiff out of range\n");
+    } else if (!av_strcasecmp(cmd, "VideoQMax")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.qmax = atoi(arg);
+        if (config->video_enc.qmax < 1 || config->video_enc.qmax > 31)
+            ERROR("VideoQMax out of range\n");
+    } else if (!av_strcasecmp(cmd, "VideoQMin")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.qmin = atoi(arg);
+        if (config->video_enc.qmin < 1 || config->video_enc.qmin > 31)
+            ERROR("VideoQMin out of range\n");
+    } else if (!av_strcasecmp(cmd, "LumiMask")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.lumi_masking = atof(arg);
+    } else if (!av_strcasecmp(cmd, "DarkMask")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        config->video_enc.dark_masking = atof(arg);
+    } else if (!av_strcasecmp(cmd, "NoVideo")) {
+        config->video_id = AV_CODEC_ID_NONE;
+    } else if (!av_strcasecmp(cmd, "NoAudio")) {
+        config->audio_id = AV_CODEC_ID_NONE;
+    } else if (!av_strcasecmp(cmd, "ACL")) {
+        ffserver_parse_acl_row(stream, NULL, NULL, *p, config->filename, line_num);
+    } else if (!av_strcasecmp(cmd, "DynamicACL")) {
+        ffserver_get_arg(stream->dynamic_acl, sizeof(stream->dynamic_acl), p);
+    } else if (!av_strcasecmp(cmd, "RTSPOption")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        av_freep(&stream->rtsp_option);
+        stream->rtsp_option = av_strdup(arg);
+    } else if (!av_strcasecmp(cmd, "MulticastAddress")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        if (resolve_host(&stream->multicast_ip, arg) != 0)
+            ERROR("Invalid host/IP address: %s\n", arg);
+        stream->is_multicast = 1;
+        stream->loop = 1; /* default is looping */
+    } else if (!av_strcasecmp(cmd, "MulticastPort")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        stream->multicast_port = atoi(arg);
+    } else if (!av_strcasecmp(cmd, "MulticastTTL")) {
+        ffserver_get_arg(arg, sizeof(arg), p);
+        stream->multicast_ttl = atoi(arg);
+    } else if (!av_strcasecmp(cmd, "NoLoop")) {
+        stream->loop = 0;
+    } else if (!av_strcasecmp(cmd, "</Stream>")) {
+        if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm") != 0) {
+            if (config->audio_id != AV_CODEC_ID_NONE) {
+                config->audio_enc.codec_type = AVMEDIA_TYPE_AUDIO;
+                config->audio_enc.codec_id = config->audio_id;
+                add_codec(stream, &config->audio_enc);
+            }
+            if (config->video_id != AV_CODEC_ID_NONE) {
+                config->video_enc.codec_type = AVMEDIA_TYPE_VIDEO;
+                config->video_enc.codec_id = config->video_id;
+                add_codec(stream, &config->video_enc);
+            }
+        }
+        *pstream = NULL;
+    } else if (!av_strcasecmp(cmd, "File") || !av_strcasecmp(cmd, "ReadOnlyFile")) {
+        ffserver_get_arg(stream->feed_filename, sizeof(stream->feed_filename), p);
+    } else {
+        ERROR("Invalid entry '%s' inside <Stream></Stream>\n", cmd);
+    }
+    return 0;
+}
+
+static int ffserver_parse_config_redirect(FFServerConfig *config, const char *cmd, const char **p,
+                                          int line_num, FFServerStream **predirect)
+{
+    FFServerStream *redirect;
+    av_assert0(predirect);
+    redirect = *predirect;
+
+    if (!av_strcasecmp(cmd, "<Redirect")) {
+        char *q;
+        redirect = av_mallocz(sizeof(FFServerStream));
+        if (!redirect)
+            return AVERROR(ENOMEM);
+
+        ffserver_get_arg(redirect->filename, sizeof(redirect->filename), p);
+        q = strrchr(redirect->filename, '>');
+        if (*q)
+            *q = '\0';
+        redirect->stream_type = STREAM_TYPE_REDIRECT;
+        *predirect = redirect;
+        return 0;
+    }
+    av_assert0(redirect);
+    if (!av_strcasecmp(cmd, "URL")) {
+        ffserver_get_arg(redirect->feed_filename, sizeof(redirect->feed_filename), p);
+    } else if (!av_strcasecmp(cmd, "</Redirect>")) {
+        if (!redirect->feed_filename[0])
+            ERROR("No URL found for <Redirect>\n");
+        *predirect = NULL;
+    } else {
+        ERROR("Invalid entry '%s' inside <Redirect></Redirect>\n", cmd);
+    }
+    return 0;
+}
+
 int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
 {
     FILE *f;
     char line[1024];
     char cmd[64];
-    char arg[1024], arg2[1024];
     const char *p;
-    int val, errors = 0, warnings = 0, line_num = 0;
+    int line_num = 0;
     FFServerStream **last_stream, *stream = NULL, *redirect = NULL;
     FFServerStream **last_feed, *feed = NULL;
-    AVCodecContext audio_enc, video_enc;
-    enum AVCodecID audio_id = AV_CODEC_ID_NONE, video_id = AV_CODEC_ID_NONE;
     int ret = 0;
 
     av_assert0(config);
@@ -361,8 +860,7 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
     last_stream = &config->first_stream;
     config->first_feed = NULL;
     last_feed = &config->first_feed;
-#define ERROR(...)   report_config_error(filename, line_num, AV_LOG_ERROR,   &errors,   __VA_ARGS__)
-#define WARNING(...) report_config_error(filename, line_num, AV_LOG_WARNING, &warnings, __VA_ARGS__)
+    config->errors = config->warnings = 0;
 
     for(;;) {
         if (fgets(line, sizeof(line), f) == NULL)
@@ -376,605 +874,61 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
 
         ffserver_get_arg(cmd, sizeof(cmd), &p);
 
-        if (!av_strcasecmp(cmd, "Port") || !av_strcasecmp(cmd, "HTTPPort")) {
-            if (!av_strcasecmp(cmd, "Port"))
-                WARNING("Port option is deprecated, use HTTPPort instead\n");
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            val = atoi(arg);
-            if (val < 1 || val > 65536) {
-                ERROR("Invalid port: %s\n", arg);
-            }
-            if (val < 1024)
-                WARNING("Trying to use IETF assigned system port: %d\n", val);
-            config->http_addr.sin_port = htons(val);
-        } else if (!av_strcasecmp(cmd, "HTTPBindAddress") || !av_strcasecmp(cmd, "BindAddress")) {
-            if (!av_strcasecmp(cmd, "BindAddress"))
-                WARNING("BindAddress option is deprecated, use HTTPBindAddress instead\n");
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (resolve_host(&config->http_addr.sin_addr, arg) != 0) {
-                ERROR("%s:%d: Invalid host/IP address: %s\n", arg);
-            }
-        } else if (!av_strcasecmp(cmd, "NoDaemon")) {
-            WARNING("NoDaemon option has no effect, you should remove it\n");
-        } else if (!av_strcasecmp(cmd, "RTSPPort")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            val = atoi(arg);
-            if (val < 1 || val > 65536) {
-                ERROR("%s:%d: Invalid port: %s\n", arg);
-            }
-            config->rtsp_addr.sin_port = htons(atoi(arg));
-        } else if (!av_strcasecmp(cmd, "RTSPBindAddress")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (resolve_host(&config->rtsp_addr.sin_addr, arg) != 0) {
-                ERROR("Invalid host/IP address: %s\n", arg);
-            }
-        } else if (!av_strcasecmp(cmd, "MaxHTTPConnections")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            val = atoi(arg);
-            if (val < 1 || val > 65536) {
-                ERROR("Invalid MaxHTTPConnections: %s\n", arg);
-            }
-            config->nb_max_http_connections = val;
-        } else if (!av_strcasecmp(cmd, "MaxClients")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            val = atoi(arg);
-            if (val < 1 || val > config->nb_max_http_connections) {
-                ERROR("Invalid MaxClients: %s\n", arg);
-            } else {
-                config->nb_max_connections = val;
-            }
-        } else if (!av_strcasecmp(cmd, "MaxBandwidth")) {
-            int64_t llval;
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            llval = strtoll(arg, NULL, 10);
-            if (llval < 10 || llval > 10000000) {
-                ERROR("Invalid MaxBandwidth: %s\n", arg);
-            } else
-                config->max_bandwidth = llval;
-        } else if (!av_strcasecmp(cmd, "CustomLog")) {
-            if (!config->debug)
-                ffserver_get_arg(config->logfilename, sizeof(config->logfilename), &p);
-        } else if (!av_strcasecmp(cmd, "<Feed")) {
-            /*********************************************/
-            /* Feed related options */
-            char *q;
-            if (stream || feed) {
+        if (feed || !av_strcasecmp(cmd, "<Feed")) {
+            int opening = !av_strcasecmp(cmd, "<Feed");
+            if (opening && (stream || feed || redirect)) {
                 ERROR("Already in a tag\n");
             } else {
-                FFServerStream *s;
-                feed = av_mallocz(sizeof(FFServerStream));
-                if (!feed) {
-                    ret = AVERROR(ENOMEM);
-                    goto end;
-                }
-                ffserver_get_arg(feed->filename, sizeof(feed->filename), &p);
-                q = strrchr(feed->filename, '>');
-                if (*q)
-                    *q = '\0';
-
-                for (s = config->first_feed; s; s = s->next) {
-                    if (!strcmp(feed->filename, s->filename)) {
-                        ERROR("Feed '%s' already registered\n", s->filename);
-                    }
-                }
-
-                feed->fmt = av_guess_format("ffm", NULL, NULL);
-                /* default feed file */
-                snprintf(feed->feed_filename, sizeof(feed->feed_filename),
-                         "/tmp/%s.ffm", feed->filename);
-                feed->feed_max_size = 5 * 1024 * 1024;
-                feed->is_feed = 1;
-                feed->feed = feed; /* self feeding :-) */
-
-                /* add in stream list */
-                *last_stream = feed;
-                last_stream = &feed->next;
-                /* add in feed list */
-                *last_feed = feed;
-                last_feed = &feed->next_feed;
-            }
-        } else if (!av_strcasecmp(cmd, "Launch")) {
-            if (feed) {
-                int i;
-
-                feed->child_argv = av_mallocz(64 * sizeof(char *));
-                if (!feed->child_argv) {
-                    ret = AVERROR(ENOMEM);
-                    goto end;
-                }
-                for (i = 0; i < 62; i++) {
-                    ffserver_get_arg(arg, sizeof(arg), &p);
-                    if (!arg[0])
-                        break;
-
-                    feed->child_argv[i] = av_strdup(arg);
-                    if (!feed->child_argv[i]) {
-                        ret = AVERROR(ENOMEM);
-                        goto end;
-                    }
-                }
-
-                feed->child_argv[i] =
-                    av_asprintf("http://%s:%d/%s",
-                                (config->http_addr.sin_addr.s_addr == INADDR_ANY) ? "127.0.0.1" :
-                                inet_ntoa(config->http_addr.sin_addr), ntohs(config->http_addr.sin_port),
-                                feed->filename);
-                if (!feed->child_argv[i]) {
-                    ret = AVERROR(ENOMEM);
-                    goto end;
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "File") || !av_strcasecmp(cmd, "ReadOnlyFile")) {
-            if (feed) {
-                ffserver_get_arg(feed->feed_filename, sizeof(feed->feed_filename), &p);
-                feed->readonly = !av_strcasecmp(cmd, "ReadOnlyFile");
-            } else if (stream) {
-                ffserver_get_arg(stream->feed_filename, sizeof(stream->feed_filename), &p);
-            }
-        } else if (!av_strcasecmp(cmd, "Truncate")) {
-            if (feed) {
-                ffserver_get_arg(arg, sizeof(arg), &p);
-                /* assume Truncate is true in case no argument is specified */
-                if (!arg[0]) {
-                    feed->truncate = 1;
-                } else {
-                    WARNING("Truncate N syntax in configuration file is deprecated, "
-                            "use Truncate alone with no arguments\n");
-                    feed->truncate = strtod(arg, NULL);
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "FileMaxSize")) {
-            if (feed) {
-                char *p1;
-                double fsize;
-
-                ffserver_get_arg(arg, sizeof(arg), &p);
-                p1 = arg;
-                fsize = strtod(p1, &p1);
-                switch(av_toupper(*p1)) {
-                case 'K':
-                    fsize *= 1024;
+                if ((ret = ffserver_parse_config_feed(config, cmd, &p, line_num, &feed)) < 0)
                     break;
-                case 'M':
-                    fsize *= 1024 * 1024;
-                    break;
-                case 'G':
-                    fsize *= 1024 * 1024 * 1024;
-                    break;
-                }
-                feed->feed_max_size = (int64_t)fsize;
-                if (feed->feed_max_size < FFM_PACKET_SIZE*4) {
-                    ERROR("Feed max file size is too small, must be at least %d\n", FFM_PACKET_SIZE*4);
+                if (opening) {
+                    /* add in stream list */
+                    *last_stream = feed;
+                    last_stream = &feed->next;
+                    /* add in feed list */
+                    *last_feed = feed;
+                    last_feed = &feed->next_feed;
                 }
             }
-        } else if (!av_strcasecmp(cmd, "</Feed>")) {
-            if (!feed) {
-                ERROR("No corresponding <Feed> for </Feed>\n");
-            }
-            feed = NULL;
-        } else if (!av_strcasecmp(cmd, "<Stream")) {
-            /*********************************************/
-            /* Stream related options */
-            char *q;
-            if (stream || feed) {
+        } else if (stream || !av_strcasecmp(cmd, "<Stream")) {
+            int opening = !av_strcasecmp(cmd, "<Stream");
+            if (opening && (stream || feed || redirect)) {
                 ERROR("Already in a tag\n");
             } else {
-                FFServerStream *s;
-                stream = av_mallocz(sizeof(FFServerStream));
-                if (!stream) {
-                    ret = AVERROR(ENOMEM);
-                    goto end;
-                }
-                ffserver_get_arg(stream->filename, sizeof(stream->filename), &p);
-                q = strrchr(stream->filename, '>');
-                if (q)
-                    *q = '\0';
-
-                for (s = config->first_stream; s; s = s->next) {
-                    if (!strcmp(stream->filename, s->filename)) {
-                        ERROR("Stream '%s' already registered\n", s->filename);
-                    }
-                }
-
-                stream->fmt = ffserver_guess_format(NULL, stream->filename, NULL);
-                avcodec_get_context_defaults3(&video_enc, NULL);
-                avcodec_get_context_defaults3(&audio_enc, NULL);
-
-                audio_id = AV_CODEC_ID_NONE;
-                video_id = AV_CODEC_ID_NONE;
-                if (stream->fmt) {
-                    audio_id = stream->fmt->audio_codec;
-                    video_id = stream->fmt->video_codec;
-                }
-
-                *last_stream = stream;
-                last_stream = &stream->next;
-            }
-        } else if (!av_strcasecmp(cmd, "Feed")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                FFServerStream *sfeed;
-
-                sfeed = config->first_feed;
-                while (sfeed) {
-                    if (!strcmp(sfeed->filename, arg))
-                        break;
-                    sfeed = sfeed->next_feed;
-                }
-                if (!sfeed)
-                    ERROR("Feed with name '%s' for stream '%s' is not defined\n", arg, stream->filename);
-                else
-                    stream->feed = sfeed;
-            }
-        } else if (!av_strcasecmp(cmd, "Format")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                if (!strcmp(arg, "status")) {
-                    stream->stream_type = STREAM_TYPE_STATUS;
-                    stream->fmt = NULL;
-                } else {
-                    stream->stream_type = STREAM_TYPE_LIVE;
-                    /* JPEG cannot be used here, so use single frame MJPEG */
-                    if (!strcmp(arg, "jpeg"))
-                        strcpy(arg, "mjpeg");
-                    stream->fmt = ffserver_guess_format(arg, NULL, NULL);
-                    if (!stream->fmt) {
-                        ERROR("Unknown Format: %s\n", arg);
-                    }
-                }
-                if (stream->fmt) {
-                    audio_id = stream->fmt->audio_codec;
-                    video_id = stream->fmt->video_codec;
+                if ((ret = ffserver_parse_config_stream(config, cmd, &p, line_num, &stream)) < 0)
+                    break;
+                if (opening) {
+                    /* add in stream list */
+                    *last_stream = stream;
+                    last_stream = &stream->next;
                 }
             }
-        } else if (!av_strcasecmp(cmd, "InputFormat")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                stream->ifmt = av_find_input_format(arg);
-                if (!stream->ifmt) {
-                    ERROR("Unknown input format: %s\n", arg);
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "FaviconURL")) {
-            if (stream && stream->stream_type == STREAM_TYPE_STATUS) {
-                ffserver_get_arg(stream->feed_filename, sizeof(stream->feed_filename), &p);
-            } else {
-                ERROR("FaviconURL only permitted for status streams\n");
-            }
-        } else if (!av_strcasecmp(cmd, "Author")    ||
-                   !av_strcasecmp(cmd, "Comment")   ||
-                   !av_strcasecmp(cmd, "Copyright") ||
-                   !av_strcasecmp(cmd, "Title")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-
-            if (stream) {
-                char key[32];
-                int i, ret;
-
-                for (i = 0; i < strlen(cmd); i++)
-                    key[i] = av_tolower(cmd[i]);
-                key[i] = 0;
-                WARNING("'%s' option in configuration file is deprecated, "
-                        "use 'Metadata %s VALUE' instead\n", cmd, key);
-                if ((ret = av_dict_set(&stream->metadata, key, arg, 0)) < 0) {
-                    ERROR("Could not set metadata '%s' to value '%s': %s\n",
-                          key, arg, av_err2str(ret));
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "Metadata")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            ffserver_get_arg(arg2, sizeof(arg2), &p);
-            if (stream) {
-                int ret;
-                if ((ret = av_dict_set(&stream->metadata, arg, arg2, 0)) < 0) {
-                    ERROR("Could not set metadata '%s' to value '%s': %s\n",
-                          arg, arg2, av_err2str(ret));
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "Preroll")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                stream->prebuffer = atof(arg) * 1000;
-        } else if (!av_strcasecmp(cmd, "StartSendOnKey")) {
-            if (stream)
-                stream->send_on_key = 1;
-        } else if (!av_strcasecmp(cmd, "AudioCodec")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            audio_id = opt_codec(arg, AVMEDIA_TYPE_AUDIO);
-            if (audio_id == AV_CODEC_ID_NONE) {
-                ERROR("Unknown AudioCodec: %s\n", arg);
-            }
-        } else if (!av_strcasecmp(cmd, "VideoCodec")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            video_id = opt_codec(arg, AVMEDIA_TYPE_VIDEO);
-            if (video_id == AV_CODEC_ID_NONE) {
-                ERROR("Unknown VideoCodec: %s\n", arg);
-            }
-        } else if (!av_strcasecmp(cmd, "MaxTime")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                stream->max_time = atof(arg) * 1000;
-        } else if (!av_strcasecmp(cmd, "AudioBitRate")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                audio_enc.bit_rate = lrintf(atof(arg) * 1000);
-        } else if (!av_strcasecmp(cmd, "AudioChannels")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                audio_enc.channels = atoi(arg);
-        } else if (!av_strcasecmp(cmd, "AudioSampleRate")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                audio_enc.sample_rate = atoi(arg);
-        } else if (!av_strcasecmp(cmd, "VideoBitRateRange")) {
-            if (stream) {
-                int minrate, maxrate;
-
-                ffserver_get_arg(arg, sizeof(arg), &p);
-
-                if (sscanf(arg, "%d-%d", &minrate, &maxrate) == 2) {
-                    video_enc.rc_min_rate = minrate * 1000;
-                    video_enc.rc_max_rate = maxrate * 1000;
-                } else {
-                    ERROR("Incorrect format for VideoBitRateRange -- should be <min>-<max>: %s\n", arg);
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "Debug")) {
-            if (stream) {
-                ffserver_get_arg(arg, sizeof(arg), &p);
-                video_enc.debug = strtol(arg,0,0);
-            }
-        } else if (!av_strcasecmp(cmd, "Strict")) {
-            if (stream) {
-                ffserver_get_arg(arg, sizeof(arg), &p);
-                video_enc.strict_std_compliance = atoi(arg);
-            }
-        } else if (!av_strcasecmp(cmd, "VideoBufferSize")) {
-            if (stream) {
-                ffserver_get_arg(arg, sizeof(arg), &p);
-                video_enc.rc_buffer_size = atoi(arg) * 8*1024;
-            }
-        } else if (!av_strcasecmp(cmd, "VideoBitRateTolerance")) {
-            if (stream) {
-                ffserver_get_arg(arg, sizeof(arg), &p);
-                video_enc.bit_rate_tolerance = atoi(arg) * 1000;
-            }
-        } else if (!av_strcasecmp(cmd, "VideoBitRate")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                video_enc.bit_rate = atoi(arg) * 1000;
-            }
-        } else if (!av_strcasecmp(cmd, "VideoSize")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                ret = av_parse_video_size(&video_enc.width, &video_enc.height, arg);
-                if (ret < 0) {
-                    ERROR("Invalid video size '%s'\n", arg);
-                } else {
-                    if ((video_enc.width % 16) != 0 ||
-                        (video_enc.height % 16) != 0) {
-                        ERROR("Image size must be a multiple of 16\n");
-                    }
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "VideoFrameRate")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                AVRational frame_rate;
-                if (av_parse_video_rate(&frame_rate, arg) < 0) {
-                    ERROR("Incorrect frame rate: %s\n", arg);
-                } else {
-                    video_enc.time_base.num = frame_rate.den;
-                    video_enc.time_base.den = frame_rate.num;
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "PixelFormat")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                video_enc.pix_fmt = av_get_pix_fmt(arg);
-                if (video_enc.pix_fmt == AV_PIX_FMT_NONE) {
-                    ERROR("Unknown pixel format: %s\n", arg);
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "VideoGopSize")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                video_enc.gop_size = atoi(arg);
-        } else if (!av_strcasecmp(cmd, "VideoIntraOnly")) {
-            if (stream)
-                video_enc.gop_size = 1;
-        } else if (!av_strcasecmp(cmd, "VideoHighQuality")) {
-            if (stream)
-                video_enc.mb_decision = FF_MB_DECISION_BITS;
-        } else if (!av_strcasecmp(cmd, "Video4MotionVector")) {
-            if (stream) {
-                video_enc.mb_decision = FF_MB_DECISION_BITS; //FIXME remove
-                video_enc.flags |= CODEC_FLAG_4MV;
-            }
-        } else if (!av_strcasecmp(cmd, "AVOptionVideo") ||
-                   !av_strcasecmp(cmd, "AVOptionAudio")) {
-            AVCodecContext *avctx;
-            int type;
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            ffserver_get_arg(arg2, sizeof(arg2), &p);
-            if (!av_strcasecmp(cmd, "AVOptionVideo")) {
-                avctx = &video_enc;
-                type = AV_OPT_FLAG_VIDEO_PARAM;
-            } else {
-                avctx = &audio_enc;
-                type = AV_OPT_FLAG_AUDIO_PARAM;
-            }
-            if (ffserver_opt_default(arg, arg2, avctx, type|AV_OPT_FLAG_ENCODING_PARAM)) {
-                ERROR("Error setting %s option to %s %s\n", cmd, arg, arg2);
-            }
-        } else if (!av_strcasecmp(cmd, "AVPresetVideo") ||
-                   !av_strcasecmp(cmd, "AVPresetAudio")) {
-            AVCodecContext *avctx;
-            int type;
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (!av_strcasecmp(cmd, "AVPresetVideo")) {
-                avctx = &video_enc;
-                video_enc.codec_id = video_id;
-                type = AV_OPT_FLAG_VIDEO_PARAM;
-            } else {
-                avctx = &audio_enc;
-                audio_enc.codec_id = audio_id;
-                type = AV_OPT_FLAG_AUDIO_PARAM;
-            }
-            if (ffserver_opt_preset(arg, avctx, type|AV_OPT_FLAG_ENCODING_PARAM, &audio_id, &video_id)) {
-                ERROR("AVPreset error: %s\n", arg);
-            }
-        } else if (!av_strcasecmp(cmd, "VideoTag")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if ((strlen(arg) == 4) && stream)
-                video_enc.codec_tag = MKTAG(arg[0], arg[1], arg[2], arg[3]);
-        } else if (!av_strcasecmp(cmd, "BitExact")) {
-            if (stream)
-                video_enc.flags |= CODEC_FLAG_BITEXACT;
-        } else if (!av_strcasecmp(cmd, "DctFastint")) {
-            if (stream)
-                video_enc.dct_algo  = FF_DCT_FASTINT;
-        } else if (!av_strcasecmp(cmd, "IdctSimple")) {
-            if (stream)
-                video_enc.idct_algo = FF_IDCT_SIMPLE;
-        } else if (!av_strcasecmp(cmd, "Qscale")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                video_enc.flags |= CODEC_FLAG_QSCALE;
-                video_enc.global_quality = FF_QP2LAMBDA * atoi(arg);
-            }
-        } else if (!av_strcasecmp(cmd, "VideoQDiff")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                video_enc.max_qdiff = atoi(arg);
-                if (video_enc.max_qdiff < 1 || video_enc.max_qdiff > 31) {
-                    ERROR("VideoQDiff out of range\n");
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "VideoQMax")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                video_enc.qmax = atoi(arg);
-                if (video_enc.qmax < 1 || video_enc.qmax > 31) {
-                    ERROR("VideoQMax out of range\n");
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "VideoQMin")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                video_enc.qmin = atoi(arg);
-                if (video_enc.qmin < 1 || video_enc.qmin > 31) {
-                    ERROR("VideoQMin out of range\n");
-                }
-            }
-        } else if (!av_strcasecmp(cmd, "LumiMask")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                video_enc.lumi_masking = atof(arg);
-        } else if (!av_strcasecmp(cmd, "DarkMask")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                video_enc.dark_masking = atof(arg);
-        } else if (!av_strcasecmp(cmd, "NoVideo")) {
-            video_id = AV_CODEC_ID_NONE;
-        } else if (!av_strcasecmp(cmd, "NoAudio")) {
-            audio_id = AV_CODEC_ID_NONE;
-        } else if (!av_strcasecmp(cmd, "ACL")) {
-            ffserver_parse_acl_row(stream, feed, NULL, p, filename, line_num);
-        } else if (!av_strcasecmp(cmd, "DynamicACL")) {
-            if (stream) {
-                ffserver_get_arg(stream->dynamic_acl, sizeof(stream->dynamic_acl), &p);
-            }
-        } else if (!av_strcasecmp(cmd, "RTSPOption")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                av_freep(&stream->rtsp_option);
-                stream->rtsp_option = av_strdup(arg);
-            }
-        } else if (!av_strcasecmp(cmd, "MulticastAddress")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream) {
-                if (resolve_host(&stream->multicast_ip, arg) != 0) {
-                    ERROR("Invalid host/IP address: %s\n", arg);
-                }
-                stream->is_multicast = 1;
-                stream->loop = 1; /* default is looping */
-            }
-        } else if (!av_strcasecmp(cmd, "MulticastPort")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                stream->multicast_port = atoi(arg);
-        } else if (!av_strcasecmp(cmd, "MulticastTTL")) {
-            ffserver_get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                stream->multicast_ttl = atoi(arg);
-        } else if (!av_strcasecmp(cmd, "NoLoop")) {
-            if (stream)
-                stream->loop = 0;
-        } else if (!av_strcasecmp(cmd, "</Stream>")) {
-            if (!stream) {
-                ERROR("No corresponding <Stream> for </Stream>\n");
-            } else {
-                if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm") != 0) {
-                    if (audio_id != AV_CODEC_ID_NONE) {
-                        audio_enc.codec_type = AVMEDIA_TYPE_AUDIO;
-                        audio_enc.codec_id = audio_id;
-                        add_codec(stream, &audio_enc);
-                    }
-                    if (video_id != AV_CODEC_ID_NONE) {
-                        video_enc.codec_type = AVMEDIA_TYPE_VIDEO;
-                        video_enc.codec_id = video_id;
-                        add_codec(stream, &video_enc);
-                    }
-                }
-                stream = NULL;
-            }
-        } else if (!av_strcasecmp(cmd, "<Redirect")) {
-            /*********************************************/
-            char *q;
-            if (stream || feed || redirect) {
+        } else if (redirect || !av_strcasecmp(cmd, "<Redirect")) {
+            int opening = !av_strcasecmp(cmd, "<Redirect");
+            if (opening && (stream || feed || redirect))
                 ERROR("Already in a tag\n");
-            } else {
-                redirect = av_mallocz(sizeof(FFServerStream));
-                if (!redirect) {
-                    ret = AVERROR(ENOMEM);
-                    goto end;
+            else {
+                if ((ret = ffserver_parse_config_redirect(config, cmd, &p, line_num, &redirect)) < 0)
+                    break;
+                if (opening) {
+                    /* add in stream list */
+                    *last_stream = redirect;
+                    last_stream = &redirect->next;
                 }
-                *last_stream = redirect;
-                last_stream = &redirect->next;
-
-                ffserver_get_arg(redirect->filename, sizeof(redirect->filename), &p);
-                q = strrchr(redirect->filename, '>');
-                if (*q)
-                    *q = '\0';
-                redirect->stream_type = STREAM_TYPE_REDIRECT;
             }
-        } else if (!av_strcasecmp(cmd, "URL")) {
-            if (redirect)
-                ffserver_get_arg(redirect->feed_filename, sizeof(redirect->feed_filename), &p);
-        } else if (!av_strcasecmp(cmd, "</Redirect>")) {
-            if (!redirect) {
-                ERROR("No corresponding <Redirect> for </Redirect>\n");
-            } else {
-                if (!redirect->feed_filename[0]) {
-                    ERROR("No URL found for <Redirect>\n");
-                }
-                redirect = NULL;
-            }
-        } else if (!av_strcasecmp(cmd, "LoadModule")) {
-            ERROR("Loadable modules no longer supported\n");
         } else {
-            ERROR("Incorrect keyword: '%s'\n", cmd);
+            ffserver_parse_config_global(config, cmd, &p, line_num);
         }
     }
-#undef ERROR
 
-end:
     fclose(f);
     if (ret < 0)
         return ret;
-    if (errors)
+    if (config->errors)
         return AVERROR(EINVAL);
     else
         return 0;
 }
+
+#undef ERROR
+#undef WARNING
