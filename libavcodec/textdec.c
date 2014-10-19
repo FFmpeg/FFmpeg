@@ -56,7 +56,7 @@ static int text_decode_frame(AVCodecContext *avctx, void *data,
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (ptr && avpkt->size > 0 && *ptr) {
         ff_ass_bprint_text_event(&buf, ptr, avpkt->size, text->linebreaks, text->keep_ass_markup);
-        ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_duration, 0);
+        ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_duration);
     }
     av_bprint_finalize(&buf, NULL);
     if (ret < 0)

@@ -122,7 +122,7 @@ static int sami_decode_frame(AVCodecContext *avctx,
         int ts_start     = av_rescale_q(avpkt->pts, avctx->time_base, (AVRational){1,100});
         int ts_duration  = avpkt->duration != -1 ?
                            av_rescale_q(avpkt->duration, avctx->time_base, (AVRational){1,100}) : -1;
-        int ret = ff_ass_add_rect_bprint(sub, &sami->full, ts_start, ts_duration, 0);
+        int ret = ff_ass_add_rect_bprint(sub, &sami->full, ts_start, ts_duration);
         if (ret < 0)
             return ret;
     }
