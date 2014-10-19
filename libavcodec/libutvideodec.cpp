@@ -40,7 +40,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     int begin_ret;
 
     if (avctx->extradata_size != 4*4) {
-        av_log(avctx, AV_LOG_ERROR, "Extradata size mismatch.\n");
+        av_log(avctx, AV_LOG_ERROR, "Extradata size (%d) mismatch.\n", avctx->extradata_size);
         return -1;
     }
 
