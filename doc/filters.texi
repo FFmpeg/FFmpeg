@@ -6718,6 +6718,9 @@ A description of the accepted parameters follows.
 @item y3
 Set coordinates expression for top left, top right, bottom left and bottom right corners.
 Default values are @code{0:0:W:0:0:H:W:H} with which perspective will remain unchanged.
+If the @code{sense} option is set to @code{source}, then the specified points will be sent
+to the corners of the destination. If the @code{sense} option is set to @code{destination},
+then the corners of the source will be sent to the specified coordinates.
 
 The expressions can use the following variables:
 
@@ -6737,6 +6740,24 @@ It accepts the following values:
 @end table
 
 Default value is @samp{linear}.
+
+@item sense
+Set interpretation of coordinate options.
+
+It accepts the following values:
+@table @samp
+@item 0, source
+
+Send point in the source specified by the given coordinates to
+the corners of the destination.
+
+@item 1, destination
+
+Send the corners of the source to the point in the destination specified
+by the given coordinates.
+
+Default value is @samp{source}.
+@end table
 @end table
 
 @section phase
