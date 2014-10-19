@@ -107,11 +107,14 @@ typedef struct FFServerConfig {
     int errors;
     int warnings;
     // Following variables MUST NOT be used outside configuration parsing code.
-    AVCodecContext audio_enc;
-    AVCodecContext video_enc;
     enum AVCodecID audio_id;
     enum AVCodecID video_id;
-
+    AVDictionary *video_opts;     /* AVOptions for video encoder */
+    AVDictionary *video_conf;     /* Values stored in video AVCodecContext.fields */
+    AVDictionary *audio_opts;     /* AVOptions for audio encoder */
+    AVDictionary *audio_conf;     /* Values stored in audio AVCodecContext.fields */
+    char *video_preset;
+    char *audio_preset;
 } FFServerConfig;
 
 void ffserver_get_arg(char *buf, int buf_size, const char **pp);
