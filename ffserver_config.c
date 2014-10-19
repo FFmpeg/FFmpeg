@@ -341,11 +341,11 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
     char cmd[64];
     char arg[1024], arg2[1024];
     const char *p;
-    int val, errors, warnings, line_num;
-    FFServerStream **last_stream, *stream, *redirect;
-    FFServerStream **last_feed, *feed, *s;
+    int val, errors = 0, warnings = 0, line_num = 0;
+    FFServerStream **last_stream, *stream = NULL, *redirect = NULL;
+    FFServerStream **last_feed, *feed = NULL;
     AVCodecContext audio_enc, video_enc;
-    enum AVCodecID audio_id, video_id;
+    enum AVCodecID audio_id = AV_CODEC_ID_NONE, video_id = AV_CODEC_ID_NONE;
     int ret = 0;
 
     av_assert0(config);
@@ -357,17 +357,10 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
         return ret;
     }
 
-    errors = warnings = 0;
-    line_num = 0;
     config->first_stream = NULL;
     last_stream = &config->first_stream;
     config->first_feed = NULL;
     last_feed = &config->first_feed;
-    stream = NULL;
-    feed = NULL;
-    redirect = NULL;
-    audio_id = AV_CODEC_ID_NONE;
-    video_id = AV_CODEC_ID_NONE;
 #define ERROR(...)   report_config_error(filename, line_num, AV_LOG_ERROR,   &errors,   __VA_ARGS__)
 #define WARNING(...) report_config_error(filename, line_num, AV_LOG_WARNING, &warnings, __VA_ARGS__)
 
@@ -448,6 +441,7 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
             if (stream || feed) {
                 ERROR("Already in a tag\n");
             } else {
+                FFServerStream *s;
                 feed = av_mallocz(sizeof(FFServerStream));
                 if (!feed) {
                     ret = AVERROR(ENOMEM);
