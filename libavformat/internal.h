@@ -353,4 +353,18 @@ enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
  */
 int ff_generate_avci_extradata(AVStream *st);
 
+/**
+ * Wrap errno on rename() error.
+ *
+ * @param oldpath source path
+ * @param newpath destination path
+ * @return        0 or AVERROR on failure
+ */
+static inline int ff_rename(const char *oldpath, const char *newpath)
+{
+    if (rename(oldpath, newpath) == -1)
+        return AVERROR(errno);
+    return 0;
+}
+
 #endif /* AVFORMAT_INTERNAL_H */

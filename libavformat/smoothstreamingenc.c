@@ -34,6 +34,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
+#include "libavutil/file.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/intreadwrite.h"
 
@@ -282,8 +283,7 @@ static int write_manifest(AVFormatContext *s, int final)
     avio_printf(out, "</SmoothStreamingMedia>\n");
     avio_flush(out);
     avio_close(out);
-    rename(temp_filename, filename);
-    return 0;
+    return ff_rename(temp_filename, filename);
 }
 
 static int ism_write_header(AVFormatContext *s)
@@ -533,8 +533,11 @@ static int ism_flush(AVFormatContext *s, int final)
         snprintf(header_filename, sizeof(header_filename), "%s/FragmentInfo(%s=%"PRIu64")", os->dirname, os->stream_type_tag, start_ts);
         snprintf(target_filename, sizeof(target_filename), "%s/Fragments(%s=%"PRIu64")", os->dirname, os->stream_type_tag, start_ts);
         copy_moof(s, filename, header_filename, moof_size);
-        rename(filename, target_filename);
-        add_fragment(os, target_filename, header_filename, start_ts, duration, start_pos, size);
+        ret = ff_rename(filename, target_filename);
+        if (ret < 0)
+            break;
+        add_fragment(os, target_filename, header_filename, start_ts, duration,
+                     os->cur_start_pos, size);
     }
 
     if (c->window_size || (final && c->remove_at_exit)) {
