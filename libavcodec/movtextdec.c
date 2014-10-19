@@ -42,7 +42,6 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end)
         text++;
     }
 
-    av_bprintf(buf, "\r\n");
     return 0;
 }
 

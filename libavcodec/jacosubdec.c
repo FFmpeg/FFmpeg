@@ -162,7 +162,6 @@ static void jacosub_to_ass(AVCodecContext *avctx, AVBPrint *dst, const char *src
         if (i == FF_ARRAY_ELEMS(ass_codes_map))
             av_bprintf(dst, "%c", *src++);
     }
-    av_bprintf(dst, "\r\n");
 }
 
 static int jacosub_decode_frame(AVCodecContext *avctx,

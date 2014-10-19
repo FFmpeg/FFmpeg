@@ -104,7 +104,7 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
     av_bprint_clear(&sami->full);
     if (sami->source.len)
         av_bprintf(&sami->full, "{\\i1}%s{\\i0}\\N", sami->source.str);
-    av_bprintf(&sami->full, "%s\r\n", sami->content.str);
+    av_bprintf(&sami->full, "%s", sami->content.str);
 
 end:
     av_free(dupsrc);

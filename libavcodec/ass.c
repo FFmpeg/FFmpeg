@@ -174,9 +174,10 @@ err:
     return ret;
 }
 
-int ff_ass_add_rect_bprint(AVSubtitle *sub, const AVBPrint *buf,
+int ff_ass_add_rect_bprint(AVSubtitle *sub, AVBPrint *buf,
                            int ts_start, int duration)
 {
+    av_bprintf(buf, "\r\n");
     if (!av_bprint_is_complete(buf))
         return AVERROR(ENOMEM);
     return ff_ass_add_rect(sub, buf->str, ts_start, duration, 0);
@@ -218,5 +219,4 @@ void ff_ass_bprint_text_event(AVBPrint *buf, const char *p, int size,
             av_bprint_chars(buf, *p, 1);
         }
     }
-    av_bprintf(buf, "\r\n");
 }

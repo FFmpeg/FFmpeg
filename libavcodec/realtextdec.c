@@ -52,7 +52,6 @@ static int rt_event_to_ass(AVBPrint *buf, const char *p)
         }
         p++;
     }
-    av_bprintf(buf, "\r\n");
     return 0;
 }
 

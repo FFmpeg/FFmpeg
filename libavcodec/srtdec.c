@@ -183,7 +183,6 @@ static void srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
         dst->len -= 2;
     dst->str[dst->len] = 0;
     rstrip_spaces_buf(dst);
-    av_bprintf(dst, "\r\n");
 }
 
 static int srt_decode_frame(AVCodecContext *avctx,
