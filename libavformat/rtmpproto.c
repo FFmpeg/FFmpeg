@@ -2594,7 +2594,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 {
     RTMPContext *rt = s->priv_data;
     char proto[8], hostname[256], path[1024], auth[100], *fname;
-    char *old_app, *qmark, fname_buffer[1024];
+    char *old_app, *qmark, *n, fname_buffer[1024];
     uint8_t buf[2048];
     int port;
     AVDictionary *opts = NULL;
@@ -2609,11 +2609,13 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
                  hostname, sizeof(hostname), &port,
                  path, sizeof(path), s->filename);
 
-    if (strchr(path, ' ')) {
+    n = strchr(path, ' ');
+    if (n) {
         av_log(s, AV_LOG_WARNING,
                "Detected librtmp style URL parameters, these aren't supported "
                "by the libavformat internal RTMP handler currently enabled. "
                "See the documentation for the correct way to pass parameters.\n");
+        *n = '\0'; // Trim not supported part
     }
 
     if (auth[0]) {
@@ -2712,8 +2714,14 @@ reconnect:
         char *next = *path ? path + 1 : path;
         char *p = strchr(next, '/');
         if (!p) {
-            fname = next;
-            rt->app[0] = '\0';
+            if (old_app) {
+                // If name of application has been defined by the user, assume that
+                // playpath is provided in the URL
+                fname = next;
+            } else {
+                fname = NULL;
+                av_strlcpy(rt->app, next, APP_MAX_LENGTH);
+            }
         } else {
             // make sure we do not mismatch a playpath for an application instance
             char *c = strchr(p + 1, ':');
@@ -2739,24 +2747,27 @@ reconnect:
     }
 
     if (!rt->playpath) {
-        int len = strlen(fname);
-
         rt->playpath = av_malloc(PLAYPATH_MAX_LENGTH);
         if (!rt->playpath) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
 
-        if (!strchr(fname, ':') && len >= 4 &&
-            (!strcmp(fname + len - 4, ".f4v") ||
-             !strcmp(fname + len - 4, ".mp4"))) {
-            memcpy(rt->playpath, "mp4:", 5);
+        if (fname) {
+            int len = strlen(fname);
+            if (!strchr(fname, ':') && len >= 4 &&
+                (!strcmp(fname + len - 4, ".f4v") ||
+                 !strcmp(fname + len - 4, ".mp4"))) {
+                memcpy(rt->playpath, "mp4:", 5);
+            } else {
+                if (len >= 4 && !strcmp(fname + len - 4, ".flv"))
+                    fname[len - 4] = '\0';
+                rt->playpath[0] = 0;
+            }
+            av_strlcat(rt->playpath, fname, PLAYPATH_MAX_LENGTH);
         } else {
-            if (len >= 4 && !strcmp(fname + len - 4, ".flv"))
-                fname[len - 4] = '\0';
-            rt->playpath[0] = 0;
+            rt->playpath[0] = '\0';
         }
-        av_strlcat(rt->playpath, fname, PLAYPATH_MAX_LENGTH);
     }
 
     if (!rt->tcurl) {
