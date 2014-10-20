@@ -717,7 +717,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
     if (i == s->nb_streams) {
         st = create_stream(s, AVMEDIA_TYPE_DATA);
         if (!st)
-            return AVERROR_INVALIDDATA;
+            return AVERROR(ENOMEM);
         st->codec->codec_id = AV_CODEC_ID_TEXT;
     }
 
@@ -817,9 +817,12 @@ skip:
                     break;
             }
         }
-        if (i == s->nb_streams)
+        if (i == s->nb_streams) {
             st = create_stream(s, is_audio ? AVMEDIA_TYPE_AUDIO
                                            : AVMEDIA_TYPE_VIDEO);
+            if (!st)
+                return AVERROR(ENOMEM);
+        }
         av_dlog(s, "%d %X %d \n", is_audio, flags, st->discard);
 
         if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
