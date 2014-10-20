@@ -48,6 +48,7 @@ void avdevice_register_all(void)
     /* devices */
     REGISTER_INOUTDEV(ALSA,             alsa);
     REGISTER_INDEV   (AVFOUNDATION,     avfoundation);
+    REGISTER_INDEV   (AVCAPTURE,        avcapture);
     REGISTER_INDEV   (BKTR,             bktr);
     REGISTER_OUTDEV  (CACA,             caca);
     REGISTER_INOUTDEV(DECKLINK,         decklink);
