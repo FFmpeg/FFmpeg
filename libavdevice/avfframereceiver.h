@@ -75,12 +75,12 @@ typedef struct
     CMSampleBufferRef         current_audio_frame;
 } AVFContext;
 
-inline void lock_frames(AVFContext* ctx)
+static inline void lock_frames(AVFContext* ctx)
 {
         pthread_mutex_lock(&ctx->frame_lock);
 }
 
-inline void unlock_frames(AVFContext* ctx)
+static inline void unlock_frames(AVFContext* ctx)
 {
         pthread_mutex_unlock(&ctx->frame_lock);
 }
