@@ -4944,6 +4944,7 @@ check_header linux/videodev2.h
 check_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
 
 check_header sys/videoio.h
+check_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
 
 check_func_headers "windows.h vfw.h" capCreateCaptureWindow "$vfwcap_indev_extralibs"
 # check that WM_CAP_DRIVER_CONNECT is defined to the proper value
