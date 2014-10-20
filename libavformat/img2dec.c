@@ -221,7 +221,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     VideoDemuxData *s = s1->priv_data;
     char filename[1024];
-    int i;
+    int i, res;
     int size[3]           = { 0 }, ret[3] = { 0 };
     AVIOContext *f[3]     = { NULL };
     AVCodecContext *codec = s1->streams[0]->codec;
@@ -262,7 +262,9 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         size[0] = 4096;
     }
 
-    av_new_packet(pkt, size[0] + size[1] + size[2]);
+    res = av_new_packet(pkt, size[0] + size[1] + size[2]);
+    if (res < 0)
+        return res;
     pkt->stream_index = 0;
     pkt->flags       |= AV_PKT_FLAG_KEY;
 
