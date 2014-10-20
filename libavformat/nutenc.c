@@ -906,7 +906,10 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
             frame_code  = i;
         }
     }
-    assert(frame_code != -1);
+
+    if (frame_code < 0)
+        return AVERROR_BUG;
+
     fc           = &nut->frame_code[frame_code];
     flags        = fc->flags;
     needed_flags = get_needed_flags(nut, nus, fc, pkt);
