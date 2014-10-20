@@ -823,7 +823,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code)
 {
     AVFormatContext *s = nut->avf;
     AVIOContext *bc    = s->pb;
-    int size, stream_id, discard;
+    int size, stream_id, discard, ret;
     int64_t pts, last_IP_pts;
     StreamContext *stc;
     uint8_t header_idx;
@@ -848,7 +848,9 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code)
         return 1;
     }
 
-    av_new_packet(pkt, size + nut->header_len[header_idx]);
+    ret = av_new_packet(pkt, size + nut->header_len[header_idx]);
+    if (ret < 0)
+        return ret;
     memcpy(pkt->data, nut->header[header_idx], nut->header_len[header_idx]);
     pkt->pos = avio_tell(bc); // FIXME
     avio_read(bc, pkt->data + nut->header_len[header_idx], size);
