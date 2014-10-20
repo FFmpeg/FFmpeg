@@ -879,6 +879,7 @@ skip:
         } else {
             AVCodecContext ctx;
             ctx.sample_rate = sample_rate;
+            ctx.bits_per_coded_sample = bits_per_coded_sample;
             flv_set_audio_codec(s, st, &ctx, flags & FLV_AUDIO_CODECID_MASK);
             sample_rate = ctx.sample_rate;
         }
