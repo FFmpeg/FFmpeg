@@ -457,7 +457,7 @@ av_cold int av_cast5_init(AVCAST5* cs, const uint8_t *key, int key_bits)
         q[i]=AV_RB32(newKey+(4*i));
     generate_round_keys(cs->rounds,cs->Km,q,p);
     generate_round_keys(cs->rounds,cs->Kr,q,p);
-    for (i=0;i<cs->rounds;i++)
+    for (i=0;i<=cs->rounds;i++)
         cs->Kr[i]=cs->Kr[i]&0x1f;
     return 0;
 }
