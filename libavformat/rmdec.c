@@ -865,7 +865,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
                     st = s->streams[i];
             }
 
-            if(len<0 || s->pb->eof_reached)
+            if (len <= 0 || s->pb->eof_reached)
                 return AVERROR(EIO);
 
             res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
