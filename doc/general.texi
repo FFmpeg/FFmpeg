@@ -1031,6 +1031,7 @@ performance on systems without hardware floating point support).
 @item PJS (Phoenix)    @tab   @tab X @tab   @tab X
 @item RealText         @tab   @tab X @tab   @tab X
 @item SAMI             @tab   @tab X @tab   @tab X
+@item Spruce format (STL) @tab   @tab X @tab   @tab X
 @item SSA/ASS          @tab X @tab X @tab X @tab X
 @item SubRip (SRT)     @tab X @tab X @tab X @tab X
 @item SubViewer v1     @tab   @tab X @tab   @tab X

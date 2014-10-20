@@ -37,6 +37,9 @@ fate-sub-sami: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SAMI_capability_test
 FATE_SUBTITLES_ASS-$(call DEMDEC, SRT, SUBRIP) += fate-sub-srt
 fate-sub-srt: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 
+FATE_SUBTITLES_ASS-$(call DEMDEC, STL, STL) += fate-sub-stl
+fate-sub-stl: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/STL_capability_tester.stl
+
 FATE_SUBTITLES-$(call ALLYES, MOV_DEMUXER MOVTEXT_DECODER SUBRIP_ENCODER SRT_MUXER) += fate-sub-subripenc
 fate-sub-subripenc: CMD = fmtstdout srt -i $(TARGET_SAMPLES)/sub/MovText_capability_tester.mp4 -scodec subrip
 

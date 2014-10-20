@@ -88,7 +88,7 @@ AVCodec ff_text_decoder = {
 };
 #endif
 
-#if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER || CONFIG_SUBVIEWER1_DECODER
+#if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER || CONFIG_SUBVIEWER1_DECODER || CONFIG_STL_DECODER
 
 static int linebreak_init(AVCodecContext *avctx)
 {
@@ -110,6 +110,22 @@ AVCodec ff_vplayer_decoder = {
     .decode         = text_decode_frame,
     .init           = linebreak_init,
     .priv_class     = &vplayer_decoder_class,
+};
+#endif
+
+#if CONFIG_STL_DECODER
+#define stl_options options
+DECLARE_CLASS(stl);
+
+AVCodec ff_stl_decoder = {
+    .name           = "stl",
+    .long_name      = NULL_IF_CONFIG_SMALL("Spruce subtitle format"),
+    .priv_data_size = sizeof(TextContext),
+    .type           = AVMEDIA_TYPE_SUBTITLE,
+    .id             = AV_CODEC_ID_STL,
+    .decode         = text_decode_frame,
+    .init           = linebreak_init,
+    .priv_class     = &stl_decoder_class,
 };
 #endif
 
