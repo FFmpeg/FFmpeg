@@ -3092,7 +3092,7 @@ static int mov_read_header(AVFormatContext *s)
         MOVStreamContext *sc = st->priv_data;
 
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-            if (st->codec->width <= 0 && st->codec->width <= 0) {
+            if (st->codec->width <= 0 || st->codec->height <= 0) {
                 st->codec->width  = sc->width;
                 st->codec->height = sc->height;
             }
