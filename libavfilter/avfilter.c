@@ -152,6 +152,11 @@ int avfilter_config_links(AVFilterContext *filter)
         AVFilterLink *link = filter->inputs[i];
 
         if (!link) continue;
+        if (!link->src || !link->dst) {
+            av_log(filter, AV_LOG_ERROR,
+                   "Not all input and output are properly linked (%d).\n", i);
+            return AVERROR(EINVAL);
+        }
 
         switch (link->init_state) {
         case AVLINK_INIT:
@@ -181,7 +186,7 @@ int avfilter_config_links(AVFilterContext *filter)
             }
 
             if (link->time_base.num == 0 && link->time_base.den == 0)
-                link->time_base = link->src && link->src->nb_inputs ?
+                link->time_base = link->src->nb_inputs ?
                     link->src->inputs[0]->time_base : AV_TIME_BASE_Q;
 
             if (link->type == AVMEDIA_TYPE_VIDEO) {
