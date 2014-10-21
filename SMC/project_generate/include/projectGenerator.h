@@ -100,9 +100,9 @@ private:
 
     void buildProjectGUIDs( map<string, string> & mLibKeys, map<string, string> & mProgramKeys );
 
-    bool copyFile( const string & sSourceFile, const string & sDestinationFile );
+    static bool copyFile( const string & sSourceFile, const string & sDestinationFile );
 
-    void deleteFile( const string & sDestinationFile );
+    static void deleteFile( const string & sDestinationFile );
 };
 
 #endif

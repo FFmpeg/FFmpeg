@@ -32,7 +32,7 @@ void projectGenerator::buildInterDependencies( const string & sProjectName, Stat
         //get the dependency list from configure
         string sLibName = sProjectName.substr( 3 ) + "_deps";
         vector<string> vLibDeps;
-        if( m_ConfigHelper.getConfigList( sLibName, vLibDeps, true ) )
+        if( m_ConfigHelper.getConfigList( sLibName, vLibDeps, false ) )
         {
             for( vector<string>::iterator itI = vLibDeps.begin( ); itI < vLibDeps.end( ); itI++ )
             {

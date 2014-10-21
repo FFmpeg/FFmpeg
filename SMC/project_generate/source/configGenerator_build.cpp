@@ -142,7 +142,6 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "MemoryBarrier", true );
     fastToggleConfigValue( "mm_empty", true );
     fastToggleConfigValue( "PeekNamedPipe", true );
-    fastToggleConfigValue( "pragma_deprecated", true );
     fastToggleConfigValue( "rdtsc", true );
     fastToggleConfigValue( "rsync_contimeout", true );
     fastToggleConfigValue( "SetConsoleTextAttribute", true );
@@ -284,11 +283,7 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
     {
         transform( vitIt->begin(), vitIt->end(), vitIt->begin(), ::toupper);
         string sName = "HAVE_" + *vitIt + "_INLINE";
-        mReplaceValues[sName] = "#if defined(__INTEL_COMPILER)\n\
-#   define " + sName + " 1\n\
-#else\n\
-#   define " + sName + " 0\n\
-#endif";
+        mReplaceValues[sName] = "#define " + sName + " HAVE_INLINE_ASM";
     }
 
     //Sanity checks for inline asm (Needed as some code only checks availability and not inline_asm)
